@@ -22,8 +22,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.BlueprintPayloadDef;
 import com.radixdlt.api.core.generated.models.FieldSchemaFeatureCondition;
-import com.radixdlt.api.core.generated.models.TypePointer;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -33,43 +33,47 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * FieldSchema
  */
 @JsonPropertyOrder({
-  FieldSchema.JSON_PROPERTY_FIELD_TYPE_POINTER,
-  FieldSchema.JSON_PROPERTY_CONDITION
+  FieldSchema.JSON_PROPERTY_FIELD_TYPE_REF,
+  FieldSchema.JSON_PROPERTY_CONDITION,
+  FieldSchema.JSON_PROPERTY_TRANSIENT_DEFAULT_VALUE_HEX
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class FieldSchema {
-  public static final String JSON_PROPERTY_FIELD_TYPE_POINTER = "field_type_pointer";
-  private TypePointer fieldTypePointer;
+  public static final String JSON_PROPERTY_FIELD_TYPE_REF = "field_type_ref";
+  private BlueprintPayloadDef fieldTypeRef;
 
   public static final String JSON_PROPERTY_CONDITION = "condition";
   private FieldSchemaFeatureCondition condition;
 
+  public static final String JSON_PROPERTY_TRANSIENT_DEFAULT_VALUE_HEX = "transient_default_value_hex";
+  private String transientDefaultValueHex;
+
   public FieldSchema() { 
   }
 
-  public FieldSchema fieldTypePointer(TypePointer fieldTypePointer) {
-    this.fieldTypePointer = fieldTypePointer;
+  public FieldSchema fieldTypeRef(BlueprintPayloadDef fieldTypeRef) {
+    this.fieldTypeRef = fieldTypeRef;
     return this;
   }
 
    /**
-   * Get fieldTypePointer
-   * @return fieldTypePointer
+   * Get fieldTypeRef
+   * @return fieldTypeRef
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_FIELD_TYPE_POINTER)
+  @JsonProperty(JSON_PROPERTY_FIELD_TYPE_REF)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public TypePointer getFieldTypePointer() {
-    return fieldTypePointer;
+  public BlueprintPayloadDef getFieldTypeRef() {
+    return fieldTypeRef;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_FIELD_TYPE_POINTER)
+  @JsonProperty(JSON_PROPERTY_FIELD_TYPE_REF)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setFieldTypePointer(TypePointer fieldTypePointer) {
-    this.fieldTypePointer = fieldTypePointer;
+  public void setFieldTypeRef(BlueprintPayloadDef fieldTypeRef) {
+    this.fieldTypeRef = fieldTypeRef;
   }
 
 
@@ -99,6 +103,32 @@ public class FieldSchema {
   }
 
 
+  public FieldSchema transientDefaultValueHex(String transientDefaultValueHex) {
+    this.transientDefaultValueHex = transientDefaultValueHex;
+    return this;
+  }
+
+   /**
+   * The hex-encoded default value of this field. Only present if this field is transient.
+   * @return transientDefaultValueHex
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "The hex-encoded default value of this field. Only present if this field is transient.")
+  @JsonProperty(JSON_PROPERTY_TRANSIENT_DEFAULT_VALUE_HEX)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public String getTransientDefaultValueHex() {
+    return transientDefaultValueHex;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_TRANSIENT_DEFAULT_VALUE_HEX)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setTransientDefaultValueHex(String transientDefaultValueHex) {
+    this.transientDefaultValueHex = transientDefaultValueHex;
+  }
+
+
   /**
    * Return true if this FieldSchema object is equal to o.
    */
@@ -111,21 +141,23 @@ public class FieldSchema {
       return false;
     }
     FieldSchema fieldSchema = (FieldSchema) o;
-    return Objects.equals(this.fieldTypePointer, fieldSchema.fieldTypePointer) &&
-        Objects.equals(this.condition, fieldSchema.condition);
+    return Objects.equals(this.fieldTypeRef, fieldSchema.fieldTypeRef) &&
+        Objects.equals(this.condition, fieldSchema.condition) &&
+        Objects.equals(this.transientDefaultValueHex, fieldSchema.transientDefaultValueHex);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(fieldTypePointer, condition);
+    return Objects.hash(fieldTypeRef, condition, transientDefaultValueHex);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class FieldSchema {\n");
-    sb.append("    fieldTypePointer: ").append(toIndentedString(fieldTypePointer)).append("\n");
+    sb.append("    fieldTypeRef: ").append(toIndentedString(fieldTypeRef)).append("\n");
     sb.append("    condition: ").append(toIndentedString(condition)).append("\n");
+    sb.append("    transientDefaultValueHex: ").append(toIndentedString(transientDefaultValueHex)).append("\n");
     sb.append("}");
     return sb.toString();
   }

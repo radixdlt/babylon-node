@@ -13,6 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { LedgerStateSummary } from './LedgerStateSummary';
+import {
+    LedgerStateSummaryFromJSON,
+    LedgerStateSummaryFromJSONTyped,
+    LedgerStateSummaryToJSON,
+} from './LedgerStateSummary';
 import type { SborData } from './SborData';
 import {
     SborDataFromJSON,
@@ -32,6 +38,12 @@ import {
  * @interface TransactionCallPreviewResponse
  */
 export interface TransactionCallPreviewResponse {
+    /**
+     * 
+     * @type {LedgerStateSummary}
+     * @memberof TransactionCallPreviewResponse
+     */
+    at_ledger_state: LedgerStateSummary;
     /**
      * 
      * @type {TransactionStatus}
@@ -57,6 +69,7 @@ export interface TransactionCallPreviewResponse {
  */
 export function instanceOfTransactionCallPreviewResponse(value: object): boolean {
     let isInstance = true;
+    isInstance = isInstance && "at_ledger_state" in value;
     isInstance = isInstance && "status" in value;
 
     return isInstance;
@@ -72,6 +85,7 @@ export function TransactionCallPreviewResponseFromJSONTyped(json: any, ignoreDis
     }
     return {
         
+        'at_ledger_state': LedgerStateSummaryFromJSON(json['at_ledger_state']),
         'status': TransactionStatusFromJSON(json['status']),
         'output': !exists(json, 'output') ? undefined : SborDataFromJSON(json['output']),
         'error_message': !exists(json, 'error_message') ? undefined : json['error_message'],
@@ -87,6 +101,7 @@ export function TransactionCallPreviewResponseToJSON(value?: TransactionCallPrev
     }
     return {
         
+        'at_ledger_state': LedgerStateSummaryToJSON(value.at_ledger_state),
         'status': TransactionStatusToJSON(value.status),
         'output': SborDataToJSON(value.output),
         'error_message': value.error_message,

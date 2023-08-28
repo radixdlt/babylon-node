@@ -13,21 +13,21 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct SortedIndexBlueprintCollectionSchemaAllOf {
-    #[serde(rename = "key_type_pointer")]
-    pub key_type_pointer: Option<crate::core_api::generated::models::TypePointer>, // Using Option permits Default trait; Will always be Some in normal use
-    #[serde(rename = "value_type_pointer")]
-    pub value_type_pointer: Option<crate::core_api::generated::models::TypePointer>, // Using Option permits Default trait; Will always be Some in normal use
+    #[serde(rename = "key_type_ref")]
+    pub key_type_ref: Option<crate::core_api::generated::models::BlueprintPayloadDef>, // Using Option permits Default trait; Will always be Some in normal use
+    #[serde(rename = "value_type_ref")]
+    pub value_type_ref: Option<crate::core_api::generated::models::BlueprintPayloadDef>, // Using Option permits Default trait; Will always be Some in normal use
     /// Whether the entries of the sorted index partition are allowed to own child nodes.
-    #[serde(rename = "can_own")]
-    pub can_own: bool,
+    #[serde(rename = "allow_ownership")]
+    pub allow_ownership: bool,
 }
 
 impl SortedIndexBlueprintCollectionSchemaAllOf {
-    pub fn new(key_type_pointer: crate::core_api::generated::models::TypePointer, value_type_pointer: crate::core_api::generated::models::TypePointer, can_own: bool) -> SortedIndexBlueprintCollectionSchemaAllOf {
+    pub fn new(key_type_ref: crate::core_api::generated::models::BlueprintPayloadDef, value_type_ref: crate::core_api::generated::models::BlueprintPayloadDef, allow_ownership: bool) -> SortedIndexBlueprintCollectionSchemaAllOf {
         SortedIndexBlueprintCollectionSchemaAllOf {
-            key_type_pointer: Option::Some(key_type_pointer),
-            value_type_pointer: Option::Some(value_type_pointer),
-            can_own,
+            key_type_ref: Option::Some(key_type_ref),
+            value_type_ref: Option::Some(value_type_ref),
+            allow_ownership,
         }
     }
 }

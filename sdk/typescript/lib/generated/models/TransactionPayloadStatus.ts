@@ -12,40 +12,12 @@
  * Do not edit the class manually.
  */
 
-import { exists, mapValues } from '../runtime';
+
 /**
  * 
  * @export
- * @interface TransactionPayloadStatus
  */
-export interface TransactionPayloadStatus {
-    /**
-     * The hex-encoded notarized transaction hash for a user transaction.
-     * This hash identifies the full submittable notarized transaction - ie the signed intent, plus the notary signature.
-     * @type {string}
-     * @memberof TransactionPayloadStatus
-     */
-    payload_hash: string;
-    /**
-     * The status of the transaction payload, as per this node.
-     * A NotInMempool status means that it wasn't rejected at last execution attempt, but it's not currently in the mempool either.
-     * @type {string}
-     * @memberof TransactionPayloadStatus
-     */
-    status: TransactionPayloadStatusStatusEnum;
-    /**
-     * An explanation for the error, if failed or rejected
-     * @type {string}
-     * @memberof TransactionPayloadStatus
-     */
-    error_message?: string;
-}
-
-
-/**
- * @export
- */
-export const TransactionPayloadStatusStatusEnum = {
+export const TransactionPayloadStatus = {
     CommittedSuccess: 'CommittedSuccess',
     CommittedFailure: 'CommittedFailure',
     PermanentlyRejected: 'PermanentlyRejected',
@@ -53,48 +25,18 @@ export const TransactionPayloadStatusStatusEnum = {
     InMempool: 'InMempool',
     NotInMempool: 'NotInMempool'
 } as const;
-export type TransactionPayloadStatusStatusEnum = typeof TransactionPayloadStatusStatusEnum[keyof typeof TransactionPayloadStatusStatusEnum];
+export type TransactionPayloadStatus = typeof TransactionPayloadStatus[keyof typeof TransactionPayloadStatus];
 
-
-/**
- * Check if a given object implements the TransactionPayloadStatus interface.
- */
-export function instanceOfTransactionPayloadStatus(value: object): boolean {
-    let isInstance = true;
-    isInstance = isInstance && "payload_hash" in value;
-    isInstance = isInstance && "status" in value;
-
-    return isInstance;
-}
 
 export function TransactionPayloadStatusFromJSON(json: any): TransactionPayloadStatus {
     return TransactionPayloadStatusFromJSONTyped(json, false);
 }
 
 export function TransactionPayloadStatusFromJSONTyped(json: any, ignoreDiscriminator: boolean): TransactionPayloadStatus {
-    if ((json === undefined) || (json === null)) {
-        return json;
-    }
-    return {
-        
-        'payload_hash': json['payload_hash'],
-        'status': json['status'],
-        'error_message': !exists(json, 'error_message') ? undefined : json['error_message'],
-    };
+    return json as TransactionPayloadStatus;
 }
 
 export function TransactionPayloadStatusToJSON(value?: TransactionPayloadStatus | null): any {
-    if (value === undefined) {
-        return undefined;
-    }
-    if (value === null) {
-        return null;
-    }
-    return {
-        
-        'payload_hash': value.payload_hash,
-        'status': value.status,
-        'error_message': value.error_message,
-    };
+    return value as any;
 }
 

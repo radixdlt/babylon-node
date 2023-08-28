@@ -75,16 +75,20 @@ use crate::{EpochTransactionIdentifiers, ReceiptTreeHash, StateVersion, Transact
 use im::hashmap::HashMap as ImmutableHashMap;
 
 use im::ordmap::OrdMap as ImmutableOrdMap;
+use radix_engine_common::prelude::NodeId;
 
 use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 
-use crate::staging::substate_overlay_iterator::SubstateOverlayIterator;
+use crate::staging::overlays::{
+    MapSubstateNodeAncestryStore, StagedSubstateNodeAncestryStore, SubstateOverlayIterator,
+};
 use crate::transaction::{LedgerTransactionHash, TransactionLogic};
 use radix_engine_store_interface::interface::{
     DatabaseUpdate, DbPartitionKey, DbSortKey, DbSubstateValue, PartitionEntry, SubstateDatabase,
 };
 use radix_engine_stores::hash_tree::tree_store::{NodeKey, ReadableTreeStore, TreeNode};
 
+use crate::store::traits::{SubstateNodeAncestryRecord, SubstateNodeAncestryStore};
 use sbor::rust::collections::HashMap;
 use slotmap::SecondaryMap;
 
@@ -365,6 +369,16 @@ impl<'s, S: ReadableAccuTreeStore<StateVersion, ReceiptTreeHash>>
     }
 }
 
+impl<'s, S: SubstateNodeAncestryStore> SubstateNodeAncestryStore for StagedStore<'s, S> {
+    fn batch_get_ancestry<'a>(
+        &self,
+        node_ids: impl IntoIterator<Item = &'a NodeId>,
+    ) -> Vec<Option<SubstateNodeAncestryRecord>> {
+        let overlay = MapSubstateNodeAncestryStore::wrap(&self.overlay.node_ancestry_records);
+        StagedSubstateNodeAncestryStore::new(self.root, &overlay).batch_get_ancestry(node_ids)
+    }
+}
+
 impl Delta for ProcessedTransactionReceipt {
     fn weight(&self) -> usize {
         match self {
@@ -411,6 +425,7 @@ pub struct ImmutableStore {
     state_tree_nodes: ImmutableHashMap<NodeKey, TreeNode>,
     transaction_tree_slices: ImmutableHashMap<StateVersion, TreeSlice<TransactionTreeHash>>,
     receipt_tree_slices: ImmutableHashMap<StateVersion, TreeSlice<ReceiptTreeHash>>,
+    node_ancestry_records: ImmutableHashMap<NodeId, SubstateNodeAncestryRecord>,
 }
 
 impl Accumulator<ProcessedTransactionReceipt> for ImmutableStore {
@@ -420,6 +435,7 @@ impl Accumulator<ProcessedTransactionReceipt> for ImmutableStore {
             state_tree_nodes: ImmutableHashMap::new(),
             transaction_tree_slices: ImmutableHashMap::new(),
             receipt_tree_slices: ImmutableHashMap::new(),
+            node_ancestry_records: ImmutableHashMap::new(),
         }
     }
 
@@ -432,6 +448,7 @@ impl Accumulator<ProcessedTransactionReceipt> for ImmutableStore {
                         .insert(db_substate_key, database_update.clone());
                 }
             }
+
             let hash_structures_diff = &commit.hash_structures_diff;
             let state_tree_diff = &hash_structures_diff.state_hash_tree_diff;
             self.state_tree_nodes
@@ -444,6 +461,12 @@ impl Accumulator<ProcessedTransactionReceipt> for ImmutableStore {
             let receipt_tree_diff = &hash_structures_diff.receipt_tree_diff;
             self.receipt_tree_slices
                 .insert(receipt_tree_diff.key, receipt_tree_diff.slice.clone());
+
+            for (node_ids, record) in commit.new_substate_node_ancestry_records.iter() {
+                for node_id in node_ids {
+                    self.node_ancestry_records.insert(*node_id, record.clone());
+                }
+            }
         }
     }
 

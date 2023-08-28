@@ -302,15 +302,6 @@ pub enum Substate {
         #[serde(rename = "value")]
         value: Box<crate::core_api::generated::models::PackageFieldRoyaltyAccumulatorValue>,
     },
-    #[serde(rename="PackageSchemaEntry")]
-    PackageSchemaEntrySubstate {
-        #[serde(rename = "is_locked")]
-        is_locked: bool,
-        #[serde(rename = "key")]
-        key: Box<crate::core_api::generated::models::SchemaKey>,
-        #[serde(rename = "value")]
-        value: Box<crate::core_api::generated::models::PackageSchemaEntryValue>,
-    },
     #[serde(rename="RoleAssignmentModuleFieldOwnerRole")]
     RoleAssignmentModuleFieldOwnerRoleSubstate {
         #[serde(rename = "is_locked")]
@@ -342,6 +333,15 @@ pub enum Substate {
         key: Box<crate::core_api::generated::models::MainMethodKey>,
         #[serde(rename = "value", skip_serializing_if = "Option::is_none")]
         value: Option<Box<crate::core_api::generated::models::RoyaltyModuleMethodRoyaltyEntryValue>>,
+    },
+    #[serde(rename="SchemaEntry")]
+    SchemaEntrySubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
+        #[serde(rename = "key")]
+        key: Box<crate::core_api::generated::models::SchemaKey>,
+        #[serde(rename = "value")]
+        value: Box<crate::core_api::generated::models::SchemaEntryValue>,
     },
     #[serde(rename="TransactionTrackerCollectionEntry")]
     TransactionTrackerCollectionEntrySubstate {

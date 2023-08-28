@@ -5,6 +5,7 @@ use sbor::{DecodeError, EncodeError};
 use state_manager::StateVersion;
 use tracing::warn;
 use transaction::errors::TransactionValidationError;
+use transaction::model::TransactionHashBech32EncodeError;
 
 use crate::core_api::*;
 
@@ -14,13 +15,14 @@ pub enum MappingError {
     SubstateKey {
         entity_address: String,
         partition_number: PartitionNumber,
-        substate_key: models::SubstateKey,
+        substate_key: Box<models::SubstateKey>, // only for the variant's size reasons
         message: String,
     },
     SubstateValue {
         bytes: Vec<u8>,
         message: String,
     },
+    ObsoleteSubstateVersion,
     UnexpectedPersistedData {
         message: String,
     },
@@ -43,11 +45,15 @@ pub enum MappingError {
     InvalidEntityAddress {
         encode_error: AddressBech32EncodeError,
     },
+    InvalidTransactionHash {
+        encode_error: TransactionHashBech32EncodeError,
+    },
     MismatchedSubstateId {
         message: String,
     },
     MismatchedSubstateKeyType {
-        message: String,
+        expected_match: String,
+        actual: String,
     },
     MismatchedTransactionIdentifiers {
         message: String,
@@ -68,7 +74,7 @@ pub enum MappingError {
     InternalIndexDataMismatch {
         message: String,
     },
-    ExpectedDataInvariantBroken {
+    MissingSystemStructure {
         message: String,
     },
 }

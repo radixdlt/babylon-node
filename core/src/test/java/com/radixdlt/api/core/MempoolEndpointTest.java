@@ -72,6 +72,7 @@ import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.rev2.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.Bytes;
+import java.util.List;
 import org.junit.Test;
 
 public class MempoolEndpointTest extends DeterministicCoreApiTestBase {
@@ -100,18 +101,33 @@ public class MempoolEndpointTest extends DeterministicCoreApiTestBase {
           .contains(
               new MempoolTransactionHashes()
                   .payloadHash(transaction.hexNotarizedTransactionHash())
-                  .intentHash(transaction.hexIntentHash()));
+                  .payloadHashBech32m(addressing.encode(transaction.notarizedTransactionHash()))
+                  .intentHash(transaction.hexIntentHash())
+                  .intentHashBech32m(addressing.encode(transaction.intentHash())));
 
-      var mempoolTransaction =
+      var mempoolTransactionByHex =
           getMempoolApi()
               .mempoolTransactionPost(
                   new MempoolTransactionRequest()
                       .network(networkLogicalName)
-                      .payloadHash(transaction.hexNotarizedTransactionHash()));
+                      .payloadHashes(List.of(transaction.hexNotarizedTransactionHash())));
 
       assertThat(
               RawNotarizedTransaction.create(
-                  Bytes.fromHexString(mempoolTransaction.getPayloadHex())))
+                  Bytes.fromHexString(mempoolTransactionByHex.getPayloads().get(0).getHex())))
+          .isEqualTo(transaction.raw());
+
+      var mempoolTransactionByBech32m =
+          getMempoolApi()
+              .mempoolTransactionPost(
+                  new MempoolTransactionRequest()
+                      .network(networkLogicalName)
+                      .payloadHashes(
+                          List.of(addressing.encode(transaction.notarizedTransactionHash()))));
+
+      assertThat(
+              RawNotarizedTransaction.create(
+                  Bytes.fromHexString(mempoolTransactionByBech32m.getPayloads().get(0).getHex())))
           .isEqualTo(transaction.raw());
 
       test.runUntilState(allCommittedTransactionSuccess(transaction.raw()), 1000);
@@ -122,27 +138,24 @@ public class MempoolEndpointTest extends DeterministicCoreApiTestBase {
                   .getContents())
           .isEmpty();
 
-      assertThatThrownBy(
-          () ->
-              getMempoolApi()
-                  .mempoolTransactionPost(
-                      new MempoolTransactionRequest()
-                          .network(networkLogicalName)
-                          .payloadHash(transaction.hexNotarizedTransactionHash())));
+      var mempoolTransactionNotFound =
+          getMempoolApi()
+              .mempoolTransactionPost(
+                  new MempoolTransactionRequest()
+                      .network(networkLogicalName)
+                      .payloadHashes(List.of(transaction.hexNotarizedTransactionHash())));
 
-      var errorResponse =
-          assertErrorResponseOfType(
-              () ->
-                  getMempoolApi()
-                      .mempoolTransactionPost(
-                          new MempoolTransactionRequest()
-                              .network(networkLogicalName)
-                              .payloadHash(transaction.hexNotarizedTransactionHash())),
-              BasicErrorResponse.class);
+      assert (mempoolTransactionNotFound.getPayloads().get(0).getError()).contains("not found");
 
-      assertThat(errorResponse.getCode()).isEqualTo(404);
-      assertThat(errorResponse.getMessage())
-          .isEqualTo("Transaction with given payload hash is not in the mempool");
+      var mempoolTransactionInvalid =
+          getMempoolApi()
+              .mempoolTransactionPost(
+                  new MempoolTransactionRequest()
+                      .network(networkLogicalName)
+                      .payloadHashes(List.of("invalid_payload_hash")));
+
+      assert (mempoolTransactionInvalid.getPayloads().get(0).getError())
+          .contains("Invalid payload");
     }
   }
 }

@@ -64,58 +64,23 @@
 
 package com.radixdlt.ledger;
 
-import com.google.common.collect.ClassToInstanceMap;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.statecomputer.commit.CommitSummary;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
-public final class LedgerUpdate {
-  private final LedgerExtension ledgerExtension;
-  // FIXME: Easiest way to implement this part for now
-  private final ClassToInstanceMap<Object> output;
+public record LedgerUpdate(
+    CommitSummary commitSummary,
+    LedgerExtension ledgerExtension,
+    Optional<EpochChange> epochChange) {
 
-  public LedgerUpdate(LedgerExtension ledgerExtension, ClassToInstanceMap<Object> output) {
-    this.ledgerExtension = Objects.requireNonNull(ledgerExtension);
-    this.output = Objects.requireNonNull(output);
-  }
-
-  public ClassToInstanceMap<Object> getStateComputerOutput() {
-    return output;
-  }
-
-  public List<RawLedgerTransaction> getNewTransactions() {
-    return ledgerExtension.getTransactions();
-  }
-
-  public LedgerProof getTail() {
+  public LedgerProof proof() {
     return ledgerExtension.getProof();
   }
 
-  public Optional<BFTValidatorSet> getNextValidatorSet() {
-    return ledgerExtension.getProof().getNextValidatorSet();
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s{transactions=%s}", this.getClass().getSimpleName(), ledgerExtension);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(ledgerExtension, output);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof LedgerUpdate)) {
-      return false;
-    }
-
-    LedgerUpdate other = (LedgerUpdate) o;
-    return Objects.equals(other.ledgerExtension, this.ledgerExtension)
-        && Objects.equals(other.output, this.output);
+  public List<RawLedgerTransaction> transactions() {
+    return ledgerExtension.getTransactions();
   }
 }

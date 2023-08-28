@@ -16,16 +16,24 @@ pub struct ParsedSignedTransactionIntentIdentifiers {
     /// The hex-encoded intent hash for a user transaction, also known as the transaction id. This hash identifies the core content \"intent\" of the transaction. Each intent can only be committed once. This hash gets signed by any signatories on the transaction, to create the signed intent. 
     #[serde(rename = "intent_hash")]
     pub intent_hash: String,
+    /// The Bech32m-encoded human readable `IntentHash`.
+    #[serde(rename = "intent_hash_bech32m")]
+    pub intent_hash_bech32m: String,
     /// The hex-encoded signed intent hash for a user transaction. This hash identifies the transaction intent, plus additional signatures. This hash is signed by the notary, to create the submittable NotarizedTransaction. 
     #[serde(rename = "signed_intent_hash")]
     pub signed_intent_hash: String,
+    /// The Bech32m-encoded human readable `SignedIntentHash`.
+    #[serde(rename = "signed_intent_hash_bech32m")]
+    pub signed_intent_hash_bech32m: String,
 }
 
 impl ParsedSignedTransactionIntentIdentifiers {
-    pub fn new(intent_hash: String, signed_intent_hash: String) -> ParsedSignedTransactionIntentIdentifiers {
+    pub fn new(intent_hash: String, intent_hash_bech32m: String, signed_intent_hash: String, signed_intent_hash_bech32m: String) -> ParsedSignedTransactionIntentIdentifiers {
         ParsedSignedTransactionIntentIdentifiers {
             intent_hash,
+            intent_hash_bech32m,
             signed_intent_hash,
+            signed_intent_hash_bech32m,
         }
     }
 }

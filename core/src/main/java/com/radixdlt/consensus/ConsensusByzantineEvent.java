@@ -69,19 +69,10 @@ import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.p2p.NodeId;
 
 public sealed interface ConsensusByzantineEvent {
-
   record ConflictingGenesis(QuorumCertificate qc, NodeId author)
-      implements ConsensusByzantineEvent {
-    public NodeId getAuthor() {
-      return author;
-    }
-  }
+      implements ConsensusByzantineEvent {}
 
   /** A Double vote which has detected. This is proof that there is byzantine node. */
   record DoubleVote(BFTValidatorId author, PreviousVote previousVote, Vote vote, HashCode voteHash)
-      implements ConsensusByzantineEvent {
-    public BFTValidatorId getAuthor() {
-      return author;
-    }
-  }
+      implements ConsensusByzantineEvent {}
 }

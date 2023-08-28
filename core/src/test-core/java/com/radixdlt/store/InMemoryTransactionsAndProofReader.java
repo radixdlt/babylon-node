@@ -94,23 +94,21 @@ public final class InMemoryTransactionsAndProofReader implements TransactionsAnd
   public EventProcessor<LedgerUpdate> updateProcessor() {
     return update -> {
       synchronized (lock) {
-        var transactions = update.getNewTransactions();
-        long firstVersion = update.getTail().getStateVersion() - transactions.size() + 1;
-        for (long version = firstVersion;
-            version <= update.getTail().getStateVersion();
-            version++) {
+        var transactions = update.transactions();
+        long firstVersion = update.proof().getStateVersion() - transactions.size() + 1;
+        for (long version = firstVersion; version <= update.proof().getStateVersion(); version++) {
           int index = (int) (version - firstVersion);
           store.committedLedgerExtensions.put(
               version,
               LedgerExtension.create(
-                  transactions.subList(index, transactions.size()), update.getTail()));
+                  transactions.subList(index, transactions.size()), update.proof()));
         }
 
         update
-            .getTail()
+            .proof()
             .getNextEpoch()
             .ifPresent(
-                nextEpoch -> this.store.epochProofs.put(nextEpoch.getEpoch(), update.getTail()));
+                nextEpoch -> this.store.epochProofs.put(nextEpoch.getEpoch(), update.proof()));
       }
     };
   }

@@ -31,9 +31,12 @@ pub fn to_api_account_vault_entry(
     typed_key: &TypedSubstateKey,
     substate: &KeyValueEntrySubstate<Vault>,
 ) -> Result<models::Substate, MappingError> {
-    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountVaultKey(resource_address)) = typed_key else {
-        return Err(MappingError::MismatchedSubstateKeyType { message: "Account Vault Key".to_string() });
-    };
+    assert_key_type!(
+        typed_key,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountVaultKey(
+            resource_address
+        ))
+    );
     Ok(key_value_store_mandatory_substate!(
         substate,
         AccountVaultEntry,
@@ -51,9 +54,12 @@ pub fn to_api_account_resource_preference_entry(
     typed_key: &TypedSubstateKey,
     substate: &KeyValueEntrySubstate<ResourcePreference>,
 ) -> Result<models::Substate, MappingError> {
-    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountResourcePreferenceKey(resource_address)) = typed_key else {
-        return Err(MappingError::MismatchedSubstateKeyType { message: "AccountResourcePreferenceKey".to_string() });
-    };
+    assert_key_type!(
+        typed_key,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountResourcePreferenceKey(
+            resource_address
+        ))
+    );
     Ok(key_value_store_optional_substate!(
         substate,
         AccountResourcePreferenceEntry,
@@ -74,9 +80,12 @@ pub fn to_api_account_authorized_depositor_entry(
     typed_key: &TypedSubstateKey,
     substate: &KeyValueEntrySubstate<AccountAuthorizedDepositorEntryContents>,
 ) -> Result<models::Substate, MappingError> {
-    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountAuthorizedDepositorKey(authorized_depositor_badge)) = typed_key else {
-        return Err(MappingError::MismatchedSubstateKeyType { message: "AccountAuthorizedDepositorKey".to_string() });
-    };
+    assert_key_type!(
+        typed_key,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountAuthorizedDepositorKey(
+            authorized_depositor_badge
+        ))
+    );
     Ok(key_value_store_optional_substate!(
         substate,
         AccountAuthorizedDepositorEntry,

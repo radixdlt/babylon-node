@@ -38,7 +38,7 @@ export interface SubstateFormatOptions {
      */
     typed?: boolean;
     /**
-     * Whether to return the previous substate value for updates (default false)
+     * Whether to return the previous substate value for updates and deletes (default false)
      * @type {boolean}
      * @memberof SubstateFormatOptions
      */

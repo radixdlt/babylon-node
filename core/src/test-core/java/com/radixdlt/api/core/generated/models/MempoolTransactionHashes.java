@@ -32,15 +32,23 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   MempoolTransactionHashes.JSON_PROPERTY_INTENT_HASH,
-  MempoolTransactionHashes.JSON_PROPERTY_PAYLOAD_HASH
+  MempoolTransactionHashes.JSON_PROPERTY_INTENT_HASH_BECH32M,
+  MempoolTransactionHashes.JSON_PROPERTY_PAYLOAD_HASH,
+  MempoolTransactionHashes.JSON_PROPERTY_PAYLOAD_HASH_BECH32M
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class MempoolTransactionHashes {
   public static final String JSON_PROPERTY_INTENT_HASH = "intent_hash";
   private String intentHash;
 
+  public static final String JSON_PROPERTY_INTENT_HASH_BECH32M = "intent_hash_bech32m";
+  private String intentHashBech32m;
+
   public static final String JSON_PROPERTY_PAYLOAD_HASH = "payload_hash";
   private String payloadHash;
+
+  public static final String JSON_PROPERTY_PAYLOAD_HASH_BECH32M = "payload_hash_bech32m";
+  private String payloadHashBech32m;
 
   public MempoolTransactionHashes() { 
   }
@@ -71,6 +79,32 @@ public class MempoolTransactionHashes {
   }
 
 
+  public MempoolTransactionHashes intentHashBech32m(String intentHashBech32m) {
+    this.intentHashBech32m = intentHashBech32m;
+    return this;
+  }
+
+   /**
+   * The Bech32m-encoded human readable &#x60;IntentHash&#x60;.
+   * @return intentHashBech32m
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable `IntentHash`.")
+  @JsonProperty(JSON_PROPERTY_INTENT_HASH_BECH32M)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getIntentHashBech32m() {
+    return intentHashBech32m;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_INTENT_HASH_BECH32M)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setIntentHashBech32m(String intentHashBech32m) {
+    this.intentHashBech32m = intentHashBech32m;
+  }
+
+
   public MempoolTransactionHashes payloadHash(String payloadHash) {
     this.payloadHash = payloadHash;
     return this;
@@ -97,6 +131,32 @@ public class MempoolTransactionHashes {
   }
 
 
+  public MempoolTransactionHashes payloadHashBech32m(String payloadHashBech32m) {
+    this.payloadHashBech32m = payloadHashBech32m;
+    return this;
+  }
+
+   /**
+   * The Bech32m-encoded human readable &#x60;NotarizedTransactionHash&#x60;.
+   * @return payloadHashBech32m
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable `NotarizedTransactionHash`.")
+  @JsonProperty(JSON_PROPERTY_PAYLOAD_HASH_BECH32M)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getPayloadHashBech32m() {
+    return payloadHashBech32m;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_PAYLOAD_HASH_BECH32M)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setPayloadHashBech32m(String payloadHashBech32m) {
+    this.payloadHashBech32m = payloadHashBech32m;
+  }
+
+
   /**
    * Return true if this MempoolTransactionHashes object is equal to o.
    */
@@ -110,12 +170,14 @@ public class MempoolTransactionHashes {
     }
     MempoolTransactionHashes mempoolTransactionHashes = (MempoolTransactionHashes) o;
     return Objects.equals(this.intentHash, mempoolTransactionHashes.intentHash) &&
-        Objects.equals(this.payloadHash, mempoolTransactionHashes.payloadHash);
+        Objects.equals(this.intentHashBech32m, mempoolTransactionHashes.intentHashBech32m) &&
+        Objects.equals(this.payloadHash, mempoolTransactionHashes.payloadHash) &&
+        Objects.equals(this.payloadHashBech32m, mempoolTransactionHashes.payloadHashBech32m);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(intentHash, payloadHash);
+    return Objects.hash(intentHash, intentHashBech32m, payloadHash, payloadHashBech32m);
   }
 
   @Override
@@ -123,7 +185,9 @@ public class MempoolTransactionHashes {
     StringBuilder sb = new StringBuilder();
     sb.append("class MempoolTransactionHashes {\n");
     sb.append("    intentHash: ").append(toIndentedString(intentHash)).append("\n");
+    sb.append("    intentHashBech32m: ").append(toIndentedString(intentHashBech32m)).append("\n");
     sb.append("    payloadHash: ").append(toIndentedString(payloadHash)).append("\n");
+    sb.append("    payloadHashBech32m: ").append(toIndentedString(payloadHashBech32m)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -78,7 +78,9 @@ import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.TimeoutQuorumDelayedResolution;
 import com.radixdlt.consensus.liveness.*;
+import com.radixdlt.consensus.safety.InitialSafetyStateProvider;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
+import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.sync.*;
 import com.radixdlt.consensus.vertexstore.PersistentVertexStore;
 import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
@@ -137,7 +139,7 @@ public class ConsensusModuleTest {
     this.validatorId =
         BFTValidatorId.withKeyAndFakeDeterministicAddress(this.validatorKeyPair.getPublicKey());
     var validatorSet =
-        BFTValidatorSet.from(Stream.of(BFTValidator.from(this.validatorId, UInt256.ONE)));
+        BFTValidatorSet.from(Stream.of(BFTValidator.from(this.validatorId, UInt192.ONE)));
     var vertexStoreState =
         VertexStoreState.create(HighQC.ofInitialEpochQc(qc), genesisVertex, hasher);
     var proposerElection = ProposerElections.defaultRotation(validatorSet);
@@ -206,6 +208,7 @@ public class ConsensusModuleTest {
 
         bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
         bind(PersistentSafetyStateStore.class).toInstance(mock(PersistentSafetyStateStore.class));
+        bind(InitialSafetyStateProvider.class).toInstance(SafetyState::initialState);
         bind(ProposalGenerator.class).toInstance(mock(ProposalGenerator.class));
         bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
         bind(TimeSupplier.class).toInstance(mock(TimeSupplier.class));

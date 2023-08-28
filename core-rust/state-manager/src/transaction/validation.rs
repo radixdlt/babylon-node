@@ -1,11 +1,10 @@
 use node_common::locks::RwLock;
-use radix_engine::errors::RejectionError;
 use std::ops::Deref;
 use std::sync::Arc;
 use std::time::SystemTime;
 use transaction::errors::TransactionValidationError;
 
-use radix_engine::transaction::{AbortReason, TransactionReceipt, TransactionResult};
+use radix_engine::transaction::{AbortReason, RejectResult, TransactionReceipt, TransactionResult};
 
 use radix_engine_common::network::NetworkDefinition;
 
@@ -14,8 +13,8 @@ use crate::staging::ReadableStore;
 use crate::store::traits::{QueryableProofStore, TransactionIndex};
 use crate::transaction::{ExecutionConfigurator, TransactionLogic};
 use crate::{
-    AtState, PendingTransactionRecord, PendingTransactionResultCache, RejectionReason,
-    TransactionAttempt,
+    AlreadyCommittedError, AtState, ExecutionRejectionReason, PendingTransactionRecord,
+    PendingTransactionResultCache, RejectionReason, TransactionAttempt,
 };
 
 use transaction::prelude::*;
@@ -213,11 +212,23 @@ where
 
         let existing =
             read_store.get_txn_state_version_by_identifier(&transaction.prepared.intent_hash());
-        if existing.is_some() {
+
+        if let Some(state_version) = existing {
+            let committed_transaction_identifiers = read_store
+                .get_committed_transaction_identifiers(state_version)
+                .expect("transaction of a state version obtained from an index");
+
             return TransactionAttempt {
-                rejection: Some(RejectionReason::FromExecution(Box::new(
-                    RejectionError::IntentHashPreviouslyCommitted,
-                ))),
+                rejection: Some(RejectionReason::AlreadyCommitted(AlreadyCommittedError {
+                    notarized_transaction_hash: transaction.prepared.notarized_transaction_hash(),
+                    committed_state_version: state_version,
+                    committed_notarized_transaction_hash: *committed_transaction_identifiers
+                        .payload
+                        .typed
+                        .user()
+                        .expect("non-user transaction located by intent hash")
+                        .notarized_transaction_hash,
+                })),
                 against_state: AtState::Committed {
                     state_version: executed_at_state_version,
                 },
@@ -225,24 +236,20 @@ where
             };
         }
 
-        let receipt =
-            match self.test_execute_transaction_up_to_fee_loan(read_store.deref(), transaction) {
-                Ok(receipt) => receipt,
-                Err(rejection_reason) => {
-                    return TransactionAttempt {
-                        rejection: Some(rejection_reason),
-                        against_state: AtState::Committed {
-                            state_version: executed_at_state_version,
-                        },
-                        timestamp,
-                    };
+        let receipt = self.test_execute_transaction_up_to_fee_loan(read_store.deref(), transaction);
+        let result = match receipt.result {
+            TransactionResult::Reject(RejectResult { reason }) => {
+                if matches!(
+                    reason,
+                    ExecutionRejectionReason::IntentHashPreviouslyCommitted
+                ) {
+                    panic!(
+                        "intent {:?} not found by Node, but reported as committed by Engine",
+                        transaction.prepared.intent_hash()
+                    );
                 }
-            };
-
-        let result = match receipt.transaction_result {
-            TransactionResult::Reject(reject_result) => Err(RejectionReason::FromExecution(
-                Box::new(reject_result.error),
-            )),
+                Err(RejectionReason::FromExecution(Box::new(reason)))
+            }
             TransactionResult::Commit(..) => Ok(()),
             TransactionResult::Abort(abort_result) => {
                 // The transaction aborted after the fee loan was repaid - meaning the transaction result would get committed
@@ -265,11 +272,10 @@ where
         &self,
         root_store: &S,
         transaction: &ValidatedNotarizedTransactionV1,
-    ) -> Result<TransactionReceipt, RejectionReason> {
-        let transaction_logic = self
-            .execution_configurator
-            .wrap_pending_transaction(transaction);
-        Ok(transaction_logic.execute_on(root_store))
+    ) -> TransactionReceipt {
+        self.execution_configurator
+            .wrap_pending_transaction(transaction)
+            .execute_on(root_store)
     }
 }
 

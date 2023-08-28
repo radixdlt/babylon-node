@@ -75,7 +75,6 @@ use crate::{
 };
 
 use crate::query::TransactionIdentifierLoader;
-use crate::store::node_ancestry_resolver::NodeAncestryResolver;
 use crate::store::traits::scenario::{
     ExecutedGenesisScenario, ExecutedGenesisScenarioStore, ScenarioSequenceNumber,
 };
@@ -170,14 +169,6 @@ impl InMemoryStore {
 
         self.ledger_payload_hash_lookup
             .insert(identifiers.payload.ledger_payload_hash, state_version);
-
-        for (node_ids, record) in
-            NodeAncestryResolver::batch_resolve(self, &receipt.on_ledger.substate_changes)
-        {
-            for node_id in node_ids {
-                self.node_ancestry_records.insert(node_id, record.clone());
-            }
-        }
 
         self.transactions.insert(state_version, transaction);
         self.ledger_receipts
@@ -328,6 +319,12 @@ impl CommitStore for InMemoryStore {
         let state_hash_tree_update = commit_bundle.state_tree_update;
         for (key, node) in state_hash_tree_update.new_nodes {
             self.tree_node_store.insert_node(key, node);
+        }
+
+        for (node_ids, record) in commit_bundle.new_substate_node_ancestry_records {
+            for node_id in node_ids {
+                self.node_ancestry_records.insert(node_id, record.clone());
+            }
         }
 
         self.transaction_tree_slices
@@ -528,7 +525,7 @@ impl InMemoryStore {
         state_version: StateVersion,
         receipt: &LocalTransactionExecution,
     ) {
-        for (address, _) in receipt.state_update_summary.balance_changes.iter() {
+        for (address, _) in receipt.global_balance_changes.iter() {
             if !address.is_account() {
                 continue;
             }

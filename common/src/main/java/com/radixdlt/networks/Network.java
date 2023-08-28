@@ -128,7 +128,7 @@ public enum Network {
       "genesis_test",
       FixedNetworkGenesis.resource(
           HashCode.fromBytes(
-              Hex.decode("a613b44d69f30641a043cda5197e88a0f529053389764e21100ce693d4191e7e")),
+              Hex.decode("ac79e815b39beb756d9afe261e8c4deff4ed95f8fcc59af001eef060d820b266")),
           "genesis/test_genesis.bin"));
 
   private final int intId;
@@ -142,6 +142,8 @@ public enum Network {
   private final String validatorHrp;
   private final String resourceHrp;
   private final String nodeHrp;
+  private final String intentHashHrp;
+  private final String notarizedTransactionHashHrp;
   private final Optional<FixedNetworkGenesis> maybeFixedGenesis;
 
   Network(
@@ -165,6 +167,8 @@ public enum Network {
     this.validatorHrp = "validator_" + hrpSuffix;
     this.resourceHrp = "resource_" + hrpSuffix;
     this.nodeHrp = "node_" + hrpSuffix;
+    this.intentHashHrp = "txid_" + hrpSuffix;
+    this.notarizedTransactionHashHrp = "notarizedtransaction_" + hrpSuffix;
     this.maybeFixedGenesis = maybeFixedGenesis;
   }
 
@@ -202,6 +206,14 @@ public enum Network {
 
   public String getNodeHrp() {
     return nodeHrp;
+  }
+
+  public String getIntentHashHrp() {
+    return intentHashHrp;
+  }
+
+  public String getNotarizedTransactionHashHrp() {
+    return notarizedTransactionHashHrp;
   }
 
   public int getId() {

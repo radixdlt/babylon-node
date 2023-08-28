@@ -72,7 +72,6 @@ use crate::*;
 
 use ::transaction::prelude::*;
 use node_common::locks::Mutex;
-use radix_engine::transaction::RejectResult;
 
 /// An internal delegate for executing a series of consecutive transactions while tracking their
 /// progress.
@@ -128,7 +127,7 @@ where
         &mut self,
         transaction: &ValidatedLedgerTransaction,
         description: &'static str,
-    ) -> Result<ProcessedCommitResult, RejectResult> {
+    ) -> Result<ProcessedCommitResult, ProcessedRejectResult> {
         let result = self.execute_no_state_update(transaction, description);
         if let Ok(commit) = &result {
             self.update_state(commit);
@@ -146,7 +145,7 @@ where
         &mut self,
         transaction: &ValidatedLedgerTransaction,
         description: &'static str,
-    ) -> Result<ProcessedCommitResult, RejectResult> {
+    ) -> Result<ProcessedCommitResult, ProcessedRejectResult> {
         let description = DescribedTransactionHash {
             ledger_hash: transaction.ledger_transaction_hash(),
             description,
@@ -162,7 +161,7 @@ where
         &mut self,
         description: &DescribedTransactionHash,
         wrapped_executable: T,
-    ) -> Result<ProcessedCommitResult, RejectResult> {
+    ) -> Result<ProcessedCommitResult, ProcessedRejectResult> {
         let mut execution_cache = self.execution_cache.lock();
         let processed = execution_cache.execute_transaction(
             self.store,

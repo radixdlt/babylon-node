@@ -15,9 +15,6 @@
 pub struct BlueprintDefinition {
     #[serde(rename = "interface")]
     pub interface: Box<crate::core_api::generated::models::BlueprintInterface>,
-    /// If true, an instantiation of this blueprint cannot be persisted. EG buckets and proofs are transient.
-    #[serde(rename = "is_transient")]
-    pub is_transient: bool,
     /// A map from the function name to its export
     #[serde(rename = "function_exports")]
     pub function_exports: ::utils::rust::prelude::IndexMap<String, crate::core_api::generated::models::PackageExport>,
@@ -27,10 +24,9 @@ pub struct BlueprintDefinition {
 }
 
 impl BlueprintDefinition {
-    pub fn new(interface: crate::core_api::generated::models::BlueprintInterface, is_transient: bool, function_exports: ::utils::rust::prelude::IndexMap<String, crate::core_api::generated::models::PackageExport>, hook_exports: Vec<crate::core_api::generated::models::HookExport>) -> BlueprintDefinition {
+    pub fn new(interface: crate::core_api::generated::models::BlueprintInterface, function_exports: ::utils::rust::prelude::IndexMap<String, crate::core_api::generated::models::PackageExport>, hook_exports: Vec<crate::core_api::generated::models::HookExport>) -> BlueprintDefinition {
         BlueprintDefinition {
             interface: Box::new(interface),
-            is_transient,
             function_exports,
             hook_exports,
         }

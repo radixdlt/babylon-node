@@ -64,7 +64,7 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt192;
 import java.util.Arrays;
 import java.util.function.Function;
 import java.util.function.IntFunction;
@@ -85,25 +85,25 @@ public interface EpochNodeWeightMapping {
    * weight.
    */
   static EpochNodeWeightMapping constant(int numNodes, long weight) {
-    return repeatingSequence(numNodes, UInt256.from(weight));
+    return repeatingSequence(numNodes, UInt192.from(weight));
   }
 
   static EpochNodeWeightMapping constant(int numNodes) {
-    return repeatingSequence(numNodes, UInt256.ONE);
+    return repeatingSequence(numNodes, UInt192.ONE);
   }
 
   static EpochNodeWeightMapping constant(Function<Long, IntStream> epochToNodeIndexesMapping) {
     return epoch ->
         epochToNodeIndexesMapping
             .apply(epoch)
-            .mapToObj(i -> NodeIndexAndWeight.from(i, UInt256.ONE));
+            .mapToObj(i -> NodeIndexAndWeight.from(i, UInt192.ONE));
   }
 
   /**
    * Returns an {@code EpochValidatorSetMapping} of the specified size and all with the specified
    * weight.
    */
-  static EpochNodeWeightMapping constant(int numNodes, UInt256 weight) {
+  static EpochNodeWeightMapping constant(int numNodes, UInt192 weight) {
     return repeatingSequence(numNodes, weight);
   }
 
@@ -113,8 +113,8 @@ public interface EpochNodeWeightMapping {
    * cycled starting from the zeroth weight.
    */
   static EpochNodeWeightMapping repeatingSequence(int numNodes, long... weights) {
-    UInt256[] weights256 = Arrays.stream(weights).mapToObj(UInt256::from).toArray(UInt256[]::new);
-    return repeatingSequence(numNodes, weights256);
+    UInt192[] weights192 = Arrays.stream(weights).mapToObj(UInt192::from).toArray(UInt192[]::new);
+    return repeatingSequence(numNodes, weights192);
   }
 
   /**
@@ -122,7 +122,7 @@ public interface EpochNodeWeightMapping {
    * weights. If the length of {@code weights} is less than {@code numNodes}, then the weights are
    * cycled starting from the zeroth weight.
    */
-  static EpochNodeWeightMapping repeatingSequence(int numNodes, UInt256... weights) {
+  static EpochNodeWeightMapping repeatingSequence(int numNodes, UInt192... weights) {
     int length = weights.length;
     return epoch ->
         IntStream.range(0, numNodes)
@@ -133,7 +133,7 @@ public interface EpochNodeWeightMapping {
    * Returns an {@code EpochValidatorSetMapping} of the specified size and with each weight computed
    * using the specified function.
    */
-  static EpochNodeWeightMapping computed(int numNodes, IntFunction<UInt256> function) {
+  static EpochNodeWeightMapping computed(int numNodes, IntFunction<UInt192> function) {
     return epoch ->
         IntStream.range(0, numNodes)
             .mapToObj(index -> NodeIndexAndWeight.from(index, function.apply(index)));

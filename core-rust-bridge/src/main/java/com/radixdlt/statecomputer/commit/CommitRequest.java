@@ -65,6 +65,7 @@
 package com.radixdlt.statecomputer.commit;
 
 import com.radixdlt.lang.Option;
+import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.transactions.RawLedgerTransaction;
@@ -75,7 +76,11 @@ import java.util.Objects;
 public record CommitRequest(
     List<RawLedgerTransaction> transactions,
     LedgerProof proof,
-    Option<byte[]> postCommitVertexStoreBytes) {
+    Option<byte[]> postCommitVertexStoreBytes,
+    // TODO(after removing validator resolution from genesis): it should be possible to inject this
+    // field to the Rust StateManager's constructor instead of passing it in every commit request.
+    // It is only needed for metrics calculation.
+    Option<ComponentAddress> selfValidatorAddress) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         CommitRequest.class,
@@ -91,22 +96,27 @@ public record CommitRequest(
         && Objects.equals(proof, that.proof)
         && Arrays.equals(
             postCommitVertexStoreBytes.or((byte[]) null),
-            that.postCommitVertexStoreBytes.or((byte[]) null));
+            that.postCommitVertexStoreBytes.or((byte[]) null))
+        && Objects.equals(selfValidatorAddress, that.selfValidatorAddress);
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(
-        transactions, proof, Arrays.hashCode(postCommitVertexStoreBytes.or((byte[]) null)));
+        transactions,
+        proof,
+        Arrays.hashCode(postCommitVertexStoreBytes.or((byte[]) null)),
+        selfValidatorAddress);
   }
 
   @Override
   public String toString() {
-    return "%s{transactions=%s, proof=%s, postCommitVertexStoreBytes.length=%s}"
+    return "%s{transactions=%s, proof=%s, postCommitVertexStoreBytes.length=%s, selfValidatorAddress=%s}"
         .formatted(
             CommitRequest.class.getSimpleName(),
             transactions,
             proof,
-            postCommitVertexStoreBytes.map(bytes -> bytes.length));
+            postCommitVertexStoreBytes.map(bytes -> bytes.length),
+            selfValidatorAddress);
   }
 }

@@ -162,9 +162,10 @@ pub mod vertex {
 pub mod substate {
     use super::*;
     use radix_engine::types::{ScryptoCategorize, ScryptoDecode, ScryptoEncode};
-    use radix_engine_common::types::{NodeId, PartitionNumber, SubstateKey};
+    use radix_engine_common::types::NodeId;
     use std::slice;
 
+    use crate::SubstateReference;
     pub use radix_engine_store_interface::interface::{
         CommittableSubstateDatabase, SubstateDatabase,
     };
@@ -214,11 +215,9 @@ pub mod substate {
         pub root: SubstateReference,
     }
 
-    /// A complete ID of Substate.
-    #[derive(
-        Debug, Clone, Hash, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode,
-    )]
-    pub struct SubstateReference(pub NodeId, pub PartitionNumber, pub SubstateKey);
+    /// A [`SubstateNodeAncestryRecord`] accompanied by a set of sibling [`NodeId`]s (which of
+    /// course share the same parent).
+    pub type KeyedSubstateNodeAncestryRecord = (Vec<NodeId>, SubstateNodeAncestryRecord);
 }
 
 pub mod transactions {
@@ -315,6 +314,7 @@ pub mod commit {
         pub state_tree_update: HashTreeUpdate,
         pub transaction_tree_slice: TreeSlice<TransactionTreeHash>,
         pub receipt_tree_slice: TreeSlice<ReceiptTreeHash>,
+        pub new_substate_node_ancestry_records: Vec<KeyedSubstateNodeAncestryRecord>,
     }
 
     pub struct SubstateStoreUpdate {

@@ -1147,7 +1147,7 @@ components:
           description: Whether to return the typed substate information (default true)
           type: boolean
         previous:
-          description: Whether to return the previous substate value for updates (default false)
+          description: Whether to return the previous substate value for updates and deletes (default false)
           type: boolean
 ###########################################################
 # GENERAL / SHARED MODELS - General / Numeric / Utilities #
@@ -1156,7 +1156,7 @@ components:
       type: string
       description: |
         A string-encoded fixed-precision decimal to 18 decimal places.
-        A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+        A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
 ##########################################
 # GENERAL / SHARED MODELS - Transactions #
 ##########################################
@@ -1173,12 +1173,21 @@ components:
       required:
         - status
         - state_updates
+        - fee_summary
+        - costing_parameters
       properties:
         status:
           $ref: "#/components/schemas/TransactionStatus"
         fee_summary:
-          description: Only present if the `status` is not `Rejected`.
           $ref: "#/components/schemas/FeeSummary"
+        costing_parameters:
+          $ref: "#/components/schemas/CostingParameters"
+        fee_source:
+          description: Only present if the `status` is not `Rejected`.
+          $ref: "#/components/schemas/FeeSource"
+        fee_destination:
+          description: Only present if the `status` is not `Rejected`.
+          $ref: "#/components/schemas/FeeDestination"
         state_updates:
           $ref: "#/components/schemas/StateUpdates"
         events:
@@ -1199,11 +1208,14 @@ components:
       type: object
       required:
         - hash
+        - hash_bech32m
         - signed_intent
         - notary_signature
       properties:
         hash:
           $ref: "#/components/schemas/NotarizedTransactionHash"
+        hash_bech32m:
+          $ref: "#/components/schemas/NotarizedTransactionHashBech32m"
         payload_hex:
           type: string
           description: The hex-encoded full notarized transaction payload. Returning this can be disabled in TransactionFormatOptions on your request (default true).
@@ -1215,11 +1227,14 @@ components:
       type: object
       required:
         - hash
+        - hash_bech32m
         - intent
         - intent_signatures
       properties:
         hash:
           $ref: "#/components/schemas/SignedIntentHash"
+        hash_bech32m:
+          $ref: "#/components/schemas/SignedIntentHashBech32m"
         intent:
           $ref: "#/components/schemas/TransactionIntent"
         intent_signatures:
@@ -1230,10 +1245,13 @@ components:
       type: object
       required:
         - hash
+        - hash_bech32m
         - header
       properties:
         hash:
           $ref: "#/components/schemas/IntentHash"
+        hash_bech32m:
+          $ref: "#/components/schemas/IntentHashBech32m"
         header:
           $ref: "#/components/schemas/TransactionHeader"
         instructions:
@@ -1486,15 +1504,24 @@ components:
       type: object
       required:
         - intent_hash
+        - intent_hash_bech32m
         - signed_intent_hash
+        - signed_intent_hash_bech32m
         - payload_hash
+        - payload_hash_bech32m
       properties:
         intent_hash:
           $ref: "#/components/schemas/IntentHash"
+        intent_hash_bech32m:
+          $ref: "#/components/schemas/IntentHashBech32m"
         signed_intent_hash:
           $ref: "#/components/schemas/SignedIntentHash"
+        signed_intent_hash_bech32m:
+          $ref: "#/components/schemas/SignedIntentHashBech32m"
         payload_hash:
           $ref: "#/components/schemas/NotarizedTransactionHash"
+        payload_hash_bech32m:
+          $ref: "#/components/schemas/NotarizedTransactionHashBech32m"
     IntentHash:
       type: string
       minLength: 64
@@ -1503,6 +1530,9 @@ components:
         The hex-encoded intent hash for a user transaction, also known as the transaction id.
         This hash identifies the core content "intent" of the transaction. Each intent can only be committed once.
         This hash gets signed by any signatories on the transaction, to create the signed intent.
+    IntentHashBech32m:
+      type: string
+      description: The Bech32m-encoded human readable `IntentHash`.
     SignedIntentHash:
       type: string
       minLength: 64
@@ -1511,6 +1541,9 @@ components:
         The hex-encoded signed intent hash for a user transaction.
         This hash identifies the transaction intent, plus additional signatures.
         This hash is signed by the notary, to create the submittable NotarizedTransaction.
+    SignedIntentHashBech32m:
+      type: string
+      description: The Bech32m-encoded human readable `SignedIntentHash`.
     NotarizedTransactionHash:
       type: string
       minLength: 64
@@ -1518,6 +1551,9 @@ components:
       description: |
         The hex-encoded notarized transaction hash for a user transaction.
         This hash identifies the full submittable notarized transaction - ie the signed intent, plus the notary signature.
+    NotarizedTransactionHashBech32m:
+      type: string
+      description: The Bech32m-encoded human readable `NotarizedTransactionHash`.
     LedgerPayloadHash:
       type: string
       minLength: 64
@@ -1525,6 +1561,30 @@ components:
       description: |
         The hex-encoded ledger payload transaction hash.
         This is a wrapper for both user transactions, and system transactions such as genesis and round changes.
+    LedgerPayloadHashBech32m:
+      type: string
+      description: The Bech32m-encoded human readable `LedgerPayloadHash`.
+    CommittedIntentMetadata:
+      type: object
+      required:
+        - state_version
+        - payload_hash
+        - payload_hash_bech32m
+        - is_same_transaction
+      properties:
+        state_version:
+          $ref: "#/components/schemas/StateVersion"
+          description: State version of a committed transaction which had the same intent.
+        payload_hash:
+          $ref: "#/components/schemas/NotarizedTransactionHash"
+        payload_hash_bech32m:
+          $ref: "#/components/schemas/NotarizedTransactionHashBech32m"
+        is_same_transaction:
+          type: boolean
+          description: |
+            Whether the intent was committed in a transaction with the same payload.
+            This is a convenience field, which can also be computed using `payload_hash` by a client
+            knowing the payload of the submitted transaction.
     ErrorResponseType:
       type: string
       enum:
@@ -1564,87 +1624,120 @@ components:
 # GENERAL / SHARED MODELS - Receipts #
 ######################################
     FeeSummary:
-      description: Fees paid
       type: object
       required:
-        - cost_unit_price
-        - tip_percentage
-        - cost_unit_limit
-        - cost_units_consumed
-        - cost_unit_execution_breakdown
+        - execution_cost_units_consumed
+        - finalization_cost_units_consumed
         - xrd_total_execution_cost
-        - xrd_total_state_expansion_cost
+        - xrd_total_finalization_cost
+        - xrd_total_storage_cost
         - xrd_total_royalty_cost
-        - xrd_total_tipped
-        - xrd_vault_payments
-        - xrd_royalty_receivers
+        - xrd_total_tipping_cost
       properties:
-        cost_unit_price:
+        execution_cost_units_consumed:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4294967295
+          description: An integer between `0` and `2^32 - 1`, representing the amount of cost units consumed by the transaction execution.
+        finalization_cost_units_consumed:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4294967295
+          description: An integer between `0` and `2^32 - 1`, representing the amount of cost units consumed by the transaction finalization.
+        xrd_total_execution_cost:
           type: string
           description: |
-            The string-encoded decimal representing the XRD price of a single cost unit.
-            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+            The string-encoded decimal representing the total amount of XRD burned in the transaction as part of execution costs.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
+        xrd_total_finalization_cost:
+          type: string
+          description: |
+            The string-encoded decimal representing the total amount of XRD burned in the transaction as part of finalization costs.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
+        xrd_total_royalty_cost:
+          type: string
+          description: |
+            The string-encoded decimal representing the total amount of XRD paid in royalties as part of the transaction.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
+        xrd_total_storage_cost:
+          type: string
+          description: |
+            The string-encoded decimal representing the total amount of XRD paid in state expansion costs as part of the transaction.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
+        xrd_total_tipping_cost:
+          type: string
+          description: |
+            The string-encoded decimal representing the total amount of XRD tipped to validators in the transaction.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
+    CostingParameters:
+      type: object
+      required:
+        - execution_cost_unit_price
+        - execution_cost_unit_limit
+        - execution_cost_unit_loan
+        - finalization_cost_unit_price
+        - finalization_cost_unit_limit
+        - xrd_usd_price
+        - xrd_storage_price
+        - tip_percentage
+      properties:
+        execution_cost_unit_price:
+          type: string
+          description: |
+            The string-encoded decimal representing the XRD price of a single cost unit of transaction execution.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
+        execution_cost_unit_limit:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4294967295
+          description: An integer between `0` and `2^32 - 1`, representing the maximum amount of cost units available for the transaction execution.
+        execution_cost_unit_loan:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4294967295
+          description: An integer between `0` and `2^32 - 1`, representing the number of execution cost units loaned from system.
+        finalization_cost_unit_price:
+          type: string
+          description: |
+            The string-encoded decimal representing the XRD price of a single cost unit of transaction finalization.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
+        finalization_cost_unit_limit:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4294967295
+          description: An integer between `0` and `2^32 - 1`, representing the maximum amount of cost units available for the transaction finalization.
+        xrd_usd_price:
+          type: string
+          description: |
+            The string-encoded decimal representing the price of 1 USD, expressed in XRD.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
+        xrd_storage_price:
+          type: string
+          description: |
+            The string-encoded decimal representing the price of 1 byte of storage, expressed in XRD.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
         tip_percentage:
           type: integer
           format: int32
           minimum: 0
           maximum: 255
           description: An integer between `0` and `255`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
-        cost_unit_limit:
-          type: integer
-          format: int64
-          minimum: 0
-          maximum: 4294967295
-          description: An integer between `0` and `2^32 - 1`, representing the maximum amount of cost units available for the transaction execution.
-        cost_units_consumed:
-          type: integer
-          format: int64
-          minimum: 0
-          maximum: 4294967295
-          description: An integer between `0` and `2^32 - 1`, representing the amount of cost units consumed by the transaction execution.
-        cost_unit_execution_breakdown:
-          type: string
-          description: |
-            A breakdown of where the execution cost went.
-          additionalProperties:
-            type: integer
-            format: int64
-            minimum: 0
-            maximum: 4294967295
-            description: An integer between `0` and `2^32 - 1`, representing the amount of cost units paid for this aspect of execution
-        xrd_total_execution_cost:
-          type: string
-          description: |
-            The string-encoded decimal representing the total amount of XRD burned in the transaction as part of execution costs.
-            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
-        xrd_total_royalty_cost:
-          type: string
-          description: |
-            The string-encoded decimal representing the total amount of XRD paid in royalties as part of the transaction.
-            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
-        xrd_total_state_expansion_cost:
-          type: string
-          description: |
-            The string-encoded decimal representing the total amount of XRD paid in state expansion costs as part of the transaction.
-            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
-        xrd_total_tipped:
-          type: string
-          description: |
-            The string-encoded decimal representing the total amount of XRD tipped to validators in the transaction.
-            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
-        xrd_vault_payments:
+    FeeSource:
+      type: object
+      required:
+        - from_vaults
+      properties:
+        from_vaults:
           type: array
-          description: |
-            A breakdown of which vaults were used to pay the fee.
+          description: A breakdown of which vaults were used to pay the fee.
           items:
-            $ref: "#/components/schemas/VaultPayment"
-        xrd_royalty_receivers:
-          type: array
-          description: |
-            A breakdown of where the royalties were paid to.
-          items:
-            $ref: "#/components/schemas/RoyaltyPayment"
-    VaultPayment:
+            $ref: "#/components/schemas/PaymentFromVault"
+    PaymentFromVault:
       type: object
       required:
         - vault_entity
@@ -1656,20 +1749,49 @@ components:
           type: string
           description: |
             The string-encoded decimal representing the amount of fee in XRD paid by this vault.
-            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
-    RoyaltyPayment:
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
+    FeeDestination:
       type: object
       required:
-        - royalty_receiver
+        - to_proposer
+        - to_validator_set
+        - to_burn
+        - to_royalty_recipients
+      properties:
+        to_proposer:
+          type: string
+          description: |
+            The string-encoded decimal representing the amount of fee in XRD paid to the proposer.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
+        to_validator_set:
+          type: string
+          description: |
+            The string-encoded decimal representing the amount of fee in XRD paid to the validator set.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
+        to_burn:
+          type: string
+          description: |
+            The string-encoded decimal representing the amount of fee burnt, in XRD.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
+        to_royalty_recipients:
+          type: array
+          description: |
+            A breakdown of where the royalties were paid to.
+          items:
+            $ref: "#/components/schemas/PaymentToRoyaltyRecipient"
+    PaymentToRoyaltyRecipient:
+      type: object
+      required:
+        - royalty_recipient
         - xrd_amount
       properties:
-        royalty_receiver:
+        royalty_recipient:
           $ref: "#/components/schemas/EntityReference"
         xrd_amount:
           type: string
           description: |
-            The string-encoded decimal representing the amount of fee in XRD paid as royalty to this receiver.
-            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+            The string-encoded decimal representing the amount of fee in XRD paid as royalty to this recipient.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
     ProposerReward:
       type: object
       required:
@@ -1682,7 +1804,7 @@ components:
           type: string
           description: |
             The string-encoded decimal representing the amount of reward in XRD.
-            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
     StateUpdates:
       type: object
       description: Transaction state updates (only present if status is Succeeded or Failed)
@@ -1730,17 +1852,22 @@ components:
       required:
         - substate_id
         - value
+        - system_structure
       properties:
         substate_id:
           $ref: "#/components/schemas/SubstateId"
         value:
           $ref: "#/components/schemas/SubstateValue"
           description: The initial value assigned to the substate.
+        system_structure:
+          $ref: "#/components/schemas/SubstateSystemStructure"
+          description: A structure with type references describing the substate's schema.
     UpdatedSubstate:
       type: object
       required:
         - substate_id
         - new_value
+        - system_structure
       properties:
         substate_id:
           $ref: "#/components/schemas/SubstateId"
@@ -1750,6 +1877,9 @@ components:
         previous_value:
           $ref: "#/components/schemas/SubstateValue"
           description: The previous value of the substate. Only returned if enabled in SubstateFormatOptions on your request (default false).
+        system_structure:
+          $ref: "#/components/schemas/SubstateSystemStructure"
+          description: A structure with type references describing the substate's schema.
     SubstateValue:
       type: object
       properties:
@@ -1766,9 +1896,16 @@ components:
       type: object
       required:
         - substate_id
+        - system_structure
       properties:
         substate_id:
           $ref: "#/components/schemas/SubstateId"
+        previous_value:
+          $ref: "#/components/schemas/SubstateValue"
+          description: The previous value of the substate. Only returned if enabled in SubstateFormatOptions on your request (default false).
+        system_structure:
+          $ref: "#/components/schemas/SubstateSystemStructure"
+          description: A structure with type references describing the substate's schema.
     EntityReference:
       type: object
       required:
@@ -1818,6 +1955,7 @@ components:
         - RoleAssignment
         - Royalty
         - Main
+        - Schema
     PartitionKind:
       type: string
       description: |
@@ -1843,6 +1981,78 @@ components:
         - KeyValue
         - Index
         - SortedIndex
+    PartitionDescriptionType:
+      type: string
+      enum:
+        - Logical
+        - Physical
+    PartitionDescription:
+      type: object
+      required:
+        - type
+        - value
+      properties:
+        type:
+          $ref: '#/components/schemas/PartitionDescriptionType'
+        value:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 255
+          description: |
+            An absolute or relative partition description, depending on the `type`:
+            - if `Physical`, then this is a partition number,
+            - if `Logical`, then this is a partition offset.
+    BlueprintPayloadDefType:
+      type: string
+      enum:
+        - Static
+        - Generic
+    BlueprintPayloadDef:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/BlueprintPayloadDefType"
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match BlueprintPayloadDefType
+          Static: '#/components/schemas/StaticBlueprintPayloadDef'
+          Generic: '#/components/schemas/GenericBlueprintPayloadDef'
+    StaticBlueprintPayloadDef:
+      allOf:
+        - $ref: "#/components/schemas/BlueprintPayloadDef"
+        - type: object
+          required:
+            - type_id
+          properties:
+            type_id:
+              $ref: "#/components/schemas/TypeIdentifier"
+    GenericBlueprintPayloadDef:
+      allOf:
+        - $ref: "#/components/schemas/BlueprintPayloadDef"
+        - type: object
+          required:
+            - generic_index
+          properties:
+            generic_index:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 4294967295
+              description: An index within the list of generic type substitutions.
+    TypeIdentifier:
+      type: object
+      required:
+        - schema_hash
+        - local_type_index
+      properties:
+        schema_hash:
+          $ref: '#/components/schemas/SchemaHash'
+        local_type_index:
+          $ref: '#/components/schemas/LocalTypeIndex'
     SubstateKey:
       type: object
       required:
@@ -1893,18 +2103,15 @@ components:
         - $ref: "#/components/schemas/SubstateKey"
         - type: object
           required:
-            - sort_prefix
+            - sort_prefix_hex
             - key_hex
           properties:
-            sort_prefix:
-              type: integer
-              format: int32
-              minimum: 0
-              maximum: 65535
-              description: The sort part of the substate key
+            sort_prefix_hex:
+              type: string
+              description: The hex-encoded bytes of the sorted part of the key
             key_hex:
               type: string
-              description: The hex-encoded bytes of the substate key
+              description: The hex-encoded remaining bytes of the key
     ResourceAddress:
       type: string
       description: The Bech32m-encoded human readable version of the resource address
@@ -1964,7 +2171,7 @@ components:
           type: string
           description: |
             The string-encoded decimal representing the XRD amount put or taken from the vault.
-            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
     Event:
       description: Event emitted by a transaction.
       type: object
@@ -1981,13 +2188,15 @@ components:
       type: object
       required:
         - emitter
-        - type_pointer
+        - type_reference
+        - name
       properties:
         emitter:
           $ref: "#/components/schemas/EventEmitterIdentifier"
-        type_pointer:
-          $ref: '#/components/schemas/TypePointer'
-          description: The type pointer of the event's type in the context of the emitter's SBOR schema.
+        type_reference:
+          $ref: '#/components/schemas/PackageTypeReference'
+        name:
+          type: string
     EventEmitterIdentifierType:
       type: string
       enum:
@@ -2447,7 +2656,7 @@ components:
               type: string
               description: |
                 The string-encoded decimal representing the amount of this resource (some decimal for fungible resources, a whole integer for non-fungible resources).
-                A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+                A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
     NonFungibleResourceAmount:
       allOf:
         - $ref: '#/components/schemas/ResourceAmount'
@@ -2460,7 +2669,7 @@ components:
               type: string
               description: |
                 The string-encoded decimal representing the amount of this resource (some decimal for fungible resources, a whole integer for non-fungible resources).
-                A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+                A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
             non_fungible_ids:
               type: array
               items:
@@ -2564,61 +2773,15 @@ components:
       properties:
         sbor_data:
           $ref: '#/components/schemas/SborData'
-    InstanceSchema:
-      type: object
-      required:
-        - schema
-        - schema_hash
-        - instance_type_lookup
-      properties:
-        schema:
-          $ref: '#/components/schemas/ScryptoSchema'
-        schema_hash:
-          $ref: '#/components/schemas/SchemaHash'
-        instance_type_lookup:
-          type: array
-          description: |
-            This is a vector which is a lookup of the "instance type index" to the local type index
-            which can be used to resolve the instance type in the instance schema.
-          items:
-            $ref: '#/components/schemas/LocalTypeIndex'
-    KeyValueStoreSchema:
-      type: object
-      required:
-        - schema
-        - schema_hash
-        - key_type
-        - value_type
-        - can_own
-      properties:
-        schema:
-          $ref: '#/components/schemas/ScryptoSchema'
-        schema_hash:
-          $ref: '#/components/schemas/SchemaHash'
-        key_type:
-          $ref: '#/components/schemas/LocalTypeIndex'
-          description: |
-            The type index of the key type in the context of this SBOR schema.
-        value_type:
-          $ref: '#/components/schemas/LocalTypeIndex'
-          description: |
-            The type index of the key type in the context of this SBOR schema.
-        can_own:
-          description: Whether the key value store can own any children.
-          type: boolean
     BlueprintDefinition:
       type: object
       required:
         - interface
-        - is_transient
         - function_exports
         - hook_exports
       properties:
         interface:
           $ref: '#/components/schemas/BlueprintInterface'
-        is_transient:
-          type: boolean
-          description: If true, an instantiation of this blueprint cannot be persisted. EG buckets and proofs are transient.
         function_exports:
           type: object
           description: A map from the function name to its export
@@ -2660,6 +2823,7 @@ components:
       type: object
       required:
         - generic_type_parameters
+        - is_transient
         - features
         - state
         - functions
@@ -2674,6 +2838,9 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/GenericTypeParameter'
+        is_transient:
+          type: boolean
+          description: If true, an instantiation of this blueprint cannot be persisted. EG buckets and proofs are transient.
         features:
           type: array
           items:
@@ -2687,9 +2854,9 @@ components:
             $ref: '#/components/schemas/FunctionSchema'
         events:
           type: object
-          description: A map from the event name to the local type index for the event payload under the blueprint schema.
+          description: A map from the event name to the event payload type reference.
           additionalProperties:
-            $ref: '#/components/schemas/TypePointer'
+            $ref: '#/components/schemas/BlueprintPayloadDef'
     IndexedStateSchema:
       type: object
       required:
@@ -2713,56 +2880,167 @@ components:
         - constraints
       properties:
         constraints:
-          $ref: '#/components/schemas/GenericTypeParameterContraints'
-    GenericTypeParameterContraints:
+          $ref: '#/components/schemas/GenericTypeParameterConstraints'
+    GenericTypeParameterConstraints:
       type: string
       enum:
         - Any
       description: |
         The constraints on the concrete type provided to fill the generic type parameter.
         Note: currently, we only support the wildcard (i.e. `Any`) generic type.
-    TypePointerType:
+    SubstateSystemStructureType:
+      type: string
+      enum:
+        - SystemField
+        - SystemSchema
+        - KeyValueStoreEntry
+        - ObjectField
+        - ObjectKeyValuePartitionEntry
+        - ObjectIndexPartitionEntry
+        - ObjectSortedIndexPartitionEntry
+    SubstateSystemStructure:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/SubstateSystemStructureType"
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match SubstateSystemStructureType
+          SystemField: '#/components/schemas/SystemFieldStructure'
+          SystemSchema: '#/components/schemas/SystemSchemaStructure'
+          KeyValueStoreEntry: '#/components/schemas/KeyValueStoreEntryStructure'
+          ObjectField: '#/components/schemas/ObjectFieldStructure'
+          ObjectKeyValuePartitionEntry: '#/components/schemas/ObjectKeyValuePartitionEntryStructure'
+          ObjectIndexPartitionEntry: '#/components/schemas/ObjectIndexPartitionEntryStructure'
+          ObjectSortedIndexPartitionEntry: '#/components/schemas/ObjectSortedIndexPartitionEntryStructure'
+    SystemFieldStructure:
+      allOf:
+        - $ref: "#/components/schemas/SubstateSystemStructure"
+        - type: object
+          required:
+            - field_kind
+          properties:
+            field_kind:
+              $ref: "#/components/schemas/SystemFieldKind"
+    SystemSchemaStructure:
+      allOf:
+        - $ref: "#/components/schemas/SubstateSystemStructure"
+        - type: object
+    KeyValueStoreEntryStructure:
+      allOf:
+        - $ref: "#/components/schemas/SubstateSystemStructure"
+        - type: object
+          required:
+            - key_value_store_address
+            - key_schema_hash
+            - key_local_type_index
+            - value_schema_hash
+            - value_local_type_index
+          properties:
+            key_value_store_address:
+              $ref: "#/components/schemas/EntityAddress"
+            key_schema_hash:
+              $ref: '#/components/schemas/SchemaHash'
+            key_local_type_index:
+              $ref: '#/components/schemas/LocalTypeIndex'
+            value_schema_hash:
+              $ref: '#/components/schemas/SchemaHash'
+            value_local_type_index:
+              $ref: '#/components/schemas/LocalTypeIndex'
+    ObjectFieldStructure:
+      allOf:
+        - $ref: "#/components/schemas/SubstateSystemStructure"
+        - type: object
+          required:
+            - value_schema
+          properties:
+            value_schema:
+              $ref: "#/components/schemas/ObjectSubstateTypeReference"
+    ObjectKeyValuePartitionEntryStructure:
+      allOf:
+        - $ref: "#/components/schemas/SubstateSystemStructure"
+        - $ref: "#/components/schemas/KeyValueBasedStructure"
+    ObjectIndexPartitionEntryStructure:
+      allOf:
+        - $ref: "#/components/schemas/SubstateSystemStructure"
+        - $ref: "#/components/schemas/KeyValueBasedStructure"
+    ObjectSortedIndexPartitionEntryStructure:
+      allOf:
+        - $ref: "#/components/schemas/SubstateSystemStructure"
+        - $ref: "#/components/schemas/KeyValueBasedStructure"
+    KeyValueBasedStructure:
+      type: object
+      required:
+        - key_schema
+        - value_schema
+      properties:
+        key_schema:
+          $ref: "#/components/schemas/ObjectSubstateTypeReference"
+        value_schema:
+          $ref: "#/components/schemas/ObjectSubstateTypeReference"
+    SystemFieldKind:
+      type: string
+      enum:
+        - TypeInfo
+    ObjectSubstateTypeReferenceType:
       type: string
       enum:
         - Package
-        - Instance
-    TypePointer:
+        - ObjectInstance
+    ObjectSubstateTypeReference:
       type: object
       required:
-        - pointer_type
+        - type
       properties:
-        pointer_type:
-          $ref: '#/components/schemas/TypePointerType'
+        type:
+          $ref: "#/components/schemas/ObjectSubstateTypeReferenceType"
       discriminator:
-        propertyName: pointer_type
+        propertyName: type
         mapping:
-          # NOTE: These need to match TypePointerType options
-          Package: '#/components/schemas/PackageTypePointer'
-          Instance: '#/components/schemas/InstanceTypePointer'
-    PackageTypePointer:
+          # NOTE: These need to match ObjectSubstateTypeReferenceType
+          Package: '#/components/schemas/PackageObjectSubstateTypeReference'
+          ObjectInstance: '#/components/schemas/ObjectInstanceTypeReference'
+    PackageObjectSubstateTypeReference:
       allOf:
-        - $ref: '#/components/schemas/TypePointer'
+        - $ref: "#/components/schemas/ObjectSubstateTypeReference"
+        - $ref: "#/components/schemas/PackageTypeReference"
+    ObjectInstanceTypeReference:
+      allOf:
+        - $ref: "#/components/schemas/ObjectSubstateTypeReference"
         - type: object
           required:
+            - entity_address
             - schema_hash
+            - instance_type_index
             - local_type_index
           properties:
+            entity_address:
+              $ref: "#/components/schemas/EntityAddress"
             schema_hash:
               $ref: '#/components/schemas/SchemaHash'
-            local_type_index:
-              $ref: '#/components/schemas/LocalTypeIndex'
-    InstanceTypePointer:
-      allOf:
-        - $ref: '#/components/schemas/TypePointer'
-        - type: object
-          required:
-            - index
-          properties:
-            index:
+            instance_type_index:
               type: integer
               format: int32
               minimum: 0
               maximum: 255
+            local_type_index:
+              $ref: "#/components/schemas/LocalTypeIndex"
+    PackageTypeReference:
+      type: object
+      required:
+        - package_address
+        - schema_hash
+        - local_type_index
+      properties:
+        package_address:
+          $ref: "#/components/schemas/PackageAddress"
+        schema_hash:
+          $ref: '#/components/schemas/SchemaHash'
+        local_type_index:
+          $ref: "#/components/schemas/LocalTypeIndex"
     PackageExport:
       type: object
       required:
@@ -2801,7 +3079,7 @@ components:
         method_auth_type:
           $ref: '#/components/schemas/MethodAuthType'
         method_roles:
-          $ref: '#/components/schemas/StaticRolesAuthTemplate'
+          $ref: '#/components/schemas/StaticRoleDefinitionAuthTemplate'
     FunctionAuthType:
       type: string
       enum:
@@ -2812,8 +3090,8 @@ components:
       type: string
       enum:
         - AllowAll
-        - StaticRoles
-    StaticRolesAuthTemplate:
+        - StaticRoleDefinition
+    StaticRoleDefinitionAuthTemplate:
       type: object
       required:
         - role_specification
@@ -2894,15 +3172,11 @@ components:
       type: object
       description: The fields partition of the blueprint.
       required:
-        - partition_offset
+        - partition_description
         - fields
       properties:
-        partition_offset:
-          description: The partition's offset from the Main module base (64)
-          type: integer
-          format: i32
-          minimum: 0
-          maximum: 191
+        partition_description:
+          $ref: '#/components/schemas/PartitionDescription'
         fields:
           type: array
           description: The field substates for this blueprint.
@@ -2911,12 +3185,15 @@ components:
     FieldSchema:
       type: object
       required:
-        - field_type_pointer
+        - field_type_ref
       properties:
-        field_type_pointer:
-          $ref: '#/components/schemas/TypePointer'
+        field_type_ref:
+          $ref: '#/components/schemas/BlueprintPayloadDef'
         condition:
           $ref: '#/components/schemas/FieldSchemaFeatureCondition'
+        transient_default_value_hex:
+          type: string
+          description: The hex-encoded default value of this field. Only present if this field is transient.
     FieldSchemaFeatureConditionType:
       type: string
       enum:
@@ -2933,7 +3210,7 @@ components:
       discriminator:
         propertyName: type
         mapping:
-          # NOTE: These need to match TypePointerType options
+          # NOTE: These need to match FieldSchemaFeatureConditionType options
           Always: '#/components/schemas/FieldSchemaFeatureConditionAlways'
           IfOwnFeature: '#/components/schemas/FieldSchemaFeatureConditionIfOwnFeature'
           IfOuterObjectFeature: '#/components/schemas/FieldSchemaFeatureConditionIfOuterObjectFeature'
@@ -2963,15 +3240,11 @@ components:
       type: object
       description: The fields partition of the blueprint.
       required:
-        - partition_offset
+        - partition_description
         - collection_schema
       properties:
-        partition_offset:
-          description: The partition's offset from the Main module base (64)
-          type: integer
-          format: i32
-          minimum: 0
-          maximum: 191
+        partition_description:
+          $ref: '#/components/schemas/PartitionDescription'
         collection_schema:
           $ref: '#/components/schemas/BlueprintCollectionSchema'
     BlueprintCollectionSchema:
@@ -2999,15 +3272,15 @@ components:
         - $ref: "#/components/schemas/BlueprintCollectionSchema"
         - type: object
           required:
-            - key_type_pointer
-            - value_type_pointer
-            - can_own
+            - key_type_ref
+            - value_type_ref
+            - allow_ownership
           properties:
-            key_type_pointer:
-              $ref: "#/components/schemas/TypePointer"
-            value_type_pointer:
-              $ref: "#/components/schemas/TypePointer"
-            can_own:
+            key_type_ref:
+              $ref: "#/components/schemas/BlueprintPayloadDef"
+            value_type_ref:
+              $ref: "#/components/schemas/BlueprintPayloadDef"
+            allow_ownership:
               type: boolean
               description: Whether the entries of the key-value partition are allowed to own child nodes.
     IndexBlueprintCollectionSchema:
@@ -3015,15 +3288,15 @@ components:
         - $ref: "#/components/schemas/BlueprintCollectionSchema"
         - type: object
           required:
-            - key_type_pointer
-            - value_type_pointer
-            - can_own
+            - key_type_ref
+            - value_type_ref
+            - allow_ownership
           properties:
-            key_type_pointer:
-              $ref: "#/components/schemas/TypePointer"
-            value_type_pointer:
-              $ref: "#/components/schemas/TypePointer"
-            can_own:
+            key_type_ref:
+              $ref: "#/components/schemas/BlueprintPayloadDef"
+            value_type_ref:
+              $ref: "#/components/schemas/BlueprintPayloadDef"
+            allow_ownership:
               type: boolean
               description: Whether the entries of the index partition are allowed to own child nodes.
     SortedIndexBlueprintCollectionSchema:
@@ -3031,15 +3304,15 @@ components:
         - $ref: "#/components/schemas/BlueprintCollectionSchema"
         - type: object
           required:
-            - key_type_pointer
-            - value_type_pointer
-            - can_own
+            - key_type_ref
+            - value_type_ref
+            - allow_ownership
           properties:
-            key_type_pointer:
-              $ref: "#/components/schemas/TypePointer"
-            value_type_pointer:
-              $ref: "#/components/schemas/TypePointer"
-            can_own:
+            key_type_ref:
+              $ref: "#/components/schemas/BlueprintPayloadDef"
+            value_type_ref:
+              $ref: "#/components/schemas/BlueprintPayloadDef"
+            allow_ownership:
               type: boolean
               description: Whether the entries of the sorted index partition are allowed to own child nodes.
     BlueprintTypeReference:
@@ -3078,7 +3351,7 @@ components:
           properties:
             instance_provided_type_index:
               type: integer
-              format: i32
+              format: int32
               minimum: 0
               maximum: 255
               description: Provided by an instance's schema at the given index in its provided types array.
@@ -3091,18 +3364,19 @@ components:
       properties:
         kind:
           type: string
-          description: |
-            The location against which to resolve this type reference against a given schema.
-            WellKnown indicates the index is a pointer to a well known scrypto type with that id.
-            SchemaLocal indicates the index is a pointer into the given schema.
+          description: The location against which to resolve this type reference.
           enum:
             - WellKnown
             - SchemaLocal
         index:
-          description: |
-            Either the well known identifier, of the schema-local index, depending on the kind.
           type: integer
-          format: int32
+          format: int64
+          minimum: 0
+          maximum: 4294967295
+          description: |
+            A reference to a type, interpreted according to `kind`:
+            - if `WellKnown`, then it is a pointer to a well known scrypto type with that ID,
+            - if `SchemaLocal`, then it is a pointer into the given schema.
         as_sbor:
           $ref: '#/components/schemas/SborData'
           description: |
@@ -3124,13 +3398,13 @@ components:
         receiver_info:
           $ref: '#/components/schemas/ReceiverInfo'
         input:
-          $ref: '#/components/schemas/TypePointer'
+          $ref: '#/components/schemas/BlueprintPayloadDef'
           description: |
-            The type pointer of the function's parameter struct in the context of the blueprint's SBOR schema.
+            The reference to the function's parameter struct.
         output:
-          $ref: '#/components/schemas/TypePointer'
+          $ref: '#/components/schemas/BlueprintPayloadDef'
           description: |
-            The type pointer of the function output in the context of the blueprint's SBOR schema.
+            The reference to the function output struct.
     ReceiverInfo:
       type: object
       required:
@@ -3191,6 +3465,12 @@ components:
     EntityAddress:
       type: string
       description: Bech32m-encoded human readable version of the entity's address (ie the entity's node id)
+    ModuleId:
+      type: string
+      enum:
+        - Metadata
+        - Royalty
+        - RoleAssignment
     ObjectModuleId:
       type: string
       enum:
@@ -3242,7 +3522,7 @@ components:
           PackageCodeVmTypeEntry: '#/components/schemas/PackageCodeVmTypeEntrySubstate'
           PackageCodeOriginalCodeEntry: '#/components/schemas/PackageCodeOriginalCodeEntrySubstate'
           PackageCodeInstrumentedCodeEntry: '#/components/schemas/PackageCodeInstrumentedCodeEntrySubstate'
-          PackageSchemaEntry: '#/components/schemas/PackageSchemaEntrySubstate'
+          SchemaEntry: '#/components/schemas/SchemaEntrySubstate'
           PackageBlueprintDefinitionEntry: '#/components/schemas/PackageBlueprintDefinitionEntrySubstate'
           PackageBlueprintDependenciesEntry: '#/components/schemas/PackageBlueprintDependenciesEntrySubstate'
           PackageBlueprintRoyaltyEntry: '#/components/schemas/PackageBlueprintRoyaltyEntrySubstate'
@@ -3294,7 +3574,7 @@ components:
         - PackageCodeVmTypeEntry
         - PackageCodeOriginalCodeEntry
         - PackageCodeInstrumentedCodeEntry
-        - PackageSchemaEntry
+        - SchemaEntry
         - PackageBlueprintDefinitionEntry
         - PackageBlueprintDependenciesEntry
         - PackageBlueprintRoyaltyEntry
@@ -3464,9 +3744,12 @@ components:
       type: object
       required:
         - intent_hash
+        - intent_hash_bech32m
       properties:
         intent_hash:
           $ref: "#/components/schemas/IntentHash"
+        intent_hash_bech32m:
+          $ref: "#/components/schemas/IntentHashBech32m"
     GenericKey:
       type: object
       properties:
@@ -3534,7 +3817,7 @@ components:
         - version
       properties:
         module:
-          $ref: '#/components/schemas/ObjectModuleId'
+          $ref: '#/components/schemas/ModuleId'
         version:
           type: string
           description: A string of `Major.Minor.Patch` where Major, Minor and Patch are all u32s.
@@ -3543,20 +3826,26 @@ components:
       required:
         - package_address
         - blueprint_name
+        - blueprint_version
         - features
+        - generic_substitutions
       properties:
         package_address:
           $ref: '#/components/schemas/PackageAddress'
         blueprint_name:
           type: string
+        blueprint_version:
+          type: string
         outer_object:
           $ref: '#/components/schemas/GlobalAddress'
-        instance_schema:
-          $ref: '#/components/schemas/InstanceSchema'
         features:
           type: array
           items:
             type: string
+        generic_substitutions:
+          type: array
+          items:
+            $ref: "#/components/schemas/TypeIdentifier"
     KeyValueStoreTypeInfoDetails:
       allOf:
         - $ref: '#/components/schemas/TypeInfoDetails'
@@ -3570,10 +3859,17 @@ components:
     KeyValueStoreInfo:
       type: object
       required:
-        - kv_store_schema
+        - key_generic_substitution
+        - value_generic_substitution
+        - allow_ownership
       properties:
-        kv_store_schema:
-          $ref: '#/components/schemas/KeyValueStoreSchema'
+        key_generic_substitution:
+          $ref: "#/components/schemas/TypeIdentifier"
+        value_generic_substitution:
+          $ref: "#/components/schemas/TypeIdentifier"
+        allow_ownership:
+          type: boolean
+          description: Whether the entries of the key-value partition are allowed to own child nodes.
     RoleAssignmentModuleFieldOwnerRoleSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -3814,7 +4110,7 @@ components:
           type: string
           description: |
             The hex-encoded instrumented WASM package code.
-    PackageSchemaEntrySubstate:
+    SchemaEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
@@ -3825,8 +4121,8 @@ components:
             key:
               $ref: '#/components/schemas/SchemaKey'
             value:
-              $ref: '#/components/schemas/PackageSchemaEntryValue'
-    PackageSchemaEntryValue:
+              $ref: '#/components/schemas/SchemaEntryValue'
+    SchemaEntryValue:
       type: object
       required:
         - schema
@@ -3946,7 +4242,7 @@ components:
           type: string
           description: |
             The string-encoded decimal representing the total supply of this resource.
-            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
     NonFungibleResourceManagerFieldIdTypeSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -3981,7 +4277,7 @@ components:
           type: string
           description: |
             The string-encoded decimal representing the total supply of this resource.
-            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
     NonFungibleResourceManagerFieldMutableFieldsSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -4043,7 +4339,7 @@ components:
           type: string
           description: |
             The string-encoded decimal representing the token amount in the vault.
-            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
     FungibleVaultFieldFrozenStatusSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -4091,7 +4387,7 @@ components:
           type: string
           description: |
             The string-encoded decimal representing the token amount in the vault.
-            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
     NonFungibleVaultFieldFrozenStatusSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -4202,12 +4498,12 @@ components:
           description: |
             The defining decimal cost of a validator in USD.
             This is turned into an XRD cost through the current protocol-based USD/XRD multiplier.
-            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
         validator_creation_xrd_cost:
           type: string
           description: |
             The decimal amount of XRD required to be passed in a bucket to create a validator.
-            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
     ConsensusManagerFieldValidatorRewardsSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -4425,7 +4721,7 @@ components:
         - validator_fee_factor
         - stake_unit_resource_address
         - stake_xrd_vault
-        - unstake_claim_token_resource_address
+        - claim_token_resource_address
         - pending_xrd_withdraw_vault
         - locked_owner_stake_unit_vault
         - pending_owner_stake_unit_unlock_vault
@@ -4449,7 +4745,7 @@ components:
           $ref: '#/components/schemas/ResourceAddress'
         stake_xrd_vault:
           $ref: '#/components/schemas/EntityReference'
-        unstake_claim_token_resource_address:
+        claim_token_resource_address:
           $ref: '#/components/schemas/ResourceAddress'
         pending_xrd_withdraw_vault:
           $ref: '#/components/schemas/EntityReference'
@@ -4803,10 +5099,18 @@ components:
       type: object
       required:
         - payload_hash
+        - payload_hash_bech32m
         - status
       properties:
         payload_hash:
           $ref: "#/components/schemas/NotarizedTransactionHash"
+        payload_hash_bech32m:
+          $ref: "#/components/schemas/NotarizedTransactionHashBech32m"
+        state_version:
+          $ref: "#/components/schemas/StateVersion"
+          description: |
+            State version of a committed transaction.
+            This field will be present only if the `status` is `Committed*`.
         status:
           $ref: "#/components/schemas/LtsTransactionPayloadStatus"
         error_message:
@@ -4942,6 +5246,11 @@ components:
               description: |
                 Whether the cached rejection of this intent is due to the intent already having been committed.
                 If so, see the /transaction/receipt endpoint for further information.
+            intent_already_committed_as:
+              $ref: "#/components/schemas/CommittedIntentMetadata"
+              description: |
+                Details of an already-committed transaction that had the same intent.
+                This field is present when `is_rejected_because_intent_already_committed` is true.
             retry_from_timestamp:
               $ref: "#/components/schemas/Instant"
               description: |
@@ -5011,7 +5320,7 @@ components:
           type: string
           description: |
             The string-encoded decimal representing the amount of the fungible resource.
-            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
 #########################################################
 # REQUEST: /lts/state/account-fungible-resource-balance #
 #########################################################
@@ -5135,7 +5444,6 @@ components:
           $ref: "#/components/schemas/LtsCommittedTransactionStatus"
         fungible_entity_balance_changes:
           description: |
-            THE FEE ASSIGNMENT IS NOT CURRENTLY FULLY ACCURATE FOR SOME TRANSACTIONS. THIS WILL BE FIXED AT RCNET-V2.
             A list of all fungible balance updates which occurred in this transaction, aggregated by the global entity (such as account)
             which owns the vaults which were updated.
           type: array
@@ -5153,7 +5461,7 @@ components:
           type: string
           description: |
             The string-encoded decimal representing the total amount of XRD payed as fee (execution, validator tip and royalties).
-            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
     LtsEntityFungibleBalanceChanges:
       type: object
       required:
@@ -5203,7 +5511,7 @@ components:
           type: string
           description: |
             The string-encoded decimal representing the amount of change for the fungible resource.
-            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
     LtsFeeFungibleResourceBalanceChange:
       type: object
       required:
@@ -5221,7 +5529,7 @@ components:
           type: string
           description: |
             The string-encoded decimal representing the amount of change for the fungible resource.
-            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
     LtsFeeFungibleResourceBalanceChangeType:
       type: string
       enum:
@@ -5256,7 +5564,7 @@ components:
           type: string
           description: |
             The string-encoded decimal representing the resultant balance of the fungible resource.
-            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
 #####################################################
 # REQUEST: /lts/stream/account-transaction-outcomes #
 #####################################################
@@ -5585,6 +5893,7 @@ components:
         - logical_name
         - state_version
         - intent_hash
+        - intent_hash_bech32m
       properties:
         logical_name:
           type: string
@@ -5592,6 +5901,8 @@ components:
           $ref: "#/components/schemas/StateVersion"
         intent_hash:
           $ref: "#/components/schemas/IntentHash"
+        intent_hash_bech32m:
+          $ref: "#/components/schemas/IntentHashBech32m"
     DescribedAddress:
       type: string
       description: An arbitrary Bech32m-encoded human readable address (its type should be inferred from `logical_name`).
@@ -5618,12 +5929,18 @@ components:
       type: object
       required:
         - intent_hash
+        - intent_hash_bech32m
         - payload_hash
+        - payload_hash_bech32m
       properties:
         intent_hash:
           $ref: "#/components/schemas/IntentHash"
+        intent_hash_bech32m:
+          $ref: "#/components/schemas/IntentHashBech32m"
         payload_hash:
           $ref: "#/components/schemas/NotarizedTransactionHash"
+        payload_hash_bech32m:
+          $ref: "#/components/schemas/NotarizedTransactionHashBech32m"
 #################################
 # REQUEST: /mempool/transaction #
 #################################
@@ -5631,20 +5948,44 @@ components:
       type: object
       required:
         - network
-        - payload_hash
+        - payload_hashes
       properties:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
-        payload_hash:
-          $ref: "#/components/schemas/NotarizedTransactionHash"
+        payload_hashes:
+          type: array
+          items:
+            $ref: "#/components/schemas/NotarizedTransactionHash"
     MempoolTransactionResponse:
       type: object
       required:
-        - payload_hex
+        - count
+        - payloads
       properties:
-        payload_hex:
-          type: string
-          description: The hex-encoded full notarized transaction payload.
+        count:
+          type: integer
+          format: int32
+          description: An integer giving the total count of payload hashes checked in the returned response.
+        payloads:
+          type: array
+          description: |
+            An array containing pairs of payload hash (query) and payload hex or error (response).
+            Note that this response is bounded - this means it is not guaranteed all queries will be processed.
+            Please query missing payload hashes again.
+          items:
+            type: object
+            required:
+              - hash
+            properties:
+              hash:
+                $ref: "#/components/schemas/NotarizedTransactionHash"
+              hex:
+                type: string
+                description: The hex-encoded full notarized transaction payload - returned only if found in mempool.
+              error:
+                type: string
+                description: |
+                  Error message why `hex` field is missing: the transaction was not found in the mempool or the provided hash is invalid.
 ###############################
 # REQUEST: /transaction/parse #
 ###############################
@@ -5759,18 +6100,30 @@ components:
       type: object
       required:
         - intent_hash
+        - intent_hash_bech32m
         - signed_intent_hash
+        - signed_intent_hash_bech32m
         - payload_hash
+        - payload_hash_bech32m
         - ledger_hash
+        - ledger_hash_bech32m
       properties:
         intent_hash:
           $ref: "#/components/schemas/IntentHash"
+        intent_hash_bech32m:
+          $ref: "#/components/schemas/IntentHashBech32m"
         signed_intent_hash:
           $ref: "#/components/schemas/SignedIntentHash"
+        signed_intent_hash_bech32m:
+          $ref: "#/components/schemas/SignedIntentHashBech32m"
         payload_hash:
           $ref: "#/components/schemas/NotarizedTransactionHash"
+        payload_hash_bech32m:
+          $ref: "#/components/schemas/NotarizedTransactionHashBech32m"
         ledger_hash:
           $ref: "#/components/schemas/LedgerPayloadHash"
+        ledger_hash_bech32m:
+          $ref: "#/components/schemas/LedgerPayloadHashBech32m"
     ParsedSignedTransactionIntent:
       allOf:
         - $ref: "#/components/schemas/ParsedTransaction"
@@ -5786,12 +6139,18 @@ components:
       type: object
       required:
         - intent_hash
+        - intent_hash_bech32m
         - signed_intent_hash
+        - signed_intent_hash_bech32m
       properties:
         intent_hash:
           $ref: "#/components/schemas/IntentHash"
+        intent_hash_bech32m:
+          $ref: "#/components/schemas/IntentHashBech32m"
         signed_intent_hash:
           $ref: "#/components/schemas/SignedIntentHash"
+        signed_intent_hash_bech32m:
+          $ref: "#/components/schemas/SignedIntentHashBech32m"
     ParsedTransactionIntent:
       allOf:
         - $ref: "#/components/schemas/ParsedTransaction"
@@ -5807,9 +6166,12 @@ components:
       type: object
       required:
         - intent_hash
+        - intent_hash_bech32m
       properties:
         intent_hash:
           $ref: "#/components/schemas/IntentHash"
+        intent_hash_bech32m:
+          $ref: "#/components/schemas/IntentHashBech32m"
     ParsedLedgerTransaction:
       allOf:
         - $ref: "#/components/schemas/ParsedTransaction"
@@ -5825,15 +6187,24 @@ components:
       type: object
       required:
         - ledger_hash
+        - ledger_hash_bech32m
       properties:
         intent_hash:
           $ref: "#/components/schemas/IntentHash"
+        intent_hash_bech32m:
+          $ref: "#/components/schemas/IntentHashBech32m"
         signed_intent_hash:
           $ref: "#/components/schemas/SignedIntentHash"
+        signed_intent_hash_bech32m:
+          $ref: "#/components/schemas/SignedIntentHashBech32m"
         payload_hash:
           $ref: "#/components/schemas/NotarizedTransactionHash"
+        payload_hash_bech32m:
+          $ref: "#/components/schemas/NotarizedTransactionHashBech32m"
         ledger_hash:
           $ref: "#/components/schemas/LedgerPayloadHash"
+        ledger_hash_bech32m:
+          $ref: "#/components/schemas/LedgerPayloadHashBech32m"
 ################################
 # REQUEST: /transaction/submit #
 ################################
@@ -5939,6 +6310,11 @@ components:
               description: |
                 Whether the cached rejection of this intent is due to the intent already having been committed.
                 If so, see the /transaction/receipt endpoint for further information.
+            intent_already_committed_as:
+              $ref: "#/components/schemas/CommittedIntentMetadata"
+              description: |
+                Details of an already-committed transaction that had the same intent.
+                This field is present when `is_rejected_because_intent_already_committed` is true.
             retry_from_timestamp:
               $ref: "#/components/schemas/Instant"
               description: |
@@ -5997,30 +6373,40 @@ components:
         known_payloads:
           type: array
           items:
-            $ref: "#/components/schemas/TransactionPayloadStatus"
-    TransactionPayloadStatus:
+            $ref: "#/components/schemas/TransactionPayloadDetails"
+    TransactionPayloadDetails:
       type: object
       required:
         - payload_hash
+        - payload_hash_bech32m
         - status
       properties:
         payload_hash:
           $ref: "#/components/schemas/NotarizedTransactionHash"
+        payload_hash_bech32m:
+          $ref: "#/components/schemas/NotarizedTransactionHashBech32m"
+        state_version:
+          $ref: "#/components/schemas/StateVersion"
+          description: |
+            State version of a committed transaction.
+            This field will be present only if the `status` is `Committed*`.
         status:
-          type: string
+          $ref: "#/components/schemas/TransactionPayloadStatus"
           description: |
             The status of the transaction payload, as per this node.
             A NotInMempool status means that it wasn't rejected at last execution attempt, but it's not currently in the mempool either.
-          enum:
-            - CommittedSuccess
-            - CommittedFailure
-            - PermanentlyRejected
-            - TransientlyRejected
-            - InMempool
-            - NotInMempool
         error_message:
           description: An explanation for the error, if failed or rejected
           type: string
+    TransactionPayloadStatus:
+      type: string
+      enum:
+        - CommittedSuccess
+        - CommittedFailure
+        - PermanentlyRejected
+        - TransientlyRejected
+        - InMempool
+        - NotInMempool
     TransactionIntentStatus:
       type: string
       description: |

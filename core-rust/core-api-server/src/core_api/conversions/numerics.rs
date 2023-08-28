@@ -1,6 +1,9 @@
+use std::any::type_name;
+
 use radix_engine_common::math::*;
 use radix_engine_interface::blueprints::package::BlueprintVersion;
 use radix_engine_interface::prelude::*;
+use sbor::WellKnownTypeIndex;
 use state_manager::store::traits::scenario::ScenarioSequenceNumber;
 use state_manager::StateVersion;
 
@@ -52,6 +55,15 @@ pub fn to_api_active_validator_index(index: ValidatorIndex) -> models::ActiveVal
     models::ActiveValidatorIndex {
         index: index as i32,
     }
+}
+
+pub fn to_api_well_known_type_index(index: &WellKnownTypeIndex) -> Result<i64, MappingError> {
+    index
+        .as_index()
+        .try_into()
+        .map_err(|_| MappingError::IntegerError {
+            message: "Well-known type index too large".to_string(),
+        })
 }
 
 #[tracing::instrument(skip_all)]
@@ -227,4 +239,90 @@ pub fn extract_api_u16_as_i32(input: i32) -> Result<u16, ExtractionError> {
         });
     }
     Ok(input.try_into().expect("Number invalid somehow"))
+}
+
+pub trait PanickingOps: Sized {
+    fn add_or_panic(self, rhs: Self) -> Self;
+    fn sub_or_panic(self, rhs: Self) -> Self;
+    fn mul_or_panic(self, rhs: Self) -> Self;
+    fn div_or_panic(self, rhs: Self) -> Self;
+    fn neg_or_panic(self) -> Self;
+}
+
+impl<T> PanickingOps for T
+where
+    T: SafeAdd<Output = T>
+        + SafeSub<Output = T>
+        + SafeDiv<Output = T>
+        + SafeMul<Output = T>
+        + SafeNeg<Output = T>
+        + Copy
+        + Display,
+{
+    fn add_or_panic(self, rhs: Self) -> Self {
+        op_or_panic(self, "+", rhs, self.safe_add(rhs))
+    }
+
+    fn sub_or_panic(self, rhs: Self) -> Self {
+        op_or_panic(self, "-", rhs, self.safe_sub(rhs))
+    }
+
+    fn mul_or_panic(self, rhs: Self) -> Self {
+        op_or_panic(self, "*", rhs, self.safe_mul(rhs))
+    }
+
+    fn div_or_panic(self, rhs: Self) -> Self {
+        op_or_panic(self, "/", rhs, self.safe_div(rhs))
+    }
+
+    fn neg_or_panic(self) -> Self {
+        if let Some(result) = self.safe_neg() {
+            result
+        } else {
+            panic!("result of -{} does not fit in {}", self, type_name::<T>());
+        }
+    }
+}
+
+pub trait PanickingSumIterator<E> {
+    fn sum_or_panic(self) -> E;
+}
+
+impl<T, E> PanickingSumIterator<E> for T
+where
+    T: Iterator<Item = E>,
+    E: Default + SafeAdd<Output = E> + Copy + Display,
+{
+    fn sum_or_panic(self) -> E {
+        let mut result = E::default();
+        for (index, element) in self.enumerate() {
+            let sum = result.safe_add(element);
+            if let Some(sum) = sum {
+                result = sum;
+            } else {
+                panic!(
+                    "result of accumulating {}. element ({} + {}) does not fit in {}",
+                    index,
+                    result,
+                    element,
+                    type_name::<T>()
+                );
+            }
+        }
+        result
+    }
+}
+
+fn op_or_panic<T: Display>(left: T, op: &str, right: T, result: Option<T>) -> T {
+    if let Some(result) = result {
+        result
+    } else {
+        panic!(
+            "result of {} {} {} does not fit in {}",
+            left,
+            op,
+            right,
+            type_name::<T>()
+        );
+    }
 }

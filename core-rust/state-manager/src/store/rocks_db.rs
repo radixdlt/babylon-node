@@ -139,7 +139,6 @@ enum RocksDBColumnFamily {
     ExecutedGenesisScenarios,
 }
 
-use crate::store::node_ancestry_resolver::NodeAncestryResolver;
 use crate::store::traits::scenario::{
     ExecutedGenesisScenario, ExecutedGenesisScenarioStore, ScenarioSequenceNumber,
 };
@@ -350,19 +349,6 @@ impl RocksDBStore {
             scrypto_encode(&receipt.on_ledger).unwrap(),
         );
 
-        for (node_ids, record) in
-            NodeAncestryResolver::batch_resolve(self, &receipt.on_ledger.substate_changes)
-        {
-            let encoded_record = scrypto_encode(&record).unwrap();
-            for node_id in node_ids {
-                batch.put_cf(
-                    self.cf_handle(&SubstateNodeAncestryRecords),
-                    node_id.0,
-                    &encoded_record,
-                );
-            }
-        }
-
         if self.is_local_transaction_execution_index_enabled() {
             batch.put_cf(
                 self.cf_handle(&LocalTransactionExecutionByStateVersion),
@@ -531,6 +517,17 @@ impl CommitStore for RocksDBStore {
                 stale_node_keys.0.to_bytes(),
                 scrypto_encode(&encoded_node_keys).unwrap(),
             )
+        }
+
+        for (node_ids, record) in commit_bundle.new_substate_node_ancestry_records {
+            let encoded_record = scrypto_encode(&record).unwrap();
+            for node_id in node_ids {
+                batch.put_cf(
+                    self.cf_handle(&SubstateNodeAncestryRecords),
+                    node_id.0,
+                    &encoded_record,
+                );
+            }
         }
 
         batch.put_cf(
@@ -1093,12 +1090,7 @@ impl RocksDBStore {
         state_version: StateVersion,
         receipt: &LocalTransactionReceipt,
     ) {
-        for (address, _) in receipt
-            .local_execution
-            .state_update_summary
-            .balance_changes
-            .iter()
-        {
+        for (address, _) in receipt.local_execution.global_balance_changes.iter() {
             if !address.is_account() {
                 continue;
             }

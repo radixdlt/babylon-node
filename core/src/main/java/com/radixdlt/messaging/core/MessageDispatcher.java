@@ -64,14 +64,15 @@
 
 package com.radixdlt.messaging.core;
 
-import static com.radixdlt.messaging.core.MessagingErrors.IO_ERROR;
-import static com.radixdlt.messaging.core.MessagingErrors.MESSAGE_EXPIRED;
+import static com.radixdlt.messaging.core.MessagingErrors.*;
 
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.lang.Cause;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.Metrics.Messages.AbortedOutboundMessage;
+import com.radixdlt.monitoring.Metrics.Messages.OutboundMessageAbortedReason;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeerManager;
 import com.radixdlt.p2p.transport.PeerChannel;
@@ -106,19 +107,23 @@ class MessageDispatcher {
   private final LRUCache<NodeId, RejectionCountingRateLimiter> sendErrorLogRateLimitersByReceiver =
       new LRUCache<>(150);
 
+  private final int maxMessageSize;
+
   MessageDispatcher(
       Metrics metrics,
       MessageCentralConfiguration config,
       Serialization serialization,
       TimeSupplier timeSource,
       PeerManager peerManager,
-      Addressing addressing) {
+      Addressing addressing,
+      int maxMessageSize) {
     this.messageTtlMs = Objects.requireNonNull(config).messagingTimeToLive(30_000L);
     this.metrics = Objects.requireNonNull(metrics);
     this.serialization = Objects.requireNonNull(serialization);
     this.timeSource = Objects.requireNonNull(timeSource);
     this.peerManager = Objects.requireNonNull(peerManager);
     this.addressing = Objects.requireNonNull(addressing);
+    this.maxMessageSize = maxMessageSize;
   }
 
   CompletableFuture<Result<Unit, Cause>> send(final OutboundMessageEvent outboundMessage) {
@@ -126,16 +131,35 @@ class MessageDispatcher {
     final var receiver = outboundMessage.receiver();
 
     if (timeSource.currentTime() - message.getTimestamp() > messageTtlMs) {
-      this.metrics.messages().outbound().aborted().inc();
+      this.metrics
+          .messages()
+          .outbound()
+          .aborted()
+          .label(new AbortedOutboundMessage(OutboundMessageAbortedReason.MESSAGE_EXPIRED))
+          .inc();
       logTtlExpired(message, receiver);
       return CompletableFuture.completedFuture(MESSAGE_EXPIRED.result());
     }
 
-    final var bytes = serialize(message);
+    final var serializedMessageBytes = serialize(message);
+
+    if (serializedMessageBytes.length > maxMessageSize) {
+      this.metrics
+          .messages()
+          .outbound()
+          .aborted()
+          .label(new AbortedOutboundMessage(OutboundMessageAbortedReason.MESSAGE_TOO_LARGE))
+          .inc();
+      logSendError(
+          message,
+          receiver,
+          String.format("message too large (length exceeds %s bytes)", maxMessageSize));
+      return CompletableFuture.completedFuture(MESSAGE_TOO_LARGE.result());
+    }
 
     return peerManager
         .findOrCreateChannel(outboundMessage.receiver())
-        .thenApply(channel -> send(channel, bytes))
+        .thenApply(channel -> send(channel, serializedMessageBytes))
         .thenApply(this::updateStatistics)
         .thenApply(
             result -> {

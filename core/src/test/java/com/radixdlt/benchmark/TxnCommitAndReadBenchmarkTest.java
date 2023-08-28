@@ -111,6 +111,7 @@ public final class TxnCommitAndReadBenchmarkTest extends DeterministicCoreApiTes
             new CommitRequest(
                 createUniqueTransactions(NUM_TXNS_IN_A_COMMIT, i),
                 REv2ToConsensus.ledgerProof(proof),
+                Option.none(),
                 Option.none());
         stateComputer.commit(commitRequest);
         stateVersion = proof.getStateVersion();

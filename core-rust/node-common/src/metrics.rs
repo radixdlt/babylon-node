@@ -63,8 +63,9 @@
  */
 
 use prometheus::core::*;
+use prometheus::proto::{MetricFamily, MetricType};
 use prometheus::*;
-use radix_engine_common::types::ComponentAddress;
+use std::mem;
 
 /// A syntactic sugar trait allowing for an inline "create + register" metric definition.
 pub trait AtDefaultRegistryExt<R> {
@@ -215,18 +216,73 @@ impl<T: MetricLabel> MetricLabel for &T {
     }
 }
 
-impl MetricLabel for ComponentAddress {
-    type StringReturnType = String;
-
-    fn prometheus_label_name(&self) -> Self::StringReturnType {
-        self.to_hex()
-    }
-}
-
 impl MetricLabel for String {
     type StringReturnType = String;
 
     fn prometheus_label_name(&self) -> Self::StringReturnType {
         self.clone()
+    }
+}
+
+/// A classic, bounded, non-thread-safe ring-buffer.
+pub struct RingBuffer<T, const N: usize> {
+    array: [T; N],
+    head: usize,
+}
+
+impl<T: Copy, const N: usize> RingBuffer<T, N> {
+    /// Creates a buffer of length [`N`], pre-filled with copies of the given element.
+    pub fn new(initial_fill_element: T) -> Self {
+        if N == 0 {
+            panic!("ring-buffer behavior is undefined for 0 len");
+        }
+        Self {
+            array: [initial_fill_element; N],
+            head: 0,
+        }
+    }
+}
+
+impl<T, const N: usize> RingBuffer<T, N> {
+    /// Adds the given newest element to the buffer while removing and returning the oldest one.
+    pub fn put(&mut self, element: T) -> T {
+        let previous_head = self.head;
+        self.head = (previous_head + 1) % N;
+        mem::replace(&mut self.array[previous_head], element)
+    }
+}
+
+/// A [`Gauge`] counterpart which probes the value on `collect()`.
+pub struct GetterGauge<F> {
+    getter: F,
+    desc: Desc,
+}
+
+impl<F> GetterGauge<F> {
+    /// Creates a gauge with the given `Opts` and the getter function to probe for value.
+    pub fn new(getter: F, opts: Opts) -> Result<Self> {
+        Ok(Self {
+            getter,
+            desc: opts.describe()?,
+        })
+    }
+}
+
+impl<F: Fn() -> f64 + Send + Sync> Collector for GetterGauge<F> {
+    fn desc(&self) -> Vec<&Desc> {
+        vec![&self.desc]
+    }
+
+    fn collect(&self) -> Vec<MetricFamily> {
+        let mut gauge = proto::Gauge::default();
+        gauge.set_value((self.getter)());
+        let mut metric = proto::Metric::default();
+        metric.set_gauge(gauge);
+        let mut family = MetricFamily::default();
+        family.set_name(self.desc.fq_name.clone());
+        family.set_help(self.desc.help.clone());
+        family.set_field_type(MetricType::GAUGE);
+        family.set_metric(vec![metric]);
+        vec![family]
     }
 }

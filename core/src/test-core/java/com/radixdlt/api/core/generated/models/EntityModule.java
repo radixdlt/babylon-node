@@ -36,7 +36,9 @@ public enum EntityModule {
   
   ROYALTY("Royalty"),
   
-  MAIN("Main");
+  MAIN("Main"),
+  
+  SCHEMA("Schema");
 
   private String value;
 

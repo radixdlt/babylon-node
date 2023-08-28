@@ -66,66 +66,6 @@ package com.radixdlt.consensus;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.Round;
-import java.util.Objects;
 
-/** A vote made by another node */
-public final class PreviousVote {
-  private final Round round;
-  private final long epoch;
-  private final HashCode hash;
-  private final boolean isTimeout;
-
-  PreviousVote(Round round, long epoch, HashCode hash, boolean isTimeout) {
-    this.round = round;
-    this.epoch = epoch;
-    this.hash = hash;
-    this.isTimeout = isTimeout;
-  }
-
-  public boolean isTimeout() {
-    return isTimeout;
-  }
-
-  public Round getRound() {
-    return round;
-  }
-
-  public HashCode getHash() {
-    return hash;
-  }
-
-  public long getEpoch() {
-    return epoch;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(this.round, this.epoch, this.hash, this.isTimeout);
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    if (obj instanceof PreviousVote) {
-      PreviousVote that = (PreviousVote) obj;
-      return Objects.equals(this.round, that.round)
-          && Objects.equals(this.hash, that.hash)
-          && this.epoch == that.epoch
-          && this.isTimeout == that.isTimeout;
-    }
-    return false;
-  }
-
-  @Override
-  public String toString() {
-    return "PreviousVote{"
-        + "round="
-        + round
-        + ", epoch="
-        + epoch
-        + ", hash="
-        + hash
-        + ", isTimeout="
-        + isTimeout
-        + '}';
-  }
-}
+public record PreviousVote(
+    Round round, long epoch, HashCode hash, boolean isTimeout, BFTHeader proposedHeader) {}

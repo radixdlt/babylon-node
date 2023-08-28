@@ -6,7 +6,7 @@ use radix_engine_interface::network::NetworkDefinition;
 use std::ops::Range;
 
 use state_manager::transaction::ProcessedPreviewResult;
-use state_manager::{LocalTransactionReceipt, PreviewRequest};
+use state_manager::{ExecutionFeeData, LocalTransactionReceipt, PreviewRequest};
 use transaction::manifest;
 use transaction::manifest::BlobProvider;
 use transaction::model::{
@@ -108,11 +108,21 @@ fn to_api_response(
         &result.base_ledger_header,
     )?);
 
-    let response = match receipt.transaction_result {
+    let execution_fee_data = ExecutionFeeData {
+        fee_summary: receipt.fee_summary,
+        engine_costing_parameters: receipt.costing_parameters,
+        transaction_costing_parameters: receipt.transaction_costing_parameters,
+    };
+
+    let response = match receipt.result {
         TransactionResult::Commit(commit_result) => {
             let mut instruction_resource_changes = Vec::new();
 
-            for (index, resource_changes) in &commit_result.execution_trace.resource_changes {
+            let execution_trace = commit_result
+                .execution_trace
+                .as_ref()
+                .expect("preview should have been executed with execution trace enabled");
+            for (index, resource_changes) in &execution_trace.resource_changes {
                 let resource_changes: Vec<models::ResourceChange> = resource_changes
                     .iter()
                     .map(|v| {
@@ -150,8 +160,12 @@ fn to_api_response(
                 )
                 .collect();
 
-            let local_receipt =
-                LocalTransactionReceipt::from((commit_result, result.substate_changes));
+            let local_receipt = LocalTransactionReceipt::new(
+                commit_result,
+                result.substate_changes,
+                result.global_balance_changes,
+                execution_fee_data,
+            );
 
             models::TransactionPreviewResponse {
                 at_ledger_state,
@@ -166,7 +180,17 @@ fn to_api_response(
             encoded_receipt,
             receipt: Box::new(models::TransactionReceipt {
                 status: models::TransactionStatus::Rejected,
-                fee_summary: None,
+                fee_summary: Box::new(to_api_fee_summary(
+                    context,
+                    &execution_fee_data.fee_summary,
+                )?),
+                fee_source: None,
+                fee_destination: None,
+                costing_parameters: Box::new(to_api_costing_parameters(
+                    context,
+                    &execution_fee_data.engine_costing_parameters,
+                    &execution_fee_data.transaction_costing_parameters,
+                )?),
                 state_updates: Box::default(),
                 events: None,
                 output: None,

@@ -46,7 +46,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   ValidatorFieldStateValue.JSON_PROPERTY_VALIDATOR_FEE_CHANGE_REQUEST,
   ValidatorFieldStateValue.JSON_PROPERTY_STAKE_UNIT_RESOURCE_ADDRESS,
   ValidatorFieldStateValue.JSON_PROPERTY_STAKE_XRD_VAULT,
-  ValidatorFieldStateValue.JSON_PROPERTY_UNSTAKE_CLAIM_TOKEN_RESOURCE_ADDRESS,
+  ValidatorFieldStateValue.JSON_PROPERTY_CLAIM_TOKEN_RESOURCE_ADDRESS,
   ValidatorFieldStateValue.JSON_PROPERTY_PENDING_XRD_WITHDRAW_VAULT,
   ValidatorFieldStateValue.JSON_PROPERTY_LOCKED_OWNER_STAKE_UNIT_VAULT,
   ValidatorFieldStateValue.JSON_PROPERTY_PENDING_OWNER_STAKE_UNIT_UNLOCK_VAULT,
@@ -79,8 +79,8 @@ public class ValidatorFieldStateValue {
   public static final String JSON_PROPERTY_STAKE_XRD_VAULT = "stake_xrd_vault";
   private EntityReference stakeXrdVault;
 
-  public static final String JSON_PROPERTY_UNSTAKE_CLAIM_TOKEN_RESOURCE_ADDRESS = "unstake_claim_token_resource_address";
-  private String unstakeClaimTokenResourceAddress;
+  public static final String JSON_PROPERTY_CLAIM_TOKEN_RESOURCE_ADDRESS = "claim_token_resource_address";
+  private String claimTokenResourceAddress;
 
   public static final String JSON_PROPERTY_PENDING_XRD_WITHDRAW_VAULT = "pending_xrd_withdraw_vault";
   private EntityReference pendingXrdWithdrawVault;
@@ -210,11 +210,11 @@ public class ValidatorFieldStateValue {
   }
 
    /**
-   * A string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(256 - 1) &lt;&#x3D; m &lt; 2^(256 - 1)&#x60;. 
+   * A string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(192 - 1) &lt;&#x3D; m &lt; 2^(192 - 1)&#x60;. 
    * @return validatorFeeFactor
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "A string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. ")
+  @ApiModelProperty(required = true, value = "A string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. ")
   @JsonProperty(JSON_PROPERTY_VALIDATOR_FEE_FACTOR)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -308,29 +308,29 @@ public class ValidatorFieldStateValue {
   }
 
 
-  public ValidatorFieldStateValue unstakeClaimTokenResourceAddress(String unstakeClaimTokenResourceAddress) {
-    this.unstakeClaimTokenResourceAddress = unstakeClaimTokenResourceAddress;
+  public ValidatorFieldStateValue claimTokenResourceAddress(String claimTokenResourceAddress) {
+    this.claimTokenResourceAddress = claimTokenResourceAddress;
     return this;
   }
 
    /**
    * The Bech32m-encoded human readable version of the resource address
-   * @return unstakeClaimTokenResourceAddress
+   * @return claimTokenResourceAddress
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the resource address")
-  @JsonProperty(JSON_PROPERTY_UNSTAKE_CLAIM_TOKEN_RESOURCE_ADDRESS)
+  @JsonProperty(JSON_PROPERTY_CLAIM_TOKEN_RESOURCE_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getUnstakeClaimTokenResourceAddress() {
-    return unstakeClaimTokenResourceAddress;
+  public String getClaimTokenResourceAddress() {
+    return claimTokenResourceAddress;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_UNSTAKE_CLAIM_TOKEN_RESOURCE_ADDRESS)
+  @JsonProperty(JSON_PROPERTY_CLAIM_TOKEN_RESOURCE_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setUnstakeClaimTokenResourceAddress(String unstakeClaimTokenResourceAddress) {
-    this.unstakeClaimTokenResourceAddress = unstakeClaimTokenResourceAddress;
+  public void setClaimTokenResourceAddress(String claimTokenResourceAddress) {
+    this.claimTokenResourceAddress = claimTokenResourceAddress;
   }
 
 
@@ -449,11 +449,11 @@ public class ValidatorFieldStateValue {
   }
 
    /**
-   * A string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(256 - 1) &lt;&#x3D; m &lt; 2^(256 - 1)&#x60;. 
+   * A string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(192 - 1) &lt;&#x3D; m &lt; 2^(192 - 1)&#x60;. 
    * @return alreadyUnlockedOwnerStakeUnitAmount
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "A string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. ")
+  @ApiModelProperty(required = true, value = "A string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. ")
   @JsonProperty(JSON_PROPERTY_ALREADY_UNLOCKED_OWNER_STAKE_UNIT_AMOUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -489,7 +489,7 @@ public class ValidatorFieldStateValue {
         Objects.equals(this.validatorFeeChangeRequest, validatorFieldStateValue.validatorFeeChangeRequest) &&
         Objects.equals(this.stakeUnitResourceAddress, validatorFieldStateValue.stakeUnitResourceAddress) &&
         Objects.equals(this.stakeXrdVault, validatorFieldStateValue.stakeXrdVault) &&
-        Objects.equals(this.unstakeClaimTokenResourceAddress, validatorFieldStateValue.unstakeClaimTokenResourceAddress) &&
+        Objects.equals(this.claimTokenResourceAddress, validatorFieldStateValue.claimTokenResourceAddress) &&
         Objects.equals(this.pendingXrdWithdrawVault, validatorFieldStateValue.pendingXrdWithdrawVault) &&
         Objects.equals(this.lockedOwnerStakeUnitVault, validatorFieldStateValue.lockedOwnerStakeUnitVault) &&
         Objects.equals(this.pendingOwnerStakeUnitUnlockVault, validatorFieldStateValue.pendingOwnerStakeUnitUnlockVault) &&
@@ -499,7 +499,7 @@ public class ValidatorFieldStateValue {
 
   @Override
   public int hashCode() {
-    return Objects.hash(sortedKey, publicKey, isRegistered, acceptsDelegatedStake, validatorFeeFactor, validatorFeeChangeRequest, stakeUnitResourceAddress, stakeXrdVault, unstakeClaimTokenResourceAddress, pendingXrdWithdrawVault, lockedOwnerStakeUnitVault, pendingOwnerStakeUnitUnlockVault, pendingOwnerStakeUnitWithdrawals, alreadyUnlockedOwnerStakeUnitAmount);
+    return Objects.hash(sortedKey, publicKey, isRegistered, acceptsDelegatedStake, validatorFeeFactor, validatorFeeChangeRequest, stakeUnitResourceAddress, stakeXrdVault, claimTokenResourceAddress, pendingXrdWithdrawVault, lockedOwnerStakeUnitVault, pendingOwnerStakeUnitUnlockVault, pendingOwnerStakeUnitWithdrawals, alreadyUnlockedOwnerStakeUnitAmount);
   }
 
   @Override
@@ -514,7 +514,7 @@ public class ValidatorFieldStateValue {
     sb.append("    validatorFeeChangeRequest: ").append(toIndentedString(validatorFeeChangeRequest)).append("\n");
     sb.append("    stakeUnitResourceAddress: ").append(toIndentedString(stakeUnitResourceAddress)).append("\n");
     sb.append("    stakeXrdVault: ").append(toIndentedString(stakeXrdVault)).append("\n");
-    sb.append("    unstakeClaimTokenResourceAddress: ").append(toIndentedString(unstakeClaimTokenResourceAddress)).append("\n");
+    sb.append("    claimTokenResourceAddress: ").append(toIndentedString(claimTokenResourceAddress)).append("\n");
     sb.append("    pendingXrdWithdrawVault: ").append(toIndentedString(pendingXrdWithdrawVault)).append("\n");
     sb.append("    lockedOwnerStakeUnitVault: ").append(toIndentedString(lockedOwnerStakeUnitVault)).append("\n");
     sb.append("    pendingOwnerStakeUnitUnlockVault: ").append(toIndentedString(pendingOwnerStakeUnitUnlockVault)).append("\n");

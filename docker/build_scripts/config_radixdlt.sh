@@ -1,12 +1,8 @@
 #!/bin/bash
-
 set -ex
 
-# Need this to run on Alpine (grsec) kernels without crashing
-find /usr -type f -name java -exec setfattr -n user.pax.flags -v em {} \;
-
-# Sets USER_ID to LOCAL_USER_ID if provided, else set it to 999
-USER_ID=${LOCAL_USER_ID:-999}
+# Sets USER_ID to LOCAL_USER_ID if provided, else set it to 996
+USER_ID=${LOCAL_USER_ID:-996}
 USER_NAME=radixdlt
 
 # Check and delete the user that is created in postinstall action of deb package
@@ -21,9 +17,7 @@ if test -f "$TEST_CONFIGS"; then
     echo >> default.config.envsubst
     cat $TEST_CONFIGS >> default.config.envsubst
 fi
-
 env | sort
-
 envsubst <"${RADIXDLT_HOME:?}"/default.config.envsubst >"${RADIXDLT_HOME:?}"/default.config
 
 # This command changes the process from executing this script to executing the argument to the script,

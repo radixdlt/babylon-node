@@ -34,6 +34,25 @@ pub use type_info_module::*;
 use super::MappingError;
 use radix_engine_queries::typed_substate_layout::KeyValueEntrySubstate;
 
+macro_rules! assert_key_type {
+    (
+        $typed_key:ident,
+        $value_unpacking:pat $(=> {
+            $($mapping:stmt)+
+        })?
+    ) => {
+        paste::paste! {
+            let $value_unpacking = $typed_key else {
+                return Err(MappingError::MismatchedSubstateKeyType {
+                    expected_match: stringify!($value_unpacking).to_owned(),
+                    actual: format!("{:?}", $typed_key)
+                });
+            };
+        }
+    };
+}
+pub(crate) use assert_key_type;
+
 macro_rules! field_substate {
     (
         $substate:ident,
@@ -61,6 +80,35 @@ macro_rules! field_substate {
     };
 }
 pub(crate) use field_substate;
+
+macro_rules! field_substate_versioned {
+    (
+        $substate:ident,
+        $substate_type:ident,
+        $value_unpacking:pat $(=> {
+            $($mapping:stmt)+
+        })?,
+        Value $fields:tt$(,)?
+    ) => {
+        paste::paste! {
+            // The trailing semicolon after the $($($mapping)+)?; output is occasionally needed,
+            // eg if the mapping ends with a match statement. But otherwise it's reported as a
+            // redundant - so add this allow statement to allow us just to include it regardless.
+            #[allow(redundant_semicolons)]
+            models::Substate::[<$substate_type Substate>] {
+                is_locked: !$substate.is_mutable(),
+                value: {
+                    // NB: We should use compiler to unpack to ensure we map all fields
+                    let $value_unpacking = $substate.payload().as_latest_ref()
+                        .ok_or(MappingError::ObsoleteSubstateVersion)?;
+                    $($($mapping)+)?;
+                    Box::new(models::[<$substate_type Value>] $fields)
+                }
+            }
+        }
+    };
+}
+pub(crate) use field_substate_versioned;
 
 macro_rules! system_field_substate {
     (
@@ -133,6 +181,28 @@ macro_rules! key_value_store_mandatory_substate {
     };
 }
 pub(crate) use key_value_store_mandatory_substate;
+
+macro_rules! key_value_store_mandatory_substate_versioned {
+    (
+        $substate:ident,
+        $substate_type:ident,
+        $key:expr,
+        $value_unpacking:pat => $fields:tt$(,)?
+    ) => {
+        paste::paste! {
+            {
+                let $value_unpacking = &$substate.get_definitely_present_value()?.as_latest_ref()
+                    .ok_or(MappingError::ObsoleteSubstateVersion)?;
+                models::Substate::[<$substate_type Substate>] {
+                    is_locked: !$substate.is_mutable(),
+                    key: Box::new($key),
+                    value: Box::new(models::[<$substate_type Value>] $fields)
+                }
+            }
+        }
+    };
+}
+pub(crate) use key_value_store_mandatory_substate_versioned;
 
 macro_rules! index_substate {
     (

@@ -13,19 +13,6 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { EntityReference } from './EntityReference';
-import {
-    EntityReferenceFromJSON,
-    EntityReferenceFromJSONTyped,
-    EntityReferenceToJSON,
-} from './EntityReference';
-import type { ObjectModuleId } from './ObjectModuleId';
-import {
-    ObjectModuleIdFromJSON,
-    ObjectModuleIdFromJSONTyped,
-    ObjectModuleIdToJSON,
-} from './ObjectModuleId';
-
 /**
  * 
  * @export
@@ -39,19 +26,13 @@ export interface FunctionEventEmitterIdentifier {
      */
     type: FunctionEventEmitterIdentifierTypeEnum;
     /**
-     * 
-     * @type {EntityReference}
+     * The Bech32m-encoded human readable version of the package address
+     * @type {string}
      * @memberof FunctionEventEmitterIdentifier
      */
-    entity: EntityReference;
+    package_address: string;
     /**
-     * 
-     * @type {ObjectModuleId}
-     * @memberof FunctionEventEmitterIdentifier
-     */
-    object_module_id: ObjectModuleId;
-    /**
-     * Blueprint name.
+     * The blueprint under the package which emitted the event.
      * @type {string}
      * @memberof FunctionEventEmitterIdentifier
      */
@@ -74,8 +55,7 @@ export type FunctionEventEmitterIdentifierTypeEnum = typeof FunctionEventEmitter
 export function instanceOfFunctionEventEmitterIdentifier(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "type" in value;
-    isInstance = isInstance && "entity" in value;
-    isInstance = isInstance && "object_module_id" in value;
+    isInstance = isInstance && "package_address" in value;
     isInstance = isInstance && "blueprint_name" in value;
 
     return isInstance;
@@ -92,8 +72,7 @@ export function FunctionEventEmitterIdentifierFromJSONTyped(json: any, ignoreDis
     return {
         
         'type': json['type'],
-        'entity': EntityReferenceFromJSON(json['entity']),
-        'object_module_id': ObjectModuleIdFromJSON(json['object_module_id']),
+        'package_address': json['package_address'],
         'blueprint_name': json['blueprint_name'],
     };
 }
@@ -108,8 +87,7 @@ export function FunctionEventEmitterIdentifierToJSON(value?: FunctionEventEmitte
     return {
         
         'type': value.type,
-        'entity': EntityReferenceToJSON(value.entity),
-        'object_module_id': ObjectModuleIdToJSON(value.object_module_id),
+        'package_address': value.package_address,
         'blueprint_name': value.blueprint_name,
     };
 }

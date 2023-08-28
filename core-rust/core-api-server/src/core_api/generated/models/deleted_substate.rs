@@ -15,12 +15,18 @@
 pub struct DeletedSubstate {
     #[serde(rename = "substate_id")]
     pub substate_id: Box<crate::core_api::generated::models::SubstateId>,
+    #[serde(rename = "previous_value", skip_serializing_if = "Option::is_none")]
+    pub previous_value: Option<Box<crate::core_api::generated::models::SubstateValue>>,
+    #[serde(rename = "system_structure")]
+    pub system_structure: Option<crate::core_api::generated::models::SubstateSystemStructure>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
 impl DeletedSubstate {
-    pub fn new(substate_id: crate::core_api::generated::models::SubstateId) -> DeletedSubstate {
+    pub fn new(substate_id: crate::core_api::generated::models::SubstateId, system_structure: crate::core_api::generated::models::SubstateSystemStructure) -> DeletedSubstate {
         DeletedSubstate {
             substate_id: Box::new(substate_id),
+            previous_value: None,
+            system_structure: Option::Some(system_structure),
         }
     }
 }

@@ -18,23 +18,26 @@ pub struct BlueprintInfo {
     pub package_address: String,
     #[serde(rename = "blueprint_name")]
     pub blueprint_name: String,
+    #[serde(rename = "blueprint_version")]
+    pub blueprint_version: String,
     /// The Bech32m-encoded human readable version of any global address
     #[serde(rename = "outer_object", skip_serializing_if = "Option::is_none")]
     pub outer_object: Option<String>,
-    #[serde(rename = "instance_schema", skip_serializing_if = "Option::is_none")]
-    pub instance_schema: Option<Box<crate::core_api::generated::models::InstanceSchema>>,
     #[serde(rename = "features")]
     pub features: Vec<String>,
+    #[serde(rename = "generic_substitutions")]
+    pub generic_substitutions: Vec<crate::core_api::generated::models::TypeIdentifier>,
 }
 
 impl BlueprintInfo {
-    pub fn new(package_address: String, blueprint_name: String, features: Vec<String>) -> BlueprintInfo {
+    pub fn new(package_address: String, blueprint_name: String, blueprint_version: String, features: Vec<String>, generic_substitutions: Vec<crate::core_api::generated::models::TypeIdentifier>) -> BlueprintInfo {
         BlueprintInfo {
             package_address,
             blueprint_name,
+            blueprint_version,
             outer_object: None,
-            instance_schema: None,
             features,
+            generic_substitutions,
         }
     }
 }

@@ -138,7 +138,7 @@ export interface NetworkConfigurationResponseWellKnownAddresses {
      * @type {string}
      * @memberof NetworkConfigurationResponseWellKnownAddresses
      */
-    access_rules_package: string;
+    role_assignment_module_package: string;
     /**
      * 
      * @type {string}
@@ -151,6 +151,12 @@ export interface NetworkConfigurationResponseWellKnownAddresses {
      * @memberof NetworkConfigurationResponseWellKnownAddresses
      */
     faucet_package: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof NetworkConfigurationResponseWellKnownAddresses
+     */
+    pool_package: string;
     /**
      * 
      * @type {string}
@@ -195,9 +201,10 @@ export function instanceOfNetworkConfigurationResponseWellKnownAddresses(value: 
     isInstance = isInstance && "transaction_processor_package" in value;
     isInstance = isInstance && "metadata_module_package" in value;
     isInstance = isInstance && "royalty_module_package" in value;
-    isInstance = isInstance && "access_rules_package" in value;
+    isInstance = isInstance && "role_assignment_module_package" in value;
     isInstance = isInstance && "genesis_helper_package" in value;
     isInstance = isInstance && "faucet_package" in value;
+    isInstance = isInstance && "pool_package" in value;
     isInstance = isInstance && "consensus_manager" in value;
     isInstance = isInstance && "genesis_helper" in value;
     isInstance = isInstance && "faucet" in value;
@@ -234,9 +241,10 @@ export function NetworkConfigurationResponseWellKnownAddressesFromJSONTyped(json
         'transaction_processor_package': json['transaction_processor_package'],
         'metadata_module_package': json['metadata_module_package'],
         'royalty_module_package': json['royalty_module_package'],
-        'access_rules_package': json['access_rules_package'],
+        'role_assignment_module_package': json['role_assignment_module_package'],
         'genesis_helper_package': json['genesis_helper_package'],
         'faucet_package': json['faucet_package'],
+        'pool_package': json['pool_package'],
         'consensus_manager': json['consensus_manager'],
         'genesis_helper': json['genesis_helper'],
         'faucet': json['faucet'],
@@ -271,9 +279,10 @@ export function NetworkConfigurationResponseWellKnownAddressesToJSON(value?: Net
         'transaction_processor_package': value.transaction_processor_package,
         'metadata_module_package': value.metadata_module_package,
         'royalty_module_package': value.royalty_module_package,
-        'access_rules_package': value.access_rules_package,
+        'role_assignment_module_package': value.role_assignment_module_package,
         'genesis_helper_package': value.genesis_helper_package,
         'faucet_package': value.faucet_package,
+        'pool_package': value.pool_package,
         'consensus_manager': value.consensus_manager,
         'genesis_helper': value.genesis_helper,
         'faucet': value.faucet,

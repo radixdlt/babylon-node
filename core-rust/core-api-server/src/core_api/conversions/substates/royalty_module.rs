@@ -31,9 +31,12 @@ pub fn to_api_component_method_royalty_substate(
     typed_key: &TypedSubstateKey,
     substate: &ComponentMethodRoyaltySubstate,
 ) -> Result<models::Substate, MappingError> {
-    let TypedSubstateKey::RoyaltyModule(TypedRoyaltyModuleSubstateKey::RoyaltyMethodRoyaltyEntryKey(method_name)) = typed_key else {
-        return Err(MappingError::MismatchedSubstateKeyType { message: "RoyaltyMethodRoyaltyEntryKey".to_string() });
-    };
+    assert_key_type!(
+        typed_key,
+        TypedSubstateKey::RoyaltyModule(
+            TypedRoyaltyModuleSubstateKey::RoyaltyMethodRoyaltyEntryKey(method_name)
+        )
+    );
     Ok(key_value_store_optional_substate!(
         substate,
         RoyaltyModuleMethodRoyaltyEntry,

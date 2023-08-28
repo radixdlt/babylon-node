@@ -194,7 +194,7 @@ public final class ProposerTimestampInaccurateClockAndLeaderDownTest {
                 >= 1);
       } else if (node.equals(downNode)) {
         // The down node shouldn't process any consensus events
-        assertEquals(0, (long) counters.bft().successfullyProcessedVotes().get());
+        assertEquals(0, (long) counters.bft().successfullyProcessedVotes().getSum());
         assertEquals(0, (long) counters.bft().successfullyProcessedProposals().get());
       } else {
         // A healthy node:

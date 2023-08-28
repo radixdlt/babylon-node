@@ -78,7 +78,6 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import java.util.Comparator;
 import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.concurrent.Immutable;
@@ -140,21 +139,6 @@ public final class LedgerProof {
             ledgerTimestamp);
     return new LedgerProof(
         HashUtils.zero256(), genesisLedgerHeader, new TimestampedECDSASignatures());
-  }
-
-  public static final class OrderByEpochAndVersionComparator implements Comparator<LedgerProof> {
-    @Override
-    public int compare(LedgerProof p0, LedgerProof p1) {
-      if (p0.ledgerHeader.getEpoch() != p1.ledgerHeader.getEpoch()) {
-        return p0.ledgerHeader.getEpoch() > p1.ledgerHeader.getEpoch() ? 1 : -1;
-      }
-
-      if (p0.ledgerHeader.isEndOfEpoch() != p1.ledgerHeader.isEndOfEpoch()) {
-        return p0.ledgerHeader.isEndOfEpoch() ? 1 : -1;
-      }
-
-      return Long.compare(p0.ledgerHeader.getStateVersion(), p1.ledgerHeader.getStateVersion());
-    }
   }
 
   public static LedgerProof fromDto(DtoLedgerProof dto) {

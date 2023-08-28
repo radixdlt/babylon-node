@@ -80,7 +80,7 @@ public class Manifest {
     public String lockFeeLine(ComponentAddress address) {
       return String.format(
           """
-          CALL_METHOD Address("%s") "lock_fee" Decimal("100");""", encode(address));
+          CALL_METHOD Address("%s") "lock_fee" Decimal("1000");""", encode(address));
     }
 
     public String createProofOfValidatorOwnerBadge(
@@ -349,10 +349,10 @@ public class Manifest {
             params.encode(stakingAccount));
   }
 
-  public static Functions.Func1<Parameters, String> claimXrdFromUnstakeReceipt(
+  public static Functions.Func1<Parameters, String> claimXrdFromClaimResource(
       ComponentAddress stakingAccount,
       ComponentAddress validatorAddress,
-      ResourceAddress unstakeReceiptAddress) {
+      ResourceAddress claimResourceAddress) {
     return (params) ->
         String.format(
             """
@@ -365,8 +365,8 @@ public class Manifest {
             """,
             params.faucetLockFeeLine(),
             params.encode(stakingAccount),
-            params.encode(unstakeReceiptAddress),
-            params.encode(unstakeReceiptAddress),
+            params.encode(claimResourceAddress),
+            params.encode(claimResourceAddress),
             params.encode(validatorAddress),
             params.encode(XRD),
             params.encode(stakingAccount));

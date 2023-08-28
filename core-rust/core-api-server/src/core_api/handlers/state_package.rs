@@ -1,4 +1,5 @@
 use crate::core_api::*;
+use radix_engine::blueprints::package::PackageField;
 use radix_engine::types::*;
 use state_manager::store::traits::QueryableProofStore;
 use std::ops::Deref;
@@ -27,7 +28,7 @@ pub(crate) async fn handle_state_package(
     let package_royalty_accumulator = read_optional_main_field_substate(
         database.deref(),
         package_address.as_node_id(),
-        &PackageField::Royalty.into(),
+        &PackageField::RoyaltyAccumulator.into(),
     );
 
     let header = database

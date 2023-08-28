@@ -72,10 +72,7 @@ import com.google.inject.*;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.ConsensusByzantineEvent;
 import com.radixdlt.consensus.ProposalLimitsConfig;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorId;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.environment.DatabaseFlags;
@@ -103,10 +100,11 @@ import com.radixdlt.statecomputer.commit.ActiveValidatorInfo;
 import com.radixdlt.statecomputer.commit.LedgerHeader;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawNotarizedTransaction;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt192;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.Test;
 
 public class REv2StateComputerTest {
@@ -148,6 +146,10 @@ public class REv2StateComputerTest {
             bind(NodeId.class)
                 .annotatedWith(Self.class)
                 .toInstance(NodeId.fromPublicKey(ONLY_VALIDATOR_ID.getKey()));
+            bind(SelfValidatorInfo.class)
+                .toInstance(
+                    new SelfValidatorInfo(
+                        ONLY_VALIDATOR_ID.getKey(), Optional.of(ONLY_VALIDATOR_ID)));
             bind(FatalPanicHandler.class).toInstance(() -> {});
           }
 
@@ -156,7 +158,7 @@ public class REv2StateComputerTest {
             final ProposerElection proposerElection = round -> ONLY_VALIDATOR_ID;
             return new BFTConfiguration(
                 proposerElection,
-                BFTValidatorSet.from(List.of(BFTValidator.from(ONLY_VALIDATOR_ID, UInt256.ONE))),
+                BFTValidatorSet.from(List.of(BFTValidator.from(ONLY_VALIDATOR_ID, UInt192.ONE))),
                 mock(VertexStoreState.class));
           }
         });

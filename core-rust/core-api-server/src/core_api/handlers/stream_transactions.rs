@@ -34,9 +34,9 @@ pub(crate) async fn handle_stream_transactions(
         return Err(client_error("limit must be positive"));
     }
 
-    if limit > MAX_STREAM_COUNT_PER_REQUEST.into() {
+    if limit > MAX_BATCH_COUNT_PER_REQUEST.into() {
         return Err(client_error(format!(
-            "limit must <= {MAX_STREAM_COUNT_PER_REQUEST}"
+            "limit must <= {MAX_BATCH_COUNT_PER_REQUEST}"
         )));
     }
 
@@ -56,7 +56,7 @@ pub(crate) async fn handle_stream_transactions(
 
     let mut response = models::StreamTransactionsResponse {
         from_state_version: to_api_state_version(from_state_version)?,
-        count: MAX_STREAM_COUNT_PER_REQUEST as i32, // placeholder to get a better size aproximation for the header
+        count: MAX_BATCH_COUNT_PER_REQUEST as i32, // placeholder to get a better size aproximation for the header
         max_ledger_state_version: to_api_state_version(max_state_version)?,
         transactions: Vec::new(),
     };
@@ -93,14 +93,14 @@ pub(crate) async fn handle_stream_transactions(
 
         response.transactions.push(committed_transaction);
 
-        if current_total_size > CAP_STREAM_RESPONSE_WHEN_ABOVE_BYTES {
+        if current_total_size > CAP_BATCH_RESPONSE_WHEN_ABOVE_BYTES {
             break;
         }
     }
 
     let count: i32 = {
         let transaction_count = response.transactions.len();
-        if transaction_count > MAX_STREAM_COUNT_PER_REQUEST.into() {
+        if transaction_count > MAX_BATCH_COUNT_PER_REQUEST.into() {
             return Err(server_error("Too many transactions were loaded somehow"));
         }
         transaction_count
@@ -214,6 +214,7 @@ pub fn to_api_notarized_transaction(
 
     Ok(models::NotarizedTransaction {
         hash: to_api_notarized_transaction_hash(notarized_transaction_hash),
+        hash_bech32m: to_api_hash_bech32m(context, notarized_transaction_hash)?,
         payload_hex,
         signed_intent: Box::new(to_api_signed_intent(
             context,
@@ -234,6 +235,7 @@ pub fn to_api_signed_intent(
 ) -> Result<models::SignedTransactionIntent, MappingError> {
     Ok(models::SignedTransactionIntent {
         hash: to_api_signed_intent_hash(signed_intent_hash),
+        hash_bech32m: to_api_hash_bech32m(context, signed_intent_hash)?,
         intent: Box::new(to_api_intent(context, &signed_intent.intent, intent_hash)?),
         intent_signatures: signed_intent
             .intent_signatures
@@ -307,6 +309,7 @@ pub fn to_api_intent(
 
     Ok(models::TransactionIntent {
         hash: to_api_intent_hash(intent_hash),
+        hash_bech32m: to_api_hash_bech32m(context, intent_hash)?,
         header,
         instructions,
         blobs_hex,

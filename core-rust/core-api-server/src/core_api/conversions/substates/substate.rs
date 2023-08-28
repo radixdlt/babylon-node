@@ -33,11 +33,10 @@ pub fn to_api_substate(
             metadata_value_substate,
         )) => to_api_metadata_value_substate(context, typed_substate_key, metadata_value_substate)?,
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Package(
-            TypedPackageFieldValue::Royalty(package_royalty_accumulator_substate),
-        )) => to_api_package_royalty_accumulator_substate(
-            context,
-            package_royalty_accumulator_substate,
-        )?,
+            PackageTypedSubstateValue::Field(PackageTypedFieldSubstateValue::RoyaltyAccumulator(
+                substate,
+            )),
+        )) => to_api_package_royalty_accumulator_substate(context, substate)?,
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::FungibleResource(
             TypedFungibleResourceManagerFieldValue::Divisibility(
                 fungible_resource_manager_divisibility_substate,
@@ -157,41 +156,41 @@ pub fn to_api_substate(
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::MultiResourcePool(
             TypedMultiResourcePoolFieldValue::MultiResourcePool(substate),
         )) => to_api_multi_resource_pool_substate(context, substate)?,
-        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::PackageBlueprint(
-            substate,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Package(
+            PackageTypedSubstateValue::BlueprintVersionDefinitionKeyValue(substate),
         )) => to_api_package_blueprint_definition_entry(context, typed_substate_key, substate)?,
-        TypedSubstateValue::MainModule(
-            TypedMainModuleSubstateValue::PackageBlueprintDependencies(substate),
-        ) => to_api_package_blueprint_dependencies_entry(context, typed_substate_key, substate)?,
-        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::PackageSchema(substate)) => {
-            to_api_package_schema_entry(context, typed_substate_key, substate)?
-        }
-        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::PackageVmType(substate)) => {
-            to_api_package_code_vm_type_entry_substate(context, typed_substate_key, substate)?
-        }
-        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::PackageOriginalCode(
-            substate,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Package(
+            PackageTypedSubstateValue::BlueprintVersionDependenciesKeyValue(substate),
+        )) => to_api_package_blueprint_dependencies_entry(context, typed_substate_key, substate)?,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Package(
+            PackageTypedSubstateValue::CodeVmTypeKeyValue(substate),
+        )) => to_api_package_code_vm_type_entry_substate(context, typed_substate_key, substate)?,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Package(
+            PackageTypedSubstateValue::CodeOriginalCodeKeyValue(substate),
         )) => {
             to_api_package_code_original_code_entry_substate(context, typed_substate_key, substate)?
         }
-        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::PackageInstrumentedCode(
-            substate,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Package(
+            PackageTypedSubstateValue::CodeInstrumentedCodeKeyValue(substate),
         )) => to_api_package_code_instrumented_code_entry_substate(
             context,
             typed_substate_key,
             substate,
         )?,
-        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::PackageAuthTemplate(
-            substate,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Package(
+            PackageTypedSubstateValue::BlueprintVersionAuthConfigKeyValue(substate),
         )) => to_api_package_auth_template_entry(context, typed_substate_key, substate)?,
-        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::PackageRoyalty(substate)) => {
-            to_api_package_blueprint_royalty_entry(context, typed_substate_key, substate)?
-        }
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Package(
+            PackageTypedSubstateValue::BlueprintVersionRoyaltyConfigKeyValue(substate),
+        )) => to_api_package_blueprint_royalty_entry(context, typed_substate_key, substate)?,
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::TransactionTracker(
             TypedTransactionTrackerFieldValue::TransactionTracker(substate),
         )) => to_api_transaction_tracker_substate(context, substate)?,
         TypedSubstateValue::MainModule(
             TypedMainModuleSubstateValue::TransactionTrackerCollectionEntry(substate),
         ) => to_api_transaction_tracker_collection_entry(context, typed_substate_key, substate)?,
+        TypedSubstateValue::Schema(substate) => {
+            to_api_schema_entry_substate(context, typed_substate_key, substate)?
+        }
     })
 }

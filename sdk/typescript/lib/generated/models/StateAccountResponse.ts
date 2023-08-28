@@ -13,6 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { LedgerStateSummary } from './LedgerStateSummary';
+import {
+    LedgerStateSummaryFromJSON,
+    LedgerStateSummaryFromJSONTyped,
+    LedgerStateSummaryToJSON,
+} from './LedgerStateSummary';
 import type { Substate } from './Substate';
 import {
     SubstateFromJSON,
@@ -32,6 +38,12 @@ import {
  * @interface StateAccountResponse
  */
 export interface StateAccountResponse {
+    /**
+     * 
+     * @type {LedgerStateSummary}
+     * @memberof StateAccountResponse
+     */
+    at_ledger_state: LedgerStateSummary;
     /**
      * 
      * @type {Substate}
@@ -63,6 +75,7 @@ export interface StateAccountResponse {
  */
 export function instanceOfStateAccountResponse(value: object): boolean {
     let isInstance = true;
+    isInstance = isInstance && "at_ledger_state" in value;
     isInstance = isInstance && "info" in value;
     isInstance = isInstance && "owner_role" in value;
     isInstance = isInstance && "state" in value;
@@ -81,6 +94,7 @@ export function StateAccountResponseFromJSONTyped(json: any, ignoreDiscriminator
     }
     return {
         
+        'at_ledger_state': LedgerStateSummaryFromJSON(json['at_ledger_state']),
         'info': SubstateFromJSON(json['info']),
         'owner_role': SubstateFromJSON(json['owner_role']),
         'state': SubstateFromJSON(json['state']),
@@ -97,6 +111,7 @@ export function StateAccountResponseToJSON(value?: StateAccountResponse | null):
     }
     return {
         
+        'at_ledger_state': LedgerStateSummaryToJSON(value.at_ledger_state),
         'info': SubstateToJSON(value.info),
         'owner_role': SubstateToJSON(value.owner_role),
         'state': SubstateToJSON(value.state),

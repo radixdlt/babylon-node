@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.BlueprintCollectionSchema;
+import com.radixdlt.api.core.generated.models.PartitionDescription;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -33,13 +34,13 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @ApiModel(description = "The fields partition of the blueprint.")
 @JsonPropertyOrder({
-  BlueprintSchemaCollectionPartition.JSON_PROPERTY_PARTITION_OFFSET,
+  BlueprintSchemaCollectionPartition.JSON_PROPERTY_PARTITION_DESCRIPTION,
   BlueprintSchemaCollectionPartition.JSON_PROPERTY_COLLECTION_SCHEMA
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class BlueprintSchemaCollectionPartition {
-  public static final String JSON_PROPERTY_PARTITION_OFFSET = "partition_offset";
-  private Integer partitionOffset;
+  public static final String JSON_PROPERTY_PARTITION_DESCRIPTION = "partition_description";
+  private PartitionDescription partitionDescription;
 
   public static final String JSON_PROPERTY_COLLECTION_SCHEMA = "collection_schema";
   private BlueprintCollectionSchema collectionSchema;
@@ -47,31 +48,29 @@ public class BlueprintSchemaCollectionPartition {
   public BlueprintSchemaCollectionPartition() { 
   }
 
-  public BlueprintSchemaCollectionPartition partitionOffset(Integer partitionOffset) {
-    this.partitionOffset = partitionOffset;
+  public BlueprintSchemaCollectionPartition partitionDescription(PartitionDescription partitionDescription) {
+    this.partitionDescription = partitionDescription;
     return this;
   }
 
    /**
-   * The partition&#39;s offset from the Main module base (64)
-   * minimum: 0
-   * maximum: 191
-   * @return partitionOffset
+   * Get partitionDescription
+   * @return partitionDescription
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The partition's offset from the Main module base (64)")
-  @JsonProperty(JSON_PROPERTY_PARTITION_OFFSET)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_PARTITION_DESCRIPTION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Integer getPartitionOffset() {
-    return partitionOffset;
+  public PartitionDescription getPartitionDescription() {
+    return partitionDescription;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_PARTITION_OFFSET)
+  @JsonProperty(JSON_PROPERTY_PARTITION_DESCRIPTION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setPartitionOffset(Integer partitionOffset) {
-    this.partitionOffset = partitionOffset;
+  public void setPartitionDescription(PartitionDescription partitionDescription) {
+    this.partitionDescription = partitionDescription;
   }
 
 
@@ -113,20 +112,20 @@ public class BlueprintSchemaCollectionPartition {
       return false;
     }
     BlueprintSchemaCollectionPartition blueprintSchemaCollectionPartition = (BlueprintSchemaCollectionPartition) o;
-    return Objects.equals(this.partitionOffset, blueprintSchemaCollectionPartition.partitionOffset) &&
+    return Objects.equals(this.partitionDescription, blueprintSchemaCollectionPartition.partitionDescription) &&
         Objects.equals(this.collectionSchema, blueprintSchemaCollectionPartition.collectionSchema);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(partitionOffset, collectionSchema);
+    return Objects.hash(partitionDescription, collectionSchema);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class BlueprintSchemaCollectionPartition {\n");
-    sb.append("    partitionOffset: ").append(toIndentedString(partitionOffset)).append("\n");
+    sb.append("    partitionDescription: ").append(toIndentedString(partitionDescription)).append("\n");
     sb.append("    collectionSchema: ").append(toIndentedString(collectionSchema)).append("\n");
     sb.append("}");
     return sb.toString();

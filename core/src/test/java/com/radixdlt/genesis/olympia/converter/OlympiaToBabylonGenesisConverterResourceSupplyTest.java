@@ -135,7 +135,7 @@ public final class OlympiaToBabylonGenesisConverterResourceSupplyTest {
   }
 
   @Test
-  public void test_large_supply_exceeding_u256() {
+  public void test_large_supply_exceeding_u192() {
     final var addrBytes = new byte[27];
     random.nextBytes(addrBytes);
     addrBytes[0] = REAddr.REAddrType.HASHED_KEY.byteValue();
@@ -161,7 +161,7 @@ public final class OlympiaToBabylonGenesisConverterResourceSupplyTest {
             1L);
 
     final var config =
-        new OlympiaToBabylonConverterConfig(10, 10, 10, 10, 10, Decimal.from(UInt256.MAX_VALUE));
+        new OlympiaToBabylonConverterConfig(10, 10, 10, 10, 10, Decimal.from(UInt192.MAX_VALUE));
     final var converted = OlympiaStateToBabylonGenesisConverter.toGenesisData(olympiaState, config);
 
     final var resourcesChunk = (GenesisDataChunk.Resources) converted.chunks().get(0);
@@ -169,10 +169,10 @@ public final class OlympiaToBabylonGenesisConverterResourceSupplyTest {
     final var resourceBalancesChunk = (GenesisDataChunk.ResourceBalances) converted.chunks().get(1);
 
     assertEquals(
-        Decimal.from(UInt256.MAX_VALUE), getBabylonTotalSupplyNonXrd(converted, resourceAddress));
+        Decimal.from(UInt192.MAX_VALUE), getBabylonTotalSupplyNonXrd(converted, resourceAddress));
 
     assertEquals(
-        Decimal.from(UInt256.MAX_VALUE),
+        Decimal.from(UInt192.MAX_VALUE),
         resourceBalancesChunk.allocations().get(0).last().get(0).amount());
   }
 

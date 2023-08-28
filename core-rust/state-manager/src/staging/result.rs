@@ -68,30 +68,42 @@ use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, Writeab
 use crate::staging::epoch_handling::EpochAwareAccuTreeFactory;
 use crate::transaction::LedgerTransactionHash;
 use crate::{
-    ActiveValidatorInfo, ChangeAction, DetailedTransactionOutcome, EpochTransactionIdentifiers,
-    LedgerHashes, LocalTransactionReceipt, NextEpoch, ReceiptTreeHash, StateHash, StateVersion,
-    SubstateChange, TransactionTreeHash,
+    ActiveValidatorInfo, BySubstate, ChangeAction, DetailedTransactionOutcome,
+    EpochTransactionIdentifiers, LedgerHashes, LocalTransactionReceipt, NextEpoch, ReceiptTreeHash,
+    StateHash, StateVersion, TransactionTreeHash,
 };
 use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
 use radix_engine::transaction::{
-    AbortResult, CommitResult, RejectResult, TransactionReceipt, TransactionResult,
+    AbortResult, BalanceChange, CommitResult, CostingParameters, RejectResult,
+    TransactionFeeSummary, TransactionReceipt, TransactionResult,
 };
 use radix_engine_interface::prelude::*;
 
 use crate::staging::ReadableStore;
 
 use radix_engine::track::SystemUpdates;
+
+use crate::staging::node_ancestry_resolver::NodeAncestryResolver;
+use crate::staging::overlays::{MapSubstateNodeAncestryStore, StagedSubstateNodeAncestryStore};
+use crate::store::traits::{KeyedSubstateNodeAncestryRecord, SubstateNodeAncestryStore};
 use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
 use radix_engine_store_interface::interface::{DatabaseUpdate, DatabaseUpdates, SubstateDatabase};
 use radix_engine_stores::hash_tree::tree_store::{
     NodeKey, ReadableTreeStore, TreeNode, WriteableTreeStore,
 };
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
+use transaction::prelude::TransactionCostingParameters;
 
 pub enum ProcessedTransactionReceipt {
     Commit(ProcessedCommitResult),
-    Reject(RejectResult),
+    Reject(ProcessedRejectResult),
     Abort(AbortResult),
+}
+
+#[derive(Clone, Debug)]
+pub struct ProcessedRejectResult {
+    pub result: RejectResult,
+    pub fee_summary: TransactionFeeSummary,
 }
 
 #[derive(Clone, Debug)]
@@ -99,6 +111,7 @@ pub struct ProcessedCommitResult {
     pub local_receipt: LocalTransactionReceipt,
     pub hash_structures_diff: HashStructuresDiff,
     pub database_updates: DatabaseUpdates,
+    pub new_substate_node_ancestry_records: Vec<KeyedSubstateNodeAncestryRecord>,
 }
 
 pub struct HashUpdateContext<'s, S> {
@@ -108,16 +121,35 @@ pub struct HashUpdateContext<'s, S> {
     pub ledger_transaction_hash: &'s LedgerTransactionHash,
 }
 
+pub struct ExecutionFeeData {
+    pub fee_summary: TransactionFeeSummary,
+    pub engine_costing_parameters: CostingParameters,
+    pub transaction_costing_parameters: TransactionCostingParameters,
+}
+
 impl ProcessedTransactionReceipt {
     pub fn process<S: ReadableStore, D: DatabaseKeyMapper>(
         hash_update_context: HashUpdateContext<S>,
-        transaction_receipt: TransactionReceipt,
+        receipt: TransactionReceipt,
     ) -> Self {
-        match transaction_receipt.transaction_result {
-            TransactionResult::Commit(commit) => ProcessedTransactionReceipt::Commit(
-                ProcessedCommitResult::process::<_, D>(hash_update_context, commit),
-            ),
-            TransactionResult::Reject(reject) => ProcessedTransactionReceipt::Reject(reject),
+        match receipt.result {
+            TransactionResult::Commit(commit) => {
+                ProcessedTransactionReceipt::Commit(ProcessedCommitResult::process::<_, D>(
+                    hash_update_context,
+                    commit,
+                    ExecutionFeeData {
+                        fee_summary: receipt.fee_summary,
+                        engine_costing_parameters: receipt.costing_parameters,
+                        transaction_costing_parameters: receipt.transaction_costing_parameters,
+                    },
+                ))
+            }
+            TransactionResult::Reject(reject) => {
+                ProcessedTransactionReceipt::Reject(ProcessedRejectResult {
+                    result: reject,
+                    fee_summary: receipt.fee_summary,
+                })
+            }
             TransactionResult::Abort(abort) => ProcessedTransactionReceipt::Abort(abort),
         }
     }
@@ -137,7 +169,7 @@ impl ProcessedTransactionReceipt {
     pub fn expect_commit_or_reject(
         &self,
         description: &impl Display,
-    ) -> Result<&ProcessedCommitResult, RejectResult> {
+    ) -> Result<&ProcessedCommitResult, ProcessedRejectResult> {
         match self {
             ProcessedTransactionReceipt::Commit(commit) => Ok(commit),
             ProcessedTransactionReceipt::Reject(reject) => Err(reject.clone()),
@@ -160,6 +192,7 @@ impl ProcessedCommitResult {
     pub fn process<S: ReadableStore, D: DatabaseKeyMapper>(
         hash_update_context: HashUpdateContext<S>,
         commit_result: CommitResult,
+        execution_fee_data: ExecutionFeeData,
     ) -> Self {
         let epoch_identifiers = hash_update_context.epoch_transaction_identifiers;
         let parent_state_version = hash_update_context.parent_state_version;
@@ -172,6 +205,13 @@ impl ProcessedCommitResult {
             store,
             &commit_result.state_updates.system_updates,
         );
+
+        let balance_changes_update = Self::compute_global_balance_changes_update(
+            store,
+            &substate_changes,
+            &commit_result.state_update_summary.vault_balance_changes,
+        );
+
         let state_hash_tree_diff =
             Self::compute_state_tree_update(store, parent_state_version, &database_updates);
 
@@ -184,7 +224,12 @@ impl ProcessedCommitResult {
             vec![TransactionTreeHash::from(ledger_transaction_hash)],
         );
 
-        let local_receipt = LocalTransactionReceipt::from((commit_result, substate_changes));
+        let local_receipt = LocalTransactionReceipt::new(
+            commit_result,
+            substate_changes,
+            balance_changes_update.global_balance_changes,
+            execution_fee_data,
+        );
         let consensus_receipt = local_receipt.on_ledger.get_consensus_receipt();
 
         let receipt_tree_diff = epoch_accu_trees.compute_tree_diff(
@@ -208,6 +253,8 @@ impl ProcessedCommitResult {
                 receipt_tree_diff,
             },
             database_updates,
+            new_substate_node_ancestry_records: balance_changes_update
+                .new_substate_node_ancestry_records,
         }
     }
 
@@ -231,35 +278,66 @@ impl ProcessedCommitResult {
             .map(|next_epoch_result| NextEpoch::from(next_epoch_result.clone()))
     }
 
+    // TODO(after RCnet-v3): Extract the `pub fn`s below (re-used by preview) to an isolated helper.
+
+    pub fn compute_global_balance_changes_update<S: SubstateNodeAncestryStore>(
+        store: &S,
+        substate_changes: &BySubstate<ChangeAction>,
+        vault_balance_changes: &IndexMap<NodeId, (ResourceAddress, BalanceChange)>,
+    ) -> GlobalBalanceChangesUpdate {
+        // We need a fresh (!) view of a node ancestry store to group Vaults by their Global* roots.
+        let new_substate_node_ancestry_records =
+            NodeAncestryResolver::batch_resolve(store, substate_changes.iter()).collect::<Vec<_>>();
+
+        // Hence, we must prepare a "staged" ancestry store (with an overlay of the newest records).
+        let map = new_substate_node_ancestry_records
+            .iter()
+            .flat_map(|(node_ids, record)| {
+                node_ids.iter().map(|node_id| (*node_id, record.clone()))
+            })
+            .collect::<NonIterMap<_, _>>();
+        let overlay = MapSubstateNodeAncestryStore::wrap(&map);
+        let staged = StagedSubstateNodeAncestryStore::new(store, &overlay);
+
+        // Call the group-by logic and return the results together with the ancestry store update.
+        let global_balance_changes =
+            Self::compute_global_balance_changes(&staged, vault_balance_changes);
+        GlobalBalanceChangesUpdate {
+            global_balance_changes,
+            new_substate_node_ancestry_records,
+        }
+    }
+
     pub fn compute_substate_changes<S: SubstateDatabase, D: DatabaseKeyMapper>(
         store: &S,
         system_updates: &SystemUpdates,
-    ) -> Vec<SubstateChange> {
-        let mut substate_changes = Vec::new();
-        for ((node_id, module_id), node_module_updates) in system_updates {
-            for (substate_key, update) in node_module_updates {
-                let partition_key = D::to_db_partition_key(node_id, *module_id);
+    ) -> BySubstate<ChangeAction> {
+        let mut substate_changes = BySubstate::new();
+        for ((node_id, partition_num), substate_updates) in system_updates {
+            for (substate_key, update) in substate_updates {
+                let partition_key = D::to_db_partition_key(node_id, *partition_num);
                 let sort_key = D::to_db_sort_key(substate_key);
-                let change_action_opt = match update {
-                    DatabaseUpdate::Set(value) => {
-                        match store.get_substate(&partition_key, &sort_key) {
-                            Some(previous) if previous != *value => Some(ChangeAction::Update {
-                                new: value.clone(),
-                                previous,
-                            }),
-                            Some(_) => None, /* Same value as before, ignore */
-                            None => Some(ChangeAction::Create(value.clone())),
-                        }
+
+                let previous_opt = store.get_substate(&partition_key, &sort_key);
+                let change_action_opt = match (update, previous_opt) {
+                    (DatabaseUpdate::Set(new), Some(previous)) if previous != *new => {
+                        Some(ChangeAction::Update {
+                            new: new.clone(),
+                            previous,
+                        })
                     }
-                    DatabaseUpdate::Delete => Some(ChangeAction::Delete),
+                    (DatabaseUpdate::Set(_new), Some(_previous)) => None, // Same value as before (i.e. not really updated), ignore
+                    (DatabaseUpdate::Set(value), None) => {
+                        Some(ChangeAction::Create { new: value.clone() })
+                    }
+                    (DatabaseUpdate::Delete, Some(previous)) => {
+                        Some(ChangeAction::Delete { previous })
+                    }
+                    (DatabaseUpdate::Delete, None) => None, // No value before (i.e. not really deleted), ignore
                 };
+
                 if let Some(change_action) = change_action_opt {
-                    substate_changes.push(SubstateChange {
-                        node_id: *node_id,
-                        partition_number: *module_id,
-                        substate_key: substate_key.clone(),
-                        action: change_action,
-                    });
+                    substate_changes.add(node_id, partition_num, substate_key, change_action);
                 }
             }
         }
@@ -294,6 +372,30 @@ impl ProcessedCommitResult {
             hash_changes,
         );
         collector.into_diff_with(root_hash)
+    }
+
+    fn compute_global_balance_changes<S: SubstateNodeAncestryStore>(
+        store: &S,
+        vault_balance_changes: &IndexMap<NodeId, (ResourceAddress, BalanceChange)>,
+    ) -> IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>> {
+        let ancestries = store.batch_get_ancestry(vault_balance_changes.keys());
+        let mut global_balance_changes = index_map_new();
+        for (vault_entry, ancestry) in vault_balance_changes.iter().zip(ancestries) {
+            let (vault_id, (resource_address, balance_change)) = vault_entry;
+            let root = ancestry
+                .map(|ancestry| ancestry.root.0)
+                .unwrap_or_else(|| *vault_id);
+            let Ok(global_ancestor_address) = GlobalAddress::try_from(root) else {
+                panic!("root {:?} resolved for vault {:?} is not global", root, vault_id);
+            };
+            global_balance_changes
+                .entry(global_ancestor_address)
+                .or_insert_with(index_map_new::<ResourceAddress, BalanceChange>)
+                .entry(*resource_address)
+                .and_modify(|existing| *existing = existing.clone() + balance_change.clone())
+                .or_insert_with(|| balance_change.clone());
+        }
+        global_balance_changes
     }
 }
 
@@ -344,6 +446,12 @@ impl Default for StateHashTreeDiff {
     fn default() -> Self {
         Self::new()
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct GlobalBalanceChangesUpdate {
+    pub global_balance_changes: IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>>,
+    pub new_substate_node_ancestry_records: Vec<KeyedSubstateNodeAncestryRecord>,
 }
 
 #[derive(Clone, Debug)]

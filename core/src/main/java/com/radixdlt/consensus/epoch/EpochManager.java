@@ -76,6 +76,7 @@ import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.PacemakerStateFactory;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
+import com.radixdlt.consensus.safety.InitialSafetyStateProvider;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyState;
@@ -153,7 +154,7 @@ public final class EpochManager {
       HashVerifier hashVerifier,
       PacemakerTimeoutCalculator timeoutCalculator,
       PacemakerStateFactory pacemakerStateFactory,
-      SafetyState safetyState,
+      InitialSafetyStateProvider initialSafetyStateProvider,
       PersistentSafetyStateStore persistentSafetyStateStore) {
     this.ledgerStatusUpdateDispatcher = requireNonNull(ledgerStatusUpdateDispatcher);
     this.currentLedgerHeader = currentProof.getHeader();
@@ -173,10 +174,10 @@ public final class EpochManager {
     this.persistentSafetyStateStore = requireNonNull(persistentSafetyStateStore);
     this.queuedEvents = new HashMap<>();
 
-    this.updateEpochState(safetyState);
+    this.updateEpochState(initialSafetyStateProvider);
   }
 
-  private void updateEpochState(SafetyState safetyState) {
+  private void updateEpochState(InitialSafetyStateProvider initialSafetyStateProvider) {
     final var validatorSet = this.lastEpochChange.getBFTConfiguration().getValidatorSet();
 
     selfValidatorInfo
@@ -184,7 +185,9 @@ public final class EpochManager {
         .ifPresentOrElse(
             selfValidatorId -> {
               if (validatorSet.containsValidator(selfValidatorId)) {
-                configureAsActiveValidator(selfValidatorId, safetyState);
+                final var initialSafetyState =
+                    initialSafetyStateProvider.initialSafetyState(selfValidatorId);
+                configureAsActiveValidator(selfValidatorId, initialSafetyState);
               } else {
                 configureAsNonValidator();
               }
@@ -319,15 +322,12 @@ public final class EpochManager {
   }
 
   private void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
-    this.currentLedgerHeader = ledgerUpdate.getTail().getHeader();
+    this.currentLedgerHeader = ledgerUpdate.proof().getHeader();
 
-    var epochChange = ledgerUpdate.getStateComputerOutput().getInstance(EpochChange.class);
-
-    if (epochChange != null) {
-      this.processEpochChange(epochChange);
-    } else {
-      this.syncLedgerUpdateProcessor.process(ledgerUpdate);
-    }
+    ledgerUpdate
+        .epochChange()
+        .ifPresentOrElse(
+            this::processEpochChange, () -> this.syncLedgerUpdateProcessor.process(ledgerUpdate));
   }
 
   private void processEpochChange(EpochChange epochChange) {
@@ -354,7 +354,7 @@ public final class EpochManager {
     }
 
     this.lastEpochChange = epochChange;
-    this.updateEpochState(SafetyState.initialState());
+    this.updateEpochState(SafetyState::initialState);
     this.bftEventProcessor.start();
 
     // Execute any queued up consensus events

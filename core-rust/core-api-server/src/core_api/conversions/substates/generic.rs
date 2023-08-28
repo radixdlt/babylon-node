@@ -26,9 +26,10 @@ pub fn to_api_generic_key_value_store_substate(
     typed_key: &TypedSubstateKey,
     substate: &KeyValueEntrySubstate<ScryptoRawValue<'_>>,
 ) -> Result<models::Substate, MappingError> {
-    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::GenericKeyValueStoreKey(raw_key)) = typed_key else {
-        return Err(MappingError::MismatchedSubstateKeyType { message: "GenericKeyValueStoreKey".to_string() });
-    };
+    assert_key_type!(
+        typed_key,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::GenericKeyValueStoreKey(raw_key))
+    );
     let key_data_option = to_api_sbor_data_from_bytes(context, raw_key).ok();
     Ok(key_value_store_optional_substate!(
         substate,

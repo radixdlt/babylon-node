@@ -67,18 +67,13 @@ package com.radixdlt.environment;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.UInt64;
 
 public record VertexLimitsConfig(
     UInt32 maxTransactionCount,
-    UInt32 maxTotalTransactionsSize,
-    UInt32 maxTotalExecutionCostUnitsConsumed) {
-  // TODO(follow-up refactor): expose these (and other relevant) Rust constants to Java so we keep a
-  // single source of truth
-  // Values are copied from core-rust/node-common/src/config/limits.rs
-  public static final int DEFAULT_MAX_TRANSACTION_COUNT = 10;
-  public static final int DEFAULT_MAX_TOTAL_TRANSACTIONS_SIZE = (int) (3.8 * 1024 * 1024);
-  public static final int DEFAULT_MAX_TOTAL_EXECUTION_COST_UNITS_CONSUMED = 200_000_000;
-
+    UInt64 maxTotalTransactionsSize,
+    UInt32 maxTotalExecutionCostUnitsConsumed,
+    UInt32 maxTotalFinalizationCostUnitsConsumed) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         VertexLimitsConfig.class,
@@ -87,11 +82,13 @@ public record VertexLimitsConfig(
 
   public VertexLimitsConfig(
       int maxTransactionCount,
-      int maxTotalTransactionsSize,
-      int maxTotalExecutionCostUnitsConsumed) {
+      long maxTotalTransactionsSize,
+      int maxTotalExecutionCostUnitsConsumed,
+      int maxTotalFinalizationCostUnitsConsumed) {
     this(
         UInt32.fromNonNegativeInt(maxTransactionCount),
-        UInt32.fromNonNegativeInt(maxTotalTransactionsSize),
-        UInt32.fromNonNegativeInt(maxTotalExecutionCostUnitsConsumed));
+        UInt64.fromNonNegativeLong(maxTotalTransactionsSize),
+        UInt32.fromNonNegativeInt(maxTotalExecutionCostUnitsConsumed),
+        UInt32.fromNonNegativeInt(maxTotalFinalizationCostUnitsConsumed));
   }
 }
