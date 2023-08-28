@@ -19,12 +19,12 @@ import {
     TransactionIntentStatusFromJSONTyped,
     TransactionIntentStatusToJSON,
 } from './TransactionIntentStatus';
-import type { TransactionPayloadStatus } from './TransactionPayloadStatus';
+import type { TransactionPayloadDetails } from './TransactionPayloadDetails';
 import {
-    TransactionPayloadStatusFromJSON,
-    TransactionPayloadStatusFromJSONTyped,
-    TransactionPayloadStatusToJSON,
-} from './TransactionPayloadStatus';
+    TransactionPayloadDetailsFromJSON,
+    TransactionPayloadDetailsFromJSONTyped,
+    TransactionPayloadDetailsToJSON,
+} from './TransactionPayloadDetails';
 
 /**
  * 
@@ -53,10 +53,10 @@ export interface TransactionStatusResponse {
     invalid_from_epoch?: number;
     /**
      * 
-     * @type {Array<TransactionPayloadStatus>}
+     * @type {Array<TransactionPayloadDetails>}
      * @memberof TransactionStatusResponse
      */
-    known_payloads: Array<TransactionPayloadStatus>;
+    known_payloads: Array<TransactionPayloadDetails>;
 }
 
 /**
@@ -84,7 +84,7 @@ export function TransactionStatusResponseFromJSONTyped(json: any, ignoreDiscrimi
         'intent_status': TransactionIntentStatusFromJSON(json['intent_status']),
         'status_description': json['status_description'],
         'invalid_from_epoch': !exists(json, 'invalid_from_epoch') ? undefined : json['invalid_from_epoch'],
-        'known_payloads': ((json['known_payloads'] as Array<any>).map(TransactionPayloadStatusFromJSON)),
+        'known_payloads': ((json['known_payloads'] as Array<any>).map(TransactionPayloadDetailsFromJSON)),
     };
 }
 
@@ -100,7 +100,7 @@ export function TransactionStatusResponseToJSON(value?: TransactionStatusRespons
         'intent_status': TransactionIntentStatusToJSON(value.intent_status),
         'status_description': value.status_description,
         'invalid_from_epoch': value.invalid_from_epoch,
-        'known_payloads': ((value.known_payloads as Array<any>).map(TransactionPayloadStatusToJSON)),
+        'known_payloads': ((value.known_payloads as Array<any>).map(TransactionPayloadDetailsToJSON)),
     };
 }
 

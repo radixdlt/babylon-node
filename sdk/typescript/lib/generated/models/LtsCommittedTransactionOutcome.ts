@@ -91,7 +91,7 @@ export interface LtsCommittedTransactionOutcome {
     resultant_account_fungible_balances: Array<LtsResultantAccountFungibleBalances>;
     /**
      * The string-encoded decimal representing the total amount of XRD payed as fee (execution, validator tip and royalties).
-     * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+     * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
      * @type {string}
      * @memberof LtsCommittedTransactionOutcome
      */

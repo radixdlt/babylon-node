@@ -13,18 +13,18 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { BlueprintPayloadDef } from './BlueprintPayloadDef';
+import {
+    BlueprintPayloadDefFromJSON,
+    BlueprintPayloadDefFromJSONTyped,
+    BlueprintPayloadDefToJSON,
+} from './BlueprintPayloadDef';
 import type { FieldSchemaFeatureCondition } from './FieldSchemaFeatureCondition';
 import {
     FieldSchemaFeatureConditionFromJSON,
     FieldSchemaFeatureConditionFromJSONTyped,
     FieldSchemaFeatureConditionToJSON,
 } from './FieldSchemaFeatureCondition';
-import type { TypePointer } from './TypePointer';
-import {
-    TypePointerFromJSON,
-    TypePointerFromJSONTyped,
-    TypePointerToJSON,
-} from './TypePointer';
 
 /**
  * 
@@ -34,10 +34,10 @@ import {
 export interface FieldSchema {
     /**
      * 
-     * @type {TypePointer}
+     * @type {BlueprintPayloadDef}
      * @memberof FieldSchema
      */
-    field_type_pointer: TypePointer;
+    field_type_ref: BlueprintPayloadDef;
     /**
      * 
      * @type {FieldSchemaFeatureCondition}
@@ -51,7 +51,7 @@ export interface FieldSchema {
  */
 export function instanceOfFieldSchema(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "field_type_pointer" in value;
+    isInstance = isInstance && "field_type_ref" in value;
 
     return isInstance;
 }
@@ -66,7 +66,7 @@ export function FieldSchemaFromJSONTyped(json: any, ignoreDiscriminator: boolean
     }
     return {
         
-        'field_type_pointer': TypePointerFromJSON(json['field_type_pointer']),
+        'field_type_ref': BlueprintPayloadDefFromJSON(json['field_type_ref']),
         'condition': !exists(json, 'condition') ? undefined : FieldSchemaFeatureConditionFromJSON(json['condition']),
     };
 }
@@ -80,7 +80,7 @@ export function FieldSchemaToJSON(value?: FieldSchema | null): any {
     }
     return {
         
-        'field_type_pointer': TypePointerToJSON(value.field_type_pointer),
+        'field_type_ref': BlueprintPayloadDefToJSON(value.field_type_ref),
         'condition': FieldSchemaFeatureConditionToJSON(value.condition),
     };
 }

@@ -34,7 +34,7 @@ export interface ProposerReward {
     validator_index: ActiveValidatorIndex;
     /**
      * The string-encoded decimal representing the amount of reward in XRD.
-     * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+     * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
      * @type {string}
      * @memberof ProposerReward
      */

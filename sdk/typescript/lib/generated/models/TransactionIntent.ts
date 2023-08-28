@@ -41,6 +41,12 @@ export interface TransactionIntent {
      */
     hash: string;
     /**
+     * The Bech32m-encoded human readable `IntentHash`.
+     * @type {string}
+     * @memberof TransactionIntent
+     */
+    hash_bech32m: string;
+    /**
      * 
      * @type {TransactionHeader}
      * @memberof TransactionIntent
@@ -72,6 +78,7 @@ export interface TransactionIntent {
 export function instanceOfTransactionIntent(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "hash" in value;
+    isInstance = isInstance && "hash_bech32m" in value;
     isInstance = isInstance && "header" in value;
 
     return isInstance;
@@ -88,6 +95,7 @@ export function TransactionIntentFromJSONTyped(json: any, ignoreDiscriminator: b
     return {
         
         'hash': json['hash'],
+        'hash_bech32m': json['hash_bech32m'],
         'header': TransactionHeaderFromJSON(json['header']),
         'instructions': !exists(json, 'instructions') ? undefined : json['instructions'],
         'blobs_hex': !exists(json, 'blobs_hex') ? undefined : json['blobs_hex'],
@@ -105,6 +113,7 @@ export function TransactionIntentToJSON(value?: TransactionIntent | null): any {
     return {
         
         'hash': value.hash,
+        'hash_bech32m': value.hash_bech32m,
         'header': TransactionHeaderToJSON(value.header),
         'instructions': value.instructions,
         'blobs_hex': value.blobs_hex,

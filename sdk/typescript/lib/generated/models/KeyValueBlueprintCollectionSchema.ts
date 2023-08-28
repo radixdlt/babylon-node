@@ -13,12 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { TypePointer } from './TypePointer';
+import type { BlueprintPayloadDef } from './BlueprintPayloadDef';
 import {
-    TypePointerFromJSON,
-    TypePointerFromJSONTyped,
-    TypePointerToJSON,
-} from './TypePointer';
+    BlueprintPayloadDefFromJSON,
+    BlueprintPayloadDefFromJSONTyped,
+    BlueprintPayloadDefToJSON,
+} from './BlueprintPayloadDef';
 
 /**
  * 
@@ -34,22 +34,22 @@ export interface KeyValueBlueprintCollectionSchema {
     type: KeyValueBlueprintCollectionSchemaTypeEnum;
     /**
      * 
-     * @type {TypePointer}
+     * @type {BlueprintPayloadDef}
      * @memberof KeyValueBlueprintCollectionSchema
      */
-    key_type_pointer: TypePointer;
+    key_type_ref: BlueprintPayloadDef;
     /**
      * 
-     * @type {TypePointer}
+     * @type {BlueprintPayloadDef}
      * @memberof KeyValueBlueprintCollectionSchema
      */
-    value_type_pointer: TypePointer;
+    value_type_ref: BlueprintPayloadDef;
     /**
-     * Whether the entries of the key-value store are allowed to own child nodes.
+     * Whether the entries of the key-value partition are allowed to own child nodes.
      * @type {boolean}
      * @memberof KeyValueBlueprintCollectionSchema
      */
-    can_own: boolean;
+    allow_ownership: boolean;
 }
 
 
@@ -68,9 +68,9 @@ export type KeyValueBlueprintCollectionSchemaTypeEnum = typeof KeyValueBlueprint
 export function instanceOfKeyValueBlueprintCollectionSchema(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "type" in value;
-    isInstance = isInstance && "key_type_pointer" in value;
-    isInstance = isInstance && "value_type_pointer" in value;
-    isInstance = isInstance && "can_own" in value;
+    isInstance = isInstance && "key_type_ref" in value;
+    isInstance = isInstance && "value_type_ref" in value;
+    isInstance = isInstance && "allow_ownership" in value;
 
     return isInstance;
 }
@@ -86,9 +86,9 @@ export function KeyValueBlueprintCollectionSchemaFromJSONTyped(json: any, ignore
     return {
         
         'type': json['type'],
-        'key_type_pointer': TypePointerFromJSON(json['key_type_pointer']),
-        'value_type_pointer': TypePointerFromJSON(json['value_type_pointer']),
-        'can_own': json['can_own'],
+        'key_type_ref': BlueprintPayloadDefFromJSON(json['key_type_ref']),
+        'value_type_ref': BlueprintPayloadDefFromJSON(json['value_type_ref']),
+        'allow_ownership': json['allow_ownership'],
     };
 }
 
@@ -102,9 +102,9 @@ export function KeyValueBlueprintCollectionSchemaToJSON(value?: KeyValueBlueprin
     return {
         
         'type': value.type,
-        'key_type_pointer': TypePointerToJSON(value.key_type_pointer),
-        'value_type_pointer': TypePointerToJSON(value.value_type_pointer),
-        'can_own': value.can_own,
+        'key_type_ref': BlueprintPayloadDefToJSON(value.key_type_ref),
+        'value_type_ref': BlueprintPayloadDefToJSON(value.value_type_ref),
+        'allow_ownership': value.allow_ownership,
     };
 }
 

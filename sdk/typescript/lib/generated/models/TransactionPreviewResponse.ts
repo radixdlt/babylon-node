@@ -19,6 +19,12 @@ import {
     InstructionResourceChangesFromJSONTyped,
     InstructionResourceChangesToJSON,
 } from './InstructionResourceChanges';
+import type { LedgerStateSummary } from './LedgerStateSummary';
+import {
+    LedgerStateSummaryFromJSON,
+    LedgerStateSummaryFromJSONTyped,
+    LedgerStateSummaryToJSON,
+} from './LedgerStateSummary';
 import type { TransactionPreviewResponseLogsInner } from './TransactionPreviewResponseLogsInner';
 import {
     TransactionPreviewResponseLogsInnerFromJSON,
@@ -38,6 +44,12 @@ import {
  * @interface TransactionPreviewResponse
  */
 export interface TransactionPreviewResponse {
+    /**
+     * 
+     * @type {LedgerStateSummary}
+     * @memberof TransactionPreviewResponse
+     */
+    at_ledger_state: LedgerStateSummary;
     /**
      * The hex-sbor-encoded receipt
      * @type {string}
@@ -69,6 +81,7 @@ export interface TransactionPreviewResponse {
  */
 export function instanceOfTransactionPreviewResponse(value: object): boolean {
     let isInstance = true;
+    isInstance = isInstance && "at_ledger_state" in value;
     isInstance = isInstance && "encoded_receipt" in value;
     isInstance = isInstance && "receipt" in value;
     isInstance = isInstance && "instruction_resource_changes" in value;
@@ -87,6 +100,7 @@ export function TransactionPreviewResponseFromJSONTyped(json: any, ignoreDiscrim
     }
     return {
         
+        'at_ledger_state': LedgerStateSummaryFromJSON(json['at_ledger_state']),
         'encoded_receipt': json['encoded_receipt'],
         'receipt': TransactionReceiptFromJSON(json['receipt']),
         'instruction_resource_changes': ((json['instruction_resource_changes'] as Array<any>).map(InstructionResourceChangesFromJSON)),
@@ -103,6 +117,7 @@ export function TransactionPreviewResponseToJSON(value?: TransactionPreviewRespo
     }
     return {
         
+        'at_ledger_state': LedgerStateSummaryToJSON(value.at_ledger_state),
         'encoded_receipt': value.encoded_receipt,
         'receipt': TransactionReceiptToJSON(value.receipt),
         'instruction_resource_changes': ((value.instruction_resource_changes as Array<any>).map(InstructionResourceChangesToJSON)),

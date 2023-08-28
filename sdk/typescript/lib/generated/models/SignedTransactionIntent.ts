@@ -41,6 +41,12 @@ export interface SignedTransactionIntent {
      */
     hash: string;
     /**
+     * The Bech32m-encoded human readable `SignedIntentHash`.
+     * @type {string}
+     * @memberof SignedTransactionIntent
+     */
+    hash_bech32m: string;
+    /**
      * 
      * @type {TransactionIntent}
      * @memberof SignedTransactionIntent
@@ -60,6 +66,7 @@ export interface SignedTransactionIntent {
 export function instanceOfSignedTransactionIntent(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "hash" in value;
+    isInstance = isInstance && "hash_bech32m" in value;
     isInstance = isInstance && "intent" in value;
     isInstance = isInstance && "intent_signatures" in value;
 
@@ -77,6 +84,7 @@ export function SignedTransactionIntentFromJSONTyped(json: any, ignoreDiscrimina
     return {
         
         'hash': json['hash'],
+        'hash_bech32m': json['hash_bech32m'],
         'intent': TransactionIntentFromJSON(json['intent']),
         'intent_signatures': ((json['intent_signatures'] as Array<any>).map(SignatureWithPublicKeyFromJSON)),
     };
@@ -92,6 +100,7 @@ export function SignedTransactionIntentToJSON(value?: SignedTransactionIntent | 
     return {
         
         'hash': value.hash,
+        'hash_bech32m': value.hash_bech32m,
         'intent': TransactionIntentToJSON(value.intent),
         'intent_signatures': ((value.intent_signatures as Array<any>).map(SignatureWithPublicKeyToJSON)),
     };

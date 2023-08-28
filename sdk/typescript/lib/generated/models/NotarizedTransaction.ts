@@ -40,6 +40,12 @@ export interface NotarizedTransaction {
      */
     hash: string;
     /**
+     * The Bech32m-encoded human readable `NotarizedTransactionHash`.
+     * @type {string}
+     * @memberof NotarizedTransaction
+     */
+    hash_bech32m: string;
+    /**
      * The hex-encoded full notarized transaction payload. Returning this can be disabled in TransactionFormatOptions on your request (default true).
      * @type {string}
      * @memberof NotarizedTransaction
@@ -65,6 +71,7 @@ export interface NotarizedTransaction {
 export function instanceOfNotarizedTransaction(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "hash" in value;
+    isInstance = isInstance && "hash_bech32m" in value;
     isInstance = isInstance && "signed_intent" in value;
     isInstance = isInstance && "notary_signature" in value;
 
@@ -82,6 +89,7 @@ export function NotarizedTransactionFromJSONTyped(json: any, ignoreDiscriminator
     return {
         
         'hash': json['hash'],
+        'hash_bech32m': json['hash_bech32m'],
         'payload_hex': !exists(json, 'payload_hex') ? undefined : json['payload_hex'],
         'signed_intent': SignedTransactionIntentFromJSON(json['signed_intent']),
         'notary_signature': SignatureFromJSON(json['notary_signature']),
@@ -98,6 +106,7 @@ export function NotarizedTransactionToJSON(value?: NotarizedTransaction | null):
     return {
         
         'hash': value.hash,
+        'hash_bech32m': value.hash_bech32m,
         'payload_hex': value.payload_hex,
         'signed_intent': SignedTransactionIntentToJSON(value.signed_intent),
         'notary_signature': SignatureToJSON(value.notary_signature),

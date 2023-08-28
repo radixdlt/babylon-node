@@ -31,12 +31,12 @@ import {
     MethodAuthTypeFromJSONTyped,
     MethodAuthTypeToJSON,
 } from './MethodAuthType';
-import type { StaticRolesAuthTemplate } from './StaticRolesAuthTemplate';
+import type { StaticRoleDefinitionAuthTemplate } from './StaticRoleDefinitionAuthTemplate';
 import {
-    StaticRolesAuthTemplateFromJSON,
-    StaticRolesAuthTemplateFromJSONTyped,
-    StaticRolesAuthTemplateToJSON,
-} from './StaticRolesAuthTemplate';
+    StaticRoleDefinitionAuthTemplateFromJSON,
+    StaticRoleDefinitionAuthTemplateFromJSONTyped,
+    StaticRoleDefinitionAuthTemplateToJSON,
+} from './StaticRoleDefinitionAuthTemplate';
 
 /**
  * 
@@ -65,10 +65,10 @@ export interface AuthConfig {
     method_auth_type: MethodAuthType;
     /**
      * 
-     * @type {StaticRolesAuthTemplate}
+     * @type {StaticRoleDefinitionAuthTemplate}
      * @memberof AuthConfig
      */
-    method_roles?: StaticRolesAuthTemplate;
+    method_roles?: StaticRoleDefinitionAuthTemplate;
 }
 
 /**
@@ -95,7 +95,7 @@ export function AuthConfigFromJSONTyped(json: any, ignoreDiscriminator: boolean)
         'function_auth_type': FunctionAuthTypeFromJSON(json['function_auth_type']),
         'function_access_rules': !exists(json, 'function_access_rules') ? undefined : (mapValues(json['function_access_rules'], AccessRuleFromJSON)),
         'method_auth_type': MethodAuthTypeFromJSON(json['method_auth_type']),
-        'method_roles': !exists(json, 'method_roles') ? undefined : StaticRolesAuthTemplateFromJSON(json['method_roles']),
+        'method_roles': !exists(json, 'method_roles') ? undefined : StaticRoleDefinitionAuthTemplateFromJSON(json['method_roles']),
     };
 }
 
@@ -111,7 +111,7 @@ export function AuthConfigToJSON(value?: AuthConfig | null): any {
         'function_auth_type': FunctionAuthTypeToJSON(value.function_auth_type),
         'function_access_rules': value.function_access_rules === undefined ? undefined : (mapValues(value.function_access_rules, AccessRuleToJSON)),
         'method_auth_type': MethodAuthTypeToJSON(value.method_auth_type),
-        'method_roles': StaticRolesAuthTemplateToJSON(value.method_roles),
+        'method_roles': StaticRoleDefinitionAuthTemplateToJSON(value.method_roles),
     };
 }
 

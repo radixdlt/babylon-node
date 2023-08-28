@@ -19,14 +19,17 @@ pub struct UpdatedSubstate {
     pub new_value: Box<crate::core_api::generated::models::SubstateValue>,
     #[serde(rename = "previous_value", skip_serializing_if = "Option::is_none")]
     pub previous_value: Option<Box<crate::core_api::generated::models::SubstateValue>>,
+    #[serde(rename = "system_structure")]
+    pub system_structure: Option<crate::core_api::generated::models::SubstateSystemStructure>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
 impl UpdatedSubstate {
-    pub fn new(substate_id: crate::core_api::generated::models::SubstateId, new_value: crate::core_api::generated::models::SubstateValue) -> UpdatedSubstate {
+    pub fn new(substate_id: crate::core_api::generated::models::SubstateId, new_value: crate::core_api::generated::models::SubstateValue, system_structure: crate::core_api::generated::models::SubstateSystemStructure) -> UpdatedSubstate {
         UpdatedSubstate {
             substate_id: Box::new(substate_id),
             new_value: Box::new(new_value),
             previous_value: None,
+            system_structure: Option::Some(system_structure),
         }
     }
 }

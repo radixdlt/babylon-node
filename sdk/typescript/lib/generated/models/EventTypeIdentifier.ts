@@ -19,12 +19,12 @@ import {
     EventEmitterIdentifierFromJSONTyped,
     EventEmitterIdentifierToJSON,
 } from './EventEmitterIdentifier';
-import type { TypePointer } from './TypePointer';
+import type { PackageTypeReference } from './PackageTypeReference';
 import {
-    TypePointerFromJSON,
-    TypePointerFromJSONTyped,
-    TypePointerToJSON,
-} from './TypePointer';
+    PackageTypeReferenceFromJSON,
+    PackageTypeReferenceFromJSONTyped,
+    PackageTypeReferenceToJSON,
+} from './PackageTypeReference';
 
 /**
  * Identifier of a specific event schema.
@@ -40,10 +40,16 @@ export interface EventTypeIdentifier {
     emitter: EventEmitterIdentifier;
     /**
      * 
-     * @type {TypePointer}
+     * @type {PackageTypeReference}
      * @memberof EventTypeIdentifier
      */
-    type_pointer: TypePointer;
+    type_reference: PackageTypeReference;
+    /**
+     * 
+     * @type {string}
+     * @memberof EventTypeIdentifier
+     */
+    name: string;
 }
 
 /**
@@ -52,7 +58,8 @@ export interface EventTypeIdentifier {
 export function instanceOfEventTypeIdentifier(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "emitter" in value;
-    isInstance = isInstance && "type_pointer" in value;
+    isInstance = isInstance && "type_reference" in value;
+    isInstance = isInstance && "name" in value;
 
     return isInstance;
 }
@@ -68,7 +75,8 @@ export function EventTypeIdentifierFromJSONTyped(json: any, ignoreDiscriminator:
     return {
         
         'emitter': EventEmitterIdentifierFromJSON(json['emitter']),
-        'type_pointer': TypePointerFromJSON(json['type_pointer']),
+        'type_reference': PackageTypeReferenceFromJSON(json['type_reference']),
+        'name': json['name'],
     };
 }
 
@@ -82,7 +90,8 @@ export function EventTypeIdentifierToJSON(value?: EventTypeIdentifier | null): a
     return {
         
         'emitter': EventEmitterIdentifierToJSON(value.emitter),
-        'type_pointer': TypePointerToJSON(value.type_pointer),
+        'type_reference': PackageTypeReferenceToJSON(value.type_reference),
+        'name': value.name,
     };
 }
 
