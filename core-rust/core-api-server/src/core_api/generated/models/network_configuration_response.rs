@@ -24,6 +24,9 @@ pub struct NetworkConfigurationResponse {
     /// The network suffix used for Bech32m HRPs used for addressing.
     #[serde(rename = "network_hrp_suffix")]
     pub network_hrp_suffix: String,
+    /// The current value of the protocol-based USD/XRD multiplier (i.e. an amount of XRDs to be paid for 1 USD). A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. 
+    #[serde(rename = "usd_price_in_xrd")]
+    pub usd_price_in_xrd: String,
     #[serde(rename = "address_types")]
     pub address_types: Vec<crate::core_api::generated::models::AddressType>,
     #[serde(rename = "well_known_addresses")]
@@ -31,12 +34,13 @@ pub struct NetworkConfigurationResponse {
 }
 
 impl NetworkConfigurationResponse {
-    pub fn new(version: crate::core_api::generated::models::NetworkConfigurationResponseVersion, network: String, network_id: i32, network_hrp_suffix: String, address_types: Vec<crate::core_api::generated::models::AddressType>, well_known_addresses: crate::core_api::generated::models::NetworkConfigurationResponseWellKnownAddresses) -> NetworkConfigurationResponse {
+    pub fn new(version: crate::core_api::generated::models::NetworkConfigurationResponseVersion, network: String, network_id: i32, network_hrp_suffix: String, usd_price_in_xrd: String, address_types: Vec<crate::core_api::generated::models::AddressType>, well_known_addresses: crate::core_api::generated::models::NetworkConfigurationResponseWellKnownAddresses) -> NetworkConfigurationResponse {
         NetworkConfigurationResponse {
             version: Box::new(version),
             network,
             network_id,
             network_hrp_suffix,
+            usd_price_in_xrd,
             address_types,
             well_known_addresses: Box::new(well_known_addresses),
         }
