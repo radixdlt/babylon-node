@@ -322,6 +322,8 @@ public final class EpochManager {
   }
 
   private void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
+    log.info("E: bft ledger update");
+
     this.currentLedgerHeader = ledgerUpdate.proof().getHeader();
 
     ledgerUpdate
@@ -383,6 +385,8 @@ public final class EpochManager {
   }
 
   public void processConsensusEvent(ConsensusEvent consensusEvent) {
+    log.info("E: bft consenus event");
+
     if (consensusEvent.getEpoch() > this.currentEpoch()) {
       log.debug(
           "{}: CONSENSUS_EVENT: Received higher epoch event: {} current epoch: {}",
@@ -413,6 +417,8 @@ public final class EpochManager {
   }
 
   public void processLocalTimeout(Epoched<ScheduledLocalTimeout> localTimeout) {
+    log.info("E: bft local timeout");
+
     if (localTimeout.epoch() != this.currentEpoch()) {
       return;
     }
@@ -422,6 +428,8 @@ public final class EpochManager {
 
   public void processTimeoutQuorumDelayedResolution(
       Epoched<TimeoutQuorumDelayedResolution> timeoutQuorumDelayedResolution) {
+    log.info("E: bft timeoud quorum delayed");
+
     if (timeoutQuorumDelayedResolution.epoch() != this.currentEpoch()) {
       return;
     }
@@ -431,6 +439,7 @@ public final class EpochManager {
 
   public EventProcessor<EpochRoundUpdate> epochRoundUpdateEventProcessor() {
     return epochRoundUpdate -> {
+      log.info("E: epoch round update");
       if (epochRoundUpdate.getEpoch() != this.currentEpoch()) {
         return;
       }
@@ -442,6 +451,8 @@ public final class EpochManager {
 
   public EventProcessor<EpochProposalRejected> epochProposalRejectedEventProcessor() {
     return epochProposalRejected -> {
+      log.info("E: epoch prop rejected update");
+
       if (epochProposalRejected.epoch() != this.currentEpoch()) {
         return;
       }
@@ -450,11 +461,15 @@ public final class EpochManager {
   }
 
   public void processBFTUpdate(BFTInsertUpdate update) {
+    log.info("E: bft update");
+
     bftUpdateProcessors.forEach(p -> p.process(update));
   }
 
   public EventProcessor<BFTRebuildUpdate> bftRebuildUpdateEventProcessor() {
     return update -> {
+      log.info("E: bft revbuild");
+
       if (update
               .getVertexStoreState()
               .getRoot()
@@ -472,6 +487,8 @@ public final class EpochManager {
 
   public RemoteEventProcessor<NodeId, GetVerticesRequest> bftSyncRequestProcessor() {
     return (nodeId, request) -> {
+      log.info("E: bft sync req");
+
       if (this.validatorNodeIds.contains(nodeId)) {
         syncRequestProcessors.forEach(p -> p.process(nodeId, request));
       }
@@ -480,6 +497,8 @@ public final class EpochManager {
 
   public RemoteEventProcessor<NodeId, GetVerticesResponse> bftSyncResponseProcessor() {
     return (nodeId, resp) -> {
+      log.info("E: bft sync resp");
+
       if (this.validatorNodeIds.contains(nodeId)) {
         syncResponseProcessors.forEach(p -> p.process(nodeId, resp));
       }
@@ -488,6 +507,8 @@ public final class EpochManager {
 
   public RemoteEventProcessor<NodeId, GetVerticesErrorResponse> bftSyncErrorResponseProcessor() {
     return (nodeId, err) -> {
+      log.info("E: bft sync err");
+
       if (log.isDebugEnabled()) {
         log.debug("SYNC_ERROR: Received GetVerticesErrorResponse {}", err);
       }
@@ -520,6 +541,8 @@ public final class EpochManager {
   }
 
   public EventProcessor<VertexRequestTimeout> timeoutEventProcessor() {
+    log.info("E: vertex req timeout");
+
     // Return reference to method rather than syncTimeoutProcessor directly,
     // since syncTimeoutProcessor will change over the time
     return this::processGetVerticesLocalTimeout;
