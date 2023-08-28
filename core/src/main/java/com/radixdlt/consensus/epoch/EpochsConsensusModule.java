@@ -119,10 +119,11 @@ public class EpochsConsensusModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  private StartProcessorOnRunner startProcessor(EpochManager epochManager2) {
-    return new StartProcessorOnRunner(Runners.CONSENSUS, epochManager2::start);
+  private StartProcessorOnRunner startProcessor(EpochManager epochManager3) {
+    return new StartProcessorOnRunner(Runners.CONSENSUS, epochManager3::start);
   }
 
+  /*
   @ProvidesIntoSet
   private EventProcessorOnRunner<?> localVoteProcessor(EpochManager epochManager) {
     return new EventProcessorOnRunner<>(
@@ -134,6 +135,7 @@ public class EpochsConsensusModule extends AbstractModule {
     return new EventProcessorOnRunner<>(
         Runners.CONSENSUS, Proposal.class, epochManager::processConsensusEvent);
   }
+   */
 
   @ProvidesIntoSet
   private EventProcessorOnRunner<?> epochTimeoutProcessor(EpochManager epochManager) {
@@ -143,6 +145,7 @@ public class EpochsConsensusModule extends AbstractModule {
         epochManager::processLocalTimeout);
   }
 
+  /*
   @ProvidesIntoSet
   private EventProcessorOnRunner<?> timeoutQuorumDelayedResolutionProcessor(
       EpochManager epochManager) {
@@ -207,6 +210,7 @@ public class EpochsConsensusModule extends AbstractModule {
         Proposal.class,
         (node, proposal) -> epochManager.processConsensusEvent(proposal));
   }
+   */
 
   @ProvidesIntoSet
   private RemoteEventProcessorOnRunner<?, ?> getVerticesRequestRemoteEventProcessor(
