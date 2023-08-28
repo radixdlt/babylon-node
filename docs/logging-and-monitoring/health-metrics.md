@@ -3,10 +3,30 @@
 This document focuses only on health-related Prometheus metrics: discusses their meaning in detail,
 and suggests some potential "Node status dashboard" ideas.
 
+## Overall health factor
+
+The Node naturally publishes a few lower-level health metrics (typically: directly reflecting some
+piece of internal state). However, it is useful to also have a single, high-level, scalar value that
+captures the overall "healthiness":
+
+`rn_ledger_overall_health_factor`
+: A proper fraction representing an overall local ledger health (with `0.0` meaning "critically
+  unhealthy" and `1.0` meaning "perfectly healthy" - intermediate fractions denote appropriate level
+  of "warning").
+
+The number described above is in practice a heuristic based on the lower-level "syncing rate" and
+"proposal reliability" metrics. It can be summarized as:
+- the "syncing rate" is healthy when:
+  - either this Node's ledger proposer timestamp is close enough to the wallclock,
+  - or the ledger-sync process is progressing considerably faster than the realtime.
+- the "proposal reliability" is healthy when:
+  - either this Node is currently not in active validator set,
+  - or the consensus agrees that this Node has no missed proposals in recent history. 
+
 ## Health's components
 
-There is no single scalar value that would fully capture the concept of Node's "health". We can
-consider the following aspects:
+Below we discuss the details of the lower-level health metrics (including the ones used for overall
+health factor computation), grouped into the following aspects:
 
 ### Application's lifecycle status
 
