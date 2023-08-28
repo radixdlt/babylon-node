@@ -25,6 +25,7 @@ pub(crate) async fn handle_status_network_configuration(
         network: network.logical_name,
         network_id: to_api_u8_as_i32(network.id),
         network_hrp_suffix: network.hrp_suffix,
+        usd_price_in_xrd: to_api_decimal(&Decimal::try_from(USD_PRICE_IN_XRD).unwrap()),
         address_types,
         well_known_addresses: Box::new(models::NetworkConfigurationResponseWellKnownAddresses {
             xrd: bech32_encoder.encode(XRD.as_ref()).unwrap(),

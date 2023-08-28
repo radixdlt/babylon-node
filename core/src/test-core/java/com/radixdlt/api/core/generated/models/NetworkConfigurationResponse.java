@@ -40,6 +40,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   NetworkConfigurationResponse.JSON_PROPERTY_NETWORK,
   NetworkConfigurationResponse.JSON_PROPERTY_NETWORK_ID,
   NetworkConfigurationResponse.JSON_PROPERTY_NETWORK_HRP_SUFFIX,
+  NetworkConfigurationResponse.JSON_PROPERTY_USD_PRICE_IN_XRD,
   NetworkConfigurationResponse.JSON_PROPERTY_ADDRESS_TYPES,
   NetworkConfigurationResponse.JSON_PROPERTY_WELL_KNOWN_ADDRESSES
 })
@@ -56,6 +57,9 @@ public class NetworkConfigurationResponse {
 
   public static final String JSON_PROPERTY_NETWORK_HRP_SUFFIX = "network_hrp_suffix";
   private String networkHrpSuffix;
+
+  public static final String JSON_PROPERTY_USD_PRICE_IN_XRD = "usd_price_in_xrd";
+  private String usdPriceInXrd;
 
   public static final String JSON_PROPERTY_ADDRESS_TYPES = "address_types";
   private List<AddressType> addressTypes = new ArrayList<>();
@@ -172,6 +176,32 @@ public class NetworkConfigurationResponse {
   }
 
 
+  public NetworkConfigurationResponse usdPriceInXrd(String usdPriceInXrd) {
+    this.usdPriceInXrd = usdPriceInXrd;
+    return this;
+  }
+
+   /**
+   * The current value of the protocol-based USD/XRD multiplier (i.e. an amount of XRDs to be paid for 1 USD). A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(192 - 1) &lt;&#x3D; m &lt; 2^(192 - 1)&#x60;. 
+   * @return usdPriceInXrd
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The current value of the protocol-based USD/XRD multiplier (i.e. an amount of XRDs to be paid for 1 USD). A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. ")
+  @JsonProperty(JSON_PROPERTY_USD_PRICE_IN_XRD)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getUsdPriceInXrd() {
+    return usdPriceInXrd;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_USD_PRICE_IN_XRD)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setUsdPriceInXrd(String usdPriceInXrd) {
+    this.usdPriceInXrd = usdPriceInXrd;
+  }
+
+
   public NetworkConfigurationResponse addressTypes(List<AddressType> addressTypes) {
     this.addressTypes = addressTypes;
     return this;
@@ -245,13 +275,14 @@ public class NetworkConfigurationResponse {
         Objects.equals(this.network, networkConfigurationResponse.network) &&
         Objects.equals(this.networkId, networkConfigurationResponse.networkId) &&
         Objects.equals(this.networkHrpSuffix, networkConfigurationResponse.networkHrpSuffix) &&
+        Objects.equals(this.usdPriceInXrd, networkConfigurationResponse.usdPriceInXrd) &&
         Objects.equals(this.addressTypes, networkConfigurationResponse.addressTypes) &&
         Objects.equals(this.wellKnownAddresses, networkConfigurationResponse.wellKnownAddresses);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(version, network, networkId, networkHrpSuffix, addressTypes, wellKnownAddresses);
+    return Objects.hash(version, network, networkId, networkHrpSuffix, usdPriceInXrd, addressTypes, wellKnownAddresses);
   }
 
   @Override
@@ -262,6 +293,7 @@ public class NetworkConfigurationResponse {
     sb.append("    network: ").append(toIndentedString(network)).append("\n");
     sb.append("    networkId: ").append(toIndentedString(networkId)).append("\n");
     sb.append("    networkHrpSuffix: ").append(toIndentedString(networkHrpSuffix)).append("\n");
+    sb.append("    usdPriceInXrd: ").append(toIndentedString(usdPriceInXrd)).append("\n");
     sb.append("    addressTypes: ").append(toIndentedString(addressTypes)).append("\n");
     sb.append("    wellKnownAddresses: ").append(toIndentedString(wellKnownAddresses)).append("\n");
     sb.append("}");
