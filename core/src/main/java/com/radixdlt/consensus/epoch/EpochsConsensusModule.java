@@ -119,8 +119,8 @@ public class EpochsConsensusModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  private StartProcessorOnRunner startProcessor(EpochManager epochManager) {
-    return new StartProcessorOnRunner(Runners.CONSENSUS, epochManager::start);
+  private StartProcessorOnRunner startProcessor(EpochManager epochManager2) {
+    return new StartProcessorOnRunner(Runners.CONSENSUS, epochManager2::start);
   }
 
   @ProvidesIntoSet
