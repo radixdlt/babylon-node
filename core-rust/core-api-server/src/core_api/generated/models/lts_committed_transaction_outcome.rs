@@ -23,7 +23,7 @@ pub struct LtsCommittedTransactionOutcome {
     pub user_transaction_identifiers: Option<Box<crate::core_api::generated::models::TransactionIdentifiers>>,
     #[serde(rename = "status")]
     pub status: crate::core_api::generated::models::LtsCommittedTransactionStatus,
-    /// THE FEE ASSIGNMENT IS NOT CURRENTLY FULLY ACCURATE FOR SOME TRANSACTIONS. THIS WILL BE FIXED AT RCNET-V2. A list of all fungible balance updates which occurred in this transaction, aggregated by the global entity (such as account) which owns the vaults which were updated. 
+    /// A list of all fungible balance updates which occurred in this transaction, aggregated by the global entity (such as account) which owns the vaults which were updated. 
     #[serde(rename = "fungible_entity_balance_changes")]
     pub fungible_entity_balance_changes: Vec<crate::core_api::generated::models::LtsEntityFungibleBalanceChanges>,
     /// THIS CURRENTLY RETURNS AN EMPTY LIST. THIS FEATURE WILL BE COMING AT RCNET-V2. A list of the resultant balances of any account balances changed in this transaction. Only balances for accounts are returned, not any other kind of entity. 

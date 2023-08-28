@@ -64,36 +64,26 @@
 
 package com.radixdlt.genesis.olympia.converter;
 
-import static com.radixdlt.genesis.olympia.converter.GenesisDataChunkUtils.createChunks;
-import static com.radixdlt.lang.Tuple.tuple;
-
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
-import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.genesis.GenesisDataChunk;
-import com.radixdlt.genesis.GenesisValidator;
-import com.radixdlt.genesis.olympia.state.OlympiaStateIR;
-import com.radixdlt.identifiers.Address;
-import com.radixdlt.lang.Tuple.Tuple2;
-import com.radixdlt.rev2.Decimal;
-import com.radixdlt.rev2.MetadataValue;
-import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public final class OlympiaValidatorsConverter {
+/**
+ * A URL validator enforcing the rules used by the Engine, as captured from <a
+ * href="https://github.com/radixdlt/radixdlt-scrypto/blob/rcnet-v3-a74271b8/radix-engine-interface/src/api/node_modules/metadata/models/url.rs">
+ * rcnet-v3-a74271b8</a>.
+ *
+ * <p>We can only propagate URL metadata items which satisfy the Engine's rules, since an invalid
+ * URL would cause a transaction to fail.
+ */
+public final class EngineUrlPredicate implements Predicate<String> {
 
-  /**
-   * A URL string validator based on {@code URL_REGEX} used by the Engine, captured at <a
-   * href="https://github.com/radixdlt/radixdlt-scrypto/blob/rcnet-v3-a74271b8/radix-engine-interface/src/api/node_modules/metadata/models/url.rs">
-   * rcnet-v3-a74271b8</a>.
-   *
-   * <p>We will only propagate URL metadata items which satisfy this regex, since an invalid URL
-   * would cause transaction to fail.
-   */
-  private static final Predicate<String> VALID_ENGINE_URL =
+  /** A {@code MAX_URL_LENGTH} value used by the Engine. */
+  private static final int MAX_URL_LENGTH = 1024;
+
+  /** A predicate based on {@code URL_REGEX} used by the Engine. */
+  private static final Predicate<String> ENGINE_URL_PREDICATE =
       Pattern.compile(
               Stream.of(
                       // 1. Start
@@ -136,39 +126,8 @@ public final class OlympiaValidatorsConverter {
                   .collect(Collectors.joining()))
           .asMatchPredicate();
 
-  public static ImmutableList<GenesisDataChunk.Validators> prepareValidatorsChunks(
-      OlympiaToBabylonConverterConfig config,
-      ImmutableList<OlympiaStateIR.Account> accounts,
-      ImmutableList<OlympiaStateIR.Validator> validators) {
-    return createChunks(
-        validators,
-        config.maxValidatorsPerChunk(),
-        (idx, olympiaValidator) -> Optional.of(convertValidator(accounts, olympiaValidator)),
-        GenesisDataChunk.Validators::new);
-  }
-
-  private static GenesisValidator convertValidator(
-      ImmutableList<OlympiaStateIR.Account> accounts, OlympiaStateIR.Validator olympiaValidator) {
-    final ECDSASecp256k1PublicKey publicKey;
-    try {
-      publicKey = ECDSASecp256k1PublicKey.fromBytes(olympiaValidator.publicKeyBytes().asBytes());
-    } catch (PublicKeyException e) {
-      throw new OlympiaToBabylonGenesisConverterException(
-          "Olympia validator public key is invalid", e);
-    }
-    final ImmutableList.Builder<Tuple2<String, MetadataValue>> metadata = ImmutableList.builder();
-    metadata.add(tuple("name", new MetadataValue.String(olympiaValidator.name())));
-    if (new EngineUrlPredicate().test(olympiaValidator.url())) {
-      metadata.add(tuple("info_url", new MetadataValue.Url(olympiaValidator.url())));
-    }
-
-    final var owner = accounts.get(olympiaValidator.ownerAccountIndex());
-    return new GenesisValidator(
-        publicKey,
-        olympiaValidator.allowsDelegation(),
-        olympiaValidator.isRegistered(),
-        Decimal.fraction(olympiaValidator.feeProportionInTenThousandths(), 10000L),
-        metadata.build(),
-        Address.virtualAccountAddress(owner.publicKeyBytes().asBytes()));
+  @Override
+  public boolean test(String url) {
+    return url.length() <= MAX_URL_LENGTH && ENGINE_URL_PREDICATE.test(url);
   }
 }
