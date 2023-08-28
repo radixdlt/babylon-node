@@ -319,6 +319,7 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
 
   @Override
   public void processLocalTimeout(ScheduledLocalTimeout scheduledTimeout) {
+    log.info("Process local timeout...");
     this.scheduledRoundTimeoutHasOccurred = true;
 
     if (canRoundTimeoutBeProlonged(scheduledTimeout)) {
