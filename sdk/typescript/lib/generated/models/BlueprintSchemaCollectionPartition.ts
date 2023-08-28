@@ -19,6 +19,12 @@ import {
     BlueprintCollectionSchemaFromJSONTyped,
     BlueprintCollectionSchemaToJSON,
 } from './BlueprintCollectionSchema';
+import type { PartitionDescription } from './PartitionDescription';
+import {
+    PartitionDescriptionFromJSON,
+    PartitionDescriptionFromJSONTyped,
+    PartitionDescriptionToJSON,
+} from './PartitionDescription';
 
 /**
  * The fields partition of the blueprint.
@@ -27,11 +33,11 @@ import {
  */
 export interface BlueprintSchemaCollectionPartition {
     /**
-     * The partition's offset from the Main module base (64)
-     * @type {number}
+     * 
+     * @type {PartitionDescription}
      * @memberof BlueprintSchemaCollectionPartition
      */
-    partition_offset: number;
+    partition_description: PartitionDescription;
     /**
      * 
      * @type {BlueprintCollectionSchema}
@@ -45,7 +51,7 @@ export interface BlueprintSchemaCollectionPartition {
  */
 export function instanceOfBlueprintSchemaCollectionPartition(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "partition_offset" in value;
+    isInstance = isInstance && "partition_description" in value;
     isInstance = isInstance && "collection_schema" in value;
 
     return isInstance;
@@ -61,7 +67,7 @@ export function BlueprintSchemaCollectionPartitionFromJSONTyped(json: any, ignor
     }
     return {
         
-        'partition_offset': json['partition_offset'],
+        'partition_description': PartitionDescriptionFromJSON(json['partition_description']),
         'collection_schema': BlueprintCollectionSchemaFromJSON(json['collection_schema']),
     };
 }
@@ -75,7 +81,7 @@ export function BlueprintSchemaCollectionPartitionToJSON(value?: BlueprintSchema
     }
     return {
         
-        'partition_offset': value.partition_offset,
+        'partition_description': PartitionDescriptionToJSON(value.partition_description),
         'collection_schema': BlueprintCollectionSchemaToJSON(value.collection_schema),
     };
 }

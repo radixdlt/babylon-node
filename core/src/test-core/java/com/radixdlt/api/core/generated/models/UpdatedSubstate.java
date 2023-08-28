@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.SubstateId;
+import com.radixdlt.api.core.generated.models.SubstateSystemStructure;
 import com.radixdlt.api.core.generated.models.SubstateValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -35,7 +36,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   UpdatedSubstate.JSON_PROPERTY_SUBSTATE_ID,
   UpdatedSubstate.JSON_PROPERTY_NEW_VALUE,
-  UpdatedSubstate.JSON_PROPERTY_PREVIOUS_VALUE
+  UpdatedSubstate.JSON_PROPERTY_PREVIOUS_VALUE,
+  UpdatedSubstate.JSON_PROPERTY_SYSTEM_STRUCTURE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class UpdatedSubstate {
@@ -47,6 +49,9 @@ public class UpdatedSubstate {
 
   public static final String JSON_PROPERTY_PREVIOUS_VALUE = "previous_value";
   private SubstateValue previousValue;
+
+  public static final String JSON_PROPERTY_SYSTEM_STRUCTURE = "system_structure";
+  private SubstateSystemStructure systemStructure;
 
   public UpdatedSubstate() { 
   }
@@ -129,6 +134,32 @@ public class UpdatedSubstate {
   }
 
 
+  public UpdatedSubstate systemStructure(SubstateSystemStructure systemStructure) {
+    this.systemStructure = systemStructure;
+    return this;
+  }
+
+   /**
+   * Get systemStructure
+   * @return systemStructure
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_SYSTEM_STRUCTURE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public SubstateSystemStructure getSystemStructure() {
+    return systemStructure;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_SYSTEM_STRUCTURE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setSystemStructure(SubstateSystemStructure systemStructure) {
+    this.systemStructure = systemStructure;
+  }
+
+
   /**
    * Return true if this UpdatedSubstate object is equal to o.
    */
@@ -143,12 +174,13 @@ public class UpdatedSubstate {
     UpdatedSubstate updatedSubstate = (UpdatedSubstate) o;
     return Objects.equals(this.substateId, updatedSubstate.substateId) &&
         Objects.equals(this.newValue, updatedSubstate.newValue) &&
-        Objects.equals(this.previousValue, updatedSubstate.previousValue);
+        Objects.equals(this.previousValue, updatedSubstate.previousValue) &&
+        Objects.equals(this.systemStructure, updatedSubstate.systemStructure);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(substateId, newValue, previousValue);
+    return Objects.hash(substateId, newValue, previousValue, systemStructure);
   }
 
   @Override
@@ -158,6 +190,7 @@ public class UpdatedSubstate {
     sb.append("    substateId: ").append(toIndentedString(substateId)).append("\n");
     sb.append("    newValue: ").append(toIndentedString(newValue)).append("\n");
     sb.append("    previousValue: ").append(toIndentedString(previousValue)).append("\n");
+    sb.append("    systemStructure: ").append(toIndentedString(systemStructure)).append("\n");
     sb.append("}");
     return sb.toString();
   }

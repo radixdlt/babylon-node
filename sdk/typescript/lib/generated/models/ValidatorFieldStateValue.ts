@@ -76,7 +76,7 @@ export interface ValidatorFieldStateValue {
     accepts_delegated_stake: boolean;
     /**
      * A string-encoded fixed-precision decimal to 18 decimal places.
-     * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+     * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
      * @type {string}
      * @memberof ValidatorFieldStateValue
      */
@@ -104,7 +104,7 @@ export interface ValidatorFieldStateValue {
      * @type {string}
      * @memberof ValidatorFieldStateValue
      */
-    unstake_claim_token_resource_address: string;
+    claim_token_resource_address: string;
     /**
      * 
      * @type {EntityReference}
@@ -131,7 +131,7 @@ export interface ValidatorFieldStateValue {
     pending_owner_stake_unit_withdrawals: Array<PendingOwnerStakeWithdrawal>;
     /**
      * A string-encoded fixed-precision decimal to 18 decimal places.
-     * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+     * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
      * @type {string}
      * @memberof ValidatorFieldStateValue
      */
@@ -149,7 +149,7 @@ export function instanceOfValidatorFieldStateValue(value: object): boolean {
     isInstance = isInstance && "validator_fee_factor" in value;
     isInstance = isInstance && "stake_unit_resource_address" in value;
     isInstance = isInstance && "stake_xrd_vault" in value;
-    isInstance = isInstance && "unstake_claim_token_resource_address" in value;
+    isInstance = isInstance && "claim_token_resource_address" in value;
     isInstance = isInstance && "pending_xrd_withdraw_vault" in value;
     isInstance = isInstance && "locked_owner_stake_unit_vault" in value;
     isInstance = isInstance && "pending_owner_stake_unit_unlock_vault" in value;
@@ -177,7 +177,7 @@ export function ValidatorFieldStateValueFromJSONTyped(json: any, ignoreDiscrimin
         'validator_fee_change_request': !exists(json, 'validator_fee_change_request') ? undefined : ValidatorFeeChangeRequestFromJSON(json['validator_fee_change_request']),
         'stake_unit_resource_address': json['stake_unit_resource_address'],
         'stake_xrd_vault': EntityReferenceFromJSON(json['stake_xrd_vault']),
-        'unstake_claim_token_resource_address': json['unstake_claim_token_resource_address'],
+        'claim_token_resource_address': json['claim_token_resource_address'],
         'pending_xrd_withdraw_vault': EntityReferenceFromJSON(json['pending_xrd_withdraw_vault']),
         'locked_owner_stake_unit_vault': EntityReferenceFromJSON(json['locked_owner_stake_unit_vault']),
         'pending_owner_stake_unit_unlock_vault': EntityReferenceFromJSON(json['pending_owner_stake_unit_unlock_vault']),
@@ -203,7 +203,7 @@ export function ValidatorFieldStateValueToJSON(value?: ValidatorFieldStateValue 
         'validator_fee_change_request': ValidatorFeeChangeRequestToJSON(value.validator_fee_change_request),
         'stake_unit_resource_address': value.stake_unit_resource_address,
         'stake_xrd_vault': EntityReferenceToJSON(value.stake_xrd_vault),
-        'unstake_claim_token_resource_address': value.unstake_claim_token_resource_address,
+        'claim_token_resource_address': value.claim_token_resource_address,
         'pending_xrd_withdraw_vault': EntityReferenceToJSON(value.pending_xrd_withdraw_vault),
         'locked_owner_stake_unit_vault': EntityReferenceToJSON(value.locked_owner_stake_unit_vault),
         'pending_owner_stake_unit_unlock_vault': EntityReferenceToJSON(value.pending_owner_stake_unit_unlock_vault),

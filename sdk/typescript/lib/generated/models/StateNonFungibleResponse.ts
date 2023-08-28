@@ -13,6 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { LedgerStateSummary } from './LedgerStateSummary';
+import {
+    LedgerStateSummaryFromJSON,
+    LedgerStateSummaryFromJSONTyped,
+    LedgerStateSummaryToJSON,
+} from './LedgerStateSummary';
 import type { Substate } from './Substate';
 import {
     SubstateFromJSON,
@@ -28,6 +34,12 @@ import {
 export interface StateNonFungibleResponse {
     /**
      * 
+     * @type {LedgerStateSummary}
+     * @memberof StateNonFungibleResponse
+     */
+    at_ledger_state: LedgerStateSummary;
+    /**
+     * 
      * @type {Substate}
      * @memberof StateNonFungibleResponse
      */
@@ -39,6 +51,7 @@ export interface StateNonFungibleResponse {
  */
 export function instanceOfStateNonFungibleResponse(value: object): boolean {
     let isInstance = true;
+    isInstance = isInstance && "at_ledger_state" in value;
     isInstance = isInstance && "non_fungible" in value;
 
     return isInstance;
@@ -54,6 +67,7 @@ export function StateNonFungibleResponseFromJSONTyped(json: any, ignoreDiscrimin
     }
     return {
         
+        'at_ledger_state': LedgerStateSummaryFromJSON(json['at_ledger_state']),
         'non_fungible': SubstateFromJSON(json['non_fungible']),
     };
 }
@@ -67,6 +81,7 @@ export function StateNonFungibleResponseToJSON(value?: StateNonFungibleResponse 
     }
     return {
         
+        'at_ledger_state': LedgerStateSummaryToJSON(value.at_ledger_state),
         'non_fungible': SubstateToJSON(value.non_fungible),
     };
 }

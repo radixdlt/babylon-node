@@ -13,6 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { BlueprintPayloadDef } from './BlueprintPayloadDef';
+import {
+    BlueprintPayloadDefFromJSON,
+    BlueprintPayloadDefFromJSONTyped,
+    BlueprintPayloadDefToJSON,
+} from './BlueprintPayloadDef';
 import type { FunctionSchema } from './FunctionSchema';
 import {
     FunctionSchemaFromJSON,
@@ -31,12 +37,6 @@ import {
     IndexedStateSchemaFromJSONTyped,
     IndexedStateSchemaToJSON,
 } from './IndexedStateSchema';
-import type { TypePointer } from './TypePointer';
-import {
-    TypePointerFromJSON,
-    TypePointerFromJSONTyped,
-    TypePointerToJSON,
-} from './TypePointer';
 
 /**
  * 
@@ -58,6 +58,12 @@ export interface BlueprintInterface {
      */
     generic_type_parameters: Array<GenericTypeParameter>;
     /**
+     * If true, an instantiation of this blueprint cannot be persisted. EG buckets and proofs are transient.
+     * @type {boolean}
+     * @memberof BlueprintInterface
+     */
+    is_transient: boolean;
+    /**
      * 
      * @type {Array<string>}
      * @memberof BlueprintInterface
@@ -76,11 +82,11 @@ export interface BlueprintInterface {
      */
     functions: { [key: string]: FunctionSchema; };
     /**
-     * A map from the event name to the local type index for the event payload under the blueprint schema.
-     * @type {{ [key: string]: TypePointer; }}
+     * A map from the event name to the event payload type reference.
+     * @type {{ [key: string]: BlueprintPayloadDef; }}
      * @memberof BlueprintInterface
      */
-    events: { [key: string]: TypePointer; };
+    events: { [key: string]: BlueprintPayloadDef; };
 }
 
 /**
@@ -89,6 +95,7 @@ export interface BlueprintInterface {
 export function instanceOfBlueprintInterface(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "generic_type_parameters" in value;
+    isInstance = isInstance && "is_transient" in value;
     isInstance = isInstance && "features" in value;
     isInstance = isInstance && "state" in value;
     isInstance = isInstance && "functions" in value;
@@ -109,10 +116,11 @@ export function BlueprintInterfaceFromJSONTyped(json: any, ignoreDiscriminator: 
         
         'outer_blueprint': !exists(json, 'outer_blueprint') ? undefined : json['outer_blueprint'],
         'generic_type_parameters': ((json['generic_type_parameters'] as Array<any>).map(GenericTypeParameterFromJSON)),
+        'is_transient': json['is_transient'],
         'features': json['features'],
         'state': IndexedStateSchemaFromJSON(json['state']),
         'functions': (mapValues(json['functions'], FunctionSchemaFromJSON)),
-        'events': (mapValues(json['events'], TypePointerFromJSON)),
+        'events': (mapValues(json['events'], BlueprintPayloadDefFromJSON)),
     };
 }
 
@@ -127,10 +135,11 @@ export function BlueprintInterfaceToJSON(value?: BlueprintInterface | null): any
         
         'outer_blueprint': value.outer_blueprint,
         'generic_type_parameters': ((value.generic_type_parameters as Array<any>).map(GenericTypeParameterToJSON)),
+        'is_transient': value.is_transient,
         'features': value.features,
         'state': IndexedStateSchemaToJSON(value.state),
         'functions': (mapValues(value.functions, FunctionSchemaToJSON)),
-        'events': (mapValues(value.events, TypePointerToJSON)),
+        'events': (mapValues(value.events, BlueprintPayloadDefToJSON)),
     };
 }
 

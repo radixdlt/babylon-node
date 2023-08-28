@@ -1867,6 +1867,7 @@ components:
       required:
         - substate_id
         - new_value
+        - system_structure
       properties:
         substate_id:
           $ref: "#/components/schemas/SubstateId"
@@ -1876,6 +1877,9 @@ components:
         previous_value:
           $ref: "#/components/schemas/SubstateValue"
           description: The previous value of the substate. Only returned if enabled in SubstateFormatOptions on your request (default false).
+        system_structure:
+          $ref: "#/components/schemas/SubstateSystemStructure"
+          description: A structure with type references describing the substate's schema.
     SubstateValue:
       type: object
       properties:
@@ -1892,12 +1896,16 @@ components:
       type: object
       required:
         - substate_id
+        - system_structure
       properties:
         substate_id:
           $ref: "#/components/schemas/SubstateId"
         previous_value:
           $ref: "#/components/schemas/SubstateValue"
           description: The previous value of the substate. Only returned if enabled in SubstateFormatOptions on your request (default false).
+        system_structure:
+          $ref: "#/components/schemas/SubstateSystemStructure"
+          description: A structure with type references describing the substate's schema.
     EntityReference:
       type: object
       required:

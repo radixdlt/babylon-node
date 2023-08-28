@@ -19,6 +19,18 @@ import {
     SubstateIdFromJSONTyped,
     SubstateIdToJSON,
 } from './SubstateId';
+import type { SubstateSystemStructure } from './SubstateSystemStructure';
+import {
+    SubstateSystemStructureFromJSON,
+    SubstateSystemStructureFromJSONTyped,
+    SubstateSystemStructureToJSON,
+} from './SubstateSystemStructure';
+import type { SubstateValue } from './SubstateValue';
+import {
+    SubstateValueFromJSON,
+    SubstateValueFromJSONTyped,
+    SubstateValueToJSON,
+} from './SubstateValue';
 
 /**
  * 
@@ -32,6 +44,18 @@ export interface DeletedSubstate {
      * @memberof DeletedSubstate
      */
     substate_id: SubstateId;
+    /**
+     * 
+     * @type {SubstateValue}
+     * @memberof DeletedSubstate
+     */
+    previous_value?: SubstateValue;
+    /**
+     * 
+     * @type {SubstateSystemStructure}
+     * @memberof DeletedSubstate
+     */
+    system_structure: SubstateSystemStructure;
 }
 
 /**
@@ -40,6 +64,7 @@ export interface DeletedSubstate {
 export function instanceOfDeletedSubstate(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "substate_id" in value;
+    isInstance = isInstance && "system_structure" in value;
 
     return isInstance;
 }
@@ -55,6 +80,8 @@ export function DeletedSubstateFromJSONTyped(json: any, ignoreDiscriminator: boo
     return {
         
         'substate_id': SubstateIdFromJSON(json['substate_id']),
+        'previous_value': !exists(json, 'previous_value') ? undefined : SubstateValueFromJSON(json['previous_value']),
+        'system_structure': SubstateSystemStructureFromJSON(json['system_structure']),
     };
 }
 
@@ -68,6 +95,8 @@ export function DeletedSubstateToJSON(value?: DeletedSubstate | null): any {
     return {
         
         'substate_id': SubstateIdToJSON(value.substate_id),
+        'previous_value': SubstateValueToJSON(value.previous_value),
+        'system_structure': SubstateSystemStructureToJSON(value.system_structure),
     };
 }
 

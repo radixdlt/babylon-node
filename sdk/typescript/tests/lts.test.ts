@@ -72,7 +72,7 @@ test('get transaction status of an invalid status returns message', async () => 
     });
     const error = await expectError(responsePromise, ResponseError);
     expect(error.status).toBe(400);
-    expect(error.message).toContain("InvalidHex");
+    expect(error.message).toContain("InvalidHash");
 });
 
 test('can get genesis transaction outcome', async () => {

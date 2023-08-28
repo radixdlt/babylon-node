@@ -13,6 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { LedgerStateSummary } from './LedgerStateSummary';
+import {
+    LedgerStateSummaryFromJSON,
+    LedgerStateSummaryFromJSONTyped,
+    LedgerStateSummaryToJSON,
+} from './LedgerStateSummary';
 import type { Substate } from './Substate';
 import {
     SubstateFromJSON,
@@ -26,6 +32,12 @@ import {
  * @interface StateConsensusManagerResponse
  */
 export interface StateConsensusManagerResponse {
+    /**
+     * 
+     * @type {LedgerStateSummary}
+     * @memberof StateConsensusManagerResponse
+     */
+    at_ledger_state: LedgerStateSummary;
     /**
      * 
      * @type {Substate}
@@ -69,6 +81,7 @@ export interface StateConsensusManagerResponse {
  */
 export function instanceOfStateConsensusManagerResponse(value: object): boolean {
     let isInstance = true;
+    isInstance = isInstance && "at_ledger_state" in value;
     isInstance = isInstance && "config" in value;
     isInstance = isInstance && "state" in value;
     isInstance = isInstance && "current_proposal_statistic" in value;
@@ -89,6 +102,7 @@ export function StateConsensusManagerResponseFromJSONTyped(json: any, ignoreDisc
     }
     return {
         
+        'at_ledger_state': LedgerStateSummaryFromJSON(json['at_ledger_state']),
         'config': SubstateFromJSON(json['config']),
         'state': SubstateFromJSON(json['state']),
         'current_proposal_statistic': SubstateFromJSON(json['current_proposal_statistic']),
@@ -107,6 +121,7 @@ export function StateConsensusManagerResponseToJSON(value?: StateConsensusManage
     }
     return {
         
+        'at_ledger_state': LedgerStateSummaryToJSON(value.at_ledger_state),
         'config': SubstateToJSON(value.config),
         'state': SubstateToJSON(value.state),
         'current_proposal_statistic': SubstateToJSON(value.current_proposal_statistic),

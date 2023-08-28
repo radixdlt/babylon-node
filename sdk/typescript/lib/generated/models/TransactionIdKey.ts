@@ -27,6 +27,12 @@ export interface TransactionIdKey {
      * @memberof TransactionIdKey
      */
     intent_hash: string;
+    /**
+     * The Bech32m-encoded human readable `IntentHash`.
+     * @type {string}
+     * @memberof TransactionIdKey
+     */
+    intent_hash_bech32m: string;
 }
 
 /**
@@ -35,6 +41,7 @@ export interface TransactionIdKey {
 export function instanceOfTransactionIdKey(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "intent_hash" in value;
+    isInstance = isInstance && "intent_hash_bech32m" in value;
 
     return isInstance;
 }
@@ -50,6 +57,7 @@ export function TransactionIdKeyFromJSONTyped(json: any, ignoreDiscriminator: bo
     return {
         
         'intent_hash': json['intent_hash'],
+        'intent_hash_bech32m': json['intent_hash_bech32m'],
     };
 }
 
@@ -63,6 +71,7 @@ export function TransactionIdKeyToJSON(value?: TransactionIdKey | null): any {
     return {
         
         'intent_hash': value.intent_hash,
+        'intent_hash_bech32m': value.intent_hash_bech32m,
     };
 }
 

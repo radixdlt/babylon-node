@@ -48,14 +48,14 @@ export interface ConsensusManagerFieldConfigValue {
     num_unstake_epochs: number;
     /**
      * A string-encoded fixed-precision decimal to 18 decimal places.
-     * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+     * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
      * @type {string}
      * @memberof ConsensusManagerFieldConfigValue
      */
     total_emission_xrd_per_epoch: string;
     /**
      * A string-encoded fixed-precision decimal to 18 decimal places.
-     * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+     * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
      * @type {string}
      * @memberof ConsensusManagerFieldConfigValue
      */
@@ -77,14 +77,14 @@ export interface ConsensusManagerFieldConfigValue {
     /**
      * The defining decimal cost of a validator in USD.
      * This is turned into an XRD cost through the current protocol-based USD/XRD multiplier.
-     * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+     * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
      * @type {string}
      * @memberof ConsensusManagerFieldConfigValue
      */
     validator_creation_usd_equivalent_cost: string;
     /**
      * The decimal amount of XRD required to be passed in a bucket to create a validator.
-     * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+     * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
      * @type {string}
      * @memberof ConsensusManagerFieldConfigValue
      */
