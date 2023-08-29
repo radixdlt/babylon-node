@@ -5640,6 +5640,7 @@ components:
         - network
         - network_id
         - network_hrp_suffix
+        - usd_price_in_xrd
         - address_types
         - well_known_addresses
       properties:
@@ -5661,6 +5662,11 @@ components:
         network_hrp_suffix:
           type: string
           description: The network suffix used for Bech32m HRPs used for addressing.
+        usd_price_in_xrd:
+          type: string
+          description: |
+            The current value of the protocol-based USD/XRD multiplier (i.e. an amount of XRDs to be paid for 1 USD).
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
         address_types:
           type: array
           items:
