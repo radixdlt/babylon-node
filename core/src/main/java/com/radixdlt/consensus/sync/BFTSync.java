@@ -244,8 +244,10 @@ public final class BFTSync implements BFTSyncer {
       return SyncResult.INVALID;
     }
 
+    log.info("Sync to QC... insert into vertex store");
     return switch (vertexStore.insertQc(qc)) {
       case VertexStore.InsertQcResult.Inserted inserted -> {
+        log.info("...inserted");
         // QC was inserted, try TC too (as it can be higher), and then process a new highQC
         highQC.highestTC().map(vertexStore::insertTimeoutCertificate);
         this.pacemakerReducer.processQC(
@@ -253,6 +255,7 @@ public final class BFTSync implements BFTSyncer {
         yield SyncResult.SYNCED;
       }
       case VertexStore.InsertQcResult.Ignored ignored -> {
+        log.info("...ignored");
         // QC was ignored, try inserting TC and if that works process a new highQC
         final var insertedTc =
             highQC.highestTC().map(vertexStore::insertTimeoutCertificate).orElse(false);
@@ -262,6 +265,8 @@ public final class BFTSync implements BFTSyncer {
         yield SyncResult.SYNCED;
       }
       case VertexStore.InsertQcResult.VertexIsMissing vertexIsMissing -> {
+        log.info("...vertex is missing");
+
         // QC is missing some vertices, sync up
         // TC (if present) is put aside for now (and reconsidered later, once QC is synced)
         log.trace("SYNC_TO_QC: Need sync: {}", highQC);

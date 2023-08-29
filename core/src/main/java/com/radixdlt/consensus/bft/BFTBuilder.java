@@ -220,7 +220,6 @@ public final class BFTBuilder {
        -> BFTQuorumAssembler (processes votes and forms a quorum)
        -> Pacemaker (manages sending proposals, votes and timeouts) */
 
-    /*
     final var quorumAssembler =
         new BFTQuorumAssembler(
             pacemaker,
@@ -231,22 +230,20 @@ public final class BFTBuilder {
             pendingVotes,
             roundUpdate,
             timeoutQuorumResolutionDelayMs);
-     */
 
     final var proposalTimestampVerifier =
         new ProposalTimestampVerifier(
-            pacemaker, timeSupplier, metrics, addressing, proposalRejectedDispatcher);
+            quorumAssembler, timeSupplier, metrics, addressing, proposalRejectedDispatcher);
 
-    //    final var postSyncUpVerifier =
-    //        new BFTEventPostSyncUpVerifier(proposalTimestampVerifier, metrics, roundUpdate);
+    final var postSyncUpVerifier =
+        new BFTEventPostSyncUpVerifier(proposalTimestampVerifier, metrics, roundUpdate);
 
-    //    final var syncUpPreprocessor =
-    //        new SyncUpPreprocessor(proposalTimestampVerifier, bftSyncer, metrics, roundUpdate);
+    final var syncUpPreprocessor =
+        new SyncUpPreprocessor(postSyncUpVerifier, bftSyncer, metrics, roundUpdate);
 
     final var oneProposalPerRoundVerifier =
-        new OneProposalPerRoundVerifier(proposalTimestampVerifier, metrics);
+        new OneProposalPerRoundVerifier(syncUpPreprocessor, metrics);
 
-    /*
     final var statelessVerifier =
         new BFTEventStatelessVerifier(
             validatorSet,
@@ -256,8 +253,7 @@ public final class BFTBuilder {
             verifier,
             safetyRules,
             metrics);
-     */
 
-    return new ObsoleteEventsFilter(oneProposalPerRoundVerifier, metrics, roundUpdate);
+    return new ObsoleteEventsFilter(statelessVerifier, metrics, roundUpdate);
   }
 }
