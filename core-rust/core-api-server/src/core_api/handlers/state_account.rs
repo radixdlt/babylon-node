@@ -11,6 +11,7 @@ pub(crate) async fn handle_state_account(
     Json(request): Json<models::StateAccountRequest>,
 ) -> Result<Json<models::StateAccountResponse>, ResponseError<()>> {
     assert_matching_network(&request.network, &state.network)?;
+    assert_unbounded_endpoints_flag_enabled(&state)?;
 
     let mapping_context = MappingContext::new(&state.network);
     let extraction_context = ExtractionContext::new(&state.network);

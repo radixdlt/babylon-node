@@ -13,6 +13,7 @@ pub(crate) async fn handle_state_component(
     Json(request): Json<models::StateComponentRequest>,
 ) -> Result<Json<models::StateComponentResponse>, ResponseError<()>> {
     assert_matching_network(&request.network, &state.network)?;
+    assert_unbounded_endpoints_flag_enabled(&state)?;
 
     let mapping_context = MappingContext::new(&state.network);
     let extraction_context = ExtractionContext::new(&state.network);

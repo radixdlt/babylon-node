@@ -26,9 +26,11 @@ mempool.reevaluation.max_count=${RADIXDLT_MEMPOOL_REEVALUATION_MAX_COUNT}
 protocol.vertex.max_transaction_count=${RADIXDLT_PROTOCOL_VERTEX_MAX_TRANSACTION_COUNT}
 protocol.vertex.max_total_transactions_size=${RADIXDLT_PROTOCOL_VERTEX_MAX_TOTAL_TRANSACTIONS_SIZE}
 protocol.vertex.max_total_execution_cost_units_consumed=${RADIXDLT_PROTOCOL_VERTEX_MAX_TOTAL_EXECUTION_COST_UNITS_CONSUMED}
+protocol.vertex.max_total_finalization_cost_units_consumed=${RADIXDLT_PROTOCOL_VERTEX_MAX_TOTAL_FINALIZATION_COST_UNITS_CONSUMED}
 
 api.core.port=$RADIXDLT_CORE_API_PORT
 api.core.bind_address=$RADIXDLT_CORE_API_BIND_ADDRESS
+api.core.flags.enable_unbounded_endpoints=${RADIXDLT_CORE_API_FLAGS_ENABLE_UNBOUNDED_ENDPOINTS}
 
 api.system.port=$RADIXDLT_SYSTEM_API_PORT
 api.system.bind_address=$RADIXDLT_SYSTEM_API_BIND_ADDRESS

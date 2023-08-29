@@ -14,6 +14,7 @@ pub(crate) async fn handle_state_access_controller(
     Json(request): Json<models::StateAccessControllerRequest>,
 ) -> Result<Json<models::StateAccessControllerResponse>, ResponseError<()>> {
     assert_matching_network(&request.network, &state.network)?;
+    assert_unbounded_endpoints_flag_enabled(&state)?;
 
     let mapping_context = MappingContext::new(&state.network);
     let extraction_context = ExtractionContext::new(&state.network);
