@@ -69,7 +69,6 @@ import static java.util.Optional.ofNullable;
 
 import com.google.inject.Provider;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.consensus.Vote;
 import com.radixdlt.lang.Cause;
 import com.radixdlt.lang.Result;
 import com.radixdlt.messaging.consensus.ConsensusEventMessage;
@@ -176,8 +175,7 @@ final class MessagePreprocessor {
       if (msg instanceof ConsensusEventMessage) {
         log.info("Consensus msg: {}", Hex.toHexString(in));
       }
-      return Result.fromOptionalOrElseError(
-          ofNullable(msg), IO_ERROR);
+      return Result.fromOptionalOrElseError(ofNullable(msg), IO_ERROR);
     } catch (IOException e) {
       log.error(
           String.format(
