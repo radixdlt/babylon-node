@@ -244,6 +244,7 @@ public final class BFTBuilder {
     final var oneProposalPerRoundVerifier =
         new OneProposalPerRoundVerifier(syncUpPreprocessor, metrics);
 
+    /*
     final var statelessVerifier =
         new BFTEventStatelessVerifier(
             validatorSet,
@@ -253,7 +254,8 @@ public final class BFTBuilder {
             verifier,
             safetyRules,
             metrics);
+     */
 
-    return new ObsoleteEventsFilter(statelessVerifier, metrics, roundUpdate);
+    return new ObsoleteEventsFilter(oneProposalPerRoundVerifier, metrics, roundUpdate);
   }
 }
