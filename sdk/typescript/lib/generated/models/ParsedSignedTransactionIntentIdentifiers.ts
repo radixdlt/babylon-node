@@ -28,6 +28,12 @@ export interface ParsedSignedTransactionIntentIdentifiers {
      */
     intent_hash: string;
     /**
+     * The Bech32m-encoded human readable `IntentHash`.
+     * @type {string}
+     * @memberof ParsedSignedTransactionIntentIdentifiers
+     */
+    intent_hash_bech32m: string;
+    /**
      * The hex-encoded signed intent hash for a user transaction.
      * This hash identifies the transaction intent, plus additional signatures.
      * This hash is signed by the notary, to create the submittable NotarizedTransaction.
@@ -35,6 +41,12 @@ export interface ParsedSignedTransactionIntentIdentifiers {
      * @memberof ParsedSignedTransactionIntentIdentifiers
      */
     signed_intent_hash: string;
+    /**
+     * The Bech32m-encoded human readable `SignedIntentHash`.
+     * @type {string}
+     * @memberof ParsedSignedTransactionIntentIdentifiers
+     */
+    signed_intent_hash_bech32m: string;
 }
 
 /**
@@ -43,7 +55,9 @@ export interface ParsedSignedTransactionIntentIdentifiers {
 export function instanceOfParsedSignedTransactionIntentIdentifiers(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "intent_hash" in value;
+    isInstance = isInstance && "intent_hash_bech32m" in value;
     isInstance = isInstance && "signed_intent_hash" in value;
+    isInstance = isInstance && "signed_intent_hash_bech32m" in value;
 
     return isInstance;
 }
@@ -59,7 +73,9 @@ export function ParsedSignedTransactionIntentIdentifiersFromJSONTyped(json: any,
     return {
         
         'intent_hash': json['intent_hash'],
+        'intent_hash_bech32m': json['intent_hash_bech32m'],
         'signed_intent_hash': json['signed_intent_hash'],
+        'signed_intent_hash_bech32m': json['signed_intent_hash_bech32m'],
     };
 }
 
@@ -73,7 +89,9 @@ export function ParsedSignedTransactionIntentIdentifiersToJSON(value?: ParsedSig
     return {
         
         'intent_hash': value.intent_hash,
+        'intent_hash_bech32m': value.intent_hash_bech32m,
         'signed_intent_hash': value.signed_intent_hash,
+        'signed_intent_hash_bech32m': value.signed_intent_hash_bech32m,
     };
 }
 

@@ -27,15 +27,15 @@ import {
  */
 export interface LocalTypeIndex {
     /**
-     * The location against which to resolve this type reference against a given schema.
-     * WellKnown indicates the index is a pointer to a well known scrypto type with that id.
-     * SchemaLocal indicates the index is a pointer into the given schema.
+     * The location against which to resolve this type reference.
      * @type {string}
      * @memberof LocalTypeIndex
      */
     kind: LocalTypeIndexKindEnum;
     /**
-     * Either the well known identifier, of the schema-local index, depending on the kind.
+     * A reference to a type, interpreted according to `kind`:
+     * - if `WellKnown`, then it is a pointer to a well known scrypto type with that ID,
+     * - if `SchemaLocal`, then it is a pointer into the given schema.
      * @type {number}
      * @memberof LocalTypeIndex
      */

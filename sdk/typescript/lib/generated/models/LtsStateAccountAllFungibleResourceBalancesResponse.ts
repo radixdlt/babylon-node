@@ -13,6 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { LedgerHeaderSummary } from './LedgerHeaderSummary';
+import {
+    LedgerHeaderSummaryFromJSON,
+    LedgerHeaderSummaryFromJSONTyped,
+    LedgerHeaderSummaryToJSON,
+} from './LedgerHeaderSummary';
 import type { LtsFungibleResourceBalance } from './LtsFungibleResourceBalance';
 import {
     LtsFungibleResourceBalanceFromJSON,
@@ -33,6 +39,12 @@ export interface LtsStateAccountAllFungibleResourceBalancesResponse {
      */
     state_version: number;
     /**
+     * 
+     * @type {LedgerHeaderSummary}
+     * @memberof LtsStateAccountAllFungibleResourceBalancesResponse
+     */
+    ledger_header_summary: LedgerHeaderSummary;
+    /**
      * The Bech32m-encoded human readable version of the account's address
      * @type {string}
      * @memberof LtsStateAccountAllFungibleResourceBalancesResponse
@@ -52,6 +64,7 @@ export interface LtsStateAccountAllFungibleResourceBalancesResponse {
 export function instanceOfLtsStateAccountAllFungibleResourceBalancesResponse(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "state_version" in value;
+    isInstance = isInstance && "ledger_header_summary" in value;
     isInstance = isInstance && "account_address" in value;
     isInstance = isInstance && "fungible_resource_balances" in value;
 
@@ -69,6 +82,7 @@ export function LtsStateAccountAllFungibleResourceBalancesResponseFromJSONTyped(
     return {
         
         'state_version': json['state_version'],
+        'ledger_header_summary': LedgerHeaderSummaryFromJSON(json['ledger_header_summary']),
         'account_address': json['account_address'],
         'fungible_resource_balances': ((json['fungible_resource_balances'] as Array<any>).map(LtsFungibleResourceBalanceFromJSON)),
     };
@@ -84,6 +98,7 @@ export function LtsStateAccountAllFungibleResourceBalancesResponseToJSON(value?:
     return {
         
         'state_version': value.state_version,
+        'ledger_header_summary': LedgerHeaderSummaryToJSON(value.ledger_header_summary),
         'account_address': value.account_address,
         'fungible_resource_balances': ((value.fungible_resource_balances as Array<any>).map(LtsFungibleResourceBalanceToJSON)),
     };

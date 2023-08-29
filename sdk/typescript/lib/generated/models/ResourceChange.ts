@@ -46,7 +46,7 @@ export interface ResourceChange {
     vault_entity: EntityReference;
     /**
      * The string-encoded decimal representing the XRD amount put or taken from the vault.
-     * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+     * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
      * @type {string}
      * @memberof ResourceChange
      */

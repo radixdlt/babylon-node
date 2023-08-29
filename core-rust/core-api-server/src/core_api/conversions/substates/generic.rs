@@ -1,6 +1,7 @@
 use super::super::*;
 use super::*;
 use crate::core_api::models;
+use radix_engine::system::system_substates::{FieldSubstate, KeyValueEntrySubstate};
 
 use radix_engine::types::*;
 use radix_engine_queries::typed_substate_layout::*;
@@ -12,11 +13,9 @@ pub fn to_api_generic_scrypto_component_state_substate(
     Ok(field_substate!(
         substate,
         GenericScryptoComponentFieldState,
-        value => {
-            let scrypto_value = value;
-        },
+        value,
         Value {
-            data_struct: Box::new(to_api_data_struct_from_scrypto_value(context, scrypto_value)?),
+            data_struct: Box::new(to_api_data_struct_from_scrypto_value(context, value)?),
         }
     ))
 }
@@ -24,7 +23,7 @@ pub fn to_api_generic_scrypto_component_state_substate(
 pub fn to_api_generic_key_value_store_substate(
     context: &MappingContext,
     typed_key: &TypedSubstateKey,
-    substate: &KeyValueEntrySubstate<ScryptoRawValue<'_>>,
+    substate: &KeyValueEntrySubstate<ScryptoOwnedRawValue>,
 ) -> Result<models::Substate, MappingError> {
     assert_key_type!(
         typed_key,

@@ -1,5 +1,4 @@
 use radix_engine::blueprints::resource::*;
-use radix_engine::system::system::KeyValueEntrySubstate;
 use radix_engine::types::*;
 use radix_engine_queries::typed_substate_layout::{TypedMainModuleSubstateKey, TypedSubstateKey};
 use state_manager::store::traits::QueryableProofStore;
@@ -30,14 +29,15 @@ pub(crate) async fn handle_state_non_fungible(
 
     let database = state.state_manager.database.read();
 
-    let id_type = read_optional_main_field_substate(
-        database.deref(),
-        resource_address.as_node_id(),
-        &NonFungibleResourceManagerField::IdType.into(),
-    )
-    .ok_or_else(|| not_found_error("Resource not found".to_string()))?
-    .value
-    .0;
+    let id_type =
+        read_optional_main_field_substate::<NonFungibleResourceManagerIdTypeFieldPayload>(
+            database.deref(),
+            resource_address.as_node_id(),
+            &NonFungibleResourceManagerField::IdType.into(),
+        )
+        .ok_or_else(|| not_found_error("Resource not found".to_string()))?
+        .into_payload()
+        .into_latest();
 
     let non_fungible_id =
         extract_non_fungible_id_from_simple_representation(&request.non_fungible_id)
@@ -51,10 +51,10 @@ pub(crate) async fn handle_state_non_fungible(
         .into_response_error("non_fungible_id"));
     }
 
-    let substate = read_optional_collection_substate::<KeyValueEntrySubstate<ScryptoRawValue<'_>>>(
+    let substate = read_optional_collection_substate::<NonFungibleResourceManagerDataEntryPayload>(
         database.deref(),
         resource_address.as_node_id(),
-        NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE,
+        NonFungibleResourceManagerCollection::DataKeyValue.collection_index(),
         &SubstateKey::Map(non_fungible_id.to_key()),
     )
     .ok_or_else(|| {
@@ -70,8 +70,10 @@ pub(crate) async fn handle_state_non_fungible(
         at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
         non_fungible: Some(to_api_non_fungible_resource_manager_data_substate(
             &mapping_context,
-            &TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleResourceData(
-                non_fungible_id,
+            &TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleResourceManager(
+                NonFungibleResourceManagerTypedSubstateKey::DataKeyValueEntry(
+                    non_fungible_id.into(),
+                ),
             )),
             &substate,
         )?),

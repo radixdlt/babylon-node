@@ -34,6 +34,18 @@ export interface LtsTransactionPayloadDetails {
      */
     payload_hash: string;
     /**
+     * The Bech32m-encoded human readable `NotarizedTransactionHash`.
+     * @type {string}
+     * @memberof LtsTransactionPayloadDetails
+     */
+    payload_hash_bech32m: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof LtsTransactionPayloadDetails
+     */
+    state_version?: number;
+    /**
      * 
      * @type {LtsTransactionPayloadStatus}
      * @memberof LtsTransactionPayloadDetails
@@ -53,6 +65,7 @@ export interface LtsTransactionPayloadDetails {
 export function instanceOfLtsTransactionPayloadDetails(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "payload_hash" in value;
+    isInstance = isInstance && "payload_hash_bech32m" in value;
     isInstance = isInstance && "status" in value;
 
     return isInstance;
@@ -69,6 +82,8 @@ export function LtsTransactionPayloadDetailsFromJSONTyped(json: any, ignoreDiscr
     return {
         
         'payload_hash': json['payload_hash'],
+        'payload_hash_bech32m': json['payload_hash_bech32m'],
+        'state_version': !exists(json, 'state_version') ? undefined : json['state_version'],
         'status': LtsTransactionPayloadStatusFromJSON(json['status']),
         'error_message': !exists(json, 'error_message') ? undefined : json['error_message'],
     };
@@ -84,6 +99,8 @@ export function LtsTransactionPayloadDetailsToJSON(value?: LtsTransactionPayload
     return {
         
         'payload_hash': value.payload_hash,
+        'payload_hash_bech32m': value.payload_hash_bech32m,
+        'state_version': value.state_version,
         'status': LtsTransactionPayloadStatusToJSON(value.status),
         'error_message': value.error_message,
     };

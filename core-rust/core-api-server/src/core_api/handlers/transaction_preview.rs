@@ -142,7 +142,7 @@ fn to_api_response(
                     .map_err(|_| server_error("Can't map entity references"))?;
 
                 let instruction = models::InstructionResourceChanges {
-                    index: i32::try_from(*index).unwrap(),
+                    index: to_api_index_as_i64(*index)?,
                     resource_changes,
                 };
 

@@ -66,7 +66,6 @@ use crate::{DetailedTransactionOutcome, LedgerTransactionOutcome, StateVersion};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use radix_engine::system::system::FieldSubstate;
 use radix_engine::types::*;
 
 use radix_engine_queries::query::ResourceAccounter;
@@ -76,9 +75,8 @@ use crate::jni::node_rust_environment::JNINodeRustEnvironment;
 use crate::query::StateManagerSubstateQueries;
 use node_common::java::*;
 
-use radix_engine::blueprints::consensus_manager::ValidatorSubstate;
-
-use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
+use radix_engine::blueprints::consensus_manager::{ValidatorField, ValidatorStateFieldSubstate};
+use radix_engine::system::type_info::TypeInfoSubstate;
 
 use crate::store::traits::{QueryableTransactionStore, SubstateNodeAncestryStore};
 use crate::transaction::LedgerTransactionHash;
@@ -202,7 +200,7 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_componentXrdAmount
             let read_store = database.read();
 
             // a quick fix for handling virtual accounts
-            // TODO: fix upstream
+            // TODO(during review): has this been "fixed upstream"?
             if read_store
                 .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
                     node_id,
@@ -235,19 +233,19 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_validatorInfo(
         |validator_address: ComponentAddress| -> JavaValidatorInfo {
             let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
             let read_store = database.read();
-            let validator_substate: ValidatorSubstate = read_store
-                .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ValidatorSubstate>>(
+            let validator_state = read_store
+                .get_mapped::<SpreadPrefixKeyMapper, ValidatorStateFieldSubstate>(
                     validator_address.as_node_id(),
                     MAIN_BASE_PARTITION,
-                    &ValidatorField::Validator.into(),
+                    &ValidatorField::State.into(),
                 )
                 .unwrap()
-                .value
-                .0;
+                .into_payload()
+                .into_latest();
 
             JavaValidatorInfo {
-                stake_unit_resource: validator_substate.stake_unit_resource,
-                claim_resource: validator_substate.claim_nft,
+                stake_unit_resource: validator_state.stake_unit_resource,
+                claim_resource: validator_state.claim_nft,
             }
         },
     )

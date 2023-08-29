@@ -144,6 +144,7 @@ impl PreparedRoundUpdateTransactionV1 {
                 },
                 epoch_range: None,
                 payload_size: 0,
+                num_of_signature_validations: 0, // TODO(during review): what does it even mean?
                 auth_zone_params: AuthZoneParams {
                     initial_proofs: btreeset!(AuthAddresses::validator_role()),
                     virtual_resources: BTreeSet::new(),

@@ -75,6 +75,7 @@ import com.radixdlt.genesis.GenesisResource;
 import com.radixdlt.genesis.GenesisResourceAllocation;
 import com.radixdlt.genesis.olympia.bech32.Bits;
 import com.radixdlt.genesis.olympia.bech32.OlympiaBech32;
+import com.radixdlt.genesis.olympia.converter.EngineUrlPredicate;
 import com.radixdlt.genesis.olympia.converter.OlympiaToBabylonConverterConfig;
 import com.radixdlt.genesis.olympia.state.OlympiaStateIR;
 import com.radixdlt.identifiers.Address;
@@ -282,10 +283,10 @@ public final class OlympiaNonXrdConverter {
             tuple("symbol", new MetadataValue.String(resource.symbol())),
             tuple("name", new MetadataValue.String(resource.name())),
             tuple("description", new MetadataValue.String(resource.description()))));
-    if (!resource.url().isBlank()) {
+    if (new EngineUrlPredicate().test(resource.url())) {
       metadataBuilder.add(tuple("info_url", new MetadataValue.Url(resource.url())));
     }
-    if (!resource.iconUrl().isBlank()) {
+    if (new EngineUrlPredicate().test(resource.iconUrl())) {
       metadataBuilder.add(tuple("icon_url", new MetadataValue.Url(resource.iconUrl())));
     }
 

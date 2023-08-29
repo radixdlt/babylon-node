@@ -7,9 +7,9 @@ use radix_engine_queries::typed_substate_layout::*;
 
 pub fn to_api_access_controller_substate(
     context: &MappingContext,
-    substate: &FieldSubstate<AccessControllerSubstate>,
+    substate: &AccessControllerStateFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate!(
+    Ok(field_substate_versioned!(
         substate,
         AccessControllerFieldState,
         substate => {

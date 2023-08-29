@@ -13,12 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { GenericTypeParameterContraints } from './GenericTypeParameterContraints';
+import type { GenericTypeParameterConstraints } from './GenericTypeParameterConstraints';
 import {
-    GenericTypeParameterContraintsFromJSON,
-    GenericTypeParameterContraintsFromJSONTyped,
-    GenericTypeParameterContraintsToJSON,
-} from './GenericTypeParameterContraints';
+    GenericTypeParameterConstraintsFromJSON,
+    GenericTypeParameterConstraintsFromJSONTyped,
+    GenericTypeParameterConstraintsToJSON,
+} from './GenericTypeParameterConstraints';
 
 /**
  * 
@@ -28,10 +28,10 @@ import {
 export interface GenericTypeParameter {
     /**
      * 
-     * @type {GenericTypeParameterContraints}
+     * @type {GenericTypeParameterConstraints}
      * @memberof GenericTypeParameter
      */
-    constraints: GenericTypeParameterContraints;
+    constraints: GenericTypeParameterConstraints;
 }
 
 /**
@@ -54,7 +54,7 @@ export function GenericTypeParameterFromJSONTyped(json: any, ignoreDiscriminator
     }
     return {
         
-        'constraints': GenericTypeParameterContraintsFromJSON(json['constraints']),
+        'constraints': GenericTypeParameterConstraintsFromJSON(json['constraints']),
     };
 }
 
@@ -67,7 +67,7 @@ export function GenericTypeParameterToJSON(value?: GenericTypeParameter | null):
     }
     return {
         
-        'constraints': GenericTypeParameterContraintsToJSON(value.constraints),
+        'constraints': GenericTypeParameterConstraintsToJSON(value.constraints),
     };
 }
 

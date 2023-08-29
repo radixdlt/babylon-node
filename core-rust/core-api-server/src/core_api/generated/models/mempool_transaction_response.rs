@@ -13,15 +13,19 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct MempoolTransactionResponse {
-    /// The hex-encoded full notarized transaction payload.
-    #[serde(rename = "payload_hex")]
-    pub payload_hex: String,
+    /// An integer giving the total count of payload hashes checked in the returned response.
+    #[serde(rename = "count")]
+    pub count: i32,
+    /// An array containing pairs of payload hash (query) and payload hex or error (response). Note that this response is bounded - this means it is not guaranteed all queries will be processed. Please query missing payload hashes again. 
+    #[serde(rename = "payloads")]
+    pub payloads: Vec<crate::core_api::generated::models::MempoolTransactionResponsePayloadsInner>,
 }
 
 impl MempoolTransactionResponse {
-    pub fn new(payload_hex: String) -> MempoolTransactionResponse {
+    pub fn new(count: i32, payloads: Vec<crate::core_api::generated::models::MempoolTransactionResponsePayloadsInner>) -> MempoolTransactionResponse {
         MempoolTransactionResponse {
-            payload_hex,
+            count,
+            payloads,
         }
     }
 }

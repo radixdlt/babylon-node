@@ -13,12 +13,30 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { CostingParameters } from './CostingParameters';
+import {
+    CostingParametersFromJSON,
+    CostingParametersFromJSONTyped,
+    CostingParametersToJSON,
+} from './CostingParameters';
 import type { Event } from './Event';
 import {
     EventFromJSON,
     EventFromJSONTyped,
     EventToJSON,
 } from './Event';
+import type { FeeDestination } from './FeeDestination';
+import {
+    FeeDestinationFromJSON,
+    FeeDestinationFromJSONTyped,
+    FeeDestinationToJSON,
+} from './FeeDestination';
+import type { FeeSource } from './FeeSource';
+import {
+    FeeSourceFromJSON,
+    FeeSourceFromJSONTyped,
+    FeeSourceToJSON,
+} from './FeeSource';
 import type { FeeSummary } from './FeeSummary';
 import {
     FeeSummaryFromJSON,
@@ -67,7 +85,25 @@ export interface TransactionReceipt {
      * @type {FeeSummary}
      * @memberof TransactionReceipt
      */
-    fee_summary?: FeeSummary;
+    fee_summary: FeeSummary;
+    /**
+     * 
+     * @type {CostingParameters}
+     * @memberof TransactionReceipt
+     */
+    costing_parameters: CostingParameters;
+    /**
+     * 
+     * @type {FeeSource}
+     * @memberof TransactionReceipt
+     */
+    fee_source?: FeeSource;
+    /**
+     * 
+     * @type {FeeDestination}
+     * @memberof TransactionReceipt
+     */
+    fee_destination?: FeeDestination;
     /**
      * 
      * @type {StateUpdates}
@@ -106,6 +142,8 @@ export interface TransactionReceipt {
 export function instanceOfTransactionReceipt(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "status" in value;
+    isInstance = isInstance && "fee_summary" in value;
+    isInstance = isInstance && "costing_parameters" in value;
     isInstance = isInstance && "state_updates" in value;
 
     return isInstance;
@@ -122,7 +160,10 @@ export function TransactionReceiptFromJSONTyped(json: any, ignoreDiscriminator: 
     return {
         
         'status': TransactionStatusFromJSON(json['status']),
-        'fee_summary': !exists(json, 'fee_summary') ? undefined : FeeSummaryFromJSON(json['fee_summary']),
+        'fee_summary': FeeSummaryFromJSON(json['fee_summary']),
+        'costing_parameters': CostingParametersFromJSON(json['costing_parameters']),
+        'fee_source': !exists(json, 'fee_source') ? undefined : FeeSourceFromJSON(json['fee_source']),
+        'fee_destination': !exists(json, 'fee_destination') ? undefined : FeeDestinationFromJSON(json['fee_destination']),
         'state_updates': StateUpdatesFromJSON(json['state_updates']),
         'events': !exists(json, 'events') ? undefined : ((json['events'] as Array<any>).map(EventFromJSON)),
         'next_epoch': !exists(json, 'next_epoch') ? undefined : NextEpochFromJSON(json['next_epoch']),
@@ -142,6 +183,9 @@ export function TransactionReceiptToJSON(value?: TransactionReceipt | null): any
         
         'status': TransactionStatusToJSON(value.status),
         'fee_summary': FeeSummaryToJSON(value.fee_summary),
+        'costing_parameters': CostingParametersToJSON(value.costing_parameters),
+        'fee_source': FeeSourceToJSON(value.fee_source),
+        'fee_destination': FeeDestinationToJSON(value.fee_destination),
         'state_updates': StateUpdatesToJSON(value.state_updates),
         'events': value.events === undefined ? undefined : ((value.events as Array<any>).map(EventToJSON)),
         'next_epoch': NextEpochToJSON(value.next_epoch),

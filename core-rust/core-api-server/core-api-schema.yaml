@@ -1867,6 +1867,7 @@ components:
       required:
         - substate_id
         - new_value
+        - system_structure
       properties:
         substate_id:
           $ref: "#/components/schemas/SubstateId"
@@ -1876,6 +1877,9 @@ components:
         previous_value:
           $ref: "#/components/schemas/SubstateValue"
           description: The previous value of the substate. Only returned if enabled in SubstateFormatOptions on your request (default false).
+        system_structure:
+          $ref: "#/components/schemas/SubstateSystemStructure"
+          description: A structure with type references describing the substate's schema.
     SubstateValue:
       type: object
       properties:
@@ -1892,12 +1896,16 @@ components:
       type: object
       required:
         - substate_id
+        - system_structure
       properties:
         substate_id:
           $ref: "#/components/schemas/SubstateId"
         previous_value:
           $ref: "#/components/schemas/SubstateValue"
           description: The previous value of the substate. Only returned if enabled in SubstateFormatOptions on your request (default false).
+        system_structure:
+          $ref: "#/components/schemas/SubstateSystemStructure"
+          description: A structure with type references describing the substate's schema.
     EntityReference:
       type: object
       required:
@@ -2141,6 +2149,9 @@ components:
       properties:
         index:
           type: integer
+          format: int64
+          minimum: 0
+          maximum: 4294967295
         resource_changes:
           type: array
           items:
@@ -3583,7 +3594,6 @@ components:
         - NonFungibleVaultFieldBalance
         - NonFungibleVaultFieldFrozenStatus
         - NonFungibleVaultContentsIndexEntry
-        - ConsensusManager
         - ConsensusManagerFieldConfig
         - ConsensusManagerFieldState
         - ConsensusManagerFieldCurrentValidatorSet
@@ -4286,10 +4296,22 @@ components:
       properties:
         mutable_fields:
           type: array
-          description: |
-            The field names of the NF Metadata which are mutable.
+          description: The fields of the NF Metadata which are mutable.
           items:
-            type: string
+            $ref: '#/components/schemas/MutableField'
+    MutableField:
+      type: object
+      required:
+        - name
+        - index
+      properties:
+        name:
+          type: string
+        index:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4294967295
     NonFungibleResourceManagerDataEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -5435,9 +5457,7 @@ components:
         status:
           $ref: "#/components/schemas/LtsCommittedTransactionStatus"
         fungible_entity_balance_changes:
-          # TODO(during review): is this description still true? we have improved both fees and balance changes recently...
           description: |
-            THE FEE ASSIGNMENT IS NOT CURRENTLY FULLY ACCURATE FOR SOME TRANSACTIONS. THIS WILL BE FIXED AT RCNET-V2.
             A list of all fungible balance updates which occurred in this transaction, aggregated by the global entity (such as account)
             which owns the vaults which were updated.
           type: array
@@ -5942,20 +5962,44 @@ components:
       type: object
       required:
         - network
-        - payload_hash
+        - payload_hashes
       properties:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
-        payload_hash:
-          $ref: "#/components/schemas/NotarizedTransactionHash"
+        payload_hashes:
+          type: array
+          items:
+            $ref: "#/components/schemas/NotarizedTransactionHash"
     MempoolTransactionResponse:
       type: object
       required:
-        - payload_hex
+        - count
+        - payloads
       properties:
-        payload_hex:
-          type: string
-          description: The hex-encoded full notarized transaction payload.
+        count:
+          type: integer
+          format: int32
+          description: An integer giving the total count of payload hashes checked in the returned response.
+        payloads:
+          type: array
+          description: |
+            An array containing pairs of payload hash (query) and payload hex or error (response).
+            Note that this response is bounded - this means it is not guaranteed all queries will be processed.
+            Please query missing payload hashes again.
+          items:
+            type: object
+            required:
+              - hash
+            properties:
+              hash:
+                $ref: "#/components/schemas/NotarizedTransactionHash"
+              hex:
+                type: string
+                description: The hex-encoded full notarized transaction payload - returned only if found in mempool.
+              error:
+                type: string
+                description: |
+                  Error message why `hex` field is missing: the transaction was not found in the mempool or the provided hash is invalid.
 ###############################
 # REQUEST: /transaction/parse #
 ###############################

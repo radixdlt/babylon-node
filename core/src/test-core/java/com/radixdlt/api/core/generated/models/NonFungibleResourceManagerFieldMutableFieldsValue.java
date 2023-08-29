@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.MutableField;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -38,38 +39,38 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class NonFungibleResourceManagerFieldMutableFieldsValue {
   public static final String JSON_PROPERTY_MUTABLE_FIELDS = "mutable_fields";
-  private List<String> mutableFields = new ArrayList<>();
+  private List<MutableField> mutableFields = new ArrayList<>();
 
   public NonFungibleResourceManagerFieldMutableFieldsValue() { 
   }
 
-  public NonFungibleResourceManagerFieldMutableFieldsValue mutableFields(List<String> mutableFields) {
+  public NonFungibleResourceManagerFieldMutableFieldsValue mutableFields(List<MutableField> mutableFields) {
     this.mutableFields = mutableFields;
     return this;
   }
 
-  public NonFungibleResourceManagerFieldMutableFieldsValue addMutableFieldsItem(String mutableFieldsItem) {
+  public NonFungibleResourceManagerFieldMutableFieldsValue addMutableFieldsItem(MutableField mutableFieldsItem) {
     this.mutableFields.add(mutableFieldsItem);
     return this;
   }
 
    /**
-   * The field names of the NF Metadata which are mutable. 
+   * The fields of the NF Metadata which are mutable.
    * @return mutableFields
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The field names of the NF Metadata which are mutable. ")
+  @ApiModelProperty(required = true, value = "The fields of the NF Metadata which are mutable.")
   @JsonProperty(JSON_PROPERTY_MUTABLE_FIELDS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<String> getMutableFields() {
+  public List<MutableField> getMutableFields() {
     return mutableFields;
   }
 
 
   @JsonProperty(JSON_PROPERTY_MUTABLE_FIELDS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setMutableFields(List<String> mutableFields) {
+  public void setMutableFields(List<MutableField> mutableFields) {
     this.mutableFields = mutableFields;
   }
 

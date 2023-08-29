@@ -13,6 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { CommittedIntentMetadata } from './CommittedIntentMetadata';
+import {
+    CommittedIntentMetadataFromJSON,
+    CommittedIntentMetadataFromJSONTyped,
+    CommittedIntentMetadataToJSON,
+} from './CommittedIntentMetadata';
 import type { Instant } from './Instant';
 import {
     InstantFromJSON,
@@ -65,6 +71,12 @@ export interface LtsTransactionSubmitRejectedErrorDetails {
      * @memberof LtsTransactionSubmitRejectedErrorDetails
      */
     is_rejected_because_intent_already_committed: boolean;
+    /**
+     * 
+     * @type {CommittedIntentMetadata}
+     * @memberof LtsTransactionSubmitRejectedErrorDetails
+     */
+    intent_already_committed_as?: CommittedIntentMetadata;
     /**
      * 
      * @type {Instant}
@@ -128,6 +140,7 @@ export function LtsTransactionSubmitRejectedErrorDetailsFromJSONTyped(json: any,
         'is_payload_rejection_permanent': json['is_payload_rejection_permanent'],
         'is_intent_rejection_permanent': json['is_intent_rejection_permanent'],
         'is_rejected_because_intent_already_committed': json['is_rejected_because_intent_already_committed'],
+        'intent_already_committed_as': !exists(json, 'intent_already_committed_as') ? undefined : CommittedIntentMetadataFromJSON(json['intent_already_committed_as']),
         'retry_from_timestamp': !exists(json, 'retry_from_timestamp') ? undefined : InstantFromJSON(json['retry_from_timestamp']),
         'retry_from_epoch': !exists(json, 'retry_from_epoch') ? undefined : json['retry_from_epoch'],
         'invalid_from_epoch': !exists(json, 'invalid_from_epoch') ? undefined : json['invalid_from_epoch'],
@@ -149,6 +162,7 @@ export function LtsTransactionSubmitRejectedErrorDetailsToJSON(value?: LtsTransa
         'is_payload_rejection_permanent': value.is_payload_rejection_permanent,
         'is_intent_rejection_permanent': value.is_intent_rejection_permanent,
         'is_rejected_because_intent_already_committed': value.is_rejected_because_intent_already_committed,
+        'intent_already_committed_as': CommittedIntentMetadataToJSON(value.intent_already_committed_as),
         'retry_from_timestamp': InstantToJSON(value.retry_from_timestamp),
         'retry_from_epoch': value.retry_from_epoch,
         'invalid_from_epoch': value.invalid_from_epoch,

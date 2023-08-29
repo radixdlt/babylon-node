@@ -13,18 +13,18 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { BlueprintPayloadDef } from './BlueprintPayloadDef';
+import {
+    BlueprintPayloadDefFromJSON,
+    BlueprintPayloadDefFromJSONTyped,
+    BlueprintPayloadDefToJSON,
+} from './BlueprintPayloadDef';
 import type { ReceiverInfo } from './ReceiverInfo';
 import {
     ReceiverInfoFromJSON,
     ReceiverInfoFromJSONTyped,
     ReceiverInfoToJSON,
 } from './ReceiverInfo';
-import type { TypePointer } from './TypePointer';
-import {
-    TypePointerFromJSON,
-    TypePointerFromJSONTyped,
-    TypePointerToJSON,
-} from './TypePointer';
 
 /**
  * 
@@ -40,16 +40,16 @@ export interface FunctionSchema {
     receiver_info?: ReceiverInfo;
     /**
      * 
-     * @type {TypePointer}
+     * @type {BlueprintPayloadDef}
      * @memberof FunctionSchema
      */
-    input: TypePointer;
+    input: BlueprintPayloadDef;
     /**
      * 
-     * @type {TypePointer}
+     * @type {BlueprintPayloadDef}
      * @memberof FunctionSchema
      */
-    output: TypePointer;
+    output: BlueprintPayloadDef;
 }
 
 /**
@@ -74,8 +74,8 @@ export function FunctionSchemaFromJSONTyped(json: any, ignoreDiscriminator: bool
     return {
         
         'receiver_info': !exists(json, 'receiver_info') ? undefined : ReceiverInfoFromJSON(json['receiver_info']),
-        'input': TypePointerFromJSON(json['input']),
-        'output': TypePointerFromJSON(json['output']),
+        'input': BlueprintPayloadDefFromJSON(json['input']),
+        'output': BlueprintPayloadDefFromJSON(json['output']),
     };
 }
 
@@ -89,8 +89,8 @@ export function FunctionSchemaToJSON(value?: FunctionSchema | null): any {
     return {
         
         'receiver_info': ReceiverInfoToJSON(value.receiver_info),
-        'input': TypePointerToJSON(value.input),
-        'output': TypePointerToJSON(value.output),
+        'input': BlueprintPayloadDefToJSON(value.input),
+        'output': BlueprintPayloadDefToJSON(value.output),
     };
 }
 

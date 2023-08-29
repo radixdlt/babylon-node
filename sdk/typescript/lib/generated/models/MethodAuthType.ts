@@ -19,7 +19,7 @@
  */
 export const MethodAuthType = {
     AllowAll: 'AllowAll',
-    StaticRoles: 'StaticRoles'
+    StaticRoleDefinition: 'StaticRoleDefinition'
 } as const;
 export type MethodAuthType = typeof MethodAuthType[keyof typeof MethodAuthType];
 
