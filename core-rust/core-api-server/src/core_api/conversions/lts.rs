@@ -8,8 +8,9 @@ use radix_engine::{
     types::{Decimal, GlobalAddress, IndexMap, ResourceAddress, FUNGIBLE_VAULT_BLUEPRINT},
 };
 use radix_engine_queries::typed_substate_layout::{
-    FungibleVaultField, TypeInfoSubstate, VersionedFungibleVaultBalance,
+    FungibleVaultBalanceFieldPayload, FungibleVaultField, TypeInfoSubstate,
 };
+use sbor::HasLatestVersion;
 use state_manager::store::{traits::SubstateNodeAncestryStore, StateManagerDatabase};
 use state_manager::{
     BySubstate, ChangeAction, CommittedTransactionIdentifiers, LedgerTransactionOutcome,
@@ -383,26 +384,25 @@ pub fn to_api_lts_resultant_account_fungible_balances(
         .batch_get_ancestry(fungible_vaults.clone())
         .into_iter()
         .map(|record| record.expect("InternalFungibleVault does not have a parent"));
-    let node_id_to_ancestor: HashMap<_, _> = fungible_vaults.into_iter().zip(ancestries).collect();
+    let node_id_to_ancestor: NonIterMap<_, _> =
+        fungible_vaults.into_iter().zip(ancestries).collect();
     let system_db_reader = SystemDatabaseReader::new(database);
     let mut resultant_fungible_balances_by_account = HashMap::new();
     substate_changes
         .iter()
+        .filter(|(substate_reference, _)| substate_reference.0.is_internal_fungible_vault())
+        .filter(|(substate_reference, _)| substate_reference.1 == MAIN_BASE_PARTITION)
+        .filter(|(substate_reference, _)| {
+            substate_reference.2 == FungibleVaultField::Balance.into()
+        })
         .filter_map(|(substate_reference, change_action)| {
             let vault_id = &substate_reference.0;
-            if !vault_id.is_internal_fungible_vault() {
-                return None;
-            }
 
-            if substate_reference.1 != MAIN_BASE_PARTITION {
-                return None;
-            }
+            let ancestor_record = node_id_to_ancestor
+                .get(vault_id)
+                .expect("Invariant broken: vaults should always have an ancestor");
+            let account_address = ancestor_record.parent.0;
 
-            if substate_reference.2 != FungibleVaultField::Balance.into() {
-                return None;
-            }
-
-            let account_address = node_id_to_ancestor.get(vault_id).unwrap().parent.0;
             let Ok(account_address) = GlobalAddress::try_from(account_address) else {
                 return None;
             };
@@ -410,6 +410,15 @@ pub fn to_api_lts_resultant_account_fungible_balances(
             if !account_address.is_account() {
                 return None;
             }
+
+            if ancestor_record.parent != ancestor_record.root {
+                panic!("Invariant broken: vaults ");
+            }
+
+            Some((account_address, substate_reference, change_action))
+        })
+        .map(|(account_address, substate_reference, change_action)| {
+            let vault_id = &substate_reference.0;
 
             let vault_type_info = system_db_reader
                 .get_type_info(vault_id)
@@ -432,8 +441,10 @@ pub fn to_api_lts_resultant_account_fungible_balances(
 
             let resource_address =
                 ResourceAddress::new_or_panic(vault_type_info.get_outer_object().into());
-
-            let fungible_vault_balance_substate: FieldSubstate<VersionedFungibleVaultBalance> =
+            (account_address, resource_address, change_action)
+        })
+        .map(|(account_address, resource_address, change_action)| {
+            let fungible_vault_balance_substate: FieldSubstate<FungibleVaultBalanceFieldPayload> =
                 match change_action {
                     ChangeAction::Create { new } => scrypto_decode(new).unwrap(),
                     ChangeAction::Update { new, .. } => scrypto_decode(new).unwrap(),
@@ -442,11 +453,12 @@ pub fn to_api_lts_resultant_account_fungible_balances(
                     }
                 };
 
-            let resultant_balance = match fungible_vault_balance_substate.into_payload() {
-                VersionedFungibleVaultBalance::V1(liquid) => liquid.amount(),
-            };
+            let resultant_balance = fungible_vault_balance_substate
+                .into_payload()
+                .into_latest()
+                .amount();
 
-            Some((account_address, resource_address, resultant_balance))
+            (account_address, resource_address, resultant_balance)
         })
         .for_each(|(account_address, resource_address, resultant_balance)| {
             resultant_fungible_balances_by_account
@@ -460,7 +472,8 @@ pub fn to_api_lts_resultant_account_fungible_balances(
     resultant_fungible_balances_by_account
         .into_iter()
         .map(|entry| models::LtsResultantAccountFungibleBalances {
-            account_address: to_api_global_address(context, &entry.0).unwrap(),
+            account_address: to_api_global_address(context, &entry.0)
+                .expect("Invariant broken: account_address is not a global address"),
             resultant_balances: entry.1,
         })
         .collect()
