@@ -191,8 +191,23 @@ public final class VertexStoreJavaImpl implements VertexStore {
     boolean isHighQC = qc.getRound().gt(highQC.highestQC().getRound());
     boolean isAnythingCommitted = qc.getCommittedAndLedgerStateProof(hasher).isPresent();
     logger.info(
-        "InsertQC is high {}, is anything committed {}, qc {}", isHighQC, isAnythingCommitted, qc);
-    if (!isHighQC) {
+        "InsertQC is high {}, is anything committed {}, qc {}, committed {}",
+        isHighQC,
+        isAnythingCommitted,
+        qc,
+        qc.getCommittedHeader());
+    if (isAnythingCommitted) {
+      logger.info(
+          "state {}  round {} epoch {}, {} || root round {} parent state {} parent round {}",
+          qc.getCommittedHeader().orElseThrow().getLedgerHeader().getStateVersion(),
+          qc.getCommittedHeader().orElseThrow().getLedgerHeader().getRound(),
+          qc.getCommittedHeader().orElseThrow().getLedgerHeader().getEpoch(),
+          qc.getCommittedHeader().orElseThrow().getLedgerHeader(),
+          getRoot().vertex().getRound(),
+          getRoot().vertex().parentLedgerHeader().getStateVersion(),
+          getRoot().vertex().parentLedgerHeader().getRound());
+    }
+    if (!isHighQC && !isAnythingCommitted) {
       return new VertexStore.InsertQcResult.Ignored();
     }
 
@@ -355,7 +370,9 @@ public final class VertexStoreJavaImpl implements VertexStore {
    * @param commitQC the proof of commit
    */
   private Optional<CommittedUpdate> commit(BFTHeader header, QuorumCertificate commitQC) {
+    logger.info("commit...");
     if (header.getRound().compareTo(this.rootVertex.vertex().getRound()) <= 0) {
+      logger.info("no commit, prev round");
       return Optional.empty();
     }
 
