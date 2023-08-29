@@ -34,7 +34,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * AccessControllerFieldStateValue
  */
 @JsonPropertyOrder({
-  AccessControllerFieldStateValue.JSON_PROPERTY_CONTROLLED_VAULT_ENTITY,
+  AccessControllerFieldStateValue.JSON_PROPERTY_CONTROLLED_VAULT,
   AccessControllerFieldStateValue.JSON_PROPERTY_TIMED_RECOVERY_DELAY_MINUTES,
   AccessControllerFieldStateValue.JSON_PROPERTY_RECOVERY_BADGE_RESOURCE_ADDRESS,
   AccessControllerFieldStateValue.JSON_PROPERTY_IS_PRIMARY_ROLE_LOCKED,
@@ -45,8 +45,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class AccessControllerFieldStateValue {
-  public static final String JSON_PROPERTY_CONTROLLED_VAULT_ENTITY = "controlled_vault_entity";
-  private EntityReference controlledVaultEntity;
+  public static final String JSON_PROPERTY_CONTROLLED_VAULT = "controlled_vault";
+  private EntityReference controlledVault;
 
   public static final String JSON_PROPERTY_TIMED_RECOVERY_DELAY_MINUTES = "timed_recovery_delay_minutes";
   private Long timedRecoveryDelayMinutes;
@@ -72,29 +72,29 @@ public class AccessControllerFieldStateValue {
   public AccessControllerFieldStateValue() { 
   }
 
-  public AccessControllerFieldStateValue controlledVaultEntity(EntityReference controlledVaultEntity) {
-    this.controlledVaultEntity = controlledVaultEntity;
+  public AccessControllerFieldStateValue controlledVault(EntityReference controlledVault) {
+    this.controlledVault = controlledVault;
     return this;
   }
 
    /**
-   * Get controlledVaultEntity
-   * @return controlledVaultEntity
+   * Get controlledVault
+   * @return controlledVault
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_CONTROLLED_VAULT_ENTITY)
+  @JsonProperty(JSON_PROPERTY_CONTROLLED_VAULT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EntityReference getControlledVaultEntity() {
-    return controlledVaultEntity;
+  public EntityReference getControlledVault() {
+    return controlledVault;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_CONTROLLED_VAULT_ENTITY)
+  @JsonProperty(JSON_PROPERTY_CONTROLLED_VAULT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setControlledVaultEntity(EntityReference controlledVaultEntity) {
-    this.controlledVaultEntity = controlledVaultEntity;
+  public void setControlledVault(EntityReference controlledVault) {
+    this.controlledVault = controlledVault;
   }
 
 
@@ -294,7 +294,7 @@ public class AccessControllerFieldStateValue {
       return false;
     }
     AccessControllerFieldStateValue accessControllerFieldStateValue = (AccessControllerFieldStateValue) o;
-    return Objects.equals(this.controlledVaultEntity, accessControllerFieldStateValue.controlledVaultEntity) &&
+    return Objects.equals(this.controlledVault, accessControllerFieldStateValue.controlledVault) &&
         Objects.equals(this.timedRecoveryDelayMinutes, accessControllerFieldStateValue.timedRecoveryDelayMinutes) &&
         Objects.equals(this.recoveryBadgeResourceAddress, accessControllerFieldStateValue.recoveryBadgeResourceAddress) &&
         Objects.equals(this.isPrimaryRoleLocked, accessControllerFieldStateValue.isPrimaryRoleLocked) &&
@@ -306,14 +306,14 @@ public class AccessControllerFieldStateValue {
 
   @Override
   public int hashCode() {
-    return Objects.hash(controlledVaultEntity, timedRecoveryDelayMinutes, recoveryBadgeResourceAddress, isPrimaryRoleLocked, primaryRoleRecoveryAttempt, hasPrimaryRoleBadgeWithdrawAttempt, recoveryRoleRecoveryAttempt, hasRecoveryRoleBadgeWithdrawAttempt);
+    return Objects.hash(controlledVault, timedRecoveryDelayMinutes, recoveryBadgeResourceAddress, isPrimaryRoleLocked, primaryRoleRecoveryAttempt, hasPrimaryRoleBadgeWithdrawAttempt, recoveryRoleRecoveryAttempt, hasRecoveryRoleBadgeWithdrawAttempt);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class AccessControllerFieldStateValue {\n");
-    sb.append("    controlledVaultEntity: ").append(toIndentedString(controlledVaultEntity)).append("\n");
+    sb.append("    controlledVault: ").append(toIndentedString(controlledVault)).append("\n");
     sb.append("    timedRecoveryDelayMinutes: ").append(toIndentedString(timedRecoveryDelayMinutes)).append("\n");
     sb.append("    recoveryBadgeResourceAddress: ").append(toIndentedString(recoveryBadgeResourceAddress)).append("\n");
     sb.append("    isPrimaryRoleLocked: ").append(toIndentedString(isPrimaryRoleLocked)).append("\n");

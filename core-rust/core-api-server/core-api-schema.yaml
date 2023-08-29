@@ -4924,13 +4924,13 @@ components:
     AccessControllerFieldStateValue:
       type: object
       required:
-        - controlled_vault_entity
+        - controlled_vault
         - recovery_badge_resource_address
         - is_primary_role_locked
         - has_primary_role_badge_withdraw_attempt
         - has_recovery_role_badge_withdraw_attempt
       properties:
-        controlled_vault_entity:
+        controlled_vault:
           $ref: "#/components/schemas/EntityReference"
         timed_recovery_delay_minutes:
           type: integer

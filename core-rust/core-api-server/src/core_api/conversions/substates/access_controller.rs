@@ -3,7 +3,7 @@ use super::*;
 use crate::core_api::models;
 
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::access_controller::RecoveryProposal;
+use radix_engine_interface::blueprints::access_controller::{RecoveryProposal, RuleSet};
 use radix_engine_queries::typed_substate_layout::*;
 
 pub fn to_api_access_controller_substate(
@@ -26,7 +26,7 @@ pub fn to_api_access_controller_substate(
             )
         },
         Value {
-            controlled_vault_entity: Box::new(to_api_entity_reference(
+            controlled_vault: Box::new(to_api_entity_reference(
                 context,
                 controlled_asset.as_node_id()
             )?),
@@ -34,10 +34,10 @@ pub fn to_api_access_controller_substate(
                 .as_ref()
                 .map(|minutes| to_api_u32_as_i64(*minutes)),
             recovery_badge_resource_address: to_api_resource_address(context, recovery_badge)?,
-            is_primary_role_locked: matches!(
-                primary_role_locking_state,
-                PrimaryRoleLockingState::Locked
-            ),
+            is_primary_role_locked: match primary_role_locking_state {
+                PrimaryRoleLockingState::Locked => true,
+                PrimaryRoleLockingState::Unlocked => false,
+            },
             primary_role_recovery_attempt: match primary_role_recovery_attempt_state {
                 PrimaryRoleRecoveryAttemptState::NoRecoveryAttempt => None,
                 PrimaryRoleRecoveryAttemptState::RecoveryAttempt(recovery_proposal) =>
@@ -48,10 +48,11 @@ pub fn to_api_access_controller_substate(
                         )?)
                     })),
             },
-            has_primary_role_badge_withdraw_attempt: matches!(
-                primary_role_badge_withdraw_attempt_state,
-                PrimaryRoleBadgeWithdrawAttemptState::BadgeWithdrawAttempt
-            ),
+            has_primary_role_badge_withdraw_attempt: match primary_role_badge_withdraw_attempt_state
+            {
+                PrimaryRoleBadgeWithdrawAttemptState::BadgeWithdrawAttempt => true,
+                PrimaryRoleBadgeWithdrawAttemptState::NoBadgeWithdrawAttempt => false,
+            },
             recovery_role_recovery_attempt: match recovery_role_recovery_attempt_state {
                 RecoveryRoleRecoveryAttemptState::NoRecoveryAttempt => None,
                 RecoveryRoleRecoveryAttemptState::RecoveryAttempt(attempt_state) => {
@@ -74,33 +75,33 @@ pub fn to_api_access_controller_substate(
                     }))
                 }
             },
-            has_recovery_role_badge_withdraw_attempt: matches!(
-                recovery_role_badge_withdraw_attempt_state,
-                RecoveryRoleBadgeWithdrawAttemptState::BadgeWithdrawAttempt
-            ),
+            has_recovery_role_badge_withdraw_attempt:
+                match recovery_role_badge_withdraw_attempt_state {
+                    RecoveryRoleBadgeWithdrawAttemptState::BadgeWithdrawAttempt => true,
+                    RecoveryRoleBadgeWithdrawAttemptState::NoBadgeWithdrawAttempt => false,
+                },
         }
     ))
 }
 
 pub fn to_api_recovery_proposal(
     context: &MappingContext,
-    substate: &RecoveryProposal,
+    proposal: &RecoveryProposal,
 ) -> Result<models::RecoveryProposal, MappingError> {
+    let RecoveryProposal {
+        rule_set:
+            RuleSet {
+                primary_role,
+                recovery_role,
+                confirmation_role,
+            },
+        timed_recovery_delay_in_minutes,
+    } = proposal;
     Ok(models::RecoveryProposal {
-        primary_role: Some(to_api_access_rule(
-            context,
-            &substate.rule_set.primary_role,
-        )?),
-        recovery_role: Some(to_api_access_rule(
-            context,
-            &substate.rule_set.recovery_role,
-        )?),
-        confirmation_role: Some(to_api_access_rule(
-            context,
-            &substate.rule_set.confirmation_role,
-        )?),
-        timed_recovery_delay_minutes: substate
-            .timed_recovery_delay_in_minutes
+        primary_role: Some(to_api_access_rule(context, primary_role)?),
+        recovery_role: Some(to_api_access_rule(context, recovery_role)?),
+        confirmation_role: Some(to_api_access_rule(context, confirmation_role)?),
+        timed_recovery_delay_minutes: timed_recovery_delay_in_minutes
             .as_ref()
             .map(|minutes| to_api_u32_as_i64(*minutes)),
     })
