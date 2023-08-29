@@ -83,7 +83,6 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import javax.annotation.concurrent.NotThreadSafe;
 import org.apache.logging.log4j.LogManager;
@@ -189,37 +188,33 @@ public final class VertexStoreJavaImpl implements VertexStore {
 
     // proposed vertex doesn't have any children
     boolean isHighQC = qc.getRound().gt(highQC.highestQC().getRound());
-    boolean isAnythingCommitted = qc.getCommittedAndLedgerStateProof(hasher).isPresent();
-    logger.info(
-        "InsertQC is high {}, is anything committed {}, qc {}, committed {}",
-        isHighQC,
-        isAnythingCommitted,
-        qc,
-        qc.getCommittedHeader());
-    if (isAnythingCommitted) {
-      logger.info(
-          "state {}  round {} epoch {}, {} || root round {} parent state {} parent round {}",
-          qc.getCommittedHeader().orElseThrow().getLedgerHeader().getStateVersion(),
-          qc.getCommittedHeader().orElseThrow().getLedgerHeader().getRound(),
-          qc.getCommittedHeader().orElseThrow().getLedgerHeader().getEpoch(),
-          qc.getCommittedHeader().orElseThrow().getLedgerHeader(),
-          getRoot().vertex().getRound(),
-          getRoot().vertex().parentLedgerHeader().getStateVersion(),
-          getRoot().vertex().parentLedgerHeader().getRound());
-    }
-    if (!isHighQC && !isAnythingCommitted) {
-      return new VertexStore.InsertQcResult.Ignored();
-    }
-
     if (isHighQC) {
       this.highQC = this.highQC.withHighestQC(qc);
     }
 
-    final var committedUpdate =
-        Option.from(qc.getCommittedHeader().flatMap(header -> this.commit(header, qc)));
+    final Option<CommittedUpdate> committedUpdate;
+    final var maybeCommittedHeader = qc.getCommittedHeader();
+    if (maybeCommittedHeader.isPresent()) {
+      final var committedHeader = maybeCommittedHeader.orElseThrow();
+      if (committedHeader.getRound().gt(this.rootVertex.vertex().getRound())) {
+        // QC has a valid committed header
+        committedUpdate = Option.some(this.commit(committedHeader, qc));
+      } else {
+        // QC has committed header for an older round
+        committedUpdate = Option.empty();
+      }
+    } else {
+      // No committed header in QC
+      committedUpdate = Option.empty();
+    }
 
-    logger.info("committed update? {}", committedUpdate);
+    if (!isHighQC && committedUpdate.isEmpty()) {
+      // This wasn't our new high QC and nothing has been committed
+      return new VertexStore.InsertQcResult.Ignored();
+    }
 
+    // We have either used `qc` as a new highQc, or some
+    // vertices were committed, or both.
     return new VertexStore.InsertQcResult.Inserted(highQC(), getState(), committedUpdate);
   }
 
@@ -369,12 +364,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
    * @param header the header to be committed
    * @param commitQC the proof of commit
    */
-  private Optional<CommittedUpdate> commit(BFTHeader header, QuorumCertificate commitQC) {
-    logger.info("commit...");
-    if (header.getRound().compareTo(this.rootVertex.vertex().getRound()) <= 0) {
-      logger.info("no commit, prev round");
-      return Optional.empty();
-    }
+  private CommittedUpdate commit(BFTHeader header, QuorumCertificate commitQC) {
 
     final HashCode vertexId = header.getVertexId();
     final VertexWithHash tipVertex = vertices.get(vertexId);
@@ -394,7 +384,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
     }
     removeVertexAndPruneInternal(prevRootVertex.hash(), null);
 
-    return Optional.of(new CommittedUpdate(path));
+    return new CommittedUpdate(path);
   }
 
   @Override
