@@ -94,16 +94,6 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
       var account2KeyPair = ECKeyPair.generateNew();
       var account2Address = Address.virtualAccountAddress(account2KeyPair.getPublicKey());
 
-      if (account1Address.toString().compareTo(account2Address.toString()) > 0) {
-        var tempAcc = account1Address;
-        account1Address = account2Address;
-        account2Address = tempAcc;
-
-        var tempKeyPair = account1KeyPair;
-        account1KeyPair = account2KeyPair;
-        account2KeyPair = tempKeyPair;
-      }
-
       var account1ExpectedAmount = 10000;
       var account2ExpectedAmount = 10000;
       var XRD = ScryptoConstants.XRD_RESOURCE_ADDRESS;

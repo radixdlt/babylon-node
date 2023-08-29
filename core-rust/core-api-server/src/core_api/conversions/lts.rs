@@ -1,12 +1,15 @@
 use node_common::utils::IsAccountExt;
 use radix_engine::{
-    blueprints::resource::FungibleVaultBalanceSubstate,
-    system::system_modules::costing::RoyaltyRecipient,
+    system::{
+        system_db_reader::SystemDatabaseReader, system_modules::costing::RoyaltyRecipient,
+        system_substates::FieldSubstate,
+    },
     transaction::BalanceChange,
     types::{Decimal, GlobalAddress, IndexMap, ResourceAddress, FUNGIBLE_VAULT_BLUEPRINT},
 };
-use radix_engine_queries::typed_substate_layout::{ComponentRoyaltySubstate, TypeInfoSubstate};
-use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
+use radix_engine_queries::typed_substate_layout::{
+    FungibleVaultField, TypeInfoSubstate, VersionedFungibleVaultBalance,
+};
 use state_manager::store::{traits::SubstateNodeAncestryStore, StateManagerDatabase};
 use state_manager::{
     BySubstate, ChangeAction, CommittedTransactionIdentifiers, LedgerTransactionOutcome,
@@ -381,12 +384,13 @@ pub fn to_api_lts_resultant_account_fungible_balances(
         .into_iter()
         .map(|record| record.expect("InternalFungibleVault does not have a parent"));
     let node_id_to_ancestor: HashMap<_, _> = fungible_vaults.into_iter().zip(ancestries).collect();
+    let system_db_reader = SystemDatabaseReader::new(database);
     let mut resultant_fungible_balances_by_account = HashMap::new();
     substate_changes
         .iter()
         .filter_map(|(substate_reference, change_action)| {
-            let vault = &substate_reference.0;
-            if !vault.is_internal_fungible_vault() {
+            let vault_id = &substate_reference.0;
+            if !vault_id.is_internal_fungible_vault() {
                 return None;
             }
 
@@ -394,11 +398,11 @@ pub fn to_api_lts_resultant_account_fungible_balances(
                 return None;
             }
 
-            if substate_reference.2 != FungibleVaultField::LiquidFungible.into() {
+            if substate_reference.2 != FungibleVaultField::Balance.into() {
                 return None;
             }
 
-            let account_address = node_id_to_ancestor.get(vault).unwrap().parent.0;
+            let account_address = node_id_to_ancestor.get(vault_id).unwrap().parent.0;
             let Ok(account_address) = GlobalAddress::try_from(account_address) else {
                 return None;
             };
@@ -407,63 +411,29 @@ pub fn to_api_lts_resultant_account_fungible_balances(
                 return None;
             }
 
-            let vault_type_info = database
-                .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
-                    vault,
-                    TYPE_INFO_FIELD_PARTITION,
-                    &TypeInfoField::TypeInfo.into(),
-                )
+            let vault_type_info = system_db_reader
+                .get_type_info(vault_id)
                 .expect("Vault missing TypeInfo substate");
 
             let TypeInfoSubstate::Object(vault_type_info) = vault_type_info else {
                 panic!("TypeInfoSubstate of FungibleVault is not of type Object.");
             };
+
             assert!(
                 vault_type_info
                     .blueprint_info
                     .blueprint_id
-                    .package_address
-                    .eq(&RESOURCE_PACKAGE),
-                "Vault type info package address invalid."
-            );
-            assert!(
-                vault_type_info
-                    .blueprint_info
-                    .blueprint_id
-                    .blueprint_name
-                    .eq(&FUNGIBLE_VAULT_BLUEPRINT),
-                "Vault type info blueprint name invalid."
+                    .eq(&BlueprintId::new(
+                        &RESOURCE_PACKAGE,
+                        FUNGIBLE_VAULT_BLUEPRINT,
+                    )),
+                "Vault's TypeInfo wrongly says this is not a fungible vault."
             );
 
             let resource_address =
                 ResourceAddress::new_or_panic(vault_type_info.get_outer_object().into());
 
-            if resource_address == XRD {
-                // Royalty vaults can be only of XRD, so we hit the DB only in this case.
-                let component_royalty_substate =
-                    read_optional_substate::<FieldSubstate<ComponentRoyaltySubstate>>(
-                        database,
-                        account_address.as_node_id(),
-                        ROYALTY_BASE_PARTITION
-                            .at_offset(ROYALTY_FIELDS_PARTITION_OFFSET)
-                            .unwrap(),
-                        &RoyaltyField::RoyaltyAccumulator.into(),
-                    )
-                    .expect("Account does not have royalty substate.");
-
-                if component_royalty_substate
-                    .value
-                    .0
-                    .royalty_vault
-                    .0
-                    .as_node_id()
-                    == vault
-                {
-                    return None;
-                }
-            }
-
-            let fungible_vault_balance_substate: FieldSubstate<FungibleVaultBalanceSubstate> =
+            let fungible_vault_balance_substate: FieldSubstate<VersionedFungibleVaultBalance> =
                 match change_action {
                     ChangeAction::Create { new } => scrypto_decode(new).unwrap(),
                     ChangeAction::Update { new, .. } => scrypto_decode(new).unwrap(),
@@ -472,7 +442,9 @@ pub fn to_api_lts_resultant_account_fungible_balances(
                     }
                 };
 
-            let resultant_balance = fungible_vault_balance_substate.value.0.amount();
+            let resultant_balance = match fungible_vault_balance_substate.into_payload() {
+                VersionedFungibleVaultBalance::V1(liquid) => liquid.amount(),
+            };
 
             Some((account_address, resource_address, resultant_balance))
         })
