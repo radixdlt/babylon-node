@@ -4924,10 +4924,79 @@ components:
     AccessControllerFieldStateValue:
       type: object
       required:
-        - data_struct
+        - controlled_vault_entity
+        - recovery_badge_resource_address
+        - is_primary_role_locked
+        - has_primary_role_badge_withdraw_attempt
+        - has_recovery_role_badge_withdraw_attempt
       properties:
-        data_struct:
-          $ref: '#/components/schemas/DataStruct'
+        controlled_vault_entity:
+          $ref: "#/components/schemas/EntityReference"
+        timed_recovery_delay_minutes:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4294967295
+          description: |
+            An integer between `0` and `2^32 - 1`, specifying the amount of time (in minutes) that
+            it takes for timed recovery to be done. When not present, then timed recovery can not be
+            performed through this access controller.
+        recovery_badge_resource_address:
+          $ref: "#/components/schemas/ResourceAddress"
+        is_primary_role_locked:
+          type: boolean
+          description: Whether the primary role is currently locked.
+        primary_role_recovery_attempt:
+          $ref: "#/components/schemas/PrimaryRoleRecoveryAttempt"
+          description: The current attempt to recover a primary role, if any.
+        has_primary_role_badge_withdraw_attempt:
+          type: boolean
+          description: Whether the primary role badge withdraw is currently being attempted.
+        recovery_role_recovery_attempt:
+          $ref: "#/components/schemas/RecoveryRoleRecoveryAttempt"
+          description: The current attempt to recover a recovery role, if any.
+        has_recovery_role_badge_withdraw_attempt:
+          type: boolean
+          description: Whether the recovery role badge withdraw is currently being attempted.
+    PrimaryRoleRecoveryAttempt:
+      type: object
+      required:
+        - recovery_proposal
+      properties:
+        recovery_proposal:
+          $ref: "#/components/schemas/RecoveryProposal"
+          description: A new set of rules being proposed for different roles.
+    RecoveryRoleRecoveryAttempt:
+      type: object
+      required:
+        - recovery_proposal
+      properties:
+        recovery_proposal:
+          $ref: "#/components/schemas/RecoveryProposal"
+          description: A new set of rules being proposed for different roles.
+        timed_recovery_allowed_after:
+          $ref: "#/components/schemas/Instant"
+          description: The time after which the recovery is allowed. Only present if this is a timed recovery.
+    RecoveryProposal:
+      type: object
+      required:
+        - primary_role
+        - recovery_role
+        - confirmation_role
+      properties:
+        primary_role:
+          $ref: "#/components/schemas/AccessRule"
+        recovery_role:
+          $ref: "#/components/schemas/AccessRule"
+        confirmation_role:
+          $ref: "#/components/schemas/AccessRule"
+        timed_recovery_delay_minutes:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4294967295
+          description: |
+            An integer between `0` and `2^32 - 1`, specifying the optional proposal delay of timed recoveries.
     GenericScryptoComponentFieldStateSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'

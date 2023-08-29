@@ -151,6 +151,14 @@ pub fn to_unix_timestamp_ms(time: std::time::SystemTime) -> Result<i64, MappingE
     })
 }
 
+pub fn to_api_instant(instant: &Instant) -> Result<models::Instant, MappingError> {
+    to_api_instant_from_safe_timestamp(instant.seconds_since_unix_epoch.checked_mul(1000).ok_or(
+        MappingError::IntegerError {
+            message: "Timestamp must be representable as millis in i64".to_owned(),
+        },
+    )?)
+}
+
 pub fn to_api_instant_from_safe_timestamp(
     timestamp_millis: i64,
 ) -> Result<models::Instant, MappingError> {

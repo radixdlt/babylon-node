@@ -22,7 +22,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.DataStruct;
+import com.radixdlt.api.core.generated.models.EntityReference;
+import com.radixdlt.api.core.generated.models.PrimaryRoleRecoveryAttempt;
+import com.radixdlt.api.core.generated.models.RecoveryRoleRecoveryAttempt;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,39 +34,251 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * AccessControllerFieldStateValue
  */
 @JsonPropertyOrder({
-  AccessControllerFieldStateValue.JSON_PROPERTY_DATA_STRUCT
+  AccessControllerFieldStateValue.JSON_PROPERTY_CONTROLLED_VAULT_ENTITY,
+  AccessControllerFieldStateValue.JSON_PROPERTY_TIMED_RECOVERY_DELAY_MINUTES,
+  AccessControllerFieldStateValue.JSON_PROPERTY_RECOVERY_BADGE_RESOURCE_ADDRESS,
+  AccessControllerFieldStateValue.JSON_PROPERTY_IS_PRIMARY_ROLE_LOCKED,
+  AccessControllerFieldStateValue.JSON_PROPERTY_PRIMARY_ROLE_RECOVERY_ATTEMPT,
+  AccessControllerFieldStateValue.JSON_PROPERTY_HAS_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT,
+  AccessControllerFieldStateValue.JSON_PROPERTY_RECOVERY_ROLE_RECOVERY_ATTEMPT,
+  AccessControllerFieldStateValue.JSON_PROPERTY_HAS_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class AccessControllerFieldStateValue {
-  public static final String JSON_PROPERTY_DATA_STRUCT = "data_struct";
-  private DataStruct dataStruct;
+  public static final String JSON_PROPERTY_CONTROLLED_VAULT_ENTITY = "controlled_vault_entity";
+  private EntityReference controlledVaultEntity;
+
+  public static final String JSON_PROPERTY_TIMED_RECOVERY_DELAY_MINUTES = "timed_recovery_delay_minutes";
+  private Long timedRecoveryDelayMinutes;
+
+  public static final String JSON_PROPERTY_RECOVERY_BADGE_RESOURCE_ADDRESS = "recovery_badge_resource_address";
+  private String recoveryBadgeResourceAddress;
+
+  public static final String JSON_PROPERTY_IS_PRIMARY_ROLE_LOCKED = "is_primary_role_locked";
+  private Boolean isPrimaryRoleLocked;
+
+  public static final String JSON_PROPERTY_PRIMARY_ROLE_RECOVERY_ATTEMPT = "primary_role_recovery_attempt";
+  private PrimaryRoleRecoveryAttempt primaryRoleRecoveryAttempt;
+
+  public static final String JSON_PROPERTY_HAS_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT = "has_primary_role_badge_withdraw_attempt";
+  private Boolean hasPrimaryRoleBadgeWithdrawAttempt;
+
+  public static final String JSON_PROPERTY_RECOVERY_ROLE_RECOVERY_ATTEMPT = "recovery_role_recovery_attempt";
+  private RecoveryRoleRecoveryAttempt recoveryRoleRecoveryAttempt;
+
+  public static final String JSON_PROPERTY_HAS_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT = "has_recovery_role_badge_withdraw_attempt";
+  private Boolean hasRecoveryRoleBadgeWithdrawAttempt;
 
   public AccessControllerFieldStateValue() { 
   }
 
-  public AccessControllerFieldStateValue dataStruct(DataStruct dataStruct) {
-    this.dataStruct = dataStruct;
+  public AccessControllerFieldStateValue controlledVaultEntity(EntityReference controlledVaultEntity) {
+    this.controlledVaultEntity = controlledVaultEntity;
     return this;
   }
 
    /**
-   * Get dataStruct
-   * @return dataStruct
+   * Get controlledVaultEntity
+   * @return controlledVaultEntity
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
+  @JsonProperty(JSON_PROPERTY_CONTROLLED_VAULT_ENTITY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public DataStruct getDataStruct() {
-    return dataStruct;
+  public EntityReference getControlledVaultEntity() {
+    return controlledVaultEntity;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
+  @JsonProperty(JSON_PROPERTY_CONTROLLED_VAULT_ENTITY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setDataStruct(DataStruct dataStruct) {
-    this.dataStruct = dataStruct;
+  public void setControlledVaultEntity(EntityReference controlledVaultEntity) {
+    this.controlledVaultEntity = controlledVaultEntity;
+  }
+
+
+  public AccessControllerFieldStateValue timedRecoveryDelayMinutes(Long timedRecoveryDelayMinutes) {
+    this.timedRecoveryDelayMinutes = timedRecoveryDelayMinutes;
+    return this;
+  }
+
+   /**
+   * An integer between &#x60;0&#x60; and &#x60;2^32 - 1&#x60;, specifying the amount of time (in minutes) that it takes for timed recovery to be done. When not present, then timed recovery can not be performed through this access controller. 
+   * minimum: 0
+   * maximum: 4294967295
+   * @return timedRecoveryDelayMinutes
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "An integer between `0` and `2^32 - 1`, specifying the amount of time (in minutes) that it takes for timed recovery to be done. When not present, then timed recovery can not be performed through this access controller. ")
+  @JsonProperty(JSON_PROPERTY_TIMED_RECOVERY_DELAY_MINUTES)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public Long getTimedRecoveryDelayMinutes() {
+    return timedRecoveryDelayMinutes;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_TIMED_RECOVERY_DELAY_MINUTES)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setTimedRecoveryDelayMinutes(Long timedRecoveryDelayMinutes) {
+    this.timedRecoveryDelayMinutes = timedRecoveryDelayMinutes;
+  }
+
+
+  public AccessControllerFieldStateValue recoveryBadgeResourceAddress(String recoveryBadgeResourceAddress) {
+    this.recoveryBadgeResourceAddress = recoveryBadgeResourceAddress;
+    return this;
+  }
+
+   /**
+   * The Bech32m-encoded human readable version of the resource address
+   * @return recoveryBadgeResourceAddress
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the resource address")
+  @JsonProperty(JSON_PROPERTY_RECOVERY_BADGE_RESOURCE_ADDRESS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getRecoveryBadgeResourceAddress() {
+    return recoveryBadgeResourceAddress;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_RECOVERY_BADGE_RESOURCE_ADDRESS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setRecoveryBadgeResourceAddress(String recoveryBadgeResourceAddress) {
+    this.recoveryBadgeResourceAddress = recoveryBadgeResourceAddress;
+  }
+
+
+  public AccessControllerFieldStateValue isPrimaryRoleLocked(Boolean isPrimaryRoleLocked) {
+    this.isPrimaryRoleLocked = isPrimaryRoleLocked;
+    return this;
+  }
+
+   /**
+   * Whether the primary role is currently locked.
+   * @return isPrimaryRoleLocked
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "Whether the primary role is currently locked.")
+  @JsonProperty(JSON_PROPERTY_IS_PRIMARY_ROLE_LOCKED)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Boolean getIsPrimaryRoleLocked() {
+    return isPrimaryRoleLocked;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_IS_PRIMARY_ROLE_LOCKED)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setIsPrimaryRoleLocked(Boolean isPrimaryRoleLocked) {
+    this.isPrimaryRoleLocked = isPrimaryRoleLocked;
+  }
+
+
+  public AccessControllerFieldStateValue primaryRoleRecoveryAttempt(PrimaryRoleRecoveryAttempt primaryRoleRecoveryAttempt) {
+    this.primaryRoleRecoveryAttempt = primaryRoleRecoveryAttempt;
+    return this;
+  }
+
+   /**
+   * Get primaryRoleRecoveryAttempt
+   * @return primaryRoleRecoveryAttempt
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_PRIMARY_ROLE_RECOVERY_ATTEMPT)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public PrimaryRoleRecoveryAttempt getPrimaryRoleRecoveryAttempt() {
+    return primaryRoleRecoveryAttempt;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_PRIMARY_ROLE_RECOVERY_ATTEMPT)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setPrimaryRoleRecoveryAttempt(PrimaryRoleRecoveryAttempt primaryRoleRecoveryAttempt) {
+    this.primaryRoleRecoveryAttempt = primaryRoleRecoveryAttempt;
+  }
+
+
+  public AccessControllerFieldStateValue hasPrimaryRoleBadgeWithdrawAttempt(Boolean hasPrimaryRoleBadgeWithdrawAttempt) {
+    this.hasPrimaryRoleBadgeWithdrawAttempt = hasPrimaryRoleBadgeWithdrawAttempt;
+    return this;
+  }
+
+   /**
+   * Whether the primary role badge withdraw is currently being attempted.
+   * @return hasPrimaryRoleBadgeWithdrawAttempt
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "Whether the primary role badge withdraw is currently being attempted.")
+  @JsonProperty(JSON_PROPERTY_HAS_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Boolean getHasPrimaryRoleBadgeWithdrawAttempt() {
+    return hasPrimaryRoleBadgeWithdrawAttempt;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_HAS_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setHasPrimaryRoleBadgeWithdrawAttempt(Boolean hasPrimaryRoleBadgeWithdrawAttempt) {
+    this.hasPrimaryRoleBadgeWithdrawAttempt = hasPrimaryRoleBadgeWithdrawAttempt;
+  }
+
+
+  public AccessControllerFieldStateValue recoveryRoleRecoveryAttempt(RecoveryRoleRecoveryAttempt recoveryRoleRecoveryAttempt) {
+    this.recoveryRoleRecoveryAttempt = recoveryRoleRecoveryAttempt;
+    return this;
+  }
+
+   /**
+   * Get recoveryRoleRecoveryAttempt
+   * @return recoveryRoleRecoveryAttempt
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_RECOVERY_ROLE_RECOVERY_ATTEMPT)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public RecoveryRoleRecoveryAttempt getRecoveryRoleRecoveryAttempt() {
+    return recoveryRoleRecoveryAttempt;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_RECOVERY_ROLE_RECOVERY_ATTEMPT)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setRecoveryRoleRecoveryAttempt(RecoveryRoleRecoveryAttempt recoveryRoleRecoveryAttempt) {
+    this.recoveryRoleRecoveryAttempt = recoveryRoleRecoveryAttempt;
+  }
+
+
+  public AccessControllerFieldStateValue hasRecoveryRoleBadgeWithdrawAttempt(Boolean hasRecoveryRoleBadgeWithdrawAttempt) {
+    this.hasRecoveryRoleBadgeWithdrawAttempt = hasRecoveryRoleBadgeWithdrawAttempt;
+    return this;
+  }
+
+   /**
+   * Whether the recovery role badge withdraw is currently being attempted.
+   * @return hasRecoveryRoleBadgeWithdrawAttempt
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "Whether the recovery role badge withdraw is currently being attempted.")
+  @JsonProperty(JSON_PROPERTY_HAS_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Boolean getHasRecoveryRoleBadgeWithdrawAttempt() {
+    return hasRecoveryRoleBadgeWithdrawAttempt;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_HAS_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setHasRecoveryRoleBadgeWithdrawAttempt(Boolean hasRecoveryRoleBadgeWithdrawAttempt) {
+    this.hasRecoveryRoleBadgeWithdrawAttempt = hasRecoveryRoleBadgeWithdrawAttempt;
   }
 
 
@@ -80,19 +294,33 @@ public class AccessControllerFieldStateValue {
       return false;
     }
     AccessControllerFieldStateValue accessControllerFieldStateValue = (AccessControllerFieldStateValue) o;
-    return Objects.equals(this.dataStruct, accessControllerFieldStateValue.dataStruct);
+    return Objects.equals(this.controlledVaultEntity, accessControllerFieldStateValue.controlledVaultEntity) &&
+        Objects.equals(this.timedRecoveryDelayMinutes, accessControllerFieldStateValue.timedRecoveryDelayMinutes) &&
+        Objects.equals(this.recoveryBadgeResourceAddress, accessControllerFieldStateValue.recoveryBadgeResourceAddress) &&
+        Objects.equals(this.isPrimaryRoleLocked, accessControllerFieldStateValue.isPrimaryRoleLocked) &&
+        Objects.equals(this.primaryRoleRecoveryAttempt, accessControllerFieldStateValue.primaryRoleRecoveryAttempt) &&
+        Objects.equals(this.hasPrimaryRoleBadgeWithdrawAttempt, accessControllerFieldStateValue.hasPrimaryRoleBadgeWithdrawAttempt) &&
+        Objects.equals(this.recoveryRoleRecoveryAttempt, accessControllerFieldStateValue.recoveryRoleRecoveryAttempt) &&
+        Objects.equals(this.hasRecoveryRoleBadgeWithdrawAttempt, accessControllerFieldStateValue.hasRecoveryRoleBadgeWithdrawAttempt);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(dataStruct);
+    return Objects.hash(controlledVaultEntity, timedRecoveryDelayMinutes, recoveryBadgeResourceAddress, isPrimaryRoleLocked, primaryRoleRecoveryAttempt, hasPrimaryRoleBadgeWithdrawAttempt, recoveryRoleRecoveryAttempt, hasRecoveryRoleBadgeWithdrawAttempt);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class AccessControllerFieldStateValue {\n");
-    sb.append("    dataStruct: ").append(toIndentedString(dataStruct)).append("\n");
+    sb.append("    controlledVaultEntity: ").append(toIndentedString(controlledVaultEntity)).append("\n");
+    sb.append("    timedRecoveryDelayMinutes: ").append(toIndentedString(timedRecoveryDelayMinutes)).append("\n");
+    sb.append("    recoveryBadgeResourceAddress: ").append(toIndentedString(recoveryBadgeResourceAddress)).append("\n");
+    sb.append("    isPrimaryRoleLocked: ").append(toIndentedString(isPrimaryRoleLocked)).append("\n");
+    sb.append("    primaryRoleRecoveryAttempt: ").append(toIndentedString(primaryRoleRecoveryAttempt)).append("\n");
+    sb.append("    hasPrimaryRoleBadgeWithdrawAttempt: ").append(toIndentedString(hasPrimaryRoleBadgeWithdrawAttempt)).append("\n");
+    sb.append("    recoveryRoleRecoveryAttempt: ").append(toIndentedString(recoveryRoleRecoveryAttempt)).append("\n");
+    sb.append("    hasRecoveryRoleBadgeWithdrawAttempt: ").append(toIndentedString(hasRecoveryRoleBadgeWithdrawAttempt)).append("\n");
     sb.append("}");
     return sb.toString();
   }
