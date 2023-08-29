@@ -155,7 +155,7 @@ public final class PendingVotes {
 
     // This doesn't do anything, other than logging and bumping the metrics,
     // when divergent execution is detected (which should hopefully never happen).
-    checkForDivergentVertexExecution(vote);
+//    checkForDivergentVertexExecution(vote);
 
     if (!validatorSet.containsValidator(author)) {
       return VoteProcessingResult.rejected(VoteRejectedReason.INVALID_AUTHOR);
