@@ -71,7 +71,6 @@ import com.google.inject.Provider;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.lang.Cause;
 import com.radixdlt.lang.Result;
-import com.radixdlt.messaging.consensus.ConsensusEventMessage;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.Metrics.Messages.DiscardedInboundMessage;
 import com.radixdlt.monitoring.Metrics.Messages.InboundMessageDiscardedReason;
@@ -86,7 +85,6 @@ import java.time.Duration;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.bouncycastle.util.encoders.Hex;
 
 /** Handles incoming messages. Deserializes raw messages and validates them. */
 final class MessagePreprocessor {
@@ -171,11 +169,8 @@ final class MessagePreprocessor {
     try {
       byte[] uncompressed = Compress.uncompress(in);
 
-      final var msg = serialization.fromDson(uncompressed, Message.class);
-      if (msg instanceof ConsensusEventMessage) {
-        log.info("Consensus msg: {}", Hex.toHexString(in));
-      }
-      return Result.fromOptionalOrElseError(ofNullable(msg), IO_ERROR);
+      return Result.fromOptionalOrElseError(
+          ofNullable(serialization.fromDson(uncompressed, Message.class)), IO_ERROR);
     } catch (IOException e) {
       log.error(
           String.format(
