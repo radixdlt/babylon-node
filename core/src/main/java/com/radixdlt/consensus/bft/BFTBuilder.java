@@ -237,14 +237,14 @@ public final class BFTBuilder {
         new ProposalTimestampVerifier(
             pacemaker, timeSupplier, metrics, addressing, proposalRejectedDispatcher);
 
-    final var postSyncUpVerifier =
-        new BFTEventPostSyncUpVerifier(proposalTimestampVerifier, metrics, roundUpdate);
+    //    final var postSyncUpVerifier =
+    //        new BFTEventPostSyncUpVerifier(proposalTimestampVerifier, metrics, roundUpdate);
 
-    final var syncUpPreprocessor =
-        new SyncUpPreprocessor(proposalTimestampVerifier, bftSyncer, metrics, roundUpdate);
+    //    final var syncUpPreprocessor =
+    //        new SyncUpPreprocessor(proposalTimestampVerifier, bftSyncer, metrics, roundUpdate);
 
     final var oneProposalPerRoundVerifier =
-        new OneProposalPerRoundVerifier(syncUpPreprocessor, metrics);
+        new OneProposalPerRoundVerifier(proposalTimestampVerifier, metrics);
 
     /*
     final var statelessVerifier =
