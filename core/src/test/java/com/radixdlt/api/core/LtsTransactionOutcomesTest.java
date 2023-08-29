@@ -67,12 +67,10 @@ package com.radixdlt.api.core;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.api.DeterministicCoreApiTestBase;
-import com.radixdlt.api.core.generated.models.LtsCommittedTransactionStatus;
-import com.radixdlt.api.core.generated.models.LtsFungibleResourceBalanceChange;
-import com.radixdlt.api.core.generated.models.LtsStreamAccountTransactionOutcomesRequest;
-import com.radixdlt.api.core.generated.models.LtsStreamTransactionOutcomesRequest;
+import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.DatabaseFlags;
+import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.lang.Option;
 import com.radixdlt.rev2.*;
@@ -83,6 +81,119 @@ import java.util.Optional;
 import org.junit.Test;
 
 public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
+  @Test
+  public void test_resultant_account_balances() throws Exception {
+    // We run all scenarios for the case when RE decides to change invariants (i.e. no vault
+    // substate is deleted).
+    try (var test = buildRunningServerTestWithScenarios(GenesisData.ALL_SCENARIOS)) {
+      test.suppressUnusedWarning();
+
+      var account1KeyPair = ECKeyPair.generateNew();
+      var account1Address = Address.virtualAccountAddress(account1KeyPair.getPublicKey());
+
+      var account2KeyPair = ECKeyPair.generateNew();
+      var account2Address = Address.virtualAccountAddress(account2KeyPair.getPublicKey());
+
+      if (account1Address.toString().compareTo(account2Address.toString()) > 0) {
+        var tempAcc = account1Address;
+        account1Address = account2Address;
+        account2Address = tempAcc;
+
+        var tempKeyPair = account1KeyPair;
+        account1KeyPair = account2KeyPair;
+        account2KeyPair = tempKeyPair;
+      }
+
+      var account1ExpectedAmount = 10000;
+      var account2ExpectedAmount = 10000;
+      var XRD = ScryptoConstants.XRD_RESOURCE_ADDRESS;
+
+      var tx1Result =
+          getSingleCommittedTransactionOutcome(
+              submitAndWaitForSuccess(
+                  test, Manifest.depositFromFaucet(account1Address), List.of()));
+      assertThat(tx1Result.getResultantAccountFungibleBalances())
+          .isEqualTo(
+              List.of(account(account1Address, List.of(balance(account1ExpectedAmount, XRD)))));
+
+      var tx2Result =
+          getSingleCommittedTransactionOutcome(
+              submitAndWaitForSuccess(
+                  test, Manifest.depositFromFaucet(account2Address), List.of()));
+      assertThat(tx2Result.getResultantAccountFungibleBalances())
+          .isEqualTo(
+              List.of(account(account2Address, List.of(balance(account2ExpectedAmount, XRD)))));
+
+      var tx3Amount = 100;
+      account1ExpectedAmount -= tx3Amount;
+      account2ExpectedAmount += tx3Amount;
+      var tx3Result =
+          getSingleCommittedTransactionOutcome(
+              submitAndWaitForSuccess(
+                  test,
+                  Manifest.transferBetweenAccountsFeeFromFaucet(
+                      account1Address, XRD, Decimal.of(tx3Amount), account2Address),
+                  List.of(account1KeyPair)));
+      assertThat(
+              findAccount(tx3Result.getResultantAccountFungibleBalances(), account1Address)
+                  .getResultantBalances())
+          .isEqualTo(List.of(balance(account1ExpectedAmount, XRD)));
+      assertThat(
+              findAccount(tx3Result.getResultantAccountFungibleBalances(), account2Address)
+                  .getResultantBalances())
+          .isEqualTo(List.of(balance(account2ExpectedAmount, XRD)));
+
+      var tx4Result =
+          getSingleCommittedTransactionOutcome(
+              submitAndWaitForSuccess(
+                  test,
+                  Manifest.transferBetweenAccountsFeeFromFaucet(
+                      account2Address, XRD, Decimal.of(450), account2Address),
+                  List.of(account2KeyPair)));
+      assertThat(tx4Result.getResultantAccountFungibleBalances()).isEqualTo(List.of());
+    }
+  }
+
+  private LtsResultantAccountFungibleBalances findAccount(
+      List<LtsResultantAccountFungibleBalances> resultantAccountFungibleBalances,
+      ComponentAddress account) {
+    var accountStr = account.encode(networkDefinition);
+    for (LtsResultantAccountFungibleBalances resultantAccountFungibleBalance :
+        resultantAccountFungibleBalances) {
+      if (resultantAccountFungibleBalance.getAccountAddress().equals(accountStr)) {
+        return resultantAccountFungibleBalance;
+      }
+    }
+    return null;
+  }
+
+  private LtsResultantFungibleBalance balance(long amount, ResourceAddress resourceAddress) {
+    return new LtsResultantFungibleBalance()
+        .resultantBalance(Decimal.of(amount).toString())
+        .resourceAddress(resourceAddress.encode(networkDefinition));
+  }
+
+  private LtsResultantAccountFungibleBalances account(
+      ComponentAddress account, List<LtsResultantFungibleBalance> ltsResultantFungibleBalance) {
+    return new LtsResultantAccountFungibleBalances()
+        .resultantBalances(ltsResultantFungibleBalance)
+        .accountAddress(account.encode(networkDefinition));
+  }
+
+  private LtsCommittedTransactionOutcome getSingleCommittedTransactionOutcome(
+      CommittedResult committedResult) throws Exception {
+    var outcomes =
+        getLtsApi()
+            .ltsStreamTransactionOutcomesPost(
+                new LtsStreamTransactionOutcomesRequest()
+                    .network(networkLogicalName)
+                    .fromStateVersion(committedResult.stateVersion())
+                    .limit(1))
+            .getCommittedTransactionOutcomes();
+    assertThat(outcomes.size()).isEqualTo(1);
+    return outcomes.get(0);
+  }
+
   @Test
   public void test_multiple_transactions_have_correct_outcomes() throws Exception {
     try (var test = buildRunningServerTest(new DatabaseFlags(true, true))) {

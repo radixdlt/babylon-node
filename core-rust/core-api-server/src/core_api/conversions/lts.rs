@@ -1,10 +1,13 @@
+use node_common::utils::IsAccountExt;
 use radix_engine::{
+    blueprints::resource::FungibleVaultBalanceSubstate,
     system::system_modules::costing::RoyaltyRecipient,
     transaction::BalanceChange,
-    types::{Decimal, GlobalAddress, IndexMap, ResourceAddress},
+    types::{Decimal, GlobalAddress, IndexMap, ResourceAddress, FUNGIBLE_VAULT_BLUEPRINT},
 };
-use state_manager::store::traits::SubstateNodeAncestryStore;
-use state_manager::store::StateManagerDatabase;
+use radix_engine_queries::typed_substate_layout::{ComponentRoyaltySubstate, TypeInfoSubstate};
+use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
+use state_manager::store::{traits::SubstateNodeAncestryStore, StateManagerDatabase};
 use state_manager::{
     BySubstate, ChangeAction, CommittedTransactionIdentifiers, LedgerTransactionOutcome,
     LocalTransactionReceipt, StateVersion, TransactionTreeHash,
@@ -365,13 +368,130 @@ pub fn to_api_lts_fungible_resource_balance_change(
 }
 
 pub fn to_api_lts_resultant_account_fungible_balances(
-    _database: &StateManagerDatabase,
-    _context: &MappingContext,
-    _substate_changes: &BySubstate<ChangeAction>,
+    database: &StateManagerDatabase,
+    context: &MappingContext,
+    substate_changes: &BySubstate<ChangeAction>,
 ) -> Vec<models::LtsResultantAccountFungibleBalances> {
-    // TODO(parallel PR): go through substate changes, collect fungible vaults' new values, resolve
-    // each into its global component owning the vault, retain only accounts.
-    vec![]
+    let fungible_vaults = substate_changes
+        .iter_node_ids()
+        .filter(|node_id| node_id.is_internal_fungible_vault())
+        .collect::<Vec<_>>();
+    let ancestries = database
+        .batch_get_ancestry(fungible_vaults.clone())
+        .into_iter()
+        .map(|record| record.expect("InternalFungibleVault does not have a parent"));
+    let node_id_to_ancestor: HashMap<_, _> = fungible_vaults.into_iter().zip(ancestries).collect();
+    let mut resultant_fungible_balances_by_account = HashMap::new();
+    substate_changes
+        .iter()
+        .filter_map(|(substate_reference, change_action)| {
+            let vault = &substate_reference.0;
+            if !vault.is_internal_fungible_vault() {
+                return None;
+            }
+
+            if substate_reference.1 != MAIN_BASE_PARTITION {
+                return None;
+            }
+
+            if substate_reference.2 != FungibleVaultField::LiquidFungible.into() {
+                return None;
+            }
+
+            let account_address = node_id_to_ancestor.get(vault).unwrap().parent.0;
+            let Ok(account_address) = GlobalAddress::try_from(account_address) else {
+                return None;
+            };
+
+            if !account_address.is_account() {
+                return None;
+            }
+
+            let vault_type_info = database
+                .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
+                    vault,
+                    TYPE_INFO_FIELD_PARTITION,
+                    &TypeInfoField::TypeInfo.into(),
+                )
+                .expect("Vault missing TypeInfo substate");
+
+            let TypeInfoSubstate::Object(vault_type_info) = vault_type_info else {
+                panic!("TypeInfoSubstate of FungibleVault is not of type Object.");
+            };
+            assert!(
+                vault_type_info
+                    .blueprint_info
+                    .blueprint_id
+                    .package_address
+                    .eq(&RESOURCE_PACKAGE),
+                "Vault type info package address invalid."
+            );
+            assert!(
+                vault_type_info
+                    .blueprint_info
+                    .blueprint_id
+                    .blueprint_name
+                    .eq(&FUNGIBLE_VAULT_BLUEPRINT),
+                "Vault type info blueprint name invalid."
+            );
+
+            let resource_address =
+                ResourceAddress::new_or_panic(vault_type_info.get_outer_object().into());
+
+            if resource_address == XRD {
+                // Royalty vaults can be only of XRD, so we hit the DB only in this case.
+                let component_royalty_substate =
+                    read_optional_substate::<FieldSubstate<ComponentRoyaltySubstate>>(
+                        database,
+                        account_address.as_node_id(),
+                        ROYALTY_BASE_PARTITION
+                            .at_offset(ROYALTY_FIELDS_PARTITION_OFFSET)
+                            .unwrap(),
+                        &RoyaltyField::RoyaltyAccumulator.into(),
+                    )
+                    .expect("Account does not have royalty substate.");
+
+                if component_royalty_substate
+                    .value
+                    .0
+                    .royalty_vault
+                    .0
+                    .as_node_id()
+                    == vault
+                {
+                    return None;
+                }
+            }
+
+            let fungible_vault_balance_substate: FieldSubstate<FungibleVaultBalanceSubstate> =
+                match change_action {
+                    ChangeAction::Create { new } => scrypto_decode(new).unwrap(),
+                    ChangeAction::Update { new, .. } => scrypto_decode(new).unwrap(),
+                    ChangeAction::Delete { .. } => {
+                        panic!("Invariant broken: vault substate is never deleted.")
+                    }
+                };
+
+            let resultant_balance = fungible_vault_balance_substate.value.0.amount();
+
+            Some((account_address, resource_address, resultant_balance))
+        })
+        .for_each(|(account_address, resource_address, resultant_balance)| {
+            resultant_fungible_balances_by_account
+                .entry(account_address)
+                .or_insert(Vec::new())
+                .push(models::LtsResultantFungibleBalance {
+                    resource_address: to_api_resource_address(context, &resource_address).unwrap(),
+                    resultant_balance: to_api_decimal(&resultant_balance),
+                })
+        });
+    resultant_fungible_balances_by_account
+        .into_iter()
+        .map(|entry| models::LtsResultantAccountFungibleBalances {
+            account_address: to_api_global_address(context, &entry.0).unwrap(),
+            resultant_balances: entry.1,
+        })
+        .collect()
 }
 
 pub fn get_fungible_balance(balance_change: &BalanceChange) -> Option<Decimal> {

@@ -303,6 +303,10 @@ impl<T> BySubstate<T> {
             })
     }
 
+    pub fn iter_node_ids(&self) -> impl Iterator<Item = &NodeId> + '_ {
+        self.by_node_id.keys()
+    }
+
     pub fn len(&self) -> usize {
         self.by_node_id
             .values()
