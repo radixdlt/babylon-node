@@ -190,6 +190,8 @@ public final class VertexStoreJavaImpl implements VertexStore {
     // proposed vertex doesn't have any children
     boolean isHighQC = qc.getRound().gt(highQC.highestQC().getRound());
     boolean isAnythingCommitted = qc.getCommittedAndLedgerStateProof(hasher).isPresent();
+    logger.info(
+        "InsertQC is high {}, is anything committed {}, qc {}", isHighQC, isAnythingCommitted, qc);
     if (!isHighQC && !isAnythingCommitted) {
       return new VertexStore.InsertQcResult.Ignored();
     }
@@ -200,6 +202,8 @@ public final class VertexStoreJavaImpl implements VertexStore {
 
     final var committedUpdate =
         Option.from(qc.getCommittedHeader().flatMap(header -> this.commit(header, qc)));
+
+    logger.info("committed update? {}", committedUpdate);
 
     return new VertexStore.InsertQcResult.Inserted(highQC(), getState(), committedUpdate);
   }
