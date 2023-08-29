@@ -97,8 +97,8 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
   private static final Logger log = LogManager.getLogger();
 
   // Send/receive buffers for each open socket
-  private static final int PER_SOCKET_RECEIVE_BUFFER_SIZE = 1024 * 1024;
-  private static final int PER_SOCKET_SEND_BUFFER_SIZE = 1024 * 1024;
+  private static final int PER_SOCKET_RECEIVE_BUFFER_SIZE = 10 * 1024 * 1024;
+  private static final int PER_SOCKET_SEND_BUFFER_SIZE = 10 * 1024 * 1024;
 
   private static final int SOCKET_BACKLOG_SIZE = 100;
 
