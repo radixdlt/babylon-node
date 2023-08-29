@@ -192,7 +192,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
     boolean isAnythingCommitted = qc.getCommittedAndLedgerStateProof(hasher).isPresent();
     logger.info(
         "InsertQC is high {}, is anything committed {}, qc {}", isHighQC, isAnythingCommitted, qc);
-    if (!isHighQC && !isAnythingCommitted) {
+    if (!isHighQC) {
       return new VertexStore.InsertQcResult.Ignored();
     }
 
