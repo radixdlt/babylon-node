@@ -6,6 +6,7 @@ pub(crate) async fn handle_mempool_list(
     Json(request): Json<models::MempoolListRequest>,
 ) -> Result<Json<models::MempoolListResponse>, ResponseError<()>> {
     assert_matching_network(&request.network, &state.network)?;
+    assert_unbounded_endpoints_flag_enabled(&state)?;
     let mapping_context = MappingContext::new(&state.network);
 
     let mempool = state.state_manager.mempool.read();

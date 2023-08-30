@@ -62,120 +62,15 @@
  * permissions under this License.
  */
 
-use crate::core_api::{create_server, CoreApiServerConfig, CoreApiState};
-use futures::channel::oneshot;
-use futures::channel::oneshot::Sender;
-use futures::FutureExt;
-use jni::objects::{JClass, JObject};
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
-use prometheus::*;
-use state_manager::jni::node_rust_environment::JNINodeRustEnvironment;
-use std::str;
-use std::sync::{Arc, MutexGuard};
-use tokio::runtime::Runtime;
+package com.radixdlt.environment;
 
-use node_common::java::*;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
 
-const POINTER_JNI_FIELD_NAME: &str = "rustCoreApiServerPointer";
-
-pub struct RunningServer {
-    pub shutdown_signal_sender: Sender<()>,
+public record CoreApiServerFlags(boolean enableUnboundedEndpoints) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        CoreApiServerFlags.class,
+        codecs -> StructCodec.fromRecordComponents(CoreApiServerFlags.class, codecs));
+  }
 }
-
-pub struct JNICoreApiServer {
-    pub config: CoreApiServerConfig,
-    pub runtime: Arc<Runtime>,
-    pub state: CoreApiState,
-    pub running_server: Option<RunningServer>,
-    pub metric_registry: Arc<Registry>,
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_api_CoreApiServer_init(
-    env: JNIEnv,
-    _class: JClass,
-    j_rust_global_context: JObject,
-    j_core_api_server: JObject,
-    j_config: jbyteArray,
-) {
-    jni_sbor_coded_call(&env, j_config, |config: CoreApiServerConfig| {
-        let jni_node_rust_env = JNINodeRustEnvironment::get(&env, j_rust_global_context);
-
-        let jni_core_api_server = JNICoreApiServer {
-            runtime: jni_node_rust_env.runtime.clone(),
-            state: CoreApiState {
-                network: jni_node_rust_env.network.clone(),
-                flags: config.flags.clone(),
-                state_manager: jni_node_rust_env.state_manager.clone(),
-            },
-            config,
-            running_server: None,
-            metric_registry: jni_node_rust_env.metric_registry.clone(),
-        };
-
-        env.set_rust_field(
-            j_core_api_server,
-            POINTER_JNI_FIELD_NAME,
-            jni_core_api_server,
-        )
-        .unwrap()
-    });
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_api_CoreApiServer_start(
-    env: JNIEnv,
-    _class: JClass,
-    j_core_api_server: JObject,
-) {
-    jni_call(&env, || {
-        let (shutdown_signal_sender, shutdown_signal_receiver) = oneshot::channel::<()>();
-
-        let mut jni_core_api_server: MutexGuard<JNICoreApiServer> = env
-            .get_rust_field(j_core_api_server, POINTER_JNI_FIELD_NAME)
-            .unwrap();
-
-        let config = &jni_core_api_server.config;
-
-        let state = jni_core_api_server.state.clone();
-        let runtime = &jni_core_api_server.runtime;
-        let metric_registry = jni_core_api_server.metric_registry.clone();
-
-        let bind_addr = format!("{}:{}", config.bind_interface, config.port);
-        runtime.spawn(async move {
-            create_server(
-                &bind_addr,
-                shutdown_signal_receiver.map(|_| ()),
-                state,
-                &metric_registry,
-            )
-            .await;
-        });
-
-        jni_core_api_server.running_server = Some(RunningServer {
-            shutdown_signal_sender,
-        });
-    });
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_api_CoreApiServer_stop(
-    env: JNIEnv,
-    _class: JClass,
-    j_core_api_server: JObject,
-) {
-    jni_call(&env, || {
-        if let Ok(jni_core_api_server) = env.take_rust_field::<JObject, &str, JNICoreApiServer>(
-            j_core_api_server,
-            POINTER_JNI_FIELD_NAME,
-        ) {
-            if let Some(running_server) = jni_core_api_server.running_server {
-                running_server.shutdown_signal_sender.send(()).unwrap();
-            }
-            // No-op, drop the jni_core_api_server
-        }
-    });
-}
-
-pub fn export_extern_functions() {}

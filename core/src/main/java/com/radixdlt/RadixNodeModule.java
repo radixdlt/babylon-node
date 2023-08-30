@@ -75,6 +75,7 @@ import com.radixdlt.consensus.ProposalLimitsConfig;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
+import com.radixdlt.environment.CoreApiServerFlags;
 import com.radixdlt.environment.DatabaseFlags;
 import com.radixdlt.environment.NodeConstants;
 import com.radixdlt.environment.VertexLimitsConfig;
@@ -355,7 +356,13 @@ public final class RadixNodeModule extends AbstractModule {
     final var coreApiBindAddress =
         properties.get("api.core.bind_address", DEFAULT_CORE_API_BIND_ADDRESS);
     final var coreApiPort = properties.get("api.core.port", DEFAULT_CORE_API_PORT);
-    install(new CoreApiServerModule(coreApiBindAddress, coreApiPort));
+    final var coreApiFlagsEnableUnboundedEndpoints =
+        properties.get("api.core.flags.enable_unbounded_endpoints", true);
+    install(
+        new CoreApiServerModule(
+            coreApiBindAddress,
+            coreApiPort,
+            new CoreApiServerFlags(coreApiFlagsEnableUnboundedEndpoints)));
 
     final var systemApiBindAddress =
         properties.get("api.system.bind_address", DEFAULT_SYSTEM_API_BIND_ADDRESS);

@@ -9,7 +9,7 @@ use hyper::StatusCode;
 use radix_engine_interface::network::NetworkDefinition;
 use tower_http::catch_panic::ResponseForPanic;
 
-use super::models;
+use super::{models, CoreApiState};
 use models::{
     lts_transaction_submit_error_details::LtsTransactionSubmitErrorDetails,
     transaction_submit_error_details::TransactionSubmitErrorDetails,
@@ -124,6 +124,17 @@ pub(crate) fn assert_matching_network<E: ErrorDetails>(
             "Invalid network - the network is actually: {}",
             network_definition.logical_name
         )));
+    }
+    Ok(())
+}
+
+pub(crate) fn assert_unbounded_endpoints_flag_enabled<E: ErrorDetails>(
+    state: &CoreApiState,
+) -> Result<(), ResponseError<E>> {
+    if !state.flags.enable_unbounded_endpoints {
+        return Err(client_error(
+            "This endpoint is disabled as the response is potentially unbounded, and this node is configured with `enable_unbounded_endpoints` false.",
+        ));
     }
     Ok(())
 }
