@@ -94,7 +94,8 @@ public final class REv2ConsensusRecoveryModule extends AbstractModule {
       BFTValidatorSet validatorSet,
       VertexStoreState vertexStoreState) {
     final var proposerElection =
-        ProposerElections.defaultRotation(lastEpochProof.getEpoch(), validatorSet);
+        ProposerElections.defaultRotation(
+            lastEpochProof.getNextEpoch().orElseThrow().getEpoch(), validatorSet);
     return new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
   }
 
