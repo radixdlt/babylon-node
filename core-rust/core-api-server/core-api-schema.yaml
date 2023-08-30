@@ -3459,7 +3459,6 @@ components:
         - GlobalNonFungibleResource
         - InternalNonFungibleVault
         - InternalGenericComponent
-        - InternalAccount
         - InternalKeyValueStore
         - GlobalOneResourcePool
         - GlobalTwoResourcePool

@@ -44,8 +44,6 @@ pub enum EntityType {
     InternalNonFungibleVault,
     #[serde(rename = "InternalGenericComponent")]
     InternalGenericComponent,
-    #[serde(rename = "InternalAccount")]
-    InternalAccount,
     #[serde(rename = "InternalKeyValueStore")]
     InternalKeyValueStore,
     #[serde(rename = "GlobalOneResourcePool")]
@@ -78,7 +76,6 @@ impl ToString for EntityType {
             Self::GlobalNonFungibleResource => String::from("GlobalNonFungibleResource"),
             Self::InternalNonFungibleVault => String::from("InternalNonFungibleVault"),
             Self::InternalGenericComponent => String::from("InternalGenericComponent"),
-            Self::InternalAccount => String::from("InternalAccount"),
             Self::InternalKeyValueStore => String::from("InternalKeyValueStore"),
             Self::GlobalOneResourcePool => String::from("GlobalOneResourcePool"),
             Self::GlobalTwoResourcePool => String::from("GlobalTwoResourcePool"),

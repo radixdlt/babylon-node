@@ -92,7 +92,6 @@ pub fn to_api_entity_type(entity_type: EntityType) -> models::EntityType {
         }
         EntityType::InternalFungibleVault => models::EntityType::InternalFungibleVault,
         EntityType::InternalNonFungibleVault => models::EntityType::InternalNonFungibleVault,
-        EntityType::InternalAccount => models::EntityType::InternalAccount,
         EntityType::InternalKeyValueStore => models::EntityType::InternalKeyValueStore,
         EntityType::InternalGenericComponent => models::EntityType::InternalGenericComponent,
         EntityType::GlobalOneResourcePool => models::EntityType::GlobalOneResourcePool,
