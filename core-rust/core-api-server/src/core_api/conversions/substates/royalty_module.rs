@@ -14,7 +14,7 @@ pub fn to_api_component_royalty_substate(
         RoyaltyModuleFieldState,
         ComponentRoyaltySubstate { royalty_vault },
         Value {
-            is_enabled: true, // TODO(during review): drop it instead?
+            is_enabled: true,
             vault_entity: Box::new(to_api_entity_reference(
                 context,
                 royalty_vault.0.as_node_id(),

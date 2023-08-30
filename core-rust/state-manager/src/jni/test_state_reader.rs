@@ -200,7 +200,6 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_componentXrdAmount
             let read_store = database.read();
 
             // a quick fix for handling virtual accounts
-            // TODO(during review): has this been "fixed upstream"?
             if read_store
                 .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
                     node_id,

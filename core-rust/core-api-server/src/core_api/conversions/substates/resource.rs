@@ -163,8 +163,6 @@ pub fn to_api_non_fungible_resource_manager_mutable_fields_substate(
             mutable_field_index
         },
         Value {
-            // TODO(during review): Please thoroughly review the feature change (i.e. my
-            // interpretation of "include the field indices").
             mutable_fields: mutable_field_index
                 .iter()
                 .map(|(name, index)| to_api_mutable_field(context, name.as_str(), *index))

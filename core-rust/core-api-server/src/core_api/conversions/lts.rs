@@ -64,7 +64,7 @@ pub fn to_api_lts_committed_transaction_outcome(
             &local_execution.fee_summary,
             &local_execution.fee_source,
             &local_execution.fee_destination,
-            &local_execution.global_balance_changes, // TODO(during review): there is some convoluted logic there; does it need to change now?
+            &local_execution.global_balance_changes,
         )?,
         resultant_account_fungible_balances: to_api_lts_resultant_account_fungible_balances(
             database,

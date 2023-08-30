@@ -78,63 +78,8 @@ import com.radixdlt.lang.Tuple.Tuple2;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.MetadataValue;
 import java.util.Optional;
-import java.util.function.Predicate;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public final class OlympiaValidatorsConverter {
-
-  /**
-   * A URL string validator based on {@code URL_REGEX} used by the Engine, captured at <a
-   * href="https://github.com/radixdlt/radixdlt-scrypto/blob/rcnet-v3-a74271b8/radix-engine-interface/src/api/node_modules/metadata/models/url.rs">
-   * rcnet-v3-a74271b8</a>.
-   *
-   * <p>We will only propagate URL metadata items which satisfy this regex, since an invalid URL
-   * would cause transaction to fail.
-   */
-  private static final Predicate<String> VALID_ENGINE_URL =
-      Pattern.compile(
-              Stream.of(
-                      // 1. Start
-                      "^",
-                      // 2. Schema, http or https only
-                      "https?",
-                      // 3. ://
-                      ":\\/\\/",
-                      // 4. Userinfo, not allowed
-                      // 5. Host, ip address or host name
-                      //    From
-                      // https://stackoverflow.com/questions/106179/regular-expression-to-match-dns-hostname-or-ip-address
-                      "(",
-                      "((([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]))",
-                      "|",
-                      "((([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9]))",
-                      ")",
-                      // 6. Port number, optional
-                      //    From
-                      // https://stackoverflow.com/questions/12968093/regex-to-validate-port-number
-                      "(:([1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5]))?",
-                      // 7. Path, optional
-                      //    * -+
-                      //    * a-zA-Z0-9
-                      //    * ()
-                      //    * []
-                      //    * @ : % _ . ~ & =
-                      "(\\/[-\\+a-zA-Z0-9\\(\\)\\[\\]@:%_.~&=]*)*",
-                      // 8. Query, optional
-                      //    * -+
-                      //    * a-zA-Z0-9
-                      //    * ()
-                      //    * []
-                      //    * @ : % _ . ~ & =
-                      //    * /
-                      "(\\?[-\\+a-zA-Z0-9\\(\\)\\[\\]@:%_.~&=\\/]*)?",
-                      // 9. Fragment, not allowed
-                      // 10. End
-                      "$")
-                  .collect(Collectors.joining()))
-          .asMatchPredicate();
 
   public static ImmutableList<GenesisDataChunk.Validators> prepareValidatorsChunks(
       OlympiaToBabylonConverterConfig config,

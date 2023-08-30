@@ -13,19 +13,16 @@ pub fn to_api_registered_validators_by_stake_index_entry_substate(
     typed_key: &TypedSubstateKey,
     substate: &ConsensusManagerRegisteredValidatorByStakeEntrySubstate,
 ) -> Result<models::Substate, MappingError> {
-    // TODO(after fixing upstream): the clone below is only needed since a `SortedValidator` struct
-    // has private fields (cannot be de-structured) and its `.into_sort_key_and_content()` manual
-    // de-structurer wants `self`, so there is no way to operate on refs.
-    let typed_key = typed_key.clone();
     assert_key_type!(
         typed_key,
         TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::ConsensusManager(
-            ConsensusManagerTypedSubstateKey::RegisteredValidatorByStakeSortedIndexEntry(
-                sorted_validator
-            )
+            ConsensusManagerTypedSubstateKey::RegisteredValidatorByStakeSortedIndexEntry(key)
         ))
     );
-    let (divided_stake, validator_address) = sorted_validator.into_sort_key_and_content();
+    let ValidatorByStakeKey {
+        divided_stake,
+        validator_address,
+    } = key.clone().into_full_content();
     Ok(index_substate_versioned!(
         substate,
         ConsensusManagerRegisteredValidatorsByStakeIndexEntry,

@@ -116,7 +116,6 @@ pub fn to_api_substate(
             typed_substate_key,
             substate,
         )?,
-        // TODO(during review): below (x2) I applied similar behavior to to_api_substate_id() - rightfully?
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::NonFungibleVault(
             NonFungibleVaultTypedSubstateValue::Field(
                 NonFungibleVaultTypedFieldSubstateValue::LockedResource(_),

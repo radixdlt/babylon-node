@@ -154,6 +154,7 @@ impl StateManager {
             costing_parameters.archive_storage_price = Decimal::ZERO;
         }
         let execution_configurator = Arc::new(ExecutionConfigurator::new(
+            &network,
             &logging_config,
             costing_parameters,
         ));
