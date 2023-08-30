@@ -1,20 +1,13 @@
-use node_common::utils::IsAccountExt;
 use radix_engine::{
-    system::{
-        system_db_reader::SystemDatabaseReader, system_modules::costing::RoyaltyRecipient,
-        system_substates::FieldSubstate,
-    },
+    system::system_modules::costing::RoyaltyRecipient,
     transaction::BalanceChange,
-    types::{Decimal, GlobalAddress, IndexMap, ResourceAddress, FUNGIBLE_VAULT_BLUEPRINT},
+    types::{Decimal, GlobalAddress, IndexMap, ResourceAddress},
 };
-use radix_engine_queries::typed_substate_layout::{
-    FungibleVaultBalanceFieldPayload, FungibleVaultField, TypeInfoSubstate,
-};
-use sbor::HasLatestVersion;
+
 use state_manager::store::{traits::SubstateNodeAncestryStore, StateManagerDatabase};
 use state_manager::{
-    BySubstate, ChangeAction, CommittedTransactionIdentifiers, LedgerTransactionOutcome,
-    LocalTransactionReceipt, StateVersion, TransactionTreeHash,
+    CommittedTransactionIdentifiers, LedgerTransactionOutcome, LocalTransactionReceipt,
+    StateVersion, TransactionTreeHash,
 };
 
 use radix_engine::transaction::{FeeDestination, FeeSource, TransactionFeeSummary};
@@ -71,13 +64,16 @@ pub fn to_api_lts_committed_transaction_outcome(
             &local_execution.fee_summary,
             &local_execution.fee_source,
             &local_execution.fee_destination,
-            &local_execution.global_balance_changes,
+            &local_execution
+                .global_balance_summary
+                .global_balance_changes,
         )?,
         resultant_account_fungible_balances: to_api_lts_resultant_account_fungible_balances(
-            database,
             context,
-            &receipt.on_ledger.substate_changes,
-        ),
+            &local_execution
+                .global_balance_summary
+                .resultant_fungible_account_balances,
+        )?,
         total_fee: to_api_decimal(&local_execution.fee_summary.total_cost()),
     })
 }
@@ -372,117 +368,24 @@ pub fn to_api_lts_fungible_resource_balance_change(
 }
 
 pub fn to_api_lts_resultant_account_fungible_balances(
-    database: &StateManagerDatabase,
     context: &MappingContext,
-    substate_changes: &BySubstate<ChangeAction>,
-) -> Vec<models::LtsResultantAccountFungibleBalances> {
-    // TODO(after upstream fix): this can be much easily computed in [`ProcessedCommitResult::compute_global_balance_changes_update`] and
-    // just extracted here, after we have RE return resultant balance along with the change delta value.
-    let fungible_vaults = substate_changes
-        .iter_node_ids()
-        .filter(|node_id| node_id.is_internal_fungible_vault())
-        .collect::<Vec<_>>();
-    let ancestries = database
-        .batch_get_ancestry(fungible_vaults.clone())
-        .into_iter()
-        .map(|record| record.expect("InternalFungibleVault does not have a parent"));
-    let node_id_to_ancestor: NonIterMap<_, _> =
-        fungible_vaults.into_iter().zip(ancestries).collect();
-    let system_db_reader = SystemDatabaseReader::new(database);
-    let mut resultant_fungible_balances_by_account = HashMap::new();
-    substate_changes
+    fungible_account_balances: &IndexMap<GlobalAddress, IndexMap<ResourceAddress, Decimal>>,
+) -> Result<Vec<models::LtsResultantAccountFungibleBalances>, MappingError> {
+    fungible_account_balances
         .iter()
-        .filter(|(substate_reference, _)| substate_reference.0.is_internal_fungible_vault())
-        .filter(|(substate_reference, _)| substate_reference.1 == FungibleVaultPartitionOffset::Field.as_main_partition())
-        .filter(|(substate_reference, _)| {
-            substate_reference.2 == FungibleVaultField::Balance.into()
-        })
-        .filter_map(|(substate_reference, change_action)| {
-            let vault_id = &substate_reference.0;
-
-            let ancestor_record = node_id_to_ancestor
-                .get(vault_id)
-                .expect("Invariant broken: vaults should always have an ancestor");
-            let account_address = ancestor_record.parent.0;
-
-            let Ok(account_address) = GlobalAddress::try_from(account_address) else {
-                return None;
-            };
-
-            if !account_address.is_account() {
-                return None;
-            }
-
-            // We check the parent of the vault is indeed owned by Account's ResourceVaultKeyValue - meaning strictly an account vault,
-            // and not an unrelated one (i.e. recently removed RoyaltyVault).
-            if ancestor_record.parent.1 != AccountPartitionOffset::ResourceVaultKeyValue.as_main_partition() {
-                return None;
-            }
-
-            if ancestor_record.parent != ancestor_record.root {
-                panic!("Invariant broken: Account vault expected to be directly owned by the account partition");
-            }
-
-            Some((account_address, substate_reference, change_action))
-        })
-        .map(|(account_address, substate_reference, change_action)| {
-            let vault_id = &substate_reference.0;
-
-            let vault_type_info = system_db_reader
-                .get_type_info(vault_id)
-                .expect("Vault missing TypeInfo substate");
-
-            let TypeInfoSubstate::Object(vault_type_info) = vault_type_info else {
-                panic!("TypeInfoSubstate of FungibleVault is not of type Object.");
-            };
-
-            assert!(
-                vault_type_info
-                    .blueprint_info
-                    .blueprint_id
-                    .eq(&BlueprintId::new(
-                        &RESOURCE_PACKAGE,
-                        FUNGIBLE_VAULT_BLUEPRINT,
-                    )),
-                "Vault's TypeInfo wrongly says this is not a fungible vault."
-            );
-
-            let resource_address =
-                ResourceAddress::new_or_panic(vault_type_info.get_outer_object().into());
-            (account_address, resource_address, change_action)
-        })
-        .map(|(account_address, resource_address, change_action)| {
-            let fungible_vault_balance_substate: FieldSubstate<FungibleVaultBalanceFieldPayload> =
-                match change_action {
-                    ChangeAction::Create { new } => scrypto_decode(new).unwrap(),
-                    ChangeAction::Update { new, .. } => scrypto_decode(new).unwrap(),
-                    ChangeAction::Delete { .. } => {
-                        panic!("Invariant broken: vault substate is never deleted.")
-                    }
-                };
-
-            let resultant_balance = fungible_vault_balance_substate
-                .into_payload()
-                .into_latest()
-                .amount();
-
-            (account_address, resource_address, resultant_balance)
-        })
-        .for_each(|(account_address, resource_address, resultant_balance)| {
-            resultant_fungible_balances_by_account
-                .entry(account_address)
-                .or_insert(Vec::new())
-                .push(models::LtsResultantFungibleBalance {
-                    resource_address: to_api_resource_address(context, &resource_address).unwrap(),
-                    resultant_balance: to_api_decimal(&resultant_balance),
-                })
-        });
-    resultant_fungible_balances_by_account
-        .into_iter()
-        .map(|entry| models::LtsResultantAccountFungibleBalances {
-            account_address: to_api_global_address(context, &entry.0)
-                .expect("Invariant broken: account_address is not a global address"),
-            resultant_balances: entry.1,
+        .map(|(account_address, resource_balances)| {
+            Ok(models::LtsResultantAccountFungibleBalances {
+                account_address: to_api_global_address(context, account_address)?,
+                resultant_balances: resource_balances
+                    .iter()
+                    .map(|(resource_address, resultant_balance)| {
+                        Ok(models::LtsResultantFungibleBalance {
+                            resource_address: to_api_resource_address(context, resource_address)?,
+                            resultant_balance: to_api_decimal(resultant_balance),
+                        })
+                    })
+                    .collect::<Result<Vec<_>, _>>()?,
+            })
         })
         .collect()
 }

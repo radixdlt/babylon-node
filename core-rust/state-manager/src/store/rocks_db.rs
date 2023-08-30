@@ -1090,7 +1090,12 @@ impl RocksDBStore {
         state_version: StateVersion,
         receipt: &LocalTransactionReceipt,
     ) {
-        for (address, _) in receipt.local_execution.global_balance_changes.iter() {
+        for address in receipt
+            .local_execution
+            .global_balance_summary
+            .global_balance_changes
+            .keys()
+        {
             if !address.is_account() {
                 continue;
             }

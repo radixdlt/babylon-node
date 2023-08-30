@@ -70,9 +70,10 @@ use crate::transaction::LedgerTransactionHash;
 use crate::{
     ActiveValidatorInfo, BySubstate, ChangeAction, DetailedTransactionOutcome,
     EpochTransactionIdentifiers, LedgerHashes, LocalTransactionReceipt, NextEpoch, ReceiptTreeHash,
-    StateHash, StateVersion, TransactionTreeHash,
+    StateHash, StateVersion, SubstateReference, TransactionTreeHash,
 };
 use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
+use radix_engine::blueprints::resource::{FungibleVaultBalanceFieldSubstate, FungibleVaultField};
 use radix_engine::transaction::{
     AbortResult, BalanceChange, CommitResult, CostingParameters, RejectResult,
     TransactionFeeSummary, TransactionReceipt, TransactionResult,
@@ -86,12 +87,14 @@ use radix_engine::track::SystemUpdates;
 use crate::staging::node_ancestry_resolver::NodeAncestryResolver;
 use crate::staging::overlays::{MapSubstateNodeAncestryStore, StagedSubstateNodeAncestryStore};
 use crate::store::traits::{KeyedSubstateNodeAncestryRecord, SubstateNodeAncestryStore};
+use node_common::utils::IsAccountExt;
 use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
 use radix_engine_store_interface::interface::{DatabaseUpdate, DatabaseUpdates, SubstateDatabase};
 use radix_engine_stores::hash_tree::tree_store::{
     NodeKey, ReadableTreeStore, TreeNode, WriteableTreeStore,
 };
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
+use sbor::HasLatestVersion;
 use transaction::prelude::TransactionCostingParameters;
 
 pub enum ProcessedTransactionReceipt {
@@ -206,7 +209,7 @@ impl ProcessedCommitResult {
             &commit_result.state_updates.system_updates,
         );
 
-        let balance_changes_update = Self::compute_global_balance_changes_update(
+        let global_balance_update = Self::compute_global_balance_update(
             store,
             &substate_changes,
             &commit_result.state_update_summary.vault_balance_changes,
@@ -227,7 +230,7 @@ impl ProcessedCommitResult {
         let local_receipt = LocalTransactionReceipt::new(
             commit_result,
             substate_changes,
-            balance_changes_update.global_balance_changes,
+            global_balance_update.global_balance_summary,
             execution_fee_data,
         );
         let consensus_receipt = local_receipt.on_ledger.get_consensus_receipt();
@@ -253,7 +256,7 @@ impl ProcessedCommitResult {
                 receipt_tree_diff,
             },
             database_updates,
-            new_substate_node_ancestry_records: balance_changes_update
+            new_substate_node_ancestry_records: global_balance_update
                 .new_substate_node_ancestry_records,
         }
     }
@@ -280,11 +283,11 @@ impl ProcessedCommitResult {
 
     // TODO(after RCnet-v3): Extract the `pub fn`s below (re-used by preview) to an isolated helper.
 
-    pub fn compute_global_balance_changes_update<S: SubstateNodeAncestryStore>(
+    pub fn compute_global_balance_update<S: SubstateNodeAncestryStore>(
         store: &S,
         substate_changes: &BySubstate<ChangeAction>,
         vault_balance_changes: &IndexMap<NodeId, (ResourceAddress, BalanceChange)>,
-    ) -> GlobalBalanceChangesUpdate {
+    ) -> GlobalBalanceUpdate {
         // We need a fresh (!) view of a node ancestry store to group Vaults by their Global* roots.
         let new_substate_node_ancestry_records =
             NodeAncestryResolver::batch_resolve(store, substate_changes.iter()).collect::<Vec<_>>();
@@ -300,10 +303,10 @@ impl ProcessedCommitResult {
         let staged = StagedSubstateNodeAncestryStore::new(store, &overlay);
 
         // Call the group-by logic and return the results together with the ancestry store update.
-        let global_balance_changes =
-            Self::compute_global_balance_changes(&staged, vault_balance_changes);
-        GlobalBalanceChangesUpdate {
-            global_balance_changes,
+        let global_balance_summary =
+            GlobalBalanceSummary::compute_from(&staged, vault_balance_changes, substate_changes);
+        GlobalBalanceUpdate {
+            global_balance_summary,
             new_substate_node_ancestry_records,
         }
     }
@@ -373,29 +376,110 @@ impl ProcessedCommitResult {
         );
         collector.into_diff_with(root_hash)
     }
+}
 
-    fn compute_global_balance_changes<S: SubstateNodeAncestryStore>(
+/// A summary of vault balances per global root entity.
+#[derive(Debug, Clone, PartialEq, Eq, Default, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct GlobalBalanceSummary {
+    /// A cumulative balance change of each global root entity owning one or more vaults from the
+    /// input "vault balance changes".
+    /// These entries are not pruned, i.e. a fungible delta of `0.0`, or a non-fungible delta of
+    /// `{added: #1#, removed: #1#}` may be encountered here (and it simply means that resources
+    /// were only moved around different vaults of the same global root entity).
+    pub global_balance_changes: IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>>,
+
+    /// A resultant balances of fungible resources held by global accounts.
+    /// Note: aggregating a resultant balance of *any* global root entity is, in principle, not
+    /// possible using only the "vault balance changes" input (because there may be vaults whose
+    /// balance was not changed). We "aggregate" it for accounts using an assumption that an account
+    /// has at most one vault for each resource.
+    pub resultant_fungible_account_balances:
+        IndexMap<GlobalAddress, IndexMap<ResourceAddress, Decimal>>,
+}
+
+impl GlobalBalanceSummary {
+    /// Computes a [`GlobalBalanceSummary`] from the given vault balance changes.
+    /// This uses the ancestry information from the given [`SubstateNodeAncestryStore`] to resolve
+    /// the owning global entity, and parses the substate changes to collect the resulting balances
+    /// of fungible vaults.
+    pub fn compute_from<S: SubstateNodeAncestryStore>(
         store: &S,
         vault_balance_changes: &IndexMap<NodeId, (ResourceAddress, BalanceChange)>,
-    ) -> IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>> {
+        substate_changes: &BySubstate<ChangeAction>,
+    ) -> Self {
         let ancestries = store.batch_get_ancestry(vault_balance_changes.keys());
         let mut global_balance_changes = index_map_new();
+        let mut resultant_fungible_account_balances = index_map_new();
         for (vault_entry, ancestry) in vault_balance_changes.iter().zip(ancestries) {
             let (vault_id, (resource_address, balance_change)) = vault_entry;
-            let root = ancestry
-                .map(|ancestry| ancestry.root.0)
-                .unwrap_or_else(|| *vault_id);
-            let Ok(global_ancestor_address) = GlobalAddress::try_from(root) else {
-                panic!("root {:?} resolved for vault {:?} is not global", root, vault_id);
+
+            let Some(ancestry) = ancestry else {
+                panic!("No ancestry found for vault {:?}", vault_id);
             };
+            let SubstateReference(root_node_id, root_partition, _) = ancestry.root;
+
+            let Ok(root_address) = GlobalAddress::try_from(root_node_id) else {
+                panic!("Root {:?} resolved for vault {:?} is not global", root_node_id, vault_id);
+            };
+
+            // Aggregate (i.e. sum) balance changes for every global root entity.
             global_balance_changes
-                .entry(global_ancestor_address)
+                .entry(root_address)
                 .or_insert_with(index_map_new::<ResourceAddress, BalanceChange>)
                 .entry(*resource_address)
                 .and_modify(|existing| *existing = existing.clone() + balance_change.clone())
                 .or_insert_with(|| balance_change.clone());
+
+            // Collect (i.e. not sum) resultant balances for fungible resources of global accounts.
+            if vault_id.is_internal_fungible_vault()
+                && root_address.is_account()
+                && root_partition
+                    == AccountPartitionOffset::ResourceVaultKeyValue.as_main_partition()
+            {
+                if ancestry.root != ancestry.parent {
+                    // By the time we've got here, we know we are a fungible vault, under a global account, under the ResourceVaultKeyValue partition.
+                    // The vault should also be directly owned by this substate (ie we have 1 layer, and parent == root)
+                    panic!("Global account vault in resource vault partition has a parent substate which isn't equal to its root substate")
+                }
+                let substate_change = substate_changes
+                    .get(
+                        vault_id,
+                        &FungibleVaultPartitionOffset::Field.as_main_partition(),
+                        &FungibleVaultField::Balance.into(),
+                    )
+                    .expect(
+                        "broken invariant: vault's balance changed without its substate change",
+                    );
+                let resultant_balance_substate = match substate_change {
+                    ChangeAction::Create { new } => new,
+                    ChangeAction::Update { new, .. } => new,
+                    ChangeAction::Delete { .. } => {
+                        panic!("broken invariant: vault {:?} deleted", vault_id)
+                    }
+                };
+                let resultant_balance =
+                    scrypto_decode::<FungibleVaultBalanceFieldSubstate>(resultant_balance_substate)
+                        .expect("cannot decode vault balance substate")
+                        .into_payload()
+                        .into_latest()
+                        .amount();
+                let balance_existed = resultant_fungible_account_balances
+                    .entry(root_address)
+                    .or_insert_with(index_map_new::<ResourceAddress, Decimal>)
+                    .insert(*resource_address, resultant_balance)
+                    .is_some();
+                if balance_existed {
+                    panic!(
+                        "broken invariant: multiple vaults of resource {:?} exist for account {:?}",
+                        resource_address, root_address
+                    )
+                }
+            }
         }
-        global_balance_changes
+        Self {
+            global_balance_changes,
+            resultant_fungible_account_balances,
+        }
     }
 }
 
@@ -449,8 +533,8 @@ impl Default for StateHashTreeDiff {
 }
 
 #[derive(Clone, Debug)]
-pub struct GlobalBalanceChangesUpdate {
-    pub global_balance_changes: IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>>,
+pub struct GlobalBalanceUpdate {
+    pub global_balance_summary: GlobalBalanceSummary,
     pub new_substate_node_ancestry_records: Vec<KeyedSubstateNodeAncestryRecord>,
 }
 

@@ -525,7 +525,7 @@ impl InMemoryStore {
         state_version: StateVersion,
         receipt: &LocalTransactionExecution,
     ) {
-        for (address, _) in receipt.global_balance_changes.iter() {
+        for (address, _) in receipt.global_balance_summary.global_balance_changes.iter() {
             if !address.is_account() {
                 continue;
             }
