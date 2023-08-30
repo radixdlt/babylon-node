@@ -70,7 +70,7 @@ use crate::transaction::LedgerTransactionHash;
 use crate::{
     ActiveValidatorInfo, BySubstate, ChangeAction, DetailedTransactionOutcome,
     EpochTransactionIdentifiers, LedgerHashes, LocalTransactionReceipt, NextEpoch, ReceiptTreeHash,
-    StateHash, StateVersion, TransactionTreeHash,
+    StateHash, StateVersion, SubstateReference, TransactionTreeHash,
 };
 use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
 use radix_engine::blueprints::resource::{FungibleVaultBalanceFieldSubstate, FungibleVaultField};
@@ -412,11 +412,14 @@ impl GlobalBalanceSummary {
         let mut resultant_fungible_account_balances = index_map_new();
         for (vault_entry, ancestry) in vault_balance_changes.iter().zip(ancestries) {
             let (vault_id, (resource_address, balance_change)) = vault_entry;
-            let root = ancestry
-                .map(|ancestry| ancestry.root.0)
-                .unwrap_or_else(|| *vault_id);
-            let Ok(root_address) = GlobalAddress::try_from(root) else {
-                panic!("root {:?} resolved for vault {:?} is not global", root, vault_id);
+
+            let Some(ancestry) = ancestry else {
+                panic!("No ancestry found for vault {:?}", vault_id);
+            };
+            let SubstateReference(root_node_id, root_partition, _) = ancestry.root;
+
+            let Ok(root_address) = GlobalAddress::try_from(root_node_id) else {
+                panic!("Root {:?} resolved for vault {:?} is not global", root_node_id, vault_id);
             };
 
             // Aggregate (i.e. sum) balance changes for every global root entity.
@@ -428,7 +431,16 @@ impl GlobalBalanceSummary {
                 .or_insert_with(|| balance_change.clone());
 
             // Collect (i.e. not sum) resultant balances for fungible resources of global accounts.
-            if vault_id.is_internal_fungible_vault() && root_address.is_account() {
+            if vault_id.is_internal_fungible_vault()
+                && root_address.is_account()
+                && root_partition
+                    == AccountPartitionOffset::ResourceVaultKeyValue.as_main_partition()
+            {
+                if ancestry.root != ancestry.parent {
+                    // By the time we've got here, we know we are a fungible vault, under a global account, under the ResourceVaultKeyValue partition.
+                    // The vault should also be directly owned by this substate (ie we have 1 layer, and parent == root)
+                    panic!("Global account vault in resource vault partition has a parent substate which isn't equal to its root substate")
+                }
                 let substate_change = substate_changes
                     .get(
                         vault_id,
