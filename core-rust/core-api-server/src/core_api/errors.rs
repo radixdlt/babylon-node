@@ -133,7 +133,7 @@ pub(crate) fn assert_unbounded_endpoints_flag_enabled<E: ErrorDetails>(
 ) -> Result<(), ResponseError<E>> {
     if !state.flags.enable_unbounded_endpoints {
         return Err(client_error(
-            "This endpoint is unbounded and `enable_unbounded_endpoints` flag is disabled.",
+            "This endpoint is disabled as the response is potentially unbounded, and this node is configured with `enable_unbounded_endpoints` false.",
         ));
     }
     Ok(())
