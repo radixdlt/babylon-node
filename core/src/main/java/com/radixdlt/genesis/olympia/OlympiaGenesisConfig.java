@@ -119,7 +119,8 @@ public record OlympiaGenesisConfig(
     }
 
     final var maybeAuthUser =
-        Optional.ofNullable(properties.get(String.format("%s.node_end_state_api_auth_user", PREFIX)));
+        Optional.ofNullable(
+            properties.get(String.format("%s.node_end_state_api_auth_user", PREFIX)));
     final Optional<String> maybeBasicAuthCredentialsBase64;
     if (maybeAuthUser.isPresent()) {
       final var authUser = maybeAuthUser.get();
@@ -131,7 +132,8 @@ public record OlympiaGenesisConfig(
                       new RuntimeException(
                           "Olympia genesis auth user was specified, but the password is missing."
                               + " Make sure both genesis.olympia.node_end_state_api_auth_user and"
-                              + " genesis.olympia.node_end_state_api_auth_password are set correctly."));
+                              + " genesis.olympia.node_end_state_api_auth_password are set"
+                              + " correctly."));
       maybeBasicAuthCredentialsBase64 =
           Optional.of(
               Base64.toBase64String(
