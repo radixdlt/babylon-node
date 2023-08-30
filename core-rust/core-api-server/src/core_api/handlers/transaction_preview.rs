@@ -163,7 +163,7 @@ fn to_api_response(
             let local_receipt = LocalTransactionReceipt::new(
                 commit_result,
                 result.substate_changes,
-                result.global_balance_changes,
+                result.global_balance_summary,
                 execution_fee_data,
             );
 
