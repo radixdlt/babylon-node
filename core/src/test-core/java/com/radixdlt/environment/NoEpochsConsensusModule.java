@@ -114,6 +114,8 @@ public class NoEpochsConsensusModule extends AbstractModule {
     eventBinder.addBinding().toInstance(RoundUpdate.class);
     eventBinder.addBinding().toInstance(BFTRebuildUpdate.class);
     eventBinder.addBinding().toInstance(BFTInsertUpdate.class);
+    eventBinder.addBinding().toInstance(BFTHighQCUpdate.class);
+    eventBinder.addBinding().toInstance(BFTCommittedUpdate.class);
     eventBinder.addBinding().toInstance(Proposal.class);
     eventBinder.addBinding().toInstance(Vote.class);
     eventBinder.addBinding().toInstance(LedgerUpdate.class);

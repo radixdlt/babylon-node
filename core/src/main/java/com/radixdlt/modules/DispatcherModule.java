@@ -432,38 +432,25 @@ public class DispatcherModule extends AbstractModule {
   @Provides
   private EventDispatcher<BFTCommittedUpdate> committedUpdateEventDispatcher(
       @ProcessOnDispatch Set<EventProcessor<BFTCommittedUpdate>> processors,
-      Set<EventProcessor<BFTCommittedUpdate>> asyncProcessors,
       Environment environment,
       Metrics metrics) {
-    if (asyncProcessors.isEmpty()) {
-      return commit -> {
-        metrics.bft().vertexStore().size().set(commit.vertexStoreSize());
-        processors.forEach(e -> e.process(commit));
-      };
-    } else {
-      var dispatcher = environment.getDispatcher(BFTCommittedUpdate.class);
-      return commit -> {
-        metrics.bft().vertexStore().size().set(commit.vertexStoreSize());
-        processors.forEach(e -> e.process(commit));
-        dispatcher.dispatch(commit);
-      };
-    }
+    var dispatcher = environment.getDispatcher(BFTCommittedUpdate.class);
+    return commit -> {
+      metrics.bft().vertexStore().size().set(commit.vertexStoreSize());
+      processors.forEach(e -> e.process(commit));
+      dispatcher.dispatch(commit);
+    };
   }
 
   @Provides
   private EventDispatcher<LocalTimeoutOccurrence> localConsensusTimeoutDispatcher(
       @ProcessOnDispatch Set<EventProcessor<LocalTimeoutOccurrence>> syncProcessors,
-      Set<EventProcessor<LocalTimeoutOccurrence>> asyncProcessors,
       Environment environment) {
-    if (asyncProcessors.isEmpty()) {
-      return roundTimeout -> syncProcessors.forEach(e -> e.process(roundTimeout));
-    } else {
-      var dispatcher = environment.getDispatcher(LocalTimeoutOccurrence.class);
-      return timeout -> {
-        syncProcessors.forEach(e -> e.process(timeout));
-        dispatcher.dispatch(timeout);
-      };
-    }
+    var dispatcher = environment.getDispatcher(LocalTimeoutOccurrence.class);
+    return timeout -> {
+      syncProcessors.forEach(e -> e.process(timeout));
+      dispatcher.dispatch(timeout);
+    };
   }
 
   @Provides
