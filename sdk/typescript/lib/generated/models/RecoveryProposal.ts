@@ -13,79 +13,75 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { AccessRule } from './AccessRule';
+import {
+    AccessRuleFromJSON,
+    AccessRuleFromJSONTyped,
+    AccessRuleToJSON,
+} from './AccessRule';
+
 /**
  * 
  * @export
- * @interface SortedSubstateKey
+ * @interface RecoveryProposal
  */
-export interface SortedSubstateKey {
+export interface RecoveryProposal {
     /**
      * 
-     * @type {string}
-     * @memberof SortedSubstateKey
+     * @type {AccessRule}
+     * @memberof RecoveryProposal
      */
-    key_type: SortedSubstateKeyKeyTypeEnum;
+    primary_role: AccessRule;
     /**
-     * The hex-encoded bytes of the partially-hashed DB sort key, under the given entity partition
-     * @type {string}
-     * @memberof SortedSubstateKey
+     * 
+     * @type {AccessRule}
+     * @memberof RecoveryProposal
      */
-    db_sort_key_hex: string;
+    recovery_role: AccessRule;
     /**
-     * The hex-encoded bytes of the sorted part of the key
-     * @type {string}
-     * @memberof SortedSubstateKey
+     * 
+     * @type {AccessRule}
+     * @memberof RecoveryProposal
      */
-    sort_prefix_hex: string;
+    confirmation_role: AccessRule;
     /**
-     * The hex-encoded remaining bytes of the key
-     * @type {string}
-     * @memberof SortedSubstateKey
+     * An integer between `0` and `2^32 - 1`, specifying the optional proposal delay of timed recoveries.
+     * @type {number}
+     * @memberof RecoveryProposal
      */
-    key_hex: string;
+    timed_recovery_delay_minutes?: number;
 }
 
-
 /**
- * @export
+ * Check if a given object implements the RecoveryProposal interface.
  */
-export const SortedSubstateKeyKeyTypeEnum = {
-    Sorted: 'Sorted'
-} as const;
-export type SortedSubstateKeyKeyTypeEnum = typeof SortedSubstateKeyKeyTypeEnum[keyof typeof SortedSubstateKeyKeyTypeEnum];
-
-
-/**
- * Check if a given object implements the SortedSubstateKey interface.
- */
-export function instanceOfSortedSubstateKey(value: object): boolean {
+export function instanceOfRecoveryProposal(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "key_type" in value;
-    isInstance = isInstance && "db_sort_key_hex" in value;
-    isInstance = isInstance && "sort_prefix_hex" in value;
-    isInstance = isInstance && "key_hex" in value;
+    isInstance = isInstance && "primary_role" in value;
+    isInstance = isInstance && "recovery_role" in value;
+    isInstance = isInstance && "confirmation_role" in value;
 
     return isInstance;
 }
 
-export function SortedSubstateKeyFromJSON(json: any): SortedSubstateKey {
-    return SortedSubstateKeyFromJSONTyped(json, false);
+export function RecoveryProposalFromJSON(json: any): RecoveryProposal {
+    return RecoveryProposalFromJSONTyped(json, false);
 }
 
-export function SortedSubstateKeyFromJSONTyped(json: any, ignoreDiscriminator: boolean): SortedSubstateKey {
+export function RecoveryProposalFromJSONTyped(json: any, ignoreDiscriminator: boolean): RecoveryProposal {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'key_type': json['key_type'],
-        'db_sort_key_hex': json['db_sort_key_hex'],
-        'sort_prefix_hex': json['sort_prefix_hex'],
-        'key_hex': json['key_hex'],
+        'primary_role': AccessRuleFromJSON(json['primary_role']),
+        'recovery_role': AccessRuleFromJSON(json['recovery_role']),
+        'confirmation_role': AccessRuleFromJSON(json['confirmation_role']),
+        'timed_recovery_delay_minutes': !exists(json, 'timed_recovery_delay_minutes') ? undefined : json['timed_recovery_delay_minutes'],
     };
 }
 
-export function SortedSubstateKeyToJSON(value?: SortedSubstateKey | null): any {
+export function RecoveryProposalToJSON(value?: RecoveryProposal | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -94,10 +90,10 @@ export function SortedSubstateKeyToJSON(value?: SortedSubstateKey | null): any {
     }
     return {
         
-        'key_type': value.key_type,
-        'db_sort_key_hex': value.db_sort_key_hex,
-        'sort_prefix_hex': value.sort_prefix_hex,
-        'key_hex': value.key_hex,
+        'primary_role': AccessRuleToJSON(value.primary_role),
+        'recovery_role': AccessRuleToJSON(value.recovery_role),
+        'confirmation_role': AccessRuleToJSON(value.confirmation_role),
+        'timed_recovery_delay_minutes': value.timed_recovery_delay_minutes,
     };
 }
 

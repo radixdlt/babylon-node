@@ -26,7 +26,7 @@ pub struct LtsCommittedTransactionOutcome {
     /// A list of all fungible balance updates which occurred in this transaction, aggregated by the global entity (such as account) which owns the vaults which were updated. 
     #[serde(rename = "fungible_entity_balance_changes")]
     pub fungible_entity_balance_changes: Vec<crate::core_api::generated::models::LtsEntityFungibleBalanceChanges>,
-    /// A list of the resultant balances of any account balances changed in this transaction. Only balances for accounts are returned, not any other kind of entity. 
+    /// A list of the resultant fungible account balances for any balances which changed in this transaction. Only balances for accounts are returned, not any other kind of entity. 
     #[serde(rename = "resultant_account_fungible_balances")]
     pub resultant_account_fungible_balances: Vec<crate::core_api::generated::models::LtsResultantAccountFungibleBalances>,
     /// The string-encoded decimal representing the total amount of XRD payed as fee (execution, validator tip and royalties). A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. 

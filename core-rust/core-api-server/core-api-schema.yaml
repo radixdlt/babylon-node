@@ -1522,6 +1522,13 @@ components:
           $ref: "#/components/schemas/NotarizedTransactionHash"
         payload_hash_bech32m:
           $ref: "#/components/schemas/NotarizedTransactionHashBech32m"
+    IntentHashInput:
+      type: string
+      description: |
+        The intent hash for a user transaction, also known as the transaction id.
+        This hash identifies the core content "intent" of the transaction. Each intent can only be committed once.
+        This hash gets signed by any signatories on the transaction, to create the signed intent.
+        Either hex or Bech32m-encoded strings are supported.
     IntentHash:
       type: string
       minLength: 64
@@ -1544,6 +1551,11 @@ components:
     SignedIntentHashBech32m:
       type: string
       description: The Bech32m-encoded human readable `SignedIntentHash`.
+    NotarizedTransactionHashInput:
+      type: string
+      description: |
+        This hash identifies the full submittable notarized transaction - ie the signed intent, plus the notary signature.
+        This hash should either be hex or Bech32m-encoded.
     NotarizedTransactionHash:
       type: string
       minLength: 64
@@ -5144,7 +5156,7 @@ components:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
         intent_hash:
-          $ref: "#/components/schemas/IntentHash"
+          $ref: "#/components/schemas/IntentHashInput"
     LtsTransactionStatusResponse:
       type: object
       required:
@@ -5533,7 +5545,7 @@ components:
             $ref: "#/components/schemas/LtsEntityFungibleBalanceChanges"
         resultant_account_fungible_balances:
           description: |
-            A list of the resultant balances of any account balances changed in this transaction.
+            A list of the resultant fungible account balances for any balances which changed in this transaction.
             Only balances for accounts are returned, not any other kind of entity.
           type: array
           items:
@@ -6040,9 +6052,10 @@ components:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
         payload_hashes:
+          description: A list of payload hashes to attempt to read. Each hash must be either hex, or in Bech32m format.
           type: array
           items:
-            $ref: "#/components/schemas/NotarizedTransactionHash"
+            $ref: "#/components/schemas/NotarizedTransactionHashInput"
     MempoolTransactionResponse:
       type: object
       required:
@@ -6063,9 +6076,12 @@ components:
             type: object
             required:
               - hash
+              - hash_bech32m
             properties:
               hash:
                 $ref: "#/components/schemas/NotarizedTransactionHash"
+              hash_bech32m:
+                $ref: "#/components/schemas/NotarizedTransactionHashBech32m"
               hex:
                 type: string
                 description: The hex-encoded full notarized transaction payload - returned only if found in mempool.
@@ -6435,7 +6451,7 @@ components:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
         intent_hash:
-          $ref: "#/components/schemas/IntentHash"
+          $ref: "#/components/schemas/IntentHashInput"
     TransactionStatusResponse:
       type: object
       required:
@@ -6519,7 +6535,7 @@ components:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
         intent_hash:
-          $ref: "#/components/schemas/IntentHash"
+          $ref: "#/components/schemas/IntentHashInput"
     TransactionReceiptResponse:
       type: object
       required:

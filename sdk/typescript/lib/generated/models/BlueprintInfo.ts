@@ -39,6 +39,12 @@ export interface BlueprintInfo {
      */
     blueprint_name: string;
     /**
+     * 
+     * @type {string}
+     * @memberof BlueprintInfo
+     */
+    blueprint_version: string;
+    /**
      * The Bech32m-encoded human readable version of any global address
      * @type {string}
      * @memberof BlueprintInfo
@@ -65,6 +71,7 @@ export function instanceOfBlueprintInfo(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "package_address" in value;
     isInstance = isInstance && "blueprint_name" in value;
+    isInstance = isInstance && "blueprint_version" in value;
     isInstance = isInstance && "features" in value;
     isInstance = isInstance && "generic_substitutions" in value;
 
@@ -83,6 +90,7 @@ export function BlueprintInfoFromJSONTyped(json: any, ignoreDiscriminator: boole
         
         'package_address': json['package_address'],
         'blueprint_name': json['blueprint_name'],
+        'blueprint_version': json['blueprint_version'],
         'outer_object': !exists(json, 'outer_object') ? undefined : json['outer_object'],
         'features': json['features'],
         'generic_substitutions': ((json['generic_substitutions'] as Array<any>).map(TypeIdentifierFromJSON)),
@@ -100,6 +108,7 @@ export function BlueprintInfoToJSON(value?: BlueprintInfo | null): any {
         
         'package_address': value.package_address,
         'blueprint_name': value.blueprint_name,
+        'blueprint_version': value.blueprint_version,
         'outer_object': value.outer_object,
         'features': value.features,
         'generic_substitutions': ((value.generic_substitutions as Array<any>).map(TypeIdentifierToJSON)),

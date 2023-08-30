@@ -12,64 +12,28 @@
  * Do not edit the class manually.
  */
 
-import { exists, mapValues } from '../runtime';
+
 /**
  * 
  * @export
- * @interface MempoolTransactionRequest
  */
-export interface MempoolTransactionRequest {
-    /**
-     * The logical name of the network
-     * @type {string}
-     * @memberof MempoolTransactionRequest
-     */
-    network: string;
-    /**
-     * A list of payload hashes to attempt to read. Each hash must be either hex, or in Bech32m format.
-     * @type {Array<string>}
-     * @memberof MempoolTransactionRequest
-     */
-    payload_hashes: Array<string>;
+export const ModuleId = {
+    Metadata: 'Metadata',
+    Royalty: 'Royalty',
+    RoleAssignment: 'RoleAssignment'
+} as const;
+export type ModuleId = typeof ModuleId[keyof typeof ModuleId];
+
+
+export function ModuleIdFromJSON(json: any): ModuleId {
+    return ModuleIdFromJSONTyped(json, false);
 }
 
-/**
- * Check if a given object implements the MempoolTransactionRequest interface.
- */
-export function instanceOfMempoolTransactionRequest(value: object): boolean {
-    let isInstance = true;
-    isInstance = isInstance && "network" in value;
-    isInstance = isInstance && "payload_hashes" in value;
-
-    return isInstance;
+export function ModuleIdFromJSONTyped(json: any, ignoreDiscriminator: boolean): ModuleId {
+    return json as ModuleId;
 }
 
-export function MempoolTransactionRequestFromJSON(json: any): MempoolTransactionRequest {
-    return MempoolTransactionRequestFromJSONTyped(json, false);
-}
-
-export function MempoolTransactionRequestFromJSONTyped(json: any, ignoreDiscriminator: boolean): MempoolTransactionRequest {
-    if ((json === undefined) || (json === null)) {
-        return json;
-    }
-    return {
-        
-        'network': json['network'],
-        'payload_hashes': json['payload_hashes'],
-    };
-}
-
-export function MempoolTransactionRequestToJSON(value?: MempoolTransactionRequest | null): any {
-    if (value === undefined) {
-        return undefined;
-    }
-    if (value === null) {
-        return null;
-    }
-    return {
-        
-        'network': value.network,
-        'payload_hashes': value.payload_hashes,
-    };
+export function ModuleIdToJSON(value?: ModuleId | null): any {
+    return value as any;
 }
 

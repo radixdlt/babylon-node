@@ -32,6 +32,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   MempoolTransactionResponsePayloadsInner.JSON_PROPERTY_HASH,
+  MempoolTransactionResponsePayloadsInner.JSON_PROPERTY_HASH_BECH32M,
   MempoolTransactionResponsePayloadsInner.JSON_PROPERTY_HEX,
   MempoolTransactionResponsePayloadsInner.JSON_PROPERTY_ERROR
 })
@@ -39,6 +40,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 public class MempoolTransactionResponsePayloadsInner {
   public static final String JSON_PROPERTY_HASH = "hash";
   private String hash;
+
+  public static final String JSON_PROPERTY_HASH_BECH32M = "hash_bech32m";
+  private String hashBech32m;
 
   public static final String JSON_PROPERTY_HEX = "hex";
   private String hex;
@@ -72,6 +76,32 @@ public class MempoolTransactionResponsePayloadsInner {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setHash(String hash) {
     this.hash = hash;
+  }
+
+
+  public MempoolTransactionResponsePayloadsInner hashBech32m(String hashBech32m) {
+    this.hashBech32m = hashBech32m;
+    return this;
+  }
+
+   /**
+   * The Bech32m-encoded human readable &#x60;NotarizedTransactionHash&#x60;.
+   * @return hashBech32m
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable `NotarizedTransactionHash`.")
+  @JsonProperty(JSON_PROPERTY_HASH_BECH32M)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getHashBech32m() {
+    return hashBech32m;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_HASH_BECH32M)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setHashBech32m(String hashBech32m) {
+    this.hashBech32m = hashBech32m;
   }
 
 
@@ -140,13 +170,14 @@ public class MempoolTransactionResponsePayloadsInner {
     }
     MempoolTransactionResponsePayloadsInner mempoolTransactionResponsePayloadsInner = (MempoolTransactionResponsePayloadsInner) o;
     return Objects.equals(this.hash, mempoolTransactionResponsePayloadsInner.hash) &&
+        Objects.equals(this.hashBech32m, mempoolTransactionResponsePayloadsInner.hashBech32m) &&
         Objects.equals(this.hex, mempoolTransactionResponsePayloadsInner.hex) &&
         Objects.equals(this.error, mempoolTransactionResponsePayloadsInner.error);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(hash, hex, error);
+    return Objects.hash(hash, hashBech32m, hex, error);
   }
 
   @Override
@@ -154,6 +185,7 @@ public class MempoolTransactionResponsePayloadsInner {
     StringBuilder sb = new StringBuilder();
     sb.append("class MempoolTransactionResponsePayloadsInner {\n");
     sb.append("    hash: ").append(toIndentedString(hash)).append("\n");
+    sb.append("    hashBech32m: ").append(toIndentedString(hashBech32m)).append("\n");
     sb.append("    hex: ").append(toIndentedString(hex)).append("\n");
     sb.append("    error: ").append(toIndentedString(error)).append("\n");
     sb.append("}");

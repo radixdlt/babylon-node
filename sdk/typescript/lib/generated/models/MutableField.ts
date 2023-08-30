@@ -16,76 +16,50 @@ import { exists, mapValues } from '../runtime';
 /**
  * 
  * @export
- * @interface SortedSubstateKey
+ * @interface MutableField
  */
-export interface SortedSubstateKey {
+export interface MutableField {
     /**
      * 
      * @type {string}
-     * @memberof SortedSubstateKey
+     * @memberof MutableField
      */
-    key_type: SortedSubstateKeyKeyTypeEnum;
+    name: string;
     /**
-     * The hex-encoded bytes of the partially-hashed DB sort key, under the given entity partition
-     * @type {string}
-     * @memberof SortedSubstateKey
+     * 
+     * @type {number}
+     * @memberof MutableField
      */
-    db_sort_key_hex: string;
-    /**
-     * The hex-encoded bytes of the sorted part of the key
-     * @type {string}
-     * @memberof SortedSubstateKey
-     */
-    sort_prefix_hex: string;
-    /**
-     * The hex-encoded remaining bytes of the key
-     * @type {string}
-     * @memberof SortedSubstateKey
-     */
-    key_hex: string;
+    index: number;
 }
 
-
 /**
- * @export
+ * Check if a given object implements the MutableField interface.
  */
-export const SortedSubstateKeyKeyTypeEnum = {
-    Sorted: 'Sorted'
-} as const;
-export type SortedSubstateKeyKeyTypeEnum = typeof SortedSubstateKeyKeyTypeEnum[keyof typeof SortedSubstateKeyKeyTypeEnum];
-
-
-/**
- * Check if a given object implements the SortedSubstateKey interface.
- */
-export function instanceOfSortedSubstateKey(value: object): boolean {
+export function instanceOfMutableField(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "key_type" in value;
-    isInstance = isInstance && "db_sort_key_hex" in value;
-    isInstance = isInstance && "sort_prefix_hex" in value;
-    isInstance = isInstance && "key_hex" in value;
+    isInstance = isInstance && "name" in value;
+    isInstance = isInstance && "index" in value;
 
     return isInstance;
 }
 
-export function SortedSubstateKeyFromJSON(json: any): SortedSubstateKey {
-    return SortedSubstateKeyFromJSONTyped(json, false);
+export function MutableFieldFromJSON(json: any): MutableField {
+    return MutableFieldFromJSONTyped(json, false);
 }
 
-export function SortedSubstateKeyFromJSONTyped(json: any, ignoreDiscriminator: boolean): SortedSubstateKey {
+export function MutableFieldFromJSONTyped(json: any, ignoreDiscriminator: boolean): MutableField {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'key_type': json['key_type'],
-        'db_sort_key_hex': json['db_sort_key_hex'],
-        'sort_prefix_hex': json['sort_prefix_hex'],
-        'key_hex': json['key_hex'],
+        'name': json['name'],
+        'index': json['index'],
     };
 }
 
-export function SortedSubstateKeyToJSON(value?: SortedSubstateKey | null): any {
+export function MutableFieldToJSON(value?: MutableField | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -94,10 +68,8 @@ export function SortedSubstateKeyToJSON(value?: SortedSubstateKey | null): any {
     }
     return {
         
-        'key_type': value.key_type,
-        'db_sort_key_hex': value.db_sort_key_hex,
-        'sort_prefix_hex': value.sort_prefix_hex,
-        'key_hex': value.key_hex,
+        'name': value.name,
+        'index': value.index,
     };
 }
 

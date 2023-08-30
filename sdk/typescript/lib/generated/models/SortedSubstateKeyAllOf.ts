@@ -20,13 +20,13 @@ import { exists, mapValues } from '../runtime';
  */
 export interface SortedSubstateKeyAllOf {
     /**
-     * The sort part of the substate key
-     * @type {number}
+     * The hex-encoded bytes of the sorted part of the key
+     * @type {string}
      * @memberof SortedSubstateKeyAllOf
      */
-    sort_prefix: number;
+    sort_prefix_hex: string;
     /**
-     * The hex-encoded bytes of the substate key
+     * The hex-encoded remaining bytes of the key
      * @type {string}
      * @memberof SortedSubstateKeyAllOf
      */
@@ -54,7 +54,7 @@ export type SortedSubstateKeyAllOfKeyTypeEnum = typeof SortedSubstateKeyAllOfKey
  */
 export function instanceOfSortedSubstateKeyAllOf(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "sort_prefix" in value;
+    isInstance = isInstance && "sort_prefix_hex" in value;
     isInstance = isInstance && "key_hex" in value;
 
     return isInstance;
@@ -70,7 +70,7 @@ export function SortedSubstateKeyAllOfFromJSONTyped(json: any, ignoreDiscriminat
     }
     return {
         
-        'sort_prefix': json['sort_prefix'],
+        'sort_prefix_hex': json['sort_prefix_hex'],
         'key_hex': json['key_hex'],
         'key_type': !exists(json, 'key_type') ? undefined : json['key_type'],
     };
@@ -85,7 +85,7 @@ export function SortedSubstateKeyAllOfToJSON(value?: SortedSubstateKeyAllOf | nu
     }
     return {
         
-        'sort_prefix': value.sort_prefix,
+        'sort_prefix_hex': value.sort_prefix_hex,
         'key_hex': value.key_hex,
         'key_type': value.key_type,
     };

@@ -16,76 +16,65 @@ import { exists, mapValues } from '../runtime';
 /**
  * 
  * @export
- * @interface SortedSubstateKey
+ * @interface MempoolTransactionResponsePayloadsInner
  */
-export interface SortedSubstateKey {
+export interface MempoolTransactionResponsePayloadsInner {
     /**
-     * 
+     * The hex-encoded notarized transaction hash for a user transaction.
+     * This hash identifies the full submittable notarized transaction - ie the signed intent, plus the notary signature.
      * @type {string}
-     * @memberof SortedSubstateKey
+     * @memberof MempoolTransactionResponsePayloadsInner
      */
-    key_type: SortedSubstateKeyKeyTypeEnum;
+    hash: string;
     /**
-     * The hex-encoded bytes of the partially-hashed DB sort key, under the given entity partition
+     * The Bech32m-encoded human readable `NotarizedTransactionHash`.
      * @type {string}
-     * @memberof SortedSubstateKey
+     * @memberof MempoolTransactionResponsePayloadsInner
      */
-    db_sort_key_hex: string;
+    hash_bech32m: string;
     /**
-     * The hex-encoded bytes of the sorted part of the key
+     * The hex-encoded full notarized transaction payload - returned only if found in mempool.
      * @type {string}
-     * @memberof SortedSubstateKey
+     * @memberof MempoolTransactionResponsePayloadsInner
      */
-    sort_prefix_hex: string;
+    hex?: string;
     /**
-     * The hex-encoded remaining bytes of the key
+     * Error message why `hex` field is missing: the transaction was not found in the mempool or the provided hash is invalid.
      * @type {string}
-     * @memberof SortedSubstateKey
+     * @memberof MempoolTransactionResponsePayloadsInner
      */
-    key_hex: string;
+    error?: string;
 }
 
-
 /**
- * @export
+ * Check if a given object implements the MempoolTransactionResponsePayloadsInner interface.
  */
-export const SortedSubstateKeyKeyTypeEnum = {
-    Sorted: 'Sorted'
-} as const;
-export type SortedSubstateKeyKeyTypeEnum = typeof SortedSubstateKeyKeyTypeEnum[keyof typeof SortedSubstateKeyKeyTypeEnum];
-
-
-/**
- * Check if a given object implements the SortedSubstateKey interface.
- */
-export function instanceOfSortedSubstateKey(value: object): boolean {
+export function instanceOfMempoolTransactionResponsePayloadsInner(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "key_type" in value;
-    isInstance = isInstance && "db_sort_key_hex" in value;
-    isInstance = isInstance && "sort_prefix_hex" in value;
-    isInstance = isInstance && "key_hex" in value;
+    isInstance = isInstance && "hash" in value;
+    isInstance = isInstance && "hash_bech32m" in value;
 
     return isInstance;
 }
 
-export function SortedSubstateKeyFromJSON(json: any): SortedSubstateKey {
-    return SortedSubstateKeyFromJSONTyped(json, false);
+export function MempoolTransactionResponsePayloadsInnerFromJSON(json: any): MempoolTransactionResponsePayloadsInner {
+    return MempoolTransactionResponsePayloadsInnerFromJSONTyped(json, false);
 }
 
-export function SortedSubstateKeyFromJSONTyped(json: any, ignoreDiscriminator: boolean): SortedSubstateKey {
+export function MempoolTransactionResponsePayloadsInnerFromJSONTyped(json: any, ignoreDiscriminator: boolean): MempoolTransactionResponsePayloadsInner {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'key_type': json['key_type'],
-        'db_sort_key_hex': json['db_sort_key_hex'],
-        'sort_prefix_hex': json['sort_prefix_hex'],
-        'key_hex': json['key_hex'],
+        'hash': json['hash'],
+        'hash_bech32m': json['hash_bech32m'],
+        'hex': !exists(json, 'hex') ? undefined : json['hex'],
+        'error': !exists(json, 'error') ? undefined : json['error'],
     };
 }
 
-export function SortedSubstateKeyToJSON(value?: SortedSubstateKey | null): any {
+export function MempoolTransactionResponsePayloadsInnerToJSON(value?: MempoolTransactionResponsePayloadsInner | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -94,10 +83,10 @@ export function SortedSubstateKeyToJSON(value?: SortedSubstateKey | null): any {
     }
     return {
         
-        'key_type': value.key_type,
-        'db_sort_key_hex': value.db_sort_key_hex,
-        'sort_prefix_hex': value.sort_prefix_hex,
-        'key_hex': value.key_hex,
+        'hash': value.hash,
+        'hash_bech32m': value.hash_bech32m,
+        'hex': value.hex,
+        'error': value.error,
     };
 }
 

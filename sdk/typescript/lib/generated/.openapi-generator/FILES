@@ -260,6 +260,7 @@ models/MempoolListResponse.ts
 models/MempoolTransactionHashes.ts
 models/MempoolTransactionRequest.ts
 models/MempoolTransactionResponse.ts
+models/MempoolTransactionResponsePayloadsInner.ts
 models/MetadataKey.ts
 models/MetadataModuleEntrySubstate.ts
 models/MetadataModuleEntrySubstateAllOf.ts
@@ -270,10 +271,12 @@ models/MethodAccessibilityType.ts
 models/MethodAuthType.ts
 models/MethodEventEmitterIdentifier.ts
 models/MethodEventEmitterIdentifierAllOf.ts
+models/ModuleId.ts
 models/ModuleVersion.ts
 models/MultiResourcePoolFieldStateSubstate.ts
 models/MultiResourcePoolFieldStateSubstateAllOf.ts
 models/MultiResourcePoolFieldStateValue.ts
+models/MutableField.ts
 models/NetworkConfigurationResponse.ts
 models/NetworkConfigurationResponseVersion.ts
 models/NetworkConfigurationResponseWellKnownAddresses.ts
@@ -395,6 +398,7 @@ models/PlaintextMessageContentType.ts
 models/PlaintextTransactionMessage.ts
 models/PlaintextTransactionMessageAllOf.ts
 models/PoolVault.ts
+models/PrimaryRoleRecoveryAttempt.ts
 models/ProofAccessRuleNode.ts
 models/ProofAccessRuleNodeAllOf.ts
 models/ProofRule.ts
@@ -409,6 +413,8 @@ models/PublicKeyType.ts
 models/PublicMethodAccessibility.ts
 models/PublicMethodAccessibilityAllOf.ts
 models/ReceiverInfo.ts
+models/RecoveryProposal.ts
+models/RecoveryRoleRecoveryAttempt.ts
 models/ReferenceType.ts
 models/RequireProofRule.ts
 models/RequireProofRuleAllOf.ts

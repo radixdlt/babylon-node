@@ -34,7 +34,6 @@ export const EntityType = {
     GlobalNonFungibleResource: 'GlobalNonFungibleResource',
     InternalNonFungibleVault: 'InternalNonFungibleVault',
     InternalGenericComponent: 'InternalGenericComponent',
-    InternalAccount: 'InternalAccount',
     InternalKeyValueStore: 'InternalKeyValueStore',
     GlobalOneResourcePool: 'GlobalOneResourcePool',
     GlobalTwoResourcePool: 'GlobalTwoResourcePool',

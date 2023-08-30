@@ -220,11 +220,11 @@ public class LtsCommittedTransactionOutcome {
   }
 
    /**
-   * A list of the resultant balances of any account balances changed in this transaction. Only balances for accounts are returned, not any other kind of entity. 
+   * A list of the resultant fungible account balances for any balances which changed in this transaction. Only balances for accounts are returned, not any other kind of entity. 
    * @return resultantAccountFungibleBalances
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "A list of the resultant balances of any account balances changed in this transaction. Only balances for accounts are returned, not any other kind of entity. ")
+  @ApiModelProperty(required = true, value = "A list of the resultant fungible account balances for any balances which changed in this transaction. Only balances for accounts are returned, not any other kind of entity. ")
   @JsonProperty(JSON_PROPERTY_RESULTANT_ACCOUNT_FUNGIBLE_BALANCES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 

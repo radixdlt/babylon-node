@@ -13,79 +13,65 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { Instant } from './Instant';
+import {
+    InstantFromJSON,
+    InstantFromJSONTyped,
+    InstantToJSON,
+} from './Instant';
+import type { RecoveryProposal } from './RecoveryProposal';
+import {
+    RecoveryProposalFromJSON,
+    RecoveryProposalFromJSONTyped,
+    RecoveryProposalToJSON,
+} from './RecoveryProposal';
+
 /**
  * 
  * @export
- * @interface SortedSubstateKey
+ * @interface RecoveryRoleRecoveryAttempt
  */
-export interface SortedSubstateKey {
+export interface RecoveryRoleRecoveryAttempt {
     /**
      * 
-     * @type {string}
-     * @memberof SortedSubstateKey
+     * @type {RecoveryProposal}
+     * @memberof RecoveryRoleRecoveryAttempt
      */
-    key_type: SortedSubstateKeyKeyTypeEnum;
+    recovery_proposal: RecoveryProposal;
     /**
-     * The hex-encoded bytes of the partially-hashed DB sort key, under the given entity partition
-     * @type {string}
-     * @memberof SortedSubstateKey
+     * 
+     * @type {Instant}
+     * @memberof RecoveryRoleRecoveryAttempt
      */
-    db_sort_key_hex: string;
-    /**
-     * The hex-encoded bytes of the sorted part of the key
-     * @type {string}
-     * @memberof SortedSubstateKey
-     */
-    sort_prefix_hex: string;
-    /**
-     * The hex-encoded remaining bytes of the key
-     * @type {string}
-     * @memberof SortedSubstateKey
-     */
-    key_hex: string;
+    timed_recovery_allowed_after?: Instant;
 }
 
-
 /**
- * @export
+ * Check if a given object implements the RecoveryRoleRecoveryAttempt interface.
  */
-export const SortedSubstateKeyKeyTypeEnum = {
-    Sorted: 'Sorted'
-} as const;
-export type SortedSubstateKeyKeyTypeEnum = typeof SortedSubstateKeyKeyTypeEnum[keyof typeof SortedSubstateKeyKeyTypeEnum];
-
-
-/**
- * Check if a given object implements the SortedSubstateKey interface.
- */
-export function instanceOfSortedSubstateKey(value: object): boolean {
+export function instanceOfRecoveryRoleRecoveryAttempt(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "key_type" in value;
-    isInstance = isInstance && "db_sort_key_hex" in value;
-    isInstance = isInstance && "sort_prefix_hex" in value;
-    isInstance = isInstance && "key_hex" in value;
+    isInstance = isInstance && "recovery_proposal" in value;
 
     return isInstance;
 }
 
-export function SortedSubstateKeyFromJSON(json: any): SortedSubstateKey {
-    return SortedSubstateKeyFromJSONTyped(json, false);
+export function RecoveryRoleRecoveryAttemptFromJSON(json: any): RecoveryRoleRecoveryAttempt {
+    return RecoveryRoleRecoveryAttemptFromJSONTyped(json, false);
 }
 
-export function SortedSubstateKeyFromJSONTyped(json: any, ignoreDiscriminator: boolean): SortedSubstateKey {
+export function RecoveryRoleRecoveryAttemptFromJSONTyped(json: any, ignoreDiscriminator: boolean): RecoveryRoleRecoveryAttempt {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'key_type': json['key_type'],
-        'db_sort_key_hex': json['db_sort_key_hex'],
-        'sort_prefix_hex': json['sort_prefix_hex'],
-        'key_hex': json['key_hex'],
+        'recovery_proposal': RecoveryProposalFromJSON(json['recovery_proposal']),
+        'timed_recovery_allowed_after': !exists(json, 'timed_recovery_allowed_after') ? undefined : InstantFromJSON(json['timed_recovery_allowed_after']),
     };
 }
 
-export function SortedSubstateKeyToJSON(value?: SortedSubstateKey | null): any {
+export function RecoveryRoleRecoveryAttemptToJSON(value?: RecoveryRoleRecoveryAttempt | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -94,10 +80,8 @@ export function SortedSubstateKeyToJSON(value?: SortedSubstateKey | null): any {
     }
     return {
         
-        'key_type': value.key_type,
-        'db_sort_key_hex': value.db_sort_key_hex,
-        'sort_prefix_hex': value.sort_prefix_hex,
-        'key_hex': value.key_hex,
+        'recovery_proposal': RecoveryProposalToJSON(value.recovery_proposal),
+        'timed_recovery_allowed_after': InstantToJSON(value.timed_recovery_allowed_after),
     };
 }
 

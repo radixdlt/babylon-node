@@ -13,79 +13,52 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { RecoveryProposal } from './RecoveryProposal';
+import {
+    RecoveryProposalFromJSON,
+    RecoveryProposalFromJSONTyped,
+    RecoveryProposalToJSON,
+} from './RecoveryProposal';
+
 /**
  * 
  * @export
- * @interface SortedSubstateKey
+ * @interface PrimaryRoleRecoveryAttempt
  */
-export interface SortedSubstateKey {
+export interface PrimaryRoleRecoveryAttempt {
     /**
      * 
-     * @type {string}
-     * @memberof SortedSubstateKey
+     * @type {RecoveryProposal}
+     * @memberof PrimaryRoleRecoveryAttempt
      */
-    key_type: SortedSubstateKeyKeyTypeEnum;
-    /**
-     * The hex-encoded bytes of the partially-hashed DB sort key, under the given entity partition
-     * @type {string}
-     * @memberof SortedSubstateKey
-     */
-    db_sort_key_hex: string;
-    /**
-     * The hex-encoded bytes of the sorted part of the key
-     * @type {string}
-     * @memberof SortedSubstateKey
-     */
-    sort_prefix_hex: string;
-    /**
-     * The hex-encoded remaining bytes of the key
-     * @type {string}
-     * @memberof SortedSubstateKey
-     */
-    key_hex: string;
+    recovery_proposal: RecoveryProposal;
 }
 
-
 /**
- * @export
+ * Check if a given object implements the PrimaryRoleRecoveryAttempt interface.
  */
-export const SortedSubstateKeyKeyTypeEnum = {
-    Sorted: 'Sorted'
-} as const;
-export type SortedSubstateKeyKeyTypeEnum = typeof SortedSubstateKeyKeyTypeEnum[keyof typeof SortedSubstateKeyKeyTypeEnum];
-
-
-/**
- * Check if a given object implements the SortedSubstateKey interface.
- */
-export function instanceOfSortedSubstateKey(value: object): boolean {
+export function instanceOfPrimaryRoleRecoveryAttempt(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "key_type" in value;
-    isInstance = isInstance && "db_sort_key_hex" in value;
-    isInstance = isInstance && "sort_prefix_hex" in value;
-    isInstance = isInstance && "key_hex" in value;
+    isInstance = isInstance && "recovery_proposal" in value;
 
     return isInstance;
 }
 
-export function SortedSubstateKeyFromJSON(json: any): SortedSubstateKey {
-    return SortedSubstateKeyFromJSONTyped(json, false);
+export function PrimaryRoleRecoveryAttemptFromJSON(json: any): PrimaryRoleRecoveryAttempt {
+    return PrimaryRoleRecoveryAttemptFromJSONTyped(json, false);
 }
 
-export function SortedSubstateKeyFromJSONTyped(json: any, ignoreDiscriminator: boolean): SortedSubstateKey {
+export function PrimaryRoleRecoveryAttemptFromJSONTyped(json: any, ignoreDiscriminator: boolean): PrimaryRoleRecoveryAttempt {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'key_type': json['key_type'],
-        'db_sort_key_hex': json['db_sort_key_hex'],
-        'sort_prefix_hex': json['sort_prefix_hex'],
-        'key_hex': json['key_hex'],
+        'recovery_proposal': RecoveryProposalFromJSON(json['recovery_proposal']),
     };
 }
 
-export function SortedSubstateKeyToJSON(value?: SortedSubstateKey | null): any {
+export function PrimaryRoleRecoveryAttemptToJSON(value?: PrimaryRoleRecoveryAttempt | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -94,10 +67,7 @@ export function SortedSubstateKeyToJSON(value?: SortedSubstateKey | null): any {
     }
     return {
         
-        'key_type': value.key_type,
-        'db_sort_key_hex': value.db_sort_key_hex,
-        'sort_prefix_hex': value.sort_prefix_hex,
-        'key_hex': value.key_hex,
+        'recovery_proposal': RecoveryProposalToJSON(value.recovery_proposal),
     };
 }
 

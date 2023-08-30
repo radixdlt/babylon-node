@@ -46,7 +46,6 @@ export const SubstateType = {
     NonFungibleVaultFieldBalance: 'NonFungibleVaultFieldBalance',
     NonFungibleVaultFieldFrozenStatus: 'NonFungibleVaultFieldFrozenStatus',
     NonFungibleVaultContentsIndexEntry: 'NonFungibleVaultContentsIndexEntry',
-    ConsensusManager: 'ConsensusManager',
     ConsensusManagerFieldConfig: 'ConsensusManagerFieldConfig',
     ConsensusManagerFieldState: 'ConsensusManagerFieldState',
     ConsensusManagerFieldCurrentValidatorSet: 'ConsensusManagerFieldCurrentValidatorSet',
