@@ -376,6 +376,8 @@ pub fn to_api_lts_resultant_account_fungible_balances(
     context: &MappingContext,
     substate_changes: &BySubstate<ChangeAction>,
 ) -> Vec<models::LtsResultantAccountFungibleBalances> {
+    // TODO(after upstream fix): this can be much easily computed in [`ProcessedCommitResult::compute_global_balance_changes_update`] and
+    // just extracted here, after we have RE return resultant balance along with the change delta value.
     let fungible_vaults = substate_changes
         .iter_node_ids()
         .filter(|node_id| node_id.is_internal_fungible_vault())
@@ -391,7 +393,7 @@ pub fn to_api_lts_resultant_account_fungible_balances(
     substate_changes
         .iter()
         .filter(|(substate_reference, _)| substate_reference.0.is_internal_fungible_vault())
-        .filter(|(substate_reference, _)| substate_reference.1 == MAIN_BASE_PARTITION)
+        .filter(|(substate_reference, _)| substate_reference.1 == FungibleVaultPartitionOffset::Field.as_main_partition())
         .filter(|(substate_reference, _)| {
             substate_reference.2 == FungibleVaultField::Balance.into()
         })
@@ -411,8 +413,14 @@ pub fn to_api_lts_resultant_account_fungible_balances(
                 return None;
             }
 
+            // We check the parent of the vault is indeed owned by Account's ResourceVaultKeyValue - meaning strictly an account vault,
+            // and not an unrelated one (i.e. recently removed RoyaltyVault).
+            if ancestor_record.parent.1 != AccountPartitionOffset::ResourceVaultKeyValue.as_main_partition() {
+                return None;
+            }
+
             if ancestor_record.parent != ancestor_record.root {
-                panic!("Invariant broken: vaults ");
+                panic!("Invariant broken: Account vault expected to be directly owned by the account partition");
             }
 
             Some((account_address, substate_reference, change_action))

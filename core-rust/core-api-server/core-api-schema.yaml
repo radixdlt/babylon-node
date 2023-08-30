@@ -5465,7 +5465,6 @@ components:
             $ref: "#/components/schemas/LtsEntityFungibleBalanceChanges"
         resultant_account_fungible_balances:
           description: |
-            THIS CURRENTLY RETURNS AN EMPTY LIST. THIS FEATURE WILL BE COMING AT RCNET-V2.
             A list of the resultant balances of any account balances changed in this transaction.
             Only balances for accounts are returned, not any other kind of entity.
           type: array
