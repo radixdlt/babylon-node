@@ -44,6 +44,12 @@ export interface FieldSchema {
      * @memberof FieldSchema
      */
     condition?: FieldSchemaFeatureCondition;
+    /**
+     * The hex-encoded default value of this field. Only present if this field is transient.
+     * @type {string}
+     * @memberof FieldSchema
+     */
+    transient_default_value_hex?: string;
 }
 
 /**
@@ -68,6 +74,7 @@ export function FieldSchemaFromJSONTyped(json: any, ignoreDiscriminator: boolean
         
         'field_type_ref': BlueprintPayloadDefFromJSON(json['field_type_ref']),
         'condition': !exists(json, 'condition') ? undefined : FieldSchemaFeatureConditionFromJSON(json['condition']),
+        'transient_default_value_hex': !exists(json, 'transient_default_value_hex') ? undefined : json['transient_default_value_hex'],
     };
 }
 
@@ -82,6 +89,7 @@ export function FieldSchemaToJSON(value?: FieldSchema | null): any {
         
         'field_type_ref': BlueprintPayloadDefToJSON(value.field_type_ref),
         'condition': FieldSchemaFeatureConditionToJSON(value.condition),
+        'transient_default_value_hex': value.transient_default_value_hex,
     };
 }
 

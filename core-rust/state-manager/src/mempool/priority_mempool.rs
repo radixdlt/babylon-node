@@ -616,6 +616,7 @@ mod tests {
                 // Fake these
                 encoded_instructions: vec![],
                 signer_keys: vec![],
+                num_of_signature_validations: 0,
             }),
             raw: RawNotarizedTransaction(vec![]),
         })

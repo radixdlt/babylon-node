@@ -68,6 +68,7 @@ import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransac
 import static org.assertj.core.api.Assertions.*;
 
 import com.radixdlt.api.DeterministicCoreApiTestBase;
+import com.radixdlt.api.core.generated.client.ApiException;
 import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.rev2.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -147,15 +148,16 @@ public class MempoolEndpointTest extends DeterministicCoreApiTestBase {
 
       assert (mempoolTransactionNotFound.getPayloads().get(0).getError()).contains("not found");
 
-      var mempoolTransactionInvalid =
-          getMempoolApi()
-              .mempoolTransactionPost(
-                  new MempoolTransactionRequest()
-                      .network(networkLogicalName)
-                      .payloadHashes(List.of("invalid_payload_hash")));
-
-      assert (mempoolTransactionInvalid.getPayloads().get(0).getError())
-          .contains("Invalid payload");
+      assertThatThrownBy(
+              () -> {
+                getMempoolApi()
+                    .mempoolTransactionPost(
+                        new MempoolTransactionRequest()
+                            .network(networkLogicalName)
+                            .payloadHashes(List.of("invalid_payload_hash")));
+              })
+          .isInstanceOf(ApiException.class)
+          .hasMessageContaining("Error extracting payload_hashes from request: InvalidHash");
     }
   }
 }

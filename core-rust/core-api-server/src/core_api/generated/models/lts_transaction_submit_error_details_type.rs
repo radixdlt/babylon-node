@@ -14,6 +14,8 @@
 pub enum LtsTransactionSubmitErrorDetailsType {
     #[serde(rename = "PriorityThresholdNotMet")]
     PriorityThresholdNotMet,
+    #[serde(rename = "IntentAlreadyCommitted")]
+    IntentAlreadyCommitted,
     #[serde(rename = "Rejected")]
     Rejected,
 
@@ -23,6 +25,7 @@ impl ToString for LtsTransactionSubmitErrorDetailsType {
     fn to_string(&self) -> String {
         match self {
             Self::PriorityThresholdNotMet => String::from("PriorityThresholdNotMet"),
+            Self::IntentAlreadyCommitted => String::from("IntentAlreadyCommitted"),
             Self::Rejected => String::from("Rejected"),
         }
     }

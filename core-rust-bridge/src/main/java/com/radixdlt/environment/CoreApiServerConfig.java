@@ -68,7 +68,7 @@ import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.utils.UInt32;
 
-public record CoreApiServerConfig(String bindInterface, UInt32 port) {
+public record CoreApiServerConfig(String bindInterface, UInt32 port, CoreApiServerFlags flags) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         CoreApiServerConfig.class,

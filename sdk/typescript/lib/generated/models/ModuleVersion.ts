@@ -13,12 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { ObjectModuleId } from './ObjectModuleId';
+import type { ModuleId } from './ModuleId';
 import {
-    ObjectModuleIdFromJSON,
-    ObjectModuleIdFromJSONTyped,
-    ObjectModuleIdToJSON,
-} from './ObjectModuleId';
+    ModuleIdFromJSON,
+    ModuleIdFromJSONTyped,
+    ModuleIdToJSON,
+} from './ModuleId';
 
 /**
  * 
@@ -28,10 +28,10 @@ import {
 export interface ModuleVersion {
     /**
      * 
-     * @type {ObjectModuleId}
+     * @type {ModuleId}
      * @memberof ModuleVersion
      */
-    module: ObjectModuleId;
+    module: ModuleId;
     /**
      * A string of `Major.Minor.Patch` where Major, Minor and Patch are all u32s.
      * @type {string}
@@ -61,7 +61,7 @@ export function ModuleVersionFromJSONTyped(json: any, ignoreDiscriminator: boole
     }
     return {
         
-        'module': ObjectModuleIdFromJSON(json['module']),
+        'module': ModuleIdFromJSON(json['module']),
         'version': json['version'],
     };
 }
@@ -75,7 +75,7 @@ export function ModuleVersionToJSON(value?: ModuleVersion | null): any {
     }
     return {
         
-        'module': ObjectModuleIdToJSON(value.module),
+        'module': ModuleIdToJSON(value.module),
         'version': value.version,
     };
 }

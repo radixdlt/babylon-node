@@ -13,6 +13,13 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { MempoolTransactionResponsePayloadsInner } from './MempoolTransactionResponsePayloadsInner';
+import {
+    MempoolTransactionResponsePayloadsInnerFromJSON,
+    MempoolTransactionResponsePayloadsInnerFromJSONTyped,
+    MempoolTransactionResponsePayloadsInnerToJSON,
+} from './MempoolTransactionResponsePayloadsInner';
+
 /**
  * 
  * @export
@@ -20,11 +27,19 @@ import { exists, mapValues } from '../runtime';
  */
 export interface MempoolTransactionResponse {
     /**
-     * The hex-encoded full notarized transaction payload.
-     * @type {string}
+     * An integer giving the total count of payload hashes checked in the returned response.
+     * @type {number}
      * @memberof MempoolTransactionResponse
      */
-    payload_hex: string;
+    count: number;
+    /**
+     * An array containing pairs of payload hash (query) and payload hex or error (response).
+     * Note that this response is bounded - this means it is not guaranteed all queries will be processed.
+     * Please query missing payload hashes again.
+     * @type {Array<MempoolTransactionResponsePayloadsInner>}
+     * @memberof MempoolTransactionResponse
+     */
+    payloads: Array<MempoolTransactionResponsePayloadsInner>;
 }
 
 /**
@@ -32,7 +47,8 @@ export interface MempoolTransactionResponse {
  */
 export function instanceOfMempoolTransactionResponse(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "payload_hex" in value;
+    isInstance = isInstance && "count" in value;
+    isInstance = isInstance && "payloads" in value;
 
     return isInstance;
 }
@@ -47,7 +63,8 @@ export function MempoolTransactionResponseFromJSONTyped(json: any, ignoreDiscrim
     }
     return {
         
-        'payload_hex': json['payload_hex'],
+        'count': json['count'],
+        'payloads': ((json['payloads'] as Array<any>).map(MempoolTransactionResponsePayloadsInnerFromJSON)),
     };
 }
 
@@ -60,7 +77,8 @@ export function MempoolTransactionResponseToJSON(value?: MempoolTransactionRespo
     }
     return {
         
-        'payload_hex': value.payload_hex,
+        'count': value.count,
+        'payloads': ((value.payloads as Array<any>).map(MempoolTransactionResponsePayloadsInnerToJSON)),
     };
 }
 

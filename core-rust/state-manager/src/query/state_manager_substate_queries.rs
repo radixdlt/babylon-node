@@ -1,7 +1,8 @@
-use radix_engine::system::system::FieldSubstate;
+use radix_engine::blueprints::consensus_manager::{
+    ConsensusManagerField, ConsensusManagerStateFieldSubstate,
+};
 use radix_engine::types::*;
 
-use radix_engine_queries::typed_substate_layout::ConsensusManagerSubstate;
 use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use radix_engine_store_interface::interface::SubstateDatabase;
 
@@ -11,15 +12,15 @@ pub trait StateManagerSubstateQueries {
 
 impl<T: SubstateDatabase> StateManagerSubstateQueries for T {
     fn get_epoch(&self) -> Epoch {
-        let substate = self
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ConsensusManagerSubstate>>(
+        let consensus_manager_state = self
+            .get_mapped::<SpreadPrefixKeyMapper, ConsensusManagerStateFieldSubstate>(
                 CONSENSUS_MANAGER.as_node_id(),
                 MAIN_BASE_PARTITION,
-                &ConsensusManagerField::ConsensusManager.into(),
+                &ConsensusManagerField::State.into(),
             )
             .unwrap()
-            .value
-            .0;
-        substate.epoch
+            .into_payload()
+            .into_latest();
+        consensus_manager_state.epoch
     }
 }

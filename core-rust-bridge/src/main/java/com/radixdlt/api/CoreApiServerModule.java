@@ -69,6 +69,7 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.environment.CoreApiServerConfig;
+import com.radixdlt.environment.CoreApiServerFlags;
 import com.radixdlt.environment.NodeAutoCloseable;
 import com.radixdlt.environment.NodeRustEnvironment;
 import com.radixdlt.utils.UInt32;
@@ -77,8 +78,9 @@ public final class CoreApiServerModule extends AbstractModule {
 
   private final CoreApiServerConfig config;
 
-  public CoreApiServerModule(String apiBindAddress, int apiPort) {
-    this.config = new CoreApiServerConfig(apiBindAddress, UInt32.fromNonNegativeInt(apiPort));
+  public CoreApiServerModule(String apiBindAddress, int apiPort, CoreApiServerFlags flags) {
+    this.config =
+        new CoreApiServerConfig(apiBindAddress, UInt32.fromNonNegativeInt(apiPort), flags);
   }
 
   @Provides

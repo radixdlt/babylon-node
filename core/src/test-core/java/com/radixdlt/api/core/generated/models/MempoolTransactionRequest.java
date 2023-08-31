@@ -84,11 +84,11 @@ public class MempoolTransactionRequest {
   }
 
    /**
-   * Get payloadHashes
+   * A list of payload hashes to attempt to read. Each hash must be either hex, or in Bech32m format.
    * @return payloadHashes
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @ApiModelProperty(required = true, value = "A list of payload hashes to attempt to read. Each hash must be either hex, or in Bech32m format.")
   @JsonProperty(JSON_PROPERTY_PAYLOAD_HASHES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 

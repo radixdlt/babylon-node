@@ -19,13 +19,15 @@ ENV DEBIAN_FRONTEND noninteractive
 
 CMD ["/bin/bash"]
 
+ARG WGET_VERSION="1.21.3-1+b2"
+
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
     docker.io=20.10.24+dfsg1-1+b3 \
     libssl-dev=3.0.9-1 \
     pkg-config=1.8.1-1 \
     unzip=6.0-28 \
-    wget=1.21.3-1+b2 \
+    wget=${WGET_VERSION} \
     software-properties-common=0.99.30-4 \
   && apt-get install -y --no-install-recommends \
     openjdk-17-jdk=17.0.8+7-1~deb12u1 \

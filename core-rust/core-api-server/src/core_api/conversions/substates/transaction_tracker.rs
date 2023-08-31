@@ -1,6 +1,7 @@
 use super::super::*;
 use super::*;
 use crate::core_api::models;
+use radix_engine::system::system_substates::{FieldSubstate, KeyValueEntrySubstate};
 
 use radix_engine::types::*;
 use radix_engine_queries::typed_substate_layout::*;
@@ -12,12 +13,14 @@ pub fn to_api_transaction_tracker_substate(
     Ok(field_substate!(
         substate,
         TransactionTrackerFieldState,
-        TransactionTrackerSubstate {
-            start_epoch,
-            start_partition,
-            partition_range_start_inclusive,
-            partition_range_end_inclusive,
-            epochs_per_partition,
+        value => {
+            let TransactionTrackerSubstateV1 {
+                start_epoch,
+                start_partition,
+                partition_range_start_inclusive,
+                partition_range_end_inclusive,
+                epochs_per_partition,
+            } = value.v1()
         },
         Value {
             start_epoch: to_api_epoch(context, Epoch::of(*start_epoch))?,
@@ -49,13 +52,13 @@ pub fn to_api_transaction_tracker_collection_entry(
         },
         value => {
             status: match value {
-                TransactionStatus::CommittedSuccess => {
+                TransactionStatus::V1(TransactionStatusV1::CommittedSuccess) => {
                     models::TransactionTrackerTransactionStatus::CommittedSuccess
                 }
-                TransactionStatus::CommittedFailure => {
+                TransactionStatus::V1(TransactionStatusV1::CommittedFailure) => {
                     models::TransactionTrackerTransactionStatus::CommittedFailure
                 }
-                TransactionStatus::Cancelled => {
+                TransactionStatus::V1(TransactionStatusV1::Cancelled) => {
                     models::TransactionTrackerTransactionStatus::Cancelled
                 }
             },

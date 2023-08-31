@@ -16,7 +16,7 @@ pub struct LtsTransactionStatusRequest {
     /// The logical name of the network
     #[serde(rename = "network")]
     pub network: String,
-    /// The hex-encoded intent hash for a user transaction, also known as the transaction id. This hash identifies the core content \"intent\" of the transaction. Each intent can only be committed once. This hash gets signed by any signatories on the transaction, to create the signed intent. 
+    /// The intent hash for a user transaction, also known as the transaction id. This hash identifies the core content \"intent\" of the transaction. Each intent can only be committed once. This hash gets signed by any signatories on the transaction, to create the signed intent. Either hex or Bech32m-encoded strings are supported. 
     #[serde(rename = "intent_hash")]
     pub intent_hash: String,
 }

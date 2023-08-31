@@ -1,6 +1,5 @@
 use crate::core_api::*;
-use radix_engine::blueprints::account::ACCOUNT_VAULT_COLLECTION_INDEX;
-use radix_engine::system::system::KeyValueEntrySubstate;
+use radix_engine::blueprints::account::{AccountCollection, AccountResourceVaultEntryPayload};
 use radix_engine::types::*;
 use radix_engine_queries::typed_substate_layout::*;
 use state_manager::store::traits::QueryableProofStore;
@@ -84,24 +83,27 @@ pub(crate) async fn handle_lts_state_account_fungible_resource_balance(
 
     let balance = {
         let encoded_key = scrypto_encode(&fungible_resource_address).expect("Impossible Case!");
-        let substate = read_optional_collection_substate::<KeyValueEntrySubstate<Own>>(
+        let substate = read_optional_collection_substate::<AccountResourceVaultEntryPayload>(
             database.deref(),
             account_address.as_node_id(),
-            ACCOUNT_VAULT_COLLECTION_INDEX,
+            AccountCollection::ResourceVaultKeyValue.collection_index(),
             &SubstateKey::Map(encoded_key),
         );
         match substate {
-            Some(KeyValueEntrySubstate {
-                value: Some(owned_vault),
-                ..
-            }) => read_mandatory_main_field_substate::<FungibleVaultBalanceSubstate>(
-                database.deref(),
-                &owned_vault.0,
-                &FungibleVaultField::LiquidFungible.into(),
-            )?
-            .value
-            .0
-            .amount(),
+            Some(substate) => {
+                let vault = substate
+                    .into_value()
+                    .ok_or(MappingError::KeyValueStoreEntryUnexpectedlyAbsent)?
+                    .into_latest();
+                read_mandatory_main_field_substate::<FungibleVaultBalanceFieldPayload>(
+                    database.deref(),
+                    vault.0.as_node_id(),
+                    &FungibleVaultField::Balance.into(),
+                )?
+                .into_payload()
+                .into_latest()
+                .amount()
+            }
             _ => Decimal::ZERO,
         }
     };

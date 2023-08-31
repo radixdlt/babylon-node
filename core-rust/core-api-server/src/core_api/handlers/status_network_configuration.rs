@@ -87,7 +87,7 @@ pub(crate) async fn handle_status_network_configuration(
     .map(Json)
 }
 
-const ALL_ENTITY_TYPES: [EntityType; 18] = [
+const ALL_ENTITY_TYPES: [EntityType; 17] = [
     // Package
     EntityType::GlobalPackage,
     // System
@@ -112,7 +112,6 @@ const ALL_ENTITY_TYPES: [EntityType; 18] = [
     EntityType::InternalNonFungibleVault,
     // Internal misc
     EntityType::InternalGenericComponent,
-    EntityType::InternalAccount,
     // Internal key-value-store-like
     EntityType::InternalKeyValueStore,
 ];

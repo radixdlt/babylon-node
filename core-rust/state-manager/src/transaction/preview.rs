@@ -1,7 +1,5 @@
 use node_common::locks::RwLock;
-use radix_engine::transaction::{
-    BalanceChange, PreviewError, TransactionReceipt, TransactionResult,
-};
+use radix_engine::transaction::{PreviewError, TransactionReceipt, TransactionResult};
 use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use std::ops::{Deref, Range};
 use std::sync::Arc;
@@ -10,7 +8,10 @@ use crate::query::{StateManagerSubstateQueries, TransactionIdentifierLoader};
 use crate::staging::ReadableStore;
 use crate::store::traits::QueryableProofStore;
 use crate::transaction::*;
-use crate::{BySubstate, ChangeAction, LedgerHeader, PreviewRequest, ProcessedCommitResult};
+use crate::{
+    BySubstate, ChangeAction, GlobalBalanceSummary, LedgerHeader, PreviewRequest,
+    ProcessedCommitResult,
+};
 use radix_engine_common::prelude::*;
 use transaction::model::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
@@ -28,7 +29,7 @@ pub struct ProcessedPreviewResult {
     pub base_ledger_header: LedgerHeader,
     pub receipt: TransactionReceipt,
     pub substate_changes: BySubstate<ChangeAction>,
-    pub global_balance_changes: IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>>,
+    pub global_balance_summary: GlobalBalanceSummary,
 }
 
 impl<S> TransactionPreviewer<S> {
@@ -63,25 +64,24 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
             .wrap_preview_transaction(&validated);
 
         let receipt = transaction_logic.execute_on(read_store.deref());
-        let (substate_changes, global_balance_changes) = match &receipt.result {
+        let (substate_changes, global_balance_summary) = match &receipt.result {
             TransactionResult::Commit(commit) => {
                 let substate_changes =
                     ProcessedCommitResult::compute_substate_changes::<S, SpreadPrefixKeyMapper>(
                         read_store.deref(),
                         &commit.state_updates.system_updates,
                     );
-                let balance_changes_update =
-                    ProcessedCommitResult::compute_global_balance_changes_update(
-                        read_store.deref(),
-                        &substate_changes,
-                        &commit.state_update_summary.vault_balance_changes,
-                    );
+                let global_balance_update = ProcessedCommitResult::compute_global_balance_update(
+                    read_store.deref(),
+                    &substate_changes,
+                    &commit.state_update_summary.vault_balance_changes,
+                );
                 (
                     substate_changes,
-                    balance_changes_update.global_balance_changes,
+                    global_balance_update.global_balance_summary,
                 )
             }
-            _ => (BySubstate::new(), index_map_new()),
+            _ => (BySubstate::new(), GlobalBalanceSummary::default()),
         };
 
         let base_ledger_header = read_store
@@ -93,7 +93,7 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
             base_ledger_header,
             receipt,
             substate_changes,
-            global_balance_changes,
+            global_balance_summary,
         })
     }
 

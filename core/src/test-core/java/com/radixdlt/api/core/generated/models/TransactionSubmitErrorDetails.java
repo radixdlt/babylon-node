@@ -26,6 +26,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.TransactionSubmitErrorDetailsType;
+import com.radixdlt.api.core.generated.models.TransactionSubmitIntentAlreadyCommitted;
 import com.radixdlt.api.core.generated.models.TransactionSubmitPriorityThresholdNotMetErrorDetails;
 import com.radixdlt.api.core.generated.models.TransactionSubmitRejectedErrorDetails;
 import io.swagger.annotations.ApiModel;
@@ -47,8 +48,10 @@ import com.radixdlt.api.core.generated.client.JSON;
 )
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
+  @JsonSubTypes.Type(value = TransactionSubmitIntentAlreadyCommitted.class, name = "IntentAlreadyCommitted"),
   @JsonSubTypes.Type(value = TransactionSubmitPriorityThresholdNotMetErrorDetails.class, name = "PriorityThresholdNotMet"),
   @JsonSubTypes.Type(value = TransactionSubmitRejectedErrorDetails.class, name = "Rejected"),
+  @JsonSubTypes.Type(value = TransactionSubmitIntentAlreadyCommitted.class, name = "TransactionSubmitIntentAlreadyCommitted"),
   @JsonSubTypes.Type(value = TransactionSubmitPriorityThresholdNotMetErrorDetails.class, name = "TransactionSubmitPriorityThresholdNotMetErrorDetails"),
   @JsonSubTypes.Type(value = TransactionSubmitRejectedErrorDetails.class, name = "TransactionSubmitRejectedErrorDetails"),
 })
@@ -129,8 +132,10 @@ public class TransactionSubmitErrorDetails {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
+  mappings.put("IntentAlreadyCommitted", TransactionSubmitIntentAlreadyCommitted.class);
   mappings.put("PriorityThresholdNotMet", TransactionSubmitPriorityThresholdNotMetErrorDetails.class);
   mappings.put("Rejected", TransactionSubmitRejectedErrorDetails.class);
+  mappings.put("TransactionSubmitIntentAlreadyCommitted", TransactionSubmitIntentAlreadyCommitted.class);
   mappings.put("TransactionSubmitPriorityThresholdNotMetErrorDetails", TransactionSubmitPriorityThresholdNotMetErrorDetails.class);
   mappings.put("TransactionSubmitRejectedErrorDetails", TransactionSubmitRejectedErrorDetails.class);
   mappings.put("TransactionSubmitErrorDetails", TransactionSubmitErrorDetails.class);

@@ -2,9 +2,9 @@ version: '3.8'
 name: radixdlt-babylon-node-testnet-node
 services:
   core:
-    container_name: radixdlt-ansharnet-node
+    container_name: radixdlt-zabanet-node
     #### Chose to either uncomment "image" or "build" to either pull the image from dockerhub or build locally from source
-    image: radixdlt/babylon-node:rcnet-v2-phase2-r4
+    image: radixdlt/babylon-node:rcnet-v3-r2
     # build:
     #   context: ..
     #   dockerfile: Dockerfile
@@ -27,16 +27,15 @@ services:
       - "127.0.0.1:30000:30000" # Gossip port - binds to localhost:30000
     environment:
       JAVA_OPTS: --enable-preview -server -Xms8g -Xmx8g  -XX:MaxDirectMemorySize=2048m -XX:+HeapDumpOnOutOfMemoryError -XX:+UseCompressedOops -Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts -Djavax.net.ssl.trustStoreType=jks -Djava.security.egd=file:/dev/urandom -DLog4jContextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector
-      RADIXDLT_HOST_IP_ADDRESS: 127.0.0.1
       RADIXDLT_LOG_LEVEL: info
       RADIXDLT_VALIDATOR_KEY_LOCATION: /home/radixdlt/key/node.ks
       RADIXDLT_NODE_KEY_CREATE_IF_MISSING: true
       RADIXDLT_DB_ACCOUNT_CHANGE_INDEX_ENABLE: true
       RADIX_NODE_KEYSTORE_PASSWORD: password
-      # "Ansharnet" - Babylon RCNet v2 network params
-      RADIXDLT_NETWORK_ID: 13
-      RADIXDLT_NETWORK_SEEDS_REMOTE: radix://node_tdx_d_1qwq2nfe6vxqwe3mqmfm9l2xl97as7lkwndval63cymvc3qszn8nqx6g2s3m@3.109.161.178,radix://node_tdx_d_1q29f3zz9w9uqjcmm6pm9hy80urqtj45hul4lv7n322vevperxs6ejcrv3w9@108.129.33.91,radix://node_tdx_d_1qt0yksvn7hq58dnwnnhz55vvy82q2q2zc38e0ew2sqwmtcvu9cufxj8zefm@18.209.234.164,radix://node_tdx_d_1qfynwk8lwzfzf4dl3ey5l3x2aw5para950q6psd6gknfnj5nqjkayjw6ugt@13.54.49.156
-      RADIXDLT_GENESIS_DATA: /wYAAHNOYVBwWQDGAgAyyI7FiAsUXCEGCgEACQEABQkHKAAAIQoJZAAAAAr0DRoICrgLCRsMCuCTBAUKFTQkoOyCkOtRDo+1mgUYRgEAIKAAAGSns7bgDUYbAAkBFUsVCSCgAAAQYy1ex2sVkToBAOAgIgMEASAhAQKA0fJ+apHv10KbZw/zq1+awjGS4SYu/i7pxk+BCLnNoAAAAGCKph7+xG3S1QgAAABCAgCwASAhBAYgByEDgKmnOmGA7Mdg2nZfqN8vuw9+zptZ3+o4JtmIggKZ5gMBAQEBgssA8JAgIQICDARuYW1lIgABDBNEZWZhdWx0IHZhbGlkYXRvciAxAgwDdXJsIg0BDBhodHRwczovL3d3dy5yYWRpeGRsdC5jb22A0Zb3rL7jVbgR3xbIbJsYSQNlONYuVDX8m+SrMBe9BiAHIQJJN1j/cJIk1b+OSU/EyuuoHo+lo8GgwbpFppnKkwSt0gEBAQGgAABkcnkBgq4ABDICjq4AcGK+4QndJF19+AtkEtsWr116M1rwDZezHWsary+vIVyAAoqYiEVxeAlje9B2W5Dv4MC5Vpfn6/Z6cVKZlgcjNDWZ/lwBKVwAM5KuAHD6QUsV/HSyClvdYh9Wu+Ousi36/G8F0lb3W9Om5gWufN5LQZP1wUO2bpzuKlGMIdQFAULET5flyoAdteGcLjiT/q4ACa4ANJKuAJAdbq5nt52TcwToTdEhi8DNaAQOt8wwNGGRzKCnggECIIAB0fJ+agEDDCAhBAKO3gIQICEBAglhHTCgAAAA6DyA0J88LjsDARE+AQABTwQCSXp/ArpPAH4gArpPAH7BAaZPACEOJEDq7XRG0Jwsnww+CwFMAAAAIAwFDHRyYW5zZmVyX3hyZAhhydBzd2FwCG1ldGFkYXRhEWZ1bmdpYmxlX3Jlc291cmNlFW5vbl9mdW5naWJsZV9yZXNvdXJjZQ==
+      # "Zabanet" - Babylon RCNet v3 network params
+      RADIXDLT_NETWORK_ID: 14
+      RADIXDLT_NETWORK_SEEDS_REMOTE: radix://node_tdx_e_1q0gm3fwqh8ggl09g7l8ru96krzlxdyrc694mqw8cf227v62vjyrmccv8md5@13.126.65.118,radix://node_tdx_e_1q0juzf2gnhfhy2aj6x88x4f459tf2a2mdk56jm3ffhzp94fn8k0q5lkse34@52.64.209.45,radix://node_tdx_e_1qdzlwtjn9wcmcyt3mp3g4qaerr6fgrl86ze6t20427tf4rmnu670y0cgszc@54.72.0.65,radix://node_tdx_e_1qfz9r8xp95vuzjq503l856ywukrdnukcz4232tr4nsx7ff2efvfnwvaq080@35.168.132.18
+      RADIXDLT_GENESIS_DATA: /wYAAHNOYVBwWQDRAgBo6NIQvgoUXCEGCgEACQEABQkHKAAAIQoJZAAAAAr0DRoICrgLCRsMCuCTBAUKFTQkoOyCkOtRDo+1mgUYGQEgoAAAZKeztuANGRMJARU7FQkgoAAAEGMtXsdrFYENAeAgIgMEASAhAQKA0fJ+apHv10KbZw/zq1+awjGS4SYu/i7pxk+BCLnNoAAAAGCKph7+xG3S1QgAAAAVArABICEEBiAHIQPRuKXAudCPvKj3zj4XVhi+ZpB40WuwOPhKleZpTJEHvAEBAQFiswDwkCAhAgIMBG5hbWUiAAEME0RlZmF1bHQgdmFsaWRhdG9yIDECDAN1cmwiDQEMGGh0dHBzOi8vd3d3LnJhZGl4ZGx0LmNvbYDRk4ZR64ZKF0UXY8UqyV6ghwcOhTBATZMlYRUFrK8GIAchA+XBJUid03IrstGOc1U1oVaVdVttqaluKU3EEtUzPZ4KAQEBAaAAAGRSWQGCpgAEMgKOpgBw6qD7P5CmKE5Vw2wD57719pXjLq07Mg+HaguVWgMlTHxF9y5TK7G8EXHYYoqDuRj0lA/n0LOlqfVXlpqPc+a88vZMAQAzkqYAcKvDUcvEhfpU9zJiX0WLTYhldkUKzZWgKxkIj7BjAaaAAkRRnMEtGcFIFHx+emiO5YbZ8tgVVRUsdZwN5KVZSxM39qYAADSSpgCQ4Bhb5cGHtROfCGYqZsBNXyin+4PMPOq2HReDCj0BAiCAAdHyfmrZAgwgIQQCjr4CECAhAQIJQfUwoAAAAOg8gNCfPC47AwEREQEFRxDlwSVInWpfAppHAH4AApZHAIKhAYZHAAHuJEDq7XRG0JwsnwwR60wAAAAgDAYMdHJhbnNmZXJfeHJkCGGJkHN3YXAIbWV0YWRhdGERZnVuZ2libGVfcmVzb3VyY2UVbm9uX2Y+FgB0HWFjY291bnRfYXV0aG9yaXplZF9kZXBvc2l0b3Jz
     volumes:
       - ledger-data:/home/radixdlt/RADIXDB
       - key-data:/home/radixdlt/key

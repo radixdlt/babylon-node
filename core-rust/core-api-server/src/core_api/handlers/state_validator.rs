@@ -1,6 +1,8 @@
 use crate::core_api::*;
 use radix_engine::types::*;
 
+use radix_engine::blueprints::consensus_manager::ValidatorField;
+use radix_engine::system::node_modules::role_assignment::RoleAssignmentField;
 use state_manager::query::dump_component_state;
 use state_manager::store::traits::QueryableProofStore;
 use std::ops::Deref;
@@ -31,15 +33,15 @@ pub(crate) async fn handle_state_validator(
     let validator_substate = read_optional_main_field_substate(
         database.deref(),
         validator_address.as_node_id(),
-        &ValidatorField::Validator.into(),
+        &ValidatorField::State.into(),
     )
     .ok_or_else(|| not_found_error("Validator not found".to_string()))?;
 
     let owner_role_substate = read_mandatory_substate(
         database.deref(),
         validator_address.as_node_id(),
-        ROLE_ASSIGNMENT_FIELDS_PARTITION,
-        &RoleAssignmentField::OwnerRole.into(),
+        RoleAssignmentPartitionOffset::Field.as_partition(ROLE_ASSIGNMENT_BASE_PARTITION),
+        &RoleAssignmentField::Owner.into(),
     )?;
 
     let component_dump = dump_component_state(database.deref(), validator_address);

@@ -1,15 +1,16 @@
 use super::super::*;
 use super::*;
 use crate::core_api::models;
+use radix_engine::system::system_substates::KeyValueEntrySubstate;
 
 use radix_engine::types::*;
 use radix_engine_queries::typed_substate_layout::*;
 
 pub fn to_api_owner_role_substate(
     context: &MappingContext,
-    substate: &FieldSubstate<OwnerRoleSubstate>,
+    substate: &RoleAssignmentOwnerFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate!(
+    Ok(field_substate_versioned!(
         substate,
         RoleAssignmentModuleFieldOwnerRole,
         OwnerRoleSubstate { owner_role_entry },
@@ -29,7 +30,7 @@ pub fn to_api_owner_role_substate(
 pub fn to_api_access_rule_entry(
     context: &MappingContext,
     typed_key: &TypedSubstateKey,
-    substate: &KeyValueEntrySubstate<AccessRule>,
+    substate: &KeyValueEntrySubstate<RoleAssignmentAccessRuleEntryPayload>,
 ) -> Result<models::Substate, MappingError> {
     assert_key_type!(
         typed_key,
@@ -37,7 +38,7 @@ pub fn to_api_access_rule_entry(
             ModuleRoleKey { module, key }
         ))
     );
-    Ok(key_value_store_optional_substate!(
+    Ok(key_value_store_optional_substate_versioned!(
         substate,
         RoleAssignmentModuleRuleEntry,
         models::ObjectRoleKey {

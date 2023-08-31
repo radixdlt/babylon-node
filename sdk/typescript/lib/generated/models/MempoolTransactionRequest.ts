@@ -26,12 +26,11 @@ export interface MempoolTransactionRequest {
      */
     network: string;
     /**
-     * The hex-encoded notarized transaction hash for a user transaction.
-     * This hash identifies the full submittable notarized transaction - ie the signed intent, plus the notary signature.
-     * @type {string}
+     * A list of payload hashes to attempt to read. Each hash must be either hex, or in Bech32m format.
+     * @type {Array<string>}
      * @memberof MempoolTransactionRequest
      */
-    payload_hash: string;
+    payload_hashes: Array<string>;
 }
 
 /**
@@ -40,7 +39,7 @@ export interface MempoolTransactionRequest {
 export function instanceOfMempoolTransactionRequest(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "network" in value;
-    isInstance = isInstance && "payload_hash" in value;
+    isInstance = isInstance && "payload_hashes" in value;
 
     return isInstance;
 }
@@ -56,7 +55,7 @@ export function MempoolTransactionRequestFromJSONTyped(json: any, ignoreDiscrimi
     return {
         
         'network': json['network'],
-        'payload_hash': json['payload_hash'],
+        'payload_hashes': json['payload_hashes'],
     };
 }
 
@@ -70,7 +69,7 @@ export function MempoolTransactionRequestToJSON(value?: MempoolTransactionReques
     return {
         
         'network': value.network,
-        'payload_hash': value.payload_hash,
+        'payload_hashes': value.payload_hashes,
     };
 }
 

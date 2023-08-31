@@ -103,12 +103,13 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_init(
         let jni_node_rust_env = JNINodeRustEnvironment::get(&env, j_rust_global_context);
 
         let jni_core_api_server = JNICoreApiServer {
-            config,
             runtime: jni_node_rust_env.runtime.clone(),
             state: CoreApiState {
                 network: jni_node_rust_env.network.clone(),
+                flags: config.flags.clone(),
                 state_manager: jni_node_rust_env.state_manager.clone(),
             },
+            config,
             running_server: None,
             metric_registry: jni_node_rust_env.metric_registry.clone(),
         };

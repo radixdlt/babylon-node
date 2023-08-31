@@ -13,6 +13,13 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { MutableField } from './MutableField';
+import {
+    MutableFieldFromJSON,
+    MutableFieldFromJSONTyped,
+    MutableFieldToJSON,
+} from './MutableField';
+
 /**
  * 
  * @export
@@ -20,11 +27,11 @@ import { exists, mapValues } from '../runtime';
  */
 export interface NonFungibleResourceManagerFieldMutableFieldsValue {
     /**
-     * The field names of the NF Metadata which are mutable.
-     * @type {Array<string>}
+     * The fields of the NF Metadata which are mutable.
+     * @type {Array<MutableField>}
      * @memberof NonFungibleResourceManagerFieldMutableFieldsValue
      */
-    mutable_fields: Array<string>;
+    mutable_fields: Array<MutableField>;
 }
 
 /**
@@ -47,7 +54,7 @@ export function NonFungibleResourceManagerFieldMutableFieldsValueFromJSONTyped(j
     }
     return {
         
-        'mutable_fields': json['mutable_fields'],
+        'mutable_fields': ((json['mutable_fields'] as Array<any>).map(MutableFieldFromJSON)),
     };
 }
 
@@ -60,7 +67,7 @@ export function NonFungibleResourceManagerFieldMutableFieldsValueToJSON(value?: 
     }
     return {
         
-        'mutable_fields': value.mutable_fields,
+        'mutable_fields': ((value.mutable_fields as Array<any>).map(MutableFieldToJSON)),
     };
 }
 

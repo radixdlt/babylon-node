@@ -1,8 +1,18 @@
 use crate::core_api::models;
 use crate::core_api::*;
 use models::SubstateType;
+use radix_engine::blueprints::account::{AccountField, AccountTypedSubstateKey};
+use radix_engine::blueprints::pool::multi_resource_pool::{
+    MultiResourcePoolField, MultiResourcePoolTypedSubstateKey,
+};
+use radix_engine::blueprints::pool::one_resource_pool::{
+    OneResourcePoolField, OneResourcePoolTypedSubstateKey,
+};
+use radix_engine::blueprints::pool::two_resource_pool::{
+    TwoResourcePoolField, TwoResourcePoolTypedSubstateKey,
+};
 use radix_engine::types::*;
-use radix_engine_interface::api::*;
+
 use radix_engine_queries::typed_substate_layout::*;
 use radix_engine_store_interface::db_key_mapper::*;
 
@@ -82,7 +92,6 @@ pub fn to_api_entity_type(entity_type: EntityType) -> models::EntityType {
         }
         EntityType::InternalFungibleVault => models::EntityType::InternalFungibleVault,
         EntityType::InternalNonFungibleVault => models::EntityType::InternalNonFungibleVault,
-        EntityType::InternalAccount => models::EntityType::InternalAccount,
         EntityType::InternalKeyValueStore => models::EntityType::InternalKeyValueStore,
         EntityType::InternalGenericComponent => models::EntityType::InternalGenericComponent,
         EntityType::GlobalOneResourcePool => models::EntityType::GlobalOneResourcePool,
@@ -112,7 +121,7 @@ pub fn to_api_substate_id(
             models::PartitionKind::Field,
         ),
         TypedSubstateKey::RoleAssignmentModule(
-            TypedRoleAssignmentSubstateKey::RoleAssignmentField(RoleAssignmentField::OwnerRole),
+            TypedRoleAssignmentSubstateKey::RoleAssignmentField(RoleAssignmentField::Owner),
         ) => (
             SubstateType::RoleAssignmentModuleFieldOwnerRole,
             models::PartitionKind::Field,
@@ -143,54 +152,66 @@ pub fn to_api_substate_id(
             SubstateType::PackageFieldRoyaltyAccumulator,
             models::PartitionKind::Field,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::FungibleResourceField(
-            FungibleResourceManagerField::Divisibility,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::FungibleResourceManager(
+            FungibleResourceManagerTypedSubstateKey::Field(
+                FungibleResourceManagerField::Divisibility,
+            ),
         )) => (
             SubstateType::FungibleResourceManagerFieldDivisibility,
             models::PartitionKind::Field,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::FungibleResourceField(
-            FungibleResourceManagerField::TotalSupply,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::FungibleResourceManager(
+            FungibleResourceManagerTypedSubstateKey::Field(
+                FungibleResourceManagerField::TotalSupply,
+            ),
         )) => (
             SubstateType::FungibleResourceManagerFieldTotalSupply,
             models::PartitionKind::Field,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleResourceField(
-            NonFungibleResourceManagerField::IdType,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleResourceManager(
+            NonFungibleResourceManagerTypedSubstateKey::Field(
+                NonFungibleResourceManagerField::IdType,
+            ),
         )) => (
             SubstateType::NonFungibleResourceManagerFieldIdType,
             models::PartitionKind::Field,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleResourceField(
-            NonFungibleResourceManagerField::TotalSupply,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleResourceManager(
+            NonFungibleResourceManagerTypedSubstateKey::Field(
+                NonFungibleResourceManagerField::TotalSupply,
+            ),
         )) => (
             SubstateType::NonFungibleResourceManagerFieldTotalSupply,
             models::PartitionKind::Field,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleResourceField(
-            NonFungibleResourceManagerField::MutableFields,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleResourceManager(
+            NonFungibleResourceManagerTypedSubstateKey::Field(
+                NonFungibleResourceManagerField::MutableFields,
+            ),
         )) => (
             SubstateType::NonFungibleResourceManagerFieldMutableFields,
             models::PartitionKind::Field,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleResourceData(_)) => (
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleResourceManager(
+            NonFungibleResourceManagerTypedSubstateKey::DataKeyValueEntry(_),
+        )) => (
             SubstateType::NonFungibleResourceManagerDataEntry,
             models::PartitionKind::KeyValue,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::FungibleVaultField(
-            FungibleVaultField::LiquidFungible,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::FungibleVault(
+            FungibleVaultTypedSubstateKey::Field(FungibleVaultField::Balance),
         )) => (
             SubstateType::FungibleVaultFieldBalance,
             models::PartitionKind::Field,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::FungibleVaultField(
-            FungibleVaultField::VaultFrozenFlag,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::FungibleVault(
+            FungibleVaultTypedSubstateKey::Field(FungibleVaultField::FreezeStatus),
         )) => (
             SubstateType::FungibleVaultFieldFrozenStatus,
             models::PartitionKind::Field,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::FungibleVaultField(
-            FungibleVaultField::LockedFungible,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::FungibleVault(
+            FungibleVaultTypedSubstateKey::Field(FungibleVaultField::LockedBalance),
         )) => {
             return Err(MappingError::SubstateKey {
                 entity_address,
@@ -199,20 +220,20 @@ pub fn to_api_substate_id(
                 message: "LockedFungible".to_string(),
             })
         }
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleVaultField(
-            NonFungibleVaultField::LiquidNonFungible,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleVault(
+            NonFungibleVaultTypedSubstateKey::Field(NonFungibleVaultField::Balance),
         )) => (
             SubstateType::NonFungibleVaultFieldBalance,
             models::PartitionKind::Field,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleVaultField(
-            NonFungibleVaultField::VaultFrozenFlag,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleVault(
+            NonFungibleVaultTypedSubstateKey::Field(NonFungibleVaultField::FreezeStatus),
         )) => (
             SubstateType::NonFungibleVaultFieldFrozenStatus,
             models::PartitionKind::Field,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleVaultField(
-            NonFungibleVaultField::LockedNonFungible,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleVault(
+            NonFungibleVaultTypedSubstateKey::Field(NonFungibleVaultField::LockedResource),
         )) => {
             return Err(MappingError::SubstateKey {
                 entity_address,
@@ -221,90 +242,100 @@ pub fn to_api_substate_id(
                 message: "LockedNonFungible".to_string(),
             })
         }
-        TypedSubstateKey::MainModule(
-            TypedMainModuleSubstateKey::NonFungibleVaultContentsIndexKey(_),
-        ) => (
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleVault(
+            NonFungibleVaultTypedSubstateKey::NonFungibleIndexEntry(_),
+        )) => (
             SubstateType::NonFungibleVaultContentsIndexEntry,
             models::PartitionKind::Index,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::ConsensusManagerField(
-            ConsensusManagerField::Config,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::ConsensusManager(
+            ConsensusManagerTypedSubstateKey::Field(ConsensusManagerField::Configuration),
         )) => (
             SubstateType::ConsensusManagerFieldConfig,
             models::PartitionKind::Field,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::ConsensusManagerField(
-            ConsensusManagerField::ConsensusManager,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::ConsensusManager(
+            ConsensusManagerTypedSubstateKey::Field(ConsensusManagerField::State),
         )) => (
             SubstateType::ConsensusManagerFieldState,
             models::PartitionKind::Field,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::ConsensusManagerField(
-            ConsensusManagerField::CurrentProposalStatistic,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::ConsensusManager(
+            ConsensusManagerTypedSubstateKey::Field(
+                ConsensusManagerField::CurrentProposalStatistic,
+            ),
         )) => (
             SubstateType::ConsensusManagerFieldCurrentProposalStatistic,
             models::PartitionKind::Field,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::ConsensusManagerField(
-            ConsensusManagerField::CurrentValidatorSet,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::ConsensusManager(
+            ConsensusManagerTypedSubstateKey::Field(ConsensusManagerField::CurrentValidatorSet),
         )) => (
             SubstateType::ConsensusManagerFieldCurrentValidatorSet,
             models::PartitionKind::Field,
         ),
-        TypedSubstateKey::MainModule(
-            TypedMainModuleSubstateKey::ConsensusManagerRegisteredValidatorsByStakeIndexKey(_),
-        ) => (
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::ConsensusManager(
+            ConsensusManagerTypedSubstateKey::RegisteredValidatorByStakeSortedIndexEntry(_),
+        )) => (
             SubstateType::ConsensusManagerRegisteredValidatorsByStakeIndexEntry,
             models::PartitionKind::SortedIndex,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::ConsensusManagerField(
-            ConsensusManagerField::CurrentTimeRoundedToMinutes,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::ConsensusManager(
+            ConsensusManagerTypedSubstateKey::Field(ConsensusManagerField::ProposerMinuteTimestamp),
         )) => (
             SubstateType::ConsensusManagerFieldCurrentTimeRoundedToMinutes,
             models::PartitionKind::Field,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::ConsensusManagerField(
-            ConsensusManagerField::CurrentTime,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::ConsensusManager(
+            ConsensusManagerTypedSubstateKey::Field(ConsensusManagerField::ProposerMilliTimestamp),
         )) => (
             SubstateType::ConsensusManagerFieldCurrentTime,
             models::PartitionKind::Field,
         ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::ConsensusManager(
+            ConsensusManagerTypedSubstateKey::Field(ConsensusManagerField::ValidatorRewards),
+        )) => (
+            SubstateType::ConsensusManagerFieldValidatorRewards,
+            models::PartitionKind::Field,
+        ),
         TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::ValidatorField(
-            ValidatorField::Validator,
+            ValidatorTypedSubstateKey::Field(ValidatorField::State),
         )) => (
             SubstateType::ValidatorFieldState,
             models::PartitionKind::Field,
         ),
         TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::ValidatorField(
-            ValidatorField::ProtocolUpdateReadinessSignal,
+            ValidatorTypedSubstateKey::Field(ValidatorField::ProtocolUpdateReadinessSignal),
         )) => (
             SubstateType::ValidatorFieldProtocolUpdateReadinessSignal,
             models::PartitionKind::Field,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountField(
-            AccountField::Account,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::Account(
+            AccountTypedSubstateKey::Field(AccountField::DepositRule),
         )) => (
             SubstateType::AccountFieldState,
             models::PartitionKind::Field,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountVaultKey(_)) => (
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::Account(
+            AccountTypedSubstateKey::ResourceVaultKeyValueEntry(_),
+        )) => (
             SubstateType::AccountVaultEntry,
             models::PartitionKind::KeyValue,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountResourcePreferenceKey(
-            _,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::Account(
+            AccountTypedSubstateKey::ResourcePreferenceKeyValueEntry(_),
         )) => (
             SubstateType::AccountResourcePreferenceEntry,
             models::PartitionKind::KeyValue,
         ),
-        TypedSubstateKey::MainModule(
-            TypedMainModuleSubstateKey::AccountAuthorizedDepositorKey(_),
-        ) => (
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::Account(
+            AccountTypedSubstateKey::AuthorizedDepositorKeyValueEntry(_),
+        )) => (
             SubstateType::AccountAuthorizedDepositorEntry,
             models::PartitionKind::KeyValue,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccessControllerField(
-            AccessControllerField::AccessController,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccessController(
+            AccessControllerTypedSubstateKey::Field(AccessControllerField::State),
         )) => (
             SubstateType::AccessControllerFieldState,
             models::PartitionKind::Field,
@@ -319,15 +350,21 @@ pub fn to_api_substate_id(
             SubstateType::GenericKeyValueStoreEntry,
             models::PartitionKind::KeyValue,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::OneResourcePoolField(_)) => (
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::OneResourcePool(
+            OneResourcePoolTypedSubstateKey::Field(OneResourcePoolField::State),
+        )) => (
             SubstateType::OneResourcePoolFieldState,
             models::PartitionKind::Field,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::TwoResourcePoolField(_)) => (
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::TwoResourcePool(
+            TwoResourcePoolTypedSubstateKey::Field(TwoResourcePoolField::State),
+        )) => (
             SubstateType::TwoResourcePoolFieldState,
             models::PartitionKind::Field,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::MultiResourcePoolField(_)) => (
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::MultiResourcePool(
+            MultiResourcePoolTypedSubstateKey::Field(MultiResourcePoolField::State),
+        )) => (
             SubstateType::MultiResourcePoolFieldState,
             models::PartitionKind::Field,
         ),
@@ -383,9 +420,6 @@ pub fn to_api_substate_id(
             SubstateType::TransactionTrackerCollectionEntry,
             models::PartitionKind::KeyValue,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::ConsensusManagerField(_)) => {
-            (SubstateType::ConsensusManager, models::PartitionKind::Field)
-        }
         TypedSubstateKey::Schema(TypedSchemaSubstateKey::SchemaKey(_)) => {
             (SubstateType::SchemaEntry, models::PartitionKind::KeyValue)
         }

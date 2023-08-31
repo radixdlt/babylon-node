@@ -38,51 +38,59 @@ pub(crate) async fn handle_transaction_submit(
             },
         )),
         Err(MempoolAddError::Duplicate(_)) => Ok(models::TransactionSubmitResponse::new(true)),
-        Err(MempoolAddError::Rejected(rejection)) => Err(detailed_error(
-            StatusCode::BAD_REQUEST,
-            "Transaction was rejected",
-            TransactionSubmitErrorDetails::TransactionSubmitRejectedErrorDetails {
-                error_message: format!("{}", rejection.reason),
-                is_fresh: !rejection.was_cached,
-                is_payload_rejection_permanent: rejection.is_permanent_for_payload(),
-                is_intent_rejection_permanent: rejection.is_permanent_for_intent(),
-                is_rejected_because_intent_already_committed: rejection
-                    .is_rejected_because_intent_already_committed(),
-                intent_already_committed_as: rejection
+        Err(MempoolAddError::Rejected(rejection)) => {
+            if rejection.is_rejected_because_intent_already_committed() {
+                let already_committed_error = rejection
                     .reason
                     .already_committed_error()
-                    .map(|err| to_api_committed_intent_metadata(&mapping_context, err))
-                    .transpose()?
-                    .map(Box::new),
-                // TODO - Add `result_validity_substate_criteria` once track / mempool is improved
-                retry_from_timestamp: match rejection.retry_from {
-                    state_manager::RetryFrom::Never => None,
-                    state_manager::RetryFrom::FromTime(time) => Some(Box::new(
-                        to_api_instant_from_safe_timestamp(to_unix_timestamp_ms(time)?)?,
-                    )),
-                    state_manager::RetryFrom::FromEpoch(_) => None,
-                    state_manager::RetryFrom::Whenever => {
-                        Some(Box::new(to_api_instant_from_safe_timestamp(
-                            to_unix_timestamp_ms(std::time::SystemTime::now())?,
-                        )?))
+                    .expect("Already committed rejections should have an already_committed_error");
+                Err(detailed_error(
+                    StatusCode::BAD_REQUEST,
+                    "The transaction intent has already been committed",
+                    TransactionSubmitErrorDetails::TransactionSubmitIntentAlreadyCommitted {
+                        committed_as: Box::new(to_api_committed_intent_metadata(&mapping_context, already_committed_error)?)
                     }
-                },
-                retry_from_epoch: match rejection.retry_from {
-                    state_manager::RetryFrom::FromEpoch(epoch) => {
-                        Some(to_api_epoch(&mapping_context, epoch)?)
-                    }
-                    _ => None,
-                },
-                invalid_from_epoch: if rejection.is_permanent_for_payload() {
-                    None
-                } else {
-                    rejection
-                        .invalid_from_epoch
-                        .map(|epoch| to_api_epoch(&mapping_context, epoch))
-                        .transpose()?
-                },
-            },
-        )),
+                ))
+            } else {
+                Err(detailed_error(
+                    StatusCode::BAD_REQUEST,
+                    "The transaction execution resulted in a rejection",
+                    TransactionSubmitErrorDetails::TransactionSubmitRejectedErrorDetails {
+                        error_message: format!("{}", rejection.reason),
+                        is_fresh: !rejection.was_cached,
+                        is_payload_rejection_permanent: rejection.is_permanent_for_payload(),
+                        is_intent_rejection_permanent: rejection.is_permanent_for_intent(),
+                        // TODO - Add `result_validity_substate_criteria` once track / mempool is improved
+                        retry_from_timestamp: match rejection.retry_from {
+                            state_manager::RetryFrom::Never => None,
+                            state_manager::RetryFrom::FromTime(time) => Some(Box::new(
+                                to_api_instant_from_safe_timestamp(to_unix_timestamp_ms(time)?)?,
+                            )),
+                            state_manager::RetryFrom::FromEpoch(_) => None,
+                            state_manager::RetryFrom::Whenever => {
+                                Some(Box::new(to_api_instant_from_safe_timestamp(
+                                    to_unix_timestamp_ms(std::time::SystemTime::now())?,
+                                )?))
+                            }
+                        },
+                        retry_from_epoch: match rejection.retry_from {
+                            state_manager::RetryFrom::FromEpoch(epoch) => {
+                                Some(to_api_epoch(&mapping_context, epoch)?)
+                            }
+                            _ => None,
+                        },
+                        invalid_from_epoch: if rejection.is_permanent_for_payload() {
+                            None
+                        } else {
+                            rejection
+                                .invalid_from_epoch
+                                .map(|epoch| to_api_epoch(&mapping_context, epoch))
+                                .transpose()?
+                        },
+                    },
+                ))
+            }
+        }
     }
     .map(Json)
 }

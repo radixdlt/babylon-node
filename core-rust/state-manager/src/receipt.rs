@@ -4,9 +4,8 @@ use radix_engine_queries::typed_substate_layout::EpochChangeEvent;
 use radix_engine::errors::RuntimeError;
 
 use radix_engine::transaction::{
-    BalanceChange, CommitResult, CostingParameters, EventSystemStructure, FeeDestination,
-    FeeSource, StateUpdateSummary, SubstateSystemStructure, TransactionFeeSummary,
-    TransactionOutcome,
+    CommitResult, CostingParameters, EventSystemStructure, FeeDestination, FeeSource,
+    StateUpdateSummary, SubstateSystemStructure, TransactionFeeSummary, TransactionOutcome,
 };
 use radix_engine::types::*;
 
@@ -19,8 +18,8 @@ use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, Writeab
 use crate::accumulator_tree::tree_builder::{AccuTree, Merklizable};
 use crate::transaction::PayloadIdentifiers;
 use crate::{
-    ConsensusReceipt, EventHash, ExecutionFeeData, LedgerHashes, SubstateChangeHash,
-    SubstateReference,
+    ConsensusReceipt, EventHash, ExecutionFeeData, GlobalBalanceSummary, LedgerHashes,
+    SubstateChangeHash, SubstateReference,
 };
 
 #[derive(Debug, Clone, Sbor)]
@@ -78,12 +77,6 @@ impl ApplicationEvent {
     pub fn get_hash(&self) -> EventHash {
         EventHash::from(hash(scrypto_encode(self).unwrap()))
     }
-}
-
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct DeletedSubstateVersion {
-    pub substate_hash: Hash,
-    pub version: u32,
 }
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -169,7 +162,7 @@ pub struct LocalTransactionExecution {
     pub transaction_costing_parameters: TransactionCostingParameters,
     pub application_logs: Vec<(Level, String)>,
     pub state_update_summary: StateUpdateSummary,
-    pub global_balance_changes: IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>>,
+    pub global_balance_summary: GlobalBalanceSummary,
     pub substates_system_structure: BySubstate<SubstateSystemStructure>,
     pub events_system_structure: IndexMap<EventTypeIdentifier, EventSystemStructure>,
     pub next_epoch: Option<EpochChangeEvent>,
@@ -207,7 +200,7 @@ impl LocalTransactionReceipt {
     pub fn new(
         commit_result: CommitResult,
         substate_changes: BySubstate<ChangeAction>,
-        global_balance_changes: IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>>,
+        global_balance_summary: GlobalBalanceSummary,
         execution_fee_data: ExecutionFeeData,
     ) -> Self {
         let next_epoch = commit_result.next_epoch();
@@ -231,7 +224,7 @@ impl LocalTransactionReceipt {
                 transaction_costing_parameters: execution_fee_data.transaction_costing_parameters,
                 application_logs: commit_result.application_logs,
                 state_update_summary: commit_result.state_update_summary,
-                global_balance_changes,
+                global_balance_summary,
                 substates_system_structure: BySubstate::wrap(
                     system_structure.substate_system_structures,
                 ),
@@ -301,6 +294,10 @@ impl<T> BySubstate<T> {
                         })
                     })
             })
+    }
+
+    pub fn iter_node_ids(&self) -> impl Iterator<Item = &NodeId> + '_ {
+        self.by_node_id.keys()
     }
 
     pub fn len(&self) -> usize {

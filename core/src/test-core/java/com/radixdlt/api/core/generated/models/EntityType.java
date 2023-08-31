@@ -60,8 +60,6 @@ public enum EntityType {
   
   INTERNALGENERICCOMPONENT("InternalGenericComponent"),
   
-  INTERNALACCOUNT("InternalAccount"),
-  
   INTERNALKEYVALUESTORE("InternalKeyValueStore"),
   
   GLOBALONERESOURCEPOOL("GlobalOneResourcePool"),
