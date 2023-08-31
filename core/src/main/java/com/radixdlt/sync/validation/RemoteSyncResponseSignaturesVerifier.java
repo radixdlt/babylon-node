@@ -73,6 +73,7 @@ import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.crypto.Hasher;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 
 /** Verifies the signatures in a sync response */
 public final class RemoteSyncResponseSignaturesVerifier {
@@ -87,15 +88,18 @@ public final class RemoteSyncResponseSignaturesVerifier {
   }
 
   public boolean verifyResponseSignatures(LedgerProof ledgerProof) {
-    var signatures = ledgerProof.getSignatures().getSignatures();
+    final var signatures = ledgerProof.getSignatures().getSignatures();
     for (Entry<BFTValidatorId, TimestampedECDSASignature> nodeAndSignature :
         signatures.entrySet()) {
       var node = nodeAndSignature.getKey();
       var signature = nodeAndSignature.getValue();
-      final var voteDataHash =
+      final var consensusVoteHash =
           ConsensusHasher.toHash(
-              ledgerProof.getOpaque(), ledgerProof.getHeader(), signature.timestamp(), hasher);
-      if (!hashVerifier.verify(node.getKey(), voteDataHash, signature.signature())) {
+              ledgerProof.getOpaque(),
+              Optional.of(ledgerProof.getHeader()),
+              signature.timestamp(),
+              hasher);
+      if (!hashVerifier.verify(node.getKey(), consensusVoteHash, signature.signature())) {
         return false;
       }
     }

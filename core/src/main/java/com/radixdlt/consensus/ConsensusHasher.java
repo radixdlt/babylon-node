@@ -69,30 +69,36 @@ import com.radixdlt.crypto.Hasher;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.Optional;
 
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public final class ConsensusHasher {
   private ConsensusHasher() {
     throw new IllegalStateException();
   }
 
   public static HashCode toHash(
-      HashCode opaque, LedgerHeader header, long nodeTimestamp, Hasher hasher) {
+      HashCode opaque,
+      Optional<LedgerHeader> committedHeaderOpt,
+      long executionTimestamp,
+      Hasher hasher) {
     var raw = new ByteArrayOutputStream();
     var outputStream = new DataOutputStream(raw);
     try {
-      outputStream.writeInt(header != null ? 0 : 1); // 4 bytes (Version)
+      outputStream.writeInt(committedHeaderOpt.isPresent() ? 0 : 1); // 4 bytes (Version)
       outputStream.write(opaque.asBytes()); // 32 bytes
-      if (header != null) {
-        outputStream.writeLong(header.getStateVersion()); // 8 bytes
-        var ledgerHashes = header.getHashes(); // 3 * 32 bytes
+      if (committedHeaderOpt.isPresent()) {
+        final var committedHeader = committedHeaderOpt.orElseThrow();
+        outputStream.writeLong(committedHeader.getStateVersion()); // 8 bytes
+        var ledgerHashes = committedHeader.getHashes(); // 3 * 32 bytes
         outputStream.write(ledgerHashes.getTransactionRoot().asBytes());
         outputStream.write(ledgerHashes.getReceiptRoot().asBytes());
         outputStream.write(ledgerHashes.getStateRoot().asBytes());
-        outputStream.writeLong(header.getEpoch()); // 8 bytes
-        outputStream.writeLong(header.getRound().number()); // 8 bytes
-        outputStream.writeLong(header.consensusParentRoundTimestamp()); // 8 bytes
-        outputStream.writeLong(header.proposerTimestamp()); // 8 bytes
-        var optNextEpoch = header.getNextEpoch();
+        outputStream.writeLong(committedHeader.getEpoch()); // 8 bytes
+        outputStream.writeLong(committedHeader.getRound().number()); // 8 bytes
+        outputStream.writeLong(committedHeader.consensusParentRoundTimestamp()); // 8 bytes
+        outputStream.writeLong(committedHeader.proposerTimestamp()); // 8 bytes
+        var optNextEpoch = committedHeader.getNextEpoch();
         if (optNextEpoch.isPresent()) {
           var nextEpoch = optNextEpoch.get();
           outputStream.writeByte(1); // 1 byte
@@ -108,7 +114,7 @@ public final class ConsensusHasher {
           outputStream.writeByte(0); // 1 byte
         }
       }
-      outputStream.writeLong(nodeTimestamp); // 8 bytes
+      outputStream.writeLong(executionTimestamp); // 8 bytes
     } catch (IOException e) {
       throw new IllegalStateException();
     }
