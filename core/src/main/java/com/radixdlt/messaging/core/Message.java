@@ -67,10 +67,6 @@ package com.radixdlt.messaging.core;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.utils.Compress;
-import com.radixdlt.utils.Ints;
-import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 
 public abstract class Message extends BasicContainer {
@@ -93,17 +89,6 @@ public abstract class Message extends BasicContainer {
 
   public long getTimestamp() {
     return this.timestamp;
-  }
-
-  public byte[] toByteArray(Serialization serialization) throws IOException {
-    byte[] bytes = serialization.toDson(this, Output.WIRE);
-    byte[] data = Compress.compress(bytes);
-
-    byte[] byteArray = new byte[data.length + Integer.BYTES];
-    Ints.copyTo(data.length, byteArray, 0);
-    System.arraycopy(data, 0, byteArray, Integer.BYTES, data.length);
-
-    return byteArray;
   }
 
   @Override

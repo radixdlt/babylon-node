@@ -65,6 +65,7 @@
 package com.radixdlt.messaging.consensus;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
@@ -107,6 +108,7 @@ public final class ConsensusEventMessage extends Message {
     this.vote = vote;
   }
 
+  @JsonIgnore
   public boolean isProposal() {
     return proposal != null;
   }
