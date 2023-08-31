@@ -25,17 +25,8 @@ services:
       - "127.0.0.1:9011:9011"   # JMX Port for Java debugging - binds to localhost:9001
       - "127.0.0.1:50505:50505" # JDWP Port for Java debugging - binds to localhost:50505
       - "127.0.0.1:30000:30000" # Gossip port - binds to localhost:30000
-    environment:
-      JAVA_OPTS: --enable-preview -server -Xms8g -Xmx8g  -XX:MaxDirectMemorySize=2048m -XX:+HeapDumpOnOutOfMemoryError -XX:+UseCompressedOops -Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts -Djavax.net.ssl.trustStoreType=jks -Djava.security.egd=file:/dev/urandom -DLog4jContextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector
-      RADIXDLT_LOG_LEVEL: info
-      RADIXDLT_VALIDATOR_KEY_LOCATION: /home/radixdlt/key/node.ks
-      RADIXDLT_NODE_KEY_CREATE_IF_MISSING: true
-      RADIXDLT_DB_ACCOUNT_CHANGE_INDEX_ENABLE: true
-      RADIX_NODE_KEYSTORE_PASSWORD: password
-      # "Zabanet" - Babylon RCNet v3 network params
-      RADIXDLT_NETWORK_ID: 14
-      RADIXDLT_NETWORK_SEEDS_REMOTE: radix://node_tdx_e_1q0gm3fwqh8ggl09g7l8ru96krzlxdyrc694mqw8cf227v62vjyrmccv8md5@13.126.65.118,radix://node_tdx_e_1q0juzf2gnhfhy2aj6x88x4f459tf2a2mdk56jm3ffhzp94fn8k0q5lkse34@52.64.209.45,radix://node_tdx_e_1qdzlwtjn9wcmcyt3mp3g4qaerr6fgrl86ze6t20427tf4rmnu670y0cgszc@54.72.0.65,radix://node_tdx_e_1qfz9r8xp95vuzjq503l856ywukrdnukcz4232tr4nsx7ff2efvfnwvaq080@35.168.132.18
-      RADIXDLT_GENESIS_DATA: /wYAAHNOYVBwWQDRAgBo6NIQvgoUXCEGCgEACQEABQkHKAAAIQoJZAAAAAr0DRoICrgLCRsMCuCTBAUKFTQkoOyCkOtRDo+1mgUYGQEgoAAAZKeztuANGRMJARU7FQkgoAAAEGMtXsdrFYENAeAgIgMEASAhAQKA0fJ+apHv10KbZw/zq1+awjGS4SYu/i7pxk+BCLnNoAAAAGCKph7+xG3S1QgAAAAVArABICEEBiAHIQPRuKXAudCPvKj3zj4XVhi+ZpB40WuwOPhKleZpTJEHvAEBAQFiswDwkCAhAgIMBG5hbWUiAAEME0RlZmF1bHQgdmFsaWRhdG9yIDECDAN1cmwiDQEMGGh0dHBzOi8vd3d3LnJhZGl4ZGx0LmNvbYDRk4ZR64ZKF0UXY8UqyV6ghwcOhTBATZMlYRUFrK8GIAchA+XBJUid03IrstGOc1U1oVaVdVttqaluKU3EEtUzPZ4KAQEBAaAAAGRSWQGCpgAEMgKOpgBw6qD7P5CmKE5Vw2wD57719pXjLq07Mg+HaguVWgMlTHxF9y5TK7G8EXHYYoqDuRj0lA/n0LOlqfVXlpqPc+a88vZMAQAzkqYAcKvDUcvEhfpU9zJiX0WLTYhldkUKzZWgKxkIj7BjAaaAAkRRnMEtGcFIFHx+emiO5YbZ8tgVVRUsdZwN5KVZSxM39qYAADSSpgCQ4Bhb5cGHtROfCGYqZsBNXyin+4PMPOq2HReDCj0BAiCAAdHyfmrZAgwgIQQCjr4CECAhAQIJQfUwoAAAAOg8gNCfPC47AwEREQEFRxDlwSVInWpfAppHAH4AApZHAIKhAYZHAAHuJEDq7XRG0JwsnwwR60wAAAAgDAYMdHJhbnNmZXJfeHJkCGGJkHN3YXAIbWV0YWRhdGERZnVuZ2libGVfcmVzb3VyY2UVbm9uX2Y+FgB0HWFjY291bnRfYXV0aG9yaXplZF9kZXBvc2l0b3Jz
+    env_file:
+      - radix-node.env
     volumes:
       - ledger-data:/home/radixdlt/RADIXDB
       - key-data:/home/radixdlt/key
