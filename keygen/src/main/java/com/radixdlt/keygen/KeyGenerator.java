@@ -69,8 +69,6 @@ import static com.radixdlt.keygen.KeyGeneratorErrors.MISSING_KEYSTORE_FILE;
 import static com.radixdlt.keygen.KeyGeneratorErrors.MISSING_PARAMETER;
 import static com.radixdlt.keygen.KeyGeneratorErrors.UNABLE_TO_LOAD_KEYSTORE;
 import static com.radixdlt.keygen.KeyGeneratorErrors.UNABLE_TO_PARSE_COMMAND_LINE;
-import static com.radixdlt.lang.Result.all;
-import static com.radixdlt.lang.Unit.unit;
 import static java.util.Optional.ofNullable;
 
 import com.radixdlt.crypto.ECKeyPair;
@@ -116,7 +114,8 @@ public class KeyGenerator {
             commandLine -> commandLine.getOptions().length != 0, IRRELEVANT::swallow)
         .flatMap(
             cli ->
-                all(parseKeystore(cli), parsePassword(cli), parseKeypair(cli), parseShowPk(cli))
+                Result.all(
+                        parseKeystore(cli), parsePassword(cli), parseKeypair(cli), parseShowPk(cli))
                     .flatMap(this::generateKeypair))
         .onError(failure -> usage(failure.message()))
         .onSuccessDo(() -> System.out.println("Done"));
@@ -149,7 +148,7 @@ public class KeyGenerator {
         () -> {
           RadixKeyStore.fromFile(keystoreFile, password.toCharArray(), newFile)
               .writeKeyPair(keypairName, keyPair);
-          return unit();
+          return Unit.unit();
         },
         UNABLE_TO_LOAD_KEYSTORE::swallow);
   }
@@ -171,7 +170,7 @@ public class KeyGenerator {
                   .readKeyPair(keypairName, false);
           System.out.printf(
               "Public key of keypair '%s': %s%n", keypairName, keyPair.getPublicKey().toHex());
-          return unit();
+          return Unit.unit();
         },
         unused -> IRRELEVANT.swallow((Object) unused));
   }
