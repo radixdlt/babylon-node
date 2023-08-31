@@ -27,7 +27,6 @@ services:
       - "127.0.0.1:30000:30000" # Gossip port - binds to localhost:30000
     environment:
       JAVA_OPTS: --enable-preview -server -Xms8g -Xmx8g  -XX:MaxDirectMemorySize=2048m -XX:+HeapDumpOnOutOfMemoryError -XX:+UseCompressedOops -Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts -Djavax.net.ssl.trustStoreType=jks -Djava.security.egd=file:/dev/urandom -DLog4jContextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector
-      RADIXDLT_HOST_IP_ADDRESS: 127.0.0.1
       RADIXDLT_LOG_LEVEL: info
       RADIXDLT_VALIDATOR_KEY_LOCATION: /home/radixdlt/key/node.ks
       RADIXDLT_NODE_KEY_CREATE_IF_MISSING: true
