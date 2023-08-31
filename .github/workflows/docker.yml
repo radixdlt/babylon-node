@@ -301,17 +301,6 @@ jobs:
           snyk_org_id: ${{ secrets.SNYK_ORG_ID }}
           image: docker.io/radixdlt/babylon-node:${{ github.event.release.tag_name }}-amd64
           target_ref: ${{ github.ref_name }}
-      - uses: radixdlt/public-iac-resuable-artifacts/snyk-container-monitor@main
-        with:
-          role_name: ${{ secrets.AWS_ROLE_NAME_SNYK_SECRET }}
-          app_name: 'babylon-node'
-          step_name: 'snyk-cntr-monitor-arm'
-          dockerhub_secret_name: ${{ secrets.AWS_SECRET_NAME_DOCKERHUB }}
-          snyk_secret_name: ${{ secrets.AWS_SECRET_NAME_SNYK }}
-          parse_json: true
-          snyk_org_id: ${{ secrets.SNYK_ORG_ID }}
-          image: docker.io/radixdlt/babylon-node:${{ github.event.release.tag_name }}-arm64
-          target_ref: ${{ github.ref_name }}
 
   snyk_monitor:
     name: Snyk monitor
