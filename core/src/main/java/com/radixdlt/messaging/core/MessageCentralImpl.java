@@ -88,6 +88,7 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@SuppressWarnings("UnstableApiUsage")
 public final class MessageCentralImpl implements MessageCentral {
   private static final Logger log = LogManager.getLogger();
 
@@ -222,21 +223,32 @@ public final class MessageCentralImpl implements MessageCentral {
 
   @Override
   public void send(NodeId receiver, Message message) {
-    final String typeForMetrics;
-    if (message instanceof ConsensusEventMessage consensusEventMessage) {
-      typeForMetrics = consensusEventMessage.isProposal() ? "Proposal" : "Vote";
-    } else {
-      typeForMetrics = message.getClass().getSimpleName().replace("Message", "");
-    }
-    this.metrics
-        .messages()
-        .outbound()
-        .enqueued()
-        .label(new Metrics.Messages.EnqueuedOutboundMessage(typeForMetrics))
-        .inc();
     final var event = new OutboundMessageEvent(receiver, message, System.nanoTime() - timeBase);
-    if (!outboundQueue.offer(event) && outboundLogRateLimiter.tryAcquire()) {
-      log.error("Outbound message to {} dropped", receiver);
+    if (outboundQueue.offer(event)) {
+      final String typeForMetrics;
+      if (message instanceof ConsensusEventMessage consensusEventMessage) {
+        typeForMetrics = consensusEventMessage.isProposal() ? "Proposal" : "Vote";
+      } else {
+        typeForMetrics = message.getClass().getSimpleName().replace("Message", "");
+      }
+      this.metrics
+          .messages()
+          .outbound()
+          .enqueued()
+          .label(new Metrics.Messages.EnqueuedOutboundMessage(typeForMetrics))
+          .inc();
+    } else {
+      this.metrics
+          .messages()
+          .outbound()
+          .aborted()
+          .label(
+              new Metrics.Messages.AbortedOutboundMessage(
+                  Metrics.Messages.OutboundMessageAbortedReason.OUTBOUND_QUEUE_OVERFLOW))
+          .inc();
+      if (outboundLogRateLimiter.tryAcquire()) {
+        log.error("Outbound message to {} dropped", receiver);
+      }
     }
   }
 

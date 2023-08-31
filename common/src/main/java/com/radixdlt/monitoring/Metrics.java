@@ -293,7 +293,8 @@ public record Metrics(
 
     public enum OutboundMessageAbortedReason {
       MESSAGE_EXPIRED,
-      MESSAGE_TOO_LARGE
+      MESSAGE_TOO_LARGE,
+      OUTBOUND_QUEUE_OVERFLOW
     }
   }
 
