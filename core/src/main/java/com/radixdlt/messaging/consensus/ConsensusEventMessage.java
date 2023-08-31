@@ -107,6 +107,10 @@ public final class ConsensusEventMessage extends Message {
     this.vote = vote;
   }
 
+  public boolean isProposal() {
+    return proposal != null;
+  }
+
   public ConsensusEventMessage(Proposal proposal) {
     this(proposal, null);
   }
