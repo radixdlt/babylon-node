@@ -272,7 +272,7 @@ jobs:
       cache_tag_suffix: arm64
       provenance: "false"
       build-args: |
-        WGET_VERSION="1.21.3-1+b1"
+        WGET_VERSION=1.21.3-1+b1
     secrets:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
       service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
