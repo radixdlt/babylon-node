@@ -25,7 +25,8 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf;
+import com.radixdlt.api.core.generated.models.CommittedIntentMetadata;
+import com.radixdlt.api.core.generated.models.LtsTransactionSubmitIntentAlreadyCommittedAllOf;
 import com.radixdlt.api.core.generated.models.TransactionSubmitErrorDetails;
 import com.radixdlt.api.core.generated.models.TransactionSubmitErrorDetailsType;
 import com.radixdlt.api.core.generated.models.TransactionSubmitIntentAlreadyCommitted;
@@ -38,11 +39,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * TransactionSubmitPriorityThresholdNotMetErrorDetails
+ * TransactionSubmitIntentAlreadyCommitted
  */
 @JsonPropertyOrder({
-  TransactionSubmitPriorityThresholdNotMetErrorDetails.JSON_PROPERTY_TIP_PERCENTAGE,
-  TransactionSubmitPriorityThresholdNotMetErrorDetails.JSON_PROPERTY_MIN_TIP_PERCENTAGE_REQUIRED
+  TransactionSubmitIntentAlreadyCommitted.JSON_PROPERTY_COMMITTED_AS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -56,74 +56,41 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = TransactionSubmitRejectedErrorDetails.class, name = "Rejected"),
 })
 
-public class TransactionSubmitPriorityThresholdNotMetErrorDetails extends TransactionSubmitErrorDetails {
-  public static final String JSON_PROPERTY_TIP_PERCENTAGE = "tip_percentage";
-  private Integer tipPercentage;
+public class TransactionSubmitIntentAlreadyCommitted extends TransactionSubmitErrorDetails {
+  public static final String JSON_PROPERTY_COMMITTED_AS = "committed_as";
+  private CommittedIntentMetadata committedAs;
 
-  public static final String JSON_PROPERTY_MIN_TIP_PERCENTAGE_REQUIRED = "min_tip_percentage_required";
-  private Integer minTipPercentageRequired;
-
-  public TransactionSubmitPriorityThresholdNotMetErrorDetails() { 
+  public TransactionSubmitIntentAlreadyCommitted() { 
   }
 
-  public TransactionSubmitPriorityThresholdNotMetErrorDetails tipPercentage(Integer tipPercentage) {
-    this.tipPercentage = tipPercentage;
+  public TransactionSubmitIntentAlreadyCommitted committedAs(CommittedIntentMetadata committedAs) {
+    this.committedAs = committedAs;
     return this;
   }
 
    /**
-   * Tip percentage of the submitted (and rejected) transaction. 
-   * minimum: 0
-   * maximum: 65535
-   * @return tipPercentage
+   * Get committedAs
+   * @return committedAs
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "Tip percentage of the submitted (and rejected) transaction. ")
-  @JsonProperty(JSON_PROPERTY_TIP_PERCENTAGE)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_COMMITTED_AS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Integer getTipPercentage() {
-    return tipPercentage;
+  public CommittedIntentMetadata getCommittedAs() {
+    return committedAs;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TIP_PERCENTAGE)
+  @JsonProperty(JSON_PROPERTY_COMMITTED_AS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setTipPercentage(Integer tipPercentage) {
-    this.tipPercentage = tipPercentage;
-  }
-
-
-  public TransactionSubmitPriorityThresholdNotMetErrorDetails minTipPercentageRequired(Integer minTipPercentageRequired) {
-    this.minTipPercentageRequired = minTipPercentageRequired;
-    return this;
-  }
-
-   /**
-   * A lower bound for tip percentage at current mempool state. Anything lower than this will very likely result in a mempool rejection. A missing value means there is no tip that can guarantee submission. 
-   * minimum: 0
-   * maximum: 65535
-   * @return minTipPercentageRequired
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "A lower bound for tip percentage at current mempool state. Anything lower than this will very likely result in a mempool rejection. A missing value means there is no tip that can guarantee submission. ")
-  @JsonProperty(JSON_PROPERTY_MIN_TIP_PERCENTAGE_REQUIRED)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-
-  public Integer getMinTipPercentageRequired() {
-    return minTipPercentageRequired;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_MIN_TIP_PERCENTAGE_REQUIRED)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setMinTipPercentageRequired(Integer minTipPercentageRequired) {
-    this.minTipPercentageRequired = minTipPercentageRequired;
+  public void setCommittedAs(CommittedIntentMetadata committedAs) {
+    this.committedAs = committedAs;
   }
 
 
   /**
-   * Return true if this TransactionSubmitPriorityThresholdNotMetErrorDetails object is equal to o.
+   * Return true if this TransactionSubmitIntentAlreadyCommitted object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -133,24 +100,22 @@ public class TransactionSubmitPriorityThresholdNotMetErrorDetails extends Transa
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    TransactionSubmitPriorityThresholdNotMetErrorDetails transactionSubmitPriorityThresholdNotMetErrorDetails = (TransactionSubmitPriorityThresholdNotMetErrorDetails) o;
-    return Objects.equals(this.tipPercentage, transactionSubmitPriorityThresholdNotMetErrorDetails.tipPercentage) &&
-        Objects.equals(this.minTipPercentageRequired, transactionSubmitPriorityThresholdNotMetErrorDetails.minTipPercentageRequired) &&
+    TransactionSubmitIntentAlreadyCommitted transactionSubmitIntentAlreadyCommitted = (TransactionSubmitIntentAlreadyCommitted) o;
+    return Objects.equals(this.committedAs, transactionSubmitIntentAlreadyCommitted.committedAs) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(tipPercentage, minTipPercentageRequired, super.hashCode());
+    return Objects.hash(committedAs, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class TransactionSubmitPriorityThresholdNotMetErrorDetails {\n");
+    sb.append("class TransactionSubmitIntentAlreadyCommitted {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    tipPercentage: ").append(toIndentedString(tipPercentage)).append("\n");
-    sb.append("    minTipPercentageRequired: ").append(toIndentedString(minTipPercentageRequired)).append("\n");
+    sb.append("    committedAs: ").append(toIndentedString(committedAs)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -172,8 +137,8 @@ static {
   mappings.put("IntentAlreadyCommitted", TransactionSubmitIntentAlreadyCommitted.class);
   mappings.put("PriorityThresholdNotMet", TransactionSubmitPriorityThresholdNotMetErrorDetails.class);
   mappings.put("Rejected", TransactionSubmitRejectedErrorDetails.class);
-  mappings.put("TransactionSubmitPriorityThresholdNotMetErrorDetails", TransactionSubmitPriorityThresholdNotMetErrorDetails.class);
-  JSON.registerDiscriminator(TransactionSubmitPriorityThresholdNotMetErrorDetails.class, "type", mappings);
+  mappings.put("TransactionSubmitIntentAlreadyCommitted", TransactionSubmitIntentAlreadyCommitted.class);
+  JSON.registerDiscriminator(TransactionSubmitIntentAlreadyCommitted.class, "type", mappings);
 }
 }
 

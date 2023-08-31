@@ -5271,6 +5271,7 @@ components:
       type: string
       enum:
         - PriorityThresholdNotMet
+        - IntentAlreadyCommitted
         - Rejected
     LtsTransactionSubmitErrorDetails:
       type: object
@@ -5284,6 +5285,7 @@ components:
         mapping:
           # NOTE: These need to match LtsTransactionSubmitErrorDetailsType
           PriorityThresholdNotMet: "#/components/schemas/LtsTransactionSubmitPriorityThresholdNotMetErrorDetails"
+          IntentAlreadyCommitted: "#/components/schemas/LtsTransactionSubmitIntentAlreadyCommitted"
           Rejected: "#/components/schemas/LtsTransactionSubmitRejectedErrorDetails"
     LtsTransactionSubmitPriorityThresholdNotMetErrorDetails:
       allOf:
@@ -5307,16 +5309,29 @@ components:
               description: |
                 A lower bound for tip percentage at current mempool state. Anything lower than this will very likely result in a mempool rejection.
                 A missing value means there is no tip that can guarantee submission.
+    LtsTransactionSubmitIntentAlreadyCommitted:
+      allOf:
+        - $ref: "#/components/schemas/LtsTransactionSubmitErrorDetails"
+        - type: object
+          required:
+            - committed_as
+          properties:
+            committed_as:
+              $ref: "#/components/schemas/CommittedIntentMetadata"
+              description: |
+                Details of an already-committed transaction that had the same intent.
     LtsTransactionSubmitRejectedErrorDetails:
       allOf:
         - $ref: "#/components/schemas/LtsTransactionSubmitErrorDetails"
         - type: object
+          description: |
+            Indicates that the transaction was executed and resulted in a rejection,
+            therefore the transaction is not being added into the mempool.
           required:
             - error_message
             - is_fresh
             - is_payload_rejection_permanent
             - is_intent_rejection_permanent
-            - is_rejected_because_intent_already_committed
           properties:
             error_message:
               type: string
@@ -5335,16 +5350,6 @@ components:
               description: |
                 Whether the rejection of this intent is known to be permanent - this is a stronger statement than the payload rejection
                 being permanent, as it implies any payloads containing the intent will also be permanently rejected.
-            is_rejected_because_intent_already_committed:
-              type: boolean
-              description: |
-                Whether the cached rejection of this intent is due to the intent already having been committed.
-                If so, see the /transaction/receipt endpoint for further information.
-            intent_already_committed_as:
-              $ref: "#/components/schemas/CommittedIntentMetadata"
-              description: |
-                Details of an already-committed transaction that had the same intent.
-                This field is present when `is_rejected_because_intent_already_committed` is true.
             retry_from_timestamp:
               $ref: "#/components/schemas/Instant"
               description: |
@@ -6344,6 +6349,7 @@ components:
       type: string
       enum:
         - PriorityThresholdNotMet
+        - IntentAlreadyCommitted
         - Rejected
     TransactionSubmitErrorDetails:
       type: object
@@ -6357,6 +6363,7 @@ components:
         mapping:
           # NOTE: These need to match TransactionSubmitErrorDetailsType
           PriorityThresholdNotMet: '#/components/schemas/TransactionSubmitPriorityThresholdNotMetErrorDetails'
+          IntentAlreadyCommitted: '#/components/schemas/TransactionSubmitIntentAlreadyCommitted'
           Rejected: '#/components/schemas/TransactionSubmitRejectedErrorDetails'
     TransactionSubmitPriorityThresholdNotMetErrorDetails:
       allOf:
@@ -6380,16 +6387,29 @@ components:
               description: |
                 A lower bound for tip percentage at current mempool state. Anything lower than this will very likely result in a mempool rejection.
                 A missing value means there is no tip that can guarantee submission.
+    TransactionSubmitIntentAlreadyCommitted:
+      allOf:
+        - $ref: "#/components/schemas/TransactionSubmitErrorDetails"
+        - type: object
+          required:
+            - committed_as
+          properties:
+            committed_as:
+              $ref: "#/components/schemas/CommittedIntentMetadata"
+              description: |
+                Details of an already-committed transaction that had the same intent.
     TransactionSubmitRejectedErrorDetails:
       allOf:
         - $ref: "#/components/schemas/TransactionSubmitErrorDetails"
         - type: object
+          description: |
+            Indicates that the transaction was executed and resulted in a rejection,
+            therefore the transaction is not being added into the mempool.
           required:
             - error_message
             - is_fresh
             - is_payload_rejection_permanent
             - is_intent_rejection_permanent
-            - is_rejected_because_intent_already_committed
           properties:
             error_message:
               type: string
@@ -6408,16 +6428,6 @@ components:
               description: |
                 Whether the rejection of this intent is known to be permanent - this is a stronger statement than the payload rejection
                 being permanent, as it implies any payloads containing the intent will also be permanently rejected.
-            is_rejected_because_intent_already_committed:
-              type: boolean
-              description: |
-                Whether the cached rejection of this intent is due to the intent already having been committed.
-                If so, see the /transaction/receipt endpoint for further information.
-            intent_already_committed_as:
-              $ref: "#/components/schemas/CommittedIntentMetadata"
-              description: |
-                Details of an already-committed transaction that had the same intent.
-                This field is present when `is_rejected_because_intent_already_committed` is true.
             retry_from_timestamp:
               $ref: "#/components/schemas/Instant"
               description: |

@@ -26,6 +26,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.LtsTransactionSubmitErrorDetailsType;
+import com.radixdlt.api.core.generated.models.LtsTransactionSubmitIntentAlreadyCommitted;
 import com.radixdlt.api.core.generated.models.LtsTransactionSubmitPriorityThresholdNotMetErrorDetails;
 import com.radixdlt.api.core.generated.models.LtsTransactionSubmitRejectedErrorDetails;
 import io.swagger.annotations.ApiModel;
@@ -47,6 +48,8 @@ import com.radixdlt.api.core.generated.client.JSON;
 )
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
+  @JsonSubTypes.Type(value = LtsTransactionSubmitIntentAlreadyCommitted.class, name = "IntentAlreadyCommitted"),
+  @JsonSubTypes.Type(value = LtsTransactionSubmitIntentAlreadyCommitted.class, name = "LtsTransactionSubmitIntentAlreadyCommitted"),
   @JsonSubTypes.Type(value = LtsTransactionSubmitPriorityThresholdNotMetErrorDetails.class, name = "LtsTransactionSubmitPriorityThresholdNotMetErrorDetails"),
   @JsonSubTypes.Type(value = LtsTransactionSubmitRejectedErrorDetails.class, name = "LtsTransactionSubmitRejectedErrorDetails"),
   @JsonSubTypes.Type(value = LtsTransactionSubmitPriorityThresholdNotMetErrorDetails.class, name = "PriorityThresholdNotMet"),
@@ -129,6 +132,8 @@ public class LtsTransactionSubmitErrorDetails {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
+  mappings.put("IntentAlreadyCommitted", LtsTransactionSubmitIntentAlreadyCommitted.class);
+  mappings.put("LtsTransactionSubmitIntentAlreadyCommitted", LtsTransactionSubmitIntentAlreadyCommitted.class);
   mappings.put("LtsTransactionSubmitPriorityThresholdNotMetErrorDetails", LtsTransactionSubmitPriorityThresholdNotMetErrorDetails.class);
   mappings.put("LtsTransactionSubmitRejectedErrorDetails", LtsTransactionSubmitRejectedErrorDetails.class);
   mappings.put("PriorityThresholdNotMet", LtsTransactionSubmitPriorityThresholdNotMetErrorDetails.class);

@@ -13,12 +13,6 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { CommittedIntentMetadata } from './CommittedIntentMetadata';
-import {
-    CommittedIntentMetadataFromJSON,
-    CommittedIntentMetadataFromJSONTyped,
-    CommittedIntentMetadataToJSON,
-} from './CommittedIntentMetadata';
 import type { Instant } from './Instant';
 import {
     InstantFromJSON,
@@ -27,7 +21,8 @@ import {
 } from './Instant';
 
 /**
- * 
+ * Indicates that the transaction was executed and resulted in a rejection,
+ * therefore the transaction is not being added into the mempool.
  * @export
  * @interface LtsTransactionSubmitRejectedErrorDetailsAllOf
  */
@@ -58,19 +53,6 @@ export interface LtsTransactionSubmitRejectedErrorDetailsAllOf {
      * @memberof LtsTransactionSubmitRejectedErrorDetailsAllOf
      */
     is_intent_rejection_permanent: boolean;
-    /**
-     * Whether the cached rejection of this intent is due to the intent already having been committed.
-     * If so, see the /transaction/receipt endpoint for further information.
-     * @type {boolean}
-     * @memberof LtsTransactionSubmitRejectedErrorDetailsAllOf
-     */
-    is_rejected_because_intent_already_committed: boolean;
-    /**
-     * 
-     * @type {CommittedIntentMetadata}
-     * @memberof LtsTransactionSubmitRejectedErrorDetailsAllOf
-     */
-    intent_already_committed_as?: CommittedIntentMetadata;
     /**
      * 
      * @type {Instant}
@@ -118,7 +100,6 @@ export function instanceOfLtsTransactionSubmitRejectedErrorDetailsAllOf(value: o
     isInstance = isInstance && "is_fresh" in value;
     isInstance = isInstance && "is_payload_rejection_permanent" in value;
     isInstance = isInstance && "is_intent_rejection_permanent" in value;
-    isInstance = isInstance && "is_rejected_because_intent_already_committed" in value;
 
     return isInstance;
 }
@@ -137,8 +118,6 @@ export function LtsTransactionSubmitRejectedErrorDetailsAllOfFromJSONTyped(json:
         'is_fresh': json['is_fresh'],
         'is_payload_rejection_permanent': json['is_payload_rejection_permanent'],
         'is_intent_rejection_permanent': json['is_intent_rejection_permanent'],
-        'is_rejected_because_intent_already_committed': json['is_rejected_because_intent_already_committed'],
-        'intent_already_committed_as': !exists(json, 'intent_already_committed_as') ? undefined : CommittedIntentMetadataFromJSON(json['intent_already_committed_as']),
         'retry_from_timestamp': !exists(json, 'retry_from_timestamp') ? undefined : InstantFromJSON(json['retry_from_timestamp']),
         'retry_from_epoch': !exists(json, 'retry_from_epoch') ? undefined : json['retry_from_epoch'],
         'invalid_from_epoch': !exists(json, 'invalid_from_epoch') ? undefined : json['invalid_from_epoch'],
@@ -159,8 +138,6 @@ export function LtsTransactionSubmitRejectedErrorDetailsAllOfToJSON(value?: LtsT
         'is_fresh': value.is_fresh,
         'is_payload_rejection_permanent': value.is_payload_rejection_permanent,
         'is_intent_rejection_permanent': value.is_intent_rejection_permanent,
-        'is_rejected_because_intent_already_committed': value.is_rejected_because_intent_already_committed,
-        'intent_already_committed_as': CommittedIntentMetadataToJSON(value.intent_already_committed_as),
         'retry_from_timestamp': InstantToJSON(value.retry_from_timestamp),
         'retry_from_epoch': value.retry_from_epoch,
         'invalid_from_epoch': value.invalid_from_epoch,

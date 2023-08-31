@@ -19,6 +19,7 @@
  */
 export const TransactionSubmitErrorDetailsType = {
     PriorityThresholdNotMet: 'PriorityThresholdNotMet',
+    IntentAlreadyCommitted: 'IntentAlreadyCommitted',
     Rejected: 'Rejected'
 } as const;
 export type TransactionSubmitErrorDetailsType = typeof TransactionSubmitErrorDetailsType[keyof typeof TransactionSubmitErrorDetailsType];

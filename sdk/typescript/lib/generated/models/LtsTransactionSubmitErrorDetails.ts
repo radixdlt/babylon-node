@@ -13,6 +13,13 @@
  */
 
 import {
+    LtsTransactionSubmitIntentAlreadyCommitted,
+    instanceOfLtsTransactionSubmitIntentAlreadyCommitted,
+    LtsTransactionSubmitIntentAlreadyCommittedFromJSON,
+    LtsTransactionSubmitIntentAlreadyCommittedFromJSONTyped,
+    LtsTransactionSubmitIntentAlreadyCommittedToJSON,
+} from './LtsTransactionSubmitIntentAlreadyCommitted';
+import {
     LtsTransactionSubmitPriorityThresholdNotMetErrorDetails,
     instanceOfLtsTransactionSubmitPriorityThresholdNotMetErrorDetails,
     LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsFromJSON,
@@ -32,7 +39,7 @@ import {
  * 
  * @export
  */
-export type LtsTransactionSubmitErrorDetails = { type: 'PriorityThresholdNotMet' } & LtsTransactionSubmitPriorityThresholdNotMetErrorDetails | { type: 'Rejected' } & LtsTransactionSubmitRejectedErrorDetails;
+export type LtsTransactionSubmitErrorDetails = { type: 'IntentAlreadyCommitted' } & LtsTransactionSubmitIntentAlreadyCommitted | { type: 'PriorityThresholdNotMet' } & LtsTransactionSubmitPriorityThresholdNotMetErrorDetails | { type: 'Rejected' } & LtsTransactionSubmitRejectedErrorDetails;
 
 export function LtsTransactionSubmitErrorDetailsFromJSON(json: any): LtsTransactionSubmitErrorDetails {
     return LtsTransactionSubmitErrorDetailsFromJSONTyped(json, false);
@@ -43,6 +50,8 @@ export function LtsTransactionSubmitErrorDetailsFromJSONTyped(json: any, ignoreD
         return json;
     }
     switch (json['type']) {
+        case 'IntentAlreadyCommitted':
+            return {...LtsTransactionSubmitIntentAlreadyCommittedFromJSONTyped(json, true), type: 'IntentAlreadyCommitted'};
         case 'PriorityThresholdNotMet':
             return {...LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsFromJSONTyped(json, true), type: 'PriorityThresholdNotMet'};
         case 'Rejected':
@@ -60,6 +69,8 @@ export function LtsTransactionSubmitErrorDetailsToJSON(value?: LtsTransactionSub
         return null;
     }
     switch (value['type']) {
+        case 'IntentAlreadyCommitted':
+            return LtsTransactionSubmitIntentAlreadyCommittedToJSON(value);
         case 'PriorityThresholdNotMet':
             return LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsToJSON(value);
         case 'Rejected':

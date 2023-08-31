@@ -156,11 +156,8 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
               TransactionSubmitErrorResponse.class);
 
       assertThat(errorResponse.getCode()).isEqualTo(400);
-      var details = (TransactionSubmitRejectedErrorDetails) errorResponse.getDetails();
-      assertThat(details.getIsIntentRejectionPermanent()).isTrue();
-      assertThat(details.getIsPayloadRejectionPermanent()).isTrue();
-      assertThat(details.getIsRejectedBecauseIntentAlreadyCommitted()).isTrue();
-      var committedAs = details.getIntentAlreadyCommittedAs();
+      var details = (TransactionSubmitIntentAlreadyCommitted) errorResponse.getDetails();
+      var committedAs = details.getCommittedAs();
       assertThat(committedAs.getPayloadHash()).isEqualTo(transaction.hexNotarizedTransactionHash());
       assertThat(committedAs.getIsSameTransaction()).isTrue();
     }
@@ -197,11 +194,8 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
               TransactionSubmitErrorResponse.class);
 
       assertThat(errorResponse.getCode()).isEqualTo(400);
-      var details = (TransactionSubmitRejectedErrorDetails) errorResponse.getDetails();
-      assertThat(details.getIsIntentRejectionPermanent()).isTrue();
-      assertThat(details.getIsPayloadRejectionPermanent()).isTrue();
-      assertThat(details.getIsRejectedBecauseIntentAlreadyCommitted()).isTrue();
-      var committedAs = details.getIntentAlreadyCommittedAs();
+      var details = (TransactionSubmitIntentAlreadyCommitted) errorResponse.getDetails();
+      var committedAs = details.getCommittedAs();
       assertThat(committedAs.getPayloadHash())
           .isEqualTo(transaction1.hexNotarizedTransactionHash());
       assertThat(committedAs.getIsSameTransaction()).isFalse();
@@ -235,7 +229,6 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
       assertThat(rejectedDetails).isNotNull();
       assertThat(rejectedDetails.getIsPayloadRejectionPermanent()).isFalse();
       assertThat(rejectedDetails.getIsIntentRejectionPermanent()).isFalse();
-      assertThat(rejectedDetails.getIsRejectedBecauseIntentAlreadyCommitted()).isFalse();
       assertThat(rejectedDetails.getIsFresh()).isTrue();
       assertThat(rejectedDetails.getErrorMessage()).contains("LoanRepaymentFailed");
     }
@@ -270,7 +263,6 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
       assertThat(rejectedDetails).isNotNull();
       assertThat(rejectedDetails.getIsPayloadRejectionPermanent()).isFalse();
       assertThat(rejectedDetails.getIsIntentRejectionPermanent()).isFalse();
-      assertThat(rejectedDetails.getIsRejectedBecauseIntentAlreadyCommitted()).isFalse();
       assertThat(rejectedDetails.getIsFresh()).isTrue();
       assertThat(rejectedDetails.getRetryFromTimestamp()).isNull();
       assertThat(rejectedDetails.getRetryFromEpoch()).isEqualTo(validFromEpoch);

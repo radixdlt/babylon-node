@@ -13,6 +13,13 @@
  */
 
 import {
+    TransactionSubmitIntentAlreadyCommitted,
+    instanceOfTransactionSubmitIntentAlreadyCommitted,
+    TransactionSubmitIntentAlreadyCommittedFromJSON,
+    TransactionSubmitIntentAlreadyCommittedFromJSONTyped,
+    TransactionSubmitIntentAlreadyCommittedToJSON,
+} from './TransactionSubmitIntentAlreadyCommitted';
+import {
     TransactionSubmitPriorityThresholdNotMetErrorDetails,
     instanceOfTransactionSubmitPriorityThresholdNotMetErrorDetails,
     TransactionSubmitPriorityThresholdNotMetErrorDetailsFromJSON,
@@ -32,7 +39,7 @@ import {
  * 
  * @export
  */
-export type TransactionSubmitErrorDetails = { type: 'PriorityThresholdNotMet' } & TransactionSubmitPriorityThresholdNotMetErrorDetails | { type: 'Rejected' } & TransactionSubmitRejectedErrorDetails;
+export type TransactionSubmitErrorDetails = { type: 'IntentAlreadyCommitted' } & TransactionSubmitIntentAlreadyCommitted | { type: 'PriorityThresholdNotMet' } & TransactionSubmitPriorityThresholdNotMetErrorDetails | { type: 'Rejected' } & TransactionSubmitRejectedErrorDetails;
 
 export function TransactionSubmitErrorDetailsFromJSON(json: any): TransactionSubmitErrorDetails {
     return TransactionSubmitErrorDetailsFromJSONTyped(json, false);
@@ -43,6 +50,8 @@ export function TransactionSubmitErrorDetailsFromJSONTyped(json: any, ignoreDisc
         return json;
     }
     switch (json['type']) {
+        case 'IntentAlreadyCommitted':
+            return {...TransactionSubmitIntentAlreadyCommittedFromJSONTyped(json, true), type: 'IntentAlreadyCommitted'};
         case 'PriorityThresholdNotMet':
             return {...TransactionSubmitPriorityThresholdNotMetErrorDetailsFromJSONTyped(json, true), type: 'PriorityThresholdNotMet'};
         case 'Rejected':
@@ -60,6 +69,8 @@ export function TransactionSubmitErrorDetailsToJSON(value?: TransactionSubmitErr
         return null;
     }
     switch (value['type']) {
+        case 'IntentAlreadyCommitted':
+            return TransactionSubmitIntentAlreadyCommittedToJSON(value);
         case 'PriorityThresholdNotMet':
             return TransactionSubmitPriorityThresholdNotMetErrorDetailsToJSON(value);
         case 'Rejected':

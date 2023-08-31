@@ -19,6 +19,7 @@
  */
 export const LtsTransactionSubmitErrorDetailsType = {
     PriorityThresholdNotMet: 'PriorityThresholdNotMet',
+    IntentAlreadyCommitted: 'IntentAlreadyCommitted',
     Rejected: 'Rejected'
 } as const;
 export type LtsTransactionSubmitErrorDetailsType = typeof LtsTransactionSubmitErrorDetailsType[keyof typeof LtsTransactionSubmitErrorDetailsType];
