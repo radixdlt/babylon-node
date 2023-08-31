@@ -167,7 +167,6 @@ public final class BFTEventStatelessVerifier implements BFTEventProcessor {
       return;
     }
 
-    /*
     if (!safetyRules.verifyHighQcAgainstTheValidatorSet(vote.highQC())) {
       log.warn("Ignoring a vote {} with invalid high QC", vote);
       metrics
@@ -177,7 +176,6 @@ public final class BFTEventStatelessVerifier implements BFTEventProcessor {
           .inc();
       return;
     }
-     */
 
     forwardTo.processVote(vote);
   }
