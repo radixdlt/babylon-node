@@ -130,9 +130,15 @@ public final class BFTEventStatelessVerifier implements BFTEventProcessor {
       return;
     }
 
+    final var voteData = vote.getVoteData();
+    final var voteTimestamp = vote.getTimestamp();
+
     final var verifiedVoteData =
         verifyHashSignature(
-            vote.getAuthor(), vote.getHashOfData(hasher), vote.getSignature(), vote);
+            vote.getAuthor(),
+            voteData.toConsensusVoteHash(hasher, voteTimestamp),
+            vote.getSignature(),
+            vote);
     if (!verifiedVoteData) {
       log.warn("Ignoring invalid vote data {}", vote);
       metrics

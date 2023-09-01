@@ -142,8 +142,8 @@ public final class RadixNodeModule extends AbstractModule {
     // Default values mean that pacemakers will sync if they are within 5 rounds of each other.
     // 5 consecutive failing rounds will take 1*(2^6)-1 seconds = 63 seconds.
     bindConstant().annotatedWith(PacemakerBaseTimeoutMs.class).to(3000L);
-    bindConstant().annotatedWith(PacemakerBackoffRate.class).to(1.1);
-    bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0);
+    bindConstant().annotatedWith(PacemakerBackoffRate.class).to(1.2);
+    bindConstant().annotatedWith(PacemakerMaxExponent.class).to(13);
     bindConstant().annotatedWith(AdditionalRoundTimeIfProposalReceivedMs.class).to(30_000L);
     bindConstant().annotatedWith(TimeoutQuorumResolutionDelayMs.class).to(1500L);
 

@@ -282,15 +282,19 @@ public record Metrics(
 
     public record Outbound(
         LabelledCounter<AbortedOutboundMessage> aborted,
-        Gauge queued,
+        LabelledCounter<EnqueuedOutboundMessage> enqueued,
+        Gauge currentQueueSize,
         Counter processed,
         Counter sent) {}
 
     public record AbortedOutboundMessage(OutboundMessageAbortedReason reason) {}
 
+    public record EnqueuedOutboundMessage(String type) {}
+
     public enum OutboundMessageAbortedReason {
       MESSAGE_EXPIRED,
-      MESSAGE_TOO_LARGE
+      MESSAGE_TOO_LARGE,
+      OUTBOUND_QUEUE_OVERFLOW
     }
   }
 

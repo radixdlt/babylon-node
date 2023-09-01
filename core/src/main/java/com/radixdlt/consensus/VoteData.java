@@ -66,6 +66,8 @@ package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -120,6 +122,16 @@ public final class VoteData {
 
   public Optional<BFTHeader> getCommitted() {
     return Optional.ofNullable(committed);
+  }
+
+  public Optional<LedgerHeader> committedLedgerHeader() {
+    return getCommitted().map(BFTHeader::getLedgerHeader);
+  }
+
+  public HashCode toConsensusVoteHash(Hasher hasher, long localExecutionTimestamp) {
+    final var selfHash = hasher.hashDsonEncoded(this);
+    return ConsensusHasher.toHash(
+        selfHash, committedLedgerHeader(), localExecutionTimestamp, hasher);
   }
 
   @Override
