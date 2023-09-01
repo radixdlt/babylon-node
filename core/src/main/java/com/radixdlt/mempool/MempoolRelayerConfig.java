@@ -74,7 +74,7 @@ public record MempoolRelayerConfig(
     int maxMessageTransactionCount,
     int maxMessagePayloadSize) {
   public static final int DEFAULT_INTERVAL_MS = 20000;
-  public static final int DEFAULT_MAX_PEERS = 100;
+  public static final int DEFAULT_MAX_PEERS = 20;
   public static final int DEFAULT_MAX_MESSAGE_TRANSACTION_COUNT = 10;
   public static final int DEFAULT_MAX_MESSAGE_PAYLOAD_SIZE = 2 * 1024 * 1024;
   public static final int DEFAULT_MAX_RELAYED_SIZE = 6 * 1024 * 1024;
