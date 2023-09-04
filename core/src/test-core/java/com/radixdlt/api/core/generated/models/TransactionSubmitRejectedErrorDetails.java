@@ -25,11 +25,11 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.CommittedIntentMetadata;
 import com.radixdlt.api.core.generated.models.Instant;
 import com.radixdlt.api.core.generated.models.LtsTransactionSubmitRejectedErrorDetailsAllOf;
 import com.radixdlt.api.core.generated.models.TransactionSubmitErrorDetails;
 import com.radixdlt.api.core.generated.models.TransactionSubmitErrorDetailsType;
+import com.radixdlt.api.core.generated.models.TransactionSubmitIntentAlreadyCommitted;
 import com.radixdlt.api.core.generated.models.TransactionSubmitPriorityThresholdNotMetErrorDetails;
 import com.radixdlt.api.core.generated.models.TransactionSubmitRejectedErrorDetails;
 import io.swagger.annotations.ApiModel;
@@ -46,8 +46,6 @@ import com.radixdlt.api.core.generated.client.JSON;
   TransactionSubmitRejectedErrorDetails.JSON_PROPERTY_IS_FRESH,
   TransactionSubmitRejectedErrorDetails.JSON_PROPERTY_IS_PAYLOAD_REJECTION_PERMANENT,
   TransactionSubmitRejectedErrorDetails.JSON_PROPERTY_IS_INTENT_REJECTION_PERMANENT,
-  TransactionSubmitRejectedErrorDetails.JSON_PROPERTY_IS_REJECTED_BECAUSE_INTENT_ALREADY_COMMITTED,
-  TransactionSubmitRejectedErrorDetails.JSON_PROPERTY_INTENT_ALREADY_COMMITTED_AS,
   TransactionSubmitRejectedErrorDetails.JSON_PROPERTY_RETRY_FROM_TIMESTAMP,
   TransactionSubmitRejectedErrorDetails.JSON_PROPERTY_RETRY_FROM_EPOCH,
   TransactionSubmitRejectedErrorDetails.JSON_PROPERTY_INVALID_FROM_EPOCH
@@ -59,6 +57,7 @@ import com.radixdlt.api.core.generated.client.JSON;
 )
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
+  @JsonSubTypes.Type(value = TransactionSubmitIntentAlreadyCommitted.class, name = "IntentAlreadyCommitted"),
   @JsonSubTypes.Type(value = TransactionSubmitPriorityThresholdNotMetErrorDetails.class, name = "PriorityThresholdNotMet"),
   @JsonSubTypes.Type(value = TransactionSubmitRejectedErrorDetails.class, name = "Rejected"),
 })
@@ -75,12 +74,6 @@ public class TransactionSubmitRejectedErrorDetails extends TransactionSubmitErro
 
   public static final String JSON_PROPERTY_IS_INTENT_REJECTION_PERMANENT = "is_intent_rejection_permanent";
   private Boolean isIntentRejectionPermanent;
-
-  public static final String JSON_PROPERTY_IS_REJECTED_BECAUSE_INTENT_ALREADY_COMMITTED = "is_rejected_because_intent_already_committed";
-  private Boolean isRejectedBecauseIntentAlreadyCommitted;
-
-  public static final String JSON_PROPERTY_INTENT_ALREADY_COMMITTED_AS = "intent_already_committed_as";
-  private CommittedIntentMetadata intentAlreadyCommittedAs;
 
   public static final String JSON_PROPERTY_RETRY_FROM_TIMESTAMP = "retry_from_timestamp";
   private Instant retryFromTimestamp;
@@ -198,58 +191,6 @@ public class TransactionSubmitRejectedErrorDetails extends TransactionSubmitErro
   }
 
 
-  public TransactionSubmitRejectedErrorDetails isRejectedBecauseIntentAlreadyCommitted(Boolean isRejectedBecauseIntentAlreadyCommitted) {
-    this.isRejectedBecauseIntentAlreadyCommitted = isRejectedBecauseIntentAlreadyCommitted;
-    return this;
-  }
-
-   /**
-   * Whether the cached rejection of this intent is due to the intent already having been committed. If so, see the /transaction/receipt endpoint for further information. 
-   * @return isRejectedBecauseIntentAlreadyCommitted
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "Whether the cached rejection of this intent is due to the intent already having been committed. If so, see the /transaction/receipt endpoint for further information. ")
-  @JsonProperty(JSON_PROPERTY_IS_REJECTED_BECAUSE_INTENT_ALREADY_COMMITTED)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Boolean getIsRejectedBecauseIntentAlreadyCommitted() {
-    return isRejectedBecauseIntentAlreadyCommitted;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_IS_REJECTED_BECAUSE_INTENT_ALREADY_COMMITTED)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIsRejectedBecauseIntentAlreadyCommitted(Boolean isRejectedBecauseIntentAlreadyCommitted) {
-    this.isRejectedBecauseIntentAlreadyCommitted = isRejectedBecauseIntentAlreadyCommitted;
-  }
-
-
-  public TransactionSubmitRejectedErrorDetails intentAlreadyCommittedAs(CommittedIntentMetadata intentAlreadyCommittedAs) {
-    this.intentAlreadyCommittedAs = intentAlreadyCommittedAs;
-    return this;
-  }
-
-   /**
-   * Get intentAlreadyCommittedAs
-   * @return intentAlreadyCommittedAs
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_INTENT_ALREADY_COMMITTED_AS)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-
-  public CommittedIntentMetadata getIntentAlreadyCommittedAs() {
-    return intentAlreadyCommittedAs;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_INTENT_ALREADY_COMMITTED_AS)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setIntentAlreadyCommittedAs(CommittedIntentMetadata intentAlreadyCommittedAs) {
-    this.intentAlreadyCommittedAs = intentAlreadyCommittedAs;
-  }
-
-
   public TransactionSubmitRejectedErrorDetails retryFromTimestamp(Instant retryFromTimestamp) {
     this.retryFromTimestamp = retryFromTimestamp;
     return this;
@@ -348,8 +289,6 @@ public class TransactionSubmitRejectedErrorDetails extends TransactionSubmitErro
         Objects.equals(this.isFresh, transactionSubmitRejectedErrorDetails.isFresh) &&
         Objects.equals(this.isPayloadRejectionPermanent, transactionSubmitRejectedErrorDetails.isPayloadRejectionPermanent) &&
         Objects.equals(this.isIntentRejectionPermanent, transactionSubmitRejectedErrorDetails.isIntentRejectionPermanent) &&
-        Objects.equals(this.isRejectedBecauseIntentAlreadyCommitted, transactionSubmitRejectedErrorDetails.isRejectedBecauseIntentAlreadyCommitted) &&
-        Objects.equals(this.intentAlreadyCommittedAs, transactionSubmitRejectedErrorDetails.intentAlreadyCommittedAs) &&
         Objects.equals(this.retryFromTimestamp, transactionSubmitRejectedErrorDetails.retryFromTimestamp) &&
         Objects.equals(this.retryFromEpoch, transactionSubmitRejectedErrorDetails.retryFromEpoch) &&
         Objects.equals(this.invalidFromEpoch, transactionSubmitRejectedErrorDetails.invalidFromEpoch) &&
@@ -358,7 +297,7 @@ public class TransactionSubmitRejectedErrorDetails extends TransactionSubmitErro
 
   @Override
   public int hashCode() {
-    return Objects.hash(errorMessage, isFresh, isPayloadRejectionPermanent, isIntentRejectionPermanent, isRejectedBecauseIntentAlreadyCommitted, intentAlreadyCommittedAs, retryFromTimestamp, retryFromEpoch, invalidFromEpoch, super.hashCode());
+    return Objects.hash(errorMessage, isFresh, isPayloadRejectionPermanent, isIntentRejectionPermanent, retryFromTimestamp, retryFromEpoch, invalidFromEpoch, super.hashCode());
   }
 
   @Override
@@ -370,8 +309,6 @@ public class TransactionSubmitRejectedErrorDetails extends TransactionSubmitErro
     sb.append("    isFresh: ").append(toIndentedString(isFresh)).append("\n");
     sb.append("    isPayloadRejectionPermanent: ").append(toIndentedString(isPayloadRejectionPermanent)).append("\n");
     sb.append("    isIntentRejectionPermanent: ").append(toIndentedString(isIntentRejectionPermanent)).append("\n");
-    sb.append("    isRejectedBecauseIntentAlreadyCommitted: ").append(toIndentedString(isRejectedBecauseIntentAlreadyCommitted)).append("\n");
-    sb.append("    intentAlreadyCommittedAs: ").append(toIndentedString(intentAlreadyCommittedAs)).append("\n");
     sb.append("    retryFromTimestamp: ").append(toIndentedString(retryFromTimestamp)).append("\n");
     sb.append("    retryFromEpoch: ").append(toIndentedString(retryFromEpoch)).append("\n");
     sb.append("    invalidFromEpoch: ").append(toIndentedString(invalidFromEpoch)).append("\n");
@@ -393,6 +330,7 @@ public class TransactionSubmitRejectedErrorDetails extends TransactionSubmitErro
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
+  mappings.put("IntentAlreadyCommitted", TransactionSubmitIntentAlreadyCommitted.class);
   mappings.put("PriorityThresholdNotMet", TransactionSubmitPriorityThresholdNotMetErrorDetails.class);
   mappings.put("Rejected", TransactionSubmitRejectedErrorDetails.class);
   mappings.put("TransactionSubmitRejectedErrorDetails", TransactionSubmitRejectedErrorDetails.class);

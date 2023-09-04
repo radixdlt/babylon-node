@@ -80,6 +80,7 @@ import com.radixdlt.rev2.MetadataValue;
 import java.util.Optional;
 
 public final class OlympiaValidatorsConverter {
+
   public static ImmutableList<GenesisDataChunk.Validators> prepareValidatorsChunks(
       OlympiaToBabylonConverterConfig config,
       ImmutableList<OlympiaStateIR.Account> accounts,
@@ -100,10 +101,11 @@ public final class OlympiaValidatorsConverter {
       throw new OlympiaToBabylonGenesisConverterException(
           "Olympia validator public key is invalid", e);
     }
-    final ImmutableList<Tuple2<String, MetadataValue>> metadata =
-        ImmutableList.of(
-            tuple("name", new MetadataValue.String(olympiaValidator.name())),
-            tuple("info_url", new MetadataValue.Url(olympiaValidator.url())));
+    final ImmutableList.Builder<Tuple2<String, MetadataValue>> metadata = ImmutableList.builder();
+    metadata.add(tuple("name", new MetadataValue.String(olympiaValidator.name())));
+    if (new EngineUrlPredicate().test(olympiaValidator.url())) {
+      metadata.add(tuple("info_url", new MetadataValue.Url(olympiaValidator.url())));
+    }
 
     final var owner = accounts.get(olympiaValidator.ownerAccountIndex());
     return new GenesisValidator(
@@ -111,7 +113,7 @@ public final class OlympiaValidatorsConverter {
         olympiaValidator.allowsDelegation(),
         olympiaValidator.isRegistered(),
         Decimal.fraction(olympiaValidator.feeProportionInTenThousandths(), 10000L),
-        metadata,
+        metadata.build(),
         Address.virtualAccountAddress(owner.publicKeyBytes().asBytes()));
   }
 }

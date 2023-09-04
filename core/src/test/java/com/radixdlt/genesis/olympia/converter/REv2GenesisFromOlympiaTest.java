@@ -135,6 +135,10 @@ public final class REv2GenesisFromOlympiaTest {
     }
   }
 
+  /**
+   * Deserializes a file captured from Olympia Node's `StateIRSerializationTest` (namely,
+   * `it_should_successfully_construct_and_then_serialize_and_deserialize_the_intermediate_state`).
+   */
   private static OlympiaStateIR readOlympiaStateIRFromResources() throws IOException {
     try (var is =
         REv2GenesisFromOlympiaTest.class

@@ -40,7 +40,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class InstructionResourceChanges {
   public static final String JSON_PROPERTY_INDEX = "index";
-  private Integer index;
+  private Long index;
 
   public static final String JSON_PROPERTY_RESOURCE_CHANGES = "resource_changes";
   private List<ResourceChange> resourceChanges = new ArrayList<>();
@@ -48,13 +48,15 @@ public class InstructionResourceChanges {
   public InstructionResourceChanges() { 
   }
 
-  public InstructionResourceChanges index(Integer index) {
+  public InstructionResourceChanges index(Long index) {
     this.index = index;
     return this;
   }
 
    /**
    * Get index
+   * minimum: 0
+   * maximum: 4294967295
    * @return index
   **/
   @javax.annotation.Nonnull
@@ -62,14 +64,14 @@ public class InstructionResourceChanges {
   @JsonProperty(JSON_PROPERTY_INDEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Integer getIndex() {
+  public Long getIndex() {
     return index;
   }
 
 
   @JsonProperty(JSON_PROPERTY_INDEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIndex(Integer index) {
+  public void setIndex(Long index) {
     this.index = index;
   }
 

@@ -3,11 +3,11 @@ use radix_engine::{
     transaction::BalanceChange,
     types::{Decimal, GlobalAddress, IndexMap, ResourceAddress},
 };
-use state_manager::store::traits::SubstateNodeAncestryStore;
-use state_manager::store::StateManagerDatabase;
+
+use state_manager::store::{traits::SubstateNodeAncestryStore, StateManagerDatabase};
 use state_manager::{
-    BySubstate, ChangeAction, CommittedTransactionIdentifiers, LedgerTransactionOutcome,
-    LocalTransactionReceipt, StateVersion, TransactionTreeHash,
+    CommittedTransactionIdentifiers, LedgerTransactionOutcome, LocalTransactionReceipt,
+    StateVersion, TransactionTreeHash,
 };
 
 use radix_engine::transaction::{FeeDestination, FeeSource, TransactionFeeSummary};
@@ -64,13 +64,16 @@ pub fn to_api_lts_committed_transaction_outcome(
             &local_execution.fee_summary,
             &local_execution.fee_source,
             &local_execution.fee_destination,
-            &local_execution.global_balance_changes, // TODO(during review): there is some convoluted logic there; does it need to change now?
+            &local_execution
+                .global_balance_summary
+                .global_balance_changes,
         )?,
         resultant_account_fungible_balances: to_api_lts_resultant_account_fungible_balances(
-            database,
             context,
-            &receipt.on_ledger.substate_changes,
-        ),
+            &local_execution
+                .global_balance_summary
+                .resultant_fungible_account_balances,
+        )?,
         total_fee: to_api_decimal(&local_execution.fee_summary.total_cost()),
     })
 }
@@ -365,13 +368,26 @@ pub fn to_api_lts_fungible_resource_balance_change(
 }
 
 pub fn to_api_lts_resultant_account_fungible_balances(
-    _database: &StateManagerDatabase,
-    _context: &MappingContext,
-    _substate_changes: &BySubstate<ChangeAction>,
-) -> Vec<models::LtsResultantAccountFungibleBalances> {
-    // TODO(parallel PR): go through substate changes, collect fungible vaults' new values, resolve
-    // each into its global component owning the vault, retain only accounts, adjust API docs.
-    vec![]
+    context: &MappingContext,
+    fungible_account_balances: &IndexMap<GlobalAddress, IndexMap<ResourceAddress, Decimal>>,
+) -> Result<Vec<models::LtsResultantAccountFungibleBalances>, MappingError> {
+    fungible_account_balances
+        .iter()
+        .map(|(account_address, resource_balances)| {
+            Ok(models::LtsResultantAccountFungibleBalances {
+                account_address: to_api_global_address(context, account_address)?,
+                resultant_balances: resource_balances
+                    .iter()
+                    .map(|(resource_address, resultant_balance)| {
+                        Ok(models::LtsResultantFungibleBalance {
+                            resource_address: to_api_resource_address(context, resource_address)?,
+                            resultant_balance: to_api_decimal(resultant_balance),
+                        })
+                    })
+                    .collect::<Result<Vec<_>, _>>()?,
+            })
+        })
+        .collect()
 }
 
 pub fn get_fungible_balance(balance_change: &BalanceChange) -> Option<Decimal> {

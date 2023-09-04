@@ -16,6 +16,9 @@ pub struct MempoolTransactionResponsePayloadsInner {
     /// The hex-encoded notarized transaction hash for a user transaction. This hash identifies the full submittable notarized transaction - ie the signed intent, plus the notary signature. 
     #[serde(rename = "hash")]
     pub hash: String,
+    /// The Bech32m-encoded human readable `NotarizedTransactionHash`.
+    #[serde(rename = "hash_bech32m")]
+    pub hash_bech32m: String,
     /// The hex-encoded full notarized transaction payload - returned only if found in mempool.
     #[serde(rename = "hex", skip_serializing_if = "Option::is_none")]
     pub hex: Option<String>,
@@ -25,9 +28,10 @@ pub struct MempoolTransactionResponsePayloadsInner {
 }
 
 impl MempoolTransactionResponsePayloadsInner {
-    pub fn new(hash: String) -> MempoolTransactionResponsePayloadsInner {
+    pub fn new(hash: String, hash_bech32m: String) -> MempoolTransactionResponsePayloadsInner {
         MempoolTransactionResponsePayloadsInner {
             hash,
+            hash_bech32m,
             hex: None,
             error: None,
         }

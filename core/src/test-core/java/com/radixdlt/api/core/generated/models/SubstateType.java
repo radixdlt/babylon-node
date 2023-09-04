@@ -84,8 +84,6 @@ public enum SubstateType {
   
   NONFUNGIBLEVAULTCONTENTSINDEXENTRY("NonFungibleVaultContentsIndexEntry"),
   
-  CONSENSUSMANAGER("ConsensusManager"),
-  
   CONSENSUSMANAGERFIELDCONFIG("ConsensusManagerFieldConfig"),
   
   CONSENSUSMANAGERFIELDSTATE("ConsensusManagerFieldState"),

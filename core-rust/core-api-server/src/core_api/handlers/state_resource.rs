@@ -9,13 +9,13 @@ use radix_engine_common::types::EntityType;
 
 enum ManagerByType {
     Fungible(
-        FieldSubstate<FungibleResourceManagerDivisibilitySubstate>,
-        Option<FieldSubstate<FungibleResourceManagerTotalSupplySubstate>>,
+        FungibleResourceManagerDivisibilityFieldSubstate,
+        Option<FungibleResourceManagerTotalSupplyFieldSubstate>,
     ),
     NonFungible(
-        FieldSubstate<NonFungibleResourceManagerIdTypeSubstate>,
-        Option<FieldSubstate<NonFungibleResourceManagerTotalSupplySubstate>>,
-        FieldSubstate<NonFungibleResourceManagerMutableFieldsSubstate>,
+        NonFungibleResourceManagerIdTypeFieldSubstate,
+        Option<NonFungibleResourceManagerTotalSupplyFieldSubstate>,
+        NonFungibleResourceManagerMutableFieldsFieldSubstate,
     ),
 }
 
@@ -73,8 +73,8 @@ pub(crate) async fn handle_state_resource(
     let owner_role_substate = read_mandatory_substate(
         database.deref(),
         resource_address.as_node_id(),
-        ROLE_ASSIGNMENT_FIELDS_PARTITION,
-        &RoleAssignmentField::OwnerRole.into(),
+        RoleAssignmentPartitionOffset::Field.as_partition(ROLE_ASSIGNMENT_BASE_PARTITION),
+        &RoleAssignmentField::Owner.into(),
     )?;
 
     let header = database

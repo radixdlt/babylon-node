@@ -16,6 +16,7 @@ pub struct MempoolTransactionRequest {
     /// The logical name of the network
     #[serde(rename = "network")]
     pub network: String,
+    /// A list of payload hashes to attempt to read. Each hash must be either hex, or in Bech32m format.
     #[serde(rename = "payload_hashes")]
     pub payload_hashes: Vec<String>,
 }

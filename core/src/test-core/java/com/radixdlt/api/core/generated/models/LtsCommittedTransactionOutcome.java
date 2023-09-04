@@ -189,11 +189,11 @@ public class LtsCommittedTransactionOutcome {
   }
 
    /**
-   * THE FEE ASSIGNMENT IS NOT CURRENTLY FULLY ACCURATE FOR SOME TRANSACTIONS. THIS WILL BE FIXED AT RCNET-V2. A list of all fungible balance updates which occurred in this transaction, aggregated by the global entity (such as account) which owns the vaults which were updated. 
+   * A list of all fungible balance updates which occurred in this transaction, aggregated by the global entity (such as account) which owns the vaults which were updated. 
    * @return fungibleEntityBalanceChanges
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "THE FEE ASSIGNMENT IS NOT CURRENTLY FULLY ACCURATE FOR SOME TRANSACTIONS. THIS WILL BE FIXED AT RCNET-V2. A list of all fungible balance updates which occurred in this transaction, aggregated by the global entity (such as account) which owns the vaults which were updated. ")
+  @ApiModelProperty(required = true, value = "A list of all fungible balance updates which occurred in this transaction, aggregated by the global entity (such as account) which owns the vaults which were updated. ")
   @JsonProperty(JSON_PROPERTY_FUNGIBLE_ENTITY_BALANCE_CHANGES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -220,11 +220,11 @@ public class LtsCommittedTransactionOutcome {
   }
 
    /**
-   * THIS CURRENTLY RETURNS AN EMPTY LIST. THIS FEATURE WILL BE COMING AT RCNET-V2. A list of the resultant balances of any account balances changed in this transaction. Only balances for accounts are returned, not any other kind of entity. 
+   * A list of the resultant fungible account balances for any balances which changed in this transaction. Only balances for accounts are returned, not any other kind of entity. 
    * @return resultantAccountFungibleBalances
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "THIS CURRENTLY RETURNS AN EMPTY LIST. THIS FEATURE WILL BE COMING AT RCNET-V2. A list of the resultant balances of any account balances changed in this transaction. Only balances for accounts are returned, not any other kind of entity. ")
+  @ApiModelProperty(required = true, value = "A list of the resultant fungible account balances for any balances which changed in this transaction. Only balances for accounts are returned, not any other kind of entity. ")
   @JsonProperty(JSON_PROPERTY_RESULTANT_ACCOUNT_FUNGIBLE_BALANCES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 

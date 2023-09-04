@@ -11,6 +11,7 @@ pub(crate) async fn handle_lts_state_account_all_fungible_resource_balances(
     Json(request): Json<models::LtsStateAccountAllFungibleResourceBalancesRequest>,
 ) -> Result<Json<models::LtsStateAccountAllFungibleResourceBalancesResponse>, ResponseError<()>> {
     assert_matching_network(&request.network, &state.network)?;
+    assert_unbounded_endpoints_flag_enabled(&state)?;
 
     if !request.account_address.starts_with("account_") {
         return Err(client_error(

@@ -14,13 +14,13 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct InstructionResourceChanges {
     #[serde(rename = "index")]
-    pub index: i32,
+    pub index: i64,
     #[serde(rename = "resource_changes")]
     pub resource_changes: Vec<crate::core_api::generated::models::ResourceChange>,
 }
 
 impl InstructionResourceChanges {
-    pub fn new(index: i32, resource_changes: Vec<crate::core_api::generated::models::ResourceChange>) -> InstructionResourceChanges {
+    pub fn new(index: i64, resource_changes: Vec<crate::core_api::generated::models::ResourceChange>) -> InstructionResourceChanges {
         InstructionResourceChanges {
             index,
             resource_changes,

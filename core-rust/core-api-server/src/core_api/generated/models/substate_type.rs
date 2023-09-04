@@ -68,8 +68,6 @@ pub enum SubstateType {
     NonFungibleVaultFieldFrozenStatus,
     #[serde(rename = "NonFungibleVaultContentsIndexEntry")]
     NonFungibleVaultContentsIndexEntry,
-    #[serde(rename = "ConsensusManager")]
-    ConsensusManager,
     #[serde(rename = "ConsensusManagerFieldConfig")]
     ConsensusManagerFieldConfig,
     #[serde(rename = "ConsensusManagerFieldState")]
@@ -148,7 +146,6 @@ impl ToString for SubstateType {
             Self::NonFungibleVaultFieldBalance => String::from("NonFungibleVaultFieldBalance"),
             Self::NonFungibleVaultFieldFrozenStatus => String::from("NonFungibleVaultFieldFrozenStatus"),
             Self::NonFungibleVaultContentsIndexEntry => String::from("NonFungibleVaultContentsIndexEntry"),
-            Self::ConsensusManager => String::from("ConsensusManager"),
             Self::ConsensusManagerFieldConfig => String::from("ConsensusManagerFieldConfig"),
             Self::ConsensusManagerFieldState => String::from("ConsensusManagerFieldState"),
             Self::ConsensusManagerFieldCurrentValidatorSet => String::from("ConsensusManagerFieldCurrentValidatorSet"),

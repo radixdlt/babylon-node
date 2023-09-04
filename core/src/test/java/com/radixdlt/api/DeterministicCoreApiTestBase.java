@@ -81,6 +81,7 @@ import com.radixdlt.api.core.generated.models.LtsTransactionStatusRequest;
 import com.radixdlt.api.core.generated.models.LtsTransactionStatusResponse;
 import com.radixdlt.api.core.generated.models.LtsTransactionSubmitRequest;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.environment.CoreApiServerFlags;
 import com.radixdlt.environment.DatabaseFlags;
 import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.genesis.GenesisBuilder;
@@ -149,7 +150,8 @@ public abstract class DeterministicCoreApiTestBase {
         DeterministicTest.builder()
             .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
             .messageSelector(firstSelector())
-            .addModule(new CoreApiServerModule("127.0.0.1", coreApiPort))
+            .addModule(
+                new CoreApiServerModule("127.0.0.1", coreApiPort, new CoreApiServerFlags(true)))
             .addModule(
                 new AbstractModule() {
                   @ProvidesIntoSet

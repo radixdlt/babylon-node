@@ -1522,6 +1522,13 @@ components:
           $ref: "#/components/schemas/NotarizedTransactionHash"
         payload_hash_bech32m:
           $ref: "#/components/schemas/NotarizedTransactionHashBech32m"
+    IntentHashInput:
+      type: string
+      description: |
+        The intent hash for a user transaction, also known as the transaction id.
+        This hash identifies the core content "intent" of the transaction. Each intent can only be committed once.
+        This hash gets signed by any signatories on the transaction, to create the signed intent.
+        Either hex or Bech32m-encoded strings are supported.
     IntentHash:
       type: string
       minLength: 64
@@ -1544,6 +1551,11 @@ components:
     SignedIntentHashBech32m:
       type: string
       description: The Bech32m-encoded human readable `SignedIntentHash`.
+    NotarizedTransactionHashInput:
+      type: string
+      description: |
+        This hash identifies the full submittable notarized transaction - ie the signed intent, plus the notary signature.
+        This hash should either be hex or Bech32m-encoded.
     NotarizedTransactionHash:
       type: string
       minLength: 64
@@ -2149,6 +2161,9 @@ components:
       properties:
         index:
           type: integer
+          format: int64
+          minimum: 0
+          maximum: 4294967295
         resource_changes:
           type: array
           items:
@@ -3456,7 +3471,6 @@ components:
         - GlobalNonFungibleResource
         - InternalNonFungibleVault
         - InternalGenericComponent
-        - InternalAccount
         - InternalKeyValueStore
         - GlobalOneResourcePool
         - GlobalTwoResourcePool
@@ -3591,7 +3605,6 @@ components:
         - NonFungibleVaultFieldBalance
         - NonFungibleVaultFieldFrozenStatus
         - NonFungibleVaultContentsIndexEntry
-        - ConsensusManager
         - ConsensusManagerFieldConfig
         - ConsensusManagerFieldState
         - ConsensusManagerFieldCurrentValidatorSet
@@ -4294,10 +4307,22 @@ components:
       properties:
         mutable_fields:
           type: array
-          description: |
-            The field names of the NF Metadata which are mutable.
+          description: The fields of the NF Metadata which are mutable.
           items:
-            type: string
+            $ref: '#/components/schemas/MutableField'
+    MutableField:
+      type: object
+      required:
+        - name
+        - index
+      properties:
+        name:
+          type: string
+        index:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4294967295
     NonFungibleResourceManagerDataEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -4910,10 +4935,79 @@ components:
     AccessControllerFieldStateValue:
       type: object
       required:
-        - data_struct
+        - controlled_vault
+        - recovery_badge_resource_address
+        - is_primary_role_locked
+        - has_primary_role_badge_withdraw_attempt
+        - has_recovery_role_badge_withdraw_attempt
       properties:
-        data_struct:
-          $ref: '#/components/schemas/DataStruct'
+        controlled_vault:
+          $ref: "#/components/schemas/EntityReference"
+        timed_recovery_delay_minutes:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4294967295
+          description: |
+            An integer between `0` and `2^32 - 1`, specifying the amount of time (in minutes) that
+            it takes for timed recovery to be done. When not present, then timed recovery can not be
+            performed through this access controller.
+        recovery_badge_resource_address:
+          $ref: "#/components/schemas/ResourceAddress"
+        is_primary_role_locked:
+          type: boolean
+          description: Whether the primary role is currently locked.
+        primary_role_recovery_attempt:
+          $ref: "#/components/schemas/PrimaryRoleRecoveryAttempt"
+          description: The current attempt to recover a primary role, if any.
+        has_primary_role_badge_withdraw_attempt:
+          type: boolean
+          description: Whether the primary role badge withdraw is currently being attempted.
+        recovery_role_recovery_attempt:
+          $ref: "#/components/schemas/RecoveryRoleRecoveryAttempt"
+          description: The current attempt to recover a recovery role, if any.
+        has_recovery_role_badge_withdraw_attempt:
+          type: boolean
+          description: Whether the recovery role badge withdraw is currently being attempted.
+    PrimaryRoleRecoveryAttempt:
+      type: object
+      required:
+        - recovery_proposal
+      properties:
+        recovery_proposal:
+          $ref: "#/components/schemas/RecoveryProposal"
+          description: A new set of rules being proposed for different roles.
+    RecoveryRoleRecoveryAttempt:
+      type: object
+      required:
+        - recovery_proposal
+      properties:
+        recovery_proposal:
+          $ref: "#/components/schemas/RecoveryProposal"
+          description: A new set of rules being proposed for different roles.
+        timed_recovery_allowed_after:
+          $ref: "#/components/schemas/Instant"
+          description: The time after which the recovery is allowed. Only present if this is a timed recovery.
+    RecoveryProposal:
+      type: object
+      required:
+        - primary_role
+        - recovery_role
+        - confirmation_role
+      properties:
+        primary_role:
+          $ref: "#/components/schemas/AccessRule"
+        recovery_role:
+          $ref: "#/components/schemas/AccessRule"
+        confirmation_role:
+          $ref: "#/components/schemas/AccessRule"
+        timed_recovery_delay_minutes:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4294967295
+          description: |
+            An integer between `0` and `2^32 - 1`, specifying the optional proposal delay of timed recoveries.
     GenericScryptoComponentFieldStateSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -5062,7 +5156,7 @@ components:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
         intent_hash:
-          $ref: "#/components/schemas/IntentHash"
+          $ref: "#/components/schemas/IntentHashInput"
     LtsTransactionStatusResponse:
       type: object
       required:
@@ -5177,6 +5271,7 @@ components:
       type: string
       enum:
         - PriorityThresholdNotMet
+        - IntentAlreadyCommitted
         - Rejected
     LtsTransactionSubmitErrorDetails:
       type: object
@@ -5190,6 +5285,7 @@ components:
         mapping:
           # NOTE: These need to match LtsTransactionSubmitErrorDetailsType
           PriorityThresholdNotMet: "#/components/schemas/LtsTransactionSubmitPriorityThresholdNotMetErrorDetails"
+          IntentAlreadyCommitted: "#/components/schemas/LtsTransactionSubmitIntentAlreadyCommitted"
           Rejected: "#/components/schemas/LtsTransactionSubmitRejectedErrorDetails"
     LtsTransactionSubmitPriorityThresholdNotMetErrorDetails:
       allOf:
@@ -5213,16 +5309,29 @@ components:
               description: |
                 A lower bound for tip percentage at current mempool state. Anything lower than this will very likely result in a mempool rejection.
                 A missing value means there is no tip that can guarantee submission.
+    LtsTransactionSubmitIntentAlreadyCommitted:
+      allOf:
+        - $ref: "#/components/schemas/LtsTransactionSubmitErrorDetails"
+        - type: object
+          required:
+            - committed_as
+          properties:
+            committed_as:
+              $ref: "#/components/schemas/CommittedIntentMetadata"
+              description: |
+                Details of an already-committed transaction that had the same intent.
     LtsTransactionSubmitRejectedErrorDetails:
       allOf:
         - $ref: "#/components/schemas/LtsTransactionSubmitErrorDetails"
         - type: object
+          description: |
+            Indicates that the transaction was executed and resulted in a rejection,
+            therefore the transaction is not being added into the mempool.
           required:
             - error_message
             - is_fresh
             - is_payload_rejection_permanent
             - is_intent_rejection_permanent
-            - is_rejected_because_intent_already_committed
           properties:
             error_message:
               type: string
@@ -5241,16 +5350,6 @@ components:
               description: |
                 Whether the rejection of this intent is known to be permanent - this is a stronger statement than the payload rejection
                 being permanent, as it implies any payloads containing the intent will also be permanently rejected.
-            is_rejected_because_intent_already_committed:
-              type: boolean
-              description: |
-                Whether the cached rejection of this intent is due to the intent already having been committed.
-                If so, see the /transaction/receipt endpoint for further information.
-            intent_already_committed_as:
-              $ref: "#/components/schemas/CommittedIntentMetadata"
-              description: |
-                Details of an already-committed transaction that had the same intent.
-                This field is present when `is_rejected_because_intent_already_committed` is true.
             retry_from_timestamp:
               $ref: "#/components/schemas/Instant"
               description: |
@@ -5451,8 +5550,7 @@ components:
             $ref: "#/components/schemas/LtsEntityFungibleBalanceChanges"
         resultant_account_fungible_balances:
           description: |
-            THIS CURRENTLY RETURNS AN EMPTY LIST. THIS FEATURE WILL BE COMING AT RCNET-V2.
-            A list of the resultant balances of any account balances changed in this transaction.
+            A list of the resultant fungible account balances for any balances which changed in this transaction.
             Only balances for accounts are returned, not any other kind of entity.
           type: array
           items:
@@ -5959,9 +6057,10 @@ components:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
         payload_hashes:
+          description: A list of payload hashes to attempt to read. Each hash must be either hex, or in Bech32m format.
           type: array
           items:
-            $ref: "#/components/schemas/NotarizedTransactionHash"
+            $ref: "#/components/schemas/NotarizedTransactionHashInput"
     MempoolTransactionResponse:
       type: object
       required:
@@ -5982,9 +6081,12 @@ components:
             type: object
             required:
               - hash
+              - hash_bech32m
             properties:
               hash:
                 $ref: "#/components/schemas/NotarizedTransactionHash"
+              hash_bech32m:
+                $ref: "#/components/schemas/NotarizedTransactionHashBech32m"
               hex:
                 type: string
                 description: The hex-encoded full notarized transaction payload - returned only if found in mempool.
@@ -6247,6 +6349,7 @@ components:
       type: string
       enum:
         - PriorityThresholdNotMet
+        - IntentAlreadyCommitted
         - Rejected
     TransactionSubmitErrorDetails:
       type: object
@@ -6260,6 +6363,7 @@ components:
         mapping:
           # NOTE: These need to match TransactionSubmitErrorDetailsType
           PriorityThresholdNotMet: '#/components/schemas/TransactionSubmitPriorityThresholdNotMetErrorDetails'
+          IntentAlreadyCommitted: '#/components/schemas/TransactionSubmitIntentAlreadyCommitted'
           Rejected: '#/components/schemas/TransactionSubmitRejectedErrorDetails'
     TransactionSubmitPriorityThresholdNotMetErrorDetails:
       allOf:
@@ -6283,16 +6387,29 @@ components:
               description: |
                 A lower bound for tip percentage at current mempool state. Anything lower than this will very likely result in a mempool rejection.
                 A missing value means there is no tip that can guarantee submission.
+    TransactionSubmitIntentAlreadyCommitted:
+      allOf:
+        - $ref: "#/components/schemas/TransactionSubmitErrorDetails"
+        - type: object
+          required:
+            - committed_as
+          properties:
+            committed_as:
+              $ref: "#/components/schemas/CommittedIntentMetadata"
+              description: |
+                Details of an already-committed transaction that had the same intent.
     TransactionSubmitRejectedErrorDetails:
       allOf:
         - $ref: "#/components/schemas/TransactionSubmitErrorDetails"
         - type: object
+          description: |
+            Indicates that the transaction was executed and resulted in a rejection,
+            therefore the transaction is not being added into the mempool.
           required:
             - error_message
             - is_fresh
             - is_payload_rejection_permanent
             - is_intent_rejection_permanent
-            - is_rejected_because_intent_already_committed
           properties:
             error_message:
               type: string
@@ -6311,16 +6428,6 @@ components:
               description: |
                 Whether the rejection of this intent is known to be permanent - this is a stronger statement than the payload rejection
                 being permanent, as it implies any payloads containing the intent will also be permanently rejected.
-            is_rejected_because_intent_already_committed:
-              type: boolean
-              description: |
-                Whether the cached rejection of this intent is due to the intent already having been committed.
-                If so, see the /transaction/receipt endpoint for further information.
-            intent_already_committed_as:
-              $ref: "#/components/schemas/CommittedIntentMetadata"
-              description: |
-                Details of an already-committed transaction that had the same intent.
-                This field is present when `is_rejected_because_intent_already_committed` is true.
             retry_from_timestamp:
               $ref: "#/components/schemas/Instant"
               description: |
@@ -6354,7 +6461,7 @@ components:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
         intent_hash:
-          $ref: "#/components/schemas/IntentHash"
+          $ref: "#/components/schemas/IntentHashInput"
     TransactionStatusResponse:
       type: object
       required:
@@ -6438,7 +6545,7 @@ components:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
         intent_hash:
-          $ref: "#/components/schemas/IntentHash"
+          $ref: "#/components/schemas/IntentHashInput"
     TransactionReceiptResponse:
       type: object
       required:

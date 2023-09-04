@@ -63,6 +63,13 @@ export interface NetworkConfigurationResponse {
      */
     network_hrp_suffix: string;
     /**
+     * The current value of the protocol-based USD/XRD multiplier (i.e. an amount of XRDs to be paid for 1 USD).
+     * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
+     * @type {string}
+     * @memberof NetworkConfigurationResponse
+     */
+    usd_price_in_xrd: string;
+    /**
      * 
      * @type {Array<AddressType>}
      * @memberof NetworkConfigurationResponse
@@ -85,6 +92,7 @@ export function instanceOfNetworkConfigurationResponse(value: object): boolean {
     isInstance = isInstance && "network" in value;
     isInstance = isInstance && "network_id" in value;
     isInstance = isInstance && "network_hrp_suffix" in value;
+    isInstance = isInstance && "usd_price_in_xrd" in value;
     isInstance = isInstance && "address_types" in value;
     isInstance = isInstance && "well_known_addresses" in value;
 
@@ -105,6 +113,7 @@ export function NetworkConfigurationResponseFromJSONTyped(json: any, ignoreDiscr
         'network': json['network'],
         'network_id': json['network_id'],
         'network_hrp_suffix': json['network_hrp_suffix'],
+        'usd_price_in_xrd': json['usd_price_in_xrd'],
         'address_types': ((json['address_types'] as Array<any>).map(AddressTypeFromJSON)),
         'well_known_addresses': NetworkConfigurationResponseWellKnownAddressesFromJSON(json['well_known_addresses']),
     };
@@ -123,6 +132,7 @@ export function NetworkConfigurationResponseToJSON(value?: NetworkConfigurationR
         'network': value.network,
         'network_id': value.network_id,
         'network_hrp_suffix': value.network_hrp_suffix,
+        'usd_price_in_xrd': value.usd_price_in_xrd,
         'address_types': ((value.address_types as Array<any>).map(AddressTypeToJSON)),
         'well_known_addresses': NetworkConfigurationResponseWellKnownAddressesToJSON(value.well_known_addresses),
     };

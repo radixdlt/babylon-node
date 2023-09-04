@@ -1,4 +1,5 @@
 use crate::core_api::*;
+use radix_engine::blueprints::consensus_manager::ConsensusManagerField;
 use radix_engine::types::*;
 use state_manager::store::traits::QueryableProofStore;
 use std::ops::Deref;
@@ -15,12 +16,12 @@ pub(crate) async fn handle_state_consensus_manager(
     let config_substate = read_mandatory_main_field_substate(
         database.deref(),
         CONSENSUS_MANAGER.as_node_id(),
-        &ConsensusManagerField::Config.into(),
+        &ConsensusManagerField::Configuration.into(),
     )?;
     let state_substate = read_mandatory_main_field_substate(
         database.deref(),
         CONSENSUS_MANAGER.as_node_id(),
-        &ConsensusManagerField::ConsensusManager.into(),
+        &ConsensusManagerField::State.into(),
     )?;
     let current_proposal_statistic_substate = read_mandatory_main_field_substate(
         database.deref(),
@@ -35,12 +36,12 @@ pub(crate) async fn handle_state_consensus_manager(
     let current_time_substate = read_mandatory_main_field_substate(
         database.deref(),
         CONSENSUS_MANAGER.as_node_id(),
-        &ConsensusManagerField::CurrentTime.into(),
+        &ConsensusManagerField::ProposerMilliTimestamp.into(),
     )?;
     let current_time_round_to_minutes_substate = read_mandatory_main_field_substate(
         database.deref(),
         CONSENSUS_MANAGER.as_node_id(),
-        &ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
+        &ConsensusManagerField::ProposerMinuteTimestamp.into(),
     )?;
 
     let header = database

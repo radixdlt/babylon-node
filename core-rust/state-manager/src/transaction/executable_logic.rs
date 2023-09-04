@@ -4,6 +4,7 @@ use radix_engine::transaction::{
 };
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
+use radix_engine_common::network::NetworkDefinition;
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
@@ -63,7 +64,11 @@ pub struct ExecutionConfigurator {
 }
 
 impl ExecutionConfigurator {
-    pub fn new(logging_config: &LoggingConfig, costing_parameters: CostingParameters) -> Self {
+    pub fn new(
+        network: &NetworkDefinition,
+        logging_config: &LoggingConfig,
+        costing_parameters: CostingParameters,
+    ) -> Self {
         let trace = logging_config.engine_trace;
         Self {
             scrypto_vm: ScryptoVm::<DefaultWasmEngine>::default(),
@@ -71,26 +76,32 @@ impl ExecutionConfigurator {
             execution_configs: HashMap::from([
                 (
                     ConfigType::Genesis,
-                    ExecutionConfig::for_genesis_transaction().with_kernel_trace(trace),
+                    ExecutionConfig::for_genesis_transaction(network.clone())
+                        .with_kernel_trace(trace),
                 ),
                 (
                     ConfigType::OtherSystem,
                     ExecutionConfig {
                         max_number_of_events: 1_000_000,
-                        ..ExecutionConfig::for_system_transaction().with_kernel_trace(trace)
+                        ..ExecutionConfig::for_system_transaction(network.clone())
+                            .with_kernel_trace(trace)
                     },
                 ),
                 (
                     ConfigType::Regular,
-                    ExecutionConfig::for_notarized_transaction().with_kernel_trace(trace),
+                    ExecutionConfig::for_notarized_transaction(network.clone())
+                        .with_kernel_trace(trace),
                 ),
                 (
                     ConfigType::Pending,
-                    ExecutionConfig::for_notarized_transaction()
+                    ExecutionConfig::for_notarized_transaction(network.clone())
                         .up_to_loan_repayment(true)
                         .with_kernel_trace(trace),
                 ),
-                (ConfigType::Preview, ExecutionConfig::for_preview()),
+                (
+                    ConfigType::Preview,
+                    ExecutionConfig::for_preview(network.clone()),
+                ),
             ]),
         }
     }

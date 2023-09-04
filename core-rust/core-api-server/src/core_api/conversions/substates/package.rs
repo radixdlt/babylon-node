@@ -1,6 +1,7 @@
 use super::super::*;
 use super::*;
 use crate::core_api::models;
+use radix_engine::system::system_substates::KeyValueEntrySubstate;
 use radix_engine::transaction::PackageTypeReference;
 
 use radix_engine::types::*;
@@ -107,14 +108,14 @@ pub fn to_api_package_code_instrumented_code_entry_substate(
 pub fn to_api_schema_entry_substate(
     context: &MappingContext,
     typed_key: &TypedSubstateKey,
-    substate: &KeyValueEntrySubstate<ScryptoSchema>,
+    substate: &KeyValueEntrySubstate<VersionedScryptoSchema>,
 ) -> Result<models::Substate, MappingError> {
     assert_key_type!(
         typed_key,
         TypedSubstateKey::Schema(TypedSchemaSubstateKey::SchemaKey(hash))
     );
 
-    Ok(key_value_store_mandatory_substate!(
+    Ok(key_value_store_mandatory_substate_versioned!(
         substate,
         SchemaEntry,
         models::SchemaKey {
@@ -725,7 +726,7 @@ pub fn to_api_blueprint_collection_schema(
 
 pub fn to_api_scrypto_schema(
     context: &MappingContext,
-    schema: &ScryptoSchema,
+    schema: &Schema<ScryptoCustomSchema>,
 ) -> Result<models::ScryptoSchema, MappingError> {
     Ok(models::ScryptoSchema {
         sbor_data: Box::new(to_api_sbor_data_from_encodable(context, schema)?),

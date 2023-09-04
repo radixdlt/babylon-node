@@ -7,17 +7,14 @@ use radix_engine_queries::typed_substate_layout::*;
 
 pub fn to_api_component_royalty_substate(
     context: &MappingContext,
-    substate: &FieldSubstate<ComponentRoyaltySubstate>,
+    substate: &ComponentRoyaltyAccumulatorFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate!(
+    Ok(field_substate_versioned!(
         substate,
         RoyaltyModuleFieldState,
-        ComponentRoyaltySubstate {
-            enabled,
-            royalty_vault,
-        },
+        ComponentRoyaltySubstate { royalty_vault },
         Value {
-            is_enabled: *enabled,
+            is_enabled: true,
             vault_entity: Box::new(to_api_entity_reference(
                 context,
                 royalty_vault.0.as_node_id(),
@@ -29,7 +26,7 @@ pub fn to_api_component_royalty_substate(
 pub fn to_api_component_method_royalty_substate(
     _context: &MappingContext,
     typed_key: &TypedSubstateKey,
-    substate: &ComponentMethodRoyaltySubstate,
+    substate: &KeyValueEntrySubstate<ComponentRoyaltyMethodAmountEntryPayload>,
 ) -> Result<models::Substate, MappingError> {
     assert_key_type!(
         typed_key,
@@ -37,7 +34,7 @@ pub fn to_api_component_method_royalty_substate(
             TypedRoyaltyModuleSubstateKey::RoyaltyMethodRoyaltyEntryKey(method_name)
         )
     );
-    Ok(key_value_store_optional_substate!(
+    Ok(key_value_store_optional_substate_versioned!(
         substate,
         RoyaltyModuleMethodRoyaltyEntry,
         models::MainMethodKey {

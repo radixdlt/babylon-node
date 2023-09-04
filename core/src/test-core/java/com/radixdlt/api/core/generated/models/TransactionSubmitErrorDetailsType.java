@@ -30,6 +30,8 @@ public enum TransactionSubmitErrorDetailsType {
   
   PRIORITYTHRESHOLDNOTMET("PriorityThresholdNotMet"),
   
+  INTENTALREADYCOMMITTED("IntentAlreadyCommitted"),
+  
   REJECTED("Rejected");
 
   private String value;

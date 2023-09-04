@@ -8,7 +8,7 @@ use radix_engine_queries::typed_substate_layout::*;
 pub fn to_api_metadata_value_substate(
     context: &MappingContext,
     typed_key: &TypedSubstateKey,
-    substate: &MetadataEntrySubstate,
+    substate: &MetadataEntryEntrySubstate,
 ) -> Result<models::Substate, MappingError> {
     assert_key_type!(
         typed_key,
@@ -16,7 +16,7 @@ pub fn to_api_metadata_value_substate(
             entry_name
         ))
     );
-    Ok(key_value_store_optional_substate!(
+    Ok(key_value_store_optional_substate_versioned!(
         substate,
         MetadataModuleEntry,
         models::MetadataKey {

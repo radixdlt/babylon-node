@@ -153,6 +153,7 @@ pub fn to_api_created_substate(
     })
 }
 
+#[allow(clippy::too_many_arguments)]
 #[tracing::instrument(skip_all)]
 pub fn to_api_updated_substate(
     context: &MappingContext,

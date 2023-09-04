@@ -148,6 +148,7 @@ public class Manifest {
                 Enum<OwnerRole::Updatable>(
                     Enum<AccessRule::AllowAll>()
                 )
+                None
             ;
             """,
             params.faucetLockFeeLine());
@@ -382,10 +383,12 @@ public class Manifest {
                 Enum<NonFungibleIdType::Integer>()
                 false                            # Track Supply
                 Tuple(                           # The NonFungibleDataSchema
-                    Tuple(                       # The SBOR schema for the non-fungible data (here: empty schema)
-                        Array<Enum>(),
-                        Array<Tuple>(),
-                        Array<Enum>()
+                    Enum<0u8>(
+                        Tuple(                   # The SBOR schema for the non-fungible data (here: empty schema)
+                            Array<Enum>(),
+                            Array<Tuple>(),
+                            Array<Enum>()
+                        )
                     ),
                     Enum<0u8>(66u8),             # The local type index in the schema (here: well-known - Unit tuple)
                     Array<String>()              # Mutable field names
