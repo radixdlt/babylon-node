@@ -73,8 +73,7 @@ import com.radixdlt.environment.EventProcessor;
 public final class PreGenesisHealthInfoService implements HealthInfoService {
 
   @Inject
-  public PreGenesisHealthInfoService() {
-  }
+  public PreGenesisHealthInfoService() {}
 
   @Override
   public NodeStatus nodeStatus() {
