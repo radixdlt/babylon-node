@@ -77,13 +77,18 @@ public abstract class ProposerElections {
    * implementation will:
    *
    * <ul>
-   *   <li>first, go over each validator once (in the "highest stake first" order);
+   *   <li>first, go over each validator once (in the pseudorandom order, seeded by epoch);
    *   <li>and then apply the {@link WeightedRotatingLeaders "frequency proportional to stake"}
    *       algorithm with a {@link #DEFAULT_CACHE_SIZE}.
    * </ul>
    */
   public static ProposerElection defaultRotation(long epoch, BFTValidatorSet validatorSet) {
-    return new RotateOnceDecorator(
-        epoch, validatorSet, new WeightedRotatingLeaders(validatorSet, DEFAULT_CACHE_SIZE));
+    return RotateOnceDecorator.deterministicallyShuffled(
+        validatorSet, epoch, new WeightedRotatingLeaders(validatorSet, DEFAULT_CACHE_SIZE));
+  }
+
+  public static ProposerElection testingRotationNoShuffle(BFTValidatorSet validatorSet) {
+    return RotateOnceDecorator.sortedByStake(
+        validatorSet, new WeightedRotatingLeaders(validatorSet, DEFAULT_CACHE_SIZE));
   }
 }

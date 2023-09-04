@@ -121,8 +121,8 @@ public class RotateOnceDecoratorTest {
               final var instances =
                   Stream.generate(
                           () ->
-                              new RotateOnceDecorator(
-                                  epoch, BFTValidatorSet.from(validators), underlying))
+                              RotateOnceDecorator.deterministicallyShuffled(
+                                  BFTValidatorSet.from(validators), epoch, underlying))
                       .limit(2)
                       .toList();
 

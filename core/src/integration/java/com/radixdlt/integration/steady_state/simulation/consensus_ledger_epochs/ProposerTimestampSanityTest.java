@@ -178,7 +178,8 @@ public final class ProposerTimestampSanityTest {
                         StateComputerConfig.mockedWithEpochs(
                             Round.of(10),
                             EpochNodeWeightMapping.constant(e -> IntStream.range(0, 4)),
-                            new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
+                            new StateComputerConfig.MockedMempoolConfig.NoMempool(),
+                            StateComputerConfig.ProposerElectionMode.ONLY_WEIGHTED_BY_STAKE))));
 
     /* One node rushing */
     modifyNthNodeTimeSupplier(0, () -> System.currentTimeMillis() - 4000, builder);

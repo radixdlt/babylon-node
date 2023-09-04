@@ -100,20 +100,31 @@ public final class RotateOnceDecorator implements ProposerElection {
    * Decorates the given {@link ProposerElection}. Assumes that the underlying instance uses the
    * same {@link BFTValidatorSet} as passed here.
    */
-  public RotateOnceDecorator(
-      long epoch, BFTValidatorSet validatorSet, ProposerElection underlying) {
-    // First, collect the validators to an ordered array...
-    final var sortedValidators =
-        validatorSet.getValidators().stream()
-            .sorted(VALIDATOR_COMPARATOR)
-            .map(BFTValidator::getValidatorId)
-            .toArray(BFTValidatorId[]::new);
-
-    // ...and then deterministically shuffle (based on epoch number)
-    new DeterministicShuffle(epoch).shuffleArray(sortedValidators);
-
-    this.initialRoundsProposers = sortedValidators;
+  private RotateOnceDecorator(
+      BFTValidatorId[] initialRoundsProposers, ProposerElection underlying) {
+    this.initialRoundsProposers = initialRoundsProposers;
     this.underlying = underlying;
+  }
+
+  public static RotateOnceDecorator sortedByStake(
+      BFTValidatorSet validatorSet, ProposerElection underlying) {
+    return new RotateOnceDecorator(toSortedArray(validatorSet), underlying);
+  }
+
+  public static RotateOnceDecorator deterministicallyShuffled(
+      BFTValidatorSet validatorSet, long shuffleSeed, ProposerElection underlying) {
+    // First, collect the validators to an ordered array...
+    final var sortedValidators = toSortedArray(validatorSet);
+    // ...and then deterministically shuffle (based on a deterministic seed)
+    new DeterministicShuffle(shuffleSeed).shuffleArray(sortedValidators);
+    return new RotateOnceDecorator(sortedValidators, underlying);
+  }
+
+  private static BFTValidatorId[] toSortedArray(BFTValidatorSet validatorSet) {
+    return validatorSet.getValidators().stream()
+        .sorted(VALIDATOR_COMPARATOR)
+        .map(BFTValidator::getValidatorId)
+        .toArray(BFTValidatorId[]::new);
   }
 
   @Override

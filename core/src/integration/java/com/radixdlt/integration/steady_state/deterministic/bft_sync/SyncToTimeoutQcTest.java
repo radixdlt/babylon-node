@@ -131,7 +131,9 @@ public class SyncToTimeoutQcTest {
                         StateComputerConfig.mockedWithEpochs(
                             Round.of(10),
                             EpochNodeWeightMapping.constant(NUM_NODES),
-                            new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
+                            new StateComputerConfig.MockedMempoolConfig.NoMempool(),
+                            StateComputerConfig.ProposerElectionMode
+                                .WITH_ROTATE_ONCE_BUT_NO_SHUFFLE))));
 
     test.startAllNodes();
     test.runUntilMessage(DeterministicTest.roundUpdateOnNode(Round.of(2), 0), 10000);

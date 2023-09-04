@@ -67,8 +67,12 @@ package com.radixdlt.modules;
 import com.radixdlt.consensus.EpochNodeWeightMapping;
 import com.radixdlt.consensus.LedgerHashes;
 import com.radixdlt.consensus.ProposalLimitsConfig;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
+import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.liveness.ProposerElections;
+import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.environment.DatabaseFlags;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
@@ -91,6 +95,15 @@ public sealed interface StateComputerConfig {
   static StateComputerConfig mockedWithEpochs(
       Round epochMaxRound,
       EpochNodeWeightMapping mapping,
+      MockedMempoolConfig mempoolType,
+      ProposerElectionMode proposerElectionMode) {
+    return mockedWithEpochs(
+        epochMaxRound, mapping, LedgerHashes.zero(), mempoolType, proposerElectionMode);
+  }
+
+  static StateComputerConfig mockedWithEpochs(
+      Round epochMaxRound,
+      EpochNodeWeightMapping mapping,
       LedgerHashes preGenesisLedgerHashes,
       MockedMempoolConfig mempoolType) {
     return mockedWithEpochs(
@@ -98,7 +111,7 @@ public sealed interface StateComputerConfig {
         mapping,
         preGenesisLedgerHashes,
         mempoolType,
-        ProposerElectionMode.WITH_INITIAL_ROUNDS_ITERATION);
+        ProposerElectionMode.WITH_DEFAULT_ROTATION);
   }
 
   static StateComputerConfig mockedWithEpochs(
@@ -112,7 +125,15 @@ public sealed interface StateComputerConfig {
   }
 
   static StateComputerConfig mockedNoEpochs(int numValidators, MockedMempoolConfig mempoolType) {
-    return new MockedStateComputerConfigNoEpochs(numValidators, mempoolType);
+    return new MockedStateComputerConfigNoEpochs(
+        numValidators, mempoolType, ProposerElectionMode.WITH_DEFAULT_ROTATION);
+  }
+
+  static StateComputerConfig mockedNoEpochs(
+      int numValidators,
+      MockedMempoolConfig mempoolType,
+      ProposerElectionMode proposerElectionMode) {
+    return new MockedStateComputerConfigNoEpochs(numValidators, mempoolType, proposerElectionMode);
   }
 
   static StateComputerConfig rev2(
@@ -123,7 +144,7 @@ public sealed interface StateComputerConfig {
       REV2ProposerConfig proposerConfig,
       boolean debugLogging,
       boolean noFees) {
-    return new REv2StateComputerConfig(
+    return rev2(
         networkId, genesis, databaseType, databaseFlags, proposerConfig, debugLogging, noFees);
   }
 
@@ -186,11 +207,24 @@ public sealed interface StateComputerConfig {
     /** Use the {@link com.radixdlt.consensus.liveness.WeightedRotatingLeaders} only. */
     ONLY_WEIGHTED_BY_STAKE,
 
+    /** Use {@link com.radixdlt.consensus.liveness.ProposerElections#testingRotationNoShuffle}. */
+    WITH_ROTATE_ONCE_BUT_NO_SHUFFLE,
+
     /** Use the newer {@link com.radixdlt.consensus.liveness.ProposerElections#defaultRotation}. */
-    WITH_INITIAL_ROUNDS_ITERATION,
+    WITH_DEFAULT_ROTATION;
+
+    public ProposerElection instantiate(long epoch, BFTValidatorSet validatorSet) {
+      return switch (this) {
+        case ONLY_WEIGHTED_BY_STAKE -> new WeightedRotatingLeaders(validatorSet, 10);
+        case WITH_ROTATE_ONCE_BUT_NO_SHUFFLE -> ProposerElections.testingRotationNoShuffle(
+            validatorSet);
+        case WITH_DEFAULT_ROTATION -> ProposerElections.defaultRotation(epoch, validatorSet);
+      };
+    }
   }
 
-  record MockedStateComputerConfigNoEpochs(int numValidators, MockedMempoolConfig mempoolType)
+  record MockedStateComputerConfigNoEpochs(
+      int numValidators, MockedMempoolConfig mempoolType, ProposerElectionMode proposerElectionMode)
       implements MockedStateComputerConfig {
     @Override
     public MockedMempoolConfig mempoolConfig() {
