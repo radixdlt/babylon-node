@@ -144,7 +144,7 @@ public sealed interface StateComputerConfig {
       REV2ProposerConfig proposerConfig,
       boolean debugLogging,
       boolean noFees) {
-    return rev2(
+    return new REv2StateComputerConfig(
         networkId, genesis, databaseType, databaseFlags, proposerConfig, debugLogging, noFees);
   }
 
