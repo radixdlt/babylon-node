@@ -267,7 +267,7 @@ public class ConsensusModuleTest {
             LedgerHeader.create(1, Round.of(1), 1, LedgerHashes.zero(), 1, 1));
     final var voteData = new VoteData(next, parent.getProposedHeader(), parent.getParentHeader());
     final var timestamp = 1;
-    final var voteDataHash = Vote.getHashOfData(hasher, voteData, timestamp);
+    final var voteDataHash = voteData.toConsensusVoteHash(hasher, timestamp);
     final var qcSignature = proposerKeyPair.sign(voteDataHash);
     var unsyncedQC =
         new QuorumCertificate(
