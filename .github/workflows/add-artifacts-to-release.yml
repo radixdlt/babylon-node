@@ -129,17 +129,16 @@ jobs:
         name: Get radixdlt version
         uses: ./.github/actions/get-version
         with:
-          is_release: true
-      - if: github.event_name == 'release'
-        name: Upload distribution zip
-        uses: actions/upload-release-asset@e8f9f06c4b078e705bd2ea027f0926603fc9b4d5
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          is_release: true      
+
+      - name: Upload distribution zip
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@c9b46fe7aad9f02afd89b12450b780f52dacfb2d
         with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip
-          asset_name: babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip
-          asset_content_type: application/zip
+          files: |
+            babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip
+      
+        
 
   publish-distribution-zip:
     if: github.event_name == 'release'
@@ -178,16 +177,14 @@ jobs:
         with:
           is_release: true
       - name: List files
-        run: ls -la ./core/build/distributions/
+        run: |
+          ls -la ./core/build/distributions/
+          mv ./core/build/distributions/core-${{ steps.get_version.outputs.radixdlt_version }}.zip babylon-node-${{ steps.get_version.outputs.radixdlt_version }}.zip
       - name: Upload distribution zip
-        uses: actions/upload-release-asset@e8f9f06c4b078e705bd2ea027f0926603fc9b4d5
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@c9b46fe7aad9f02afd89b12450b780f52dacfb2d
         with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./core/build/distributions/core-${{ steps.get_version.outputs.radixdlt_version }}.zip
-          asset_name: babylon-node-${{ steps.get_version.outputs.radixdlt_version }}.zip
-          asset_content_type: application/zip
+          files: |
+            babylon-node-${{ steps.get_version.outputs.radixdlt_version }}.zip
 
   snyk-sbom:
     if: github.event_name == 'release'
@@ -210,7 +207,7 @@ jobs:
           args: --all-projects --org=${{ env.SNYK_NETWORK_ORG_ID }} --format=cyclonedx1.4+json --json-file-output sbom.json
           command: sbom
       - name: Upload SBOM
-        uses: AButler/upload-release-assets@c94805dc72e4b20745f543da0f62eaee7722df7a # v2.0.2
+        uses: softprops/action-gh-release@c9b46fe7aad9f02afd89b12450b780f52dacfb2d
         with:
-          files: sbom.json
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          files: |
+            sbom.json
