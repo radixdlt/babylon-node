@@ -199,7 +199,8 @@ impl<'s, S: ReadableAccuTreeStore<StateVersion, N>, N> ReadableAccuTreeStore<usi
     fn get_tree_slice(&self, epoch_tree_size: &usize) -> Option<TreeSlice<N>> {
         let end_state_version = self
             .epoch_start_state_version
-            .relative(*epoch_tree_size as u64 - 1);
+            .relative(*epoch_tree_size as u64 - 1)
+            .expect("Invalid relative state version.");
         self.store.get_tree_slice(&end_state_version)
     }
 }
@@ -210,7 +211,8 @@ impl<'s, S: WriteableAccuTreeStore<StateVersion, N>, N> WriteableAccuTreeStore<u
     fn put_tree_slice(&mut self, epoch_tree_size: usize, slice: TreeSlice<N>) {
         let end_state_version = self
             .epoch_start_state_version
-            .relative(epoch_tree_size as u64 - 1);
+            .relative(epoch_tree_size as u64 - 1)
+            .expect("Invalid relative state version.");
         self.store.put_tree_slice(end_state_version, slice)
     }
 }

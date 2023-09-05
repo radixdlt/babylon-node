@@ -51,10 +51,27 @@ pub(crate) async fn handle_stream_transactions(
             Please note the resync will take a while.",
         ));
     }
+    let previous_state_identifiers = match from_state_version.previous() {
+        Ok(previous_state_version) => {
+            if previous_state_version.number() == 0 {
+                None
+            } else {
+                let identifiers = database
+                    .get_committed_transaction_identifiers(previous_state_version)
+                    .expect("Txn identifiers are missing");
+                Some(Box::new(to_api_committed_state_identifiers(
+                    previous_state_version,
+                    &identifiers.resultant_ledger_hashes,
+                )?))
+            }
+        }
+        Err(_) => None,
+    };
 
     let max_state_version = database.max_state_version();
 
     let mut response = models::StreamTransactionsResponse {
+        previous_state_identifiers,
         from_state_version: to_api_state_version(from_state_version)?,
         count: MAX_BATCH_COUNT_PER_REQUEST as i32, // placeholder to get a better size aproximation for the header
         max_ledger_state_version: to_api_state_version(max_state_version)?,
