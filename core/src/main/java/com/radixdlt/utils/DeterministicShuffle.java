@@ -62,33 +62,35 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.liveness;
+package com.radixdlt.utils;
 
-import com.radixdlt.consensus.bft.BFTValidatorSet;
+import javax.annotation.concurrent.NotThreadSafe;
 
-/** A static factory of {@link ProposerElection}s. */
-public abstract class ProposerElections {
+/** Fisher-Yates shuffle using LCG pseudorandom generator. */
+@NotThreadSafe
+public final class DeterministicShuffle {
+  // Same as glibc
+  private static final long LCG_MULTIPLIER = 1103515245L;
+  private static final long LCG_INCREMENT = 12345L;
+  private static final long LCG_MODULUS = 2L << 31;
 
-  /** A default size for {@link WeightedRotatingLeaders} cache. */
-  private static final int DEFAULT_CACHE_SIZE = 10;
+  private long seed;
 
-  /**
-   * Creates a default production validation rotation over the given validator set. Currently, our
-   * implementation will:
-   *
-   * <ul>
-   *   <li>first, go over each validator once (in the pseudorandom order, seeded by epoch);
-   *   <li>and then apply the {@link WeightedRotatingLeaders "frequency proportional to stake"}
-   *       algorithm with a {@link #DEFAULT_CACHE_SIZE}.
-   * </ul>
-   */
-  public static ProposerElection defaultRotation(long epoch, BFTValidatorSet validatorSet) {
-    return RotateOnceDecorator.deterministicallyShuffled(
-        validatorSet, epoch, new WeightedRotatingLeaders(validatorSet, DEFAULT_CACHE_SIZE));
+  public DeterministicShuffle(long seed) {
+    this.seed = seed;
   }
 
-  public static ProposerElection testingRotationNoShuffle(BFTValidatorSet validatorSet) {
-    return RotateOnceDecorator.sortedByStake(
-        validatorSet, new WeightedRotatingLeaders(validatorSet, DEFAULT_CACHE_SIZE));
+  public <T> void shuffleArray(T[] arr) {
+    for (int i = arr.length; i > 1; i--) {
+      final var rndIdx = nextInt(i);
+      final var tmp = arr[i - 1];
+      arr[i - 1] = arr[rndIdx];
+      arr[rndIdx] = tmp;
+    }
+  }
+
+  private int nextInt(int upperLimitExclusive) {
+    this.seed = (this.seed * LCG_MULTIPLIER + LCG_INCREMENT) % LCG_MODULUS;
+    return (int) (this.seed % upperLimitExclusive);
   }
 }

@@ -114,7 +114,7 @@ public class OneByzantineGenesisTest {
                         EpochNodeWeightMapping.constant(3, 1),
                         LedgerHashes.create(
                             HashUtils.random256(), HashUtils.random256(), HashUtils.random256()),
-                        StateComputerConfig.ProposerElectionMode.WITH_INITIAL_ROUNDS_ITERATION))
+                        StateComputerConfig.ProposerElectionMode.WITH_DEFAULT_ROTATION))
             .addTestModules(ConsensusMonitors.noneCommitted())
             .build();
 
@@ -163,7 +163,7 @@ public class OneByzantineGenesisTest {
                         Round.of(10000000),
                         EpochNodeWeightMapping.constant(4),
                         LedgerHashes.zero(),
-                        StateComputerConfig.ProposerElectionMode.WITH_INITIAL_ROUNDS_ITERATION))
+                        StateComputerConfig.ProposerElectionMode.WITH_DEFAULT_ROTATION))
             .addTestModules(ConsensusMonitors.liveness(5, TimeUnit.SECONDS))
             .build();
 

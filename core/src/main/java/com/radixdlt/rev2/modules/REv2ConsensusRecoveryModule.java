@@ -90,8 +90,12 @@ public final class REv2ConsensusRecoveryModule extends AbstractModule {
   @Provides
   @Singleton
   private BFTConfiguration initialConfig(
-      BFTValidatorSet validatorSet, VertexStoreState vertexStoreState) {
-    var proposerElection = ProposerElections.defaultRotation(validatorSet);
+      @LastEpochProof LedgerProof lastEpochProof,
+      BFTValidatorSet validatorSet,
+      VertexStoreState vertexStoreState) {
+    final var proposerElection =
+        ProposerElections.defaultRotation(
+            lastEpochProof.getNextEpoch().orElseThrow().getEpoch(), validatorSet);
     return new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
   }
 

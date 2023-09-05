@@ -206,7 +206,11 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
 
   public sealed interface LedgerConfig {
     static LedgerConfig mocked(int numValidators) {
-      return new MockedLedgerConfig(numValidators);
+      return new MockedLedgerConfig(numValidators, ProposerElectionMode.WITH_DEFAULT_ROTATION);
+    }
+
+    static LedgerConfig mocked(int numValidators, ProposerElectionMode proposerElectionMode) {
+      return new MockedLedgerConfig(numValidators, proposerElectionMode);
     }
 
     static LedgerConfig stateComputerNoSync(StateComputerConfig stateComputerConfig) {
@@ -231,7 +235,8 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
     }
   }
 
-  public record MockedLedgerConfig(int numValidators) implements LedgerConfig {}
+  public record MockedLedgerConfig(int numValidators, ProposerElectionMode proposerElectionMode)
+      implements LedgerConfig {}
 
   public record StateComputerLedgerConfig(StateComputerConfig config, SyncConfig syncConfig)
       implements LedgerConfig {}
@@ -332,7 +337,9 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
       case MockedLedgerConfig config -> {
         install(new MockedLedgerRecoveryModule());
         install(new MockedLedgerModule());
-        install(new MockedNoEpochsConsensusRecoveryModule(config.numValidators));
+        install(
+            new MockedNoEpochsConsensusRecoveryModule(
+                config.numValidators, config.proposerElectionMode));
       }
       case StateComputerLedgerConfig stateComputerLedgerConfig -> {
         install(new LedgerModule());
@@ -384,7 +391,9 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
 
             switch (c) {
               case MockedStateComputerConfigNoEpochs noEpochs -> {
-                install(new MockedNoEpochsConsensusRecoveryModule(noEpochs.numValidators()));
+                install(
+                    new MockedNoEpochsConsensusRecoveryModule(
+                        noEpochs.numValidators(), noEpochs.proposerElectionMode()));
               }
               case MockedStateComputerConfigWithEpochs withEpochs -> {
                 install(

@@ -68,18 +68,21 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.liveness.ProposerElections;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.rev2.LastEpochProof;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt192;
 
 public final class MockedNoEpochsConsensusRecoveryModule extends AbstractModule {
   private final int numValidators;
+  private final StateComputerConfig.ProposerElectionMode proposerElectionMode;
 
-  public MockedNoEpochsConsensusRecoveryModule(int numValidators) {
+  public MockedNoEpochsConsensusRecoveryModule(
+      int numValidators, StateComputerConfig.ProposerElectionMode proposerElectionMode) {
     this.numValidators = numValidators;
+    this.proposerElectionMode = proposerElectionMode;
   }
 
   @Provides
@@ -120,7 +123,9 @@ public final class MockedNoEpochsConsensusRecoveryModule extends AbstractModule 
             proof.proposerTimestamp());
     final var initialEpochQC =
         QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
-    var proposerElection = ProposerElections.defaultRotation(validatorSet);
+    var proposerElection =
+        proposerElectionMode.instantiate(
+            proof.getNextEpoch().orElseThrow().getEpoch(), validatorSet);
     return new BFTConfiguration(
         proposerElection,
         validatorSet,
