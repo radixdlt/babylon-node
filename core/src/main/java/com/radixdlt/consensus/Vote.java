@@ -69,12 +69,10 @@ import static java.util.Objects.requireNonNull;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.hash.HashCode;
 import com.google.errorprone.annotations.Immutable;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -173,16 +171,6 @@ public final class Vote implements ConsensusEvent {
 
   public VoteData getVoteData() {
     return voteData;
-  }
-
-  public static HashCode getHashOfData(Hasher hasher, VoteData voteData, long timestamp) {
-    var opaque = hasher.hashDsonEncoded(voteData);
-    var header = voteData.getCommitted().map(BFTHeader::getLedgerHeader).orElse(null);
-    return ConsensusHasher.toHash(opaque, header, timestamp, hasher);
-  }
-
-  public HashCode getHashOfData(Hasher hasher) {
-    return getHashOfData(hasher, this.voteData, this.timestamp);
   }
 
   public long getTimestamp() {
