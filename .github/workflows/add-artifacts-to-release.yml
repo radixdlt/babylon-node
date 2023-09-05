@@ -207,7 +207,7 @@ jobs:
           args: --all-projects --org=${{ env.SNYK_NETWORK_ORG_ID }} --format=cyclonedx1.4+json --json-file-output sbom.json
           command: sbom
       - name: Upload SBOM
-        uses: AButler/upload-release-assets@c94805dc72e4b20745f543da0f62eaee7722df7a # v2.0.2
+        uses: softprops/action-gh-release@c9b46fe7aad9f02afd89b12450b780f52dacfb2d
         with:
-          files: sbom.json
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          files: |
+            sbom.json
