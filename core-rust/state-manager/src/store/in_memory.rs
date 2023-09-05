@@ -366,7 +366,10 @@ impl Iterator for InMemoryCommittedTransactionBundleIterator<'_> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let state_version = self.state_version;
-        self.state_version = self.state_version.next();
+        self.state_version = self
+            .state_version
+            .next()
+            .expect("Invalid next state version!");
         match self.store.transactions.get(&state_version) {
             None => None,
             Some(transaction) => Some(CommittedTransactionBundle {
@@ -549,7 +552,10 @@ impl AccountChangeIndexExtension for InMemoryStore {
 
         for state_version in last_processed_state_version
             .next()
-            .to(last_state_version.next())
+            .expect("Invalid next state version!")
+            .to(last_state_version
+                .next()
+                .expect("Invalid next state version!"))
         {
             self.update_account_change_index_from_receipt(
                 state_version,

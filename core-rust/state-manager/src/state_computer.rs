@@ -186,7 +186,10 @@ pub struct GenesisCommitRequestFactory {
 
 impl GenesisCommitRequestFactory {
     pub fn create_next(&mut self, result: GenesisPrepareResult) -> GenesisCommitRequest {
-        self.state_version = self.state_version.next();
+        self.state_version = self
+            .state_version
+            .next()
+            .expect("Invalid next state version!");
         GenesisCommitRequest {
             raw: result.raw,
             validated: result.validated,
@@ -202,7 +205,10 @@ impl GenesisCommitRequestFactory {
         let Some(ledger_hashes) = result.committable_ledger_hashes else {
             return None;
         };
-        self.state_version = self.state_version.next();
+        self.state_version = self
+            .state_version
+            .next()
+            .expect("Invalid next state version!");
         Some(GenesisCommitRequest {
             raw: result.raw,
             validated: result.validated,
@@ -975,7 +981,7 @@ where
         let commit_ledger_header = &commit_request.proof.ledger_header;
         let commit_state_version = commit_ledger_header.state_version;
         let commit_request_start_state_version =
-            commit_state_version.relative(-(commit_transactions_len as i128));
+            commit_state_version.relative(-(commit_transactions_len as i128)).expect("`commit_request_start_state_version` should be computable from `commit_state_version - commit_transactions_len` and valid.");
 
         // Step 1.: Parse the transactions (and collect specific metrics from them, as a drive-by)
         let mut prepared_transactions = Vec::new();

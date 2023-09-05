@@ -255,7 +255,10 @@ impl StateTracker {
                 result.hash_structures_diff.ledger_hashes
             );
         }
-        self.state_version = self.state_version.next();
+        self.state_version = self
+            .state_version
+            .next()
+            .expect("Invalid next state version!");
         self.ledger_hashes = result.hash_structures_diff.ledger_hashes;
         self.next_epoch = result.next_epoch();
     }

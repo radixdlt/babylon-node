@@ -230,26 +230,30 @@ impl StateVersion {
         self.0
     }
 
+    /// Creates an immdiate predecessor.
+    /// Returns error on underflow.
+    pub fn previous(&self) -> Result<Self, TryFromIntError> {
+        self.relative(-1)
+    }
+
     /// Creates an immediate successor version.
-    /// Panics on overflow.
-    pub fn next(&self) -> Self {
+    /// Returns error on overflow.
+    pub fn next(&self) -> Result<Self, TryFromIntError> {
         self.relative(1)
     }
 
     /// Creates a version relative to this one.
-    /// Panics on overflow or underflow.
-    pub fn relative(&self, delta: impl Into<StateVersionDelta>) -> Self {
+    /// Returns error on overflow or underflow.
+    pub fn relative(&self, delta: impl Into<StateVersionDelta>) -> Result<Self, TryFromIntError> {
         let number = self.0 as i128; // every u64 is safe to represent as i128
         let delta_number = delta.into();
         let relative_number = number
             .checked_add(delta_number)
             .expect("both operands are representable by i65, so their sum must fit in i128");
-        Self(u64::try_from(relative_number).unwrap_or_else(|error| {
-            panic!(
-                "cannot reference state version {} + {} ({:?})",
-                self.0, delta_number, error
-            )
-        }))
+        match u64::try_from(relative_number) {
+            Ok(relative_number) => Ok(Self(relative_number)),
+            Err(error) => Err(error),
+        }
     }
 
     /// Creates an iterator of all versions starting with this one, and ending at the given one

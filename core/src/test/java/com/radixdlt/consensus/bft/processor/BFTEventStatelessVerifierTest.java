@@ -231,6 +231,8 @@ public class BFTEventStatelessVerifierTest {
   @Test
   public void when_process_correct_vote_then_should_be_forwarded() {
     Vote vote = mock(Vote.class);
+    final var voteData = mock(VoteData.class);
+    when(vote.getVoteData()).thenReturn(voteData);
     when(vote.getRound()).thenReturn(Round.of(1));
     when(vote.getEpoch()).thenReturn(0L);
     BFTValidatorId author = mock(BFTValidatorId.class);
@@ -262,6 +264,8 @@ public class BFTEventStatelessVerifierTest {
   @Test
   public void when_process_bad_signature_vote_then_should_not_be_forwarded() {
     Vote vote = mock(Vote.class);
+    final var voteData = mock(VoteData.class);
+    when(vote.getVoteData()).thenReturn(voteData);
     BFTValidatorId author = mock(BFTValidatorId.class);
     when(vote.getAuthor()).thenReturn(author);
     when(vote.getSignature()).thenReturn(mock(ECDSASecp256k1Signature.class));
@@ -282,6 +286,8 @@ public class BFTEventStatelessVerifierTest {
     ECDSASecp256k1Signature timeoutSignature = mock(ECDSASecp256k1Signature.class);
     when(vote.getSignature()).thenReturn(voteSignature);
     when(vote.getTimeoutSignature()).thenReturn(Optional.of(timeoutSignature));
+    final var voteData = mock(VoteData.class);
+    when(vote.getVoteData()).thenReturn(voteData);
     when(validatorSet.containsValidator(eq(author))).thenReturn(true);
     when(verifier.verify(any(), any(), eq(voteSignature))).thenReturn(true);
     when(verifier.verify(any(), any(), eq(timeoutSignature))).thenReturn(false);
