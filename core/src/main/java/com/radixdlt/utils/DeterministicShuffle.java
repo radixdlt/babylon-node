@@ -62,63 +62,35 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.utils;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.Hasher;
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.util.Optional;
+import javax.annotation.concurrent.NotThreadSafe;
 
-@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-public final class ConsensusHasher {
-  private ConsensusHasher() {
-    throw new IllegalStateException();
+/** Fisher-Yates shuffle using LCG pseudorandom generator. */
+@NotThreadSafe
+public final class DeterministicShuffle {
+  // Same as glibc
+  private static final long LCG_MULTIPLIER = 1103515245L;
+  private static final long LCG_INCREMENT = 12345L;
+  private static final long LCG_MODULUS = 2L << 31;
+
+  private long seed;
+
+  public DeterministicShuffle(long seed) {
+    this.seed = seed;
   }
 
-  public static HashCode toHash(
-      HashCode opaque,
-      Optional<LedgerHeader> committedHeaderOpt,
-      long localExecutionTimestamp,
-      Hasher hasher) {
-    var raw = new ByteArrayOutputStream();
-    var outputStream = new DataOutputStream(raw);
-    try {
-      outputStream.writeInt(committedHeaderOpt.isPresent() ? 0 : 1); // 4 bytes (Version)
-      outputStream.write(opaque.asBytes()); // 32 bytes
-      if (committedHeaderOpt.isPresent()) {
-        final var committedHeader = committedHeaderOpt.orElseThrow();
-        outputStream.writeLong(committedHeader.getStateVersion()); // 8 bytes
-        var ledgerHashes = committedHeader.getHashes(); // 3 * 32 bytes
-        outputStream.write(ledgerHashes.getTransactionRoot().asBytes());
-        outputStream.write(ledgerHashes.getReceiptRoot().asBytes());
-        outputStream.write(ledgerHashes.getStateRoot().asBytes());
-        outputStream.writeLong(committedHeader.getEpoch()); // 8 bytes
-        outputStream.writeLong(committedHeader.getRound().number()); // 8 bytes
-        outputStream.writeLong(committedHeader.consensusParentRoundTimestamp()); // 8 bytes
-        outputStream.writeLong(committedHeader.proposerTimestamp()); // 8 bytes
-        var optNextEpoch = committedHeader.getNextEpoch();
-        if (optNextEpoch.isPresent()) {
-          var nextEpoch = optNextEpoch.get();
-          outputStream.writeByte(1); // 1 byte
-          outputStream.writeInt(nextEpoch.getValidators().size()); // 4 bytes
-          outputStream.writeLong(nextEpoch.getEpoch()); // 8 bytes
-          for (var v : nextEpoch.getValidators().asList()) {
-            var key = v.getValidatorId().getKey().getBytes();
-            outputStream.write(key);
-            var power = v.getPower();
-            outputStream.write(power.toByteArray());
-          }
-        } else {
-          outputStream.writeByte(0); // 1 byte
-        }
-      }
-      outputStream.writeLong(localExecutionTimestamp); // 8 bytes
-    } catch (IOException e) {
-      throw new IllegalStateException();
+  public <T> void shuffleArray(T[] arr) {
+    for (int i = arr.length; i > 1; i--) {
+      final var rndIdx = nextInt(i);
+      final var tmp = arr[i - 1];
+      arr[i - 1] = arr[rndIdx];
+      arr[rndIdx] = tmp;
     }
-    var toHash = raw.toByteArray();
-    return hasher.hashBytes(toHash);
+  }
+
+  private int nextInt(int upperLimitExclusive) {
+    this.seed = (this.seed * LCG_MULTIPLIER + LCG_INCREMENT) % LCG_MODULUS;
+    return (int) (this.seed % upperLimitExclusive);
   }
 }

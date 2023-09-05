@@ -72,10 +72,10 @@ import com.radixdlt.consensus.liveness.VoteTimeout;
 import com.radixdlt.consensus.safety.SafetyState.Builder;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.Hasher;
-import java.util.LinkedHashSet;
+import com.radixdlt.lang.Unit;
+import com.radixdlt.utils.LRUCache;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -94,7 +94,8 @@ public final class SafetyRules {
   private final PersistentSafetyStateStore persistentSafetyStateStore;
 
   private SafetyState state;
-  private final Set<HashCode> verifiedCertificatesCache = new LinkedHashSet<>();
+  private final LRUCache<HashCode, Unit> verifiedCertificatesCache =
+      new LRUCache<>(VERIFIED_CERTIFICATES_CACHE_MAX_SIZE);
 
   public SafetyRules(
       BFTValidatorId self,
@@ -230,10 +231,10 @@ public final class SafetyRules {
     }
 
     final VoteData voteData = constructVoteData(proposedVertex, proposedHeader);
-    final var voteHash = Vote.getHashOfData(hasher, voteData, timestamp);
+    final var consensusVoteHash = voteData.toConsensusVoteHash(hasher, timestamp);
 
     // TODO make signing more robust by including author in signed hash
-    final ECDSASecp256k1Signature signature = this.signer.sign(voteHash);
+    final ECDSASecp256k1Signature signature = this.signer.sign(consensusVoteHash);
     var vote = new Vote(this.self, voteData, timestamp, signature, highQC, Optional.empty());
 
     safetyStateBuilder.lastVote(vote);
@@ -257,7 +258,8 @@ public final class SafetyRules {
   public boolean verifyQcAgainstTheValidatorSet(QuorumCertificate qc) {
     final var qcHash = hasher.hashDsonEncoded(qc);
 
-    if (verifiedCertificatesCache.contains(qcHash)) {
+    // Using get() instead of contains() to bump recently accessed state
+    if (verifiedCertificatesCache.get(qcHash).isPresent()) {
       return true;
     }
 
@@ -283,19 +285,10 @@ public final class SafetyRules {
     final var isQcValid = allSignaturesAddedSuccessfully && validationState.complete();
 
     if (isQcValid) {
-      addVerifiedCertificateToCache(qcHash);
+      verifiedCertificatesCache.put(qcHash, Unit.unit());
     }
 
     return isQcValid;
-  }
-
-  private void addVerifiedCertificateToCache(HashCode certificateHash) {
-    if (verifiedCertificatesCache.size() >= VERIFIED_CERTIFICATES_CACHE_MAX_SIZE) {
-      final var iter = verifiedCertificatesCache.iterator();
-      iter.next();
-      iter.remove();
-    }
-    verifiedCertificatesCache.add(certificateHash);
   }
 
   private boolean isGenesisQc(QuorumCertificate qc) {
@@ -314,19 +307,24 @@ public final class SafetyRules {
 
   private boolean areAllQcTimestampedSignaturesValid(QuorumCertificate qc) {
     final var voteData = qc.getVoteData();
+    final var committedLedgerHeader = voteData.committedLedgerHeader();
+    final var voteDataHash = hasher.hashDsonEncoded(voteData);
     return qc.getTimestampedSignatures().getSignatures().entrySet().parallelStream()
         .allMatch(
             e -> {
-              final var nodePublicKey = e.getKey().getKey();
-              final var voteHash = Vote.getHashOfData(hasher, voteData, e.getValue().timestamp());
-              return hashVerifier.verify(nodePublicKey, voteHash, e.getValue().signature());
+              final var consensusVoteHash =
+                  ConsensusHasher.toHash(
+                      voteDataHash, committedLedgerHeader, e.getValue().timestamp(), hasher);
+              return hashVerifier.verify(
+                  e.getKey().getKey(), consensusVoteHash, e.getValue().signature());
             });
   }
 
   public boolean verifyTcAgainstTheValidatorSet(TimeoutCertificate tc) {
     final var tcHash = hasher.hashDsonEncoded(tc);
 
-    if (verifiedCertificatesCache.contains(tcHash)) {
+    // Using get() instead of contains() to bump recently accessed state
+    if (verifiedCertificatesCache.get(tcHash).isPresent()) {
       return true;
     }
 
@@ -335,7 +333,7 @@ public final class SafetyRules {
             && areAllTcTimestampedSignaturesValid(tc);
 
     if (isTcValid) {
-      addVerifiedCertificateToCache(tcHash);
+      verifiedCertificatesCache.put(tcHash, Unit.unit());
     }
 
     return isTcValid;

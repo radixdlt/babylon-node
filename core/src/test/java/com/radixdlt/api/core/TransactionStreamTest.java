@@ -209,6 +209,66 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
     }
   }
 
+  @Test
+  public void test_previous_state_identifiers() throws Exception {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
+
+      var firstPartTransactions =
+          List.of(
+              TransactionBuilder.forTests().nonce(1).prepare(),
+              TransactionBuilder.forTests().nonce(2).prepare(),
+              TransactionBuilder.forTests().nonce(3).prepare());
+      for (var transaction : firstPartTransactions) {
+        getTransactionApi()
+            .transactionSubmitPost(
+                new TransactionSubmitRequest()
+                    .network(networkLogicalName)
+                    .notarizedTransactionHex(transaction.hexPayloadBytes()));
+        test.runUntilState(allCommittedTransactionSuccess(transaction.raw()), 100);
+      }
+
+      var firstPartCommittedTransactions =
+          getStreamApi()
+              .streamTransactionsPost(
+                  new StreamTransactionsRequest()
+                      .network(networkLogicalName)
+                      .limit(100)
+                      .fromStateVersion(1L))
+              .getTransactions();
+
+      var lastCommittedTransactionIdentifiers =
+          firstPartCommittedTransactions
+              .get(firstPartCommittedTransactions.size() - 1)
+              .getResultantStateIdentifiers();
+
+      var secondPartTransactions =
+          List.of(
+              TransactionBuilder.forTests().nonce(4).prepare(),
+              TransactionBuilder.forTests().nonce(5).prepare(),
+              TransactionBuilder.forTests().nonce(6).prepare());
+      for (var transaction : secondPartTransactions) {
+        getTransactionApi()
+            .transactionSubmitPost(
+                new TransactionSubmitRequest()
+                    .network(networkLogicalName)
+                    .notarizedTransactionHex(transaction.hexPayloadBytes()));
+        test.runUntilState(allCommittedTransactionSuccess(transaction.raw()), 100);
+      }
+
+      var secondPartCommittedTransactions =
+          getStreamApi()
+              .streamTransactionsPost(
+                  new StreamTransactionsRequest()
+                      .network(networkLogicalName)
+                      .limit(100)
+                      .fromStateVersion(lastCommittedTransactionIdentifiers.getStateVersion() + 1));
+
+      assertThat(secondPartCommittedTransactions.getPreviousStateIdentifiers())
+          .isEqualTo(lastCommittedTransactionIdentifiers);
+    }
+  }
+
   private static byte[] bytes(int length) {
     byte[] bytes = new byte[length];
     for (int i = 0; i < length; ++i) {

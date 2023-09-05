@@ -70,6 +70,7 @@ import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.utils.DeterministicShuffle;
 import com.radixdlt.utils.KeyComparator;
 import java.util.*;
 
@@ -99,13 +100,31 @@ public final class RotateOnceDecorator implements ProposerElection {
    * Decorates the given {@link ProposerElection}. Assumes that the underlying instance uses the
    * same {@link BFTValidatorSet} as passed here.
    */
-  public RotateOnceDecorator(BFTValidatorSet validatorSet, ProposerElection underlying) {
-    this.initialRoundsProposers =
-        validatorSet.getValidators().stream()
-            .sorted(VALIDATOR_COMPARATOR)
-            .map(BFTValidator::getValidatorId)
-            .toArray(BFTValidatorId[]::new);
+  private RotateOnceDecorator(
+      BFTValidatorId[] initialRoundsProposers, ProposerElection underlying) {
+    this.initialRoundsProposers = initialRoundsProposers;
     this.underlying = underlying;
+  }
+
+  public static RotateOnceDecorator sortedByStake(
+      BFTValidatorSet validatorSet, ProposerElection underlying) {
+    return new RotateOnceDecorator(toSortedArray(validatorSet), underlying);
+  }
+
+  public static RotateOnceDecorator deterministicallyShuffled(
+      BFTValidatorSet validatorSet, long shuffleSeed, ProposerElection underlying) {
+    // First, collect the validators to an ordered array...
+    final var sortedValidators = toSortedArray(validatorSet);
+    // ...and then deterministically shuffle (based on a deterministic seed)
+    new DeterministicShuffle(shuffleSeed).shuffleArray(sortedValidators);
+    return new RotateOnceDecorator(sortedValidators, underlying);
+  }
+
+  private static BFTValidatorId[] toSortedArray(BFTValidatorSet validatorSet) {
+    return validatorSet.getValidators().stream()
+        .sorted(VALIDATOR_COMPARATOR)
+        .map(BFTValidator::getValidatorId)
+        .toArray(BFTValidatorId[]::new);
   }
 
   @Override

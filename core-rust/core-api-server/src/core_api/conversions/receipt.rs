@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments)]
+
 use super::addressing::*;
 use crate::core_api::*;
 use radix_engine::types::*;
@@ -123,6 +125,7 @@ impl ValueRepresentations {
         })
     }
 }
+
 #[tracing::instrument(skip_all)]
 pub fn to_api_created_substate(
     context: &MappingContext,

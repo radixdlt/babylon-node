@@ -113,7 +113,6 @@ public final class UInt192 implements Comparable<UInt192> {
     return from(UInt128.from(value));
   }
 
-  @JsonCreator
   public static UInt192 from(String s) {
     Objects.requireNonNull(s);
 
@@ -165,6 +164,7 @@ public final class UInt192 implements Comparable<UInt192> {
    * @throws IllegalArgumentException if {@code bytes} is 0 length.
    * @see #toByteArray()
    */
+  @JsonCreator
   public static UInt192 from(byte[] bytes) {
     Objects.requireNonNull(bytes);
     if (bytes.length == 0) {
@@ -438,8 +438,8 @@ public final class UInt192 implements Comparable<UInt192> {
   }
 
   @JsonValue
-  public String toJson() {
-    return toString(10);
+  public byte[] toJson() {
+    return toByteArray();
   }
 
   @Override

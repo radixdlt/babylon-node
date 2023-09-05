@@ -142,7 +142,7 @@ public class ConsensusModuleTest {
         BFTValidatorSet.from(Stream.of(BFTValidator.from(this.validatorId, UInt192.ONE)));
     var vertexStoreState =
         VertexStoreState.create(HighQC.ofInitialEpochQc(qc), genesisVertex, hasher);
-    var proposerElection = ProposerElections.defaultRotation(validatorSet);
+    var proposerElection = ProposerElections.defaultRotation(0L, validatorSet);
     this.bftConfiguration = new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
     this.selfKeyPair = ECKeyPair.generateNew();
     this.selfValidatorId =
@@ -267,7 +267,7 @@ public class ConsensusModuleTest {
             LedgerHeader.create(1, Round.of(1), 1, LedgerHashes.zero(), 1, 1));
     final var voteData = new VoteData(next, parent.getProposedHeader(), parent.getParentHeader());
     final var timestamp = 1;
-    final var voteDataHash = Vote.getHashOfData(hasher, voteData, timestamp);
+    final var voteDataHash = voteData.toConsensusVoteHash(hasher, timestamp);
     final var qcSignature = proposerKeyPair.sign(voteDataHash);
     var unsyncedQC =
         new QuorumCertificate(
