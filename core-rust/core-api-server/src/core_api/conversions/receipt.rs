@@ -275,7 +275,10 @@ pub fn to_api_substate_system_structure(
             } = entry;
             models::SubstateSystemStructure::KeyValueStoreEntryStructure {
                 key_full_type_id: Box::new(to_api_fully_scoped_type_id(context, key_full_type_id)?),
-                value_full_type_id: Box::new(to_api_fully_scoped_type_id(context, value_full_type_id)?),
+                value_full_type_id: Box::new(to_api_fully_scoped_type_id(
+                    context,
+                    value_full_type_id,
+                )?),
             }
         }
         SubstateSystemStructure::ObjectField(field) => {
@@ -335,9 +338,7 @@ pub fn to_api_object_substate_type_reference(
 ) -> Result<models::ObjectSubstateTypeReference, MappingError> {
     Ok(match substate_type_reference {
         ObjectSubstateTypeReference::Package(package) => {
-            let PackageTypeReference {
-                full_type_id,
-            } = package;
+            let PackageTypeReference { full_type_id } = package;
             models::ObjectSubstateTypeReference::PackageObjectSubstateTypeReference {
                 full_type_id: Box::new(to_api_fully_scoped_type_id(context, full_type_id)?),
             }
@@ -348,7 +349,10 @@ pub fn to_api_object_substate_type_reference(
                 resolved_full_type_id,
             } = instance;
             models::ObjectSubstateTypeReference::ObjectInstanceTypeReference {
-                resolved_full_type_id: Box::new(to_api_fully_scoped_type_id(context, resolved_full_type_id)?),
+                resolved_full_type_id: Box::new(to_api_fully_scoped_type_id(
+                    context,
+                    resolved_full_type_id,
+                )?),
                 generic_index: to_api_u8_as_i32(*instance_type_id),
             }
         }

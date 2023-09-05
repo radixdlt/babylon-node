@@ -558,9 +558,7 @@ pub fn to_api_package_type_reference(
     context: &MappingContext,
     reference: &PackageTypeReference,
 ) -> Result<models::PackageTypeReference, MappingError> {
-    let PackageTypeReference {
-        full_type_id,
-    } = reference;
+    let PackageTypeReference { full_type_id } = reference;
     Ok(models::PackageTypeReference {
         full_type_id: Box::new(to_api_fully_scoped_type_id(context, full_type_id)?),
     })

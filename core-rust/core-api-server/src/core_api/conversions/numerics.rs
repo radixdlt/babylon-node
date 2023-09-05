@@ -57,7 +57,9 @@ pub fn to_api_active_validator_index(index: ValidatorIndex) -> models::ActiveVal
     }
 }
 
-pub fn to_api_well_known_type_id(well_known_type_id: &WellKnownTypeId) -> Result<i64, MappingError> {
+pub fn to_api_well_known_type_id(
+    well_known_type_id: &WellKnownTypeId,
+) -> Result<i64, MappingError> {
     well_known_type_id
         .as_index()
         .try_into()

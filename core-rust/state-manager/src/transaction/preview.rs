@@ -66,11 +66,10 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
         let receipt = transaction_logic.execute_on(read_store.deref());
         let (substate_changes, global_balance_summary) = match &receipt.result {
             TransactionResult::Commit(commit) => {
-                let substate_changes =
-                    ProcessedCommitResult::compute_substate_changes::<S, SpreadPrefixKeyMapper>(
-                        read_store.deref(),
-                        &commit.state_updates,
-                    );
+                let substate_changes = ProcessedCommitResult::compute_substate_changes::<
+                    S,
+                    SpreadPrefixKeyMapper,
+                >(read_store.deref(), &commit.state_updates);
                 let global_balance_update = ProcessedCommitResult::compute_global_balance_update(
                     read_store.deref(),
                     &substate_changes,

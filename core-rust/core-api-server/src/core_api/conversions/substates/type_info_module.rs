@@ -101,12 +101,15 @@ pub fn to_api_generic_substitution(
     Ok(match substitution {
         GenericSubstitution::Local(scoped_type_id) => {
             models::GenericSubstitution::LocalGenericSubstition {
-                scoped_type_id: Box::new(to_api_scoped_type_id(context, scoped_type_id)?)
+                scoped_type_id: Box::new(to_api_scoped_type_id(context, scoped_type_id)?),
             }
         }
         GenericSubstitution::Remote(blueprint_type_identifier) => {
             models::GenericSubstitution::RemoteGenericSubstition {
-                blueprint_type_identifier: Box::new(to_api_blueprint_type_identifier(context, blueprint_type_identifier)?)
+                blueprint_type_identifier: Box::new(to_api_blueprint_type_identifier(
+                    context,
+                    blueprint_type_identifier,
+                )?),
             }
         }
     })
@@ -133,11 +136,12 @@ pub fn to_api_key_value_store_info(
     key_value_store_info: &KeyValueStoreInfo,
 ) -> Result<models::KeyValueStoreInfo, MappingError> {
     let KeyValueStoreInfo {
-        generic_substitutions: KeyValueStoreGenericSubstitutions {
-            key_generic_substitution,
-            value_generic_substitution,
-            allow_ownership,
-        },
+        generic_substitutions:
+            KeyValueStoreGenericSubstitutions {
+                key_generic_substitution,
+                value_generic_substitution,
+                allow_ownership,
+            },
     } = key_value_store_info;
     Ok(models::KeyValueStoreInfo {
         key_generic_substitution: Some(to_api_generic_substitution(
