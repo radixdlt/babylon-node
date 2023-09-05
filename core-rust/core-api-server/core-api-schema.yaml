@@ -6781,7 +6781,8 @@ components:
         previous_state_identifiers:
           $ref: "#/components/schemas/CommittedStateIdentifier"
           description: |
-            Identifiers for the state on top of which transactions are executed.
+            Identifiers for the state on top of which the returned transactions were executed (ie `from_state_version - 1`).
+            This should be used for sanity-checking that you're reading from the ledger history you're expecting.
             If this is field is missing, the previous state does not exists (`from_state_version` is 0).
         from_state_version:
           $ref: "#/components/schemas/StateVersion"
