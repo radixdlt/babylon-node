@@ -100,9 +100,13 @@ import com.radixdlt.utils.BooleanUtils;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.time.Duration;
 import java.util.Optional;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** Module which manages everything in a single node */
 public final class RadixNodeModule extends AbstractModule {
+  private static final Logger log = LogManager.getLogger();
+
   private static final int DEFAULT_CORE_API_PORT = 3333;
   private static final int DEFAULT_SYSTEM_API_PORT = 3334;
   private static final int DEFAULT_PROMETHEUS_API_PORT = 3335;
@@ -287,18 +291,37 @@ public final class RadixNodeModule extends AbstractModule {
         properties.get(
             "protocol.vertex.max_transaction_count",
             NodeConstants.DEFAULT_MAX_VERTEX_TRANSACTION_COUNT);
+    if (vertexMaxTransactionCount != NodeConstants.DEFAULT_MAX_VERTEX_TRANSACTION_COUNT) {
+      warnProtocolPropertySet("protocol.vertex.max_transaction_count");
+    }
+
     var vertexMaxTotalTransactionsSize =
         properties.get(
             "protocol.vertex.max_total_transactions_size",
             (int) NodeConstants.DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE);
+    if (vertexMaxTotalTransactionsSize
+        != NodeConstants.DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE) {
+      warnProtocolPropertySet("protocol.vertex.max_total_transactions_size");
+    }
+
     var vertexMaxTotalExecutionCostUnitsConsumed =
         properties.get(
             "protocol.vertex.max_total_execution_cost_units_consumed",
             NodeConstants.DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED);
+    if (vertexMaxTotalExecutionCostUnitsConsumed
+        != NodeConstants.DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED) {
+      warnProtocolPropertySet("protocol.vertex.max_total_execution_cost_units_consumed");
+    }
+
     var vertexMaxTotalFinalizationCostUnitsConsumed =
         properties.get(
             "protocol.vertex.max_total_finalization_cost_units_consumed",
             NodeConstants.DEFAULT_MAX_TOTAL_VERTEX_FINALIZATION_COST_UNITS_CONSUMED);
+    if (vertexMaxTotalFinalizationCostUnitsConsumed
+        != NodeConstants.DEFAULT_MAX_TOTAL_VERTEX_FINALIZATION_COST_UNITS_CONSUMED) {
+      warnProtocolPropertySet("protocol.vertex.max_total_finalization_cost_units_consumed");
+    }
+
     Preconditions.checkArgument(
         vertexMaxTransactionCount > 0,
         "Invalid configuration: protocol.vertex.max_transaction_count (%s) must be a non zero"
@@ -382,5 +405,13 @@ public final class RadixNodeModule extends AbstractModule {
             .map(LedgerSyncCapability.Builder::new)
             .orElse(LedgerSyncCapability.Builder.asDefault());
     install(new CapabilitiesModule(builder.build()));
+  }
+
+  private void warnProtocolPropertySet(String prop) {
+    log.warn(
+        "WARNING: A {} property was set. It is highly NOT recommended to modify any protocol.**"
+            + " properties as this may cause your node to disagree with the rest of the network"
+            + " and, as a result, miss proposals!",
+        prop);
   }
 }
