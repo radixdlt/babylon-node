@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.CommittedStateIdentifier;
 import com.radixdlt.api.core.generated.models.CommittedTransaction;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -34,6 +35,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * StreamTransactionsResponse
  */
 @JsonPropertyOrder({
+  StreamTransactionsResponse.JSON_PROPERTY_PREVIOUS_STATE_IDENTIFIERS,
   StreamTransactionsResponse.JSON_PROPERTY_FROM_STATE_VERSION,
   StreamTransactionsResponse.JSON_PROPERTY_COUNT,
   StreamTransactionsResponse.JSON_PROPERTY_MAX_LEDGER_STATE_VERSION,
@@ -41,6 +43,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class StreamTransactionsResponse {
+  public static final String JSON_PROPERTY_PREVIOUS_STATE_IDENTIFIERS = "previous_state_identifiers";
+  private CommittedStateIdentifier previousStateIdentifiers;
+
   public static final String JSON_PROPERTY_FROM_STATE_VERSION = "from_state_version";
   private Long fromStateVersion;
 
@@ -55,6 +60,32 @@ public class StreamTransactionsResponse {
 
   public StreamTransactionsResponse() { 
   }
+
+  public StreamTransactionsResponse previousStateIdentifiers(CommittedStateIdentifier previousStateIdentifiers) {
+    this.previousStateIdentifiers = previousStateIdentifiers;
+    return this;
+  }
+
+   /**
+   * Get previousStateIdentifiers
+   * @return previousStateIdentifiers
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_PREVIOUS_STATE_IDENTIFIERS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public CommittedStateIdentifier getPreviousStateIdentifiers() {
+    return previousStateIdentifiers;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_PREVIOUS_STATE_IDENTIFIERS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setPreviousStateIdentifiers(CommittedStateIdentifier previousStateIdentifiers) {
+    this.previousStateIdentifiers = previousStateIdentifiers;
+  }
+
 
   public StreamTransactionsResponse fromStateVersion(Long fromStateVersion) {
     this.fromStateVersion = fromStateVersion;
@@ -183,7 +214,8 @@ public class StreamTransactionsResponse {
       return false;
     }
     StreamTransactionsResponse streamTransactionsResponse = (StreamTransactionsResponse) o;
-    return Objects.equals(this.fromStateVersion, streamTransactionsResponse.fromStateVersion) &&
+    return Objects.equals(this.previousStateIdentifiers, streamTransactionsResponse.previousStateIdentifiers) &&
+        Objects.equals(this.fromStateVersion, streamTransactionsResponse.fromStateVersion) &&
         Objects.equals(this.count, streamTransactionsResponse.count) &&
         Objects.equals(this.maxLedgerStateVersion, streamTransactionsResponse.maxLedgerStateVersion) &&
         Objects.equals(this.transactions, streamTransactionsResponse.transactions);
@@ -191,13 +223,14 @@ public class StreamTransactionsResponse {
 
   @Override
   public int hashCode() {
-    return Objects.hash(fromStateVersion, count, maxLedgerStateVersion, transactions);
+    return Objects.hash(previousStateIdentifiers, fromStateVersion, count, maxLedgerStateVersion, transactions);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class StreamTransactionsResponse {\n");
+    sb.append("    previousStateIdentifiers: ").append(toIndentedString(previousStateIdentifiers)).append("\n");
     sb.append("    fromStateVersion: ").append(toIndentedString(fromStateVersion)).append("\n");
     sb.append("    count: ").append(toIndentedString(count)).append("\n");
     sb.append("    maxLedgerStateVersion: ").append(toIndentedString(maxLedgerStateVersion)).append("\n");

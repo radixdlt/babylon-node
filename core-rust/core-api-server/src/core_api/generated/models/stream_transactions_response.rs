@@ -13,6 +13,8 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct StreamTransactionsResponse {
+    #[serde(rename = "previous_state_identifiers", skip_serializing_if = "Option::is_none")]
+    pub previous_state_identifiers: Option<Box<crate::core_api::generated::models::CommittedStateIdentifier>>,
     #[serde(rename = "from_state_version")]
     pub from_state_version: i64,
     /// An integer between `0` and `10000`, giving the total count of transactions in the returned response
@@ -28,6 +30,7 @@ pub struct StreamTransactionsResponse {
 impl StreamTransactionsResponse {
     pub fn new(from_state_version: i64, count: i32, max_ledger_state_version: i64, transactions: Vec<crate::core_api::generated::models::CommittedTransaction>) -> StreamTransactionsResponse {
         StreamTransactionsResponse {
+            previous_state_identifiers: None,
             from_state_version,
             count,
             max_ledger_state_version,
