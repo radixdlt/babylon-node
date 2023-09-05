@@ -53,7 +53,7 @@ openapi: 3.1.0
 # => Hex-encoded bytes/payload should end _hex and not include _bytes
 info:
   version: '0.5.0'
-  title: 'Babylon Core API - RCnet v3'
+  title: 'Babylon Core API - RCnet v3.1'
   license:
     name: The Radix License, Version 1.0
     url: https://www.radixfoundation.org/licenses/license-v1
@@ -74,7 +74,7 @@ info:
 
     ## Integration and forward compatibility guarantees
   
-    This version of the Core API belongs to the second release candidate of the Radix Babylon network ("RCnet v3").
+    This version of the Core API belongs to the fourth release candidate of the Radix Babylon network ("RCnet v3.1").
 
     Integrators (such as exchanges) are recommended to use the `/lts/` endpoints - they have been designed to be clear
     and simple for integrators wishing to create and monitor transactions involving fungible transfers to/from accounts.

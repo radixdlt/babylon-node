@@ -44,6 +44,7 @@ models/AnyOfAccessRuleNode.ts
 models/AnyOfAccessRuleNodeAllOf.ts
 models/AnyOfProofRule.ts
 models/AnyOfProofRuleAllOf.ts
+models/AttachedModuleId.ts
 models/AuthConfig.ts
 models/AuthorizedDepositorBadge.ts
 models/AuthorizedDepositorBadgeBase.ts
@@ -332,7 +333,6 @@ models/ObjectInstanceTypeReference.ts
 models/ObjectInstanceTypeReferenceAllOf.ts
 models/ObjectKeyValuePartitionEntryStructure.ts
 models/ObjectKeyValuePartitionEntryStructureAllOf.ts
-models/ObjectModuleId.ts
 models/ObjectRoleKey.ts
 models/ObjectSortedIndexPartitionEntryStructure.ts
 models/ObjectSortedIndexPartitionEntryStructureAllOf.ts
