@@ -382,7 +382,7 @@ public class Manifest {
                 Enum<OwnerRole::None>()
                 Enum<NonFungibleIdType::Integer>()
                 false                            # Track Supply
-                Tuple(                           # The NonFungibleDataSchema
+                Enum<0u8>(                       # NonFungibleDataSchema::Local
                     Enum<0u8>(
                         Tuple(                   # The SBOR schema for the non-fungible data (here: empty schema)
                             Array<Enum>(),
