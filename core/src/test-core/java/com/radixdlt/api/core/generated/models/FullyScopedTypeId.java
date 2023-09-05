@@ -22,151 +22,115 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.SborData;
+import com.radixdlt.api.core.generated.models.LocalTypeId;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * LocalTypeIndex
+ * An identifier for a type in the context of a schema in an entity&#39;s schema partition.  Note - this type provides a schema context even for well-known types where this context is effectively irrelevant. 
  */
+@ApiModel(description = "An identifier for a type in the context of a schema in an entity's schema partition.  Note - this type provides a schema context even for well-known types where this context is effectively irrelevant. ")
 @JsonPropertyOrder({
-  LocalTypeIndex.JSON_PROPERTY_KIND,
-  LocalTypeIndex.JSON_PROPERTY_INDEX,
-  LocalTypeIndex.JSON_PROPERTY_AS_SBOR
+  FullyScopedTypeId.JSON_PROPERTY_ENTITY_ADDRESS,
+  FullyScopedTypeId.JSON_PROPERTY_SCHEMA_HASH,
+  FullyScopedTypeId.JSON_PROPERTY_LOCAL_TYPE_ID
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class LocalTypeIndex {
-  /**
-   * The location against which to resolve this type reference.
-   */
-  public enum KindEnum {
-    WELLKNOWN("WellKnown"),
-    
-    SCHEMALOCAL("SchemaLocal");
+public class FullyScopedTypeId {
+  public static final String JSON_PROPERTY_ENTITY_ADDRESS = "entity_address";
+  private String entityAddress;
 
-    private String value;
+  public static final String JSON_PROPERTY_SCHEMA_HASH = "schema_hash";
+  private String schemaHash;
 
-    KindEnum(String value) {
-      this.value = value;
-    }
+  public static final String JSON_PROPERTY_LOCAL_TYPE_ID = "local_type_id";
+  private LocalTypeId localTypeId;
 
-    @JsonValue
-    public String getValue() {
-      return value;
-    }
-
-    @Override
-    public String toString() {
-      return String.valueOf(value);
-    }
-
-    @JsonCreator
-    public static KindEnum fromValue(String value) {
-      for (KindEnum b : KindEnum.values()) {
-        if (b.value.equals(value)) {
-          return b;
-        }
-      }
-      throw new IllegalArgumentException("Unexpected value '" + value + "'");
-    }
+  public FullyScopedTypeId() { 
   }
 
-  public static final String JSON_PROPERTY_KIND = "kind";
-  private KindEnum kind;
-
-  public static final String JSON_PROPERTY_INDEX = "index";
-  private Long index;
-
-  public static final String JSON_PROPERTY_AS_SBOR = "as_sbor";
-  private SborData asSbor;
-
-  public LocalTypeIndex() { 
-  }
-
-  public LocalTypeIndex kind(KindEnum kind) {
-    this.kind = kind;
+  public FullyScopedTypeId entityAddress(String entityAddress) {
+    this.entityAddress = entityAddress;
     return this;
   }
 
    /**
-   * The location against which to resolve this type reference.
-   * @return kind
+   * Bech32m-encoded human readable version of the entity&#39;s address (ie the entity&#39;s node id)
+   * @return entityAddress
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The location against which to resolve this type reference.")
-  @JsonProperty(JSON_PROPERTY_KIND)
+  @ApiModelProperty(required = true, value = "Bech32m-encoded human readable version of the entity's address (ie the entity's node id)")
+  @JsonProperty(JSON_PROPERTY_ENTITY_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public KindEnum getKind() {
-    return kind;
+  public String getEntityAddress() {
+    return entityAddress;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_KIND)
+  @JsonProperty(JSON_PROPERTY_ENTITY_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setKind(KindEnum kind) {
-    this.kind = kind;
+  public void setEntityAddress(String entityAddress) {
+    this.entityAddress = entityAddress;
   }
 
 
-  public LocalTypeIndex index(Long index) {
-    this.index = index;
+  public FullyScopedTypeId schemaHash(String schemaHash) {
+    this.schemaHash = schemaHash;
     return this;
   }
 
    /**
-   * A reference to a type, interpreted according to &#x60;kind&#x60;: - if &#x60;WellKnown&#x60;, then it is a pointer to a well known scrypto type with that ID, - if &#x60;SchemaLocal&#x60;, then it is a pointer into the given schema. 
-   * minimum: 0
-   * maximum: 4294967295
-   * @return index
+   * The hex-encoded schema hash, capturing the identity of an SBOR schema.
+   * @return schemaHash
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "A reference to a type, interpreted according to `kind`: - if `WellKnown`, then it is a pointer to a well known scrypto type with that ID, - if `SchemaLocal`, then it is a pointer into the given schema. ")
-  @JsonProperty(JSON_PROPERTY_INDEX)
+  @ApiModelProperty(required = true, value = "The hex-encoded schema hash, capturing the identity of an SBOR schema.")
+  @JsonProperty(JSON_PROPERTY_SCHEMA_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Long getIndex() {
-    return index;
+  public String getSchemaHash() {
+    return schemaHash;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_INDEX)
+  @JsonProperty(JSON_PROPERTY_SCHEMA_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIndex(Long index) {
-    this.index = index;
+  public void setSchemaHash(String schemaHash) {
+    this.schemaHash = schemaHash;
   }
 
 
-  public LocalTypeIndex asSbor(SborData asSbor) {
-    this.asSbor = asSbor;
+  public FullyScopedTypeId localTypeId(LocalTypeId localTypeId) {
+    this.localTypeId = localTypeId;
     return this;
   }
 
    /**
-   * Get asSbor
-   * @return asSbor
+   * Get localTypeId
+   * @return localTypeId
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_AS_SBOR)
+  @JsonProperty(JSON_PROPERTY_LOCAL_TYPE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public SborData getAsSbor() {
-    return asSbor;
+  public LocalTypeId getLocalTypeId() {
+    return localTypeId;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_AS_SBOR)
+  @JsonProperty(JSON_PROPERTY_LOCAL_TYPE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAsSbor(SborData asSbor) {
-    this.asSbor = asSbor;
+  public void setLocalTypeId(LocalTypeId localTypeId) {
+    this.localTypeId = localTypeId;
   }
 
 
   /**
-   * Return true if this LocalTypeIndex object is equal to o.
+   * Return true if this FullyScopedTypeId object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -176,24 +140,24 @@ public class LocalTypeIndex {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    LocalTypeIndex localTypeIndex = (LocalTypeIndex) o;
-    return Objects.equals(this.kind, localTypeIndex.kind) &&
-        Objects.equals(this.index, localTypeIndex.index) &&
-        Objects.equals(this.asSbor, localTypeIndex.asSbor);
+    FullyScopedTypeId fullyScopedTypeId = (FullyScopedTypeId) o;
+    return Objects.equals(this.entityAddress, fullyScopedTypeId.entityAddress) &&
+        Objects.equals(this.schemaHash, fullyScopedTypeId.schemaHash) &&
+        Objects.equals(this.localTypeId, fullyScopedTypeId.localTypeId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(kind, index, asSbor);
+    return Objects.hash(entityAddress, schemaHash, localTypeId);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class LocalTypeIndex {\n");
-    sb.append("    kind: ").append(toIndentedString(kind)).append("\n");
-    sb.append("    index: ").append(toIndentedString(index)).append("\n");
-    sb.append("    asSbor: ").append(toIndentedString(asSbor)).append("\n");
+    sb.append("class FullyScopedTypeId {\n");
+    sb.append("    entityAddress: ").append(toIndentedString(entityAddress)).append("\n");
+    sb.append("    schemaHash: ").append(toIndentedString(schemaHash)).append("\n");
+    sb.append("    localTypeId: ").append(toIndentedString(localTypeId)).append("\n");
     sb.append("}");
     return sb.toString();
   }

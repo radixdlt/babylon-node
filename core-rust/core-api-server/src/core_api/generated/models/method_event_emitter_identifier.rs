@@ -18,11 +18,11 @@ pub struct MethodEventEmitterIdentifier {
     #[serde(rename = "entity")]
     pub entity: Box<crate::core_api::generated::models::EntityReference>,
     #[serde(rename = "object_module_id")]
-    pub object_module_id: crate::core_api::generated::models::ObjectModuleId,
+    pub object_module_id: crate::core_api::generated::models::ModuleId,
 }
 
 impl MethodEventEmitterIdentifier {
-    pub fn new(_type: crate::core_api::generated::models::EventEmitterIdentifierType, entity: crate::core_api::generated::models::EntityReference, object_module_id: crate::core_api::generated::models::ObjectModuleId) -> MethodEventEmitterIdentifier {
+    pub fn new(_type: crate::core_api::generated::models::EventEmitterIdentifierType, entity: crate::core_api::generated::models::EntityReference, object_module_id: crate::core_api::generated::models::ModuleId) -> MethodEventEmitterIdentifier {
         MethodEventEmitterIdentifier {
             _type,
             entity: Box::new(entity),

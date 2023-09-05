@@ -14,14 +14,14 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct ModuleVersion {
     #[serde(rename = "module")]
-    pub module: crate::core_api::generated::models::ModuleId,
+    pub module: crate::core_api::generated::models::AttachedModuleId,
     /// A string of `Major.Minor.Patch` where Major, Minor and Patch are all u32s.
     #[serde(rename = "version")]
     pub version: String,
 }
 
 impl ModuleVersion {
-    pub fn new(module: crate::core_api::generated::models::ModuleId, version: String) -> ModuleVersion {
+    pub fn new(module: crate::core_api::generated::models::AttachedModuleId, version: String) -> ModuleVersion {
         ModuleVersion {
             module,
             version,

@@ -14,13 +14,13 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct ObjectRoleKey {
     #[serde(rename = "object_module_id")]
-    pub object_module_id: crate::core_api::generated::models::ObjectModuleId,
+    pub object_module_id: crate::core_api::generated::models::ModuleId,
     #[serde(rename = "role_key")]
     pub role_key: String,
 }
 
 impl ObjectRoleKey {
-    pub fn new(object_module_id: crate::core_api::generated::models::ObjectModuleId, role_key: String) -> ObjectRoleKey {
+    pub fn new(object_module_id: crate::core_api::generated::models::ModuleId, role_key: String) -> ObjectRoleKey {
         ObjectRoleKey {
             object_module_id,
             role_key,

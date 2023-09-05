@@ -13,12 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { LocalTypeIndex } from './LocalTypeIndex';
+import type { FullyScopedTypeId } from './FullyScopedTypeId';
 import {
-    LocalTypeIndexFromJSON,
-    LocalTypeIndexFromJSONTyped,
-    LocalTypeIndexToJSON,
-} from './LocalTypeIndex';
+    FullyScopedTypeIdFromJSON,
+    FullyScopedTypeIdFromJSONTyped,
+    FullyScopedTypeIdToJSON,
+} from './FullyScopedTypeId';
 
 /**
  * 
@@ -33,23 +33,11 @@ export interface PackageObjectSubstateTypeReference {
      */
     type: PackageObjectSubstateTypeReferenceTypeEnum;
     /**
-     * The Bech32m-encoded human readable version of the package address
-     * @type {string}
-     * @memberof PackageObjectSubstateTypeReference
-     */
-    package_address: string;
-    /**
-     * The hex-encoded schema hash, capturing the identity of an SBOR schema.
-     * @type {string}
-     * @memberof PackageObjectSubstateTypeReference
-     */
-    schema_hash: string;
-    /**
      * 
-     * @type {LocalTypeIndex}
+     * @type {FullyScopedTypeId}
      * @memberof PackageObjectSubstateTypeReference
      */
-    local_type_index: LocalTypeIndex;
+    full_type_id: FullyScopedTypeId;
 }
 
 
@@ -68,9 +56,7 @@ export type PackageObjectSubstateTypeReferenceTypeEnum = typeof PackageObjectSub
 export function instanceOfPackageObjectSubstateTypeReference(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "type" in value;
-    isInstance = isInstance && "package_address" in value;
-    isInstance = isInstance && "schema_hash" in value;
-    isInstance = isInstance && "local_type_index" in value;
+    isInstance = isInstance && "full_type_id" in value;
 
     return isInstance;
 }
@@ -86,9 +72,7 @@ export function PackageObjectSubstateTypeReferenceFromJSONTyped(json: any, ignor
     return {
         
         'type': json['type'],
-        'package_address': json['package_address'],
-        'schema_hash': json['schema_hash'],
-        'local_type_index': LocalTypeIndexFromJSON(json['local_type_index']),
+        'full_type_id': FullyScopedTypeIdFromJSON(json['full_type_id']),
     };
 }
 
@@ -102,9 +86,7 @@ export function PackageObjectSubstateTypeReferenceToJSON(value?: PackageObjectSu
     return {
         
         'type': value.type,
-        'package_address': value.package_address,
-        'schema_hash': value.schema_hash,
-        'local_type_index': LocalTypeIndexToJSON(value.local_type_index),
+        'full_type_id': FullyScopedTypeIdToJSON(value.full_type_id),
     };
 }
 

@@ -13,29 +13,17 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct KeyValueStoreEntryStructureAllOf {
-    /// Bech32m-encoded human readable version of the entity's address (ie the entity's node id)
-    #[serde(rename = "key_value_store_address")]
-    pub key_value_store_address: String,
-    /// The hex-encoded schema hash, capturing the identity of an SBOR schema.
-    #[serde(rename = "key_schema_hash")]
-    pub key_schema_hash: String,
-    #[serde(rename = "key_local_type_index")]
-    pub key_local_type_index: Box<crate::core_api::generated::models::LocalTypeIndex>,
-    /// The hex-encoded schema hash, capturing the identity of an SBOR schema.
-    #[serde(rename = "value_schema_hash")]
-    pub value_schema_hash: String,
-    #[serde(rename = "value_local_type_index")]
-    pub value_local_type_index: Box<crate::core_api::generated::models::LocalTypeIndex>,
+    #[serde(rename = "key_full_type_id")]
+    pub key_full_type_id: Box<crate::core_api::generated::models::FullyScopedTypeId>,
+    #[serde(rename = "value_full_type_id")]
+    pub value_full_type_id: Box<crate::core_api::generated::models::FullyScopedTypeId>,
 }
 
 impl KeyValueStoreEntryStructureAllOf {
-    pub fn new(key_value_store_address: String, key_schema_hash: String, key_local_type_index: crate::core_api::generated::models::LocalTypeIndex, value_schema_hash: String, value_local_type_index: crate::core_api::generated::models::LocalTypeIndex) -> KeyValueStoreEntryStructureAllOf {
+    pub fn new(key_full_type_id: crate::core_api::generated::models::FullyScopedTypeId, value_full_type_id: crate::core_api::generated::models::FullyScopedTypeId) -> KeyValueStoreEntryStructureAllOf {
         KeyValueStoreEntryStructureAllOf {
-            key_value_store_address,
-            key_schema_hash,
-            key_local_type_index: Box::new(key_local_type_index),
-            value_schema_hash,
-            value_local_type_index: Box::new(value_local_type_index),
+            key_full_type_id: Box::new(key_full_type_id),
+            value_full_type_id: Box::new(value_full_type_id),
         }
     }
 }

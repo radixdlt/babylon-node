@@ -26,6 +26,7 @@ import com.radixdlt.api.core.generated.models.BlueprintPayloadDef;
 import com.radixdlt.api.core.generated.models.FunctionSchema;
 import com.radixdlt.api.core.generated.models.GenericTypeParameter;
 import com.radixdlt.api.core.generated.models.IndexedStateSchema;
+import com.radixdlt.api.core.generated.models.ScopedTypeId;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -45,7 +46,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   BlueprintInterface.JSON_PROPERTY_FEATURES,
   BlueprintInterface.JSON_PROPERTY_STATE,
   BlueprintInterface.JSON_PROPERTY_FUNCTIONS,
-  BlueprintInterface.JSON_PROPERTY_EVENTS
+  BlueprintInterface.JSON_PROPERTY_EVENTS,
+  BlueprintInterface.JSON_PROPERTY_TYPES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class BlueprintInterface {
@@ -69,6 +71,9 @@ public class BlueprintInterface {
 
   public static final String JSON_PROPERTY_EVENTS = "events";
   private Map<String, BlueprintPayloadDef> events = new HashMap<>();
+
+  public static final String JSON_PROPERTY_TYPES = "types";
+  private Map<String, ScopedTypeId> types = new HashMap<>();
 
   public BlueprintInterface() { 
   }
@@ -275,6 +280,37 @@ public class BlueprintInterface {
   }
 
 
+  public BlueprintInterface types(Map<String, ScopedTypeId> types) {
+    this.types = types;
+    return this;
+  }
+
+  public BlueprintInterface putTypesItem(String key, ScopedTypeId typesItem) {
+    this.types.put(key, typesItem);
+    return this;
+  }
+
+   /**
+   * A map from the registered type name to the concrete type, resolved against a schema from the package&#39;s schema partition. 
+   * @return types
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "A map from the registered type name to the concrete type, resolved against a schema from the package's schema partition. ")
+  @JsonProperty(JSON_PROPERTY_TYPES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Map<String, ScopedTypeId> getTypes() {
+    return types;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_TYPES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setTypes(Map<String, ScopedTypeId> types) {
+    this.types = types;
+  }
+
+
   /**
    * Return true if this BlueprintInterface object is equal to o.
    */
@@ -293,12 +329,13 @@ public class BlueprintInterface {
         Objects.equals(this.features, blueprintInterface.features) &&
         Objects.equals(this.state, blueprintInterface.state) &&
         Objects.equals(this.functions, blueprintInterface.functions) &&
-        Objects.equals(this.events, blueprintInterface.events);
+        Objects.equals(this.events, blueprintInterface.events) &&
+        Objects.equals(this.types, blueprintInterface.types);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(outerBlueprint, genericTypeParameters, isTransient, features, state, functions, events);
+    return Objects.hash(outerBlueprint, genericTypeParameters, isTransient, features, state, functions, events, types);
   }
 
   @Override
@@ -312,6 +349,7 @@ public class BlueprintInterface {
     sb.append("    state: ").append(toIndentedString(state)).append("\n");
     sb.append("    functions: ").append(toIndentedString(functions)).append("\n");
     sb.append("    events: ").append(toIndentedString(events)).append("\n");
+    sb.append("    types: ").append(toIndentedString(types)).append("\n");
     sb.append("}");
     return sb.toString();
   }

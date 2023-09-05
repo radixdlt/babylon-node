@@ -13,12 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { LocalTypeIndex } from './LocalTypeIndex';
+import type { FullyScopedTypeId } from './FullyScopedTypeId';
 import {
-    LocalTypeIndexFromJSON,
-    LocalTypeIndexFromJSONTyped,
-    LocalTypeIndexToJSON,
-} from './LocalTypeIndex';
+    FullyScopedTypeIdFromJSON,
+    FullyScopedTypeIdFromJSONTyped,
+    FullyScopedTypeIdToJSON,
+} from './FullyScopedTypeId';
 
 /**
  * 
@@ -33,29 +33,18 @@ export interface ObjectInstanceTypeReference {
      */
     type: ObjectInstanceTypeReferenceTypeEnum;
     /**
-     * Bech32m-encoded human readable version of the entity's address (ie the entity's node id)
-     * @type {string}
-     * @memberof ObjectInstanceTypeReference
-     */
-    entity_address: string;
-    /**
-     * The hex-encoded schema hash, capturing the identity of an SBOR schema.
-     * @type {string}
-     * @memberof ObjectInstanceTypeReference
-     */
-    schema_hash: string;
-    /**
      * 
+     * @type {FullyScopedTypeId}
+     * @memberof ObjectInstanceTypeReference
+     */
+    resolved_full_type_id: FullyScopedTypeId;
+    /**
+     * The index of the generic parameter in the instance definition.
+     * Was called the `instance_type_index`.
      * @type {number}
      * @memberof ObjectInstanceTypeReference
      */
-    instance_type_index: number;
-    /**
-     * 
-     * @type {LocalTypeIndex}
-     * @memberof ObjectInstanceTypeReference
-     */
-    local_type_index: LocalTypeIndex;
+    generic_index: number;
 }
 
 
@@ -74,10 +63,8 @@ export type ObjectInstanceTypeReferenceTypeEnum = typeof ObjectInstanceTypeRefer
 export function instanceOfObjectInstanceTypeReference(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "type" in value;
-    isInstance = isInstance && "entity_address" in value;
-    isInstance = isInstance && "schema_hash" in value;
-    isInstance = isInstance && "instance_type_index" in value;
-    isInstance = isInstance && "local_type_index" in value;
+    isInstance = isInstance && "resolved_full_type_id" in value;
+    isInstance = isInstance && "generic_index" in value;
 
     return isInstance;
 }
@@ -93,10 +80,8 @@ export function ObjectInstanceTypeReferenceFromJSONTyped(json: any, ignoreDiscri
     return {
         
         'type': json['type'],
-        'entity_address': json['entity_address'],
-        'schema_hash': json['schema_hash'],
-        'instance_type_index': json['instance_type_index'],
-        'local_type_index': LocalTypeIndexFromJSON(json['local_type_index']),
+        'resolved_full_type_id': FullyScopedTypeIdFromJSON(json['resolved_full_type_id']),
+        'generic_index': json['generic_index'],
     };
 }
 
@@ -110,10 +95,8 @@ export function ObjectInstanceTypeReferenceToJSON(value?: ObjectInstanceTypeRefe
     return {
         
         'type': value.type,
-        'entity_address': value.entity_address,
-        'schema_hash': value.schema_hash,
-        'instance_type_index': value.instance_type_index,
-        'local_type_index': LocalTypeIndexToJSON(value.local_type_index),
+        'resolved_full_type_id': FullyScopedTypeIdToJSON(value.resolved_full_type_id),
+        'generic_index': value.generic_index,
     };
 }
 

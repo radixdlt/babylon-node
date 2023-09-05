@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.TypeIdentifier;
+import com.radixdlt.api.core.generated.models.GenericSubstitution;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -39,10 +39,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class KeyValueStoreInfo {
   public static final String JSON_PROPERTY_KEY_GENERIC_SUBSTITUTION = "key_generic_substitution";
-  private TypeIdentifier keyGenericSubstitution;
+  private GenericSubstitution keyGenericSubstitution;
 
   public static final String JSON_PROPERTY_VALUE_GENERIC_SUBSTITUTION = "value_generic_substitution";
-  private TypeIdentifier valueGenericSubstitution;
+  private GenericSubstitution valueGenericSubstitution;
 
   public static final String JSON_PROPERTY_ALLOW_OWNERSHIP = "allow_ownership";
   private Boolean allowOwnership;
@@ -50,7 +50,7 @@ public class KeyValueStoreInfo {
   public KeyValueStoreInfo() { 
   }
 
-  public KeyValueStoreInfo keyGenericSubstitution(TypeIdentifier keyGenericSubstitution) {
+  public KeyValueStoreInfo keyGenericSubstitution(GenericSubstitution keyGenericSubstitution) {
     this.keyGenericSubstitution = keyGenericSubstitution;
     return this;
   }
@@ -64,19 +64,19 @@ public class KeyValueStoreInfo {
   @JsonProperty(JSON_PROPERTY_KEY_GENERIC_SUBSTITUTION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public TypeIdentifier getKeyGenericSubstitution() {
+  public GenericSubstitution getKeyGenericSubstitution() {
     return keyGenericSubstitution;
   }
 
 
   @JsonProperty(JSON_PROPERTY_KEY_GENERIC_SUBSTITUTION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setKeyGenericSubstitution(TypeIdentifier keyGenericSubstitution) {
+  public void setKeyGenericSubstitution(GenericSubstitution keyGenericSubstitution) {
     this.keyGenericSubstitution = keyGenericSubstitution;
   }
 
 
-  public KeyValueStoreInfo valueGenericSubstitution(TypeIdentifier valueGenericSubstitution) {
+  public KeyValueStoreInfo valueGenericSubstitution(GenericSubstitution valueGenericSubstitution) {
     this.valueGenericSubstitution = valueGenericSubstitution;
     return this;
   }
@@ -90,14 +90,14 @@ public class KeyValueStoreInfo {
   @JsonProperty(JSON_PROPERTY_VALUE_GENERIC_SUBSTITUTION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public TypeIdentifier getValueGenericSubstitution() {
+  public GenericSubstitution getValueGenericSubstitution() {
     return valueGenericSubstitution;
   }
 
 
   @JsonProperty(JSON_PROPERTY_VALUE_GENERIC_SUBSTITUTION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValueGenericSubstitution(TypeIdentifier valueGenericSubstitution) {
+  public void setValueGenericSubstitution(GenericSubstitution valueGenericSubstitution) {
     this.valueGenericSubstitution = valueGenericSubstitution;
   }
 

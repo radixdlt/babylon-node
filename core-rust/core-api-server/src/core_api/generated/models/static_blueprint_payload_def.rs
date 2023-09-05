@@ -16,11 +16,11 @@ pub struct StaticBlueprintPayloadDef {
     #[serde(rename = "type")]
     pub _type: crate::core_api::generated::models::BlueprintPayloadDefType,
     #[serde(rename = "type_id")]
-    pub type_id: Box<crate::core_api::generated::models::TypeIdentifier>,
+    pub type_id: Box<crate::core_api::generated::models::ScopedTypeId>,
 }
 
 impl StaticBlueprintPayloadDef {
-    pub fn new(_type: crate::core_api::generated::models::BlueprintPayloadDefType, type_id: crate::core_api::generated::models::TypeIdentifier) -> StaticBlueprintPayloadDef {
+    pub fn new(_type: crate::core_api::generated::models::BlueprintPayloadDefType, type_id: crate::core_api::generated::models::ScopedTypeId) -> StaticBlueprintPayloadDef {
         StaticBlueprintPayloadDef {
             _type,
             type_id: Box::new(type_id),

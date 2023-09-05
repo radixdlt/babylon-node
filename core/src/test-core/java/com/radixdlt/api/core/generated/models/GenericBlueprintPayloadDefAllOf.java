@@ -36,12 +36,12 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class GenericBlueprintPayloadDefAllOf {
   public static final String JSON_PROPERTY_GENERIC_INDEX = "generic_index";
-  private Long genericIndex;
+  private Integer genericIndex;
 
   public GenericBlueprintPayloadDefAllOf() { 
   }
 
-  public GenericBlueprintPayloadDefAllOf genericIndex(Long genericIndex) {
+  public GenericBlueprintPayloadDefAllOf genericIndex(Integer genericIndex) {
     this.genericIndex = genericIndex;
     return this;
   }
@@ -49,7 +49,7 @@ public class GenericBlueprintPayloadDefAllOf {
    /**
    * An index within the list of generic type substitutions.
    * minimum: 0
-   * maximum: 4294967295
+   * maximum: 255
    * @return genericIndex
   **/
   @javax.annotation.Nonnull
@@ -57,14 +57,14 @@ public class GenericBlueprintPayloadDefAllOf {
   @JsonProperty(JSON_PROPERTY_GENERIC_INDEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Long getGenericIndex() {
+  public Integer getGenericIndex() {
     return genericIndex;
   }
 
 
   @JsonProperty(JSON_PROPERTY_GENERIC_INDEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setGenericIndex(Long genericIndex) {
+  public void setGenericIndex(Integer genericIndex) {
     this.genericIndex = genericIndex;
   }
 

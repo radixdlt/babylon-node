@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.ObjectModuleId;
+import com.radixdlt.api.core.generated.models.ModuleId;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -38,7 +38,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ObjectRoleKey {
   public static final String JSON_PROPERTY_OBJECT_MODULE_ID = "object_module_id";
-  private ObjectModuleId objectModuleId;
+  private ModuleId objectModuleId;
 
   public static final String JSON_PROPERTY_ROLE_KEY = "role_key";
   private String roleKey;
@@ -46,7 +46,7 @@ public class ObjectRoleKey {
   public ObjectRoleKey() { 
   }
 
-  public ObjectRoleKey objectModuleId(ObjectModuleId objectModuleId) {
+  public ObjectRoleKey objectModuleId(ModuleId objectModuleId) {
     this.objectModuleId = objectModuleId;
     return this;
   }
@@ -60,14 +60,14 @@ public class ObjectRoleKey {
   @JsonProperty(JSON_PROPERTY_OBJECT_MODULE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ObjectModuleId getObjectModuleId() {
+  public ModuleId getObjectModuleId() {
     return objectModuleId;
   }
 
 
   @JsonProperty(JSON_PROPERTY_OBJECT_MODULE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setObjectModuleId(ObjectModuleId objectModuleId) {
+  public void setObjectModuleId(ModuleId objectModuleId) {
     this.objectModuleId = objectModuleId;
   }
 

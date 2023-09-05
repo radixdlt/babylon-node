@@ -13,12 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { LocalTypeIndex } from './LocalTypeIndex';
+import type { LocalTypeId } from './LocalTypeId';
 import {
-    LocalTypeIndexFromJSON,
-    LocalTypeIndexFromJSONTyped,
-    LocalTypeIndexToJSON,
-} from './LocalTypeIndex';
+    LocalTypeIdFromJSON,
+    LocalTypeIdFromJSONTyped,
+    LocalTypeIdToJSON,
+} from './LocalTypeId';
 
 /**
  * 
@@ -28,10 +28,10 @@ import {
 export interface BlueprintSchemaBlueprintTypeReferenceAllOf {
     /**
      * 
-     * @type {LocalTypeIndex}
+     * @type {LocalTypeId}
      * @memberof BlueprintSchemaBlueprintTypeReferenceAllOf
      */
-    local_type_index: LocalTypeIndex;
+    local_type_id: LocalTypeId;
     /**
      * 
      * @type {string}
@@ -55,7 +55,7 @@ export type BlueprintSchemaBlueprintTypeReferenceAllOfTypeEnum = typeof Blueprin
  */
 export function instanceOfBlueprintSchemaBlueprintTypeReferenceAllOf(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "local_type_index" in value;
+    isInstance = isInstance && "local_type_id" in value;
 
     return isInstance;
 }
@@ -70,7 +70,7 @@ export function BlueprintSchemaBlueprintTypeReferenceAllOfFromJSONTyped(json: an
     }
     return {
         
-        'local_type_index': LocalTypeIndexFromJSON(json['local_type_index']),
+        'local_type_id': LocalTypeIdFromJSON(json['local_type_id']),
         'type': !exists(json, 'type') ? undefined : json['type'],
     };
 }
@@ -84,7 +84,7 @@ export function BlueprintSchemaBlueprintTypeReferenceAllOfToJSON(value?: Bluepri
     }
     return {
         
-        'local_type_index': LocalTypeIndexToJSON(value.local_type_index),
+        'local_type_id': LocalTypeIdToJSON(value.local_type_id),
         'type': value.type,
     };
 }

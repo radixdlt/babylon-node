@@ -13,12 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { TypeIdentifier } from './TypeIdentifier';
+import type { ScopedTypeId } from './ScopedTypeId';
 import {
-    TypeIdentifierFromJSON,
-    TypeIdentifierFromJSONTyped,
-    TypeIdentifierToJSON,
-} from './TypeIdentifier';
+    ScopedTypeIdFromJSON,
+    ScopedTypeIdFromJSONTyped,
+    ScopedTypeIdToJSON,
+} from './ScopedTypeId';
 
 /**
  * 
@@ -34,10 +34,10 @@ export interface StaticBlueprintPayloadDef {
     type: StaticBlueprintPayloadDefTypeEnum;
     /**
      * 
-     * @type {TypeIdentifier}
+     * @type {ScopedTypeId}
      * @memberof StaticBlueprintPayloadDef
      */
-    type_id: TypeIdentifier;
+    type_id: ScopedTypeId;
 }
 
 
@@ -72,7 +72,7 @@ export function StaticBlueprintPayloadDefFromJSONTyped(json: any, ignoreDiscrimi
     return {
         
         'type': json['type'],
-        'type_id': TypeIdentifierFromJSON(json['type_id']),
+        'type_id': ScopedTypeIdFromJSON(json['type_id']),
     };
 }
 
@@ -86,7 +86,7 @@ export function StaticBlueprintPayloadDefToJSON(value?: StaticBlueprintPayloadDe
     return {
         
         'type': value.type,
-        'type_id': TypeIdentifierToJSON(value.type_id),
+        'type_id': ScopedTypeIdToJSON(value.type_id),
     };
 }
 

@@ -13,22 +13,14 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct PackageTypeReference {
-    /// The Bech32m-encoded human readable version of the package address
-    #[serde(rename = "package_address")]
-    pub package_address: String,
-    /// The hex-encoded schema hash, capturing the identity of an SBOR schema.
-    #[serde(rename = "schema_hash")]
-    pub schema_hash: String,
-    #[serde(rename = "local_type_index")]
-    pub local_type_index: Box<crate::core_api::generated::models::LocalTypeIndex>,
+    #[serde(rename = "full_type_id")]
+    pub full_type_id: Box<crate::core_api::generated::models::FullyScopedTypeId>,
 }
 
 impl PackageTypeReference {
-    pub fn new(package_address: String, schema_hash: String, local_type_index: crate::core_api::generated::models::LocalTypeIndex) -> PackageTypeReference {
+    pub fn new(full_type_id: crate::core_api::generated::models::FullyScopedTypeId) -> PackageTypeReference {
         PackageTypeReference {
-            package_address,
-            schema_hash,
-            local_type_index: Box::new(local_type_index),
+            full_type_id: Box::new(full_type_id),
         }
     }
 }

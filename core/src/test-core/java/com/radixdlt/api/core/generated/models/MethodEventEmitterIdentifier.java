@@ -31,7 +31,7 @@ import com.radixdlt.api.core.generated.models.EventEmitterIdentifierType;
 import com.radixdlt.api.core.generated.models.FunctionEventEmitterIdentifier;
 import com.radixdlt.api.core.generated.models.MethodEventEmitterIdentifier;
 import com.radixdlt.api.core.generated.models.MethodEventEmitterIdentifierAllOf;
-import com.radixdlt.api.core.generated.models.ObjectModuleId;
+import com.radixdlt.api.core.generated.models.ModuleId;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -61,7 +61,7 @@ public class MethodEventEmitterIdentifier extends EventEmitterIdentifier {
   private EntityReference entity;
 
   public static final String JSON_PROPERTY_OBJECT_MODULE_ID = "object_module_id";
-  private ObjectModuleId objectModuleId;
+  private ModuleId objectModuleId;
 
   public MethodEventEmitterIdentifier() { 
   }
@@ -92,7 +92,7 @@ public class MethodEventEmitterIdentifier extends EventEmitterIdentifier {
   }
 
 
-  public MethodEventEmitterIdentifier objectModuleId(ObjectModuleId objectModuleId) {
+  public MethodEventEmitterIdentifier objectModuleId(ModuleId objectModuleId) {
     this.objectModuleId = objectModuleId;
     return this;
   }
@@ -106,14 +106,14 @@ public class MethodEventEmitterIdentifier extends EventEmitterIdentifier {
   @JsonProperty(JSON_PROPERTY_OBJECT_MODULE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ObjectModuleId getObjectModuleId() {
+  public ModuleId getObjectModuleId() {
     return objectModuleId;
   }
 
 
   @JsonProperty(JSON_PROPERTY_OBJECT_MODULE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setObjectModuleId(ObjectModuleId objectModuleId) {
+  public void setObjectModuleId(ModuleId objectModuleId) {
     this.objectModuleId = objectModuleId;
   }
 

@@ -3,7 +3,7 @@ use std::any::type_name;
 use radix_engine_common::math::*;
 use radix_engine_interface::blueprints::package::BlueprintVersion;
 use radix_engine_interface::prelude::*;
-use sbor::WellKnownTypeIndex;
+use sbor::WellKnownTypeId;
 use state_manager::store::traits::scenario::ScenarioSequenceNumber;
 use state_manager::StateVersion;
 
@@ -57,8 +57,8 @@ pub fn to_api_active_validator_index(index: ValidatorIndex) -> models::ActiveVal
     }
 }
 
-pub fn to_api_well_known_type_index(index: &WellKnownTypeIndex) -> Result<i64, MappingError> {
-    index
+pub fn to_api_well_known_type_id(well_known_type_id: &WellKnownTypeId) -> Result<i64, MappingError> {
+    well_known_type_id
         .as_index()
         .try_into()
         .map_err(|_| MappingError::IntegerError {
@@ -265,32 +265,32 @@ pub trait PanickingOps: Sized {
 
 impl<T> PanickingOps for T
 where
-    T: SafeAdd<Output = T>
-        + SafeSub<Output = T>
-        + SafeDiv<Output = T>
-        + SafeMul<Output = T>
-        + SafeNeg<Output = T>
+    T: CheckedAdd<Output = T>
+        + CheckedSub<Output = T>
+        + CheckedDiv<Output = T>
+        + CheckedMul<Output = T>
+        + CheckedNeg<Output = T>
         + Copy
         + Display,
 {
     fn add_or_panic(self, rhs: Self) -> Self {
-        op_or_panic(self, "+", rhs, self.safe_add(rhs))
+        op_or_panic(self, "+", rhs, self.checked_add(rhs))
     }
 
     fn sub_or_panic(self, rhs: Self) -> Self {
-        op_or_panic(self, "-", rhs, self.safe_sub(rhs))
+        op_or_panic(self, "-", rhs, self.checked_sub(rhs))
     }
 
     fn mul_or_panic(self, rhs: Self) -> Self {
-        op_or_panic(self, "*", rhs, self.safe_mul(rhs))
+        op_or_panic(self, "*", rhs, self.checked_mul(rhs))
     }
 
     fn div_or_panic(self, rhs: Self) -> Self {
-        op_or_panic(self, "/", rhs, self.safe_div(rhs))
+        op_or_panic(self, "/", rhs, self.checked_div(rhs))
     }
 
     fn neg_or_panic(self) -> Self {
-        if let Some(result) = self.safe_neg() {
+        if let Some(result) = self.checked_neg() {
             result
         } else {
             panic!("result of -{} does not fit in {}", self, type_name::<T>());
@@ -305,12 +305,12 @@ pub trait PanickingSumIterator<E> {
 impl<T, E> PanickingSumIterator<E> for T
 where
     T: Iterator<Item = E>,
-    E: Default + SafeAdd<Output = E> + Copy + Display,
+    E: Default + CheckedAdd<Output = E> + Copy + Display,
 {
     fn sum_or_panic(self) -> E {
         let mut result = E::default();
         for (index, element) in self.enumerate() {
-            let sum = result.safe_add(element);
+            let sum = result.checked_add(element);
             if let Some(sum) = sum {
                 result = sum;
             } else {

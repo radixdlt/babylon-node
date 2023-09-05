@@ -16,11 +16,11 @@ pub struct MethodEventEmitterIdentifierAllOf {
     #[serde(rename = "entity")]
     pub entity: Box<crate::core_api::generated::models::EntityReference>,
     #[serde(rename = "object_module_id")]
-    pub object_module_id: crate::core_api::generated::models::ObjectModuleId,
+    pub object_module_id: crate::core_api::generated::models::ModuleId,
 }
 
 impl MethodEventEmitterIdentifierAllOf {
-    pub fn new(entity: crate::core_api::generated::models::EntityReference, object_module_id: crate::core_api::generated::models::ObjectModuleId) -> MethodEventEmitterIdentifierAllOf {
+    pub fn new(entity: crate::core_api::generated::models::EntityReference, object_module_id: crate::core_api::generated::models::ModuleId) -> MethodEventEmitterIdentifierAllOf {
         MethodEventEmitterIdentifierAllOf {
             entity: Box::new(entity),
             object_module_id,

@@ -13,81 +13,70 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { SborData } from './SborData';
+import type { BlueprintTypeIdentifier } from './BlueprintTypeIdentifier';
 import {
-    SborDataFromJSON,
-    SborDataFromJSONTyped,
-    SborDataToJSON,
-} from './SborData';
+    BlueprintTypeIdentifierFromJSON,
+    BlueprintTypeIdentifierFromJSONTyped,
+    BlueprintTypeIdentifierToJSON,
+} from './BlueprintTypeIdentifier';
 
 /**
  * 
  * @export
- * @interface LocalTypeIndex
+ * @interface RemoteGenericSubstition
  */
-export interface LocalTypeIndex {
-    /**
-     * The location against which to resolve this type reference.
-     * @type {string}
-     * @memberof LocalTypeIndex
-     */
-    kind: LocalTypeIndexKindEnum;
-    /**
-     * A reference to a type, interpreted according to `kind`:
-     * - if `WellKnown`, then it is a pointer to a well known scrypto type with that ID,
-     * - if `SchemaLocal`, then it is a pointer into the given schema.
-     * @type {number}
-     * @memberof LocalTypeIndex
-     */
-    index: number;
+export interface RemoteGenericSubstition {
     /**
      * 
-     * @type {SborData}
-     * @memberof LocalTypeIndex
+     * @type {string}
+     * @memberof RemoteGenericSubstition
      */
-    as_sbor: SborData;
+    type: RemoteGenericSubstitionTypeEnum;
+    /**
+     * 
+     * @type {BlueprintTypeIdentifier}
+     * @memberof RemoteGenericSubstition
+     */
+    blueprint_type_identifier: BlueprintTypeIdentifier;
 }
 
 
 /**
  * @export
  */
-export const LocalTypeIndexKindEnum = {
-    WellKnown: 'WellKnown',
-    SchemaLocal: 'SchemaLocal'
+export const RemoteGenericSubstitionTypeEnum = {
+    Remote: 'Remote'
 } as const;
-export type LocalTypeIndexKindEnum = typeof LocalTypeIndexKindEnum[keyof typeof LocalTypeIndexKindEnum];
+export type RemoteGenericSubstitionTypeEnum = typeof RemoteGenericSubstitionTypeEnum[keyof typeof RemoteGenericSubstitionTypeEnum];
 
 
 /**
- * Check if a given object implements the LocalTypeIndex interface.
+ * Check if a given object implements the RemoteGenericSubstition interface.
  */
-export function instanceOfLocalTypeIndex(value: object): boolean {
+export function instanceOfRemoteGenericSubstition(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "kind" in value;
-    isInstance = isInstance && "index" in value;
-    isInstance = isInstance && "as_sbor" in value;
+    isInstance = isInstance && "type" in value;
+    isInstance = isInstance && "blueprint_type_identifier" in value;
 
     return isInstance;
 }
 
-export function LocalTypeIndexFromJSON(json: any): LocalTypeIndex {
-    return LocalTypeIndexFromJSONTyped(json, false);
+export function RemoteGenericSubstitionFromJSON(json: any): RemoteGenericSubstition {
+    return RemoteGenericSubstitionFromJSONTyped(json, false);
 }
 
-export function LocalTypeIndexFromJSONTyped(json: any, ignoreDiscriminator: boolean): LocalTypeIndex {
+export function RemoteGenericSubstitionFromJSONTyped(json: any, ignoreDiscriminator: boolean): RemoteGenericSubstition {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'kind': json['kind'],
-        'index': json['index'],
-        'as_sbor': SborDataFromJSON(json['as_sbor']),
+        'type': json['type'],
+        'blueprint_type_identifier': BlueprintTypeIdentifierFromJSON(json['blueprint_type_identifier']),
     };
 }
 
-export function LocalTypeIndexToJSON(value?: LocalTypeIndex | null): any {
+export function RemoteGenericSubstitionToJSON(value?: RemoteGenericSubstition | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -96,9 +85,8 @@ export function LocalTypeIndexToJSON(value?: LocalTypeIndex | null): any {
     }
     return {
         
-        'kind': value.kind,
-        'index': value.index,
-        'as_sbor': SborDataToJSON(value.as_sbor),
+        'type': value.type,
+        'blueprint_type_identifier': BlueprintTypeIdentifierToJSON(value.blueprint_type_identifier),
     };
 }
 

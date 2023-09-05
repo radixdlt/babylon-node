@@ -13,12 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { LocalTypeIndex } from './LocalTypeIndex';
+import type { FullyScopedTypeId } from './FullyScopedTypeId';
 import {
-    LocalTypeIndexFromJSON,
-    LocalTypeIndexFromJSONTyped,
-    LocalTypeIndexToJSON,
-} from './LocalTypeIndex';
+    FullyScopedTypeIdFromJSON,
+    FullyScopedTypeIdFromJSONTyped,
+    FullyScopedTypeIdToJSON,
+} from './FullyScopedTypeId';
 
 /**
  * 
@@ -27,35 +27,17 @@ import {
  */
 export interface KeyValueStoreEntryStructureAllOf {
     /**
-     * Bech32m-encoded human readable version of the entity's address (ie the entity's node id)
-     * @type {string}
+     * 
+     * @type {FullyScopedTypeId}
      * @memberof KeyValueStoreEntryStructureAllOf
      */
-    key_value_store_address: string;
-    /**
-     * The hex-encoded schema hash, capturing the identity of an SBOR schema.
-     * @type {string}
-     * @memberof KeyValueStoreEntryStructureAllOf
-     */
-    key_schema_hash: string;
+    key_full_type_id: FullyScopedTypeId;
     /**
      * 
-     * @type {LocalTypeIndex}
+     * @type {FullyScopedTypeId}
      * @memberof KeyValueStoreEntryStructureAllOf
      */
-    key_local_type_index: LocalTypeIndex;
-    /**
-     * The hex-encoded schema hash, capturing the identity of an SBOR schema.
-     * @type {string}
-     * @memberof KeyValueStoreEntryStructureAllOf
-     */
-    value_schema_hash: string;
-    /**
-     * 
-     * @type {LocalTypeIndex}
-     * @memberof KeyValueStoreEntryStructureAllOf
-     */
-    value_local_type_index: LocalTypeIndex;
+    value_full_type_id: FullyScopedTypeId;
     /**
      * 
      * @type {string}
@@ -79,11 +61,8 @@ export type KeyValueStoreEntryStructureAllOfTypeEnum = typeof KeyValueStoreEntry
  */
 export function instanceOfKeyValueStoreEntryStructureAllOf(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "key_value_store_address" in value;
-    isInstance = isInstance && "key_schema_hash" in value;
-    isInstance = isInstance && "key_local_type_index" in value;
-    isInstance = isInstance && "value_schema_hash" in value;
-    isInstance = isInstance && "value_local_type_index" in value;
+    isInstance = isInstance && "key_full_type_id" in value;
+    isInstance = isInstance && "value_full_type_id" in value;
 
     return isInstance;
 }
@@ -98,11 +77,8 @@ export function KeyValueStoreEntryStructureAllOfFromJSONTyped(json: any, ignoreD
     }
     return {
         
-        'key_value_store_address': json['key_value_store_address'],
-        'key_schema_hash': json['key_schema_hash'],
-        'key_local_type_index': LocalTypeIndexFromJSON(json['key_local_type_index']),
-        'value_schema_hash': json['value_schema_hash'],
-        'value_local_type_index': LocalTypeIndexFromJSON(json['value_local_type_index']),
+        'key_full_type_id': FullyScopedTypeIdFromJSON(json['key_full_type_id']),
+        'value_full_type_id': FullyScopedTypeIdFromJSON(json['value_full_type_id']),
         'type': !exists(json, 'type') ? undefined : json['type'],
     };
 }
@@ -116,11 +92,8 @@ export function KeyValueStoreEntryStructureAllOfToJSON(value?: KeyValueStoreEntr
     }
     return {
         
-        'key_value_store_address': value.key_value_store_address,
-        'key_schema_hash': value.key_schema_hash,
-        'key_local_type_index': LocalTypeIndexToJSON(value.key_local_type_index),
-        'value_schema_hash': value.value_schema_hash,
-        'value_local_type_index': LocalTypeIndexToJSON(value.value_local_type_index),
+        'key_full_type_id': FullyScopedTypeIdToJSON(value.key_full_type_id),
+        'value_full_type_id': FullyScopedTypeIdToJSON(value.value_full_type_id),
         'type': value.type,
     };
 }

@@ -13,12 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { TypeIdentifier } from './TypeIdentifier';
+import type { GenericSubstitution } from './GenericSubstitution';
 import {
-    TypeIdentifierFromJSON,
-    TypeIdentifierFromJSONTyped,
-    TypeIdentifierToJSON,
-} from './TypeIdentifier';
+    GenericSubstitutionFromJSON,
+    GenericSubstitutionFromJSONTyped,
+    GenericSubstitutionToJSON,
+} from './GenericSubstitution';
 
 /**
  * 
@@ -28,16 +28,16 @@ import {
 export interface KeyValueStoreInfo {
     /**
      * 
-     * @type {TypeIdentifier}
+     * @type {GenericSubstitution}
      * @memberof KeyValueStoreInfo
      */
-    key_generic_substitution: TypeIdentifier;
+    key_generic_substitution: GenericSubstitution;
     /**
      * 
-     * @type {TypeIdentifier}
+     * @type {GenericSubstitution}
      * @memberof KeyValueStoreInfo
      */
-    value_generic_substitution: TypeIdentifier;
+    value_generic_substitution: GenericSubstitution;
     /**
      * Whether the entries of the key-value partition are allowed to own child nodes.
      * @type {boolean}
@@ -68,8 +68,8 @@ export function KeyValueStoreInfoFromJSONTyped(json: any, ignoreDiscriminator: b
     }
     return {
         
-        'key_generic_substitution': TypeIdentifierFromJSON(json['key_generic_substitution']),
-        'value_generic_substitution': TypeIdentifierFromJSON(json['value_generic_substitution']),
+        'key_generic_substitution': GenericSubstitutionFromJSON(json['key_generic_substitution']),
+        'value_generic_substitution': GenericSubstitutionFromJSON(json['value_generic_substitution']),
         'allow_ownership': json['allow_ownership'],
     };
 }
@@ -83,8 +83,8 @@ export function KeyValueStoreInfoToJSON(value?: KeyValueStoreInfo | null): any {
     }
     return {
         
-        'key_generic_substitution': TypeIdentifierToJSON(value.key_generic_substitution),
-        'value_generic_substitution': TypeIdentifierToJSON(value.value_generic_substitution),
+        'key_generic_substitution': GenericSubstitutionToJSON(value.key_generic_substitution),
+        'value_generic_substitution': GenericSubstitutionToJSON(value.value_generic_substitution),
         'allow_ownership': value.allow_ownership,
     };
 }

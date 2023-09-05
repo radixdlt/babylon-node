@@ -9,35 +9,20 @@
  */
 
 
-/// 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
-pub enum ObjectModuleId {
-    #[serde(rename = "Main")]
-    Main,
-    #[serde(rename = "Metadata")]
-    Metadata,
-    #[serde(rename = "Royalty")]
-    Royalty,
-    #[serde(rename = "RoleAssignment")]
-    RoleAssignment,
 
-}
-
-impl ToString for ObjectModuleId {
-    fn to_string(&self) -> String {
-        match self {
-            Self::Main => String::from("Main"),
-            Self::Metadata => String::from("Metadata"),
-            Self::Royalty => String::from("Royalty"),
-            Self::RoleAssignment => String::from("RoleAssignment"),
-        }
-    }
-}
-
-impl Default for ObjectModuleId {
-    fn default() -> ObjectModuleId {
-        Self::Main
-    }
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(tag = "type")]
+pub enum GenericSubstitution {
+    #[serde(rename="Local")]
+    LocalGenericSubstition {
+        #[serde(rename = "scoped_type_id")]
+        scoped_type_id: Box<crate::core_api::generated::models::ScopedTypeId>,
+    },
+    #[serde(rename="Remote")]
+    RemoteGenericSubstition {
+        #[serde(rename = "blueprint_type_identifier")]
+        blueprint_type_identifier: Box<crate::core_api::generated::models::BlueprintTypeIdentifier>,
+    },
 }
 
 

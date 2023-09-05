@@ -69,7 +69,7 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
                 let substate_changes =
                     ProcessedCommitResult::compute_substate_changes::<S, SpreadPrefixKeyMapper>(
                         read_store.deref(),
-                        &commit.state_updates.system_updates,
+                        &commit.state_updates,
                     );
                 let global_balance_update = ProcessedCommitResult::compute_global_balance_update(
                     read_store.deref(),

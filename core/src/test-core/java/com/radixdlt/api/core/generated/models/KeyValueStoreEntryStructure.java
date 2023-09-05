@@ -25,9 +25,9 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.FullyScopedTypeId;
 import com.radixdlt.api.core.generated.models.KeyValueStoreEntryStructure;
 import com.radixdlt.api.core.generated.models.KeyValueStoreEntryStructureAllOf;
-import com.radixdlt.api.core.generated.models.LocalTypeIndex;
 import com.radixdlt.api.core.generated.models.ObjectFieldStructure;
 import com.radixdlt.api.core.generated.models.ObjectIndexPartitionEntryStructure;
 import com.radixdlt.api.core.generated.models.ObjectKeyValuePartitionEntryStructure;
@@ -46,11 +46,8 @@ import com.radixdlt.api.core.generated.client.JSON;
  * KeyValueStoreEntryStructure
  */
 @JsonPropertyOrder({
-  KeyValueStoreEntryStructure.JSON_PROPERTY_KEY_VALUE_STORE_ADDRESS,
-  KeyValueStoreEntryStructure.JSON_PROPERTY_KEY_SCHEMA_HASH,
-  KeyValueStoreEntryStructure.JSON_PROPERTY_KEY_LOCAL_TYPE_INDEX,
-  KeyValueStoreEntryStructure.JSON_PROPERTY_VALUE_SCHEMA_HASH,
-  KeyValueStoreEntryStructure.JSON_PROPERTY_VALUE_LOCAL_TYPE_INDEX
+  KeyValueStoreEntryStructure.JSON_PROPERTY_KEY_FULL_TYPE_ID,
+  KeyValueStoreEntryStructure.JSON_PROPERTY_VALUE_FULL_TYPE_ID
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -69,151 +66,64 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class KeyValueStoreEntryStructure extends SubstateSystemStructure {
-  public static final String JSON_PROPERTY_KEY_VALUE_STORE_ADDRESS = "key_value_store_address";
-  private String keyValueStoreAddress;
+  public static final String JSON_PROPERTY_KEY_FULL_TYPE_ID = "key_full_type_id";
+  private FullyScopedTypeId keyFullTypeId;
 
-  public static final String JSON_PROPERTY_KEY_SCHEMA_HASH = "key_schema_hash";
-  private String keySchemaHash;
-
-  public static final String JSON_PROPERTY_KEY_LOCAL_TYPE_INDEX = "key_local_type_index";
-  private LocalTypeIndex keyLocalTypeIndex;
-
-  public static final String JSON_PROPERTY_VALUE_SCHEMA_HASH = "value_schema_hash";
-  private String valueSchemaHash;
-
-  public static final String JSON_PROPERTY_VALUE_LOCAL_TYPE_INDEX = "value_local_type_index";
-  private LocalTypeIndex valueLocalTypeIndex;
+  public static final String JSON_PROPERTY_VALUE_FULL_TYPE_ID = "value_full_type_id";
+  private FullyScopedTypeId valueFullTypeId;
 
   public KeyValueStoreEntryStructure() { 
   }
 
-  public KeyValueStoreEntryStructure keyValueStoreAddress(String keyValueStoreAddress) {
-    this.keyValueStoreAddress = keyValueStoreAddress;
+  public KeyValueStoreEntryStructure keyFullTypeId(FullyScopedTypeId keyFullTypeId) {
+    this.keyFullTypeId = keyFullTypeId;
     return this;
   }
 
    /**
-   * Bech32m-encoded human readable version of the entity&#39;s address (ie the entity&#39;s node id)
-   * @return keyValueStoreAddress
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "Bech32m-encoded human readable version of the entity's address (ie the entity's node id)")
-  @JsonProperty(JSON_PROPERTY_KEY_VALUE_STORE_ADDRESS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getKeyValueStoreAddress() {
-    return keyValueStoreAddress;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_KEY_VALUE_STORE_ADDRESS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setKeyValueStoreAddress(String keyValueStoreAddress) {
-    this.keyValueStoreAddress = keyValueStoreAddress;
-  }
-
-
-  public KeyValueStoreEntryStructure keySchemaHash(String keySchemaHash) {
-    this.keySchemaHash = keySchemaHash;
-    return this;
-  }
-
-   /**
-   * The hex-encoded schema hash, capturing the identity of an SBOR schema.
-   * @return keySchemaHash
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded schema hash, capturing the identity of an SBOR schema.")
-  @JsonProperty(JSON_PROPERTY_KEY_SCHEMA_HASH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getKeySchemaHash() {
-    return keySchemaHash;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_KEY_SCHEMA_HASH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setKeySchemaHash(String keySchemaHash) {
-    this.keySchemaHash = keySchemaHash;
-  }
-
-
-  public KeyValueStoreEntryStructure keyLocalTypeIndex(LocalTypeIndex keyLocalTypeIndex) {
-    this.keyLocalTypeIndex = keyLocalTypeIndex;
-    return this;
-  }
-
-   /**
-   * Get keyLocalTypeIndex
-   * @return keyLocalTypeIndex
+   * Get keyFullTypeId
+   * @return keyFullTypeId
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_KEY_LOCAL_TYPE_INDEX)
+  @JsonProperty(JSON_PROPERTY_KEY_FULL_TYPE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public LocalTypeIndex getKeyLocalTypeIndex() {
-    return keyLocalTypeIndex;
+  public FullyScopedTypeId getKeyFullTypeId() {
+    return keyFullTypeId;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_KEY_LOCAL_TYPE_INDEX)
+  @JsonProperty(JSON_PROPERTY_KEY_FULL_TYPE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setKeyLocalTypeIndex(LocalTypeIndex keyLocalTypeIndex) {
-    this.keyLocalTypeIndex = keyLocalTypeIndex;
+  public void setKeyFullTypeId(FullyScopedTypeId keyFullTypeId) {
+    this.keyFullTypeId = keyFullTypeId;
   }
 
 
-  public KeyValueStoreEntryStructure valueSchemaHash(String valueSchemaHash) {
-    this.valueSchemaHash = valueSchemaHash;
+  public KeyValueStoreEntryStructure valueFullTypeId(FullyScopedTypeId valueFullTypeId) {
+    this.valueFullTypeId = valueFullTypeId;
     return this;
   }
 
    /**
-   * The hex-encoded schema hash, capturing the identity of an SBOR schema.
-   * @return valueSchemaHash
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded schema hash, capturing the identity of an SBOR schema.")
-  @JsonProperty(JSON_PROPERTY_VALUE_SCHEMA_HASH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getValueSchemaHash() {
-    return valueSchemaHash;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_VALUE_SCHEMA_HASH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValueSchemaHash(String valueSchemaHash) {
-    this.valueSchemaHash = valueSchemaHash;
-  }
-
-
-  public KeyValueStoreEntryStructure valueLocalTypeIndex(LocalTypeIndex valueLocalTypeIndex) {
-    this.valueLocalTypeIndex = valueLocalTypeIndex;
-    return this;
-  }
-
-   /**
-   * Get valueLocalTypeIndex
-   * @return valueLocalTypeIndex
+   * Get valueFullTypeId
+   * @return valueFullTypeId
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VALUE_LOCAL_TYPE_INDEX)
+  @JsonProperty(JSON_PROPERTY_VALUE_FULL_TYPE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public LocalTypeIndex getValueLocalTypeIndex() {
-    return valueLocalTypeIndex;
+  public FullyScopedTypeId getValueFullTypeId() {
+    return valueFullTypeId;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_VALUE_LOCAL_TYPE_INDEX)
+  @JsonProperty(JSON_PROPERTY_VALUE_FULL_TYPE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValueLocalTypeIndex(LocalTypeIndex valueLocalTypeIndex) {
-    this.valueLocalTypeIndex = valueLocalTypeIndex;
+  public void setValueFullTypeId(FullyScopedTypeId valueFullTypeId) {
+    this.valueFullTypeId = valueFullTypeId;
   }
 
 
@@ -229,17 +139,14 @@ public class KeyValueStoreEntryStructure extends SubstateSystemStructure {
       return false;
     }
     KeyValueStoreEntryStructure keyValueStoreEntryStructure = (KeyValueStoreEntryStructure) o;
-    return Objects.equals(this.keyValueStoreAddress, keyValueStoreEntryStructure.keyValueStoreAddress) &&
-        Objects.equals(this.keySchemaHash, keyValueStoreEntryStructure.keySchemaHash) &&
-        Objects.equals(this.keyLocalTypeIndex, keyValueStoreEntryStructure.keyLocalTypeIndex) &&
-        Objects.equals(this.valueSchemaHash, keyValueStoreEntryStructure.valueSchemaHash) &&
-        Objects.equals(this.valueLocalTypeIndex, keyValueStoreEntryStructure.valueLocalTypeIndex) &&
+    return Objects.equals(this.keyFullTypeId, keyValueStoreEntryStructure.keyFullTypeId) &&
+        Objects.equals(this.valueFullTypeId, keyValueStoreEntryStructure.valueFullTypeId) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(keyValueStoreAddress, keySchemaHash, keyLocalTypeIndex, valueSchemaHash, valueLocalTypeIndex, super.hashCode());
+    return Objects.hash(keyFullTypeId, valueFullTypeId, super.hashCode());
   }
 
   @Override
@@ -247,11 +154,8 @@ public class KeyValueStoreEntryStructure extends SubstateSystemStructure {
     StringBuilder sb = new StringBuilder();
     sb.append("class KeyValueStoreEntryStructure {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    keyValueStoreAddress: ").append(toIndentedString(keyValueStoreAddress)).append("\n");
-    sb.append("    keySchemaHash: ").append(toIndentedString(keySchemaHash)).append("\n");
-    sb.append("    keyLocalTypeIndex: ").append(toIndentedString(keyLocalTypeIndex)).append("\n");
-    sb.append("    valueSchemaHash: ").append(toIndentedString(valueSchemaHash)).append("\n");
-    sb.append("    valueLocalTypeIndex: ").append(toIndentedString(valueLocalTypeIndex)).append("\n");
+    sb.append("    keyFullTypeId: ").append(toIndentedString(keyFullTypeId)).append("\n");
+    sb.append("    valueFullTypeId: ").append(toIndentedString(valueFullTypeId)).append("\n");
     sb.append("}");
     return sb.toString();
   }

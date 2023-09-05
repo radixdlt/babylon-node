@@ -15,11 +15,11 @@
 pub struct GenericBlueprintPayloadDefAllOf {
     /// An index within the list of generic type substitutions.
     #[serde(rename = "generic_index")]
-    pub generic_index: i64,
+    pub generic_index: i32,
 }
 
 impl GenericBlueprintPayloadDefAllOf {
-    pub fn new(generic_index: i64) -> GenericBlueprintPayloadDefAllOf {
+    pub fn new(generic_index: i32) -> GenericBlueprintPayloadDefAllOf {
         GenericBlueprintPayloadDefAllOf {
             generic_index,
         }

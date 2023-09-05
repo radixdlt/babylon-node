@@ -13,12 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { TypeIdentifier } from './TypeIdentifier';
+import type { GenericSubstitution } from './GenericSubstitution';
 import {
-    TypeIdentifierFromJSON,
-    TypeIdentifierFromJSONTyped,
-    TypeIdentifierToJSON,
-} from './TypeIdentifier';
+    GenericSubstitutionFromJSON,
+    GenericSubstitutionFromJSONTyped,
+    GenericSubstitutionToJSON,
+} from './GenericSubstitution';
 
 /**
  * 
@@ -58,10 +58,10 @@ export interface BlueprintInfo {
     features: Array<string>;
     /**
      * 
-     * @type {Array<TypeIdentifier>}
+     * @type {Array<GenericSubstitution>}
      * @memberof BlueprintInfo
      */
-    generic_substitutions: Array<TypeIdentifier>;
+    generic_substitutions: Array<GenericSubstitution>;
 }
 
 /**
@@ -93,7 +93,7 @@ export function BlueprintInfoFromJSONTyped(json: any, ignoreDiscriminator: boole
         'blueprint_version': json['blueprint_version'],
         'outer_object': !exists(json, 'outer_object') ? undefined : json['outer_object'],
         'features': json['features'],
-        'generic_substitutions': ((json['generic_substitutions'] as Array<any>).map(TypeIdentifierFromJSON)),
+        'generic_substitutions': ((json['generic_substitutions'] as Array<any>).map(GenericSubstitutionFromJSON)),
     };
 }
 
@@ -111,7 +111,7 @@ export function BlueprintInfoToJSON(value?: BlueprintInfo | null): any {
         'blueprint_version': value.blueprint_version,
         'outer_object': value.outer_object,
         'features': value.features,
-        'generic_substitutions': ((value.generic_substitutions as Array<any>).map(TypeIdentifierToJSON)),
+        'generic_substitutions': ((value.generic_substitutions as Array<any>).map(GenericSubstitutionToJSON)),
     };
 }
 

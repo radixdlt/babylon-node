@@ -13,12 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { LocalTypeIndex } from './LocalTypeIndex';
+import type { LocalTypeId } from './LocalTypeId';
 import {
-    LocalTypeIndexFromJSON,
-    LocalTypeIndexFromJSONTyped,
-    LocalTypeIndexToJSON,
-} from './LocalTypeIndex';
+    LocalTypeIdFromJSON,
+    LocalTypeIdFromJSONTyped,
+    LocalTypeIdToJSON,
+} from './LocalTypeId';
 
 /**
  * 
@@ -34,10 +34,10 @@ export interface BlueprintSchemaBlueprintTypeReference {
     type: BlueprintSchemaBlueprintTypeReferenceTypeEnum;
     /**
      * 
-     * @type {LocalTypeIndex}
+     * @type {LocalTypeId}
      * @memberof BlueprintSchemaBlueprintTypeReference
      */
-    local_type_index: LocalTypeIndex;
+    local_type_id: LocalTypeId;
 }
 
 
@@ -56,7 +56,7 @@ export type BlueprintSchemaBlueprintTypeReferenceTypeEnum = typeof BlueprintSche
 export function instanceOfBlueprintSchemaBlueprintTypeReference(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "type" in value;
-    isInstance = isInstance && "local_type_index" in value;
+    isInstance = isInstance && "local_type_id" in value;
 
     return isInstance;
 }
@@ -72,7 +72,7 @@ export function BlueprintSchemaBlueprintTypeReferenceFromJSONTyped(json: any, ig
     return {
         
         'type': json['type'],
-        'local_type_index': LocalTypeIndexFromJSON(json['local_type_index']),
+        'local_type_id': LocalTypeIdFromJSON(json['local_type_id']),
     };
 }
 
@@ -86,7 +86,7 @@ export function BlueprintSchemaBlueprintTypeReferenceToJSON(value?: BlueprintSch
     return {
         
         'type': value.type,
-        'local_type_index': LocalTypeIndexToJSON(value.local_type_index),
+        'local_type_id': LocalTypeIdToJSON(value.local_type_id),
     };
 }
 

@@ -37,6 +37,12 @@ import {
     IndexedStateSchemaFromJSONTyped,
     IndexedStateSchemaToJSON,
 } from './IndexedStateSchema';
+import type { ScopedTypeId } from './ScopedTypeId';
+import {
+    ScopedTypeIdFromJSON,
+    ScopedTypeIdFromJSONTyped,
+    ScopedTypeIdToJSON,
+} from './ScopedTypeId';
 
 /**
  * 
@@ -87,6 +93,13 @@ export interface BlueprintInterface {
      * @memberof BlueprintInterface
      */
     events: { [key: string]: BlueprintPayloadDef; };
+    /**
+     * A map from the registered type name to the concrete type,
+     * resolved against a schema from the package's schema partition.
+     * @type {{ [key: string]: ScopedTypeId; }}
+     * @memberof BlueprintInterface
+     */
+    types: { [key: string]: ScopedTypeId; };
 }
 
 /**
@@ -100,6 +113,7 @@ export function instanceOfBlueprintInterface(value: object): boolean {
     isInstance = isInstance && "state" in value;
     isInstance = isInstance && "functions" in value;
     isInstance = isInstance && "events" in value;
+    isInstance = isInstance && "types" in value;
 
     return isInstance;
 }
@@ -121,6 +135,7 @@ export function BlueprintInterfaceFromJSONTyped(json: any, ignoreDiscriminator: 
         'state': IndexedStateSchemaFromJSON(json['state']),
         'functions': (mapValues(json['functions'], FunctionSchemaFromJSON)),
         'events': (mapValues(json['events'], BlueprintPayloadDefFromJSON)),
+        'types': (mapValues(json['types'], ScopedTypeIdFromJSON)),
     };
 }
 
@@ -140,6 +155,7 @@ export function BlueprintInterfaceToJSON(value?: BlueprintInterface | null): any
         'state': IndexedStateSchemaToJSON(value.state),
         'functions': (mapValues(value.functions, FunctionSchemaToJSON)),
         'events': (mapValues(value.events, BlueprintPayloadDefToJSON)),
+        'types': (mapValues(value.types, ScopedTypeIdToJSON)),
     };
 }
 

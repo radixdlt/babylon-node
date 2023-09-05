@@ -13,12 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { TypeIdentifier } from './TypeIdentifier';
+import type { ScopedTypeId } from './ScopedTypeId';
 import {
-    TypeIdentifierFromJSON,
-    TypeIdentifierFromJSONTyped,
-    TypeIdentifierToJSON,
-} from './TypeIdentifier';
+    ScopedTypeIdFromJSON,
+    ScopedTypeIdFromJSONTyped,
+    ScopedTypeIdToJSON,
+} from './ScopedTypeId';
 
 /**
  * 
@@ -28,10 +28,10 @@ import {
 export interface StaticBlueprintPayloadDefAllOf {
     /**
      * 
-     * @type {TypeIdentifier}
+     * @type {ScopedTypeId}
      * @memberof StaticBlueprintPayloadDefAllOf
      */
-    type_id: TypeIdentifier;
+    type_id: ScopedTypeId;
     /**
      * 
      * @type {string}
@@ -70,7 +70,7 @@ export function StaticBlueprintPayloadDefAllOfFromJSONTyped(json: any, ignoreDis
     }
     return {
         
-        'type_id': TypeIdentifierFromJSON(json['type_id']),
+        'type_id': ScopedTypeIdFromJSON(json['type_id']),
         'type': !exists(json, 'type') ? undefined : json['type'],
     };
 }
@@ -84,7 +84,7 @@ export function StaticBlueprintPayloadDefAllOfToJSON(value?: StaticBlueprintPayl
     }
     return {
         
-        'type_id': TypeIdentifierToJSON(value.type_id),
+        'type_id': ScopedTypeIdToJSON(value.type_id),
         'type': value.type,
     };
 }

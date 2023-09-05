@@ -55,12 +55,12 @@ import com.radixdlt.api.core.generated.client.JSON;
 
 public class GenericBlueprintPayloadDef extends BlueprintPayloadDef {
   public static final String JSON_PROPERTY_GENERIC_INDEX = "generic_index";
-  private Long genericIndex;
+  private Integer genericIndex;
 
   public GenericBlueprintPayloadDef() { 
   }
 
-  public GenericBlueprintPayloadDef genericIndex(Long genericIndex) {
+  public GenericBlueprintPayloadDef genericIndex(Integer genericIndex) {
     this.genericIndex = genericIndex;
     return this;
   }
@@ -68,7 +68,7 @@ public class GenericBlueprintPayloadDef extends BlueprintPayloadDef {
    /**
    * An index within the list of generic type substitutions.
    * minimum: 0
-   * maximum: 4294967295
+   * maximum: 255
    * @return genericIndex
   **/
   @javax.annotation.Nonnull
@@ -76,14 +76,14 @@ public class GenericBlueprintPayloadDef extends BlueprintPayloadDef {
   @JsonProperty(JSON_PROPERTY_GENERIC_INDEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Long getGenericIndex() {
+  public Integer getGenericIndex() {
     return genericIndex;
   }
 
 
   @JsonProperty(JSON_PROPERTY_GENERIC_INDEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setGenericIndex(Long genericIndex) {
+  public void setGenericIndex(Integer genericIndex) {
     this.genericIndex = genericIndex;
   }
 

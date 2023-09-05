@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.LocalTypeIndex;
+import com.radixdlt.api.core.generated.models.LocalTypeId;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,39 +32,39 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * BlueprintSchemaBlueprintTypeReferenceAllOf
  */
 @JsonPropertyOrder({
-  BlueprintSchemaBlueprintTypeReferenceAllOf.JSON_PROPERTY_LOCAL_TYPE_INDEX
+  BlueprintSchemaBlueprintTypeReferenceAllOf.JSON_PROPERTY_LOCAL_TYPE_ID
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class BlueprintSchemaBlueprintTypeReferenceAllOf {
-  public static final String JSON_PROPERTY_LOCAL_TYPE_INDEX = "local_type_index";
-  private LocalTypeIndex localTypeIndex;
+  public static final String JSON_PROPERTY_LOCAL_TYPE_ID = "local_type_id";
+  private LocalTypeId localTypeId;
 
   public BlueprintSchemaBlueprintTypeReferenceAllOf() { 
   }
 
-  public BlueprintSchemaBlueprintTypeReferenceAllOf localTypeIndex(LocalTypeIndex localTypeIndex) {
-    this.localTypeIndex = localTypeIndex;
+  public BlueprintSchemaBlueprintTypeReferenceAllOf localTypeId(LocalTypeId localTypeId) {
+    this.localTypeId = localTypeId;
     return this;
   }
 
    /**
-   * Get localTypeIndex
-   * @return localTypeIndex
+   * Get localTypeId
+   * @return localTypeId
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_LOCAL_TYPE_INDEX)
+  @JsonProperty(JSON_PROPERTY_LOCAL_TYPE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public LocalTypeIndex getLocalTypeIndex() {
-    return localTypeIndex;
+  public LocalTypeId getLocalTypeId() {
+    return localTypeId;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_LOCAL_TYPE_INDEX)
+  @JsonProperty(JSON_PROPERTY_LOCAL_TYPE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setLocalTypeIndex(LocalTypeIndex localTypeIndex) {
-    this.localTypeIndex = localTypeIndex;
+  public void setLocalTypeId(LocalTypeId localTypeId) {
+    this.localTypeId = localTypeId;
   }
 
 
@@ -80,19 +80,19 @@ public class BlueprintSchemaBlueprintTypeReferenceAllOf {
       return false;
     }
     BlueprintSchemaBlueprintTypeReferenceAllOf blueprintSchemaBlueprintTypeReferenceAllOf = (BlueprintSchemaBlueprintTypeReferenceAllOf) o;
-    return Objects.equals(this.localTypeIndex, blueprintSchemaBlueprintTypeReferenceAllOf.localTypeIndex);
+    return Objects.equals(this.localTypeId, blueprintSchemaBlueprintTypeReferenceAllOf.localTypeId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(localTypeIndex);
+    return Objects.hash(localTypeId);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class BlueprintSchemaBlueprintTypeReferenceAllOf {\n");
-    sb.append("    localTypeIndex: ").append(toIndentedString(localTypeIndex)).append("\n");
+    sb.append("    localTypeId: ").append(toIndentedString(localTypeId)).append("\n");
     sb.append("}");
     return sb.toString();
   }

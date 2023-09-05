@@ -13,60 +13,52 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { LocalTypeIndex } from './LocalTypeIndex';
+import type { GenericSubstitutionType } from './GenericSubstitutionType';
 import {
-    LocalTypeIndexFromJSON,
-    LocalTypeIndexFromJSONTyped,
-    LocalTypeIndexToJSON,
-} from './LocalTypeIndex';
+    GenericSubstitutionTypeFromJSON,
+    GenericSubstitutionTypeFromJSONTyped,
+    GenericSubstitutionTypeToJSON,
+} from './GenericSubstitutionType';
 
 /**
  * 
  * @export
- * @interface TypeIdentifier
+ * @interface GenericSubstitutionBase
  */
-export interface TypeIdentifier {
-    /**
-     * The hex-encoded schema hash, capturing the identity of an SBOR schema.
-     * @type {string}
-     * @memberof TypeIdentifier
-     */
-    schema_hash: string;
+export interface GenericSubstitutionBase {
     /**
      * 
-     * @type {LocalTypeIndex}
-     * @memberof TypeIdentifier
+     * @type {GenericSubstitutionType}
+     * @memberof GenericSubstitutionBase
      */
-    local_type_index: LocalTypeIndex;
+    type: GenericSubstitutionType;
 }
 
 /**
- * Check if a given object implements the TypeIdentifier interface.
+ * Check if a given object implements the GenericSubstitutionBase interface.
  */
-export function instanceOfTypeIdentifier(value: object): boolean {
+export function instanceOfGenericSubstitutionBase(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "schema_hash" in value;
-    isInstance = isInstance && "local_type_index" in value;
+    isInstance = isInstance && "type" in value;
 
     return isInstance;
 }
 
-export function TypeIdentifierFromJSON(json: any): TypeIdentifier {
-    return TypeIdentifierFromJSONTyped(json, false);
+export function GenericSubstitutionBaseFromJSON(json: any): GenericSubstitutionBase {
+    return GenericSubstitutionBaseFromJSONTyped(json, false);
 }
 
-export function TypeIdentifierFromJSONTyped(json: any, ignoreDiscriminator: boolean): TypeIdentifier {
+export function GenericSubstitutionBaseFromJSONTyped(json: any, ignoreDiscriminator: boolean): GenericSubstitutionBase {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'schema_hash': json['schema_hash'],
-        'local_type_index': LocalTypeIndexFromJSON(json['local_type_index']),
+        'type': GenericSubstitutionTypeFromJSON(json['type']),
     };
 }
 
-export function TypeIdentifierToJSON(value?: TypeIdentifier | null): any {
+export function GenericSubstitutionBaseToJSON(value?: GenericSubstitutionBase | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -75,8 +67,7 @@ export function TypeIdentifierToJSON(value?: TypeIdentifier | null): any {
     }
     return {
         
-        'schema_hash': value.schema_hash,
-        'local_type_index': LocalTypeIndexToJSON(value.local_type_index),
+        'type': GenericSubstitutionTypeToJSON(value.type),
     };
 }
 

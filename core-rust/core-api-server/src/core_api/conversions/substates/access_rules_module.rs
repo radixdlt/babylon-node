@@ -42,7 +42,7 @@ pub fn to_api_access_rule_entry(
         substate,
         RoleAssignmentModuleRuleEntry,
         models::ObjectRoleKey {
-            object_module_id: to_api_object_module_id(module),
+            object_module_id: to_api_module_id(module),
             role_key: key.key.to_string(),
         },
         value => {

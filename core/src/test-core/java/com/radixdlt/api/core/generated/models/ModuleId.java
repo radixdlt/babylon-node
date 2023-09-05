@@ -28,6 +28,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
  */
 public enum ModuleId {
   
+  MAIN("Main"),
+  
   METADATA("Metadata"),
   
   ROYALTY("Royalty"),

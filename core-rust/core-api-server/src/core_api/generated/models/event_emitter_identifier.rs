@@ -27,7 +27,7 @@ pub enum EventEmitterIdentifier {
         #[serde(rename = "entity")]
         entity: Box<crate::core_api::generated::models::EntityReference>,
         #[serde(rename = "object_module_id")]
-        object_module_id: crate::core_api::generated::models::ObjectModuleId,
+        object_module_id: crate::core_api::generated::models::ModuleId,
     },
 }
 

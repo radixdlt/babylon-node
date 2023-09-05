@@ -13,25 +13,18 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct ObjectInstanceTypeReferenceAllOf {
-    /// Bech32m-encoded human readable version of the entity's address (ie the entity's node id)
-    #[serde(rename = "entity_address")]
-    pub entity_address: String,
-    /// The hex-encoded schema hash, capturing the identity of an SBOR schema.
-    #[serde(rename = "schema_hash")]
-    pub schema_hash: String,
-    #[serde(rename = "instance_type_index")]
-    pub instance_type_index: i32,
-    #[serde(rename = "local_type_index")]
-    pub local_type_index: Box<crate::core_api::generated::models::LocalTypeIndex>,
+    #[serde(rename = "resolved_full_type_id")]
+    pub resolved_full_type_id: Box<crate::core_api::generated::models::FullyScopedTypeId>,
+    /// The index of the generic parameter in the instance definition. Was called the `instance_type_index`. 
+    #[serde(rename = "generic_index")]
+    pub generic_index: i32,
 }
 
 impl ObjectInstanceTypeReferenceAllOf {
-    pub fn new(entity_address: String, schema_hash: String, instance_type_index: i32, local_type_index: crate::core_api::generated::models::LocalTypeIndex) -> ObjectInstanceTypeReferenceAllOf {
+    pub fn new(resolved_full_type_id: crate::core_api::generated::models::FullyScopedTypeId, generic_index: i32) -> ObjectInstanceTypeReferenceAllOf {
         ObjectInstanceTypeReferenceAllOf {
-            entity_address,
-            schema_hash,
-            instance_type_index,
-            local_type_index: Box::new(local_type_index),
+            resolved_full_type_id: Box::new(resolved_full_type_id),
+            generic_index,
         }
     }
 }

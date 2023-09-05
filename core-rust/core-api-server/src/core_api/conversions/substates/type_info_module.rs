@@ -25,7 +25,7 @@ pub fn to_api_type_info_substate(
                             .flat_map(|modules| modules.iter())
                             .map(|(module_id, version)| -> Result<_, MappingError> {
                                 Ok(models::ModuleVersion {
-                                    module: to_api_module_id(module_id),
+                                    module: to_api_attached_module_id(module_id),
                                     version: to_api_blueprint_version(context, version)?,
                                 })
                             })
@@ -97,12 +97,35 @@ pub fn to_api_blueprint_info(
 pub fn to_api_generic_substitution(
     context: &MappingContext,
     substitution: &GenericSubstitution,
-) -> Result<models::TypeIdentifier, MappingError> {
-    match substitution {
-        GenericSubstitution::Local(type_identifier) => {
-            to_api_type_identifier(context, type_identifier)
+) -> Result<models::GenericSubstitution, MappingError> {
+    Ok(match substitution {
+        GenericSubstitution::Local(scoped_type_id) => {
+            models::GenericSubstitution::LocalGenericSubstition {
+                scoped_type_id: Box::new(to_api_scoped_type_id(context, scoped_type_id)?)
+            }
         }
-    }
+        GenericSubstitution::Remote(blueprint_type_identifier) => {
+            models::GenericSubstitution::RemoteGenericSubstition {
+                blueprint_type_identifier: Box::new(to_api_blueprint_type_identifier(context, blueprint_type_identifier)?)
+            }
+        }
+    })
+}
+
+pub fn to_api_blueprint_type_identifier(
+    context: &MappingContext,
+    blueprint_type_identifier: &BlueprintTypeIdentifier,
+) -> Result<models::BlueprintTypeIdentifier, MappingError> {
+    let BlueprintTypeIdentifier {
+        package_address,
+        blueprint_name,
+        type_name,
+    } = blueprint_type_identifier;
+    Ok(models::BlueprintTypeIdentifier {
+        package_address: to_api_package_address(context, package_address)?,
+        blueprint_name: blueprint_name.clone(),
+        type_name: type_name.clone(),
+    })
 }
 
 pub fn to_api_key_value_store_info(
@@ -110,17 +133,21 @@ pub fn to_api_key_value_store_info(
     key_value_store_info: &KeyValueStoreInfo,
 ) -> Result<models::KeyValueStoreInfo, MappingError> {
     let KeyValueStoreInfo {
-        generic_substitutions,
+        generic_substitutions: KeyValueStoreGenericSubstitutions {
+            key_generic_substitution,
+            value_generic_substitution,
+            allow_ownership,
+        },
     } = key_value_store_info;
     Ok(models::KeyValueStoreInfo {
-        key_generic_substitution: Box::new(to_api_generic_substitution(
+        key_generic_substitution: Some(to_api_generic_substitution(
             context,
-            &generic_substitutions.key_generic_substitutions,
+            key_generic_substitution,
         )?),
-        value_generic_substitution: Box::new(to_api_generic_substitution(
+        value_generic_substitution: Some(to_api_generic_substitution(
             context,
-            &generic_substitutions.value_generic_substitutions,
+            value_generic_substitution,
         )?),
-        allow_ownership: generic_substitutions.allow_ownership,
+        allow_ownership: *allow_ownership,
     })
 }

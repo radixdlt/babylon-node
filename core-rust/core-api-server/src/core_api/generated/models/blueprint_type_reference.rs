@@ -15,8 +15,8 @@
 pub enum BlueprintTypeReference {
     #[serde(rename="BlueprintSchema")]
     BlueprintSchemaBlueprintTypeReference {
-        #[serde(rename = "local_type_index")]
-        local_type_index: Box<crate::core_api::generated::models::LocalTypeIndex>,
+        #[serde(rename = "local_type_id")]
+        local_type_id: Box<crate::core_api::generated::models::LocalTypeId>,
     },
     #[serde(rename="InstanceSchema")]
     InstanceSchemaBlueprintTypeReference {

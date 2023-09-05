@@ -15,27 +15,16 @@
 pub enum ObjectSubstateTypeReference {
     #[serde(rename="ObjectInstance")]
     ObjectInstanceTypeReference {
-        /// Bech32m-encoded human readable version of the entity's address (ie the entity's node id)
-        #[serde(rename = "entity_address")]
-        entity_address: String,
-        /// The hex-encoded schema hash, capturing the identity of an SBOR schema.
-        #[serde(rename = "schema_hash")]
-        schema_hash: String,
-        #[serde(rename = "instance_type_index")]
-        instance_type_index: i32,
-        #[serde(rename = "local_type_index")]
-        local_type_index: Box<crate::core_api::generated::models::LocalTypeIndex>,
+        #[serde(rename = "resolved_full_type_id")]
+        resolved_full_type_id: Box<crate::core_api::generated::models::FullyScopedTypeId>,
+        /// The index of the generic parameter in the instance definition. Was called the `instance_type_index`. 
+        #[serde(rename = "generic_index")]
+        generic_index: i32,
     },
     #[serde(rename="Package")]
     PackageObjectSubstateTypeReference {
-        /// The Bech32m-encoded human readable version of the package address
-        #[serde(rename = "package_address")]
-        package_address: String,
-        /// The hex-encoded schema hash, capturing the identity of an SBOR schema.
-        #[serde(rename = "schema_hash")]
-        schema_hash: String,
-        #[serde(rename = "local_type_index")]
-        local_type_index: Box<crate::core_api::generated::models::LocalTypeIndex>,
+        #[serde(rename = "full_type_id")]
+        full_type_id: Box<crate::core_api::generated::models::FullyScopedTypeId>,
     },
 }
 

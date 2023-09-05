@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.LocalTypeIndex;
+import com.radixdlt.api.core.generated.models.FullyScopedTypeId;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,131 +32,71 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * ObjectInstanceTypeReferenceAllOf
  */
 @JsonPropertyOrder({
-  ObjectInstanceTypeReferenceAllOf.JSON_PROPERTY_ENTITY_ADDRESS,
-  ObjectInstanceTypeReferenceAllOf.JSON_PROPERTY_SCHEMA_HASH,
-  ObjectInstanceTypeReferenceAllOf.JSON_PROPERTY_INSTANCE_TYPE_INDEX,
-  ObjectInstanceTypeReferenceAllOf.JSON_PROPERTY_LOCAL_TYPE_INDEX
+  ObjectInstanceTypeReferenceAllOf.JSON_PROPERTY_RESOLVED_FULL_TYPE_ID,
+  ObjectInstanceTypeReferenceAllOf.JSON_PROPERTY_GENERIC_INDEX
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ObjectInstanceTypeReferenceAllOf {
-  public static final String JSON_PROPERTY_ENTITY_ADDRESS = "entity_address";
-  private String entityAddress;
+  public static final String JSON_PROPERTY_RESOLVED_FULL_TYPE_ID = "resolved_full_type_id";
+  private FullyScopedTypeId resolvedFullTypeId;
 
-  public static final String JSON_PROPERTY_SCHEMA_HASH = "schema_hash";
-  private String schemaHash;
-
-  public static final String JSON_PROPERTY_INSTANCE_TYPE_INDEX = "instance_type_index";
-  private Integer instanceTypeIndex;
-
-  public static final String JSON_PROPERTY_LOCAL_TYPE_INDEX = "local_type_index";
-  private LocalTypeIndex localTypeIndex;
+  public static final String JSON_PROPERTY_GENERIC_INDEX = "generic_index";
+  private Integer genericIndex;
 
   public ObjectInstanceTypeReferenceAllOf() { 
   }
 
-  public ObjectInstanceTypeReferenceAllOf entityAddress(String entityAddress) {
-    this.entityAddress = entityAddress;
+  public ObjectInstanceTypeReferenceAllOf resolvedFullTypeId(FullyScopedTypeId resolvedFullTypeId) {
+    this.resolvedFullTypeId = resolvedFullTypeId;
     return this;
   }
 
    /**
-   * Bech32m-encoded human readable version of the entity&#39;s address (ie the entity&#39;s node id)
-   * @return entityAddress
+   * Get resolvedFullTypeId
+   * @return resolvedFullTypeId
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "Bech32m-encoded human readable version of the entity's address (ie the entity's node id)")
-  @JsonProperty(JSON_PROPERTY_ENTITY_ADDRESS)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_RESOLVED_FULL_TYPE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getEntityAddress() {
-    return entityAddress;
+  public FullyScopedTypeId getResolvedFullTypeId() {
+    return resolvedFullTypeId;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ENTITY_ADDRESS)
+  @JsonProperty(JSON_PROPERTY_RESOLVED_FULL_TYPE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEntityAddress(String entityAddress) {
-    this.entityAddress = entityAddress;
+  public void setResolvedFullTypeId(FullyScopedTypeId resolvedFullTypeId) {
+    this.resolvedFullTypeId = resolvedFullTypeId;
   }
 
 
-  public ObjectInstanceTypeReferenceAllOf schemaHash(String schemaHash) {
-    this.schemaHash = schemaHash;
+  public ObjectInstanceTypeReferenceAllOf genericIndex(Integer genericIndex) {
+    this.genericIndex = genericIndex;
     return this;
   }
 
    /**
-   * The hex-encoded schema hash, capturing the identity of an SBOR schema.
-   * @return schemaHash
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded schema hash, capturing the identity of an SBOR schema.")
-  @JsonProperty(JSON_PROPERTY_SCHEMA_HASH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getSchemaHash() {
-    return schemaHash;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_SCHEMA_HASH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSchemaHash(String schemaHash) {
-    this.schemaHash = schemaHash;
-  }
-
-
-  public ObjectInstanceTypeReferenceAllOf instanceTypeIndex(Integer instanceTypeIndex) {
-    this.instanceTypeIndex = instanceTypeIndex;
-    return this;
-  }
-
-   /**
-   * Get instanceTypeIndex
+   * The index of the generic parameter in the instance definition. Was called the &#x60;instance_type_index&#x60;. 
    * minimum: 0
    * maximum: 255
-   * @return instanceTypeIndex
+   * @return genericIndex
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_INSTANCE_TYPE_INDEX)
+  @ApiModelProperty(required = true, value = "The index of the generic parameter in the instance definition. Was called the `instance_type_index`. ")
+  @JsonProperty(JSON_PROPERTY_GENERIC_INDEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Integer getInstanceTypeIndex() {
-    return instanceTypeIndex;
+  public Integer getGenericIndex() {
+    return genericIndex;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_INSTANCE_TYPE_INDEX)
+  @JsonProperty(JSON_PROPERTY_GENERIC_INDEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setInstanceTypeIndex(Integer instanceTypeIndex) {
-    this.instanceTypeIndex = instanceTypeIndex;
-  }
-
-
-  public ObjectInstanceTypeReferenceAllOf localTypeIndex(LocalTypeIndex localTypeIndex) {
-    this.localTypeIndex = localTypeIndex;
-    return this;
-  }
-
-   /**
-   * Get localTypeIndex
-   * @return localTypeIndex
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_LOCAL_TYPE_INDEX)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public LocalTypeIndex getLocalTypeIndex() {
-    return localTypeIndex;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_LOCAL_TYPE_INDEX)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setLocalTypeIndex(LocalTypeIndex localTypeIndex) {
-    this.localTypeIndex = localTypeIndex;
+  public void setGenericIndex(Integer genericIndex) {
+    this.genericIndex = genericIndex;
   }
 
 
@@ -172,25 +112,21 @@ public class ObjectInstanceTypeReferenceAllOf {
       return false;
     }
     ObjectInstanceTypeReferenceAllOf objectInstanceTypeReferenceAllOf = (ObjectInstanceTypeReferenceAllOf) o;
-    return Objects.equals(this.entityAddress, objectInstanceTypeReferenceAllOf.entityAddress) &&
-        Objects.equals(this.schemaHash, objectInstanceTypeReferenceAllOf.schemaHash) &&
-        Objects.equals(this.instanceTypeIndex, objectInstanceTypeReferenceAllOf.instanceTypeIndex) &&
-        Objects.equals(this.localTypeIndex, objectInstanceTypeReferenceAllOf.localTypeIndex);
+    return Objects.equals(this.resolvedFullTypeId, objectInstanceTypeReferenceAllOf.resolvedFullTypeId) &&
+        Objects.equals(this.genericIndex, objectInstanceTypeReferenceAllOf.genericIndex);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entityAddress, schemaHash, instanceTypeIndex, localTypeIndex);
+    return Objects.hash(resolvedFullTypeId, genericIndex);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class ObjectInstanceTypeReferenceAllOf {\n");
-    sb.append("    entityAddress: ").append(toIndentedString(entityAddress)).append("\n");
-    sb.append("    schemaHash: ").append(toIndentedString(schemaHash)).append("\n");
-    sb.append("    instanceTypeIndex: ").append(toIndentedString(instanceTypeIndex)).append("\n");
-    sb.append("    localTypeIndex: ").append(toIndentedString(localTypeIndex)).append("\n");
+    sb.append("    resolvedFullTypeId: ").append(toIndentedString(resolvedFullTypeId)).append("\n");
+    sb.append("    genericIndex: ").append(toIndentedString(genericIndex)).append("\n");
     sb.append("}");
     return sb.toString();
   }

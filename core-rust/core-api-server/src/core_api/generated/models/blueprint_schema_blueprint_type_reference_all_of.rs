@@ -13,14 +13,14 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct BlueprintSchemaBlueprintTypeReferenceAllOf {
-    #[serde(rename = "local_type_index")]
-    pub local_type_index: Box<crate::core_api::generated::models::LocalTypeIndex>,
+    #[serde(rename = "local_type_id")]
+    pub local_type_id: Box<crate::core_api::generated::models::LocalTypeId>,
 }
 
 impl BlueprintSchemaBlueprintTypeReferenceAllOf {
-    pub fn new(local_type_index: crate::core_api::generated::models::LocalTypeIndex) -> BlueprintSchemaBlueprintTypeReferenceAllOf {
+    pub fn new(local_type_id: crate::core_api::generated::models::LocalTypeId) -> BlueprintSchemaBlueprintTypeReferenceAllOf {
         BlueprintSchemaBlueprintTypeReferenceAllOf {
-            local_type_index: Box::new(local_type_index),
+            local_type_id: Box::new(local_type_id),
         }
     }
 }

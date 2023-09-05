@@ -12,39 +12,20 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct LocalTypeIndex {
-    /// The location against which to resolve this type reference.
-    #[serde(rename = "kind")]
-    pub kind: Kind,
-    /// A reference to a type, interpreted according to `kind`: - if `WellKnown`, then it is a pointer to a well known scrypto type with that ID, - if `SchemaLocal`, then it is a pointer into the given schema. 
-    #[serde(rename = "index")]
-    pub index: i64,
-    #[serde(rename = "as_sbor")]
-    pub as_sbor: Box<crate::core_api::generated::models::SborData>,
+pub struct RemoteGenericSubstition {
+    #[serde(rename = "type")]
+    pub _type: crate::core_api::generated::models::GenericSubstitutionType,
+    #[serde(rename = "blueprint_type_identifier")]
+    pub blueprint_type_identifier: Box<crate::core_api::generated::models::BlueprintTypeIdentifier>,
 }
 
-impl LocalTypeIndex {
-    pub fn new(kind: Kind, index: i64, as_sbor: crate::core_api::generated::models::SborData) -> LocalTypeIndex {
-        LocalTypeIndex {
-            kind,
-            index,
-            as_sbor: Box::new(as_sbor),
+impl RemoteGenericSubstition {
+    pub fn new(_type: crate::core_api::generated::models::GenericSubstitutionType, blueprint_type_identifier: crate::core_api::generated::models::BlueprintTypeIdentifier) -> RemoteGenericSubstition {
+        RemoteGenericSubstition {
+            _type,
+            blueprint_type_identifier: Box::new(blueprint_type_identifier),
         }
     }
 }
 
-/// The location against which to resolve this type reference.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
-pub enum Kind {
-    #[serde(rename = "WellKnown")]
-    WellKnown,
-    #[serde(rename = "SchemaLocal")]
-    SchemaLocal,
-}
-
-impl Default for Kind {
-    fn default() -> Kind {
-        Self::WellKnown
-    }
-}
 

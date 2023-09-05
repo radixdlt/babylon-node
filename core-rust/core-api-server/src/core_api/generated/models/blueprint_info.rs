@@ -26,11 +26,11 @@ pub struct BlueprintInfo {
     #[serde(rename = "features")]
     pub features: Vec<String>,
     #[serde(rename = "generic_substitutions")]
-    pub generic_substitutions: Vec<crate::core_api::generated::models::TypeIdentifier>,
+    pub generic_substitutions: Vec<crate::core_api::generated::models::GenericSubstitution>,
 }
 
 impl BlueprintInfo {
-    pub fn new(package_address: String, blueprint_name: String, blueprint_version: String, features: Vec<String>, generic_substitutions: Vec<crate::core_api::generated::models::TypeIdentifier>) -> BlueprintInfo {
+    pub fn new(package_address: String, blueprint_name: String, blueprint_version: String, features: Vec<String>, generic_substitutions: Vec<crate::core_api::generated::models::GenericSubstitution>) -> BlueprintInfo {
         BlueprintInfo {
             package_address,
             blueprint_name,

@@ -15,15 +15,15 @@
 pub struct BlueprintSchemaBlueprintTypeReference {
     #[serde(rename = "type")]
     pub _type: crate::core_api::generated::models::BlueprintTypeReferenceKind,
-    #[serde(rename = "local_type_index")]
-    pub local_type_index: Box<crate::core_api::generated::models::LocalTypeIndex>,
+    #[serde(rename = "local_type_id")]
+    pub local_type_id: Box<crate::core_api::generated::models::LocalTypeId>,
 }
 
 impl BlueprintSchemaBlueprintTypeReference {
-    pub fn new(_type: crate::core_api::generated::models::BlueprintTypeReferenceKind, local_type_index: crate::core_api::generated::models::LocalTypeIndex) -> BlueprintSchemaBlueprintTypeReference {
+    pub fn new(_type: crate::core_api::generated::models::BlueprintTypeReferenceKind, local_type_id: crate::core_api::generated::models::LocalTypeId) -> BlueprintSchemaBlueprintTypeReference {
         BlueprintSchemaBlueprintTypeReference {
             _type,
-            local_type_index: Box::new(local_type_index),
+            local_type_id: Box::new(local_type_id),
         }
     }
 }

@@ -28,9 +28,9 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.BlueprintPayloadDef;
 import com.radixdlt.api.core.generated.models.BlueprintPayloadDefType;
 import com.radixdlt.api.core.generated.models.GenericBlueprintPayloadDef;
+import com.radixdlt.api.core.generated.models.ScopedTypeId;
 import com.radixdlt.api.core.generated.models.StaticBlueprintPayloadDef;
 import com.radixdlt.api.core.generated.models.StaticBlueprintPayloadDefAllOf;
-import com.radixdlt.api.core.generated.models.TypeIdentifier;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -56,12 +56,12 @@ import com.radixdlt.api.core.generated.client.JSON;
 
 public class StaticBlueprintPayloadDef extends BlueprintPayloadDef {
   public static final String JSON_PROPERTY_TYPE_ID = "type_id";
-  private TypeIdentifier typeId;
+  private ScopedTypeId typeId;
 
   public StaticBlueprintPayloadDef() { 
   }
 
-  public StaticBlueprintPayloadDef typeId(TypeIdentifier typeId) {
+  public StaticBlueprintPayloadDef typeId(ScopedTypeId typeId) {
     this.typeId = typeId;
     return this;
   }
@@ -75,14 +75,14 @@ public class StaticBlueprintPayloadDef extends BlueprintPayloadDef {
   @JsonProperty(JSON_PROPERTY_TYPE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public TypeIdentifier getTypeId() {
+  public ScopedTypeId getTypeId() {
     return typeId;
   }
 
 
   @JsonProperty(JSON_PROPERTY_TYPE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setTypeId(TypeIdentifier typeId) {
+  public void setTypeId(ScopedTypeId typeId) {
     this.typeId = typeId;
   }
 

@@ -14,11 +14,11 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct StaticBlueprintPayloadDefAllOf {
     #[serde(rename = "type_id")]
-    pub type_id: Box<crate::core_api::generated::models::TypeIdentifier>,
+    pub type_id: Box<crate::core_api::generated::models::ScopedTypeId>,
 }
 
 impl StaticBlueprintPayloadDefAllOf {
-    pub fn new(type_id: crate::core_api::generated::models::TypeIdentifier) -> StaticBlueprintPayloadDefAllOf {
+    pub fn new(type_id: crate::core_api::generated::models::ScopedTypeId) -> StaticBlueprintPayloadDefAllOf {
         StaticBlueprintPayloadDefAllOf {
             type_id: Box::new(type_id),
         }

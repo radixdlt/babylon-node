@@ -14,19 +14,19 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct KeyValueStoreInfo {
     #[serde(rename = "key_generic_substitution")]
-    pub key_generic_substitution: Box<crate::core_api::generated::models::TypeIdentifier>,
+    pub key_generic_substitution: Option<crate::core_api::generated::models::GenericSubstitution>, // Using Option permits Default trait; Will always be Some in normal use
     #[serde(rename = "value_generic_substitution")]
-    pub value_generic_substitution: Box<crate::core_api::generated::models::TypeIdentifier>,
+    pub value_generic_substitution: Option<crate::core_api::generated::models::GenericSubstitution>, // Using Option permits Default trait; Will always be Some in normal use
     /// Whether the entries of the key-value partition are allowed to own child nodes.
     #[serde(rename = "allow_ownership")]
     pub allow_ownership: bool,
 }
 
 impl KeyValueStoreInfo {
-    pub fn new(key_generic_substitution: crate::core_api::generated::models::TypeIdentifier, value_generic_substitution: crate::core_api::generated::models::TypeIdentifier, allow_ownership: bool) -> KeyValueStoreInfo {
+    pub fn new(key_generic_substitution: crate::core_api::generated::models::GenericSubstitution, value_generic_substitution: crate::core_api::generated::models::GenericSubstitution, allow_ownership: bool) -> KeyValueStoreInfo {
         KeyValueStoreInfo {
-            key_generic_substitution: Box::new(key_generic_substitution),
-            value_generic_substitution: Box::new(value_generic_substitution),
+            key_generic_substitution: Option::Some(key_generic_substitution),
+            value_generic_substitution: Option::Some(value_generic_substitution),
             allow_ownership,
         }
     }

@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.TypeIdentifier;
+import com.radixdlt.api.core.generated.models.GenericSubstitution;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -59,7 +59,7 @@ public class BlueprintInfo {
   private List<String> features = new ArrayList<>();
 
   public static final String JSON_PROPERTY_GENERIC_SUBSTITUTIONS = "generic_substitutions";
-  private List<TypeIdentifier> genericSubstitutions = new ArrayList<>();
+  private List<GenericSubstitution> genericSubstitutions = new ArrayList<>();
 
   public BlueprintInfo() { 
   }
@@ -199,12 +199,12 @@ public class BlueprintInfo {
   }
 
 
-  public BlueprintInfo genericSubstitutions(List<TypeIdentifier> genericSubstitutions) {
+  public BlueprintInfo genericSubstitutions(List<GenericSubstitution> genericSubstitutions) {
     this.genericSubstitutions = genericSubstitutions;
     return this;
   }
 
-  public BlueprintInfo addGenericSubstitutionsItem(TypeIdentifier genericSubstitutionsItem) {
+  public BlueprintInfo addGenericSubstitutionsItem(GenericSubstitution genericSubstitutionsItem) {
     this.genericSubstitutions.add(genericSubstitutionsItem);
     return this;
   }
@@ -218,14 +218,14 @@ public class BlueprintInfo {
   @JsonProperty(JSON_PROPERTY_GENERIC_SUBSTITUTIONS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<TypeIdentifier> getGenericSubstitutions() {
+  public List<GenericSubstitution> getGenericSubstitutions() {
     return genericSubstitutions;
   }
 
 
   @JsonProperty(JSON_PROPERTY_GENERIC_SUBSTITUTIONS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setGenericSubstitutions(List<TypeIdentifier> genericSubstitutions) {
+  public void setGenericSubstitutions(List<GenericSubstitution> genericSubstitutions) {
     this.genericSubstitutions = genericSubstitutions;
   }
 

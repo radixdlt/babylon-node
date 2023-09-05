@@ -25,7 +25,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.LocalTypeIndex;
+import com.radixdlt.api.core.generated.models.FullyScopedTypeId;
 import com.radixdlt.api.core.generated.models.ObjectInstanceTypeReference;
 import com.radixdlt.api.core.generated.models.ObjectSubstateTypeReference;
 import com.radixdlt.api.core.generated.models.ObjectSubstateTypeReferenceType;
@@ -41,9 +41,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * PackageObjectSubstateTypeReference
  */
 @JsonPropertyOrder({
-  PackageObjectSubstateTypeReference.JSON_PROPERTY_PACKAGE_ADDRESS,
-  PackageObjectSubstateTypeReference.JSON_PROPERTY_SCHEMA_HASH,
-  PackageObjectSubstateTypeReference.JSON_PROPERTY_LOCAL_TYPE_INDEX
+  PackageObjectSubstateTypeReference.JSON_PROPERTY_FULL_TYPE_ID
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -57,93 +55,35 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class PackageObjectSubstateTypeReference extends ObjectSubstateTypeReference {
-  public static final String JSON_PROPERTY_PACKAGE_ADDRESS = "package_address";
-  private String packageAddress;
-
-  public static final String JSON_PROPERTY_SCHEMA_HASH = "schema_hash";
-  private String schemaHash;
-
-  public static final String JSON_PROPERTY_LOCAL_TYPE_INDEX = "local_type_index";
-  private LocalTypeIndex localTypeIndex;
+  public static final String JSON_PROPERTY_FULL_TYPE_ID = "full_type_id";
+  private FullyScopedTypeId fullTypeId;
 
   public PackageObjectSubstateTypeReference() { 
   }
 
-  public PackageObjectSubstateTypeReference packageAddress(String packageAddress) {
-    this.packageAddress = packageAddress;
+  public PackageObjectSubstateTypeReference fullTypeId(FullyScopedTypeId fullTypeId) {
+    this.fullTypeId = fullTypeId;
     return this;
   }
 
    /**
-   * The Bech32m-encoded human readable version of the package address
-   * @return packageAddress
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the package address")
-  @JsonProperty(JSON_PROPERTY_PACKAGE_ADDRESS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getPackageAddress() {
-    return packageAddress;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_PACKAGE_ADDRESS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setPackageAddress(String packageAddress) {
-    this.packageAddress = packageAddress;
-  }
-
-
-  public PackageObjectSubstateTypeReference schemaHash(String schemaHash) {
-    this.schemaHash = schemaHash;
-    return this;
-  }
-
-   /**
-   * The hex-encoded schema hash, capturing the identity of an SBOR schema.
-   * @return schemaHash
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded schema hash, capturing the identity of an SBOR schema.")
-  @JsonProperty(JSON_PROPERTY_SCHEMA_HASH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getSchemaHash() {
-    return schemaHash;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_SCHEMA_HASH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSchemaHash(String schemaHash) {
-    this.schemaHash = schemaHash;
-  }
-
-
-  public PackageObjectSubstateTypeReference localTypeIndex(LocalTypeIndex localTypeIndex) {
-    this.localTypeIndex = localTypeIndex;
-    return this;
-  }
-
-   /**
-   * Get localTypeIndex
-   * @return localTypeIndex
+   * Get fullTypeId
+   * @return fullTypeId
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_LOCAL_TYPE_INDEX)
+  @JsonProperty(JSON_PROPERTY_FULL_TYPE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public LocalTypeIndex getLocalTypeIndex() {
-    return localTypeIndex;
+  public FullyScopedTypeId getFullTypeId() {
+    return fullTypeId;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_LOCAL_TYPE_INDEX)
+  @JsonProperty(JSON_PROPERTY_FULL_TYPE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setLocalTypeIndex(LocalTypeIndex localTypeIndex) {
-    this.localTypeIndex = localTypeIndex;
+  public void setFullTypeId(FullyScopedTypeId fullTypeId) {
+    this.fullTypeId = fullTypeId;
   }
 
 
@@ -159,15 +99,13 @@ public class PackageObjectSubstateTypeReference extends ObjectSubstateTypeRefere
       return false;
     }
     PackageObjectSubstateTypeReference packageObjectSubstateTypeReference = (PackageObjectSubstateTypeReference) o;
-    return Objects.equals(this.packageAddress, packageObjectSubstateTypeReference.packageAddress) &&
-        Objects.equals(this.schemaHash, packageObjectSubstateTypeReference.schemaHash) &&
-        Objects.equals(this.localTypeIndex, packageObjectSubstateTypeReference.localTypeIndex) &&
+    return Objects.equals(this.fullTypeId, packageObjectSubstateTypeReference.fullTypeId) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(packageAddress, schemaHash, localTypeIndex, super.hashCode());
+    return Objects.hash(fullTypeId, super.hashCode());
   }
 
   @Override
@@ -175,9 +113,7 @@ public class PackageObjectSubstateTypeReference extends ObjectSubstateTypeRefere
     StringBuilder sb = new StringBuilder();
     sb.append("class PackageObjectSubstateTypeReference {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    packageAddress: ").append(toIndentedString(packageAddress)).append("\n");
-    sb.append("    schemaHash: ").append(toIndentedString(schemaHash)).append("\n");
-    sb.append("    localTypeIndex: ").append(toIndentedString(localTypeIndex)).append("\n");
+    sb.append("    fullTypeId: ").append(toIndentedString(fullTypeId)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.ModuleId;
+import com.radixdlt.api.core.generated.models.AttachedModuleId;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -38,7 +38,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ModuleVersion {
   public static final String JSON_PROPERTY_MODULE = "module";
-  private ModuleId module;
+  private AttachedModuleId module;
 
   public static final String JSON_PROPERTY_VERSION = "version";
   private String version;
@@ -46,7 +46,7 @@ public class ModuleVersion {
   public ModuleVersion() { 
   }
 
-  public ModuleVersion module(ModuleId module) {
+  public ModuleVersion module(AttachedModuleId module) {
     this.module = module;
     return this;
   }
@@ -60,14 +60,14 @@ public class ModuleVersion {
   @JsonProperty(JSON_PROPERTY_MODULE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ModuleId getModule() {
+  public AttachedModuleId getModule() {
     return module;
   }
 
 
   @JsonProperty(JSON_PROPERTY_MODULE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setModule(ModuleId module) {
+  public void setModule(AttachedModuleId module) {
     this.module = module;
   }
 

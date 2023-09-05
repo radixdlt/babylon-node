@@ -17,12 +17,12 @@ pub enum BlueprintPayloadDef {
     GenericBlueprintPayloadDef {
         /// An index within the list of generic type substitutions.
         #[serde(rename = "generic_index")]
-        generic_index: i64,
+        generic_index: i32,
     },
     #[serde(rename="Static")]
     StaticBlueprintPayloadDef {
         #[serde(rename = "type_id")]
-        type_id: Box<crate::core_api::generated::models::TypeIdentifier>,
+        type_id: Box<crate::core_api::generated::models::ScopedTypeId>,
     },
 }
 
