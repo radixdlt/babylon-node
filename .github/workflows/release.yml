@@ -22,8 +22,9 @@ jobs:
     name: Cancel running workflows
     runs-on: ubuntu-22.04
     steps:
+      # https://github.com/styfle/cancel-workflow-action/releases/tag/0.11.0
       - name: cancel running workflows
-        uses: styfle/cancel-workflow-action@0.8.0
+        uses: styfle/cancel-workflow-action@b173b6ec0100793626c2d9e6b90435061f4fc3e5
         with:
           access_token: ${{ github.token }}
 
@@ -207,19 +208,21 @@ jobs:
       - uses: actions/checkout@master
         with:
           lfs: true
-      - uses: actions/cache@v1
+      # https://github.com/actions/cache/releases/tag/v3.3.1
+      - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
         with:
           path: ~/.cargo/registry
           key: '${{ runner.os }}-${{ matrix.target }}-cargo-registry-${{ hashFiles(''**/Cargo.lock'') }}'
-      - uses: actions/cache@v1
+      - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
         with:
           path: ~/.cargo/git
           key: '${{ runner.os }}-${{ matrix.target }}-cargo-index-${{ hashFiles(''**/Cargo.lock'') }}'
-      - uses: actions/cache@v1
+      - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
         with:
           path: target
           key: ${{ runner.os }}-${{ matrix.target }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
-      - uses: actions-rs/toolchain@v1
+      # https://github.com/actions-rs/toolchain/releases/tag/v1.0.6
+      - uses: actions-rs/toolchain@b2417cde72dcf67f306c0ae8e0828a81bf0b189f
         with:
           profile: minimal
           toolchain: stable
