@@ -192,6 +192,7 @@ public final class UInt256 implements Comparable<UInt256>, Serializable {
    * @throws IllegalArgumentException if {@code bytes} is 0 length.
    * @see #toByteArray()
    */
+  @JsonCreator
   public static UInt256 from(byte[] bytes) {
     Objects.requireNonNull(bytes);
     if (bytes.length == 0) {
@@ -224,7 +225,6 @@ public final class UInt256 implements Comparable<UInt256>, Serializable {
    * @return {@code s} as an {@link UInt256} type.
    * @throws NumberFormatException if {@code s} is not a valid integer number.
    */
-  @JsonCreator
   public static UInt256 from(String s) {
     Objects.requireNonNull(s);
 
@@ -861,8 +861,8 @@ public final class UInt256 implements Comparable<UInt256>, Serializable {
   }
 
   @JsonValue
-  public String toJson() {
-    return toString(10);
+  public byte[] toJson() {
+    return toByteArray();
   }
 
   @Override
