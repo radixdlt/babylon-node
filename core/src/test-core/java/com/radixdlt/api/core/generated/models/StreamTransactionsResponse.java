@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.CommittedStateIdentifier;
 import com.radixdlt.api.core.generated.models.CommittedTransaction;
+import com.radixdlt.api.core.generated.models.LedgerProof;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -39,7 +40,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   StreamTransactionsResponse.JSON_PROPERTY_FROM_STATE_VERSION,
   StreamTransactionsResponse.JSON_PROPERTY_COUNT,
   StreamTransactionsResponse.JSON_PROPERTY_MAX_LEDGER_STATE_VERSION,
-  StreamTransactionsResponse.JSON_PROPERTY_TRANSACTIONS
+  StreamTransactionsResponse.JSON_PROPERTY_TRANSACTIONS,
+  StreamTransactionsResponse.JSON_PROPERTY_PROOFS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class StreamTransactionsResponse {
@@ -57,6 +59,9 @@ public class StreamTransactionsResponse {
 
   public static final String JSON_PROPERTY_TRANSACTIONS = "transactions";
   private List<CommittedTransaction> transactions = new ArrayList<>();
+
+  public static final String JSON_PROPERTY_PROOFS = "proofs";
+  private List<LedgerProof> proofs = null;
 
   public StreamTransactionsResponse() { 
   }
@@ -202,6 +207,40 @@ public class StreamTransactionsResponse {
   }
 
 
+  public StreamTransactionsResponse proofs(List<LedgerProof> proofs) {
+    this.proofs = proofs;
+    return this;
+  }
+
+  public StreamTransactionsResponse addProofsItem(LedgerProof proofsItem) {
+    if (this.proofs == null) {
+      this.proofs = new ArrayList<>();
+    }
+    this.proofs.add(proofsItem);
+    return this;
+  }
+
+   /**
+   * A ledger proof list starting from &#x60;from_state_version&#x60; (inclusive) stored by this node.
+   * @return proofs
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "A ledger proof list starting from `from_state_version` (inclusive) stored by this node.")
+  @JsonProperty(JSON_PROPERTY_PROOFS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public List<LedgerProof> getProofs() {
+    return proofs;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_PROOFS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setProofs(List<LedgerProof> proofs) {
+    this.proofs = proofs;
+  }
+
+
   /**
    * Return true if this StreamTransactionsResponse object is equal to o.
    */
@@ -218,12 +257,13 @@ public class StreamTransactionsResponse {
         Objects.equals(this.fromStateVersion, streamTransactionsResponse.fromStateVersion) &&
         Objects.equals(this.count, streamTransactionsResponse.count) &&
         Objects.equals(this.maxLedgerStateVersion, streamTransactionsResponse.maxLedgerStateVersion) &&
-        Objects.equals(this.transactions, streamTransactionsResponse.transactions);
+        Objects.equals(this.transactions, streamTransactionsResponse.transactions) &&
+        Objects.equals(this.proofs, streamTransactionsResponse.proofs);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(previousStateIdentifiers, fromStateVersion, count, maxLedgerStateVersion, transactions);
+    return Objects.hash(previousStateIdentifiers, fromStateVersion, count, maxLedgerStateVersion, transactions, proofs);
   }
 
   @Override
@@ -235,6 +275,7 @@ public class StreamTransactionsResponse {
     sb.append("    count: ").append(toIndentedString(count)).append("\n");
     sb.append("    maxLedgerStateVersion: ").append(toIndentedString(maxLedgerStateVersion)).append("\n");
     sb.append("    transactions: ").append(toIndentedString(transactions)).append("\n");
+    sb.append("    proofs: ").append(toIndentedString(proofs)).append("\n");
     sb.append("}");
     return sb.toString();
   }

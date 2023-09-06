@@ -51,13 +51,13 @@ public class EpochRound {
   }
 
    /**
-   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking the epoch. Only present if the rejection is temporary due to a header specifying a \&quot;from epoch\&quot; in the future. 
+   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking the epoch.
    * minimum: 0
    * maximum: 10000000000
    * @return epoch
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`, marking the epoch. Only present if the rejection is temporary due to a header specifying a \"from epoch\" in the future. ")
+  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`, marking the epoch.")
   @JsonProperty(JSON_PROPERTY_EPOCH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 

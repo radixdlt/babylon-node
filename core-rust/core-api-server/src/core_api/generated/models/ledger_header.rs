@@ -12,33 +12,37 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct StreamTransactionsResponse {
-    #[serde(rename = "previous_state_identifiers", skip_serializing_if = "Option::is_none")]
-    pub previous_state_identifiers: Option<Box<crate::core_api::generated::models::CommittedStateIdentifier>>,
-    #[serde(rename = "from_state_version")]
-    pub from_state_version: i64,
-    /// An integer between `0` and `10000`, giving the total count of transactions in the returned response
-    #[serde(rename = "count")]
-    pub count: i32,
-    #[serde(rename = "max_ledger_state_version")]
-    pub max_ledger_state_version: i64,
-    /// A committed transactions list starting from the `from_state_version` (inclusive).
-    #[serde(rename = "transactions")]
-    pub transactions: Vec<crate::core_api::generated::models::CommittedTransaction>,
-    /// A ledger proof list starting from `from_state_version` (inclusive) stored by this node.
-    #[serde(rename = "proofs", skip_serializing_if = "Option::is_none")]
-    pub proofs: Option<Vec<crate::core_api::generated::models::LedgerProof>>,
+pub struct LedgerHeader {
+    /// An integer between `0` and `10^10`, marking the epoch.
+    #[serde(rename = "epoch")]
+    pub epoch: i64,
+    /// An integer between `0` and `10^10`, marking the current round in an epoch
+    #[serde(rename = "round")]
+    pub round: i64,
+    #[serde(rename = "state_version")]
+    pub state_version: i64,
+    #[serde(rename = "hashes")]
+    pub hashes: Box<crate::core_api::generated::models::LedgerHashes>,
+    /// An integer between `0` and `10^14`, marking the consensus parent round timestamp in ms.
+    #[serde(rename = "consensus_parent_round_timestamp_ms")]
+    pub consensus_parent_round_timestamp_ms: i64,
+    /// An integer between `0` and `10^14`, marking the proposer timestamp in ms.
+    #[serde(rename = "proposer_timestamp_ms")]
+    pub proposer_timestamp_ms: i64,
+    #[serde(rename = "next_epoch", skip_serializing_if = "Option::is_none")]
+    pub next_epoch: Option<Box<crate::core_api::generated::models::NextEpoch>>,
 }
 
-impl StreamTransactionsResponse {
-    pub fn new(from_state_version: i64, count: i32, max_ledger_state_version: i64, transactions: Vec<crate::core_api::generated::models::CommittedTransaction>) -> StreamTransactionsResponse {
-        StreamTransactionsResponse {
-            previous_state_identifiers: None,
-            from_state_version,
-            count,
-            max_ledger_state_version,
-            transactions,
-            proofs: None,
+impl LedgerHeader {
+    pub fn new(epoch: i64, round: i64, state_version: i64, hashes: crate::core_api::generated::models::LedgerHashes, consensus_parent_round_timestamp_ms: i64, proposer_timestamp_ms: i64) -> LedgerHeader {
+        LedgerHeader {
+            epoch,
+            round,
+            state_version,
+            hashes: Box::new(hashes),
+            consensus_parent_round_timestamp_ms,
+            proposer_timestamp_ms,
+            next_epoch: None,
         }
     }
 }

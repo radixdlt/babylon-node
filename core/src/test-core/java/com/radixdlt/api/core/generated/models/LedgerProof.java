@@ -22,7 +22,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.ActiveValidator;
+import com.radixdlt.api.core.generated.models.LedgerHeader;
+import com.radixdlt.api.core.generated.models.TimestampedValidatorSignature;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -31,84 +32,112 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * NextEpoch
+ * LedgerProof
  */
 @JsonPropertyOrder({
-  NextEpoch.JSON_PROPERTY_EPOCH,
-  NextEpoch.JSON_PROPERTY_VALIDATORS
+  LedgerProof.JSON_PROPERTY_OPAQUE,
+  LedgerProof.JSON_PROPERTY_LEDGER_HEADER,
+  LedgerProof.JSON_PROPERTY_TIMESTAMPED_SIGNATURES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class NextEpoch {
-  public static final String JSON_PROPERTY_EPOCH = "epoch";
-  private Long epoch;
+public class LedgerProof {
+  public static final String JSON_PROPERTY_OPAQUE = "opaque";
+  private String opaque;
 
-  public static final String JSON_PROPERTY_VALIDATORS = "validators";
-  private List<ActiveValidator> validators = new ArrayList<>();
+  public static final String JSON_PROPERTY_LEDGER_HEADER = "ledger_header";
+  private LedgerHeader ledgerHeader;
 
-  public NextEpoch() { 
+  public static final String JSON_PROPERTY_TIMESTAMPED_SIGNATURES = "timestamped_signatures";
+  private List<TimestampedValidatorSignature> timestampedSignatures = new ArrayList<>();
+
+  public LedgerProof() { 
   }
 
-  public NextEpoch epoch(Long epoch) {
-    this.epoch = epoch;
+  public LedgerProof opaque(String opaque) {
+    this.opaque = opaque;
     return this;
   }
 
    /**
-   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking the epoch.
-   * minimum: 0
-   * maximum: 10000000000
-   * @return epoch
+   * A hex-encoded 32-byte hash
+   * @return opaque
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`, marking the epoch.")
-  @JsonProperty(JSON_PROPERTY_EPOCH)
+  @ApiModelProperty(required = true, value = "A hex-encoded 32-byte hash")
+  @JsonProperty(JSON_PROPERTY_OPAQUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Long getEpoch() {
-    return epoch;
+  public String getOpaque() {
+    return opaque;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_EPOCH)
+  @JsonProperty(JSON_PROPERTY_OPAQUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEpoch(Long epoch) {
-    this.epoch = epoch;
+  public void setOpaque(String opaque) {
+    this.opaque = opaque;
   }
 
 
-  public NextEpoch validators(List<ActiveValidator> validators) {
-    this.validators = validators;
-    return this;
-  }
-
-  public NextEpoch addValidatorsItem(ActiveValidator validatorsItem) {
-    this.validators.add(validatorsItem);
+  public LedgerProof ledgerHeader(LedgerHeader ledgerHeader) {
+    this.ledgerHeader = ledgerHeader;
     return this;
   }
 
    /**
-   * Active validator set for the new epoch, ordered by stake descending.
-   * @return validators
+   * Get ledgerHeader
+   * @return ledgerHeader
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "Active validator set for the new epoch, ordered by stake descending.")
-  @JsonProperty(JSON_PROPERTY_VALIDATORS)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_LEDGER_HEADER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<ActiveValidator> getValidators() {
-    return validators;
+  public LedgerHeader getLedgerHeader() {
+    return ledgerHeader;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_VALIDATORS)
+  @JsonProperty(JSON_PROPERTY_LEDGER_HEADER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValidators(List<ActiveValidator> validators) {
-    this.validators = validators;
+  public void setLedgerHeader(LedgerHeader ledgerHeader) {
+    this.ledgerHeader = ledgerHeader;
+  }
+
+
+  public LedgerProof timestampedSignatures(List<TimestampedValidatorSignature> timestampedSignatures) {
+    this.timestampedSignatures = timestampedSignatures;
+    return this;
+  }
+
+  public LedgerProof addTimestampedSignaturesItem(TimestampedValidatorSignature timestampedSignaturesItem) {
+    this.timestampedSignatures.add(timestampedSignaturesItem);
+    return this;
+  }
+
+   /**
+   * Get timestampedSignatures
+   * @return timestampedSignatures
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_TIMESTAMPED_SIGNATURES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public List<TimestampedValidatorSignature> getTimestampedSignatures() {
+    return timestampedSignatures;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_TIMESTAMPED_SIGNATURES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setTimestampedSignatures(List<TimestampedValidatorSignature> timestampedSignatures) {
+    this.timestampedSignatures = timestampedSignatures;
   }
 
 
   /**
-   * Return true if this NextEpoch object is equal to o.
+   * Return true if this LedgerProof object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -118,22 +147,24 @@ public class NextEpoch {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    NextEpoch nextEpoch = (NextEpoch) o;
-    return Objects.equals(this.epoch, nextEpoch.epoch) &&
-        Objects.equals(this.validators, nextEpoch.validators);
+    LedgerProof ledgerProof = (LedgerProof) o;
+    return Objects.equals(this.opaque, ledgerProof.opaque) &&
+        Objects.equals(this.ledgerHeader, ledgerProof.ledgerHeader) &&
+        Objects.equals(this.timestampedSignatures, ledgerProof.timestampedSignatures);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(epoch, validators);
+    return Objects.hash(opaque, ledgerHeader, timestampedSignatures);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class NextEpoch {\n");
-    sb.append("    epoch: ").append(toIndentedString(epoch)).append("\n");
-    sb.append("    validators: ").append(toIndentedString(validators)).append("\n");
+    sb.append("class LedgerProof {\n");
+    sb.append("    opaque: ").append(toIndentedString(opaque)).append("\n");
+    sb.append("    ledgerHeader: ").append(toIndentedString(ledgerHeader)).append("\n");
+    sb.append("    timestampedSignatures: ").append(toIndentedString(timestampedSignatures)).append("\n");
     sb.append("}");
     return sb.toString();
   }

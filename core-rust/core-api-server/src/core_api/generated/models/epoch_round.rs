@@ -13,7 +13,7 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct EpochRound {
-    /// An integer between `0` and `10^10`, marking the epoch. Only present if the rejection is temporary due to a header specifying a \"from epoch\" in the future. 
+    /// An integer between `0` and `10^10`, marking the epoch.
     #[serde(rename = "epoch")]
     pub epoch: i64,
     /// An integer between `0` and `10^10`, marking the current round in an epoch

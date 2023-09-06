@@ -810,6 +810,48 @@ impl TransactionIdentifierLoader for RocksDBStore {
     }
 }
 
+pub struct RocksDBProofIterator<'a> {
+    proofs_iter: DBIteratorWithThreadMode<'a, DB>,
+}
+
+impl<'a> RocksDBProofIterator<'a> {
+    fn new(from_state_version: StateVersion, store: &'a RocksDBStore) -> Self {
+        let start_state_version_bytes = from_state_version.to_bytes();
+        Self {
+            proofs_iter: store.db.iterator_cf(
+                store.cf_handle(&LedgerProofByStateVersion),
+                IteratorMode::From(&start_state_version_bytes, Direction::Forward),
+            ),
+        }
+    }
+}
+
+impl Iterator for RocksDBProofIterator<'_> {
+    type Item = LedgerProof;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.proofs_iter.next() {
+            None => None,
+            Some(proof) => {
+                let proof_kv = proof.unwrap();
+
+                let proof: LedgerProof = scrypto_decode(proof_kv.1.as_ref()).unwrap();
+
+                Some(proof)
+            }
+        }
+    }
+}
+
+impl IterableProofStore for RocksDBStore {
+    fn get_proof_iter(
+        &self,
+        from_state_version: StateVersion,
+    ) -> Box<dyn Iterator<Item = LedgerProof> + '_> {
+        Box::new(RocksDBProofIterator::new(from_state_version, self))
+    }
+}
+
 impl QueryableProofStore for RocksDBStore {
     fn max_state_version(&self) -> StateVersion {
         self.db

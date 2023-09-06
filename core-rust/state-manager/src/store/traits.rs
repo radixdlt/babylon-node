@@ -62,6 +62,9 @@
  * permissions under this License.
  */
 
+use std::cmp::Ordering;
+use std::iter::Peekable;
+
 use crate::staging::StateHashTreeDiff;
 use crate::store::StateManagerDatabase;
 use crate::transaction::*;
@@ -138,6 +141,7 @@ pub trait ConfigurableDatabase {
     fn is_local_transaction_execution_index_enabled(&self) -> bool;
 }
 
+#[derive(Debug, Clone)]
 pub struct CommittedTransactionBundle {
     pub state_version: StateVersion,
     pub raw: RawLedgerTransaction,
@@ -279,6 +283,14 @@ pub mod proofs {
     use radix_engine_common::types::Epoch;
 
     use super::*;
+
+    #[enum_dispatch]
+    pub trait IterableProofStore {
+        fn get_proof_iter(
+            &self,
+            from_state_version: StateVersion,
+        ) -> Box<dyn Iterator<Item = LedgerProof> + '_>;
+    }
 
     #[enum_dispatch]
     pub trait QueryableProofStore {
@@ -464,5 +476,57 @@ pub mod extensions {
             account: GlobalAddress,
             from_state_version: StateVersion,
         ) -> Box<dyn Iterator<Item = StateVersion> + '_>;
+    }
+}
+
+pub struct TransactionAndProofIterator<'a> {
+    committed_transaction_bundle:
+        Peekable<Box<dyn Iterator<Item = CommittedTransactionBundle> + 'a>>,
+    ledger_proof: Peekable<Box<dyn Iterator<Item = LedgerProof> + 'a>>,
+}
+
+impl<'a> TransactionAndProofIterator<'a> {
+    pub fn new(
+        committed_transaction_bundle: Peekable<
+            Box<dyn Iterator<Item = CommittedTransactionBundle> + 'a>,
+        >,
+        ledger_proof: Peekable<Box<dyn Iterator<Item = LedgerProof> + 'a>>,
+    ) -> Self {
+        Self {
+            committed_transaction_bundle,
+            ledger_proof,
+        }
+    }
+}
+
+impl<'a> Iterator for TransactionAndProofIterator<'a> {
+    type Item = (CommittedTransactionBundle, Option<LedgerProof>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match (
+            self.committed_transaction_bundle.peek(),
+            self.ledger_proof.peek(),
+        ) {
+            (Some(transaction), Some(proof)) => {
+                match proof
+                    .ledger_header
+                    .state_version
+                    .cmp(&transaction.state_version)
+                {
+                    Ordering::Greater => {
+                        Some((self.committed_transaction_bundle.next().unwrap(), None))
+                    }
+                    _ => Some((
+                        self.committed_transaction_bundle.next().unwrap(),
+                        Some(self.ledger_proof.next().unwrap()),
+                    )),
+                }
+            }
+            (None, Some(_)) => {
+                panic!("Invalid state: proof without transaction");
+            }
+            (Some(_), None) => Some((self.committed_transaction_bundle.next().unwrap(), None)),
+            (None, None) => None,
+        }
     }
 }
