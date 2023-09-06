@@ -411,8 +411,7 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
         this.highestReceivedProposalRound.gte(currentRound());
 
     return (receivedAnyQcForThisOrHigherRound || receivedProposalForThisOrFutureRound)
-        && timeoutCalculator.additionalRoundTimeIfProposalReceivedMs() > 0
-        && !scheduledRoundTimeoutHasOccurred;
+        && timeoutCalculator.additionalRoundTimeIfProposalReceivedMs() > 0;
   }
 
   private void prolongRoundTimeout(ScheduledLocalTimeout originalScheduledLocalTimeout) {
