@@ -51,7 +51,7 @@ impl RejectionReason {
             RejectionReason::AlreadyCommitted(_) => true,
             RejectionReason::FromExecution(rejection_reason) => match **rejection_reason {
                 ExecutionRejectionReason::SuccessButFeeLoanNotRepaid => false,
-                ExecutionRejectionReason::ErrorBeforeFeeLoanRepaid(_) => false,
+                ExecutionRejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(_) => false,
                 ExecutionRejectionReason::TransactionEpochNotYetValid { .. } => false,
                 ExecutionRejectionReason::TransactionEpochNoLongerValid { .. } => false,
                 ExecutionRejectionReason::IntentHashPreviouslyCommitted => true,
@@ -83,7 +83,7 @@ impl RejectionReason {
                         },
                     }
                 }
-                ExecutionRejectionReason::ErrorBeforeFeeLoanRepaid(_) => {
+                ExecutionRejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(_) => {
                     RejectionPermanence::Temporary {
                         retry: RetrySettings::AfterDelay {
                             base_delay: Duration::from_secs(2 * 60),

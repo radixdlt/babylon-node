@@ -91,7 +91,8 @@ public record GenesisData(
           "metadata",
           "fungible_resource",
           "non_fungible_resource",
-          "account_authorized_depositors");
+          "account_authorized_depositors",
+          "global_n_owned");
   public static final ImmutableList<String> NO_SCENARIOS = ImmutableList.of();
 
   public static void registerCodec(CodecMap codecMap) {

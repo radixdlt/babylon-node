@@ -44,6 +44,7 @@ models/AnyOfAccessRuleNode.ts
 models/AnyOfAccessRuleNodeAllOf.ts
 models/AnyOfProofRule.ts
 models/AnyOfProofRuleAllOf.ts
+models/AttachedModuleId.ts
 models/AuthConfig.ts
 models/AuthorizedDepositorBadge.ts
 models/AuthorizedDepositorBadgeBase.ts
@@ -71,6 +72,7 @@ models/BlueprintSchemaBlueprintTypeReference.ts
 models/BlueprintSchemaBlueprintTypeReferenceAllOf.ts
 models/BlueprintSchemaCollectionPartition.ts
 models/BlueprintSchemaFieldPartition.ts
+models/BlueprintTypeIdentifier.ts
 models/BlueprintTypeReference.ts
 models/BlueprintTypeReferenceBase.ts
 models/BlueprintTypeReferenceKind.ts
@@ -161,6 +163,7 @@ models/FieldSchemaFeatureConditionType.ts
 models/FieldSubstateKey.ts
 models/FieldSubstateKeyAllOf.ts
 models/FrozenStatus.ts
+models/FullyScopedTypeId.ts
 models/FunctionAuthType.ts
 models/FunctionEventEmitterIdentifier.ts
 models/FunctionEventEmitterIdentifierAllOf.ts
@@ -188,6 +191,9 @@ models/GenericKeyValueStoreEntryValue.ts
 models/GenericScryptoComponentFieldStateSubstate.ts
 models/GenericScryptoComponentFieldStateSubstateAllOf.ts
 models/GenericScryptoComponentFieldStateValue.ts
+models/GenericSubstitution.ts
+models/GenericSubstitutionBase.ts
+models/GenericSubstitutionType.ts
 models/GenericTypeParameter.ts
 models/GenericTypeParameterConstraints.ts
 models/GenesisLedgerTransaction.ts
@@ -215,8 +221,10 @@ models/LedgerStateSummary.ts
 models/LedgerTransaction.ts
 models/LedgerTransactionBase.ts
 models/LedgerTransactionType.ts
+models/LocalGenericSubstition.ts
+models/LocalGenericSubstitionAllOf.ts
 models/LocalNonFungibleKey.ts
-models/LocalTypeIndex.ts
+models/LocalTypeId.ts
 models/LtsCommittedTransactionOutcome.ts
 models/LtsCommittedTransactionStatus.ts
 models/LtsEntityFungibleBalanceChanges.ts
@@ -325,7 +333,6 @@ models/ObjectInstanceTypeReference.ts
 models/ObjectInstanceTypeReferenceAllOf.ts
 models/ObjectKeyValuePartitionEntryStructure.ts
 models/ObjectKeyValuePartitionEntryStructureAllOf.ts
-models/ObjectModuleId.ts
 models/ObjectRoleKey.ts
 models/ObjectSortedIndexPartitionEntryStructure.ts
 models/ObjectSortedIndexPartitionEntryStructureAllOf.ts
@@ -418,6 +425,8 @@ models/ReceiverInfo.ts
 models/RecoveryProposal.ts
 models/RecoveryRoleRecoveryAttempt.ts
 models/ReferenceType.ts
+models/RemoteGenericSubstition.ts
+models/RemoteGenericSubstitionAllOf.ts
 models/RequireProofRule.ts
 models/RequireProofRuleAllOf.ts
 models/Requirement.ts
@@ -461,6 +470,7 @@ models/SchemaEntrySubstate.ts
 models/SchemaEntrySubstateAllOf.ts
 models/SchemaEntryValue.ts
 models/SchemaKey.ts
+models/ScopedTypeId.ts
 models/ScryptoSchema.ts
 models/Signature.ts
 models/SignatureBase.ts
@@ -568,7 +578,6 @@ models/TransactionTrackerTransactionStatus.ts
 models/TwoResourcePoolFieldStateSubstate.ts
 models/TwoResourcePoolFieldStateSubstateAllOf.ts
 models/TwoResourcePoolFieldStateValue.ts
-models/TypeIdentifier.ts
 models/TypeInfoDetails.ts
 models/TypeInfoDetailsBase.ts
 models/TypeInfoModuleFieldTypeInfoSubstate.ts
