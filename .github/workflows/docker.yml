@@ -22,6 +22,19 @@ jobs:
         uses: actions/checkout@v3
       - name: Dump context
         uses: crazy-max/ghaction-dump-context@516dbb0c760f39b4cdd750ae095f1688780f68f4
+      - name: "Configure AWS credentials"
+        uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355
+        with:
+          role-to-assume: arn:aws:iam::308190735829:role/gh-common-secrets-read-access
+          aws-region: eu-west-2
+      # This is version v1.0.4
+      # https://github.com/aws-actions/configure-aws-credentials/releases/tag/v1.0.4
+      - name: Read secrets from AWS Secrets Manager into environment variables
+        uses: aws-actions/aws-secretsmanager-get-secrets@022e8919774ecb75e8e375656d7b1898936ab878
+        with:
+          secret-ids: |
+            DOCKERHUB_PRIVATE, github-actions/common/dockerhub-credentials
+          parse-json-secrets: true
       - name: OIDC access test
         run: |
           echo ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
