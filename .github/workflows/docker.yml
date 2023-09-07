@@ -239,6 +239,20 @@ jobs:
       - name: OIDC access test
         run: |
           echo ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
+      - name: "Configure AWS credentials"
+        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838
+        with:
+          role-to-assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
+          aws-region: eu-west-2
+      - name: Read secrets from AWS Secrets Manager into environment variables
+        uses: aws-actions/aws-secretsmanager-get-secrets@022e8919774ecb75e8e375656d7b1898936ab878
+        with:
+          secret-ids: |
+            DOCKERHUB_PUBLIC, github-actions/rdxworks/dockerhub-images/release-credentials
+          parse-json-secrets: true
+      - name: OIDC access test
+        run: |
+          echo ${{ secrets.DOCKERHUB_PUBLIC_USERNAME }}
       
 
   build_push_container_dockerhub:
