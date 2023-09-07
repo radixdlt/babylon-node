@@ -108,12 +108,20 @@ public final class REv2RegisterValidatorTest {
   @Parameterized.Parameters
   public static Collection<Object[]> parameters() throws PublicKeyException {
     return List.of(
-        new Object[] {PrivateKeys.ofNumeric(2).getPublicKey()},
+        new Object[] {
+          // A regular, valid public key
+          PrivateKeys.ofNumeric(2).getPublicKey()
+        },
         new Object[] {
           // This has correct length but does not decode to a valid point on a curve,
           // and it shouldn't cause any problems on the node side.
           ECDSASecp256k1PublicKey.fromHex(
-              "02f7bdef7bdef7bdef7bdef7bdef7bdef7bdef7bdef7bdef7bdef7bdef7be22351")
+              "02f7bdef7bdef7bdef7bdef7bdef7bdef7bdef7bdef7bdef7bdef7bdef7be22351"),
+        },
+        new Object[] {
+          // This one doesn't even have a correct prefix byte, and it should still work.
+          ECDSASecp256k1PublicKey.fromHex(
+              "000000000000000000000000000000000000000000000000000000000000000000")
         });
   }
 
