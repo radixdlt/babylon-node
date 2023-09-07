@@ -653,7 +653,10 @@ impl Iterator for RocksDBCommittedTransactionBundleIterator<'_> {
                 };
                 let identifiers = scrypto_decode(identifiers_kv.1.as_ref()).unwrap();
 
-                self.state_version = self.state_version.next();
+                self.state_version = self
+                    .state_version
+                    .next()
+                    .expect("Invalid next state version!");
 
                 Some(CommittedTransactionBundle {
                     state_version: current_state_version,
@@ -1147,7 +1150,9 @@ impl RocksDBStore {
                     let next_receipt_kv = next_receipt_result.unwrap();
                     let next_receipt_state_version = StateVersion::from_bytes(next_receipt_kv.0);
 
-                    let expected_state_version = start_state_version_inclusive.relative(index);
+                    let expected_state_version = start_state_version_inclusive
+                        .relative(index)
+                        .expect("Invalid relative state version!");
                     if expected_state_version != next_receipt_state_version {
                         panic!(
                             "DB inconsistency! Missing receipt at state version {expected_state_version}"
@@ -1218,7 +1223,9 @@ impl AccountChangeIndexExtension for RocksDBStore {
 
         while last_processed_state_version < last_state_version {
             last_processed_state_version = self.update_account_change_index_from_store(
-                last_processed_state_version.next(),
+                last_processed_state_version
+                    .next()
+                    .expect("Invalid next state version!"),
                 MAX_TRANSACTION_BATCH,
             );
             info!("Account Change Index updated to {last_processed_state_version}/{last_state_version}");

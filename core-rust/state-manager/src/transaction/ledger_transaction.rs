@@ -1,6 +1,5 @@
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::prelude::*;
-use sbor::*;
 
 use crate::transaction::ConfigType;
 use transaction::define_raw_transaction_payload;

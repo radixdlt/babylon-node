@@ -311,7 +311,8 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                   var header = ledgerExtension.getProof();
                   final var initialState = VertexStoreState.createNewForNextEpoch(header, hasher);
                   var validatorSet = BFTValidatorSet.from(nextEpoch.getValidators());
-                  var proposerElection = ProposerElections.defaultRotation(validatorSet);
+                  var proposerElection =
+                      ProposerElections.defaultRotation(nextEpoch.getEpoch(), validatorSet);
                   var bftConfiguration =
                       new BFTConfiguration(proposerElection, validatorSet, initialState);
                   return new EpochChange(header, bftConfiguration);

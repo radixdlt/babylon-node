@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments)]
+
 use super::addressing::*;
 use crate::core_api::*;
 use radix_engine::types::*;
@@ -123,6 +125,7 @@ impl ValueRepresentations {
         })
     }
 }
+
 #[tracing::instrument(skip_all)]
 pub fn to_api_created_substate(
     context: &MappingContext,
@@ -267,26 +270,14 @@ pub fn to_api_substate_system_structure(
         }
         SubstateSystemStructure::KeyValueStoreEntry(entry) => {
             let KeyValueStoreEntryStructure {
-                key_value_store_address,
-                key_schema_hash,
-                key_local_type_index,
-                value_schema_hash,
-                value_local_type_index,
+                key_full_type_id,
+                value_full_type_id,
             } = entry;
             models::SubstateSystemStructure::KeyValueStoreEntryStructure {
-                key_value_store_address: to_api_entity_address(
+                key_full_type_id: Box::new(to_api_fully_scoped_type_id(context, key_full_type_id)?),
+                value_full_type_id: Box::new(to_api_fully_scoped_type_id(
                     context,
-                    key_value_store_address.as_node_id(),
-                )?,
-                key_schema_hash: to_api_schema_hash(key_schema_hash),
-                key_local_type_index: Box::new(to_api_local_type_index(
-                    context,
-                    key_local_type_index,
-                )?),
-                value_schema_hash: to_api_schema_hash(value_schema_hash),
-                value_local_type_index: Box::new(to_api_local_type_index(
-                    context,
-                    value_local_type_index,
+                    value_full_type_id,
                 )?),
             }
         }
@@ -347,31 +338,36 @@ pub fn to_api_object_substate_type_reference(
 ) -> Result<models::ObjectSubstateTypeReference, MappingError> {
     Ok(match substate_type_reference {
         ObjectSubstateTypeReference::Package(package) => {
-            let PackageTypeReference {
-                package_address,
-                schema_hash,
-                local_type_index,
-            } = package;
+            let PackageTypeReference { full_type_id } = package;
             models::ObjectSubstateTypeReference::PackageObjectSubstateTypeReference {
-                package_address: to_api_entity_address(context, package_address.as_node_id())?,
-                schema_hash: to_api_schema_hash(schema_hash),
-                local_type_index: Box::new(to_api_local_type_index(context, local_type_index)?),
+                full_type_id: Box::new(to_api_fully_scoped_type_id(context, full_type_id)?),
             }
         }
         ObjectSubstateTypeReference::ObjectInstance(instance) => {
             let ObjectInstanceTypeReference {
-                entity_address,
-                schema_hash,
-                instance_type_index,
-                local_type_index,
+                instance_type_id,
+                resolved_full_type_id,
             } = instance;
             models::ObjectSubstateTypeReference::ObjectInstanceTypeReference {
-                entity_address: to_api_entity_address(context, entity_address)?,
-                schema_hash: to_api_schema_hash(schema_hash),
-                instance_type_index: to_api_u8_as_i32(*instance_type_index),
-                local_type_index: Box::new(to_api_local_type_index(context, local_type_index)?),
+                resolved_full_type_id: Box::new(to_api_fully_scoped_type_id(
+                    context,
+                    resolved_full_type_id,
+                )?),
+                generic_index: to_api_u8_as_i32(*instance_type_id),
             }
         }
+    })
+}
+
+pub fn to_api_fully_scoped_type_id(
+    context: &MappingContext,
+    fully_scoped_type_id: &FullyScopedTypeId<impl Into<NodeId> + Clone>,
+) -> Result<models::FullyScopedTypeId, MappingError> {
+    let FullyScopedTypeId(address, schema_hash, local_type_id) = fully_scoped_type_id;
+    Ok(models::FullyScopedTypeId {
+        entity_address: to_api_entity_address(context, &address.clone().into())?,
+        schema_hash: to_api_schema_hash(schema_hash),
+        local_type_id: Box::new(to_api_local_type_id(context, local_type_id)?),
     })
 }
 
@@ -517,7 +513,7 @@ pub fn to_api_event(
                 Emitter::Method(node_id, object_module_id) => {
                     models::EventEmitterIdentifier::MethodEventEmitterIdentifier {
                         entity: Box::new(to_api_entity_reference(context, &node_id)?),
-                        object_module_id: to_api_object_module_id(&object_module_id),
+                        object_module_id: to_api_module_id(&object_module_id),
                     }
                 }
             }),

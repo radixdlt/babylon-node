@@ -108,7 +108,7 @@ public final class ProposerTimestampInaccurateClockAndLeaderDownTest {
   private static final int NUM_VALIDATORS = 7;
 
   // Two consecutive leaders (verified below with an assertion)
-  private static final int NODE_WITH_INACCURATE_CLOCK_INDEX = 6;
+  private static final int NODE_WITH_INACCURATE_CLOCK_INDEX = 5;
   private static final int DOWN_NODE_INDEX = 0;
 
   @Test
@@ -172,6 +172,9 @@ public final class ProposerTimestampInaccurateClockAndLeaderDownTest {
             .getProposerElection();
     final var firstLeader = proposerElection.getProposer(Round.of(1L));
     final var nextLeader = proposerElection.getProposer(Round.of(2L));
+
+    // Note - if this fails then the rotation has changed, and you'll need to recalculate
+    // NODE_WITH_INACCURATE_CLOCK_INDEX and DOWN_NODE_INDEX to satisfy the below assertions
     assertEquals(firstLeader.getKey(), rushingNode.get().getPublicKey());
     assertEquals(nextLeader.getKey(), downNode.getPublicKey());
 

@@ -124,6 +124,10 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
   // set to true even if the result was a prolongation
   private boolean scheduledRoundTimeoutHasOccurred = false;
 
+  // Whether any vote has already been sent
+  // in the current round.
+  private boolean hasAnyVoteBeenSentInCurrentRound = false;
+
   public Pacemaker(
       BFTValidatorId self,
       BFTValidatorSet validatorSet,
@@ -188,6 +192,7 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
 
     this.roundStatus = RoundStatus.UNDISTURBED;
     this.scheduledRoundTimeoutHasOccurred = false;
+    this.hasAnyVoteBeenSentInCurrentRound = false;
 
     final var timeoutMs =
         timeoutCalculator.calculateTimeoutMs(latestRoundUpdate.consecutiveUncommittedRoundsCount());
@@ -302,6 +307,8 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
     } else {
       this.voteDispatcher.dispatch(this.latestRoundUpdate.getNextLeader(), vote);
     }
+
+    this.hasAnyVoteBeenSentInCurrentRound = true;
   }
 
   @Override
@@ -388,6 +395,7 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
   }
 
   private boolean canRoundTimeoutBeProlonged(ScheduledLocalTimeout originalScheduledLocalTimeout) {
+    // At most one prolonged timeout per round
     if (originalScheduledLocalTimeout.hasBeenProlonged()) {
       return false;
     }
@@ -396,7 +404,15 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
       return false;
     }
 
-    /* The timeouts for the current round can be prolonged if:
+    /* Don't prolong if any vote has been sent in the current round
+    (which, considering other conditions, must have been a non-timeout vote).
+    This indicates that a Proposal must have been processed, so there's no reason
+    to prolong (which could cause unnecessary delays if e.g. next leader is offline). */
+    if (this.hasAnyVoteBeenSentInCurrentRound) {
+      return false;
+    }
+
+    /* The timeouts for the current round can be prolonged if all above conditions are met, and:
     1) we have already received a QC for this (or higher) round, which hasn't yet been synced-up to:
        this prevents us from sending timeout votes for rounds that already have a QC,
        and potentially avoids creating a competing TC for the same round.
@@ -411,8 +427,7 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
         this.highestReceivedProposalRound.gte(currentRound());
 
     return (receivedAnyQcForThisOrHigherRound || receivedProposalForThisOrFutureRound)
-        && timeoutCalculator.additionalRoundTimeIfProposalReceivedMs() > 0
-        && !scheduledRoundTimeoutHasOccurred;
+        && timeoutCalculator.additionalRoundTimeIfProposalReceivedMs() > 0;
   }
 
   private void prolongRoundTimeout(ScheduledLocalTimeout originalScheduledLocalTimeout) {

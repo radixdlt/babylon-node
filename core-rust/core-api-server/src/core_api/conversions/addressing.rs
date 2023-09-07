@@ -502,19 +502,19 @@ pub fn extract_non_fungible_id_from_simple_representation(
     Ok(NonFungibleLocalId::from_str(simple_rep)?)
 }
 
-pub fn to_api_module_id(module_id: &ModuleId) -> models::ModuleId {
+pub fn to_api_attached_module_id(module_id: &AttachedModuleId) -> models::AttachedModuleId {
     match module_id {
-        ModuleId::Metadata => models::ModuleId::Metadata,
-        ModuleId::Royalty => models::ModuleId::Royalty,
-        ModuleId::RoleAssignment => models::ModuleId::RoleAssignment,
+        AttachedModuleId::Metadata => models::AttachedModuleId::Metadata,
+        AttachedModuleId::Royalty => models::AttachedModuleId::Royalty,
+        AttachedModuleId::RoleAssignment => models::AttachedModuleId::RoleAssignment,
     }
 }
 
-pub fn to_api_object_module_id(object_module_id: &ObjectModuleId) -> models::ObjectModuleId {
+pub fn to_api_module_id(object_module_id: &ModuleId) -> models::ModuleId {
     match object_module_id {
-        ObjectModuleId::Main => models::ObjectModuleId::Main,
-        ObjectModuleId::Metadata => models::ObjectModuleId::Metadata,
-        ObjectModuleId::Royalty => models::ObjectModuleId::Royalty,
-        ObjectModuleId::RoleAssignment => models::ObjectModuleId::RoleAssignment,
+        ModuleId::Main => models::ModuleId::Main,
+        ModuleId::Metadata => models::ModuleId::Metadata,
+        ModuleId::Royalty => models::ModuleId::Royalty,
+        ModuleId::RoleAssignment => models::ModuleId::RoleAssignment,
     }
 }

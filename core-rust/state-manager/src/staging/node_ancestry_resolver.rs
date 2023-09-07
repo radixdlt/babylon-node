@@ -149,8 +149,8 @@ impl NodeAncestryResolver {
 
     /// Inspects the given substate changes (using the [`IndexedScryptoValue`]) to find the Nodes
     /// *directly* owned by each upserted Substate.
-    fn extract_owned_node_sets(
-        substate_changes: impl Iterator<Item = (SubstateReference, impl Borrow<ChangeAction>)>,
+    fn extract_owned_node_sets<T: Borrow<ChangeAction>>(
+        substate_changes: impl Iterator<Item = (SubstateReference, T)>,
     ) -> impl Iterator<Item = OwnedNodeSet> {
         substate_changes.filter_map(|(substate_reference, action)| {
             let created_directly_owned_nodes = match action.borrow() {

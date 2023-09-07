@@ -450,6 +450,7 @@ pub fn to_api_blueprint_interface(
         functions,
         feature_set,
         events,
+        types,
     } = blueprint_interface;
     Ok(models::BlueprintInterface {
         outer_blueprint: match blueprint_type {
@@ -482,6 +483,15 @@ pub fn to_api_blueprint_interface(
                 Ok((
                     event_name.to_string(),
                     to_api_blueprint_payload_def(context, blueprint_payload_def)?,
+                ))
+            })
+            .collect::<Result<_, _>>()?,
+        types: types
+            .iter()
+            .map(|(type_name, scoped_type_id)| {
+                Ok((
+                    type_name.to_string(),
+                    to_api_scoped_type_id(context, scoped_type_id)?,
                 ))
             })
             .collect::<Result<_, _>>()?,
@@ -520,26 +530,27 @@ pub fn to_api_blueprint_payload_def(
     blueprint_payload_def: &BlueprintPayloadDef,
 ) -> Result<models::BlueprintPayloadDef, MappingError> {
     Ok(match blueprint_payload_def {
-        BlueprintPayloadDef::Static(type_identifier) => {
+        BlueprintPayloadDef::Static(scoped_type_id) => {
             models::BlueprintPayloadDef::StaticBlueprintPayloadDef {
-                type_id: Box::new(to_api_type_identifier(context, type_identifier)?),
+                type_id: Box::new(to_api_scoped_type_id(context, scoped_type_id)?),
             }
         }
         BlueprintPayloadDef::Generic(index) => {
             models::BlueprintPayloadDef::GenericBlueprintPayloadDef {
-                generic_index: i64::from(*index),
+                generic_index: to_api_u8_as_i32(*index),
             }
         }
     })
 }
 
-pub fn to_api_type_identifier(
+pub fn to_api_scoped_type_id(
     context: &MappingContext,
-    type_identifier: &TypeIdentifier,
-) -> Result<models::TypeIdentifier, MappingError> {
-    Ok(models::TypeIdentifier {
-        schema_hash: to_api_schema_hash(&type_identifier.0),
-        local_type_index: Box::new(to_api_local_type_index(context, &type_identifier.1)?),
+    scoped_type_id: &ScopedTypeId,
+) -> Result<models::ScopedTypeId, MappingError> {
+    let ScopedTypeId(schema_hash, local_type_id) = scoped_type_id;
+    Ok(models::ScopedTypeId {
+        schema_hash: to_api_schema_hash(schema_hash),
+        local_type_id: Box::new(to_api_local_type_id(context, local_type_id)?),
     })
 }
 
@@ -547,32 +558,26 @@ pub fn to_api_package_type_reference(
     context: &MappingContext,
     reference: &PackageTypeReference,
 ) -> Result<models::PackageTypeReference, MappingError> {
+    let PackageTypeReference { full_type_id } = reference;
     Ok(models::PackageTypeReference {
-        package_address: to_api_package_address(context, &reference.package_address)?,
-        schema_hash: to_api_schema_hash(&reference.schema_hash),
-        local_type_index: Box::new(to_api_local_type_index(
-            context,
-            &reference.local_type_index,
-        )?),
+        full_type_id: Box::new(to_api_fully_scoped_type_id(context, full_type_id)?),
     })
 }
 
-pub fn to_api_local_type_index(
+pub fn to_api_local_type_id(
     context: &MappingContext,
-    local_type_index: &LocalTypeIndex,
-) -> Result<models::LocalTypeIndex, MappingError> {
-    Ok(match local_type_index {
-        LocalTypeIndex::WellKnown(index) => models::LocalTypeIndex {
-            kind: models::local_type_index::Kind::WellKnown,
-            index: to_api_well_known_type_index(index)?,
-            as_sbor: Box::new(to_api_sbor_data_from_encodable(context, local_type_index)?),
+    local_type_id: &LocalTypeId,
+) -> Result<models::LocalTypeId, MappingError> {
+    Ok(match local_type_id {
+        LocalTypeId::WellKnown(index) => models::LocalTypeId {
+            kind: models::local_type_id::Kind::WellKnown,
+            id: to_api_well_known_type_id(index)?,
+            as_sbor: Box::new(to_api_sbor_data_from_encodable(context, local_type_id)?),
         },
-        LocalTypeIndex::SchemaLocalIndex(index) => models::LocalTypeIndex {
-            kind: models::local_type_index::Kind::SchemaLocal,
-            index: i64::try_from(*index).map_err(|_| MappingError::IntegerError {
-                message: "Schema-local type index too large".to_string(),
-            })?,
-            as_sbor: Box::new(to_api_sbor_data_from_encodable(context, local_type_index)?),
+        LocalTypeId::SchemaLocalIndex(index) => models::LocalTypeId {
+            kind: models::local_type_id::Kind::SchemaLocal,
+            id: to_api_index_as_i64(*index)?,
+            as_sbor: Box::new(to_api_sbor_data_from_encodable(context, local_type_id)?),
         },
     })
 }

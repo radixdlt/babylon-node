@@ -86,15 +86,27 @@ import org.junit.Test;
  * If quorum is formed on a timeout (timeout certificate), and there's a node that's a single round
  * behind (i.e. it didn't participate in forming of TC). Then it should be able to sync up (move to
  * next round) as soon as it receives a proposal (with a TC). BFTSync should then immediately switch
- * to next round without any additional sync requests. The setup is as follows: 1. there are 4 nodes
- * 2. proposal is sent by the leader (0) but only received by 2 nodes (including the leader): 0 and
- * 1 3. two nodes vote on a proposal (0 and 1) 4. two nodes vote on an empty timeout vertex and
- * broadcast the vote (2 and 3) 5. nodes 0 and 1 resend (broadcast) their vote with a timeout flag
- * 6. node 0 doesn't receive any of the above votes 7. nodes 1, 2 and 3 can form a valid TC out of
- * the votes they received, and they switch to the next round 8. next leader (node 1) sends out a
- * proposal 9. proposal (with a valid TC) is received by node 0 (which is still on previous round)
- * 10. node 0 is able to move to the next round just by processing the proposal's TC (no additional
- * sync requests) Expected result: node 0 is at round 2 and no sync requests have been sent
+ * to next round without any additional sync requests.
+ *
+ * <p>The setup is as follows:
+ *
+ * <ol>
+ *   <li>There are 4 nodes
+ *   <li>The proposal is sent by the leader (0) but only received by 2 nodes (including the leader):
+ *       0 and 1
+ *   <li>Two nodes vote on a proposal (0 and 1)
+ *   <li>Two nodes vote on an empty timeout vertex and broadcast the vote (2 and 3)
+ *   <li>Nodes 0 and 1 resend (broadcast) their vote with a timeout flag.
+ *   <li>Node 0 doesn't receive any of the above votes.
+ *   <li>Nodes 1, 2 and 3 can form a valid TC out of the votes they received, and they switch to the
+ *       next round
+ *   <li>The next leader (node 1) sends out a proposal
+ *   <li>The proposal (with a valid TC) is received by node 0 (which is still on previous round)
+ *   <li>Node 0 is able to move to the next round just by processing the proposal's TC (no
+ *       additional sync requests)
+ * </ol>
+ *
+ * Expected result: node 0 is at round 2 and no sync requests have been sent.
  */
 public class SyncToTimeoutQcTest {
 
@@ -119,7 +131,9 @@ public class SyncToTimeoutQcTest {
                         StateComputerConfig.mockedWithEpochs(
                             Round.of(10),
                             EpochNodeWeightMapping.constant(NUM_NODES),
-                            new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
+                            new StateComputerConfig.MockedMempoolConfig.NoMempool(),
+                            StateComputerConfig.ProposerElectionMode
+                                .WITH_ROTATE_ONCE_BUT_NO_SHUFFLE))));
 
     test.startAllNodes();
     test.runUntilMessage(DeterministicTest.roundUpdateOnNode(Round.of(2), 0), 10000);
