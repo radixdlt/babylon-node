@@ -259,6 +259,8 @@ jobs:
     needs: 
       - build-core-rust
     runs-on: 'ubuntu-latest'
+    permissions:
+      contents: write
     continue-on-error: true
     strategy:
       matrix:
@@ -295,7 +297,6 @@ jobs:
           zip -j babylon-node-rust-${{ matrix.zipname }}-release-${{ inputs.release-tag }}.zip libcorerust-${{ matrix.target }}/${{ matrix.artifact }}
 
       - name: Upload distribution zip
-        if: github.event_name == 'release'
         uses: softprops/action-gh-release@c9b46fe7aad9f02afd89b12450b780f52dacfb2d
         with:
           files: |
@@ -309,6 +310,8 @@ jobs:
     name: Build and Upload Application Binary
     runs-on: ubuntu-22.04
     environment: release
+    permissions:
+      contents: write
     steps:
       - name: Dump context
         uses: crazy-max/ghaction-dump-context@516dbb0c760f39b4cdd750ae095f1688780f68f4
