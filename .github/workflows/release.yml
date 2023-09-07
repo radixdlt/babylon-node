@@ -303,7 +303,7 @@ jobs:
           tag_name: ${{ inputs.release-tag }}
           name: ${{ inputs.release-name }}
           prerelease: ${{ inputs.prerelease }}
-          generate_release_notes: true
+          generate_release_notes: false
       
   publish-distribution-zip:
     name: Build and Upload Application Binary
@@ -347,7 +347,7 @@ jobs:
           tag_name: ${{ inputs.release-tag }}
           name: ${{ inputs.release-name }}
           prerelease: ${{ inputs.prerelease }}
-          generate_release_notes: true
+          generate_release_notes: false
 
   snyk-sbom:
     environment: release
@@ -377,4 +377,4 @@ jobs:
           tag_name: ${{ inputs.release-tag }}
           name: ${{ inputs.release-name }}
           prerelease: ${{ inputs.prerelease }}
-          generate_release_notes: true
+          generate_release_notes: false
