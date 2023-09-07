@@ -36,7 +36,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   CommittedTransaction.JSON_PROPERTY_RESULTANT_STATE_IDENTIFIERS,
   CommittedTransaction.JSON_PROPERTY_LEDGER_TRANSACTION,
-  CommittedTransaction.JSON_PROPERTY_RECEIPT
+  CommittedTransaction.JSON_PROPERTY_RECEIPT,
+  CommittedTransaction.JSON_PROPERTY_PROPOSER_TIMESTAMP_MS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class CommittedTransaction {
@@ -48,6 +49,9 @@ public class CommittedTransaction {
 
   public static final String JSON_PROPERTY_RECEIPT = "receipt";
   private TransactionReceipt receipt;
+
+  public static final String JSON_PROPERTY_PROPOSER_TIMESTAMP_MS = "proposer_timestamp_ms";
+  private Long proposerTimestampMs;
 
   public CommittedTransaction() { 
   }
@@ -130,6 +134,34 @@ public class CommittedTransaction {
   }
 
 
+  public CommittedTransaction proposerTimestampMs(Long proposerTimestampMs) {
+    this.proposerTimestampMs = proposerTimestampMs;
+    return this;
+  }
+
+   /**
+   * An integer between &#x60;0&#x60; and &#x60;10^14&#x60;, marking the proposer timestamp in ms.
+   * minimum: 0
+   * maximum: 100000000000000
+   * @return proposerTimestampMs
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "An integer between `0` and `10^14`, marking the proposer timestamp in ms.")
+  @JsonProperty(JSON_PROPERTY_PROPOSER_TIMESTAMP_MS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Long getProposerTimestampMs() {
+    return proposerTimestampMs;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_PROPOSER_TIMESTAMP_MS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setProposerTimestampMs(Long proposerTimestampMs) {
+    this.proposerTimestampMs = proposerTimestampMs;
+  }
+
+
   /**
    * Return true if this CommittedTransaction object is equal to o.
    */
@@ -144,12 +176,13 @@ public class CommittedTransaction {
     CommittedTransaction committedTransaction = (CommittedTransaction) o;
     return Objects.equals(this.resultantStateIdentifiers, committedTransaction.resultantStateIdentifiers) &&
         Objects.equals(this.ledgerTransaction, committedTransaction.ledgerTransaction) &&
-        Objects.equals(this.receipt, committedTransaction.receipt);
+        Objects.equals(this.receipt, committedTransaction.receipt) &&
+        Objects.equals(this.proposerTimestampMs, committedTransaction.proposerTimestampMs);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(resultantStateIdentifiers, ledgerTransaction, receipt);
+    return Objects.hash(resultantStateIdentifiers, ledgerTransaction, receipt, proposerTimestampMs);
   }
 
   @Override
@@ -159,6 +192,7 @@ public class CommittedTransaction {
     sb.append("    resultantStateIdentifiers: ").append(toIndentedString(resultantStateIdentifiers)).append("\n");
     sb.append("    ledgerTransaction: ").append(toIndentedString(ledgerTransaction)).append("\n");
     sb.append("    receipt: ").append(toIndentedString(receipt)).append("\n");
+    sb.append("    proposerTimestampMs: ").append(toIndentedString(proposerTimestampMs)).append("\n");
     sb.append("}");
     return sb.toString();
   }

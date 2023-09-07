@@ -152,6 +152,7 @@ pub fn to_api_committed_transaction(
             &ledger_transaction,
             &identifiers.payload,
         )?),
+        proposer_timestamp_ms: identifiers.proposer_timestamp_ms,
         receipt: Box::new(receipt),
     })
 }
