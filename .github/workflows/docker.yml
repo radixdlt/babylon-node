@@ -16,7 +16,11 @@ jobs:
     if: github.event_name == 'release'
     name: OIDC access test
     runs-on: ubuntu-latest
-    environment: release
+    environment: release2
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: read
     steps:
       - name: Checkout
         uses: actions/checkout@v3
