@@ -119,7 +119,7 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
 
   // For tracking round prolongation
   private Round highestReceivedProposalRound;
-  private Round highestKnownQcRound;
+  private Round highestKnownCertificateRound;
   // Whether any scheduled timeout event has already been received
   // set to true even if the result was a prolongation
   private boolean scheduledRoundTimeoutHasOccurred = false;
@@ -161,7 +161,7 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
     this.metrics = Objects.requireNonNull(metrics);
 
     final var highestQcRound = initialRoundUpdate.getHighQC().getHighestRound();
-    this.highestKnownQcRound = highestQcRound;
+    this.highestKnownCertificateRound = highestQcRound;
     this.highestReceivedProposalRound = highestQcRound;
   }
 
@@ -175,8 +175,8 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
   public void processRoundUpdate(RoundUpdate roundUpdate) {
     log.trace("Round Update: {}", roundUpdate);
     this.latestRoundUpdate = roundUpdate;
-    if (currentRound().gt(this.highestKnownQcRound)) {
-      this.highestKnownQcRound = roundUpdate.getCurrentRound();
+    if (roundUpdate.getHighQC().getHighestRound().gt(this.highestKnownCertificateRound)) {
+      this.highestKnownCertificateRound = roundUpdate.getHighQC().getHighestRound();
     }
     this.startRound();
   }
@@ -421,7 +421,8 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
     The 3rd case really duplicates the "received QC" condition (as proposal for round M > N should contain a QC for round N),
     but adding it explicitly for completeness. */
 
-    final var receivedAnyQcForThisOrHigherRound = this.highestKnownQcRound.gte(currentRound());
+    final var receivedAnyQcForThisOrHigherRound =
+        this.highestKnownCertificateRound.gte(currentRound());
 
     final var receivedProposalForThisOrFutureRound =
         this.highestReceivedProposalRound.gte(currentRound());
@@ -508,8 +509,8 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
     // Process highest received proposal / QC
     // Used to determine whether the round timeout should be prolonged
     // See: processLocalTimeout and canRoundTimeoutBeProlonged
-    if (proposal.highQC().getHighestRound().gt(this.highestKnownQcRound)) {
-      this.highestKnownQcRound = proposal.highQC().getHighestRound();
+    if (proposal.highQC().getHighestRound().gt(this.highestKnownCertificateRound)) {
+      this.highestKnownCertificateRound = proposal.highQC().getHighestRound();
     }
     if (proposal.getRound().gt(this.highestReceivedProposalRound)) {
       this.highestReceivedProposalRound = proposal.getRound();
@@ -521,8 +522,8 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
     // Process highest received proposal / QC
     // Used to determine whether the round timeout should be prolonged
     // See: processLocalTimeout and canRoundTimeoutBeProlonged
-    if (vote.highQC().getHighestRound().gt(this.highestKnownQcRound)) {
-      this.highestKnownQcRound = vote.highQC().getHighestRound();
+    if (vote.highQC().getHighestRound().gt(this.highestKnownCertificateRound)) {
+      this.highestKnownCertificateRound = vote.highQC().getHighestRound();
     }
   }
 
