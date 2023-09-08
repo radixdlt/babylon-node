@@ -175,8 +175,8 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
   public void processRoundUpdate(RoundUpdate roundUpdate) {
     log.trace("Round Update: {}", roundUpdate);
     this.latestRoundUpdate = roundUpdate;
-    if (currentRound().gt(this.highestKnownQcRound)) {
-      this.highestKnownQcRound = roundUpdate.getCurrentRound();
+    if (roundUpdate.getHighQC().getHighestRound().gt(this.highestKnownQcRound)) {
+      this.highestKnownQcRound = roundUpdate.getHighQC().getHighestRound();
     }
     this.startRound();
   }
