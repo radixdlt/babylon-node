@@ -176,6 +176,7 @@ public class PacemakerTest {
     QuorumCertificate highestQc = mock(QuorumCertificate.class);
     when(roundUpdateHighQc.highestCommittedQC()).thenReturn(committedQc);
     when(roundUpdateHighQc.highestQC()).thenReturn(highestQc);
+    when(roundUpdateHighQc.getHighestRound()).thenReturn(Round.of(1L));
     BFTHeader highestQcProposed = mock(BFTHeader.class);
     HashCode highQcParentVertexId = mock(HashCode.class);
     when(highestQcProposed.getVertexId()).thenReturn(highQcParentVertexId);

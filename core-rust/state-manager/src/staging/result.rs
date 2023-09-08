@@ -427,7 +427,10 @@ impl GlobalBalanceSummary {
             let SubstateReference(root_node_id, root_partition, _) = ancestry.root;
 
             let Ok(root_address) = GlobalAddress::try_from(root_node_id) else {
-                panic!("Root {:?} resolved for vault {:?} is not global", root_node_id, vault_id);
+                panic!(
+                    "Root {:?} resolved for vault {:?} is not global",
+                    root_node_id, vault_id
+                );
             };
 
             // Aggregate (i.e. sum) balance changes for every global root entity.
