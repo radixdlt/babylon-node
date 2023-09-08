@@ -575,7 +575,9 @@ impl IterableAccountChangeIndex for InMemoryStore {
         account: GlobalAddress,
         from_state_version: StateVersion,
     ) -> Box<dyn Iterator<Item = StateVersion> + '_> {
-        let Some(index) = self.account_change_index_set.get(&account) else { return Box::new(vec![].into_iter()); };
+        let Some(index) = self.account_change_index_set.get(&account) else {
+            return Box::new(vec![].into_iter());
+        };
         return Box::new(
             index
                 .range((Included(from_state_version), Unbounded))
