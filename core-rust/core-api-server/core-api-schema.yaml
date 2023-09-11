@@ -3950,11 +3950,15 @@ components:
         - type: object
           description: |
             The generic substitution is provided remotely by a blueprint type.
+            The `resolved_scoped_type_id` is added by the node, and is always present in the model returned from the transaction stream API.
+            Other APIs may not resolve the type from the blueprint definition. 
           required:
             - blueprint_type_identifier
           properties:
             blueprint_type_identifier:
               $ref: '#/components/schemas/BlueprintTypeIdentifier'
+            resolved_scoped_type_id:
+              $ref: '#/components/schemas/ScopedTypeId'
     RoleAssignmentModuleFieldOwnerRoleSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'

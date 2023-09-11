@@ -2,7 +2,7 @@ use crate::core_api::*;
 
 use radix_engine::types::hash;
 
-use state_manager::store::traits::*;
+use state_manager::store::{traits::*, StateManagerDatabase};
 use state_manager::transaction::*;
 use state_manager::{CommittedTransactionIdentifiers, LocalTransactionReceipt, StateVersion};
 
@@ -83,6 +83,7 @@ pub(crate) async fn handle_stream_transactions(
     let bundles = database
         .get_committed_transaction_bundle_iter(from_state_version)
         .take(limit);
+
     for bundle in bundles {
         let CommittedTransactionBundle {
             state_version,
@@ -97,6 +98,7 @@ pub(crate) async fn handle_stream_transactions(
             }
         })?;
         let committed_transaction = to_api_committed_transaction(
+            Some(&database),
             &mapping_context,
             state_version,
             raw,
@@ -132,6 +134,7 @@ pub(crate) async fn handle_stream_transactions(
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_committed_transaction(
+    database: Option<&StateManagerDatabase>,
     context: &MappingContext,
     state_version: StateVersion,
     raw_ledger_transaction: RawLedgerTransaction,
@@ -139,7 +142,7 @@ pub fn to_api_committed_transaction(
     receipt: LocalTransactionReceipt,
     identifiers: CommittedTransactionIdentifiers,
 ) -> Result<models::CommittedTransaction, MappingError> {
-    let receipt = to_api_receipt(context, receipt)?;
+    let receipt = to_api_receipt(database, context, receipt)?;
 
     Ok(models::CommittedTransaction {
         resultant_state_identifiers: Box::new(to_api_committed_state_identifiers(

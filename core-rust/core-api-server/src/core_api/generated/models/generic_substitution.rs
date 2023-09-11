@@ -22,6 +22,8 @@ pub enum GenericSubstitution {
     RemoteGenericSubstition {
         #[serde(rename = "blueprint_type_identifier")]
         blueprint_type_identifier: Box<crate::core_api::generated::models::BlueprintTypeIdentifier>,
+        #[serde(rename = "resolved_scoped_type_id", skip_serializing_if = "Option::is_none")]
+        resolved_scoped_type_id: Option<Box<crate::core_api::generated::models::ScopedTypeId>>,
     },
 }
 
