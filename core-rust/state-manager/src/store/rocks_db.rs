@@ -484,16 +484,45 @@ impl CommitStore for RocksDBStore {
             );
         }
 
-        for (partition_key, partition_updates) in commit_bundle.substate_store_update.updates {
-            for (sort_key, database_update) in partition_updates {
-                let encoded_key_bytes = encode_to_rocksdb_bytes(&partition_key, &sort_key);
-                match database_update {
-                    DatabaseUpdate::Set(value) => {
-                        batch.put_cf(self.cf_handle(&Substates), encoded_key_bytes, value);
+        for (node_key, node_updates) in commit_bundle.substate_store_update.updates.node_updates {
+            for (partition_num, partition_updates) in node_updates.partition_updates {
+                let partition_key = DbPartitionKey {
+                    node_key: node_key.clone(),
+                    partition_num,
+                };
+                match partition_updates {
+                    PartitionDatabaseUpdates::Delta { substate_updates } => {
+                        for (sort_key, update) in substate_updates {
+                            let key_bytes = encode_to_rocksdb_bytes(&partition_key, &sort_key);
+                            match update {
+                                DatabaseUpdate::Set(value_bytes) => {
+                                    batch.put_cf(self.cf_handle(&Substates), key_bytes, value_bytes)
+                                }
+                                DatabaseUpdate::Delete => {
+                                    batch.delete_cf(self.cf_handle(&Substates), key_bytes)
+                                }
+                            }
+                        }
                     }
-                    DatabaseUpdate::Delete => {
-                        batch.delete_cf(self.cf_handle(&Substates), encoded_key_bytes);
-                    }
+                    PartitionDatabaseUpdates::Batch(batch_update) => match batch_update {
+                        BatchPartitionDatabaseUpdate::Reset {
+                            new_substate_values,
+                        } => {
+                            let empty_key = DbSortKey(vec![]);
+                            batch.delete_range_cf(
+                                self.cf_handle(&Substates),
+                                encode_to_rocksdb_bytes(&partition_key, &empty_key),
+                                encode_to_rocksdb_bytes(&partition_key.next(), &empty_key),
+                            );
+                            for (sort_key, value_bytes) in new_substate_values {
+                                batch.put_cf(
+                                    self.cf_handle(&Substates),
+                                    encode_to_rocksdb_bytes(&partition_key, &sort_key),
+                                    value_bytes,
+                                );
+                            }
+                        }
+                    },
                 }
             }
         }
@@ -510,12 +539,11 @@ impl CommitStore for RocksDBStore {
                 scrypto_encode(&node).unwrap(),
             );
         }
-        for stale_node_keys in state_hash_tree_update.stale_node_keys_at_state_version {
-            let encoded_node_keys = stale_node_keys.1.iter().map(encode_key).collect::<Vec<_>>();
+        for (version, stale_parts) in state_hash_tree_update.stale_tree_parts_at_state_version {
             batch.put_cf(
                 self.cf_handle(&StaleStateHashTreeNodeKeysByStateVersion),
-                stale_node_keys.0.to_bytes(),
-                scrypto_encode(&encoded_node_keys).unwrap(),
+                version.to_bytes(),
+                scrypto_encode(&stale_parts).unwrap(),
             )
         }
 

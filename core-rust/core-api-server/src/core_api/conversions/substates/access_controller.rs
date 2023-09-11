@@ -28,7 +28,7 @@ pub fn to_api_access_controller_substate(
         Value {
             controlled_vault: Box::new(to_api_entity_reference(
                 context,
-                controlled_asset.as_node_id()
+                controlled_asset.0.as_node_id()
             )?),
             timed_recovery_delay_minutes: timed_recovery_delay_in_minutes
                 .as_ref()

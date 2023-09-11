@@ -360,27 +360,11 @@ impl ProcessedCommitResult {
         parent_state_version: StateVersion,
         database_updates: &DatabaseUpdates,
     ) -> StateHashTreeDiff {
-        let mut hash_changes = Vec::new();
-        for (db_partition_key, partition_updates) in database_updates {
-            for (db_sort_key, database_update) in partition_updates {
-                match database_update {
-                    DatabaseUpdate::Set(value) => hash_changes.push(SubstateHashChange::new(
-                        (db_partition_key.clone(), db_sort_key.clone()),
-                        Some(hash(value)),
-                    )),
-                    DatabaseUpdate::Delete => hash_changes.push(SubstateHashChange::new(
-                        (db_partition_key.clone(), db_sort_key.clone()),
-                        None,
-                    )),
-                }
-            }
-        }
-
         let mut collector = CollectingTreeStore::new(store);
         let root_hash = put_at_next_version(
             &mut collector,
             Some(parent_state_version.number()).filter(|v| *v > 0),
-            hash_changes,
+            database_updates,
         );
         collector.into_diff_with(root_hash)
     }
@@ -524,7 +508,7 @@ pub struct HashStructuresDiff {
 pub struct StateHashTreeDiff {
     pub new_root: StateHash,
     pub new_nodes: Vec<(NodeKey, TreeNode)>,
-    pub stale_hash_tree_node_keys: Vec<NodeKey>,
+    pub stale_tree_parts: Vec<StaleTreePart>,
 }
 
 impl StateHashTreeDiff {
@@ -532,7 +516,7 @@ impl StateHashTreeDiff {
         Self {
             new_root: StateHash::from(Hash([0; Hash::LENGTH])),
             new_nodes: Vec::new(),
-            stale_hash_tree_node_keys: Vec::new(),
+            stale_tree_parts: Vec::new(),
         }
     }
 }
@@ -621,7 +605,7 @@ impl<'s, S> WriteableTreeStore for CollectingTreeStore<'s, S> {
         self.diff.new_nodes.push((key, node));
     }
 
-    fn record_stale_node(&mut self, key: NodeKey) {
-        self.diff.stale_hash_tree_node_keys.push(key);
+    fn record_stale_tree_part(&mut self, part: StaleTreePart) {
+        self.diff.stale_tree_parts.push(part);
     }
 }
