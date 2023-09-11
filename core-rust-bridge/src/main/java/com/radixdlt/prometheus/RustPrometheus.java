@@ -77,14 +77,25 @@ public class RustPrometheus {
     this.prometheusMetricsFunc =
         Natives.builder(nodeRustEnvironment, RustPrometheus::prometheusMetrics)
             .build(new TypeToken<>() {});
+    this.ledgerStatusFunc =
+        Natives.builder(nodeRustEnvironment, RustPrometheus::ledgerStatus)
+            .build(new TypeToken<>() {});
   }
 
   public String prometheusMetrics() {
     return prometheusMetricsFunc.call(Tuple.tuple());
   }
 
+  public LedgerStatus ledgerStatus() {
+    return ledgerStatusFunc.call(Tuple.tuple());
+  }
+
   private final Natives.Call1<Tuple.Tuple0, String> prometheusMetricsFunc;
+
+  private final Natives.Call1<Tuple.Tuple0, LedgerStatus> ledgerStatusFunc;
 
   private static native byte[] prometheusMetrics(
       NodeRustEnvironment nodeRustEnvironment, byte[] args);
+
+  private static native byte[] ledgerStatus(NodeRustEnvironment nodeRustEnvironment, byte[] args);
 }

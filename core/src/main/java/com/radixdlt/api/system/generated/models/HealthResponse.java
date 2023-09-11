@@ -36,6 +36,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   HealthResponse.JSON_PROPERTY_STATUS,
+  HealthResponse.JSON_PROPERTY_DETAIL,
   HealthResponse.JSON_PROPERTY_CURRENT_FORK_NAME,
   HealthResponse.JSON_PROPERTY_EXECUTED_FORKS,
   HealthResponse.JSON_PROPERTY_FORK_VOTE_STATUS,
@@ -88,6 +89,9 @@ public class HealthResponse {
 
   public static final String JSON_PROPERTY_STATUS = "status";
   private StatusEnum status;
+
+  public static final String JSON_PROPERTY_DETAIL = "detail";
+  private String detail;
 
   public static final String JSON_PROPERTY_CURRENT_FORK_NAME = "current_fork_name";
   private String currentForkName;
@@ -160,6 +164,32 @@ public class HealthResponse {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setStatus(StatusEnum status) {
     this.status = status;
+  }
+
+
+  public HealthResponse detail(String detail) {
+    this.detail = detail;
+    return this;
+  }
+
+   /**
+   * A human-readable message detailing the &#x60;status&#x60;.
+   * @return detail
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "A human-readable message detailing the `status`.")
+  @JsonProperty(JSON_PROPERTY_DETAIL)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getDetail() {
+    return detail;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_DETAIL)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setDetail(String detail) {
+    this.detail = detail;
   }
 
 
@@ -290,6 +320,7 @@ public class HealthResponse {
     }
     HealthResponse healthResponse = (HealthResponse) o;
     return Objects.equals(this.status, healthResponse.status) &&
+        Objects.equals(this.detail, healthResponse.detail) &&
         Objects.equals(this.currentForkName, healthResponse.currentForkName) &&
         Objects.equals(this.executedForks, healthResponse.executedForks) &&
         Objects.equals(this.forkVoteStatus, healthResponse.forkVoteStatus) &&
@@ -298,7 +329,7 @@ public class HealthResponse {
 
   @Override
   public int hashCode() {
-    return Objects.hash(status, currentForkName, executedForks, forkVoteStatus, unknownReportedForks);
+    return Objects.hash(status, detail, currentForkName, executedForks, forkVoteStatus, unknownReportedForks);
   }
 
   @Override
@@ -306,6 +337,7 @@ public class HealthResponse {
     StringBuilder sb = new StringBuilder();
     sb.append("class HealthResponse {\n");
     sb.append("    status: ").append(toIndentedString(status)).append("\n");
+    sb.append("    detail: ").append(toIndentedString(detail)).append("\n");
     sb.append("    currentForkName: ").append(toIndentedString(currentForkName)).append("\n");
     sb.append("    executedForks: ").append(toIndentedString(executedForks)).append("\n");
     sb.append("    forkVoteStatus: ").append(toIndentedString(forkVoteStatus)).append("\n");

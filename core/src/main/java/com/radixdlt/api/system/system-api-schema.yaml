@@ -197,6 +197,7 @@ components:
       type: object
       required:
         - status
+        - detail
         - current_fork_name
         - executed_forks
         - fork_vote_status
@@ -211,6 +212,9 @@ components:
             - UP
             - STALLED
             - OUT_OF_SYNC
+        detail:
+          type: string
+          description: A human-readable message detailing the `status`.
         current_fork_name:
           type: string
         executed_forks:
