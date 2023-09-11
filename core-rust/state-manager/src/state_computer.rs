@@ -986,6 +986,14 @@ where
         // Step 1.: Parse the transactions (and collect specific metrics from them, as a drive-by)
         let mut prepared_transactions = Vec::new();
         let mut leader_round_counters_builder = LeaderRoundCountersBuilder::default();
+        let mut proposer_timestamps = Vec::new();
+        let mut proposer_timestamp_ms = self
+            .store
+            .read()
+            .get_last_proof()
+            .unwrap()
+            .ledger_header
+            .proposer_timestamp_ms;
         for (index, raw_transaction) in commit_request.transactions.iter().enumerate() {
             let result = self
                 .ledger_transaction_validator
@@ -1006,10 +1014,12 @@ where
                     .expect("the same transaction was parsed fine above");
                 if let LedgerTransaction::RoundUpdateV1(round_update) = round_update {
                     leader_round_counters_builder.update(&round_update.leader_proposal_history);
+                    proposer_timestamp_ms = round_update.proposer_timestamp_ms;
                 }
             }
 
             prepared_transactions.push(prepared_transaction);
+            proposer_timestamps.push(proposer_timestamp_ms);
         }
 
         // Step 2.: Start the write DB transaction, check invariants, set-up DB update structures
@@ -1065,10 +1075,11 @@ where
         let mut committed_user_transactions = Vec::new();
 
         // Step 3.: Actually execute the transactions, collect their results into DB structures
-        for (raw, prepared) in commit_request
+        for ((raw, prepared), proposer_timestamp_ms) in commit_request
             .transactions
             .into_iter()
             .zip(prepared_transactions)
+            .zip(proposer_timestamps)
         {
             let validated = self
                 .ledger_transaction_validator
@@ -1110,6 +1121,7 @@ where
                 identifiers: CommittedTransactionIdentifiers {
                     payload: validated.create_identifiers(),
                     resultant_ledger_hashes: *series_executor.latest_ledger_hashes(),
+                    proposer_timestamp_ms,
                 },
             });
         }
@@ -1208,6 +1220,8 @@ where
             .lock()
             .progress_base(&resultant_ledger_hashes.transaction_root);
 
+        let proof = request.proof;
+        let proposer_timestamp_ms = proof.ledger_header.proposer_timestamp_ms;
         let committed_transaction_bundle = CommittedTransactionBundle {
             state_version: resultant_state_version,
             raw: request.raw,
@@ -1215,11 +1229,11 @@ where
             identifiers: CommittedTransactionIdentifiers {
                 payload: request.validated.create_identifiers(),
                 resultant_ledger_hashes,
+                proposer_timestamp_ms,
             },
         };
 
-        let proof = request.proof;
-        let proposer_timestamp_ms = proof.ledger_header.proposer_timestamp_ms; // for metrics only
+        // for metrics only
         let hash_structures_diff = commit.hash_structures_diff;
         write_store.commit(CommitBundle {
             transactions: vec![committed_transaction_bundle],

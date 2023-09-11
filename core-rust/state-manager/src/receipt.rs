@@ -26,6 +26,7 @@ use crate::{
 pub struct CommittedTransactionIdentifiers {
     pub payload: PayloadIdentifiers,
     pub resultant_ledger_hashes: LedgerHashes,
+    pub proposer_timestamp_ms: i64,
 }
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

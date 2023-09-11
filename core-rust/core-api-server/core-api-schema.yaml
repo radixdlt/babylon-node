@@ -6881,6 +6881,7 @@ components:
         - resultant_state_identifiers
         - ledger_transaction
         - receipt
+        - proposer_timestamp_ms
       properties:
         resultant_state_identifiers:
           $ref: "#/components/schemas/CommittedStateIdentifier"
@@ -6888,6 +6889,12 @@ components:
           $ref: "#/components/schemas/LedgerTransaction"
         receipt:
           $ref: "#/components/schemas/TransactionReceipt"
+        proposer_timestamp_ms:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100000000000000
+          description: An integer between `0` and `10^14`, marking the proposer timestamp in ms.
     LedgerTransactionType:
       type: string
       description: The type of the ledger transaction
