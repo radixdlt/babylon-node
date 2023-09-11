@@ -122,9 +122,12 @@ pub fn to_api_generic_substitution(
                     context,
                     blueprint_type_identifier,
                 )?),
-                resolved_scoped_type_id: resolved
+                resolved_full_type_id: resolved
                     .map(|scoped_type_id| -> Result<_, MappingError> {
-                        Ok(Box::new(to_api_scoped_type_id(context, &scoped_type_id)?))
+                        Ok(Box::new(to_api_fully_scoped_type_id(
+                            context,
+                            &scoped_type_id,
+                        )?))
                     })
                     .transpose()?,
             }

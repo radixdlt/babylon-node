@@ -425,9 +425,16 @@ pub fn to_api_state_updates(
     })
 }
 
+/// This lookup was introduced near mainnet launch, to avoid needing Gateway to do the resolution of a
+/// `GenericResolution::Remote(BlueprintTypeIdentifier)` into a `FullyScopedTypeId` in the data aggregator.
+///
+/// It is not ideal, and more of a pragamatic workaround to a pre-launch problem.
+///
+/// The `GenericResolution` is only found in the TypeInfo substate, so we first filter to only TypeInfo substates,
+/// and then extract any relevant blueprints, and create a local lookup of those types, for the main mapping steps.
 #[derive(Default)]
 pub struct StateMappingLookups {
-    generic_type_lookups: Option<IndexMap<BlueprintTypeIdentifier, ScopedTypeId>>,
+    blueprint_type_lookups: Option<IndexMap<BlueprintId, IndexMap<String, ScopedTypeId>>>,
 }
 
 impl StateMappingLookups {
@@ -446,29 +453,45 @@ impl StateMappingLookups {
             }
         }
         Ok(Self {
-            generic_type_lookups: Some(Self::create_generic_type_lookups(database, &typed_values)?),
+            blueprint_type_lookups: Some(Self::create_blueprint_type_lookups(
+                database,
+                &typed_values,
+            )?),
         })
     }
 
     pub fn resolve_generic_remote(
         &self,
         blueprint_type_identifier: &BlueprintTypeIdentifier,
-    ) -> Result<Option<ScopedTypeId>, MappingError> {
-        let Some(lookup) = &self.generic_type_lookups else {
+    ) -> Result<Option<FullyScopedTypeId<NodeId>>, MappingError> {
+        let Some(lookup) = &self.blueprint_type_lookups else {
             return Ok(None);
         };
-        let resolved = lookup.get(blueprint_type_identifier).cloned().ok_or_else(|| MappingError::CouldNotResolveRemoteGenericSubstition {
-            message: "Could not find type in existing lookup - likely the lookup was somehow created incomplete".to_string()
+        let BlueprintTypeIdentifier {
+            package_address,
+            blueprint_name,
+            type_name,
+        } = blueprint_type_identifier;
+        let package_types = lookup.get(&BlueprintId {
+            package_address: *package_address,
+            blueprint_name: blueprint_name.clone(),
+        }).ok_or_else(|| MappingError::CouldNotResolveRemoteGenericSubstition {
+            message: "Could not find package in existing lookup - likely the lookup was somehow created incomplete".to_string()
         })?;
-        Ok(Some(resolved))
+        let resolved = package_types.get(type_name).cloned().ok_or_else(|| {
+            MappingError::CouldNotResolveRemoteGenericSubstition {
+                message: "Could not find type in package lookup".to_string(),
+            }
+        })?;
+        Ok(Some(resolved.under_node(package_address.into_node_id())))
     }
 
-    fn create_generic_type_lookups(
+    fn create_blueprint_type_lookups(
         database: &StateManagerDatabase,
         typed_values: &[TypedSubstateValue],
-    ) -> Result<IndexMap<BlueprintTypeIdentifier, ScopedTypeId>, MappingError> {
+    ) -> Result<IndexMap<BlueprintId, IndexMap<String, ScopedTypeId>>, MappingError> {
         // Step 1 - work out what database reads we need to do
-        let mut blueprint_types_to_resolve = IndexMap::new();
+        let mut blueprints_to_fetch_types = IndexSet::new();
         for typed_value in typed_values {
             if let TypedSubstateValue::TypeInfoModule(TypedTypeInfoModuleSubstateValue::TypeInfo(
                 type_info,
@@ -479,8 +502,8 @@ impl StateMappingLookups {
                         for generic_substitution in
                             &object_type_info.blueprint_info.generic_substitutions
                         {
-                            extract_blueprint_types(
-                                &mut blueprint_types_to_resolve,
+                            register_blueprint_for_adding_to_type_lookup(
+                                &mut blueprints_to_fetch_types,
                                 generic_substitution,
                             );
                         }
@@ -491,12 +514,12 @@ impl StateMappingLookups {
                             value_generic_substitution,
                             allow_ownership: _,
                         } = &key_value_store_type_info.generic_substitutions;
-                        extract_blueprint_types(
-                            &mut blueprint_types_to_resolve,
+                        register_blueprint_for_adding_to_type_lookup(
+                            &mut blueprints_to_fetch_types,
                             key_generic_substitution,
                         );
-                        extract_blueprint_types(
-                            &mut blueprint_types_to_resolve,
+                        register_blueprint_for_adding_to_type_lookup(
+                            &mut blueprints_to_fetch_types,
                             value_generic_substitution,
                         );
                     }
@@ -514,35 +537,30 @@ impl StateMappingLookups {
             }
         }
         // Step 2 - Create the lookups from the database
-        let mut generic_type_lookups = IndexMap::new();
-        for ((package_address, blueprint_name), type_names) in blueprint_types_to_resolve {
-            let definition = database.get_mapped::<SpreadPrefixKeyMapper, PackageBlueprintVersionDefinitionEntryPayload>(
+        let mut blueprint_type_lookups = IndexMap::new();
+        for (package_address, blueprint_name) in blueprints_to_fetch_types {
+            let definition = database.get_mapped::<SpreadPrefixKeyMapper, PackageBlueprintVersionDefinitionEntrySubstate>(
                 package_address.as_node_id(),
                 PackagePartitionOffset::BlueprintVersionDefinitionKeyValue.as_main_partition(),
                 &SubstateKey::Map(scrypto_encode(&PackageBlueprintVersionDefinitionKeyPayload::from_content_source(
                     BlueprintVersionKey::new_default(blueprint_name.clone())
                 )).unwrap()),
-            ).ok_or_else(|| MappingError::CouldNotResolveRemoteGenericSubstition { 
-                message: "Could not find blueprint definition referenced in Remote Generic Substition, but this was checked".to_string(),
+            ).ok_or_else(|| MappingError::CouldNotResolveRemoteGenericSubstition {
+                message: "Could not find blueprint definition referenced in Remote Generic Substition, but this was checked by the engine".to_string(),
+            })?
+            .into_value()
+            .ok_or_else(|| MappingError::CouldNotResolveRemoteGenericSubstition {
+                message: "Blueprint definition was a deleted entry".to_string(),
             })?;
-            let mut types = definition.into_latest().interface.types;
-            for type_name in type_names {
-                let scoped_type_id = types.remove(&type_name).ok_or_else(|| {
-                    MappingError::CouldNotResolveRemoteGenericSubstition {
-                        message: "Could not find typed under blueprint definition".to_string(),
-                    }
-                })?;
-                generic_type_lookups.insert(
-                    BlueprintTypeIdentifier {
-                        package_address,
-                        blueprint_name: blueprint_name.clone(),
-                        type_name,
-                    },
-                    scoped_type_id,
-                );
-            }
+            blueprint_type_lookups.insert(
+                BlueprintId {
+                    package_address,
+                    blueprint_name: blueprint_name.clone(),
+                },
+                definition.into_latest().interface.types,
+            );
         }
-        Ok(generic_type_lookups)
+        Ok(blueprint_type_lookups)
     }
 }
 
@@ -566,8 +584,8 @@ pub fn extract_typed_values(
     Ok(())
 }
 
-pub fn extract_blueprint_types(
-    blueprint_types: &mut IndexMap<(PackageAddress, String), IndexSet<String>>,
+pub fn register_blueprint_for_adding_to_type_lookup(
+    blueprints_to_lookup: &mut IndexSet<(PackageAddress, String)>,
     generic_substition: &GenericSubstitution,
 ) {
     match generic_substition {
@@ -575,12 +593,9 @@ pub fn extract_blueprint_types(
         GenericSubstitution::Remote(BlueprintTypeIdentifier {
             package_address,
             blueprint_name,
-            type_name,
+            type_name: _,
         }) => {
-            blueprint_types
-                .entry((*package_address, blueprint_name.clone()))
-                .or_default()
-                .insert(type_name.clone());
+            blueprints_to_lookup.insert((*package_address, blueprint_name.clone()));
         }
     }
 }

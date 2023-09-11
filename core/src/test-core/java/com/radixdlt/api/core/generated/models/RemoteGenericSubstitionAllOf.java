@@ -23,27 +23,27 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.BlueprintTypeIdentifier;
-import com.radixdlt.api.core.generated.models.ScopedTypeId;
+import com.radixdlt.api.core.generated.models.FullyScopedTypeId;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * The generic substitution is provided remotely by a blueprint type. The &#x60;resolved_scoped_type_id&#x60; is added by the node, and is always present in the model returned from the transaction stream API. Other APIs may not resolve the type from the blueprint definition.  
+ * The generic substitution is provided remotely by a blueprint type. The &#x60;resolved_full_type_id&#x60; is added by the node, and is always present in the model returned from the transaction stream API. Other APIs may not resolve the type from the blueprint definition.  
  */
-@ApiModel(description = "The generic substitution is provided remotely by a blueprint type. The `resolved_scoped_type_id` is added by the node, and is always present in the model returned from the transaction stream API. Other APIs may not resolve the type from the blueprint definition.  ")
+@ApiModel(description = "The generic substitution is provided remotely by a blueprint type. The `resolved_full_type_id` is added by the node, and is always present in the model returned from the transaction stream API. Other APIs may not resolve the type from the blueprint definition.  ")
 @JsonPropertyOrder({
   RemoteGenericSubstitionAllOf.JSON_PROPERTY_BLUEPRINT_TYPE_IDENTIFIER,
-  RemoteGenericSubstitionAllOf.JSON_PROPERTY_RESOLVED_SCOPED_TYPE_ID
+  RemoteGenericSubstitionAllOf.JSON_PROPERTY_RESOLVED_FULL_TYPE_ID
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class RemoteGenericSubstitionAllOf {
   public static final String JSON_PROPERTY_BLUEPRINT_TYPE_IDENTIFIER = "blueprint_type_identifier";
   private BlueprintTypeIdentifier blueprintTypeIdentifier;
 
-  public static final String JSON_PROPERTY_RESOLVED_SCOPED_TYPE_ID = "resolved_scoped_type_id";
-  private ScopedTypeId resolvedScopedTypeId;
+  public static final String JSON_PROPERTY_RESOLVED_FULL_TYPE_ID = "resolved_full_type_id";
+  private FullyScopedTypeId resolvedFullTypeId;
 
   public RemoteGenericSubstitionAllOf() { 
   }
@@ -74,29 +74,29 @@ public class RemoteGenericSubstitionAllOf {
   }
 
 
-  public RemoteGenericSubstitionAllOf resolvedScopedTypeId(ScopedTypeId resolvedScopedTypeId) {
-    this.resolvedScopedTypeId = resolvedScopedTypeId;
+  public RemoteGenericSubstitionAllOf resolvedFullTypeId(FullyScopedTypeId resolvedFullTypeId) {
+    this.resolvedFullTypeId = resolvedFullTypeId;
     return this;
   }
 
    /**
-   * Get resolvedScopedTypeId
-   * @return resolvedScopedTypeId
+   * Get resolvedFullTypeId
+   * @return resolvedFullTypeId
   **/
   @javax.annotation.Nullable
   @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_RESOLVED_SCOPED_TYPE_ID)
+  @JsonProperty(JSON_PROPERTY_RESOLVED_FULL_TYPE_ID)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public ScopedTypeId getResolvedScopedTypeId() {
-    return resolvedScopedTypeId;
+  public FullyScopedTypeId getResolvedFullTypeId() {
+    return resolvedFullTypeId;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_RESOLVED_SCOPED_TYPE_ID)
+  @JsonProperty(JSON_PROPERTY_RESOLVED_FULL_TYPE_ID)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setResolvedScopedTypeId(ScopedTypeId resolvedScopedTypeId) {
-    this.resolvedScopedTypeId = resolvedScopedTypeId;
+  public void setResolvedFullTypeId(FullyScopedTypeId resolvedFullTypeId) {
+    this.resolvedFullTypeId = resolvedFullTypeId;
   }
 
 
@@ -113,12 +113,12 @@ public class RemoteGenericSubstitionAllOf {
     }
     RemoteGenericSubstitionAllOf remoteGenericSubstitionAllOf = (RemoteGenericSubstitionAllOf) o;
     return Objects.equals(this.blueprintTypeIdentifier, remoteGenericSubstitionAllOf.blueprintTypeIdentifier) &&
-        Objects.equals(this.resolvedScopedTypeId, remoteGenericSubstitionAllOf.resolvedScopedTypeId);
+        Objects.equals(this.resolvedFullTypeId, remoteGenericSubstitionAllOf.resolvedFullTypeId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(blueprintTypeIdentifier, resolvedScopedTypeId);
+    return Objects.hash(blueprintTypeIdentifier, resolvedFullTypeId);
   }
 
   @Override
@@ -126,7 +126,7 @@ public class RemoteGenericSubstitionAllOf {
     StringBuilder sb = new StringBuilder();
     sb.append("class RemoteGenericSubstitionAllOf {\n");
     sb.append("    blueprintTypeIdentifier: ").append(toIndentedString(blueprintTypeIdentifier)).append("\n");
-    sb.append("    resolvedScopedTypeId: ").append(toIndentedString(resolvedScopedTypeId)).append("\n");
+    sb.append("    resolvedFullTypeId: ").append(toIndentedString(resolvedFullTypeId)).append("\n");
     sb.append("}");
     return sb.toString();
   }

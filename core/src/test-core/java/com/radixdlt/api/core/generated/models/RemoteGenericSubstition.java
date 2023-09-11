@@ -26,12 +26,12 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.BlueprintTypeIdentifier;
+import com.radixdlt.api.core.generated.models.FullyScopedTypeId;
 import com.radixdlt.api.core.generated.models.GenericSubstitution;
 import com.radixdlt.api.core.generated.models.GenericSubstitutionType;
 import com.radixdlt.api.core.generated.models.LocalGenericSubstition;
 import com.radixdlt.api.core.generated.models.RemoteGenericSubstition;
 import com.radixdlt.api.core.generated.models.RemoteGenericSubstitionAllOf;
-import com.radixdlt.api.core.generated.models.ScopedTypeId;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -43,7 +43,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  */
 @JsonPropertyOrder({
   RemoteGenericSubstition.JSON_PROPERTY_BLUEPRINT_TYPE_IDENTIFIER,
-  RemoteGenericSubstition.JSON_PROPERTY_RESOLVED_SCOPED_TYPE_ID
+  RemoteGenericSubstition.JSON_PROPERTY_RESOLVED_FULL_TYPE_ID
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -60,8 +60,8 @@ public class RemoteGenericSubstition extends GenericSubstitution {
   public static final String JSON_PROPERTY_BLUEPRINT_TYPE_IDENTIFIER = "blueprint_type_identifier";
   private BlueprintTypeIdentifier blueprintTypeIdentifier;
 
-  public static final String JSON_PROPERTY_RESOLVED_SCOPED_TYPE_ID = "resolved_scoped_type_id";
-  private ScopedTypeId resolvedScopedTypeId;
+  public static final String JSON_PROPERTY_RESOLVED_FULL_TYPE_ID = "resolved_full_type_id";
+  private FullyScopedTypeId resolvedFullTypeId;
 
   public RemoteGenericSubstition() { 
   }
@@ -92,29 +92,29 @@ public class RemoteGenericSubstition extends GenericSubstitution {
   }
 
 
-  public RemoteGenericSubstition resolvedScopedTypeId(ScopedTypeId resolvedScopedTypeId) {
-    this.resolvedScopedTypeId = resolvedScopedTypeId;
+  public RemoteGenericSubstition resolvedFullTypeId(FullyScopedTypeId resolvedFullTypeId) {
+    this.resolvedFullTypeId = resolvedFullTypeId;
     return this;
   }
 
    /**
-   * Get resolvedScopedTypeId
-   * @return resolvedScopedTypeId
+   * Get resolvedFullTypeId
+   * @return resolvedFullTypeId
   **/
   @javax.annotation.Nullable
   @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_RESOLVED_SCOPED_TYPE_ID)
+  @JsonProperty(JSON_PROPERTY_RESOLVED_FULL_TYPE_ID)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public ScopedTypeId getResolvedScopedTypeId() {
-    return resolvedScopedTypeId;
+  public FullyScopedTypeId getResolvedFullTypeId() {
+    return resolvedFullTypeId;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_RESOLVED_SCOPED_TYPE_ID)
+  @JsonProperty(JSON_PROPERTY_RESOLVED_FULL_TYPE_ID)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setResolvedScopedTypeId(ScopedTypeId resolvedScopedTypeId) {
-    this.resolvedScopedTypeId = resolvedScopedTypeId;
+  public void setResolvedFullTypeId(FullyScopedTypeId resolvedFullTypeId) {
+    this.resolvedFullTypeId = resolvedFullTypeId;
   }
 
 
@@ -131,13 +131,13 @@ public class RemoteGenericSubstition extends GenericSubstitution {
     }
     RemoteGenericSubstition remoteGenericSubstition = (RemoteGenericSubstition) o;
     return Objects.equals(this.blueprintTypeIdentifier, remoteGenericSubstition.blueprintTypeIdentifier) &&
-        Objects.equals(this.resolvedScopedTypeId, remoteGenericSubstition.resolvedScopedTypeId) &&
+        Objects.equals(this.resolvedFullTypeId, remoteGenericSubstition.resolvedFullTypeId) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(blueprintTypeIdentifier, resolvedScopedTypeId, super.hashCode());
+    return Objects.hash(blueprintTypeIdentifier, resolvedFullTypeId, super.hashCode());
   }
 
   @Override
@@ -146,7 +146,7 @@ public class RemoteGenericSubstition extends GenericSubstitution {
     sb.append("class RemoteGenericSubstition {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    blueprintTypeIdentifier: ").append(toIndentedString(blueprintTypeIdentifier)).append("\n");
-    sb.append("    resolvedScopedTypeId: ").append(toIndentedString(resolvedScopedTypeId)).append("\n");
+    sb.append("    resolvedFullTypeId: ").append(toIndentedString(resolvedFullTypeId)).append("\n");
     sb.append("}");
     return sb.toString();
   }
