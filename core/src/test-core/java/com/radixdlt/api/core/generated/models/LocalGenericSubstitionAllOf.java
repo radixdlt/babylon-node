@@ -29,9 +29,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * The generic substitution is provided by the instance itself. 
+ * The generic substitution is provided by the instance itself. The &#x60;scoped_type_id&#x60; can be expanded to a &#x60;FullyScopedTypeId&#x60; by including the current entity&#39;s address. 
  */
-@ApiModel(description = "The generic substitution is provided by the instance itself. ")
+@ApiModel(description = "The generic substitution is provided by the instance itself. The `scoped_type_id` can be expanded to a `FullyScopedTypeId` by including the current entity's address. ")
 @JsonPropertyOrder({
   LocalGenericSubstitionAllOf.JSON_PROPERTY_SCOPED_TYPE_ID
 })

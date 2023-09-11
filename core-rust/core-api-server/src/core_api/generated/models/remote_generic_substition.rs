@@ -17,6 +17,8 @@ pub struct RemoteGenericSubstition {
     pub _type: crate::core_api::generated::models::GenericSubstitutionType,
     #[serde(rename = "blueprint_type_identifier")]
     pub blueprint_type_identifier: Box<crate::core_api::generated::models::BlueprintTypeIdentifier>,
+    #[serde(rename = "resolved_full_type_id", skip_serializing_if = "Option::is_none")]
+    pub resolved_full_type_id: Option<Box<crate::core_api::generated::models::FullyScopedTypeId>>,
 }
 
 impl RemoteGenericSubstition {
@@ -24,6 +26,7 @@ impl RemoteGenericSubstition {
         RemoteGenericSubstition {
             _type,
             blueprint_type_identifier: Box::new(blueprint_type_identifier),
+            resolved_full_type_id: None,
         }
     }
 }
