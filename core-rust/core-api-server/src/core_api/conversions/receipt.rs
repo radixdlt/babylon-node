@@ -324,7 +324,7 @@ pub fn to_api_state_updates(
     let state_mapping_lookups =
         StateMappingLookups::create_from_database(database, &changes_to_map)?;
 
-    // Step 3 -
+    // Step 3 - Map the change actions
     for (substate_reference, typed_substate_key, action) in changes_to_map.into_iter() {
         let SubstateReference(node_id, partition_number, substate_key) = substate_reference;
         let system_structure = system_structures
