@@ -77,6 +77,9 @@ pub enum MappingError {
     MissingSystemStructure {
         message: String,
     },
+    CouldNotResolveRemoteGenericSubstitution {
+        message: String,
+    },
 }
 
 impl<E: ErrorDetails> From<MappingError> for ResponseError<E> {

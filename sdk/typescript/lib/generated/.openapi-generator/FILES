@@ -221,8 +221,8 @@ models/LedgerStateSummary.ts
 models/LedgerTransaction.ts
 models/LedgerTransactionBase.ts
 models/LedgerTransactionType.ts
-models/LocalGenericSubstition.ts
-models/LocalGenericSubstitionAllOf.ts
+models/LocalGenericSubstitution.ts
+models/LocalGenericSubstitutionAllOf.ts
 models/LocalNonFungibleKey.ts
 models/LocalTypeId.ts
 models/LtsCommittedTransactionOutcome.ts
@@ -425,8 +425,8 @@ models/ReceiverInfo.ts
 models/RecoveryProposal.ts
 models/RecoveryRoleRecoveryAttempt.ts
 models/ReferenceType.ts
-models/RemoteGenericSubstition.ts
-models/RemoteGenericSubstitionAllOf.ts
+models/RemoteGenericSubstitution.ts
+models/RemoteGenericSubstitutionAllOf.ts
 models/RequireProofRule.ts
 models/RequireProofRuleAllOf.ts
 models/Requirement.ts

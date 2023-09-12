@@ -19,63 +19,78 @@ import {
     BlueprintTypeIdentifierFromJSONTyped,
     BlueprintTypeIdentifierToJSON,
 } from './BlueprintTypeIdentifier';
+import type { FullyScopedTypeId } from './FullyScopedTypeId';
+import {
+    FullyScopedTypeIdFromJSON,
+    FullyScopedTypeIdFromJSONTyped,
+    FullyScopedTypeIdToJSON,
+} from './FullyScopedTypeId';
 
 /**
  * The generic substitution is provided remotely by a blueprint type.
+ * The `resolved_full_type_id` is added by the node, and is always present in the model returned from the transaction stream API.
+ * Other APIs may not resolve the type from the blueprint definition. 
  * @export
- * @interface RemoteGenericSubstitionAllOf
+ * @interface RemoteGenericSubstitutionAllOf
  */
-export interface RemoteGenericSubstitionAllOf {
+export interface RemoteGenericSubstitutionAllOf {
     /**
      * 
      * @type {BlueprintTypeIdentifier}
-     * @memberof RemoteGenericSubstitionAllOf
+     * @memberof RemoteGenericSubstitutionAllOf
      */
     blueprint_type_identifier: BlueprintTypeIdentifier;
     /**
      * 
-     * @type {string}
-     * @memberof RemoteGenericSubstitionAllOf
+     * @type {FullyScopedTypeId}
+     * @memberof RemoteGenericSubstitutionAllOf
      */
-    type?: RemoteGenericSubstitionAllOfTypeEnum;
+    resolved_full_type_id?: FullyScopedTypeId;
+    /**
+     * 
+     * @type {string}
+     * @memberof RemoteGenericSubstitutionAllOf
+     */
+    type?: RemoteGenericSubstitutionAllOfTypeEnum;
 }
 
 
 /**
  * @export
  */
-export const RemoteGenericSubstitionAllOfTypeEnum = {
+export const RemoteGenericSubstitutionAllOfTypeEnum = {
     Remote: 'Remote'
 } as const;
-export type RemoteGenericSubstitionAllOfTypeEnum = typeof RemoteGenericSubstitionAllOfTypeEnum[keyof typeof RemoteGenericSubstitionAllOfTypeEnum];
+export type RemoteGenericSubstitutionAllOfTypeEnum = typeof RemoteGenericSubstitutionAllOfTypeEnum[keyof typeof RemoteGenericSubstitutionAllOfTypeEnum];
 
 
 /**
- * Check if a given object implements the RemoteGenericSubstitionAllOf interface.
+ * Check if a given object implements the RemoteGenericSubstitutionAllOf interface.
  */
-export function instanceOfRemoteGenericSubstitionAllOf(value: object): boolean {
+export function instanceOfRemoteGenericSubstitutionAllOf(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "blueprint_type_identifier" in value;
 
     return isInstance;
 }
 
-export function RemoteGenericSubstitionAllOfFromJSON(json: any): RemoteGenericSubstitionAllOf {
-    return RemoteGenericSubstitionAllOfFromJSONTyped(json, false);
+export function RemoteGenericSubstitutionAllOfFromJSON(json: any): RemoteGenericSubstitutionAllOf {
+    return RemoteGenericSubstitutionAllOfFromJSONTyped(json, false);
 }
 
-export function RemoteGenericSubstitionAllOfFromJSONTyped(json: any, ignoreDiscriminator: boolean): RemoteGenericSubstitionAllOf {
+export function RemoteGenericSubstitutionAllOfFromJSONTyped(json: any, ignoreDiscriminator: boolean): RemoteGenericSubstitutionAllOf {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
         'blueprint_type_identifier': BlueprintTypeIdentifierFromJSON(json['blueprint_type_identifier']),
+        'resolved_full_type_id': !exists(json, 'resolved_full_type_id') ? undefined : FullyScopedTypeIdFromJSON(json['resolved_full_type_id']),
         'type': !exists(json, 'type') ? undefined : json['type'],
     };
 }
 
-export function RemoteGenericSubstitionAllOfToJSON(value?: RemoteGenericSubstitionAllOf | null): any {
+export function RemoteGenericSubstitutionAllOfToJSON(value?: RemoteGenericSubstitutionAllOf | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -85,6 +100,7 @@ export function RemoteGenericSubstitionAllOfToJSON(value?: RemoteGenericSubstiti
     return {
         
         'blueprint_type_identifier': BlueprintTypeIdentifierToJSON(value.blueprint_type_identifier),
+        'resolved_full_type_id': FullyScopedTypeIdToJSON(value.resolved_full_type_id),
         'type': value.type,
     };
 }

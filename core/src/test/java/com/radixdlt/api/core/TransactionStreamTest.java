@@ -119,6 +119,10 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
                           .getTransactions())
                   .getLedgerTransaction();
 
+      // In order for this assertion to pass, we must have downloaded all the scenario transactions
+      // in the above first page of data.
+      // This ensures that genesis and all scenarios must have data which can be mapped by the
+      // Core API Transaction Stream
       assertThat(lastTransaction.getNotarizedTransaction().getPayloadHex())
           .isEqualTo(transaction.hexPayloadBytes());
     }
