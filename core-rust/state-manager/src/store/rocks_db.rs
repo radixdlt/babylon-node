@@ -504,25 +504,22 @@ impl CommitStore for RocksDBStore {
                             }
                         }
                     }
-                    PartitionDatabaseUpdates::Batch(batch_update) => match batch_update {
-                        BatchPartitionDatabaseUpdate::Reset {
-                            new_substate_values,
-                        } => {
-                            let empty_key = DbSortKey(vec![]);
-                            batch.delete_range_cf(
+                    PartitionDatabaseUpdates::Reset {
+                        new_substate_values,
+                    } => {
+                        batch.delete_range_cf(
+                            self.cf_handle(&Substates),
+                            encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![])),
+                            encode_to_rocksdb_bytes(&partition_key.next(), &DbSortKey(vec![])),
+                        );
+                        for (sort_key, value_bytes) in new_substate_values {
+                            batch.put_cf(
                                 self.cf_handle(&Substates),
-                                encode_to_rocksdb_bytes(&partition_key, &empty_key),
-                                encode_to_rocksdb_bytes(&partition_key.next(), &empty_key),
+                                encode_to_rocksdb_bytes(&partition_key, &sort_key),
+                                value_bytes,
                             );
-                            for (sort_key, value_bytes) in new_substate_values {
-                                batch.put_cf(
-                                    self.cf_handle(&Substates),
-                                    encode_to_rocksdb_bytes(&partition_key, &sort_key),
-                                    value_bytes,
-                                );
-                            }
                         }
-                    },
+                    }
                 }
             }
         }

@@ -83,8 +83,8 @@ use crate::staging::overlays::{
 };
 use crate::transaction::{LedgerTransactionHash, TransactionLogic};
 use radix_engine_store_interface::interface::{
-    BatchPartitionDatabaseUpdate, DatabaseUpdate, DbPartitionKey, DbSortKey, DbSubstateValue,
-    PartitionDatabaseUpdates, PartitionEntry, SubstateDatabase,
+    DatabaseUpdate, DbPartitionKey, DbSortKey, DbSubstateValue, PartitionDatabaseUpdates,
+    PartitionEntry, SubstateDatabase,
 };
 use radix_engine_stores::hash_tree::tree_store::{NodeKey, ReadableTreeStore, TreeNode};
 
@@ -474,20 +474,17 @@ impl ImmutablePartitionUpdates {
                             .map(|(key, value)| (key.clone(), value.clone())),
                     );
                 }
-                PartitionDatabaseUpdates::Batch(batch) => match batch {
-                    BatchPartitionDatabaseUpdate::Reset {
-                        new_substate_values,
-                    } => {
-                        *self = ImmutablePartitionUpdates::Batch(
-                            BatchImmutablePartitionUpdates::Reset {
-                                new_substate_values: new_substate_values
-                                    .iter()
-                                    .map(|(key, value)| (key.clone(), value.clone()))
-                                    .collect(),
-                            },
-                        )
-                    }
-                },
+                PartitionDatabaseUpdates::Reset {
+                    new_substate_values: db_new_substate_values,
+                } => {
+                    *self =
+                        ImmutablePartitionUpdates::Batch(BatchImmutablePartitionUpdates::Reset {
+                            new_substate_values: db_new_substate_values
+                                .iter()
+                                .map(|(key, value)| (key.clone(), value.clone()))
+                                .collect(),
+                        })
+                }
             },
             ImmutablePartitionUpdates::Batch(batch) => {
                 batch.accumulate(db_partition_updates);
@@ -519,16 +516,14 @@ impl BatchImmutablePartitionUpdates {
                         }
                     }
                 }
-                PartitionDatabaseUpdates::Batch(batch) => match batch {
-                    BatchPartitionDatabaseUpdate::Reset {
-                        new_substate_values: values,
-                    } => {
-                        *new_substate_values = values
-                            .iter()
-                            .map(|(key, value)| (key.clone(), value.clone()))
-                            .collect()
-                    }
-                },
+                PartitionDatabaseUpdates::Reset {
+                    new_substate_values: db_new_substate_values,
+                } => {
+                    *new_substate_values = db_new_substate_values
+                        .iter()
+                        .map(|(key, value)| (key.clone(), value.clone()))
+                        .collect()
+                }
             },
         }
     }

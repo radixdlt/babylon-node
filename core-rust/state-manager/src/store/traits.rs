@@ -303,8 +303,7 @@ pub mod commit {
     use crate::{ReceiptTreeHash, StateVersion, TransactionTreeHash};
 
     use radix_engine_store_interface::interface::{
-        BatchPartitionDatabaseUpdate, DatabaseUpdate, DatabaseUpdates, NodeDatabaseUpdates,
-        PartitionDatabaseUpdates,
+        DatabaseUpdate, DatabaseUpdates, NodeDatabaseUpdates, PartitionDatabaseUpdates,
     };
     use radix_engine_stores::hash_tree::tree_store::{NodeKey, StaleTreePart, TreeNode};
 
@@ -371,9 +370,9 @@ pub mod commit {
                     } => {
                         target_updates.extend(source_updates);
                     }
-                    PartitionDatabaseUpdates::Batch(BatchPartitionDatabaseUpdate::Reset {
+                    PartitionDatabaseUpdates::Reset {
                         new_substate_values: target_values,
-                    }) => {
+                    } => {
                         for (sort_key, update) in source_updates {
                             match update {
                                 DatabaseUpdate::Set(value) => {
@@ -389,7 +388,7 @@ pub mod commit {
                         }
                     }
                 },
-                PartitionDatabaseUpdates::Batch(BatchPartitionDatabaseUpdate::Reset { .. }) => {
+                PartitionDatabaseUpdates::Reset { .. } => {
                     *target = source;
                 }
             }
