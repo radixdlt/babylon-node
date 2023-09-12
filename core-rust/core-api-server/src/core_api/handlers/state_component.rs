@@ -70,6 +70,7 @@ pub(crate) async fn handle_state_component(
         at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
         info: Some(to_api_type_info_substate(
             &mapping_context,
+            &StateMappingLookups::default(),
             &type_info_substate,
         )?),
         state: Some(to_api_generic_scrypto_component_state_substate(

@@ -13,26 +13,26 @@
  */
 
 import {
-    LocalGenericSubstition,
-    instanceOfLocalGenericSubstition,
-    LocalGenericSubstitionFromJSON,
-    LocalGenericSubstitionFromJSONTyped,
-    LocalGenericSubstitionToJSON,
-} from './LocalGenericSubstition';
+    LocalGenericSubstitution,
+    instanceOfLocalGenericSubstitution,
+    LocalGenericSubstitutionFromJSON,
+    LocalGenericSubstitutionFromJSONTyped,
+    LocalGenericSubstitutionToJSON,
+} from './LocalGenericSubstitution';
 import {
-    RemoteGenericSubstition,
-    instanceOfRemoteGenericSubstition,
-    RemoteGenericSubstitionFromJSON,
-    RemoteGenericSubstitionFromJSONTyped,
-    RemoteGenericSubstitionToJSON,
-} from './RemoteGenericSubstition';
+    RemoteGenericSubstitution,
+    instanceOfRemoteGenericSubstitution,
+    RemoteGenericSubstitutionFromJSON,
+    RemoteGenericSubstitutionFromJSONTyped,
+    RemoteGenericSubstitutionToJSON,
+} from './RemoteGenericSubstitution';
 
 /**
  * @type GenericSubstitution
  * 
  * @export
  */
-export type GenericSubstitution = { type: 'Local' } & LocalGenericSubstition | { type: 'Remote' } & RemoteGenericSubstition;
+export type GenericSubstitution = { type: 'Local' } & LocalGenericSubstitution | { type: 'Remote' } & RemoteGenericSubstitution;
 
 export function GenericSubstitutionFromJSON(json: any): GenericSubstitution {
     return GenericSubstitutionFromJSONTyped(json, false);
@@ -44,9 +44,9 @@ export function GenericSubstitutionFromJSONTyped(json: any, ignoreDiscriminator:
     }
     switch (json['type']) {
         case 'Local':
-            return {...LocalGenericSubstitionFromJSONTyped(json, true), type: 'Local'};
+            return {...LocalGenericSubstitutionFromJSONTyped(json, true), type: 'Local'};
         case 'Remote':
-            return {...RemoteGenericSubstitionFromJSONTyped(json, true), type: 'Remote'};
+            return {...RemoteGenericSubstitutionFromJSONTyped(json, true), type: 'Remote'};
         default:
             throw new Error(`No variant of GenericSubstitution exists with 'type=${json['type']}'`);
     }
@@ -61,9 +61,9 @@ export function GenericSubstitutionToJSON(value?: GenericSubstitution | null): a
     }
     switch (value['type']) {
         case 'Local':
-            return LocalGenericSubstitionToJSON(value);
+            return LocalGenericSubstitutionToJSON(value);
         case 'Remote':
-            return RemoteGenericSubstitionToJSON(value);
+            return RemoteGenericSubstitutionToJSON(value);
         default:
             throw new Error(`No variant of GenericSubstitution exists with 'type=${value['type']}'`);
     }

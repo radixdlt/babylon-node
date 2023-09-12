@@ -51,6 +51,7 @@ pub(crate) async fn handle_transaction_receipt(
 
         Ok(models::TransactionReceiptResponse {
             committed: Box::new(to_api_committed_transaction(
+                Some(&database),
                 &mapping_context,
                 txn_state_version,
                 raw,

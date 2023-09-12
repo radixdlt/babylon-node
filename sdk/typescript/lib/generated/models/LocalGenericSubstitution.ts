@@ -21,61 +21,62 @@ import {
 } from './ScopedTypeId';
 
 /**
- * The generic substitution is provided by the instance itself.
+ * 
  * @export
- * @interface LocalGenericSubstitionAllOf
+ * @interface LocalGenericSubstitution
  */
-export interface LocalGenericSubstitionAllOf {
-    /**
-     * 
-     * @type {ScopedTypeId}
-     * @memberof LocalGenericSubstitionAllOf
-     */
-    scoped_type_id: ScopedTypeId;
+export interface LocalGenericSubstitution {
     /**
      * 
      * @type {string}
-     * @memberof LocalGenericSubstitionAllOf
+     * @memberof LocalGenericSubstitution
      */
-    type?: LocalGenericSubstitionAllOfTypeEnum;
+    type: LocalGenericSubstitutionTypeEnum;
+    /**
+     * 
+     * @type {ScopedTypeId}
+     * @memberof LocalGenericSubstitution
+     */
+    scoped_type_id: ScopedTypeId;
 }
 
 
 /**
  * @export
  */
-export const LocalGenericSubstitionAllOfTypeEnum = {
+export const LocalGenericSubstitutionTypeEnum = {
     Local: 'Local'
 } as const;
-export type LocalGenericSubstitionAllOfTypeEnum = typeof LocalGenericSubstitionAllOfTypeEnum[keyof typeof LocalGenericSubstitionAllOfTypeEnum];
+export type LocalGenericSubstitutionTypeEnum = typeof LocalGenericSubstitutionTypeEnum[keyof typeof LocalGenericSubstitutionTypeEnum];
 
 
 /**
- * Check if a given object implements the LocalGenericSubstitionAllOf interface.
+ * Check if a given object implements the LocalGenericSubstitution interface.
  */
-export function instanceOfLocalGenericSubstitionAllOf(value: object): boolean {
+export function instanceOfLocalGenericSubstitution(value: object): boolean {
     let isInstance = true;
+    isInstance = isInstance && "type" in value;
     isInstance = isInstance && "scoped_type_id" in value;
 
     return isInstance;
 }
 
-export function LocalGenericSubstitionAllOfFromJSON(json: any): LocalGenericSubstitionAllOf {
-    return LocalGenericSubstitionAllOfFromJSONTyped(json, false);
+export function LocalGenericSubstitutionFromJSON(json: any): LocalGenericSubstitution {
+    return LocalGenericSubstitutionFromJSONTyped(json, false);
 }
 
-export function LocalGenericSubstitionAllOfFromJSONTyped(json: any, ignoreDiscriminator: boolean): LocalGenericSubstitionAllOf {
+export function LocalGenericSubstitutionFromJSONTyped(json: any, ignoreDiscriminator: boolean): LocalGenericSubstitution {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
+        'type': json['type'],
         'scoped_type_id': ScopedTypeIdFromJSON(json['scoped_type_id']),
-        'type': !exists(json, 'type') ? undefined : json['type'],
     };
 }
 
-export function LocalGenericSubstitionAllOfToJSON(value?: LocalGenericSubstitionAllOf | null): any {
+export function LocalGenericSubstitutionToJSON(value?: LocalGenericSubstitution | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -84,8 +85,8 @@ export function LocalGenericSubstitionAllOfToJSON(value?: LocalGenericSubstition
     }
     return {
         
-        'scoped_type_id': ScopedTypeIdToJSON(value.scoped_type_id),
         'type': value.type,
+        'scoped_type_id': ScopedTypeIdToJSON(value.scoped_type_id),
     };
 }
 

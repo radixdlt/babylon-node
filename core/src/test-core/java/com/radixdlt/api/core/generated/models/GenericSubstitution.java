@@ -26,8 +26,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.GenericSubstitutionType;
-import com.radixdlt.api.core.generated.models.LocalGenericSubstition;
-import com.radixdlt.api.core.generated.models.RemoteGenericSubstition;
+import com.radixdlt.api.core.generated.models.LocalGenericSubstitution;
+import com.radixdlt.api.core.generated.models.RemoteGenericSubstitution;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -47,10 +47,10 @@ import com.radixdlt.api.core.generated.client.JSON;
 )
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = LocalGenericSubstition.class, name = "Local"),
-  @JsonSubTypes.Type(value = LocalGenericSubstition.class, name = "LocalGenericSubstition"),
-  @JsonSubTypes.Type(value = RemoteGenericSubstition.class, name = "Remote"),
-  @JsonSubTypes.Type(value = RemoteGenericSubstition.class, name = "RemoteGenericSubstition"),
+  @JsonSubTypes.Type(value = LocalGenericSubstitution.class, name = "Local"),
+  @JsonSubTypes.Type(value = LocalGenericSubstitution.class, name = "LocalGenericSubstitution"),
+  @JsonSubTypes.Type(value = RemoteGenericSubstitution.class, name = "Remote"),
+  @JsonSubTypes.Type(value = RemoteGenericSubstitution.class, name = "RemoteGenericSubstitution"),
 })
 
 public class GenericSubstitution {
@@ -129,10 +129,10 @@ public class GenericSubstitution {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("Local", LocalGenericSubstition.class);
-  mappings.put("LocalGenericSubstition", LocalGenericSubstition.class);
-  mappings.put("Remote", RemoteGenericSubstition.class);
-  mappings.put("RemoteGenericSubstition", RemoteGenericSubstition.class);
+  mappings.put("Local", LocalGenericSubstitution.class);
+  mappings.put("LocalGenericSubstitution", LocalGenericSubstitution.class);
+  mappings.put("Remote", RemoteGenericSubstitution.class);
+  mappings.put("RemoteGenericSubstitution", RemoteGenericSubstitution.class);
   mappings.put("GenericSubstitution", GenericSubstitution.class);
   JSON.registerDiscriminator(GenericSubstitution.class, "type", mappings);
 }
