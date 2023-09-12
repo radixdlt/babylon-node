@@ -475,11 +475,11 @@ impl StateMappingLookups {
         let package_types = lookup.get(&BlueprintId {
             package_address: *package_address,
             blueprint_name: blueprint_name.clone(),
-        }).ok_or_else(|| MappingError::CouldNotResolveRemoteGenericSubstition {
+        }).ok_or_else(|| MappingError::CouldNotResolveRemoteGenericSubstitution {
             message: "Could not find package in existing lookup - likely the lookup was somehow created incomplete".to_string()
         })?;
         let resolved = package_types.get(type_name).cloned().ok_or_else(|| {
-            MappingError::CouldNotResolveRemoteGenericSubstition {
+            MappingError::CouldNotResolveRemoteGenericSubstitution {
                 message: "Could not find type in package lookup".to_string(),
             }
         })?;
@@ -545,11 +545,11 @@ impl StateMappingLookups {
                 &SubstateKey::Map(scrypto_encode(&PackageBlueprintVersionDefinitionKeyPayload::from_content_source(
                     BlueprintVersionKey::new_default(blueprint_name.clone())
                 )).unwrap()),
-            ).ok_or_else(|| MappingError::CouldNotResolveRemoteGenericSubstition {
+            ).ok_or_else(|| MappingError::CouldNotResolveRemoteGenericSubstitution {
                 message: "Could not find blueprint definition referenced in Remote Generic Substition, but this was checked by the engine".to_string(),
             })?
             .into_value()
-            .ok_or_else(|| MappingError::CouldNotResolveRemoteGenericSubstition {
+            .ok_or_else(|| MappingError::CouldNotResolveRemoteGenericSubstitution {
                 message: "Blueprint definition was a deleted entry".to_string(),
             })?;
             blueprint_type_lookups.insert(

@@ -110,14 +110,14 @@ pub fn to_api_generic_substitution(
 ) -> Result<models::GenericSubstitution, MappingError> {
     Ok(match substitution {
         GenericSubstitution::Local(scoped_type_id) => {
-            models::GenericSubstitution::LocalGenericSubstition {
+            models::GenericSubstitution::LocalGenericSubstitution {
                 scoped_type_id: Box::new(to_api_scoped_type_id(context, scoped_type_id)?),
             }
         }
         GenericSubstitution::Remote(blueprint_type_identifier) => {
             let resolved =
                 state_mapping_lookups.resolve_generic_remote(blueprint_type_identifier)?;
-            models::GenericSubstitution::RemoteGenericSubstition {
+            models::GenericSubstitution::RemoteGenericSubstitution {
                 blueprint_type_identifier: Box::new(to_api_blueprint_type_identifier(
                     context,
                     blueprint_type_identifier,

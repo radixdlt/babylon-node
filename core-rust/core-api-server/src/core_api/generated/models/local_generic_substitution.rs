@@ -12,16 +12,16 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct LocalGenericSubstition {
+pub struct LocalGenericSubstitution {
     #[serde(rename = "type")]
     pub _type: crate::core_api::generated::models::GenericSubstitutionType,
     #[serde(rename = "scoped_type_id")]
     pub scoped_type_id: Box<crate::core_api::generated::models::ScopedTypeId>,
 }
 
-impl LocalGenericSubstition {
-    pub fn new(_type: crate::core_api::generated::models::GenericSubstitutionType, scoped_type_id: crate::core_api::generated::models::ScopedTypeId) -> LocalGenericSubstition {
-        LocalGenericSubstition {
+impl LocalGenericSubstitution {
+    pub fn new(_type: crate::core_api::generated::models::GenericSubstitutionType, scoped_type_id: crate::core_api::generated::models::ScopedTypeId) -> LocalGenericSubstitution {
+        LocalGenericSubstitution {
             _type,
             scoped_type_id: Box::new(scoped_type_id),
         }

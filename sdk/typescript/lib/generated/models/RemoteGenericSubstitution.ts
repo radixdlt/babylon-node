@@ -19,41 +19,53 @@ import {
     BlueprintTypeIdentifierFromJSONTyped,
     BlueprintTypeIdentifierToJSON,
 } from './BlueprintTypeIdentifier';
+import type { FullyScopedTypeId } from './FullyScopedTypeId';
+import {
+    FullyScopedTypeIdFromJSON,
+    FullyScopedTypeIdFromJSONTyped,
+    FullyScopedTypeIdToJSON,
+} from './FullyScopedTypeId';
 
 /**
  * 
  * @export
- * @interface RemoteGenericSubstition
+ * @interface RemoteGenericSubstitution
  */
-export interface RemoteGenericSubstition {
+export interface RemoteGenericSubstitution {
     /**
      * 
      * @type {string}
-     * @memberof RemoteGenericSubstition
+     * @memberof RemoteGenericSubstitution
      */
-    type: RemoteGenericSubstitionTypeEnum;
+    type: RemoteGenericSubstitutionTypeEnum;
     /**
      * 
      * @type {BlueprintTypeIdentifier}
-     * @memberof RemoteGenericSubstition
+     * @memberof RemoteGenericSubstitution
      */
     blueprint_type_identifier: BlueprintTypeIdentifier;
+    /**
+     * 
+     * @type {FullyScopedTypeId}
+     * @memberof RemoteGenericSubstitution
+     */
+    resolved_full_type_id?: FullyScopedTypeId;
 }
 
 
 /**
  * @export
  */
-export const RemoteGenericSubstitionTypeEnum = {
+export const RemoteGenericSubstitutionTypeEnum = {
     Remote: 'Remote'
 } as const;
-export type RemoteGenericSubstitionTypeEnum = typeof RemoteGenericSubstitionTypeEnum[keyof typeof RemoteGenericSubstitionTypeEnum];
+export type RemoteGenericSubstitutionTypeEnum = typeof RemoteGenericSubstitutionTypeEnum[keyof typeof RemoteGenericSubstitutionTypeEnum];
 
 
 /**
- * Check if a given object implements the RemoteGenericSubstition interface.
+ * Check if a given object implements the RemoteGenericSubstitution interface.
  */
-export function instanceOfRemoteGenericSubstition(value: object): boolean {
+export function instanceOfRemoteGenericSubstitution(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "type" in value;
     isInstance = isInstance && "blueprint_type_identifier" in value;
@@ -61,11 +73,11 @@ export function instanceOfRemoteGenericSubstition(value: object): boolean {
     return isInstance;
 }
 
-export function RemoteGenericSubstitionFromJSON(json: any): RemoteGenericSubstition {
-    return RemoteGenericSubstitionFromJSONTyped(json, false);
+export function RemoteGenericSubstitutionFromJSON(json: any): RemoteGenericSubstitution {
+    return RemoteGenericSubstitutionFromJSONTyped(json, false);
 }
 
-export function RemoteGenericSubstitionFromJSONTyped(json: any, ignoreDiscriminator: boolean): RemoteGenericSubstition {
+export function RemoteGenericSubstitutionFromJSONTyped(json: any, ignoreDiscriminator: boolean): RemoteGenericSubstitution {
     if ((json === undefined) || (json === null)) {
         return json;
     }
@@ -73,10 +85,11 @@ export function RemoteGenericSubstitionFromJSONTyped(json: any, ignoreDiscrimina
         
         'type': json['type'],
         'blueprint_type_identifier': BlueprintTypeIdentifierFromJSON(json['blueprint_type_identifier']),
+        'resolved_full_type_id': !exists(json, 'resolved_full_type_id') ? undefined : FullyScopedTypeIdFromJSON(json['resolved_full_type_id']),
     };
 }
 
-export function RemoteGenericSubstitionToJSON(value?: RemoteGenericSubstition | null): any {
+export function RemoteGenericSubstitutionToJSON(value?: RemoteGenericSubstitution | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -87,6 +100,7 @@ export function RemoteGenericSubstitionToJSON(value?: RemoteGenericSubstition | 
         
         'type': value.type,
         'blueprint_type_identifier': BlueprintTypeIdentifierToJSON(value.blueprint_type_identifier),
+        'resolved_full_type_id': FullyScopedTypeIdToJSON(value.resolved_full_type_id),
     };
 }
 

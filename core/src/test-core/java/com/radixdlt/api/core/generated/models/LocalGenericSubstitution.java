@@ -25,13 +25,12 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.BlueprintTypeIdentifier;
-import com.radixdlt.api.core.generated.models.FullyScopedTypeId;
 import com.radixdlt.api.core.generated.models.GenericSubstitution;
 import com.radixdlt.api.core.generated.models.GenericSubstitutionType;
-import com.radixdlt.api.core.generated.models.LocalGenericSubstition;
-import com.radixdlt.api.core.generated.models.RemoteGenericSubstition;
-import com.radixdlt.api.core.generated.models.RemoteGenericSubstitionAllOf;
+import com.radixdlt.api.core.generated.models.LocalGenericSubstitution;
+import com.radixdlt.api.core.generated.models.LocalGenericSubstitutionAllOf;
+import com.radixdlt.api.core.generated.models.RemoteGenericSubstitution;
+import com.radixdlt.api.core.generated.models.ScopedTypeId;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -39,11 +38,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * RemoteGenericSubstition
+ * LocalGenericSubstitution
  */
 @JsonPropertyOrder({
-  RemoteGenericSubstition.JSON_PROPERTY_BLUEPRINT_TYPE_IDENTIFIER,
-  RemoteGenericSubstition.JSON_PROPERTY_RESOLVED_FULL_TYPE_ID
+  LocalGenericSubstitution.JSON_PROPERTY_SCOPED_TYPE_ID
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -52,74 +50,45 @@ import com.radixdlt.api.core.generated.client.JSON;
 )
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = LocalGenericSubstition.class, name = "Local"),
-  @JsonSubTypes.Type(value = RemoteGenericSubstition.class, name = "Remote"),
+  @JsonSubTypes.Type(value = LocalGenericSubstitution.class, name = "Local"),
+  @JsonSubTypes.Type(value = RemoteGenericSubstitution.class, name = "Remote"),
 })
 
-public class RemoteGenericSubstition extends GenericSubstitution {
-  public static final String JSON_PROPERTY_BLUEPRINT_TYPE_IDENTIFIER = "blueprint_type_identifier";
-  private BlueprintTypeIdentifier blueprintTypeIdentifier;
+public class LocalGenericSubstitution extends GenericSubstitution {
+  public static final String JSON_PROPERTY_SCOPED_TYPE_ID = "scoped_type_id";
+  private ScopedTypeId scopedTypeId;
 
-  public static final String JSON_PROPERTY_RESOLVED_FULL_TYPE_ID = "resolved_full_type_id";
-  private FullyScopedTypeId resolvedFullTypeId;
-
-  public RemoteGenericSubstition() { 
+  public LocalGenericSubstitution() { 
   }
 
-  public RemoteGenericSubstition blueprintTypeIdentifier(BlueprintTypeIdentifier blueprintTypeIdentifier) {
-    this.blueprintTypeIdentifier = blueprintTypeIdentifier;
+  public LocalGenericSubstitution scopedTypeId(ScopedTypeId scopedTypeId) {
+    this.scopedTypeId = scopedTypeId;
     return this;
   }
 
    /**
-   * Get blueprintTypeIdentifier
-   * @return blueprintTypeIdentifier
+   * Get scopedTypeId
+   * @return scopedTypeId
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_BLUEPRINT_TYPE_IDENTIFIER)
+  @JsonProperty(JSON_PROPERTY_SCOPED_TYPE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public BlueprintTypeIdentifier getBlueprintTypeIdentifier() {
-    return blueprintTypeIdentifier;
+  public ScopedTypeId getScopedTypeId() {
+    return scopedTypeId;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_BLUEPRINT_TYPE_IDENTIFIER)
+  @JsonProperty(JSON_PROPERTY_SCOPED_TYPE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setBlueprintTypeIdentifier(BlueprintTypeIdentifier blueprintTypeIdentifier) {
-    this.blueprintTypeIdentifier = blueprintTypeIdentifier;
-  }
-
-
-  public RemoteGenericSubstition resolvedFullTypeId(FullyScopedTypeId resolvedFullTypeId) {
-    this.resolvedFullTypeId = resolvedFullTypeId;
-    return this;
-  }
-
-   /**
-   * Get resolvedFullTypeId
-   * @return resolvedFullTypeId
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_RESOLVED_FULL_TYPE_ID)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-
-  public FullyScopedTypeId getResolvedFullTypeId() {
-    return resolvedFullTypeId;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_RESOLVED_FULL_TYPE_ID)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setResolvedFullTypeId(FullyScopedTypeId resolvedFullTypeId) {
-    this.resolvedFullTypeId = resolvedFullTypeId;
+  public void setScopedTypeId(ScopedTypeId scopedTypeId) {
+    this.scopedTypeId = scopedTypeId;
   }
 
 
   /**
-   * Return true if this RemoteGenericSubstition object is equal to o.
+   * Return true if this LocalGenericSubstitution object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -129,24 +98,22 @@ public class RemoteGenericSubstition extends GenericSubstitution {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    RemoteGenericSubstition remoteGenericSubstition = (RemoteGenericSubstition) o;
-    return Objects.equals(this.blueprintTypeIdentifier, remoteGenericSubstition.blueprintTypeIdentifier) &&
-        Objects.equals(this.resolvedFullTypeId, remoteGenericSubstition.resolvedFullTypeId) &&
+    LocalGenericSubstitution localGenericSubstitution = (LocalGenericSubstitution) o;
+    return Objects.equals(this.scopedTypeId, localGenericSubstitution.scopedTypeId) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(blueprintTypeIdentifier, resolvedFullTypeId, super.hashCode());
+    return Objects.hash(scopedTypeId, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class RemoteGenericSubstition {\n");
+    sb.append("class LocalGenericSubstitution {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    blueprintTypeIdentifier: ").append(toIndentedString(blueprintTypeIdentifier)).append("\n");
-    sb.append("    resolvedFullTypeId: ").append(toIndentedString(resolvedFullTypeId)).append("\n");
+    sb.append("    scopedTypeId: ").append(toIndentedString(scopedTypeId)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -165,10 +132,10 @@ public class RemoteGenericSubstition extends GenericSubstitution {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("Local", LocalGenericSubstition.class);
-  mappings.put("Remote", RemoteGenericSubstition.class);
-  mappings.put("RemoteGenericSubstition", RemoteGenericSubstition.class);
-  JSON.registerDiscriminator(RemoteGenericSubstition.class, "type", mappings);
+  mappings.put("Local", LocalGenericSubstitution.class);
+  mappings.put("Remote", RemoteGenericSubstitution.class);
+  mappings.put("LocalGenericSubstitution", LocalGenericSubstitution.class);
+  JSON.registerDiscriminator(LocalGenericSubstitution.class, "type", mappings);
 }
 }
 

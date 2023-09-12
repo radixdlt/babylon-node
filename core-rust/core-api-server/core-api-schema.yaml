@@ -3931,9 +3931,9 @@ components:
         propertyName: type
         mapping:
           # NOTE: These need to match TypeInfoType options above
-          Local: '#/components/schemas/LocalGenericSubstition'
-          Remote: '#/components/schemas/RemoteGenericSubstition'
-    LocalGenericSubstition:
+          Local: '#/components/schemas/LocalGenericSubstitution'
+          Remote: '#/components/schemas/RemoteGenericSubstitution'
+    LocalGenericSubstitution:
       allOf:
         - $ref: '#/components/schemas/GenericSubstitution'
         - type: object
@@ -3945,7 +3945,7 @@ components:
           properties:
             scoped_type_id:
               $ref: '#/components/schemas/ScopedTypeId'
-    RemoteGenericSubstition:
+    RemoteGenericSubstitution:
       allOf:
         - $ref: '#/components/schemas/GenericSubstitution'
         - type: object

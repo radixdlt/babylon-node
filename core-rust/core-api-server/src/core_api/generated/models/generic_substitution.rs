@@ -14,12 +14,12 @@
 #[serde(tag = "type")]
 pub enum GenericSubstitution {
     #[serde(rename="Local")]
-    LocalGenericSubstition {
+    LocalGenericSubstitution {
         #[serde(rename = "scoped_type_id")]
         scoped_type_id: Box<crate::core_api::generated::models::ScopedTypeId>,
     },
     #[serde(rename="Remote")]
-    RemoteGenericSubstition {
+    RemoteGenericSubstitution {
         #[serde(rename = "blueprint_type_identifier")]
         blueprint_type_identifier: Box<crate::core_api::generated::models::BlueprintTypeIdentifier>,
         #[serde(rename = "resolved_full_type_id", skip_serializing_if = "Option::is_none")]
