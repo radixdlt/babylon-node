@@ -586,9 +586,9 @@ pub fn extract_typed_values(
 
 pub fn register_blueprint_for_adding_to_type_lookup(
     blueprints_to_lookup: &mut IndexSet<(PackageAddress, String)>,
-    generic_substition: &GenericSubstitution,
+    generic_substitution: &GenericSubstitution,
 ) {
-    match generic_substition {
+    match generic_substitution {
         GenericSubstitution::Local(_) => {}
         GenericSubstitution::Remote(BlueprintTypeIdentifier {
             package_address,
