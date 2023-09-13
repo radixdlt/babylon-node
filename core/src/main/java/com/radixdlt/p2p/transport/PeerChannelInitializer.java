@@ -107,7 +107,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
   private final P2PConfig config;
   private final Addressing addressing;
   private final Network network;
-  private final String newestForkName;
+  private final ProtocolUpdateId newestProtocolUpdateId;
   private final Metrics metrics;
   private final Serialization serialization;
   private final SecureRandom secureRandom;
@@ -121,7 +121,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
       P2PConfig config,
       Addressing addressing,
       Network network,
-      String newestForkName,
+      ProtocolUpdateId newestProtocolUpdateId,
       Metrics metrics,
       Serialization serialization,
       SecureRandom secureRandom,
@@ -133,7 +133,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
     this.config = Objects.requireNonNull(config);
     this.addressing = Objects.requireNonNull(addressing);
     this.network = network;
-    this.newestForkName = newestForkName;
+    this.newestProtocolUpdateId = newestProtocolUpdateId;
     this.metrics = Objects.requireNonNull(metrics);
     this.serialization = Objects.requireNonNull(serialization);
     this.secureRandom = Objects.requireNonNull(secureRandom);
@@ -224,7 +224,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
             config,
             addressing,
             network,
-            newestForkName,
+            newestProtocolUpdateId,
             metrics,
             serialization,
             secureRandom,

@@ -30,14 +30,14 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * HealthResponseUnknownReportedForks
+ * HealthResponseUnknownReportedProtocolUpdates
  */
 @JsonPropertyOrder({
-  HealthResponseUnknownReportedForks.JSON_PROPERTY_NAME,
-  HealthResponseUnknownReportedForks.JSON_PROPERTY_REPORTED_BY
+  HealthResponseUnknownReportedProtocolUpdates.JSON_PROPERTY_NAME,
+  HealthResponseUnknownReportedProtocolUpdates.JSON_PROPERTY_REPORTED_BY
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class HealthResponseUnknownReportedForks {
+public class HealthResponseUnknownReportedProtocolUpdates {
   public static final String JSON_PROPERTY_NAME = "name";
   private String name;
 
@@ -45,7 +45,7 @@ public class HealthResponseUnknownReportedForks {
   private List<String> reportedBy = new ArrayList<>();
 
 
-  public HealthResponseUnknownReportedForks name(String name) {
+  public HealthResponseUnknownReportedProtocolUpdates name(String name) {
     this.name = name;
     return this;
   }
@@ -71,12 +71,12 @@ public class HealthResponseUnknownReportedForks {
   }
 
 
-  public HealthResponseUnknownReportedForks reportedBy(List<String> reportedBy) {
+  public HealthResponseUnknownReportedProtocolUpdates reportedBy(List<String> reportedBy) {
     this.reportedBy = reportedBy;
     return this;
   }
 
-  public HealthResponseUnknownReportedForks addReportedByItem(String reportedByItem) {
+  public HealthResponseUnknownReportedProtocolUpdates addReportedByItem(String reportedByItem) {
     this.reportedBy.add(reportedByItem);
     return this;
   }
@@ -103,7 +103,7 @@ public class HealthResponseUnknownReportedForks {
 
 
   /**
-   * Return true if this HealthResponse_unknown_reported_forks object is equal to o.
+   * Return true if this HealthResponse_unknown_reported_protocol_updates object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -113,9 +113,9 @@ public class HealthResponseUnknownReportedForks {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    HealthResponseUnknownReportedForks healthResponseUnknownReportedForks = (HealthResponseUnknownReportedForks) o;
-    return Objects.equals(this.name, healthResponseUnknownReportedForks.name) &&
-        Objects.equals(this.reportedBy, healthResponseUnknownReportedForks.reportedBy);
+    HealthResponseUnknownReportedProtocolUpdates healthResponseUnknownReportedProtocolUpdates = (HealthResponseUnknownReportedProtocolUpdates) o;
+    return Objects.equals(this.name, healthResponseUnknownReportedProtocolUpdates.name) &&
+        Objects.equals(this.reportedBy, healthResponseUnknownReportedProtocolUpdates.reportedBy);
   }
 
   @Override
@@ -126,7 +126,7 @@ public class HealthResponseUnknownReportedForks {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class HealthResponseUnknownReportedForks {\n");
+    sb.append("class HealthResponseUnknownReportedProtocolUpdates {\n");
     sb.append("    name: ").append(toIndentedString(name)).append("\n");
     sb.append("    reportedBy: ").append(toIndentedString(reportedBy)).append("\n");
     sb.append("}");

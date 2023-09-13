@@ -28,14 +28,14 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * ExecutedFork
+ * ExecutedProtocolUpdate
  */
 @JsonPropertyOrder({
-  ExecutedFork.JSON_PROPERTY_EPOCH,
-  ExecutedFork.JSON_PROPERTY_NAME
+  ExecutedProtocolUpdate.JSON_PROPERTY_EPOCH,
+  ExecutedProtocolUpdate.JSON_PROPERTY_NAME
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class ExecutedFork {
+public class ExecutedProtocolUpdate {
   public static final String JSON_PROPERTY_EPOCH = "epoch";
   private Long epoch;
 
@@ -43,7 +43,7 @@ public class ExecutedFork {
   private String name;
 
 
-  public ExecutedFork epoch(Long epoch) {
+  public ExecutedProtocolUpdate epoch(Long epoch) {
     this.epoch = epoch;
     return this;
   }
@@ -69,7 +69,7 @@ public class ExecutedFork {
   }
 
 
-  public ExecutedFork name(String name) {
+  public ExecutedProtocolUpdate name(String name) {
     this.name = name;
     return this;
   }
@@ -96,7 +96,7 @@ public class ExecutedFork {
 
 
   /**
-   * Return true if this ExecutedFork object is equal to o.
+   * Return true if this ExecutedProtocolUpdate object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -106,9 +106,9 @@ public class ExecutedFork {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ExecutedFork executedFork = (ExecutedFork) o;
-    return Objects.equals(this.epoch, executedFork.epoch) &&
-        Objects.equals(this.name, executedFork.name);
+    ExecutedProtocolUpdate executedProtocolUpdate = (ExecutedProtocolUpdate) o;
+    return Objects.equals(this.epoch, executedProtocolUpdate.epoch) &&
+        Objects.equals(this.name, executedProtocolUpdate.name);
   }
 
   @Override
@@ -119,7 +119,7 @@ public class ExecutedFork {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ExecutedFork {\n");
+    sb.append("class ExecutedProtocolUpdate {\n");
     sb.append("    epoch: ").append(toIndentedString(epoch)).append("\n");
     sb.append("    name: ").append(toIndentedString(name)).append("\n");
     sb.append("}");

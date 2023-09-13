@@ -156,7 +156,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
       P2PConfig config,
       Addressing addressing,
       Network network,
-      String newestForkName,
+      ProtocolUpdateId newestProtocolUpdateId,
       Metrics metrics,
       Serialization serialization,
       SecureRandom secureRandom,
@@ -180,7 +180,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
             ecKeyOps,
             network,
             NETWORK_VERSION,
-            newestForkName,
+            newestProtocolUpdateId.name(),
             capabilities);
     this.nettyChannel = requireNonNull(nettyChannel);
     this.remoteAddress = requireNonNull(remoteAddress);

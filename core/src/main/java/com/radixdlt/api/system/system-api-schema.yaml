@@ -197,10 +197,10 @@ components:
       type: object
       required:
         - status
-        - current_fork_name
-        - executed_forks
-        - fork_vote_status
-        - unknown_reported_forks
+        - current_protocol_update_name
+        - executed_protocol_updates
+        - protocol_update_readiness_signal_status
+        - unknown_reported_protocol_updates
       properties:
         status:
           type: string
@@ -211,18 +211,18 @@ components:
             - UP
             - STALLED
             - OUT_OF_SYNC
-        current_fork_name:
+        current_protocol_update_name:
           type: string
-        executed_forks:
+        executed_protocol_updates:
           type: array
           items:
-            $ref: "#/components/schemas/ExecutedFork"
-        fork_vote_status:
+            $ref: "#/components/schemas/ExecutedProtocolUpdate"
+        protocol_update_readiness_signal_status:
           type: string
           enum:
-            - VOTE_REQUIRED
+            - READINESS_SIGNAL_REQUIRED
             - NO_ACTION_NEEDED
-        unknown_reported_forks:
+        unknown_reported_protocol_updates:
           type: array
           items:
             type: object
@@ -435,7 +435,7 @@ components:
           format: int32
         message:
           type: string
-    ExecutedFork:
+    ExecutedProtocolUpdate:
       type: object
       required:
         - epoch

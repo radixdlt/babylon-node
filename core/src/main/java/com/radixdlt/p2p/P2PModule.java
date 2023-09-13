@@ -85,6 +85,7 @@ import com.radixdlt.p2p.hostip.HostIpModule;
 import com.radixdlt.p2p.transport.PeerOutboundBootstrap;
 import com.radixdlt.p2p.transport.PeerOutboundBootstrapImpl;
 import com.radixdlt.p2p.transport.PeerServerBootstrap;
+import com.radixdlt.p2p.transport.ProtocolUpdateId;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.BerkeleyDbDefaults;
 import com.radixdlt.store.NodeStorageLocation;
@@ -104,6 +105,9 @@ public final class P2PModule extends AbstractModule {
             .permitDuplicates();
     eventBinder.addBinding().toInstance(PeerEvent.class);
     eventBinder.addBinding().toInstance(PeerOutboundConnectionTimeout.class);
+
+    // TODO(when introducing actual protocol updates): design how to manage this
+    bind(ProtocolUpdateId.class).toInstance(new ProtocolUpdateId("babylon-v1"));
 
     bind(AddressBook.class).in(Scopes.SINGLETON);
     bind(PeersView.class).to(PeerManagerPeersView.class).in(Scopes.SINGLETON);

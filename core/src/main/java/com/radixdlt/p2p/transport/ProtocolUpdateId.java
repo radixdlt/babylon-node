@@ -62,43 +62,6 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system.routes;
+package com.radixdlt.p2p.transport;
 
-import com.google.inject.Inject;
-import com.radixdlt.api.system.SystemGetJsonHandler;
-import com.radixdlt.api.system.generated.models.HealthResponse;
-import com.radixdlt.api.system.health.HealthInfoService;
-import com.radixdlt.p2p.transport.ProtocolUpdateId;
-import java.util.List;
-
-public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
-  private final HealthInfoService healthInfoService;
-  private final ProtocolUpdateId newestProtocolUpdateId;
-
-  @Inject
-  HealthHandler(HealthInfoService healthInfoService, ProtocolUpdateId newestProtocolUpdateId) {
-    super();
-    this.healthInfoService = healthInfoService;
-    this.newestProtocolUpdateId = newestProtocolUpdateId;
-  }
-
-  @Override
-  public HealthResponse handleRequest() {
-    final var status =
-        switch (healthInfoService.nodeStatus()) {
-          case BOOTING_PRE_GENESIS -> HealthResponse.StatusEnum.BOOTING_PRE_GENESIS;
-          case BOOTING_AT_GENESIS -> HealthResponse.StatusEnum.BOOTING_AT_GENESIS;
-          case SYNCING -> HealthResponse.StatusEnum.SYNCING;
-          case UP -> HealthResponse.StatusEnum.UP;
-          case STALLED -> HealthResponse.StatusEnum.STALLED;
-          case OUT_OF_SYNC -> HealthResponse.StatusEnum.OUT_OF_SYNC;
-        };
-
-    return new HealthResponse()
-        .status(status)
-        .currentProtocolUpdateName(newestProtocolUpdateId.name())
-        .protocolUpdateReadinessSignalStatus(
-            HealthResponse.ProtocolUpdateReadinessSignalStatusEnum.NO_ACTION_NEEDED)
-        .unknownReportedProtocolUpdates(List.of());
-  }
-}
+public record ProtocolUpdateId(String name) {}
