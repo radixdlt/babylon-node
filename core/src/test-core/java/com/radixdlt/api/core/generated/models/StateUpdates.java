@@ -25,6 +25,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.CreatedSubstate;
 import com.radixdlt.api.core.generated.models.DeletedSubstate;
 import com.radixdlt.api.core.generated.models.EntityReference;
+import com.radixdlt.api.core.generated.models.PartitionId;
 import com.radixdlt.api.core.generated.models.UpdatedSubstate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -38,6 +39,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @ApiModel(description = "Transaction state updates (only present if status is Succeeded or Failed)")
 @JsonPropertyOrder({
+  StateUpdates.JSON_PROPERTY_DELETED_PARTITIONS,
   StateUpdates.JSON_PROPERTY_CREATED_SUBSTATES,
   StateUpdates.JSON_PROPERTY_UPDATED_SUBSTATES,
   StateUpdates.JSON_PROPERTY_DELETED_SUBSTATES,
@@ -45,6 +47,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class StateUpdates {
+  public static final String JSON_PROPERTY_DELETED_PARTITIONS = "deleted_partitions";
+  private List<PartitionId> deletedPartitions = new ArrayList<>();
+
   public static final String JSON_PROPERTY_CREATED_SUBSTATES = "created_substates";
   private List<CreatedSubstate> createdSubstates = new ArrayList<>();
 
@@ -59,6 +64,37 @@ public class StateUpdates {
 
   public StateUpdates() { 
   }
+
+  public StateUpdates deletedPartitions(List<PartitionId> deletedPartitions) {
+    this.deletedPartitions = deletedPartitions;
+    return this;
+  }
+
+  public StateUpdates addDeletedPartitionsItem(PartitionId deletedPartitionsItem) {
+    this.deletedPartitions.add(deletedPartitionsItem);
+    return this;
+  }
+
+   /**
+   * Get deletedPartitions
+   * @return deletedPartitions
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_DELETED_PARTITIONS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public List<PartitionId> getDeletedPartitions() {
+    return deletedPartitions;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_DELETED_PARTITIONS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setDeletedPartitions(List<PartitionId> deletedPartitions) {
+    this.deletedPartitions = deletedPartitions;
+  }
+
 
   public StateUpdates createdSubstates(List<CreatedSubstate> createdSubstates) {
     this.createdSubstates = createdSubstates;
@@ -196,7 +232,8 @@ public class StateUpdates {
       return false;
     }
     StateUpdates stateUpdates = (StateUpdates) o;
-    return Objects.equals(this.createdSubstates, stateUpdates.createdSubstates) &&
+    return Objects.equals(this.deletedPartitions, stateUpdates.deletedPartitions) &&
+        Objects.equals(this.createdSubstates, stateUpdates.createdSubstates) &&
         Objects.equals(this.updatedSubstates, stateUpdates.updatedSubstates) &&
         Objects.equals(this.deletedSubstates, stateUpdates.deletedSubstates) &&
         Objects.equals(this.newGlobalEntities, stateUpdates.newGlobalEntities);
@@ -204,13 +241,14 @@ public class StateUpdates {
 
   @Override
   public int hashCode() {
-    return Objects.hash(createdSubstates, updatedSubstates, deletedSubstates, newGlobalEntities);
+    return Objects.hash(deletedPartitions, createdSubstates, updatedSubstates, deletedSubstates, newGlobalEntities);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class StateUpdates {\n");
+    sb.append("    deletedPartitions: ").append(toIndentedString(deletedPartitions)).append("\n");
     sb.append("    createdSubstates: ").append(toIndentedString(createdSubstates)).append("\n");
     sb.append("    updatedSubstates: ").append(toIndentedString(updatedSubstates)).append("\n");
     sb.append("    deletedSubstates: ").append(toIndentedString(deletedSubstates)).append("\n");

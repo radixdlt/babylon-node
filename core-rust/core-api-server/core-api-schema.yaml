@@ -1821,11 +1821,16 @@ components:
       type: object
       description: Transaction state updates (only present if status is Succeeded or Failed)
       required:
+        - deleted_partitions
         - created_substates
         - updated_substates
         - deleted_substates
         - new_global_entities
       properties:
+        deleted_partitions:
+          type: array
+          items:
+            $ref: "#/components/schemas/PartitionId"
         created_substates:
           type: array
           items:
@@ -1931,7 +1936,7 @@ components:
           type: boolean
         entity_address:
           $ref: "#/components/schemas/EntityAddress"
-    SubstateId:
+    PartitionId:
       type: object
       required:
         - entity_type
@@ -1939,8 +1944,6 @@ components:
         - entity_module
         - partition_kind
         - partition_number
-        - substate_type
-        - substate_key
       properties:
         entity_type:
           $ref: "#/components/schemas/EntityType"
@@ -1955,10 +1958,18 @@ components:
           format: int32
           minimum: 0
           maximum: 255
-        substate_type:
-          $ref: "#/components/schemas/SubstateType"
-        substate_key:
-          $ref: "#/components/schemas/SubstateKey"
+    SubstateId:
+      allOf:
+        - $ref: "#/components/schemas/PartitionId"
+        - type: object
+          required:
+            - substate_type
+            - substate_key
+          properties:
+            substate_type:
+              $ref: "#/components/schemas/SubstateType"
+            substate_key:
+              $ref: "#/components/schemas/SubstateKey"
     EntityModule:
       type: string
       enum:
