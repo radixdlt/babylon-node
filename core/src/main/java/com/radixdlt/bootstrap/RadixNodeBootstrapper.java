@@ -75,6 +75,7 @@ import com.google.inject.util.Modules;
 import com.radixdlt.UnstartedRadixNode;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.api.system.SystemApi;
+import com.radixdlt.config.SelfValidatorAddressConfig;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.Hasher;
@@ -88,6 +89,7 @@ import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.networks.FixedNetworkGenesis;
 import com.radixdlt.networks.Network;
+import com.radixdlt.p2p.discovery.SeedNodesConfigParser;
 import com.radixdlt.sbor.NodeSborCodecs;
 import com.radixdlt.store.NodeStorageLocation;
 import com.radixdlt.utils.WrappedByteArray;
@@ -154,6 +156,7 @@ public final class RadixNodeBootstrapper {
   private final GenesisFromPropertiesLoader genesisFromPropertiesLoader;
   private final GenesisStore genesisStore;
   private final File nodeStorageDir;
+  private final SeedNodesConfigParser seedNodesConfigParser;
 
   @Inject
   public RadixNodeBootstrapper(
@@ -164,7 +167,8 @@ public final class RadixNodeBootstrapper {
       RuntimeProperties properties,
       GenesisFromPropertiesLoader genesisFromPropertiesLoader,
       GenesisStore genesisStore,
-      @NodeStorageLocation String nodeStorageLocation) {
+      @NodeStorageLocation String nodeStorageLocation,
+      SeedNodesConfigParser seedNodesConfigParser) {
     this.selfPublicKey = selfPublicKey;
     this.network = network;
     this.addressing = addressing;
@@ -173,16 +177,29 @@ public final class RadixNodeBootstrapper {
     this.genesisFromPropertiesLoader = genesisFromPropertiesLoader;
     this.genesisStore = genesisStore;
     this.nodeStorageDir = new File(nodeStorageLocation);
+    this.seedNodesConfigParser = seedNodesConfigParser;
   }
 
   public RadixNodeBootstrapperHandle bootstrapRadixNode() {
     log.info("Radix node {} is booting...", addressing.encodeNodeAddress(selfPublicKey));
+
+    // An early check for validator address misconfiguration
+    final var selfValidatorAddressConfig =
+        SelfValidatorAddressConfig.fromRuntimeProperties(properties, addressing);
 
     // An early check for storage misconfiguration
     final var storageVerifyResult = verifyNodeStorageDirIsWritable();
     if (storageVerifyResult.isError()) {
       return new RadixNodeBootstrapperHandle.Failed(
           new RuntimeException(storageVerifyResult.unwrapError()));
+    }
+
+    // An early check for seed nodes misconfiguration
+    final var seedNodes = seedNodesConfigParser.getResolvedSeedNodes();
+    if (seedNodes.isEmpty()) {
+      log.warn(
+          "Warning! No valid seed nodes have been configured for this node."
+              + " Check your `network.p2p.seed_nodes` configuration!");
     }
 
     // Genesis source #1: node configuration parameters / genesis file
@@ -210,6 +227,27 @@ public final class RadixNodeBootstrapper {
       final var useOlympiaFlagIsSet = properties.get("genesis.use_olympia", false);
       if (useOlympiaFlagIsSet) {
         final var olympiaBootstrapper = new OlympiaGenesisBootstrapper();
+        switch (selfValidatorAddressConfig) {
+          case SelfValidatorAddressConfig.Set set -> {
+            log.warn(
+                "This node has been configured to acquire the genesis data from Olympia."
+                    + " The `consensus.validator_address` property that has been set is most likely"
+                    + " a misconfiguration. If you were a registered Olympia validator"
+                    + " (and you are reusing the same node key for this Babylon node) consider"
+                    + " setting `consensus.use_genesis_for_validator_address=true` instead.");
+          }
+          case SelfValidatorAddressConfig.Unset unset -> {
+            log.warn(
+                "This node has been configured to acquire the genesis data from Olympia, and it"
+                    + " will boot up as a non-validating full node. If you were a registered"
+                    + " Olympia validator (and you are reusing the same node key for this Babylon"
+                    + " node) consider setting"
+                    + " `consensus.use_genesis_for_validator_address=true`.");
+          }
+          case SelfValidatorAddressConfig.FromGenesis fromGenesis -> {
+            // All good, no warning here
+          }
+        }
         olympiaBootstrapper.start();
         return new RadixNodeBootstrapperHandle.AsyncFromOlympia(olympiaBootstrapper);
       } else {
