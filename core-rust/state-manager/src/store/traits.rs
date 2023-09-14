@@ -314,9 +314,10 @@ pub mod commit {
     use crate::accumulator_tree::storage::TreeSlice;
     use crate::{ReceiptTreeHash, StateVersion, TransactionTreeHash};
 
-    use radix_engine_store_interface::interface::DatabaseUpdates;
-    use radix_engine_stores::hash_tree::tree_store::{NodeKey, TreeNode};
-    use utils::rust::collections::IndexMap;
+    use radix_engine_store_interface::interface::{
+        DatabaseUpdate, DatabaseUpdates, NodeDatabaseUpdates, PartitionDatabaseUpdates,
+    };
+    use radix_engine_stores::hash_tree::tree_store::{NodeKey, StaleTreePart, TreeNode};
 
     pub struct CommitBundle {
         pub transactions: Vec<CommittedTransactionBundle>,
@@ -336,7 +337,7 @@ pub mod commit {
     impl SubstateStoreUpdate {
         pub fn new() -> Self {
             Self {
-                updates: IndexMap::new(),
+                updates: DatabaseUpdates::default(),
             }
         }
 
@@ -347,17 +348,60 @@ pub mod commit {
         }
 
         pub fn apply(&mut self, database_updates: DatabaseUpdates) {
-            if self.updates.is_empty() {
+            if self.updates.node_updates.is_empty() {
                 self.updates = database_updates;
                 return;
             }
-            for (partition_key, partition_updates) in database_updates {
-                let curr_partition_updates = self
-                    .updates
-                    .entry(partition_key)
-                    .or_insert_with(IndexMap::new);
-                for (sort_key, database_update) in partition_updates {
-                    curr_partition_updates.insert(sort_key, database_update);
+            for (node_key, node_updates) in database_updates.node_updates {
+                Self::merge_in_node_updates(
+                    self.updates.node_updates.entry(node_key).or_default(),
+                    node_updates,
+                );
+            }
+        }
+
+        fn merge_in_node_updates(target: &mut NodeDatabaseUpdates, source: NodeDatabaseUpdates) {
+            for (partition_num, partition_updates) in source.partition_updates {
+                Self::merge_in_partition_updates(
+                    target.partition_updates.entry(partition_num).or_default(),
+                    partition_updates,
+                );
+            }
+        }
+
+        fn merge_in_partition_updates(
+            target: &mut PartitionDatabaseUpdates,
+            source: PartitionDatabaseUpdates,
+        ) {
+            match source {
+                PartitionDatabaseUpdates::Delta {
+                    substate_updates: source_updates,
+                } => match target {
+                    PartitionDatabaseUpdates::Delta {
+                        substate_updates: target_updates,
+                    } => {
+                        target_updates.extend(source_updates);
+                    }
+                    PartitionDatabaseUpdates::Reset {
+                        new_substate_values: target_values,
+                    } => {
+                        for (sort_key, update) in source_updates {
+                            match update {
+                                DatabaseUpdate::Set(value) => {
+                                    target_values.insert(sort_key, value);
+                                }
+                                DatabaseUpdate::Delete => {
+                                    let existed = target_values.remove(&sort_key).is_some();
+                                    if !existed {
+                                        panic!("broken invariant: deleting non-existent substate");
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                PartitionDatabaseUpdates::Reset { .. } => {
+                    *target = source;
                 }
             }
         }
@@ -371,31 +415,28 @@ pub mod commit {
 
     pub struct HashTreeUpdate {
         pub new_nodes: Vec<(NodeKey, TreeNode)>,
-        pub stale_node_keys_at_state_version: Vec<(StateVersion, Vec<NodeKey>)>,
+        pub stale_tree_parts_at_state_version: Vec<(StateVersion, Vec<StaleTreePart>)>,
     }
 
     impl HashTreeUpdate {
         pub fn new() -> Self {
             Self {
                 new_nodes: Vec::new(),
-                stale_node_keys_at_state_version: Vec::new(),
+                stale_tree_parts_at_state_version: Vec::new(),
             }
         }
 
         pub fn from_single(at_state_version: StateVersion, diff: StateHashTreeDiff) -> Self {
             Self {
                 new_nodes: diff.new_nodes,
-                stale_node_keys_at_state_version: vec![(
-                    at_state_version,
-                    diff.stale_hash_tree_node_keys,
-                )],
+                stale_tree_parts_at_state_version: vec![(at_state_version, diff.stale_tree_parts)],
             }
         }
 
         pub fn add(&mut self, at_state_version: StateVersion, diff: StateHashTreeDiff) {
             self.new_nodes.extend(diff.new_nodes);
-            self.stale_node_keys_at_state_version
-                .push((at_state_version, diff.stale_hash_tree_node_keys));
+            self.stale_tree_parts_at_state_version
+                .push((at_state_version, diff.stale_tree_parts));
         }
     }
 

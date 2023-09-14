@@ -22,13 +22,14 @@ use super::*;
 
 pub fn to_api_substate(
     context: &MappingContext,
+    state_mapping_lookups: &StateMappingLookups,
     typed_substate_key: &TypedSubstateKey,
     typed_substate_value: &TypedSubstateValue,
 ) -> Result<models::Substate, MappingError> {
     Ok(match typed_substate_value {
         TypedSubstateValue::TypeInfoModule(TypedTypeInfoModuleSubstateValue::TypeInfo(
             type_info_substate,
-        )) => to_api_type_info_substate(context, type_info_substate)?,
+        )) => to_api_type_info_substate(context, state_mapping_lookups, type_info_substate)?,
         TypedSubstateValue::RoleAssignmentModule(
             TypedRoleAssignmentModuleSubstateValue::OwnerRole(substate),
         ) => to_api_owner_role_substate(context, substate)?,

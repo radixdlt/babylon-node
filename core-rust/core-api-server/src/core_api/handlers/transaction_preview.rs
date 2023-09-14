@@ -1,8 +1,6 @@
 use crate::core_api::*;
-use radix_engine::transaction::{PreviewError, TransactionResult};
-use radix_engine_common::crypto::PublicKey;
-use radix_engine_common::data::scrypto::scrypto_encode;
-use radix_engine_interface::network::NetworkDefinition;
+use radix_engine::prelude::*;
+use radix_engine::transaction::*;
 use std::ops::Range;
 
 use state_manager::transaction::ProcessedPreviewResult;
@@ -100,8 +98,11 @@ fn to_api_response(
     context: &MappingContext,
     result: ProcessedPreviewResult,
 ) -> Result<models::TransactionPreviewResponse, ResponseError<()>> {
-    let receipt = result.receipt;
-    let encoded_receipt = to_hex(scrypto_encode(&receipt).unwrap());
+    let engine_receipt = result.receipt;
+    let versioned_engine_receipt = engine_receipt.clone().into_versioned();
+
+    // This is interpreted by the toolkit in the wallet
+    let encoded_receipt = to_hex(scrypto_encode(&versioned_engine_receipt).unwrap());
 
     let at_ledger_state = Box::new(to_api_ledger_state_summary(
         context,
@@ -109,12 +110,12 @@ fn to_api_response(
     )?);
 
     let execution_fee_data = ExecutionFeeData {
-        fee_summary: receipt.fee_summary,
-        engine_costing_parameters: receipt.costing_parameters,
-        transaction_costing_parameters: receipt.transaction_costing_parameters,
+        fee_summary: engine_receipt.fee_summary,
+        engine_costing_parameters: engine_receipt.costing_parameters,
+        transaction_costing_parameters: engine_receipt.transaction_costing_parameters,
     };
 
-    let response = match receipt.result {
+    let response = match engine_receipt.result {
         TransactionResult::Commit(commit_result) => {
             let mut instruction_resource_changes = Vec::new();
 
@@ -170,7 +171,7 @@ fn to_api_response(
             models::TransactionPreviewResponse {
                 at_ledger_state,
                 encoded_receipt,
-                receipt: Box::new(to_api_receipt(context, local_receipt)?),
+                receipt: Box::new(to_api_receipt(None, context, local_receipt)?),
                 instruction_resource_changes,
                 logs,
             }

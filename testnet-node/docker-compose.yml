@@ -4,7 +4,7 @@ services:
   core:
     container_name: radixdlt-zabanet-node
     #### Chose to either uncomment "image" or "build" to either pull the image from dockerhub or build locally from source
-    image: radixdlt/babylon-node:rcnet-v3-r4
+    image: radixdlt/babylon-node:rcnet-v3.1-r1
     # build:
     #   context: ..
     #   dockerfile: Dockerfile

@@ -2,9 +2,12 @@ use crate::core_api::*;
 
 use radix_engine::types::hash;
 
-use state_manager::store::traits::*;
-use state_manager::{transaction::*, LedgerHeader, LedgerProof};
-use state_manager::{CommittedTransactionIdentifiers, LocalTransactionReceipt, StateVersion};
+use state_manager::store::{traits::*, StateManagerDatabase};
+use state_manager::transaction::*;
+use state_manager::{
+    CommittedTransactionIdentifiers, LedgerHeader, LedgerProof, LocalTransactionReceipt,
+    StateVersion,
+};
 
 use transaction::manifest;
 use transaction::prelude::*;
@@ -101,6 +104,7 @@ pub(crate) async fn handle_stream_transactions(
             }
         })?;
         let committed_transaction = to_api_committed_transaction(
+            Some(&database),
             &mapping_context,
             state_version,
             raw,
@@ -226,6 +230,7 @@ pub fn to_api_ledger_header(
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_committed_transaction(
+    database: Option<&StateManagerDatabase>,
     context: &MappingContext,
     state_version: StateVersion,
     raw_ledger_transaction: RawLedgerTransaction,
@@ -233,7 +238,7 @@ pub fn to_api_committed_transaction(
     receipt: LocalTransactionReceipt,
     identifiers: CommittedTransactionIdentifiers,
 ) -> Result<models::CommittedTransaction, MappingError> {
-    let receipt = to_api_receipt(context, receipt)?;
+    let receipt = to_api_receipt(database, context, receipt)?;
 
     Ok(models::CommittedTransaction {
         resultant_state_identifiers: Box::new(to_api_committed_state_identifiers(
@@ -246,6 +251,7 @@ pub fn to_api_committed_transaction(
             &ledger_transaction,
             &identifiers.payload,
         )?),
+        proposer_timestamp_ms: identifiers.proposer_timestamp_ms,
         receipt: Box::new(receipt),
     })
 }

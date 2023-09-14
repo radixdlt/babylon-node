@@ -82,19 +82,16 @@ use radix_engine_interface::prelude::*;
 
 use crate::staging::ReadableStore;
 
-use radix_engine::track::SystemUpdates;
+use radix_engine::track::{NodeStateUpdates, PartitionStateUpdates, StateUpdates};
 
 use crate::staging::node_ancestry_resolver::NodeAncestryResolver;
 use crate::staging::overlays::{MapSubstateNodeAncestryStore, StagedSubstateNodeAncestryStore};
 use crate::store::traits::{KeyedSubstateNodeAncestryRecord, SubstateNodeAncestryStore};
 use node_common::utils::IsAccountExt;
-use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
-use radix_engine_store_interface::interface::{DatabaseUpdate, DatabaseUpdates, SubstateDatabase};
-use radix_engine_stores::hash_tree::tree_store::{
-    NodeKey, ReadableTreeStore, TreeNode, WriteableTreeStore,
-};
-use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
-use sbor::HasLatestVersion;
+use radix_engine_store_interface::db_key_mapper::*;
+use radix_engine_store_interface::interface::*;
+use radix_engine_stores::hash_tree::tree_store::*;
+use radix_engine_stores::hash_tree::*;
 use transaction::prelude::TransactionCostingParameters;
 
 pub enum ProcessedTransactionReceipt {
@@ -202,12 +199,10 @@ impl ProcessedCommitResult {
         let ledger_transaction_hash = *hash_update_context.ledger_transaction_hash;
         let store = hash_update_context.store;
 
-        let database_updates = commit_result.state_updates.database_updates.clone();
+        let substate_changes =
+            Self::compute_substate_changes::<S, D>(store, &commit_result.state_updates);
 
-        let substate_changes = Self::compute_substate_changes::<S, D>(
-            store,
-            &commit_result.state_updates.system_updates,
-        );
+        let database_updates = commit_result.state_updates.create_database_updates::<D>();
 
         let global_balance_update = Self::compute_global_balance_update(
             store,
@@ -311,36 +306,49 @@ impl ProcessedCommitResult {
         }
     }
 
+    // I assume we're going to replace BySubstate<ChangeAction> with StateUpdates down the whole stack
     pub fn compute_substate_changes<S: SubstateDatabase, D: DatabaseKeyMapper>(
         store: &S,
-        system_updates: &SystemUpdates,
+        state_updates: &StateUpdates,
     ) -> BySubstate<ChangeAction> {
         let mut substate_changes = BySubstate::new();
-        for ((node_id, partition_num), substate_updates) in system_updates {
-            for (substate_key, update) in substate_updates {
-                let partition_key = D::to_db_partition_key(node_id, *partition_num);
-                let sort_key = D::to_db_sort_key(substate_key);
-
-                let previous_opt = store.get_substate(&partition_key, &sort_key);
-                let change_action_opt = match (update, previous_opt) {
-                    (DatabaseUpdate::Set(new), Some(previous)) if previous != *new => {
-                        Some(ChangeAction::Update {
-                            new: new.clone(),
-                            previous,
-                        })
+        for (node_id, node_updates) in &state_updates.by_node {
+            let by_partition_updates = match node_updates {
+                NodeStateUpdates::Delta { by_partition } => by_partition,
+            };
+            for (partition_num, partition_updates) in by_partition_updates {
+                let substate_updates = match partition_updates {
+                    PartitionStateUpdates::Delta { by_substate } => by_substate,
+                    PartitionStateUpdates::Batch(_) => {
+                        // Ignored for now
+                        continue;
                     }
-                    (DatabaseUpdate::Set(_new), Some(_previous)) => None, // Same value as before (i.e. not really updated), ignore
-                    (DatabaseUpdate::Set(value), None) => {
-                        Some(ChangeAction::Create { new: value.clone() })
-                    }
-                    (DatabaseUpdate::Delete, Some(previous)) => {
-                        Some(ChangeAction::Delete { previous })
-                    }
-                    (DatabaseUpdate::Delete, None) => None, // No value before (i.e. not really deleted), ignore
                 };
+                for (substate_key, update) in substate_updates {
+                    let partition_key = D::to_db_partition_key(node_id, *partition_num);
+                    let sort_key = D::to_db_sort_key(substate_key);
 
-                if let Some(change_action) = change_action_opt {
-                    substate_changes.add(node_id, partition_num, substate_key, change_action);
+                    let previous_opt = store.get_substate(&partition_key, &sort_key);
+                    let change_action_opt = match (update, previous_opt) {
+                        (DatabaseUpdate::Set(new), Some(previous)) if previous != *new => {
+                            Some(ChangeAction::Update {
+                                new: new.clone(),
+                                previous,
+                            })
+                        }
+                        (DatabaseUpdate::Set(_new), Some(_previous)) => None, // Same value as before (i.e. not really updated), ignore
+                        (DatabaseUpdate::Set(value), None) => {
+                            Some(ChangeAction::Create { new: value.clone() })
+                        }
+                        (DatabaseUpdate::Delete, Some(previous)) => {
+                            Some(ChangeAction::Delete { previous })
+                        }
+                        (DatabaseUpdate::Delete, None) => None, // No value before (i.e. not really deleted), ignore
+                    };
+
+                    if let Some(change_action) = change_action_opt {
+                        substate_changes.add(node_id, partition_num, substate_key, change_action);
+                    }
                 }
             }
         }
@@ -352,27 +360,11 @@ impl ProcessedCommitResult {
         parent_state_version: StateVersion,
         database_updates: &DatabaseUpdates,
     ) -> StateHashTreeDiff {
-        let mut hash_changes = Vec::new();
-        for (db_partition_key, partition_updates) in database_updates {
-            for (db_sort_key, database_update) in partition_updates {
-                match database_update {
-                    DatabaseUpdate::Set(value) => hash_changes.push(SubstateHashChange::new(
-                        (db_partition_key.clone(), db_sort_key.clone()),
-                        Some(hash(value)),
-                    )),
-                    DatabaseUpdate::Delete => hash_changes.push(SubstateHashChange::new(
-                        (db_partition_key.clone(), db_sort_key.clone()),
-                        None,
-                    )),
-                }
-            }
-        }
-
         let mut collector = CollectingTreeStore::new(store);
         let root_hash = put_at_next_version(
             &mut collector,
             Some(parent_state_version.number()).filter(|v| *v > 0),
-            hash_changes,
+            database_updates,
         );
         collector.into_diff_with(root_hash)
     }
@@ -419,7 +411,10 @@ impl GlobalBalanceSummary {
             let SubstateReference(root_node_id, root_partition, _) = ancestry.root;
 
             let Ok(root_address) = GlobalAddress::try_from(root_node_id) else {
-                panic!("Root {:?} resolved for vault {:?} is not global", root_node_id, vault_id);
+                panic!(
+                    "Root {:?} resolved for vault {:?} is not global",
+                    root_node_id, vault_id
+                );
             };
 
             // Aggregate (i.e. sum) balance changes for every global root entity.
@@ -513,7 +508,7 @@ pub struct HashStructuresDiff {
 pub struct StateHashTreeDiff {
     pub new_root: StateHash,
     pub new_nodes: Vec<(NodeKey, TreeNode)>,
-    pub stale_hash_tree_node_keys: Vec<NodeKey>,
+    pub stale_tree_parts: Vec<StaleTreePart>,
 }
 
 impl StateHashTreeDiff {
@@ -521,7 +516,7 @@ impl StateHashTreeDiff {
         Self {
             new_root: StateHash::from(Hash([0; Hash::LENGTH])),
             new_nodes: Vec::new(),
-            stale_hash_tree_node_keys: Vec::new(),
+            stale_tree_parts: Vec::new(),
         }
     }
 }
@@ -610,7 +605,7 @@ impl<'s, S> WriteableTreeStore for CollectingTreeStore<'s, S> {
         self.diff.new_nodes.push((key, node));
     }
 
-    fn record_stale_node(&mut self, key: NodeKey) {
-        self.diff.stale_hash_tree_node_keys.push(key);
+    fn record_stale_tree_part(&mut self, part: StaleTreePart) {
+        self.diff.stale_tree_parts.push(part);
     }
 }

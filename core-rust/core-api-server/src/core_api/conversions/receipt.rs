@@ -2,6 +2,7 @@
 
 use super::addressing::*;
 use crate::core_api::*;
+use radix_engine::blueprints::models::KeyValueKeyPayload;
 use radix_engine::types::*;
 
 use radix_engine::system::system_modules::costing::*;
@@ -13,6 +14,8 @@ use radix_engine::transaction::{
     SystemFieldKind, SystemFieldStructure, TransactionFeeSummary,
 };
 use radix_engine_queries::typed_substate_layout::*;
+use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
+use state_manager::store::StateManagerDatabase;
 use transaction::prelude::TransactionCostingParameters;
 
 use state_manager::{
@@ -21,6 +24,7 @@ use state_manager::{
 };
 
 pub fn to_api_receipt(
+    database: Option<&StateManagerDatabase>,
     context: &MappingContext,
     receipt: LocalTransactionReceipt,
 ) -> Result<models::TransactionReceipt, MappingError> {
@@ -39,6 +43,7 @@ pub fn to_api_receipt(
     let on_ledger = receipt.on_ledger;
 
     let api_state_updates = to_api_state_updates(
+        database,
         context,
         &local_execution.substates_system_structure,
         &on_ledger.substate_changes,
@@ -107,148 +112,47 @@ pub fn create_typed_substate_key(
     })
 }
 
-pub struct ValueRepresentations {
-    pub typed: TypedSubstateValue,
-    pub raw: Vec<u8>,
-}
-
-impl ValueRepresentations {
-    pub fn new(typed_substate_key: &TypedSubstateKey, raw: Vec<u8>) -> Result<Self, MappingError> {
-        Ok(Self {
-            typed: to_typed_substate_value(typed_substate_key, raw.as_ref()).map_err(|msg| {
-                MappingError::SubstateValue {
-                    bytes: raw.clone(),
-                    message: msg,
-                }
-            })?,
-            raw,
-        })
-    }
-}
-
-#[tracing::instrument(skip_all)]
-pub fn to_api_created_substate(
-    context: &MappingContext,
-    node_id: &NodeId,
-    partition_number: PartitionNumber,
-    substate_key: &SubstateKey,
+pub fn create_typed_substate_value(
     typed_substate_key: &TypedSubstateKey,
-    value_representations: &ValueRepresentations,
-    system_structure: &SubstateSystemStructure,
-) -> Result<models::CreatedSubstate, MappingError> {
-    Ok(models::CreatedSubstate {
-        substate_id: Box::new(to_api_substate_id(
-            context,
-            node_id,
-            partition_number,
-            substate_key,
-            typed_substate_key,
-        )?),
-        value: Box::new(to_api_substate_value(
-            context,
-            typed_substate_key,
-            value_representations,
-        )?),
-        system_structure: Some(to_api_substate_system_structure(context, system_structure)?),
-    })
-}
-
-#[allow(clippy::too_many_arguments)]
-#[tracing::instrument(skip_all)]
-pub fn to_api_updated_substate(
-    context: &MappingContext,
-    node_id: &NodeId,
-    partition_number: PartitionNumber,
-    substate_key: &SubstateKey,
-    typed_substate_key: &TypedSubstateKey,
-    new_value_representations: &ValueRepresentations,
-    previous_value_representations: &ValueRepresentations,
-    system_structure: &SubstateSystemStructure,
-) -> Result<models::UpdatedSubstate, MappingError> {
-    Ok(models::UpdatedSubstate {
-        substate_id: Box::new(to_api_substate_id(
-            context,
-            node_id,
-            partition_number,
-            substate_key,
-            typed_substate_key,
-        )?),
-        new_value: Box::new(to_api_substate_value(
-            context,
-            typed_substate_key,
-            new_value_representations,
-        )?),
-        previous_value: if context.substate_options.include_previous {
-            Some(Box::new(to_api_substate_value(
-                context,
-                typed_substate_key,
-                previous_value_representations,
-            )?))
-        } else {
-            None
-        },
-        system_structure: Some(to_api_substate_system_structure(context, system_structure)?),
+    raw_value: &[u8],
+) -> Result<TypedSubstateValue, MappingError> {
+    to_typed_substate_value(typed_substate_key, raw_value).map_err(|msg| {
+        MappingError::SubstateValue {
+            bytes: raw_value.to_vec(),
+            message: msg,
+        }
     })
 }
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_substate_value(
     context: &MappingContext,
+    state_mapping_lookups: &StateMappingLookups,
     typed_substate_key: &TypedSubstateKey,
-    value_representations: &ValueRepresentations,
+    raw_value: &[u8],
 ) -> Result<models::SubstateValue, MappingError> {
     Ok(models::SubstateValue {
         substate_hex: if context.substate_options.include_raw {
-            Some(to_hex(&value_representations.raw))
+            Some(to_hex(raw_value))
         } else {
             None
         },
         substate_data_hash: if context.substate_options.include_hash {
-            Some(to_hex(hash(&value_representations.raw)))
+            Some(to_hex(hash(raw_value)))
         } else {
             None
         },
         substate_data: if context.substate_options.include_typed {
+            let typed_value = create_typed_substate_value(typed_substate_key, raw_value)?;
             Some(Box::new(to_api_substate(
                 context,
+                state_mapping_lookups,
                 typed_substate_key,
-                &value_representations.typed,
+                &typed_value,
             )?))
         } else {
             None
         },
-    })
-}
-
-#[tracing::instrument(skip_all)]
-pub fn to_api_deleted_substate(
-    context: &MappingContext,
-    node_id: &NodeId,
-    partition_number: PartitionNumber,
-    substate_key: &SubstateKey,
-    typed_substate_key: &TypedSubstateKey,
-    previous_value_representations: &ValueRepresentations,
-    system_structure: &SubstateSystemStructure,
-) -> Result<models::DeletedSubstate, MappingError> {
-    let substate_id = to_api_substate_id(
-        context,
-        node_id,
-        partition_number,
-        substate_key,
-        typed_substate_key,
-    )?;
-    Ok(models::DeletedSubstate {
-        substate_id: Box::new(substate_id),
-        previous_value: if context.substate_options.include_previous {
-            Some(Box::new(to_api_substate_value(
-                context,
-                typed_substate_key,
-                previous_value_representations,
-            )?))
-        } else {
-            None
-        },
-        system_structure: Some(to_api_substate_system_structure(context, system_structure)?),
     })
 }
 
@@ -270,26 +174,14 @@ pub fn to_api_substate_system_structure(
         }
         SubstateSystemStructure::KeyValueStoreEntry(entry) => {
             let KeyValueStoreEntryStructure {
-                key_value_store_address,
-                key_schema_hash,
-                key_local_type_index,
-                value_schema_hash,
-                value_local_type_index,
+                key_full_type_id,
+                value_full_type_id,
             } = entry;
             models::SubstateSystemStructure::KeyValueStoreEntryStructure {
-                key_value_store_address: to_api_entity_address(
+                key_full_type_id: Box::new(to_api_fully_scoped_type_id(context, key_full_type_id)?),
+                value_full_type_id: Box::new(to_api_fully_scoped_type_id(
                     context,
-                    key_value_store_address.as_node_id(),
-                )?,
-                key_schema_hash: to_api_schema_hash(key_schema_hash),
-                key_local_type_index: Box::new(to_api_local_type_index(
-                    context,
-                    key_local_type_index,
-                )?),
-                value_schema_hash: to_api_schema_hash(value_schema_hash),
-                value_local_type_index: Box::new(to_api_local_type_index(
-                    context,
-                    value_local_type_index,
+                    value_full_type_id,
                 )?),
             }
         }
@@ -350,31 +242,36 @@ pub fn to_api_object_substate_type_reference(
 ) -> Result<models::ObjectSubstateTypeReference, MappingError> {
     Ok(match substate_type_reference {
         ObjectSubstateTypeReference::Package(package) => {
-            let PackageTypeReference {
-                package_address,
-                schema_hash,
-                local_type_index,
-            } = package;
+            let PackageTypeReference { full_type_id } = package;
             models::ObjectSubstateTypeReference::PackageObjectSubstateTypeReference {
-                package_address: to_api_entity_address(context, package_address.as_node_id())?,
-                schema_hash: to_api_schema_hash(schema_hash),
-                local_type_index: Box::new(to_api_local_type_index(context, local_type_index)?),
+                full_type_id: Box::new(to_api_fully_scoped_type_id(context, full_type_id)?),
             }
         }
         ObjectSubstateTypeReference::ObjectInstance(instance) => {
             let ObjectInstanceTypeReference {
-                entity_address,
-                schema_hash,
-                instance_type_index,
-                local_type_index,
+                instance_type_id,
+                resolved_full_type_id,
             } = instance;
             models::ObjectSubstateTypeReference::ObjectInstanceTypeReference {
-                entity_address: to_api_entity_address(context, entity_address)?,
-                schema_hash: to_api_schema_hash(schema_hash),
-                instance_type_index: to_api_u8_as_i32(*instance_type_index),
-                local_type_index: Box::new(to_api_local_type_index(context, local_type_index)?),
+                resolved_full_type_id: Box::new(to_api_fully_scoped_type_id(
+                    context,
+                    resolved_full_type_id,
+                )?),
+                generic_index: to_api_u8_as_i32(*instance_type_id),
             }
         }
+    })
+}
+
+pub fn to_api_fully_scoped_type_id(
+    context: &MappingContext,
+    fully_scoped_type_id: &FullyScopedTypeId<impl Into<NodeId> + Clone>,
+) -> Result<models::FullyScopedTypeId, MappingError> {
+    let FullyScopedTypeId(address, schema_hash, local_type_id) = fully_scoped_type_id;
+    Ok(models::FullyScopedTypeId {
+        entity_address: to_api_entity_address(context, &address.clone().into())?,
+        schema_hash: to_api_schema_hash(schema_hash),
+        local_type_id: Box::new(to_api_local_type_id(context, local_type_id)?),
     })
 }
 
@@ -401,6 +298,7 @@ pub fn to_api_next_epoch(
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_state_updates(
+    database: Option<&StateManagerDatabase>,
     context: &MappingContext,
     system_structures: &BySubstate<SubstateSystemStructure>,
     substate_changes: &BySubstate<ChangeAction>,
@@ -409,13 +307,26 @@ pub fn to_api_state_updates(
     let mut created_substates = Vec::new();
     let mut updated_substates = Vec::new();
     let mut deleted_substates = Vec::new();
+
+    // Step 1 - First, build actions
+    let mut changes_to_map = Vec::new();
     for (substate_reference, action) in substate_changes.iter() {
-        let SubstateReference(node_id, partition_number, substate_key) = substate_reference;
+        let SubstateReference(node_id, partition_number, substate_key) = &substate_reference;
         let typed_substate_key =
-            create_typed_substate_key(context, &node_id, partition_number, &substate_key)?;
+            create_typed_substate_key(context, node_id, *partition_number, substate_key)?;
         if !typed_substate_key.value_is_mappable() {
             continue;
         }
+        changes_to_map.push((substate_reference, typed_substate_key, action))
+    }
+
+    // Step 2 - Build supplementary lookups from the database
+    let state_mapping_lookups =
+        StateMappingLookups::create_from_database(database, &changes_to_map)?;
+
+    // Step 3 - Map the change actions
+    for (substate_reference, typed_substate_key, action) in changes_to_map.into_iter() {
+        let SubstateReference(node_id, partition_number, substate_key) = substate_reference;
         let system_structure = system_structures
             .get(&node_id, &partition_number, &substate_key)
             .ok_or(MappingError::MissingSystemStructure {
@@ -424,40 +335,64 @@ pub fn to_api_state_updates(
                     node_id, partition_number, substate_key
                 ),
             })?;
-        match action.clone() {
+        let system_structure = Some(to_api_substate_system_structure(context, system_structure)?);
+        let substate_id = Box::new(to_api_substate_id(
+            context,
+            &node_id,
+            partition_number,
+            &substate_key,
+            &typed_substate_key,
+        )?);
+        match action {
             ChangeAction::Create { new } => {
-                created_substates.push(to_api_created_substate(
-                    context,
-                    &node_id,
-                    partition_number,
-                    &substate_key,
-                    &typed_substate_key,
-                    &ValueRepresentations::new(&typed_substate_key, new)?,
+                created_substates.push(models::CreatedSubstate {
+                    substate_id,
+                    value: Box::new(to_api_substate_value(
+                        context,
+                        &state_mapping_lookups,
+                        &typed_substate_key,
+                        new,
+                    )?),
                     system_structure,
-                )?);
+                });
             }
             ChangeAction::Update { previous, new } => {
-                updated_substates.push(to_api_updated_substate(
-                    context,
-                    &node_id,
-                    partition_number,
-                    &substate_key,
-                    &typed_substate_key,
-                    &ValueRepresentations::new(&typed_substate_key, new)?,
-                    &ValueRepresentations::new(&typed_substate_key, previous)?,
+                updated_substates.push(models::UpdatedSubstate {
+                    substate_id,
+                    new_value: Box::new(to_api_substate_value(
+                        context,
+                        &state_mapping_lookups,
+                        &typed_substate_key,
+                        new,
+                    )?),
+                    previous_value: if context.substate_options.include_previous {
+                        Some(Box::new(to_api_substate_value(
+                            context,
+                            &state_mapping_lookups,
+                            &typed_substate_key,
+                            previous,
+                        )?))
+                    } else {
+                        None
+                    },
                     system_structure,
-                )?);
+                });
             }
             ChangeAction::Delete { previous } => {
-                deleted_substates.push(to_api_deleted_substate(
-                    context,
-                    &node_id,
-                    partition_number,
-                    &substate_key,
-                    &typed_substate_key,
-                    &ValueRepresentations::new(&typed_substate_key, previous)?,
+                deleted_substates.push(models::DeletedSubstate {
+                    substate_id,
+                    previous_value: if context.substate_options.include_previous {
+                        Some(Box::new(to_api_substate_value(
+                            context,
+                            &state_mapping_lookups,
+                            &typed_substate_key,
+                            previous,
+                        )?))
+                    } else {
+                        None
+                    },
                     system_structure,
-                )?);
+                });
             }
         }
     }
@@ -490,6 +425,181 @@ pub fn to_api_state_updates(
     })
 }
 
+/// This lookup was introduced near mainnet launch, to avoid needing Gateway to do the resolution of a
+/// `GenericResolution::Remote(BlueprintTypeIdentifier)` into a `FullyScopedTypeId` in the data aggregator.
+///
+/// It is not ideal, and more of a pragamatic workaround to a pre-launch problem.
+///
+/// The `GenericResolution` is only found in the TypeInfo substate, so we first filter to only TypeInfo substates,
+/// and then extract any relevant blueprints, and create a local lookup of those types, for the main mapping steps.
+#[derive(Default)]
+pub struct StateMappingLookups {
+    blueprint_type_lookups: Option<IndexMap<BlueprintId, IndexMap<String, ScopedTypeId>>>,
+}
+
+impl StateMappingLookups {
+    pub fn create_from_database(
+        database: Option<&StateManagerDatabase>,
+        changes_to_map: &[(SubstateReference, TypedSubstateKey, &ChangeAction)],
+    ) -> Result<Self, MappingError> {
+        let Some(database) = database else {
+            return Ok(Self::default());
+        };
+        // First - filter to creating only the typed values which will be needed by lookup construction
+        let mut typed_values = Vec::new();
+        for (_, typed_substate_key, action) in changes_to_map.iter() {
+            if matches!(typed_substate_key, TypedSubstateKey::TypeInfo(_)) {
+                extract_typed_values(&mut typed_values, typed_substate_key, action)?;
+            }
+        }
+        Ok(Self {
+            blueprint_type_lookups: Some(Self::create_blueprint_type_lookups(
+                database,
+                &typed_values,
+            )?),
+        })
+    }
+
+    pub fn resolve_generic_remote(
+        &self,
+        blueprint_type_identifier: &BlueprintTypeIdentifier,
+    ) -> Result<Option<FullyScopedTypeId<NodeId>>, MappingError> {
+        let Some(lookup) = &self.blueprint_type_lookups else {
+            return Ok(None);
+        };
+        let BlueprintTypeIdentifier {
+            package_address,
+            blueprint_name,
+            type_name,
+        } = blueprint_type_identifier;
+        let package_types = lookup.get(&BlueprintId {
+            package_address: *package_address,
+            blueprint_name: blueprint_name.clone(),
+        }).ok_or_else(|| MappingError::CouldNotResolveRemoteGenericSubstitution {
+            message: "Could not find package in existing lookup - likely the lookup was somehow created incomplete".to_string()
+        })?;
+        let resolved = package_types.get(type_name).cloned().ok_or_else(|| {
+            MappingError::CouldNotResolveRemoteGenericSubstitution {
+                message: "Could not find type in package lookup".to_string(),
+            }
+        })?;
+        Ok(Some(resolved.under_node(package_address.into_node_id())))
+    }
+
+    fn create_blueprint_type_lookups(
+        database: &StateManagerDatabase,
+        typed_values: &[TypedSubstateValue],
+    ) -> Result<IndexMap<BlueprintId, IndexMap<String, ScopedTypeId>>, MappingError> {
+        // Step 1 - work out what database reads we need to do
+        let mut blueprints_to_fetch_types = IndexSet::new();
+        for typed_value in typed_values {
+            if let TypedSubstateValue::TypeInfoModule(TypedTypeInfoModuleSubstateValue::TypeInfo(
+                type_info,
+            )) = typed_value
+            {
+                match type_info {
+                    TypeInfoSubstate::Object(object_type_info) => {
+                        for generic_substitution in
+                            &object_type_info.blueprint_info.generic_substitutions
+                        {
+                            register_blueprint_for_adding_to_type_lookup(
+                                &mut blueprints_to_fetch_types,
+                                generic_substitution,
+                            );
+                        }
+                    }
+                    TypeInfoSubstate::KeyValueStore(key_value_store_type_info) => {
+                        let KeyValueStoreGenericSubstitutions {
+                            key_generic_substitution,
+                            value_generic_substitution,
+                            allow_ownership: _,
+                        } = &key_value_store_type_info.generic_substitutions;
+                        register_blueprint_for_adding_to_type_lookup(
+                            &mut blueprints_to_fetch_types,
+                            key_generic_substitution,
+                        );
+                        register_blueprint_for_adding_to_type_lookup(
+                            &mut blueprints_to_fetch_types,
+                            value_generic_substitution,
+                        );
+                    }
+                    TypeInfoSubstate::GlobalAddressReservation(_) => {
+                        return Err(MappingError::UnexpectedPersistedData {
+                            message: "GlobalAddressReservation was persisted".to_string(),
+                        })
+                    }
+                    TypeInfoSubstate::GlobalAddressPhantom(_) => {
+                        return Err(MappingError::UnexpectedPersistedData {
+                            message: "GlobalAddressPhantom was persisted".to_string(),
+                        })
+                    }
+                }
+            }
+        }
+        // Step 2 - Create the lookups from the database
+        let mut blueprint_type_lookups = IndexMap::new();
+        for (package_address, blueprint_name) in blueprints_to_fetch_types {
+            let definition = database.get_mapped::<SpreadPrefixKeyMapper, PackageBlueprintVersionDefinitionEntrySubstate>(
+                package_address.as_node_id(),
+                PackagePartitionOffset::BlueprintVersionDefinitionKeyValue.as_main_partition(),
+                &SubstateKey::Map(scrypto_encode(&PackageBlueprintVersionDefinitionKeyPayload::from_content_source(
+                    BlueprintVersionKey::new_default(blueprint_name.clone())
+                )).unwrap()),
+            ).ok_or_else(|| MappingError::CouldNotResolveRemoteGenericSubstitution {
+                message: "Could not find blueprint definition referenced in Remote Generic Substition, but this was checked by the engine".to_string(),
+            })?
+            .into_value()
+            .ok_or_else(|| MappingError::CouldNotResolveRemoteGenericSubstitution {
+                message: "Blueprint definition was a deleted entry".to_string(),
+            })?;
+            blueprint_type_lookups.insert(
+                BlueprintId {
+                    package_address,
+                    blueprint_name: blueprint_name.clone(),
+                },
+                definition.into_latest().interface.types,
+            );
+        }
+        Ok(blueprint_type_lookups)
+    }
+}
+
+pub fn extract_typed_values(
+    typed_values: &mut Vec<TypedSubstateValue>,
+    typed_substate_key: &TypedSubstateKey,
+    action: &ChangeAction,
+) -> Result<(), MappingError> {
+    match action {
+        ChangeAction::Create { new } => {
+            typed_values.push(create_typed_substate_value(typed_substate_key, new)?);
+        }
+        ChangeAction::Update { new, previous } => {
+            typed_values.push(create_typed_substate_value(typed_substate_key, new)?);
+            typed_values.push(create_typed_substate_value(typed_substate_key, previous)?);
+        }
+        ChangeAction::Delete { previous } => {
+            typed_values.push(create_typed_substate_value(typed_substate_key, previous)?);
+        }
+    }
+    Ok(())
+}
+
+pub fn register_blueprint_for_adding_to_type_lookup(
+    blueprints_to_lookup: &mut IndexSet<(PackageAddress, String)>,
+    generic_substitution: &GenericSubstitution,
+) {
+    match generic_substitution {
+        GenericSubstitution::Local(_) => {}
+        GenericSubstitution::Remote(BlueprintTypeIdentifier {
+            package_address,
+            blueprint_name,
+            type_name: _,
+        }) => {
+            blueprints_to_lookup.insert((*package_address, blueprint_name.clone()));
+        }
+    }
+}
+
 #[tracing::instrument(skip_all)]
 pub fn to_api_event(
     context: &MappingContext,
@@ -520,7 +630,7 @@ pub fn to_api_event(
                 Emitter::Method(node_id, object_module_id) => {
                     models::EventEmitterIdentifier::MethodEventEmitterIdentifier {
                         entity: Box::new(to_api_entity_reference(context, &node_id)?),
-                        object_module_id: to_api_object_module_id(&object_module_id),
+                        object_module_id: to_api_module_id(&object_module_id),
                     }
                 }
             }),

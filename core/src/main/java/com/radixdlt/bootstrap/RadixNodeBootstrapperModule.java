@@ -75,6 +75,8 @@ import com.radixdlt.lang.Either;
 import com.radixdlt.modules.CryptoModule;
 import com.radixdlt.modules.MetricsModule;
 import com.radixdlt.networks.Network;
+import com.radixdlt.p2p.P2PConfig;
+import com.radixdlt.p2p.discovery.SeedNodesConfigParser;
 import com.radixdlt.store.NodeStorageLocation;
 import com.radixdlt.store.NodeStorageLocationFromPropertiesModule;
 import com.radixdlt.utils.properties.RuntimeProperties;
@@ -106,6 +108,11 @@ public final class RadixNodeBootstrapperModule extends AbstractModule {
     // configuration works - this will error at Guice
     // instantiation if the key store isn't found.
     install(new PersistedBFTKeyModule());
+
+    // Similarly this isn't strictly required,
+    // but we're loading it to preverify the seed nodes.
+    bind(P2PConfig.class).toInstance(P2PConfig.fromRuntimeProperties(properties));
+    bind(SeedNodesConfigParser.class).in(Scopes.SINGLETON);
   }
 
   @Provides

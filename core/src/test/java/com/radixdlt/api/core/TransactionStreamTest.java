@@ -119,6 +119,10 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
                           .getTransactions())
                   .getLedgerTransaction();
 
+      // In order for this assertion to pass, we must have downloaded all the scenario transactions
+      // in the above first page of data.
+      // This ensures that genesis and all scenarios must have data which can be mapped by the
+      // Core API Transaction Stream
       assertThat(lastTransaction.getNotarizedTransaction().getPayloadHex())
           .isEqualTo(transaction.hexPayloadBytes());
     }
@@ -247,6 +251,13 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
                       .fromStateVersion(1L));
       assertThat(firstPartResponseWithProofs.getProofs().size()).isEqualTo(13);
 
+      var firstPartCommittedTransactions = firstPartResponse.getTransactions();
+
+      assertThat(
+              firstPartCommittedTransactions.stream()
+                  .map(CommittedTransaction::getProposerTimestampMs))
+          .isSorted();
+
       var proofQuery =
           getStreamApi()
               .streamTransactionsPost(
@@ -286,6 +297,11 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
                       .network(networkLogicalName)
                       .limit(100)
                       .fromStateVersion(lastCommittedTransactionIdentifiers.getStateVersion() + 1));
+
+      assertThat(
+              secondPartCommittedTransactions.getTransactions().stream()
+                  .map(CommittedTransaction::getProposerTimestampMs))
+          .isSorted();
 
       assertThat(secondPartCommittedTransactions.getPreviousStateIdentifiers())
           .isEqualTo(lastCommittedTransactionIdentifiers);

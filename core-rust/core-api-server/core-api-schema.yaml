@@ -52,8 +52,8 @@ openapi: 3.1.0
 # => Hex-encoded hashes should end _hash
 # => Hex-encoded bytes/payload should end _hex and not include _bytes
 info:
-  version: '0.5.0'
-  title: 'Babylon Core API - RCnet v3'
+  version: '0.5.1'
+  title: 'Babylon Core API - RCnet v3.1'
   license:
     name: The Radix License, Version 1.0
     url: https://www.radixfoundation.org/licenses/license-v1
@@ -74,7 +74,7 @@ info:
 
     ## Integration and forward compatibility guarantees
   
-    This version of the Core API belongs to the second release candidate of the Radix Babylon network ("RCnet v3").
+    This version of the Core API belongs to the fourth release candidate of the Radix Babylon network ("RCnet v3.1").
 
     Integrators (such as exchanges) are recommended to use the `/lts/` endpoints - they have been designed to be clear
     and simple for integrators wishing to create and monitor transactions involving fungible transfers to/from accounts.
@@ -2037,7 +2037,7 @@ components:
             - type_id
           properties:
             type_id:
-              $ref: "#/components/schemas/TypeIdentifier"
+              $ref: "#/components/schemas/ScopedTypeId"
     GenericBlueprintPayloadDef:
       allOf:
         - $ref: "#/components/schemas/BlueprintPayloadDef"
@@ -2047,20 +2047,62 @@ components:
           properties:
             generic_index:
               type: integer
-              format: int64
+              format: int32
               minimum: 0
-              maximum: 4294967295
+              maximum: 255
               description: An index within the list of generic type substitutions.
-    TypeIdentifier:
+    FullyScopedTypeId:
       type: object
+      description: |
+        An identifier for a type in the context of a schema in an entity's schema partition.
+
+        Note - this type provides a schema context even for well-known types where this context
+        is effectively irrelevant.
+      required:
+        - entity_address
+        - schema_hash
+        - local_type_id
+      properties:
+        entity_address:
+          $ref: '#/components/schemas/EntityAddress'
+        schema_hash:
+          $ref: '#/components/schemas/SchemaHash'
+        local_type_id:
+          $ref: '#/components/schemas/LocalTypeId'
+    ScopedTypeId:
+      type: object
+      description: |
+        An identifier for a type in the context of a schema.
+
+        The location of the schema store to locate the schema is not included, and
+        is known from context. Currently the schema store will be in the
+        schema partition under a node (typically a package).
+
+        Note - this type provides scoping to a schema even for well-known types where
+        the schema is irrelevant.
       required:
         - schema_hash
-        - local_type_index
+        - local_type_id
       properties:
         schema_hash:
           $ref: '#/components/schemas/SchemaHash'
-        local_type_index:
-          $ref: '#/components/schemas/LocalTypeIndex'
+        local_type_id:
+          $ref: '#/components/schemas/LocalTypeId'
+    BlueprintTypeIdentifier:
+      type: object
+      description: |
+        An identifier for a defined type in the v1 blueprint version under the given package blueprint.
+      required:
+        - package_address
+        - blueprint_name
+        - type_name
+      properties:
+        package_address:
+          $ref: '#/components/schemas/PackageAddress'
+        blueprint_name:
+          type: string
+        type_name:
+          type: string
     SubstateKey:
       type: object
       required:
@@ -2250,7 +2292,7 @@ components:
             entity:
               $ref: "#/components/schemas/EntityReference"
             object_module_id:
-              $ref: "#/components/schemas/ObjectModuleId"
+              $ref: "#/components/schemas/ModuleId"
 
 #################################################
 # GENERAL / SHARED MODELS - keys and signatures #
@@ -2839,6 +2881,7 @@ components:
         - state
         - functions
         - events
+        - types
       properties:
         outer_blueprint:
           type: string
@@ -2868,6 +2911,13 @@ components:
           description: A map from the event name to the event payload type reference.
           additionalProperties:
             $ref: '#/components/schemas/BlueprintPayloadDef'
+        types:
+          type: object
+          description: |
+            A map from the registered type name to the concrete type,
+            resolved against a schema from the package's schema partition.
+          additionalProperties:
+            $ref: '#/components/schemas/ScopedTypeId'
     IndexedStateSchema:
       type: object
       required:
@@ -2945,22 +2995,13 @@ components:
         - $ref: "#/components/schemas/SubstateSystemStructure"
         - type: object
           required:
-            - key_value_store_address
-            - key_schema_hash
-            - key_local_type_index
-            - value_schema_hash
-            - value_local_type_index
+            - key_full_type_id
+            - value_full_type_id
           properties:
-            key_value_store_address:
-              $ref: "#/components/schemas/EntityAddress"
-            key_schema_hash:
-              $ref: '#/components/schemas/SchemaHash'
-            key_local_type_index:
-              $ref: '#/components/schemas/LocalTypeIndex'
-            value_schema_hash:
-              $ref: '#/components/schemas/SchemaHash'
-            value_local_type_index:
-              $ref: '#/components/schemas/LocalTypeIndex'
+            key_full_type_id:
+              $ref: "#/components/schemas/FullyScopedTypeId"
+            value_full_type_id:
+              $ref: '#/components/schemas/FullyScopedTypeId'
     ObjectFieldStructure:
       allOf:
         - $ref: "#/components/schemas/SubstateSystemStructure"
@@ -3023,35 +3064,26 @@ components:
         - $ref: "#/components/schemas/ObjectSubstateTypeReference"
         - type: object
           required:
-            - entity_address
-            - schema_hash
-            - instance_type_index
-            - local_type_index
+            - resolved_full_type_id
+            - generic_index
           properties:
-            entity_address:
-              $ref: "#/components/schemas/EntityAddress"
-            schema_hash:
-              $ref: '#/components/schemas/SchemaHash'
-            instance_type_index:
+            resolved_full_type_id:
+              $ref: "#/components/schemas/FullyScopedTypeId"
+            generic_index:
+              description: |
+                The index of the generic parameter in the instance definition.
+                Was called the `instance_type_index`.
               type: integer
               format: int32
               minimum: 0
               maximum: 255
-            local_type_index:
-              $ref: "#/components/schemas/LocalTypeIndex"
     PackageTypeReference:
       type: object
       required:
-        - package_address
-        - schema_hash
-        - local_type_index
+        - full_type_id
       properties:
-        package_address:
-          $ref: "#/components/schemas/PackageAddress"
-        schema_hash:
-          $ref: '#/components/schemas/SchemaHash'
-        local_type_index:
-          $ref: "#/components/schemas/LocalTypeIndex"
+        full_type_id:
+          $ref: "#/components/schemas/FullyScopedTypeId"
     PackageExport:
       type: object
       required:
@@ -3349,10 +3381,10 @@ components:
         - $ref: "#/components/schemas/BlueprintTypeReference"
         - type: object
           required:
-            - local_type_index
+            - local_type_id
           properties:
-            local_type_index:
-              $ref: "#/components/schemas/LocalTypeIndex"
+            local_type_id:
+              $ref: "#/components/schemas/LocalTypeId"
     InstanceSchemaBlueprintTypeReference:
       allOf:
         - $ref: "#/components/schemas/BlueprintTypeReference"
@@ -3366,11 +3398,11 @@ components:
               minimum: 0
               maximum: 255
               description: Provided by an instance's schema at the given index in its provided types array.
-    LocalTypeIndex:
+    LocalTypeId:
       type: object
       required:
         - kind
-        - index
+        - id
         - as_sbor
       properties:
         kind:
@@ -3379,19 +3411,19 @@ components:
           enum:
             - WellKnown
             - SchemaLocal
-        index:
+        id:
           type: integer
           format: int64
           minimum: 0
           maximum: 4294967295
           description: |
             A reference to a type, interpreted according to `kind`:
-            - if `WellKnown`, then it is a pointer to a well known scrypto type with that ID,
-            - if `SchemaLocal`, then it is a pointer into the given schema.
+            - If `WellKnown`, then it is a pointer to a well known scrypto type with that ID,
+            - If `SchemaLocal`, then it is an index into the given schema.
         as_sbor:
           $ref: '#/components/schemas/SborData'
           description: |
-            The SBOR encoding of the LocalTypeIndex.
+            The SBOR encoding of the LocalTypeId.
             This is useful for passing to the Radix Engine toolkit along with a schema.
     VirtualLazyLoadSchema:
       type: object
@@ -3475,13 +3507,13 @@ components:
     EntityAddress:
       type: string
       description: Bech32m-encoded human readable version of the entity's address (ie the entity's node id)
-    ModuleId:
+    AttachedModuleId:
       type: string
       enum:
         - Metadata
         - Royalty
         - RoleAssignment
-    ObjectModuleId:
+    ModuleId:
       type: string
       enum:
         - Main
@@ -3633,7 +3665,7 @@ components:
         - role_key
       properties:
         object_module_id:
-          $ref: "#/components/schemas/ObjectModuleId"
+          $ref: "#/components/schemas/ModuleId"
         role_key:
           type: string
     MainMethodKey:
@@ -3826,7 +3858,7 @@ components:
         - version
       properties:
         module:
-          $ref: '#/components/schemas/ModuleId'
+          $ref: '#/components/schemas/AttachedModuleId'
         version:
           type: string
           description: A string of `Major.Minor.Patch` where Major, Minor and Patch are all u32s.
@@ -3854,7 +3886,7 @@ components:
         generic_substitutions:
           type: array
           items:
-            $ref: "#/components/schemas/TypeIdentifier"
+            $ref: "#/components/schemas/GenericSubstitution"
     KeyValueStoreTypeInfoDetails:
       allOf:
         - $ref: '#/components/schemas/TypeInfoDetails'
@@ -3873,12 +3905,57 @@ components:
         - allow_ownership
       properties:
         key_generic_substitution:
-          $ref: "#/components/schemas/TypeIdentifier"
+          $ref: "#/components/schemas/GenericSubstitution"
         value_generic_substitution:
-          $ref: "#/components/schemas/TypeIdentifier"
+          $ref: "#/components/schemas/GenericSubstitution"
         allow_ownership:
           type: boolean
           description: Whether the entries of the key-value partition are allowed to own child nodes.
+    GenericSubstitutionType:
+      type: string
+      enum:
+        - Local
+        - Remote
+    GenericSubstitution:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/GenericSubstitutionType'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match TypeInfoType options above
+          Local: '#/components/schemas/LocalGenericSubstitution'
+          Remote: '#/components/schemas/RemoteGenericSubstitution'
+    LocalGenericSubstitution:
+      allOf:
+        - $ref: '#/components/schemas/GenericSubstitution'
+        - type: object
+          description: |
+            The generic substitution is provided by the instance itself.
+            The `scoped_type_id` can be expanded to a `FullyScopedTypeId` by including the current entity's address.
+          required:
+            - scoped_type_id
+          properties:
+            scoped_type_id:
+              $ref: '#/components/schemas/ScopedTypeId'
+    RemoteGenericSubstitution:
+      allOf:
+        - $ref: '#/components/schemas/GenericSubstitution'
+        - type: object
+          description: |
+            The generic substitution is provided remotely by a blueprint type.
+            The `resolved_full_type_id` is added by the node, and is always present in the model returned from the transaction stream API.
+            Other APIs may not resolve the type from the blueprint definition. 
+          required:
+            - blueprint_type_identifier
+          properties:
+            blueprint_type_identifier:
+              $ref: '#/components/schemas/BlueprintTypeIdentifier'
+            resolved_full_type_id:
+              $ref: '#/components/schemas/FullyScopedTypeId'
     RoleAssignmentModuleFieldOwnerRoleSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -6815,6 +6892,7 @@ components:
         - resultant_state_identifiers
         - ledger_transaction
         - receipt
+        - proposer_timestamp_ms
       properties:
         resultant_state_identifiers:
           $ref: "#/components/schemas/CommittedStateIdentifier"
@@ -6822,6 +6900,12 @@ components:
           $ref: "#/components/schemas/LedgerTransaction"
         receipt:
           $ref: "#/components/schemas/TransactionReceipt"
+        proposer_timestamp_ms:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100000000000000
+          description: An integer between `0` and `10^14`, marking the proposer timestamp in ms.
     LedgerProof:
       type: object
       required:
