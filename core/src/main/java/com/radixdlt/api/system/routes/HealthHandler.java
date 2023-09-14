@@ -68,15 +68,19 @@ import com.google.inject.Inject;
 import com.radixdlt.api.system.SystemGetJsonHandler;
 import com.radixdlt.api.system.generated.models.HealthResponse;
 import com.radixdlt.api.system.health.HealthInfoService;
-import java.util.List;
+import com.radixdlt.protocol.Current;
+import com.radixdlt.protocol.ProtocolVersion;
 
 public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
   private final HealthInfoService healthInfoService;
+  private final ProtocolVersion currentProtocolVersion;
 
   @Inject
-  HealthHandler(HealthInfoService healthInfoService) {
+  HealthHandler(
+      HealthInfoService healthInfoService, @Current ProtocolVersion currentProtocolVersion) {
     super();
     this.healthInfoService = healthInfoService;
+    this.currentProtocolVersion = currentProtocolVersion;
   }
 
   @Override
@@ -93,8 +97,6 @@ public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
 
     return new HealthResponse()
         .status(status)
-        .currentForkName("SomeForkName")
-        .forkVoteStatus(HealthResponse.ForkVoteStatusEnum.NO_ACTION_NEEDED)
-        .unknownReportedForks(List.of());
+        .currentProtocolVersion(currentProtocolVersion.name());
   }
 }
