@@ -136,6 +136,12 @@ public final class PeerDiscovery {
       final var seedNodes = seedNodesConfigParser.getResolvedSeedNodes();
       this.addressBook.addUncheckedPeers(seedNodes);
 
+      if (seedNodes.isEmpty() && this.addressBook.knownPeers().isEmpty()) {
+        log.warn(
+            "Warning! No valid seed nodes have been configured for this node."
+                + " Check your `network.p2p.seed_nodes` configuration!");
+      }
+
       final var channels = new ArrayList<>(this.peerManager.activeChannels());
       Collections.shuffle(channels);
       channels.stream()

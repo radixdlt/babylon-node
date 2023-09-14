@@ -241,6 +241,11 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
                       .fromStateVersion(1L))
               .getTransactions();
 
+      assertThat(
+              firstPartCommittedTransactions.stream()
+                  .map(CommittedTransaction::getProposerTimestampMs))
+          .isSorted();
+
       var lastCommittedTransactionIdentifiers =
           firstPartCommittedTransactions
               .get(firstPartCommittedTransactions.size() - 1)
@@ -267,6 +272,11 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
                       .network(networkLogicalName)
                       .limit(100)
                       .fromStateVersion(lastCommittedTransactionIdentifiers.getStateVersion() + 1));
+
+      assertThat(
+              secondPartCommittedTransactions.getTransactions().stream()
+                  .map(CommittedTransaction::getProposerTimestampMs))
+          .isSorted();
 
       assertThat(secondPartCommittedTransactions.getPreviousStateIdentifiers())
           .isEqualTo(lastCommittedTransactionIdentifiers);

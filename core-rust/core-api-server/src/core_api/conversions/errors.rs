@@ -77,7 +77,7 @@ pub enum MappingError {
     MissingSystemStructure {
         message: String,
     },
-    CouldNotResolveRemoteGenericSubstition {
+    CouldNotResolveRemoteGenericSubstitution {
         message: String,
     },
 }

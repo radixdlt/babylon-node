@@ -94,8 +94,7 @@ public class AddressingTest {
   }
 
   @Test
-  public void can_encode_and_decode_a_node_address()
-      throws PublicKeyException, DeserializeException {
+  public void can_encode_and_decode_a_node_address() throws PublicKeyException {
     var pubKey =
         ECDSASecp256k1PublicKey.fromHex(
             "0236856ea9fa8c243e45fc94ec27c29cf3f17e3a9e19a410ee4a41f4858e379918");
@@ -106,8 +105,7 @@ public class AddressingTest {
   }
 
   @Test
-  public void node_address_for_enkinet_is_decoded_correctly()
-      throws PublicKeyException, DeserializeException {
+  public void node_address_for_enkinet_is_decoded_correctly() throws PublicKeyException {
     var address = "node_tdx_21_1qfk895krd3l8t8z7z7p9sxpjdszpal24f6y2sjtqe7mdkhdele5az658ak2";
     var expected =
         ECDSASecp256k1PublicKey.fromHex(

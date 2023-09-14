@@ -67,6 +67,7 @@ package com.radixdlt.consensus.epoch;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.processor.BFTEventProcessor;
@@ -110,6 +111,7 @@ public final class EpochManager {
   private final Hasher hasher;
   private final HashSigner signer;
   private final HashVerifier hashVerifier;
+  private final Addressing addressing;
   private final PacemakerTimeoutCalculator timeoutCalculator;
   private final Metrics metrics;
   private final Map<Long, List<ConsensusEvent>> queuedEvents;
@@ -152,6 +154,7 @@ public final class EpochManager {
       Hasher hasher,
       HashSigner signer,
       HashVerifier hashVerifier,
+      Addressing addressing,
       PacemakerTimeoutCalculator timeoutCalculator,
       PacemakerStateFactory pacemakerStateFactory,
       InitialSafetyStateProvider initialSafetyStateProvider,
@@ -167,6 +170,7 @@ public final class EpochManager {
     this.hasher = requireNonNull(hasher);
     this.signer = requireNonNull(signer);
     this.hashVerifier = requireNonNull(hashVerifier);
+    this.addressing = requireNonNull(addressing);
     this.timeoutCalculator = requireNonNull(timeoutCalculator);
     this.bftFactory = bftFactory;
     this.metrics = requireNonNull(metrics);
@@ -189,6 +193,36 @@ public final class EpochManager {
                     initialSafetyStateProvider.initialSafetyState(selfValidatorId);
                 configureAsActiveValidator(selfValidatorId, initialSafetyState);
               } else {
+                // A check to protect against misconfiguration
+                for (var validator : validatorSet.getValidators()) {
+                  final var addressesMatch =
+                      validator
+                          .getValidatorId()
+                          .getValidatorAddress()
+                          .equals(selfValidatorId.getValidatorAddress());
+                  final var keysMatch =
+                      validator.getValidatorId().getKey().equals(selfValidatorId.getKey());
+                  if (addressesMatch && !keysMatch) {
+                    log.warn(
+                        "This node has been configured as validator {} (included in the validator"
+                            + " set for epoch {}) but its registered public key ({}) doesn't match"
+                            + " this nodes key ({}), therefore this node can't participate in the"
+                            + " consensus on its behalf.",
+                        selfValidatorId.getValidatorAddress(),
+                        this.lastEpochChange.getNextEpoch(),
+                        validator.getValidatorId().getKey().toHex(),
+                        selfValidatorId.getKey().toHex());
+                  } else if (keysMatch && !addressesMatch) {
+                    log.warn(
+                        "There is a validator in the active validator set for epoch {} whose"
+                            + " registered key matches this node's public key, but this node hasn't"
+                            + " been configured to validate. If you wish to validate consider"
+                            + " setting `consensus.validator_address={}`.",
+                        this.lastEpochChange.getNextEpoch(),
+                        addressing.encode(validator.getValidatorId().getValidatorAddress()));
+                  }
+                }
+
                 configureAsNonValidator();
               }
             },

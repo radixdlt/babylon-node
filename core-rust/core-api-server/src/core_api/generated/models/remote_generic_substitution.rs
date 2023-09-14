@@ -12,7 +12,7 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct RemoteGenericSubstition {
+pub struct RemoteGenericSubstitution {
     #[serde(rename = "type")]
     pub _type: crate::core_api::generated::models::GenericSubstitutionType,
     #[serde(rename = "blueprint_type_identifier")]
@@ -21,9 +21,9 @@ pub struct RemoteGenericSubstition {
     pub resolved_full_type_id: Option<Box<crate::core_api::generated::models::FullyScopedTypeId>>,
 }
 
-impl RemoteGenericSubstition {
-    pub fn new(_type: crate::core_api::generated::models::GenericSubstitutionType, blueprint_type_identifier: crate::core_api::generated::models::BlueprintTypeIdentifier) -> RemoteGenericSubstition {
-        RemoteGenericSubstition {
+impl RemoteGenericSubstitution {
+    pub fn new(_type: crate::core_api::generated::models::GenericSubstitutionType, blueprint_type_identifier: crate::core_api::generated::models::BlueprintTypeIdentifier) -> RemoteGenericSubstitution {
+        RemoteGenericSubstitution {
             _type,
             blueprint_type_identifier: Box::new(blueprint_type_identifier),
             resolved_full_type_id: None,

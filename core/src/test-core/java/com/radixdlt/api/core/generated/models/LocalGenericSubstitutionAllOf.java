@@ -33,17 +33,17 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @ApiModel(description = "The generic substitution is provided by the instance itself. The `scoped_type_id` can be expanded to a `FullyScopedTypeId` by including the current entity's address. ")
 @JsonPropertyOrder({
-  LocalGenericSubstitionAllOf.JSON_PROPERTY_SCOPED_TYPE_ID
+  LocalGenericSubstitutionAllOf.JSON_PROPERTY_SCOPED_TYPE_ID
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class LocalGenericSubstitionAllOf {
+public class LocalGenericSubstitutionAllOf {
   public static final String JSON_PROPERTY_SCOPED_TYPE_ID = "scoped_type_id";
   private ScopedTypeId scopedTypeId;
 
-  public LocalGenericSubstitionAllOf() { 
+  public LocalGenericSubstitutionAllOf() { 
   }
 
-  public LocalGenericSubstitionAllOf scopedTypeId(ScopedTypeId scopedTypeId) {
+  public LocalGenericSubstitutionAllOf scopedTypeId(ScopedTypeId scopedTypeId) {
     this.scopedTypeId = scopedTypeId;
     return this;
   }
@@ -70,7 +70,7 @@ public class LocalGenericSubstitionAllOf {
 
 
   /**
-   * Return true if this LocalGenericSubstition_allOf object is equal to o.
+   * Return true if this LocalGenericSubstitution_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -80,8 +80,8 @@ public class LocalGenericSubstitionAllOf {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    LocalGenericSubstitionAllOf localGenericSubstitionAllOf = (LocalGenericSubstitionAllOf) o;
-    return Objects.equals(this.scopedTypeId, localGenericSubstitionAllOf.scopedTypeId);
+    LocalGenericSubstitutionAllOf localGenericSubstitutionAllOf = (LocalGenericSubstitutionAllOf) o;
+    return Objects.equals(this.scopedTypeId, localGenericSubstitutionAllOf.scopedTypeId);
   }
 
   @Override
@@ -92,7 +92,7 @@ public class LocalGenericSubstitionAllOf {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class LocalGenericSubstitionAllOf {\n");
+    sb.append("class LocalGenericSubstitutionAllOf {\n");
     sb.append("    scopedTypeId: ").append(toIndentedString(scopedTypeId)).append("\n");
     sb.append("}");
     return sb.toString();
