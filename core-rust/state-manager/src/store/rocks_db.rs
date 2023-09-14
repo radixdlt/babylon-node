@@ -855,16 +855,9 @@ impl Iterator for RocksDBProofIterator<'_> {
     type Item = LedgerProof;
 
     fn next(&mut self) -> Option<Self::Item> {
-        match self.proofs_iter.next() {
-            None => None,
-            Some(proof) => {
-                let proof_kv = proof.unwrap();
-
-                let proof: LedgerProof = scrypto_decode(proof_kv.1.as_ref()).unwrap();
-
-                Some(proof)
-            }
-        }
+        self.proofs_iter
+            .next()
+            .map(|proof| scrypto_decode(proof.unwrap().1.as_ref()).unwrap())
     }
 }
 

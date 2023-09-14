@@ -1849,7 +1849,11 @@ components:
         - validators
       properties:
         epoch:
-          $ref: "#/components/schemas/Epoch"
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: An integer between `0` and `10^10`, marking the new epoch
         validators:
           type: array
           items:
@@ -6002,9 +6006,19 @@ components:
         - round
       properties:
         epoch:
-          $ref: "#/components/schemas/Epoch"
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: |
+            An integer between `0` and `10^10`, marking the epoch.
+            Only present if the rejection is temporary due to a header specifying a "from epoch" in the future.
         round:
-          $ref: "#/components/schemas/Round"
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: An integer between `0` and `10^10`, marking the current round in an epoch
     CommittedStateIdentifier:
       allOf:
         - type: object
@@ -6909,12 +6923,12 @@ components:
     LedgerProof:
       type: object
       required:
-        - opaque
+        - opaque_hash
         - ledger_header
         - timestamped_signatures
       properties:
         opaque: 
-          $ref: "#/components/schemas/Hash"
+          $ref: "#/components/schemas/OpaqueHash"
         ledger_header:
           $ref: "#/components/schemas/LedgerHeader"
         timestamped_signatures:
@@ -6932,9 +6946,17 @@ components:
         - proposer_timestamp_ms
       properties:
         epoch:
-          $ref: "#/components/schemas/Epoch"
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: An integer between `0` and `10^10`, marking the epoch.
         round:
-          $ref: "#/components/schemas/Round"
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: An integer between `0` and `10^10`, marking the current round in an epoch
         state_version:
           $ref: "#/components/schemas/StateVersion"
         hashes:
@@ -6956,12 +6978,12 @@ components:
     TimestampedValidatorSignature:
       type: object
       required:
-        - key
+        - validator_key
         - validator_address
         - timestamp_ms
         - signature
       properties:
-        key:
+        validator_key:
           $ref: "#/components/schemas/EcdsaSecp256k1PublicKey"
         validator_address:
           $ref: "#/components/schemas/ComponentAddress"
@@ -6973,7 +6995,7 @@ components:
           description: An integer between `0` and `10^14`, marking the unix timestamp in ms.
         signature:
           $ref: "#/components/schemas/EcdsaSecp256k1Signature"
-    Hash:
+    OpaqueHash:
       type: string
       minLength: 64
       maxLength: 64

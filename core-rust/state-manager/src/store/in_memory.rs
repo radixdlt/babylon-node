@@ -473,34 +473,12 @@ impl TransactionIdentifierLoader for InMemoryStore {
     }
 }
 
-pub struct InMemoryProofIterator<'a> {
-    _state_version: StateVersion,
-    _store: &'a InMemoryStore,
-}
-
-impl<'a> InMemoryProofIterator<'a> {
-    fn new(from_state_version: StateVersion, store: &'a InMemoryStore) -> Self {
-        Self {
-            _state_version: from_state_version,
-            _store: store,
-        }
-    }
-}
-
-impl Iterator for InMemoryProofIterator<'_> {
-    type Item = LedgerProof;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        unimplemented!()
-    }
-}
-
 impl IterableProofStore for InMemoryStore {
     fn get_proof_iter(
         &self,
-        from_state_version: StateVersion,
+        _from_state_version: StateVersion,
     ) -> Box<dyn Iterator<Item = LedgerProof> + '_> {
-        Box::new(InMemoryProofIterator::new(from_state_version, self))
+        unimplemented!()
     }
 }
 
