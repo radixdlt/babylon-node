@@ -62,88 +62,17 @@
  * permissions under this License.
  */
 
-package com.radixdlt.p2p.discovery;
+package com.radixdlt.protocol;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.inject.Inject;
-import com.radixdlt.addressing.Addressing;
-import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.exceptions.Bech32DecodeException;
-import com.radixdlt.networks.Network;
-import com.radixdlt.p2p.P2PConfig;
-import com.radixdlt.p2p.RadixNodeUri;
-import com.radixdlt.utils.Pair;
-import java.net.InetAddress;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.UnknownHostException;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import static java.lang.annotation.ElementType.*;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-// TODO: move to PeerDiscovery
-public final class SeedNodesConfigParser {
-  private static final Logger log = LogManager.getLogger();
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
 
-  private final int defaultPort;
-  private final Set<String> unresolvedUris = new HashSet<>();
-  private final Set<RadixNodeUri> resolvedSeedNodes = new HashSet<>();
-  private final Addressing addressing;
-  private final Network network;
-
-  @Inject
-  public SeedNodesConfigParser(P2PConfig config, Network network, Addressing addressing) {
-    this.network = network;
-    this.addressing = addressing;
-    this.defaultPort = config.defaultPort();
-    this.unresolvedUris.addAll(config.seedNodes());
-    this.resolveHostNames();
-  }
-
-  public Set<RadixNodeUri> getResolvedSeedNodes() {
-    this.resolveHostNames();
-    return this.resolvedSeedNodes;
-  }
-
-  private void resolveHostNames() {
-    if (this.unresolvedUris.isEmpty()) {
-      return;
-    }
-
-    final var newlyResolvedHosts =
-        this.unresolvedUris.stream()
-            .map(host -> Pair.of(host, resolveRadixNodeUri(host)))
-            .filter(p -> p.getSecond().isPresent())
-            .collect(ImmutableSet.toImmutableSet());
-
-    final var newlyResolvedHostsNames =
-        newlyResolvedHosts.stream().map(Pair::getFirst).collect(ImmutableSet.toImmutableSet());
-
-    this.unresolvedUris.removeAll(newlyResolvedHostsNames);
-
-    this.resolvedSeedNodes.addAll(
-        newlyResolvedHosts.stream().map(p -> p.getSecond().get()).toList());
-  }
-
-  private Optional<RadixNodeUri> resolveRadixNodeUri(String rawUri) {
-    try {
-      final var parsedUri = new URI(rawUri);
-      final var resolved = InetAddress.getByName(parsedUri.getHost());
-      // FIXME: This is a bit messy, should have clearer logic on the checks
-      return Optional.of(
-          RadixNodeUri.fromPubKeyAndAddress(
-              network.getId(),
-              addressing.decodeNodeAddress(parsedUri.getUserInfo()),
-              resolved.getHostAddress(),
-              parsedUri.getPort() > 0 ? parsedUri.getPort() : defaultPort));
-    } catch (UnknownHostException
-        | URISyntaxException
-        | Bech32DecodeException
-        | PublicKeyException e) {
-      log.error("Seed node address {} couldn't be parsed: {}", rawUri, e.getMessage());
-      return Optional.empty();
-    }
-  }
-}
+/** A binding annotation for beans related to the protocol version currently run by this Node. */
+@Qualifier
+@Target({FIELD, PARAMETER, METHOD})
+@Retention(RUNTIME)
+public @interface Current {}

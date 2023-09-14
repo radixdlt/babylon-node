@@ -79,17 +79,25 @@ import com.radixdlt.p2p.addressbook.AddressBook;
 import com.radixdlt.p2p.addressbook.AddressBookPeerControl;
 import com.radixdlt.p2p.addressbook.AddressBookPersistence;
 import com.radixdlt.p2p.addressbook.BerkeleyAddressBookStore;
+import com.radixdlt.p2p.discovery.SeedNodesConfigParser;
 import com.radixdlt.p2p.hostip.HostIp;
 import com.radixdlt.p2p.hostip.HostIpModule;
 import com.radixdlt.p2p.transport.PeerOutboundBootstrap;
 import com.radixdlt.p2p.transport.PeerOutboundBootstrapImpl;
 import com.radixdlt.p2p.transport.PeerServerBootstrap;
+import com.radixdlt.protocol.Current;
+import com.radixdlt.protocol.Newest;
+import com.radixdlt.protocol.ProtocolVersion;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.BerkeleyDbDefaults;
 import com.radixdlt.store.NodeStorageLocation;
 import com.radixdlt.utils.properties.RuntimeProperties;
 
 public final class P2PModule extends AbstractModule {
+
+  /** The only currently defined protocol version. */
+  private static final ProtocolVersion ONLY_PROTOCOL_VERSION = new ProtocolVersion("babylon-v1");
+
   private final RuntimeProperties properties;
 
   public P2PModule(RuntimeProperties properties) {
@@ -104,6 +112,10 @@ public final class P2PModule extends AbstractModule {
     eventBinder.addBinding().toInstance(PeerEvent.class);
     eventBinder.addBinding().toInstance(PeerOutboundConnectionTimeout.class);
 
+    // TODO(when introducing actual protocol updates): design how to manage this
+    bind(ProtocolVersion.class).annotatedWith(Current.class).toInstance(ONLY_PROTOCOL_VERSION);
+    bind(ProtocolVersion.class).annotatedWith(Newest.class).toInstance(ONLY_PROTOCOL_VERSION);
+
     bind(AddressBook.class).in(Scopes.SINGLETON);
     bind(PeersView.class).to(PeerManagerPeersView.class).in(Scopes.SINGLETON);
     bind(PeerControl.class).to(AddressBookPeerControl.class).in(Scopes.SINGLETON);
@@ -112,6 +124,7 @@ public final class P2PModule extends AbstractModule {
     bind(PeerServerBootstrap.class).in(Scopes.SINGLETON);
     bind(PendingOutboundChannelsManager.class).in(Scopes.SINGLETON);
     bind(PeerManager.class).in(Scopes.SINGLETON);
+    bind(SeedNodesConfigParser.class).in(Scopes.SINGLETON);
 
     install(new HostIpModule(properties));
     install(new PeerDiscoveryModule());

@@ -65,12 +65,12 @@
 package com.radixdlt;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
 import com.google.inject.AbstractModule;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.api.CoreApiServerModule;
 import com.radixdlt.api.prometheus.PrometheusApiModule;
 import com.radixdlt.api.system.SystemApiModule;
+import com.radixdlt.config.SelfValidatorAddressConfig;
 import com.radixdlt.consensus.ProposalLimitsConfig;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
@@ -161,25 +161,15 @@ public final class RadixNodeModule extends AbstractModule {
     // Consensus
     install(new EventLoggerModule(EventLoggerConfig.addressed(addressing)));
 
-    final String useGenesisProperty = properties.get("consensus.use_genesis_for_validator_address");
-    final Option<Boolean> useGenesis =
-        Strings.isNullOrEmpty(useGenesisProperty)
-            ? Option.none()
-            : Option.some(Boolean.parseBoolean(useGenesisProperty));
-    final String validatorAddress = properties.get("consensus.validator_address", (String) null);
-    if (useGenesis.isPresent() && useGenesis.unwrap() && !Strings.isNullOrEmpty(validatorAddress)) {
-      throw new IllegalArgumentException(
-          "Invalid configuration. Using both consensus.use_genesis_for_validator_address=true and"
-              + " consensus.validator_address. Please use one.");
-    } else if (!Strings.isNullOrEmpty(validatorAddress)) {
-      install(
-          new SelfValidatorInfoModule(
-              Optional.of(addressing.decodeValidatorAddress(validatorAddress))));
-    } else if (useGenesis.isEmpty() || (useGenesis.isPresent() && useGenesis.unwrap())) {
-      install(new SelfValidatorInfoFromGenesisModule());
-    } else {
-      // No validator address provided, and use genesis explicitly disabled
-      install(new SelfValidatorInfoModule(Optional.empty()));
+    final var selfValidatorAddressConfig =
+        SelfValidatorAddressConfig.fromRuntimeProperties(properties, addressing);
+    switch (selfValidatorAddressConfig) {
+      case SelfValidatorAddressConfig.Set set -> install(
+          new SelfValidatorInfoModule(Optional.of(set.validatorComponentAddress())));
+      case SelfValidatorAddressConfig.FromGenesis fromGenesis -> install(
+          new SelfValidatorInfoFromGenesisModule());
+      case SelfValidatorAddressConfig.Unset unset -> install(
+          new SelfValidatorInfoModule(Optional.empty()));
     }
 
     install(new PersistedBFTKeyModule());

@@ -75,6 +75,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.genesis.*;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.networks.Network;
+import com.radixdlt.p2p.discovery.SeedNodesConfigParser;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.sbor.NodeSborCodecs;
 import com.radixdlt.serialization.DefaultSerialization;
@@ -91,6 +92,7 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.mockito.Mockito;
 
 public final class RadixNodeBootstrapperTest {
 
@@ -115,7 +117,8 @@ public final class RadixNodeBootstrapperTest {
                 properties1,
                 new GenesisFromPropertiesLoader(properties1),
                 genesisStore,
-                storageDirectory.getAbsolutePath())
+                storageDirectory.getAbsolutePath(),
+                Mockito.mock(SeedNodesConfigParser.class))
             .bootstrapRadixNode();
     assertTrue(nodeHandle1 instanceof RadixNodeBootstrapper.RadixNodeBootstrapperHandle.Resolved);
 
@@ -133,7 +136,8 @@ public final class RadixNodeBootstrapperTest {
                 properties2,
                 new GenesisFromPropertiesLoader(properties2),
                 genesisStore,
-                storageDirectory.getAbsolutePath())
+                storageDirectory.getAbsolutePath(),
+                Mockito.mock(SeedNodesConfigParser.class))
             .bootstrapRadixNode();
     assertTrue(nodeHandle2 instanceof RadixNodeBootstrapper.RadixNodeBootstrapperHandle.Failed);
   }
@@ -159,7 +163,8 @@ public final class RadixNodeBootstrapperTest {
                 properties1,
                 new GenesisFromPropertiesLoader(properties1),
                 new GenesisFileStore(new File(storageDirectory, "genesis")),
-                storageDirectory.getAbsolutePath())
+                storageDirectory.getAbsolutePath(),
+                Mockito.mock(SeedNodesConfigParser.class))
             .bootstrapRadixNode();
     assertThat(nodeHandle1)
         .isInstanceOf(RadixNodeBootstrapper.RadixNodeBootstrapperHandle.Resolved.class);
@@ -180,7 +185,8 @@ public final class RadixNodeBootstrapperTest {
                 properties2,
                 new GenesisFromPropertiesLoader(properties2),
                 new GenesisFileStore(new File(storageDirectory2, "genesis")),
-                storageDirectory2.getAbsolutePath())
+                storageDirectory2.getAbsolutePath(),
+                Mockito.mock(SeedNodesConfigParser.class))
             .bootstrapRadixNode();
     assertTrue(nodeHandle2 instanceof RadixNodeBootstrapper.RadixNodeBootstrapperHandle.Failed);
   }
@@ -204,7 +210,8 @@ public final class RadixNodeBootstrapperTest {
                 properties,
                 new GenesisFromPropertiesLoader(properties),
                 new GenesisFileStore(new File(storageDirectory, "genesis")),
-                storageDirectory.getAbsolutePath())
+                storageDirectory.getAbsolutePath(),
+                Mockito.mock(SeedNodesConfigParser.class))
             .bootstrapRadixNode();
     assertTrue(nodeHandle instanceof RadixNodeBootstrapper.RadixNodeBootstrapperHandle.Resolved);
   }
@@ -272,7 +279,8 @@ public final class RadixNodeBootstrapperTest {
                 properties,
                 new GenesisFromPropertiesLoader(properties),
                 genesisFileStore,
-                storageDirectory.getAbsolutePath())
+                storageDirectory.getAbsolutePath(),
+                Mockito.mock(SeedNodesConfigParser.class))
             .bootstrapRadixNode();
 
     assertTrue(nodeHandle instanceof RadixNodeBootstrapper.RadixNodeBootstrapperHandle.Resolved);
@@ -306,7 +314,8 @@ public final class RadixNodeBootstrapperTest {
                 properties,
                 new GenesisFromPropertiesLoader(properties),
                 genesisFileStore,
-                storageDirectory.getAbsolutePath())
+                storageDirectory.getAbsolutePath(),
+                Mockito.mock(SeedNodesConfigParser.class))
             .bootstrapRadixNode();
 
     assertTrue(nodeHandle instanceof RadixNodeBootstrapper.RadixNodeBootstrapperHandle.Resolved);
