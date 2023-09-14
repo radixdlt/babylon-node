@@ -1367,7 +1367,7 @@ mod tests {
             .header(TransactionHeaderV1 {
                 network_id: NetworkDefinition::simulator().id,
                 start_epoch_inclusive: epoch,
-                end_epoch_exclusive: epoch.after(100),
+                end_epoch_exclusive: epoch.after(100).unwrap(),
                 nonce,
                 notary_public_key: notary_private_key.public_key().into(),
                 notary_is_signatory: true,
@@ -1400,7 +1400,7 @@ mod tests {
             .header(TransactionHeaderV1 {
                 network_id: NetworkDefinition::simulator().id,
                 start_epoch_inclusive: epoch,
-                end_epoch_exclusive: epoch.after(100),
+                end_epoch_exclusive: epoch.after(100).unwrap(),
                 nonce,
                 notary_public_key: notary_private_key.public_key().into(),
                 notary_is_signatory: true,
