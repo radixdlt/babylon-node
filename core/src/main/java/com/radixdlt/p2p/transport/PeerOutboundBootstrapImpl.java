@@ -75,6 +75,8 @@ import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.PeerEvent;
 import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.p2p.capability.Capabilities;
+import com.radixdlt.protocol.Newest;
+import com.radixdlt.protocol.ProtocolVersion;
 import com.radixdlt.serialization.Serialization;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelOption;
@@ -88,7 +90,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
   private final P2PConfig config;
   private final Addressing addressing;
   private final Network network;
-  private final ProtocolUpdateId newestProtocolUpdateId;
+  private final ProtocolVersion newestProtocolVersion;
   private final Metrics metrics;
   private final Serialization serialization;
   private final SecureRandom secureRandom;
@@ -103,7 +105,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
       P2PConfig config,
       Addressing addressing,
       Network network,
-      ProtocolUpdateId newestProtocolUpdateId,
+      @Newest ProtocolVersion newestProtocolVersion,
       Metrics metrics,
       Serialization serialization,
       SecureRandom secureRandom,
@@ -114,7 +116,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
     this.config = Objects.requireNonNull(config);
     this.addressing = Objects.requireNonNull(addressing);
     this.network = network;
-    this.newestProtocolUpdateId = newestProtocolUpdateId;
+    this.newestProtocolVersion = newestProtocolVersion;
     this.metrics = Objects.requireNonNull(metrics);
     this.serialization = Objects.requireNonNull(serialization);
     this.secureRandom = Objects.requireNonNull(secureRandom);
@@ -138,7 +140,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
                 config,
                 addressing,
                 network,
-                newestProtocolUpdateId,
+                newestProtocolVersion,
                 metrics,
                 serialization,
                 secureRandom,

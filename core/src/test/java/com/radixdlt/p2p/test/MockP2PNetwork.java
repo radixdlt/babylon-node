@@ -81,7 +81,7 @@ import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.p2p.capability.Capabilities;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.p2p.transport.PeerChannel;
-import com.radixdlt.p2p.transport.ProtocolUpdateId;
+import com.radixdlt.protocol.ProtocolVersion;
 import com.radixdlt.serialization.Serialization;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -118,7 +118,7 @@ final class MockP2PNetwork {
             clientPeer.injector.getInstance(P2PConfig.class),
             Addressing.ofNetwork(Network.INTEGRATIONTESTNET),
             Network.INTEGRATIONTESTNET,
-            new ProtocolUpdateId("fork1"),
+            new ProtocolVersion("fork1"),
             clientPeer.injector.getInstance(Metrics.class),
             clientPeer.injector.getInstance(Serialization.class),
             new SecureRandom(),
@@ -144,7 +144,7 @@ final class MockP2PNetwork {
             serverPeer.injector.getInstance(P2PConfig.class),
             Addressing.ofNetwork(Network.INTEGRATIONTESTNET),
             Network.INTEGRATIONTESTNET,
-            new ProtocolUpdateId("fork1"),
+            new ProtocolVersion("fork1"),
             serverPeer.injector.getInstance(Metrics.class),
             serverPeer.injector.getInstance(Serialization.class),
             new SecureRandom(),

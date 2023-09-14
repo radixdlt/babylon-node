@@ -92,6 +92,7 @@ import com.radixdlt.p2p.transport.handshake.AuthHandshakeResult;
 import com.radixdlt.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeError;
 import com.radixdlt.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeSuccess;
 import com.radixdlt.p2p.transport.handshake.AuthHandshaker;
+import com.radixdlt.protocol.ProtocolVersion;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.RateCalculator;
 import io.netty.buffer.ByteBuf;
@@ -156,7 +157,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
       P2PConfig config,
       Addressing addressing,
       Network network,
-      ProtocolUpdateId newestProtocolUpdateId,
+      ProtocolVersion newestProtocolVersion,
       Metrics metrics,
       Serialization serialization,
       SecureRandom secureRandom,
@@ -180,7 +181,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
             ecKeyOps,
             network,
             NETWORK_VERSION,
-            newestProtocolUpdateId.name(),
+            newestProtocolVersion.name(),
             capabilities);
     this.nettyChannel = requireNonNull(nettyChannel);
     this.remoteAddress = requireNonNull(remoteAddress);

@@ -23,7 +23,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.system.generated.models.ExecutedProtocolUpdate;
-import com.radixdlt.api.system.generated.models.HealthResponseUnknownReportedProtocolUpdates;
+import com.radixdlt.api.system.generated.models.PendingProtocolUpdate;
+import com.radixdlt.api.system.generated.models.UnknownReportedPendingProtocolUpdate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -36,10 +37,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   HealthResponse.JSON_PROPERTY_STATUS,
-  HealthResponse.JSON_PROPERTY_CURRENT_PROTOCOL_UPDATE_NAME,
+  HealthResponse.JSON_PROPERTY_CURRENT_PROTOCOL_VERSION,
   HealthResponse.JSON_PROPERTY_EXECUTED_PROTOCOL_UPDATES,
-  HealthResponse.JSON_PROPERTY_PROTOCOL_UPDATE_READINESS_SIGNAL_STATUS,
-  HealthResponse.JSON_PROPERTY_UNKNOWN_REPORTED_PROTOCOL_UPDATES
+  HealthResponse.JSON_PROPERTY_PENDING_PROTOCOL_UPDATE,
+  HealthResponse.JSON_PROPERTY_UNKNOWN_REPORTED_PENDING_PROTOCOL_UPDATES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class HealthResponse {
@@ -89,52 +90,17 @@ public class HealthResponse {
   public static final String JSON_PROPERTY_STATUS = "status";
   private StatusEnum status;
 
-  public static final String JSON_PROPERTY_CURRENT_PROTOCOL_UPDATE_NAME = "current_protocol_update_name";
-  private String currentProtocolUpdateName;
+  public static final String JSON_PROPERTY_CURRENT_PROTOCOL_VERSION = "current_protocol_version";
+  private String currentProtocolVersion;
 
   public static final String JSON_PROPERTY_EXECUTED_PROTOCOL_UPDATES = "executed_protocol_updates";
   private List<ExecutedProtocolUpdate> executedProtocolUpdates = new ArrayList<>();
 
-  /**
-   * Gets or Sets protocolUpdateReadinessSignalStatus
-   */
-  public enum ProtocolUpdateReadinessSignalStatusEnum {
-    READINESS_SIGNAL_REQUIRED("READINESS_SIGNAL_REQUIRED"),
-    
-    NO_ACTION_NEEDED("NO_ACTION_NEEDED");
+  public static final String JSON_PROPERTY_PENDING_PROTOCOL_UPDATE = "pending_protocol_update";
+  private PendingProtocolUpdate pendingProtocolUpdate;
 
-    private String value;
-
-    ProtocolUpdateReadinessSignalStatusEnum(String value) {
-      this.value = value;
-    }
-
-    @JsonValue
-    public String getValue() {
-      return value;
-    }
-
-    @Override
-    public String toString() {
-      return String.valueOf(value);
-    }
-
-    @JsonCreator
-    public static ProtocolUpdateReadinessSignalStatusEnum fromValue(String value) {
-      for (ProtocolUpdateReadinessSignalStatusEnum b : ProtocolUpdateReadinessSignalStatusEnum.values()) {
-        if (b.value.equals(value)) {
-          return b;
-        }
-      }
-      throw new IllegalArgumentException("Unexpected value '" + value + "'");
-    }
-  }
-
-  public static final String JSON_PROPERTY_PROTOCOL_UPDATE_READINESS_SIGNAL_STATUS = "protocol_update_readiness_signal_status";
-  private ProtocolUpdateReadinessSignalStatusEnum protocolUpdateReadinessSignalStatus;
-
-  public static final String JSON_PROPERTY_UNKNOWN_REPORTED_PROTOCOL_UPDATES = "unknown_reported_protocol_updates";
-  private List<HealthResponseUnknownReportedProtocolUpdates> unknownReportedProtocolUpdates = new ArrayList<>();
+  public static final String JSON_PROPERTY_UNKNOWN_REPORTED_PENDING_PROTOCOL_UPDATES = "unknown_reported_pending_protocol_updates";
+  private List<UnknownReportedPendingProtocolUpdate> unknownReportedPendingProtocolUpdates = new ArrayList<>();
 
 
   public HealthResponse status(StatusEnum status) {
@@ -163,29 +129,29 @@ public class HealthResponse {
   }
 
 
-  public HealthResponse currentProtocolUpdateName(String currentProtocolUpdateName) {
-    this.currentProtocolUpdateName = currentProtocolUpdateName;
+  public HealthResponse currentProtocolVersion(String currentProtocolVersion) {
+    this.currentProtocolVersion = currentProtocolVersion;
     return this;
   }
 
    /**
-   * Get currentProtocolUpdateName
-   * @return currentProtocolUpdateName
+   * A name identifying a protocol version.
+   * @return currentProtocolVersion
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_CURRENT_PROTOCOL_UPDATE_NAME)
+  @ApiModelProperty(required = true, value = "A name identifying a protocol version.")
+  @JsonProperty(JSON_PROPERTY_CURRENT_PROTOCOL_VERSION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getCurrentProtocolUpdateName() {
-    return currentProtocolUpdateName;
+  public String getCurrentProtocolVersion() {
+    return currentProtocolVersion;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_CURRENT_PROTOCOL_UPDATE_NAME)
+  @JsonProperty(JSON_PROPERTY_CURRENT_PROTOCOL_VERSION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setCurrentProtocolUpdateName(String currentProtocolUpdateName) {
-    this.currentProtocolUpdateName = currentProtocolUpdateName;
+  public void setCurrentProtocolVersion(String currentProtocolVersion) {
+    this.currentProtocolVersion = currentProtocolVersion;
   }
 
 
@@ -220,60 +186,60 @@ public class HealthResponse {
   }
 
 
-  public HealthResponse protocolUpdateReadinessSignalStatus(ProtocolUpdateReadinessSignalStatusEnum protocolUpdateReadinessSignalStatus) {
-    this.protocolUpdateReadinessSignalStatus = protocolUpdateReadinessSignalStatus;
+  public HealthResponse pendingProtocolUpdate(PendingProtocolUpdate pendingProtocolUpdate) {
+    this.pendingProtocolUpdate = pendingProtocolUpdate;
     return this;
   }
 
    /**
-   * Get protocolUpdateReadinessSignalStatus
-   * @return protocolUpdateReadinessSignalStatus
+   * Get pendingProtocolUpdate
+   * @return pendingProtocolUpdate
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_PROTOCOL_UPDATE_READINESS_SIGNAL_STATUS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_PENDING_PROTOCOL_UPDATE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public ProtocolUpdateReadinessSignalStatusEnum getProtocolUpdateReadinessSignalStatus() {
-    return protocolUpdateReadinessSignalStatus;
+  public PendingProtocolUpdate getPendingProtocolUpdate() {
+    return pendingProtocolUpdate;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_PROTOCOL_UPDATE_READINESS_SIGNAL_STATUS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setProtocolUpdateReadinessSignalStatus(ProtocolUpdateReadinessSignalStatusEnum protocolUpdateReadinessSignalStatus) {
-    this.protocolUpdateReadinessSignalStatus = protocolUpdateReadinessSignalStatus;
+  @JsonProperty(JSON_PROPERTY_PENDING_PROTOCOL_UPDATE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setPendingProtocolUpdate(PendingProtocolUpdate pendingProtocolUpdate) {
+    this.pendingProtocolUpdate = pendingProtocolUpdate;
   }
 
 
-  public HealthResponse unknownReportedProtocolUpdates(List<HealthResponseUnknownReportedProtocolUpdates> unknownReportedProtocolUpdates) {
-    this.unknownReportedProtocolUpdates = unknownReportedProtocolUpdates;
+  public HealthResponse unknownReportedPendingProtocolUpdates(List<UnknownReportedPendingProtocolUpdate> unknownReportedPendingProtocolUpdates) {
+    this.unknownReportedPendingProtocolUpdates = unknownReportedPendingProtocolUpdates;
     return this;
   }
 
-  public HealthResponse addUnknownReportedProtocolUpdatesItem(HealthResponseUnknownReportedProtocolUpdates unknownReportedProtocolUpdatesItem) {
-    this.unknownReportedProtocolUpdates.add(unknownReportedProtocolUpdatesItem);
+  public HealthResponse addUnknownReportedPendingProtocolUpdatesItem(UnknownReportedPendingProtocolUpdate unknownReportedPendingProtocolUpdatesItem) {
+    this.unknownReportedPendingProtocolUpdates.add(unknownReportedPendingProtocolUpdatesItem);
     return this;
   }
 
    /**
-   * Get unknownReportedProtocolUpdates
-   * @return unknownReportedProtocolUpdates
+   * Get unknownReportedPendingProtocolUpdates
+   * @return unknownReportedPendingProtocolUpdates
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_UNKNOWN_REPORTED_PROTOCOL_UPDATES)
+  @JsonProperty(JSON_PROPERTY_UNKNOWN_REPORTED_PENDING_PROTOCOL_UPDATES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<HealthResponseUnknownReportedProtocolUpdates> getUnknownReportedProtocolUpdates() {
-    return unknownReportedProtocolUpdates;
+  public List<UnknownReportedPendingProtocolUpdate> getUnknownReportedPendingProtocolUpdates() {
+    return unknownReportedPendingProtocolUpdates;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_UNKNOWN_REPORTED_PROTOCOL_UPDATES)
+  @JsonProperty(JSON_PROPERTY_UNKNOWN_REPORTED_PENDING_PROTOCOL_UPDATES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setUnknownReportedProtocolUpdates(List<HealthResponseUnknownReportedProtocolUpdates> unknownReportedProtocolUpdates) {
-    this.unknownReportedProtocolUpdates = unknownReportedProtocolUpdates;
+  public void setUnknownReportedPendingProtocolUpdates(List<UnknownReportedPendingProtocolUpdate> unknownReportedPendingProtocolUpdates) {
+    this.unknownReportedPendingProtocolUpdates = unknownReportedPendingProtocolUpdates;
   }
 
 
@@ -290,15 +256,15 @@ public class HealthResponse {
     }
     HealthResponse healthResponse = (HealthResponse) o;
     return Objects.equals(this.status, healthResponse.status) &&
-        Objects.equals(this.currentProtocolUpdateName, healthResponse.currentProtocolUpdateName) &&
+        Objects.equals(this.currentProtocolVersion, healthResponse.currentProtocolVersion) &&
         Objects.equals(this.executedProtocolUpdates, healthResponse.executedProtocolUpdates) &&
-        Objects.equals(this.protocolUpdateReadinessSignalStatus, healthResponse.protocolUpdateReadinessSignalStatus) &&
-        Objects.equals(this.unknownReportedProtocolUpdates, healthResponse.unknownReportedProtocolUpdates);
+        Objects.equals(this.pendingProtocolUpdate, healthResponse.pendingProtocolUpdate) &&
+        Objects.equals(this.unknownReportedPendingProtocolUpdates, healthResponse.unknownReportedPendingProtocolUpdates);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(status, currentProtocolUpdateName, executedProtocolUpdates, protocolUpdateReadinessSignalStatus, unknownReportedProtocolUpdates);
+    return Objects.hash(status, currentProtocolVersion, executedProtocolUpdates, pendingProtocolUpdate, unknownReportedPendingProtocolUpdates);
   }
 
   @Override
@@ -306,10 +272,10 @@ public class HealthResponse {
     StringBuilder sb = new StringBuilder();
     sb.append("class HealthResponse {\n");
     sb.append("    status: ").append(toIndentedString(status)).append("\n");
-    sb.append("    currentProtocolUpdateName: ").append(toIndentedString(currentProtocolUpdateName)).append("\n");
+    sb.append("    currentProtocolVersion: ").append(toIndentedString(currentProtocolVersion)).append("\n");
     sb.append("    executedProtocolUpdates: ").append(toIndentedString(executedProtocolUpdates)).append("\n");
-    sb.append("    protocolUpdateReadinessSignalStatus: ").append(toIndentedString(protocolUpdateReadinessSignalStatus)).append("\n");
-    sb.append("    unknownReportedProtocolUpdates: ").append(toIndentedString(unknownReportedProtocolUpdates)).append("\n");
+    sb.append("    pendingProtocolUpdate: ").append(toIndentedString(pendingProtocolUpdate)).append("\n");
+    sb.append("    unknownReportedPendingProtocolUpdates: ").append(toIndentedString(unknownReportedPendingProtocolUpdates)).append("\n");
     sb.append("}");
     return sb.toString();
   }

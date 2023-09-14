@@ -62,6 +62,17 @@
  * permissions under this License.
  */
 
-package com.radixdlt.p2p.transport;
+package com.radixdlt.protocol;
 
-public record ProtocolUpdateId(String name) {}
+import static java.lang.annotation.ElementType.*;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
+
+/** A binding annotation for beans related to the newest protocol version known to this Node. */
+@Qualifier
+@Target({FIELD, PARAMETER, METHOD})
+@Retention(RUNTIME)
+public @interface Newest {}

@@ -32,15 +32,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   ExecutedProtocolUpdate.JSON_PROPERTY_EPOCH,
-  ExecutedProtocolUpdate.JSON_PROPERTY_NAME
+  ExecutedProtocolUpdate.JSON_PROPERTY_RESULTANT_PROTOCOL_VERSION
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ExecutedProtocolUpdate {
   public static final String JSON_PROPERTY_EPOCH = "epoch";
   private Long epoch;
 
-  public static final String JSON_PROPERTY_NAME = "name";
-  private String name;
+  public static final String JSON_PROPERTY_RESULTANT_PROTOCOL_VERSION = "resultant_protocol_version";
+  private String resultantProtocolVersion;
 
 
   public ExecutedProtocolUpdate epoch(Long epoch) {
@@ -69,29 +69,29 @@ public class ExecutedProtocolUpdate {
   }
 
 
-  public ExecutedProtocolUpdate name(String name) {
-    this.name = name;
+  public ExecutedProtocolUpdate resultantProtocolVersion(String resultantProtocolVersion) {
+    this.resultantProtocolVersion = resultantProtocolVersion;
     return this;
   }
 
    /**
-   * Get name
-   * @return name
+   * A name identifying a protocol version.
+   * @return resultantProtocolVersion
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_NAME)
+  @ApiModelProperty(required = true, value = "A name identifying a protocol version.")
+  @JsonProperty(JSON_PROPERTY_RESULTANT_PROTOCOL_VERSION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getName() {
-    return name;
+  public String getResultantProtocolVersion() {
+    return resultantProtocolVersion;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_NAME)
+  @JsonProperty(JSON_PROPERTY_RESULTANT_PROTOCOL_VERSION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setName(String name) {
-    this.name = name;
+  public void setResultantProtocolVersion(String resultantProtocolVersion) {
+    this.resultantProtocolVersion = resultantProtocolVersion;
   }
 
 
@@ -108,12 +108,12 @@ public class ExecutedProtocolUpdate {
     }
     ExecutedProtocolUpdate executedProtocolUpdate = (ExecutedProtocolUpdate) o;
     return Objects.equals(this.epoch, executedProtocolUpdate.epoch) &&
-        Objects.equals(this.name, executedProtocolUpdate.name);
+        Objects.equals(this.resultantProtocolVersion, executedProtocolUpdate.resultantProtocolVersion);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(epoch, name);
+    return Objects.hash(epoch, resultantProtocolVersion);
   }
 
   @Override
@@ -121,7 +121,7 @@ public class ExecutedProtocolUpdate {
     StringBuilder sb = new StringBuilder();
     sb.append("class ExecutedProtocolUpdate {\n");
     sb.append("    epoch: ").append(toIndentedString(epoch)).append("\n");
-    sb.append("    name: ").append(toIndentedString(name)).append("\n");
+    sb.append("    resultantProtocolVersion: ").append(toIndentedString(resultantProtocolVersion)).append("\n");
     sb.append("}");
     return sb.toString();
   }
