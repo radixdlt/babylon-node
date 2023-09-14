@@ -152,13 +152,10 @@ public final class Addressing {
     return Bech32mCoder.encode(network.getNodeHrp(), publicKey.getBytes());
   }
 
-  public ECDSASecp256k1PublicKey decodeNodeAddress(String address) throws DeserializeException {
-    try {
-      var pubKeyBytes = Bech32mCoder.decodeWithExpectedHrp(network.getNodeHrp(), address);
-      return ECDSASecp256k1PublicKey.fromBytes(pubKeyBytes);
-    } catch (Bech32DecodeException | PublicKeyException e) {
-      throw new DeserializeException("Invalid address", e);
-    }
+  public ECDSASecp256k1PublicKey decodeNodeAddress(String address)
+      throws Bech32DecodeException, PublicKeyException {
+    final var pubKeyBytes = Bech32mCoder.decodeWithExpectedHrp(network.getNodeHrp(), address);
+    return ECDSASecp256k1PublicKey.fromBytes(pubKeyBytes);
   }
 
   public static String encodeNodeAddressWithHrp(String hrp, ECDSASecp256k1PublicKey publicKey) {

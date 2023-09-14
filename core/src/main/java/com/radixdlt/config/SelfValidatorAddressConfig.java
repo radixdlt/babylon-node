@@ -62,88 +62,40 @@
  * permissions under this License.
  */
 
-package com.radixdlt.p2p.discovery;
+package com.radixdlt.config;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.inject.Inject;
+import com.google.common.base.Strings;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.exceptions.Bech32DecodeException;
-import com.radixdlt.networks.Network;
-import com.radixdlt.p2p.P2PConfig;
-import com.radixdlt.p2p.RadixNodeUri;
-import com.radixdlt.utils.Pair;
-import java.net.InetAddress;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.UnknownHostException;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.radixdlt.lang.Option;
+import com.radixdlt.rev2.ComponentAddress;
+import com.radixdlt.utils.properties.RuntimeProperties;
 
-// TODO: move to PeerDiscovery
-public final class SeedNodesConfigParser {
-  private static final Logger log = LogManager.getLogger();
+public sealed interface SelfValidatorAddressConfig {
+  record FromGenesis() implements SelfValidatorAddressConfig {}
 
-  private final int defaultPort;
-  private final Set<String> unresolvedUris = new HashSet<>();
-  private final Set<RadixNodeUri> resolvedSeedNodes = new HashSet<>();
-  private final Addressing addressing;
-  private final Network network;
+  record Set(ComponentAddress validatorComponentAddress) implements SelfValidatorAddressConfig {}
 
-  @Inject
-  public SeedNodesConfigParser(P2PConfig config, Network network, Addressing addressing) {
-    this.network = network;
-    this.addressing = addressing;
-    this.defaultPort = config.defaultPort();
-    this.unresolvedUris.addAll(config.seedNodes());
-    this.resolveHostNames();
-  }
+  record Unset() implements SelfValidatorAddressConfig {}
 
-  public Set<RadixNodeUri> getResolvedSeedNodes() {
-    this.resolveHostNames();
-    return this.resolvedSeedNodes;
-  }
-
-  private void resolveHostNames() {
-    if (this.unresolvedUris.isEmpty()) {
-      return;
-    }
-
-    final var newlyResolvedHosts =
-        this.unresolvedUris.stream()
-            .map(host -> Pair.of(host, resolveRadixNodeUri(host)))
-            .filter(p -> p.getSecond().isPresent())
-            .collect(ImmutableSet.toImmutableSet());
-
-    final var newlyResolvedHostsNames =
-        newlyResolvedHosts.stream().map(Pair::getFirst).collect(ImmutableSet.toImmutableSet());
-
-    this.unresolvedUris.removeAll(newlyResolvedHostsNames);
-
-    this.resolvedSeedNodes.addAll(
-        newlyResolvedHosts.stream().map(p -> p.getSecond().get()).toList());
-  }
-
-  private Optional<RadixNodeUri> resolveRadixNodeUri(String rawUri) {
-    try {
-      final var parsedUri = new URI(rawUri);
-      final var resolved = InetAddress.getByName(parsedUri.getHost());
-      // FIXME: This is a bit messy, should have clearer logic on the checks
-      return Optional.of(
-          RadixNodeUri.fromPubKeyAndAddress(
-              network.getId(),
-              addressing.decodeNodeAddress(parsedUri.getUserInfo()),
-              resolved.getHostAddress(),
-              parsedUri.getPort() > 0 ? parsedUri.getPort() : defaultPort));
-    } catch (UnknownHostException
-        | URISyntaxException
-        | Bech32DecodeException
-        | PublicKeyException e) {
-      log.error("Seed node address {} couldn't be parsed: {}", rawUri, e.getMessage());
-      return Optional.empty();
+  static SelfValidatorAddressConfig fromRuntimeProperties(
+      RuntimeProperties properties, Addressing addressing) {
+    final var useGenesisProperty = properties.get("consensus.use_genesis_for_validator_address");
+    final Option<Boolean> useGenesis =
+        Strings.isNullOrEmpty(useGenesisProperty)
+            ? Option.none()
+            : Option.some(Boolean.parseBoolean(useGenesisProperty));
+    final var validatorAddress = properties.get("consensus.validator_address", (String) null);
+    if (useGenesis.isPresent() && useGenesis.unwrap() && !Strings.isNullOrEmpty(validatorAddress)) {
+      throw new IllegalArgumentException(
+          "Invalid configuration. Using both consensus.use_genesis_for_validator_address=true and"
+              + " consensus.validator_address. Please use one.");
+    } else if (!Strings.isNullOrEmpty(validatorAddress)) {
+      return new Set(addressing.decodeValidatorAddress(validatorAddress));
+    } else if (useGenesis.isEmpty() || (useGenesis.isPresent() && useGenesis.unwrap())) {
+      return new FromGenesis();
+    } else {
+      // No validator address provided, and use genesis explicitly disabled
+      return new Unset();
     }
   }
 }

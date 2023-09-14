@@ -78,6 +78,7 @@ import com.radixdlt.bootstrap.RadixNodeBootstrapperModule;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.RadixKeyStore;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.environment.*;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxEnvironment;
@@ -351,7 +352,7 @@ public final class RadixShell {
       sendMsg(uri.getNodeId(), message);
     }
 
-    public void sendMsg(String nodeAddress, Message message) throws DeserializeException {
+    public void sendMsg(String nodeAddress, Message message) throws PublicKeyException {
       final var addressing = injector.getInstance(Addressing.class);
       sendMsg(NodeId.fromPublicKey(addressing.decodeNodeAddress(nodeAddress)), message);
     }

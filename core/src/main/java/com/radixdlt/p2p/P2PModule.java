@@ -79,6 +79,7 @@ import com.radixdlt.p2p.addressbook.AddressBook;
 import com.radixdlt.p2p.addressbook.AddressBookPeerControl;
 import com.radixdlt.p2p.addressbook.AddressBookPersistence;
 import com.radixdlt.p2p.addressbook.BerkeleyAddressBookStore;
+import com.radixdlt.p2p.discovery.SeedNodesConfigParser;
 import com.radixdlt.p2p.hostip.HostIp;
 import com.radixdlt.p2p.hostip.HostIpModule;
 import com.radixdlt.p2p.transport.PeerOutboundBootstrap;
@@ -112,6 +113,7 @@ public final class P2PModule extends AbstractModule {
     bind(PeerServerBootstrap.class).in(Scopes.SINGLETON);
     bind(PendingOutboundChannelsManager.class).in(Scopes.SINGLETON);
     bind(PeerManager.class).in(Scopes.SINGLETON);
+    bind(SeedNodesConfigParser.class).in(Scopes.SINGLETON);
 
     install(new HostIpModule(properties));
     install(new PeerDiscoveryModule());
