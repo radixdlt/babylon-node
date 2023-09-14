@@ -104,7 +104,9 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
             let current_epoch = read_store.get_epoch();
             Range {
                 start: current_epoch,
-                end: current_epoch.after(self.validation_config.max_epoch_range),
+                end: current_epoch
+                    .after(self.validation_config.max_epoch_range)
+                    .expect("currently calculated max end epoch is outside of valid range"),
             }
         });
         let (instructions, blobs) = preview_request.manifest.for_intent();
