@@ -24,86 +24,79 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * HealthResponseUnknownReportedForks
+ * ExecutedProtocolUpdate
  */
 @JsonPropertyOrder({
-  HealthResponseUnknownReportedForks.JSON_PROPERTY_NAME,
-  HealthResponseUnknownReportedForks.JSON_PROPERTY_REPORTED_BY
+  ExecutedProtocolUpdate.JSON_PROPERTY_EPOCH,
+  ExecutedProtocolUpdate.JSON_PROPERTY_RESULTANT_PROTOCOL_VERSION
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class HealthResponseUnknownReportedForks {
-  public static final String JSON_PROPERTY_NAME = "name";
-  private String name;
+public class ExecutedProtocolUpdate {
+  public static final String JSON_PROPERTY_EPOCH = "epoch";
+  private Long epoch;
 
-  public static final String JSON_PROPERTY_REPORTED_BY = "reported_by";
-  private List<String> reportedBy = new ArrayList<>();
+  public static final String JSON_PROPERTY_RESULTANT_PROTOCOL_VERSION = "resultant_protocol_version";
+  private String resultantProtocolVersion;
 
 
-  public HealthResponseUnknownReportedForks name(String name) {
-    this.name = name;
+  public ExecutedProtocolUpdate epoch(Long epoch) {
+    this.epoch = epoch;
     return this;
   }
 
    /**
-   * Get name
-   * @return name
+   * Get epoch
+   * @return epoch
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_NAME)
+  @JsonProperty(JSON_PROPERTY_EPOCH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getName() {
-    return name;
+  public Long getEpoch() {
+    return epoch;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_NAME)
+  @JsonProperty(JSON_PROPERTY_EPOCH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setName(String name) {
-    this.name = name;
+  public void setEpoch(Long epoch) {
+    this.epoch = epoch;
   }
 
 
-  public HealthResponseUnknownReportedForks reportedBy(List<String> reportedBy) {
-    this.reportedBy = reportedBy;
-    return this;
-  }
-
-  public HealthResponseUnknownReportedForks addReportedByItem(String reportedByItem) {
-    this.reportedBy.add(reportedByItem);
+  public ExecutedProtocolUpdate resultantProtocolVersion(String resultantProtocolVersion) {
+    this.resultantProtocolVersion = resultantProtocolVersion;
     return this;
   }
 
    /**
-   * Get reportedBy
-   * @return reportedBy
+   * A name identifying a protocol version.
+   * @return resultantProtocolVersion
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_REPORTED_BY)
+  @ApiModelProperty(required = true, value = "A name identifying a protocol version.")
+  @JsonProperty(JSON_PROPERTY_RESULTANT_PROTOCOL_VERSION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<String> getReportedBy() {
-    return reportedBy;
+  public String getResultantProtocolVersion() {
+    return resultantProtocolVersion;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_REPORTED_BY)
+  @JsonProperty(JSON_PROPERTY_RESULTANT_PROTOCOL_VERSION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setReportedBy(List<String> reportedBy) {
-    this.reportedBy = reportedBy;
+  public void setResultantProtocolVersion(String resultantProtocolVersion) {
+    this.resultantProtocolVersion = resultantProtocolVersion;
   }
 
 
   /**
-   * Return true if this HealthResponse_unknown_reported_forks object is equal to o.
+   * Return true if this ExecutedProtocolUpdate object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -113,22 +106,22 @@ public class HealthResponseUnknownReportedForks {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    HealthResponseUnknownReportedForks healthResponseUnknownReportedForks = (HealthResponseUnknownReportedForks) o;
-    return Objects.equals(this.name, healthResponseUnknownReportedForks.name) &&
-        Objects.equals(this.reportedBy, healthResponseUnknownReportedForks.reportedBy);
+    ExecutedProtocolUpdate executedProtocolUpdate = (ExecutedProtocolUpdate) o;
+    return Objects.equals(this.epoch, executedProtocolUpdate.epoch) &&
+        Objects.equals(this.resultantProtocolVersion, executedProtocolUpdate.resultantProtocolVersion);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, reportedBy);
+    return Objects.hash(epoch, resultantProtocolVersion);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class HealthResponseUnknownReportedForks {\n");
-    sb.append("    name: ").append(toIndentedString(name)).append("\n");
-    sb.append("    reportedBy: ").append(toIndentedString(reportedBy)).append("\n");
+    sb.append("class ExecutedProtocolUpdate {\n");
+    sb.append("    epoch: ").append(toIndentedString(epoch)).append("\n");
+    sb.append("    resultantProtocolVersion: ").append(toIndentedString(resultantProtocolVersion)).append("\n");
     sb.append("}");
     return sb.toString();
   }

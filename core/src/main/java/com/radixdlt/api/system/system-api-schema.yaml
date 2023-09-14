@@ -197,10 +197,9 @@ components:
       type: object
       required:
         - status
-        - current_fork_name
-        - executed_forks
-        - fork_vote_status
-        - unknown_reported_forks
+        - current_protocol_version
+        - executed_protocol_updates
+        - unknown_reported_pending_protocol_updates
       properties:
         status:
           type: string
@@ -211,31 +210,18 @@ components:
             - UP
             - STALLED
             - OUT_OF_SYNC
-        current_fork_name:
-          type: string
-        executed_forks:
+        current_protocol_version:
+          $ref: "#/components/schemas/ProtocolVersion"
+        executed_protocol_updates:
           type: array
           items:
-            $ref: "#/components/schemas/ExecutedFork"
-        fork_vote_status:
-          type: string
-          enum:
-            - VOTE_REQUIRED
-            - NO_ACTION_NEEDED
-        unknown_reported_forks:
+            $ref: "#/components/schemas/ExecutedProtocolUpdate"
+        pending_protocol_update:
+          $ref: "#/components/schemas/PendingProtocolUpdate"
+        unknown_reported_pending_protocol_updates:
           type: array
           items:
-            type: object
-            required:
-              - name
-              - reported_by
-            properties:
-              name:
-                type: string
-              reported_by:
-                type: array
-                items:
-                  type: string
+            $ref: "#/components/schemas/UnknownReportedPendingProtocolUpdate"
     SystemConfigurationResponse:
       type: object
       required:
@@ -435,17 +421,45 @@ components:
           format: int32
         message:
           type: string
-    ExecutedFork:
+    ProtocolVersion:
+      type: string
+      description: A name identifying a protocol version.
+    ExecutedProtocolUpdate:
       type: object
       required:
         - epoch
-        - name
+        - resultant_protocol_version
       properties:
         epoch:
           type: integer
           format: int64
-        name:
+        resultant_protocol_version:
+          $ref: "#/components/schemas/ProtocolVersion"
+    PendingProtocolUpdate:
+      type: object
+      required:
+        - protocol_version
+        - readiness_signal_status
+      properties:
+        protocol_version:
+          $ref: "#/components/schemas/ProtocolVersion"
+        readiness_signal_status:
           type: string
+          enum:
+            - READINESS_SIGNAL_REQUIRED
+            - NO_ACTION_NEEDED
+    UnknownReportedPendingProtocolUpdate:
+      type: object
+      required:
+        - protocol_version
+        - reported_by
+      properties:
+        protocol_version:
+          $ref: "#/components/schemas/ProtocolVersion"
+        reported_by_node_addresses:
+          type: array
+          items:
+            type: string
 #################################
 # REQUEST: /network-sync-status #
 #################################

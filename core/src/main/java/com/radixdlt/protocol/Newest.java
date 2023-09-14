@@ -62,41 +62,17 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system.routes;
+package com.radixdlt.protocol;
 
-import com.google.inject.Inject;
-import com.radixdlt.api.system.SystemGetJsonHandler;
-import com.radixdlt.api.system.generated.models.HealthResponse;
-import com.radixdlt.api.system.health.HealthInfoService;
-import com.radixdlt.protocol.Current;
-import com.radixdlt.protocol.ProtocolVersion;
+import static java.lang.annotation.ElementType.*;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
-  private final HealthInfoService healthInfoService;
-  private final ProtocolVersion currentProtocolVersion;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
 
-  @Inject
-  HealthHandler(
-      HealthInfoService healthInfoService, @Current ProtocolVersion currentProtocolVersion) {
-    super();
-    this.healthInfoService = healthInfoService;
-    this.currentProtocolVersion = currentProtocolVersion;
-  }
-
-  @Override
-  public HealthResponse handleRequest() {
-    final var status =
-        switch (healthInfoService.nodeStatus()) {
-          case BOOTING_PRE_GENESIS -> HealthResponse.StatusEnum.BOOTING_PRE_GENESIS;
-          case BOOTING_AT_GENESIS -> HealthResponse.StatusEnum.BOOTING_AT_GENESIS;
-          case SYNCING -> HealthResponse.StatusEnum.SYNCING;
-          case UP -> HealthResponse.StatusEnum.UP;
-          case STALLED -> HealthResponse.StatusEnum.STALLED;
-          case OUT_OF_SYNC -> HealthResponse.StatusEnum.OUT_OF_SYNC;
-        };
-
-    return new HealthResponse()
-        .status(status)
-        .currentProtocolVersion(currentProtocolVersion.name());
-  }
-}
+/** A binding annotation for beans related to the newest protocol version known to this Node. */
+@Qualifier
+@Target({FIELD, PARAMETER, METHOD})
+@Retention(RUNTIME)
+public @interface Newest {}
