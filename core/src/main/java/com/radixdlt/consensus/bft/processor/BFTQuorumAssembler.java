@@ -186,18 +186,24 @@ public final class BFTQuorumAssembler implements BFTEventProcessorAtCurrentRound
         resolveCurrentRoundWithQuorum(roundQuorum, lastVote);
       }
       case RoundQuorum.TimeoutRoundQuorum timeoutRoundQuorum -> {
-        // A timeout quorum has been formed.
-        // We're going to delay its processing, in hope to form a QC (and continue the 3-chain).
-        // We might have already formed (and delayed) a timeout quorum in this round, in which
-        // case any subsequent quorums (i.e. with additional votes) are ignored -
-        // no need to dispatch duplicate delayed resolution events.
-        if (!hasTimeoutQuorumResolutionBeenDelayedInCurrentRound) {
-          hasTimeoutQuorumResolutionBeenDelayedInCurrentRound = true;
-          metrics.bft().timeoutQuorumDelayedResolutions().inc();
-          this.timeoutQuorumDelayedResolutionDispatcher.dispatch(
-              new TimeoutQuorumDelayedResolution(
-                  roundQuorumWithLastAuthor, timeoutQuorumResolutionDelayMs),
-              timeoutQuorumResolutionDelayMs);
+        // A timeout quorum has been formed
+        if (timeoutQuorumResolutionDelayMs > 0) {
+          // A delay has been configured, so we're going to delay its processing,
+          // in hope to form a QC (and continue the 3-chain).
+          // We might have already formed (and delayed) a timeout quorum in this round, in which
+          // case any subsequent quorums (i.e. with additional votes) are ignored -
+          // no need to dispatch duplicate delayed resolution events.
+          if (!hasTimeoutQuorumResolutionBeenDelayedInCurrentRound) {
+            hasTimeoutQuorumResolutionBeenDelayedInCurrentRound = true;
+            metrics.bft().timeoutQuorumDelayedResolutions().inc();
+            this.timeoutQuorumDelayedResolutionDispatcher.dispatch(
+                new TimeoutQuorumDelayedResolution(
+                    roundQuorumWithLastAuthor, timeoutQuorumResolutionDelayMs),
+                timeoutQuorumResolutionDelayMs);
+          }
+        } else {
+          // No delay was configured, so process the timeout quorum immediately
+          resolveCurrentRoundWithQuorum(timeoutRoundQuorum, lastVote);
         }
       }
     }
