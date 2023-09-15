@@ -182,6 +182,7 @@ public final class BFTEventStatelessVerifier implements BFTEventProcessor {
 
   @Override
   public void processProposal(Proposal proposal) {
+    this.metrics.bft().proposalsReceived().inc();
     final var expectedAuthor = proposerElection.getProposer(proposal.getRound());
     if (!proposal.getAuthor().equals(expectedAuthor)) {
       metrics

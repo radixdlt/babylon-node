@@ -22,8 +22,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.system.generated.models.ExecutedFork;
-import com.radixdlt.api.system.generated.models.HealthResponseUnknownReportedForks;
+import com.radixdlt.api.system.generated.models.ExecutedProtocolUpdate;
+import com.radixdlt.api.system.generated.models.PendingProtocolUpdate;
+import com.radixdlt.api.system.generated.models.UnknownReportedPendingProtocolUpdate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -36,11 +37,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   HealthResponse.JSON_PROPERTY_STATUS,
-  HealthResponse.JSON_PROPERTY_DETAIL,
-  HealthResponse.JSON_PROPERTY_CURRENT_FORK_NAME,
-  HealthResponse.JSON_PROPERTY_EXECUTED_FORKS,
-  HealthResponse.JSON_PROPERTY_FORK_VOTE_STATUS,
-  HealthResponse.JSON_PROPERTY_UNKNOWN_REPORTED_FORKS
+  HealthResponse.JSON_PROPERTY_CURRENT_PROTOCOL_VERSION,
+  HealthResponse.JSON_PROPERTY_EXECUTED_PROTOCOL_UPDATES,
+  HealthResponse.JSON_PROPERTY_PENDING_PROTOCOL_UPDATE,
+  HealthResponse.JSON_PROPERTY_UNKNOWN_REPORTED_PENDING_PROTOCOL_UPDATES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class HealthResponse {
@@ -90,55 +90,17 @@ public class HealthResponse {
   public static final String JSON_PROPERTY_STATUS = "status";
   private StatusEnum status;
 
-  public static final String JSON_PROPERTY_DETAIL = "detail";
-  private String detail;
+  public static final String JSON_PROPERTY_CURRENT_PROTOCOL_VERSION = "current_protocol_version";
+  private String currentProtocolVersion;
 
-  public static final String JSON_PROPERTY_CURRENT_FORK_NAME = "current_fork_name";
-  private String currentForkName;
+  public static final String JSON_PROPERTY_EXECUTED_PROTOCOL_UPDATES = "executed_protocol_updates";
+  private List<ExecutedProtocolUpdate> executedProtocolUpdates = new ArrayList<>();
 
-  public static final String JSON_PROPERTY_EXECUTED_FORKS = "executed_forks";
-  private List<ExecutedFork> executedForks = new ArrayList<>();
+  public static final String JSON_PROPERTY_PENDING_PROTOCOL_UPDATE = "pending_protocol_update";
+  private PendingProtocolUpdate pendingProtocolUpdate;
 
-  /**
-   * Gets or Sets forkVoteStatus
-   */
-  public enum ForkVoteStatusEnum {
-    VOTE_REQUIRED("VOTE_REQUIRED"),
-    
-    NO_ACTION_NEEDED("NO_ACTION_NEEDED");
-
-    private String value;
-
-    ForkVoteStatusEnum(String value) {
-      this.value = value;
-    }
-
-    @JsonValue
-    public String getValue() {
-      return value;
-    }
-
-    @Override
-    public String toString() {
-      return String.valueOf(value);
-    }
-
-    @JsonCreator
-    public static ForkVoteStatusEnum fromValue(String value) {
-      for (ForkVoteStatusEnum b : ForkVoteStatusEnum.values()) {
-        if (b.value.equals(value)) {
-          return b;
-        }
-      }
-      throw new IllegalArgumentException("Unexpected value '" + value + "'");
-    }
-  }
-
-  public static final String JSON_PROPERTY_FORK_VOTE_STATUS = "fork_vote_status";
-  private ForkVoteStatusEnum forkVoteStatus;
-
-  public static final String JSON_PROPERTY_UNKNOWN_REPORTED_FORKS = "unknown_reported_forks";
-  private List<HealthResponseUnknownReportedForks> unknownReportedForks = new ArrayList<>();
+  public static final String JSON_PROPERTY_UNKNOWN_REPORTED_PENDING_PROTOCOL_UPDATES = "unknown_reported_pending_protocol_updates";
+  private List<UnknownReportedPendingProtocolUpdate> unknownReportedPendingProtocolUpdates = new ArrayList<>();
 
 
   public HealthResponse status(StatusEnum status) {
@@ -167,143 +129,117 @@ public class HealthResponse {
   }
 
 
-  public HealthResponse detail(String detail) {
-    this.detail = detail;
+  public HealthResponse currentProtocolVersion(String currentProtocolVersion) {
+    this.currentProtocolVersion = currentProtocolVersion;
     return this;
   }
 
    /**
-   * A human-readable message detailing the &#x60;status&#x60;.
-   * @return detail
+   * A name identifying a protocol version.
+   * @return currentProtocolVersion
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "A human-readable message detailing the `status`.")
-  @JsonProperty(JSON_PROPERTY_DETAIL)
+  @ApiModelProperty(required = true, value = "A name identifying a protocol version.")
+  @JsonProperty(JSON_PROPERTY_CURRENT_PROTOCOL_VERSION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getDetail() {
-    return detail;
+  public String getCurrentProtocolVersion() {
+    return currentProtocolVersion;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_DETAIL)
+  @JsonProperty(JSON_PROPERTY_CURRENT_PROTOCOL_VERSION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setDetail(String detail) {
-    this.detail = detail;
+  public void setCurrentProtocolVersion(String currentProtocolVersion) {
+    this.currentProtocolVersion = currentProtocolVersion;
   }
 
 
-  public HealthResponse currentForkName(String currentForkName) {
-    this.currentForkName = currentForkName;
+  public HealthResponse executedProtocolUpdates(List<ExecutedProtocolUpdate> executedProtocolUpdates) {
+    this.executedProtocolUpdates = executedProtocolUpdates;
+    return this;
+  }
+
+  public HealthResponse addExecutedProtocolUpdatesItem(ExecutedProtocolUpdate executedProtocolUpdatesItem) {
+    this.executedProtocolUpdates.add(executedProtocolUpdatesItem);
     return this;
   }
 
    /**
-   * Get currentForkName
-   * @return currentForkName
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_CURRENT_FORK_NAME)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getCurrentForkName() {
-    return currentForkName;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_CURRENT_FORK_NAME)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setCurrentForkName(String currentForkName) {
-    this.currentForkName = currentForkName;
-  }
-
-
-  public HealthResponse executedForks(List<ExecutedFork> executedForks) {
-    this.executedForks = executedForks;
-    return this;
-  }
-
-  public HealthResponse addExecutedForksItem(ExecutedFork executedForksItem) {
-    this.executedForks.add(executedForksItem);
-    return this;
-  }
-
-   /**
-   * Get executedForks
-   * @return executedForks
+   * Get executedProtocolUpdates
+   * @return executedProtocolUpdates
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_EXECUTED_FORKS)
+  @JsonProperty(JSON_PROPERTY_EXECUTED_PROTOCOL_UPDATES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<ExecutedFork> getExecutedForks() {
-    return executedForks;
+  public List<ExecutedProtocolUpdate> getExecutedProtocolUpdates() {
+    return executedProtocolUpdates;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_EXECUTED_FORKS)
+  @JsonProperty(JSON_PROPERTY_EXECUTED_PROTOCOL_UPDATES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setExecutedForks(List<ExecutedFork> executedForks) {
-    this.executedForks = executedForks;
+  public void setExecutedProtocolUpdates(List<ExecutedProtocolUpdate> executedProtocolUpdates) {
+    this.executedProtocolUpdates = executedProtocolUpdates;
   }
 
 
-  public HealthResponse forkVoteStatus(ForkVoteStatusEnum forkVoteStatus) {
-    this.forkVoteStatus = forkVoteStatus;
+  public HealthResponse pendingProtocolUpdate(PendingProtocolUpdate pendingProtocolUpdate) {
+    this.pendingProtocolUpdate = pendingProtocolUpdate;
     return this;
   }
 
    /**
-   * Get forkVoteStatus
-   * @return forkVoteStatus
+   * Get pendingProtocolUpdate
+   * @return pendingProtocolUpdate
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_FORK_VOTE_STATUS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_PENDING_PROTOCOL_UPDATE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public ForkVoteStatusEnum getForkVoteStatus() {
-    return forkVoteStatus;
+  public PendingProtocolUpdate getPendingProtocolUpdate() {
+    return pendingProtocolUpdate;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_FORK_VOTE_STATUS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setForkVoteStatus(ForkVoteStatusEnum forkVoteStatus) {
-    this.forkVoteStatus = forkVoteStatus;
+  @JsonProperty(JSON_PROPERTY_PENDING_PROTOCOL_UPDATE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setPendingProtocolUpdate(PendingProtocolUpdate pendingProtocolUpdate) {
+    this.pendingProtocolUpdate = pendingProtocolUpdate;
   }
 
 
-  public HealthResponse unknownReportedForks(List<HealthResponseUnknownReportedForks> unknownReportedForks) {
-    this.unknownReportedForks = unknownReportedForks;
+  public HealthResponse unknownReportedPendingProtocolUpdates(List<UnknownReportedPendingProtocolUpdate> unknownReportedPendingProtocolUpdates) {
+    this.unknownReportedPendingProtocolUpdates = unknownReportedPendingProtocolUpdates;
     return this;
   }
 
-  public HealthResponse addUnknownReportedForksItem(HealthResponseUnknownReportedForks unknownReportedForksItem) {
-    this.unknownReportedForks.add(unknownReportedForksItem);
+  public HealthResponse addUnknownReportedPendingProtocolUpdatesItem(UnknownReportedPendingProtocolUpdate unknownReportedPendingProtocolUpdatesItem) {
+    this.unknownReportedPendingProtocolUpdates.add(unknownReportedPendingProtocolUpdatesItem);
     return this;
   }
 
    /**
-   * Get unknownReportedForks
-   * @return unknownReportedForks
+   * Get unknownReportedPendingProtocolUpdates
+   * @return unknownReportedPendingProtocolUpdates
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_UNKNOWN_REPORTED_FORKS)
+  @JsonProperty(JSON_PROPERTY_UNKNOWN_REPORTED_PENDING_PROTOCOL_UPDATES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<HealthResponseUnknownReportedForks> getUnknownReportedForks() {
-    return unknownReportedForks;
+  public List<UnknownReportedPendingProtocolUpdate> getUnknownReportedPendingProtocolUpdates() {
+    return unknownReportedPendingProtocolUpdates;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_UNKNOWN_REPORTED_FORKS)
+  @JsonProperty(JSON_PROPERTY_UNKNOWN_REPORTED_PENDING_PROTOCOL_UPDATES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setUnknownReportedForks(List<HealthResponseUnknownReportedForks> unknownReportedForks) {
-    this.unknownReportedForks = unknownReportedForks;
+  public void setUnknownReportedPendingProtocolUpdates(List<UnknownReportedPendingProtocolUpdate> unknownReportedPendingProtocolUpdates) {
+    this.unknownReportedPendingProtocolUpdates = unknownReportedPendingProtocolUpdates;
   }
 
 
@@ -320,16 +256,15 @@ public class HealthResponse {
     }
     HealthResponse healthResponse = (HealthResponse) o;
     return Objects.equals(this.status, healthResponse.status) &&
-        Objects.equals(this.detail, healthResponse.detail) &&
-        Objects.equals(this.currentForkName, healthResponse.currentForkName) &&
-        Objects.equals(this.executedForks, healthResponse.executedForks) &&
-        Objects.equals(this.forkVoteStatus, healthResponse.forkVoteStatus) &&
-        Objects.equals(this.unknownReportedForks, healthResponse.unknownReportedForks);
+        Objects.equals(this.currentProtocolVersion, healthResponse.currentProtocolVersion) &&
+        Objects.equals(this.executedProtocolUpdates, healthResponse.executedProtocolUpdates) &&
+        Objects.equals(this.pendingProtocolUpdate, healthResponse.pendingProtocolUpdate) &&
+        Objects.equals(this.unknownReportedPendingProtocolUpdates, healthResponse.unknownReportedPendingProtocolUpdates);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(status, detail, currentForkName, executedForks, forkVoteStatus, unknownReportedForks);
+    return Objects.hash(status, currentProtocolVersion, executedProtocolUpdates, pendingProtocolUpdate, unknownReportedPendingProtocolUpdates);
   }
 
   @Override
@@ -337,11 +272,10 @@ public class HealthResponse {
     StringBuilder sb = new StringBuilder();
     sb.append("class HealthResponse {\n");
     sb.append("    status: ").append(toIndentedString(status)).append("\n");
-    sb.append("    detail: ").append(toIndentedString(detail)).append("\n");
-    sb.append("    currentForkName: ").append(toIndentedString(currentForkName)).append("\n");
-    sb.append("    executedForks: ").append(toIndentedString(executedForks)).append("\n");
-    sb.append("    forkVoteStatus: ").append(toIndentedString(forkVoteStatus)).append("\n");
-    sb.append("    unknownReportedForks: ").append(toIndentedString(unknownReportedForks)).append("\n");
+    sb.append("    currentProtocolVersion: ").append(toIndentedString(currentProtocolVersion)).append("\n");
+    sb.append("    executedProtocolUpdates: ").append(toIndentedString(executedProtocolUpdates)).append("\n");
+    sb.append("    pendingProtocolUpdate: ").append(toIndentedString(pendingProtocolUpdate)).append("\n");
+    sb.append("    unknownReportedPendingProtocolUpdates: ").append(toIndentedString(unknownReportedPendingProtocolUpdates)).append("\n");
     sb.append("}");
     return sb.toString();
   }

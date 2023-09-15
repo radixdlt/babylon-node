@@ -67,10 +67,11 @@ package com.radixdlt.p2p.discovery;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.radixdlt.addressing.Addressing;
+import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.exceptions.Bech32DecodeException;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.RadixNodeUri;
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Pair;
 import java.net.InetAddress;
 import java.net.URI;
@@ -79,9 +80,13 @@ import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 // TODO: move to PeerDiscovery
 public final class SeedNodesConfigParser {
+  private static final Logger log = LogManager.getLogger();
+
   private final int defaultPort;
   private final Set<String> unresolvedUris = new HashSet<>();
   private final Set<RadixNodeUri> resolvedSeedNodes = new HashSet<>();
@@ -133,7 +138,11 @@ public final class SeedNodesConfigParser {
               addressing.decodeNodeAddress(parsedUri.getUserInfo()),
               resolved.getHostAddress(),
               parsedUri.getPort() > 0 ? parsedUri.getPort() : defaultPort));
-    } catch (UnknownHostException | URISyntaxException | DeserializeException e) {
+    } catch (UnknownHostException
+        | URISyntaxException
+        | Bech32DecodeException
+        | PublicKeyException e) {
+      log.error("Seed node address {} couldn't be parsed: {}", rawUri, e.getMessage());
       return Optional.empty();
     }
   }

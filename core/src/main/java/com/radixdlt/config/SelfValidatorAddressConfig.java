@@ -62,105 +62,40 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.config;
 
-import static java.util.Objects.requireNonNull;
+import com.google.common.base.Strings;
+import com.radixdlt.addressing.Addressing;
+import com.radixdlt.lang.Option;
+import com.radixdlt.rev2.ComponentAddress;
+import com.radixdlt.utils.properties.RuntimeProperties;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializerConstants;
-import com.radixdlt.serialization.SerializerDummy;
-import com.radixdlt.serialization.SerializerId2;
-import java.util.Objects;
-import javax.annotation.concurrent.Immutable;
+public sealed interface SelfValidatorAddressConfig {
+  record FromGenesis() implements SelfValidatorAddressConfig {}
 
-/**
- * The bft header which gets voted upon by consensus.
- *
- * <p>Includes the ledger header, which captures the resultant engine/transaction state.
- */
-@Immutable
-@SerializerId2("consensus.bft_header")
-public final class BFTHeader {
-  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
-  @DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
-  SerializerDummy serializer = SerializerDummy.DUMMY;
+  record Set(ComponentAddress validatorComponentAddress) implements SelfValidatorAddressConfig {}
 
-  private final Round round;
+  record Unset() implements SelfValidatorAddressConfig {}
 
-  @JsonProperty("vertex_id")
-  @DsonOutput(Output.ALL)
-  private final HashCode vertexId;
-
-  @JsonProperty("ledger_header")
-  @DsonOutput(Output.ALL)
-  private final LedgerHeader ledgerHeader;
-
-  public BFTHeader(
-      Round round, // consensus data
-      HashCode vertexId, // consensus data
-      LedgerHeader ledgerHeader) {
-    this.round = requireNonNull(round);
-    this.vertexId = requireNonNull(vertexId);
-    this.ledgerHeader = requireNonNull(ledgerHeader);
-  }
-
-  @JsonCreator
-  public static BFTHeader create(
-      @JsonProperty("round") long roundNumber,
-      @JsonProperty(value = "vertex_id", required = true) HashCode vertexId,
-      @JsonProperty(value = "ledger_header", required = true) LedgerHeader ledgerHeader) {
-    return new BFTHeader(Round.of(roundNumber), vertexId, ledgerHeader);
-  }
-
-  public static BFTHeader ofGenesisAncestor(LedgerHeader ledgerHeader) {
-    return new BFTHeader(Round.genesis(), HashUtils.zero256(), ledgerHeader);
-  }
-
-  public LedgerHeader getLedgerHeader() {
-    return ledgerHeader;
-  }
-
-  public Round getRound() {
-    return round;
-  }
-
-  public HashCode getVertexId() {
-    return vertexId;
-  }
-
-  @JsonProperty("round")
-  @DsonOutput(Output.ALL)
-  private long getSerializerRound() {
-    return round.number();
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(this.vertexId, this.round, this.ledgerHeader);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (o == this) {
-      return true;
+  static SelfValidatorAddressConfig fromRuntimeProperties(
+      RuntimeProperties properties, Addressing addressing) {
+    final var useGenesisProperty = properties.get("consensus.use_genesis_for_validator_address");
+    final Option<Boolean> useGenesis =
+        Strings.isNullOrEmpty(useGenesisProperty)
+            ? Option.none()
+            : Option.some(Boolean.parseBoolean(useGenesisProperty));
+    final var validatorAddress = properties.get("consensus.validator_address", (String) null);
+    if (useGenesis.isPresent() && useGenesis.unwrap() && !Strings.isNullOrEmpty(validatorAddress)) {
+      throw new IllegalArgumentException(
+          "Invalid configuration. Using both consensus.use_genesis_for_validator_address=true and"
+              + " consensus.validator_address. Please use one.");
+    } else if (!Strings.isNullOrEmpty(validatorAddress)) {
+      return new Set(addressing.decodeValidatorAddress(validatorAddress));
+    } else if (useGenesis.isEmpty() || (useGenesis.isPresent() && useGenesis.unwrap())) {
+      return new FromGenesis();
+    } else {
+      // No validator address provided, and use genesis explicitly disabled
+      return new Unset();
     }
-
-    return (o instanceof BFTHeader other)
-        && Objects.equals(this.round, other.round)
-        && Objects.equals(this.vertexId, other.vertexId)
-        && Objects.equals(this.ledgerHeader, other.ledgerHeader);
-  }
-
-  @Override
-  public String toString() {
-    return String.format(
-        "%s{round=%s vertex=%s ledger=%s}",
-        getClass().getSimpleName(), this.round, this.vertexId, this.ledgerHeader);
   }
 }

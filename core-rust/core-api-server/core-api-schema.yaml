@@ -3931,30 +3931,35 @@ components:
         propertyName: type
         mapping:
           # NOTE: These need to match TypeInfoType options above
-          Local: '#/components/schemas/LocalGenericSubstition'
-          Remote: '#/components/schemas/RemoteGenericSubstition'
-    LocalGenericSubstition:
+          Local: '#/components/schemas/LocalGenericSubstitution'
+          Remote: '#/components/schemas/RemoteGenericSubstitution'
+    LocalGenericSubstitution:
       allOf:
         - $ref: '#/components/schemas/GenericSubstitution'
         - type: object
           description: |
             The generic substitution is provided by the instance itself.
+            The `scoped_type_id` can be expanded to a `FullyScopedTypeId` by including the current entity's address.
           required:
             - scoped_type_id
           properties:
             scoped_type_id:
               $ref: '#/components/schemas/ScopedTypeId'
-    RemoteGenericSubstition:
+    RemoteGenericSubstitution:
       allOf:
         - $ref: '#/components/schemas/GenericSubstitution'
         - type: object
           description: |
             The generic substitution is provided remotely by a blueprint type.
+            The `resolved_full_type_id` is added by the node, and is always present in the model returned from the transaction stream API.
+            Other APIs may not resolve the type from the blueprint definition. 
           required:
             - blueprint_type_identifier
           properties:
             blueprint_type_identifier:
               $ref: '#/components/schemas/BlueprintTypeIdentifier'
+            resolved_full_type_id:
+              $ref: '#/components/schemas/FullyScopedTypeId'
     RoleAssignmentModuleFieldOwnerRoleSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -5592,6 +5597,7 @@ components:
       type: object
       required:
         - state_version
+        - proposer_timestamp_ms
         - accumulator_hash
         - status
         - fungible_entity_balance_changes
@@ -5601,6 +5607,12 @@ components:
         state_version:
           $ref: "#/components/schemas/StateVersion"
           description: The resultant state version after the transaction has been committed
+        proposer_timestamp_ms:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100000000000000
+          description: An integer between `0` and `10^14`, marking the proposer timestamp in ms.
         accumulator_hash:
           type: string
           minLength: 64

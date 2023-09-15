@@ -62,105 +62,17 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.protocol;
 
-import static java.util.Objects.requireNonNull;
+import static java.lang.annotation.ElementType.*;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializerConstants;
-import com.radixdlt.serialization.SerializerDummy;
-import com.radixdlt.serialization.SerializerId2;
-import java.util.Objects;
-import javax.annotation.concurrent.Immutable;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
 
-/**
- * The bft header which gets voted upon by consensus.
- *
- * <p>Includes the ledger header, which captures the resultant engine/transaction state.
- */
-@Immutable
-@SerializerId2("consensus.bft_header")
-public final class BFTHeader {
-  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
-  @DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
-  SerializerDummy serializer = SerializerDummy.DUMMY;
-
-  private final Round round;
-
-  @JsonProperty("vertex_id")
-  @DsonOutput(Output.ALL)
-  private final HashCode vertexId;
-
-  @JsonProperty("ledger_header")
-  @DsonOutput(Output.ALL)
-  private final LedgerHeader ledgerHeader;
-
-  public BFTHeader(
-      Round round, // consensus data
-      HashCode vertexId, // consensus data
-      LedgerHeader ledgerHeader) {
-    this.round = requireNonNull(round);
-    this.vertexId = requireNonNull(vertexId);
-    this.ledgerHeader = requireNonNull(ledgerHeader);
-  }
-
-  @JsonCreator
-  public static BFTHeader create(
-      @JsonProperty("round") long roundNumber,
-      @JsonProperty(value = "vertex_id", required = true) HashCode vertexId,
-      @JsonProperty(value = "ledger_header", required = true) LedgerHeader ledgerHeader) {
-    return new BFTHeader(Round.of(roundNumber), vertexId, ledgerHeader);
-  }
-
-  public static BFTHeader ofGenesisAncestor(LedgerHeader ledgerHeader) {
-    return new BFTHeader(Round.genesis(), HashUtils.zero256(), ledgerHeader);
-  }
-
-  public LedgerHeader getLedgerHeader() {
-    return ledgerHeader;
-  }
-
-  public Round getRound() {
-    return round;
-  }
-
-  public HashCode getVertexId() {
-    return vertexId;
-  }
-
-  @JsonProperty("round")
-  @DsonOutput(Output.ALL)
-  private long getSerializerRound() {
-    return round.number();
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(this.vertexId, this.round, this.ledgerHeader);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (o == this) {
-      return true;
-    }
-
-    return (o instanceof BFTHeader other)
-        && Objects.equals(this.round, other.round)
-        && Objects.equals(this.vertexId, other.vertexId)
-        && Objects.equals(this.ledgerHeader, other.ledgerHeader);
-  }
-
-  @Override
-  public String toString() {
-    return String.format(
-        "%s{round=%s vertex=%s ledger=%s}",
-        getClass().getSimpleName(), this.round, this.vertexId, this.ledgerHeader);
-  }
-}
+/** A binding annotation for beans related to the newest protocol version known to this Node. */
+@Qualifier
+@Target({FIELD, PARAMETER, METHOD})
+@Retention(RUNTIME)
+public @interface Newest {}
