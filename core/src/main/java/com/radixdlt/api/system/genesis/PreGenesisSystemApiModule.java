@@ -64,6 +64,8 @@
 
 package com.radixdlt.api.system.genesis;
 
+import static com.radixdlt.protocol.ProtocolVersion.ONLY_PROTOCOL_VERSION;
+
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
@@ -75,6 +77,9 @@ import com.radixdlt.api.system.SystemApiEndpoints;
 import com.radixdlt.api.system.health.HealthInfoService;
 import com.radixdlt.api.system.routes.HealthHandler;
 import com.radixdlt.api.system.routes.VersionHandler;
+import com.radixdlt.protocol.Current;
+import com.radixdlt.protocol.Newest;
+import com.radixdlt.protocol.ProtocolVersion;
 import io.undertow.server.HttpHandler;
 import java.util.Map;
 
@@ -93,6 +98,10 @@ public class PreGenesisSystemApiModule extends AbstractModule {
 
   @Override
   protected void configure() {
+    // TODO(when introducing actual protocol updates): design how to manage this
+    bind(ProtocolVersion.class).annotatedWith(Current.class).toInstance(ONLY_PROTOCOL_VERSION);
+    bind(ProtocolVersion.class).annotatedWith(Newest.class).toInstance(ONLY_PROTOCOL_VERSION);
+
     bind(HealthInfoService.class).to(PreGenesisHealthInfoService.class).in(Scopes.SINGLETON);
 
     final var binder =
