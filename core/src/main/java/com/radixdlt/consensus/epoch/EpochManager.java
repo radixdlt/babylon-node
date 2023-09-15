@@ -269,6 +269,10 @@ public final class EpochManager {
     final var initialRoundUpdate = RoundUpdate.create(round, highQC, leader, nextLeader);
 
     // Mutable Consensus State
+    log.info(
+        "Epoch {} Initial Vertex Store State: {}",
+        nextEpoch,
+        bftConfiguration.getVertexStoreState());
     final var vertexStore = vertexStoreFactory.create(bftConfiguration.getVertexStoreState());
     final var pacemakerState =
         pacemakerStateFactory.create(initialRoundUpdate, nextEpoch, proposerElection);

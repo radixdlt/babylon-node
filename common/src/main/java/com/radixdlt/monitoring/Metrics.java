@@ -165,6 +165,7 @@ public record Metrics(
       LabelledCounter<SuccessfullyProcessedVote> successfullyProcessedVotes,
       LabelledCounter<IgnoredVote> ignoredVotes,
       Counter successfullyProcessedProposals,
+      Counter proposalsReceived,
       Counter preconditionViolations,
       Counter duplicateProposalsReceived,
       Counter eventsReceived,
@@ -190,7 +191,15 @@ public record Metrics(
       Summary numSignaturesInCertificate,
       Counter divergentVertexExecutions) {
 
-    public record SuccessfullyProcessedVote(boolean isTimeout) {}
+    public record SuccessfullyProcessedVote(boolean isTimeout, VoteProcessingResult result) {}
+
+    public enum VoteProcessingResult {
+      ACCEPTED_NO_QUORUM,
+      ACCEPTED_FORMED_QC,
+      ACCEPTED_FORMED_TC,
+      REJECTED_INVALID_AUTHOR,
+      REJECTED_DUPLICATE_VOTE,
+    }
 
     public record QuorumResolution(boolean isTimeout) {}
 
@@ -209,7 +218,10 @@ public record Metrics(
         Counter proposalsSent,
         Counter timedOutRounds,
         Counter proposalsWithSubstituteTimestamp,
-        Timer roundDuration) {}
+        Timer roundDuration,
+        LabelledCounter<SentVote> votesSent) {}
+
+    public record SentVote(boolean isFallbackVertex, boolean isTimeout, boolean sentToAll) {}
 
     public record Sync(Counter requestsSent, Counter requestsReceived, Counter requestTimeouts) {}
 

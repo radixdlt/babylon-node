@@ -308,6 +308,24 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
       this.voteDispatcher.dispatch(this.latestRoundUpdate.getNextLeader(), vote);
     }
 
+    // This should always be Some(), we've just sent a vote for this vertex
+    // so it must have been successfully executed!
+    // But better not to unwrap() just to bump the metrics, even if it's safe :)
+    this.vertexStore
+        .getExecutedVertex(vote.getVoteData().getProposed().getVertexId())
+        .ifPresent(
+            executedVertex ->
+                metrics
+                    .bft()
+                    .pacemaker()
+                    .votesSent()
+                    .label(
+                        new Metrics.Bft.SentVote(
+                            executedVertex.vertex().isFallback(),
+                            vote.isTimeout(),
+                            this.scheduledRoundTimeoutHasOccurred))
+                    .inc());
+
     this.hasAnyVoteBeenSentInCurrentRound = true;
   }
 
