@@ -1,3 +1,5 @@
+use std::iter;
+
 use crate::core_api::*;
 
 use radix_engine::types::hash;
@@ -87,7 +89,11 @@ pub(crate) async fn handle_stream_transactions(
     // Reserve enough for the "header" fields
     let mut current_total_size = response.get_json_size();
     let bundles_iter = database.get_committed_transaction_bundle_iter(from_state_version);
-    let proofs_iter = database.get_proof_iter(from_state_version);
+    let proofs_iter = if request.include_proofs.is_some_and(|value| value) {
+        database.get_proof_iter(from_state_version)
+    } else {
+        Box::new(iter::empty())
+    };
     let transactions_and_proofs_iter =
         TransactionAndProofIterator::new(bundles_iter.peekable(), proofs_iter.peekable());
     for (bundle, maybe_proof) in transactions_and_proofs_iter.take(limit) {
@@ -115,12 +121,10 @@ pub(crate) async fn handle_stream_transactions(
         current_total_size += committed_transaction.get_json_size();
         response.transactions.push(committed_transaction);
 
-        if request.include_proofs.is_some_and(|value| value) {
-            if let Some(proof) = maybe_proof {
-                let api_proof = to_api_ledger_proof(&mapping_context, proof)?;
-                current_total_size += api_proof.get_json_size();
-                proofs.push(api_proof);
-            }
+        if let Some(proof) = maybe_proof {
+            let api_proof = to_api_ledger_proof(&mapping_context, proof)?;
+            current_total_size += api_proof.get_json_size();
+            proofs.push(api_proof);
         }
 
         if current_total_size > CAP_BATCH_RESPONSE_WHEN_ABOVE_BYTES {
