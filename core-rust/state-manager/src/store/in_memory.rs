@@ -97,17 +97,17 @@ pub struct InMemoryStore {
     transaction_identifiers: BTreeMap<StateVersion, CommittedTransactionIdentifiers>,
     ledger_receipts: BTreeMap<StateVersion, LedgerTransactionReceipt>,
     local_transaction_executions: BTreeMap<StateVersion, LocalTransactionExecution>,
-    transaction_intent_lookup: HashMap<IntentHash, StateVersion>,
-    user_payload_hash_lookup: HashMap<NotarizedTransactionHash, StateVersion>,
-    ledger_payload_hash_lookup: HashMap<LedgerTransactionHash, StateVersion>,
+    intent_hash_lookup: HashMap<IntentHash, StateVersion>,
+    notarized_transaction_hash_lookup: HashMap<NotarizedTransactionHash, StateVersion>,
+    ledger_transaction_hash_lookup: HashMap<LedgerTransactionHash, StateVersion>,
     proofs: BTreeMap<StateVersion, LedgerProof>,
     epoch_proofs: BTreeMap<Epoch, LedgerProof>,
     vertex_store: Option<Vec<u8>>,
     substate_store: InMemorySubstateDatabase,
     node_ancestry_records: BTreeMap<NodeId, SubstateNodeAncestryRecord>,
     tree_node_store: SerializedInMemoryTreeStore,
-    transaction_tree_slices: BTreeMap<StateVersion, TreeSlice<TransactionTreeHash>>,
-    receipt_tree_slices: BTreeMap<StateVersion, TreeSlice<ReceiptTreeHash>>,
+    transaction_tree_slices: BTreeMap<StateVersion, TransactionAccuTreeSlice>,
+    receipt_tree_slices: BTreeMap<StateVersion, ReceiptAccuTreeSlice>,
     account_change_index_last_state_version: StateVersion,
     account_change_index_set: HashMap<GlobalAddress, BTreeSet<StateVersion>>,
     executed_genesis_scenarios: BTreeMap<ScenarioSequenceNumber, ExecutedGenesisScenario>,
@@ -121,9 +121,9 @@ impl InMemoryStore {
             transaction_identifiers: BTreeMap::new(),
             ledger_receipts: BTreeMap::new(),
             local_transaction_executions: BTreeMap::new(),
-            transaction_intent_lookup: HashMap::new(),
-            user_payload_hash_lookup: HashMap::new(),
-            ledger_payload_hash_lookup: HashMap::new(),
+            intent_hash_lookup: HashMap::new(),
+            notarized_transaction_hash_lookup: HashMap::new(),
+            ledger_transaction_hash_lookup: HashMap::new(),
             proofs: BTreeMap::new(),
             epoch_proofs: BTreeMap::new(),
             vertex_store: None,
@@ -155,20 +155,19 @@ impl InMemoryStore {
             ..
         } = &identifiers.payload.typed
         {
-            let key_already_exists = self.transaction_intent_lookup.get(intent_hash);
-            if let Some(existing_payload_hash) = key_already_exists {
+            let existing_state_version = self.intent_hash_lookup.get(intent_hash);
+            if let Some(existing_state_version) = existing_state_version {
                 panic!(
-                    "Attempted to save intent hash which already exists: {existing_payload_hash:?}"
+                    "Attempted to save intent hash which already exists: {existing_state_version:?}"
                 );
             }
-            self.transaction_intent_lookup
-                .insert(*intent_hash, state_version);
-            self.user_payload_hash_lookup
+            self.intent_hash_lookup.insert(*intent_hash, state_version);
+            self.notarized_transaction_hash_lookup
                 .insert(*notarized_transaction_hash, state_version);
         }
 
-        self.ledger_payload_hash_lookup
-            .insert(identifiers.payload.ledger_payload_hash, state_version);
+        self.ledger_transaction_hash_lookup
+            .insert(identifiers.payload.ledger_transaction_hash, state_version);
 
         self.transactions.insert(state_version, transaction);
         self.ledger_receipts
@@ -221,7 +220,7 @@ impl RecoverableVertexStore for InMemoryStore {
 
 impl TransactionIndex<&IntentHash> for InMemoryStore {
     fn get_txn_state_version_by_identifier(&self, identifier: &IntentHash) -> Option<StateVersion> {
-        self.transaction_intent_lookup.get(identifier).cloned()
+        self.intent_hash_lookup.get(identifier).cloned()
     }
 }
 
@@ -230,7 +229,9 @@ impl TransactionIndex<&NotarizedTransactionHash> for InMemoryStore {
         &self,
         identifier: &NotarizedTransactionHash,
     ) -> Option<StateVersion> {
-        self.user_payload_hash_lookup.get(identifier).cloned()
+        self.notarized_transaction_hash_lookup
+            .get(identifier)
+            .cloned()
     }
 }
 
@@ -239,7 +240,7 @@ impl TransactionIndex<&LedgerTransactionHash> for InMemoryStore {
         &self,
         identifier: &LedgerTransactionHash,
     ) -> Option<StateVersion> {
-        self.ledger_payload_hash_lookup.get(identifier).cloned()
+        self.ledger_transaction_hash_lookup.get(identifier).cloned()
     }
 }
 
@@ -277,13 +278,17 @@ impl ReadableAccuTreeStore<StateVersion, TransactionTreeHash> for InMemoryStore 
         &self,
         state_version: &StateVersion,
     ) -> Option<TreeSlice<TransactionTreeHash>> {
-        self.transaction_tree_slices.get(state_version).cloned()
+        self.transaction_tree_slices
+            .get(state_version)
+            .map(|slice| slice.0.clone())
     }
 }
 
 impl ReadableAccuTreeStore<StateVersion, ReceiptTreeHash> for InMemoryStore {
     fn get_tree_slice(&self, state_version: &StateVersion) -> Option<TreeSlice<ReceiptTreeHash>> {
-        self.receipt_tree_slices.get(state_version).cloned()
+        self.receipt_tree_slices
+            .get(state_version)
+            .map(|slice| slice.0.clone())
     }
 }
 

@@ -22,8 +22,13 @@ use crate::{
     SubstateChangeHash, SubstateReference,
 };
 
+define_single_versioned! {
+    #[derive(Debug, Clone, Sbor)]
+    pub enum VersionedCommittedTransactionIdentifiers => CommittedTransactionIdentifiers = CommittedTransactionIdentifiersV1
+}
+
 #[derive(Debug, Clone, Sbor)]
-pub struct CommittedTransactionIdentifiers {
+pub struct CommittedTransactionIdentifiersV1 {
     pub payload: PayloadIdentifiers,
     pub resultant_ledger_hashes: LedgerHashes,
     pub proposer_timestamp_ms: i64,
@@ -133,14 +138,19 @@ pub struct LocalTransactionReceipt {
     pub local_execution: LocalTransactionExecution,
 }
 
-/// A part of the `LocalTransactionReceipt` which is completely stored on ledger. It contains only
+define_single_versioned! {
+    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub enum VersionedLedgerTransactionReceipt => LedgerTransactionReceipt = LedgerTransactionReceiptV1
+}
+
+/// A part of the [`LocalTransactionReceipt`] which is completely stored on ledger. It contains only
 /// the critical, deterministic pieces of the original Engine's `TransactionReceipt`.
 /// All these pieces can be verified against the Receipt Root hash (found in the Ledger Proof).
 /// Note: the Ledger Receipt is still a pretty large structure (i.e. containing entire collections,
 /// like substate changes) and is not supposed to be hashed directly - it should instead go through
-/// a `Consensus Receipt`.
+/// a [`ConsensusReceipt`].
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct LedgerTransactionReceipt {
+pub struct LedgerTransactionReceiptV1 {
     /// A simple, high-level outcome of the transaction.
     /// Its omitted details may be found in `LocalTransactionExecution::outcome`.
     pub outcome: LedgerTransactionOutcome,
@@ -150,11 +160,16 @@ pub struct LedgerTransactionReceipt {
     pub application_events: Vec<ApplicationEvent>,
 }
 
+define_single_versioned! {
+    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub enum VersionedLocalTransactionExecution => LocalTransactionExecution = LocalTransactionExecutionV1
+}
+
 /// A computable/non-critical/non-deterministic part of the `LocalTransactionReceipt` (e.g. logs,
 /// summaries).
 /// It is not verifiable against ledger, but may still be useful for debugging.
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct LocalTransactionExecution {
+pub struct LocalTransactionExecutionV1 {
     pub outcome: DetailedTransactionOutcome,
     pub fee_summary: TransactionFeeSummary,
     pub fee_source: FeeSource,
