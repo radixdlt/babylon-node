@@ -16,6 +16,9 @@
 pub struct LtsCommittedTransactionOutcome {
     #[serde(rename = "state_version")]
     pub state_version: i64,
+    /// An integer between `0` and `10^14`, marking the proposer timestamp in ms.
+    #[serde(rename = "proposer_timestamp_ms")]
+    pub proposer_timestamp_ms: i64,
     /// The hex-encoded transaction accumulator hash. This hash captures the order of all transactions on ledger. This hash is `ACC_{N+1} = combine(ACC_N, LEDGER_HASH_{N}))` (where `combine()` is an arbitrary deterministic function we use). 
     #[serde(rename = "accumulator_hash")]
     pub accumulator_hash: String,
@@ -36,9 +39,10 @@ pub struct LtsCommittedTransactionOutcome {
 
 impl LtsCommittedTransactionOutcome {
     /// For the given transaction, contains the status, total fee summary and individual entity resource balance changes. The balance changes accounts for the fee payments as well. Current implementation does not take into account recalls, but this will change in a future update. For failed transactions, current implementation does not return any balance changes (not even the fee payments). This will also change in a future update. 
-    pub fn new(state_version: i64, accumulator_hash: String, status: crate::core_api::generated::models::LtsCommittedTransactionStatus, fungible_entity_balance_changes: Vec<crate::core_api::generated::models::LtsEntityFungibleBalanceChanges>, resultant_account_fungible_balances: Vec<crate::core_api::generated::models::LtsResultantAccountFungibleBalances>, total_fee: String) -> LtsCommittedTransactionOutcome {
+    pub fn new(state_version: i64, proposer_timestamp_ms: i64, accumulator_hash: String, status: crate::core_api::generated::models::LtsCommittedTransactionStatus, fungible_entity_balance_changes: Vec<crate::core_api::generated::models::LtsEntityFungibleBalanceChanges>, resultant_account_fungible_balances: Vec<crate::core_api::generated::models::LtsResultantAccountFungibleBalances>, total_fee: String) -> LtsCommittedTransactionOutcome {
         LtsCommittedTransactionOutcome {
             state_version,
+            proposer_timestamp_ms,
             accumulator_hash,
             user_transaction_identifiers: None,
             status,

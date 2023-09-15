@@ -5597,6 +5597,7 @@ components:
       type: object
       required:
         - state_version
+        - proposer_timestamp_ms
         - accumulator_hash
         - status
         - fungible_entity_balance_changes
@@ -5606,6 +5607,12 @@ components:
         state_version:
           $ref: "#/components/schemas/StateVersion"
           description: The resultant state version after the transaction has been committed
+        proposer_timestamp_ms:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100000000000000
+          description: An integer between `0` and `10^14`, marking the proposer timestamp in ms.
         accumulator_hash:
           type: string
           minLength: 64
