@@ -31,6 +31,7 @@ pub fn to_api_lts_committed_transaction_outcome(
     let local_execution = &receipt.local_execution;
     Ok(models::LtsCommittedTransactionOutcome {
         state_version: to_api_state_version(state_version)?,
+        proposer_timestamp_ms: identifiers.proposer_timestamp_ms,
         accumulator_hash: to_lts_api_accumulator_hash(
             &identifiers.resultant_ledger_hashes.transaction_root,
         ),
