@@ -64,10 +64,6 @@
 
 package com.radixdlt.api.system.health;
 
-import com.radixdlt.environment.EventProcessor;
-
 public interface HealthInfoService {
   NodeStatus nodeStatus();
-
-  EventProcessor<ScheduledStatsCollecting> updateStats();
 }

@@ -62,69 +62,24 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system;
+package com.radixdlt.prometheus;
 
-import static com.radixdlt.api.system.health.NodeStatus.*;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
+import com.radixdlt.SecurityCritical;
+import com.radixdlt.SecurityCritical.SecurityKind;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.EnumCodec;
 
-import com.radixdlt.api.system.health.HealthInfoService;
-import com.radixdlt.api.system.health.HealthInfoServiceImpl;
-import com.radixdlt.api.system.health.ScheduledStatsCollecting;
-import com.radixdlt.environment.ScheduledEventDispatcher;
-import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.monitoring.MetricsInitializer;
-import io.prometheus.client.Gauge;
-import java.util.stream.IntStream;
-import org.junit.Test;
-
-public class HealthInfoServiceTest {
-  @SuppressWarnings("unchecked")
-  private final ScheduledEventDispatcher<ScheduledStatsCollecting> dispatcher =
-      mock(ScheduledEventDispatcher.class);
-
-  private final Metrics metrics = new MetricsInitializer().initialize();
-  private final HealthInfoService healthInfoService =
-      new HealthInfoServiceImpl(metrics, dispatcher);
-
-  @Test
-  public void testNodeStatus() {
-    Gauge ledgerGauge = metrics.ledger().stateVersion();
-    Gauge targetGauge = metrics.sync().targetStateVersion();
-    assertEquals(BOOTING_AT_GENESIS, healthInfoService.nodeStatus());
-
-    updateStatsSync(10, targetGauge, 5, ledgerGauge);
-
-    assertEquals(SYNCING, healthInfoService.nodeStatus());
-
-    updateStatsSync(10, targetGauge, 15, ledgerGauge);
-
-    assertEquals(UP, healthInfoService.nodeStatus());
-
-    updateStatsSync(10, targetGauge, 0, ledgerGauge);
-
-    assertEquals(STALLED, healthInfoService.nodeStatus());
+@SecurityCritical(SecurityKind.NUMERIC)
+public sealed interface LedgerStatus {
+  static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        LedgerStatus.class,
+        codecs -> EnumCodec.fromPermittedRecordSubclasses(LedgerStatus.class, codecs));
   }
 
-  private void updateStatsSync(int count1, Gauge gauge1, int count2, Gauge gauge2) {
-    var count = Math.min(count1, count2);
+  record Synced() implements LedgerStatus {}
 
-    IntStream.range(0, count)
-        .forEach(
-            __ -> {
-              gauge1.inc();
-              gauge2.inc();
-              healthInfoService.updateStats().process(ScheduledStatsCollecting.create());
-            });
+  record Syncing() implements LedgerStatus {}
 
-    var remaining = Math.max(count1, count2) - count;
-    var gauge = count1 > count2 ? gauge1 : gauge2;
-
-    IntStream.range(0, remaining)
-        .forEach(
-            __ -> {
-              gauge.inc();
-              healthInfoService.updateStats().process(ScheduledStatsCollecting.create());
-            });
-  }
+  record NotSyncing() implements LedgerStatus {}
 }
