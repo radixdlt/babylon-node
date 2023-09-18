@@ -170,6 +170,13 @@ impl<S: QueryableProofStore> StateComputer<S> {
             committed_transactions_metrics,
         }
     }
+
+    /// Exposes the [`LedgerMetrics::get_ledger_status()`].
+    /// This abstraction leak is needed to transfer the "overall ledger health" information from a
+    /// Rust-side (derived) metric, via JNI, to the Java-based "system health" endpoint.
+    pub fn get_ledger_status_from_metrics(&self) -> LedgerStatus {
+        self.ledger_metrics.get_ledger_status()
+    }
 }
 
 pub enum StateComputerRejectReason {

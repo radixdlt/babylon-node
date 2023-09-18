@@ -39,6 +39,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @ApiModel(description = "For the given transaction, contains the status, total fee summary and individual entity resource balance changes. The balance changes accounts for the fee payments as well. Current implementation does not take into account recalls, but this will change in a future update. For failed transactions, current implementation does not return any balance changes (not even the fee payments). This will also change in a future update. ")
 @JsonPropertyOrder({
   LtsCommittedTransactionOutcome.JSON_PROPERTY_STATE_VERSION,
+  LtsCommittedTransactionOutcome.JSON_PROPERTY_PROPOSER_TIMESTAMP_MS,
   LtsCommittedTransactionOutcome.JSON_PROPERTY_ACCUMULATOR_HASH,
   LtsCommittedTransactionOutcome.JSON_PROPERTY_USER_TRANSACTION_IDENTIFIERS,
   LtsCommittedTransactionOutcome.JSON_PROPERTY_STATUS,
@@ -50,6 +51,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 public class LtsCommittedTransactionOutcome {
   public static final String JSON_PROPERTY_STATE_VERSION = "state_version";
   private Long stateVersion;
+
+  public static final String JSON_PROPERTY_PROPOSER_TIMESTAMP_MS = "proposer_timestamp_ms";
+  private Long proposerTimestampMs;
 
   public static final String JSON_PROPERTY_ACCUMULATOR_HASH = "accumulator_hash";
   private String accumulatorHash;
@@ -97,6 +101,34 @@ public class LtsCommittedTransactionOutcome {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setStateVersion(Long stateVersion) {
     this.stateVersion = stateVersion;
+  }
+
+
+  public LtsCommittedTransactionOutcome proposerTimestampMs(Long proposerTimestampMs) {
+    this.proposerTimestampMs = proposerTimestampMs;
+    return this;
+  }
+
+   /**
+   * An integer between &#x60;0&#x60; and &#x60;10^14&#x60;, marking the proposer timestamp in ms.
+   * minimum: 0
+   * maximum: 100000000000000
+   * @return proposerTimestampMs
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "An integer between `0` and `10^14`, marking the proposer timestamp in ms.")
+  @JsonProperty(JSON_PROPERTY_PROPOSER_TIMESTAMP_MS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Long getProposerTimestampMs() {
+    return proposerTimestampMs;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_PROPOSER_TIMESTAMP_MS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setProposerTimestampMs(Long proposerTimestampMs) {
+    this.proposerTimestampMs = proposerTimestampMs;
   }
 
 
@@ -279,6 +311,7 @@ public class LtsCommittedTransactionOutcome {
     }
     LtsCommittedTransactionOutcome ltsCommittedTransactionOutcome = (LtsCommittedTransactionOutcome) o;
     return Objects.equals(this.stateVersion, ltsCommittedTransactionOutcome.stateVersion) &&
+        Objects.equals(this.proposerTimestampMs, ltsCommittedTransactionOutcome.proposerTimestampMs) &&
         Objects.equals(this.accumulatorHash, ltsCommittedTransactionOutcome.accumulatorHash) &&
         Objects.equals(this.userTransactionIdentifiers, ltsCommittedTransactionOutcome.userTransactionIdentifiers) &&
         Objects.equals(this.status, ltsCommittedTransactionOutcome.status) &&
@@ -289,7 +322,7 @@ public class LtsCommittedTransactionOutcome {
 
   @Override
   public int hashCode() {
-    return Objects.hash(stateVersion, accumulatorHash, userTransactionIdentifiers, status, fungibleEntityBalanceChanges, resultantAccountFungibleBalances, totalFee);
+    return Objects.hash(stateVersion, proposerTimestampMs, accumulatorHash, userTransactionIdentifiers, status, fungibleEntityBalanceChanges, resultantAccountFungibleBalances, totalFee);
   }
 
   @Override
@@ -297,6 +330,7 @@ public class LtsCommittedTransactionOutcome {
     StringBuilder sb = new StringBuilder();
     sb.append("class LtsCommittedTransactionOutcome {\n");
     sb.append("    stateVersion: ").append(toIndentedString(stateVersion)).append("\n");
+    sb.append("    proposerTimestampMs: ").append(toIndentedString(proposerTimestampMs)).append("\n");
     sb.append("    accumulatorHash: ").append(toIndentedString(accumulatorHash)).append("\n");
     sb.append("    userTransactionIdentifiers: ").append(toIndentedString(userTransactionIdentifiers)).append("\n");
     sb.append("    status: ").append(toIndentedString(status)).append("\n");
