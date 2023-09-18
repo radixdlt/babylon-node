@@ -26,7 +26,7 @@ export interface SborFormatOptions {
      */
     raw?: boolean;
     /**
-     * Whether to return the programmatic json format (default true)
+     * Whether to return the programmatic json format (normally default true, defaults false for streamed transactions)
      * @type {boolean}
      * @memberof SborFormatOptions
      */

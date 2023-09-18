@@ -55,6 +55,12 @@ export interface LtsCommittedTransactionOutcome {
      */
     state_version: number;
     /**
+     * An integer between `0` and `10^14`, marking the proposer timestamp in ms.
+     * @type {number}
+     * @memberof LtsCommittedTransactionOutcome
+     */
+    proposer_timestamp_ms: number;
+    /**
      * The hex-encoded transaction accumulator hash. This hash captures the order of all transactions on ledger.
      * This hash is `ACC_{N+1} = combine(ACC_N, LEDGER_HASH_{N}))` (where `combine()` is an arbitrary deterministic function we use).
      * @type {string}
@@ -102,6 +108,7 @@ export interface LtsCommittedTransactionOutcome {
 export function instanceOfLtsCommittedTransactionOutcome(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "state_version" in value;
+    isInstance = isInstance && "proposer_timestamp_ms" in value;
     isInstance = isInstance && "accumulator_hash" in value;
     isInstance = isInstance && "status" in value;
     isInstance = isInstance && "fungible_entity_balance_changes" in value;
@@ -122,6 +129,7 @@ export function LtsCommittedTransactionOutcomeFromJSONTyped(json: any, ignoreDis
     return {
         
         'state_version': json['state_version'],
+        'proposer_timestamp_ms': json['proposer_timestamp_ms'],
         'accumulator_hash': json['accumulator_hash'],
         'user_transaction_identifiers': !exists(json, 'user_transaction_identifiers') ? undefined : TransactionIdentifiersFromJSON(json['user_transaction_identifiers']),
         'status': LtsCommittedTransactionStatusFromJSON(json['status']),
@@ -141,6 +149,7 @@ export function LtsCommittedTransactionOutcomeToJSON(value?: LtsCommittedTransac
     return {
         
         'state_version': value.state_version,
+        'proposer_timestamp_ms': value.proposer_timestamp_ms,
         'accumulator_hash': value.accumulator_hash,
         'user_transaction_identifiers': TransactionIdentifiersToJSON(value.user_transaction_identifiers),
         'status': LtsCommittedTransactionStatusToJSON(value.status),
