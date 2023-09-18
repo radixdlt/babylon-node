@@ -1109,7 +1109,7 @@ components:
           description: Whether to return the raw hex-encoded bytes (default true)
           type: boolean
         programmatic_json:
-          description: Whether to return the programmatic json format (default true)
+          description: Whether to return the programmatic json format (normally default true, defaults false for streamed transactions)
           type: boolean
     TransactionFormatOptions:
       type: object
@@ -1122,7 +1122,7 @@ components:
           description: Whether to return the hex-encoded blobs (default false)
           type: boolean
         message:
-          description: Whether to return the transaction message (default false)
+          description: Whether to return the transaction message (default true)
           type: boolean
         raw_system_transaction:
           description: Whether to return the raw hex-encoded system transaction bytes (default false)
