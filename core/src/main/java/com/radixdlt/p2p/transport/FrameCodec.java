@@ -103,6 +103,8 @@ public final class FrameCodec {
     enc.init(
         true,
         new ParametersWithIV(
+            // The key is always unique (generated during handshake),
+            // so a zero-filled initialization vector is fine here.
             new KeyParameter(secrets.getAes()), new byte[encCipher.getBlockSize()]));
 
     final var decCipher = new AESEngine();
@@ -110,6 +112,8 @@ public final class FrameCodec {
     dec.init(
         false,
         new ParametersWithIV(
+            // The key is always unique (generated during handshake),
+            // so a zero-filled initialization vector is fine here.
             new KeyParameter(secrets.getAes()), new byte[decCipher.getBlockSize()]));
 
     egressMac = secrets.getEgressMac();
