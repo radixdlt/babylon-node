@@ -79,28 +79,32 @@ import java.util.Random;
  */
 public final class REv2SimpleFuzzerTransactionGenerator
     implements TransactionGenerator<RawNotarizedTransaction> {
+  private final NetworkDefinition networkDefinition;
   private final Addressing addressing;
+  private final String encodedFaucetAddress;
+  private final String lockFee;
   private final Random random;
 
   public REv2SimpleFuzzerTransactionGenerator(NetworkDefinition networkDefinition, Random random) {
+    this.networkDefinition = networkDefinition;
     this.addressing = Addressing.ofNetwork(networkDefinition);
+    this.encodedFaucetAddress = addressing.encode(ScryptoConstants.FAUCET_ADDRESS);
+    this.lockFee =
+        String.format(
+            "CALL_METHOD Address(\"%s\") \"lock_fee\" Decimal(\"10\");", encodedFaucetAddress);
     this.random = random;
   }
 
   private String nextInstruction() {
-    final var faucetAddress = addressing.encode(ScryptoConstants.FAUCET_ADDRESS);
     return switch (random.nextInt(4)) {
-      case 0 -> String.format(
-          "CALL_METHOD ComponentAddress(\"%s\") \"lock_fee\" Decimal(\"100\");", faucetAddress);
-      case 1 -> String.format("CALL_METHOD ComponentAddress(\"%s\") \"free\";", faucetAddress);
-      case 2 -> "CREATE_ACCOUNT Enum(\"AccessRule::AllowAll\");";
+      case 0 -> lockFee;
+      case 1 -> String.format("CALL_METHOD Address(\"%s\") \"free\";", encodedFaucetAddress);
+      case 3 -> "CREATE_ACCOUNT;";
       default -> {
-        ComponentAddress accountAddress =
+        final var accountAddress =
             Address.virtualAccountAddress(ECKeyPair.generateNew().getPublicKey());
         yield String.format(
-            """
-                CALL_METHOD ComponentAddress("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
-                """,
+            "CALL_METHOD Address(\"%s\") \"deposit_batch\" Expression(\"ENTIRE_WORKTOP\");",
             addressing.encode(accountAddress));
       }
     };
@@ -112,12 +116,15 @@ public final class REv2SimpleFuzzerTransactionGenerator
         PrivateKeys.numeric(1 + random.nextInt(10)).findFirst().orElseThrow();
     var manifestBuilder = new StringBuilder();
 
+    manifestBuilder.append(lockFee);
+    manifestBuilder.append("\n");
     var numInstructions = 1 + random.nextInt(20);
     for (int i = 0; i < numInstructions; i++) {
       manifestBuilder.append(this.nextInstruction());
+      manifestBuilder.append("\n");
     }
 
-    return TransactionBuilder.forNetwork(NetworkDefinition.LOCAL_SIMULATOR)
+    return TransactionBuilder.forNetwork(networkDefinition)
         .manifest(manifestBuilder.toString())
         .notary(notaryAndExplicitSignatory)
         .signatories(List.of(notaryAndExplicitSignatory))
