@@ -176,6 +176,8 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_reevaluateTransactionCo
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |max_reevaluated_count: u32| {
         let mempool_manager = JNINodeRustEnvironment::get_mempool_manager(&env, j_node_rust_env);
+        // Once we have an dedicated actor thread for Mempool, move this call there.
+        mempool_manager.execute_deferred_updates();
         mempool_manager.reevaluate_transaction_committability(max_reevaluated_count);
     })
 }

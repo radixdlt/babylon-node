@@ -66,25 +66,36 @@ use super::metrics::MempoolManagerMetrics;
 use crate::mempool::priority_mempool::*;
 use crate::mempool::*;
 use crate::MempoolAddSource;
+use crate::StateVersion;
+use node_common::locks::Mutex;
 use node_common::metrics::TakesMetricLabels;
 use prometheus::Registry;
 use transaction::model::*;
 
-use std::cmp::max;
 use std::collections::HashSet;
+use std::sync::mpsc::Receiver;
 use std::sync::Arc;
 use std::time::Instant;
 
 use crate::mempool_relay_dispatcher::MempoolRelayDispatcher;
 use crate::store::StateManagerDatabase;
-use crate::transaction::{
-    CachedCommittabilityValidator, ForceRecalculation, PrevalidatedCheckMetadata,
-};
+use crate::transaction::{CachedCommittabilityValidator, ForceRecalculation};
 use node_common::locks::RwLock;
 use tracing::warn;
 
+pub enum MempoolUpdate {
+    StateVersionUpdate(StateVersionUpdate),
+    TransactionRejected(NotarizedTransactionHash),
+}
+
+pub struct StateVersionUpdate {
+    pub payload_hash: NotarizedTransactionHash,
+    pub state_version: StateVersion,
+}
+
 /// A high-level API giving a thread-safe access to the `PriorityMempool`.
 pub struct MempoolManager {
+    deferred_updates_rx: Mutex<Receiver<MempoolUpdate>>,
     mempool: Arc<RwLock<PriorityMempool>>,
     relay_dispatcher: Option<MempoolRelayDispatcher>,
     cached_committability_validator: CachedCommittabilityValidator<StateManagerDatabase>,
@@ -94,12 +105,14 @@ pub struct MempoolManager {
 impl MempoolManager {
     /// Creates a manager and registers its metrics.
     pub fn new(
+        deferred_updates_rx: Mutex<Receiver<MempoolUpdate>>,
         mempool: Arc<RwLock<PriorityMempool>>,
         relay_dispatcher: MempoolRelayDispatcher,
         cached_committability_validator: CachedCommittabilityValidator<StateManagerDatabase>,
         metric_registry: &Registry,
     ) -> Self {
         Self {
+            deferred_updates_rx,
             mempool,
             relay_dispatcher: Some(relay_dispatcher),
             cached_committability_validator,
@@ -109,11 +122,13 @@ impl MempoolManager {
 
     /// Creates a testing manager (without the JNI-based relay dispatcher) and registers its metrics.
     pub fn new_for_testing(
+        deferred_updates_rx: Mutex<Receiver<MempoolUpdate>>,
         mempool: Arc<RwLock<PriorityMempool>>,
         cached_committability_validator: CachedCommittabilityValidator<StateManagerDatabase>,
         metric_registry: &Registry,
     ) -> Self {
         Self {
+            deferred_updates_rx,
             mempool,
             relay_dispatcher: None,
             cached_committability_validator,
@@ -166,35 +181,49 @@ impl MempoolManager {
             .collect()
     }
 
-    /// Checks the committability of a random subset of transactions and removes the rejected ones
-    /// from the mempool.
+    /// Updates the underlying [`PriorityMempool`] with all accumulated updates from [`self.deferred_updates_rx`].
+    /// Currently the only place that sends these updates is [`PendingTransactionResultCache`].
+    pub fn execute_deferred_updates(&self) {
+        let mut write_mempool = self.mempool.write();
+
+        let updates = self.deferred_updates_rx.lock();
+
+        // We use [`try_iter`] instead of [`iter`] because we don't want to wait since this is not called in it's own actor thread yet.
+        for mempool_update in updates.try_iter() {
+            match &mempool_update {
+                MempoolUpdate::StateVersionUpdate(StateVersionUpdate {
+                    payload_hash,
+                    state_version,
+                }) => {
+                    write_mempool
+                        .update_transaction_executed_state_version(payload_hash, *state_version);
+                }
+                MempoolUpdate::TransactionRejected(payload_hash) => {
+                    write_mempool.remove_by_payload_hash(payload_hash);
+                }
+            }
+        }
+    }
+
+    /// Checks the committability of a subset of transactions executed against earliest state versions
+    /// and removes the newly rejected ones from the mempool.
     /// Obeys the given limit on the number of actually executed (i.e. not cached) transactions.
     pub fn reevaluate_transaction_committability(&self, max_reevaluated_count: u32) {
-        // TODO: better selection of transactions based on last time/state version against it was reevaluated.
-        const MIN_TRANSACTIONS_TO_CHECK_FOR_REEVALUATION: u32 = 100;
-        let candidate_transactions = self.mempool.read().get_k_random_transactions(max(
-            max_reevaluated_count,
-            MIN_TRANSACTIONS_TO_CHECK_FOR_REEVALUATION,
-        )
-            as usize);
-
         let mut transactions_to_remove = Vec::new();
-        let mut reevaluated_count = 0;
-        for candidate_transaction in candidate_transactions {
-            let (record, was_cached) = self
+        for candidate_transaction in self
+            .mempool
+            .read()
+            .iter_by_state_version()
+            .take(max_reevaluated_count as usize)
+        {
+            let (record, _was_cached) = self
                 .cached_committability_validator
                 .check_for_rejection_cached_prevalidated(
-                    &candidate_transaction.validated,
-                    ForceRecalculation::No,
+                    &candidate_transaction.transaction.validated,
+                    ForceRecalculation::Yes,
                 );
             if record.latest_attempt.rejection.is_some() {
                 transactions_to_remove.push(candidate_transaction);
-            }
-            if was_cached == PrevalidatedCheckMetadata::Fresh {
-                reevaluated_count += 1;
-                if reevaluated_count >= max_reevaluated_count {
-                    break;
-                }
             }
         }
 
@@ -205,6 +234,7 @@ impl MempoolManager {
                 .for_each(|transaction_to_remove| {
                     write_mempool.remove_by_payload_hash(
                         &transaction_to_remove
+                            .transaction
                             .validated
                             .prepared
                             .notarized_transaction_hash(),
@@ -310,7 +340,7 @@ impl MempoolManager {
             .map_err(MempoolAddError::Rejected);
 
         match result {
-            Ok(validated) => {
+            Ok((validated, state_version)) => {
                 let mempool_transaction = Arc::new(MempoolTransaction {
                     validated,
                     raw: raw_transaction,
@@ -319,6 +349,7 @@ impl MempoolManager {
                     mempool_transaction.clone(),
                     source,
                     Instant::now(),
+                    state_version,
                 ) {
                     Ok(_evicted) => Ok(mempool_transaction),
                     Err(error) => Err(error),

@@ -64,7 +64,6 @@
 
 use radix_engine_common::prelude::*;
 
-// TODO: revisit & tune before Babylon
 pub const DEFAULT_MAX_VERTEX_TRANSACTION_COUNT: u32 = 100;
 pub const DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE: usize = (3.8 * 1024.0 * 1024.0) as usize;
 pub const DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED: u32 =

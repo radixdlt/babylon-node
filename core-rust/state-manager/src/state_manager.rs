@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use std::sync::Arc;
+use std::sync::{mpsc, Arc};
 
 use node_common::{
     config::{limits::VertexLimitsConfig, MempoolConfig},
@@ -158,11 +158,19 @@ impl StateManager {
             &logging_config,
             costing_parameters,
         ));
-        let pending_transaction_result_cache = Arc::new(
-            lock_factory
-                .named("pending_cache")
-                .new_rwlock(PendingTransactionResultCache::new(10000, 10000)),
-        );
+
+        let (mempool_deferred_updates_tx, mempool_deferred_updates_rx) = mpsc::channel();
+        let mempool_deferred_updates_tx = lock_factory
+            .named("mempool_deferred_updates_tx")
+            .new_mutex(mempool_deferred_updates_tx);
+        let mempool_deferred_updates_rx = lock_factory
+            .named("mempool_deferred_updates_rx")
+            .new_mutex(mempool_deferred_updates_rx);
+
+        let pending_transaction_result_cache =
+            Arc::new(lock_factory.named("pending_cache").new_rwlock(
+                PendingTransactionResultCache::new(mempool_deferred_updates_tx, 10000, 10000),
+            ));
         let committability_validator = Arc::new(CommittabilityValidator::new(
             &network,
             database.clone(),
@@ -182,11 +190,13 @@ impl StateManager {
 
         let mempool_manager = Arc::new(match mempool_relay_dispatcher {
             None => MempoolManager::new_for_testing(
+                mempool_deferred_updates_rx,
                 mempool.clone(),
                 cached_committability_validator,
                 metrics_registry,
             ),
             Some(mempool_relay_dispatcher) => MempoolManager::new(
+                mempool_deferred_updates_rx,
                 mempool.clone(),
                 mempool_relay_dispatcher,
                 cached_committability_validator,

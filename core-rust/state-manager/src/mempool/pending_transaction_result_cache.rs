@@ -1,7 +1,9 @@
+use node_common::locks::Mutex;
 use radix_engine_common::types::Epoch;
 use transaction::{errors::TransactionValidationError, model::*};
 
 use crate::{
+    mempool_manager::{MempoolUpdate, StateVersionUpdate},
     transaction::{CheckMetadata, StaticValidation},
     CommittedUserTransactionIdentifiers, MempoolAddRejection, StateVersion,
 };
@@ -12,6 +14,7 @@ use std::{
     fmt,
     num::NonZeroUsize,
     ops::Add,
+    sync::mpsc::Sender,
     time::{Duration, SystemTime},
 };
 
@@ -259,6 +262,23 @@ pub enum AtState {
     },
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct AtStateIntoStateVersionError(pub ());
+
+impl TryInto<StateVersion> for AtState {
+    type Error = AtStateIntoStateVersionError;
+
+    fn try_into(self) -> Result<StateVersion, Self::Error> {
+        match self {
+            AtState::Static => Err(AtStateIntoStateVersionError(())),
+            AtState::PendingPreparingVertices {
+                base_committed_state_version,
+            } => Ok(base_committed_state_version),
+            AtState::Committed { state_version } => Ok(state_version),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RetryFrom {
     Never,
@@ -338,7 +358,7 @@ impl PendingTransactionRecord {
     pub fn should_accept_into_mempool(
         self,
         check: CheckMetadata,
-    ) -> Result<Box<ValidatedNotarizedTransactionV1>, MempoolAddRejection> {
+    ) -> Result<(Box<ValidatedNotarizedTransactionV1>, StateVersion), MempoolAddRejection> {
         if let Some(permanent_rejection) = self.earliest_permanent_rejection {
             return Err(MempoolAddRejection {
                 reason: permanent_rejection.rejection.unwrap(),
@@ -363,7 +383,10 @@ impl PendingTransactionRecord {
             CheckMetadata::Cached => {
                 panic!("Precondition was not met - the result was cached, but the latest attempt was not a rejection")
             }
-            CheckMetadata::Fresh(StaticValidation::Valid(transaction)) => Ok(transaction),
+            CheckMetadata::Fresh(StaticValidation::Valid(transaction)) => Ok((
+                transaction,
+                self.latest_attempt.against_state.try_into().unwrap(),
+            )),
             CheckMetadata::Fresh(StaticValidation::Invalid) => {
                 panic!("A statically invalid transaction should already have been handled in the above")
             }
@@ -431,14 +454,20 @@ const NON_REJECTION_RECALCULATION_DELAY: Duration = Duration::from_secs(120);
 const MAX_RECALCULATION_DELAY: Duration = Duration::from_secs(1000);
 
 pub struct PendingTransactionResultCache {
+    mempool_deferred_updates_tx: Mutex<Sender<MempoolUpdate>>,
     pending_transaction_records: LruCache<NotarizedTransactionHash, PendingTransactionRecord>,
     intent_lookup: HashMap<IntentHash, HashSet<NotarizedTransactionHash>>,
     recently_committed_intents: LruCache<IntentHash, CommittedIntentRecord>,
 }
 
 impl PendingTransactionResultCache {
-    pub fn new(pending_txn_records_max_count: u32, committed_intents_max_size: u32) -> Self {
+    pub fn new(
+        mempool_deferred_updates_tx: Mutex<Sender<MempoolUpdate>>,
+        pending_txn_records_max_count: u32,
+        committed_intents_max_size: u32,
+    ) -> Self {
         PendingTransactionResultCache {
+            mempool_deferred_updates_tx,
             pending_transaction_records: LruCache::new(
                 NonZeroUsize::new(pending_txn_records_max_count as usize).unwrap(),
             ),
@@ -460,6 +489,22 @@ impl PendingTransactionResultCache {
         let existing_record = self
             .pending_transaction_records
             .get_mut(&notarized_transaction_hash);
+
+        let mempool_update = {
+            match &attempt.rejection {
+                None => MempoolUpdate::StateVersionUpdate(StateVersionUpdate {
+                    payload_hash: notarized_transaction_hash,
+                    state_version: attempt.against_state.clone().try_into().expect(
+                        "Succesfully executed transaction attempt should have state version",
+                    ),
+                }),
+                Some(_rejection) => MempoolUpdate::TransactionRejected(notarized_transaction_hash),
+            }
+        };
+        self.mempool_deferred_updates_tx
+            .lock()
+            .send(mempool_update)
+            .expect("mempool_deferred_updates_rx has been closed");
 
         if let Some(record) = existing_record {
             record.track_attempt(attempt);
@@ -629,6 +674,9 @@ struct CommittedIntentRecord {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::mpsc;
+
+    use node_common::locks::LockFactory;
     use radix_engine_interface::crypto::blake2b_256_hash;
 
     use super::*;
@@ -646,8 +694,17 @@ mod tests {
         let rejection_limit = 3;
         let recently_committed_intents_limit = 1;
 
-        let mut cache =
-            PendingTransactionResultCache::new(rejection_limit, recently_committed_intents_limit);
+        let lock_factory = LockFactory::new(|| {});
+        let (mempool_deferred_updates_tx, _mempool_deferred_updates_rx) = mpsc::channel();
+        let mempool_deferred_updates_tx = lock_factory
+            .named("mempool_deffered_updates_tx")
+            .new_mutex(mempool_deferred_updates_tx);
+
+        let mut cache = PendingTransactionResultCache::new(
+            mempool_deferred_updates_tx,
+            rejection_limit,
+            recently_committed_intents_limit,
+        );
 
         let payload_hash_1 = user_payload_hash(1);
         let payload_hash_2 = user_payload_hash(2);
@@ -792,8 +849,17 @@ mod tests {
         let recently_committed_intents_limit = 1;
         let now = SystemTime::now();
 
-        let mut cache =
-            PendingTransactionResultCache::new(rejection_limit, recently_committed_intents_limit);
+        let lock_factory = LockFactory::new(|| {});
+        let (mempool_deferred_updates_tx, _mempool_deferred_updates_rx) = mpsc::channel();
+        let mempool_deferred_updates_tx = lock_factory
+            .named("mempool_deffered_updates_tx")
+            .new_mutex(mempool_deferred_updates_tx);
+
+        let mut cache = PendingTransactionResultCache::new(
+            mempool_deferred_updates_tx,
+            rejection_limit,
+            recently_committed_intents_limit,
+        );
 
         let payload_hash_1 = user_payload_hash(1);
         let payload_hash_2 = user_payload_hash(2);
@@ -825,8 +891,17 @@ mod tests {
         let far_in_future = start.add(Duration::from_secs(u32::MAX as u64));
         let little_in_future = start.add(Duration::from_secs(1));
 
-        let mut cache =
-            PendingTransactionResultCache::new(rejection_limit, recently_committed_intents_limit);
+        let lock_factory = LockFactory::new(|| {});
+        let (mempool_deferred_updates_tx, _mempool_deferred_updates_rx) = mpsc::channel();
+        let mempool_deferred_updates_tx = lock_factory
+            .named("mempool_deffered_updates_tx")
+            .new_mutex(mempool_deferred_updates_tx);
+
+        let mut cache = PendingTransactionResultCache::new(
+            mempool_deferred_updates_tx,
+            rejection_limit,
+            recently_committed_intents_limit,
+        );
 
         let payload_hash_1 = user_payload_hash(1);
         let payload_hash_2 = user_payload_hash(2);
