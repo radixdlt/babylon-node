@@ -1166,7 +1166,7 @@ where
             transactions: committed_transaction_bundles,
             proof: commit_request.proof,
             substate_store_update,
-            vertex_store: commit_request.vertex_store,
+            vertex_store: commit_request.vertex_store.map(VertexStoreBlobV1),
             state_tree_update,
             transaction_tree_slice: TransactionAccuTreeSliceV1(
                 transaction_tree_slice_merger.into_slice(),

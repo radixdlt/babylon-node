@@ -157,13 +157,21 @@ pub mod vertex {
 
     #[enum_dispatch]
     pub trait RecoverableVertexStore {
-        fn get_vertex_store(&self) -> Option<Vec<u8>>;
+        fn get_vertex_store(&self) -> Option<VertexStoreBlob>;
     }
 
     #[enum_dispatch]
     pub trait WriteableVertexStore {
-        fn save_vertex_store(&mut self, vertex_store_bytes: Vec<u8>);
+        fn save_vertex_store(&mut self, blob: VertexStoreBlob);
     }
+
+    define_single_versioned! {
+        #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+        pub enum VersionedVertexStoreBlob => VertexStoreBlob = VertexStoreBlobV1
+    }
+
+    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub struct VertexStoreBlobV1(pub Vec<u8>);
 }
 
 pub mod substate {
@@ -330,7 +338,7 @@ pub mod commit {
         pub transactions: Vec<CommittedTransactionBundle>,
         pub proof: LedgerProof,
         pub substate_store_update: SubstateStoreUpdate,
-        pub vertex_store: Option<Vec<u8>>,
+        pub vertex_store: Option<VertexStoreBlob>,
         pub state_tree_update: HashTreeUpdate,
         pub transaction_tree_slice: TransactionAccuTreeSlice,
         pub receipt_tree_slice: ReceiptAccuTreeSlice,

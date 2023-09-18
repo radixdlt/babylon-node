@@ -102,7 +102,7 @@ pub struct InMemoryStore {
     ledger_transaction_hash_lookup: HashMap<LedgerTransactionHash, StateVersion>,
     proofs: BTreeMap<StateVersion, LedgerProof>,
     epoch_proofs: BTreeMap<Epoch, LedgerProof>,
-    vertex_store: Option<Vec<u8>>,
+    vertex_store: Option<VertexStoreBlob>,
     substate_store: InMemorySubstateDatabase,
     node_ancestry_records: BTreeMap<NodeId, SubstateNodeAncestryRecord>,
     tree_node_store: SerializedInMemoryTreeStore,
@@ -207,13 +207,13 @@ impl ConfigurableDatabase for InMemoryStore {
 }
 
 impl WriteableVertexStore for InMemoryStore {
-    fn save_vertex_store(&mut self, vertex_store_bytes: Vec<u8>) {
-        self.vertex_store = Some(vertex_store_bytes);
+    fn save_vertex_store(&mut self, blob: VertexStoreBlob) {
+        self.vertex_store = Some(blob);
     }
 }
 
 impl RecoverableVertexStore for InMemoryStore {
-    fn get_vertex_store(&self) -> Option<Vec<u8>> {
+    fn get_vertex_store(&self) -> Option<VertexStoreBlob> {
         self.vertex_store.clone()
     }
 }

@@ -131,7 +131,7 @@ enum RocksDBColumnFamily {
     /// Note: This table does not use explicit versioning wrapper, since the value represents a DB
     /// key of another table (and versioning DB keys is not useful).
     NotarizedTransactionHashToStateVersion,
-    /// DB "index" table for transaction's [`NotarizedTransactionHash`] resolution.
+    /// DB "index" table for transaction's [`LedgerTransactionHash`] resolution.
     /// Schema: `LedgerTransactionHash.as_ref::<[u8]>()` -> `StateVersion.to_bytes()`
     /// Note: This table does not use explicit versioning wrapper, since the value represents a DB
     /// key of another table (and versioning DB keys is not useful).
@@ -147,7 +147,7 @@ enum RocksDBColumnFamily {
     /// Note: we do not persist records of root Nodes (which do not have any ancestor).
     NodeIdToSubstateNodeAncestryRecord,
     /// Vertex store.
-    /// Schema: `[]` -> scrypto_encode(VersionedVertexStore)`
+    /// Schema: `[]` -> `scrypto_encode(VersionedVertexStore)`
     /// Note: This is a single-entry table (i.e. the empty key is the only allowed key).
     VertexStore,
     /// Individual nodes of the Substate database's hash tree.
@@ -553,7 +553,11 @@ impl CommitStore for RocksDBStore {
         }
 
         if let Some(vertex_store) = commit_bundle.vertex_store {
-            batch.put_cf(self.cf_handle(&VertexStore), [], vertex_store);
+            batch.put_cf(
+                self.cf_handle(&VertexStore),
+                [],
+                scrypto_encode(&VersionedVertexStoreBlob::new_latest(vertex_store)).unwrap(),
+            );
         }
 
         let state_hash_tree_update = commit_bundle.state_tree_update;
@@ -907,7 +911,7 @@ impl<'a> RocksDBProofIterator<'a> {
         let start_state_version_bytes = from_state_version.to_bytes();
         Self {
             proofs_iter: store.db.iterator_cf(
-                store.cf_handle(&LedgerProofByStateVersion),
+                store.cf_handle(&StateVersionToLedgerProof),
                 IteratorMode::From(&start_state_version_bytes, Direction::Forward),
             ),
         }
@@ -918,9 +922,11 @@ impl Iterator for RocksDBProofIterator<'_> {
     type Item = LedgerProof;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.proofs_iter
-            .next()
-            .map(|proof| scrypto_decode(proof.unwrap().1.as_ref()).unwrap())
+        self.proofs_iter.next().map(|proof| {
+            scrypto_decode::<VersionedLedgerProof>(proof.unwrap().1.as_ref())
+                .unwrap()
+                .into_latest()
+        })
     }
 }
 
@@ -1178,16 +1184,27 @@ impl ReadableAccuTreeStore<StateVersion, ReceiptTreeHash> for RocksDBStore {
 }
 
 impl WriteableVertexStore for RocksDBStore {
-    fn save_vertex_store(&mut self, vertex_store_bytes: Vec<u8>) {
+    fn save_vertex_store(&mut self, blob: VertexStoreBlob) {
         self.db
-            .put_cf(self.cf_handle(&VertexStore), [], vertex_store_bytes)
+            .put_cf(
+                self.cf_handle(&VertexStore),
+                [],
+                scrypto_encode(&VersionedVertexStoreBlob::new_latest(blob)).unwrap(),
+            )
             .unwrap();
     }
 }
 
 impl RecoverableVertexStore for RocksDBStore {
-    fn get_vertex_store(&self) -> Option<Vec<u8>> {
-        self.db.get_cf(self.cf_handle(&VertexStore), []).unwrap()
+    fn get_vertex_store(&self) -> Option<VertexStoreBlob> {
+        self.db
+            .get_cf(self.cf_handle(&VertexStore), [])
+            .unwrap()
+            .map(|bytes| {
+                scrypto_decode::<VersionedVertexStoreBlob>(&bytes)
+                    .unwrap()
+                    .into_latest()
+            })
     }
 }
 
