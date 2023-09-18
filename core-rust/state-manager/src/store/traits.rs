@@ -528,14 +528,12 @@ pub struct TransactionAndProofIterator<'a> {
 
 impl<'a> TransactionAndProofIterator<'a> {
     pub fn new(
-        committed_transaction_bundle: Peekable<
-            Box<dyn Iterator<Item = CommittedTransactionBundle> + 'a>,
-        >,
-        ledger_proof: Peekable<Box<dyn Iterator<Item = LedgerProof> + 'a>>,
+        committed_transaction_bundle: Box<dyn Iterator<Item = CommittedTransactionBundle> + 'a>,
+        ledger_proof: Box<dyn Iterator<Item = LedgerProof> + 'a>,
     ) -> Self {
         Self {
-            committed_transaction_bundle,
-            ledger_proof,
+            committed_transaction_bundle: committed_transaction_bundle.peekable(),
+            ledger_proof: ledger_proof.peekable(),
         }
     }
 }

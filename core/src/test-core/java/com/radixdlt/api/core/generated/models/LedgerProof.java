@@ -35,14 +35,14 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * LedgerProof
  */
 @JsonPropertyOrder({
-  LedgerProof.JSON_PROPERTY_OPAQUE,
+  LedgerProof.JSON_PROPERTY_OPAQUE_HASH,
   LedgerProof.JSON_PROPERTY_LEDGER_HEADER,
   LedgerProof.JSON_PROPERTY_TIMESTAMPED_SIGNATURES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class LedgerProof {
-  public static final String JSON_PROPERTY_OPAQUE = "opaque";
-  private String opaque;
+  public static final String JSON_PROPERTY_OPAQUE_HASH = "opaque_hash";
+  private String opaqueHash;
 
   public static final String JSON_PROPERTY_LEDGER_HEADER = "ledger_header";
   private LedgerHeader ledgerHeader;
@@ -53,29 +53,29 @@ public class LedgerProof {
   public LedgerProof() { 
   }
 
-  public LedgerProof opaque(String opaque) {
-    this.opaque = opaque;
+  public LedgerProof opaqueHash(String opaqueHash) {
+    this.opaqueHash = opaqueHash;
     return this;
   }
 
    /**
-   * A hex-encoded 32-byte hash
-   * @return opaque
+   * A hex-encoded 32-byte vertex VoteData hash on the consensus side, opaque to ledger.
+   * @return opaqueHash
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "A hex-encoded 32-byte hash")
-  @JsonProperty(JSON_PROPERTY_OPAQUE)
+  @ApiModelProperty(required = true, value = "A hex-encoded 32-byte vertex VoteData hash on the consensus side, opaque to ledger.")
+  @JsonProperty(JSON_PROPERTY_OPAQUE_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getOpaque() {
-    return opaque;
+  public String getOpaqueHash() {
+    return opaqueHash;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_OPAQUE)
+  @JsonProperty(JSON_PROPERTY_OPAQUE_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setOpaque(String opaque) {
-    this.opaque = opaque;
+  public void setOpaqueHash(String opaqueHash) {
+    this.opaqueHash = opaqueHash;
   }
 
 
@@ -148,21 +148,21 @@ public class LedgerProof {
       return false;
     }
     LedgerProof ledgerProof = (LedgerProof) o;
-    return Objects.equals(this.opaque, ledgerProof.opaque) &&
+    return Objects.equals(this.opaqueHash, ledgerProof.opaqueHash) &&
         Objects.equals(this.ledgerHeader, ledgerProof.ledgerHeader) &&
         Objects.equals(this.timestampedSignatures, ledgerProof.timestampedSignatures);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(opaque, ledgerHeader, timestampedSignatures);
+    return Objects.hash(opaqueHash, ledgerHeader, timestampedSignatures);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class LedgerProof {\n");
-    sb.append("    opaque: ").append(toIndentedString(opaque)).append("\n");
+    sb.append("    opaqueHash: ").append(toIndentedString(opaqueHash)).append("\n");
     sb.append("    ledgerHeader: ").append(toIndentedString(ledgerHeader)).append("\n");
     sb.append("    timestampedSignatures: ").append(toIndentedString(timestampedSignatures)).append("\n");
     sb.append("}");

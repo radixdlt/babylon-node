@@ -6927,7 +6927,7 @@ components:
         - ledger_header
         - timestamped_signatures
       properties:
-        opaque: 
+        opaque_hash: 
           $ref: "#/components/schemas/OpaqueHash"
         ledger_header:
           $ref: "#/components/schemas/LedgerHeader"
@@ -6999,7 +6999,7 @@ components:
       type: string
       minLength: 64
       maxLength: 64
-      description: A hex-encoded 32-byte hash
+      description: A hex-encoded 32-byte vertex VoteData hash on the consensus side, opaque to ledger.
     LedgerTransactionType:
       type: string
       description: The type of the ledger transaction

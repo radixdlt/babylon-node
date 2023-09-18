@@ -13,8 +13,8 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct TimestampedValidatorSignature {
-    #[serde(rename = "key")]
-    pub key: Box<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>,
+    #[serde(rename = "validator_key")]
+    pub validator_key: Box<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>,
     /// The Bech32m-encoded human readable version of the component address
     #[serde(rename = "validator_address")]
     pub validator_address: String,
@@ -26,9 +26,9 @@ pub struct TimestampedValidatorSignature {
 }
 
 impl TimestampedValidatorSignature {
-    pub fn new(key: crate::core_api::generated::models::EcdsaSecp256k1PublicKey, validator_address: String, timestamp_ms: i64, signature: crate::core_api::generated::models::EcdsaSecp256k1Signature) -> TimestampedValidatorSignature {
+    pub fn new(validator_key: crate::core_api::generated::models::EcdsaSecp256k1PublicKey, validator_address: String, timestamp_ms: i64, signature: crate::core_api::generated::models::EcdsaSecp256k1Signature) -> TimestampedValidatorSignature {
         TimestampedValidatorSignature {
-            key: Box::new(key),
+            validator_key: Box::new(validator_key),
             validator_address,
             timestamp_ms,
             signature: Box::new(signature),

@@ -94,8 +94,7 @@ pub(crate) async fn handle_stream_transactions(
     } else {
         Box::new(iter::empty())
     };
-    let transactions_and_proofs_iter =
-        TransactionAndProofIterator::new(bundles_iter.peekable(), proofs_iter.peekable());
+    let transactions_and_proofs_iter = TransactionAndProofIterator::new(bundles_iter, proofs_iter);
     for (bundle, maybe_proof) in transactions_and_proofs_iter.take(limit) {
         let CommittedTransactionBundle {
             state_version,
@@ -160,7 +159,7 @@ pub fn to_api_ledger_proof(
         .into_iter()
         .map(|timestamped_validator_signature| {
             Ok(models::TimestampedValidatorSignature {
-                key: Box::new(to_api_ecdsa_secp256k1_public_key(
+                validator_key: Box::new(to_api_ecdsa_secp256k1_public_key(
                     &timestamped_validator_signature.key,
                 )),
                 validator_address: to_api_component_address(
@@ -176,7 +175,7 @@ pub fn to_api_ledger_proof(
         })
         .collect::<Result<_, _>>()?;
     Ok(models::LedgerProof {
-        opaque: to_api_hash(&proof.opaque),
+        opaque_hash: to_api_hash(&proof.opaque),
         ledger_header: Box::new(to_api_ledger_header(mapping_context, proof.ledger_header)?),
         timestamped_signatures,
     })

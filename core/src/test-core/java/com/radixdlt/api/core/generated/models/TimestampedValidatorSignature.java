@@ -33,15 +33,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * TimestampedValidatorSignature
  */
 @JsonPropertyOrder({
-  TimestampedValidatorSignature.JSON_PROPERTY_KEY,
+  TimestampedValidatorSignature.JSON_PROPERTY_VALIDATOR_KEY,
   TimestampedValidatorSignature.JSON_PROPERTY_VALIDATOR_ADDRESS,
   TimestampedValidatorSignature.JSON_PROPERTY_TIMESTAMP_MS,
   TimestampedValidatorSignature.JSON_PROPERTY_SIGNATURE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class TimestampedValidatorSignature {
-  public static final String JSON_PROPERTY_KEY = "key";
-  private EcdsaSecp256k1PublicKey key;
+  public static final String JSON_PROPERTY_VALIDATOR_KEY = "validator_key";
+  private EcdsaSecp256k1PublicKey validatorKey;
 
   public static final String JSON_PROPERTY_VALIDATOR_ADDRESS = "validator_address";
   private String validatorAddress;
@@ -55,29 +55,29 @@ public class TimestampedValidatorSignature {
   public TimestampedValidatorSignature() { 
   }
 
-  public TimestampedValidatorSignature key(EcdsaSecp256k1PublicKey key) {
-    this.key = key;
+  public TimestampedValidatorSignature validatorKey(EcdsaSecp256k1PublicKey validatorKey) {
+    this.validatorKey = validatorKey;
     return this;
   }
 
    /**
-   * Get key
-   * @return key
+   * Get validatorKey
+   * @return validatorKey
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_KEY)
+  @JsonProperty(JSON_PROPERTY_VALIDATOR_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EcdsaSecp256k1PublicKey getKey() {
-    return key;
+  public EcdsaSecp256k1PublicKey getValidatorKey() {
+    return validatorKey;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_KEY)
+  @JsonProperty(JSON_PROPERTY_VALIDATOR_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setKey(EcdsaSecp256k1PublicKey key) {
-    this.key = key;
+  public void setValidatorKey(EcdsaSecp256k1PublicKey validatorKey) {
+    this.validatorKey = validatorKey;
   }
 
 
@@ -173,7 +173,7 @@ public class TimestampedValidatorSignature {
       return false;
     }
     TimestampedValidatorSignature timestampedValidatorSignature = (TimestampedValidatorSignature) o;
-    return Objects.equals(this.key, timestampedValidatorSignature.key) &&
+    return Objects.equals(this.validatorKey, timestampedValidatorSignature.validatorKey) &&
         Objects.equals(this.validatorAddress, timestampedValidatorSignature.validatorAddress) &&
         Objects.equals(this.timestampMs, timestampedValidatorSignature.timestampMs) &&
         Objects.equals(this.signature, timestampedValidatorSignature.signature);
@@ -181,14 +181,14 @@ public class TimestampedValidatorSignature {
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, validatorAddress, timestampMs, signature);
+    return Objects.hash(validatorKey, validatorAddress, timestampMs, signature);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class TimestampedValidatorSignature {\n");
-    sb.append("    key: ").append(toIndentedString(key)).append("\n");
+    sb.append("    validatorKey: ").append(toIndentedString(validatorKey)).append("\n");
     sb.append("    validatorAddress: ").append(toIndentedString(validatorAddress)).append("\n");
     sb.append("    timestampMs: ").append(toIndentedString(timestampMs)).append("\n");
     sb.append("    signature: ").append(toIndentedString(signature)).append("\n");

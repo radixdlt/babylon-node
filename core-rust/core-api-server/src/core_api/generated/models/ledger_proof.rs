@@ -13,9 +13,9 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct LedgerProof {
-    /// A hex-encoded 32-byte hash
-    #[serde(rename = "opaque")]
-    pub opaque: String,
+    /// A hex-encoded 32-byte vertex VoteData hash on the consensus side, opaque to ledger.
+    #[serde(rename = "opaque_hash")]
+    pub opaque_hash: String,
     #[serde(rename = "ledger_header")]
     pub ledger_header: Box<crate::core_api::generated::models::LedgerHeader>,
     #[serde(rename = "timestamped_signatures")]
@@ -23,9 +23,9 @@ pub struct LedgerProof {
 }
 
 impl LedgerProof {
-    pub fn new(opaque: String, ledger_header: crate::core_api::generated::models::LedgerHeader, timestamped_signatures: Vec<crate::core_api::generated::models::TimestampedValidatorSignature>) -> LedgerProof {
+    pub fn new(opaque_hash: String, ledger_header: crate::core_api::generated::models::LedgerHeader, timestamped_signatures: Vec<crate::core_api::generated::models::TimestampedValidatorSignature>) -> LedgerProof {
         LedgerProof {
-            opaque,
+            opaque_hash,
             ledger_header: Box::new(ledger_header),
             timestamped_signatures,
         }
