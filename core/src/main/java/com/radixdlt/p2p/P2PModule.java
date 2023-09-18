@@ -64,6 +64,8 @@
 
 package com.radixdlt.p2p;
 
+import static com.radixdlt.protocol.ProtocolVersion.ONLY_PROTOCOL_VERSION;
+
 import com.google.inject.*;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
@@ -94,9 +96,6 @@ import com.radixdlt.store.NodeStorageLocation;
 import com.radixdlt.utils.properties.RuntimeProperties;
 
 public final class P2PModule extends AbstractModule {
-
-  /** The only currently defined protocol version. */
-  private static final ProtocolVersion ONLY_PROTOCOL_VERSION = new ProtocolVersion("babylon-v1");
 
   private final RuntimeProperties properties;
 

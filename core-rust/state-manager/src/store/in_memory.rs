@@ -478,6 +478,15 @@ impl TransactionIdentifierLoader for InMemoryStore {
     }
 }
 
+impl IterableProofStore for InMemoryStore {
+    fn get_proof_iter(
+        &self,
+        _from_state_version: StateVersion,
+    ) -> Box<dyn Iterator<Item = LedgerProof> + '_> {
+        unimplemented!()
+    }
+}
+
 impl QueryableProofStore for InMemoryStore {
     fn max_state_version(&self) -> StateVersion {
         self.transactions

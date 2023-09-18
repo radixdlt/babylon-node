@@ -40,7 +40,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   StreamTransactionsRequest.JSON_PROPERTY_LIMIT,
   StreamTransactionsRequest.JSON_PROPERTY_SBOR_FORMAT_OPTIONS,
   StreamTransactionsRequest.JSON_PROPERTY_TRANSACTION_FORMAT_OPTIONS,
-  StreamTransactionsRequest.JSON_PROPERTY_SUBSTATE_FORMAT_OPTIONS
+  StreamTransactionsRequest.JSON_PROPERTY_SUBSTATE_FORMAT_OPTIONS,
+  StreamTransactionsRequest.JSON_PROPERTY_INCLUDE_PROOFS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class StreamTransactionsRequest {
@@ -61,6 +62,9 @@ public class StreamTransactionsRequest {
 
   public static final String JSON_PROPERTY_SUBSTATE_FORMAT_OPTIONS = "substate_format_options";
   private SubstateFormatOptions substateFormatOptions;
+
+  public static final String JSON_PROPERTY_INCLUDE_PROOFS = "include_proofs";
+  private Boolean includeProofs;
 
   public StreamTransactionsRequest() { 
   }
@@ -223,6 +227,32 @@ public class StreamTransactionsRequest {
   }
 
 
+  public StreamTransactionsRequest includeProofs(Boolean includeProofs) {
+    this.includeProofs = includeProofs;
+    return this;
+  }
+
+   /**
+   * Whether to include LedgerProofs (default false)
+   * @return includeProofs
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "Whether to include LedgerProofs (default false)")
+  @JsonProperty(JSON_PROPERTY_INCLUDE_PROOFS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public Boolean getIncludeProofs() {
+    return includeProofs;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_INCLUDE_PROOFS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setIncludeProofs(Boolean includeProofs) {
+    this.includeProofs = includeProofs;
+  }
+
+
   /**
    * Return true if this StreamTransactionsRequest object is equal to o.
    */
@@ -240,12 +270,13 @@ public class StreamTransactionsRequest {
         Objects.equals(this.limit, streamTransactionsRequest.limit) &&
         Objects.equals(this.sborFormatOptions, streamTransactionsRequest.sborFormatOptions) &&
         Objects.equals(this.transactionFormatOptions, streamTransactionsRequest.transactionFormatOptions) &&
-        Objects.equals(this.substateFormatOptions, streamTransactionsRequest.substateFormatOptions);
+        Objects.equals(this.substateFormatOptions, streamTransactionsRequest.substateFormatOptions) &&
+        Objects.equals(this.includeProofs, streamTransactionsRequest.includeProofs);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(network, fromStateVersion, limit, sborFormatOptions, transactionFormatOptions, substateFormatOptions);
+    return Objects.hash(network, fromStateVersion, limit, sborFormatOptions, transactionFormatOptions, substateFormatOptions, includeProofs);
   }
 
   @Override
@@ -258,6 +289,7 @@ public class StreamTransactionsRequest {
     sb.append("    sborFormatOptions: ").append(toIndentedString(sborFormatOptions)).append("\n");
     sb.append("    transactionFormatOptions: ").append(toIndentedString(transactionFormatOptions)).append("\n");
     sb.append("    substateFormatOptions: ").append(toIndentedString(substateFormatOptions)).append("\n");
+    sb.append("    includeProofs: ").append(toIndentedString(includeProofs)).append("\n");
     sb.append("}");
     return sb.toString();
   }
