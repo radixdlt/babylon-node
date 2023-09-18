@@ -64,4 +64,7 @@
 
 package com.radixdlt.protocol;
 
-public record ProtocolVersion(String name) {}
+public record ProtocolVersion(String name) {
+  /** The only currently defined protocol version. */
+  public static final ProtocolVersion ONLY_PROTOCOL_VERSION = new ProtocolVersion("babylon-v1");
+}

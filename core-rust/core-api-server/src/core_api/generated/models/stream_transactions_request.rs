@@ -28,6 +28,9 @@ pub struct StreamTransactionsRequest {
     pub transaction_format_options: Option<Box<crate::core_api::generated::models::TransactionFormatOptions>>,
     #[serde(rename = "substate_format_options", skip_serializing_if = "Option::is_none")]
     pub substate_format_options: Option<Box<crate::core_api::generated::models::SubstateFormatOptions>>,
+    /// Whether to include LedgerProofs (default false)
+    #[serde(rename = "include_proofs", skip_serializing_if = "Option::is_none")]
+    pub include_proofs: Option<bool>,
 }
 
 impl StreamTransactionsRequest {
@@ -40,6 +43,7 @@ impl StreamTransactionsRequest {
             sbor_format_options: None,
             transaction_format_options: None,
             substate_format_options: None,
+            include_proofs: None,
         }
     }
 }

@@ -66,16 +66,10 @@ package com.radixdlt.api.system;
 
 import com.google.inject.*;
 import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.api.common.HandlerRoute;
 import com.radixdlt.api.system.health.HealthInfoService;
 import com.radixdlt.api.system.health.HealthInfoServiceImpl;
-import com.radixdlt.api.system.health.ScheduledStatsCollecting;
 import com.radixdlt.api.system.routes.*;
-import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.LocalEvents;
-import com.radixdlt.environment.Runners;
 import io.undertow.server.HttpHandler;
 import java.util.Map;
 
@@ -93,10 +87,6 @@ public class SystemApiModule extends AbstractModule {
 
   @Override
   protected void configure() {
-    var eventBinder =
-        Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
-            .permitDuplicates();
-    eventBinder.addBinding().toInstance(ScheduledStatsCollecting.class);
     bind(HealthInfoService.class).to(HealthInfoServiceImpl.class).in(Scopes.SINGLETON);
 
     var binder =
@@ -111,12 +101,6 @@ public class SystemApiModule extends AbstractModule {
     binder
         .addBinding(HandlerRoute.get("/system/network-sync-status"))
         .to(NetworkSyncStatusHandler.class);
-  }
-
-  @ProvidesIntoSet
-  public EventProcessorOnRunner<?> healthInfoService(HealthInfoService healthInfoService) {
-    return new EventProcessorOnRunner<>(
-        Runners.SYSTEM_INFO, ScheduledStatsCollecting.class, healthInfoService.updateStats());
   }
 
   @Provides
