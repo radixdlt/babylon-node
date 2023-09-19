@@ -219,6 +219,9 @@ public abstract class DeterministicCoreApiTestBase {
     // Create a dummy SSLContext to avoid the "NoSuchAlgorithmException" when
     // the default HttpClient fails to load a trust store. We don't need SSL anyway.
     try {
+      // SNYK - this file is ignored in .snyk file
+      // Raised issue: Inadequate Encryption Strength
+      // Explanation: This is just a test, it doesn't matter.
       final var dummySSLContext = SSLContext.getInstance("TLS");
       dummySSLContext.init(null, null, null);
       apiClient.setHttpClientBuilder(HttpClient.newBuilder().sslContext(dummySSLContext));
