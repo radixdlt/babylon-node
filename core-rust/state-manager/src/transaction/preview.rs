@@ -9,8 +9,7 @@ use crate::staging::ReadableStore;
 use crate::store::traits::QueryableProofStore;
 use crate::transaction::*;
 use crate::{
-    BySubstate, ChangeAction, GlobalBalanceSummary, LedgerHeader, PreviewRequest,
-    ProcessedCommitResult,
+    GlobalBalanceSummary, LedgerHeader, LedgerStateChanges, PreviewRequest, ProcessedCommitResult,
 };
 use radix_engine_common::prelude::*;
 use transaction::model::*;
@@ -28,7 +27,7 @@ pub struct TransactionPreviewer<S> {
 pub struct ProcessedPreviewResult {
     pub base_ledger_header: LedgerHeader,
     pub receipt: TransactionReceipt,
-    pub substate_changes: BySubstate<ChangeAction>,
+    pub state_changes: LedgerStateChanges,
     pub global_balance_summary: GlobalBalanceSummary,
 }
 
@@ -64,23 +63,23 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
             .wrap_preview_transaction(&validated);
 
         let receipt = transaction_logic.execute_on(read_store.deref());
-        let (substate_changes, global_balance_summary) = match &receipt.result {
+        let (state_changes, global_balance_summary) = match &receipt.result {
             TransactionResult::Commit(commit) => {
-                let substate_changes = ProcessedCommitResult::compute_substate_changes::<
+                let state_changes = ProcessedCommitResult::compute_ledger_state_changes::<
                     S,
                     SpreadPrefixKeyMapper,
                 >(read_store.deref(), &commit.state_updates);
                 let global_balance_update = ProcessedCommitResult::compute_global_balance_update(
                     read_store.deref(),
-                    &substate_changes,
+                    &state_changes,
                     &commit.state_update_summary.vault_balance_changes,
                 );
-                (
-                    substate_changes,
-                    global_balance_update.global_balance_summary,
-                )
+                (state_changes, global_balance_update.global_balance_summary)
             }
-            _ => (BySubstate::new(), GlobalBalanceSummary::default()),
+            _ => (
+                LedgerStateChanges::default(),
+                GlobalBalanceSummary::default(),
+            ),
         };
 
         let base_ledger_header = read_store
@@ -91,7 +90,7 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
         Ok(ProcessedPreviewResult {
             base_ledger_header,
             receipt,
-            substate_changes,
+            state_changes,
             global_balance_summary,
         })
     }
@@ -173,6 +172,6 @@ mod tests {
         });
 
         // just checking that we're getting some processed substate changes back in the response
-        assert!(!preview_response.unwrap().substate_changes.is_empty());
+        assert!(!preview_response.unwrap().state_changes.is_empty());
     }
 }

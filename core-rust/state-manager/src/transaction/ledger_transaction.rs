@@ -12,7 +12,7 @@ use super::{
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub struct PayloadIdentifiers {
-    pub ledger_payload_hash: LedgerTransactionHash,
+    pub ledger_transaction_hash: LedgerTransactionHash,
     pub typed: TypedTransactionIdentifiers,
 }
 
@@ -140,7 +140,7 @@ impl PreparedLedgerTransaction {
 
     pub fn create_identifiers(&self) -> PayloadIdentifiers {
         PayloadIdentifiers {
-            ledger_payload_hash: self.ledger_transaction_hash(),
+            ledger_transaction_hash: self.ledger_transaction_hash(),
             typed: match &self.inner {
                 PreparedLedgerTransactionInner::Genesis(t) => {
                     TypedTransactionIdentifiers::Genesis {
@@ -361,7 +361,7 @@ impl ValidatedLedgerTransaction {
 
     pub fn create_identifiers(&self) -> PayloadIdentifiers {
         PayloadIdentifiers {
-            ledger_payload_hash: self.ledger_transaction_hash(),
+            ledger_transaction_hash: self.ledger_transaction_hash(),
             typed: match &self.inner {
                 ValidatedLedgerTransactionInner::Genesis(t) => {
                     TypedTransactionIdentifiers::Genesis {

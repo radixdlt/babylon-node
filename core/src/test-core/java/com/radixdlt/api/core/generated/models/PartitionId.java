@@ -24,30 +24,24 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.EntityModule;
 import com.radixdlt.api.core.generated.models.EntityType;
-import com.radixdlt.api.core.generated.models.PartitionId;
 import com.radixdlt.api.core.generated.models.PartitionKind;
-import com.radixdlt.api.core.generated.models.SubstateIdAllOf;
-import com.radixdlt.api.core.generated.models.SubstateKey;
-import com.radixdlt.api.core.generated.models.SubstateType;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * SubstateId
+ * PartitionId
  */
 @JsonPropertyOrder({
-  SubstateId.JSON_PROPERTY_ENTITY_TYPE,
-  SubstateId.JSON_PROPERTY_ENTITY_ADDRESS,
-  SubstateId.JSON_PROPERTY_ENTITY_MODULE,
-  SubstateId.JSON_PROPERTY_PARTITION_KIND,
-  SubstateId.JSON_PROPERTY_PARTITION_NUMBER,
-  SubstateId.JSON_PROPERTY_SUBSTATE_TYPE,
-  SubstateId.JSON_PROPERTY_SUBSTATE_KEY
+  PartitionId.JSON_PROPERTY_ENTITY_TYPE,
+  PartitionId.JSON_PROPERTY_ENTITY_ADDRESS,
+  PartitionId.JSON_PROPERTY_ENTITY_MODULE,
+  PartitionId.JSON_PROPERTY_PARTITION_KIND,
+  PartitionId.JSON_PROPERTY_PARTITION_NUMBER
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class SubstateId {
+public class PartitionId {
   public static final String JSON_PROPERTY_ENTITY_TYPE = "entity_type";
   private EntityType entityType;
 
@@ -63,16 +57,10 @@ public class SubstateId {
   public static final String JSON_PROPERTY_PARTITION_NUMBER = "partition_number";
   private Integer partitionNumber;
 
-  public static final String JSON_PROPERTY_SUBSTATE_TYPE = "substate_type";
-  private SubstateType substateType;
-
-  public static final String JSON_PROPERTY_SUBSTATE_KEY = "substate_key";
-  private SubstateKey substateKey;
-
-  public SubstateId() { 
+  public PartitionId() { 
   }
 
-  public SubstateId entityType(EntityType entityType) {
+  public PartitionId entityType(EntityType entityType) {
     this.entityType = entityType;
     return this;
   }
@@ -98,7 +86,7 @@ public class SubstateId {
   }
 
 
-  public SubstateId entityAddress(String entityAddress) {
+  public PartitionId entityAddress(String entityAddress) {
     this.entityAddress = entityAddress;
     return this;
   }
@@ -124,7 +112,7 @@ public class SubstateId {
   }
 
 
-  public SubstateId entityModule(EntityModule entityModule) {
+  public PartitionId entityModule(EntityModule entityModule) {
     this.entityModule = entityModule;
     return this;
   }
@@ -150,7 +138,7 @@ public class SubstateId {
   }
 
 
-  public SubstateId partitionKind(PartitionKind partitionKind) {
+  public PartitionId partitionKind(PartitionKind partitionKind) {
     this.partitionKind = partitionKind;
     return this;
   }
@@ -176,7 +164,7 @@ public class SubstateId {
   }
 
 
-  public SubstateId partitionNumber(Integer partitionNumber) {
+  public PartitionId partitionNumber(Integer partitionNumber) {
     this.partitionNumber = partitionNumber;
     return this;
   }
@@ -204,60 +192,8 @@ public class SubstateId {
   }
 
 
-  public SubstateId substateType(SubstateType substateType) {
-    this.substateType = substateType;
-    return this;
-  }
-
-   /**
-   * Get substateType
-   * @return substateType
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_SUBSTATE_TYPE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public SubstateType getSubstateType() {
-    return substateType;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_SUBSTATE_TYPE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSubstateType(SubstateType substateType) {
-    this.substateType = substateType;
-  }
-
-
-  public SubstateId substateKey(SubstateKey substateKey) {
-    this.substateKey = substateKey;
-    return this;
-  }
-
-   /**
-   * Get substateKey
-   * @return substateKey
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_SUBSTATE_KEY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public SubstateKey getSubstateKey() {
-    return substateKey;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_SUBSTATE_KEY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSubstateKey(SubstateKey substateKey) {
-    this.substateKey = substateKey;
-  }
-
-
   /**
-   * Return true if this SubstateId object is equal to o.
+   * Return true if this PartitionId object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -267,32 +203,28 @@ public class SubstateId {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    SubstateId substateId = (SubstateId) o;
-    return Objects.equals(this.entityType, substateId.entityType) &&
-        Objects.equals(this.entityAddress, substateId.entityAddress) &&
-        Objects.equals(this.entityModule, substateId.entityModule) &&
-        Objects.equals(this.partitionKind, substateId.partitionKind) &&
-        Objects.equals(this.partitionNumber, substateId.partitionNumber) &&
-        Objects.equals(this.substateType, substateId.substateType) &&
-        Objects.equals(this.substateKey, substateId.substateKey);
+    PartitionId partitionId = (PartitionId) o;
+    return Objects.equals(this.entityType, partitionId.entityType) &&
+        Objects.equals(this.entityAddress, partitionId.entityAddress) &&
+        Objects.equals(this.entityModule, partitionId.entityModule) &&
+        Objects.equals(this.partitionKind, partitionId.partitionKind) &&
+        Objects.equals(this.partitionNumber, partitionId.partitionNumber);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entityType, entityAddress, entityModule, partitionKind, partitionNumber, substateType, substateKey);
+    return Objects.hash(entityType, entityAddress, entityModule, partitionKind, partitionNumber);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class SubstateId {\n");
+    sb.append("class PartitionId {\n");
     sb.append("    entityType: ").append(toIndentedString(entityType)).append("\n");
     sb.append("    entityAddress: ").append(toIndentedString(entityAddress)).append("\n");
     sb.append("    entityModule: ").append(toIndentedString(entityModule)).append("\n");
     sb.append("    partitionKind: ").append(toIndentedString(partitionKind)).append("\n");
     sb.append("    partitionNumber: ").append(toIndentedString(partitionNumber)).append("\n");
-    sb.append("    substateType: ").append(toIndentedString(substateType)).append("\n");
-    sb.append("    substateKey: ").append(toIndentedString(substateKey)).append("\n");
     sb.append("}");
     return sb.toString();
   }

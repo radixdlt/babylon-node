@@ -19,46 +19,90 @@ use crate::accumulator_tree::tree_builder::{AccuTree, Merklizable};
 use crate::transaction::PayloadIdentifiers;
 use crate::{
     ConsensusReceipt, EventHash, ExecutionFeeData, GlobalBalanceSummary, LedgerHashes,
-    SubstateChangeHash, SubstateReference,
+    PartitionReference, StateChangeHash, SubstateReference,
 };
 
+define_single_versioned! {
+    #[derive(Debug, Clone, Sbor)]
+    pub enum VersionedCommittedTransactionIdentifiers => CommittedTransactionIdentifiers = CommittedTransactionIdentifiersV1
+}
+
 #[derive(Debug, Clone, Sbor)]
-pub struct CommittedTransactionIdentifiers {
+pub struct CommittedTransactionIdentifiersV1 {
     pub payload: PayloadIdentifiers,
     pub resultant_ledger_hashes: LedgerHashes,
     pub proposer_timestamp_ms: i64,
 }
 
+/// A "flat" representation of an entire Partition's change, suitable for merkle hash computation.
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct PartitionChange {
+    pub node_id: NodeId,
+    pub partition_num: PartitionNumber,
+    pub action: PartitionChangeAction,
+}
+
+impl From<(PartitionReference, PartitionChangeAction)> for PartitionChange {
+    fn from((partition_reference, action): (PartitionReference, PartitionChangeAction)) -> Self {
+        let PartitionReference(node_id, partition_num) = partition_reference;
+        Self {
+            node_id,
+            partition_num,
+            action,
+        }
+    }
+}
+
+/// A "flat" representation of a single substate's change, suitable for merkle hash computation.
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct SubstateChange {
     pub node_id: NodeId,
-    pub partition_number: PartitionNumber,
+    pub partition_num: PartitionNumber,
     pub substate_key: SubstateKey,
-    pub action: ChangeAction,
+    pub action: SubstateChangeAction,
 }
 
-impl From<(SubstateReference, ChangeAction)> for SubstateChange {
-    fn from((substate_reference, action): (SubstateReference, ChangeAction)) -> Self {
-        let SubstateReference(node_id, partition_number, substate_key) = substate_reference;
+impl From<(SubstateReference, SubstateChangeAction)> for SubstateChange {
+    fn from((substate_reference, action): (SubstateReference, SubstateChangeAction)) -> Self {
+        let SubstateReference(node_id, partition_num, substate_key) = substate_reference;
         Self {
             node_id,
-            partition_number,
+            partition_num,
             substate_key,
             action,
         }
     }
 }
 
+/// An on-ledger change of an entire partition.
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum ChangeAction {
+pub enum PartitionChangeAction {
+    /// Deletion of an entire Partition.
+    /// Note: contrary to [`SubstateChangeAction`]s, the previous contents of the Partition are not
+    /// captured here.
+    Delete,
+}
+
+/// An on-ledger change of an individual substate.
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub enum SubstateChangeAction {
     Create {
+        /// A value after the transaction.
         new: DbSubstateValue,
     },
     Update {
+        /// A value after the transaction.
         new: DbSubstateValue,
+        /// A value before the transaction.
+        /// *Important note:* this is *not* a "value before the substate change", but "before the
+        /// transaction" - it may be especially visible if a partition is deleted, and then a
+        /// substate inside is created under some key that existed before the transaction:
+        /// technically, this was a creation (i.e. no previous value), but in the scope of its
+        /// transaction it was an update (i.e. we can return its previous value).
         previous: DbSubstateValue,
     },
     Delete {
+        /// A value before the transaction.
         previous: DbSubstateValue,
     },
 }
@@ -123,6 +167,43 @@ impl From<TransactionOutcome> for DetailedTransactionOutcome {
     }
 }
 
+/// A "flattened", unambiguous representation of state changes resulting from a transaction,
+/// suitable for merkle hash computation (to be recorded on-ledger).
+#[derive(Debug, Clone, Default, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct LedgerStateChanges {
+    /// Changes applied on Partition level, affecting all substates of a Partition *except* the
+    /// ones referenced in [`substate_level_changes`].
+    pub partition_level_changes: ByPartition<PartitionChangeAction>,
+    /// Changes applied to individual substates.
+    pub substate_level_changes: BySubstate<SubstateChangeAction>,
+}
+
+impl LedgerStateChanges {
+    /// Returns hashes of all the contained changes in a predefined order, suitable for computing
+    /// a merkle root hash.
+    pub fn get_hashes(&self) -> Vec<StateChangeHash> {
+        self.partition_level_changes
+            .iter()
+            .map(|(par_ref, action)| PartitionChange::from((par_ref, action.clone())))
+            .map(|partition_change| StateChangeHash::from_partition_change(&partition_change))
+            .chain(
+                self.substate_level_changes
+                    .iter()
+                    .map(|(sub_ref, action)| SubstateChange::from((sub_ref, action.clone())))
+                    .map(|substate_change| StateChangeHash::from_substate_change(&substate_change)),
+            )
+            .collect()
+    }
+
+    pub fn len(&self) -> usize {
+        self.partition_level_changes.len() + self.substate_level_changes.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.partition_level_changes.is_empty() && self.substate_level_changes.is_empty()
+    }
+}
+
 /// A committed transaction (success or failure), extracted from the Engine's `TransactionReceipt`
 /// of any locally-executed transaction (slightly post-processed).
 /// It contains all the critical, deterministic pieces of the Engine's receipt, but also some of its
@@ -133,28 +214,38 @@ pub struct LocalTransactionReceipt {
     pub local_execution: LocalTransactionExecution,
 }
 
-/// A part of the `LocalTransactionReceipt` which is completely stored on ledger. It contains only
+define_single_versioned! {
+    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub enum VersionedLedgerTransactionReceipt => LedgerTransactionReceipt = LedgerTransactionReceiptV1
+}
+
+/// A part of the [`LocalTransactionReceipt`] which is completely stored on ledger. It contains only
 /// the critical, deterministic pieces of the original Engine's `TransactionReceipt`.
 /// All these pieces can be verified against the Receipt Root hash (found in the Ledger Proof).
 /// Note: the Ledger Receipt is still a pretty large structure (i.e. containing entire collections,
 /// like substate changes) and is not supposed to be hashed directly - it should instead go through
-/// a `Consensus Receipt`.
+/// a [`ConsensusReceipt`].
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct LedgerTransactionReceipt {
+pub struct LedgerTransactionReceiptV1 {
     /// A simple, high-level outcome of the transaction.
     /// Its omitted details may be found in `LocalTransactionExecution::outcome`.
     pub outcome: LedgerTransactionOutcome,
-    /// The substate changes resulting from the transaction.
-    pub substate_changes: BySubstate<ChangeAction>,
+    /// The state changes resulting from the transaction.
+    pub state_changes: LedgerStateChanges,
     /// The events emitted during the transaction, in the order they occurred.
     pub application_events: Vec<ApplicationEvent>,
+}
+
+define_single_versioned! {
+    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub enum VersionedLocalTransactionExecution => LocalTransactionExecution = LocalTransactionExecutionV1
 }
 
 /// A computable/non-critical/non-deterministic part of the `LocalTransactionReceipt` (e.g. logs,
 /// summaries).
 /// It is not verifiable against ledger, but may still be useful for debugging.
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct LocalTransactionExecution {
+pub struct LocalTransactionExecutionV1 {
     pub outcome: DetailedTransactionOutcome,
     pub fee_summary: TransactionFeeSummary,
     pub fee_source: FeeSource,
@@ -173,20 +264,12 @@ impl LedgerTransactionReceipt {
     pub fn get_consensus_receipt(&self) -> ConsensusReceipt {
         let LedgerTransactionReceipt {
             outcome,
-            substate_changes,
+            state_changes,
             application_events,
         } = self;
         ConsensusReceipt {
             outcome: outcome.clone(),
-            substate_change_root: compute_merkle_root(
-                substate_changes
-                    .iter()
-                    .map(|(sub_ref, action)| SubstateChange::from((sub_ref, action.clone())))
-                    .map(|substate_change| {
-                        SubstateChangeHash::from_substate_change(&substate_change)
-                    })
-                    .collect(),
-            ),
+            substate_change_root: compute_merkle_root(state_changes.get_hashes()),
             event_root: compute_merkle_root(
                 application_events
                     .iter()
@@ -200,7 +283,7 @@ impl LedgerTransactionReceipt {
 impl LocalTransactionReceipt {
     pub fn new(
         commit_result: CommitResult,
-        substate_changes: BySubstate<ChangeAction>,
+        state_changes: LedgerStateChanges,
         global_balance_summary: GlobalBalanceSummary,
         execution_fee_data: ExecutionFeeData,
     ) -> Self {
@@ -209,7 +292,7 @@ impl LocalTransactionReceipt {
         Self {
             on_ledger: LedgerTransactionReceipt {
                 outcome: LedgerTransactionOutcome::resolve(&commit_result.outcome),
-                substate_changes,
+                state_changes,
                 application_events: commit_result
                     .application_events
                     .into_iter()
@@ -236,6 +319,64 @@ impl LocalTransactionReceipt {
     }
 }
 
+/// A container of items associated with a specific partition.
+/// This simply offers a less wasteful representation of a `Vec<(PartitionReference, T)>`, by
+/// avoiding the repeated [`NodeId`]s (within [`PartitionReference`]s).
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ByPartition<T> {
+    by_node_id: IndexMap<NodeId, IndexMap<PartitionNumber, T>>,
+}
+
+impl<T> ByPartition<T> {
+    pub fn new() -> Self {
+        Self {
+            by_node_id: index_map_new(),
+        }
+    }
+
+    pub fn add(&mut self, node_id: &NodeId, partition_num: &PartitionNumber, item: T) {
+        self.by_node_id
+            .entry(*node_id)
+            .or_insert(index_map_new())
+            .insert(*partition_num, item);
+    }
+
+    pub fn get(&self, node_id: &NodeId, partition_num: &PartitionNumber) -> Option<&T> {
+        self.by_node_id
+            .get(node_id)
+            .and_then(|by_partition_num| by_partition_num.get(partition_num))
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (PartitionReference, &T)> + '_ {
+        self.by_node_id
+            .iter()
+            .flat_map(|(node_id, by_partition_num)| {
+                by_partition_num.iter().map(|(partition_num, element)| {
+                    (PartitionReference(*node_id, *partition_num), element)
+                })
+            })
+    }
+
+    pub fn len(&self) -> usize {
+        self.by_node_id
+            .values()
+            .map(|by_partition_num| by_partition_num.len())
+            .sum::<usize>()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.by_node_id.is_empty()
+    }
+}
+
+impl<T> Default for ByPartition<T> {
+    fn default() -> Self {
+        Self {
+            by_node_id: index_map_new(),
+        }
+    }
+}
+
 /// A container of items associated with a specific substate.
 /// This simply offers a less wasteful representation of a `Vec<(SubstateReference, T)>`, by
 /// avoiding the repeated [`NodeId`]s and [`PartitionNumber`]s (within [`SubstateReference`]s).
@@ -252,14 +393,14 @@ impl<T> BySubstate<T> {
     pub fn add(
         &mut self,
         node_id: &NodeId,
-        partition_number: &PartitionNumber,
+        partition_num: &PartitionNumber,
         substate_key: &SubstateKey,
         item: T,
     ) {
         self.by_node_id
             .entry(*node_id)
             .or_insert(index_map_new())
-            .entry(*partition_number)
+            .entry(*partition_num)
             .or_insert(index_map_new())
             .insert(substate_key.clone(), item);
     }
@@ -267,30 +408,26 @@ impl<T> BySubstate<T> {
     pub fn get(
         &self,
         node_id: &NodeId,
-        partition_number: &PartitionNumber,
+        partition_num: &PartitionNumber,
         substate_key: &SubstateKey,
     ) -> Option<&T> {
         self.by_node_id
             .get(node_id)
-            .and_then(|by_partition_number| by_partition_number.get(partition_number))
+            .and_then(|by_partition_num| by_partition_num.get(partition_num))
             .and_then(|by_substate_key| by_substate_key.get(substate_key))
     }
 
     pub fn iter(&self) -> impl Iterator<Item = (SubstateReference, &T)> + '_ {
         self.by_node_id
             .iter()
-            .flat_map(|(node_id, by_partition_number)| {
-                by_partition_number
+            .flat_map(|(node_id, by_partition_num)| {
+                by_partition_num
                     .iter()
-                    .flat_map(|(partition_number, by_substate_key)| {
-                        by_substate_key.iter().map(|(substate_key, action)| {
+                    .flat_map(|(partition_num, by_substate_key)| {
+                        by_substate_key.iter().map(|(substate_key, element)| {
                             (
-                                SubstateReference(
-                                    *node_id,
-                                    *partition_number,
-                                    substate_key.clone(),
-                                ),
-                                action,
+                                SubstateReference(*node_id, *partition_num, substate_key.clone()),
+                                element,
                             )
                         })
                     })
@@ -304,8 +441,8 @@ impl<T> BySubstate<T> {
     pub fn len(&self) -> usize {
         self.by_node_id
             .values()
-            .map(|by_partition_number| {
-                by_partition_number
+            .map(|by_partition_num| {
+                by_partition_num
                     .values()
                     .map(|by_substate_key| by_substate_key.len())
                     .sum::<usize>()
@@ -326,7 +463,9 @@ impl<T> BySubstate<T> {
 
 impl<T> Default for BySubstate<T> {
     fn default() -> Self {
-        Self::new()
+        Self {
+            by_node_id: index_map_new(),
+        }
     }
 }
 

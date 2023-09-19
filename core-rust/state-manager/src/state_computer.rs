@@ -1166,10 +1166,12 @@ where
             transactions: committed_transaction_bundles,
             proof: commit_request.proof,
             substate_store_update,
-            vertex_store: commit_request.vertex_store,
+            vertex_store: commit_request.vertex_store.map(VertexStoreBlobV1),
             state_tree_update,
-            transaction_tree_slice: transaction_tree_slice_merger.into_slice(),
-            receipt_tree_slice: receipt_tree_slice_merger.into_slice(),
+            transaction_tree_slice: TransactionAccuTreeSliceV1(
+                transaction_tree_slice_merger.into_slice(),
+            ),
+            receipt_tree_slice: ReceiptAccuTreeSliceV1(receipt_tree_slice_merger.into_slice()),
             new_substate_node_ancestry_records: new_node_ancestry_records,
         });
         drop(write_store);
@@ -1251,8 +1253,12 @@ where
                 resultant_state_version,
                 hash_structures_diff.state_hash_tree_diff,
             ),
-            transaction_tree_slice: hash_structures_diff.transaction_tree_diff.slice,
-            receipt_tree_slice: hash_structures_diff.receipt_tree_diff.slice,
+            transaction_tree_slice: TransactionAccuTreeSliceV1(
+                hash_structures_diff.transaction_tree_diff.slice,
+            ),
+            receipt_tree_slice: ReceiptAccuTreeSliceV1(
+                hash_structures_diff.receipt_tree_diff.slice,
+            ),
             new_substate_node_ancestry_records: commit.new_substate_node_ancestry_records,
         });
         drop(write_store);

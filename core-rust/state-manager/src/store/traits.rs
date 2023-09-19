@@ -77,6 +77,9 @@ pub use substate::*;
 pub use transactions::*;
 pub use vertex::*;
 
+use radix_engine::types::{ScryptoCategorize, ScryptoDecode, ScryptoEncode};
+use sbor::define_single_versioned;
+
 pub enum DatabaseConfigValidationError {
     AccountChangeIndexRequiresLocalTransactionExecutionIndex,
     LocalTransactionExecutionIndexChanged,
@@ -154,18 +157,25 @@ pub mod vertex {
 
     #[enum_dispatch]
     pub trait RecoverableVertexStore {
-        fn get_vertex_store(&self) -> Option<Vec<u8>>;
+        fn get_vertex_store(&self) -> Option<VertexStoreBlob>;
     }
 
     #[enum_dispatch]
     pub trait WriteableVertexStore {
-        fn save_vertex_store(&mut self, vertex_store_bytes: Vec<u8>);
+        fn save_vertex_store(&mut self, blob: VertexStoreBlob);
     }
+
+    define_single_versioned! {
+        #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+        pub enum VersionedVertexStoreBlob => VertexStoreBlob = VertexStoreBlobV1
+    }
+
+    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub struct VertexStoreBlobV1(pub Vec<u8>);
 }
 
 pub mod substate {
     use super::*;
-    use radix_engine::types::{ScryptoCategorize, ScryptoDecode, ScryptoEncode};
     use radix_engine_common::types::NodeId;
     use std::slice;
 
@@ -208,9 +218,14 @@ pub mod substate {
         }
     }
 
+    define_single_versioned! {
+        #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+        pub enum VersionedSubstateNodeAncestryRecord => SubstateNodeAncestryRecord = SubstateNodeAncestryRecordV1
+    }
+
     /// Ancestry information of a RE Node.
     #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-    pub struct SubstateNodeAncestryRecord {
+    pub struct SubstateNodeAncestryRecordV1 {
         /// A substate owning the Node (i.e. its immediate parent).
         /// Note: this will always be present, since we do not need ancestry of root RE Nodes.
         pub parent: SubstateReference,
@@ -323,10 +338,10 @@ pub mod commit {
         pub transactions: Vec<CommittedTransactionBundle>,
         pub proof: LedgerProof,
         pub substate_store_update: SubstateStoreUpdate,
-        pub vertex_store: Option<Vec<u8>>,
+        pub vertex_store: Option<VertexStoreBlob>,
         pub state_tree_update: HashTreeUpdate,
-        pub transaction_tree_slice: TreeSlice<TransactionTreeHash>,
-        pub receipt_tree_slice: TreeSlice<ReceiptTreeHash>,
+        pub transaction_tree_slice: TransactionAccuTreeSlice,
+        pub receipt_tree_slice: ReceiptAccuTreeSlice,
         pub new_substate_node_ancestry_records: Vec<KeyedSubstateNodeAncestryRecord>,
     }
 
@@ -413,9 +428,17 @@ pub mod commit {
         }
     }
 
+    define_single_versioned! {
+        #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+        pub enum VersionedStaleTreeParts => StaleTreeParts = StaleTreePartsV1
+    }
+
+    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub struct StaleTreePartsV1(pub Vec<StaleTreePart>);
+
     pub struct HashTreeUpdate {
         pub new_nodes: Vec<(NodeKey, TreeNode)>,
-        pub stale_tree_parts_at_state_version: Vec<(StateVersion, Vec<StaleTreePart>)>,
+        pub stale_tree_parts_at_state_version: Vec<(StateVersion, StaleTreeParts)>,
     }
 
     impl HashTreeUpdate {
@@ -429,14 +452,17 @@ pub mod commit {
         pub fn from_single(at_state_version: StateVersion, diff: StateHashTreeDiff) -> Self {
             Self {
                 new_nodes: diff.new_nodes,
-                stale_tree_parts_at_state_version: vec![(at_state_version, diff.stale_tree_parts)],
+                stale_tree_parts_at_state_version: vec![(
+                    at_state_version,
+                    StaleTreePartsV1(diff.stale_tree_parts),
+                )],
             }
         }
 
         pub fn add(&mut self, at_state_version: StateVersion, diff: StateHashTreeDiff) {
             self.new_nodes.extend(diff.new_nodes);
             self.stale_tree_parts_at_state_version
-                .push((at_state_version, diff.stale_tree_parts));
+                .push((at_state_version, StaleTreePartsV1(diff.stale_tree_parts)));
         }
     }
 
@@ -445,6 +471,22 @@ pub mod commit {
             Self::new()
         }
     }
+
+    define_single_versioned! {
+        #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+        pub enum VersionedTransactionAccuTreeSlice => TransactionAccuTreeSlice = TransactionAccuTreeSliceV1
+    }
+
+    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub struct TransactionAccuTreeSliceV1(pub TreeSlice<TransactionTreeHash>);
+
+    define_single_versioned! {
+        #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+        pub enum VersionedReceiptAccuTreeSlice => ReceiptAccuTreeSlice = ReceiptAccuTreeSliceV1
+    }
+
+    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub struct ReceiptAccuTreeSliceV1(pub TreeSlice<ReceiptTreeHash>);
 
     #[enum_dispatch]
     pub trait CommitStore {
@@ -459,8 +501,13 @@ pub mod scenario {
 
     pub type ScenarioSequenceNumber = u32;
 
+    define_single_versioned! {
+        #[derive(Debug, Clone, Categorize, Encode, Decode)]
+        pub enum VersionedExecutedGenesisScenario => ExecutedGenesisScenario = ExecutedGenesisScenarioV1
+    }
+
     #[derive(Debug, Clone, Categorize, Encode, Decode)]
-    pub struct ExecutedGenesisScenario {
+    pub struct ExecutedGenesisScenarioV1 {
         pub logical_name: String,
         pub committed_transactions: Vec<ExecutedScenarioTransaction>,
         pub addresses: Vec<DescribedAddress>,
