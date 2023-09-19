@@ -213,9 +213,33 @@ const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 19] = [
     ScenarioSequenceNumberToExecutedGenesisScenario,
 ];
 
+// IMPORTANT NOTE: the strings defined below are used as database column family names. Any change
+// would effectively mean a ledger wipe. For this reason, we choose to define them manually (rather
+// than using the enum's `Into<String>`, which is refactor-sensitive).
 impl fmt::Display for RocksDBColumnFamily {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.into())
+        let str = match self {
+            StateVersionToRawLedgerTransactionBytes => "raw_ledger_transactions",
+            StateVersionToCommittedTransactionIdentifiers => "committed_transaction_identifiers",
+            StateVersionToLedgerTransactionReceipt => "transaction_receipts",
+            StateVersionToLocalTransactionExecution => "local_transaction_executions",
+            StateVersionToLedgerProof => "ledger_proofs",
+            EpochToLedgerProof => "epoch_ledger_proofs",
+            IntentHashToStateVersion => "intent_hashes",
+            NotarizedTransactionHashToStateVersion => "notarized_transaction_hashes",
+            LedgerTransactionHashToStateVersion => "ledger_transaction_hashes",
+            Substates => "substates",
+            NodeIdToSubstateNodeAncestryRecord => "substate_node_ancestry_records",
+            VertexStore => "vertex_store",
+            NodeKeyToTreeNode => "state_hash_tree_nodes",
+            StateVersionToStaleTreeParts => "stale_state_hash_tree_parts",
+            StateVersionToTransactionAccuTreeSlice => "transaction_accu_tree_slices",
+            StateVersionToReceiptAccuTreeSlice => "receipt_accu_tree_slices",
+            ExtensionsDataKeyToCustomValue => "extensions_data",
+            AccountChangeStateVersions => "account_change_state_versions",
+            ScenarioSequenceNumberToExecutedGenesisScenario => "executed_genesis_scenarios",
+        };
+        write!(f, "{str}")
     }
 }
 
@@ -226,6 +250,9 @@ enum ExtensionsDataKey {
     LocalTransactionExecutionIndexEnabled,
 }
 
+// IMPORTANT NOTE: the strings defined below are used as database identifiers. Any change would
+// effectively clear the associated extension's state in DB. For this reason, we choose to
+// define them manually (rather than using the enum's `Into<String>`, which is refactor-sensitive).
 impl fmt::Display for ExtensionsDataKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let str = match self {
