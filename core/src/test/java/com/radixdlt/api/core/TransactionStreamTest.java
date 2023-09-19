@@ -214,7 +214,7 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
   }
 
   @Test
-  public void test_previous_state_identifiers() throws Exception {
+  public void test_previous_state_identifiers_and_proofs() throws Exception {
     try (var test = buildRunningServerTest()) {
       test.suppressUnusedWarning();
 
@@ -232,23 +232,48 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
         test.runUntilState(allCommittedTransactionSuccess(transaction.raw()), 100);
       }
 
-      var firstPartCommittedTransactions =
+      var firstPartResponse =
           getStreamApi()
               .streamTransactionsPost(
                   new StreamTransactionsRequest()
                       .network(networkLogicalName)
                       .limit(100)
-                      .fromStateVersion(1L))
-              .getTransactions();
+                      .fromStateVersion(1L));
+      assertThat(firstPartResponse.getProofs()).isNull();
+
+      var firstPartResponseWithProofs =
+          getStreamApi()
+              .streamTransactionsPost(
+                  new StreamTransactionsRequest()
+                      .network(networkLogicalName)
+                      .includeProofs(true)
+                      .limit(100)
+                      .fromStateVersion(1L));
+      assertThat(firstPartResponseWithProofs.getProofs().size()).isEqualTo(13);
+
+      var firstPartCommittedTransactions = firstPartResponse.getTransactions();
 
       assertThat(
               firstPartCommittedTransactions.stream()
                   .map(CommittedTransaction::getProposerTimestampMs))
           .isSorted();
 
+      var proofQuery =
+          getStreamApi()
+              .streamTransactionsPost(
+                  new StreamTransactionsRequest()
+                      .network(networkLogicalName)
+                      .includeProofs(true)
+                      .limit(4)
+                      .fromStateVersion(3L))
+              .getProofs();
+
+      assertThat(proofQuery.size()).isEqualTo(4);
+
       var lastCommittedTransactionIdentifiers =
-          firstPartCommittedTransactions
-              .get(firstPartCommittedTransactions.size() - 1)
+          firstPartResponse
+              .getTransactions()
+              .get(firstPartResponse.getTransactions().size() - 1)
               .getResultantStateIdentifiers();
 
       var secondPartTransactions =

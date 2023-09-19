@@ -104,6 +104,7 @@ pub enum DatabaseBackendConfig {
     SubstateNodeAncestryStore,
     IterableAccountChangeIndex,
     IterableTransactionStore,
+    IterableProofStore,
     ExecutedGenesisScenarioStore
 )]
 pub enum StateManagerDatabase {

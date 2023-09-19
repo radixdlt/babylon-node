@@ -5608,6 +5608,7 @@ components:
       type: object
       required:
         - state_version
+        - proposer_timestamp_ms
         - accumulator_hash
         - status
         - fungible_entity_balance_changes
@@ -5617,6 +5618,12 @@ components:
         state_version:
           $ref: "#/components/schemas/StateVersion"
           description: The resultant state version after the transaction has been committed
+        proposer_timestamp_ms:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100000000000000
+          description: An integer between `0` and `10^14`, marking the proposer timestamp in ms.
         accumulator_hash:
           type: string
           minLength: 64
@@ -5998,6 +6005,18 @@ components:
           type: string
           description: |
             A descriptor for the current protocol version that the node is running.
+    Epoch:
+      type: integer
+      format: int64
+      minimum: 0
+      maximum: 10000000000
+      description: An integer between `0` and `10^10`, marking the epoch.
+    Round:
+      type: integer
+      format: int64
+      minimum: 0
+      maximum: 10000000000
+      description: An integer between `0` and `10^10`, marking the current round in an epoch
     EpochRound:
       type: object
       required:
@@ -6858,6 +6877,9 @@ components:
           $ref: "#/components/schemas/TransactionFormatOptions"
         substate_format_options:
           $ref: "#/components/schemas/SubstateFormatOptions"
+        include_proofs:
+          description: Whether to include LedgerProofs (default false)
+          type: boolean
     StreamTransactionsResponse:
       type: object
       required:
@@ -6891,6 +6913,11 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/CommittedTransaction"
+        proofs:
+          description: A ledger proof list starting from `from_state_version` (inclusive) stored by this node.
+          type: array
+          items:
+            $ref: "#/components/schemas/LedgerProof"
     CommittedTransaction:
       type: object
       required:
@@ -6911,6 +6938,86 @@ components:
           minimum: 0
           maximum: 100000000000000
           description: An integer between `0` and `10^14`, marking the proposer timestamp in ms.
+    LedgerProof:
+      type: object
+      required:
+        - opaque_hash
+        - ledger_header
+        - timestamped_signatures
+      properties:
+        opaque_hash: 
+          $ref: "#/components/schemas/OpaqueHash"
+        ledger_header:
+          $ref: "#/components/schemas/LedgerHeader"
+        timestamped_signatures:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimestampedValidatorSignature"
+    LedgerHeader:
+      type: object
+      required:
+        - epoch
+        - round
+        - state_version
+        - hashes
+        - consensus_parent_round_timestamp_ms
+        - proposer_timestamp_ms
+      properties:
+        epoch:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: An integer between `0` and `10^10`, marking the epoch.
+        round:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: An integer between `0` and `10^10`, marking the current round in an epoch
+        state_version:
+          $ref: "#/components/schemas/StateVersion"
+        hashes:
+          $ref: "#/components/schemas/LedgerHashes"
+        consensus_parent_round_timestamp_ms:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100000000000000
+          description: An integer between `0` and `10^14`, marking the consensus parent round timestamp in ms.
+        proposer_timestamp_ms:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100000000000000
+          description: An integer between `0` and `10^14`, marking the proposer timestamp in ms.
+        next_epoch:
+          $ref: "#/components/schemas/NextEpoch"
+    TimestampedValidatorSignature:
+      type: object
+      required:
+        - validator_key
+        - validator_address
+        - timestamp_ms
+        - signature
+      properties:
+        validator_key:
+          $ref: "#/components/schemas/EcdsaSecp256k1PublicKey"
+        validator_address:
+          $ref: "#/components/schemas/ComponentAddress"
+        timestamp_ms:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100000000000000
+          description: An integer between `0` and `10^14`, marking the unix timestamp in ms.
+        signature:
+          $ref: "#/components/schemas/EcdsaSecp256k1Signature"
+    OpaqueHash:
+      type: string
+      minLength: 64
+      maxLength: 64
+      description: A hex-encoded 32-byte vertex VoteData hash on the consensus side, opaque to ledger.
     LedgerTransactionType:
       type: string
       description: The type of the ledger transaction

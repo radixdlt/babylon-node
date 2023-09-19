@@ -197,6 +197,7 @@ components:
       type: object
       required:
         - status
+        - detail
         - current_protocol_version
         - executed_protocol_updates
         - unknown_reported_pending_protocol_updates
@@ -205,11 +206,12 @@ components:
           type: string
           enum:
             - BOOTING_PRE_GENESIS
-            - BOOTING_AT_GENESIS
             - SYNCING
             - UP
-            - STALLED
             - OUT_OF_SYNC
+        detail:
+          type: string
+          description: A human-readable message detailing the `status`.
         current_protocol_version:
           $ref: "#/components/schemas/ProtocolVersion"
         executed_protocol_updates:

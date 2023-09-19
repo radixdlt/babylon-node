@@ -417,7 +417,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                 bind(ProposalGenerator.class).toInstance(generated.generator());
                 install(
                     REv2StateManagerModule.createForTesting(
-                        ProposalLimitsConfig.zero(),
+                        ProposalLimitsConfig.testDefaults(),
                         rev2Config.databaseType(),
                         rev2Config.databaseFlags(),
                         Option.none(),
