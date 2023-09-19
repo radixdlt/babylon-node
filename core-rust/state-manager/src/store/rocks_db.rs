@@ -99,6 +99,17 @@ use crate::transaction::{
 
 use super::traits::extensions::*;
 
+/// Identifiers of column families used by the Node.
+/// The name of each field should follow the `KeyTypeToValueType` convention, wherever possible.
+/// The documentation of each field contains low-level details on the underlying RocksDB "schema"
+/// (effectively: byte-level encodings of keys and values).
+///
+/// **An extra note on the key encoding used throughout all column families:**
+/// We often rely on the RocksDB's unsurprising ability to efficiently list entries sorted
+/// lexicographically by key. For this reason, our byte-level encoding of certain keys (e.g.
+/// [`StateVersion`]) needs to reflect the business-level ordering of the represented concept (i.e.
+/// since state versions grow, the "last" state version must have a lexicographically greatest key,
+/// which means that we need to use a constant-length big-endian integer encoding).
 #[derive(Eq, PartialEq, PartialOrd, Ord, Clone, Debug, IntoStaticStr)]
 enum RocksDBColumnFamily {
     /// Committed transactions.
