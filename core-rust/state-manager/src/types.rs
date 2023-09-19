@@ -407,8 +407,13 @@ pub struct TimestampedValidatorSignature {
     pub signature: Secp256k1Signature,
 }
 
+define_single_versioned! {
+    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub enum VersionedLedgerProof => LedgerProof = LedgerProofV1
+}
+
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct LedgerProof {
+pub struct LedgerProofV1 {
     pub opaque: Hash,
     pub ledger_header: LedgerHeader,
     pub timestamped_signatures: Vec<TimestampedValidatorSignature>,
