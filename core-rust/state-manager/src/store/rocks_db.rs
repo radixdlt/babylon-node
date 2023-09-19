@@ -69,16 +69,13 @@ use crate::store::traits::*;
 use crate::{
     CommittedTransactionIdentifiers, LedgerProof, LedgerTransactionReceipt,
     LocalTransactionExecution, LocalTransactionReceipt, ReceiptTreeHash, StateVersion,
-    TransactionTreeHash, VersionedCommittedTransactionIdentifiers,
-    VersionedCommittedTransactionIdentifiersVersion, VersionedLedgerProof,
-    VersionedLedgerProofVersion, VersionedLedgerTransactionReceipt,
-    VersionedLedgerTransactionReceiptVersion, VersionedLocalTransactionExecution,
-    VersionedLocalTransactionExecutionVersion,
+    TransactionTreeHash, VersionedCommittedTransactionIdentifiers, VersionedLedgerProof,
+    VersionedLedgerTransactionReceipt, VersionedLocalTransactionExecution,
 };
 use node_common::utils::IsAccountExt;
 use radix_engine::types::*;
 use radix_engine_stores::hash_tree::tree_store::{
-    encode_key, NodeKey, ReadableTreeStore, TreeNode, VersionedTreeNode, VersionedTreeNodeVersion,
+    encode_key, NodeKey, ReadableTreeStore, TreeNode, VersionedTreeNode,
 };
 use rocksdb::{ColumnFamilyDescriptor, Direction, Options, WriteBatch, DB};
 use transaction::model::*;
@@ -93,7 +90,7 @@ use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::query::TransactionIdentifierLoader;
 use crate::store::traits::scenario::{
     ExecutedGenesisScenario, ExecutedGenesisScenarioStore, ScenarioSequenceNumber,
-    VersionedExecutedGenesisScenario, VersionedExecutedGenesisScenarioVersion,
+    VersionedExecutedGenesisScenario,
 };
 use crate::store::typed_cf_api::*;
 use crate::transaction::{
@@ -1495,97 +1492,6 @@ impl DbCodec<NodeId> for NodeIdDbCodec {
 
     fn decode(&self, bytes: &[u8]) -> NodeId {
         NodeId(copy_u8_array(bytes))
-    }
-}
-
-// TODO(requires Engine changes): move the `IsConcreteVersion` to the versioning macros on the
-// Engine's side, in order to get rid of the following ~100 lines.
-
-impl IsConcreteVersion for SubstateNodeAncestryRecord {
-    type Versioned = VersionedSubstateNodeAncestryRecord;
-
-    fn clone_into_versioned(&self) -> Self::Versioned {
-        self.clone().into_versioned()
-    }
-}
-
-impl IsConcreteVersion for LedgerTransactionReceipt {
-    type Versioned = VersionedLedgerTransactionReceipt;
-
-    fn clone_into_versioned(&self) -> Self::Versioned {
-        self.clone().into_versioned()
-    }
-}
-
-impl IsConcreteVersion for CommittedTransactionIdentifiers {
-    type Versioned = VersionedCommittedTransactionIdentifiers;
-
-    fn clone_into_versioned(&self) -> Self::Versioned {
-        self.clone().into_versioned()
-    }
-}
-
-impl IsConcreteVersion for LocalTransactionExecution {
-    type Versioned = VersionedLocalTransactionExecution;
-
-    fn clone_into_versioned(&self) -> Self::Versioned {
-        self.clone().into_versioned()
-    }
-}
-
-impl IsConcreteVersion for ExecutedGenesisScenario {
-    type Versioned = VersionedExecutedGenesisScenario;
-
-    fn clone_into_versioned(&self) -> Self::Versioned {
-        self.clone().into_versioned()
-    }
-}
-
-impl IsConcreteVersion for LedgerProof {
-    type Versioned = VersionedLedgerProof;
-
-    fn clone_into_versioned(&self) -> Self::Versioned {
-        self.clone().into_versioned()
-    }
-}
-
-impl IsConcreteVersion for ReceiptAccuTreeSlice {
-    type Versioned = VersionedReceiptAccuTreeSlice;
-
-    fn clone_into_versioned(&self) -> Self::Versioned {
-        self.clone().into_versioned()
-    }
-}
-
-impl IsConcreteVersion for TransactionAccuTreeSlice {
-    type Versioned = VersionedTransactionAccuTreeSlice;
-
-    fn clone_into_versioned(&self) -> Self::Versioned {
-        self.clone().into_versioned()
-    }
-}
-
-impl IsConcreteVersion for TreeNode {
-    type Versioned = VersionedTreeNode;
-
-    fn clone_into_versioned(&self) -> Self::Versioned {
-        self.clone().into_versioned()
-    }
-}
-
-impl IsConcreteVersion for StaleTreeParts {
-    type Versioned = VersionedStaleTreeParts;
-
-    fn clone_into_versioned(&self) -> Self::Versioned {
-        self.clone().into_versioned()
-    }
-}
-
-impl IsConcreteVersion for VertexStoreBlob {
-    type Versioned = VersionedVertexStoreBlob;
-
-    fn clone_into_versioned(&self) -> Self::Versioned {
-        self.clone().into_versioned()
     }
 }
 

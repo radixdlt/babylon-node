@@ -261,26 +261,13 @@ impl<'db, K, KC: DbCodec<K> + 'db, V, VC: DbCodec<V> + 'db> TypedCfApi<'db, K, V
     }
 }
 
-/// A trait for a type representing a specific version of some versioned type.
-pub trait IsConcreteVersion {
-    /// The type of versioned wrapper.
-    type Versioned;
-
-    /// Creates a versioned wrapper containing a copy of this instance.
-    fn clone_into_versioned(&self) -> Self::Versioned;
-}
-
 /// A reusable versioning decorator for [`DbCodec`]s.
-pub struct VersionedDbCodec<
-    T: IsConcreteVersion<Versioned = VT>,
-    U: DbCodec<VT>,
-    VT: HasLatestVersion<Latest = T>,
-> {
+pub struct VersionedDbCodec<T: Into<VT> + Clone, U: DbCodec<VT>, VT: HasLatestVersion<Latest = T>> {
     underlying: U,
     type_parameters_phantom: PhantomData<VT>,
 }
 
-impl<T: IsConcreteVersion<Versioned = VT>, U: DbCodec<VT>, VT: HasLatestVersion<Latest = T>>
+impl<T: Into<VT> + Clone, U: DbCodec<VT>, VT: HasLatestVersion<Latest = T>>
     VersionedDbCodec<T, U, VT>
 {
     /// Applies versioning for the given codec.
@@ -292,7 +279,7 @@ impl<T: IsConcreteVersion<Versioned = VT>, U: DbCodec<VT>, VT: HasLatestVersion<
     }
 }
 
-impl<T: IsConcreteVersion<Versioned = VT>, U: DbCodec<VT>, VT: HasLatestVersion<Latest = T>> Clone
+impl<T: Into<VT> + Clone, U: DbCodec<VT>, VT: HasLatestVersion<Latest = T>> Clone
     for VersionedDbCodec<T, U, VT>
 {
     fn clone(&self) -> Self {
@@ -303,11 +290,11 @@ impl<T: IsConcreteVersion<Versioned = VT>, U: DbCodec<VT>, VT: HasLatestVersion<
     }
 }
 
-impl<T: IsConcreteVersion<Versioned = VT>, U: DbCodec<VT>, VT: HasLatestVersion<Latest = T>>
-    DbCodec<T> for VersionedDbCodec<T, U, VT>
+impl<T: Into<VT> + Clone, U: DbCodec<VT>, VT: HasLatestVersion<Latest = T>> DbCodec<T>
+    for VersionedDbCodec<T, U, VT>
 {
     fn encode(&self, value: &T) -> Vec<u8> {
-        let versioned = value.clone_into_versioned();
+        let versioned = value.clone().into();
         self.underlying.encode(&versioned)
     }
 
