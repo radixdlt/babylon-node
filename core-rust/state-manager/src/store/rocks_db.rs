@@ -395,7 +395,7 @@ impl NodeColumnFamilies {
     }
 
     /// Returns an API scoped at [`NodeKeyToTreeNode`] column family.
-    pub fn hash_tree_nodes(&self) -> impl TypedCfApi<NodeKey, TreeNode> {
+    pub fn state_hash_tree_nodes(&self) -> impl TypedCfApi<NodeKey, TreeNode> {
         self.create_with_codecs(
             NodeKeyToTreeNode,
             NodeKeyDbCodec::default(),
@@ -404,7 +404,7 @@ impl NodeColumnFamilies {
     }
 
     /// Returns an API scoped at [`StateVersionToStaleTreeParts`] column family.
-    pub fn stale_hash_tree_parts(&self) -> impl TypedCfApi<StateVersion, StaleTreeParts> {
+    pub fn stale_state_hash_tree_parts(&self) -> impl TypedCfApi<StateVersion, StaleTreeParts> {
         self.create_with_codecs(
             StateVersionToStaleTreeParts,
             StateVersionDbCodec::default(),
@@ -433,7 +433,7 @@ impl NodeColumnFamilies {
     }
 
     /// Returns an API scoped at [`ExtensionsDataKeyToCustomValue`] column family.
-    pub fn extension_data(&self) -> impl TypedCfApi<ExtensionsDataKey, Vec<u8>> {
+    pub fn extensions_data(&self) -> impl TypedCfApi<ExtensionsDataKey, Vec<u8>> {
         self.create_with_codecs(
             ExtensionsDataKeyToCustomValue,
             PredefinedDbCodec::new_from_string_representations(vec![
@@ -609,7 +609,7 @@ impl RocksDBStore {
 
 impl ConfigurableDatabase for RocksDBStore {
     fn read_flags_state(&self) -> DatabaseFlagsState {
-        let extension_data_cf = self.cfs.extension_data();
+        let extension_data_cf = self.cfs.extensions_data();
         let account_change_index_enabled = extension_data_cf
             .get(&ExtensionsDataKey::AccountChangeIndexEnabled)
             .map(|bytes| scrypto_decode::<bool>(&bytes).unwrap());
@@ -624,7 +624,7 @@ impl ConfigurableDatabase for RocksDBStore {
 
     fn write_flags(&mut self, database_config: &DatabaseFlags) {
         let mut batch = WriteBatch::default();
-        let extension_data_cf = self.cfs.extension_data();
+        let extension_data_cf = self.cfs.extensions_data();
         extension_data_cf.put_with_batch(
             &mut batch,
             &ExtensionsDataKey::AccountChangeIndexEnabled,
@@ -747,13 +747,15 @@ impl CommitStore for RocksDBStore {
         let state_hash_tree_update = commit_bundle.state_tree_update;
         for (key, node) in state_hash_tree_update.new_nodes {
             self.cfs
-                .hash_tree_nodes()
+                .state_hash_tree_nodes()
                 .put_with_batch(&mut batch, &key, &node);
         }
         for (version, stale_parts) in state_hash_tree_update.stale_tree_parts_at_state_version {
-            self.cfs
-                .stale_hash_tree_parts()
-                .put_with_batch(&mut batch, &version, &stale_parts);
+            self.cfs.stale_state_hash_tree_parts().put_with_batch(
+                &mut batch,
+                &version,
+                &stale_parts,
+            );
         }
 
         for (node_ids, record) in commit_bundle.new_substate_node_ancestry_records {
@@ -1169,7 +1171,7 @@ impl SubstateNodeAncestryStore for RocksDBStore {
 
 impl ReadableTreeStore for RocksDBStore {
     fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
-        self.cfs.hash_tree_nodes().get(key)
+        self.cfs.state_hash_tree_nodes().get(key)
     }
 }
 
@@ -1268,7 +1270,7 @@ impl RocksDBStore {
             &transaction_bundle.receipt.local_execution,
         );
 
-        self.cfs.extension_data().put_with_batch(
+        self.cfs.extensions_data().put_with_batch(
             batch,
             &ExtensionsDataKey::AccountChangeIndexLastProcessedStateVersion,
             &state_version.to_bytes().to_vec(),
@@ -1312,7 +1314,7 @@ impl RocksDBStore {
             }
         }
 
-        self.cfs.extension_data().put_with_batch(
+        self.cfs.extensions_data().put_with_batch(
             &mut batch,
             &ExtensionsDataKey::AccountChangeIndexLastProcessedStateVersion,
             &last_state_version.to_bytes().to_vec(),
@@ -1326,7 +1328,7 @@ impl RocksDBStore {
 impl AccountChangeIndexExtension for RocksDBStore {
     fn account_change_index_last_processed_state_version(&self) -> StateVersion {
         self.cfs
-            .extension_data()
+            .extensions_data()
             .get(&ExtensionsDataKey::AccountChangeIndexLastProcessedStateVersion)
             .map(StateVersion::from_bytes)
             .unwrap_or(StateVersion::pre_genesis())
