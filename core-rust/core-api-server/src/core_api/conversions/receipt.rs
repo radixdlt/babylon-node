@@ -19,8 +19,9 @@ use state_manager::store::StateManagerDatabase;
 use transaction::prelude::TransactionCostingParameters;
 
 use state_manager::{
-    ApplicationEvent, BySubstate, ChangeAction, DetailedTransactionOutcome,
-    LocalTransactionReceipt, SubstateReference,
+    ApplicationEvent, BySubstate, DetailedTransactionOutcome, LedgerStateChanges,
+    LocalTransactionReceipt, PartitionChangeAction, PartitionReference, SubstateChangeAction,
+    SubstateReference,
 };
 
 pub fn to_api_receipt(
@@ -46,7 +47,7 @@ pub fn to_api_receipt(
         database,
         context,
         &local_execution.substates_system_structure,
-        &on_ledger.substate_changes,
+        &on_ledger.state_changes,
         &local_execution.state_update_summary,
     )?;
 
@@ -301,16 +302,31 @@ pub fn to_api_state_updates(
     database: Option<&StateManagerDatabase>,
     context: &MappingContext,
     system_structures: &BySubstate<SubstateSystemStructure>,
-    substate_changes: &BySubstate<ChangeAction>,
+    state_changes: &LedgerStateChanges,
     state_update_summary: &StateUpdateSummary,
 ) -> Result<models::StateUpdates, MappingError> {
+    let LedgerStateChanges {
+        partition_level_changes,
+        substate_level_changes,
+    } = state_changes;
+
+    let deleted_partitions = partition_level_changes
+        .iter()
+        .map(|(partition_ref, action)| match action {
+            PartitionChangeAction::Delete => {
+                let PartitionReference(node_id, partition_num) = partition_ref;
+                to_api_partition_id(context, &node_id, partition_num)
+            }
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+
     let mut created_substates = Vec::new();
     let mut updated_substates = Vec::new();
     let mut deleted_substates = Vec::new();
 
     // Step 1 - First, build actions
     let mut changes_to_map = Vec::new();
-    for (substate_reference, action) in substate_changes.iter() {
+    for (substate_reference, action) in substate_level_changes.iter() {
         let SubstateReference(node_id, partition_number, substate_key) = &substate_reference;
         let typed_substate_key =
             create_typed_substate_key(context, node_id, *partition_number, substate_key)?;
@@ -344,7 +360,7 @@ pub fn to_api_state_updates(
             &typed_substate_key,
         )?);
         match action {
-            ChangeAction::Create { new } => {
+            SubstateChangeAction::Create { new } => {
                 created_substates.push(models::CreatedSubstate {
                     substate_id,
                     value: Box::new(to_api_substate_value(
@@ -356,7 +372,7 @@ pub fn to_api_state_updates(
                     system_structure,
                 });
             }
-            ChangeAction::Update { previous, new } => {
+            SubstateChangeAction::Update { previous, new } => {
                 updated_substates.push(models::UpdatedSubstate {
                     substate_id,
                     new_value: Box::new(to_api_substate_value(
@@ -378,7 +394,7 @@ pub fn to_api_state_updates(
                     system_structure,
                 });
             }
-            ChangeAction::Delete { previous } => {
+            SubstateChangeAction::Delete { previous } => {
                 deleted_substates.push(models::DeletedSubstate {
                     substate_id,
                     previous_value: if context.substate_options.include_previous {
@@ -418,6 +434,7 @@ pub fn to_api_state_updates(
     }
 
     Ok(models::StateUpdates {
+        deleted_partitions,
         created_substates,
         updated_substates,
         deleted_substates,
@@ -440,7 +457,7 @@ pub struct StateMappingLookups {
 impl StateMappingLookups {
     pub fn create_from_database(
         database: Option<&StateManagerDatabase>,
-        changes_to_map: &[(SubstateReference, TypedSubstateKey, &ChangeAction)],
+        changes_to_map: &[(SubstateReference, TypedSubstateKey, &SubstateChangeAction)],
     ) -> Result<Self, MappingError> {
         let Some(database) = database else {
             return Ok(Self::default());
@@ -567,17 +584,17 @@ impl StateMappingLookups {
 pub fn extract_typed_values(
     typed_values: &mut Vec<TypedSubstateValue>,
     typed_substate_key: &TypedSubstateKey,
-    action: &ChangeAction,
+    action: &SubstateChangeAction,
 ) -> Result<(), MappingError> {
     match action {
-        ChangeAction::Create { new } => {
+        SubstateChangeAction::Create { new } => {
             typed_values.push(create_typed_substate_value(typed_substate_key, new)?);
         }
-        ChangeAction::Update { new, previous } => {
+        SubstateChangeAction::Update { new, previous } => {
             typed_values.push(create_typed_substate_value(typed_substate_key, new)?);
             typed_values.push(create_typed_substate_value(typed_substate_key, previous)?);
         }
-        ChangeAction::Delete { previous } => {
+        SubstateChangeAction::Delete { previous } => {
             typed_values.push(create_typed_substate_value(typed_substate_key, previous)?);
         }
     }

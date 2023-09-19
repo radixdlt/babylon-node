@@ -394,7 +394,7 @@ impl Delta for ProcessedTransactionReceipt {
         match self {
             ProcessedTransactionReceipt::Commit(commit) => {
                 let ledger_receipt = &commit.local_receipt.on_ledger;
-                ledger_receipt.substate_changes.len()
+                ledger_receipt.state_changes.len()
                     + ledger_receipt.application_events.len()
                     + commit.hash_structures_diff.weight()
             }
