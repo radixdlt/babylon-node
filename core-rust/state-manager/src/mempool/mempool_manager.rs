@@ -95,6 +95,9 @@ pub struct StateVersionUpdate {
 
 /// A high-level API giving a thread-safe access to the `PriorityMempool`.
 pub struct MempoolManager {
+    // TODO(after 100% Rust migration): The mutex is needed solely to circumvent jni`s Sync requirement.
+    // The overhead is just the extra memory access (+ compare) since it will never actually wait.
+    // In a pure Rust environment this is not needed and should be removed in future.
     deferred_updates_rx: Mutex<Receiver<MempoolUpdate>>,
     mempool: Arc<RwLock<PriorityMempool>>,
     relay_dispatcher: Option<MempoolRelayDispatcher>,
@@ -209,13 +212,15 @@ impl MempoolManager {
     /// and removes the newly rejected ones from the mempool.
     /// Obeys the given limit on the number of actually executed (i.e. not cached) transactions.
     pub fn reevaluate_transaction_committability(&self, max_reevaluated_count: u32) {
-        let mut transactions_to_remove = Vec::new();
-        for candidate_transaction in self
+        let candidate_transactions: Vec<Arc<MempoolData>> = self
             .mempool
             .read()
             .iter_by_state_version()
             .take(max_reevaluated_count as usize)
-        {
+            .collect();
+
+        let mut transactions_to_remove = Vec::new();
+        for candidate_transaction in candidate_transactions {
             let (record, _was_cached) = self
                 .cached_committability_validator
                 .check_for_rejection_cached_prevalidated(

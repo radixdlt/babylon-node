@@ -454,6 +454,9 @@ const NON_REJECTION_RECALCULATION_DELAY: Duration = Duration::from_secs(120);
 const MAX_RECALCULATION_DELAY: Duration = Duration::from_secs(1000);
 
 pub struct PendingTransactionResultCache {
+    // TODO(after 100% Rust migration): The mutex is needed solely to circumvent jni`s Sync requirement.
+    // The overhead is just the extra memory access (+ compare) since it will never actually wait.
+    // In a pure Rust environment this is not needed and should be removed in future.
     mempool_deferred_updates_tx: Mutex<Sender<MempoolUpdate>>,
     pending_transaction_records: LruCache<NotarizedTransactionHash, PendingTransactionRecord>,
     intent_lookup: HashMap<IntentHash, HashSet<NotarizedTransactionHash>>,
