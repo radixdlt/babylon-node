@@ -1,0 +1,14 @@
+# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.
+version: v1.25.0
+ignore: {}
+patch: {}
+exclude:
+  global:
+    # Snyk reports false positives in those files and sadly
+    # there's no option to ignore specific issues within a file.
+    - core/src/main/java/com/radixdlt/p2p/transport/FrameCodec.java
+    - common/src/main/java/com/radixdlt/crypto/IESEngine.java
+    - common/src/main/java/com/radixdlt/crypto/ECIESCoder.java
+    - cli-tools/src/main/java/com/radixdlt/cloud/AWSSecrets.java
+    - common/src/main/java/com/radixdlt/crypto/ECKeyUtils.java
+    - core/src/test/java/com/radixdlt/api/DeterministicCoreApiTestBase.java
