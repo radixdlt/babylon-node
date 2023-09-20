@@ -75,11 +75,31 @@ import java.math.BigInteger;
 import java.util.Objects;
 import org.bouncycastle.util.Arrays;
 
-/** Decimal represents a 192 bit representation of a fixed-scale decimal number. */
+/**
+ * Decimal represents a 192 bit representation of a fixed-scale decimal number. Note that the Java
+ * implementation is fairly basic and mostly acts as a container for node<->engine interop.
+ * Internally it uses an *unsigned* 192-bit integer representation, and only exposes a handful of
+ * operations that behave the same way for signed and unsigned numbers (e.g. add, sub).
+ */
 @SecurityCritical(SecurityKind.NUMERIC)
 public class Decimal implements Comparable<Decimal> {
 
-  public static final Decimal ZERO = Decimal.of(0L);
+  public static final Decimal MIN_VALUE =
+      Decimal.fromUnsignedFixedPointRepresentation(
+          UInt192.from(
+              new BigInteger("-3138550867693340381917894711603833208051177722232017256448")
+                  .toByteArray()));
+
+  public static final Decimal MAX_VALUE =
+      Decimal.fromUnsignedFixedPointRepresentation(
+          UInt192.from(
+              new BigInteger("3138550867693340381917894711603833208051177722232017256447")
+                  .toByteArray()));
+
+  public static final Decimal ZERO = Decimal.ofNonNegative(0L);
+  public static final Decimal ONE = Decimal.ofNonNegative(1L);
+  public static final Decimal ONE_SUBUNIT =
+      Decimal.fromUnsignedFixedPointRepresentation(UInt192.ONE);
   private static final int SCALE = 18;
 
   public static void registerCodec(CodecMap codecMap) {
@@ -101,15 +121,17 @@ public class Decimal implements Comparable<Decimal> {
     this.underlyingValue = Objects.requireNonNull(underlyingValue);
   }
 
-  public static Decimal from(UInt192 fixedPointRepresentation) {
-    return new Decimal(fixedPointRepresentation);
+  public static Decimal fromUnsignedFixedPointRepresentation(
+      UInt192 unsignedFixedPointRepresentation) {
+    return new Decimal(unsignedFixedPointRepresentation);
   }
 
   /**
    * Creates a Decimal from raw, non-negative BigInteger representation. Note that a BigInteger
-   * value of 1 translates to 1e-18 Decimal unit, not 1. Throws if the BigInteger exceeds UInt192.
+   * value of 1 translates to 1e-18 Decimal unit, not 1. Throws if the BigInteger representation
+   * exceeds 24 bytes.
    */
-  public static Decimal fromBigIntegerSubunits(BigInteger bigInt) {
+  public static Decimal fromNonNegativeBigIntegerSubunits(BigInteger bigInt) {
     if (bigInt.compareTo(BigInteger.ZERO) < 0) {
       throw new IllegalArgumentException(
           "Can't create a Decimal from a negative BigInteger representation");
@@ -126,44 +148,53 @@ public class Decimal implements Comparable<Decimal> {
     } else {
       uint192Bytes = bigIntSignedBytes;
     }
-    return Decimal.from(UInt192.from(uint192Bytes));
+    return Decimal.fromUnsignedFixedPointRepresentation(UInt192.from(uint192Bytes));
   }
 
   public Decimal add(Decimal other) {
-    var newUnderlying = this.underlyingValue.add(other.underlyingValue);
+    final var newUnderlying = this.underlyingValue.add(other.underlyingValue);
     return new Decimal(newUnderlying);
   }
 
   public BigInteger toBigIntegerSubunits() {
-    return underlyingValue.toBigInt();
+    return new BigInteger(underlyingValue.toByteArray());
   }
 
-  public static Decimal of(long amount) {
-    var underlying = UInt192.from(amount).multiply(UInt192.from(10).pow(SCALE));
+  public static Decimal ofNonNegative(long amount) {
+    if (amount < 0) {
+      throw new IllegalArgumentException("Amount must be non-negative");
+    }
+    final var underlying = UInt192.from(amount).multiply(UInt192.from(10).pow(SCALE));
     return new Decimal(underlying);
   }
 
-  public static Decimal fraction(long numerator, long denominator) {
-    return Decimal.of(numerator).divide(denominator);
+  public static Decimal nonNegativeFraction(long numerator, long denominator) {
+    if (numerator < 0 != denominator < 0) {
+      throw new IllegalArgumentException("Non-negative fraction must be non-negative");
+    }
+    final var underlying =
+        UInt192.from(Math.abs(numerator))
+            .multiply(UInt192.from(10).pow(SCALE))
+            .divide(UInt192.from(Math.abs(denominator)));
+    return fromUnsignedFixedPointRepresentation(underlying);
   }
 
   public Decimal subtract(Decimal other) {
-    var newUnderlying = this.underlyingValue.subtract(other.underlyingValue);
+    final var newUnderlying = this.underlyingValue.subtract(other.underlyingValue);
     return new Decimal(newUnderlying);
   }
 
-  public Decimal divide(long divisor) {
-    var newUnderlying = this.underlyingValue.divide(UInt192.from(divisor));
-    return new Decimal(newUnderlying);
-  }
-
-  public UInt192 toUInt192() {
+  /**
+   * Returns a raw underlying UInt192 unsigned value that this Decimal internally uses. Note that
+   * the resultant (unsigned) value may exceed `Decimal.MAX_VALUE` (for negative Decimals).
+   */
+  public UInt192 unsignedFixedPointRepresentation() {
     return underlyingValue;
   }
 
   @Override
   public String toString() {
-    var str = new BigDecimal(underlyingValue.toBigInt(), SCALE).toString();
+    var str = new BigDecimal(new BigInteger(underlyingValue.toByteArray()), SCALE).toPlainString();
     if (str.contains(".")) {
       // The outputted string contains the full precision (18 decimals) - but the rust Decimal
       // doesn't include these characters...

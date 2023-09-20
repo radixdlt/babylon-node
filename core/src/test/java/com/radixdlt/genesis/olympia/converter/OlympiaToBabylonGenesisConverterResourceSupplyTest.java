@@ -117,7 +117,12 @@ public final class OlympiaToBabylonGenesisConverterResourceSupplyTest {
 
     final var config =
         new OlympiaToBabylonConverterConfig(
-            10, 10, 10, 10, 10, Decimal.fromBigIntegerSubunits(BigInteger.valueOf(6000L)));
+            10,
+            10,
+            10,
+            10,
+            10,
+            Decimal.fromNonNegativeBigIntegerSubunits(BigInteger.valueOf(6000L)));
     final var converted = OlympiaStateToBabylonGenesisConverter.toGenesisData(olympiaState, config);
 
     // There are two balance entries: 10000 and 2001 (12k + 1 total), and the maximum supply is 6k.
@@ -126,11 +131,11 @@ public final class OlympiaToBabylonGenesisConverterResourceSupplyTest {
     final var resourceBalancesChunk = (GenesisDataChunk.ResourceBalances) converted.chunks().get(1);
 
     assertEquals(
-        Decimal.fromBigIntegerSubunits(BigInteger.valueOf(4999L)),
+        Decimal.fromNonNegativeBigIntegerSubunits(BigInteger.valueOf(4999L)),
         resourceBalancesChunk.allocations().get(0).last().get(0).amount());
 
     assertEquals(
-        Decimal.fromBigIntegerSubunits(BigInteger.valueOf(1000L)),
+        Decimal.fromNonNegativeBigIntegerSubunits(BigInteger.valueOf(1000L)),
         resourceBalancesChunk.allocations().get(0).last().get(1).amount());
   }
 
@@ -160,20 +165,17 @@ public final class OlympiaToBabylonGenesisConverterResourceSupplyTest {
             1L,
             1L);
 
-    final var config =
-        new OlympiaToBabylonConverterConfig(10, 10, 10, 10, 10, Decimal.from(UInt192.MAX_VALUE));
+    final var config = new OlympiaToBabylonConverterConfig(10, 10, 10, 10, 10, Decimal.MAX_VALUE);
     final var converted = OlympiaStateToBabylonGenesisConverter.toGenesisData(olympiaState, config);
 
     final var resourcesChunk = (GenesisDataChunk.Resources) converted.chunks().get(0);
     final var resourceAddress = resourcesChunk.value().get(0).address();
     final var resourceBalancesChunk = (GenesisDataChunk.ResourceBalances) converted.chunks().get(1);
 
-    assertEquals(
-        Decimal.from(UInt192.MAX_VALUE), getBabylonTotalSupplyNonXrd(converted, resourceAddress));
+    assertEquals(Decimal.MAX_VALUE, getBabylonTotalSupplyNonXrd(converted, resourceAddress));
 
     assertEquals(
-        Decimal.from(UInt192.MAX_VALUE),
-        resourceBalancesChunk.allocations().get(0).last().get(0).amount());
+        Decimal.MAX_VALUE, resourceBalancesChunk.allocations().get(0).last().get(0).amount());
   }
 
   @Test
@@ -210,7 +212,7 @@ public final class OlympiaToBabylonGenesisConverterResourceSupplyTest {
 
     final var config =
         new OlympiaToBabylonConverterConfig(
-            10, 10, 10, 10, 10, Decimal.fromBigIntegerSubunits(maxSupply));
+            10, 10, 10, 10, 10, Decimal.fromNonNegativeBigIntegerSubunits(maxSupply));
     final var converted = OlympiaStateToBabylonGenesisConverter.toGenesisData(olympiaState, config);
 
     final var resourcesChunk = (GenesisDataChunk.Resources) converted.chunks().get(0);
@@ -220,18 +222,18 @@ public final class OlympiaToBabylonGenesisConverterResourceSupplyTest {
     // Max supply is 1461501637330902918203684832716283019655932542976 (2^160)
     // but we end up with one unit less due to rounding errors.
     assertEquals(
-        Decimal.fromBigIntegerSubunits(
+        Decimal.fromNonNegativeBigIntegerSubunits(
             new BigInteger("1461501637330902918203684832716283019655932542975")),
         getBabylonTotalSupplyNonXrd(converted, resourceAddress));
 
     // One account receives 4/5 of total supply (rounded down), and the other one 1/5
     assertEquals(
-        Decimal.fromBigIntegerSubunits(
+        Decimal.fromNonNegativeBigIntegerSubunits(
             new BigInteger("1169201309864722334562947866173026415724746034380")),
         resourceBalancesChunk.allocations().get(0).last().get(0).amount());
 
     assertEquals(
-        Decimal.fromBigIntegerSubunits(
+        Decimal.fromNonNegativeBigIntegerSubunits(
             new BigInteger("292300327466180583640736966543256603931186508595")),
         resourceBalancesChunk.allocations().get(0).last().get(1).amount());
   }

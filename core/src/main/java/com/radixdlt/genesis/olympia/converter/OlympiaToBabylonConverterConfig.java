@@ -84,5 +84,10 @@ public record OlympiaToBabylonConverterConfig(
     Decimal maxGenesisResourceUnscaledSupply) {
   public static final OlympiaToBabylonConverterConfig DEFAULT =
       new OlympiaToBabylonConverterConfig(
-          100, 1000, 1000, 100, 1000, Decimal.from(UInt192.TWO.pow(152)));
+          100,
+          1000,
+          1000,
+          100,
+          1000,
+          Decimal.fromUnsignedFixedPointRepresentation(UInt192.TWO.pow(152)));
 }

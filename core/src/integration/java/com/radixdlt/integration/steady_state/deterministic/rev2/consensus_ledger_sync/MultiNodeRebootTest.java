@@ -216,10 +216,10 @@ public final class MultiNodeRebootTest {
                     Network.INTEGRATIONTESTNET.getId(),
                     GenesisBuilder.createTestGenesisWithNumValidators(
                         numValidators,
-                        Decimal.of(1),
+                        Decimal.ONE,
                         GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
                                 this.roundsPerEpoch)
-                            .totalEmissionXrdPerEpoch(Decimal.of(0))),
+                            .totalEmissionXrdPerEpoch(Decimal.ofNonNegative(0))),
                     REv2StateManagerModule.DatabaseType.ROCKS_DB,
                     new DatabaseFlags(true, false),
                     StateComputerConfig.REV2ProposerConfig.transactionGenerator(

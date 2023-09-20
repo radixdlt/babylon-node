@@ -82,6 +82,7 @@ import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UniqueListBuilder;
 import java.io.File;
+import java.math.BigInteger;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Set;
@@ -115,9 +116,9 @@ public final class GenerateGenesis {
           Network.KISHARNET, Network.ANSHARNET, Network.ZABANET, Network.STOKENET, Network.MAINNET);
 
   private static final Decimal GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_BALANCE =
-      Decimal.of(700_000_000_000L); // 70% XRD_MAX_SUPPLY
+      Decimal.ofNonNegative(700_000_000_000L); // 70% XRD_MAX_SUPPLY
   private static final Decimal GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR =
-      Decimal.of(1_000_000_000L); // 0.1% XRD_MAX_SUPPLY
+      Decimal.ofNonNegative(1_000_000_000L); // 0.1% XRD_MAX_SUPPLY
   private static final ECDSASecp256k1PublicKey GENESIS_POWERFUL_STAKING_ACCOUNT_PUBLIC_KEY;
 
   static {
@@ -131,7 +132,7 @@ public final class GenerateGenesis {
   }
 
   private static final Decimal GENESIS_NO_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR =
-      Decimal.of(1); // Allow it to be easily changed in eg tests
+      Decimal.ONE; // Allow it to be easily changed in eg tests
 
   private GenerateGenesis() {}
 
@@ -264,9 +265,13 @@ public final class GenerateGenesis {
     final var mustUseProductionEmissions =
         NETWORKS_TO_ENSURE_PRODUCTION_EMISSIONS.contains(network);
     if (!mustUseProductionEmissions && !usePowerfulStakingAccount) {
+      final var totalEmissionXrdPerEpochBigInt =
+          GENESIS_NO_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR
+              .toBigIntegerSubunits()
+              .divide(BigInteger.valueOf(10000));
       consensusConfig =
           consensusConfig.totalEmissionXrdPerEpoch(
-              GENESIS_NO_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR.divide(10000));
+              Decimal.fromNonNegativeBigIntegerSubunits(totalEmissionXrdPerEpochBigInt));
     }
 
     final var useFaucet = !NETWORKS_TO_DISABLE_FAUCET.contains(network);

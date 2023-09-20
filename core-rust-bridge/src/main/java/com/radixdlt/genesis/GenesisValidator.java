@@ -96,6 +96,6 @@ public record GenesisValidator(
                 "name", new MetadataValue.String(String.format("Default validator %s", index + 1))),
             tuple("url", new MetadataValue.Url("https://www.radixdlt.com")));
     return new GenesisValidator(
-        key, true, true, Decimal.of(1), metadata, Address.virtualAccountAddress(key));
+        key, true, true, Decimal.ONE, metadata, Address.virtualAccountAddress(key));
   }
 }

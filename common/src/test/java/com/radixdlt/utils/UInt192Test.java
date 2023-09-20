@@ -484,6 +484,48 @@ public class UInt192Test {
     UInt192.ONE.pow(-1);
   }
 
+  /** Test some concrete large values div/mul */
+  @Test
+  public void test_large_number_div_mul() {
+    assertEquals(UInt192.MAX_VALUE.divide(UInt192.MAX_VALUE), UInt192.ONE);
+    assertEquals(UInt192.ONE.divide(UInt192.ONE), UInt192.ONE);
+    assertEquals(UInt192.ONE.divide(UInt192.TWO), UInt192.ZERO);
+    assertEquals(UInt192.ONE.divide(UInt192.MAX_VALUE), UInt192.ZERO);
+    assertEquals(
+        UInt192.MAX_VALUE.toBigInt(),
+        new BigInteger("6277101735386680763835789423207666416102355444464034512895"));
+    assertEquals(
+        UInt192.MAX_VALUE.divide(UInt192.TWO).toBigInt(),
+        new BigInteger("3138550867693340381917894711603833208051177722232017256447"));
+    assertEquals(
+        UInt192.MAX_VALUE.divide(UInt192.FIVE),
+        UInt192.from("1255420347077336152767157884641533283220471088892806902579"));
+    assertEquals(
+        UInt192.MAX_VALUE.divide(UInt192.FIVE).multiply(UInt192.THREE),
+        UInt192.from("3766261041232008458301473653924599849661413266678420707737"));
+    assertEquals(
+        UInt192.from("3138550867693340381917894711603833208051177722232017256448")
+            .divide(UInt192.FOUR),
+        UInt192.from("784637716923335095479473677900958302012794430558004314112"));
+  }
+
+  /** Test some concrete large values add/sub */
+  @Test
+  public void test_large_number_add_sub() {
+    final var u1 = UInt192.from("3766261041232008458301473653924599849661413266678420707737");
+    // An overflow
+    assertEquals(
+        u1.add(u1), UInt192.from("1255420347077336152767157884641533283220471088892806902578"));
+
+    // A transient overflow
+    assertEquals(UInt192.MAX_VALUE.add(UInt192.ONE).subtract(UInt192.ONE), UInt192.MAX_VALUE);
+
+    assertEquals(
+        UInt192.from("6277101735386680763835789423207666416102355444464034512895")
+            .subtract(UInt192.from("6277101735386680763835789423207666416102355444464034512894")),
+        UInt192.ONE);
+  }
+
   private static void testRoundTrip(String s) {
     assertEquals(s, UInt192.from(s).toString());
   }

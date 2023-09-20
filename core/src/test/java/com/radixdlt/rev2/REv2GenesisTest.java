@@ -89,9 +89,9 @@ import java.util.Map;
 import org.junit.Test;
 
 public final class REv2GenesisTest {
-  private static final Decimal INITIAL_STAKE = Decimal.of(1);
+  private static final Decimal INITIAL_STAKE = Decimal.ONE;
 
-  private static final Decimal XRD_ALLOC_AMOUNT = Decimal.of(100123);
+  private static final Decimal XRD_ALLOC_AMOUNT = Decimal.ofNonNegative(100123);
   private static final ECDSASecp256k1PublicKey XRD_ALLOC_ACCOUNT_PUB_KEY =
       ECKeyPair.generateNew().getPublicKey();
 
@@ -171,7 +171,7 @@ public final class REv2GenesisTest {
 
       final var readFaucetAmount =
           stateReader.getComponentXrdAmount(ScryptoConstants.FAUCET_ADDRESS);
-      final var maxTotalXrdUsedByScenarios = Decimal.of(100_000);
+      final var maxTotalXrdUsedByScenarios = Decimal.ofNonNegative(100_000);
       assertThat(readFaucetAmount).isLessThanOrEqualTo(GenesisData.DEFAULT_TEST_FAUCET_SUPPLY);
       assertThat(readFaucetAmount)
           .isGreaterThan(
@@ -184,7 +184,7 @@ public final class REv2GenesisTest {
       assertThat(allocatedAmount).isEqualTo(XRD_ALLOC_AMOUNT);
 
       var emptyAccountAmount = stateReader.getComponentXrdAmount(NON_EXISTENT_COMPONENT_ADDRESS);
-      assertThat(emptyAccountAmount).isEqualTo(Decimal.of(0));
+      assertThat(emptyAccountAmount).isEqualTo(Decimal.ofNonNegative(0));
     }
   }
 }

@@ -77,39 +77,95 @@ public final class DecimalTest {
   public void testDecimalBigIntConversions() {
     final var positiveTestCases =
         List.of(
-            Decimal.from(UInt192.MAX_VALUE).toBigIntegerSubunits(),
+            Decimal.MAX_VALUE.toBigIntegerSubunits(),
             new BigInteger("3138550867693340381917894711603833208051177722232017256447"),
-            Decimal.from(UInt192.MAX_VALUE).toBigIntegerSubunits().divide(BigInteger.TWO),
-            Decimal.from(UInt192.MAX_VALUE).toBigIntegerSubunits().divide(BigInteger.TEN),
+            Decimal.MAX_VALUE.toBigIntegerSubunits().divide(BigInteger.TWO),
+            Decimal.MAX_VALUE.toBigIntegerSubunits().divide(BigInteger.TEN),
             BigInteger.ONE,
             BigInteger.TWO,
             BigInteger.ZERO);
 
     for (var testBigInt : positiveTestCases) {
-      assertEquals(Decimal.fromBigIntegerSubunits(testBigInt).toBigIntegerSubunits(), testBigInt);
+      assertEquals(
+          Decimal.fromNonNegativeBigIntegerSubunits(testBigInt).toBigIntegerSubunits(), testBigInt);
     }
 
     assertThrows(
         IllegalArgumentException.class,
-        () -> Decimal.fromBigIntegerSubunits(BigInteger.valueOf(-1L)));
+        () -> Decimal.fromNonNegativeBigIntegerSubunits(BigInteger.valueOf(-1L)));
 
+    // Decimal overflow
     assertThrows(
         IllegalArgumentException.class,
         () ->
-            Decimal.fromBigIntegerSubunits(
-                Decimal.from(UInt192.MAX_VALUE).toBigIntegerSubunits().add(BigInteger.ONE)));
+            Decimal.fromNonNegativeBigIntegerSubunits(
+                UInt192.MAX_VALUE.toBigInt().add(BigInteger.ONE)));
 
-    assertEquals(Decimal.fromBigIntegerSubunits(BigInteger.ZERO), Decimal.ZERO);
+    assertEquals(Decimal.fromNonNegativeBigIntegerSubunits(BigInteger.ZERO), Decimal.ZERO);
     assertEquals(Decimal.ZERO.toBigIntegerSubunits(), BigInteger.ZERO);
-    assertEquals(Decimal.from(UInt192.ONE).toBigIntegerSubunits(), BigInteger.ONE);
-    assertEquals(Decimal.fromBigIntegerSubunits(BigInteger.TEN.pow(18)), Decimal.of(1L));
+    assertEquals(
+        Decimal.fromUnsignedFixedPointRepresentation(UInt192.ONE).toBigIntegerSubunits(),
+        BigInteger.ONE);
+    assertEquals(Decimal.fromNonNegativeBigIntegerSubunits(BigInteger.TEN.pow(18)), Decimal.ONE);
   }
 
   @Test
   public void test_fraction_and_to_string() {
-    assertThat(Decimal.fraction(123456, 1).toString()).isEqualTo("123456");
-    assertThat(Decimal.fraction(123456, 10).toString()).isEqualTo("12345.6");
-    assertThat(Decimal.fraction(123456, 100).toString()).isEqualTo("1234.56");
-    assertThat(Decimal.fraction(123456, 10000000).toString()).isEqualTo("0.0123456");
+    assertThat(Decimal.nonNegativeFraction(123456, 1).toString()).isEqualTo("123456");
+    assertThat(Decimal.nonNegativeFraction(123456, 10).toString()).isEqualTo("12345.6");
+    assertThat(Decimal.nonNegativeFraction(123456, 100).toString()).isEqualTo("1234.56");
+    assertThat(Decimal.nonNegativeFraction(123456, 10000000).toString()).isEqualTo("0.0123456");
+  }
+
+  @Test
+  public void test_negative_and_large_numbers_and_to_string() {
+    assertEquals(
+        Decimal.fromNonNegativeBigIntegerSubunits(BigInteger.ONE).toString(),
+        "0.000000000000000001");
+
+    assertEquals(Decimal.ofNonNegative(0L).subtract(Decimal.ONE).toString(), "-1");
+
+    assertEquals(
+        Decimal.ZERO
+            .subtract(Decimal.fromNonNegativeBigIntegerSubunits(BigInteger.valueOf(12L)))
+            .toString(),
+        "-0.000000000000000012");
+
+    assertEquals(
+        Decimal.ofNonNegative(100L).subtract(Decimal.ofNonNegative(200L)).toString(), "-100");
+
+    assertEquals(
+        Decimal.ofNonNegative(0L).subtract(Decimal.ONE_SUBUNIT).toString(),
+        "-0.000000000000000001");
+
+    assertEquals(
+        Decimal.MIN_VALUE.toString(),
+        "-3138550867693340381917894711603833208051.177722232017256448");
+
+    // Overflow MIN_VALUE by minus one subunit == MAX_VALUE
+    assertEquals(
+        Decimal.MIN_VALUE.subtract(Decimal.ONE_SUBUNIT).toString(),
+        "3138550867693340381917894711603833208051.177722232017256447");
+
+    // Overflow MAX_VALUE by one subunit == MIN_VALUE
+    assertEquals(
+        Decimal.MAX_VALUE.add(Decimal.ONE_SUBUNIT).toString(),
+        "-3138550867693340381917894711603833208051.177722232017256448");
+
+    // Some large additions
+    assertEquals(
+        Decimal.fromNonNegativeBigIntegerSubunits(
+                new BigInteger("3138550867693340381917894711603833208051177722232017256440"))
+            .add(
+                Decimal.fromNonNegativeBigIntegerSubunits(
+                    new BigInteger("0000000000000000000000000000000000000000000000000000000007"))),
+        Decimal.MAX_VALUE);
+
+    final var twoPow152 = Decimal.fromUnsignedFixedPointRepresentation(UInt192.TWO.pow(152));
+    assertEquals(twoPow152.toString(), "5708990770823839524233143877.797980545530986496");
+
+    assertEquals(
+        twoPow152.toBigIntegerSubunits().toString(),
+        "5708990770823839524233143877797980545530986496");
   }
 }

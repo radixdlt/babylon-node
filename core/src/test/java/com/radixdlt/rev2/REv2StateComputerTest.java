@@ -125,7 +125,7 @@ public class REv2StateComputerTest {
             RawGenesisDataWithHash.fromGenesisData(
                 GenesisBuilder.createGenesisWithValidatorsAndXrdBalances(
                     ImmutableList.of(ONLY_VALIDATOR_ID.getKey()),
-                    Decimal.of(1),
+                    Decimal.ONE,
                     Address.virtualAccountAddress(ONLY_VALIDATOR_ID.getKey()),
                     Map.of(),
                     GenesisConsensusManagerConfig.Builder.testDefaults(),

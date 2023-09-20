@@ -187,7 +187,8 @@ public final class OlympiaToBabylonGenesisConverterTest {
       final var xrdAmount =
           stateReader.getComponentXrdAmount(
               Address.virtualAccountAddress(expectedBalanceEntry.getKey().asBytes()));
-      assertEquals(Decimal.fromBigIntegerSubunits(expectedBalanceEntry.getValue()), xrdAmount);
+      assertEquals(
+          Decimal.fromNonNegativeBigIntegerSubunits(expectedBalanceEntry.getValue()), xrdAmount);
     }
   }
 
@@ -449,7 +450,8 @@ public final class OlympiaToBabylonGenesisConverterTest {
                             .toBigInt()
                             .multiply(summaryValidator.totalStakedXrd().toBigInt())
                             .divide(summaryValidator.totalStakeUnits);
-                    assertEquals(Decimal.fromBigIntegerSubunits(stakeInXrd), babylonStakerStake);
+                    assertEquals(
+                        Decimal.fromNonNegativeBigIntegerSubunits(stakeInXrd), babylonStakerStake);
                   });
             });
   }
@@ -471,7 +473,7 @@ public final class OlympiaToBabylonGenesisConverterTest {
         (keyBytes, amount) -> {
           final var babylonAmount =
               babylonXrdByAccount.get(Address.virtualAccountAddress(keyBytes.asBytes()));
-          assertEquals(Decimal.fromBigIntegerSubunits(amount), babylonAmount);
+          assertEquals(Decimal.fromNonNegativeBigIntegerSubunits(amount), babylonAmount);
         });
   }
 
@@ -555,11 +557,11 @@ public final class OlympiaToBabylonGenesisConverterTest {
       BigInteger resourceTotalSupplyOnOlympia,
       BigInteger resourceMaxSupplyOnBabylon) {
     if (resourceTotalSupplyOnOlympia.compareTo(resourceMaxSupplyOnBabylon) <= 0) {
-      return Decimal.fromBigIntegerSubunits(originalAmount);
+      return Decimal.fromNonNegativeBigIntegerSubunits(originalAmount);
     } else {
       final var scaledBigInt =
           resourceMaxSupplyOnBabylon.multiply(originalAmount).divide(resourceTotalSupplyOnOlympia);
-      return Decimal.fromBigIntegerSubunits(scaledBigInt);
+      return Decimal.fromNonNegativeBigIntegerSubunits(scaledBigInt);
     }
   }
 

@@ -86,13 +86,20 @@ public final class REv2ToConsensus {
 
   public static BFTValidator validator(ActiveValidatorInfo validator) {
     return BFTValidator.from(
-        BFTValidatorId.create(validator.address(), validator.key()), validator.stake().toUInt192());
+        BFTValidatorId.create(validator.address(), validator.key()),
+        // Stake is never negative, so it's safe to use
+        // `unsignedFixedPointRepresentation` here.
+        validator.stake().unsignedFixedPointRepresentation());
   }
 
   public static ActiveValidatorInfo validator(BFTValidator validator) {
     BFTValidatorId id = validator.getValidatorId();
     return new ActiveValidatorInfo(
-        id.getValidatorAddress(), id.getKey(), Decimal.from(validator.getPower()));
+        id.getValidatorAddress(),
+        id.getKey(),
+        // Stake is never negative, so it's safe to use
+        // `fromUnsignedFixedPointRepresentation` here.
+        Decimal.fromUnsignedFixedPointRepresentation(validator.getPower()));
   }
 
   public static BFTValidatorSet validatorSet(Set<ActiveValidatorInfo> validators) {
