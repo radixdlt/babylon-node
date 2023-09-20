@@ -229,8 +229,11 @@ public class IESEngine {
       System.arraycopy(k, 0, k1, 0, k1.length);
       System.arraycopy(k, k1.length, k2, 0, k2.length);
 
-      // If iv provided use it to initialise the cipher
+      // SNYK - this file is ignored in .snyk file
+      // Raised issue: Hardcoded value array {...} is used as a cipher key.
+      // Explanation: k1 isn't hardcoded, Snyk can't figure out the arraycopy call that sets it
       if (iv != null) {
+        // If iv provided use it to initialise the cipher
         cipher.init(true, new ParametersWithIV(new KeyParameter(k1), iv));
       } else {
         cipher.init(true, new KeyParameter(k1));
@@ -256,6 +259,9 @@ public class IESEngine {
     } else {
       k2a = k2;
     }
+    // SNYK - this file is ignored in .snyk file
+    // Raised issue: Hardcoded value array {...} is used as a cipher key.
+    // Explanation: k2a isn't hardcoded, Snyk can't figure out the doFinal call that sets it
     mac.init(new KeyParameter(k2a));
     mac.update(iv, 0, iv.length);
     mac.update(c, 0, c.length);
@@ -319,8 +325,11 @@ public class IESEngine {
       System.arraycopy(k, 0, k1, 0, k1.length);
       System.arraycopy(k, k1.length, k2, 0, k2.length);
 
-      // If IV provide use it to initialize the cipher
+      // SNYK - this file is ignored in .snyk file
+      // Raised issue: Hardcoded value array {...} is used as a cipher key.
+      // Explanation: k1 isn't hardcoded, Snyk can't figure out the arraycopy call that sets it
       if (iv != null) {
+        // If IV provide use it to initialize the cipher
         cipher.init(false, new ParametersWithIV(new KeyParameter(k1), iv));
       } else {
         cipher.init(false, new KeyParameter(k1));
@@ -348,6 +357,9 @@ public class IESEngine {
     } else {
       k2a = k2;
     }
+    // SNYK - this file is ignored in .snyk file
+    // Raised issue: Hardcoded value array {...} is used as a cipher key.
+    // Explanation: k2a isn't hardcoded, Snyk can't figure out the doFinal call that sets it
     mac.init(new KeyParameter(k2a));
     mac.update(iv, 0, iv.length);
     mac.update(inEnc, inOff + v.length, inLen - v.length - t2.length);
