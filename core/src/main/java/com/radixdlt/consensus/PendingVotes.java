@@ -78,10 +78,13 @@ import com.radixdlt.consensus.liveness.VoteTimeout;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.monitoring.Metrics;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.concurrent.NotThreadSafe;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Manages pending votes for various vertices.
@@ -93,20 +96,48 @@ import javax.annotation.concurrent.NotThreadSafe;
 @NotThreadSafe
 @SecurityCritical({SecurityKind.SIG_VERIFY, SecurityKind.GENERAL})
 public final class PendingVotes {
+  private static final Logger log = LogManager.getLogger();
+
   private final Map<HashCode, ValidationState> voteState = Maps.newHashMap();
   private final Map<HashCode, ValidationState> timeoutVoteState = Maps.newHashMap();
   private final Map<BFTValidatorId, PreviousVote> previousVotes = Maps.newHashMap();
   private final Hasher hasher;
   private final EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher;
   private final BFTValidatorSet validatorSet;
+  private final Metrics metrics;
 
   public PendingVotes(
       Hasher hasher,
       EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher,
-      BFTValidatorSet validatorSet) {
+      BFTValidatorSet validatorSet,
+      Metrics metrics) {
     this.hasher = Objects.requireNonNull(hasher);
     this.doubleVoteEventDispatcher = Objects.requireNonNull(doubleVoteEventDispatcher);
     this.validatorSet = Objects.requireNonNull(validatorSet);
+    this.metrics = metrics;
+  }
+
+  private void checkForDivergentVertexExecution(Vote vote) {
+    final var voteVertexId = vote.getVoteData().getProposed().getVertexId();
+    final var voteLedgerHeader = vote.getVoteData().getProposed().getLedgerHeader();
+    for (var otherVote : this.previousVotes.entrySet()) {
+      final var otherVertexId = otherVote.getValue().proposedHeader().getVertexId();
+      final var otherLedgerHeader = otherVote.getValue().proposedHeader().getLedgerHeader();
+      if (voteVertexId.equals(otherVertexId) && !voteLedgerHeader.equals(otherLedgerHeader)) {
+        log.warn(
+            "Divergent vertex execution detected! An incoming vote (from {}) for vertex {} claims"
+                + " the following resultant ledger header: {}, while validator {} thinks that the"
+                + " resultant ledger header is {}. [this_vote={}, other_vote={}]",
+            vote.getAuthor(),
+            voteVertexId,
+            voteLedgerHeader,
+            otherVote.getKey(),
+            otherLedgerHeader,
+            vote,
+            otherVote);
+        this.metrics.bft().divergentVertexExecutions().inc();
+      }
+    }
   }
 
   /**
@@ -118,15 +149,19 @@ public final class PendingVotes {
    * @return The result of vote processing
    */
   public VoteProcessingResult insertVote(Vote vote) {
-    final BFTValidatorId node = vote.getAuthor();
+    final BFTValidatorId author = vote.getAuthor();
     final VoteData voteData = vote.getVoteData();
     final HashCode voteDataHash = this.hasher.hashDsonEncoded(voteData);
 
-    if (!validatorSet.containsNode(node)) {
+    // This doesn't do anything, other than logging and bumping the metrics,
+    // when divergent execution is detected (which should hopefully never happen).
+    checkForDivergentVertexExecution(vote);
+
+    if (!validatorSet.containsValidator(author)) {
       return VoteProcessingResult.rejected(VoteRejectedReason.INVALID_AUTHOR);
     }
 
-    if (!replacePreviousVote(node, vote, voteDataHash)) {
+    if (!replacePreviousVote(author, vote, voteDataHash)) {
       return VoteProcessingResult.rejected(VoteRejectedReason.DUPLICATE_VOTE);
     }
 
@@ -139,13 +174,13 @@ public final class PendingVotes {
   private Optional<QuorumCertificate> processVoteForQC(Vote vote) {
     final VoteData voteData = vote.getVoteData();
     final HashCode voteDataHash = this.hasher.hashDsonEncoded(voteData);
-    final BFTValidatorId node = vote.getAuthor();
+    final BFTValidatorId author = vote.getAuthor();
 
     final ValidationState validationState =
         this.voteState.computeIfAbsent(voteDataHash, k -> validatorSet.newValidationState());
 
     final boolean signatureAdded =
-        validationState.addSignature(node, vote.getTimestamp(), vote.getSignature());
+        validationState.addSignature(author, vote.getTimestamp(), vote.getSignature());
 
     if (signatureAdded && validationState.complete()) {
       return Optional.of(new QuorumCertificate(voteData, validationState.signatures()));
@@ -163,14 +198,14 @@ public final class PendingVotes {
 
     final VoteTimeout voteTimeout = VoteTimeout.of(vote);
     final HashCode voteTimeoutHash = this.hasher.hashDsonEncoded(voteTimeout);
-    final BFTValidatorId node = vote.getAuthor();
+    final BFTValidatorId author = vote.getAuthor();
 
     final ValidationState validationState =
         this.timeoutVoteState.computeIfAbsent(
             voteTimeoutHash, k -> validatorSet.newValidationState());
 
     final boolean signatureAdded =
-        validationState.addSignature(node, vote.getTimestamp(), timeoutSignature);
+        validationState.addSignature(author, vote.getTimestamp(), timeoutSignature);
 
     if (signatureAdded && validationState.complete()) {
       return Optional.of(
@@ -185,7 +220,12 @@ public final class PendingVotes {
   // TODO: Could be causing quorum formation to slow down
   private boolean replacePreviousVote(BFTValidatorId author, Vote vote, HashCode voteHash) {
     final PreviousVote thisVote =
-        new PreviousVote(vote.getRound(), vote.getEpoch(), voteHash, vote.isTimeout());
+        new PreviousVote(
+            vote.getRound(),
+            vote.getEpoch(),
+            voteHash,
+            vote.isTimeout(),
+            vote.getVoteData().getProposed());
     final PreviousVote previousVote = this.previousVotes.put(author, thisVote);
     if (previousVote == null) {
       // No previous vote for this author, all good here
@@ -200,16 +240,16 @@ public final class PendingVotes {
 
     // Prune last pending vote from the pending votes.
     // This limits the number of pending vertices that are in the pipeline.
-    var validationState = this.voteState.get(previousVote.getHash());
+    var validationState = this.voteState.get(previousVote.hash());
     if (validationState != null) {
       validationState.removeSignature(author);
       if (validationState.isEmpty()) {
-        this.voteState.remove(previousVote.getHash());
+        this.voteState.remove(previousVote.hash());
       }
     }
 
     if (previousVote.isTimeout()) {
-      final var voteTimeout = new VoteTimeout(previousVote.getRound(), previousVote.getEpoch());
+      final var voteTimeout = new VoteTimeout(previousVote.round(), previousVote.epoch());
       final var voteTimeoutHash = this.hasher.hashDsonEncoded(voteTimeout);
 
       var timeoutValidationState = this.timeoutVoteState.get(voteTimeoutHash);
@@ -221,15 +261,15 @@ public final class PendingVotes {
       }
     }
 
-    if (vote.getRound().equals(previousVote.getRound())) {
+    if (vote.getRound().equals(previousVote.round())) {
       // If the validator already voted in this round for something else,
       // then the only valid possibility is a non-timeout vote being replaced by a timeout vote
-      // on the same vote data, or a byzantine node
+      // on the same vote data, or a byzantine validator
 
-      var isValidVote = thisVote.getHash().equals(previousVote.getHash());
+      var isValidVote = thisVote.hash().equals(previousVote.hash());
       if (!isValidVote) {
         this.doubleVoteEventDispatcher.dispatch(
-            new ConsensusByzantineEvent.DoubleVote(author, previousVote, vote, thisVote.getHash()));
+            new ConsensusByzantineEvent.DoubleVote(author, previousVote, vote, thisVote.hash()));
       }
       return isValidVote && !previousVote.isTimeout() && vote.isTimeout();
     } else {

@@ -69,9 +69,6 @@ import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
-import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.liveness.ProposerElections;
-import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessor;
@@ -113,14 +110,14 @@ public class MockedEpochsConsensusRecoveryModule extends AbstractModule {
                         .map(
                             niw ->
                                 BFTValidator.from(
-                                    BFTValidatorId.create(
+                                    BFTValidatorId.withKeyAndFakeDeterministicAddress(
                                         PrivateKeys.ofNumeric(niw.index() + 1).getPublicKey()),
                                     niw.weight()))));
   }
 
   @Provides
-  private RoundUpdate initialRoundUpdate(
-      BFTConfiguration configuration, ProposerElection proposerElection) {
+  private RoundUpdate initialRoundUpdate(BFTConfiguration configuration) {
+    final var proposerElection = configuration.getProposerElection();
     HighQC highQC = configuration.getVertexStoreState().getHighQC();
     Round round = highQC.highestQC().getRound().next();
     final BFTValidatorId leader = proposerElection.getProposer(round);
@@ -152,10 +149,7 @@ public class MockedEpochsConsensusRecoveryModule extends AbstractModule {
     final var initialEpochQC =
         QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
     final var proposerElection =
-        switch (this.proposerElectionMode) {
-          case ONLY_WEIGHTED_BY_STAKE -> new WeightedRotatingLeaders(validatorSet, 10);
-          case WITH_INITIAL_ROUNDS_ITERATION -> ProposerElections.defaultRotation(validatorSet);
-        };
+        this.proposerElectionMode.instantiate(proof.getEpoch(), validatorSet);
     return new BFTConfiguration(
         proposerElection,
         validatorSet,

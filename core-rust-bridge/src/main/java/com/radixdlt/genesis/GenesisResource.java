@@ -68,40 +68,19 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Tuple.Tuple2;
 import com.radixdlt.rev2.ComponentAddress;
-import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.MetadataValue;
+import com.radixdlt.rev2.ResourceAddress;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-import java.util.Arrays;
-import java.util.Objects;
 
 public record GenesisResource(
-    byte[] addressBytesWithoutEntityId,
-    Decimal initialSupply,
+    ResourceAddress address,
     ImmutableList<Tuple2<String, MetadataValue>> metadata,
     Option<ComponentAddress> owner) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         GenesisResource.class,
         codecs -> StructCodec.fromRecordComponents(GenesisResource.class, codecs));
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    GenesisResource that = (GenesisResource) o;
-    return Arrays.equals(addressBytesWithoutEntityId, that.addressBytesWithoutEntityId)
-        && Objects.equals(initialSupply, that.initialSupply)
-        && Objects.equals(metadata, that.metadata)
-        && Objects.equals(owner, that.owner);
-  }
-
-  @Override
-  public int hashCode() {
-    int result = Objects.hash(initialSupply, metadata, owner);
-    result = result * 31 + Arrays.hashCode(addressBytesWithoutEntityId);
-    return result;
   }
 
   @Override

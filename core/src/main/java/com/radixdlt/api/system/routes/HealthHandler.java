@@ -68,33 +68,35 @@ import com.google.inject.Inject;
 import com.radixdlt.api.system.SystemGetJsonHandler;
 import com.radixdlt.api.system.generated.models.HealthResponse;
 import com.radixdlt.api.system.health.HealthInfoService;
-import java.util.List;
+import com.radixdlt.protocol.Current;
+import com.radixdlt.protocol.ProtocolVersion;
 
 public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
   private final HealthInfoService healthInfoService;
+  private final ProtocolVersion currentProtocolVersion;
 
   @Inject
-  HealthHandler(HealthInfoService healthInfoService) {
+  HealthHandler(
+      HealthInfoService healthInfoService, @Current ProtocolVersion currentProtocolVersion) {
     super();
     this.healthInfoService = healthInfoService;
+    this.currentProtocolVersion = currentProtocolVersion;
   }
 
   @Override
   public HealthResponse handleRequest() {
-    final var status =
-        switch (healthInfoService.nodeStatus()) {
+    final var nodeStatus = healthInfoService.nodeStatus();
+    final var statusEnum =
+        switch (nodeStatus) {
           case BOOTING_PRE_GENESIS -> HealthResponse.StatusEnum.BOOTING_PRE_GENESIS;
-          case BOOTING_AT_GENESIS -> HealthResponse.StatusEnum.BOOTING_AT_GENESIS;
           case SYNCING -> HealthResponse.StatusEnum.SYNCING;
           case UP -> HealthResponse.StatusEnum.UP;
-          case STALLED -> HealthResponse.StatusEnum.STALLED;
           case OUT_OF_SYNC -> HealthResponse.StatusEnum.OUT_OF_SYNC;
         };
 
     return new HealthResponse()
-        .status(status)
-        .currentForkName("SomeForkName")
-        .forkVoteStatus(HealthResponse.ForkVoteStatusEnum.NO_ACTION_NEEDED)
-        .unknownReportedForks(List.of());
+        .status(statusEnum)
+        .detail(nodeStatus.detail())
+        .currentProtocolVersion(currentProtocolVersion.name());
   }
 }

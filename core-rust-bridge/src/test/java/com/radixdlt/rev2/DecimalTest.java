@@ -64,9 +64,10 @@
 
 package com.radixdlt.rev2;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.*;
 
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt192;
 import java.math.BigInteger;
 import java.util.List;
 import org.junit.Test;
@@ -76,11 +77,10 @@ public final class DecimalTest {
   public void testDecimalBigIntConversions() {
     final var positiveTestCases =
         List.of(
-            Decimal.from(UInt256.MAX_VALUE).toBigIntegerSubunits(),
-            new BigInteger(
-                "57896044618658097711785492504343953926634992332820282019728792003956564819967"),
-            Decimal.from(UInt256.MAX_VALUE).toBigIntegerSubunits().divide(BigInteger.TWO),
-            Decimal.from(UInt256.MAX_VALUE).toBigIntegerSubunits().divide(BigInteger.TEN),
+            Decimal.from(UInt192.MAX_VALUE).toBigIntegerSubunits(),
+            new BigInteger("3138550867693340381917894711603833208051177722232017256447"),
+            Decimal.from(UInt192.MAX_VALUE).toBigIntegerSubunits().divide(BigInteger.TWO),
+            Decimal.from(UInt192.MAX_VALUE).toBigIntegerSubunits().divide(BigInteger.TEN),
             BigInteger.ONE,
             BigInteger.TWO,
             BigInteger.ZERO);
@@ -97,11 +97,19 @@ public final class DecimalTest {
         IllegalArgumentException.class,
         () ->
             Decimal.fromBigIntegerSubunits(
-                Decimal.from(UInt256.MAX_VALUE).toBigIntegerSubunits().add(BigInteger.ONE)));
+                Decimal.from(UInt192.MAX_VALUE).toBigIntegerSubunits().add(BigInteger.ONE)));
 
     assertEquals(Decimal.fromBigIntegerSubunits(BigInteger.ZERO), Decimal.ZERO);
     assertEquals(Decimal.ZERO.toBigIntegerSubunits(), BigInteger.ZERO);
-    assertEquals(Decimal.from(UInt256.ONE).toBigIntegerSubunits(), BigInteger.ONE);
+    assertEquals(Decimal.from(UInt192.ONE).toBigIntegerSubunits(), BigInteger.ONE);
     assertEquals(Decimal.fromBigIntegerSubunits(BigInteger.TEN.pow(18)), Decimal.of(1L));
+  }
+
+  @Test
+  public void test_fraction_and_to_string() {
+    assertThat(Decimal.fraction(123456, 1).toString()).isEqualTo("123456");
+    assertThat(Decimal.fraction(123456, 10).toString()).isEqualTo("12345.6");
+    assertThat(Decimal.fraction(123456, 100).toString()).isEqualTo("1234.56");
+    assertThat(Decimal.fraction(123456, 10000000).toString()).isEqualTo("0.0123456");
   }
 }

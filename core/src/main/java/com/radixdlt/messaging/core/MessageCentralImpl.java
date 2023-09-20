@@ -69,6 +69,8 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.radixdlt.addressing.Addressing;
+import com.radixdlt.messaging.MaxMessageSize;
+import com.radixdlt.messaging.consensus.ConsensusEventMessage;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeerControl;
@@ -81,18 +83,20 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@SuppressWarnings("UnstableApiUsage")
 public final class MessageCentralImpl implements MessageCentral {
   private static final Logger log = LogManager.getLogger();
 
   // Dependencies
   private final Metrics metrics;
-  private final TimeSupplier timeSupplier;
 
   // Message dispatching
+  private final Set<OutboundMessageInterceptor> outboundMessageInterceptors;
   private final MessageDispatcher messageDispatcher;
   private final MessagePreprocessor messagePreprocessor;
 
@@ -118,9 +122,10 @@ public final class MessageCentralImpl implements MessageCentral {
       Metrics metrics,
       Provider<PeerControl> peerControl,
       Addressing addressing,
-      Capabilities capabilities) {
+      Capabilities capabilities,
+      Set<OutboundMessageInterceptor> outboundMessageInterceptors,
+      @MaxMessageSize int maxMessageSize) {
     this.metrics = Objects.requireNonNull(metrics);
-    this.timeSupplier = Objects.requireNonNull(timeSupplier);
 
     this.outboundQueue =
         outboundEventQueueFactory.createEventQueue(
@@ -129,9 +134,11 @@ public final class MessageCentralImpl implements MessageCentral {
     Objects.requireNonNull(timeSupplier);
     Objects.requireNonNull(serialization);
 
+    this.outboundMessageInterceptors = outboundMessageInterceptors;
+
     this.messageDispatcher =
         new MessageDispatcher(
-            metrics, config, serialization, timeSupplier, peerManager, addressing);
+            metrics, config, serialization, timeSupplier, peerManager, addressing, maxMessageSize);
 
     this.messagePreprocessor =
         new MessagePreprocessor(
@@ -141,7 +148,11 @@ public final class MessageCentralImpl implements MessageCentral {
     this.outboundThreadPool =
         new SimpleThreadPool<>(
             "Outbound message processing",
-            1, // Ensure messages sent in-order
+            /* This was meant to ensure messages are sent in order,
+            but this isn't guaranteed because currently
+            outboundMessageProcessor spawns a CompletableFuture
+            and doesn't await its completion. */
+            1,
             outboundQueue::take,
             this::outboundMessageProcessor,
             log);
@@ -213,13 +224,37 @@ public final class MessageCentralImpl implements MessageCentral {
   @Override
   public void send(NodeId receiver, Message message) {
     final var event = new OutboundMessageEvent(receiver, message, System.nanoTime() - timeBase);
-    if (!outboundQueue.offer(event) && outboundLogRateLimiter.tryAcquire()) {
-      log.error("Outbound message to {} dropped", receiver);
+    if (outboundQueue.offer(event)) {
+      final String typeForMetrics;
+      if (message instanceof ConsensusEventMessage consensusEventMessage) {
+        typeForMetrics = consensusEventMessage.isProposal() ? "Proposal" : "Vote";
+      } else {
+        typeForMetrics = message.getClass().getSimpleName().replace("Message", "");
+      }
+      this.metrics
+          .messages()
+          .outbound()
+          .enqueued()
+          .label(new Metrics.Messages.EnqueuedOutboundMessage(typeForMetrics))
+          .inc();
+    } else {
+      this.metrics
+          .messages()
+          .outbound()
+          .aborted()
+          .label(
+              new Metrics.Messages.AbortedOutboundMessage(
+                  Metrics.Messages.OutboundMessageAbortedReason.OUTBOUND_QUEUE_OVERFLOW))
+          .inc();
+      if (outboundLogRateLimiter.tryAcquire()) {
+        log.error("Outbound message to {} dropped because of queue overflow", receiver);
+      }
     }
   }
 
   private void outboundMessageProcessor(OutboundMessageEvent outbound) {
-    this.metrics.messages().outbound().queued().set(outboundQueue.size());
+    this.metrics.messages().outbound().currentQueueSize().set(outboundQueue.size());
+    outboundMessageInterceptors.forEach(i -> i.intercept(outbound));
     messageDispatcher.send(outbound);
   }
 }

@@ -68,6 +68,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.*;
+import com.radixdlt.consensus.ProposalLimitsConfig;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
@@ -79,9 +80,7 @@ import com.radixdlt.genesis.RawGenesisDataWithHash;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.MockedLedgerModule;
 import com.radixdlt.ledger.MockedLedgerRecoveryModule;
-import com.radixdlt.mempool.MempoolReceiverModule;
-import com.radixdlt.mempool.MempoolReevaluationModule;
-import com.radixdlt.mempool.MempoolRelayerModule;
+import com.radixdlt.mempool.*;
 import com.radixdlt.modules.StateComputerConfig.*;
 import com.radixdlt.rev2.modules.*;
 import com.radixdlt.statecomputer.MockedMempoolStateComputerModule;
@@ -89,7 +88,6 @@ import com.radixdlt.statecomputer.MockedStateComputerModule;
 import com.radixdlt.statecomputer.MockedStateComputerWithEpochsModule;
 import com.radixdlt.statecomputer.RandomTransactionGenerator;
 import com.radixdlt.store.InMemoryCommittedReaderModule;
-import com.radixdlt.store.berkeley.BerkeleyDatabaseModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import java.io.File;
 import java.time.Duration;
@@ -208,7 +206,11 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
 
   public sealed interface LedgerConfig {
     static LedgerConfig mocked(int numValidators) {
-      return new MockedLedgerConfig(numValidators);
+      return new MockedLedgerConfig(numValidators, ProposerElectionMode.WITH_DEFAULT_ROTATION);
+    }
+
+    static LedgerConfig mocked(int numValidators, ProposerElectionMode proposerElectionMode) {
+      return new MockedLedgerConfig(numValidators, proposerElectionMode);
     }
 
     static LedgerConfig stateComputerNoSync(StateComputerConfig stateComputerConfig) {
@@ -233,7 +235,8 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
     }
   }
 
-  public record MockedLedgerConfig(int numValidators) implements LedgerConfig {}
+  public record MockedLedgerConfig(int numValidators, ProposerElectionMode proposerElectionMode)
+      implements LedgerConfig {}
 
   public record StateComputerLedgerConfig(StateComputerConfig config, SyncConfig syncConfig)
       implements LedgerConfig {}
@@ -309,11 +312,6 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
       case NodeStorageConfig.FileStorage fileStorage -> {
         final var tempFolderPath = fileStorage.folder.getAbsolutePath();
         install(new PrefixedNodeStorageLocationModule(tempFolderPath));
-
-        final var needsBerkeleyDb = this.safetyRecoveryConfig == SafetyRecoveryConfig.BERKELEY_DB;
-        if (needsBerkeleyDb) {
-          install(new BerkeleyDatabaseModule(BerkeleyDatabaseModule.DEFAULT_CACHE_SIZE));
-        }
       }
     }
 
@@ -324,7 +322,6 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
 
     // Consensus
     install(consensusConfig.asModule());
-    install(new ConsensusModule());
     if (this.epochs) {
       install(new EpochsConsensusModule());
       install(new EpochsSafetyRecoveryModule());
@@ -340,7 +337,9 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
       case MockedLedgerConfig config -> {
         install(new MockedLedgerRecoveryModule());
         install(new MockedLedgerModule());
-        install(new MockedNoEpochsConsensusRecoveryModule(config.numValidators));
+        install(
+            new MockedNoEpochsConsensusRecoveryModule(
+                config.numValidators, config.proposerElectionMode));
       }
       case StateComputerLedgerConfig stateComputerLedgerConfig -> {
         install(new LedgerModule());
@@ -382,7 +381,9 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
               }
               case MockedMempoolConfig.Relayed relayed -> {
                 install(new MempoolReceiverModule());
-                install(new MempoolRelayerModule(10000));
+                install(
+                    new MempoolRelayerModule(
+                        MempoolRelayerConfig.defaults().withIntervalMs(10000)));
                 install(new MempoolReevaluationModule(Duration.ofSeconds(1), 1));
                 install(new MockedMempoolStateComputerModule(relayed.mempoolSize()));
               }
@@ -390,7 +391,9 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
 
             switch (c) {
               case MockedStateComputerConfigNoEpochs noEpochs -> {
-                install(new MockedNoEpochsConsensusRecoveryModule(noEpochs.numValidators()));
+                install(
+                    new MockedNoEpochsConsensusRecoveryModule(
+                        noEpochs.numValidators(), noEpochs.proposerElectionMode()));
               }
               case MockedStateComputerConfigWithEpochs withEpochs -> {
                 install(
@@ -414,26 +417,26 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                 bind(ProposalGenerator.class).toInstance(generated.generator());
                 install(
                     REv2StateManagerModule.createForTesting(
-                        0,
-                        0,
+                        ProposalLimitsConfig.testDefaults(),
                         rev2Config.databaseType(),
                         rev2Config.databaseFlags(),
                         Option.none(),
-                        rev2Config.debugLogging()));
+                        rev2Config.debugLogging(),
+                        rev2Config.noFees()));
               }
               case REV2ProposerConfig.Mempool mempool -> {
-                install(new MempoolRelayerModule(10000));
+                install(new MempoolRelayerModule(mempool.mempoolRelayerConfig()));
                 install(new MempoolReevaluationModule(Duration.ofSeconds(1), 1));
                 install(new MempoolReceiverModule());
-                install(mempool.relayConfig().asModule());
+                install(mempool.mempoolReceiverConfig().asModule());
                 install(
                     REv2StateManagerModule.createForTesting(
-                        mempool.maxNumTransactionsPerProposal(),
-                        mempool.maxProposalTotalTxnsPayloadSize(),
+                        mempool.proposalLimitsConfig(),
                         rev2Config.databaseType(),
                         rev2Config.databaseFlags(),
                         Option.some(mempool.mempoolConfig()),
-                        rev2Config.debugLogging()));
+                        rev2Config.debugLogging(),
+                        rev2Config.noFees()));
               }
             }
           }

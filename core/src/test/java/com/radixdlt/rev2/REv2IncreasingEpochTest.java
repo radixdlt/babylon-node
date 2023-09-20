@@ -78,6 +78,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
+import com.radixdlt.testutil.TestStateReader;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -99,7 +100,7 @@ public class REv2IncreasingEpochTest {
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        GenesisBuilder.createGenesisWithNumValidators(
+                        GenesisBuilder.createTestGenesisWithNumValidators(
                             1,
                             Decimal.of(1),
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10)),
@@ -112,12 +113,18 @@ public class REv2IncreasingEpochTest {
     try (var test = createTest()) {
       // Arrange: Start single node network
       test.startAllNodes();
-      var stateReader = test.getInstance(0, REv2StateReader.class);
-      var epoch0 = stateReader.getEpoch();
+      var stateReader = test.getInstance(0, TestStateReader.class);
+      var epoch0 = stateReader.getEpoch().toNonNegativeLong().unwrap();
 
       // Act/Assert: Run until next epoch is reached
       test.runUntilMessage(DeterministicTest.epochLedgerUpdate(epoch0 + 2), 1000);
-      assertThat(test.getNodeInjectors().get(0).getInstance(REv2StateReader.class).getEpoch())
+      assertThat(
+              test.getNodeInjectors()
+                  .get(0)
+                  .getInstance(TestStateReader.class)
+                  .getEpoch()
+                  .toNonNegativeLong()
+                  .unwrap())
           .isGreaterThanOrEqualTo(epoch0 + 2);
     }
   }

@@ -67,16 +67,29 @@ package com.radixdlt.api.core;
 import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransactionSuccess;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.collect.Iterables;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.*;
+import com.radixdlt.crypto.EdDSAEd25519PublicKey;
+import com.radixdlt.crypto.PublicKey;
+import com.radixdlt.genesis.GenesisData;
+import com.radixdlt.message.CurveDecryptorSet;
+import com.radixdlt.message.Decryptor;
+import com.radixdlt.message.MessageContent;
+import com.radixdlt.message.TransactionMessage;
 import com.radixdlt.rev2.TransactionBuilder;
+import com.radixdlt.utils.Bytes;
+import java.util.List;
 import org.junit.Test;
 
 public class TransactionStreamTest extends DeterministicCoreApiTestBase {
 
   @Test
-  public void test_core_api_can_submit_and_commit_transaction() throws Exception {
-    try (var test = buildRunningServerTest()) {
+  public void test_core_api_can_submit_and_commit_transaction_after_running_all_scenarios()
+      throws Exception {
+    // This test checks that the transaction stream doesn't return errors when mapping genesis and
+    // the scenarios
+    try (var test = buildRunningServerTestWithScenarios(GenesisData.ALL_SCENARIOS)) {
       test.suppressUnusedWarning();
       var transaction = TransactionBuilder.forTests().prepare();
 
@@ -92,17 +105,214 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
 
       test.runUntilState(allCommittedTransactionSuccess(transaction.raw()), 100);
 
-      var newTransactions =
+      var lastTransaction =
+          (UserLedgerTransaction)
+              Iterables.getLast(
+                      getStreamApi()
+                          .streamTransactionsPost(
+                              new StreamTransactionsRequest()
+                                  .network(networkLogicalName)
+                                  .transactionFormatOptions(
+                                      new TransactionFormatOptions().rawLedgerTransaction(true))
+                                  .limit(1000)
+                                  .fromStateVersion(1L))
+                          .getTransactions())
+                  .getLedgerTransaction();
+
+      // In order for this assertion to pass, we must have downloaded all the scenario transactions
+      // in the above first page of data.
+      // This ensures that genesis and all scenarios must have data which can be mapped by the
+      // Core API Transaction Stream
+      assertThat(lastTransaction.getNotarizedTransaction().getPayloadHex())
+          .isEqualTo(transaction.hexPayloadBytes());
+    }
+  }
+
+  @Test
+  public void streamed_transactions_contain_their_message() throws Exception {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
+
+      // Prepare 3 different flavors of messages in transaction:
+      var withoutMessage = TransactionBuilder.forTests().prepare();
+      var withPlaintextMessage =
+          TransactionBuilder.forTests()
+              .message(
+                  new TransactionMessage.Plaintext(
+                      new com.radixdlt.message.PlaintextTransactionMessage(
+                          "text/plain", new MessageContent.StringContent("hello transaction"))))
+              .prepare();
+      var withEncryptedMessage =
+          TransactionBuilder.forTests()
+              .message(
+                  new TransactionMessage.Encrypted(
+                      new com.radixdlt.message.EncryptedTransactionMessage(
+                          bytes(47),
+                          List.of(
+                              new CurveDecryptorSet(
+                                  new PublicKey.EddsaEd25519(
+                                      EdDSAEd25519PublicKey.fromCompressedBytesUnchecked(
+                                          bytes(32))),
+                                  List.of(new Decryptor(bytes(8), bytes(24))))))))
+              .prepare();
+
+      // Commit them in this order:
+      var createdTransactions = List.of(withoutMessage, withPlaintextMessage, withEncryptedMessage);
+      for (var transaction : createdTransactions) {
+        getTransactionApi()
+            .transactionSubmitPost(
+                new TransactionSubmitRequest()
+                    .network(networkLogicalName)
+                    .notarizedTransactionHex(transaction.hexPayloadBytes()));
+        test.runUntilState(allCommittedTransactionSuccess(transaction.raw()), 100);
+      }
+
+      // Retrieve them from the stream API:
+      var streamedIntents =
           getStreamApi()
               .streamTransactionsPost(
                   new StreamTransactionsRequest()
                       .network(networkLogicalName)
+                      .transactionFormatOptions(new TransactionFormatOptions().message(true))
                       .limit(1000)
                       .fromStateVersion(1L))
-              .getTransactions();
+              .getTransactions()
+              .stream()
+              .map(CommittedTransaction::getLedgerTransaction)
+              .filter(UserLedgerTransaction.class::isInstance)
+              .map(UserLedgerTransaction.class::cast)
+              .map(userTxn -> userTxn.getNotarizedTransaction().getSignedIntent().getIntent())
+              .toList();
 
-      var lastTransaction = newTransactions.get(newTransactions.size() - 1).getLedgerTransaction();
-      assertThat(lastTransaction).isInstanceOf(UserLedgerTransaction.class);
+      // Assert on their messages:
+      assertThat(streamedIntents.get(streamedIntents.size() - 3).getMessage()).isNull();
+      assertThat(streamedIntents.get(streamedIntents.size() - 2).getMessage())
+          .isEqualTo(
+              new PlaintextTransactionMessage()
+                  .mimeType("text/plain")
+                  .content(
+                      new StringPlaintextMessageContent()
+                          .value("hello transaction")
+                          .type(PlaintextMessageContentType.STRING))
+                  .type(TransactionMessageType.PLAINTEXT));
+      assertThat(streamedIntents.get(streamedIntents.size() - 1).getMessage())
+          .isEqualTo(
+              new EncryptedTransactionMessage()
+                  .encryptedHex(Bytes.toHexString(bytes(47)))
+                  .addCurveDecryptorSetsItem(
+                      new EncryptedMessageCurveDecryptorSet()
+                          .dhEphemeralPublicKey(
+                              new EddsaEd25519PublicKey()
+                                  .keyHex(Bytes.toHexString(bytes(32)))
+                                  .keyType(PublicKeyType.EDDSAED25519))
+                          .addDecryptorsItem(
+                              new EncryptedMessageDecryptor()
+                                  .publicKeyFingerprintHex(Bytes.toHexString(bytes(8)))
+                                  .aesWrappedKeyHex(Bytes.toHexString(bytes(24)))))
+                  .type(TransactionMessageType.ENCRYPTED));
     }
+  }
+
+  @Test
+  public void test_previous_state_identifiers_and_proofs() throws Exception {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
+
+      var firstPartTransactions =
+          List.of(
+              TransactionBuilder.forTests().nonce(1).prepare(),
+              TransactionBuilder.forTests().nonce(2).prepare(),
+              TransactionBuilder.forTests().nonce(3).prepare());
+      for (var transaction : firstPartTransactions) {
+        getTransactionApi()
+            .transactionSubmitPost(
+                new TransactionSubmitRequest()
+                    .network(networkLogicalName)
+                    .notarizedTransactionHex(transaction.hexPayloadBytes()));
+        test.runUntilState(allCommittedTransactionSuccess(transaction.raw()), 100);
+      }
+
+      var firstPartResponse =
+          getStreamApi()
+              .streamTransactionsPost(
+                  new StreamTransactionsRequest()
+                      .network(networkLogicalName)
+                      .limit(100)
+                      .fromStateVersion(1L));
+      assertThat(firstPartResponse.getProofs()).isNull();
+
+      var firstPartResponseWithProofs =
+          getStreamApi()
+              .streamTransactionsPost(
+                  new StreamTransactionsRequest()
+                      .network(networkLogicalName)
+                      .includeProofs(true)
+                      .limit(100)
+                      .fromStateVersion(1L));
+      assertThat(firstPartResponseWithProofs.getProofs().size()).isEqualTo(13);
+
+      var firstPartCommittedTransactions = firstPartResponse.getTransactions();
+
+      assertThat(
+              firstPartCommittedTransactions.stream()
+                  .map(CommittedTransaction::getProposerTimestampMs))
+          .isSorted();
+
+      var proofQuery =
+          getStreamApi()
+              .streamTransactionsPost(
+                  new StreamTransactionsRequest()
+                      .network(networkLogicalName)
+                      .includeProofs(true)
+                      .limit(4)
+                      .fromStateVersion(3L))
+              .getProofs();
+
+      assertThat(proofQuery.size()).isEqualTo(4);
+
+      var lastCommittedTransactionIdentifiers =
+          firstPartResponse
+              .getTransactions()
+              .get(firstPartResponse.getTransactions().size() - 1)
+              .getResultantStateIdentifiers();
+
+      var secondPartTransactions =
+          List.of(
+              TransactionBuilder.forTests().nonce(4).prepare(),
+              TransactionBuilder.forTests().nonce(5).prepare(),
+              TransactionBuilder.forTests().nonce(6).prepare());
+      for (var transaction : secondPartTransactions) {
+        getTransactionApi()
+            .transactionSubmitPost(
+                new TransactionSubmitRequest()
+                    .network(networkLogicalName)
+                    .notarizedTransactionHex(transaction.hexPayloadBytes()));
+        test.runUntilState(allCommittedTransactionSuccess(transaction.raw()), 100);
+      }
+
+      var secondPartCommittedTransactions =
+          getStreamApi()
+              .streamTransactionsPost(
+                  new StreamTransactionsRequest()
+                      .network(networkLogicalName)
+                      .limit(100)
+                      .fromStateVersion(lastCommittedTransactionIdentifiers.getStateVersion() + 1));
+
+      assertThat(
+              secondPartCommittedTransactions.getTransactions().stream()
+                  .map(CommittedTransaction::getProposerTimestampMs))
+          .isSorted();
+
+      assertThat(secondPartCommittedTransactions.getPreviousStateIdentifiers())
+          .isEqualTo(lastCommittedTransactionIdentifiers);
+    }
+  }
+
+  private static byte[] bytes(int length) {
+    byte[] bytes = new byte[length];
+    for (int i = 0; i < length; ++i) {
+      bytes[i] = (byte) (length - i); // a descending sequence is easy to eyeball in the logs
+    }
+    return bytes;
   }
 }

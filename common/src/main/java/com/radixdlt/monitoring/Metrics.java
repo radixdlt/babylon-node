@@ -65,6 +65,7 @@
 package com.radixdlt.monitoring;
 
 import com.google.common.base.Preconditions;
+import com.google.common.hash.HashCode;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Info;
@@ -161,9 +162,10 @@ public record Metrics(
     Misc misc) {
 
   public record Bft(
-      Counter successfullyProcessedVotes,
+      LabelledCounter<SuccessfullyProcessedVote> successfullyProcessedVotes,
       LabelledCounter<IgnoredVote> ignoredVotes,
       Counter successfullyProcessedProposals,
+      Counter proposalsReceived,
       Counter preconditionViolations,
       Counter duplicateProposalsReceived,
       Counter eventsReceived,
@@ -176,6 +178,7 @@ public record Metrics(
       LabelledCounter<RoundChange> roundChanges,
       Timer consensusEventsQueueWait,
       LabelledCounter<RejectedConsensusEvent> rejectedConsensusEvents,
+      LabelledGauge<Validator> proposalTimestampDifferenceSeconds,
       GetterGauge validatorCount,
       GetterGauge inValidatorSet,
       Pacemaker pacemaker,
@@ -185,7 +188,18 @@ public record Metrics(
       Summary leaderNumTransactionsIncludedInProposal,
       Summary leaderTransactionBytesIncludedInProposal,
       Summary leaderTransactionBytesIncludedInProposalAndPreviousVertices,
-      Summary numSignaturesInCertificate) {
+      Summary numSignaturesInCertificate,
+      Counter divergentVertexExecutions) {
+
+    public record SuccessfullyProcessedVote(boolean isTimeout, VoteProcessingResult result) {}
+
+    public enum VoteProcessingResult {
+      ACCEPTED_NO_QUORUM,
+      ACCEPTED_FORMED_QC,
+      ACCEPTED_FORMED_TC,
+      REJECTED_INVALID_AUTHOR,
+      REJECTED_DUPLICATE_VOTE,
+    }
 
     public record QuorumResolution(boolean isTimeout) {}
 
@@ -204,7 +218,10 @@ public record Metrics(
         Counter proposalsSent,
         Counter timedOutRounds,
         Counter proposalsWithSubstituteTimestamp,
-        Timer roundDuration) {}
+        Timer roundDuration,
+        LabelledCounter<SentVote> votesSent) {}
+
+    public record SentVote(boolean isFallbackVertex, boolean isTimeout, boolean sentToAll) {}
 
     public record Sync(Counter requestsSent, Counter requestsReceived, Counter requestTimeouts) {}
 
@@ -228,19 +245,69 @@ public record Metrics(
       Timer prepare) {}
 
   public record LedgerSync(
-      Counter invalidResponsesReceived,
       Counter validResponsesReceived,
       Counter remoteRequestsReceived,
       Gauge currentStateVersion,
-      Gauge targetStateVersion) {}
+      Gauge targetStateVersion, // UNTRUSTED: comes from a single peer Node and is not verified
+      Gauge targetProposerTimestampEpochSecond, // UNTRUSTED: same as `targetStateVersion`
+      LabelledCounter<UnexpectedSyncResponse> unexpectedResponsesReceived,
+      LabelledCounter<InvalidSyncResponse> invalidResponsesReceived) {
+
+    public record UnexpectedSyncResponse(UnexpectedSyncResponseReason reason) {}
+
+    public enum UnexpectedSyncResponseReason {
+      NO_REQUEST_PENDING,
+      UNEXPECTED_SENDER,
+      LEDGER_START_MISMATCH,
+    }
+
+    public record InvalidSyncResponse(InvalidSyncResponseReason reason) {}
+
+    public enum InvalidSyncResponseReason {
+      NO_TRANSACTIONS,
+      TRANSACTION_COUNT_MISMATCH,
+      UNPARSEABLE_TRANSACTION,
+      MISMATCHED_TRANSACTION_ROOT,
+      INSUFFICIENT_VALIDATOR_SET,
+      MISMATCHED_SIGNATURES
+    }
+  }
 
   public record Mempool(Counter relaysSent) {}
 
   public record Messages(Inbound inbound, Outbound outbound) {
 
-    public record Inbound(Timer queueWait, Timer process, Counter received, Counter discarded) {}
+    public record Inbound(
+        Timer queueWait,
+        Timer process,
+        Counter received,
+        LabelledCounter<DiscardedInboundMessage> discarded) {}
 
-    public record Outbound(Counter aborted, Gauge queued, Counter processed, Counter sent) {}
+    public record DiscardedInboundMessage(InboundMessageDiscardedReason reason) {}
+
+    public enum InboundMessageDiscardedReason {
+      DESERIALIZATION_ERROR,
+      MESSAGE_EXPIRED,
+      MESSAGE_UNSUPPORTED,
+      MESSAGE_TOO_LARGE
+    }
+
+    public record Outbound(
+        LabelledCounter<AbortedOutboundMessage> aborted,
+        LabelledCounter<EnqueuedOutboundMessage> enqueued,
+        Gauge currentQueueSize,
+        Counter processed,
+        Counter sent) {}
+
+    public record AbortedOutboundMessage(OutboundMessageAbortedReason reason) {}
+
+    public record EnqueuedOutboundMessage(String type) {}
+
+    public enum OutboundMessageAbortedReason {
+      MESSAGE_EXPIRED,
+      MESSAGE_TOO_LARGE,
+      OUTBOUND_QUEUE_OVERFLOW
+    }
   }
 
   public record Networking(
@@ -260,6 +327,7 @@ public record Metrics(
   public record Misc(
       TypedInfo<Config> config,
       Timer nodeStartup,
+      GetterGauge wallclockEpochSecond,
       Counter vertexStoreSaved,
       GetterGauge peerCount) {}
 
@@ -338,6 +406,8 @@ public record Metrics(
     }
   }
 
+  public record Validator(String key, String componentAddress) {}
+
   public record ChannelProperties(Direction direction) {
 
     public enum Direction {
@@ -346,5 +416,9 @@ public record Metrics(
     }
   }
 
-  public record Config(String branchAndCommit, String key) {}
+  public record Config(
+      String branchAndCommit,
+      String key,
+      @Nullable String configuredValidatorAddress, // null when not configured as validator
+      HashCode postGenesisEpochStateHash) {}
 }

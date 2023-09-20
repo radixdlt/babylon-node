@@ -128,8 +128,6 @@ public final class PeerManager {
     this.addressBook = Objects.requireNonNull(addressBook);
     this.pendingOutboundChannelsManager = Objects.requireNonNull(pendingOutboundChannelsManager);
     this.metrics = Objects.requireNonNull(metrics);
-
-    log.info("Node URI: {}", self);
   }
 
   public Observable<InboundMessage> messages() {
@@ -363,7 +361,7 @@ public final class PeerManager {
   }
 
   private void handlePeerHandshakeFailed(PeerHandshakeFailed peerHandshakeFailed) {
-    peerHandshakeFailed.channel().getUri().ifPresent(this.addressBook.get()::blacklist);
+    peerHandshakeFailed.channel().getUri().ifPresent(this.addressBook.get()::reportFailedHandshake);
   }
 
   private void updateChannelsCounters() {

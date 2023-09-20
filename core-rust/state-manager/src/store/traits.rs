@@ -62,6 +62,9 @@
  * permissions under this License.
  */
 
+use std::cmp::Ordering;
+use std::iter::Peekable;
+
 use crate::staging::StateHashTreeDiff;
 use crate::store::StateManagerDatabase;
 use crate::transaction::*;
@@ -73,6 +76,9 @@ use radix_engine_common::{Categorize, Decode, Encode};
 pub use substate::*;
 pub use transactions::*;
 pub use vertex::*;
+
+use radix_engine::types::{ScryptoCategorize, ScryptoDecode, ScryptoEncode};
+use sbor::define_single_versioned;
 
 pub enum DatabaseConfigValidationError {
     AccountChangeIndexRequiresLocalTransactionExecutionIndex,
@@ -138,6 +144,7 @@ pub trait ConfigurableDatabase {
     fn is_local_transaction_execution_index_enabled(&self) -> bool;
 }
 
+#[derive(Debug, Clone)]
 pub struct CommittedTransactionBundle {
     pub state_version: StateVersion,
     pub raw: RawLedgerTransaction,
@@ -150,19 +157,86 @@ pub mod vertex {
 
     #[enum_dispatch]
     pub trait RecoverableVertexStore {
-        fn get_vertex_store(&self) -> Option<Vec<u8>>;
+        fn get_vertex_store(&self) -> Option<VertexStoreBlob>;
     }
 
     #[enum_dispatch]
     pub trait WriteableVertexStore {
-        fn save_vertex_store(&mut self, vertex_store_bytes: Vec<u8>);
+        fn save_vertex_store(&mut self, blob: VertexStoreBlob);
     }
+
+    define_single_versioned! {
+        #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+        pub enum VersionedVertexStoreBlob => VertexStoreBlob = VertexStoreBlobV1
+    }
+
+    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub struct VertexStoreBlobV1(pub Vec<u8>);
 }
 
 pub mod substate {
+    use super::*;
+    use radix_engine_common::types::NodeId;
+    use std::slice;
+
+    use crate::SubstateReference;
     pub use radix_engine_store_interface::interface::{
         CommittableSubstateDatabase, SubstateDatabase,
     };
+
+    /// A low-level storage of [`SubstateNodeAncestryRecord`].
+    /// API note: this trait defines a simple "get by ID" method, and also a performance-driven
+    /// batch method. Both provide default implementations (which mutually reduce one problem to the
+    /// other). The implementer must choose to implement at least one of the methods, based on its
+    /// nature (though implementing both rarely makes sense).
+    #[enum_dispatch]
+    pub trait SubstateNodeAncestryStore {
+        /// Returns the [`SubstateNodeAncestryRecord`] for the given [`NodeId`], or [`None`] if:
+        /// - the `node_id` happens to be a root Node (since they do not have "ancestry");
+        /// - or the `node_id` does not exist yet.
+        fn get_ancestry(&self, node_id: &NodeId) -> Option<SubstateNodeAncestryRecord> {
+            let records = self.batch_get_ancestry(slice::from_ref(node_id));
+            if records.len() != 1 {
+                panic!(
+                    "trait contract violated: expected a single result for {:?}, got {:?}",
+                    node_id, records
+                )
+            }
+            records.into_iter().next().unwrap()
+        }
+
+        /// A batch counterpart of the [`get_ancestry()`].
+        /// The results are returned in the same order as the input `node_ids`.
+        fn batch_get_ancestry<'a>(
+            &self,
+            node_ids: impl IntoIterator<Item = &'a NodeId>,
+        ) -> Vec<Option<SubstateNodeAncestryRecord>> {
+            node_ids
+                .into_iter()
+                .map(|node_id| self.get_ancestry(node_id))
+                .collect()
+        }
+    }
+
+    define_single_versioned! {
+        #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+        pub enum VersionedSubstateNodeAncestryRecord => SubstateNodeAncestryRecord = SubstateNodeAncestryRecordV1
+    }
+
+    /// Ancestry information of a RE Node.
+    #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub struct SubstateNodeAncestryRecordV1 {
+        /// A substate owning the Node (i.e. its immediate parent).
+        /// Note: this will always be present, since we do not need ancestry of root RE Nodes.
+        pub parent: SubstateReference,
+        /// A root ancestor of the Node's tree (i.e. the top of its parent chain).
+        /// Note: the returned reference is guaranteed to resolve to a [`GlobalAddress`].
+        pub root: SubstateReference,
+    }
+
+    /// A [`SubstateNodeAncestryRecord`] accompanied by a set of sibling [`NodeId`]s (which of
+    /// course share the same parent).
+    pub type KeyedSubstateNodeAncestryRecord = (Vec<NodeId>, SubstateNodeAncestryRecord);
 }
 
 pub mod transactions {
@@ -226,6 +300,14 @@ pub mod proofs {
     use super::*;
 
     #[enum_dispatch]
+    pub trait IterableProofStore {
+        fn get_proof_iter(
+            &self,
+            from_state_version: StateVersion,
+        ) -> Box<dyn Iterator<Item = LedgerProof> + '_>;
+    }
+
+    #[enum_dispatch]
     pub trait QueryableProofStore {
         fn max_state_version(&self) -> StateVersion;
         fn get_txns_and_proof(
@@ -248,40 +330,93 @@ pub mod commit {
     use crate::{ReceiptTreeHash, StateVersion, TransactionTreeHash};
 
     use radix_engine_store_interface::interface::{
-        DatabaseUpdate, DatabaseUpdates, DbPartitionKey, DbSortKey,
+        DatabaseUpdate, DatabaseUpdates, NodeDatabaseUpdates, PartitionDatabaseUpdates,
     };
-    use radix_engine_stores::hash_tree::tree_store::{NodeKey, PartitionPayload, TreeNode};
-    use utils::rust::collections::IndexMap;
+    use radix_engine_stores::hash_tree::tree_store::{NodeKey, StaleTreePart, TreeNode};
 
     pub struct CommitBundle {
         pub transactions: Vec<CommittedTransactionBundle>,
         pub proof: LedgerProof,
         pub substate_store_update: SubstateStoreUpdate,
-        pub vertex_store: Option<Vec<u8>>,
+        pub vertex_store: Option<VertexStoreBlob>,
         pub state_tree_update: HashTreeUpdate,
-        pub transaction_tree_slice: TreeSlice<TransactionTreeHash>,
-        pub receipt_tree_slice: TreeSlice<ReceiptTreeHash>,
+        pub transaction_tree_slice: TransactionAccuTreeSlice,
+        pub receipt_tree_slice: ReceiptAccuTreeSlice,
+        pub new_substate_node_ancestry_records: Vec<KeyedSubstateNodeAncestryRecord>,
     }
 
     pub struct SubstateStoreUpdate {
-        pub updates: IndexMap<DbPartitionKey, IndexMap<DbSortKey, DatabaseUpdate>>,
+        pub updates: DatabaseUpdates,
     }
 
     impl SubstateStoreUpdate {
         pub fn new() -> Self {
             Self {
-                updates: IndexMap::new(),
+                updates: DatabaseUpdates::default(),
+            }
+        }
+
+        pub fn from_single(database_updates: DatabaseUpdates) -> Self {
+            Self {
+                updates: database_updates,
             }
         }
 
         pub fn apply(&mut self, database_updates: DatabaseUpdates) {
-            for (partition_key, partition_updates) in database_updates {
-                let curr_partition_updates = self
-                    .updates
-                    .entry(partition_key)
-                    .or_insert_with(IndexMap::new);
-                for (sort_key, database_update) in partition_updates {
-                    curr_partition_updates.insert(sort_key, database_update);
+            if self.updates.node_updates.is_empty() {
+                self.updates = database_updates;
+                return;
+            }
+            for (node_key, node_updates) in database_updates.node_updates {
+                Self::merge_in_node_updates(
+                    self.updates.node_updates.entry(node_key).or_default(),
+                    node_updates,
+                );
+            }
+        }
+
+        fn merge_in_node_updates(target: &mut NodeDatabaseUpdates, source: NodeDatabaseUpdates) {
+            for (partition_num, partition_updates) in source.partition_updates {
+                Self::merge_in_partition_updates(
+                    target.partition_updates.entry(partition_num).or_default(),
+                    partition_updates,
+                );
+            }
+        }
+
+        fn merge_in_partition_updates(
+            target: &mut PartitionDatabaseUpdates,
+            source: PartitionDatabaseUpdates,
+        ) {
+            match source {
+                PartitionDatabaseUpdates::Delta {
+                    substate_updates: source_updates,
+                } => match target {
+                    PartitionDatabaseUpdates::Delta {
+                        substate_updates: target_updates,
+                    } => {
+                        target_updates.extend(source_updates);
+                    }
+                    PartitionDatabaseUpdates::Reset {
+                        new_substate_values: target_values,
+                    } => {
+                        for (sort_key, update) in source_updates {
+                            match update {
+                                DatabaseUpdate::Set(value) => {
+                                    target_values.insert(sort_key, value);
+                                }
+                                DatabaseUpdate::Delete => {
+                                    let existed = target_values.remove(&sort_key).is_some();
+                                    if !existed {
+                                        panic!("broken invariant: deleting non-existent substate");
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                PartitionDatabaseUpdates::Reset { .. } => {
+                    *target = source;
                 }
             }
         }
@@ -293,28 +428,41 @@ pub mod commit {
         }
     }
 
+    define_single_versioned! {
+        #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+        pub enum VersionedStaleTreeParts => StaleTreeParts = StaleTreePartsV1
+    }
+
+    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub struct StaleTreePartsV1(pub Vec<StaleTreePart>);
+
     pub struct HashTreeUpdate {
-        pub new_re_node_layer_nodes: Vec<(NodeKey, TreeNode<PartitionPayload>)>,
-        pub new_substate_layer_nodes: Vec<(NodeKey, TreeNode<()>)>,
-        pub stale_node_keys_at_state_version: Vec<(StateVersion, Vec<NodeKey>)>,
+        pub new_nodes: Vec<(NodeKey, TreeNode)>,
+        pub stale_tree_parts_at_state_version: Vec<(StateVersion, StaleTreeParts)>,
     }
 
     impl HashTreeUpdate {
         pub fn new() -> Self {
             Self {
-                new_re_node_layer_nodes: Vec::new(),
-                new_substate_layer_nodes: Vec::new(),
-                stale_node_keys_at_state_version: Vec::new(),
+                new_nodes: Vec::new(),
+                stale_tree_parts_at_state_version: Vec::new(),
+            }
+        }
+
+        pub fn from_single(at_state_version: StateVersion, diff: StateHashTreeDiff) -> Self {
+            Self {
+                new_nodes: diff.new_nodes,
+                stale_tree_parts_at_state_version: vec![(
+                    at_state_version,
+                    StaleTreePartsV1(diff.stale_tree_parts),
+                )],
             }
         }
 
         pub fn add(&mut self, at_state_version: StateVersion, diff: StateHashTreeDiff) {
-            self.new_re_node_layer_nodes
-                .extend(diff.new_re_node_layer_nodes);
-            self.new_substate_layer_nodes
-                .extend(diff.new_substate_layer_nodes);
-            self.stale_node_keys_at_state_version
-                .push((at_state_version, diff.stale_hash_tree_node_keys));
+            self.new_nodes.extend(diff.new_nodes);
+            self.stale_tree_parts_at_state_version
+                .push((at_state_version, StaleTreePartsV1(diff.stale_tree_parts)));
         }
     }
 
@@ -324,9 +472,77 @@ pub mod commit {
         }
     }
 
+    define_single_versioned! {
+        #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+        pub enum VersionedTransactionAccuTreeSlice => TransactionAccuTreeSlice = TransactionAccuTreeSliceV1
+    }
+
+    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub struct TransactionAccuTreeSliceV1(pub TreeSlice<TransactionTreeHash>);
+
+    define_single_versioned! {
+        #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+        pub enum VersionedReceiptAccuTreeSlice => ReceiptAccuTreeSlice = ReceiptAccuTreeSliceV1
+    }
+
+    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub struct ReceiptAccuTreeSliceV1(pub TreeSlice<ReceiptTreeHash>);
+
     #[enum_dispatch]
     pub trait CommitStore {
         fn commit(&mut self, commit_bundle: CommitBundle);
+    }
+}
+
+pub mod scenario {
+    use super::*;
+
+    use transaction::model::IntentHash;
+
+    pub type ScenarioSequenceNumber = u32;
+
+    define_single_versioned! {
+        #[derive(Debug, Clone, Categorize, Encode, Decode)]
+        pub enum VersionedExecutedGenesisScenario => ExecutedGenesisScenario = ExecutedGenesisScenarioV1
+    }
+
+    #[derive(Debug, Clone, Categorize, Encode, Decode)]
+    pub struct ExecutedGenesisScenarioV1 {
+        pub logical_name: String,
+        pub committed_transactions: Vec<ExecutedScenarioTransaction>,
+        pub addresses: Vec<DescribedAddress>,
+    }
+
+    #[derive(Debug, Clone, Categorize, Encode, Decode)]
+    pub struct DescribedAddress {
+        pub logical_name: String,
+        pub rendered_address: String, // we store it pre-rendered, since `GlobalAddress` has no SBOR coding
+    }
+
+    #[derive(Debug, Clone, Categorize, Encode, Decode)]
+    pub struct ExecutedScenarioTransaction {
+        pub logical_name: String,
+        pub state_version: StateVersion,
+        pub intent_hash: IntentHash,
+    }
+
+    /// A store of testing-specific [`ExecutedGenesisScenario`], meant to be as separated as
+    /// possible from the production stores (e.g. the writes happening outside of the regular commit
+    /// batch write).
+    #[enum_dispatch]
+    pub trait ExecutedGenesisScenarioStore {
+        /// Writes the given Scenario under a caller-managed sequence number (which means: it allows
+        /// overwriting, writing out-of-order, leaving gaps, etc.).
+        fn put_scenario(
+            &mut self,
+            number: ScenarioSequenceNumber,
+            scenario: ExecutedGenesisScenario,
+        );
+
+        /// Returns all Scenarios written so far, ordered by their sequence numbers (but with no
+        /// guarantees regarding gaps; see [`put_scenario()`]'s contract).
+        /// Performance note: this method assumes a small number of Scenarios.
+        fn list_all_scenarios(&self) -> Vec<(ScenarioSequenceNumber, ExecutedGenesisScenario)>;
     }
 }
 
@@ -348,5 +564,55 @@ pub mod extensions {
             account: GlobalAddress,
             from_state_version: StateVersion,
         ) -> Box<dyn Iterator<Item = StateVersion> + '_>;
+    }
+}
+
+pub struct TransactionAndProofIterator<'a> {
+    committed_transaction_bundle:
+        Peekable<Box<dyn Iterator<Item = CommittedTransactionBundle> + 'a>>,
+    ledger_proof: Peekable<Box<dyn Iterator<Item = LedgerProof> + 'a>>,
+}
+
+impl<'a> TransactionAndProofIterator<'a> {
+    pub fn new(
+        committed_transaction_bundle: Box<dyn Iterator<Item = CommittedTransactionBundle> + 'a>,
+        ledger_proof: Box<dyn Iterator<Item = LedgerProof> + 'a>,
+    ) -> Self {
+        Self {
+            committed_transaction_bundle: committed_transaction_bundle.peekable(),
+            ledger_proof: ledger_proof.peekable(),
+        }
+    }
+}
+
+impl<'a> Iterator for TransactionAndProofIterator<'a> {
+    type Item = (CommittedTransactionBundle, Option<LedgerProof>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match (
+            self.committed_transaction_bundle.peek(),
+            self.ledger_proof.peek(),
+        ) {
+            (Some(transaction), Some(proof)) => {
+                match proof
+                    .ledger_header
+                    .state_version
+                    .cmp(&transaction.state_version)
+                {
+                    Ordering::Greater => {
+                        Some((self.committed_transaction_bundle.next().unwrap(), None))
+                    }
+                    _ => Some((
+                        self.committed_transaction_bundle.next().unwrap(),
+                        Some(self.ledger_proof.next().unwrap()),
+                    )),
+                }
+            }
+            (None, Some(_)) => {
+                panic!("Invalid state: proof without transaction");
+            }
+            (Some(_), None) => Some((self.committed_transaction_bundle.next().unwrap(), None)),
+            (None, None) => None,
+        }
     }
 }

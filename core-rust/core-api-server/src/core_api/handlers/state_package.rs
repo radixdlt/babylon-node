@@ -1,6 +1,8 @@
 use crate::core_api::*;
+use radix_engine::blueprints::package::PackageField;
+use radix_engine::system::node_modules::role_assignment::RoleAssignmentField;
 use radix_engine::types::*;
-use radix_engine_queries::typed_substate_layout::*;
+use state_manager::store::traits::QueryableProofStore;
 use std::ops::Deref;
 
 pub(crate) async fn handle_state_package(
@@ -14,41 +16,41 @@ pub(crate) async fn handle_state_package(
     let package_address = extract_package_address(&extraction_context, &request.package_address)
         .map_err(|err| err.into_response_error("package_address"))?;
 
-    let database = state.database.read();
+    let database = state.state_manager.database.read();
 
-    let package_info: PackageInfoSubstate = read_optional_main_field_substate(
+    let owner_role_substate = read_optional_substate(
         database.deref(),
         package_address.as_node_id(),
-        &PackageField::Info.into(),
+        RoleAssignmentPartitionOffset::Field.as_partition(ROLE_ASSIGNMENT_BASE_PARTITION),
+        &RoleAssignmentField::Owner.into(),
     )
     .ok_or_else(|| not_found_error("Package not found".to_string()))?;
 
-    let package_royalty: PackageRoyaltySubstate = read_mandatory_main_field_substate(
+    let package_royalty_accumulator = read_optional_main_field_substate(
         database.deref(),
         package_address.as_node_id(),
-        &PackageField::Royalty.into(),
-    )?;
+        &PackageField::RoyaltyAccumulator.into(),
+    );
 
-    let method_access_rules_substate = read_mandatory_substate(
-        database.deref(),
-        package_address.as_node_id(),
-        ACCESS_RULES_FIELD_PARTITION,
-        &AccessRulesField::AccessRules.into(),
-    )?;
+    let header = database
+        .get_last_proof()
+        .expect("proof for outputted state must exist")
+        .ledger_header;
 
     Ok(models::StatePackageResponse {
-        info: Some(to_api_package_info_substate(
+        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
+        owner_role: Some(to_api_owner_role_substate(
             &mapping_context,
-            &package_info,
+            &owner_role_substate,
         )?),
-        royalty: Some(to_api_package_royalty_substate(
-            &mapping_context,
-            &package_royalty,
-        )?),
-        access_rules: Some(to_api_method_access_rules_substate(
-            &mapping_context,
-            &method_access_rules_substate,
-        )?),
+        royalty: package_royalty_accumulator
+            .map(|substate| -> Result<_, MappingError> {
+                Ok(Box::new(to_api_package_royalty_accumulator_substate(
+                    &mapping_context,
+                    &substate,
+                )?))
+            })
+            .transpose()?,
     })
     .map(Json)
 }

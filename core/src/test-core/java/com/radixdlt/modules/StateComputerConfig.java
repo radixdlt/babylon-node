@@ -66,14 +66,20 @@ package com.radixdlt.modules;
 
 import com.radixdlt.consensus.EpochNodeWeightMapping;
 import com.radixdlt.consensus.LedgerHashes;
+import com.radixdlt.consensus.ProposalLimitsConfig;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
+import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.liveness.ProposerElections;
+import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.environment.DatabaseFlags;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
-import com.radixdlt.mempool.MempoolRelayConfig;
+import com.radixdlt.mempool.MempoolReceiverConfig;
+import com.radixdlt.mempool.MempoolRelayerConfig;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import com.radixdlt.statemanager.DatabaseFlags;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -89,6 +95,15 @@ public sealed interface StateComputerConfig {
   static StateComputerConfig mockedWithEpochs(
       Round epochMaxRound,
       EpochNodeWeightMapping mapping,
+      MockedMempoolConfig mempoolType,
+      ProposerElectionMode proposerElectionMode) {
+    return mockedWithEpochs(
+        epochMaxRound, mapping, LedgerHashes.zero(), mempoolType, proposerElectionMode);
+  }
+
+  static StateComputerConfig mockedWithEpochs(
+      Round epochMaxRound,
+      EpochNodeWeightMapping mapping,
       LedgerHashes preGenesisLedgerHashes,
       MockedMempoolConfig mempoolType) {
     return mockedWithEpochs(
@@ -96,7 +111,7 @@ public sealed interface StateComputerConfig {
         mapping,
         preGenesisLedgerHashes,
         mempoolType,
-        ProposerElectionMode.WITH_INITIAL_ROUNDS_ITERATION);
+        ProposerElectionMode.WITH_DEFAULT_ROTATION);
   }
 
   static StateComputerConfig mockedWithEpochs(
@@ -110,7 +125,15 @@ public sealed interface StateComputerConfig {
   }
 
   static StateComputerConfig mockedNoEpochs(int numValidators, MockedMempoolConfig mempoolType) {
-    return new MockedStateComputerConfigNoEpochs(numValidators, mempoolType);
+    return new MockedStateComputerConfigNoEpochs(
+        numValidators, mempoolType, ProposerElectionMode.WITH_DEFAULT_ROTATION);
+  }
+
+  static StateComputerConfig mockedNoEpochs(
+      int numValidators,
+      MockedMempoolConfig mempoolType,
+      ProposerElectionMode proposerElectionMode) {
+    return new MockedStateComputerConfigNoEpochs(numValidators, mempoolType, proposerElectionMode);
   }
 
   static StateComputerConfig rev2(
@@ -119,9 +142,10 @@ public sealed interface StateComputerConfig {
       REv2StateManagerModule.DatabaseType databaseType,
       DatabaseFlags databaseFlags,
       REV2ProposerConfig proposerConfig,
-      boolean debugLogging) {
+      boolean debugLogging,
+      boolean noFees) {
     return new REv2StateComputerConfig(
-        networkId, genesis, databaseType, databaseFlags, proposerConfig, debugLogging);
+        networkId, genesis, databaseType, databaseFlags, proposerConfig, debugLogging, noFees);
   }
 
   static StateComputerConfig rev2(
@@ -131,7 +155,7 @@ public sealed interface StateComputerConfig {
       DatabaseFlags databaseFlags,
       REV2ProposerConfig proposerConfig) {
     return new REv2StateComputerConfig(
-        networkId, genesis, databaseType, databaseFlags, proposerConfig, false);
+        networkId, genesis, databaseType, databaseFlags, proposerConfig, false, false);
   }
 
   static StateComputerConfig rev2(
@@ -140,7 +164,13 @@ public sealed interface StateComputerConfig {
       REv2StateManagerModule.DatabaseType databaseType,
       REV2ProposerConfig proposerConfig) {
     return new REv2StateComputerConfig(
-        networkId, genesis, databaseType, new DatabaseFlags(true, false), proposerConfig, false);
+        networkId,
+        genesis,
+        databaseType,
+        new DatabaseFlags(true, false),
+        proposerConfig,
+        false,
+        false);
   }
 
   sealed interface MockedMempoolConfig {
@@ -177,11 +207,24 @@ public sealed interface StateComputerConfig {
     /** Use the {@link com.radixdlt.consensus.liveness.WeightedRotatingLeaders} only. */
     ONLY_WEIGHTED_BY_STAKE,
 
+    /** Use {@link com.radixdlt.consensus.liveness.ProposerElections#testingRotationNoShuffle}. */
+    WITH_ROTATE_ONCE_BUT_NO_SHUFFLE,
+
     /** Use the newer {@link com.radixdlt.consensus.liveness.ProposerElections#defaultRotation}. */
-    WITH_INITIAL_ROUNDS_ITERATION,
+    WITH_DEFAULT_ROTATION;
+
+    public ProposerElection instantiate(long epoch, BFTValidatorSet validatorSet) {
+      return switch (this) {
+        case ONLY_WEIGHTED_BY_STAKE -> new WeightedRotatingLeaders(validatorSet, 10);
+        case WITH_ROTATE_ONCE_BUT_NO_SHUFFLE -> ProposerElections.testingRotationNoShuffle(
+            validatorSet);
+        case WITH_DEFAULT_ROTATION -> ProposerElections.defaultRotation(epoch, validatorSet);
+      };
+    }
   }
 
-  record MockedStateComputerConfigNoEpochs(int numValidators, MockedMempoolConfig mempoolType)
+  record MockedStateComputerConfigNoEpochs(
+      int numValidators, MockedMempoolConfig mempoolType, ProposerElectionMode proposerElectionMode)
       implements MockedStateComputerConfig {
     @Override
     public MockedMempoolConfig mempoolConfig() {
@@ -195,7 +238,8 @@ public sealed interface StateComputerConfig {
       REv2StateManagerModule.DatabaseType databaseType,
       DatabaseFlags databaseFlags,
       REV2ProposerConfig proposerConfig,
-      boolean debugLogging)
+      boolean debugLogging,
+      boolean noFees)
       implements StateComputerConfig {}
 
   sealed interface REV2ProposerConfig {
@@ -217,24 +261,60 @@ public sealed interface StateComputerConfig {
     }
 
     static REV2ProposerConfig mempool(
-        int maxNumTransactionsPerProposal,
-        int maxProposalTotalTxnsPayloadSize,
-        int mempoolMaxSize,
-        MempoolRelayConfig config) {
+        ProposalLimitsConfig proposalLimitsConfig,
+        RustMempoolConfig mempoolConfig,
+        MempoolReceiverConfig mempoolReceiverConfig,
+        MempoolRelayerConfig mempoolRelayerConfig) {
       return new Mempool(
-          maxNumTransactionsPerProposal,
-          maxProposalTotalTxnsPayloadSize,
-          new RustMempoolConfig(mempoolMaxSize),
-          config);
+          proposalLimitsConfig, mempoolConfig, mempoolReceiverConfig, mempoolRelayerConfig);
     }
 
     record Generated(ProposalGenerator generator) implements REV2ProposerConfig {}
 
     record Mempool(
-        int maxNumTransactionsPerProposal,
-        int maxProposalTotalTxnsPayloadSize,
+        ProposalLimitsConfig proposalLimitsConfig,
         RustMempoolConfig mempoolConfig,
-        MempoolRelayConfig relayConfig)
-        implements REV2ProposerConfig {}
+        MempoolReceiverConfig mempoolReceiverConfig,
+        MempoolRelayerConfig mempoolRelayerConfig)
+        implements REV2ProposerConfig {
+      public static Mempool zero() {
+        return new Mempool(
+            ProposalLimitsConfig.zero(),
+            new RustMempoolConfig(0, 0),
+            MempoolReceiverConfig.of(),
+            MempoolRelayerConfig.defaults());
+      }
+
+      public static Mempool singleTransaction() {
+        return new Mempool(
+            ProposalLimitsConfig.singleTransaction(),
+            new RustMempoolConfig(1024 * 1024, 1),
+            new MempoolReceiverConfig(0),
+            MempoolRelayerConfig.defaults());
+      }
+
+      public static Mempool defaults() {
+        return new Mempool(
+            ProposalLimitsConfig.testDefaults(),
+            new RustMempoolConfig(100 * 1024 * 1024, 100),
+            MempoolReceiverConfig.of(),
+            MempoolRelayerConfig.defaults());
+      }
+
+      public Mempool withReceiverConfig(MempoolReceiverConfig mempoolReceiverConfig) {
+        return new Mempool(
+            proposalLimitsConfig, mempoolConfig, mempoolReceiverConfig, mempoolRelayerConfig);
+      }
+
+      public Mempool withRelayerConfig(MempoolRelayerConfig mempoolRelayerConfig) {
+        return new Mempool(
+            proposalLimitsConfig, mempoolConfig, mempoolReceiverConfig, mempoolRelayerConfig);
+      }
+
+      public Mempool withMempoolConfig(RustMempoolConfig mempoolConfig) {
+        return new Mempool(
+            proposalLimitsConfig, mempoolConfig, mempoolReceiverConfig, mempoolRelayerConfig);
+      }
+    }
   }
 }

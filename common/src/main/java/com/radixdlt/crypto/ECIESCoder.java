@@ -90,11 +90,6 @@ public final class ECIESCoder {
 
   private ECIESCoder() {}
 
-  public static byte[] decrypt(BigInteger privKey, byte[] cipher)
-      throws IOException, InvalidCipherTextException {
-    return decrypt(privKey, cipher, null);
-  }
-
   public static byte[] decrypt(BigInteger privKey, byte[] cipher, byte[] macData)
       throws InvalidCipherTextException {
     final var is = new ByteArrayInputStream(cipher);
@@ -128,6 +123,10 @@ public final class ECIESCoder {
     final var e = new byte[] {};
 
     final var p = new IESWithCipherParameters(d, e, KEY_SIZE, KEY_SIZE);
+    // SNYK - this file is ignored in .snyk file
+    // Raised issue: Hardcoded value array {...} is used as a cipher initialization value.
+    // Explanation: iv isn't hardcoded, Snyk can't figure out that earlier ByteArrayInputStream
+    // is being read into this buffer
     final var parametersWithIV = new ParametersWithIV(p, iv);
     iesEngine.init(
         false,
@@ -187,6 +186,10 @@ public final class ECIESCoder {
     final var e = new byte[] {};
 
     final var p = new IESWithCipherParameters(d, e, KEY_SIZE, KEY_SIZE);
+    // SNYK - this file is ignored in .snyk file
+    // Raised issue: Hardcoded value array {...} is used as a cipher initialization value.
+    // Explanation: iv isn't hardcoded, Snyk can't figure out the SecureRandom.nextBytes call that
+    // sets it
     final var parametersWithIV = new ParametersWithIV(p, iv);
     iesEngine.init(
         isEncrypt,

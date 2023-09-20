@@ -65,6 +65,9 @@
 use std::future::Future;
 use std::sync::Arc;
 
+use super::metrics::CoreApiMetrics;
+use super::metrics_layer::MetricsLayer;
+use axum::extract::State;
 use axum::http::{StatusCode, Uri};
 use axum::middleware::map_response;
 use axum::response::Response;
@@ -73,37 +76,33 @@ use axum::{
     routing::{get, post},
     Router,
 };
-use parking_lot::RwLock;
-use radix_engine::types::{Categorize, Decode, Encode};
-use radix_engine_common::network::NetworkDefinition;
-use tracing::{debug, error, info, trace, warn, Level};
 
-use state_manager::jni::state_manager::ActualStateManager;
+use prometheus::Registry;
+use radix_engine_common::network::NetworkDefinition;
+use radix_engine_common::ScryptoSbor;
+use state_manager::StateManager;
+use tower_http::catch_panic::CatchPanicLayer;
+use tracing::{debug, error, info, trace, warn, Level};
 
 use super::{constants::LARGE_REQUEST_MAX_BYTES, handlers::*, not_found_error, ResponseError};
 
 use crate::core_api::models::ErrorResponse;
+use crate::core_api::InternalServerErrorResponseForPanic;
 use handle_status_network_configuration as handle_provide_info_at_root_path;
-use state_manager::mempool_manager::MempoolManager;
-use state_manager::simple_mempool::SimpleMempool;
-use state_manager::store::StateManagerDatabase;
-use state_manager::transaction::{CommitabilityValidator, TransactionPreviewer};
-use state_manager::PendingTransactionResultCache;
 
 #[derive(Clone)]
 pub struct CoreApiState {
     pub network: NetworkDefinition,
-    pub state_manager: Arc<ActualStateManager>,
-    pub database: Arc<RwLock<StateManagerDatabase>>,
-    pub pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
-    pub mempool: Arc<RwLock<SimpleMempool>>,
-    pub mempool_manager: Arc<MempoolManager>,
-    pub commitability_validator: Arc<CommitabilityValidator<StateManagerDatabase>>,
-    pub transaction_previewer: Arc<TransactionPreviewer<StateManagerDatabase>>,
+    pub flags: CoreApiServerFlags,
+    pub state_manager: StateManager,
 }
 
-pub async fn create_server<F>(bind_addr: &str, shutdown_signal: F, core_api_state: CoreApiState)
-where
+pub async fn create_server<F>(
+    bind_addr: &str,
+    shutdown_signal: F,
+    core_api_state: CoreApiState,
+    metric_registry: &Registry,
+) where
     F: Future<Output = ()>,
 {
     let router = Router::new()
@@ -144,6 +143,7 @@ where
             post(handle_status_network_configuration),
         )
         .route("/status/network-status", post(handle_status_network_status))
+        .route("/status/scenarios", post(handle_status_scenarios))
         // Mempool Sub-API
         .route("/mempool/list", post(handle_mempool_list))
         .route("/mempool/transaction", post(handle_mempool_transaction))
@@ -185,10 +185,18 @@ where
         .route("/state/non-fungible", post(handle_state_non_fungible))
         .with_state(core_api_state);
 
+    let metrics = Arc::new(CoreApiMetrics::new(metric_registry));
+
     let prefixed_router = Router::new()
         .nest("/core", router)
         .route("/", get(handle_no_core_path))
-        .layer(map_response(emit_error_response_event));
+        .layer(CatchPanicLayer::custom(InternalServerErrorResponseForPanic))
+        // Note: it is important to run the metrics middleware only on router matched paths to avoid out of memory crash
+        // of node or full storage for prometheus server.
+        .route_layer(MetricsLayer::new(metrics.clone()))
+        .layer(map_response(emit_error_response_event))
+        .fallback(handle_not_found)
+        .with_state(metrics);
 
     let bind_addr = bind_addr.parse().expect("Failed to parse bind address");
 
@@ -204,6 +212,11 @@ pub(crate) async fn handle_no_core_path() -> Result<(), ResponseError<()>> {
     Err(not_found_error("Try /core"))
 }
 
+async fn handle_not_found(metrics: State<Arc<CoreApiMetrics>>) -> Result<(), ResponseError<()>> {
+    metrics.requests_not_found.inc();
+    Err(not_found_error("Not found!"))
+}
+
 /// A function (to be used within a `map_response` layer) in order to emit more customized events
 /// when top-level `ErrorResponse` is returned.
 /// In short, it is supposed to replace an `err(Debug)` within `#[tracing::instrument(...)]` of
@@ -214,7 +227,7 @@ async fn emit_error_response_event(uri: Uri, response: Response) -> Response {
     let error_response = response.extensions().get::<ErrorResponse>();
     if let Some(error_response) = error_response {
         let level = resolve_level(response.status());
-        // the `event!(level, ...)` macro does not accept non-costant levels, hence we unroll:
+        // the `event!(level, ...)` macro does not accept non-constant levels, hence we unroll:
         match level {
             Level::TRACE => trace!(path = uri.path(), error = debug(error_response)),
             Level::DEBUG => debug!(path = uri.path(), error = debug(error_response)),
@@ -234,8 +247,14 @@ fn resolve_level(status_code: StatusCode) -> Level {
     }
 }
 
-#[derive(Debug, Categorize, Encode, Decode, Clone)]
+#[derive(Debug, Clone, ScryptoSbor)]
+pub struct CoreApiServerFlags {
+    pub enable_unbounded_endpoints: bool,
+}
+
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct CoreApiServerConfig {
     pub bind_interface: String,
     pub port: u32,
+    pub flags: CoreApiServerFlags,
 }

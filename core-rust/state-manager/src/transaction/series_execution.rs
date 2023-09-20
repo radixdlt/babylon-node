@@ -70,11 +70,8 @@ use crate::store::traits::*;
 use crate::transaction::*;
 use crate::*;
 
-use ::transaction::model::IntentHash;
 use ::transaction::prelude::*;
-use parking_lot::Mutex;
-use radix_engine::transaction::RejectResult;
-use utils::rust::collections::NonIterMap;
+use node_common::locks::Mutex;
 
 /// An internal delegate for executing a series of consecutive transactions while tracking their
 /// progress.
@@ -120,37 +117,65 @@ where
     /// Executes the given already-validated ledger transaction (against the borrowed `store` and
     /// `execution_cache`).
     /// Uses an internal [`StateTracker`] to track the progression of *committable* transactions.
+    /// Note that this method should NOT be used if a *committable* transaction is to be in
+    /// some other way rejected by an upper layer (because then the subsequent
+    /// execute_* calls may use an invalid state, e.g. ledger hashes may include the
+    /// hash of the transaction, which the upper layer decided to discard).
     /// The passed description will only be used for logging/errors/panics (and will be augmented by
     /// the transaction's ledger hash).
-    pub fn execute(
+    pub fn execute_and_update_state(
         &mut self,
-        config_type: ConfigType,
         transaction: &ValidatedLedgerTransaction,
-        description: impl Display,
-    ) -> Result<ProcessedCommitResult, RejectResult> {
+        description: &'static str,
+    ) -> Result<ProcessedCommitResult, ProcessedRejectResult> {
+        let result = self.execute_no_state_update(transaction, description);
+        if let Ok(commit) = &result {
+            self.update_state(commit);
+        }
+        result
+    }
+
+    /// Executes the given already-validated ledger transaction (against the borrowed `store` and
+    /// `execution_cache`).
+    /// Uses an internal [`StateTracker`] in a read-only mode. Specifically, does NOT
+    /// update it with commit result (which can later be done by calling [`TransactionSeriesExecutor::update_state()`]).
+    /// The passed description will only be used for logging/errors/panics (and will be augmented by
+    /// the transaction's ledger hash).
+    pub fn execute_no_state_update(
+        &mut self,
+        transaction: &ValidatedLedgerTransaction,
+        description: &'static str,
+    ) -> Result<ProcessedCommitResult, ProcessedRejectResult> {
         let description = DescribedTransactionHash {
             ledger_hash: transaction.ledger_transaction_hash(),
             description,
         };
+        self.execute_wrapped_no_state_update(
+            &description,
+            self.execution_configurator
+                .wrap_ledger_transaction(transaction, &description),
+        )
+    }
+
+    fn execute_wrapped_no_state_update<T: for<'l> TransactionLogic<StagedStore<'l, S>>>(
+        &mut self,
+        description: &DescribedTransactionHash,
+        wrapped_executable: T,
+    ) -> Result<ProcessedCommitResult, ProcessedRejectResult> {
         let mut execution_cache = self.execution_cache.lock();
         let processed = execution_cache.execute_transaction(
             self.store,
             self.epoch_identifiers(),
             self.state_tracker.state_version,
             &self.state_tracker.ledger_hashes.transaction_root,
-            &transaction.ledger_transaction_hash(),
-            self.execution_configurator
-                .wrap(transaction.get_executable(), config_type)
-                .warn_after(
-                    config_type.get_transaction_runtime_warn_threshold(),
-                    &description,
-                ),
+            &description.ledger_hash,
+            wrapped_executable,
         );
-        let result = processed.expect_commit_or_reject(&description).cloned();
-        if let Ok(commit) = &result {
-            self.state_tracker.update(commit);
-        }
-        result
+        processed.expect_commit_or_reject(&description).cloned()
+    }
+
+    pub fn update_state(&mut self, commit: &ProcessedCommitResult) {
+        self.state_tracker.update(commit);
     }
 
     /// Returns a ledger header which started the current epoch (i.e. in which the transactions are
@@ -184,79 +209,19 @@ where
     }
 }
 
-/// A source of intent hash duplication.
-#[derive(Debug, Clone)]
-pub enum IntentHashDuplicateWith {
-    /// Some other newly-proposed transaction has the same intent hash.
-    Proposed,
-    /// Some ancestor transaction (i.e. already-prepared-but-not-yet-committed one) has the same
-    /// intent hash.
-    Ancestor,
-    /// Some committed transaction (i.e. already persisted on ledger) has the same intent hash.
-    Committed,
-}
-
-/// An internal implementation delegate dealing with intent hash duplicates.
-// TODO: Remove after this responsibility is implemented by the Engine.
-pub struct DuplicateIntentHashDetector<'s, S> {
-    store: &'s S,
-    recorded_intent_hashes: NonIterMap<IntentHash, IntentHashDuplicateWith>,
-}
-
-impl<'s, S: for<'a> TransactionIndex<&'a IntentHash>> DuplicateIntentHashDetector<'s, S> {
-    pub fn new(store: &'s S) -> Self {
-        Self {
-            store,
-            recorded_intent_hashes: NonIterMap::new(),
-        }
-    }
-
-    /// Records an intent hash of an ancestor (i.e. one of already-prepared-but-not-yet-committed)
-    /// transaction.
-    /// Please note that duplicates are not possible for ancestor transactions (since they were all
-    /// checked against this during previous prepare operations), and hence the `check_ancestor()`
-    /// method does not exist.
-    pub fn record_ancestor(&mut self, intent_hash: IntentHash) {
-        self.recorded_intent_hashes
-            .insert(intent_hash, IntentHashDuplicateWith::Ancestor);
-    }
-
-    /// Checks whether the given intent hash of a newly-proposed transaction clashes with any other
-    /// transaction (i.e. an already committed one, or an ancestor, or another proposed one).
-    pub fn check_proposed(
-        &mut self,
-        intent_hash: &IntentHash,
-    ) -> Result<(), IntentHashDuplicateWith> {
-        if let Some(duplicate_with) = self.recorded_intent_hashes.get(intent_hash) {
-            return Err(duplicate_with.clone());
-        }
-        let committed_at_version = self.store.get_txn_state_version_by_identifier(intent_hash);
-        if committed_at_version.is_some() {
-            // we insert this to our map only as an optimization (avoid repeating the same DB read)
-            self.recorded_intent_hashes
-                .insert(*intent_hash, IntentHashDuplicateWith::Committed);
-            return Err(IntentHashDuplicateWith::Committed);
-        }
-        Ok(())
-    }
-
-    /// Records an intent hash of a proposed transaction which is expected to be committed.
-    /// From this point on, it will be taken into account by the `check_proposed()` method.
-    pub fn record_committable_proposed(&mut self, intent_hash: IntentHash) {
-        self.recorded_intent_hashes
-            .insert(intent_hash, IntentHashDuplicateWith::Proposed);
-    }
-}
-
 /// A simple `Display` augmenting the human-readable transaction description with its ledger hash.
-struct DescribedTransactionHash<D> {
+struct DescribedTransactionHash {
     ledger_hash: LedgerTransactionHash,
-    description: D,
+    description: &'static str,
 }
 
-impl<D: Display> Display for DescribedTransactionHash<D> {
+impl Display for DescribedTransactionHash {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{} (ledger hash {})", self.description, self.ledger_hash)
+        write!(
+            f,
+            "{} (ledger hash {:?})",
+            self.description, self.ledger_hash
+        )
     }
 }
 
@@ -290,7 +255,10 @@ impl StateTracker {
                 result.hash_structures_diff.ledger_hashes
             );
         }
-        self.state_version = self.state_version.next();
+        self.state_version = self
+            .state_version
+            .next()
+            .expect("Invalid next state version!");
         self.ledger_hashes = result.hash_structures_diff.ledger_hashes;
         self.next_epoch = result.next_epoch();
     }

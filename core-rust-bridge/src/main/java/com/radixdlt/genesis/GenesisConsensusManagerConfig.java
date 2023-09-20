@@ -80,7 +80,8 @@ public record GenesisConsensusManagerConfig(
     Decimal totalEmissionXrdPerEpoch,
     Decimal minValidatorReliability,
     UInt64 numOwnerStakeUnitsUnlockEpochs,
-    UInt64 numFeeIncreaseDelayEpochs) {
+    UInt64 numFeeIncreaseDelayEpochs,
+    Decimal validatorCreationUsdCost) {
 
   public GenesisConsensusManagerConfig {
     Objects.requireNonNull(maxValidators);
@@ -92,6 +93,7 @@ public record GenesisConsensusManagerConfig(
     Objects.requireNonNull(minValidatorReliability);
     Objects.requireNonNull(numOwnerStakeUnitsUnlockEpochs);
     Objects.requireNonNull(numFeeIncreaseDelayEpochs);
+    Objects.requireNonNull(validatorCreationUsdCost);
   }
 
   public static void registerCodec(CodecMap codecMap) {
@@ -114,6 +116,7 @@ public record GenesisConsensusManagerConfig(
     Decimal minValidatorReliability;
     UInt64 numOwnerStakeUnitsUnlockEpochs;
     UInt64 numFeeIncreaseDelayEpochs;
+    Decimal validatorCreationUsdCost;
 
     private Builder() {}
 
@@ -137,10 +140,9 @@ public record GenesisConsensusManagerConfig(
       var targetEmissionsPerYear = 300L * 1000L * 1000L;
       var totalXrdEmissionPerEpoch = Decimal.fraction(targetEmissionsPerYear, approxEpochsPerYear);
 
-      // Epochs are shorter, hence more variable: lower reliability threshold for emissions from 98%
-      // to 95%
-      // But we also have a linear increase after this cap in Babylon
-      var minReliabilityForEmissions = Decimal.fraction(95, 100);
+      // Epochs are shorter than Olympia, hence we have less to work with.
+      // So we require 100% reliability in these short epochs to get emissions.
+      var minReliabilityForEmissions = Decimal.fraction(100, 100);
 
       var numOwnerStakeUnitsUnlockEpochs = 4 * 7 * approxEpochsPerDay;
       var numFeeIncreaseDelayEpochs = 2 * 7 * approxEpochsPerDay;
@@ -150,13 +152,21 @@ public record GenesisConsensusManagerConfig(
           .maxValidators(100)
           .epochMinRoundCount(minRounds)
           .epochMaxRoundCount(maxRounds)
-          // Subtract a little to try to offset an artificial delay around epoch change
-          .epochTargetDurationMillis(targetEpochLengthSeconds * 1000 - 300)
+          .epochTargetDurationMillis(targetEpochLengthSeconds * 1000)
           .numUnstakeEpochs(unstakeEpochs)
           .totalEmissionXrdPerEpoch(totalXrdEmissionPerEpoch)
           .minValidatorReliability(minReliabilityForEmissions)
           .numOwnerStakeUnitsUnlockEpochs(numOwnerStakeUnitsUnlockEpochs)
-          .numFeeIncreaseDelayEpochs(numFeeIncreaseDelayEpochs);
+          .numFeeIncreaseDelayEpochs(numFeeIncreaseDelayEpochs)
+          .validatorCreationUsdCost(Decimal.of(1000));
+    }
+
+    public static Builder testEnvironmentDefaults() {
+      return productionDefaults()
+          .numUnstakeEpochs(1)
+          .numOwnerStakeUnitsUnlockEpochs(1)
+          .numFeeIncreaseDelayEpochs(1)
+          .validatorCreationUsdCost(Decimal.of(100));
     }
 
     public static Builder testInfiniteEpochs() {
@@ -176,7 +186,8 @@ public record GenesisConsensusManagerConfig(
           .totalEmissionXrdPerEpoch(Decimal.of(100))
           .minValidatorReliability(Decimal.fraction(8, 10))
           .numOwnerStakeUnitsUnlockEpochs(100)
-          .numFeeIncreaseDelayEpochs(100);
+          .numFeeIncreaseDelayEpochs(100)
+          .validatorCreationUsdCost(Decimal.of(1));
     }
 
     public GenesisConsensusManagerConfig build() {
@@ -191,7 +202,8 @@ public record GenesisConsensusManagerConfig(
           totalEmissionXrdPerEpoch,
           minValidatorReliability,
           numOwnerStakeUnitsUnlockEpochs,
-          numFeeIncreaseDelayEpochs);
+          numFeeIncreaseDelayEpochs,
+          validatorCreationUsdCost);
     }
 
     public Builder maxValidators(int value) {
@@ -242,6 +254,11 @@ public record GenesisConsensusManagerConfig(
 
     public Builder numFeeIncreaseDelayEpochs(long value) {
       numFeeIncreaseDelayEpochs = UInt64.fromNonNegativeLong(value);
+      return this;
+    }
+
+    public Builder validatorCreationUsdCost(Decimal value) {
+      validatorCreationUsdCost = value;
       return this;
     }
   }

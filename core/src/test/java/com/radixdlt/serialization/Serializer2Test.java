@@ -91,8 +91,6 @@ public class Serializer2Test extends RadixTest {
     Configurator.setLevel(
         LogManager.getLogger(ClassScanningSerializerIds.class).getName(), Level.INFO);
 
-    TestSetupUtils.installBouncyCastleProvider();
-
     serialization = DefaultSerialization.getInstance();
 
     testObject = new DummyTestObject(true);

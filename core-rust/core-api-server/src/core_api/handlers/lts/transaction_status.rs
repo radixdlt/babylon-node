@@ -2,7 +2,9 @@ use std::collections::{HashMap, HashSet};
 
 use crate::core_api::*;
 
-use state_manager::{DetailedTransactionOutcome, RejectionReason};
+use state_manager::{
+    AlreadyCommittedError, DetailedTransactionOutcome, RejectionReason, StateVersion,
+};
 
 use state_manager::mempool::pending_transaction_result_cache::PendingTransactionRecord;
 use state_manager::query::StateManagerSubstateQueries;
@@ -17,16 +19,18 @@ pub(crate) async fn handle_lts_transaction_status(
     assert_matching_network(&request.network, &state.network)?;
 
     let mapping_context = MappingContext::new_for_uncommitted_data(&state.network);
+    let extraction_context = ExtractionContext::new(&state.network);
 
-    let intent_hash = extract_intent_hash(request.intent_hash)
+    let intent_hash = extract_intent_hash(&extraction_context, request.intent_hash)
         .map_err(|err| err.into_response_error("intent_hash"))?;
 
-    let pending_transaction_result_cache = state.pending_transaction_result_cache.read();
+    let pending_transaction_result_cache =
+        state.state_manager.pending_transaction_result_cache.read();
     let mut known_pending_payloads =
         pending_transaction_result_cache.peek_all_known_payloads_for_intent(&intent_hash);
     drop(pending_transaction_result_cache);
 
-    let database = state.database.read();
+    let database = state.state_manager.database.read();
 
     if !database.is_local_transaction_execution_index_enabled() {
         return Err(client_error(
@@ -68,9 +72,10 @@ pub(crate) async fn handle_lts_transaction_status(
         let user_identifiers = identifiers
             .user()
             .expect("Only user transactions should be able to be looked up by intent hash");
+        let notarized_transaction_hash = user_identifiers.notarized_transaction_hash;
 
         // Remove the committed payload from the rejection list if it's present
-        known_pending_payloads.remove(user_identifiers.notarized_transaction_hash);
+        known_pending_payloads.remove(notarized_transaction_hash);
 
         let (intent_status, payload_status, outcome, error_message) = match local_detailed_outcome {
             DetailedTransactionOutcome::Success(_) => (
@@ -91,14 +96,22 @@ pub(crate) async fn handle_lts_transaction_status(
             payload_hash: to_api_notarized_transaction_hash(
                 user_identifiers.notarized_transaction_hash,
             ),
+            payload_hash_bech32m: to_api_hash_bech32m(
+                &mapping_context,
+                user_identifiers.notarized_transaction_hash,
+            )?,
+            state_version: Some(to_api_state_version(txn_state_version)?),
             status: payload_status,
             error_message,
         };
 
         let mut known_payloads = vec![committed_payload];
         known_payloads.append(&mut map_rejected_payloads_due_to_known_commit(
+            &mapping_context,
             known_pending_payloads,
-        ));
+            txn_state_version,
+            notarized_transaction_hash,
+        )?);
 
         return Ok(models::LtsTransactionStatusResponse {
             intent_status,
@@ -109,19 +122,23 @@ pub(crate) async fn handle_lts_transaction_status(
         }).map(Json);
     }
 
-    let mempool = state.mempool.read();
+    let mempool = state.state_manager.mempool.read();
     let mempool_payloads_hashes = mempool.get_payload_hashes_for_intent(&intent_hash);
     drop(mempool);
 
     if !mempool_payloads_hashes.is_empty() {
         let mempool_payloads = mempool_payloads_hashes
             .iter()
-            .map(|payload_hash| models::LtsTransactionPayloadDetails {
-                payload_hash: to_api_notarized_transaction_hash(payload_hash),
-                status: models::LtsTransactionPayloadStatus::InMempool,
-                error_message: None,
+            .map(|payload_hash| {
+                Ok(models::LtsTransactionPayloadDetails {
+                    payload_hash: to_api_notarized_transaction_hash(payload_hash),
+                    payload_hash_bech32m: to_api_hash_bech32m(&mapping_context, payload_hash)?,
+                    state_version: None,
+                    status: models::LtsTransactionPayloadStatus::InMempool,
+                    error_message: None,
+                })
             })
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, MappingError>>()?;
 
         let mempool_payloads_hashes: HashSet<_> = mempool_payloads_hashes.into_iter().collect();
 
@@ -132,8 +149,9 @@ pub(crate) async fn handle_lts_transaction_status(
 
         let mut known_payloads = mempool_payloads;
         known_payloads.append(&mut map_pending_payloads_not_in_mempool(
+            &mapping_context,
             known_payloads_not_in_mempool,
-        ));
+        )?);
 
         return Ok(models::LtsTransactionStatusResponse {
             intent_status: models::LtsTransactionIntentStatus::InMempool,
@@ -144,7 +162,8 @@ pub(crate) async fn handle_lts_transaction_status(
         }).map(Json);
     }
 
-    let known_payloads = map_pending_payloads_not_in_mempool(known_pending_payloads);
+    let known_payloads =
+        map_pending_payloads_not_in_mempool(&mapping_context, known_pending_payloads)?;
 
     let response = if intent_is_permanently_rejected {
         models::LtsTransactionStatusResponse {
@@ -185,32 +204,53 @@ pub(crate) async fn handle_lts_transaction_status(
 }
 
 fn map_rejected_payloads_due_to_known_commit(
+    context: &MappingContext,
     known_rejected_payloads: HashMap<NotarizedTransactionHash, PendingTransactionRecord>,
-) -> Vec<models::LtsTransactionPayloadDetails> {
+    committed_state_version: StateVersion,
+    committed_notarized_transaction_hash: &NotarizedTransactionHash,
+) -> Result<Vec<models::LtsTransactionPayloadDetails>, MappingError> {
     known_rejected_payloads
         .into_iter()
-        .map(|(payload_hash, transaction_record)| {
-            let rejection_reason_to_use = transaction_record
+        .map(|(notarized_transaction_hash, transaction_record)| {
+            let error_string_to_use = transaction_record
                 .most_applicable_status()
-                .unwrap_or(&RejectionReason::IntentHashCommitted);
-            models::LtsTransactionPayloadDetails {
-                payload_hash: to_api_notarized_transaction_hash(&payload_hash),
+                .map(|reason| reason.to_string())
+                // Note: in theory, we should not see the "no rejection" for any transaction here,
+                // since we only enter this method after seeing their intent hash committed by a
+                // different payload. However, the cache update happens asynchronously after the
+                // commit, and we may see a "not-yet-updated" entry - luckily, in such case, we can
+                // precisely tell the transaction's status ourselves:
+                .unwrap_or_else(|| {
+                    RejectionReason::AlreadyCommitted(AlreadyCommittedError {
+                        notarized_transaction_hash,
+                        committed_state_version,
+                        committed_notarized_transaction_hash: *committed_notarized_transaction_hash,
+                    })
+                    .to_string()
+                });
+            Ok(models::LtsTransactionPayloadDetails {
+                payload_hash: to_api_notarized_transaction_hash(&notarized_transaction_hash),
+                payload_hash_bech32m: to_api_hash_bech32m(context, &notarized_transaction_hash)?,
+                state_version: None,
                 status: models::LtsTransactionPayloadStatus::PermanentlyRejected,
-                error_message: Some(rejection_reason_to_use.to_string()),
-            }
+                error_message: Some(error_string_to_use),
+            })
         })
-        .collect::<Vec<_>>()
+        .collect::<Result<Vec<_>, _>>()
 }
 
 fn map_pending_payloads_not_in_mempool(
+    context: &MappingContext,
     known_payloads_not_in_mempool: HashMap<NotarizedTransactionHash, PendingTransactionRecord>,
-) -> Vec<models::LtsTransactionPayloadDetails> {
+) -> Result<Vec<models::LtsTransactionPayloadDetails>, MappingError> {
     known_payloads_not_in_mempool
         .into_iter()
         .map(|(payload_hash, transaction_record)| {
-            match transaction_record.most_applicable_status() {
+            Ok(match transaction_record.most_applicable_status() {
                 Some(reason) => models::LtsTransactionPayloadDetails {
                     payload_hash: to_api_notarized_transaction_hash(&payload_hash),
+                    payload_hash_bech32m: to_api_hash_bech32m(context, &payload_hash)?,
+                    state_version: None,
                     status: if reason.is_permanent_for_payload() {
                         models::LtsTransactionPayloadStatus::PermanentlyRejected
                     } else {
@@ -220,10 +260,12 @@ fn map_pending_payloads_not_in_mempool(
                 },
                 None => models::LtsTransactionPayloadDetails {
                     payload_hash: to_api_notarized_transaction_hash(&payload_hash),
+                    payload_hash_bech32m: to_api_hash_bech32m(context, &payload_hash)?,
+                    state_version: None,
                     status: models::LtsTransactionPayloadStatus::NotInMempool,
                     error_message: None,
                 },
-            }
+            })
         })
-        .collect::<Vec<_>>()
+        .collect::<Result<Vec<_>, _>>()
 }

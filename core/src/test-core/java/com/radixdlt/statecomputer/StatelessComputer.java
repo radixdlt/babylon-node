@@ -64,7 +64,7 @@
 
 package com.radixdlt.statecomputer;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
@@ -77,7 +77,9 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.*;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.p2p.NodeId;
+import com.radixdlt.statecomputer.commit.CommitSummary;
 import com.radixdlt.transactions.RawNotarizedTransaction;
+import com.radixdlt.utils.UInt32;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -147,7 +149,7 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
   }
 
   private LedgerUpdate generateLedgerUpdate(LedgerExtension ledgerExtension) {
-    var output =
+    final var maybeEpochChange =
         ledgerExtension
             .getProof()
             .getNextEpoch()
@@ -170,15 +172,17 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
                       VertexStoreState.create(
                           HighQC.ofInitialEpochQc(initialEpochQC), genesisVertex, hasher);
                   var validatorSet = BFTValidatorSet.from(nextEpoch.getValidators());
-                  var proposerElection = ProposerElections.defaultRotation(validatorSet);
+                  var proposerElection =
+                      ProposerElections.defaultRotation(nextEpoch.getEpoch(), validatorSet);
                   var bftConfiguration =
                       new BFTConfiguration(proposerElection, validatorSet, initialState);
                   return new EpochChange(proof, bftConfiguration);
-                })
-            .map(e -> ImmutableClassToInstanceMap.<Object, EpochChange>of(EpochChange.class, e))
-            .orElse(ImmutableClassToInstanceMap.of());
+                });
 
-    return new LedgerUpdate(ledgerExtension, output);
+    return new LedgerUpdate(
+        new CommitSummary(ImmutableList.of(), UInt32.fromNonNegativeInt(0)),
+        ledgerExtension,
+        maybeEpochChange);
   }
 
   @Override

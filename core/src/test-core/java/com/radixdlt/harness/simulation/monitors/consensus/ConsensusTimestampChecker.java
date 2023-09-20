@@ -88,7 +88,7 @@ public final class ConsensusTimestampChecker implements TestInvariant {
 
   private Maybe<TestInvariantError> checkCloseTimestamp(LedgerUpdate update) {
     final var now = System.currentTimeMillis();
-    final var proof = update.getTail();
+    final var proof = update.proof();
     final var timestamp = proof.consensusParentRoundTimestamp();
     // Initial rounds of Consensus can have a timestamp of 0
     if (timestamp == 0) {
@@ -107,8 +107,8 @@ public final class ConsensusTimestampChecker implements TestInvariant {
   }
 
   private static boolean isFirstRoundOfFirstEpoch(LedgerUpdate ledgerUpdate) {
-    return ledgerUpdate.getTail().getEpoch() == 1
-        && ledgerUpdate.getTail().getRound().equals(Round.of(1));
+    return ledgerUpdate.proof().getEpoch() == 1
+        && ledgerUpdate.proof().getRound().equals(Round.of(1));
   }
 
   @Override
@@ -117,7 +117,7 @@ public final class ConsensusTimestampChecker implements TestInvariant {
         .ledgerUpdates()
         .map(Pair::getSecond)
         // Test on only the first ledger update in the network
-        .distinct(update -> EpochRound.of(update.getTail().getEpoch(), update.getTail().getRound()))
+        .distinct(update -> EpochRound.of(update.proof().getEpoch(), update.proof().getRound()))
         .filter(l -> !isFirstRoundOfFirstEpoch(l))
         .flatMapMaybe(this::checkCloseTimestamp);
   }

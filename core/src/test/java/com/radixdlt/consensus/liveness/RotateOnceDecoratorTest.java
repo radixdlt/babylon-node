@@ -65,6 +65,8 @@
 package com.radixdlt.consensus.liveness;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -78,11 +80,12 @@ import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt192;
 import java.util.Arrays;
-import java.util.Optional;
+import java.util.HashMap;
+import java.util.List;
 import java.util.stream.LongStream;
-import javax.annotation.Nullable;
+import java.util.stream.Stream;
 import org.junit.Test;
 
 public class RotateOnceDecoratorTest {
@@ -91,7 +94,7 @@ public class RotateOnceDecoratorTest {
   public void initial_rounds_iterate_through_all_validators_once() {
     final var validators =
         Arrays.asList(
-            BFTValidator.from(id(null, 7), power(22)), // for round 2
+            BFTValidator.from(id(1012, 7), power(22)), // for round 2
             BFTValidator.from(id(1013, 3), power(33)), // for round 0
             BFTValidator.from(id(1018, 7), power(22)), // for round 3
             BFTValidator.from(id(1011, 5), power(22)) // for round 1
@@ -105,45 +108,79 @@ public class RotateOnceDecoratorTest {
               return id(seed, seed + 1);
             });
 
-    final var subject = new RotateOnceDecorator(BFTValidatorSet.from(validators), underlying);
+    // We will iterate over a few epochs and collect the results (order) for the initial rotation
+    // to make sure it's not always the same.
+    HashMap<Long, List<Integer>> iteratedValidatorIndicesByEpoch = new HashMap<>();
+    LongStream.range(0, 10)
+        .forEach(
+            epoch -> {
+              // For each epoch we perform the same "local" assertions
 
-    // happy-path on initial rounds:
-    final int[] iteratedValidatorIndices =
-        LongStream.range(0, 4)
-            .mapToObj(Round::of)
-            .map(subject::getProposer)
-            .mapToInt(Lists.transform(validators, BFTValidator::getValidatorId)::indexOf)
-            .toArray();
-    assertThat(iteratedValidatorIndices)
-        .containsExactly(
-            1, // wins by stake (33 is before 22)
-            3, // wins by key tie-breaker (5 is before 7)
-            0, // wins by address tie-breaker (null is before 1018)
-            2); // well, does not win
+              // Verify that n(=2) instances produce exactly the same values
+              // (deterministic ordering)
+              final var instances =
+                  Stream.generate(
+                          () ->
+                              RotateOnceDecorator.deterministicallyShuffled(
+                                  BFTValidatorSet.from(validators), epoch, underlying))
+                      .limit(2)
+                      .toList();
 
-    // right after the initial rounds - the underlying impl returns the first one from its sequence
-    assertThat(subject.getProposer(Round.of(4))).isEqualTo(id(0, 1));
+              final var iteratedValidatorIndicesFromAllInstances =
+                  instances.stream()
+                      .map(
+                          leaderElection ->
+                              LongStream.range(0, validators.size())
+                                  .mapToObj(Round::of)
+                                  .map(leaderElection::getProposer)
+                                  .map(
+                                      Lists.transform(validators, BFTValidator::getValidatorId)
+                                          ::indexOf)
+                                  .toList())
+                      .distinct() // All results should be equal (which we verify below)
+                      .toList();
 
-    // repeated "initial rounds" query
-    assertThat(subject.getProposer(Round.of(2))).isEqualTo(validators.get(0).getValidatorId());
-    assertThat(subject.getProposer(Round.of(2))).isEqualTo(validators.get(0).getValidatorId());
+              assertEquals(iteratedValidatorIndicesFromAllInstances.size(), 1L);
 
-    // far outside the initial rounds - the underlying impl returns a `N - initial_rounds`-th one
-    assertThat(subject.getProposer(Round.of(907))).isEqualTo(id(903, 904));
+              iteratedValidatorIndicesByEpoch.put(
+                  epoch, iteratedValidatorIndicesFromAllInstances.get(0));
+
+              iteratedValidatorIndicesFromAllInstances.forEach(
+                  indices -> assertThat(indices).containsExactlyInAnyOrder(0, 1, 2, 3));
+
+              instances.forEach(
+                  subject -> {
+                    // right after the initial rounds - the underlying impl returns the first one
+                    // from its sequence
+                    assertThat(subject.getProposer(Round.of(4))).isEqualTo(id(0, 1));
+
+                    // repeated "initial rounds" query
+                    final var roundTwoProposer = subject.getProposer(Round.of(2));
+                    assertThat(roundTwoProposer).isEqualTo(subject.getProposer(Round.of(2)));
+
+                    // far outside the initial rounds - the underlying impl returns a `N -
+                    // initial_rounds`-th one
+                    assertThat(subject.getProposer(Round.of(907))).isEqualTo(id(903, 904));
+                  });
+            });
+
+    final var distinctOrdersInEpochs =
+        iteratedValidatorIndicesByEpoch.values().stream().distinct().count();
+
+    // Verify that the order isn't always the same in all epochs.
+    // With just 4 validators it's likely that it will repeat,
+    // but this is just to make sure that it isn't always the same.
+    assertTrue(distinctOrdersInEpochs >= 3);
   }
 
-  private static BFTValidatorId id(@Nullable Integer addressBytes, int keySeed) {
+  private static BFTValidatorId id(Integer addressBytes, int keySeed) {
     // we do not care about valid address representation (i.e. we do not call Engine), just ordering
-    final @Nullable ComponentAddress address =
-        Optional.ofNullable(addressBytes)
-            .map(Ints::toByteArray)
-            .map(ComponentAddress::new)
-            .orElse(null);
+    final ComponentAddress address = new ComponentAddress(Ints.toByteArray(addressBytes));
     final ECDSASecp256k1PublicKey key = PrivateKeys.ofNumeric(keySeed).getPublicKey();
     return BFTValidatorId.create(address, key);
   }
 
-  private static UInt256 power(int value) {
-    return UInt256.from(value);
+  private static UInt192 power(int value) {
+    return UInt192.from(value);
   }
 }

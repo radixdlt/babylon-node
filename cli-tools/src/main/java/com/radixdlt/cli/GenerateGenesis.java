@@ -70,32 +70,31 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
-import com.radixdlt.sbor.StateManagerSbor;
+import com.radixdlt.sbor.NodeSborCodecs;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UniqueListBuilder;
 import java.io.File;
-import java.security.Security;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.IntStream;
 import org.apache.commons.cli.*;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 /** Generates the genesis data for the Babylon Radix network */
 public final class GenerateGenesis {
 
   // Genesis parameters for XRD allocation for testnets
-  private static final Set<Network> GENESIS_NETWORKS_TO_USE_POWERFUL_STAKING_ACCOUNT =
+  private static final Set<Network> NETWORKS_TO_USE_POWERFUL_STAKING_ACCOUNT =
       Set.of(
           Network.GILGANET,
           Network.ENKINET,
@@ -105,27 +104,40 @@ public final class GenerateGenesis {
           Network.NERGALNET,
           Network.NEBUNET,
           Network.KISHARNET,
-          Network.ANSHARNET);
+          Network.ANSHARNET,
+          Network.ZABANET,
+          Network.STOKENET);
+
+  private static final Set<Network> PRODUCTION_NETWORKS = Set.of(Network.MAINNET);
+  private static final Set<Network> NETWORKS_TO_DISABLE_FAUCET = PRODUCTION_NETWORKS;
+  private static final Set<Network> NETWORKS_TO_DISABLE_SCENARIOS = NETWORKS_TO_DISABLE_FAUCET;
 
   private static final Set<Network> NETWORKS_TO_ENSURE_PRODUCTION_EMISSIONS =
-      Set.of(Network.KISHARNET, Network.ANSHARNET, Network.STOKENET, Network.MAINNET);
+      Set.of(
+          Network.KISHARNET, Network.ANSHARNET, Network.ZABANET, Network.STOKENET, Network.MAINNET);
 
   private static final Decimal GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_BALANCE =
       Decimal.of(700_000_000_000L); // 70% XRD_MAX_SUPPLY
   private static final Decimal GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR =
       Decimal.of(1_000_000_000L); // 0.1% XRD_MAX_SUPPLY
-  private static final ECDSASecp256k1PublicKey GENESIS_POWERFUL_STAKING_ACCOUNT_PUBLIC_KEY =
-      ECDSASecp256k1PublicKey.tryFromHex(
-              "026f08db98ef1d0231eb15580da9123db8e25aa1747c8c32e5fd2ec47b8db73d5c")
-          .unwrap();
+  private static final ECDSASecp256k1PublicKey GENESIS_POWERFUL_STAKING_ACCOUNT_PUBLIC_KEY;
+
+  static {
+    try {
+      GENESIS_POWERFUL_STAKING_ACCOUNT_PUBLIC_KEY =
+          ECDSASecp256k1PublicKey.fromHex(
+              "026f08db98ef1d0231eb15580da9123db8e25aa1747c8c32e5fd2ec47b8db73d5c");
+    } catch (PublicKeyException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   private static final Decimal GENESIS_NO_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR =
       Decimal.of(1); // Allow it to be easily changed in eg tests
 
   private GenerateGenesis() {}
 
   public static void main(String[] args) throws Exception {
-    Security.insertProviderAt(new BouncyCastleProvider(), 1);
-
     Options options = new Options();
     options.addOption("h", "help", false, "Show usage information (this message)");
     options.addOption("p", "public-keys", true, "Specify validator keys");
@@ -179,7 +191,7 @@ public final class GenerateGenesis {
     final var validators = validatorsBuilder.build();
     final var genesisData = createGenesisData(network, validators);
     final var encodedGenesisData =
-        StateManagerSbor.encode(genesisData, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
+        NodeSborCodecs.encode(genesisData, NodeSborCodecs.resolveCodec(new TypeToken<>() {}));
     final var compressedGenesisData = Compress.compress(encodedGenesisData);
     final var compressedGenesisDataBase64 =
         Base64.getEncoder().encodeToString(compressedGenesisData);
@@ -230,7 +242,7 @@ public final class GenerateGenesis {
   private static GenesisData createGenesisData(
       Network network, ImmutableList<ECDSASecp256k1PublicKey> validators) {
     final var usePowerfulStakingAccount =
-        GENESIS_NETWORKS_TO_USE_POWERFUL_STAKING_ACCOUNT.contains(network);
+        NETWORKS_TO_USE_POWERFUL_STAKING_ACCOUNT.contains(network);
 
     final var stakeAmount =
         usePowerfulStakingAccount
@@ -249,7 +261,10 @@ public final class GenerateGenesis {
                 GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_BALANCE)
             : Map.of();
 
-    var consensusConfig = GenesisConsensusManagerConfig.Builder.productionDefaults();
+    var consensusConfig =
+        PRODUCTION_NETWORKS.contains(network)
+            ? GenesisConsensusManagerConfig.Builder.productionDefaults()
+            : GenesisConsensusManagerConfig.Builder.testEnvironmentDefaults();
 
     final var mustUseProductionEmissions =
         NETWORKS_TO_ENSURE_PRODUCTION_EMISSIONS.contains(network);
@@ -259,8 +274,20 @@ public final class GenerateGenesis {
               GENESIS_NO_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR.divide(10000));
     }
 
+    final var useFaucet = !NETWORKS_TO_DISABLE_FAUCET.contains(network);
+    final var scenariosToRun =
+        NETWORKS_TO_DISABLE_SCENARIOS.contains(network)
+            ? GenesisData.NO_SCENARIOS
+            : GenesisData.ALL_SCENARIOS;
+
     return GenesisBuilder.createGenesisWithValidatorsAndXrdBalances(
-        validators, stakeAmount, stakingAccount, xrdBalances, consensusConfig);
+        validators,
+        stakeAmount,
+        stakingAccount,
+        xrdBalances,
+        consensusConfig,
+        useFaucet,
+        scenariosToRun);
   }
 
   private static void usage(Options options) {

@@ -75,37 +75,32 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /** Query for a public IP address from environment variable. */
-final class EnvironmentHostIp implements HostIp {
+final class EnvironmentHostIp {
   private static final Logger log = LogManager.getLogger();
 
   @VisibleForTesting static final String ENV_VAR = "RADIXDLT_HOST_IP_ADDRESS";
 
-  private final Supplier<Optional<String>> result =
+  private final Supplier<Optional<HostIp>> result =
       Suppliers.memoize(() -> hostIp(System.getenv(ENV_VAR)));
 
-  static HostIp create() {
-    return new EnvironmentHostIp();
-  }
-
-  @Override
-  public Optional<String> hostIp() {
+  public Optional<HostIp> hostIp() {
     return result.get();
   }
 
   // Broken out for testing as environment is immutable from Java runtime
   @VisibleForTesting
-  Optional<String> hostIp(String value) {
+  Optional<HostIp> hostIp(String value) {
     if (value != null && !value.trim().isEmpty()) {
       try {
         InetAddress address = InetAddress.getByName(value);
         HostAndPort hap = HostAndPort.fromHost(address.getHostAddress());
-        log.info("Found address {}", hap);
-        return Optional.of(hap.getHost());
+        log.debug("Found address {}", hap);
+        return Optional.of(new HostIp(hap.getHost()));
       } catch (UnknownHostException | IllegalArgumentException e) {
         log.warn("Environment variable {} is invalid: '{}'", ENV_VAR, value);
       }
     }
-    log.info("No suitable address found");
+    log.debug("No suitable address found");
     return Optional.empty();
   }
 }

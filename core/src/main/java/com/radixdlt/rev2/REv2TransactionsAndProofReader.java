@@ -72,6 +72,8 @@ import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import java.util.Optional;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public final class REv2TransactionsAndProofReader implements TransactionsAndProofReader {
   /* Maximum number of transactions to return in a single getTransactions response, but only if
@@ -84,7 +86,9 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
 
   /* Maximum transactions size (in terms of their total byte size) to return in a single getTransactions response.
    * See also MAX_PACKET_LENGTH in PeerChannelInitializer and OVERRIDE_MAX_PAYLOAD_SIZE for transaction size */
-  public static final int MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE = 4 * 1024 * 1024;
+  public static final int MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE = 12 * 1024 * 1024;
+
+  private static final Logger log = LogManager.getLogger();
 
   private final REv2TransactionAndProofStore transactionStore;
 
@@ -102,6 +106,17 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
             startStateVersionInclusive,
             MAX_TXNS_FOR_RESPONSES_SPANNING_MORE_THAN_ONE_PROOF,
             MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE);
+
+    if (rawTxnsAndProofOpt.isEmpty()) {
+      log.error(
+          "Impossible to build a chain of transactions from state version "
+              + startStateVersionInclusive
+              + " that ends with a proof that is: under "
+              + MAX_TXNS_FOR_RESPONSES_SPANNING_MORE_THAN_ONE_PROOF
+              + " transactions and under "
+              + MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE
+              + " total payload size!");
+    }
 
     return rawTxnsAndProofOpt
         .map(

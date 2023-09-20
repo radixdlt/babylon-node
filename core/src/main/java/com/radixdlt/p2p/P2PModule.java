@@ -64,10 +64,9 @@
 
 package com.radixdlt.p2p;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Scopes;
-import com.google.inject.TypeLiteral;
+import static com.radixdlt.protocol.ProtocolVersion.ONLY_PROTOCOL_VERSION;
+
+import com.google.inject.*;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.bft.Self;
@@ -75,17 +74,25 @@ import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.Runners;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.PendingOutboundChannelsManager.PeerOutboundConnectionTimeout;
 import com.radixdlt.p2p.addressbook.AddressBook;
 import com.radixdlt.p2p.addressbook.AddressBookPeerControl;
 import com.radixdlt.p2p.addressbook.AddressBookPersistence;
 import com.radixdlt.p2p.addressbook.BerkeleyAddressBookStore;
+import com.radixdlt.p2p.discovery.SeedNodesConfigParser;
 import com.radixdlt.p2p.hostip.HostIp;
 import com.radixdlt.p2p.hostip.HostIpModule;
 import com.radixdlt.p2p.transport.PeerOutboundBootstrap;
 import com.radixdlt.p2p.transport.PeerOutboundBootstrapImpl;
 import com.radixdlt.p2p.transport.PeerServerBootstrap;
+import com.radixdlt.protocol.Current;
+import com.radixdlt.protocol.Newest;
+import com.radixdlt.protocol.ProtocolVersion;
+import com.radixdlt.serialization.Serialization;
+import com.radixdlt.store.BerkeleyDbDefaults;
+import com.radixdlt.store.NodeStorageLocation;
 import com.radixdlt.utils.properties.RuntimeProperties;
 
 public final class P2PModule extends AbstractModule {
@@ -104,15 +111,19 @@ public final class P2PModule extends AbstractModule {
     eventBinder.addBinding().toInstance(PeerEvent.class);
     eventBinder.addBinding().toInstance(PeerOutboundConnectionTimeout.class);
 
+    // TODO(when introducing actual protocol updates): design how to manage this
+    bind(ProtocolVersion.class).annotatedWith(Current.class).toInstance(ONLY_PROTOCOL_VERSION);
+    bind(ProtocolVersion.class).annotatedWith(Newest.class).toInstance(ONLY_PROTOCOL_VERSION);
+
     bind(AddressBook.class).in(Scopes.SINGLETON);
     bind(PeersView.class).to(PeerManagerPeersView.class).in(Scopes.SINGLETON);
     bind(PeerControl.class).to(AddressBookPeerControl.class).in(Scopes.SINGLETON);
     bind(PeerOutboundBootstrap.class).to(PeerOutboundBootstrapImpl.class).in(Scopes.SINGLETON);
     bind(AddressBookPersistence.class).to(BerkeleyAddressBookStore.class);
-    bind(BerkeleyAddressBookStore.class).in(Scopes.SINGLETON);
     bind(PeerServerBootstrap.class).in(Scopes.SINGLETON);
     bind(PendingOutboundChannelsManager.class).in(Scopes.SINGLETON);
     bind(PeerManager.class).in(Scopes.SINGLETON);
+    bind(SeedNodesConfigParser.class).in(Scopes.SINGLETON);
 
     install(new HostIpModule(properties));
     install(new PeerDiscoveryModule());
@@ -150,9 +161,21 @@ public final class P2PModule extends AbstractModule {
   @Self
   public RadixNodeUri selfUri(
       Network network, @Self ECDSASecp256k1PublicKey selfKey, HostIp hostIp, P2PConfig p2pConfig) {
-    final var host =
-        hostIp.hostIp().orElseThrow(() -> new IllegalStateException("Unable to determine host IP"));
+    final var host = hostIp.value();
     final var port = p2pConfig.broadcastPort();
     return RadixNodeUri.fromPubKeyAndAddress(network.getId(), selfKey, host, port);
+  }
+
+  @Provides
+  @Singleton
+  BerkeleyAddressBookStore addressBookStore(
+      Serialization serialization,
+      Metrics metrics,
+      @NodeStorageLocation String nodeStorageLocation) {
+    return new BerkeleyAddressBookStore(
+        serialization,
+        metrics,
+        nodeStorageLocation,
+        BerkeleyDbDefaults.createDefaultEnvConfigFromProperties(properties));
   }
 }

@@ -9,7 +9,7 @@ pub(crate) async fn handle_status_network_configuration(
 ) -> Result<Json<models::NetworkConfigurationResponse>, ResponseError<()>> {
     let network = state.network.clone();
 
-    let bech32_encoder = Bech32Encoder::new(&network);
+    let bech32_encoder = AddressBech32Encoder::new(&network);
     let hrp_set: HrpSet = (&network).into();
 
     let address_types = ALL_ENTITY_TYPES
@@ -25,14 +25,15 @@ pub(crate) async fn handle_status_network_configuration(
         network: network.logical_name,
         network_id: to_api_u8_as_i32(network.id),
         network_hrp_suffix: network.hrp_suffix,
+        usd_price_in_xrd: to_api_decimal(&Decimal::try_from(USD_PRICE_IN_XRD).unwrap()),
         address_types,
         well_known_addresses: Box::new(models::NetworkConfigurationResponseWellKnownAddresses {
-            xrd: bech32_encoder.encode(RADIX_TOKEN.as_ref()).unwrap(),
+            xrd: bech32_encoder.encode(XRD.as_ref()).unwrap(),
             secp256k1_signature_virtual_badge: bech32_encoder
-                .encode(ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.as_ref())
+                .encode(SECP256K1_SIGNATURE_VIRTUAL_BADGE.as_ref())
                 .unwrap(),
             ed25519_signature_virtual_badge: bech32_encoder
-                .encode(EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.as_ref())
+                .encode(ED25519_SIGNATURE_VIRTUAL_BADGE.as_ref())
                 .unwrap(),
             package_of_direct_caller_virtual_badge: bech32_encoder
                 .encode(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.as_ref())
@@ -70,13 +71,14 @@ pub(crate) async fn handle_status_network_configuration(
             royalty_module_package: bech32_encoder
                 .encode(ROYALTY_MODULE_PACKAGE.as_ref())
                 .unwrap(),
-            access_rules_package: bech32_encoder
-                .encode(ACCESS_RULES_MODULE_PACKAGE.as_ref())
+            role_assignment_module_package: bech32_encoder
+                .encode(ROLE_ASSIGNMENT_MODULE_PACKAGE.as_ref())
                 .unwrap(),
             genesis_helper_package: bech32_encoder
                 .encode(GENESIS_HELPER_PACKAGE.as_ref())
                 .unwrap(),
             faucet_package: bech32_encoder.encode(FAUCET_PACKAGE.as_ref()).unwrap(),
+            pool_package: bech32_encoder.encode(POOL_PACKAGE.as_ref()).unwrap(),
             consensus_manager: bech32_encoder.encode(CONSENSUS_MANAGER.as_ref()).unwrap(),
             genesis_helper: bech32_encoder.encode(GENESIS_HELPER.as_ref()).unwrap(),
             faucet: bech32_encoder.encode(FAUCET.as_ref()).unwrap(),
@@ -85,7 +87,7 @@ pub(crate) async fn handle_status_network_configuration(
     .map(Json)
 }
 
-const ALL_ENTITY_TYPES: [EntityType; 18] = [
+const ALL_ENTITY_TYPES: [EntityType; 17] = [
     // Package
     EntityType::GlobalPackage,
     // System
@@ -110,7 +112,6 @@ const ALL_ENTITY_TYPES: [EntityType; 18] = [
     EntityType::InternalNonFungibleVault,
     // Internal misc
     EntityType::InternalGenericComponent,
-    EntityType::InternalAccount,
     // Internal key-value-store-like
     EntityType::InternalKeyValueStore,
 ];

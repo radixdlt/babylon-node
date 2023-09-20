@@ -68,11 +68,15 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.genesis.GenesisFromPropertiesLoader;
+import com.radixdlt.keys.PersistedBFTKeyModule;
 import com.radixdlt.lang.Either;
 import com.radixdlt.modules.CryptoModule;
 import com.radixdlt.modules.MetricsModule;
 import com.radixdlt.networks.Network;
+import com.radixdlt.p2p.P2PConfig;
+import com.radixdlt.p2p.discovery.SeedNodesConfigParser;
 import com.radixdlt.store.NodeStorageLocation;
 import com.radixdlt.store.NodeStorageLocationFromPropertiesModule;
 import com.radixdlt.utils.properties.RuntimeProperties;
@@ -90,12 +94,25 @@ public final class RadixNodeBootstrapperModule extends AbstractModule {
   @Override
   public void configure() {
     bind(RuntimeProperties.class).toInstance(this.properties);
-    bind(Network.class).toInstance(readNetworkFromProperties(this.properties).unwrapRight());
+    final var network = readNetworkFromProperties(this.properties).unwrapRight();
+    bind(Network.class).toInstance(network);
+    bind(Addressing.class).toInstance(Addressing.ofNetwork(network));
     bind(GenesisFromPropertiesLoader.class).toInstance(new GenesisFromPropertiesLoader(properties));
     bind(RadixNodeBootstrapper.class).in(Scopes.SINGLETON);
     install(new MetricsModule());
     install(new CryptoModule());
     install(new NodeStorageLocationFromPropertiesModule());
+
+    // This isn't strictly required by the bootstrapper, but
+    // we're loading it up to verify that node's keystore
+    // configuration works - this will error at Guice
+    // instantiation if the key store isn't found.
+    install(new PersistedBFTKeyModule());
+
+    // Similarly this isn't strictly required,
+    // but we're loading it to preverify the seed nodes.
+    bind(P2PConfig.class).toInstance(P2PConfig.fromRuntimeProperties(properties));
+    bind(SeedNodesConfigParser.class).in(Scopes.SINGLETON);
   }
 
   @Provides

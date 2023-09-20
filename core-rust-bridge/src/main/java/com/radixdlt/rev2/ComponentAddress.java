@@ -84,11 +84,11 @@ public record ComponentAddress(byte[] value) {
                 ComponentAddress::new));
   }
 
-  private static final int BYTE_LENGTH = 30;
+  public static final int BYTE_LENGTH = 30;
 
   // See entity_type.rs
 
-  public static byte VALIDATOR_COMPONENT_ADDRESS_ENTITY_ID = (byte) 130;
+  public static byte VALIDATOR_COMPONENT_ADDRESS_ENTITY_ID = (byte) 131;
   public static byte NORMAL_COMPONENT_ADDRESS_ENTITY_ID = (byte) 192;
 
   public static ComponentAddress create(byte[] addressBytes) {
@@ -96,6 +96,10 @@ public record ComponentAddress(byte[] value) {
       throw new IllegalArgumentException("Invalid component address length");
     }
     return new ComponentAddress(addressBytes);
+  }
+
+  public String ownerBadgeBytesLocalId() {
+    return String.format("[%s]", toHexString());
   }
 
   public String encode(NetworkDefinition networkDefinition) {

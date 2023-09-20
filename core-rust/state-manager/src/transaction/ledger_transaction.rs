@@ -1,8 +1,7 @@
-use radix_engine_constants::TRANSACTION_HASHABLE_PAYLOAD_PREFIX;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::prelude::*;
-use sbor::*;
 
+use crate::transaction::ConfigType;
 use transaction::define_raw_transaction_payload;
 use transaction::prelude::*;
 
@@ -13,7 +12,7 @@ use super::{
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub struct PayloadIdentifiers {
-    pub ledger_payload_hash: LedgerTransactionHash,
+    pub ledger_transaction_hash: LedgerTransactionHash,
     pub typed: TypedTransactionIdentifiers,
 }
 
@@ -59,7 +58,7 @@ impl TypedTransactionIdentifiers {
 #[derive(Debug, Clone, PartialEq, Eq, ManifestCategorize, ManifestEncode, ManifestDecode)]
 pub enum LedgerTransaction {
     #[sbor(discriminator(GENESIS_LEDGER_TRANSACTION_DISCRIMINATOR))]
-    Genesis(Box<SystemTransactionV1>),
+    Genesis(Box<GenesisTransaction>),
     #[sbor(discriminator(USER_V1_LEDGER_TRANSACTION_DISCRIMINATOR))]
     UserV1(Box<NotarizedTransactionV1>),
     #[sbor(discriminator(ROUND_UPDATE_V1_LEDGER_TRANSACTION_DISCRIMINATOR))]
@@ -108,6 +107,17 @@ impl LedgerTransaction {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ManifestCategorize, ManifestEncode, ManifestDecode)]
+pub enum GenesisTransaction {
+    #[sbor(discriminator(GENESIS_TRANSACTION_FLASH_DISCRIMINATOR))]
+    Flash,
+    #[sbor(discriminator(GENESIS_TRANSACTION_SYSTEM_TRANSACTION_DISCRIMINATOR))]
+    Transaction(Box<SystemTransactionV1>),
+}
+
+const GENESIS_TRANSACTION_FLASH_DISCRIMINATOR: u8 = 0;
+const GENESIS_TRANSACTION_SYSTEM_TRANSACTION_DISCRIMINATOR: u8 = 1;
+
 pub struct PreparedLedgerTransaction {
     pub inner: PreparedLedgerTransactionInner,
     pub summary: Summary,
@@ -128,16 +138,9 @@ impl PreparedLedgerTransaction {
         }
     }
 
-    pub fn into_genesis(self) -> Option<Box<PreparedSystemTransactionV1>> {
-        match self.inner {
-            PreparedLedgerTransactionInner::Genesis(t) => Some(t),
-            _ => None,
-        }
-    }
-
     pub fn create_identifiers(&self) -> PayloadIdentifiers {
         PayloadIdentifiers {
-            ledger_payload_hash: self.ledger_transaction_hash(),
+            ledger_transaction_hash: self.ledger_transaction_hash(),
             typed: match &self.inner {
                 PreparedLedgerTransactionInner::Genesis(t) => {
                     TypedTransactionIdentifiers::Genesis {
@@ -168,7 +171,7 @@ impl HasSummary for PreparedLedgerTransaction {
 #[derive(BasicCategorize)]
 pub enum PreparedLedgerTransactionInner {
     #[sbor(discriminator(GENESIS_LEDGER_TRANSACTION_DISCRIMINATOR))]
-    Genesis(Box<PreparedSystemTransactionV1>),
+    Genesis(Box<PreparedGenesisTransaction>),
     #[sbor(discriminator(USER_V1_LEDGER_TRANSACTION_DISCRIMINATOR))]
     UserV1(Box<PreparedNotarizedTransactionV1>),
     #[sbor(discriminator(ROUND_UPDATE_V1_LEDGER_TRANSACTION_DISCRIMINATOR))]
@@ -197,45 +200,84 @@ impl TransactionFullChildPreparable for PreparedLedgerTransactionInner {
         let (discriminator, length) = decoder.read_enum_header()?;
         let prepared_inner = match discriminator {
             GENESIS_LEDGER_TRANSACTION_DISCRIMINATOR => {
-                if length != 1 {
-                    return Err(PrepareError::DecodeError(DecodeError::UnexpectedSize {
-                        expected: 1,
-                        actual: length,
-                    }));
-                }
-                let prepared = PreparedSystemTransactionV1::prepare_as_full_body_child(decoder)?;
-                PreparedLedgerTransactionInner::Genesis(Box::new(prepared))
+                check_length(length, 1)?;
+                let (discriminator, length) = decoder.read_enum_header()?;
+                let genesis_transaction = match discriminator {
+                    GENESIS_TRANSACTION_FLASH_DISCRIMINATOR => {
+                        check_length(length, 0)?;
+                        PreparedGenesisTransaction::Flash(Summary {
+                            effective_length: 0,
+                            total_bytes_hashed: 0,
+                            hash: hash("Genesis Flash"),
+                        })
+                    }
+                    GENESIS_TRANSACTION_SYSTEM_TRANSACTION_DISCRIMINATOR => {
+                        check_length(length, 1)?;
+                        let prepared =
+                            PreparedSystemTransactionV1::prepare_as_full_body_child(decoder)?;
+                        PreparedGenesisTransaction::Transaction(Box::new(prepared))
+                    }
+                    _ => return Err(unknown_discriminator(discriminator)),
+                };
+                PreparedLedgerTransactionInner::Genesis(Box::new(genesis_transaction))
             }
             USER_V1_LEDGER_TRANSACTION_DISCRIMINATOR => {
-                if length != 1 {
-                    return Err(PrepareError::DecodeError(DecodeError::UnexpectedSize {
-                        expected: 1,
-                        actual: length,
-                    }));
-                }
+                check_length(length, 1)?;
                 let prepared = PreparedNotarizedTransactionV1::prepare_as_full_body_child(decoder)?;
                 PreparedLedgerTransactionInner::UserV1(Box::new(prepared))
             }
             ROUND_UPDATE_V1_LEDGER_TRANSACTION_DISCRIMINATOR => {
-                if length != 1 {
-                    return Err(PrepareError::DecodeError(DecodeError::UnexpectedSize {
-                        expected: 1,
-                        actual: length,
-                    }));
-                }
+                check_length(length, 1)?;
                 let prepared =
                     PreparedRoundUpdateTransactionV1::prepare_as_full_body_child(decoder)?;
                 PreparedLedgerTransactionInner::RoundUpdateV1(Box::new(prepared))
             }
-            _ => {
-                return Err(PrepareError::DecodeError(
-                    DecodeError::UnknownDiscriminator(discriminator),
-                ));
-            }
+            _ => return Err(unknown_discriminator(discriminator)),
         };
         decoder.track_stack_depth_decrease()?;
 
         Ok(prepared_inner)
+    }
+}
+
+fn check_length(actual: usize, expected: usize) -> Result<(), PrepareError> {
+    if actual != expected {
+        return Err(PrepareError::DecodeError(DecodeError::UnexpectedSize {
+            expected,
+            actual,
+        }));
+    }
+    Ok(())
+}
+
+fn unknown_discriminator(discriminator: u8) -> PrepareError {
+    PrepareError::DecodeError(DecodeError::UnknownDiscriminator(discriminator))
+}
+
+pub enum PreparedGenesisTransaction {
+    Flash(Summary),
+    Transaction(Box<PreparedSystemTransactionV1>),
+}
+
+impl HasSummary for PreparedGenesisTransaction {
+    fn get_summary(&self) -> &Summary {
+        match self {
+            PreparedGenesisTransaction::Flash(summary) => summary,
+            PreparedGenesisTransaction::Transaction(system_transaction) => {
+                system_transaction.get_summary()
+            }
+        }
+    }
+}
+
+impl HasSystemTransactionHash for PreparedGenesisTransaction {
+    fn system_transaction_hash(&self) -> SystemTransactionHash {
+        match self {
+            PreparedGenesisTransaction::Flash(summary) => SystemTransactionHash(summary.hash),
+            PreparedGenesisTransaction::Transaction(transaction) => {
+                transaction.system_transaction_hash()
+            }
+        }
     }
 }
 
@@ -262,12 +304,10 @@ pub struct ValidatedLedgerTransaction {
     pub summary: Summary,
 }
 
-/// Note - we don't allow System transactions here, because they are Genesis or Protocol Updates,
-/// which are executed / inserted by the node, and not explicitly provided / validated from ledger sync
 #[derive(BasicCategorize)]
 pub enum ValidatedLedgerTransactionInner {
     #[sbor(discriminator(GENESIS_LEDGER_TRANSACTION_DISCRIMINATOR))]
-    Genesis(Box<PreparedSystemTransactionV1>),
+    Genesis(Box<PreparedGenesisTransaction>),
     #[sbor(discriminator(USER_V1_LEDGER_TRANSACTION_DISCRIMINATOR))]
     UserV1(Box<ValidatedNotarizedTransactionV1>),
     #[sbor(discriminator(ROUND_UPDATE_V1_LEDGER_TRANSACTION_DISCRIMINATOR))]
@@ -283,19 +323,45 @@ impl ValidatedLedgerTransaction {
         }
     }
 
+    pub fn as_genesis_flash(&self) -> Option<&Summary> {
+        match &self.inner {
+            ValidatedLedgerTransactionInner::Genesis(genesis) => match genesis.as_ref() {
+                PreparedGenesisTransaction::Flash(summary) => Some(summary),
+                PreparedGenesisTransaction::Transaction(_) => None,
+            },
+            _ => None,
+        }
+    }
+
+    /// Note - panics if it's a genesis flash
     pub fn get_executable(&self) -> Executable<'_> {
         match &self.inner {
-            ValidatedLedgerTransactionInner::Genesis(t) => {
-                t.get_executable(btreeset!(AuthAddresses::system_role()))
-            }
+            ValidatedLedgerTransactionInner::Genesis(genesis) => match genesis.as_ref() {
+                PreparedGenesisTransaction::Flash(_) => {
+                    panic!("Should not call get_executable on a genesis flash")
+                }
+                PreparedGenesisTransaction::Transaction(t) => {
+                    t.get_executable(btreeset!(AuthAddresses::system_role()))
+                }
+            },
             ValidatedLedgerTransactionInner::UserV1(t) => t.get_executable(),
             ValidatedLedgerTransactionInner::RoundUpdateV1(t) => t.get_executable(),
         }
     }
 
+    /// Gets a [`ConfigType`] to be used during regular execution (i.e. not preview, not in-mempool
+    /// committability check).
+    pub fn config_type(&self) -> ConfigType {
+        match &self.inner {
+            ValidatedLedgerTransactionInner::Genesis(_) => ConfigType::Genesis,
+            ValidatedLedgerTransactionInner::UserV1(_) => ConfigType::Regular,
+            ValidatedLedgerTransactionInner::RoundUpdateV1(_) => ConfigType::OtherSystem,
+        }
+    }
+
     pub fn create_identifiers(&self) -> PayloadIdentifiers {
         PayloadIdentifiers {
-            ledger_payload_hash: self.ledger_transaction_hash(),
+            ledger_transaction_hash: self.ledger_transaction_hash(),
             typed: match &self.inner {
                 ValidatedLedgerTransactionInner::Genesis(t) => {
                     TypedTransactionIdentifiers::Genesis {
@@ -352,6 +418,12 @@ impl LedgerTransactionHash {
     }
 }
 
+impl HashHasHrp for LedgerTransactionHash {
+    fn hrp(hrp_set: &HrpSet) -> &str {
+        &hrp_set.ledger_transaction
+    }
+}
+
 pub trait HasLedgerTransactionHash {
     fn ledger_transaction_hash(&self) -> LedgerTransactionHash;
 }
@@ -366,13 +438,11 @@ impl HasLedgerTransactionHash for PreparedLedgerTransaction {
 mod tests {
     use super::*;
 
-    use transaction::validation::*;
-
     #[test]
     pub fn v1_ledger_transaction_structure() {
-        let sig_1_private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
-        let sig_2_private_key = EddsaEd25519PrivateKey::from_u64(2).unwrap();
-        let notary_private_key = EddsaEd25519PrivateKey::from_u64(3).unwrap();
+        let sig_1_private_key = Secp256k1PrivateKey::from_u64(1).unwrap();
+        let sig_2_private_key = Ed25519PrivateKey::from_u64(2).unwrap();
+        let notary_private_key = Ed25519PrivateKey::from_u64(3).unwrap();
 
         let notarized = TransactionBuilder::new()
             .header(TransactionHeaderV1 {
@@ -384,7 +454,7 @@ mod tests {
                 notary_is_signatory: true,
                 tip_percentage: 0,
             })
-            .manifest(ManifestBuilder::new().clear_auth_zone().build())
+            .manifest(ManifestBuilder::new().drop_all_proofs().build())
             .sign(&sig_1_private_key)
             .sign(&sig_2_private_key)
             .notarize(&notary_private_key)

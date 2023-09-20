@@ -74,12 +74,12 @@ import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.messaging.ledgersync.StatusRequestMessage;
 import com.radixdlt.messaging.ledgersync.StatusResponseMessage;
+import com.radixdlt.monitoring.LabelledCounter;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.rev2.Decimal;
-import com.radixdlt.sbor.StateManagerSbor;
+import com.radixdlt.sbor.NodeSborCodecs;
 import com.radixdlt.shell.RadixShell;
 import com.radixdlt.utils.Compress;
-import io.prometheus.client.Counter;
 import java.time.Duration;
 import java.util.*;
 import org.awaitility.core.ConditionTimeoutException;
@@ -187,7 +187,7 @@ public class NodeCapabilityTests {
           m -> messagesReceived.add("node1-" + m.message().getClass().getSimpleName()));
 
       // Have the expected messages been received?
-      var result = waitForMessagesReceived(expectedResultMap, messagesReceived, 3);
+      var result = waitForMessagesReceived(expectedResultMap, messagesReceived, 10);
 
       assertTrue(result.message, result.testOk);
     } catch (Exception ex) {
@@ -305,10 +305,10 @@ public class NodeCapabilityTests {
 
   private RadixShell.Node startNode(int port, boolean ledgerSyncEnabled) throws Exception {
     final var genesisData =
-        GenesisBuilder.createGenesisWithNumValidators(
+        GenesisBuilder.createTestGenesisWithNumValidators(
             1, Decimal.of(1), GenesisConsensusManagerConfig.Builder.testDefaults());
     final var encodedGenesisData =
-        StateManagerSbor.encode(genesisData, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
+        NodeSborCodecs.encode(genesisData, NodeSborCodecs.resolveCodec(new TypeToken<>() {}));
     final var genesisDataBase64 =
         Base64.getEncoder().encodeToString(Compress.compress(encodedGenesisData));
     return nodeBuilder()
@@ -379,8 +379,8 @@ public class NodeCapabilityTests {
 
   // Check a specified counter value. The value is checked every 100ms until either the value
   // matches, or the maxWaitTimeSecs expires
-  private Result waitForCounterValueEquals(
-      Counter counter, long expectedValue, int maxWaitTimeSecs) {
+  private <T extends Record> Result waitForCounterValueEquals(
+      LabelledCounter<T> counter, long expectedValue, int maxWaitTimeSecs) {
     var result = new Result();
     result.testOk = false;
 
@@ -388,14 +388,14 @@ public class NodeCapabilityTests {
       await()
           .atMost(Duration.ofSeconds(maxWaitTimeSecs))
           .pollInterval(Duration.ofMillis(100))
-          .until(() -> counter.get() == expectedValue);
+          .until(() -> counter.getSum() == expectedValue);
       result.testOk = true;
       result.message = String.format("%s equals expected value: %s", counter, expectedValue);
     } catch (ConditionTimeoutException e) {
       result.message =
           String.format(
               "%s (%d) does NOT equal expected value: %d within the specified time %d seconds",
-              counter, counter.get(), expectedValue, maxWaitTimeSecs);
+              counter, (long) counter.getSum(), expectedValue, maxWaitTimeSecs);
     }
 
     return result;

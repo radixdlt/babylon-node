@@ -86,7 +86,6 @@ import com.radixdlt.rev2.REv2SimpleFuzzerTransactionGenerator;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import java.util.Random;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -96,8 +95,7 @@ public final class SimpleFuzzerTransactionsTest {
 
   private DeterministicTest createTest() {
     final var transactionGenerator =
-        new REv2SimpleFuzzerTransactionGenerator(
-            NetworkDefinition.LOCAL_SIMULATOR, new Random(12345));
+        new REv2SimpleFuzzerTransactionGenerator(NetworkDefinition.INT_TEST_NET, new Random(12345));
     return DeterministicTest.builder()
         .addPhysicalNodes(PhysicalNodeConfig.createBatch(20, true))
         .messageSelector(firstSelector())
@@ -110,8 +108,8 @@ public final class SimpleFuzzerTransactionsTest {
                 ConsensusConfig.of(1000),
                 LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
-                        Network.LOCALSIMULATOR.getId(),
-                        GenesisBuilder.createGenesisWithNumValidators(
+                        Network.INTEGRATIONTESTNET.getId(),
+                        GenesisBuilder.createTestGenesisWithNumValidators(
                             10,
                             Decimal.of(1),
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10)),
@@ -121,10 +119,6 @@ public final class SimpleFuzzerTransactionsTest {
   }
 
   @Test
-  @Ignore(
-      "It causes unexpected errors, many txns fail with:"
-          + " ErrorBeforeFeeLoanRepaid(KernelError(WasmError(WasmError(Trap(Trap { kind:"
-          + " Unreachable })))))")
   public void simple_fuzzer_transaction_generator_should_not_cause_unexpected_errors() {
     try (var test = createTest()) {
       test.startAllNodes();

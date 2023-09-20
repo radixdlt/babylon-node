@@ -64,6 +64,7 @@
 
 package com.radixdlt.consensus.bft.processor;
 
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.environment.EventDispatcher;
@@ -72,6 +73,7 @@ import com.radixdlt.monitoring.Metrics.RejectedConsensusEvent;
 import com.radixdlt.monitoring.Metrics.RejectedConsensusEvent.TimestampIssue;
 import com.radixdlt.monitoring.Metrics.RejectedConsensusEvent.Type;
 import com.radixdlt.utils.TimeSupplier;
+import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
@@ -95,6 +97,8 @@ with the proposal, and use the value here, for verification (in place of timeSup
 public final class ProposalTimestampVerifier implements BFTEventProcessorAtCurrentRound {
   private static final Logger log = LogManager.getLogger();
 
+  private static final double MILLIS_TO_SECONDS = 1.0 / Duration.ofSeconds(1).toMillis();
+
   /* These two constants specify the bounds for acceptable proposal timestamps in relation to
   the current time (id est, the system time when the proposal message starts being processed).
   Proposals that fall out of bounds are rejected (ignored).
@@ -109,16 +113,19 @@ public final class ProposalTimestampVerifier implements BFTEventProcessorAtCurre
   private final BFTEventProcessorAtCurrentRound forwardTo;
   private final TimeSupplier timeSupplier;
   private final Metrics metrics;
+  private final Addressing addressing;
   private final EventDispatcher<ProposalRejected> proposalRejectedDispatcher;
 
   public ProposalTimestampVerifier(
       BFTEventProcessorAtCurrentRound forwardTo,
       TimeSupplier timeSupplier,
       Metrics metrics,
+      Addressing addressing,
       EventDispatcher<ProposalRejected> proposalRejectedDispatcher) {
     this.forwardTo = Objects.requireNonNull(forwardTo);
     this.timeSupplier = Objects.requireNonNull(timeSupplier);
     this.metrics = Objects.requireNonNull(metrics);
+    this.addressing = addressing;
     this.proposalRejectedDispatcher = Objects.requireNonNull(proposalRejectedDispatcher);
   }
 
@@ -131,6 +138,15 @@ public final class ProposalTimestampVerifier implements BFTEventProcessorAtCurre
 
     final var prevTimestamp = proposal.getVertex().parentLedgerHeader().proposerTimestamp();
     final var proposalTimestamp = proposal.getVertex().proposerTimestamp();
+
+    metrics
+        .bft()
+        .proposalTimestampDifferenceSeconds()
+        .label(
+            new Metrics.Validator(
+                proposal.getAuthor().getKey().toHex(),
+                addressing.encode(proposal.getAuthor().getValidatorAddress())))
+        .set((proposalTimestamp - now) * MILLIS_TO_SECONDS);
 
     final boolean isAcceptable;
     if (proposalTimestamp < lowerBoundInclusive) {

@@ -66,6 +66,7 @@ mod db;
 mod in_memory;
 mod rocks_db;
 pub mod traits;
+mod typed_cf_api;
 
 pub use db::{DatabaseBackendConfig, StateManagerDatabase};
 pub use in_memory::InMemoryStore;

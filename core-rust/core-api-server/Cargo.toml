@@ -12,7 +12,6 @@ transaction = { workspace = true }
 radix-engine-common = { workspace = true }
 radix-engine-interface = { workspace = true }
 radix-engine = { workspace = true }
-radix-engine-constants = { workspace = true }
 radix-engine-stores = { workspace = true }
 radix-engine-store-interface = { workspace = true }
 radix-engine-queries = { workspace = true }
@@ -22,7 +21,6 @@ utils = { workspace = true }
 jni = { workspace = true }
 tracing = { workspace = true }
 tokio = { workspace = true }
-parking_lot = { workspace = true }
 prometheus = { workspace = true }
 blake2 = { workspace = true }
 serde = { workspace = true }
@@ -31,5 +29,9 @@ serde_json = { workspace = true }
 chrono = { version = "0.4.23", default-features = false, features = ["std"] }
 hex = { version = "0.4.3", default-features = false }
 futures = { version = "0.3" }
+futures-util = "0.3.28"
 axum = { version = "0.6.6", features = ["http1", "json"] }
+tower = "0.4.13"
+tower-http = { version = "0.4.3", features = ["catch-panic"]}
 hyper = { version = "0.14.20", features = ["server", "http1"] }
+paste = { version = "1.0.12", default-features = false }

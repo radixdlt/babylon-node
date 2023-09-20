@@ -69,12 +69,13 @@ use futures::FutureExt;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
+use prometheus::*;
+use state_manager::jni::node_rust_environment::JNINodeRustEnvironment;
 use std::str;
 use std::sync::{Arc, MutexGuard};
 use tokio::runtime::Runtime;
 
 use node_common::java::*;
-use state_manager::jni::state_manager::JNIStateManager;
 
 const POINTER_JNI_FIELD_NAME: &str = "rustCoreApiServerPointer";
 
@@ -87,41 +88,39 @@ pub struct JNICoreApiServer {
     pub runtime: Arc<Runtime>,
     pub state: CoreApiState,
     pub running_server: Option<RunningServer>,
+    pub metric_registry: Arc<Registry>,
 }
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_api_CoreApiServer_init(
     env: JNIEnv,
     _class: JClass,
-    j_state_manager: JObject,
+    j_rust_global_context: JObject,
     j_core_api_server: JObject,
     j_config: jbyteArray,
 ) {
-    let state = JNIStateManager::get_state(&env, j_state_manager);
+    jni_sbor_coded_call(&env, j_config, |config: CoreApiServerConfig| {
+        let jni_node_rust_env = JNINodeRustEnvironment::get(&env, j_rust_global_context);
 
-    let config_bytes: Vec<u8> = jni_jbytearray_to_vector(&env, j_config).unwrap();
-    let jni_core_api_server = JNICoreApiServer {
-        config: CoreApiServerConfig::from_java(&config_bytes).unwrap(),
-        runtime: state.runtime.clone(),
-        state: CoreApiState {
-            network: state.network.clone(),
-            state_manager: state.state_manager.clone(),
-            database: state.database.clone(),
-            pending_transaction_result_cache: state.pending_transaction_result_cache.clone(),
-            mempool: state.mempool.clone(),
-            mempool_manager: state.mempool_manager.clone(),
-            commitability_validator: state.commitability_validator.clone(),
-            transaction_previewer: state.transaction_previewer.clone(),
-        },
-        running_server: None,
-    };
+        let jni_core_api_server = JNICoreApiServer {
+            runtime: jni_node_rust_env.runtime.clone(),
+            state: CoreApiState {
+                network: jni_node_rust_env.network.clone(),
+                flags: config.flags.clone(),
+                state_manager: jni_node_rust_env.state_manager.clone(),
+            },
+            config,
+            running_server: None,
+            metric_registry: jni_node_rust_env.metric_registry.clone(),
+        };
 
-    env.set_rust_field(
-        j_core_api_server,
-        POINTER_JNI_FIELD_NAME,
-        jni_core_api_server,
-    )
-    .unwrap();
+        env.set_rust_field(
+            j_core_api_server,
+            POINTER_JNI_FIELD_NAME,
+            jni_core_api_server,
+        )
+        .unwrap()
+    });
 }
 
 #[no_mangle]
@@ -130,24 +129,33 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_start(
     _class: JClass,
     j_core_api_server: JObject,
 ) {
-    let (shutdown_signal_sender, shutdown_signal_receiver) = oneshot::channel::<()>();
+    jni_call(&env, || {
+        let (shutdown_signal_sender, shutdown_signal_receiver) = oneshot::channel::<()>();
 
-    let mut jni_core_api_server: MutexGuard<JNICoreApiServer> = env
-        .get_rust_field(j_core_api_server, POINTER_JNI_FIELD_NAME)
-        .unwrap();
+        let mut jni_core_api_server: MutexGuard<JNICoreApiServer> = env
+            .get_rust_field(j_core_api_server, POINTER_JNI_FIELD_NAME)
+            .unwrap();
 
-    let config = &jni_core_api_server.config;
+        let config = &jni_core_api_server.config;
 
-    let state = jni_core_api_server.state.clone();
-    let runtime = &jni_core_api_server.runtime;
+        let state = jni_core_api_server.state.clone();
+        let runtime = &jni_core_api_server.runtime;
+        let metric_registry = jni_core_api_server.metric_registry.clone();
 
-    let bind_addr = format!("{}:{}", config.bind_interface, config.port);
-    runtime.spawn(async move {
-        create_server(&bind_addr, shutdown_signal_receiver.map(|_| ()), state).await;
-    });
+        let bind_addr = format!("{}:{}", config.bind_interface, config.port);
+        runtime.spawn(async move {
+            create_server(
+                &bind_addr,
+                shutdown_signal_receiver.map(|_| ()),
+                state,
+                &metric_registry,
+            )
+            .await;
+        });
 
-    jni_core_api_server.running_server = Some(RunningServer {
-        shutdown_signal_sender,
+        jni_core_api_server.running_server = Some(RunningServer {
+            shutdown_signal_sender,
+        });
     });
 }
 
@@ -157,15 +165,17 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_stop(
     _class: JClass,
     j_core_api_server: JObject,
 ) {
-    if let Ok(jni_core_api_server) = env.take_rust_field::<JObject, &str, JNICoreApiServer>(
-        j_core_api_server,
-        POINTER_JNI_FIELD_NAME,
-    ) {
-        if let Some(running_server) = jni_core_api_server.running_server {
-            running_server.shutdown_signal_sender.send(()).unwrap();
+    jni_call(&env, || {
+        if let Ok(jni_core_api_server) = env.take_rust_field::<JObject, &str, JNICoreApiServer>(
+            j_core_api_server,
+            POINTER_JNI_FIELD_NAME,
+        ) {
+            if let Some(running_server) = jni_core_api_server.running_server {
+                running_server.shutdown_signal_sender.send(()).unwrap();
+            }
+            // No-op, drop the jni_core_api_server
         }
-        // No-op, drop the jni_core_api_server
-    }
+    });
 }
 
 pub fn export_extern_functions() {}

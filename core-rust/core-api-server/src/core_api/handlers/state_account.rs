@@ -1,6 +1,9 @@
 use crate::core_api::*;
+use radix_engine::blueprints::account::AccountField;
+use radix_engine::system::node_modules::role_assignment::RoleAssignmentField;
 use radix_engine::types::*;
 use state_manager::query::{dump_component_state, VaultData};
+use state_manager::store::traits::QueryableProofStore;
 use std::ops::Deref;
 
 pub(crate) async fn handle_state_account(
@@ -8,6 +11,7 @@ pub(crate) async fn handle_state_account(
     Json(request): Json<models::StateAccountRequest>,
 ) -> Result<Json<models::StateAccountResponse>, ResponseError<()>> {
     assert_matching_network(&request.network, &state.network)?;
+    assert_unbounded_endpoints_flag_enabled(&state)?;
 
     let mapping_context = MappingContext::new(&state.network);
     let extraction_context = ExtractionContext::new(&state.network);
@@ -20,7 +24,7 @@ pub(crate) async fn handle_state_account(
         return Err(client_error("Only account addresses starting account_ currently work with this endpoint. Try another endpoint instead."));
     }
 
-    let database = state.database.read();
+    let database = state.state_manager.database.read();
     let type_info = read_optional_substate(
         database.deref(),
         component_address.as_node_id(),
@@ -29,17 +33,17 @@ pub(crate) async fn handle_state_account(
     )
     .ok_or_else(|| not_found_error("Account not found".to_string()))?;
 
-    let method_access_rules_substate = read_mandatory_substate(
+    let owner_role_substate = read_mandatory_substate(
         database.deref(),
         component_address.as_node_id(),
-        ACCESS_RULES_FIELD_PARTITION,
-        &AccessRulesField::AccessRules.into(),
+        RoleAssignmentPartitionOffset::Field.as_partition(ROLE_ASSIGNMENT_BASE_PARTITION),
+        &RoleAssignmentField::Owner.into(),
     )?;
 
     let state_substate = read_mandatory_main_field_substate(
         database.deref(),
         component_address.as_node_id(),
-        &AccountField::Account.into(),
+        &AccountField::DepositRule.into(),
     )?;
 
     let component_dump = dump_component_state(database.deref(), component_address);
@@ -50,11 +54,21 @@ pub(crate) async fn handle_state_account(
         .map(|(vault_id, vault_data)| map_to_vault_balance(&mapping_context, vault_id, vault_data))
         .collect::<Result<Vec<_>, MappingError>>()?;
 
+    let header = database
+        .get_last_proof()
+        .expect("proof for outputted state must exist")
+        .ledger_header;
+
     Ok(models::StateAccountResponse {
-        info: Some(to_api_type_info_substate(&mapping_context, &type_info)?),
-        access_rules: Some(to_api_method_access_rules_substate(
+        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
+        info: Some(to_api_type_info_substate(
             &mapping_context,
-            &method_access_rules_substate,
+            &StateMappingLookups::default(),
+            &type_info,
+        )?),
+        owner_role: Some(to_api_owner_role_substate(
+            &mapping_context,
+            &owner_role_substate,
         )?),
         state: Some(to_api_account_state_substate(
             &mapping_context,

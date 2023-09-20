@@ -70,17 +70,15 @@ import com.google.inject.TypeLiteral;
 import com.radixdlt.api.CoreApiServer;
 import com.radixdlt.api.prometheus.PrometheusApi;
 import com.radixdlt.api.system.SystemApi;
-import com.radixdlt.consensus.bft.BFTValidatorId;
-import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.SelfValidatorInfo;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
+import com.radixdlt.environment.NodeRustEnvironment;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.modules.ModuleRunner;
 import com.radixdlt.monitoring.MetricInstaller;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.addressbook.AddressBookPersistence;
 import com.radixdlt.p2p.transport.PeerServerBootstrap;
-import com.radixdlt.statemanager.StateManager;
-import com.radixdlt.store.berkeley.BerkeleyDatabaseEnvironment;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -97,9 +95,11 @@ public final class RunningRadixNode {
   }
 
   public static RunningRadixNode run(UnstartedRadixNode unstartedRadixNode) {
-    log.info("Starting Radix node");
+    log.info("Starting Radix node subsystems...");
+    log.info("Using a genesis of hash {}", unstartedRadixNode.genesisProvider().genesisDataHash());
 
     final var injector = unstartedRadixNode.instantiateRadixNodeModule();
+    final var runningNode = new RunningRadixNode(injector);
 
     final var metrics = injector.getInstance(Metrics.class);
     injector.getInstance(MetricInstaller.class).installAt(metrics);
@@ -117,7 +117,11 @@ public final class RunningRadixNode {
 
     for (var module : moduleStartOrder) {
       final var moduleRunner = moduleRunners.get(module);
-      moduleRunner.start();
+      moduleRunner.start(
+          error -> {
+            log.error("Uncaught exception in runner {}; exiting the process", module, error);
+            System.exit(-1);
+          });
     }
 
     final var peerServer = injector.getInstance(PeerServerBootstrap.class);
@@ -135,32 +139,28 @@ public final class RunningRadixNode {
     final var coreApiServer = injector.getInstance(CoreApiServer.class);
     coreApiServer.start();
 
-    return new RunningRadixNode(injector);
+    return runningNode;
   }
 
-  public BFTValidatorId self() {
-    return this.injector.getInstance(Key.get(BFTValidatorId.class, Self.class));
+  public SelfValidatorInfo self() {
+    return this.injector.getInstance(SelfValidatorInfo.class);
   }
 
   public void reportSelfStartupTime(Duration startupTimeMs) {
     this.injector.getInstance(Metrics.class).misc().nodeStartup().observe(startupTimeMs);
   }
 
-  public void shutdown() {
+  public void onShutdown() {
     // using System.out.printf as logger no longer works reliably in a shutdown hook
-    final var self = injector.getInstance(Key.get(BFTValidatorId.class, Self.class));
-    System.out.printf("Node %s is shutting down...\n", self);
+    System.out.printf("Node %s is shutting down...\n", this.self());
 
     injector
         .getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() {}))
+        .values()
         .forEach(
-            (k, moduleRunner) -> {
-              try {
-                moduleRunner.stop();
-              } catch (Exception e) {
-                logShutdownError("ModuleRunner " + moduleRunner.threadName(), e.getMessage());
-              }
-            });
+            moduleRunner ->
+                catchAllAndLogShutdownError(
+                    "ModuleRunner " + moduleRunner.threadName(), moduleRunner::stop));
 
     catchAllAndLogShutdownError(
         "AddressBookPersistence", () -> injector.getInstance(AddressBookPersistence.class).close());
@@ -168,10 +168,6 @@ public final class RunningRadixNode {
     catchAllAndLogShutdownError(
         "PersistentSafetyStateStore",
         () -> injector.getInstance(PersistentSafetyStateStore.class).close());
-
-    catchAllAndLogShutdownError(
-        "BerkeleyDatabaseEnvironment",
-        () -> injector.getInstance(BerkeleyDatabaseEnvironment.class).stop());
 
     catchAllAndLogShutdownError(
         "PeerServerBootstrap", () -> injector.getInstance(PeerServerBootstrap.class).stop());
@@ -185,7 +181,7 @@ public final class RunningRadixNode {
         "CoreApiServer", () -> injector.getInstance(CoreApiServer.class).stop());
 
     catchAllAndLogShutdownError(
-        "StateManager", () -> injector.getInstance(StateManager.class).shutdown());
+        "StateManager", () -> injector.getInstance(NodeRustEnvironment.class).shutdown());
   }
 
   private void catchAllAndLogShutdownError(String what, Runnable thunk) {

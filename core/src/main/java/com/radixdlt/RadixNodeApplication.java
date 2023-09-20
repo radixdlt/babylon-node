@@ -66,16 +66,15 @@ package com.radixdlt;
 
 import com.google.common.base.Stopwatch;
 import com.google.inject.Guice;
+import com.google.inject.util.Modules;
 import com.radixdlt.bootstrap.RadixNodeBootstrapper;
 import com.radixdlt.bootstrap.RadixNodeBootstrapperModule;
 import com.radixdlt.monitoring.ApplicationVersion;
 import com.radixdlt.utils.MemoryLeakDetector;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.net.URISyntaxException;
-import java.security.Security;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public final class RadixNodeApplication {
   private static final Logger log = LogManager.getLogger();
@@ -86,42 +85,27 @@ public final class RadixNodeApplication {
     System.setProperty("java.net.preferIPv4Stack", "true");
   }
 
-  private static final Object BC_LOCK = new Object();
-  private static boolean bcInitialised;
-
-  private static void setupBouncyCastle() {
-    synchronized (BC_LOCK) {
-      if (bcInitialised) {
-        log.warn("Bouncy castle is already initialised");
-        return;
-      }
-
-      Security.insertProviderAt(new BouncyCastleProvider(), 1);
-      bcInitialised = true;
-    }
-  }
-
   public static void main(String[] args) {
     try {
       MemoryLeakDetector.start();
-
       logVersion();
       dumpExecutionLocation();
-      // Bouncy Castle is required for loading the node key, so set it up now.
-      setupBouncyCastle();
       final var properties = RuntimeProperties.fromCommandLineArgs(args);
       bootstrapRadixNode(properties);
     } catch (Exception ex) {
       log.fatal("Unable to start", ex);
       LogManager.shutdown(); // Flush any async logs
-      exitWithError();
+      System.exit(-1);
     }
   }
 
   private static void bootstrapRadixNode(RuntimeProperties properties) {
     final var nodeBootStopwatch = Stopwatch.createStarted();
     final var bootstrapperModule =
-        Guice.createInjector(new RadixNodeBootstrapperModule(properties));
+        Guice.createInjector(
+            Modules.requireAtInjectOnConstructorsModule(),
+            Modules.disableCircularProxiesModule(),
+            new RadixNodeBootstrapperModule(properties));
     final var bootstrapper = bootstrapperModule.getInstance(RadixNodeBootstrapper.class);
     final var radixNodeBootstrapperHandle = bootstrapper.bootstrapRadixNode();
     /* Note that because some modules obtain the resources at construction (ORAC paradigm), this
@@ -134,32 +118,28 @@ public final class RadixNodeApplication {
            provides the shutdown functionality) is still needed - for both happy (no errors during initialization)
            and unhappy (errors during initialization) paths.
     */
-    Runtime.getRuntime().addShutdownHook(new Thread(radixNodeBootstrapperHandle::shutdown));
+    Runtime.getRuntime()
+        .addShutdownHook(
+            new Thread(radixNodeBootstrapperHandle::onShutdown, "Bootstrapper-Shutdown"));
     radixNodeBootstrapperHandle
         .radixNodeFuture()
-        .whenComplete(
-            (unstartedRadixNode, ex) -> {
-              if (ex != null) {
-                log.warn("Radix node couldn't be started", ex);
-                exitWithError();
-              } else {
-                final var startupTime = nodeBootStopwatch.elapsed();
-                final var runningNode = RunningRadixNode.run(unstartedRadixNode);
-                log.info(
-                    "Radix node {} started successfully in {} ms",
-                    runningNode.self(),
-                    startupTime.toMillis());
-                runningNode.reportSelfStartupTime(startupTime);
-                Runtime.getRuntime().addShutdownHook(new Thread(runningNode::shutdown));
-              }
-            });
-  }
-
-  private static void exitWithError() {
-    // This (or more likely, the one in ModuleRunnerImpl.java) may cause integration test errors
-    // which look like:
-    // "Process 'Gradle Test Executor 1' finished with non-zero exit value 255"
-    java.lang.System.exit(-1);
+        .thenAccept(
+            (unstartedRadixNode) -> {
+              final var startupTime = nodeBootStopwatch.elapsed();
+              final var runningNode = RunningRadixNode.run(unstartedRadixNode);
+              log.info(
+                  "Radix node {} started successfully in {} ms",
+                  runningNode.self(),
+                  startupTime.toMillis());
+              runningNode.reportSelfStartupTime(startupTime);
+              Runtime.getRuntime()
+                  .addShutdownHook(new Thread(runningNode::onShutdown, "Node-Shutdown"));
+            })
+        // Call .join() to block on the future completing, ensuring that errors during
+        // bootstrapping are not swallowed, and propagate to the "Unable to start" handler.
+        // In particular, errors can come from running genesis during guice initiation in
+        // RunningRadixNode.run(..);
+        .join();
   }
 
   private static void logVersion() {

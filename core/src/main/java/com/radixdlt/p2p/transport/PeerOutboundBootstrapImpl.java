@@ -68,12 +68,15 @@ import com.google.inject.Inject;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.messaging.MaxMessageSize;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.PeerEvent;
 import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.p2p.capability.Capabilities;
+import com.radixdlt.protocol.Newest;
+import com.radixdlt.protocol.ProtocolVersion;
 import com.radixdlt.serialization.Serialization;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelOption;
@@ -87,39 +90,41 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
   private final P2PConfig config;
   private final Addressing addressing;
   private final Network network;
-  private final String newestForkName;
+  private final ProtocolVersion newestProtocolVersion;
   private final Metrics metrics;
   private final Serialization serialization;
   private final SecureRandom secureRandom;
   private final ECKeyOps ecKeyOps;
   private final EventDispatcher<PeerEvent> peerEventDispatcher;
-
-  private final NioEventLoopGroup clientWorkerGroup;
   private final Capabilities capabilities;
+  private final int maxMessageSize;
+  private final NioEventLoopGroup clientWorkerGroup;
 
   @Inject
   public PeerOutboundBootstrapImpl(
       P2PConfig config,
       Addressing addressing,
       Network network,
+      @Newest ProtocolVersion newestProtocolVersion,
       Metrics metrics,
       Serialization serialization,
       SecureRandom secureRandom,
       ECKeyOps ecKeyOps,
       EventDispatcher<PeerEvent> peerEventDispatcher,
-      Capabilities capabilities) {
+      Capabilities capabilities,
+      @MaxMessageSize int maxMessageSize) {
     this.config = Objects.requireNonNull(config);
     this.addressing = Objects.requireNonNull(addressing);
     this.network = network;
-    this.newestForkName = "SomeForkName";
+    this.newestProtocolVersion = newestProtocolVersion;
     this.metrics = Objects.requireNonNull(metrics);
     this.serialization = Objects.requireNonNull(serialization);
     this.secureRandom = Objects.requireNonNull(secureRandom);
     this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
     this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
-
-    this.clientWorkerGroup = new NioEventLoopGroup();
     this.capabilities = capabilities;
+    this.maxMessageSize = maxMessageSize;
+    this.clientWorkerGroup = new NioEventLoopGroup();
   }
 
   @Override
@@ -135,14 +140,15 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
                 config,
                 addressing,
                 network,
-                newestForkName,
+                newestProtocolVersion,
                 metrics,
                 serialization,
                 secureRandom,
                 ecKeyOps,
                 peerEventDispatcher,
                 Optional.of(uri),
-                capabilities))
+                capabilities,
+                maxMessageSize))
         .connect(uri.getHost(), uri.getPort());
   }
 }

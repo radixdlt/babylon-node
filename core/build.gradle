@@ -235,6 +235,7 @@ dependencies {
     testImplementation 'org.awaitility:awaitility'
     testImplementation 'org.mockito:mockito-core'
     testImplementation 'junit:junit'
+    testImplementation 'pl.pragmatists:JUnitParams'
     testImplementation 'nl.jqno.equalsverifier:equalsverifier'
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'org.reflections:reflections'

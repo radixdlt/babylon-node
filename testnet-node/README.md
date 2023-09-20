@@ -4,7 +4,8 @@ This is the easiest way to get a Babylon fullnode up and running, for integratio
 
 This set-up is only intended for local running as a developer - it is not intended for running in production - see [our documentation site for information on running a production node](https://docs-babylon.radixdlt.com/main/node-and-gateway/node-setup-introduction.html).
 
-The node connects to the latest public testnet (as of April/May 2023, this is RCnet-V1, known by its logical name `kisharnet`).
+The node connects to the latest public testnet (as of August 2023, this is RCnet v3, known by its logical name `zabanet`).
+If you previously ran a `kisharnet` or `ansharnet` node, you will need to wipe the ledger database as documented in the "Ledger Database" section below.
 
 Documentation for integrators is available [here](https://docs.google.com/document/d/1cjc7_alyzIb2QQIGGn1PEpJyjrMRZYHq3VwkOXRP8J0).
 
@@ -18,8 +19,15 @@ Documentation for integrators is available [here](https://docs.google.com/docume
 curl \
   'http://localhost:3333/core/lts/transaction/construction' \
   -H 'Content-Type: application/json' \
-  -d '{ "network": "kisharnet" }'
+  -d '{ "network": "zabanet" }'
 ```
+
+## Running without compose
+If you wanted to run without using compose you can do so like 
+```
+docker run -p 127.0.0.1:3333:3333 127.0.0.1:3334:3334 127.0.0.1:3335:3335 -v ledger-data:/home/radixdlt/RADIXDB -v key-data:/home/radixdlt/key --env-file radix-node.env radixdlt/babylon-node:rcnet-v2-phase2-r4
+```
+
 
 ## Node volumes
 

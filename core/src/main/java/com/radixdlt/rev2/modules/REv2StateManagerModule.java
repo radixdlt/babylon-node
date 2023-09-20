@@ -66,10 +66,12 @@ package com.radixdlt.rev2.modules;
 
 import com.google.inject.*;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.ProposalLimitsConfig;
 import com.radixdlt.consensus.bft.*;
-import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.vertexstore.PersistentVertexStore;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.*;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.NodeAutoCloseable;
@@ -85,9 +87,9 @@ import com.radixdlt.rev2.*;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
-import com.radixdlt.statemanager.*;
 import com.radixdlt.store.NodeStorageLocation;
 import com.radixdlt.sync.TransactionsAndProofReader;
+import com.radixdlt.testutil.TestStateReader;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.NotarizedTransactionHash;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
@@ -100,64 +102,62 @@ public final class REv2StateManagerModule extends AbstractModule {
     ROCKS_DB,
   }
 
-  private final int maxNumTransactionsPerProposal;
-  private final int maxProposalTotalTxnsPayloadSize;
-  private final int maxUncommittedUserTransactionsTotalPayloadSize;
+  private final ProposalLimitsConfig proposalLimitsConfig;
+  private final Option<VertexLimitsConfig> vertexLimitsConfigOpt;
   private final DatabaseType databaseType;
   private final DatabaseFlags databaseFlags;
   private final Option<RustMempoolConfig> mempoolConfig;
   private final boolean debugLogging;
+  private final boolean noFees;
 
   private REv2StateManagerModule(
-      int maxNumTransactionsPerProposal,
-      int maxProposalTotalTxnsPayloadSize,
-      int maxUncommittedUserTransactionsTotalPayloadSize,
+      ProposalLimitsConfig proposalLimitsConfig,
+      Option<VertexLimitsConfig> vertexLimitsConfigOpt,
       DatabaseType databaseType,
       DatabaseFlags databaseFlags,
       Option<RustMempoolConfig> mempoolConfig,
-      boolean debugLogging) {
-    this.maxNumTransactionsPerProposal = maxNumTransactionsPerProposal;
-    this.maxProposalTotalTxnsPayloadSize = maxProposalTotalTxnsPayloadSize;
-    this.maxUncommittedUserTransactionsTotalPayloadSize =
-        maxUncommittedUserTransactionsTotalPayloadSize;
+      boolean debugLogging,
+      boolean noFees) {
+    this.proposalLimitsConfig = proposalLimitsConfig;
+    this.vertexLimitsConfigOpt = vertexLimitsConfigOpt;
     this.databaseType = databaseType;
     this.databaseFlags = databaseFlags;
     this.mempoolConfig = mempoolConfig;
     this.debugLogging = debugLogging;
+    this.noFees = noFees;
   }
 
   public static REv2StateManagerModule create(
-      int maxNumTransactionsPerProposal,
-      int maxProposalTotalTxnsPayloadSize,
-      int maxUncommittedUserTransactionsTotalPayloadSize,
+      ProposalLimitsConfig proposalLimitsConfig,
+      VertexLimitsConfig vertexLimitsConfig,
       DatabaseType databaseType,
       DatabaseFlags databaseFlags,
       Option<RustMempoolConfig> mempoolConfig) {
     return new REv2StateManagerModule(
-        maxNumTransactionsPerProposal,
-        maxProposalTotalTxnsPayloadSize,
-        maxUncommittedUserTransactionsTotalPayloadSize,
+        proposalLimitsConfig,
+        Option.some(vertexLimitsConfig),
         databaseType,
         databaseFlags,
         mempoolConfig,
+        false,
         false);
   }
 
   public static REv2StateManagerModule createForTesting(
-      int maxNumTransactionsPerProposal,
-      int maxProposalTotalTxnsPayloadSize,
+      ProposalLimitsConfig proposalLimitsConfig,
       DatabaseType databaseType,
       DatabaseFlags databaseFlags,
       Option<RustMempoolConfig> mempoolConfig,
-      boolean debugLogging) {
+      boolean debugLogging,
+      boolean noFees) {
     return new REv2StateManagerModule(
-        maxNumTransactionsPerProposal,
-        maxProposalTotalTxnsPayloadSize,
-        maxProposalTotalTxnsPayloadSize * 5,
+        proposalLimitsConfig,
+        Option.none(),
         databaseType,
         databaseFlags,
         mempoolConfig,
-        debugLogging);
+        debugLogging,
+        noFees);
   }
 
   @Override
@@ -167,6 +167,8 @@ public final class REv2StateManagerModule extends AbstractModule {
     bind(TransactionsAndProofReader.class).to(REv2TransactionsAndProofReader.class);
     bind(DatabaseFlags.class).toInstance(databaseFlags);
 
+    install(proposalLimitsConfig.asModule());
+
     switch (databaseType) {
       case ROCKS_DB -> install(
           new AbstractModule() {
@@ -175,7 +177,7 @@ public final class REv2StateManagerModule extends AbstractModule {
             DatabaseBackendConfig databaseBackendConfig(
                 @NodeStorageLocation String nodeStorageLocation) {
               return DatabaseBackendConfig.rocksDB(
-                  new File(nodeStorageLocation, "rocks_db").getPath());
+                  new File(nodeStorageLocation, "state_manager").getPath());
             }
           });
       case IN_MEMORY -> install(
@@ -191,19 +193,23 @@ public final class REv2StateManagerModule extends AbstractModule {
         new AbstractModule() {
           @Provides
           @Singleton
-          private StateManager stateManager(
+          private NodeRustEnvironment stateManager(
               MempoolRelayDispatcher<RawNotarizedTransaction> mempoolRelayDispatcher,
+              FatalPanicHandler fatalPanicHandler,
               Network network,
               DatabaseBackendConfig databaseBackendConfig,
               DatabaseFlags databaseFlags) {
-            return new StateManager(
+            return new NodeRustEnvironment(
                 mempoolRelayDispatcher,
+                fatalPanicHandler,
                 new StateManagerConfig(
                     NetworkDefinition.from(network),
                     mempoolConfig,
+                    vertexLimitsConfigOpt,
                     databaseBackendConfig,
                     databaseFlags,
-                    getLoggingConfig()));
+                    getLoggingConfig(),
+                    noFees));
           }
 
           @Provides
@@ -215,54 +221,37 @@ public final class REv2StateManagerModule extends AbstractModule {
               Hasher hasher,
               EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher,
               Serialization serialization,
-              ProposerElection initialProposerElection,
-              Metrics metrics) {
+              BFTConfiguration initialBftConfiguration,
+              Metrics metrics,
+              SelfValidatorInfo selfValidatorInfo) {
             return new REv2StateComputer(
                 stateComputer,
                 mempool,
-                maxNumTransactionsPerProposal,
-                maxProposalTotalTxnsPayloadSize,
-                maxUncommittedUserTransactionsTotalPayloadSize,
+                proposalLimitsConfig,
                 hasher,
                 ledgerUpdateEventDispatcher,
                 mempoolAddSuccessEventDispatcher,
                 serialization,
-                initialProposerElection,
-                metrics);
+                initialBftConfiguration.getProposerElection(),
+                metrics,
+                selfValidatorInfo);
           }
 
           @Provides
           REv2TransactionAndProofStore transactionAndProofStore(
-              Metrics metrics, StateManager stateManager) {
-            return new REv2TransactionAndProofStore(metrics, stateManager);
+              Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
+            return new REv2TransactionAndProofStore(metrics, nodeRustEnvironment);
           }
 
           @Provides
-          VertexStoreRecovery rEv2VertexStoreRecovery(Metrics metrics, StateManager stateManager) {
-            return new VertexStoreRecovery(metrics, stateManager);
+          VertexStoreRecovery rEv2VertexStoreRecovery(
+              Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
+            return new VertexStoreRecovery(metrics, nodeRustEnvironment);
           }
 
           @Provides
-          REv2StateReader stateReader(RustStateComputer stateComputer) {
-            return new REv2StateReader() {
-              @Override
-              public Decimal getComponentXrdAmount(ComponentAddress componentAddress) {
-                return stateComputer.getComponentXrdAmount(componentAddress);
-              }
-
-              @Override
-              public ValidatorInfo getValidatorInfo(ComponentAddress systemAddress) {
-                return stateComputer.getValidatorInfo(systemAddress);
-              }
-
-              @Override
-              public long getEpoch() {
-                return stateComputer
-                    .getEpoch()
-                    .toNonNegativeLong()
-                    .unwrap(() -> new IllegalStateException("Epoch is not non-negative"));
-              }
-            };
+          TestStateReader testStateReader(NodeRustEnvironment nodeRustEnvironment) {
+            return new TestStateReader(nodeRustEnvironment);
           }
 
           @Provides
@@ -299,8 +288,8 @@ public final class REv2StateManagerModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  NodeAutoCloseable closeable(StateManager stateManager) {
-    return stateManager::shutdown;
+  NodeAutoCloseable closeable(NodeRustEnvironment nodeRustEnvironment) {
+    return nodeRustEnvironment::shutdown;
   }
 
   public LoggingConfig getLoggingConfig() {
@@ -309,13 +298,14 @@ public final class REv2StateManagerModule extends AbstractModule {
 
   @Provides
   @Singleton
-  private RustStateComputer rustStateComputer(Metrics metrics, StateManager stateManager) {
-    return new RustStateComputer(metrics, stateManager);
+  private RustStateComputer rustStateComputer(
+      Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
+    return new RustStateComputer(metrics, nodeRustEnvironment);
   }
 
   @Provides
   @Singleton
-  private RustMempool rustMempool(Metrics metrics, StateManager stateManager) {
-    return new RustMempool(metrics, stateManager);
+  private RustMempool rustMempool(Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
+    return new RustMempool(metrics, nodeRustEnvironment);
   }
 }

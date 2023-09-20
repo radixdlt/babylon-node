@@ -151,6 +151,10 @@ public final class UInt128 implements Comparable<UInt128>, Serializable {
     return from(0L, value);
   }
 
+  public static UInt128 from(UInt64 high, UInt64 low) {
+    return from(high.toLong(), low.toLong());
+  }
+
   /**
    * Factory method for materialising an {@link UInt128} from two {@code long} values. {@code high}
    * is the most significant word, and {@code low} the least significant.

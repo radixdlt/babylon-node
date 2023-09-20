@@ -64,9 +64,13 @@
 
 package com.radixdlt.p2p.transport;
 
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.Metrics.Messages.DiscardedInboundMessage;
+import com.radixdlt.monitoring.Metrics.Messages.InboundMessageDiscardedReason;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import io.netty.handler.codec.TooLongFrameException;
 import io.netty.util.concurrent.Future;
 import java.net.SocketAddress;
 import java.util.Optional;
@@ -76,14 +80,25 @@ import org.apache.logging.log4j.Logger;
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public class ExceptionHandler extends ChannelDuplexHandler {
   private static final Logger log = LogManager.getLogger();
+
+  private final Metrics metrics;
   private final Optional<PeerChannel> mainHandler;
 
-  public ExceptionHandler(Optional<PeerChannel> mainHandler) {
+  public ExceptionHandler(Metrics metrics, Optional<PeerChannel> mainHandler) {
+    this.metrics = metrics;
     this.mainHandler = mainHandler;
   }
 
   @Override
   public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+    if (cause instanceof TooLongFrameException) {
+      metrics
+          .messages()
+          .inbound()
+          .discarded()
+          .label(new DiscardedInboundMessage(InboundMessageDiscardedReason.MESSAGE_TOO_LARGE))
+          .inc();
+    }
     logAndCloseChannel(ctx, cause);
   }
 

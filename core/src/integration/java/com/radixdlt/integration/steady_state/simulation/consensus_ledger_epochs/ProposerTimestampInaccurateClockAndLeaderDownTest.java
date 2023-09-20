@@ -73,9 +73,9 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.EpochNodeWeightMapping;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
@@ -108,7 +108,7 @@ public final class ProposerTimestampInaccurateClockAndLeaderDownTest {
   private static final int NUM_VALIDATORS = 7;
 
   // Two consecutive leaders (verified below with an assertion)
-  private static final int NODE_WITH_INACCURATE_CLOCK_INDEX = 6;
+  private static final int NODE_WITH_INACCURATE_CLOCK_INDEX = 5;
   private static final int DOWN_NODE_INDEX = 0;
 
   @Test
@@ -165,9 +165,16 @@ public final class ProposerTimestampInaccurateClockAndLeaderDownTest {
 
     // Making sure that the altered nodes are in fact consecutive leaders
     final var proposerElection =
-        runningTest.getNodeInjectors().get(0).getInstance(ProposerElection.class);
+        runningTest
+            .getNodeInjectors()
+            .get(0)
+            .getInstance(BFTConfiguration.class)
+            .getProposerElection();
     final var firstLeader = proposerElection.getProposer(Round.of(1L));
     final var nextLeader = proposerElection.getProposer(Round.of(2L));
+
+    // Note - if this fails then the rotation has changed, and you'll need to recalculate
+    // NODE_WITH_INACCURATE_CLOCK_INDEX and DOWN_NODE_INDEX to satisfy the below assertions
     assertEquals(firstLeader.getKey(), rushingNode.get().getPublicKey());
     assertEquals(nextLeader.getKey(), downNode.getPublicKey());
 
@@ -190,7 +197,7 @@ public final class ProposerTimestampInaccurateClockAndLeaderDownTest {
                 >= 1);
       } else if (node.equals(downNode)) {
         // The down node shouldn't process any consensus events
-        assertEquals(0, (long) counters.bft().successfullyProcessedVotes().get());
+        assertEquals(0, (long) counters.bft().successfullyProcessedVotes().getSum());
         assertEquals(0, (long) counters.bft().successfullyProcessedProposals().get());
       } else {
         // A healthy node:

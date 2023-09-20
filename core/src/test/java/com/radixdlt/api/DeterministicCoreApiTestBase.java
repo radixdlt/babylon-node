@@ -68,11 +68,11 @@ import static com.radixdlt.environment.deterministic.network.MessageSelector.fir
 import static org.assertj.core.api.Assertions.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.collect.ImmutableList;
 import com.google.common.reflect.ClassPath;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.api.core.LtsTransactionOutcomesTest;
 import com.radixdlt.api.core.generated.api.*;
 import com.radixdlt.api.core.generated.client.ApiClient;
 import com.radixdlt.api.core.generated.client.ApiException;
@@ -81,13 +81,15 @@ import com.radixdlt.api.core.generated.models.LtsTransactionStatusRequest;
 import com.radixdlt.api.core.generated.models.LtsTransactionStatusResponse;
 import com.radixdlt.api.core.generated.models.LtsTransactionSubmitRequest;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.environment.CoreApiServerFlags;
+import com.radixdlt.environment.DatabaseFlags;
 import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
+import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.lang.Functions;
-import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
@@ -97,12 +99,13 @@ import com.radixdlt.rev2.Manifest;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.TransactionBuilder;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import com.radixdlt.statemanager.DatabaseFlags;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transactions.IntentHash;
 import com.radixdlt.utils.FreePortFinder;
 import java.net.http.HttpClient;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import javax.net.ssl.SSLContext;
 import org.assertj.core.api.ThrowableAssert;
 import org.junit.Rule;
@@ -124,24 +127,31 @@ public abstract class DeterministicCoreApiTestBase {
   protected DeterministicCoreApiTestBase() {}
 
   protected DeterministicTest buildRunningServerTest() {
-    return buildRunningServerTest(1000000, new DatabaseFlags(true, false));
+    return buildRunningServerTest(
+        1000000, new DatabaseFlags(true, false), GenesisData.NO_SCENARIOS);
+  }
+
+  protected DeterministicTest buildRunningServerTestWithScenarios(ImmutableList<String> scenarios) {
+    return buildRunningServerTest(1000000, new DatabaseFlags(true, false), scenarios);
   }
 
   protected DeterministicTest buildRunningServerTest(DatabaseFlags databaseFlags) {
-    return buildRunningServerTest(1000000, databaseFlags);
+    return buildRunningServerTest(1000000, databaseFlags, GenesisData.NO_SCENARIOS);
   }
 
   protected DeterministicTest buildRunningServerTest(int roundsPerEpoch) {
-    return buildRunningServerTest(roundsPerEpoch, new DatabaseFlags(true, false));
+    return buildRunningServerTest(
+        roundsPerEpoch, new DatabaseFlags(true, false), GenesisData.NO_SCENARIOS);
   }
 
   protected DeterministicTest buildRunningServerTest(
-      int roundsPerEpoch, DatabaseFlags databaseConfig) {
+      int roundsPerEpoch, DatabaseFlags databaseConfig, ImmutableList<String> scenariosToRun) {
     var test =
         DeterministicTest.builder()
             .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
             .messageSelector(firstSelector())
-            .addModule(new CoreApiServerModule("127.0.0.1", coreApiPort))
+            .addModule(
+                new CoreApiServerModule("127.0.0.1", coreApiPort, new CoreApiServerFlags(true)))
             .addModule(
                 new AbstractModule() {
                   @ProvidesIntoSet
@@ -161,15 +171,15 @@ public abstract class DeterministicCoreApiTestBase {
                     FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
                         StateComputerConfig.rev2(
                             Network.INTEGRATIONTESTNET.getId(),
-                            GenesisBuilder.createGenesisWithNumValidators(
+                            GenesisBuilder.createTestGenesisWithNumValidators(
                                 1,
                                 Decimal.of(1),
                                 GenesisConsensusManagerConfig.Builder.testDefaults()
-                                    .epochExactRoundCount(roundsPerEpoch)),
+                                    .epochExactRoundCount(roundsPerEpoch),
+                                scenariosToRun),
                             REv2StateManagerModule.DatabaseType.ROCKS_DB,
                             databaseConfig,
-                            StateComputerConfig.REV2ProposerConfig.mempool(
-                                50, 50 * 1024 * 1024, 1000, MempoolRelayConfig.of())),
+                            StateComputerConfig.REV2ProposerConfig.Mempool.defaults()),
                         SyncRelayConfig.of(200, 10, 2000))));
     try {
       test.startAllNodes();
@@ -209,6 +219,9 @@ public abstract class DeterministicCoreApiTestBase {
     // Create a dummy SSLContext to avoid the "NoSuchAlgorithmException" when
     // the default HttpClient fails to load a trust store. We don't need SSL anyway.
     try {
+      // SNYK - this file is ignored in .snyk file
+      // Raised issue: Inadequate Encryption Strength
+      // Explanation: This is just a test, it doesn't matter.
       final var dummySSLContext = SSLContext.getInstance("TLS");
       dummySSLContext.init(null, null, null);
       apiClient.setHttpClientBuilder(HttpClient.newBuilder().sslContext(dummySSLContext));
@@ -333,7 +346,7 @@ public abstract class DeterministicCoreApiTestBase {
                 throw new RuntimeException(
                     "Transaction got committed as success without state version on response");
               }
-              return new LtsTransactionOutcomesTest.CommittedResult(intentHash, stateVersion);
+              return new CommittedResult(intentHash, stateVersion, Optional.empty());
             }
             case CommittedFailure -> throw new RuntimeException(
                 String.format(
@@ -367,7 +380,9 @@ public abstract class DeterministicCoreApiTestBase {
                 throw new RuntimeException(
                     "Transaction got committed as failure without state version on response");
               }
-              return new LtsTransactionOutcomesTest.CommittedResult(intentHash, stateVersion);
+              var errorMessage =
+                  Objects.requireNonNull(response.getKnownPayloads().get(0).getErrorMessage());
+              return new CommittedResult(intentHash, stateVersion, Optional.of(errorMessage));
             }
             case PermanentRejection -> throw new RuntimeException(
                 String.format(
@@ -378,5 +393,6 @@ public abstract class DeterministicCoreApiTestBase {
         });
   }
 
-  public record CommittedResult(IntentHash intentHash, long stateVersion) {}
+  public record CommittedResult(
+      IntentHash intentHash, long stateVersion, Optional<String> errorMessage) {}
 }

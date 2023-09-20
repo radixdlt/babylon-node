@@ -86,17 +86,13 @@ public final class REv2ToConsensus {
 
   public static BFTValidator validator(ActiveValidatorInfo validator) {
     return BFTValidator.from(
-        BFTValidatorId.create(validator.address(), validator.key()), validator.stake().toUInt256());
+        BFTValidatorId.create(validator.address(), validator.key()), validator.stake().toUInt192());
   }
 
   public static ActiveValidatorInfo validator(BFTValidator validator) {
     BFTValidatorId id = validator.getValidatorId();
-    var validatorAddress = id.getValidatorAddress();
-    if (validatorAddress.isEmpty()) {
-      throw new IllegalStateException("Active validator must have a validator address");
-    }
     return new ActiveValidatorInfo(
-        validatorAddress.get(), id.getKey(), Decimal.from(validator.getPower()));
+        id.getValidatorAddress(), id.getKey(), Decimal.from(validator.getPower()));
   }
 
   public static BFTValidatorSet validatorSet(Set<ActiveValidatorInfo> validators) {
@@ -156,9 +152,7 @@ public final class REv2ToConsensus {
   public static Map.Entry<BFTValidatorId, TimestampedECDSASignature> timestampedValidatorSignature(
       TimestampedValidatorSignature timestampedSignature) {
     return Maps.immutableEntry(
-        BFTValidatorId.create(
-            timestampedSignature.validatorAddress().or((ComponentAddress) null),
-            timestampedSignature.key()),
+        BFTValidatorId.create(timestampedSignature.validatorAddress(), timestampedSignature.key()),
         TimestampedECDSASignature.from(
             timestampedSignature.timestampMs(), timestampedSignature.signature()));
   }
@@ -167,7 +161,7 @@ public final class REv2ToConsensus {
       BFTValidatorId id, TimestampedECDSASignature timestampedSignature) {
     return new TimestampedValidatorSignature(
         id.getKey(),
-        Option.from(id.getValidatorAddress()),
+        id.getValidatorAddress(),
         timestampedSignature.timestamp(),
         timestampedSignature.signature());
   }

@@ -75,7 +75,7 @@ import com.google.common.collect.Lists;
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt192;
 import java.util.stream.IntStream;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
@@ -89,17 +89,19 @@ public class BFTValidatorSetTest {
 
   @Test
   public void sensibleToString() {
-    BFTValidatorId node = BFTValidatorId.create(ECKeyPair.generateNew().getPublicKey());
+    BFTValidatorId node =
+        BFTValidatorId.withKeyAndFakeDeterministicAddress(ECKeyPair.generateNew().getPublicKey());
     String s =
-        BFTValidatorSet.from(ImmutableList.of(BFTValidator.from(node, UInt256.ONE))).toString();
+        BFTValidatorSet.from(ImmutableList.of(BFTValidator.from(node, UInt192.ONE))).toString();
     assertThat(s).contains(BFTValidatorSet.class.getSimpleName()).contains(node.toString());
   }
 
   @Test
   public void testStreamConstructor() {
-    BFTValidatorId node = BFTValidatorId.create(ECKeyPair.generateNew().getPublicKey());
+    BFTValidatorId node =
+        BFTValidatorId.withKeyAndFakeDeterministicAddress(ECKeyPair.generateNew().getPublicKey());
     String s =
-        BFTValidatorSet.from(ImmutableList.of(BFTValidator.from(node, UInt256.ONE)).stream())
+        BFTValidatorSet.from(ImmutableList.of(BFTValidator.from(node, UInt192.ONE)).stream())
             .toString();
     assertThat(s).contains(node.toString());
   }
@@ -112,16 +114,16 @@ public class BFTValidatorSetTest {
     ECKeyPair k4 = ECKeyPair.generateNew();
     ECKeyPair k5 = ECKeyPair.generateNew(); // Rogue signature
 
-    BFTValidatorId node1 = BFTValidatorId.create(k1.getPublicKey());
-    BFTValidatorId node2 = BFTValidatorId.create(k2.getPublicKey());
-    BFTValidatorId node3 = BFTValidatorId.create(k3.getPublicKey());
-    BFTValidatorId node4 = BFTValidatorId.create(k4.getPublicKey());
-    BFTValidatorId node5 = BFTValidatorId.create(k5.getPublicKey());
+    BFTValidatorId node1 = BFTValidatorId.withKeyAndFakeDeterministicAddress(k1.getPublicKey());
+    BFTValidatorId node2 = BFTValidatorId.withKeyAndFakeDeterministicAddress(k2.getPublicKey());
+    BFTValidatorId node3 = BFTValidatorId.withKeyAndFakeDeterministicAddress(k3.getPublicKey());
+    BFTValidatorId node4 = BFTValidatorId.withKeyAndFakeDeterministicAddress(k4.getPublicKey());
+    BFTValidatorId node5 = BFTValidatorId.withKeyAndFakeDeterministicAddress(k5.getPublicKey());
 
-    BFTValidator v1 = BFTValidator.from(node1, UInt256.ONE);
-    BFTValidator v2 = BFTValidator.from(node2, UInt256.ONE);
-    BFTValidator v3 = BFTValidator.from(node3, UInt256.ONE);
-    BFTValidator v4 = BFTValidator.from(node4, UInt256.ONE);
+    BFTValidator v1 = BFTValidator.from(node1, UInt192.ONE);
+    BFTValidator v2 = BFTValidator.from(node2, UInt192.ONE);
+    BFTValidator v3 = BFTValidator.from(node3, UInt192.ONE);
+    BFTValidator v4 = BFTValidator.from(node4, UInt192.ONE);
 
     BFTValidatorSet vs = BFTValidatorSet.from(ImmutableSet.of(v1, v2, v3, v4));
     HashCode message = HashUtils.random256();
@@ -172,11 +174,11 @@ public class BFTValidatorSetTest {
     ECKeyPair k1 = ECKeyPair.generateNew();
     ECKeyPair k2 = ECKeyPair.generateNew();
 
-    BFTValidatorId node1 = BFTValidatorId.create(k1.getPublicKey());
-    BFTValidatorId node2 = BFTValidatorId.create(k2.getPublicKey());
+    BFTValidatorId node1 = BFTValidatorId.withKeyAndFakeDeterministicAddress(k1.getPublicKey());
+    BFTValidatorId node2 = BFTValidatorId.withKeyAndFakeDeterministicAddress(k2.getPublicKey());
 
-    BFTValidator v1 = BFTValidator.from(node1, UInt256.THREE);
-    BFTValidator v2 = BFTValidator.from(node2, UInt256.ONE);
+    BFTValidator v1 = BFTValidator.from(node1, UInt192.THREE);
+    BFTValidator v2 = BFTValidator.from(node2, UInt192.ONE);
 
     BFTValidatorSet vs = BFTValidatorSet.from(ImmutableSet.of(v1, v2));
     HashCode message = HashUtils.random256();
@@ -193,8 +195,8 @@ public class BFTValidatorSetTest {
           IntStream.range(0, 100)
               .mapToObj(n -> ECKeyPair.generateNew())
               .map(ECKeyPair::getPublicKey)
-              .map(BFTValidatorId::create)
-              .map(node -> BFTValidator.from(node, UInt256.ONE))
+              .map(BFTValidatorId::withKeyAndFakeDeterministicAddress)
+              .map(node -> BFTValidator.from(node, UInt192.ONE))
               .toList();
 
       final var validatorSet = BFTValidatorSet.from(validators);

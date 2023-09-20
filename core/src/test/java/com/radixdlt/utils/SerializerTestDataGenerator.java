@@ -105,7 +105,8 @@ public class SerializerTestDataGenerator {
   public static Proposal randomProposal() {
     var qc = randomQC();
     var txn = RawNotarizedTransaction.create(new byte[] {0, 1, 2, 3});
-    var author = BFTValidatorId.create(ECKeyPair.generateNew().getPublicKey());
+    var author =
+        BFTValidatorId.withKeyAndFakeDeterministicAddress(ECKeyPair.generateNew().getPublicKey());
     var vertex = Vertex.create(qc, randomRound(), List.of(txn), author, 0L);
     return new Proposal(vertex, qc, ECDSASecp256k1Signature.zeroSignature(), Optional.empty());
   }
@@ -129,7 +130,7 @@ public class SerializerTestDataGenerator {
             NextEpoch.create(
                 Math.abs(random.nextLong()) + 1,
                 ImmutableSet.of(
-                    BFTValidator.from(BFTValidatorId.random(), UInt256.from(random.nextLong()))))));
+                    BFTValidator.from(BFTValidatorId.random(), UInt192.from(random.nextLong()))))));
   }
 
   public static TimestampedECDSASignatures randomTimestampedECDSASignatures() {

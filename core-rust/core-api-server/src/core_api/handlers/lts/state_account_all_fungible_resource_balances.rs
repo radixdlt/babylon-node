@@ -11,6 +11,7 @@ pub(crate) async fn handle_lts_state_account_all_fungible_resource_balances(
     Json(request): Json<models::LtsStateAccountAllFungibleResourceBalancesRequest>,
 ) -> Result<Json<models::LtsStateAccountAllFungibleResourceBalancesResponse>, ResponseError<()>> {
     assert_matching_network(&request.network, &state.network)?;
+    assert_unbounded_endpoints_flag_enabled(&state)?;
 
     if !request.account_address.starts_with("account_") {
         return Err(client_error(
@@ -31,7 +32,11 @@ pub(crate) async fn handle_lts_state_account_all_fungible_resource_balances(
         ));
     }
 
-    let database = state.database.read();
+    let database = state.state_manager.database.read();
+    let header = database
+        .get_last_proof()
+        .expect("proof for outputted state must exist")
+        .ledger_header;
 
     let type_info: Option<TypeInfoSubstate> = read_optional_substate::<TypeInfoSubstate>(
         database.deref(),
@@ -43,7 +48,11 @@ pub(crate) async fn handle_lts_state_account_all_fungible_resource_balances(
     if type_info.is_none() {
         if component_address.as_node_id().is_global_virtual() {
             return Ok(models::LtsStateAccountAllFungibleResourceBalancesResponse {
-                state_version: to_api_state_version(database.max_state_version())?,
+                state_version: to_api_state_version(header.state_version)?,
+                ledger_header_summary: Box::new(to_api_ledger_header_summary(
+                    &mapping_context,
+                    &header,
+                )?),
                 account_address: to_api_component_address(&mapping_context, &component_address)?,
                 fungible_resource_balances: vec![],
             })
@@ -68,11 +77,10 @@ pub(crate) async fn handle_lts_state_account_all_fungible_resource_balances(
         .fold(
             IndexMap::new(),
             |mut index, (fungible_resource_address, amount)| {
-                {
-                    *index
-                        .entry(fungible_resource_address)
-                        .or_insert(Decimal::zero()) += amount;
-                }
+                let sum = index
+                    .entry(fungible_resource_address)
+                    .or_insert(Decimal::zero());
+                *sum = sum.add_or_panic(amount);
                 index
             },
         )
@@ -89,7 +97,8 @@ pub(crate) async fn handle_lts_state_account_all_fungible_resource_balances(
         .collect::<Result<Vec<_>, MappingError>>()?;
 
     Ok(models::LtsStateAccountAllFungibleResourceBalancesResponse {
-        state_version: to_api_state_version(database.max_state_version())?,
+        state_version: to_api_state_version(header.state_version)?,
+        ledger_header_summary: Box::new(to_api_ledger_header_summary(&mapping_context, &header)?),
         account_address: to_api_component_address(&mapping_context, &component_address)?,
         fungible_resource_balances,
     })

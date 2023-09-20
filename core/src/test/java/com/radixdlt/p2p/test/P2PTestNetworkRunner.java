@@ -81,6 +81,7 @@ import com.radixdlt.environment.deterministic.network.ControlledDispatcher;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
+import com.radixdlt.messaging.MaxMessageSize;
 import com.radixdlt.modules.CapabilitiesModule;
 import com.radixdlt.modules.DispatcherModule;
 import com.radixdlt.modules.PrefixedNodeStorageLocationModule;
@@ -94,8 +95,6 @@ import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.p2p.transport.PeerOutboundBootstrap;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.store.berkeley.BerkeleyDatabaseEnvironment;
-import com.radixdlt.store.berkeley.BerkeleyDatabaseModule;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.IOException;
 import java.util.Objects;
@@ -133,7 +132,9 @@ public final class P2PTestNetworkRunner {
             .collect(ImmutableList.toImmutableList());
 
     final var bftAddressBook =
-        nodesKeys.stream().map(key -> BFTValidatorId.create(key.getPublicKey())).toList();
+        nodesKeys.stream()
+            .map(key -> BFTValidatorId.withKeyAndFakeDeterministicAddress(key.getPublicKey()))
+            .toList();
     final var p2pAddressBook =
         nodesKeys.stream().map(key -> NodeId.fromPublicKey(key.getPublicKey())).toList();
     final var network =
@@ -186,6 +187,7 @@ public final class P2PTestNetworkRunner {
                 new AbstractModule() {
                   @Override
                   protected void configure() {
+                    bindConstant().annotatedWith(MaxMessageSize.class).to(1024 * 1024);
                     bind(TestCounters.class).toInstance(new TestCounters());
                     bind(P2PConfig.class).toInstance(p2pConfig);
                     bind(RadixNodeUri.class).annotatedWith(Self.class).toInstance(selfUri);
@@ -202,7 +204,6 @@ public final class P2PTestNetworkRunner {
                 }),
         new DispatcherModule(),
         new PrefixedNodeStorageLocationModule(sharedDbDir.getRoot().getAbsolutePath()),
-        new BerkeleyDatabaseModule(BerkeleyDatabaseModule.DEFAULT_CACHE_SIZE),
         new AbstractModule() {
           @Override
           protected void configure() {
@@ -214,7 +215,8 @@ public final class P2PTestNetworkRunner {
                 .toInstance(nodeKey.getPublicKey());
             bind(BFTValidatorId.class)
                 .annotatedWith(Self.class)
-                .toInstance(BFTValidatorId.create(nodeKey.getPublicKey()));
+                .toInstance(
+                    BFTValidatorId.withKeyAndFakeDeterministicAddress(nodeKey.getPublicKey()));
             bind(NodeId.class)
                 .annotatedWith(Self.class)
                 .toInstance(NodeId.fromPublicKey(nodeKey.getPublicKey()));
@@ -245,7 +247,6 @@ public final class P2PTestNetworkRunner {
     this.nodes.forEach(
         node -> {
           node.injector.getInstance(AddressBookPersistence.class).close();
-          node.injector.getInstance(BerkeleyDatabaseEnvironment.class).stop();
         });
   }
 

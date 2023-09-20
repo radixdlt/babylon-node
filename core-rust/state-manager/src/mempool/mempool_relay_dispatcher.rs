@@ -73,7 +73,7 @@ use node_common::java::*;
 /// A Java dispatcher for a "new transaction from Core API" event.
 pub struct MempoolRelayDispatcher {
     jvm: JavaVM,
-    j_state_manager_ref: GlobalRef,
+    j_rust_global_context_ref: GlobalRef,
 }
 
 impl MempoolRelayDispatcher {
@@ -89,10 +89,10 @@ impl MempoolRelayDispatcher {
 
     /// Creates a long-lived dispatcher from the given short-lived JNI context and Java state
     /// manager reference.
-    pub fn new(env: &JNIEnv, j_state_manager: JObject) -> Result<Self> {
+    pub fn new(env: &JNIEnv, j_rust_global_context: JObject) -> Result<Self> {
         Ok(Self {
             jvm: env.get_java_vm()?,
-            j_state_manager_ref: env.new_global_ref(j_state_manager)?,
+            j_rust_global_context_ref: env.new_global_ref(j_rust_global_context)?,
         })
     }
 
@@ -103,9 +103,9 @@ impl MempoolRelayDispatcher {
     pub fn trigger_relay(&self, transaction: &RawNotarizedTransaction) -> Result<()> {
         let attachment = self.jvm.attach_current_thread()?;
         let env = attachment.deref();
-        let j_state_manager = self.j_state_manager_ref.as_obj();
+        let j_rust_global_context = self.j_rust_global_context_ref.as_obj();
         let result = env.call_method(
-            j_state_manager,
+            j_rust_global_context,
             MempoolRelayDispatcher::TRIGGER_METHOD_NAME,
             MempoolRelayDispatcher::TRIGGER_METHOD_DESCRIPTOR,
             &[JValue::Object(JObject::from(jni_slice_to_jbytearray(

@@ -13,8 +13,24 @@ db.location=$RADIXDLT_DB_LOCATION
 db.local_transaction_execution_index.enable=$RADIXDLT_DB_LOCAL_TRANSACTION_EXECUTION_INDEX_ENABLE
 db.account_change_index.enable=$RADIXDLT_DB_ACCOUNT_CHANGE_INDEX_ENABLE
 
+mempool.max_transaction_count=${RADIXDLT_MEMPOOL_MAX_TRANSACTION_COUNT}
+mempool.max_memory=${RADIXDLT_MEMPOOL_MAX_MEMORY}
+mempool.relayer.interval_ms=${RADIXDLT_MEMPOOL_RELAYER_INTERVAL_MS}
+mempool.relayer.max_peers=${RADIXDLT_MEMPOOL_RELAYER_MAX_PEERS}
+mempool.relayer.max_relayed_size=${RADIXDLT_MEMPOOL_RELAYER_MAX_RELAYED_SIZE}
+mempool.relayer.max_message_transaction_count=${RADIXDLT_MEMPOOL_RELAYER_MAX_MESSAGE_TRANSACTION_COUNT}
+mempool.relayer.max_message_payload_size=${RADIXDLT_MEMPOOL_RELAYER_MAX_MESSAGE_PAYLOAD_SIZE}
+mempool.reevaluation.interval_ms=${RADIXDLT_MEMPOOL_REEVALUATION_INTERVAL_MS}
+mempool.reevaluation.max_count=${RADIXDLT_MEMPOOL_REEVALUATION_MAX_COUNT}
+
+protocol.vertex.max_transaction_count=${RADIXDLT_PROTOCOL_VERTEX_MAX_TRANSACTION_COUNT}
+protocol.vertex.max_total_transactions_size=${RADIXDLT_PROTOCOL_VERTEX_MAX_TOTAL_TRANSACTIONS_SIZE}
+protocol.vertex.max_total_execution_cost_units_consumed=${RADIXDLT_PROTOCOL_VERTEX_MAX_TOTAL_EXECUTION_COST_UNITS_CONSUMED}
+protocol.vertex.max_total_finalization_cost_units_consumed=${RADIXDLT_PROTOCOL_VERTEX_MAX_TOTAL_FINALIZATION_COST_UNITS_CONSUMED}
+
 api.core.port=$RADIXDLT_CORE_API_PORT
 api.core.bind_address=$RADIXDLT_CORE_API_BIND_ADDRESS
+api.core.flags.enable_unbounded_endpoints=${RADIXDLT_CORE_API_FLAGS_ENABLE_UNBOUNDED_ENDPOINTS}
 
 api.system.port=$RADIXDLT_SYSTEM_API_PORT
 api.system.bind_address=$RADIXDLT_SYSTEM_API_BIND_ADDRESS
@@ -29,7 +45,7 @@ consensus.use_genesis_for_validator_address=$RADIXDLT_CONSENSUS_USE_GENESIS_FOR_
 consensus.validator_address=$RADIXDLT_CONSENSUS_VALIDATOR_ADDRESS
 
 genesis.use_olympia=${RADIXDLT_GENESIS_USE_OLYMPIA}
-genesis.olympia.node_core_api_url=${RADIXDLT_GENESIS_OLYMPIA_NODE_CORE_API_URL}
-genesis.olympia.node_core_api_auth_user=${RADIXDLT_GENESIS_OLYMPIA_NODE_CORE_API_AUTH_USER}
-genesis.olympia.node_core_api_auth_password=${RADIXDLT_GENESIS_OLYMPIA_NODE_CORE_API_AUTH_PASSWORD}
+genesis.olympia.node_end_state_api_url=${RADIXDLT_GENESIS_OLYMPIA_NODE_END_STATE_API_URL}
+genesis.olympia.node_end_state_api_auth_user=${RADIXDLT_GENESIS_OLYMPIA_NODE_END_STATE_API_AUTH_USER}
+genesis.olympia.node_end_state_api_auth_password=${RADIXDLT_GENESIS_OLYMPIA_NODE_END_STATE_API_AUTH_PASSWORD}
 genesis.olympia.node_bech32_address=${RADIXDLT_GENESIS_OLYMPIA_NODE_BECH32_ADDRESS}

@@ -68,6 +68,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.radixdlt.consensus.Blake2b256Hasher;
+import com.radixdlt.environment.*;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.genesis.RawGenesisDataWithHash;
 import com.radixdlt.lang.Option;
@@ -75,7 +76,6 @@ import com.radixdlt.mempool.*;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.statecomputer.RustStateComputer;
-import com.radixdlt.statemanager.*;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -90,36 +90,46 @@ public final class RustMempoolTest {
   /** A no-op dispatcher of transactions to be relayed. */
   private static final MempoolRelayDispatcher<RawNotarizedTransaction> NOOP_DISPATCHER = tx -> {};
 
-  private static void initStateComputer(StateManager stateManager) {
+  /**
+   * A no-op fatal panic handler. Please note that a JNI-invoking test (like this one) will observe
+   * panics as runtime exceptions propagated up the stack (through JNI), which will fail the test
+   * gracefully anyway.
+   */
+  private static final FatalPanicHandler NOOP_HANDLER = () -> {};
+
+  private static void initStateComputer(NodeRustEnvironment nodeRustEnvironment) {
     final var metrics = new MetricsInitializer().initialize();
     final var genesisProvider =
         RawGenesisDataWithHash.fromGenesisData(GenesisData.testingDefaultEmpty());
     new REv2LedgerInitializer(
             new Blake2b256Hasher(DefaultSerialization.getInstance()),
-            new RustStateComputer(metrics, stateManager),
+            new RustStateComputer(metrics, nodeRustEnvironment),
             new REv2TransactionsAndProofReader(
-                new REv2TransactionAndProofStore(metrics, stateManager)))
+                new REv2TransactionAndProofStore(metrics, nodeRustEnvironment)))
         .initialize(genesisProvider);
   }
 
   @Test
   public void test_rust_mempool_add() throws Exception {
-    final var mempoolSize = 2;
+    final var mempoolMaxTotalTransactionsSize = 10 * 1024 * 1024;
+    final var mempoolMaxTransactionCount = 20;
     final var config =
         new StateManagerConfig(
             NetworkDefinition.INT_TEST_NET,
-            Option.some(new RustMempoolConfig(mempoolSize)),
+            Option.some(
+                new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount)),
+            Option.none(),
             DatabaseBackendConfig.inMemory(),
             new DatabaseFlags(false, false),
-            LoggingConfig.getDefault());
+            LoggingConfig.getDefault(),
+            false);
     final var metrics = new MetricsInitializer().initialize();
 
-    try (var stateManager = new StateManager(NOOP_DISPATCHER, config)) {
+    try (var stateManager = new NodeRustEnvironment(NOOP_DISPATCHER, NOOP_HANDLER, config)) {
       initStateComputer(stateManager);
       final var rustMempool = new RustMempool(metrics, stateManager);
       final var transaction1 = constructValidTransaction(0, 0);
       final var transaction2 = constructValidTransaction(0, 1);
-      final var transaction3 = constructValidTransaction(0, 2);
 
       assertEquals(0, rustMempool.getCount());
 
@@ -141,18 +151,6 @@ public final class RustMempoolTest {
       rustMempool.addTransaction(transaction2.raw());
       assertEquals(2, rustMempool.getCount());
 
-      try {
-        // Mempool is full - adding a new transaction should fail
-        rustMempool.addTransaction(transaction3.raw());
-        // Because we want to assert properties of the exception, we have to use this weird
-        // try/catch approach, instead of assertThrows
-        Assert.fail();
-      } catch (MempoolFullException ex) {
-        assertEquals(2, ex.getMaxSize());
-        assertEquals(2, ex.getCurrentSize());
-      }
-      assertEquals(2, rustMempool.getCount());
-
       // With a full mempool, a duplicate transaction returns Duplicate, not MempoolFull
       // This is an implementation detail, not mandated behaviour, feel free to change it in future
       Assert.assertThrows(
@@ -167,17 +165,21 @@ public final class RustMempoolTest {
 
   @Test
   public void test_rust_mempool_getTxns() throws Exception {
-    final var mempoolSize = 3;
+    final var mempoolMaxTotalTransactionsSize = 10 * 1024 * 1024;
+    final var mempoolMaxTransactionCount = 20;
     final var config =
         new StateManagerConfig(
             NetworkDefinition.INT_TEST_NET,
-            Option.some(new RustMempoolConfig(mempoolSize)),
+            Option.some(
+                new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount)),
+            Option.none(),
             DatabaseBackendConfig.inMemory(),
             new DatabaseFlags(false, false),
-            LoggingConfig.getDefault());
+            LoggingConfig.getDefault(),
+            false);
     final var metrics = new MetricsInitializer().initialize();
 
-    try (var stateManager = new StateManager(NOOP_DISPATCHER, config)) {
+    try (var stateManager = new NodeRustEnvironment(NOOP_DISPATCHER, NOOP_HANDLER, config)) {
       initStateComputer(stateManager);
       final var rustMempool = new RustMempool(metrics, stateManager);
       final var transaction1 = constructValidTransaction(0, 0);
@@ -300,17 +302,21 @@ public final class RustMempoolTest {
 
   @Test
   public void test_rust_mempool_getRelayTxns() throws Exception {
-    final var mempoolSize = 3;
+    final var mempoolMaxTotalTransactionsSize = 10 * 1024 * 1024;
+    final var mempoolMaxTransactionCount = 20;
     final var config =
         new StateManagerConfig(
             NetworkDefinition.INT_TEST_NET,
-            Option.some(new RustMempoolConfig(mempoolSize)),
+            Option.some(
+                new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount)),
+            Option.none(),
             DatabaseBackendConfig.inMemory(),
             new DatabaseFlags(false, false),
-            LoggingConfig.getDefault());
+            LoggingConfig.getDefault(),
+            false);
     final var metrics = new MetricsInitializer().initialize();
 
-    try (var stateManager = new StateManager(NOOP_DISPATCHER, config)) {
+    try (var stateManager = new NodeRustEnvironment(NOOP_DISPATCHER, NOOP_HANDLER, config)) {
       initStateComputer(stateManager);
       final var rustMempool = new RustMempool(metrics, stateManager);
       final var transaction1 = constructValidTransaction(0, 0);

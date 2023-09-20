@@ -1,5 +1,7 @@
 use crate::core_api::*;
+use radix_engine::blueprints::consensus_manager::ConsensusManagerField;
 use radix_engine::types::*;
+use state_manager::store::traits::QueryableProofStore;
 use std::ops::Deref;
 
 #[tracing::instrument(skip(state))]
@@ -9,17 +11,17 @@ pub(crate) async fn handle_state_consensus_manager(
 ) -> Result<Json<models::StateConsensusManagerResponse>, ResponseError<()>> {
     assert_matching_network(&request.network, &state.network)?;
     let mapping_context = MappingContext::new(&state.network);
-    let database = state.database.read();
+    let database = state.state_manager.database.read();
 
     let config_substate = read_mandatory_main_field_substate(
         database.deref(),
         CONSENSUS_MANAGER.as_node_id(),
-        &ConsensusManagerField::Config.into(),
+        &ConsensusManagerField::Configuration.into(),
     )?;
     let state_substate = read_mandatory_main_field_substate(
         database.deref(),
         CONSENSUS_MANAGER.as_node_id(),
-        &ConsensusManagerField::ConsensusManager.into(),
+        &ConsensusManagerField::State.into(),
     )?;
     let current_proposal_statistic_substate = read_mandatory_main_field_substate(
         database.deref(),
@@ -34,15 +36,21 @@ pub(crate) async fn handle_state_consensus_manager(
     let current_time_substate = read_mandatory_main_field_substate(
         database.deref(),
         CONSENSUS_MANAGER.as_node_id(),
-        &ConsensusManagerField::CurrentTime.into(),
+        &ConsensusManagerField::ProposerMilliTimestamp.into(),
     )?;
     let current_time_round_to_minutes_substate = read_mandatory_main_field_substate(
         database.deref(),
         CONSENSUS_MANAGER.as_node_id(),
-        &ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
+        &ConsensusManagerField::ProposerMinuteTimestamp.into(),
     )?;
 
+    let header = database
+        .get_last_proof()
+        .expect("proof for outputted state must exist")
+        .ledger_header;
+
     Ok(models::StateConsensusManagerResponse {
+        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
         config: Some(to_api_consensus_manager_config_substate(&config_substate)?),
         state: Some(to_api_consensus_manager_state_substate(
             &mapping_context,

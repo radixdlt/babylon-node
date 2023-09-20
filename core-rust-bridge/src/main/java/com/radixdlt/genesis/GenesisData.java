@@ -64,20 +64,70 @@
 
 package com.radixdlt.genesis;
 
+import static com.radixdlt.lang.Tuple.tuple;
+
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.identifiers.Address;
+import com.radixdlt.rev2.Decimal;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
 
 public record GenesisData(
     UInt64 initialEpoch,
     long initialTimestampMs,
     GenesisConsensusManagerConfig consensusManagerConfig,
-    ImmutableList<GenesisDataChunk> chunks) {
+    ImmutableList<GenesisDataChunk> chunks,
+    Decimal faucetSupply,
+    ImmutableList<String> scenarios) {
+
+  public static final Decimal DEFAULT_TEST_FAUCET_SUPPLY = Decimal.of(1000_000_000_000L);
+  public static final ImmutableList<String> ALL_SCENARIOS =
+      ImmutableList.of(
+          "transfer_xrd",
+          "radiswap",
+          "metadata",
+          "fungible_resource",
+          "non_fungible_resource",
+          "account_authorized_depositors",
+          "global_n_owned",
+          "non_fungible_resource_with_remote_type",
+          "kv_store_with_remote_type");
+  public static final ImmutableList<String> NO_SCENARIOS = ImmutableList.of();
 
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         GenesisData.class, codecs -> StructCodec.fromRecordComponents(GenesisData.class, codecs));
+  }
+
+  public static GenesisData testingWithSingleValidator() {
+    final var validatorKey = ECKeyPair.fromSeed(new byte[] {0x02}).getPublicKey();
+    return new GenesisData(
+        UInt64.fromNonNegativeLong(1L),
+        0,
+        GenesisConsensusManagerConfig.testingDefaultEmpty(),
+        ImmutableList.of(
+            new GenesisDataChunk.Validators(
+                ImmutableList.of(
+                    new GenesisValidator(
+                        validatorKey,
+                        true,
+                        true,
+                        Decimal.ZERO,
+                        ImmutableList.of(),
+                        Address.virtualAccountAddress(validatorKey)))),
+            new GenesisDataChunk.Stakes(
+                ImmutableList.of(Address.virtualAccountAddress(validatorKey)),
+                ImmutableList.of(
+                    tuple(
+                        validatorKey,
+                        ImmutableList.of(
+                            new GenesisStakeAllocation(
+                                UInt32.fromNonNegativeInt(0), Decimal.of(1L))))))),
+        DEFAULT_TEST_FAUCET_SUPPLY,
+        NO_SCENARIOS);
   }
 
   public static GenesisData testingDefaultEmpty() {
@@ -85,6 +135,18 @@ public record GenesisData(
         UInt64.fromNonNegativeLong(1L),
         0,
         GenesisConsensusManagerConfig.testingDefaultEmpty(),
-        ImmutableList.of());
+        ImmutableList.of(),
+        DEFAULT_TEST_FAUCET_SUPPLY,
+        NO_SCENARIOS);
+  }
+
+  public static GenesisData testingDefaultEmptyWithScenarios() {
+    return new GenesisData(
+        UInt64.fromNonNegativeLong(1L),
+        0,
+        GenesisConsensusManagerConfig.testingDefaultEmpty(),
+        ImmutableList.of(),
+        DEFAULT_TEST_FAUCET_SUPPLY,
+        ALL_SCENARIOS);
   }
 }

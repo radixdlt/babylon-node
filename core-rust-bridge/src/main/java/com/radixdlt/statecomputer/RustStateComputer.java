@@ -65,49 +65,32 @@
 package com.radixdlt.statecomputer;
 
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.environment.NodeRustEnvironment;
 import com.radixdlt.lang.Result;
-import com.radixdlt.lang.Tuple;
 import com.radixdlt.monitoring.LabelledTimer;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.Metrics.MethodId;
-import com.radixdlt.rev2.ComponentAddress;
-import com.radixdlt.rev2.Decimal;
-import com.radixdlt.rev2.ValidatorInfo;
 import com.radixdlt.sbor.Natives;
 import com.radixdlt.statecomputer.commit.*;
-import com.radixdlt.statemanager.StateManager;
-import com.radixdlt.utils.UInt64;
 import java.util.Objects;
 
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public class RustStateComputer {
 
-  public RustStateComputer(Metrics metrics, StateManager stateManager) {
-    Objects.requireNonNull(stateManager);
+  public RustStateComputer(Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
+    Objects.requireNonNull(nodeRustEnvironment);
     LabelledTimer<MethodId> timer = metrics.stateManager().nativeCall();
     this.executeGenesisFunc =
-        Natives.builder(stateManager, RustStateComputer::executeGenesis)
+        Natives.builder(nodeRustEnvironment, RustStateComputer::executeGenesis)
             .measure(timer.label(new MethodId(RustStateComputer.class, "executeGenesis")))
             .build(new TypeToken<>() {});
     this.prepareFunc =
-        Natives.builder(stateManager, RustStateComputer::prepare)
+        Natives.builder(nodeRustEnvironment, RustStateComputer::prepare)
             .measure(timer.label(new MethodId(RustStateComputer.class, "prepare")))
             .build(new TypeToken<>() {});
     this.commitFunc =
-        Natives.builder(stateManager, RustStateComputer::commit)
+        Natives.builder(nodeRustEnvironment, RustStateComputer::commit)
             .measure(timer.label(new MethodId(RustStateComputer.class, "commit")))
-            .build(new TypeToken<>() {});
-    this.componentXrdAmountFunc =
-        Natives.builder(stateManager, RustStateComputer::componentXrdAmount)
-            .measure(timer.label(new MethodId(RustStateComputer.class, "componentXrdAmount")))
-            .build(new TypeToken<>() {});
-    this.validatorInfoFunc =
-        Natives.builder(stateManager, RustStateComputer::validatorInfo)
-            .measure(timer.label(new MethodId(RustStateComputer.class, "validatorInfo")))
-            .build(new TypeToken<>() {});
-    this.epochFunc =
-        Natives.builder(stateManager, RustStateComputer::epoch)
-            .measure(timer.label(new MethodId(RustStateComputer.class, "epoch")))
             .build(new TypeToken<>() {});
   }
 
@@ -117,7 +100,8 @@ public class RustStateComputer {
 
   private final Natives.Call1<byte[], LedgerProof> executeGenesisFunc;
 
-  private static native byte[] executeGenesis(StateManager stateManager, byte[] payload);
+  private static native byte[] executeGenesis(
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
   public PrepareResult prepare(PrepareRequest prepareRequest) {
     return prepareFunc.call(prepareRequest);
@@ -125,38 +109,14 @@ public class RustStateComputer {
 
   private final Natives.Call1<PrepareRequest, PrepareResult> prepareFunc;
 
-  private static native byte[] prepare(StateManager stateManager, byte[] payload);
+  private static native byte[] prepare(NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
-  public Result<Tuple.Tuple0, InvalidCommitRequestError> commit(CommitRequest commitRequest) {
+  public Result<CommitSummary, InvalidCommitRequestError> commit(CommitRequest commitRequest) {
     return commitFunc.call(commitRequest);
   }
 
-  private final Natives.Call1<CommitRequest, Result<Tuple.Tuple0, InvalidCommitRequestError>>
+  private final Natives.Call1<CommitRequest, Result<CommitSummary, InvalidCommitRequestError>>
       commitFunc;
 
-  private static native byte[] commit(StateManager stateManager, byte[] payload);
-
-  private final Natives.Call1<ComponentAddress, Decimal> componentXrdAmountFunc;
-
-  public Decimal getComponentXrdAmount(ComponentAddress componentAddress) {
-    return componentXrdAmountFunc.call(componentAddress);
-  }
-
-  private static native byte[] componentXrdAmount(StateManager stateManager, byte[] payload);
-
-  private final Natives.Call1<Tuple.Tuple0, UInt64> epochFunc;
-
-  public UInt64 getEpoch() {
-    return epochFunc.call(Tuple.tuple());
-  }
-
-  private static native byte[] epoch(StateManager stateManager, byte[] payload);
-
-  private final Natives.Call1<ComponentAddress, ValidatorInfo> validatorInfoFunc;
-
-  public ValidatorInfo getValidatorInfo(ComponentAddress validatorAddress) {
-    return validatorInfoFunc.call(validatorAddress);
-  }
-
-  private static native byte[] validatorInfo(StateManager stateManager, byte[] payload);
+  private static native byte[] commit(NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 }

@@ -69,13 +69,13 @@ import static com.radixdlt.harness.predicates.NodesPredicate.*;
 
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.consensus.ProposalLimitsConfig;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolRelayConfig;
+import com.radixdlt.mempool.*;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
@@ -90,7 +90,7 @@ import com.radixdlt.sync.SyncRelayConfig;
 import org.junit.Test;
 
 public final class REv2MempoolRelayerTest {
-  private final int MEMPOOL_SIZE = 100;
+  private final int MEMPOOL_TX_SIZE = 100;
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
@@ -105,13 +105,16 @@ public final class REv2MempoolRelayerTest {
                 LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        GenesisBuilder.createGenesisWithNumValidators(
+                        GenesisBuilder.createTestGenesisWithNumValidators(
                             1,
                             Decimal.of(1),
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(100000)),
                         REv2StateManagerModule.DatabaseType.IN_MEMORY,
                         StateComputerConfig.REV2ProposerConfig.mempool(
-                            0, 0, MEMPOOL_SIZE, new MempoolRelayConfig(0, 100))),
+                            ProposalLimitsConfig.zero(),
+                            new RustMempoolConfig(MEMPOOL_TX_SIZE * 1024 * 1024, MEMPOOL_TX_SIZE),
+                            new MempoolReceiverConfig(0),
+                            MempoolRelayerConfig.defaults())),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 
@@ -124,14 +127,14 @@ public final class REv2MempoolRelayerTest {
       // Arrange: Fill node1 mempool
       var mempoolDispatcher =
           test.getInstance(1, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
-      for (int i = 0; i < MEMPOOL_SIZE; i++) {
+      for (int i = 0; i < MEMPOOL_TX_SIZE; i++) {
         mempoolDispatcher.dispatch(MempoolAdd.create(transactionGenerator.nextTransaction()));
       }
 
       // Run all nodes except validator node0
       test.runUntilState(
-          n -> allHaveExactMempoolCount(MEMPOOL_SIZE).test(n.subList(1, n.size())),
-          10000,
+          n -> allHaveExactMempoolCount(MEMPOOL_TX_SIZE).test(n.subList(1, n.size())),
+          20000,
           m -> m.channelId().senderIndex() != 0 && m.channelId().receiverIndex() != 0);
     }
   }

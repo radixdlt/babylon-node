@@ -78,7 +78,9 @@ import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.TimeoutQuorumDelayedResolution;
 import com.radixdlt.consensus.liveness.*;
+import com.radixdlt.consensus.safety.InitialSafetyStateProvider;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
+import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.sync.*;
 import com.radixdlt.consensus.vertexstore.PersistentVertexStore;
 import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
@@ -86,6 +88,7 @@ import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.NoEpochsConsensusModule;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.messaging.core.GetVerticesRequestRateLimit;
@@ -118,7 +121,8 @@ public class ConsensusModuleTest {
   private BFTValidatorId validatorId;
   private BFTConfiguration bftConfiguration;
 
-  private ECKeyPair ecKeyPair;
+  private ECKeyPair selfKeyPair;
+  private BFTValidatorId selfValidatorId;
   private RemoteEventDispatcher<NodeId, GetVerticesRequest> requestSender;
   private RemoteEventDispatcher<NodeId, GetVerticesResponse> responseSender;
   private RemoteEventDispatcher<NodeId, GetVerticesErrorResponse> errorResponseSender;
@@ -132,19 +136,22 @@ public class ConsensusModuleTest {
         QuorumCertificate.createInitialEpochQC(
             genesisVertex, LedgerHeader.genesis(0, LedgerHashes.zero(), null, 0, 0));
     this.validatorKeyPair = ECKeyPair.generateNew();
-    this.validatorId = BFTValidatorId.create(this.validatorKeyPair.getPublicKey());
+    this.validatorId =
+        BFTValidatorId.withKeyAndFakeDeterministicAddress(this.validatorKeyPair.getPublicKey());
     var validatorSet =
-        BFTValidatorSet.from(Stream.of(BFTValidator.from(this.validatorId, UInt256.ONE)));
+        BFTValidatorSet.from(Stream.of(BFTValidator.from(this.validatorId, UInt192.ONE)));
     var vertexStoreState =
         VertexStoreState.create(HighQC.ofInitialEpochQc(qc), genesisVertex, hasher);
-    var proposerElection = ProposerElections.defaultRotation(validatorSet);
+    var proposerElection = ProposerElections.defaultRotation(0L, validatorSet);
     this.bftConfiguration = new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
-    this.ecKeyPair = ECKeyPair.generateNew();
+    this.selfKeyPair = ECKeyPair.generateNew();
+    this.selfValidatorId =
+        BFTValidatorId.withKeyAndFakeDeterministicAddress(selfKeyPair.getPublicKey());
     this.requestSender = rmock(RemoteEventDispatcher.class);
     this.responseSender = rmock(RemoteEventDispatcher.class);
     this.errorResponseSender = rmock(RemoteEventDispatcher.class);
 
-    Guice.createInjector(new ConsensusModule(), new CryptoModule(), getExternalModule())
+    Guice.createInjector(new NoEpochsConsensusModule(), new CryptoModule(), getExternalModule())
         .injectMembers(this);
   }
 
@@ -201,6 +208,7 @@ public class ConsensusModuleTest {
 
         bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
         bind(PersistentSafetyStateStore.class).toInstance(mock(PersistentSafetyStateStore.class));
+        bind(InitialSafetyStateProvider.class).toInstance(SafetyState::initialState);
         bind(ProposalGenerator.class).toInstance(mock(ProposalGenerator.class));
         bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
         bind(TimeSupplier.class).toInstance(mock(TimeSupplier.class));
@@ -208,6 +216,9 @@ public class ConsensusModuleTest {
         bind(BFTValidatorSet.class).toInstance(bftConfiguration.getValidatorSet());
         LedgerProof proof = mock(LedgerProof.class);
         when(proof.getRound()).thenReturn(Round.genesis());
+        final var header = mock(LedgerHeader.class);
+        when(header.getRound()).thenReturn(Round.genesis());
+        when(proof.getHeader()).thenReturn(header);
         bind(LedgerProof.class).annotatedWith(LastProof.class).toInstance(proof);
         bind(RateLimiter.class)
             .annotatedWith(GetVerticesRequestRateLimit.class)
@@ -225,14 +236,14 @@ public class ConsensusModuleTest {
       }
 
       @Provides
-      RoundUpdate initialRoundUpdate(@Self BFTValidatorId node) {
-        return RoundUpdate.create(Round.of(1), mock(HighQC.class), node, node);
+      RoundUpdate initialRoundUpdate() {
+        return RoundUpdate.create(
+            Round.of(1), mock(HighQC.class), selfValidatorId, selfValidatorId);
       }
 
       @Provides
-      @Self
-      private BFTValidatorId bftNode() {
-        return BFTValidatorId.create(ecKeyPair.getPublicKey());
+      private SelfValidatorInfo selfValidatorInfo() {
+        return new SelfValidatorInfo(selfKeyPair.getPublicKey(), Optional.of(selfValidatorId));
       }
     };
   }
@@ -245,7 +256,8 @@ public class ConsensusModuleTest {
 
   private Pair<QuorumCertificate, VertexWithHash> createNextVertex(
       QuorumCertificate parent, ECKeyPair proposerKeyPair, RawNotarizedTransaction txn) {
-    final var proposerBftNode = BFTValidatorId.create(proposerKeyPair.getPublicKey());
+    final var proposerBftNode =
+        BFTValidatorId.withKeyAndFakeDeterministicAddress(proposerKeyPair.getPublicKey());
     var vertex =
         Vertex.create(parent, Round.of(1), List.of(txn), proposerBftNode, 0).withId(hasher);
     var next =
@@ -255,7 +267,7 @@ public class ConsensusModuleTest {
             LedgerHeader.create(1, Round.of(1), 1, LedgerHashes.zero(), 1, 1));
     final var voteData = new VoteData(next, parent.getProposedHeader(), parent.getParentHeader());
     final var timestamp = 1;
-    final var voteDataHash = Vote.getHashOfData(hasher, voteData, timestamp);
+    final var voteDataHash = voteData.toConsensusVoteHash(hasher, timestamp);
     final var qcSignature = proposerKeyPair.sign(voteDataHash);
     var unsyncedQC =
         new QuorumCertificate(

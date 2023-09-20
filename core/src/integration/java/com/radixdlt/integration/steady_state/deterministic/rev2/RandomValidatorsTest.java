@@ -81,7 +81,7 @@ import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.invariants.Checkers;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolRelayConfig;
+import com.radixdlt.mempool.MempoolReceiverConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
@@ -89,7 +89,7 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.*;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transaction.REv2TransactionAndProofStore;
+import com.radixdlt.testutil.TestStateReader;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import java.util.HashMap;
@@ -103,7 +103,7 @@ public final class RandomValidatorsTest {
   private static final int TOTAL_NUM_VALIDATORS = 30;
   private static final int NUM_GENESIS_VALIDATORS = TOTAL_NUM_VALIDATORS / 2;
   private static final GenesisData GENESIS =
-      GenesisBuilder.createGenesisWithNumValidators(
+      GenesisBuilder.createTestGenesisWithNumValidators(
           NUM_GENESIS_VALIDATORS,
           Decimal.of(1000),
           GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10));
@@ -127,8 +127,8 @@ public final class RandomValidatorsTest {
                         Network.INTEGRATIONTESTNET.getId(),
                         GENESIS,
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
-                        StateComputerConfig.REV2ProposerConfig.mempool(
-                            10, 10 * 1024 * 1024, 100, MempoolRelayConfig.of(5, 5))),
+                        StateComputerConfig.REV2ProposerConfig.Mempool.defaults()
+                            .withReceiverConfig(MempoolReceiverConfig.of(5))),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 
@@ -136,19 +136,17 @@ public final class RandomValidatorsTest {
   public void normal_run_should_not_cause_unexpected_errors() {
     try (var test = createTest()) {
       test.startAllNodes();
-      final var faucet = test.faucetAddress();
-
       var random = new Random(12345);
 
       var creatingValidators = new HashMap<Integer, RawNotarizedTransaction>();
       var validators = new HashMap<Integer, ComponentAddress>();
 
       // Iterate over all genesis transactions (data chunks) and collect validator's addresses
-      final var txnStore = test.getInstance(0, REv2TransactionAndProofStore.class);
+      final var reader = test.getInstance(0, TestStateReader.class);
       final var componentAddressesBuilder = ImmutableList.<ComponentAddress>builder();
       var stateVersion = 1;
       while (true) {
-        final var nextTxnDetails = txnStore.getTransactionDetailsAtStateVersion(stateVersion);
+        final var nextTxnDetails = reader.getTransactionDetailsAtStateVersion(stateVersion);
         if (nextTxnDetails.isEmpty()) {
           break;
         } else {
@@ -233,13 +231,13 @@ public final class RandomValidatorsTest {
               txn =
                   TransactionBuilder.forTests()
                       .manifest(
-                          Manifest.stakeValidator(stakingAccount, validatorAddress, ownerAccount))
+                          Manifest.stakeValidatorAsNormalUser(stakingAccount, validatorAddress))
                       .signatories(List.of(stakingAccountKeyPair))
                       .prepare()
                       .raw();
             }
             case 3 -> {
-              var stateReader = test.getInstance(randomValidatorIndex, REv2StateReader.class);
+              var stateReader = test.getInstance(randomValidatorIndex, TestStateReader.class);
               var validatorInfo = stateReader.getValidatorInfo(validatorAddress);
               txn =
                   TransactionBuilder.forTests()
@@ -251,13 +249,13 @@ public final class RandomValidatorsTest {
                       .raw();
             }
             default -> {
-              var stateReader = test.getInstance(randomValidatorIndex, REv2StateReader.class);
+              var stateReader = test.getInstance(randomValidatorIndex, TestStateReader.class);
               var validatorInfo = stateReader.getValidatorInfo(validatorAddress);
               txn =
                   TransactionBuilder.forTests()
                       .manifest(
-                          Manifest.claimXrdFromUnstakeReceipt(
-                              stakingAccount, validatorAddress, validatorInfo.unstakeResource()))
+                          Manifest.claimXrdFromClaimResource(
+                              stakingAccount, validatorAddress, validatorInfo.claimResource()))
                       .signatories(List.of(stakingAccountKeyPair))
                       .prepare()
                       .raw();

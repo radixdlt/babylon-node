@@ -1,12 +1,9 @@
 use crate::core_api::*;
 use radix_engine::types::*;
-use radix_engine::{
-    system::node_modules::type_info::TypeInfoSubstate, track::db_key_mapper::DatabaseKeyMapper,
-    track::db_key_mapper::SpreadPrefixKeyMapper,
-};
-use radix_engine_interface::api::component::*;
 use radix_engine_queries::typed_substate_layout::*;
+use radix_engine_store_interface::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
 use state_manager::query::{dump_component_state, ComponentStateDump, DescendantParentOpt};
+use state_manager::store::traits::QueryableProofStore;
 use std::ops::Deref;
 
 use super::map_to_vault_balance;
@@ -16,6 +13,7 @@ pub(crate) async fn handle_state_component(
     Json(request): Json<models::StateComponentRequest>,
 ) -> Result<Json<models::StateComponentResponse>, ResponseError<()>> {
     assert_matching_network(&request.network, &state.network)?;
+    assert_unbounded_endpoints_flag_enabled(&state)?;
 
     let mapping_context = MappingContext::new(&state.network);
     let extraction_context = ExtractionContext::new(&state.network);
@@ -28,8 +26,8 @@ pub(crate) async fn handle_state_component(
         return Err(client_error("Only component addresses starting component_ currently work with this endpoint. Try another endpoint instead."));
     }
 
-    let database = state.database.read();
-    let type_info: TypeInfoSubstate = read_optional_substate(
+    let database = state.state_manager.database.read();
+    let type_info_substate = read_optional_substate(
         database.deref(),
         component_address.as_node_id(),
         TYPE_INFO_FIELD_PARTITION,
@@ -37,32 +35,25 @@ pub(crate) async fn handle_state_component(
     )
     .ok_or_else(|| not_found_error("Component not found".to_string()))?;
 
-    let component_state: ComponentStateSubstate = read_mandatory_main_field_substate(
+    let component_state_substate = read_mandatory_main_field_substate(
         database.deref(),
         component_address.as_node_id(),
         &ComponentField::State0.into(),
     )?;
 
-    let component_royalty_config: ComponentRoyaltyConfigSubstate = read_mandatory_substate(
-        database.deref(),
-        component_address.as_node_id(),
-        ROYALTY_FIELD_PARTITION,
-        &RoyaltyField::RoyaltyConfig.into(),
-    )?;
-
-    let component_royalty_accumulator: ComponentRoyaltyAccumulatorSubstate =
-        read_mandatory_substate(
+    let component_royalty_substate =
+        read_optional_substate::<ComponentRoyaltyAccumulatorFieldSubstate>(
             database.deref(),
             component_address.as_node_id(),
-            ROYALTY_FIELD_PARTITION,
+            ComponentRoyaltyPartitionOffset::Field.as_partition(ROYALTY_BASE_PARTITION),
             &RoyaltyField::RoyaltyAccumulator.into(),
-        )?;
+        );
 
-    let method_access_rules_substate: MethodAccessRulesSubstate = read_mandatory_substate(
+    let owner_role_substate = read_mandatory_substate(
         database.deref(),
         component_address.as_node_id(),
-        ACCESS_RULES_FIELD_PARTITION,
-        &AccessRulesField::AccessRules.into(),
+        RoleAssignmentPartitionOffset::Field.as_partition(ROLE_ASSIGNMENT_BASE_PARTITION),
+        &RoleAssignmentField::Owner.into(),
     )?;
 
     let component_dump = dump_component_state(database.deref(), component_address);
@@ -70,23 +61,29 @@ pub(crate) async fn handle_state_component(
     let (vaults, descendent_nodes) =
         component_dump_to_vaults_and_nodes(&mapping_context, component_dump)?;
 
+    let header = database
+        .get_last_proof()
+        .expect("proof for outputted state must exist")
+        .ledger_header;
+
     Ok(models::StateComponentResponse {
-        info: Some(to_api_type_info_substate(&mapping_context, &type_info)?),
-        state: Some(to_api_component_state_substate(
+        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
+        info: Some(to_api_type_info_substate(
             &mapping_context,
-            &component_state,
+            &StateMappingLookups::default(),
+            &type_info_substate,
         )?),
-        royalty_config: Some(to_api_component_royalty_config_substate(
+        state: Some(to_api_generic_scrypto_component_state_substate(
             &mapping_context,
-            &component_royalty_config,
+            &component_state_substate,
         )?),
-        royalty_accumulator: Some(to_api_component_royalty_accumulator_substate(
+        royalty_accumulator: component_royalty_substate
+            .map(|substate| to_api_component_royalty_substate(&mapping_context, &substate))
+            .transpose()?
+            .map(Box::new),
+        owner_role: Some(to_api_owner_role_substate(
             &mapping_context,
-            &component_royalty_accumulator,
-        )?),
-        access_rules: Some(to_api_method_access_rules_substate(
-            &mapping_context,
-            &method_access_rules_substate,
+            &owner_role_substate,
         )?),
         vaults,
         descendent_nodes,
@@ -139,13 +136,8 @@ pub(crate) fn map_to_descendent_id(
 
 pub(crate) fn substate_key_to_hex(substate_key: &SubstateKey) -> String {
     match substate_key {
-        SubstateKey::Tuple(tuple_key) => to_hex([*tuple_key]),
+        SubstateKey::Field(field_key) => to_hex([*field_key]),
         SubstateKey::Map(map_key) => to_hex(map_key),
-        SubstateKey::Sorted((sort_key, map_key)) => {
-            let mut vec = Vec::with_capacity(2 + map_key.len());
-            vec.extend_from_slice(&sort_key.to_be_bytes());
-            vec.extend_from_slice(map_key);
-            to_hex(&vec)
-        }
+        SubstateKey::Sorted((sort_key, map_key)) => to_hex([sort_key, map_key.as_slice()].concat()),
     }
 }

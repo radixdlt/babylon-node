@@ -116,7 +116,7 @@ public class REv2RejectedTransactionMempoolTest {
     this.roundsPerEpoch = roundsPerEpoch;
   }
 
-  private DeterministicTest createTest(int mempoolSize) {
+  private DeterministicTest createTest(RustMempoolConfig mempoolConfig) {
     return DeterministicTest.builder()
         .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
         .messageSelector(firstSelector())
@@ -130,19 +130,19 @@ public class REv2RejectedTransactionMempoolTest {
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        GenesisBuilder.createGenesisWithNumValidators(
+                        GenesisBuilder.createTestGenesisWithNumValidators(
                             1,
                             Decimal.of(1),
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
                                 this.roundsPerEpoch)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
-                        StateComputerConfig.REV2ProposerConfig.mempool(
-                            1, 1024 * 1024, mempoolSize, MempoolRelayConfig.of())))));
+                        StateComputerConfig.REV2ProposerConfig.Mempool.singleTransaction()
+                            .withMempoolConfig(mempoolConfig)))));
   }
 
   @Test
   public void initially_rejected_transaction_should_not_linger_in_mempool() {
-    try (var test = createTest(1)) {
+    try (var test = createTest(new RustMempoolConfig(1024 * 1024, 1))) {
       test.startAllNodes();
       final var faucet = test.faucetAddress();
 
@@ -184,7 +184,7 @@ public class REv2RejectedTransactionMempoolTest {
 
   @Test
   public void later_rejected_transaction_should_not_linger_in_mempool() {
-    try (var test = createTest(2)) {
+    try (var test = createTest(new RustMempoolConfig(2 * 1024 * 1024, 2))) {
       test.startAllNodes();
 
       // Arrange: Two conflicting transactions in mempool

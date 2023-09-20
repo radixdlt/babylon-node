@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::LedgerProof;
+use crate::{CommitSummary, LedgerProof};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -70,19 +70,14 @@ use radix_engine::types::*;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerConfig, EpochChangeCondition,
 };
-use radix_engine_queries::query::ResourceAccounter;
-use std::ops::Deref;
 
-use crate::jni::state_manager::JNIStateManager;
-use crate::query::StateManagerSubstateQueries;
 use node_common::java::*;
 
 use crate::types::{CommitRequest, InvalidCommitRequestError, PrepareRequest, PrepareResult};
-use radix_engine::blueprints::consensus_manager::ValidatorSubstate;
-use radix_engine::system::bootstrap::GenesisDataChunk;
-use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 
-use radix_engine::track::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
+use radix_engine::system::bootstrap::GenesisDataChunk;
+
+use super::node_rust_environment::JNINodeRustEnvironment;
 
 //
 // JNI Interface
@@ -94,6 +89,8 @@ pub struct JavaGenesisData {
     pub initial_timestamp_ms: i64,
     pub initial_config: JavaConsensusManagerConfig,
     pub chunks: Vec<GenesisDataChunk>,
+    pub faucet_supply: Decimal,
+    pub scenarios_to_run: Vec<String>,
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -107,25 +104,26 @@ pub struct JavaConsensusManagerConfig {
     pub min_validator_reliability: Decimal,
     pub num_owner_stake_units_unlock_epochs: u64,
     pub num_fee_increase_delay_epochs: u64,
+    pub validator_creation_usd_cost: Decimal,
 }
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_executeGenesis(
     env: JNIEnv,
     _class: JClass,
-    j_state_manager: JObject,
+    j_node_rust_env: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_call(
+    jni_sbor_coded_fallible_call(
         &env,
         request_payload,
-        |raw_genesis_data: Vec<u8>| -> LedgerProof {
-            let state_manager = JNIStateManager::get_state_manager(&env, j_state_manager);
+        |raw_genesis_data: Vec<u8>| -> JavaResult<LedgerProof> {
+            let state_computer = JNINodeRustEnvironment::get_state_computer(&env, j_node_rust_env);
             let genesis_data_hash = hash(&raw_genesis_data);
-            let genesis_data: JavaGenesisData =
-                scrypto_decode(&raw_genesis_data).expect("Invalid genesis data");
+            let genesis_data: JavaGenesisData = scrypto_decode(&raw_genesis_data)
+                .map_err(|err| JavaError(format!("Invalid genesis data {:?}", err)))?;
             let config = genesis_data.initial_config;
-            state_manager.execute_genesis(
+            let resultant_proof = state_computer.execute_genesis(
                 genesis_data.chunks,
                 genesis_data.initial_epoch,
                 ConsensusManagerConfig {
@@ -140,10 +138,14 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_executeGene
                     min_validator_reliability: config.min_validator_reliability,
                     num_owner_stake_units_unlock_epochs: config.num_owner_stake_units_unlock_epochs,
                     num_fee_increase_delay_epochs: config.num_fee_increase_delay_epochs,
+                    validator_creation_usd_cost: config.validator_creation_usd_cost,
                 },
                 genesis_data.initial_timestamp_ms,
                 genesis_data_hash,
-            )
+                genesis_data.faucet_supply,
+                genesis_data.scenarios_to_run,
+            );
+            Ok(resultant_proof)
         },
     )
 }
@@ -152,15 +154,15 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_executeGene
 extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_prepare(
     env: JNIEnv,
     _class: JClass,
-    j_state_manager: JObject,
+    j_node_rust_env: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(
         &env,
         request_payload,
         |prepare_request: PrepareRequest| -> PrepareResult {
-            let state_manager = JNIStateManager::get_state_manager(&env, j_state_manager);
-            state_manager.prepare(prepare_request)
+            let state_computer = JNINodeRustEnvironment::get_state_computer(&env, j_node_rust_env);
+            state_computer.prepare(prepare_request)
         },
     )
 }
@@ -169,107 +171,17 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_prepare(
 extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_commit(
     env: JNIEnv,
     _class: JClass,
-    j_state_manager: JObject,
+    j_node_rust_env: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(
         &env,
         request_payload,
-        |commit_request: CommitRequest| -> Result<(), InvalidCommitRequestError> {
-            let state_manager = JNIStateManager::get_state_manager(&env, j_state_manager);
-            state_manager
-                .commit(commit_request, false)
-                .map(|_unused| ())
+        |commit_request: CommitRequest| -> Result<CommitSummary, InvalidCommitRequestError> {
+            let state_computer = JNINodeRustEnvironment::get_state_computer(&env, j_node_rust_env);
+            state_computer.commit(commit_request)
         },
     )
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_componentXrdAmount(
-    env: JNIEnv,
-    _class: JClass,
-    j_state_manager: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(
-        &env,
-        request_payload,
-        |component_address: ComponentAddress| -> Decimal {
-            let node_id = component_address.as_node_id();
-            let database = JNIStateManager::get_database(&env, j_state_manager);
-            let read_store = database.read();
-
-            // a quick fix for handling virtual accounts
-            // TODO: fix upstream
-            if read_store
-                .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
-                    node_id,
-                    TYPE_INFO_FIELD_PARTITION,
-                    &TypeInfoField::TypeInfo.into(),
-                )
-                .is_some()
-            {
-                let mut accounter = ResourceAccounter::new(read_store.deref());
-                accounter.traverse(*node_id);
-                let balances = accounter.close().balances;
-                balances
-                    .get(&RADIX_TOKEN)
-                    .cloned()
-                    .unwrap_or_else(Decimal::zero)
-            } else {
-                Decimal::zero()
-            }
-        },
-    )
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_validatorInfo(
-    env: JNIEnv,
-    _class: JClass,
-    j_state_manager: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(
-        &env,
-        request_payload,
-        |validator_address: ComponentAddress| -> JavaValidatorInfo {
-            let database = JNIStateManager::get_database(&env, j_state_manager);
-            let read_store = database.read();
-            let validator_substate: ValidatorSubstate = read_store
-                .get_mapped::<SpreadPrefixKeyMapper, ValidatorSubstate>(
-                    validator_address.as_node_id(),
-                    OBJECT_BASE_PARTITION,
-                    &ValidatorField::Validator.into(),
-                )
-                .unwrap();
-
-            JavaValidatorInfo {
-                stake_unit_resource: validator_substate.stake_unit_resource,
-                unstake_receipt_resource: validator_substate.unstake_nft,
-            }
-        },
-    )
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_epoch(
-    env: JNIEnv,
-    _class: JClass,
-    j_state_manager: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |_: ()| -> u64 {
-        let database = JNIStateManager::get_database(&env, j_state_manager);
-        let read_store = database.read();
-        read_store.get_epoch().number()
-    })
 }
 
 pub fn export_extern_functions() {}
-
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct JavaValidatorInfo {
-    pub stake_unit_resource: ResourceAddress,
-    pub unstake_receipt_resource: ResourceAddress,
-}

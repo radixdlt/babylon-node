@@ -63,12 +63,9 @@
  */
 
 use radix_engine_common::types::Epoch;
-use sbor::*;
 use transaction::{errors::TransactionValidationError, prelude::NotarizedTransactionHash};
 
 use std::string::ToString;
-
-use crate::MetricLabel;
 
 pub use crate::pending_transaction_result_cache::*;
 
@@ -78,20 +75,12 @@ pub enum MempoolAddSource {
     MempoolSync,
 }
 
-impl MetricLabel for MempoolAddSource {
-    type StringReturnType = &'static str;
-
-    fn prometheus_label_name(&self) -> Self::StringReturnType {
-        match *self {
-            MempoolAddSource::CoreApi => "CoreApi",
-            MempoolAddSource::MempoolSync => "MempoolSync",
-        }
-    }
-}
-
 #[derive(Debug)]
 pub enum MempoolAddError {
-    Full { current_size: u64, max_size: u64 },
+    PriorityThresholdNotMet {
+        min_tip_percentage_required: Option<u16>,
+        tip_percentage: u16,
+    },
     Duplicate(NotarizedTransactionHash),
     Rejected(MempoolAddRejection),
 }
@@ -143,41 +132,27 @@ impl MempoolAddRejection {
     }
 }
 
-impl MetricLabel for MempoolAddError {
-    type StringReturnType = &'static str;
-
-    fn prometheus_label_name(&self) -> Self::StringReturnType {
-        match self {
-            MempoolAddError::Rejected(rejection) => match &rejection.reason {
-                RejectionReason::FromExecution(_) => "ExecutionError",
-                RejectionReason::ValidationError(_) => "ValidationError",
-                RejectionReason::IntentHashCommitted => "IntentHashCommitted",
-            },
-            MempoolAddError::Full { .. } => "MempoolFull",
-            MempoolAddError::Duplicate(_) => "Duplicate",
-        }
-    }
-}
-
 impl ToString for MempoolAddError {
     fn to_string(&self) -> String {
         match self {
-            MempoolAddError::Full {
-                current_size,
-                max_size,
-            } => format!("Mempool Full [{current_size} - {max_size}]"),
+            MempoolAddError::PriorityThresholdNotMet {min_tip_percentage_required, tip_percentage} => {
+                match min_tip_percentage_required {
+                    None => {
+                        "Priority Threshold not met. There is no known tip to guarantee mempool submission.".to_string()
+                    }
+                    Some(min_tip_percentage_required) => {
+                        format!("Priority Threshold not met: tip is {tip_percentage} while min tip required {min_tip_percentage_required}")
+                    }
+                }
+            },
             MempoolAddError::Duplicate(_) => "Duplicate Entry".to_string(),
             MempoolAddError::Rejected(rejection) => rejection.reason.to_string(),
         }
     }
 }
 
-#[derive(Debug, Categorize, Encode, Decode, Clone)]
-pub struct MempoolConfig {
-    pub max_size: u32,
-}
-
 pub mod mempool_manager;
 pub mod mempool_relay_dispatcher;
+pub mod metrics;
 pub mod pending_transaction_result_cache;
-pub mod simple_mempool;
+pub mod priority_mempool;

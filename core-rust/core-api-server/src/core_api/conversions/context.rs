@@ -1,11 +1,13 @@
-use radix_engine::types::{Bech32Decoder, Bech32Encoder};
+use radix_engine::types::{AddressBech32Decoder, AddressBech32Encoder};
 use radix_engine_interface::network::NetworkDefinition;
+use transaction::model::{TransactionHashBech32Decoder, TransactionHashBech32Encoder};
 
 use crate::core_api::models;
 
 pub struct MappingContext {
     pub network_definition: NetworkDefinition,
-    pub bech32_encoder: Bech32Encoder,
+    pub address_encoder: AddressBech32Encoder,
+    pub transaction_hash_encoder: TransactionHashBech32Encoder,
     /// If this is true, then the data (eg transaction data) being mapped can be trusted less, so we need to be more lenient about invalid data
     pub uncommitted_data: bool,
     pub sbor_options: SborOptions,
@@ -17,7 +19,8 @@ impl MappingContext {
     pub fn new(network_definition: &NetworkDefinition) -> Self {
         Self {
             network_definition: network_definition.clone(),
-            bech32_encoder: Bech32Encoder::new(network_definition),
+            address_encoder: AddressBech32Encoder::new(network_definition),
+            transaction_hash_encoder: TransactionHashBech32Encoder::new(network_definition),
             uncommitted_data: false,
             sbor_options: Default::default(),
             transaction_options: Default::default(),
@@ -28,7 +31,8 @@ impl MappingContext {
     pub fn new_for_uncommitted_data(network_definition: &NetworkDefinition) -> Self {
         Self {
             network_definition: network_definition.clone(),
-            bech32_encoder: Bech32Encoder::new(network_definition),
+            address_encoder: AddressBech32Encoder::new(network_definition),
+            transaction_hash_encoder: TransactionHashBech32Encoder::new(network_definition),
             uncommitted_data: true,
             sbor_options: Default::default(),
             transaction_options: Default::default(),
@@ -40,7 +44,7 @@ impl MappingContext {
         mut self,
         format_options: &Option<Box<models::SborFormatOptions>>,
     ) -> Self {
-        let mut options = &mut self.sbor_options;
+        let options = &mut self.sbor_options;
         if let Some(formats) = format_options {
             if let Some(value) = formats.raw {
                 options.include_raw = value;
@@ -56,13 +60,16 @@ impl MappingContext {
         mut self,
         format_options: &Option<Box<models::TransactionFormatOptions>>,
     ) -> Self {
-        let mut options = &mut self.transaction_options;
+        let options = &mut self.transaction_options;
         if let Some(formats) = format_options {
             if let Some(value) = formats.manifest {
                 options.include_manifest = value;
             }
             if let Some(value) = formats.blobs {
                 options.include_blobs = value;
+            }
+            if let Some(value) = formats.message {
+                options.include_message = value;
             }
             if let Some(value) = formats.raw_system_transaction {
                 options.include_raw_system = value;
@@ -81,7 +88,7 @@ impl MappingContext {
         mut self,
         format_options: &Option<Box<models::SubstateFormatOptions>>,
     ) -> Self {
-        let mut options = &mut self.substate_options;
+        let options = &mut self.substate_options;
         if let Some(formats) = format_options {
             if let Some(value) = formats.hash {
                 options.include_hash = value;
@@ -91,6 +98,9 @@ impl MappingContext {
             }
             if let Some(value) = formats.typed {
                 options.include_typed = value;
+            }
+            if let Some(value) = formats.previous {
+                options.include_previous = value;
             }
         }
         self
@@ -114,6 +124,7 @@ impl Default for SborOptions {
 pub struct TransactionOptions {
     pub include_manifest: bool,
     pub include_blobs: bool,
+    pub include_message: bool,
     pub include_raw_system: bool,
     pub include_raw_notarized: bool,
     pub include_raw_ledger: bool,
@@ -124,6 +135,7 @@ impl Default for TransactionOptions {
         Self {
             include_manifest: true,
             include_blobs: false,
+            include_message: false,
             include_raw_system: false,
             include_raw_notarized: true,
             include_raw_ledger: false,
@@ -135,6 +147,7 @@ pub struct SubstateOptions {
     pub include_raw: bool,
     pub include_hash: bool,
     pub include_typed: bool,
+    pub include_previous: bool,
 }
 
 impl Default for SubstateOptions {
@@ -143,18 +156,21 @@ impl Default for SubstateOptions {
             include_raw: false,
             include_hash: false,
             include_typed: true,
+            include_previous: false,
         }
     }
 }
 
 pub struct ExtractionContext {
-    pub bech32_decoder: Bech32Decoder,
+    pub address_decoder: AddressBech32Decoder,
+    pub transaction_hash_decoder: TransactionHashBech32Decoder,
 }
 
 impl ExtractionContext {
     pub fn new(network_definition: &NetworkDefinition) -> Self {
         Self {
-            bech32_decoder: Bech32Decoder::new(network_definition),
+            address_decoder: AddressBech32Decoder::new(network_definition),
+            transaction_hash_decoder: TransactionHashBech32Decoder::new(network_definition),
         }
     }
 }

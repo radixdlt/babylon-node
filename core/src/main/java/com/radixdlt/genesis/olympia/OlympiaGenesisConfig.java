@@ -87,11 +87,11 @@ public record OlympiaGenesisConfig(
     final URL nodeCoreApiUrl;
 
     try {
-      nodeCoreApiUrl = new URL(properties.get(String.format("%s.node_core_api_url", PREFIX)));
+      nodeCoreApiUrl = new URL(properties.get(String.format("%s.node_end_state_api_url", PREFIX)));
     } catch (MalformedURLException e) {
       throw new RuntimeException(
           """
-              Olympia genesis was configured, but the provided genesis.olympia.node_core_api_url value \
+              Olympia genesis was configured, but the provided genesis.olympia.node_end_state_api_url value \
               is invalid (expected a valid URL)""",
           e);
     }
@@ -119,19 +119,21 @@ public record OlympiaGenesisConfig(
     }
 
     final var maybeAuthUser =
-        Optional.ofNullable(properties.get(String.format("%s.node_core_api_auth_user", PREFIX)));
+        Optional.ofNullable(
+            properties.get(String.format("%s.node_end_state_api_auth_user", PREFIX)));
     final Optional<String> maybeBasicAuthCredentialsBase64;
     if (maybeAuthUser.isPresent()) {
       final var authUser = maybeAuthUser.get();
       final var authPassword =
           Optional.ofNullable(
-                  properties.get(String.format("%s.node_core_api_auth_password", PREFIX)))
+                  properties.get(String.format("%s.node_end_state_api_auth_password", PREFIX)))
               .orElseThrow(
                   () ->
                       new RuntimeException(
                           "Olympia genesis auth user was specified, but the password is missing."
-                              + " Make sure both genesis.olympia.node_core_api_auth_user and"
-                              + " genesis.olympia.node_core_api_auth_password are set correctly."));
+                              + " Make sure both genesis.olympia.node_end_state_api_auth_user and"
+                              + " genesis.olympia.node_end_state_api_auth_password are set"
+                              + " correctly."));
       maybeBasicAuthCredentialsBase64 =
           Optional.of(
               Base64.toBase64String(

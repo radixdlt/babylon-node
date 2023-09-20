@@ -13,6 +13,74 @@ on:
       - main
       - release\/*
 jobs:
+  snyk-scan-deps-licences:
+    name: Snyk deps/licences scan
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      pull-requests: read
+      contents: read
+      deployments: write
+    steps:
+      - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b
+      - uses: radixdlt/public-iac-resuable-artifacts/fetch-secrets@main
+        with:
+          role_name: ${{ secrets.AWS_ROLE_NAME_SNYK_SECRET }}
+          app_name: 'babylon-node'
+          step_name: 'snyk-scan-deps-licenses'
+          secret_prefix: 'SNYK'
+          secret_name: ${{ secrets.AWS_SECRET_NAME_SNYK }}
+          parse_json: true
+      - name: Run Snyk to check for deps vulnerabilities
+        uses: snyk/actions/gradle-jdk17@b98d498629f1c368650224d6d212bf7dfa89e4bf # v0.4.0
+        with:
+          args: --all-projects --org=${{ env.SNYK_NETWORK_ORG_ID }} --severity-threshold=critical
+  snyk-scan-code:
+    name: Snyk code scan
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      pull-requests: read
+      contents: read
+      deployments: write
+    steps:
+      - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b
+      - uses: radixdlt/public-iac-resuable-artifacts/fetch-secrets@main
+        with:
+          role_name: ${{ secrets.AWS_ROLE_NAME_SNYK_SECRET }}
+          app_name: 'babylon-node'
+          step_name: 'snyk-scan-code'
+          secret_prefix: 'SNYK'
+          secret_name: ${{ secrets.AWS_SECRET_NAME_SNYK }}
+          parse_json: true
+      - name: Run Snyk to check for code vulnerabilities
+        uses: snyk/actions/gradle-jdk17@b98d498629f1c368650224d6d212bf7dfa89e4bf # v0.4.0
+        with:
+          args: --all-projects --org=${{ env.SNYK_NETWORK_ORG_ID }} --severity-threshold=high
+          command: code test
+  snyk-sbom:
+    name: Snyk SBOM
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      pull-requests: read
+      contents: read
+      deployments: write
+    steps:
+      - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b
+      - uses: radixdlt/public-iac-resuable-artifacts/fetch-secrets@main
+        with:
+          role_name: ${{ secrets.AWS_ROLE_NAME_SNYK_SECRET }}
+          app_name: 'babylon-node'
+          step_name: 'snyk-sbom'
+          secret_prefix: 'SNYK'
+          secret_name: ${{ secrets.AWS_SECRET_NAME_SNYK }}
+          parse_json: true
+      - name: Generate SBOM # check SBOM can be generated but nothing is done with it
+        uses: snyk/actions/gradle-jdk17@b98d498629f1c368650224d6d212bf7dfa89e4bf # v0.4.0
+        with:
+          args: --all-projects --org=${{ env.SNYK_NETWORK_ORG_ID }} --format=cyclonedx1.4+json --json-file-output sbom.json
+          command: sbom
   build:
     name: Unit tests and sonarqube
     runs-on: babylon-runner
@@ -58,7 +126,7 @@ jobs:
           retention-days: 7
       - uses: ./.github/actions/fetch-secrets
         with: 
-          role_name: "arn:aws:iam::308190735829:role/gh-common-secrets-read-access"
+          role_name: "${{ secrets.COMMON_SECRETS_ROLE_ARN }}"
           app_name: "babylon-node"
           step_name: "build"
           secret_prefix: "SONAR"
@@ -120,10 +188,6 @@ jobs:
           restore-keys: ${{ runner.os }}-gradle
       - name: Run steady-state integration tests
         # If you need better logging, you should add --info to the below command to output application logs.
-        #   This is useful to debug failures caused by an uncaught exception.
-        #   In this case, the node calls System.exit(X), which appear in the integration test logs
-        #   as something like:
-        # "Process 'Gradle Test Executor 1' finished with non-zero exit value 255"
         run: ./gradlew clean runSteadyStateIntegrationTests --refresh-dependencies
   targeted-integration:
     name: Targeted integration tests
@@ -151,10 +215,6 @@ jobs:
           restore-keys: ${{ runner.os }}-gradle
       - name: Run targeted integration tests
         # If you need better logging, you should add --info to the below command to output application logs.
-        #   This is useful to debug failures caused by an uncaught exception.
-        #   In this case, the node calls System.exit(X), which appear in the integration test logs
-        #   as something like:
-        # "Process 'Gradle Test Executor 1' finished with non-zero exit value 255"
         run: ./gradlew clean runTargetedIntegrationTests --refresh-dependencies --parallel
   cross-xwin:
     name: Cross compile to Windows

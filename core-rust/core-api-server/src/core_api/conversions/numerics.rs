@@ -1,5 +1,10 @@
+use std::any::type_name;
+
 use radix_engine_common::math::*;
+use radix_engine_interface::blueprints::package::BlueprintVersion;
 use radix_engine_interface::prelude::*;
+use sbor::WellKnownTypeId;
+use state_manager::store::traits::scenario::ScenarioSequenceNumber;
 use state_manager::StateVersion;
 
 use crate::core_api::models;
@@ -16,6 +21,7 @@ const MAX_API_ROUND: u64 = 10000000000;
 const MAX_API_STATE_VERSION: u64 = 100000000000000;
 const MIN_API_TIMESTAMP_MS: i64 = 0;
 const MAX_API_TIMESTAMP_MS: i64 = 100000000000000; // For comparison, current timestamp is 1673822843000 (about 1/100th the size)
+const MAX_API_GENESIS_SCENARIO_NUMBER: i32 = 1000000;
 const TEN_TRILLION: u64 = 10000000000;
 
 #[tracing::instrument(skip_all)]
@@ -45,6 +51,23 @@ pub fn to_api_round(round: Round) -> Result<i64, MappingError> {
     Ok(round.number().try_into().expect("Round too large somehow"))
 }
 
+pub fn to_api_active_validator_index(index: ValidatorIndex) -> models::ActiveValidatorIndex {
+    models::ActiveValidatorIndex {
+        index: index as i32,
+    }
+}
+
+pub fn to_api_well_known_type_id(
+    well_known_type_id: &WellKnownTypeId,
+) -> Result<i64, MappingError> {
+    well_known_type_id
+        .as_index()
+        .try_into()
+        .map_err(|_| MappingError::IntegerError {
+            message: "Well-known type index too large".to_string(),
+        })
+}
+
 #[tracing::instrument(skip_all)]
 pub fn to_api_state_version(state_version: StateVersion) -> Result<i64, MappingError> {
     let state_version_number = state_version.number();
@@ -56,6 +79,16 @@ pub fn to_api_state_version(state_version: StateVersion) -> Result<i64, MappingE
     Ok(state_version_number
         .try_into()
         .expect("State version too large somehow"))
+}
+
+pub fn to_api_blueprint_version(
+    _context: &MappingContext,
+    version: &BlueprintVersion,
+) -> Result<String, MappingError> {
+    Ok(format!(
+        "{}.{}.{}",
+        version.major, version.minor, version.patch
+    ))
 }
 
 #[tracing::instrument(skip_all)]
@@ -87,6 +120,23 @@ pub fn to_api_u32_as_i64(input: u32) -> i64 {
     input.into()
 }
 
+pub fn to_api_index_as_i64(index: usize) -> Result<i64, MappingError> {
+    index.try_into().map_err(|_| MappingError::IntegerError {
+        message: "Index number too large".to_string(),
+    })
+}
+
+pub fn to_api_scenario_number(number: ScenarioSequenceNumber) -> Result<i32, MappingError> {
+    if number > MAX_API_GENESIS_SCENARIO_NUMBER as u32 {
+        return Err(MappingError::IntegerError {
+            message: format!(
+                "Genesis scenario sequence number must be <= {MAX_API_GENESIS_SCENARIO_NUMBER}"
+            ),
+        });
+    }
+    Ok(number as i32)
+}
+
 #[allow(dead_code)]
 pub fn to_api_u64_as_string(input: u64) -> String {
     input.to_string()
@@ -101,6 +151,14 @@ pub fn to_unix_timestamp_ms(time: std::time::SystemTime) -> Result<i64, MappingE
     millis.try_into().map_err(|_| MappingError::IntegerError {
         message: format!("Timestamp ms must be <= {MAX_API_TIMESTAMP_MS}"),
     })
+}
+
+pub fn to_api_instant(instant: &Instant) -> Result<models::Instant, MappingError> {
+    to_api_instant_from_safe_timestamp(instant.seconds_since_unix_epoch.checked_mul(1000).ok_or(
+        MappingError::IntegerError {
+            message: "Timestamp must be representable as millis in i64".to_owned(),
+        },
+    )?)
 }
 
 pub fn to_api_instant_from_safe_timestamp(
@@ -197,4 +255,90 @@ pub fn extract_api_u16_as_i32(input: i32) -> Result<u16, ExtractionError> {
         });
     }
     Ok(input.try_into().expect("Number invalid somehow"))
+}
+
+pub trait PanickingOps: Sized {
+    fn add_or_panic(self, rhs: Self) -> Self;
+    fn sub_or_panic(self, rhs: Self) -> Self;
+    fn mul_or_panic(self, rhs: Self) -> Self;
+    fn div_or_panic(self, rhs: Self) -> Self;
+    fn neg_or_panic(self) -> Self;
+}
+
+impl<T> PanickingOps for T
+where
+    T: CheckedAdd<Output = T>
+        + CheckedSub<Output = T>
+        + CheckedDiv<Output = T>
+        + CheckedMul<Output = T>
+        + CheckedNeg<Output = T>
+        + Copy
+        + Display,
+{
+    fn add_or_panic(self, rhs: Self) -> Self {
+        op_or_panic(self, "+", rhs, self.checked_add(rhs))
+    }
+
+    fn sub_or_panic(self, rhs: Self) -> Self {
+        op_or_panic(self, "-", rhs, self.checked_sub(rhs))
+    }
+
+    fn mul_or_panic(self, rhs: Self) -> Self {
+        op_or_panic(self, "*", rhs, self.checked_mul(rhs))
+    }
+
+    fn div_or_panic(self, rhs: Self) -> Self {
+        op_or_panic(self, "/", rhs, self.checked_div(rhs))
+    }
+
+    fn neg_or_panic(self) -> Self {
+        if let Some(result) = self.checked_neg() {
+            result
+        } else {
+            panic!("result of -{} does not fit in {}", self, type_name::<T>());
+        }
+    }
+}
+
+pub trait PanickingSumIterator<E> {
+    fn sum_or_panic(self) -> E;
+}
+
+impl<T, E> PanickingSumIterator<E> for T
+where
+    T: Iterator<Item = E>,
+    E: Default + CheckedAdd<Output = E> + Copy + Display,
+{
+    fn sum_or_panic(self) -> E {
+        let mut result = E::default();
+        for (index, element) in self.enumerate() {
+            let sum = result.checked_add(element);
+            if let Some(sum) = sum {
+                result = sum;
+            } else {
+                panic!(
+                    "result of accumulating {}. element ({} + {}) does not fit in {}",
+                    index,
+                    result,
+                    element,
+                    type_name::<T>()
+                );
+            }
+        }
+        result
+    }
+}
+
+fn op_or_panic<T: Display>(left: T, op: &str, right: T, result: Option<T>) -> T {
+    if let Some(result) = result {
+        result
+    } else {
+        panic!(
+            "result of {} {} {} does not fit in {}",
+            left,
+            op,
+            right,
+            type_name::<T>()
+        );
+    }
 }

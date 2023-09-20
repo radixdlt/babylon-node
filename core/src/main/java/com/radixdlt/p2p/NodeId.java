@@ -92,7 +92,7 @@ public final class NodeId {
 
   @JsonValue
   public byte[] getPubKey() {
-    return publicKey.getCompressedBytes();
+    return publicKey.getBytes();
   }
 
   @Override

@@ -79,7 +79,7 @@ use radix_engine_store_interface::interface::{
 };
 use transaction::model::*;
 
-use radix_engine_stores::hash_tree::tree_store::{NodeKey, Payload, ReadableTreeStore, TreeNode};
+use radix_engine_stores::hash_tree::tree_store::{NodeKey, ReadableTreeStore, TreeNode};
 use sbor::{Categorize, Decode, Encode};
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
@@ -101,8 +101,11 @@ pub enum DatabaseBackendConfig {
     AccountChangeIndexExtension,
     QueryableTransactionStore,
     CommitStore,
+    SubstateNodeAncestryStore,
     IterableAccountChangeIndex,
-    IterableTransactionStore
+    IterableTransactionStore,
+    IterableProofStore,
+    ExecutedGenesisScenarioStore
 )]
 pub enum StateManagerDatabase {
     InMemory(InMemoryStore),
@@ -162,8 +165,8 @@ impl SubstateDatabase for StateManagerDatabase {
     }
 }
 
-impl<P: Payload> ReadableTreeStore<P> for StateManagerDatabase {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<P>> {
+impl ReadableTreeStore for StateManagerDatabase {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
         match self {
             StateManagerDatabase::InMemory(store) => store.get_node(key),
             StateManagerDatabase::RocksDB(store) => store.get_node(key),

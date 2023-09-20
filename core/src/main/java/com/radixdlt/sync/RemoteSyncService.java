@@ -172,7 +172,7 @@ public final class RemoteSyncService {
   }
 
   private void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
-    final LedgerProof updatedHeader = ledgerUpdate.getTail();
+    final LedgerProof updatedHeader = ledgerUpdate.proof();
     if (updatedHeader.getStateVersion() > this.currentHeader.getStateVersion()) {
       this.currentHeader = updatedHeader;
       this.sendStatusUpdateToSomePeers(updatedHeader);

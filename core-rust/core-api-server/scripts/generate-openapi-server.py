@@ -99,12 +99,14 @@ def generate_rust_models(schema_file, tmp_client_folder, out_location):
         # Fix changes due to putting generated files directly into the crate
         replace_in_file(file_path, 'crate::', 'crate::core_api::generated::')
         replace_in_file(file_path, ', Serialize, Deserialize', ', serde::Serialize, serde::Deserialize')
+        replace_in_file(file_path, '::std::collections::HashMap', '::utils::rust::prelude::IndexMap')
         # Fix bugs in the OAS generation:
         fix_broken_discriminator_tag(file_path, "substate_type")
         fix_broken_discriminator_tag(file_path, "resource_type")
         fix_broken_discriminator_tag(file_path, "key_type")
         fix_broken_discriminator_tag(file_path, "error_type")
         fix_broken_discriminator_tag(file_path, "type")
+        fix_broken_discriminator_tag(file_path, "pointer_type")
         fix_for_enum_not_implementing_default(file_path, "AccessRule")
         fix_for_enum_not_implementing_default(file_path, "AccessRuleNode")
         fix_for_enum_not_implementing_default(file_path, "ProofRule")
@@ -132,6 +134,17 @@ def generate_rust_models(schema_file, tmp_client_folder, out_location):
         fix_for_enum_not_implementing_default(file_path, "BlueprintCollectionSchema")
         fix_for_enum_not_implementing_default(file_path, "BlueprintTypeReference")
         fix_for_enum_not_implementing_default(file_path, "Requirement")
+        fix_for_enum_not_implementing_default(file_path, "MethodPermission")
+        fix_for_enum_not_implementing_default(file_path, "TypePointer")
+        fix_for_enum_not_implementing_default(file_path, "OwnerRole")
+        fix_for_enum_not_implementing_default(file_path, "FieldSchemaFeatureCondition")
+        fix_for_enum_not_implementing_default(file_path, "TransactionMessage")
+        fix_for_enum_not_implementing_default(file_path, "PlaintextMessageContent")
+        fix_for_enum_not_implementing_default(file_path, "AuthorizedDepositorBadge")
+        fix_for_enum_not_implementing_default(file_path, "BlueprintPayloadDef")
+        fix_for_enum_not_implementing_default(file_path, "SubstateSystemStructure")
+        fix_for_enum_not_implementing_default(file_path, "ObjectSubstateTypeReference")
+        fix_for_enum_not_implementing_default(file_path, "GenericSubstitution")
 
     logging.info("Successfully fixed up rust models.")
 

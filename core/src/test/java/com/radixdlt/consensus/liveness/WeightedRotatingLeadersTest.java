@@ -77,7 +77,7 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.utils.KeyComparator;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt192;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -94,8 +94,8 @@ public class WeightedRotatingLeadersTest {
     this.validatorsInOrder =
         Stream.generate(() -> ECKeyPair.generateNew().getPublicKey())
             .limit(validatorSetSize)
-            .map(BFTValidatorId::create)
-            .map(node -> BFTValidator.from(node, UInt256.ONE))
+            .map(BFTValidatorId::withKeyAndFakeDeterministicAddress)
+            .map(node -> BFTValidator.from(node, UInt192.ONE))
             .sorted(
                 Comparator.comparing(
                     v -> v.getValidatorId().getKey(), KeyComparator.instance().reversed()))
@@ -183,19 +183,19 @@ public class WeightedRotatingLeadersTest {
     this.validatorsInOrder =
         fibonacci
             .get()
-            .mapToObj(p -> BFTValidator.from(BFTValidatorId.random(), UInt256.from(p)))
+            .mapToObj(p -> BFTValidator.from(BFTValidatorId.random(), UInt192.from(p)))
             .collect(ImmutableList.toImmutableList());
 
     BFTValidatorSet validatorSet = BFTValidatorSet.from(validatorsInOrder);
     this.weightedRotatingLeaders = new WeightedRotatingLeaders(validatorSet, sizeOfCache);
 
-    Map<BFTValidatorId, UInt256> proposerCounts =
+    Map<BFTValidatorId, UInt192> proposerCounts =
         Stream.iterate(Round.of(0), Round::next)
             .limit(sumOfPower)
             .map(this.weightedRotatingLeaders::getProposer)
-            .collect(groupingBy(p -> p, collectingAndThen(counting(), UInt256::from)));
+            .collect(groupingBy(p -> p, collectingAndThen(counting(), UInt192::from)));
 
-    Map<BFTValidatorId, UInt256> expected =
+    Map<BFTValidatorId, UInt192> expected =
         validatorsInOrder.stream()
             .collect(toMap(BFTValidator::getValidatorId, BFTValidator::getPower));
 

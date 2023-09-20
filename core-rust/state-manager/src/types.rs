@@ -64,7 +64,7 @@
 
 use crate::accumulator_tree::IsMerklizableHash;
 use crate::transaction::*;
-use crate::{LedgerTransactionOutcome, SubstateChange};
+use crate::{LedgerTransactionOutcome, PartitionChange, SubstateChange};
 use radix_engine::types::*;
 use radix_engine_common::prelude::IsHash;
 use std::fmt;
@@ -74,19 +74,43 @@ use std::num::TryFromIntError;
 use std::ops::Range;
 use transaction::prelude::*;
 
-use transaction::ecdsa_secp256k1::EcdsaSecp256k1Signature;
+use transaction::signing::secp256k1::Secp256k1Signature;
 
-define_wrapped_hash!(SubstateChangeHash);
+/// A complete ID of a Substate.
+#[derive(Debug, Clone, Hash, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct SubstateReference(pub NodeId, pub PartitionNumber, pub SubstateKey);
 
-impl SubstateChangeHash {
-    pub fn from_substate_change(substate_change: &SubstateChange) -> SubstateChangeHash {
-        SubstateChangeHash(hash(scrypto_encode(&substate_change).unwrap()))
+/// A complete ID of a Partition.
+#[derive(Debug, Clone, Hash, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct PartitionReference(pub NodeId, pub PartitionNumber);
+
+define_wrapped_hash!(StateChangeHash);
+
+impl Display for StateChangeHash {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
 
-impl IsMerklizableHash for SubstateChangeHash {}
+impl StateChangeHash {
+    pub fn from_substate_change(substate_change: &SubstateChange) -> StateChangeHash {
+        StateChangeHash(hash(scrypto_encode(substate_change).unwrap()))
+    }
+
+    pub fn from_partition_change(partition_change: &PartitionChange) -> StateChangeHash {
+        StateChangeHash(hash(scrypto_encode(partition_change).unwrap()))
+    }
+}
+
+impl IsMerklizableHash for StateChangeHash {}
 
 define_wrapped_hash!(EventHash);
+
+impl Display for EventHash {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
 
 impl IsMerklizableHash for EventHash {}
 
@@ -101,7 +125,7 @@ pub struct ConsensusReceipt {
     pub outcome: LedgerTransactionOutcome,
     /// The root hash of a merkle tree whose leaves are hashes of the `LedgerTransactionReceipt`'s
     /// `substate_changes`.
-    pub substate_change_root: SubstateChangeHash,
+    pub substate_change_root: StateChangeHash,
     /// The root hash of a merkle tree whose leaves are hashes of the `LedgerTransactionReceipt`'s
     /// `application_events` (see `ApplicationEvent::get_hash()`).
     pub event_root: EventHash,
@@ -120,18 +144,54 @@ define_wrapped_hash! {
     LedgerReceiptHash
 }
 
+impl Display for LedgerReceiptHash {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 define_wrapped_hash! {
     StateHash
+}
+
+impl Display for StateHash {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 define_wrapped_hash! {
     TransactionTreeHash
 }
 
+impl Display for TransactionTreeHash {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl From<LedgerTransactionHash> for TransactionTreeHash {
+    fn from(hash: LedgerTransactionHash) -> Self {
+        Self::from(hash.into_hash())
+    }
+}
+
 impl IsMerklizableHash for TransactionTreeHash {}
 
 define_wrapped_hash! {
     ReceiptTreeHash
+}
+
+impl Display for ReceiptTreeHash {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl From<LedgerReceiptHash> for ReceiptTreeHash {
+    fn from(hash: LedgerReceiptHash) -> Self {
+        Self::from(hash.into_hash())
+    }
 }
 
 impl IsMerklizableHash for ReceiptTreeHash {}
@@ -178,26 +238,30 @@ impl StateVersion {
         self.0
     }
 
+    /// Creates an immdiate predecessor.
+    /// Returns error on underflow.
+    pub fn previous(&self) -> Result<Self, TryFromIntError> {
+        self.relative(-1)
+    }
+
     /// Creates an immediate successor version.
-    /// Panics on overflow.
-    pub fn next(&self) -> Self {
+    /// Returns error on overflow.
+    pub fn next(&self) -> Result<Self, TryFromIntError> {
         self.relative(1)
     }
 
     /// Creates a version relative to this one.
-    /// Panics on overflow or underflow.
-    pub fn relative(&self, delta: impl Into<StateVersionDelta>) -> Self {
+    /// Returns error on overflow or underflow.
+    pub fn relative(&self, delta: impl Into<StateVersionDelta>) -> Result<Self, TryFromIntError> {
         let number = self.0 as i128; // every u64 is safe to represent as i128
         let delta_number = delta.into();
         let relative_number = number
             .checked_add(delta_number)
             .expect("both operands are representable by i65, so their sum must fit in i128");
-        Self(u64::try_from(relative_number).unwrap_or_else(|error| {
-            panic!(
-                "cannot reference state version {} + {} ({:?})",
-                self.0, delta_number, error
-            )
-        }))
+        match u64::try_from(relative_number) {
+            Ok(relative_number) => Ok(Self(relative_number)),
+            Err(error) => Err(error),
+        }
     }
 
     /// Creates an iterator of all versions starting with this one, and ending at the given one
@@ -251,14 +315,13 @@ pub struct PreviewRequest {
     pub nonce: u32,
     pub signer_public_keys: Vec<PublicKey>,
     pub flags: PreviewFlags,
+    pub message: MessageV1,
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum InvalidCommitRequestError {
-    MissingEpochProof,
-    SuperfluousEpochProof,
-    EpochProofMismatch,
-    LedgerHashesMismatch,
+    TransactionParsingFailed,
+    TransactionRootMismatch,
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -266,6 +329,13 @@ pub struct CommitRequest {
     pub transactions: Vec<RawLedgerTransaction>,
     pub proof: LedgerProof,
     pub vertex_store: Option<Vec<u8>>,
+    pub self_validator_address: Option<ComponentAddress>, // for metrics calculation only
+}
+
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct CommitSummary {
+    pub validator_round_counters: Vec<(ComponentAddress, LeaderRoundCounter)>,
+    pub num_user_transactions: u32,
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -290,6 +360,7 @@ pub struct RoundHistory {
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PrepareResult {
     pub committed: Vec<CommittableTransaction>,
+    /// Note: this is only used for testing
     pub rejected: Vec<RejectedTransaction>,
     pub next_epoch: Option<NextEpoch>,
     pub ledger_hashes: LedgerHashes,
@@ -318,7 +389,7 @@ pub struct RejectedTransaction {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ActiveValidatorInfo {
     pub address: ComponentAddress,
-    pub key: EcdsaSecp256k1PublicKey,
+    pub key: Secp256k1PublicKey,
     pub stake: Decimal,
 }
 
@@ -330,14 +401,19 @@ pub struct NextEpoch {
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct TimestampedValidatorSignature {
-    pub key: EcdsaSecp256k1PublicKey,
-    pub validator_address: Option<ComponentAddress>,
+    pub key: Secp256k1PublicKey,
+    pub validator_address: ComponentAddress,
     pub timestamp_ms: i64,
-    pub signature: EcdsaSecp256k1Signature,
+    pub signature: Secp256k1Signature,
+}
+
+define_single_versioned! {
+    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub enum VersionedLedgerProof => LedgerProof = LedgerProofV1
 }
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct LedgerProof {
+pub struct LedgerProofV1 {
     pub opaque: Hash,
     pub ledger_header: LedgerHeader,
     pub timestamped_signatures: Vec<TimestampedValidatorSignature>,

@@ -69,23 +69,23 @@ import static org.junit.Assert.assertTrue;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.radixdlt.TestSetupUtils;
 import com.radixdlt.utils.Bytes;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.List;
 import java.util.Map;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class ECDSASecp256k1SignatureTest {
-  @BeforeClass
-  public static void startRadixTest() {
-    TestSetupUtils.installBouncyCastleProvider();
+
+  @Test
+  public void randomTest() {
+    System.out.println(new SecureRandom().getAlgorithm());
   }
 
   @Test
@@ -239,8 +239,7 @@ public class ECDSASecp256k1SignatureTest {
       var publicKey = keyPair.getPublicKey();
 
       assertEquals(
-          vector.get("expectedPublicKeyCompressed"),
-          Bytes.toHexString(publicKey.getCompressedBytes()));
+          vector.get("expectedPublicKeyCompressed"), Bytes.toHexString(publicKey.getBytes()));
 
       var messageUnhashedPlaintext = vector.get("message");
       var messageUnhashed = messageUnhashedPlaintext.getBytes(StandardCharsets.UTF_8);
@@ -260,7 +259,8 @@ public class ECDSASecp256k1SignatureTest {
               signature.getConcatRecoveryRSBytes()));
 
       var expectedSignatureDERBytes = Bytes.fromHexString(vector.get("expectedDer"));
-      var sigFromDER = ECDSASecp256k1Signature.decodeFromDER(expectedSignatureDERBytes);
+      var sigFromDER =
+          ECDSASecp256k1Signature.decodeNonRecoverableFromDer(expectedSignatureDERBytes);
 
       // Signature from DER has no `v` byte, so comparing using `equals` fails.
       assertEquals(sigFromDER.getR(), signature.getR());
@@ -269,9 +269,9 @@ public class ECDSASecp256k1SignatureTest {
   }
 
   private byte[] sha2bits256Once(byte[] data) {
-    MessageDigest hasher = null;
+    MessageDigest hasher;
     try {
-      hasher = MessageDigest.getInstance("SHA-256");
+      hasher = MessageDigest.getInstance("SHA-256", BouncyCastleProviderInstance.get());
     } catch (NoSuchAlgorithmException e) {
       throw new IllegalStateException("Should always be able to sha256 hash", e);
     }

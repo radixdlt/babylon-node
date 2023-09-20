@@ -67,10 +67,13 @@ package com.radixdlt.api.core;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.api.DeterministicCoreApiTestBase;
-import com.radixdlt.api.core.generated.models.ParsedNotarizedTransaction;
-import com.radixdlt.api.core.generated.models.TransactionParseRequest;
+import com.radixdlt.api.core.generated.models.*;
+import com.radixdlt.message.MessageContent;
+import com.radixdlt.message.PlaintextTransactionMessage;
+import com.radixdlt.message.TransactionMessage;
 import com.radixdlt.rev2.Manifest;
 import com.radixdlt.rev2.TransactionBuilder;
+import com.radixdlt.utils.Bytes;
 import org.junit.Test;
 
 public class TransactionParseTest extends DeterministicCoreApiTestBase {
@@ -96,9 +99,44 @@ public class TransactionParseTest extends DeterministicCoreApiTestBase {
       var parsedNotarized = (ParsedNotarizedTransaction) parsed;
       var validationError = parsedNotarized.getValidationError();
       assertThat(validationError).isNotNull();
-      assertThat(validationError.getReason())
+      assertThat(validationError.getReason()).contains("LoanRepaymentFailed");
+    }
+  }
+
+  @Test
+  public void parsed_transaction_contains_its_message() throws Exception {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
+
+      var created =
+          TransactionBuilder.forTests()
+              .manifest(Manifest.valid())
+              .message(
+                  new TransactionMessage.Plaintext(
+                      new PlaintextTransactionMessage(
+                          "image/jpeg", new MessageContent.BytesContent(new byte[] {13, 37}))))
+              .prepare();
+
+      var response =
+          getTransactionApi()
+              .transactionParsePost(
+                  new TransactionParseRequest()
+                      .network(networkLogicalName)
+                      .transactionFormatOptions(new TransactionFormatOptions().message(true))
+                      .validationMode(TransactionParseRequest.ValidationModeEnum.FULL)
+                      .payloadHex(created.hexPayloadBytes()));
+
+      var parsed = (ParsedNotarizedTransaction) response.getParsed();
+
+      assertThat(parsed.getNotarizedTransaction().getSignedIntent().getIntent().getMessage())
           .isEqualTo(
-              "FromExecution(ErrorBeforeFeeLoanRepaid(ModuleError(CostingError(FeeReserveError(LoanRepaymentFailed)))))");
+              new com.radixdlt.api.core.generated.models.PlaintextTransactionMessage()
+                  .mimeType("image/jpeg")
+                  .content(
+                      new BinaryPlaintextMessageContent()
+                          .valueHex(Bytes.toHexString(new byte[] {13, 37}))
+                          .type(PlaintextMessageContentType.BINARY))
+                  .type(TransactionMessageType.PLAINTEXT));
     }
   }
 }

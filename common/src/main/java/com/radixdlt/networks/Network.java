@@ -90,12 +90,14 @@ public enum Network {
   /// Babylon Temporary Testnets (0x0a - 0x0f)
   // - adapanet = Babylon Alphanet, after Adapa
   // - nebunet = Babylon Betanet, after Nebuchadnezzar
-  // - kisharnet = Babylon RCnet-V1, after Kishar (from the Babylonian Creation Story)
-  // - ansharnet = Babylon RCnet-V2, after Anshar (from the Babylonian Creation Story)
+  // - kisharnet = Babylon RCnet v1, after Kishar (from the Babylonian Creation Story)
+  // - ansharnet = Babylon RCnet v2, after Anshar (from the Babylonian Creation Story)
+  // - zabanet = Babylon RCnet v3, after Zababa, a war god from the Mesopotamian city of Kish
   ADAPANET(10 /* 0x0a */, "adapanet", "tdx_a_"),
   NEBUNET(11 /* 0x0b */, "nebunet", "tdx_b_"),
   KISHARNET(12 /* 0x0c */, "kisharnet", "tdx_c_"),
   ANSHARNET(13 /* 0x0d */, "ansharnet", "tdx_d_"),
+  ZABANET(14 /* 0x0e */, "zabanet", "tdx_e_"),
 
   /// RDX Development - Semi-permanent Testnets (start with 0x2)
   // - gilganet = Node integration network, after Gilgamesh
@@ -126,7 +128,7 @@ public enum Network {
       "genesis_test",
       FixedNetworkGenesis.resource(
           HashCode.fromBytes(
-              Hex.decode("8224a260ac04ce77e4d0b6359f8010faa3f3ba2adba601d612b2f40b67a558a3")),
+              Hex.decode("ac79e815b39beb756d9afe261e8c4deff4ed95f8fcc59af001eef060d820b266")),
           "genesis/test_genesis.bin"));
 
   private final int intId;
@@ -136,9 +138,12 @@ public enum Network {
   private final String packageHrp;
   private final String normalComponentHrp;
   private final String accountComponentHrp;
+  private final String internalVaultHrp;
   private final String validatorHrp;
   private final String resourceHrp;
   private final String nodeHrp;
+  private final String intentHashHrp;
+  private final String notarizedTransactionHashHrp;
   private final Optional<FixedNetworkGenesis> maybeFixedGenesis;
 
   Network(
@@ -158,9 +163,12 @@ public enum Network {
     this.packageHrp = "package_" + hrpSuffix;
     this.normalComponentHrp = "component_" + hrpSuffix;
     this.accountComponentHrp = "account_" + hrpSuffix;
+    this.internalVaultHrp = "internal_vault_" + hrpSuffix;
     this.validatorHrp = "validator_" + hrpSuffix;
     this.resourceHrp = "resource_" + hrpSuffix;
     this.nodeHrp = "node_" + hrpSuffix;
+    this.intentHashHrp = "txid_" + hrpSuffix;
+    this.notarizedTransactionHashHrp = "notarizedtransaction_" + hrpSuffix;
     this.maybeFixedGenesis = maybeFixedGenesis;
   }
 
@@ -184,6 +192,10 @@ public enum Network {
     return accountComponentHrp;
   }
 
+  public String getInternalVaultHrp() {
+    return internalVaultHrp;
+  }
+
   public String getValidatorHrp() {
     return validatorHrp;
   }
@@ -194,6 +206,14 @@ public enum Network {
 
   public String getNodeHrp() {
     return nodeHrp;
+  }
+
+  public String getIntentHashHrp() {
+    return intentHashHrp;
+  }
+
+  public String getNotarizedTransactionHashHrp() {
+    return notarizedTransactionHashHrp;
   }
 
   public int getId() {

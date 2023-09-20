@@ -64,22 +64,26 @@
 
 package com.radixdlt;
 
-import com.google.common.base.Strings;
+import com.google.common.base.Preconditions;
 import com.google.inject.AbstractModule;
-import com.google.inject.Key;
-import com.google.inject.multibindings.OptionalBinder;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.api.CoreApiServerModule;
 import com.radixdlt.api.prometheus.PrometheusApiModule;
 import com.radixdlt.api.system.SystemApiModule;
+import com.radixdlt.config.SelfValidatorAddressConfig;
+import com.radixdlt.consensus.ProposalLimitsConfig;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
+import com.radixdlt.environment.CoreApiServerFlags;
+import com.radixdlt.environment.DatabaseFlags;
+import com.radixdlt.environment.NodeConstants;
+import com.radixdlt.environment.VertexLimitsConfig;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.genesis.GenesisProvider;
-import com.radixdlt.keys.BFTValidatorIdFromGenesisModule;
-import com.radixdlt.keys.BFTValidatorIdModule;
 import com.radixdlt.keys.PersistedBFTKeyModule;
+import com.radixdlt.keys.SelfValidatorInfoFromGenesisModule;
+import com.radixdlt.keys.SelfValidatorInfoModule;
 import com.radixdlt.lang.Option;
 import com.radixdlt.logger.EventLoggerConfig;
 import com.radixdlt.logger.EventLoggerModule;
@@ -89,18 +93,20 @@ import com.radixdlt.modules.*;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.P2PModule;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
-import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.modules.*;
-import com.radixdlt.statemanager.DatabaseFlags;
 import com.radixdlt.store.NodeStorageLocationFromPropertiesModule;
-import com.radixdlt.store.berkeley.BerkeleyDatabaseModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.BooleanUtils;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.time.Duration;
+import java.util.Optional;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** Module which manages everything in a single node */
 public final class RadixNodeModule extends AbstractModule {
+  private static final Logger log = LogManager.getLogger();
+
   private static final int DEFAULT_CORE_API_PORT = 3333;
   private static final int DEFAULT_SYSTEM_API_PORT = 3334;
   private static final int DEFAULT_PROMETHEUS_API_PORT = 3335;
@@ -109,11 +115,6 @@ public final class RadixNodeModule extends AbstractModule {
   private static final String DEFAULT_CORE_API_BIND_ADDRESS = "127.0.0.1";
   private static final String DEFAULT_SYSTEM_API_BIND_ADDRESS = "127.0.0.1";
   private static final String DEFAULT_PROMETHEUS_API_BIND_ADDRESS = "127.0.0.1";
-
-  // Proposal constants
-  public static final int MAX_TRANSACTIONS_PER_PROPOSAL = 4;
-  public static final int MAX_PROPOSAL_TOTAL_TXNS_PAYLOAD_SIZE = 2 * 1024 * 1024;
-  public static final int MAX_UNCOMMITTED_USER_TRANSACTIONS_TOTAL_PAYLOAD_SIZE = 2 * 1024 * 1024;
 
   private final RuntimeProperties properties;
   private final Network network;
@@ -145,8 +146,8 @@ public final class RadixNodeModule extends AbstractModule {
     // Default values mean that pacemakers will sync if they are within 5 rounds of each other.
     // 5 consecutive failing rounds will take 1*(2^6)-1 seconds = 63 seconds.
     bindConstant().annotatedWith(PacemakerBaseTimeoutMs.class).to(3000L);
-    bindConstant().annotatedWith(PacemakerBackoffRate.class).to(1.1);
-    bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0);
+    bindConstant().annotatedWith(PacemakerBackoffRate.class).to(1.2);
+    bindConstant().annotatedWith(PacemakerMaxExponent.class).to(13);
     bindConstant().annotatedWith(AdditionalRoundTimeIfProposalReceivedMs.class).to(30_000L);
     bindConstant().annotatedWith(TimeoutQuorumResolutionDelayMs.class).to(1500L);
 
@@ -160,41 +161,78 @@ public final class RadixNodeModule extends AbstractModule {
     // Consensus
     install(new EventLoggerModule(EventLoggerConfig.addressed(addressing)));
 
-    final String useGenesisProperty = properties.get("consensus.use_genesis_for_validator_address");
-    final Option<Boolean> useGenesis =
-        Strings.isNullOrEmpty(useGenesisProperty)
-            ? Option.none()
-            : Option.some(Boolean.parseBoolean(useGenesisProperty));
-    final String validatorAddress = properties.get("consensus.validator_address", (String) null);
-    if (useGenesis.isPresent() && useGenesis.unwrap() && !Strings.isNullOrEmpty(validatorAddress)) {
-      throw new IllegalArgumentException(
-          "Invalid configuration. Using both consensus.use_genesis_for_validator_address=true and"
-              + " consensus.validator_address. Please use one.");
-    } else if (!Strings.isNullOrEmpty(validatorAddress)) {
-      OptionalBinder.newOptionalBinder(binder(), Key.get(ComponentAddress.class, Self.class))
-          .setBinding()
-          .toInstance(addressing.decodeValidatorAddress(validatorAddress));
-      install(new BFTValidatorIdModule());
-    } else if (useGenesis.isEmpty() || (useGenesis.isPresent() && useGenesis.unwrap())) {
-      install(new BFTValidatorIdFromGenesisModule());
-    } else {
-      // No validator address provided, and use genesis explicitly disabled
-      OptionalBinder.newOptionalBinder(binder(), Key.get(ComponentAddress.class, Self.class));
-      install(new BFTValidatorIdModule());
+    final var selfValidatorAddressConfig =
+        SelfValidatorAddressConfig.fromRuntimeProperties(properties, addressing);
+    switch (selfValidatorAddressConfig) {
+      case SelfValidatorAddressConfig.Set set -> install(
+          new SelfValidatorInfoModule(Optional.of(set.validatorComponentAddress())));
+      case SelfValidatorAddressConfig.FromGenesis fromGenesis -> install(
+          new SelfValidatorInfoFromGenesisModule());
+      case SelfValidatorAddressConfig.Unset unset -> install(
+          new SelfValidatorInfoModule(Optional.empty()));
     }
 
     install(new PersistedBFTKeyModule());
     install(new CryptoModule());
-    install(new ConsensusModule());
 
     // Ledger
     install(new LedgerModule());
     install(new MempoolReceiverModule());
 
     // Mempool Relay
-    install(new MempoolRelayConfig(5, 100).asModule());
-    install(new MempoolRelayerModule(20000));
-    install(new MempoolReevaluationModule(Duration.ofSeconds(10), 5));
+    install(new MempoolReceiverConfig(5).asModule());
+    var mempoolRelayerIntervalMs =
+        properties.get("mempool.relayer.interval_ms", MempoolRelayerConfig.DEFAULT_INTERVAL_MS);
+    var mempoolRelayerMaxPeers =
+        properties.get("mempool.relayer.max_peers", MempoolRelayerConfig.DEFAULT_MAX_PEERS);
+    var mempoolRelayerMaxRelayedSize =
+        properties.get(
+            "mempool.relayer.max_relayed_size", MempoolRelayerConfig.DEFAULT_MAX_RELAYED_SIZE);
+    var mempoolRelayerMaxMessageTransactionCount =
+        properties.get(
+            "mempool.relayer.max_message_transaction_count",
+            MempoolRelayerConfig.DEFAULT_MAX_MESSAGE_TRANSACTION_COUNT);
+    var mempoolRelayerMaxMessagePayloadSize =
+        properties.get(
+            "mempool.relayer.max_message_payload_size",
+            MempoolRelayerConfig.DEFAULT_MAX_MESSAGE_PAYLOAD_SIZE);
+    Preconditions.checkArgument(
+        mempoolRelayerMaxPeers > 0,
+        "Invalid configuration: mempool.relayer.max_peers ("
+            + mempoolRelayerMaxPeers
+            + ") must be a non zero positive number.");
+    Preconditions.checkArgument(
+        mempoolRelayerMaxMessageTransactionCount > 0,
+        "Invalid configuration: mempool.relayer.max_message_transaction_count (%s) must be a non"
+            + " zero positive number.",
+        mempoolRelayerMaxMessageTransactionCount);
+    Preconditions.checkArgument(
+        mempoolRelayerMaxMessagePayloadSize >= NodeConstants.DEFAULT_MAX_TRANSACTION_SIZE,
+        "Invalid configuration: mempool.relayer.max_message_payload_size (%s) must be at least the"
+            + " maximum transaction size (%s).",
+        mempoolRelayerMaxMessagePayloadSize,
+        NodeConstants.DEFAULT_MAX_TRANSACTION_SIZE);
+    Preconditions.checkArgument(
+        mempoolRelayerMaxRelayedSize >= mempoolRelayerMaxMessagePayloadSize,
+        "Invalid configuration: mempool.relayer.max_relayed_size (%s) must be at least"
+            + " mempool.relayer.max_message_payload_size (%s).",
+        mempoolRelayerMaxRelayedSize,
+        mempoolRelayerMaxMessagePayloadSize);
+    install(
+        new MempoolRelayerModule(
+            new MempoolRelayerConfig(
+                mempoolRelayerIntervalMs,
+                mempoolRelayerMaxPeers,
+                mempoolRelayerMaxRelayedSize,
+                mempoolRelayerMaxMessageTransactionCount,
+                mempoolRelayerMaxMessagePayloadSize)));
+
+    // Mempool Reevaluation
+    var mempoolReevaluationIntervalMs = properties.get("mempool.reevaluation.interval_ms", 10000);
+    var mempoolReevaluationMaxCount = properties.get("mempool.reevaluation.max_count", 5);
+    install(
+        new MempoolReevaluationModule(
+            Duration.ofMillis(mempoolReevaluationIntervalMs), mempoolReevaluationMaxCount));
 
     // Ledger Sync
     final long syncPatience = properties.get("sync.patience", 5000L);
@@ -207,15 +245,30 @@ public final class RadixNodeModule extends AbstractModule {
 
     // Storage directory
     install(new NodeStorageLocationFromPropertiesModule());
-
-    // Berkeley storage
-
-    install(
-        new BerkeleyDatabaseModule(BerkeleyDatabaseModule.getCacheSizeFromProperties(properties)));
-
     // State Computer
-    var mempoolMaxSize = properties.get("mempool.maxSize", 50);
-    var mempoolConfig = new RustMempoolConfig(mempoolMaxSize);
+    var mempoolMaxMemory =
+        properties.get(
+            "mempool.max_memory",
+            (int)
+                (NodeConstants.DEFAULT_MEMPOOL_MAX_TOTAL_TRANSACTIONS_SIZE
+                    * NodeConstants.MEMPOOL_TRANSACTION_OVERHEAD_FACTOR));
+    var mempoolMaxTotalTransactionsSize =
+        (int) (mempoolMaxMemory / NodeConstants.MEMPOOL_TRANSACTION_OVERHEAD_FACTOR);
+    var mempoolMaxTransactionCount =
+        properties.get(
+            "mempool.max_transaction_count", NodeConstants.DEFAULT_MEMPOOL_MAX_TRANSACTION_COUNT);
+    Preconditions.checkArgument(
+        mempoolMaxTransactionCount > 0,
+        "Invalid configuration: mempool.max_transaction_count (%s) must be a non zero positive"
+            + " number.",
+        mempoolMaxTransactionCount);
+    Preconditions.checkArgument(
+        mempoolMaxTotalTransactionsSize >= NodeConstants.DEFAULT_MAX_TRANSACTION_SIZE,
+        "Invalid configuration: Computed mempool total transactions size is lower than the maximum"
+            + " transaction size (%s). Please increase mempool.max_memory.",
+        NodeConstants.DEFAULT_MAX_TRANSACTION_SIZE);
+    var mempoolConfig =
+        new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount);
     var enableLocalTransactionExecutionIndex =
         properties.get("db.local_transaction_execution_index.enable", true);
     var enableAccountChangeIndex = properties.get("db.account_change_index.enable", true);
@@ -224,17 +277,82 @@ public final class RadixNodeModule extends AbstractModule {
 
     install(new REv2LedgerInitializerModule(genesisProvider));
 
+    var vertexMaxTransactionCount =
+        properties.get(
+            "protocol.vertex.max_transaction_count",
+            NodeConstants.DEFAULT_MAX_VERTEX_TRANSACTION_COUNT);
+    if (vertexMaxTransactionCount != NodeConstants.DEFAULT_MAX_VERTEX_TRANSACTION_COUNT) {
+      warnProtocolPropertySet("protocol.vertex.max_transaction_count");
+    }
+
+    var vertexMaxTotalTransactionsSize =
+        properties.get(
+            "protocol.vertex.max_total_transactions_size",
+            (int) NodeConstants.DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE);
+    if (vertexMaxTotalTransactionsSize
+        != NodeConstants.DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE) {
+      warnProtocolPropertySet("protocol.vertex.max_total_transactions_size");
+    }
+
+    var vertexMaxTotalExecutionCostUnitsConsumed =
+        properties.get(
+            "protocol.vertex.max_total_execution_cost_units_consumed",
+            NodeConstants.DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED);
+    if (vertexMaxTotalExecutionCostUnitsConsumed
+        != NodeConstants.DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED) {
+      warnProtocolPropertySet("protocol.vertex.max_total_execution_cost_units_consumed");
+    }
+
+    var vertexMaxTotalFinalizationCostUnitsConsumed =
+        properties.get(
+            "protocol.vertex.max_total_finalization_cost_units_consumed",
+            NodeConstants.DEFAULT_MAX_TOTAL_VERTEX_FINALIZATION_COST_UNITS_CONSUMED);
+    if (vertexMaxTotalFinalizationCostUnitsConsumed
+        != NodeConstants.DEFAULT_MAX_TOTAL_VERTEX_FINALIZATION_COST_UNITS_CONSUMED) {
+      warnProtocolPropertySet("protocol.vertex.max_total_finalization_cost_units_consumed");
+    }
+
+    Preconditions.checkArgument(
+        vertexMaxTransactionCount > 0,
+        "Invalid configuration: protocol.vertex.max_transaction_count (%s) must be a non zero"
+            + " positive number.",
+        vertexMaxTransactionCount);
+    Preconditions.checkArgument(
+        vertexMaxTotalTransactionsSize >= NodeConstants.DEFAULT_MAX_TRANSACTION_SIZE,
+        "Invalid configuration: protocol.vertex.max_total_transactions_size (%s) must be at least"
+            + " the maximum transaction size (%s).",
+        vertexMaxTotalTransactionsSize,
+        NodeConstants.DEFAULT_MAX_TRANSACTION_SIZE);
+    Preconditions.checkArgument(
+        vertexMaxTotalExecutionCostUnitsConsumed >= NodeConstants.DEFAULT_EXECUTION_COST_UNIT_LIMIT,
+        "Invalid configuration: protocol.vertex.max_total_execution_cost_units_consumed (%s) must"
+            + " be at least the transaction cost unit limit (%s).",
+        vertexMaxTotalExecutionCostUnitsConsumed,
+        NodeConstants.DEFAULT_EXECUTION_COST_UNIT_LIMIT);
+    Preconditions.checkArgument(
+        vertexMaxTotalFinalizationCostUnitsConsumed
+            >= NodeConstants.DEFAULT_FINALIZATION_COST_UNIT_LIMIT,
+        "Invalid configuration: protocol.vertex.max_total_finalization_cost_units_consumed (%s)"
+            + " must be at least the transaction cost unit limit (%s).",
+        vertexMaxTotalFinalizationCostUnitsConsumed,
+        NodeConstants.DEFAULT_FINALIZATION_COST_UNIT_LIMIT);
+    var vertexLimitsConfig =
+        new VertexLimitsConfig(
+            vertexMaxTransactionCount,
+            vertexMaxTotalTransactionsSize,
+            vertexMaxTotalExecutionCostUnitsConsumed,
+            vertexMaxTotalFinalizationCostUnitsConsumed);
     install(
         REv2StateManagerModule.create(
-            MAX_TRANSACTIONS_PER_PROPOSAL,
-            MAX_PROPOSAL_TOTAL_TXNS_PAYLOAD_SIZE,
-            MAX_UNCOMMITTED_USER_TRANSACTIONS_TOTAL_PAYLOAD_SIZE,
+            ProposalLimitsConfig.from(vertexLimitsConfig),
+            vertexLimitsConfig,
             REv2StateManagerModule.DatabaseType.ROCKS_DB,
             databaseFlags,
             Option.some(mempoolConfig)));
 
     // Recovery
     install(new BerkeleySafetyStoreModule());
+    install(new EpochsSafetyRecoveryModule());
     install(new REv2LedgerRecoveryModule());
     install(new REv2ConsensusRecoveryModule());
 
@@ -251,7 +369,13 @@ public final class RadixNodeModule extends AbstractModule {
     final var coreApiBindAddress =
         properties.get("api.core.bind_address", DEFAULT_CORE_API_BIND_ADDRESS);
     final var coreApiPort = properties.get("api.core.port", DEFAULT_CORE_API_PORT);
-    install(new CoreApiServerModule(coreApiBindAddress, coreApiPort));
+    final var coreApiFlagsEnableUnboundedEndpoints =
+        properties.get("api.core.flags.enable_unbounded_endpoints", true);
+    install(
+        new CoreApiServerModule(
+            coreApiBindAddress,
+            coreApiPort,
+            new CoreApiServerFlags(coreApiFlagsEnableUnboundedEndpoints)));
 
     final var systemApiBindAddress =
         properties.get("api.system.bind_address", DEFAULT_SYSTEM_API_BIND_ADDRESS);
@@ -271,5 +395,13 @@ public final class RadixNodeModule extends AbstractModule {
             .map(LedgerSyncCapability.Builder::new)
             .orElse(LedgerSyncCapability.Builder.asDefault());
     install(new CapabilitiesModule(builder.build()));
+  }
+
+  private void warnProtocolPropertySet(String prop) {
+    log.warn(
+        "WARNING: A {} property was set. It is highly NOT recommended to modify any protocol.**"
+            + " properties as this may cause your node to disagree with the rest of the network"
+            + " and, as a result, miss proposals!",
+        prop);
   }
 }

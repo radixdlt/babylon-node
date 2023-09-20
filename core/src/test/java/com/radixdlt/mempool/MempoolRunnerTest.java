@@ -81,7 +81,7 @@ import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
-import com.radixdlt.ledger.MockedBFTNodeModule;
+import com.radixdlt.ledger.MockedSelfValidatorInfoModule;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.logger.EventLoggerConfig;
 import com.radixdlt.logger.EventLoggerModule;
@@ -98,11 +98,14 @@ import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.TimeSupplier;
 import io.reactivex.rxjava3.core.Flowable;
-import java.util.Comparator;
 import java.util.Map;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Test;
 
 public final class MempoolRunnerTest {
+  private static final Logger log = LogManager.getLogger();
+
   @Inject private Map<String, ModuleRunner> moduleRunners;
   @Inject private EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
 
@@ -128,11 +131,10 @@ public final class MempoolRunnerTest {
                     return Flowable.never();
                   }
                 });
-        bind(new TypeLiteral<Comparator<LedgerProof>>() {}).toInstance(mock(Comparator.class));
         bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
         Multibinder.newSetBinder(binder(), StartProcessorOnRunner.class);
-        install(MempoolRelayConfig.of(10).asModule());
-        install(new MockedBFTNodeModule());
+        install(MempoolReceiverConfig.of(10).asModule());
+        install(new MockedSelfValidatorInfoModule());
         install(new MockedKeyModule());
         install(new MockedCryptoModule());
         install(new RxEnvironmentModule());
@@ -148,7 +150,7 @@ public final class MempoolRunnerTest {
   @Test
   public void dispatched_mempool_add_arrives_at_state_computer() {
     Guice.createInjector(createModule()).injectMembers(this);
-    moduleRunners.get(Runners.MEMPOOL).start();
+    moduleRunners.get(Runners.MEMPOOL).start(error -> log.error("Uncaught runner error", error));
 
     MempoolAdd mempoolAdd = MempoolAdd.create(RawNotarizedTransaction.create(new byte[0]));
     mempoolAddEventDispatcher.dispatch(mempoolAdd);

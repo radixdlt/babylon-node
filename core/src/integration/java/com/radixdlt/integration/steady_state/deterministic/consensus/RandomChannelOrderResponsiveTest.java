@@ -96,7 +96,7 @@ public class RandomChannelOrderResponsiveTest {
 
     DeterministicTest test =
         DeterministicTest.builder()
-            .addPhysicalNodes(PhysicalNodeConfig.createBasicBatch(numValidatorNodes))
+            .addPhysicalNodes(PhysicalNodeConfig.createBatchWithFakeAddresses(numValidatorNodes))
             .messageSelector(MessageSelector.randomSelector(random))
             .messageMutator(MessageMutator.dropTimeouts())
             .functionalNodeModule(
@@ -107,7 +107,10 @@ public class RandomChannelOrderResponsiveTest {
                     ConsensusConfig.of(),
                     LedgerConfig.stateComputerNoSync(
                         StateComputerConfig.mockedNoEpochs(
-                            numValidatorNodes, MockedMempoolConfig.noMempool()))));
+                            numValidatorNodes,
+                            MockedMempoolConfig.noMempool(),
+                            StateComputerConfig.ProposerElectionMode
+                                .WITH_ROTATE_ONCE_BUT_NO_SHUFFLE))));
 
     test.startAllNodes();
     test.runUntilMessage(

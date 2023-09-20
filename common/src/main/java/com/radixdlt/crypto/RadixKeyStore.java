@@ -144,16 +144,6 @@ public final class RadixKeyStore implements Closeable {
   private static KeyStore.PasswordProtection emptyPassword =
       new KeyStore.PasswordProtection(new char[0]);
 
-  // Unexpectedly, the BouncyCastleProvider.getPrivateKey(...) and getPublicKey(...) static methods
-  // require the BouncyCastleProvider() constructor to be called at least once, otherwise they fail.
-  // This looks like an implementation issue with Bouncy Castle (static data initialisation in
-  // constructor), but we work around it here by creating a dummy provider and then discarding it.
-  // This is as at BC 1.64.
-  static {
-    @SuppressWarnings("unused")
-    Object unused = new BouncyCastleProvider();
-  }
-
   /**
    * Load a private key from file, and compute the public key.
    *
@@ -174,7 +164,7 @@ public final class RadixKeyStore implements Closeable {
   public static RadixKeyStore fromFile(File file, char[] storePassword, boolean create)
       throws IOException, KeyStoreException {
     try {
-      var ks = KeyStore.getInstance("pkcs12");
+      var ks = KeyStore.getInstance("pkcs12", BouncyCastleProviderInstance.get());
       var usedStorePassword =
           (storePassword == null || storePassword.length == 0) ? defaultKey : storePassword;
       initializeKeyStore(ks, file, usedStorePassword, create);
@@ -356,7 +346,9 @@ public final class RadixKeyStore implements Closeable {
 
     try {
       ContentSigner contentSigner =
-          new JcaContentSignerBuilder(CERT_SIGNATURE_ALG).build(keyPair.getPrivate());
+          new JcaContentSignerBuilder(CERT_SIGNATURE_ALG)
+              .setProvider(BouncyCastleProviderInstance.get())
+              .build(keyPair.getPrivate());
       return new JcaX509CertificateConverter().getCertificate(certBuilder.build(contentSigner));
     } catch (OperatorCreationException | CertificateException ex) {
       throw new KeyStoreException("Error creating certificate", ex);

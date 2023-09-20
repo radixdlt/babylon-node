@@ -62,167 +62,591 @@
  * permissions under this License.
  */
 
-use prometheus::core::*;
-use prometheus::*;
+use std::cmp::min;
+
+use std::time::{SystemTime, UNIX_EPOCH};
+
+use crate::limits::VertexLimitsExceeded;
+use crate::transaction::{ExecutionConfigurator, LeaderRoundCounter};
+use crate::StateVersion;
+use node_common::config::limits::*;
+use node_common::locks::{LockFactory, Mutex};
+use node_common::metrics::*;
+use prometheus::{Gauge, Histogram, IntCounter, IntCounterVec, IntGauge, Opts, Registry};
+
+use radix_engine::transaction::TransactionFeeSummary;
+use radix_engine_common::prelude::*;
 
 pub struct LedgerMetrics {
+    address_encoder: AddressBech32Encoder, // for label rendering only
     pub state_version: IntGauge,
     pub transactions_committed: IntCounter,
+    pub consensus_rounds_committed: IntCounterVec,
     pub last_update_epoch_second: Gauge,
+    pub last_update_proposer_epoch_second: Gauge,
+    pub recent_self_proposal_miss_count: SelfProposalMissTracker,
+    pub recent_proposer_timestamp_progress_rate: ProposerTimestampProgressRateTracker,
 }
 
-pub struct MempoolMetrics {
-    pub current_transactions: IntGauge,
-    pub submission_added: IntCounterVec,
-    pub submission_rejected: IntCounterVec,
-    pub from_local_api_to_commit_wait: Histogram,
+pub struct CommittedTransactionsMetrics {
+    pub size: Histogram,
+    pub execution_cost_units_consumed: Histogram,
+    pub finalization_cost_units_consumed: Histogram,
+}
+
+pub struct VertexPrepareMetrics {
+    pub proposal_transactions_size: Histogram,
+    pub wasted_proposal_bandwidth: Histogram,
+    pub stop_reason: IntCounterVec,
 }
 
 impl LedgerMetrics {
-    pub fn new(registry: &Registry) -> Self {
-        Self {
+    pub fn new(
+        network: &NetworkDefinition,
+        lock_factory: &LockFactory,
+        registry: &Registry,
+        current_ledger_proposer_timestamp_ms: i64,
+    ) -> Self {
+        let instance = Self {
+            address_encoder: AddressBech32Encoder::new(network),
+            state_version: IntGauge::with_opts(opts(
+                "ledger_state_version",
+                "Version of the ledger state.",
+            ))
+            .registered_at(registry),
             transactions_committed: IntCounter::with_opts(opts(
                 "ledger_transactions_committed_total",
                 "Count of transactions committed to the ledger.",
             ))
+            .registered_at(registry),
+            consensus_rounds_committed: IntCounterVec::new(
+                opts(
+                    "ledger_consensus_rounds_committed",
+                    "Count of rounds processed by consensus that reached the ledger commit.",
+                ),
+                &["leader_component_address", "round_resolution"],
+            )
             .registered_at(registry),
             last_update_epoch_second: Gauge::with_opts(opts(
                 "ledger_last_update_epoch_second",
                 "Last timestamp at which the ledger was updated.",
             ))
             .registered_at(registry),
-            state_version: IntGauge::with_opts(opts(
-                "ledger_state_version",
-                "Version of the ledger state.",
+            last_update_proposer_epoch_second: Gauge::with_opts(opts(
+                "ledger_last_update_proposer_epoch_second",
+                "Proposer timestamp from the last proof written to the ledger.",
             ))
+            .registered_at(registry),
+            recent_self_proposal_miss_count: SelfProposalMissTracker::new(
+                opts(
+                    "ledger_recent_self_proposal_miss_count",
+                    &format!("A number of proposals missed by this validator during its {} most recent rounds.", PROPOSAL_HISTORY_LEN),
+                ),
+                &lock_factory.named("self_proposal_miss_tracker"),
+                registry,
+            ),
+            recent_proposer_timestamp_progress_rate: ProposerTimestampProgressRateTracker::new(
+                current_ledger_proposer_timestamp_ms,
+                opts(
+                    "ledger_recent_proposer_timestamp_progress_rate",
+                    &format!("A rate of the proposer timestamp progress (against wall-clock) averaged over {} most recent ledger updates.", PROGRESS_RATE_HISTORY_LEN),
+                ),
+                &lock_factory.named("progress_rate_tracker"),
+                registry,
+            ),
+        };
+        OverallLedgerHealthFactor::register_direct_collector(
+            &instance,
+            opts(
+                "ledger_overall_health_factor",
+                "A proper fraction representing an overall local ledger health (with 0.0 = critical and 1.0 = healthy).",
+            ),
+            registry
+        );
+        instance
+    }
+
+    pub fn update(
+        &self,
+        added_transactions: usize,
+        new_state_version: StateVersion,
+        validator_proposal_counters: Vec<(ComponentAddress, LeaderRoundCounter)>,
+        proposer_timestamp_ms: i64,
+        self_validator_address: Option<ComponentAddress>,
+    ) {
+        self.state_version.set(new_state_version.number() as i64);
+        self.transactions_committed
+            .inc_by(added_transactions as u64);
+        for (validator_address, counter) in validator_proposal_counters {
+            let encoded_validator_address = self
+                .address_encoder
+                .encode(validator_address.as_ref())
+                // a fallback for an unlikely encoding error:
+                .unwrap_or_else(|_| validator_address.to_hex());
+            for (round_resolution, count) in [
+                (ConsensusRoundResolution::Successful, counter.successful),
+                (
+                    ConsensusRoundResolution::MissedByFallback,
+                    counter.missed_by_fallback,
+                ),
+                (ConsensusRoundResolution::MissedByGap, counter.missed_by_gap),
+            ] {
+                self.consensus_rounds_committed
+                    .with_two_labels(&encoded_validator_address, round_resolution)
+                    .inc_by(count as u64);
+            }
+            if self_validator_address == Some(validator_address) {
+                self.recent_self_proposal_miss_count.track(&counter);
+            }
+        }
+        self.last_update_epoch_second.set(
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs_f64(),
+        );
+        self.last_update_proposer_epoch_second
+            .set(proposer_timestamp_ms as f64 / 1000.0);
+        self.recent_proposer_timestamp_progress_rate
+            .track(proposer_timestamp_ms);
+    }
+
+    /// Calculates current [`LedgerStatus`] (see the enum's doc for explanation).
+    pub fn get_ledger_status(&self) -> LedgerStatus {
+        if current_wallclock_epoch_sec() - self.last_update_proposer_epoch_second.get()
+            < SYNCED_LEDGER_MAX_DELAY_SEC
+        {
+            LedgerStatus::Synced
+        } else if self.recent_proposer_timestamp_progress_rate.gauge.get()
+            > MIN_PROPOSER_TIMESTAMP_PROGRESS_RATE
+        {
+            LedgerStatus::Syncing
+        } else {
+            LedgerStatus::NotSyncing
+        }
+    }
+}
+
+pub struct TransactionMetricsData {
+    size: usize,
+    fee_summary: TransactionFeeSummary,
+}
+
+impl TransactionMetricsData {
+    pub fn new(size: usize, fee_summary: TransactionFeeSummary) -> Self {
+        TransactionMetricsData { size, fee_summary }
+    }
+}
+
+impl CommittedTransactionsMetrics {
+    pub fn new(registry: &Registry, execution_configurator: &ExecutionConfigurator) -> Self {
+        Self {
+            size: new_histogram(
+                opts(
+                    "committed_transactions_size",
+                    "Size in bytes of committed transactions.",
+                ),
+                higher_resolution_for_lower_values_buckets_for_limit(MAX_TRANSACTION_SIZE),
+            )
+            .registered_at(registry),
+            execution_cost_units_consumed: new_histogram(
+                opts(
+                    "committed_transactions_execution_cost_units_consumed",
+                    "Execution cost units consumed per committed transactions.",
+                ),
+                higher_resolution_for_lower_values_buckets_for_limit(
+                    execution_configurator
+                        .costing_parameters
+                        .execution_cost_unit_limit as usize,
+                ),
+            )
+            .registered_at(registry),
+            finalization_cost_units_consumed: new_histogram(
+                opts(
+                    "committed_transactions_finalization_cost_units_consumed",
+                    "Finalization cost units consumed per committed transactions.",
+                ),
+                higher_resolution_for_lower_values_buckets_for_limit(
+                    execution_configurator
+                        .costing_parameters
+                        .finalization_cost_unit_limit as usize,
+                ),
+            )
             .registered_at(registry),
         }
     }
-}
 
-impl MempoolMetrics {
-    pub fn new(registry: &Registry) -> Self {
-        Self {
-            current_transactions: IntGauge::with_opts(opts(
-                "mempool_current_transactions",
-                "Number of transactions in progress in the mempool.",
-            )).registered_at(registry),
-            submission_added: IntCounterVec::new(
-                opts(
-                    "mempool_submission_added_total",
-                    "Count of submissions added to the mempool.",
-                ),
-                &["source"],
-            ).registered_at(registry),
-            submission_rejected: IntCounterVec::new(
-                opts(
-                    "mempool_submission_rejected_total",
-                    "Count of the submissions rejected by the mempool.",
-                ),
-                &["source", "rejection_reason"],
-            ).registered_at(registry),
-            from_local_api_to_commit_wait: new_timer(
-                opts(
-                    "mempool_from_local_api_to_commit_wait",
-                    "Time spent in the mempool, by a transaction coming from local API, until successful commit."
-                ),
-                vec![0.01, 0.1, 0.5, 1.0, 2.5, 5.0, 10.0, 25.0, 50.0]
-            ).registered_at(registry)
+    pub fn update(&self, transactions_metrics_data: Vec<TransactionMetricsData>) {
+        for transaction_metrics_data in transactions_metrics_data {
+            self.size.observe(transaction_metrics_data.size as f64);
+            self.execution_cost_units_consumed.observe(
+                transaction_metrics_data
+                    .fee_summary
+                    .total_execution_cost_units_consumed as f64,
+            );
+            self.finalization_cost_units_consumed.observe(
+                transaction_metrics_data
+                    .fee_summary
+                    .total_finalization_cost_units_consumed as f64,
+            );
         }
     }
 }
 
-/// A syntactic sugar trait allowing for an inline "create + register" metric definition.
-trait AtDefaultRegistryExt<R> {
-    /// Unwraps a Prometheus metric creation `Result` and registers it at the given registry.
-    fn registered_at(self, registry: &Registry) -> R;
-}
-
-impl<T: Collector + Clone + 'static> AtDefaultRegistryExt<T> for Result<T> {
-    fn registered_at(self, registry: &Registry) -> T {
-        let collector = self.unwrap();
-        registry.register(Box::new(collector.clone())).unwrap();
-        collector
+impl VertexPrepareMetrics {
+    pub fn new(registry: &Registry) -> Self {
+        Self {
+            proposal_transactions_size: new_histogram(
+                opts(
+                    "vertex_prepare_proposal_transactions_size",
+                    "Size of all transactions inside proposal.",
+                ),
+                // TODO: This is accurate enough but update once MAX_PROPOSAL_SIZE is available here
+                higher_resolution_for_higher_values_buckets_for_limit(
+                    DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE,
+                ),
+            )
+            .registered_at(registry),
+            wasted_proposal_bandwidth: new_histogram(
+                opts(
+                    "vertex_prepare_wasted_proposal_bandwidth",
+                    "Size sum of received transactions that were skipped during preparation.",
+                ),
+                // TODO: This is accurate enough but update once MAX_PROPOSAL_SIZE is available here
+                higher_resolution_for_lower_values_buckets_for_limit(
+                    DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE,
+                ),
+            )
+            .registered_at(registry),
+            stop_reason: IntCounterVec::new(
+                opts(
+                    "vertex_prepare_stop_reason",
+                    "Count of vertex prepare stop reasons by type.",
+                ),
+                &["type"],
+            )
+            .registered_at(registry),
+        }
     }
-}
 
-fn opts(name: &str, help: &str) -> Opts {
-    Opts::new(format!("rn_{name}"), help)
-}
-
-/// Creates a new `Histogram` tailored to measuring time durations.
-/// The name (found in `Opts`) is expected to be a verb (describing the measured action) and will be
-/// auto-suffixed with a conventional `_seconds` string. The measurements are thus expected to be
-/// reported in seconds (possibly fractional).
-/// The buckets should represent expected interesting ranges of the measurements (i.e. their upper
-/// bounds). The last `+inf` bucket will be auto-added - this means that an empty bucket list may be
-/// passed here, and the timer will work in a `Summary` mode (i.e. tracking just sum and count).
-fn new_timer(opts: Opts, buckets: Vec<f64>) -> Result<Histogram> {
-    let mut adjusted_opts = opts;
-    adjusted_opts.name = format!("{}_seconds", adjusted_opts.name);
-    let mut adjusted_buckets = buckets;
-    adjusted_buckets.push(f64::INFINITY);
-    Histogram::with_opts(HistogramOpts::from(adjusted_opts).buckets(adjusted_buckets))
-}
-
-// TODO - capture the metric types on a generic wrapper around the GenericCounter, and ensure the provided labels match the types, like in Java.
-pub trait TakesMetricLabels {
-    type Metric;
-
-    fn with_label(&self, label1: impl MetricLabel) -> Self::Metric;
-    fn with_two_labels(&self, label1: impl MetricLabel, label2: impl MetricLabel) -> Self::Metric;
-    fn with_three_labels(
+    pub fn update(
         &self,
-        label1: impl MetricLabel,
-        label2: impl MetricLabel,
-        label3: impl MetricLabel,
-    ) -> Self::Metric;
-}
-
-impl<T: MetricVecBuilder> TakesMetricLabels for MetricVec<T> {
-    type Metric = <T as MetricVecBuilder>::M;
-
-    fn with_label(&self, label1: impl MetricLabel) -> Self::Metric {
-        self.with_label_values(&[label1.prometheus_label_name().as_ref()])
-    }
-
-    fn with_two_labels(&self, label1: impl MetricLabel, label2: impl MetricLabel) -> Self::Metric {
-        self.with_label_values(&[
-            label1.prometheus_label_name().as_ref(),
-            label2.prometheus_label_name().as_ref(),
-        ])
-    }
-
-    fn with_three_labels(
-        &self,
-        label1: impl MetricLabel,
-        label2: impl MetricLabel,
-        label3: impl MetricLabel,
-    ) -> Self::Metric {
-        self.with_label_values(&[
-            label1.prometheus_label_name().as_ref(),
-            label2.prometheus_label_name().as_ref(),
-            label3.prometheus_label_name().as_ref(),
-        ])
+        total_proposal_size: usize,
+        committed_proposal_size: usize,
+        stop_reason: VertexPrepareStopReason,
+    ) {
+        self.proposal_transactions_size
+            .observe(total_proposal_size as f64);
+        self.wasted_proposal_bandwidth
+            .observe((total_proposal_size - committed_proposal_size) as f64);
+        self.stop_reason.with_label(stop_reason).inc();
     }
 }
 
-/// Typically applied to enums or Errors where we wish to derive a label name.
-/// Note the label name returned should be in a fixed, small-ish sized-set, to prevent
-/// issues with tracking too many metrics, or combinatorial explosion of metrics with different labels.
-pub trait MetricLabel {
-    /// Typically &str, but could also be String if it's dynamic (as long as it's in a fixed small set)
-    type StringReturnType: AsRef<str>;
-
-    /// Returns the string label associated with this enum value.
-    fn prometheus_label_name(&self) -> Self::StringReturnType;
+// Concrete types used for metric labels:
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ConsensusRoundResolution {
+    Successful,
+    MissedByFallback,
+    MissedByGap,
 }
 
-/// We implement it for &T so that you can pass references in to function parameters taking `impl MetricLabel`
-impl<T: MetricLabel> MetricLabel for &T {
-    type StringReturnType = <T as MetricLabel>::StringReturnType;
+impl MetricLabel for ConsensusRoundResolution {
+    type StringReturnType = &'static str;
 
     fn prometheus_label_name(&self) -> Self::StringReturnType {
-        T::prometheus_label_name(self)
+        match *self {
+            ConsensusRoundResolution::Successful => "Successful",
+            ConsensusRoundResolution::MissedByFallback => "MissedByFallback",
+            ConsensusRoundResolution::MissedByGap => "MissedByGap",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum VertexPrepareStopReason {
+    ProposalComplete,
+    EpochChange,
+    LimitExceeded(VertexLimitsExceeded),
+}
+
+impl MetricLabel for VertexPrepareStopReason {
+    type StringReturnType = &'static str;
+
+    fn prometheus_label_name(&self) -> Self::StringReturnType {
+        match self {
+            VertexPrepareStopReason::ProposalComplete => "ProposalComplete",
+            VertexPrepareStopReason::EpochChange => "EpochChange",
+            VertexPrepareStopReason::LimitExceeded(limit_exceeded) => match limit_exceeded {
+                VertexLimitsExceeded::TransactionsCount => "TransactionsCountLimitReached",
+                VertexLimitsExceeded::TransactionsSize => "TransactionsSizeLimitReached",
+                VertexLimitsExceeded::ExecutionCostUnitsConsumed => {
+                    "ExecutionCostUnitsConsumedLimitReached"
+                }
+                VertexLimitsExceeded::FinalizationCostUnitsConsumed => {
+                    "FinalizationCostUnitsConsumedLimitReached"
+                }
+            },
+        }
+    }
+}
+
+/// A number of most recent [`RoundSlot`]s of a single validator to track for metrics purposes.
+const PROPOSAL_HISTORY_LEN: usize = 100;
+
+/// An indication of (any kind of) missed round vs successful round of a validator.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum RoundSlot {
+    Success,
+    Missed,
+}
+
+/// A higher-level metric helper, tracking a number of recent proposal misses of a specific
+/// validator.
+pub struct SelfProposalMissTracker {
+    buffer: Mutex<RingBuffer<RoundSlot, PROPOSAL_HISTORY_LEN>>,
+    gauge: IntGauge,
+}
+
+impl SelfProposalMissTracker {
+    /// Creates a new tracker and registers its resulting [`IntGauge`] (with the given options) at
+    /// the given registry.
+    /// Note: the [`LockFactory`] is required to ensure a thread-safe access to a ring-buffer used
+    /// for history tracking.
+    pub fn new(opts: Opts, lock_factory: &LockFactory, registry: &Registry) -> Self {
+        Self {
+            buffer: lock_factory.new_mutex(RingBuffer::new(RoundSlot::Success)),
+            gauge: IntGauge::with_opts(opts).registered_at(registry),
+        }
+    }
+
+    /// Interprets the newest round history of the scoped validator and updates the managed gauge of
+    /// recent proposal misses.
+    pub fn track(&self, counter: &LeaderRoundCounter) {
+        // Optimization: even if lots of rounds were missed, we track only the "recent" number.
+        let new_missed_count = min(
+            counter.missed(),
+            PROPOSAL_HISTORY_LEN + (counter.missed() % PROPOSAL_HISTORY_LEN),
+        ) as i64;
+        // We are not actually getting a time-ordered history - only a statistic. We have to invent
+        // the order, so we put the successes first...
+        let mut buffer = self.buffer.lock();
+        let mut outdated_missed_count = 0;
+        for _ in 0..counter.successful {
+            let outdated = buffer.put(RoundSlot::Success);
+            if outdated == RoundSlot::Missed {
+                outdated_missed_count += 1;
+            }
+        }
+        // ... and the misses later (so that they stay in the buffer longer).
+        for _ in 0..new_missed_count {
+            let outdated = buffer.put(RoundSlot::Missed);
+            if outdated == RoundSlot::Missed {
+                outdated_missed_count += 1;
+            }
+        }
+        // We update the gauge with a delta of new observed misses vs those that ceased to be recent
+        self.gauge.add(new_missed_count - outdated_missed_count);
+    }
+}
+
+/// A number of most recent [`ProposerTimestampDatapoint`]s to track for metrics purposes.
+/// We mostly care about the progress rate during ledger-syncing, where Node is capable of ingesting
+/// >100 sync responses a second. The value below should give us at least 1 sec of history.
+const PROGRESS_RATE_HISTORY_LEN: usize = 100;
+
+/// A `proposer_timestamp_ms` captured at a specific `wallclock_epoch_sec`.
+#[derive(Debug, Clone, Copy)]
+struct ProposerTimestampDatapoint {
+    wallclock_epoch_sec: f64,
+    proposer_timestamp_ms: i64,
+}
+
+impl ProposerTimestampDatapoint {
+    /// Captures the given `proposer_timestamp_ms` at the current wall-clock.
+    pub fn at_current_wallclock(proposer_timestamp_ms: i64) -> Self {
+        Self {
+            wallclock_epoch_sec: current_wallclock_epoch_sec(),
+            proposer_timestamp_ms,
+        }
+    }
+
+    /// Calculates the rate of the `proposer_timestamp_ms` measured relative to the given reference
+    /// point.
+    pub fn proposer_timestamp_rate_since(&self, reference: &ProposerTimestampDatapoint) -> f64 {
+        let delta_proposer_timestamp_ms =
+            self.proposer_timestamp_ms - reference.proposer_timestamp_ms;
+        let delta_proposer_timestamp_sec = (delta_proposer_timestamp_ms as f64) / 1000.0;
+        let delta_wallclock_sec = self.wallclock_epoch_sec - reference.wallclock_epoch_sec;
+        delta_proposer_timestamp_sec / delta_wallclock_sec
+    }
+}
+
+/// A higher-level metric helper, tracking a recent rate of `proposer_timestamp_ms` committed to the
+/// ledger.
+pub struct ProposerTimestampProgressRateTracker {
+    buffer: Mutex<RingBuffer<ProposerTimestampDatapoint, PROGRESS_RATE_HISTORY_LEN>>,
+    gauge: Gauge,
+}
+
+impl ProposerTimestampProgressRateTracker {
+    /// Creates a new tracker and registers its resulting [`Gauge`] (with the given options) at the
+    /// given registry.
+    /// Note: the [`LockFactory`] is required to ensure a thread-safe access to a ring-buffer used
+    /// for history tracking.
+    pub fn new(
+        initial_proposer_timestamp_ms: i64,
+        opts: Opts,
+        lock_factory: &LockFactory,
+        registry: &Registry,
+    ) -> Self {
+        Self {
+            buffer: lock_factory.new_mutex(RingBuffer::new(
+                ProposerTimestampDatapoint::at_current_wallclock(initial_proposer_timestamp_ms),
+            )),
+            gauge: Gauge::with_opts(opts).registered_at(registry),
+        }
+    }
+
+    /// Records the given currently-committed `proposer_timestamp_ms` and updates the managed gauge
+    /// with its recent rate.
+    pub fn track(&self, proposer_timestamp_ms: i64) {
+        let mut buffer = self.buffer.lock();
+        let current = ProposerTimestampDatapoint::at_current_wallclock(proposer_timestamp_ms);
+        let outdated = buffer.put(current);
+        let recent_rate = current.proposer_timestamp_rate_since(&outdated);
+        self.gauge.set(recent_rate);
+    }
+}
+
+/// A maximum delay of latest committed proposer timestamp relative to local wall-clock, in seconds,
+/// up to which a Node considers itself "synced".
+const SYNCED_LEDGER_MAX_DELAY_SEC: f64 = 60.0;
+
+/// A minimum progress rate of the proposer timestamp (see `ProposerTimestampProgressRateTracker`),
+/// below which a syncing Node is considered critically unhealthy.
+const MIN_PROPOSER_TIMESTAMP_PROGRESS_RATE: f64 = 10.0;
+
+/// A progress rate of the proposer timestamp (see `ProposerTimestampProgressRateTracker`) at or
+/// above which a syncing Node is considered fully healthy.
+const HEALTHY_PROPOSER_TIMESTAMP_PROGRESS_RATE: f64 = 50.0;
+
+/// A number of recent proposal misses (see `SelfProposalMissTracker`) at or above which a Validator
+/// is considered critically unhealthy.
+/// Of course, missing no proposals is fully healthy. Missing some small number of proposals (i.e.
+/// less than this constant) results in some proportionally lower health factor.
+/// A Node outside Active Validator Set is considered fully healthy in this aspect (i.e. it misses
+/// no proposals).
+const CRITICAL_RECENT_PROPOSAL_MISS_COUNT: i64 = 2;
+
+/// A top-level health metric helper, aggregating a few lower-level parts of [`LedgerMetrics`] into
+/// one, single-dimensional "overall health factor" [`Gauge`].
+struct OverallLedgerHealthFactor {
+    last_update_proposer_epoch_second: Gauge,
+    recent_proposer_timestamp_progress_rate: Gauge,
+    recent_self_proposal_miss_count: IntGauge,
+}
+
+impl OverallLedgerHealthFactor {
+    /// Creates a direct Prometheus collector (of `OverallLedgerHealthFactor::calculate()`) and
+    /// registers it (with the given options) at the given registry.
+    pub fn register_direct_collector(
+        ledger_metrics: &LedgerMetrics,
+        opts: Opts,
+        registry: &Registry,
+    ) {
+        let health_factor = Self {
+            last_update_proposer_epoch_second: ledger_metrics
+                .last_update_proposer_epoch_second
+                .clone(),
+            recent_proposer_timestamp_progress_rate: ledger_metrics
+                .recent_proposer_timestamp_progress_rate
+                .gauge
+                .clone(),
+            recent_self_proposal_miss_count: ledger_metrics
+                .recent_self_proposal_miss_count
+                .gauge
+                .clone(),
+        };
+        let collector = GetterGauge::new(move || health_factor.calculate(), opts);
+        registry.register(Box::new(collector.unwrap())).unwrap();
+    }
+
+    /// Calculates the current value of the overall ledger health factor.
+    /// This is a proper fraction representation, where:
+    /// - 0.0 means "critically unhealthy",
+    /// - 1.0 means "fully healthy",
+    /// - intermediate fractions mean some level of warning.
+    /// Implementation wise, the result depends on the "syncing rate" and "proposal reliability".
+    fn calculate(&self) -> f64 {
+        self.syncing_factor() * self.proposal_reliability_factor()
+    }
+
+    /// Calculates the health factor part related to ledger-syncing.
+    /// If the ledger is synced (i.e. the latest committed proposer timestamp is close to the
+    /// wall-clock), then the result is "fully healthy" (i.e. 1.0).
+    /// Otherwise, the health factor depends on the proposer timestamp's progress rate (see
+    /// [`HEALTHY_PROPOSER_TIMESTAMP_PROGRESS_RATE`] and [`MIN_PROPOSER_TIMESTAMP_PROGRESS_RATE`]).
+    fn syncing_factor(&self) -> f64 {
+        let proposer_timestamp_delay_sec =
+            current_wallclock_epoch_sec() - self.last_update_proposer_epoch_second.get();
+        if proposer_timestamp_delay_sec < SYNCED_LEDGER_MAX_DELAY_SEC {
+            return 1.0;
+        }
+        let clamped_proposer_timestamp_rate = clamp(
+            MIN_PROPOSER_TIMESTAMP_PROGRESS_RATE,
+            self.recent_proposer_timestamp_progress_rate.get(),
+            HEALTHY_PROPOSER_TIMESTAMP_PROGRESS_RATE,
+        );
+        (clamped_proposer_timestamp_rate - MIN_PROPOSER_TIMESTAMP_PROGRESS_RATE)
+            / (HEALTHY_PROPOSER_TIMESTAMP_PROGRESS_RATE - MIN_PROPOSER_TIMESTAMP_PROGRESS_RATE)
+    }
+
+    /// Calculates the health factor part related to proposal reliability.
+    /// It is "fully healthy" (i.e. 1.0) when no proposals are missed (also in case this Node is not
+    /// in active validator set). Otherwise, it linearly degrades with the number of recently missed
+    /// proposals, potentially down to 0.0 (see [`CRITICAL_RECENT_PROPOSAL_MISS_COUNT`]).
+    fn proposal_reliability_factor(&self) -> f64 {
+        let clamped_recent_proposal_miss_count = min(
+            self.recent_self_proposal_miss_count.get(),
+            CRITICAL_RECENT_PROPOSAL_MISS_COUNT,
+        );
+        1.0 - (clamped_recent_proposal_miss_count as f64)
+            / (CRITICAL_RECENT_PROPOSAL_MISS_COUNT as f64)
+    }
+}
+
+/// A simplified "overall ledger health" (see [`OverallLedgerHealthFactor::syncing_factor()`]).
+/// This enum is meant to be surfaced from a `/system/health` API.
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub enum LedgerStatus {
+    /// Ledger is fully synced, i.e. the last committed proposer timestamp is closer than
+    /// [`SYNCED_LEDGER_MAX_DELAY_SEC`] to wallclock.
+    Synced,
+    /// Ledger's last proposer timestamp is far from wallclock, but progresses at least
+    /// [`MIN_PROPOSER_TIMESTAMP_PROGRESS_RATE`] times faster than wallclock (i.e. catches up).
+    Syncing,
+    /// Ledger's last proposer timestamp is far from wallclock *and* progresses slower than
+    /// expected from a [`Self::Syncing`] ledger.
+    NotSyncing,
+}
+
+/// Returns the `SystemTime::now()` expressed as a fractional number of seconds since epoch.
+fn current_wallclock_epoch_sec() -> f64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs_f64()
+}
+
+/// A "clamp" implementation for not-strictly-[`Ord`] elements (for which a classic `min()/max()`
+/// idiom cannot be used).
+fn clamp<T: Copy + PartialOrd>(min: T, arg: T, max: T) -> T {
+    if arg < min {
+        min
+    } else if arg > max {
+        max
+    } else {
+        arg
     }
 }

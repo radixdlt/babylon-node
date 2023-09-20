@@ -81,6 +81,7 @@ import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.harness.simulation.ModuleRunnerStopper;
 import com.radixdlt.harness.simulation.NodeNetworkMessagesModule;
 import com.radixdlt.keys.LocalSigner;
 import com.radixdlt.ledger.LedgerUpdate;
@@ -98,6 +99,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** A multi-node bft test network where the network and latencies of each message is simulated. */
 public class SimulationNodes {
@@ -195,6 +198,8 @@ public class SimulationNodes {
   }
 
   private class RunningNetworkImpl implements RunningNetwork {
+    private static final Logger log = LogManager.getLogger();
+
     private final ImmutableMap<NodeId, ImmutableSet<String>> disabledModuleRunners;
     private final Map<NodeId, Injector> nodes;
 
@@ -251,7 +256,12 @@ public class SimulationNodes {
           .entrySet()
           .stream()
           .filter(not(e -> nodeDisabledModuleRunners.contains(e.getKey())))
-          .forEach(e -> e.getValue().start());
+          .forEach(e -> e.getValue().start(error -> this.onModuleError(e.getKey(), error)));
+    }
+
+    private void onModuleError(String module, Throwable error) {
+      log.error("Uncaught error from module {}; stopping the network", module, error);
+      this.stop();
     }
 
     private void addObservables(NodeId node, Injector injector) {
@@ -264,8 +274,8 @@ public class SimulationNodes {
       final var epochChangeObservable =
           ledgerUpdateObservable.flatMapMaybe(
               ledgerUpdate -> {
-                final var e = ledgerUpdate.getStateComputerOutput().getInstance(EpochChange.class);
-                return e == null ? Maybe.empty() : Maybe.just(Pair.of(node, e));
+                final var e = ledgerUpdate.epochChange();
+                return e.isEmpty() ? Maybe.empty() : Maybe.just(Pair.of(node, e.orElseThrow()));
               });
       epochChangeObservables.onNext(epochChangeObservable);
     }
@@ -339,7 +349,12 @@ public class SimulationNodes {
           .get(node)
           .getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() {}))
           .get(name)
-          .start();
+          .start(
+              error -> {
+                log.error(
+                    "uncaught error in individually run {}; stopping the network", name, error);
+                this.stop();
+              });
     }
 
     @Override
@@ -350,10 +365,7 @@ public class SimulationNodes {
     }
 
     private void stopNode(Injector injector) {
-      injector
-          .getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() {}))
-          .values()
-          .forEach(ModuleRunner::stop);
+      injector.getInstance(ModuleRunnerStopper.class).stop();
     }
   }
 }

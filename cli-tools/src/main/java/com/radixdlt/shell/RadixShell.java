@@ -78,6 +78,7 @@ import com.radixdlt.bootstrap.RadixNodeBootstrapperModule;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.RadixKeyStore;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.environment.*;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxEnvironment;
@@ -94,10 +95,11 @@ import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.p2p.transport.PeerChannel;
 import com.radixdlt.p2p.transport.PeerOutboundBootstrap;
 import com.radixdlt.p2p.transport.PeerServerBootstrap;
-import com.radixdlt.sbor.StateManagerSbor;
+import com.radixdlt.sbor.NodeSborCodecs;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.sync.TransactionsAndProofReader;
+import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import io.reactivex.rxjava3.disposables.Disposable;
 import java.io.File;
@@ -199,10 +201,11 @@ public final class RadixShell {
       properties.set("network.id", network.getId());
       if (properties.get("network.genesis_data", "").isEmpty()) {
         final var encodedGenesisData =
-            StateManagerSbor.encode(
-                GenesisData.testingDefaultEmpty(),
-                StateManagerSbor.resolveCodec(new TypeToken<>() {}));
-        final var genesisDataBase64 = Base64.getEncoder().encodeToString(encodedGenesisData);
+            NodeSborCodecs.encode(
+                GenesisData.testingWithSingleValidator(),
+                NodeSborCodecs.resolveCodec(new TypeToken<>() {}));
+        final var compressedGenesisData = Compress.compress(encodedGenesisData);
+        final var genesisDataBase64 = Base64.getEncoder().encodeToString(compressedGenesisData);
         properties.set("network.genesis_data", genesisDataBase64);
       }
 
@@ -235,8 +238,7 @@ public final class RadixShell {
 
     public Node(Injector injector) {
       this.injector = injector;
-      this.moduleRunners =
-          injector.getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() {}));
+      this.moduleRunners = injector.getInstance(Key.get(new TypeLiteral<>() {}));
     }
 
     public <T> T getInstance(Key<T> key) {
@@ -248,7 +250,13 @@ public final class RadixShell {
     }
 
     public void startRunner(String runner) {
-      moduleRunners.get(runner).start();
+      moduleRunners
+          .get(runner)
+          .start(
+              error -> {
+                log.error("Uncaught exception in runner {}; stopping all runners", runner, error);
+                moduleRunners.values().forEach(ModuleRunner::stop);
+              });
     }
 
     public void stopRunner(String runner) {
@@ -344,7 +352,7 @@ public final class RadixShell {
       sendMsg(uri.getNodeId(), message);
     }
 
-    public void sendMsg(String nodeAddress, Message message) throws DeserializeException {
+    public void sendMsg(String nodeAddress, Message message) throws PublicKeyException {
       final var addressing = injector.getInstance(Addressing.class);
       sendMsg(NodeId.fromPublicKey(addressing.decodeNodeAddress(nodeAddress)), message);
     }

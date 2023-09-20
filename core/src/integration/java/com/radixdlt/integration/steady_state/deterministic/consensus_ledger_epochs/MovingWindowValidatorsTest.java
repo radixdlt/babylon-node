@@ -101,7 +101,7 @@ public class MovingWindowValidatorsTest {
   private void run(int numNodes, int windowSize, int maxEpoch, Round epochMaxRound) {
     DeterministicTest bftTest =
         DeterministicTest.builder()
-            .addPhysicalNodes(PhysicalNodeConfig.createBasicBatch(numNodes))
+            .addPhysicalNodes(PhysicalNodeConfig.createBatchWithFakeAddresses(numNodes))
             .messageMutator(mutator())
             .messageSelector(firstSelector())
             .functionalNodeModule(

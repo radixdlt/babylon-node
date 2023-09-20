@@ -1,9 +1,10 @@
 use crate::core_api::*;
 use radix_engine::types::*;
 
-use radix_engine::blueprints::consensus_manager::*;
-use radix_engine::system::node_modules::access_rules::*;
+use radix_engine::blueprints::consensus_manager::ValidatorField;
+use radix_engine::system::node_modules::role_assignment::RoleAssignmentField;
 use state_manager::query::dump_component_state;
+use state_manager::store::traits::QueryableProofStore;
 use std::ops::Deref;
 
 use super::component_dump_to_vaults_and_nodes;
@@ -27,19 +28,20 @@ pub(crate) async fn handle_state_validator(
         ));
     }
 
-    let database = state.database.read();
+    let database = state.state_manager.database.read();
 
-    let validator_substate: ValidatorSubstate = read_mandatory_main_field_substate(
+    let validator_substate = read_optional_main_field_substate(
         database.deref(),
         validator_address.as_node_id(),
-        &ValidatorField::Validator.into(),
-    )?;
+        &ValidatorField::State.into(),
+    )
+    .ok_or_else(|| not_found_error("Validator not found".to_string()))?;
 
-    let method_access_rules_substate: MethodAccessRulesSubstate = read_mandatory_substate(
+    let owner_role_substate = read_mandatory_substate(
         database.deref(),
         validator_address.as_node_id(),
-        ACCESS_RULES_FIELD_PARTITION,
-        &AccessRulesField::AccessRules.into(),
+        RoleAssignmentPartitionOffset::Field.as_partition(ROLE_ASSIGNMENT_BASE_PARTITION),
+        &RoleAssignmentField::Owner.into(),
     )?;
 
     let component_dump = dump_component_state(database.deref(), validator_address);
@@ -47,15 +49,21 @@ pub(crate) async fn handle_state_validator(
     let (vaults, descendent_nodes) =
         component_dump_to_vaults_and_nodes(&mapping_context, component_dump)?;
 
+    let header = database
+        .get_last_proof()
+        .expect("proof for outputted state must exist")
+        .ledger_header;
+
     Ok(models::StateValidatorResponse {
+        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
         address: to_api_component_address(&mapping_context, &validator_address)?,
         state: Some(to_api_validator_substate(
             &mapping_context,
             &validator_substate,
         )?),
-        access_rules: Some(to_api_method_access_rules_substate(
+        owner_role: Some(to_api_owner_role_substate(
             &mapping_context,
-            &method_access_rules_substate,
+            &owner_role_substate,
         )?),
         vaults,
         descendent_nodes,

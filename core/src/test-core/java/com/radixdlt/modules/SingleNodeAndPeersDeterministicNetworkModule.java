@@ -72,12 +72,13 @@ import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.Environment;
+import com.radixdlt.environment.FatalPanicHandler;
 import com.radixdlt.environment.deterministic.network.ControlledDispatcher;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.keys.BFTValidatorIdFromGenesisModule;
 import com.radixdlt.keys.InMemoryBFTKeyModule;
+import com.radixdlt.keys.SelfValidatorInfoFromGenesisModule;
 import com.radixdlt.logger.EventLoggerConfig;
 import com.radixdlt.logger.EventLoggerModule;
 import com.radixdlt.monitoring.Metrics;
@@ -105,10 +106,10 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
     // System
     bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
     bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
-
+    bind(FatalPanicHandler.class).toInstance(() -> {});
     var addressing = Addressing.ofNetwork(Network.INTEGRATIONTESTNET);
     bind(Addressing.class).toInstance(addressing);
-    install(new BFTValidatorIdFromGenesisModule());
+    install(new SelfValidatorInfoFromGenesisModule());
     install(new EventLoggerModule(EventLoggerConfig.addressed(addressing)));
     install(new InMemoryBFTKeyModule(self));
     install(new CryptoModule());
@@ -116,8 +117,8 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
   }
 
   @Provides
-  public List<BFTValidatorId> nodes(@Self BFTValidatorId self) {
-    return List.of(self);
+  public List<BFTValidatorId> nodes() {
+    return List.of(BFTValidatorId.withKeyAndFakeDeterministicAddress(self.getPublicKey()));
   }
 
   @Provides

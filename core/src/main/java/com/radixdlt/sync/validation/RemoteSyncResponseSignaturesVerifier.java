@@ -67,12 +67,13 @@ package com.radixdlt.sync.validation;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.ConsensusHasher;
 import com.radixdlt.consensus.HashVerifier;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.TimestampedECDSASignature;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.sync.messages.remote.SyncResponse;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 
 /** Verifies the signatures in a sync response */
 public final class RemoteSyncResponseSignaturesVerifier {
@@ -86,20 +87,19 @@ public final class RemoteSyncResponseSignaturesVerifier {
     this.hashVerifier = Objects.requireNonNull(hashVerifier);
   }
 
-  public boolean verifyResponseSignatures(SyncResponse syncResponse) {
-    var ledgerExtension = syncResponse.getLedgerExtension();
-    var endHeader = ledgerExtension.getTail();
-
-    var opaque = endHeader.getOpaque();
-    var header = endHeader.getLedgerHeader();
-    var signatures = endHeader.getSignatures().getSignatures();
+  public boolean verifyResponseSignatures(LedgerProof ledgerProof) {
+    final var signatures = ledgerProof.getSignatures().getSignatures();
     for (Entry<BFTValidatorId, TimestampedECDSASignature> nodeAndSignature :
         signatures.entrySet()) {
       var node = nodeAndSignature.getKey();
       var signature = nodeAndSignature.getValue();
-      final var voteDataHash =
-          ConsensusHasher.toHash(opaque, header, signature.timestamp(), hasher);
-      if (!hashVerifier.verify(node.getKey(), voteDataHash, signature.signature())) {
+      final var consensusVoteHash =
+          ConsensusHasher.toHash(
+              ledgerProof.getOpaque(),
+              Optional.of(ledgerProof.getHeader()),
+              signature.timestamp(),
+              hasher);
+      if (!hashVerifier.verify(node.getKey(), consensusVoteHash, signature.signature())) {
         return false;
       }
     }

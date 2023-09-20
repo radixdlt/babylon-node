@@ -64,35 +64,49 @@
 
 use super::ReadableStateTreeStore;
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, WriteableAccuTreeStore};
-use crate::accumulator_tree::tree_builder::{AccuTree, Merklizable};
-use crate::staging::epoch_handling::AccuTreeEpochHandler;
+
+use crate::staging::epoch_handling::EpochAwareAccuTreeFactory;
 use crate::transaction::LedgerTransactionHash;
 use crate::{
-    ActiveValidatorInfo, ChangeAction, DetailedTransactionOutcome, EpochTransactionIdentifiers,
-    LedgerHashes, LocalTransactionReceipt, NextEpoch, ReceiptTreeHash, StateHash, StateVersion,
-    SubstateChange, TransactionTreeHash,
+    ActiveValidatorInfo, ByPartition, BySubstate, DetailedTransactionOutcome,
+    EpochTransactionIdentifiers, LedgerHashes, LedgerStateChanges, LocalTransactionReceipt,
+    NextEpoch, PartitionChangeAction, ReceiptTreeHash, StateHash, StateVersion,
+    SubstateChangeAction, SubstateReference, TransactionTreeHash,
 };
 use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
+use radix_engine::blueprints::resource::{FungibleVaultBalanceFieldSubstate, FungibleVaultField};
 use radix_engine::transaction::{
-    AbortResult, CommitResult, RejectResult, TransactionExecutionTrace, TransactionReceipt,
-    TransactionResult,
+    AbortResult, BalanceChange, CommitResult, CostingParameters, RejectResult,
+    TransactionFeeSummary, TransactionReceipt, TransactionResult,
 };
 use radix_engine_interface::prelude::*;
 
 use crate::staging::ReadableStore;
-use radix_engine::track::db_key_mapper::DatabaseKeyMapper;
 
-use radix_engine::track::SystemUpdates;
-use radix_engine_store_interface::interface::{DatabaseUpdate, DatabaseUpdates, SubstateDatabase};
-use radix_engine_stores::hash_tree::tree_store::{
-    NodeKey, PartitionPayload, Payload, ReadableTreeStore, TreeNode, WriteableTreeStore,
+use radix_engine::track::{
+    BatchPartitionStateUpdate, NodeStateUpdates, PartitionStateUpdates, StateUpdates,
 };
-use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
+
+use crate::staging::node_ancestry_resolver::NodeAncestryResolver;
+use crate::staging::overlays::{MapSubstateNodeAncestryStore, StagedSubstateNodeAncestryStore};
+use crate::store::traits::{KeyedSubstateNodeAncestryRecord, SubstateNodeAncestryStore};
+use node_common::utils::IsAccountExt;
+use radix_engine_store_interface::db_key_mapper::*;
+use radix_engine_store_interface::interface::*;
+use radix_engine_stores::hash_tree::tree_store::*;
+use radix_engine_stores::hash_tree::*;
+use transaction::prelude::TransactionCostingParameters;
 
 pub enum ProcessedTransactionReceipt {
     Commit(ProcessedCommitResult),
-    Reject(RejectResult),
+    Reject(ProcessedRejectResult),
     Abort(AbortResult),
+}
+
+#[derive(Clone, Debug)]
+pub struct ProcessedRejectResult {
+    pub result: RejectResult,
+    pub fee_summary: TransactionFeeSummary,
 }
 
 #[derive(Clone, Debug)]
@@ -100,6 +114,7 @@ pub struct ProcessedCommitResult {
     pub local_receipt: LocalTransactionReceipt,
     pub hash_structures_diff: HashStructuresDiff,
     pub database_updates: DatabaseUpdates,
+    pub new_substate_node_ancestry_records: Vec<KeyedSubstateNodeAncestryRecord>,
 }
 
 pub struct HashUpdateContext<'s, S> {
@@ -109,25 +124,40 @@ pub struct HashUpdateContext<'s, S> {
     pub ledger_transaction_hash: &'s LedgerTransactionHash,
 }
 
+pub struct ExecutionFeeData {
+    pub fee_summary: TransactionFeeSummary,
+    pub engine_costing_parameters: CostingParameters,
+    pub transaction_costing_parameters: TransactionCostingParameters,
+}
+
 impl ProcessedTransactionReceipt {
     pub fn process<S: ReadableStore, D: DatabaseKeyMapper>(
         hash_update_context: HashUpdateContext<S>,
-        transaction_receipt: TransactionReceipt,
+        receipt: TransactionReceipt,
     ) -> Self {
-        match transaction_receipt.result {
+        match receipt.result {
             TransactionResult::Commit(commit) => {
                 ProcessedTransactionReceipt::Commit(ProcessedCommitResult::process::<_, D>(
                     hash_update_context,
                     commit,
-                    transaction_receipt.execution_trace,
+                    ExecutionFeeData {
+                        fee_summary: receipt.fee_summary,
+                        engine_costing_parameters: receipt.costing_parameters,
+                        transaction_costing_parameters: receipt.transaction_costing_parameters,
+                    },
                 ))
             }
-            TransactionResult::Reject(reject) => ProcessedTransactionReceipt::Reject(reject),
+            TransactionResult::Reject(reject) => {
+                ProcessedTransactionReceipt::Reject(ProcessedRejectResult {
+                    result: reject,
+                    fee_summary: receipt.fee_summary,
+                })
+            }
             TransactionResult::Abort(abort) => ProcessedTransactionReceipt::Abort(abort),
         }
     }
 
-    pub fn expect_commit(&self, description: impl Display) -> &ProcessedCommitResult {
+    pub fn expect_commit(&self, description: &impl Display) -> &ProcessedCommitResult {
         match self {
             ProcessedTransactionReceipt::Commit(commit) => commit,
             ProcessedTransactionReceipt::Reject(reject) => {
@@ -141,8 +171,8 @@ impl ProcessedTransactionReceipt {
 
     pub fn expect_commit_or_reject(
         &self,
-        description: impl Display,
-    ) -> Result<&ProcessedCommitResult, RejectResult> {
+        description: &impl Display,
+    ) -> Result<&ProcessedCommitResult, ProcessedRejectResult> {
         match self {
             ProcessedTransactionReceipt::Commit(commit) => Ok(commit),
             ProcessedTransactionReceipt::Reject(reject) => Err(reject.clone()),
@@ -165,39 +195,50 @@ impl ProcessedCommitResult {
     pub fn process<S: ReadableStore, D: DatabaseKeyMapper>(
         hash_update_context: HashUpdateContext<S>,
         commit_result: CommitResult,
-        execution_trace: TransactionExecutionTrace,
+        execution_fee_data: ExecutionFeeData,
     ) -> Self {
-        let epoch_transaction_identifiers = hash_update_context.epoch_transaction_identifiers;
+        let epoch_identifiers = hash_update_context.epoch_transaction_identifiers;
         let parent_state_version = hash_update_context.parent_state_version;
-        let ledger_transaction_hash = hash_update_context.ledger_transaction_hash;
+        let ledger_transaction_hash = *hash_update_context.ledger_transaction_hash;
         let store = hash_update_context.store;
 
-        let database_updates = commit_result.state_updates.database_updates.clone();
+        let state_changes =
+            Self::compute_ledger_state_changes::<S, D>(store, &commit_result.state_updates);
 
-        let substate_changes = Self::compute_substate_changes::<S, D>(
+        let database_updates = commit_result.state_updates.create_database_updates::<D>();
+
+        let global_balance_update = Self::compute_global_balance_update(
             store,
-            &commit_result.state_updates.system_updates,
+            &state_changes,
+            &commit_result.state_update_summary.vault_balance_changes,
         );
+
         let state_hash_tree_diff =
             Self::compute_state_tree_update(store, parent_state_version, &database_updates);
-        let transaction_tree_diff = Self::compute_accu_tree_update::<S, TransactionTreeHash>(
+
+        let epoch_accu_trees =
+            EpochAwareAccuTreeFactory::new(epoch_identifiers.state_version, parent_state_version);
+
+        let transaction_tree_diff = epoch_accu_trees.compute_tree_diff(
+            epoch_identifiers.transaction_hash,
             store,
-            epoch_transaction_identifiers.state_version,
-            epoch_transaction_identifiers.transaction_hash,
-            parent_state_version,
-            TransactionTreeHash::from(ledger_transaction_hash.into_hash()),
+            vec![TransactionTreeHash::from(ledger_transaction_hash)],
         );
 
-        let local_receipt =
-            LocalTransactionReceipt::from((commit_result, substate_changes, execution_trace));
-        let consensus_receipt = local_receipt.on_ledger.get_consensus_receipt();
-        let receipt_tree_diff = Self::compute_accu_tree_update::<S, ReceiptTreeHash>(
-            store,
-            epoch_transaction_identifiers.state_version,
-            epoch_transaction_identifiers.receipt_hash,
-            parent_state_version,
-            ReceiptTreeHash::from(consensus_receipt.get_hash().into_hash()),
+        let local_receipt = LocalTransactionReceipt::new(
+            commit_result,
+            state_changes,
+            global_balance_update.global_balance_summary,
+            execution_fee_data,
         );
+        let consensus_receipt = local_receipt.on_ledger.get_consensus_receipt();
+
+        let receipt_tree_diff = epoch_accu_trees.compute_tree_diff(
+            epoch_identifiers.receipt_hash,
+            store,
+            vec![ReceiptTreeHash::from(consensus_receipt.get_hash())],
+        );
+
         let ledger_hashes = LedgerHashes {
             state_root: state_hash_tree_diff.new_root,
             transaction_root: *transaction_tree_diff.slice.root(),
@@ -213,10 +254,12 @@ impl ProcessedCommitResult {
                 receipt_tree_diff,
             },
             database_updates,
+            new_substate_node_ancestry_records: global_balance_update
+                .new_substate_node_ancestry_records,
         }
     }
 
-    pub fn check_success(self, description: impl Display) -> Self {
+    pub fn expect_success(self, description: impl Display) -> Self {
         if let DetailedTransactionOutcome::Failure(error) =
             &self.local_receipt.local_execution.outcome
         {
@@ -236,53 +279,107 @@ impl ProcessedCommitResult {
             .map(|next_epoch_result| NextEpoch::from(next_epoch_result.clone()))
     }
 
-    pub fn compute_substate_changes<S: SubstateDatabase, D: DatabaseKeyMapper>(
+    // TODO(after RCnet-v3): Extract the `pub fn`s below (re-used by preview) to an isolated helper.
+
+    pub fn compute_global_balance_update<S: SubstateNodeAncestryStore>(
         store: &S,
-        system_updates: &SystemUpdates,
-    ) -> Vec<SubstateChange> {
-        let mut substate_changes = Vec::new();
-        for ((node_id, module_id), node_module_updates) in system_updates {
-            for (substate_key, update) in node_module_updates {
-                let partition_key = D::to_db_partition_key(node_id, *module_id);
-                let sort_key = D::to_db_sort_key(substate_key);
-                let change_action = match update {
-                    DatabaseUpdate::Set(value) => {
-                        match store.get_substate(&partition_key, &sort_key) {
-                            Some(_) => ChangeAction::Update(value.clone()),
-                            None => ChangeAction::Create(value.clone()),
-                        }
-                    }
-                    DatabaseUpdate::Delete => ChangeAction::Delete,
-                };
-                substate_changes.push(SubstateChange {
-                    node_id: *node_id,
-                    partition_number: *module_id,
-                    substate_key: substate_key.clone(),
-                    action: change_action,
-                });
-            }
+        state_changes: &LedgerStateChanges,
+        vault_balance_changes: &IndexMap<NodeId, (ResourceAddress, BalanceChange)>,
+    ) -> GlobalBalanceUpdate {
+        // We need a fresh (!) view of a node ancestry store to group Vaults by their Global* roots.
+        let new_substate_node_ancestry_records =
+            NodeAncestryResolver::batch_resolve(store, state_changes.substate_level_changes.iter())
+                .collect::<Vec<_>>();
+
+        // Hence, we must prepare a "staged" ancestry store (with an overlay of the newest records).
+        let map = new_substate_node_ancestry_records
+            .iter()
+            .flat_map(|(node_ids, record)| {
+                node_ids.iter().map(|node_id| (*node_id, record.clone()))
+            })
+            .collect::<NonIterMap<_, _>>();
+        let overlay = MapSubstateNodeAncestryStore::wrap(&map);
+        let staged = StagedSubstateNodeAncestryStore::new(store, &overlay);
+
+        // Call the group-by logic and return the results together with the ancestry store update.
+        let global_balance_summary =
+            GlobalBalanceSummary::compute_from(&staged, vault_balance_changes, state_changes);
+        GlobalBalanceUpdate {
+            global_balance_summary,
+            new_substate_node_ancestry_records,
         }
-        substate_changes
     }
 
-    fn compute_accu_tree_update<
-        S: ReadableAccuTreeStore<StateVersion, M>,
-        M: Merklizable + Clone,
-    >(
+    pub fn compute_ledger_state_changes<S: SubstateDatabase, D: DatabaseKeyMapper>(
         store: &S,
-        epoch_state_version: StateVersion,
-        epoch_root: M,
-        parent_state_version: StateVersion,
-        new_leaf_hash: M,
-    ) -> AccuTreeDiff<StateVersion, M> {
-        let mut collector = CollectingAccuTreeStore::new(store);
-        let mut epoch_scoped_store =
-            EpochScopedAccuTreeStore::new(&mut collector, epoch_state_version);
-        let epoch_handler = AccuTreeEpochHandler::new(epoch_state_version, parent_state_version);
-        let epoch_tree_len = epoch_handler.current_accu_tree_len();
-        let appended_hashes = epoch_handler.adjust_next_batch(epoch_root, vec![new_leaf_hash]);
-        AccuTree::new(&mut epoch_scoped_store, epoch_tree_len).append(appended_hashes);
-        collector.into_diff()
+        state_updates: &StateUpdates,
+    ) -> LedgerStateChanges {
+        let mut partition_level_changes = ByPartition::default();
+        let mut substate_level_changes = BySubstate::default();
+        for (node_id, node_updates) in &state_updates.by_node {
+            let by_partition_updates = match node_updates {
+                NodeStateUpdates::Delta { by_partition } => by_partition,
+            };
+            for (partition_num, partition_updates) in by_partition_updates {
+                let substate_updates = match partition_updates {
+                    PartitionStateUpdates::Delta { by_substate } => Cow::Borrowed(by_substate),
+                    PartitionStateUpdates::Batch(batch) => match batch {
+                        BatchPartitionStateUpdate::Reset {
+                            new_substate_values,
+                        } => {
+                            partition_level_changes.add(
+                                node_id,
+                                partition_num,
+                                PartitionChangeAction::Delete,
+                            );
+                            Cow::Owned(
+                                new_substate_values
+                                    .iter()
+                                    .map(|(substate_key, value)| {
+                                        (substate_key.clone(), DatabaseUpdate::Set(value.clone()))
+                                    })
+                                    .collect::<IndexMap<_, _>>(),
+                            )
+                        }
+                    },
+                };
+                for (substate_key, update) in substate_updates.as_ref() {
+                    let partition_key = D::to_db_partition_key(node_id, *partition_num);
+                    let sort_key = D::to_db_sort_key(substate_key);
+
+                    let previous_opt = store.get_substate(&partition_key, &sort_key);
+                    let change_action_opt = match (update, previous_opt) {
+                        (DatabaseUpdate::Set(new), Some(previous)) if previous != *new => {
+                            Some(SubstateChangeAction::Update {
+                                new: new.clone(),
+                                previous,
+                            })
+                        }
+                        (DatabaseUpdate::Set(_new), Some(_previous)) => None, // Same value as before (i.e. not really updated), ignore
+                        (DatabaseUpdate::Set(value), None) => {
+                            Some(SubstateChangeAction::Create { new: value.clone() })
+                        }
+                        (DatabaseUpdate::Delete, Some(previous)) => {
+                            Some(SubstateChangeAction::Delete { previous })
+                        }
+                        (DatabaseUpdate::Delete, None) => None, // No value before (i.e. not really deleted), ignore
+                    };
+
+                    if let Some(change_action) = change_action_opt {
+                        substate_level_changes.add(
+                            node_id,
+                            partition_num,
+                            substate_key,
+                            change_action,
+                        );
+                    }
+                }
+            }
+        }
+        LedgerStateChanges {
+            partition_level_changes,
+            substate_level_changes,
+        }
     }
 
     fn compute_state_tree_update<S: ReadableStateTreeStore>(
@@ -290,29 +387,125 @@ impl ProcessedCommitResult {
         parent_state_version: StateVersion,
         database_updates: &DatabaseUpdates,
     ) -> StateHashTreeDiff {
-        let mut hash_changes = Vec::new();
-        for (db_partition_key, partition_updates) in database_updates {
-            for (db_sort_key, database_update) in partition_updates {
-                match database_update {
-                    DatabaseUpdate::Set(value) => hash_changes.push(SubstateHashChange::new(
-                        (db_partition_key.clone(), db_sort_key.clone()),
-                        Some(hash(value)),
-                    )),
-                    DatabaseUpdate::Delete => hash_changes.push(SubstateHashChange::new(
-                        (db_partition_key.clone(), db_sort_key.clone()),
-                        None,
-                    )),
-                }
-            }
-        }
-
         let mut collector = CollectingTreeStore::new(store);
         let root_hash = put_at_next_version(
             &mut collector,
             Some(parent_state_version.number()).filter(|v| *v > 0),
-            hash_changes,
+            database_updates,
         );
         collector.into_diff_with(root_hash)
+    }
+}
+
+/// A summary of vault balances per global root entity.
+#[derive(Debug, Clone, PartialEq, Eq, Default, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct GlobalBalanceSummary {
+    /// A cumulative balance change of each global root entity owning one or more vaults from the
+    /// input "vault balance changes".
+    /// These entries are not pruned, i.e. a fungible delta of `0.0`, or a non-fungible delta of
+    /// `{added: #1#, removed: #1#}` may be encountered here (and it simply means that resources
+    /// were only moved around different vaults of the same global root entity).
+    pub global_balance_changes: IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>>,
+
+    /// A resultant balances of fungible resources held by global accounts.
+    /// Note: aggregating a resultant balance of *any* global root entity is, in principle, not
+    /// possible using only the "vault balance changes" input (because there may be vaults whose
+    /// balance was not changed). We "aggregate" it for accounts using an assumption that an account
+    /// has at most one vault for each resource.
+    pub resultant_fungible_account_balances:
+        IndexMap<GlobalAddress, IndexMap<ResourceAddress, Decimal>>,
+}
+
+impl GlobalBalanceSummary {
+    /// Computes a [`GlobalBalanceSummary`] from the given vault balance changes.
+    /// This uses the ancestry information from the given [`SubstateNodeAncestryStore`] to resolve
+    /// the owning global entity, and parses the substate changes to collect the resulting balances
+    /// of fungible vaults.
+    /// Note: this function deliberately ignores the [`LedgerStateChanges::partition_level_changes`]
+    /// (assuming that vault partitions cannot be deleted). In fact, it also panics upon
+    /// encountering a delete of any vault's balance field.
+    pub fn compute_from<S: SubstateNodeAncestryStore>(
+        store: &S,
+        vault_balance_changes: &IndexMap<NodeId, (ResourceAddress, BalanceChange)>,
+        state_changes: &LedgerStateChanges,
+    ) -> Self {
+        let ancestries = store.batch_get_ancestry(vault_balance_changes.keys());
+        let mut global_balance_changes = index_map_new();
+        let mut resultant_fungible_account_balances = index_map_new();
+        for (vault_entry, ancestry) in vault_balance_changes.iter().zip(ancestries) {
+            let (vault_id, (resource_address, balance_change)) = vault_entry;
+
+            let Some(ancestry) = ancestry else {
+                panic!("No ancestry found for vault {:?}", vault_id);
+            };
+            let SubstateReference(root_node_id, root_partition, _) = ancestry.root;
+
+            let Ok(root_address) = GlobalAddress::try_from(root_node_id) else {
+                panic!(
+                    "Root {:?} resolved for vault {:?} is not global",
+                    root_node_id, vault_id
+                );
+            };
+
+            // Aggregate (i.e. sum) balance changes for every global root entity.
+            global_balance_changes
+                .entry(root_address)
+                .or_insert_with(index_map_new::<ResourceAddress, BalanceChange>)
+                .entry(*resource_address)
+                .and_modify(|existing| *existing = existing.clone() + balance_change.clone())
+                .or_insert_with(|| balance_change.clone());
+
+            // Collect (i.e. not sum) resultant balances for fungible resources of global accounts.
+            if vault_id.is_internal_fungible_vault()
+                && root_address.is_account()
+                && root_partition
+                    == AccountPartitionOffset::ResourceVaultKeyValue.as_main_partition()
+            {
+                if ancestry.root != ancestry.parent {
+                    // By the time we've got here, we know we are a fungible vault, under a global account, under the ResourceVaultKeyValue partition.
+                    // The vault should also be directly owned by this substate (ie we have 1 layer, and parent == root)
+                    panic!("Global account vault in resource vault partition has a parent substate which isn't equal to its root substate")
+                }
+                let substate_change = state_changes
+                    .substate_level_changes
+                    .get(
+                        vault_id,
+                        &FungibleVaultPartitionOffset::Field.as_main_partition(),
+                        &FungibleVaultField::Balance.into(),
+                    )
+                    .expect(
+                        "broken invariant: vault's balance changed without its substate change",
+                    );
+                let resultant_balance_substate = match substate_change {
+                    SubstateChangeAction::Create { new } => new,
+                    SubstateChangeAction::Update { new, .. } => new,
+                    SubstateChangeAction::Delete { .. } => {
+                        panic!("broken invariant: vault {:?} deleted", vault_id)
+                    }
+                };
+                let resultant_balance =
+                    scrypto_decode::<FungibleVaultBalanceFieldSubstate>(resultant_balance_substate)
+                        .expect("cannot decode vault balance substate")
+                        .into_payload()
+                        .into_latest()
+                        .amount();
+                let balance_existed = resultant_fungible_account_balances
+                    .entry(root_address)
+                    .or_insert_with(index_map_new::<ResourceAddress, Decimal>)
+                    .insert(*resource_address, resultant_balance)
+                    .is_some();
+                if balance_existed {
+                    panic!(
+                        "broken invariant: multiple vaults of resource {:?} exist for account {:?}",
+                        resource_address, root_address
+                    )
+                }
+            }
+        }
+        Self {
+            global_balance_changes,
+            resultant_fungible_account_balances,
+        }
     }
 }
 
@@ -345,18 +538,16 @@ pub struct HashStructuresDiff {
 #[derive(Clone, Debug)]
 pub struct StateHashTreeDiff {
     pub new_root: StateHash,
-    pub new_re_node_layer_nodes: Vec<(NodeKey, TreeNode<PartitionPayload>)>,
-    pub new_substate_layer_nodes: Vec<(NodeKey, TreeNode<()>)>,
-    pub stale_hash_tree_node_keys: Vec<NodeKey>,
+    pub new_nodes: Vec<(NodeKey, TreeNode)>,
+    pub stale_tree_parts: Vec<StaleTreePart>,
 }
 
 impl StateHashTreeDiff {
     pub fn new() -> Self {
         Self {
             new_root: StateHash::from(Hash([0; Hash::LENGTH])),
-            new_re_node_layer_nodes: Vec::new(),
-            new_substate_layer_nodes: Vec::new(),
-            stale_hash_tree_node_keys: Vec::new(),
+            new_nodes: Vec::new(),
+            stale_tree_parts: Vec::new(),
         }
     }
 }
@@ -368,48 +559,18 @@ impl Default for StateHashTreeDiff {
 }
 
 #[derive(Clone, Debug)]
+pub struct GlobalBalanceUpdate {
+    pub global_balance_summary: GlobalBalanceSummary,
+    pub new_substate_node_ancestry_records: Vec<KeyedSubstateNodeAncestryRecord>,
+}
+
+#[derive(Clone, Debug)]
 pub struct AccuTreeDiff<K, N> {
     pub key: K,
     pub slice: TreeSlice<N>,
 }
 
-struct EpochScopedAccuTreeStore<'s, S> {
-    forest_store: &'s mut S,
-    epoch_state_version: StateVersion,
-}
-
-impl<'s, S> EpochScopedAccuTreeStore<'s, S> {
-    pub fn new(forest_store: &'s mut S, epoch_state_version: StateVersion) -> Self {
-        Self {
-            forest_store,
-            epoch_state_version,
-        }
-    }
-}
-
-impl<'s, S: ReadableAccuTreeStore<StateVersion, N>, N> ReadableAccuTreeStore<usize, N>
-    for EpochScopedAccuTreeStore<'s, S>
-{
-    fn get_tree_slice(&self, epoch_tree_size: &usize) -> Option<TreeSlice<N>> {
-        let end_state_version = self
-            .epoch_state_version
-            .relative(*epoch_tree_size as u64 - 1);
-        self.forest_store.get_tree_slice(&end_state_version)
-    }
-}
-
-impl<'s, S: WriteableAccuTreeStore<StateVersion, N>, N> WriteableAccuTreeStore<usize, N>
-    for EpochScopedAccuTreeStore<'s, S>
-{
-    fn put_tree_slice(&mut self, epoch_tree_size: usize, slice: TreeSlice<N>) {
-        let end_state_version = self
-            .epoch_state_version
-            .relative(epoch_tree_size as u64 - 1);
-        self.forest_store.put_tree_slice(end_state_version, slice)
-    }
-}
-
-struct CollectingAccuTreeStore<'s, S, K, N> {
+pub struct CollectingAccuTreeStore<'s, S, K, N> {
     readable_delegate: &'s S,
     diff: Option<AccuTreeDiff<K, N>>,
 }
@@ -464,28 +625,18 @@ impl<'s, S: ReadableStateTreeStore> CollectingTreeStore<'s, S> {
     }
 }
 
-impl<'s, S: ReadableTreeStore<P>, P: Payload> ReadableTreeStore<P> for CollectingTreeStore<'s, S> {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<P>> {
+impl<'s, S: ReadableTreeStore> ReadableTreeStore for CollectingTreeStore<'s, S> {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
         self.readable_delegate.get_node(key)
     }
 }
 
-impl<'s, S> WriteableTreeStore<PartitionPayload> for CollectingTreeStore<'s, S> {
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode<PartitionPayload>) {
-        self.diff.new_re_node_layer_nodes.push((key, node));
+impl<'s, S> WriteableTreeStore for CollectingTreeStore<'s, S> {
+    fn insert_node(&mut self, key: NodeKey, node: TreeNode) {
+        self.diff.new_nodes.push((key, node));
     }
 
-    fn record_stale_node(&mut self, key: NodeKey) {
-        self.diff.stale_hash_tree_node_keys.push(key);
-    }
-}
-
-impl<'s, S> WriteableTreeStore<()> for CollectingTreeStore<'s, S> {
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode<()>) {
-        self.diff.new_substate_layer_nodes.push((key, node));
-    }
-
-    fn record_stale_node(&mut self, key: NodeKey) {
-        self.diff.stale_hash_tree_node_keys.push(key);
+    fn record_stale_tree_part(&mut self, part: StaleTreePart) {
+        self.diff.stale_tree_parts.push(part);
     }
 }

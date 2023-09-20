@@ -149,9 +149,20 @@ public class PacemakerTest {
     Vote lastVoteWithTimeout = mock(Vote.class);
     ImmutableSet<BFTValidatorId> validators = rmock(ImmutableSet.class);
 
+    final var vertexId = HashCode.fromInt(99);
+    final var voteData = mock(VoteData.class);
+    final var proposed = mock(BFTHeader.class);
+    when(proposed.getVertexId()).thenReturn(vertexId);
+    when(voteData.getProposed()).thenReturn(proposed);
+    when(lastVoteWithTimeout.getVoteData()).thenReturn(voteData);
     when(this.safetyRules.getLastVote(round)).thenReturn(Optional.of(lastVote));
     when(this.safetyRules.timeoutVote(lastVote)).thenReturn(lastVoteWithTimeout);
-    when(this.validatorSet.nodes()).thenReturn(validators);
+    when(this.validatorSet.validators()).thenReturn(validators);
+    final var vertex = mock(Vertex.class);
+    when(vertex.isFallback()).thenReturn(false);
+    final var executedVertex = mock(ExecutedVertex.class);
+    when(executedVertex.vertex()).thenReturn(vertex);
+    when(this.vertexStore.getExecutedVertex(vertexId)).thenReturn(Optional.of(executedVertex));
 
     RoundUpdate roundUpdate =
         RoundUpdate.create(
@@ -162,6 +173,7 @@ public class PacemakerTest {
     this.pacemaker.processLocalTimeout(ScheduledLocalTimeout.create(roundUpdate, 0L));
 
     verify(this.voteDispatcher, times(1)).dispatch(eq(validators), eq(lastVoteWithTimeout));
+    verify(this.vertexStore, times(1)).getExecutedVertex(vertexId);
     verifyNoMoreInteractions(this.vertexStore);
     verify(this.safetyRules, times(1)).getLastVote(round);
     verify(this.safetyRules, times(1)).timeoutVote(lastVote);
@@ -176,6 +188,7 @@ public class PacemakerTest {
     QuorumCertificate highestQc = mock(QuorumCertificate.class);
     when(roundUpdateHighQc.highestCommittedQC()).thenReturn(committedQc);
     when(roundUpdateHighQc.highestQC()).thenReturn(highestQc);
+    when(roundUpdateHighQc.getHighestRound()).thenReturn(Round.of(1L));
     BFTHeader highestQcProposed = mock(BFTHeader.class);
     HashCode highQcParentVertexId = mock(HashCode.class);
     when(highestQcProposed.getVertexId()).thenReturn(highQcParentVertexId);
@@ -210,9 +223,20 @@ public class PacemakerTest {
     when(this.safetyRules.createVote(any(), any(), anyLong(), any()))
         .thenReturn(Optional.of(emptyVote));
     when(this.safetyRules.timeoutVote(emptyVote)).thenReturn(emptyVoteWithTimeout);
-    when(this.validatorSet.nodes()).thenReturn(validators);
+    when(this.validatorSet.validators()).thenReturn(validators);
 
     when(this.vertexStore.getExecutedVertex(any())).thenReturn(Optional.empty());
+
+    final var vertexId = HashCode.fromInt(99);
+    final var voteData = mock(VoteData.class);
+    final var proposed = mock(BFTHeader.class);
+    when(emptyVoteWithTimeout.getVoteData()).thenReturn(voteData);
+    when(proposed.getVertexId()).thenReturn(vertexId);
+    when(voteData.getProposed()).thenReturn(proposed);
+    final var vertex = mock(Vertex.class);
+    when(vertex.isFallback()).thenReturn(true);
+    when(executedVertex.vertex()).thenReturn(vertex);
+    when(this.vertexStore.getExecutedVertex(vertexId)).thenReturn(Optional.of(executedVertex));
 
     this.pacemaker.processLocalTimeout(
         ScheduledLocalTimeout.create(
@@ -227,7 +251,7 @@ public class PacemakerTest {
     verify(this.safetyRules, times(1)).timeoutVote(emptyVote);
     verifyNoMoreInteractions(this.safetyRules);
 
-    verify(this.vertexStore, times(1)).getExecutedVertex(any());
+    verify(this.vertexStore, times(2)).getExecutedVertex(any());
 
     ArgumentCaptor<VertexWithHash> insertVertexCaptor =
         ArgumentCaptor.forClass(VertexWithHash.class);

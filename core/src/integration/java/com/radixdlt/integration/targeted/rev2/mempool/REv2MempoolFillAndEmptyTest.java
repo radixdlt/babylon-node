@@ -69,6 +69,7 @@ import static com.radixdlt.harness.predicates.EventPredicate.onlyLocalMempoolAdd
 
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.*;
+import com.radixdlt.consensus.ProposalLimitsConfig;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
@@ -101,6 +102,7 @@ import org.junit.experimental.categories.Category;
  */
 @Category(Slow.class)
 public final class REv2MempoolFillAndEmptyTest {
+  private static final int MAX_MEMPOOL_TRANSACTION_COUNT = 1000;
   private static final Logger logger = LogManager.getLogger();
 
   private DeterministicTest createTest() {
@@ -116,13 +118,16 @@ public final class REv2MempoolFillAndEmptyTest {
                 LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        GenesisBuilder.createGenesisWithNumValidators(
+                        GenesisBuilder.createTestGenesisWithNumValidators(
                             1,
                             Decimal.of(1),
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(100000)),
                         REv2StateManagerModule.DatabaseType.IN_MEMORY,
                         StateComputerConfig.REV2ProposerConfig.mempool(
-                            50, 50 * 1024 * 1024, 1000, new MempoolRelayConfig(0, 100))),
+                            ProposalLimitsConfig.testDefaults(),
+                            new RustMempoolConfig(100 * 1024 * 1024, MAX_MEMPOOL_TRANSACTION_COUNT),
+                            new MempoolReceiverConfig(0),
+                            MempoolRelayerConfig.defaults())),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 
@@ -140,7 +145,7 @@ public final class REv2MempoolFillAndEmptyTest {
     var mempoolDispatcher =
         test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
 
-    while (mempoolReader.getCount() < 1000) {
+    while (mempoolReader.getCount() < MAX_MEMPOOL_TRANSACTION_COUNT) {
       if (rateLimiter.tryAcquire()) {
         logger.info("Filling Mempool...  Current Size: {}", mempoolReader.getCount());
       }

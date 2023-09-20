@@ -65,19 +65,20 @@
 use std::collections::HashSet;
 use std::sync::Arc;
 
-use crate::jni::state_manager::JNIStateManager;
-use crate::simple_mempool::MempoolTransaction;
+use crate::mempool::priority_mempool::MempoolTransaction;
 
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 
 use crate::mempool::*;
+use crate::MempoolAddSource;
 use node_common::java::*;
 use sbor::{Categorize, Decode, Encode};
 use transaction::errors::TransactionValidationError;
 use transaction::model::*;
 
+use super::node_rust_environment::JNINodeRustEnvironment;
 use super::transaction_preparer::JavaPreparedNotarizedTransaction;
 
 //
@@ -88,14 +89,14 @@ use super::transaction_preparer::JavaPreparedNotarizedTransaction;
 extern "system" fn Java_com_radixdlt_mempool_RustMempool_add(
     env: JNIEnv,
     _class: JClass,
-    j_state_manager: JObject,
+    j_node_rust_env: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(
         &env,
         request_payload,
         |transaction: RawNotarizedTransaction| -> Result<(), MempoolAddErrorJava> {
-            JNIStateManager::get_mempool_manager(&env, j_state_manager).add_if_committable(
+            JNINodeRustEnvironment::get_mempool_manager(&env, j_node_rust_env).add_if_committable(
                 MempoolAddSource::MempoolSync,
                 transaction,
                 false,
@@ -109,14 +110,14 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_add(
 extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsForProposal(
     env: JNIEnv,
     _class: JClass,
-    j_state_manager: JObject,
+    j_node_rust_env: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(
         &env,
         request_payload,
         |request: ProposalTransactionsRequest| -> Vec<JavaPreparedNotarizedTransaction> {
-            JNIStateManager::get_mempool_manager(&env, j_state_manager)
+            JNINodeRustEnvironment::get_mempool_manager(&env, j_node_rust_env)
                 .get_proposal_transactions(
                     request.max_count.try_into().unwrap(),
                     request.max_payload_size_bytes as u64,
@@ -133,11 +134,11 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsForPropo
 extern "system" fn Java_com_radixdlt_mempool_RustMempool_getCount(
     env: JNIEnv,
     _class: JClass,
-    j_state_manager: JObject,
+    j_node_rust_env: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |_no_args: ()| -> i32 {
-        let mempool = JNIStateManager::get_mempool(&env, j_state_manager);
+        let mempool = JNINodeRustEnvironment::get_mempool(&env, j_node_rust_env);
         let read_mempool = mempool.read();
         read_mempool.get_count().try_into().unwrap()
     })
@@ -147,14 +148,14 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getCount(
 extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsToRelay(
     env: JNIEnv,
     _class: JClass,
-    j_state_manager: JObject,
+    j_node_rust_env: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(
         &env,
         request_payload,
         |(max_num_txns, max_payload_size_bytes): (u32, u32)| -> Vec<JavaPreparedNotarizedTransaction> {
-            JNIStateManager::get_mempool_manager(&env, j_state_manager)
+            JNINodeRustEnvironment::get_mempool_manager(&env, j_node_rust_env)
                 .get_relay_transactions(
                     max_num_txns.try_into().unwrap(),
                     max_payload_size_bytes as u64,
@@ -167,15 +168,15 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsToRelay(
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_mempool_RustMempool_reevaluateTransactionCommitability(
+extern "system" fn Java_com_radixdlt_mempool_RustMempool_reevaluateTransactionCommittability(
     env: JNIEnv,
     _class: JClass,
-    j_state_manager: JObject,
+    j_node_rust_env: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |max_reevaluated_count: u32| {
-        let mempool_manager = JNIStateManager::get_mempool_manager(&env, j_state_manager);
-        mempool_manager.reevaluate_transaction_commitability(max_reevaluated_count);
+        let mempool_manager = JNINodeRustEnvironment::get_mempool_manager(&env, j_node_rust_env);
+        mempool_manager.reevaluate_transaction_committability(max_reevaluated_count);
     })
 }
 
@@ -205,7 +206,10 @@ impl From<Arc<MempoolTransaction>> for JavaPreparedNotarizedTransaction {
 
 #[derive(Debug, Categorize, Encode, Decode)]
 enum MempoolAddErrorJava {
-    Full { current_size: u64, max_size: u64 },
+    PriorityThresholdNotMet {
+        min_tip_percentage_required: Option<u32>,
+        tip_percentage: u32,
+    },
     Duplicate(NotarizedTransactionHash),
     TransactionValidationError(String),
     Rejected(String),
@@ -214,12 +218,12 @@ enum MempoolAddErrorJava {
 impl From<MempoolAddError> for MempoolAddErrorJava {
     fn from(err: MempoolAddError) -> Self {
         match err {
-            MempoolAddError::Full {
-                current_size,
-                max_size,
-            } => MempoolAddErrorJava::Full {
-                current_size,
-                max_size,
+            MempoolAddError::PriorityThresholdNotMet {
+                min_tip_percentage_required,
+                tip_percentage,
+            } => MempoolAddErrorJava::PriorityThresholdNotMet {
+                min_tip_percentage_required: min_tip_percentage_required.map(|x| x as u32),
+                tip_percentage: tip_percentage as u32,
             },
             MempoolAddError::Duplicate(hash) => MempoolAddErrorJava::Duplicate(hash),
             MempoolAddError::Rejected(rejection) => {

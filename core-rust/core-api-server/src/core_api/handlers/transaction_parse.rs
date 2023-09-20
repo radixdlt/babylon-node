@@ -1,12 +1,10 @@
 use crate::core_api::*;
-use models::parsed_notarized_transaction_all_of_identifiers::ParsedNotarizedTransactionAllOfIdentifiers;
 use std::ops::Deref;
 use std::time::SystemTime;
 use transaction::validation::{
     NotarizedTransactionValidator, TransactionValidator, ValidationConfig,
 };
 
-use models::parsed_signed_transaction_intent_all_of_identifiers::ParsedSignedTransactionIntentAllOfIdentifiers;
 use models::transaction_parse_request::{ParseMode, ResponseMode, ValidationMode};
 use models::transaction_parse_response::TransactionParseResponse;
 
@@ -25,7 +23,7 @@ pub struct ParseContext<'a> {
     response_mode: ResponseMode,
     validation_mode: ValidationMode,
     user_transaction_validator: NotarizedTransactionValidator,
-    commitability_validator: &'a CommitabilityValidator<StateManagerDatabase>,
+    committability_validator: &'a CommittabilityValidator<StateManagerDatabase>,
 }
 
 pub(crate) async fn handle_transaction_parse(
@@ -45,7 +43,7 @@ pub(crate) async fn handle_transaction_parse(
         user_transaction_validator: NotarizedTransactionValidator::new(ValidationConfig::default(
             state.network.id,
         )),
-        commitability_validator: state.commitability_validator.deref(),
+        committability_validator: state.state_manager.committability_validator.deref(),
     };
 
     let parse_mode = request.parse_mode.unwrap_or(ParseMode::Any);
@@ -165,7 +163,7 @@ fn attempt_parsing_as_notarized_transaction(
                     .map_err(RejectionReason::ValidationError)
                     .and_then(|validated| {
                         let rejection = context
-                            .commitability_validator
+                            .committability_validator
                             .check_for_rejection(&validated, SystemTime::now())
                             .rejection;
                         match rejection {
@@ -217,11 +215,21 @@ fn to_api_parsed_notarized_transaction(
 
     Ok(models::ParsedTransaction::ParsedNotarizedTransaction {
         notarized_transaction: model,
-        identifiers: Box::new(ParsedNotarizedTransactionAllOfIdentifiers {
+        identifiers: Box::new(models::ParsedNotarizedTransactionIdentifiers {
             intent_hash: to_api_intent_hash(&intent_hash),
+            intent_hash_bech32m: to_api_hash_bech32m(&context.mapping_context, &intent_hash)?,
             signed_intent_hash: to_api_signed_intent_hash(&signed_intent_hash),
+            signed_intent_hash_bech32m: to_api_hash_bech32m(
+                &context.mapping_context,
+                &signed_intent_hash,
+            )?,
             payload_hash: to_api_notarized_transaction_hash(&notarized_transaction_hash),
+            payload_hash_bech32m: to_api_hash_bech32m(
+                &context.mapping_context,
+                &notarized_transaction_hash,
+            )?,
             ledger_hash: to_api_ledger_hash(&ledger_hash),
+            ledger_hash_bech32m: to_api_hash_bech32m(&context.mapping_context, &ledger_hash)?,
         }),
         validation_error,
     })
@@ -250,9 +258,17 @@ fn to_api_parsed_signed_intent(
     };
     Ok(models::ParsedTransaction::ParsedSignedTransactionIntent {
         signed_intent: model,
-        identifiers: Box::new(ParsedSignedTransactionIntentAllOfIdentifiers {
+        identifiers: Box::new(models::ParsedSignedTransactionIntentIdentifiers {
             intent_hash: to_api_intent_hash(&prepared.intent_hash()),
+            intent_hash_bech32m: to_api_hash_bech32m(
+                &context.mapping_context,
+                &prepared.intent_hash(),
+            )?,
             signed_intent_hash: to_api_signed_intent_hash(&prepared.signed_intent_hash()),
+            signed_intent_hash_bech32m: to_api_hash_bech32m(
+                &context.mapping_context,
+                &prepared.signed_intent_hash(),
+            )?,
         }),
     })
 }
@@ -267,18 +283,20 @@ fn to_api_parsed_intent(
     context: &ParseContext,
     (model, prepared): (IntentV1, PreparedIntentV1),
 ) -> Result<models::ParsedTransaction, ResponseError<()>> {
+    let intent_hash = &prepared.intent_hash();
     let model = match context.response_mode {
         ResponseMode::Basic => None,
         ResponseMode::Full => Some(Box::new(to_api_intent(
             &context.mapping_context,
             &model,
-            &prepared.intent_hash(),
+            intent_hash,
         )?)),
     };
     Ok(models::ParsedTransaction::ParsedTransactionIntent {
         intent: model,
-        identifiers: Box::new(models::ParsedTransactionIntentAllOfIdentifiers {
-            intent_hash: to_api_intent_hash(&prepared.intent_hash()),
+        identifiers: Box::new(models::ParsedTransactionIntentIdentifiers {
+            intent_hash: to_api_intent_hash(intent_hash),
+            intent_hash_bech32m: to_api_hash_bech32m(&context.mapping_context, intent_hash)?,
         }),
     })
 }
@@ -319,17 +337,37 @@ fn to_api_parsed_ledger_transaction(
 
     Ok(models::ParsedTransaction::ParsedLedgerTransaction {
         ledger_transaction: model,
-        identifiers: Box::new(models::ParsedLedgerTransactionAllOfIdentifiers {
+        identifiers: Box::new(models::ParsedLedgerTransactionIdentifiers {
             intent_hash: user_identifiers
                 .as_ref()
                 .map(|hashes| to_api_intent_hash(hashes.intent_hash)),
+            intent_hash_bech32m: user_identifiers
+                .as_ref()
+                .map(|hashes| to_api_hash_bech32m(&context.mapping_context, hashes.intent_hash))
+                .transpose()?,
             signed_intent_hash: user_identifiers
                 .as_ref()
                 .map(|hashes| to_api_signed_intent_hash(hashes.signed_intent_hash)),
+            signed_intent_hash_bech32m: user_identifiers
+                .as_ref()
+                .map(|hashes| {
+                    to_api_hash_bech32m(&context.mapping_context, hashes.signed_intent_hash)
+                })
+                .transpose()?,
             payload_hash: user_identifiers
                 .as_ref()
                 .map(|hashes| to_api_notarized_transaction_hash(hashes.notarized_transaction_hash)),
+            payload_hash_bech32m: user_identifiers
+                .as_ref()
+                .map(|hashes| {
+                    to_api_hash_bech32m(&context.mapping_context, hashes.notarized_transaction_hash)
+                })
+                .transpose()?,
             ledger_hash: to_api_ledger_hash(&prepared.ledger_transaction_hash()),
+            ledger_hash_bech32m: to_api_hash_bech32m(
+                &context.mapping_context,
+                &prepared.ledger_transaction_hash(),
+            )?,
         }),
     })
 }

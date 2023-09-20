@@ -158,14 +158,38 @@ public final class BFTQuorumAssembler implements BFTEventProcessorAtCurrentRound
       return;
     }
 
-    switch (this.pendingVotes.insertVote(vote)) {
-      case VoteAccepted ignored -> log.trace("Vote has been processed but didn't form a quorum");
-      case VoteRejected voteRejected -> log.trace(
-          "Vote has been rejected because of: {}", voteRejected.reason());
-      case QuorumReached quorumReached -> this.processQuorum(quorumReached.roundQuorum(), vote);
-    }
+    final var resultForMetrics =
+        switch (this.pendingVotes.insertVote(vote)) {
+          case VoteAccepted unused -> {
+            log.trace("Vote has been processed but didn't form a quorum");
 
-    metrics.bft().successfullyProcessedVotes().inc();
+            yield Metrics.Bft.VoteProcessingResult.ACCEPTED_NO_QUORUM;
+          }
+          case VoteRejected voteRejected -> {
+            log.trace("Vote has been rejected because of: {}", voteRejected.reason());
+
+            yield switch (voteRejected.reason()) {
+              case INVALID_AUTHOR -> Metrics.Bft.VoteProcessingResult.REJECTED_INVALID_AUTHOR;
+              case DUPLICATE_VOTE -> Metrics.Bft.VoteProcessingResult.REJECTED_DUPLICATE_VOTE;
+            };
+          }
+          case QuorumReached quorumReached -> {
+            this.processQuorum(quorumReached.roundQuorum(), vote);
+
+            yield switch (quorumReached.roundQuorum()) {
+              case RoundQuorum.RegularRoundQuorum unused -> Metrics.Bft.VoteProcessingResult
+                  .ACCEPTED_FORMED_QC;
+              case RoundQuorum.TimeoutRoundQuorum unused -> Metrics.Bft.VoteProcessingResult
+                  .ACCEPTED_FORMED_TC;
+            };
+          }
+        };
+
+    metrics
+        .bft()
+        .successfullyProcessedVotes()
+        .label(new Metrics.Bft.SuccessfullyProcessedVote(vote.isTimeout(), resultForMetrics))
+        .inc();
   }
 
   private void processQuorum(RoundQuorum roundQuorum, Vote lastVote) {

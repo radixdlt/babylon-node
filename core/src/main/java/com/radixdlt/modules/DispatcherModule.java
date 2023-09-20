@@ -66,7 +66,6 @@ package com.radixdlt.modules;
 
 import com.google.inject.*;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.api.system.health.ScheduledStatsCollecting;
 import com.radixdlt.consensus.ConsensusByzantineEvent;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
@@ -152,9 +151,6 @@ public class DispatcherModule extends AbstractModule {
         .in(Scopes.SINGLETON);
     bind(new TypeLiteral<EventDispatcher<SyncCheckTrigger>>() {})
         .toProvider(Dispatchers.dispatcherProvider(SyncCheckTrigger.class))
-        .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledStatsCollecting>>() {})
-        .toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledStatsCollecting.class))
         .in(Scopes.SINGLETON);
 
     // BFT
@@ -426,47 +422,31 @@ public class DispatcherModule extends AbstractModule {
   @Provides
   private EventDispatcher<LedgerExtension> syncUpdateEventDispatcher(
       @ProcessOnDispatch Set<EventProcessor<LedgerExtension>> processors, Metrics metrics) {
-    return commit -> {
-      metrics.sync().validResponsesReceived().inc(commit.getTransactions().size());
-      processors.forEach(e -> e.process(commit));
-    };
+    return commit -> processors.forEach(e -> e.process(commit));
   }
 
   @Provides
   private EventDispatcher<BFTCommittedUpdate> committedUpdateEventDispatcher(
       @ProcessOnDispatch Set<EventProcessor<BFTCommittedUpdate>> processors,
-      Set<EventProcessor<BFTCommittedUpdate>> asyncProcessors,
       Environment environment,
       Metrics metrics) {
-    if (asyncProcessors.isEmpty()) {
-      return commit -> {
-        metrics.bft().vertexStore().size().set(commit.vertexStoreSize());
-        processors.forEach(e -> e.process(commit));
-      };
-    } else {
-      var dispatcher = environment.getDispatcher(BFTCommittedUpdate.class);
-      return commit -> {
-        metrics.bft().vertexStore().size().set(commit.vertexStoreSize());
-        processors.forEach(e -> e.process(commit));
-        dispatcher.dispatch(commit);
-      };
-    }
+    var dispatcher = environment.getDispatcher(BFTCommittedUpdate.class);
+    return commit -> {
+      metrics.bft().vertexStore().size().set(commit.vertexStoreSize());
+      processors.forEach(e -> e.process(commit));
+      dispatcher.dispatch(commit);
+    };
   }
 
   @Provides
   private EventDispatcher<LocalTimeoutOccurrence> localConsensusTimeoutDispatcher(
       @ProcessOnDispatch Set<EventProcessor<LocalTimeoutOccurrence>> syncProcessors,
-      Set<EventProcessor<LocalTimeoutOccurrence>> asyncProcessors,
       Environment environment) {
-    if (asyncProcessors.isEmpty()) {
-      return roundTimeout -> syncProcessors.forEach(e -> e.process(roundTimeout));
-    } else {
-      var dispatcher = environment.getDispatcher(LocalTimeoutOccurrence.class);
-      return timeout -> {
-        syncProcessors.forEach(e -> e.process(timeout));
-        dispatcher.dispatch(timeout);
-      };
-    }
+    var dispatcher = environment.getDispatcher(LocalTimeoutOccurrence.class);
+    return timeout -> {
+      syncProcessors.forEach(e -> e.process(timeout));
+      dispatcher.dispatch(timeout);
+    };
   }
 
   @Provides

@@ -98,7 +98,8 @@ public class ProposalSerializeTest extends SerializeObject<Proposal> {
     QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
     var transaction = RawNotarizedTransaction.create(new byte[] {0, 1, 2, 3});
 
-    BFTValidatorId author = BFTValidatorId.create(ECKeyPair.generateNew().getPublicKey());
+    BFTValidatorId author =
+        BFTValidatorId.withKeyAndFakeDeterministicAddress(ECKeyPair.generateNew().getPublicKey());
     Vertex vertex = Vertex.create(qc, round, List.of(transaction), author, 0L);
     return new Proposal(vertex, qc, ECDSASecp256k1Signature.zeroSignature(), Optional.empty());
   }

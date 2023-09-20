@@ -1,22 +1,21 @@
-use parking_lot::RwLock;
-use radix_engine::track::db_key_mapper::SpreadPrefixKeyMapper;
+use node_common::locks::RwLock;
 use radix_engine::transaction::{PreviewError, TransactionReceipt, TransactionResult};
+use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use std::ops::{Deref, Range};
 use std::sync::Arc;
-use std::time::Duration;
 
 use crate::query::{StateManagerSubstateQueries, TransactionIdentifierLoader};
 use crate::staging::ReadableStore;
 use crate::store::traits::QueryableProofStore;
 use crate::transaction::*;
-use crate::{PreviewRequest, ProcessedCommitResult, SubstateChange};
+use crate::{
+    GlobalBalanceSummary, LedgerHeader, LedgerStateChanges, PreviewRequest, ProcessedCommitResult,
+};
 use radix_engine_common::prelude::*;
-use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::*;
+use transaction::signing::secp256k1::Secp256k1PrivateKey;
 use transaction::validation::NotarizedTransactionValidator;
 use transaction::validation::ValidationConfig;
-
-const PREVIEW_RUNTIME_WARN_THRESHOLD: Duration = Duration::from_millis(500);
 
 /// A transaction preview runner.
 pub struct TransactionPreviewer<S> {
@@ -26,8 +25,10 @@ pub struct TransactionPreviewer<S> {
 }
 
 pub struct ProcessedPreviewResult {
+    pub base_ledger_header: LedgerHeader,
     pub receipt: TransactionReceipt,
-    pub substate_changes: Vec<SubstateChange>,
+    pub state_changes: LedgerStateChanges,
+    pub global_balance_summary: GlobalBalanceSummary,
 }
 
 impl<S> TransactionPreviewer<S> {
@@ -59,35 +60,52 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
             .map_err(PreviewError::TransactionValidationError)?;
         let transaction_logic = self
             .execution_configurator
-            .wrap(validated.get_executable(), ConfigType::Preview)
-            .warn_after(PREVIEW_RUNTIME_WARN_THRESHOLD, "preview");
+            .wrap_preview_transaction(&validated);
 
         let receipt = transaction_logic.execute_on(read_store.deref());
-        let substate_changes = match &receipt.result {
+        let (state_changes, global_balance_summary) = match &receipt.result {
             TransactionResult::Commit(commit) => {
-                ProcessedCommitResult::compute_substate_changes::<S, SpreadPrefixKeyMapper>(
+                let state_changes = ProcessedCommitResult::compute_ledger_state_changes::<
+                    S,
+                    SpreadPrefixKeyMapper,
+                >(read_store.deref(), &commit.state_updates);
+                let global_balance_update = ProcessedCommitResult::compute_global_balance_update(
                     read_store.deref(),
-                    &commit.state_updates.system_updates,
-                )
+                    &state_changes,
+                    &commit.state_update_summary.vault_balance_changes,
+                );
+                (state_changes, global_balance_update.global_balance_summary)
             }
-            _ => Vec::new(),
+            _ => (
+                LedgerStateChanges::default(),
+                GlobalBalanceSummary::default(),
+            ),
         };
 
+        let base_ledger_header = read_store
+            .get_last_proof()
+            .expect("proof for preview's base state")
+            .ledger_header;
+
         Ok(ProcessedPreviewResult {
+            base_ledger_header,
             receipt,
-            substate_changes,
+            state_changes,
+            global_balance_summary,
         })
     }
 
     fn create_intent(&self, preview_request: PreviewRequest, read_store: &S) -> PreviewIntentV1 {
         let notary = preview_request.notary_public_key.unwrap_or_else(|| {
-            PublicKey::EcdsaSecp256k1(EcdsaSecp256k1PrivateKey::from_u64(2).unwrap().public_key())
+            PublicKey::Secp256k1(Secp256k1PrivateKey::from_u64(2).unwrap().public_key())
         });
         let effective_epoch_range = preview_request.explicit_epoch_range.unwrap_or_else(|| {
             let current_epoch = read_store.get_epoch();
             Range {
                 start: current_epoch,
-                end: current_epoch.after(self.validation_config.max_epoch_range),
+                end: current_epoch
+                    .after(self.validation_config.max_epoch_range)
+                    .expect("currently calculated max end epoch is outside of valid range"),
             }
         });
         let (instructions, blobs) = preview_request.manifest.for_intent();
@@ -104,102 +122,40 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
                 },
                 instructions,
                 blobs,
-                attachments: AttachmentsV1 {},
+                message: preview_request.message,
             },
             signer_public_keys: preview_request.signer_public_keys,
-            flags: PreviewFlags {
-                unlimited_loan: preview_request.flags.unlimited_loan,
-                assume_all_signature_proofs: preview_request.flags.assume_all_signature_proofs,
-                permit_duplicate_intent_hash: preview_request.flags.permit_duplicate_intent_hash,
-                permit_invalid_header_epoch: preview_request.flags.permit_invalid_header_epoch,
-            },
+            flags: preview_request.flags,
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::jni::state_manager::ActualStateManager;
-    use crate::mempool_manager::MempoolManager;
-    use crate::simple_mempool::SimpleMempool;
-    use crate::store::{DatabaseFlags, InMemoryStore, StateManagerDatabase};
-    use crate::transaction::{
-        CachedCommitabilityValidator, CommitabilityValidator, ExecutionConfigurator,
-        TransactionPreviewer,
-    };
-    use crate::{
-        LoggingConfig, MempoolConfig, PendingTransactionResultCache, PreviewRequest, StateManager,
-        StateManagerLoggingConfig,
-    };
-    use parking_lot::RwLock;
+    use crate::{PreviewRequest, StateManager, StateManagerConfig};
+    use node_common::locks::LockFactory;
     use prometheus::Registry;
-    use radix_engine_common::network::NetworkDefinition;
-    use radix_engine_common::{dec, manifest_args};
-    use radix_engine_interface::constants::FAUCET;
-    use std::sync::Arc;
     use transaction::builder::ManifestBuilder;
-    use transaction::model::PreviewFlags;
+    use transaction::model::{MessageV1, PreviewFlags};
 
     #[test]
     fn test_preview_processed_substate_changes() {
-        // TODO: extract test state manager setup to a method/helper
-        let network = NetworkDefinition::simulator();
-        let logging_config = LoggingConfig {
-            engine_trace: false,
-            state_manager_config: StateManagerLoggingConfig {
-                log_on_transaction_rejection: false,
-            },
-        };
-        let database = Arc::new(parking_lot::const_rwlock(StateManagerDatabase::InMemory(
-            InMemoryStore::new(DatabaseFlags::default()),
-        )));
-        let metric_registry = Registry::new();
-        let execution_configurator = Arc::new(ExecutionConfigurator::new(&logging_config));
-        let pending_transaction_result_cache = Arc::new(parking_lot::const_rwlock(
-            PendingTransactionResultCache::new(10000, 10000),
-        ));
-        let commitability_validator = Arc::new(CommitabilityValidator::new(
-            &network,
-            database.clone(),
-            execution_configurator.clone(),
-        ));
-        let cached_commitability_validator = CachedCommitabilityValidator::new(
-            database.clone(),
-            commitability_validator,
-            pending_transaction_result_cache.clone(),
+        let lock_factory = LockFactory::new(|| {});
+        let metrics_registry = Registry::new();
+        let state_manager = StateManager::new(
+            StateManagerConfig::new_for_testing(),
+            None,
+            &lock_factory,
+            &metrics_registry,
         );
-        let mempool = Arc::new(parking_lot::const_rwlock(SimpleMempool::new(
-            MempoolConfig { max_size: 10 },
-        )));
-        let mempool_manager = Arc::new(MempoolManager::new_for_testing(
-            mempool,
-            cached_commitability_validator,
-            &metric_registry,
-        ));
-        let state_manager: Arc<RwLock<ActualStateManager>> =
-            Arc::new(parking_lot::const_rwlock(StateManager::new(
-                &network,
-                database.clone(),
-                mempool_manager,
-                execution_configurator.clone(),
-                pending_transaction_result_cache,
-                logging_config,
-                &metric_registry,
-            )));
 
-        state_manager.read().execute_test_genesis();
+        state_manager
+            .state_computer
+            .execute_genesis_for_unit_tests();
 
-        let transaction_previewer = Arc::new(TransactionPreviewer::new(
-            &network,
-            database,
-            execution_configurator,
-        ));
+        let preview_manifest = ManifestBuilder::new().lock_fee_from_faucet().build();
 
-        let preview_manifest = ManifestBuilder::new()
-            .call_method(FAUCET, "lock_fee", manifest_args!(dec!("100")))
-            .build();
-
-        let preview_response = transaction_previewer.preview(PreviewRequest {
+        let preview_response = state_manager.transaction_previewer.preview(PreviewRequest {
             manifest: preview_manifest,
             explicit_epoch_range: None,
             notary_public_key: None,
@@ -208,14 +164,14 @@ mod tests {
             nonce: 0,
             signer_public_keys: vec![],
             flags: PreviewFlags {
-                unlimited_loan: true,
+                use_free_credit: true,
                 assume_all_signature_proofs: true,
-                permit_duplicate_intent_hash: false,
-                permit_invalid_header_epoch: false,
+                skip_epoch_check: false,
             },
+            message: MessageV1::None,
         });
 
         // just checking that we're getting some processed substate changes back in the response
-        assert!(!preview_response.unwrap().substate_changes.is_empty());
+        assert!(!preview_response.unwrap().state_changes.is_empty());
     }
 }

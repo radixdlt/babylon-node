@@ -95,6 +95,7 @@ jobs:
           tags: |
             type=ref,event=branch
             type=ref,event=pr
+            type=ref,event=tag
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
@@ -159,17 +160,33 @@ jobs:
           name: deb4docker
           path: "${{ github.workspace }}/docker/*.deb"
 
+  setup_tags:
+    name: Setup Docker tags
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.setup_tags.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - id: setup_tags
+        run: echo "tag=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
   build_push_container_private:
     name: (PRIVATE) Docker AMD
+    needs:
+      - setup_tags
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
       runs_on: ubuntu-latest
       image_registry: "docker.io"
       image_organization: "radixdlt"
       image_name: "private-babylon-node"
+      tag: ${{ needs.setup_tags.outputs.tag }}
       tags: |
         type=ref,event=branch
         type=ref,event=pr
+        type=ref,event=tag
         type=semver,pattern={{version}}
         type=semver,pattern={{major}}.{{minor}}
         type=semver,pattern={{major}}
@@ -178,6 +195,8 @@ jobs:
       dockerfile: "./Dockerfile"
       platforms: "linux/amd64"
       provenance: "false"
+      scan_image: true
+      snyk_target_ref: ${{ github.ref_name }}
     secrets:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
       service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
@@ -204,6 +223,8 @@ jobs:
   #     platforms: "linux/arm64"
   #     cache_tag_suffix: arm64
   #     provenance: "false"
+  #     build-args: |
+  #       WGET_VERSION=1.21.3-1+b1
   #   secrets:
   #     workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
   #     service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
@@ -250,10 +271,62 @@ jobs:
       enable_dockerhub: "true"
       cache_tag_suffix: arm64
       provenance: "false"
+      build-args: |
+        WGET_VERSION=1.21.3-1+b1
     secrets:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
       service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
       role_to_assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
+
+  snyk_container_monitor:
+    name: Snyk monitor container
+    runs-on: ubuntu-latest
+    needs:
+      - build_push_container_dockerhub
+      - build_push_container_dockerhub_arm
+    permissions:
+      id-token: write
+      pull-requests: read
+      contents: read
+      deployments: write
+    steps:
+      - uses: radixdlt/public-iac-resuable-artifacts/snyk-container-monitor@main
+        with:
+          role_name: ${{ secrets.AWS_ROLE_NAME_SNYK_SECRET }}
+          app_name: 'babylon-node'
+          step_name: 'snyk-cntr-monitor-amd'
+          dockerhub_secret_name: ${{ secrets.AWS_SECRET_NAME_DOCKERHUB }}
+          snyk_secret_name: ${{ secrets.AWS_SECRET_NAME_SNYK }}
+          parse_json: true
+          snyk_org_id: ${{ secrets.SNYK_ORG_ID }}
+          image: docker.io/radixdlt/babylon-node:${{ github.event.release.tag_name }}-amd64
+          target_ref: ${{ github.ref_name }}
+
+  snyk_monitor:
+    name: Snyk monitor
+    runs-on: ubuntu-latest
+    needs:
+      - build_push_container_dockerhub
+    permissions:
+      id-token: write
+      pull-requests: read
+      contents: read
+      deployments: write
+    steps:
+      - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b
+      - uses: radixdlt/public-iac-resuable-artifacts/fetch-secrets@main
+        with:
+          role_name: ${{ secrets.AWS_ROLE_NAME_SNYK_SECRET }}
+          app_name: 'babylon-node'
+          step_name: 'snyk-monitor'
+          secret_prefix: 'SNYK'
+          secret_name: ${{ secrets.AWS_SECRET_NAME_SNYK }}
+          parse_json: true
+      - name: Enable Snyk online monitoring to check for vulnerabilities
+        uses: snyk/actions/gradle-jdk17@b98d498629f1c368650224d6d212bf7dfa89e4bf # v0.4.0
+        with:
+          args: --all-projects --org=${{ env.SNYK_NETWORK_ORG_ID }} --target-reference=${{ github.ref_name }}
+          command: monitor
 
 # TEMPORARILY REMOVE EPHEMERAL TESTS
 # => Until we can change them to only run the "node" tests and not the transaction tests

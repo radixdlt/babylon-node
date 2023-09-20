@@ -92,6 +92,7 @@ import com.radixdlt.p2p.transport.handshake.AuthHandshakeResult;
 import com.radixdlt.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeError;
 import com.radixdlt.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeSuccess;
 import com.radixdlt.p2p.transport.handshake.AuthHandshaker;
+import com.radixdlt.protocol.ProtocolVersion;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.RateCalculator;
 import io.netty.buffer.ByteBuf;
@@ -156,7 +157,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
       P2PConfig config,
       Addressing addressing,
       Network network,
-      String newestForkName,
+      ProtocolVersion newestProtocolVersion,
       Metrics metrics,
       Serialization serialization,
       SecureRandom secureRandom,
@@ -180,7 +181,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
             ecKeyOps,
             network,
             NETWORK_VERSION,
-            newestForkName,
+            newestProtocolVersion.name(),
             capabilities);
     this.nettyChannel = requireNonNull(nettyChannel);
     this.remoteAddress = requireNonNull(remoteAddress);
@@ -207,13 +208,15 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
   }
 
   private void initHandshake(NodeId remoteNodeId) {
-    final var initiatePacket = authHandshaker.initiate(remoteNodeId.getPublicKey());
-
-    if (log.isTraceEnabled()) {
-      log.trace("Sending auth initiate to {}", this);
+    final var initiatePacketOrError = authHandshaker.initiate(remoteNodeId.getPublicKey());
+    if (initiatePacketOrError.isSuccess()) {
+      if (log.isTraceEnabled()) {
+        log.trace("Sending auth initiate to {}", this);
+      }
+      this.write(Unpooled.wrappedBuffer(initiatePacketOrError.unwrap()));
+    } else {
+      finalizeFailedHandshake(initiatePacketOrError.unwrapError());
     }
-
-    this.write(Unpooled.wrappedBuffer(initiatePacket));
   }
 
   public Flowable<InboundMessage> inboundMessages() {
@@ -306,8 +309,9 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 
   @Override
   public void channelInactive(ChannelHandlerContext ctx) {
-    log.info("Closed: {}", this);
-
+    if (log.isTraceEnabled()) {
+      log.trace("Closed: {}", this);
+    }
     final var prevState = this.state;
     this.state = ChannelState.INACTIVE;
     this.inboundMessageSink.onComplete();

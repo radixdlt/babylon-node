@@ -71,4 +71,9 @@ public final class NoOpPeerControl implements PeerControl {
   public void banPeer(NodeId nodeId, Duration banDuration, String reason) {
     // no-op
   }
+
+  @Override
+  public void reportHighPriorityPeer(NodeId nodeId) {
+    // no-op
+  }
 }

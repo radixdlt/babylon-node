@@ -86,24 +86,21 @@ import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.lang.Tuple.Tuple2;
-import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.Decimal;
-import com.radixdlt.rev2.REv2StateReader;
 import com.radixdlt.rev2.ResourceAddress;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.serialization.DefaultSerialization;
+import com.radixdlt.testutil.TestStateReader;
 import com.radixdlt.utils.UInt128;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UniqueListBuilder;
 import java.math.BigInteger;
-import java.security.Security;
 import java.util.*;
 import java.util.stream.Collectors;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -111,10 +108,6 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public final class OlympiaToBabylonGenesisConverterTest {
   private static final Hasher HASHER = new Blake2b256Hasher(DefaultSerialization.getInstance());
-
-  static {
-    Security.insertProviderAt(new BouncyCastleProvider(), 1);
-  }
 
   private static final OlympiaToBabylonConverterConfig CONVERTER_CONFIG =
       new OlympiaToBabylonConverterConfig(
@@ -186,12 +179,11 @@ public final class OlympiaToBabylonGenesisConverterTest {
                             Network.INTEGRATIONTESTNET.getId(),
                             converted,
                             REv2StateManagerModule.DatabaseType.IN_MEMORY,
-                            StateComputerConfig.REV2ProposerConfig.mempool(
-                                0, 0, 0, MempoolRelayConfig.of())))))) {
+                            StateComputerConfig.REV2ProposerConfig.Mempool.zero()))))) {
       test.startAllNodes();
       final var expectedBalanceEntry =
           stateSummary.xrdBalances.entrySet().stream().findFirst().orElseThrow();
-      final var stateReader = test.getInstance(0, REv2StateReader.class);
+      final var stateReader = test.getInstance(0, TestStateReader.class);
       final var xrdAmount =
           stateReader.getComponentXrdAmount(
               Address.virtualAccountAddress(expectedBalanceEntry.getKey().asBytes()));
@@ -224,13 +216,13 @@ public final class OlympiaToBabylonGenesisConverterTest {
       final var isRegistered = random.nextBoolean();
       final var validator =
           new OlympiaStateIR.Validator(
-              HashCode.fromBytes(publicKey.getCompressedBytes()),
+              HashCode.fromBytes(publicKey.getBytes()),
               "Validator " + i,
-              "Validator " + i + " URL",
+              "https://validator" + i + ".com",
               acceptDelegatedStake,
               isRegistered,
               totalStakedXrd,
-              Decimal.fromBigIntegerSubunits(totalStakeUnitAmount).toUInt256(),
+              UInt256.from(totalStakeUnitAmount.toByteArray()),
               1000,
               ownerIndex);
       validatorsBuilder.add(validator);
@@ -345,7 +337,7 @@ public final class OlympiaToBabylonGenesisConverterTest {
   }
 
   private Tuple2<HashCode, Integer> randomAccount(UniqueListBuilder<HashCode> accountsBuilder) {
-    final var publicKeyBytes = new byte[ECDSASecp256k1PublicKey.COMPRESSED_BYTES];
+    final var publicKeyBytes = new byte[ECDSASecp256k1PublicKey.LENGTH];
     random.nextBytes(publicKeyBytes);
     final var publicKey = HashCode.fromBytes(publicKeyBytes);
     final var accountIndex = accountsBuilder.insertIfMissingAndGetIndex(publicKey);
@@ -506,14 +498,9 @@ public final class OlympiaToBabylonGenesisConverterTest {
             .mapToInt(r -> r.allocations().stream().mapToInt(s -> s.last().size()).sum())
             .sum());
 
-    final var babylonResourcesByAddr =
-        resources.stream()
-            .flatMap(r -> r.value().stream())
-            .collect(
-                Collectors.toMap(r -> HashCode.fromBytes(r.addressBytesWithoutEntityId()), r -> r));
-
     final var babylonAllocationsByResource =
         new HashMap<ResourceAddress, Map<ComponentAddress, Decimal>>();
+    final var babylonResourceSupplies = new HashMap<ResourceAddress, Decimal>();
     resourceBalances.forEach(
         resourcesChunk -> {
           resourcesChunk
@@ -530,18 +517,21 @@ public final class OlympiaToBabylonGenesisConverterTest {
                               final var acc =
                                   resourcesChunk.accounts().get(alloc.accountIndex().toInt());
                               resourceAllocations.put(acc, alloc.amount());
+                              final var prevBalance =
+                                  babylonResourceSupplies.getOrDefault(resourceAddr, Decimal.ZERO);
+                              babylonResourceSupplies.put(
+                                  resourceAddr, prevBalance.add(alloc.amount()));
                             });
                   });
         });
 
     stateSummary.resources.forEach(
         summaryResource -> {
-          final var babylonAddrBytes =
-              olympiaToBabylonResourceAddressBytes(summaryResource.resourceAddrBytes.asBytes());
-          final var babylonResource =
-              babylonResourcesByAddr.get(HashCode.fromBytes(babylonAddrBytes));
+          final var babylonAddress =
+              toGlobalFungibleAddr(summaryResource.resourceAddrBytes.asBytes());
           assertEquals(
-              summaryResource.expectedScaledTotalSupply(), babylonResource.initialSupply());
+              summaryResource.expectedScaledTotalSupply(),
+              babylonResourceSupplies.get(babylonAddress));
 
           final var babylonBalances =
               babylonAllocationsByResource.get(

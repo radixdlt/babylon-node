@@ -81,18 +81,19 @@ import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.TimeSupplier;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt192;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.Before;
 import org.junit.Test;
 
 public final class PacemakerGenerateProposalTest {
-  private BFTValidatorId self = BFTValidatorId.create(PrivateKeys.ofNumeric(1).getPublicKey());
+  private BFTValidatorId self =
+      BFTValidatorId.withKeyAndFakeDeterministicAddress(PrivateKeys.ofNumeric(1).getPublicKey());
   private BFTValidatorId validator1 =
-      BFTValidatorId.create(PrivateKeys.ofNumeric(2).getPublicKey());
+      BFTValidatorId.withKeyAndFakeDeterministicAddress(PrivateKeys.ofNumeric(2).getPublicKey());
   private BFTValidatorId validator2 =
-      BFTValidatorId.create(PrivateKeys.ofNumeric(3).getPublicKey());
+      BFTValidatorId.withKeyAndFakeDeterministicAddress(PrivateKeys.ofNumeric(3).getPublicKey());
   private BFTValidatorSet validatorSet;
   private VertexStoreAdapter vertexStore;
   private SafetyRules safetyRules;
@@ -117,9 +118,9 @@ public final class PacemakerGenerateProposalTest {
     this.validatorSet =
         BFTValidatorSet.from(
             Stream.of(
-                BFTValidator.from(validator1, UInt256.ONE),
-                BFTValidator.from(validator2, UInt256.ONE),
-                BFTValidator.from(self, UInt256.ONE)));
+                BFTValidator.from(validator1, UInt192.ONE),
+                BFTValidator.from(validator2, UInt192.ONE),
+                BFTValidator.from(self, UInt192.ONE)));
     this.vertexStore = mock(VertexStoreAdapter.class);
     this.safetyRules = mock(SafetyRules.class);
     this.timeoutDispatcher = rmock(EventDispatcher.class);
@@ -206,6 +207,7 @@ public final class PacemakerGenerateProposalTest {
     when(highestQcLedgerHeader.isEndOfEpoch()).thenReturn(false);
     when(highestQcLedgerHeader.proposerTimestamp()).thenReturn(previousTimestamp);
     when(highQc.highestQC()).thenReturn(highestQc);
+    when(highQc.getHighestRound()).thenReturn(Round.of(1L));
 
     return highQc;
   }

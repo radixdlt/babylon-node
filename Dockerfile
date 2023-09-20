@@ -10,34 +10,30 @@
 # LAYER: java-build-stage
 # The base for building the Java application
 # =================================================================================================
-FROM debian:11-slim AS java-build-stage
+FROM debian:12.1-slim AS java-build-stage
 
 LABEL org.opencontainers.image.authors="devops@radixdlt.com"
-LABEL org.opencontainers.image.description="Java + Debian 11 (OpenJDK)"
+LABEL org.opencontainers.image.description="Java + Debian 12 (OpenJDK)"
 
 ENV DEBIAN_FRONTEND noninteractive
 
 CMD ["/bin/bash"]
 
+ARG WGET_VERSION="1.21.3-1+b2"
+
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
-    docker.io=20.10.5+dfsg1-1+deb11u2 \
-    libssl-dev=1.1.1n-0+deb11u4 \
-    pkg-config=0.29.2-1 \
-    unzip=6.0-26+deb11u1 \
-    wget=1.21-1+deb11u1 \
-    software-properties-common=0.96.20.2-2.1 \
-  && add-apt-repository -y ppa:openjdk-r/ppa \
+    docker.io=20.10.24+dfsg1-1+b3 \
+    libssl-dev=3.0.9-1 \
+    pkg-config=1.8.1-1 \
+    unzip=6.0-28 \
+    wget=${WGET_VERSION} \
+    software-properties-common=0.99.30-4 \
   && apt-get install -y --no-install-recommends \
-    openjdk-17-jdk=17.0.6+10-1~deb11u1 \
+    openjdk-17-jdk=17.0.8+7-1~deb12u1 \
   && apt-get clean \
-  && rm -rf /var/lib/apt/lists/* \
-  && wget -q https://services.gradle.org/distributions/gradle-7.2-bin.zip \
-  && unzip gradle-7.2-bin.zip -d /opt \
-  && rm gradle-7.2-bin.zip
+  && rm -rf /var/lib/apt/lists/*
 
-ENV GRADLE_HOME=/opt/gradle-7.2
-ENV PATH=/opt/gradle-7.2/bin:$PATH
 ENV JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF8
 
 RUN mkdir -p /radixdlt
@@ -59,35 +55,17 @@ COPY ./core-rust-bridge /radixdlt/core-rust-bridge
 COPY ./olympia-engine /radixdlt/olympia-engine
 COPY ./cli-tools /radixdlt/cli-tools
 COPY ./shell /radixdlt/shell
+COPY ./keygen /radixdlt/keygen
 # Need .git for tag versions - but this can probably be removed soon
 COPY ./.git /radixdlt/.git
 
 WORKDIR /radixdlt
 
 USER root
-RUN SKIP_NATIVE_RUST_BUILD=TRUE gradle clean build -x test -Pci=true -PrustBinaryBuildType=release
+RUN SKIP_NATIVE_RUST_BUILD=TRUE ./gradlew clean build -x test -Pci=true -PrustBinaryBuildType=release
+WORKDIR /radixdlt/core/build/distributions
+RUN unzip -j *.zip
 USER nobody
-
-# =================================================================================================
-# LAYER: Keygen
-# An alternative build target that executes the keygeneration
-# =================================================================================================
-# hadolint ignore=DL3029
-FROM --platform=linux/amd64 eclipse-temurin:17-jre-alpine AS keygen
-LABEL org.opencontainers.image.authors="devops@radixdlt.com"
-
-COPY --from=java-build-stage /radixdlt/cli-tools/build/distributions /tmp/
-
-RUN mkdir -p /keygen
-
-WORKDIR /keygen/
-
-RUN unzip -j /tmp/*.zip && \
-    mkdir -p /keygen/bin /keygen/lib && \
-    mv /keygen/*.jar /keygen/lib && \
-    mv /keygen/keygen /keygen/bin/keygen 
-    
-ENTRYPOINT ["bin/keygen"]
 
 # =================================================================================================
 # LAYER: java-container
@@ -100,7 +78,7 @@ COPY --from=java-build-stage /radixdlt/core/build/distributions /
 # LAYER: library-build-stage-base
 # Creates the base image for building the rust library
 # =================================================================================================
-FROM debian:11-slim as library-build-stage-base
+FROM debian:12.1-slim as library-build-stage-base
 WORKDIR /app
 
 # Install dependencies needed for building the Rust library
@@ -110,19 +88,19 @@ RUN apt-get update \
   && apt-get -y --no-install-recommends install \
     ca-certificates \
     build-essential=12.9 \
-    curl=7.74.0-1.3+deb11u7 \
+    curl=7.88.1-10+deb12u1 \
     g++-aarch64-linux-gnu \
     g++-x86-64-linux-gnu \
-    libc6-dev-arm64-cross=2.31-9cross4 \
-    libclang-dev=1:11.0-51+nmu5 \
-    libssl-dev=1.1.1n-0+deb11u4 \
-    pkg-config=0.29.2-1 \
+    libc6-dev-arm64-cross=2.36-8cross1 \
+    libclang-dev=1:14.0-55.6 \
+    libssl-dev=3.0.9-1 \
+    pkg-config=1.8.1-1 \
   && rm -rf /var/lib/apt/lists/*
 
 # We fix the version of Rust here to ensure that we can update it without having
 # issues with the caching layers containing outdated versions which aren't compatible.
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o rustup.sh \
-  && sh rustup.sh -y --target 1.68.2-aarch64-unknown-linux-gnu 1.68.2-x86_64-unknown-linux-gnu
+  && sh rustup.sh -y --target 1.71.1-aarch64-unknown-linux-gnu 1.71.1-x86_64-unknown-linux-gnu
 
 RUN "$HOME/.cargo/bin/cargo" install sccache --version 0.3.3
 
@@ -213,23 +191,21 @@ COPY --from=library-build-stage /libcorerust.so /
 # LAYER: app-container
 # The application container which will actually run the application
 # =================================================================================================
-FROM debian:11-slim as app-container
+FROM debian:12.1-slim as app-container
 LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 
 # Install dependencies needed for building the image or running the application
 # - unzip is needed for unpacking the java build artifacts
 # - daemontools is needed at application runtime for async tasks
-# - libssl-dev is needed for encryption methods used in the keystore.ks
 # - software-properties-common is needed for installing debian packages with dpkg
 # - gettext-base is needed for envsubst in config_radixdlt.sh
+# - curl is needed for the docker-healthcheck
 RUN apt-get update -y \
   && apt-get -y --no-install-recommends install \
-    openjdk-17-jre-headless=17.0.6+10-1~deb11u1 \
-    unzip=6.0-26+deb11u1 \
-    daemontools=1:0.76-7 \
-    libssl-dev=1.1.1n-0+deb11u4 \
-    software-properties-common=0.96.20.2-2.1 \
-    gettext-base=0.21-4 \
+    openjdk-17-jre-headless=17.0.8+7-1~deb12u1 \
+    curl=7.88.1-10+deb12u1 \
+    gettext-base=0.21-12 \
+    daemontools=1:0.76-8.1 \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
@@ -272,20 +248,13 @@ ENV RADIXDLT_HOME=/home/radixdlt \
     RADIXDLT_NODE_KEY_CREATE_IF_MISSING=false
 
 # Copy in the application artifacts
-COPY --from=java-container / /tmp
-RUN unzip -j /tmp/*.zip && mkdir -p /opt/radixdlt/bin && \
-    mkdir -p /opt/radixdlt/lib && \
-    ls -lah && \
-    pwd && \
-    mv /home/radixdlt/core /opt/radixdlt/bin/core && \
-    mv /home/radixdlt/*.jar /opt/radixdlt/lib/ 
-
+COPY --from=java-container /*.jar /opt/radixdlt/lib/
+COPY --from=java-container /core /opt/radixdlt/bin/core
 COPY --from=library-container /libcorerust.so /usr/lib/jni/libcorerust.so
 
 # Create configuration automatically when starting
 COPY docker/build_scripts/config_radixdlt.sh /opt/radixdlt/config_radixdlt.sh
 
-# The entrypoint `config_radixdlt.sh` finishes configuration and then runs its parameters (ie CMD) as the radixdlt user
 # See https://docs.docker.com/engine/reference/builder/#entrypoint
 ENTRYPOINT ["/opt/radixdlt/config_radixdlt.sh"]
 CMD ["/opt/radixdlt/bin/core"]

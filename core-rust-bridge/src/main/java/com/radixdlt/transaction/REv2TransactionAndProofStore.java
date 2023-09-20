@@ -65,6 +65,7 @@
 package com.radixdlt.transaction;
 
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.environment.NodeRustEnvironment;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.monitoring.LabelledTimer;
@@ -72,57 +73,32 @@ import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.Metrics.MethodId;
 import com.radixdlt.sbor.Natives;
 import com.radixdlt.statecomputer.commit.LedgerProof;
-import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
 import java.util.Optional;
 
 public final class REv2TransactionAndProofStore {
-  public REv2TransactionAndProofStore(Metrics metrics, StateManager stateManager) {
+  public REv2TransactionAndProofStore(Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
     LabelledTimer<MethodId> timer = metrics.stateManager().nativeCall();
-    this.getTransactionAtStateVersionFunc =
-        Natives.builder(stateManager, REv2TransactionAndProofStore::getTransactionAtStateVersion)
-            .measure(
-                timer.label(
-                    new MethodId(
-                        REv2TransactionAndProofStore.class, "getTransactionAtStateVersion")))
-            .build(new TypeToken<>() {});
-    this.getTransactionDetailsAtStateVersionFunc =
-        Natives.builder(
-                stateManager, REv2TransactionAndProofStore::getTransactionDetailsAtStateVersion)
-            .measure(
-                timer.label(
-                    new MethodId(
-                        REv2TransactionAndProofStore.class, "getTransactionDetailsAtStateVersion")))
-            .build(new TypeToken<>() {});
     this.getTxnsAndProof =
-        Natives.builder(stateManager, REv2TransactionAndProofStore::getTxnsAndProof)
+        Natives.builder(nodeRustEnvironment, REv2TransactionAndProofStore::getTxnsAndProof)
             .measure(
                 timer.label(new MethodId(REv2TransactionAndProofStore.class, "getTxnsAndProof")))
             .build(new TypeToken<>() {});
     this.getLastProofFunc =
-        Natives.builder(stateManager, REv2TransactionAndProofStore::getLastProof)
+        Natives.builder(nodeRustEnvironment, REv2TransactionAndProofStore::getLastProof)
             .measure(timer.label(new MethodId(REv2TransactionAndProofStore.class, "getLastProof")))
             .build(new TypeToken<>() {});
     this.getPostGenesisEpochProofFunc =
-        Natives.builder(stateManager, REv2TransactionAndProofStore::getPostGenesisEpochProof)
+        Natives.builder(nodeRustEnvironment, REv2TransactionAndProofStore::getPostGenesisEpochProof)
             .measure(
                 timer.label(
                     new MethodId(REv2TransactionAndProofStore.class, "getPostGenesisEpochProof")))
             .build(new TypeToken<>() {});
     this.getEpochProofFunc =
-        Natives.builder(stateManager, REv2TransactionAndProofStore::getEpochProof)
+        Natives.builder(nodeRustEnvironment, REv2TransactionAndProofStore::getEpochProof)
             .measure(timer.label(new MethodId(REv2TransactionAndProofStore.class, "getEpochProof")))
             .build(new TypeToken<>() {});
-  }
-
-  public Option<ExecutedTransaction> getTransactionAtStateVersion(long stateVersion) {
-    return this.getTransactionAtStateVersionFunc.call(UInt64.fromNonNegativeLong(stateVersion));
-  }
-
-  public Option<TransactionDetails> getTransactionDetailsAtStateVersion(long stateVersion) {
-    return this.getTransactionDetailsAtStateVersionFunc.call(
-        UInt64.fromNonNegativeLong(stateVersion));
   }
 
   public Option<TxnsAndProof> getTxnsAndProof(
@@ -148,30 +124,23 @@ public final class REv2TransactionAndProofStore {
     return this.getEpochProofFunc.call(UInt64.fromNonNegativeLong(epoch)).toOptional();
   }
 
-  private final Natives.Call1<UInt64, Option<ExecutedTransaction>> getTransactionAtStateVersionFunc;
-
-  private static native byte[] getTransactionDetailsAtStateVersion(
-      StateManager stateManager, byte[] payload);
-
-  private final Natives.Call1<UInt64, Option<TransactionDetails>>
-      getTransactionDetailsAtStateVersionFunc;
-
-  private static native byte[] getTransactionAtStateVersion(
-      StateManager stateManager, byte[] payload);
-
   private final Natives.Call1<TxnsAndProofRequest, Option<TxnsAndProof>> getTxnsAndProof;
 
-  private static native byte[] getTxnsAndProof(StateManager stateManager, byte[] payload);
+  private static native byte[] getTxnsAndProof(
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
   private final Natives.Call1<Tuple.Tuple0, Option<LedgerProof>> getLastProofFunc;
 
-  private static native byte[] getLastProof(StateManager stateManager, byte[] payload);
+  private static native byte[] getLastProof(
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
   private final Natives.Call1<Tuple.Tuple0, Option<LedgerProof>> getPostGenesisEpochProofFunc;
 
-  private static native byte[] getPostGenesisEpochProof(StateManager stateManager, byte[] payload);
+  private static native byte[] getPostGenesisEpochProof(
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
   private final Natives.Call1<UInt64, Option<LedgerProof>> getEpochProofFunc;
 
-  private static native byte[] getEpochProof(StateManager stateManager, byte[] payload);
+  private static native byte[] getEpochProof(
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 }

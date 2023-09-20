@@ -67,26 +67,27 @@ package com.radixdlt.api.core;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.api.DeterministicCoreApiTestBase;
-import com.radixdlt.api.core.generated.models.PackageFieldInfoSubstate;
+import com.radixdlt.api.core.generated.models.DenyAllAccessRule;
+import com.radixdlt.api.core.generated.models.RoleAssignmentModuleFieldOwnerRoleSubstate;
 import com.radixdlt.api.core.generated.models.StatePackageRequest;
 import org.junit.Test;
 
 public class NetworkConfigurationTest extends DeterministicCoreApiTestBase {
   @Test
-  @SuppressWarnings("try")
   public void test_network_configuration() throws Exception {
     try (var test = buildRunningServerTest()) {
       test.suppressUnusedWarning();
 
-      final var response = getStatusApi().statusNetworkConfigurationPost();
+      final var configurationResponse = getStatusApi().statusNetworkConfigurationPost();
 
-      assertThat(response.getNetwork())
+      assertThat(configurationResponse.getNetwork())
           .isEqualTo(DeterministicCoreApiTestBase.networkDefinition.logical_name());
-      assertThat(response.getNetworkHrpSuffix())
+      assertThat(configurationResponse.getNetworkHrpSuffix())
           .isEqualTo(DeterministicCoreApiTestBase.networkDefinition.hrp_suffix());
 
       // And check the package endpoint whilst we're here, using a well known address...
-      final var faucetPackageAddress = response.getWellKnownAddresses().getFaucetPackage();
+      final var faucetPackageAddress =
+          configurationResponse.getWellKnownAddresses().getFaucetPackage();
 
       final var packageResponse =
           getStateApi()
@@ -94,11 +95,11 @@ public class NetworkConfigurationTest extends DeterministicCoreApiTestBase {
                   new StatePackageRequest()
                       .network(networkLogicalName)
                       .packageAddress(faucetPackageAddress));
-
-      final var packageInfoSubstate = (PackageFieldInfoSubstate) packageResponse.getInfo();
-      final var blueprintSchemas = packageInfoSubstate.getPackageSchema().getBlueprintSchemas();
-      assertThat(blueprintSchemas).hasSize(1);
-      assertThat(blueprintSchemas).containsKey("Faucet");
+      // Note: this asserts on a random well-known field (not specific to Faucet package)
+      final var ownerRoleSubstate =
+          (RoleAssignmentModuleFieldOwnerRoleSubstate) packageResponse.getOwnerRole();
+      assertThat(ownerRoleSubstate.getValue().getOwnerRole().getRule())
+          .isInstanceOf(DenyAllAccessRule.class);
     }
   }
 }

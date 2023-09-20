@@ -69,6 +69,7 @@ import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitor
 import static org.assertj.core.api.Assertions.*;
 
 import com.google.inject.Module;
+import com.radixdlt.environment.DatabaseFlags;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -90,7 +91,6 @@ import com.radixdlt.sync.SyncRelayConfig;
 import java.util.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -98,7 +98,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 @RunWith(Parameterized.class)
-@Ignore // Ignore all these tests until we can fix them properly
 public final class MultiNodeRebootTest {
   @Parameterized.Parameters
   public static Collection<Object[]> numNodes() {
@@ -202,6 +201,10 @@ public final class MultiNodeRebootTest {
       builder.overrideWithIncorrectModule(overrideModule);
     }
 
+    // This test requires a fixed validator set, so we're removing
+    // any fees from transactions (so they don't get any rewards,
+    // which would alter the stake distribution)
+    final var noFees = true;
     return builder.functionalNodeModule(
         new FunctionalRadixNodeModule(
             NodeStorageConfig.tempFolder(folder),
@@ -211,15 +214,22 @@ public final class MultiNodeRebootTest {
             LedgerConfig.stateComputerWithSyncRelay(
                 StateComputerConfig.rev2(
                     Network.INTEGRATIONTESTNET.getId(),
-                    GenesisBuilder.createGenesisWithNumValidators(
+                    GenesisBuilder.createTestGenesisWithNumValidators(
                         numValidators,
                         Decimal.of(1),
                         GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
-                            this.roundsPerEpoch)),
+                                this.roundsPerEpoch)
+                            .totalEmissionXrdPerEpoch(Decimal.of(0))),
                     REv2StateManagerModule.DatabaseType.ROCKS_DB,
+                    new DatabaseFlags(true, false),
                     StateComputerConfig.REV2ProposerConfig.transactionGenerator(
-                        new REV2TransactionGenerator(), 1)),
-                SyncRelayConfig.of(5000, 10, 5000L))));
+                        new REV2TransactionGenerator(), 1),
+                    false,
+                    noFees),
+                // This test can, in some cases, rely on ledger sync
+                // requests timing out in reasonable time,
+                // so setting the request timeout to 100 ms
+                SyncRelayConfig.of(100, 10, 500))));
   }
 
   private void runTest(

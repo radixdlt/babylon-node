@@ -1,8 +1,10 @@
 use crate::core_api::*;
 
+use radix_engine_interface::prelude::*;
+
 use state_manager::query::TransactionIdentifierLoader;
 use state_manager::store::traits::*;
-use state_manager::{LedgerHashes, LedgerProof, StateVersion};
+use state_manager::{LedgerHashes, LedgerHeader, LedgerProof, StateVersion};
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_status_network_status(
@@ -12,7 +14,7 @@ pub(crate) async fn handle_status_network_status(
     assert_matching_network(&request.network, &state.network)?;
     let mapping_context = MappingContext::new(&state.network);
 
-    let database = state.database.read();
+    let database = state.state_manager.database.read();
     let (current_state_version, current_ledger_hashes) = database.get_top_ledger_hashes();
     Ok(models::NetworkStatusResponse {
         pre_genesis_state_identifier: Box::new(to_api_committed_state_identifiers(
@@ -22,7 +24,10 @@ pub(crate) async fn handle_status_network_status(
         genesis_epoch_round: database
             .get_first_proof()
             .map(|proof| -> Result<_, MappingError> {
-                Ok(Box::new(to_api_epoch_round(&mapping_context, &proof)?))
+                Ok(Box::new(to_api_epoch_round(
+                    &mapping_context,
+                    &proof.ledger_header,
+                )?))
             })
             .transpose()?,
         post_genesis_state_identifier: database
@@ -42,6 +47,20 @@ pub(crate) async fn handle_status_network_status(
                 },
             )
             .transpose()?,
+        post_genesis_epoch_round: database
+            .get_post_genesis_epoch_proof()
+            .map(|epoch_proof: LedgerProof| -> Result<_, MappingError> {
+                let next_epoch = epoch_proof.ledger_header.next_epoch.ok_or_else(|| {
+                    MappingError::UnexpectedGenesis {
+                        message: "Post-genesis epoch proof didn't contain a next_epoch".to_string(),
+                    }
+                })?;
+                Ok(Box::new(models::EpochRound {
+                    epoch: to_api_epoch(&mapping_context, next_epoch.epoch)?,
+                    round: to_api_round(Round::of(0))?,
+                }))
+            })
+            .transpose()?,
         current_state_identifier: Some(Box::new(to_api_committed_state_identifiers(
             current_state_version,
             &current_ledger_hashes,
@@ -49,7 +68,10 @@ pub(crate) async fn handle_status_network_status(
         current_epoch_round: database
             .get_last_proof()
             .map(|proof| -> Result<_, MappingError> {
-                Ok(Box::new(to_api_epoch_round(&mapping_context, &proof)?))
+                Ok(Box::new(to_api_epoch_round(
+                    &mapping_context,
+                    &proof.ledger_header,
+                )?))
             })
             .transpose()?,
         current_protocol_version: "babylon".to_string(),
@@ -59,11 +81,11 @@ pub(crate) async fn handle_status_network_status(
 
 pub fn to_api_epoch_round(
     context: &MappingContext,
-    ledger_proof: &LedgerProof,
+    ledger_header: &LedgerHeader,
 ) -> Result<models::EpochRound, MappingError> {
     Ok(models::EpochRound {
-        epoch: to_api_epoch(context, ledger_proof.ledger_header.epoch)?,
-        round: to_api_round(ledger_proof.ledger_header.round)?,
+        epoch: to_api_epoch(context, ledger_header.epoch)?,
+        round: to_api_round(ledger_header.round)?,
     })
 }
 

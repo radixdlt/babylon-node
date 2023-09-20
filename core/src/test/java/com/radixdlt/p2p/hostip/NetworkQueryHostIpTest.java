@@ -84,7 +84,7 @@ public class NetworkQueryHostIpTest {
   public void testPropertyNull() {
     RuntimeProperties properties = mock(RuntimeProperties.class);
     when(properties.get(eq(NetworkQueryHostIp.QUERY_URLS_PROPERTY), anyString())).thenReturn(null);
-    NetworkQueryHostIp nqhip = (NetworkQueryHostIp) NetworkQueryHostIp.create(properties);
+    NetworkQueryHostIp nqhip = NetworkQueryHostIp.create(properties);
     assertEquals(NetworkQueryHostIp.DEFAULT_QUERY_URLS.size(), nqhip.count());
   }
 
@@ -92,7 +92,7 @@ public class NetworkQueryHostIpTest {
   public void testPropertyEmpty() {
     RuntimeProperties properties = mock(RuntimeProperties.class);
     when(properties.get(eq(NetworkQueryHostIp.QUERY_URLS_PROPERTY), anyString())).thenReturn("");
-    NetworkQueryHostIp nqhip = (NetworkQueryHostIp) NetworkQueryHostIp.create(properties);
+    NetworkQueryHostIp nqhip = NetworkQueryHostIp.create(properties);
     assertEquals(NetworkQueryHostIp.DEFAULT_QUERY_URLS.size(), nqhip.count());
   }
 
@@ -101,7 +101,7 @@ public class NetworkQueryHostIpTest {
     RuntimeProperties properties = mock(RuntimeProperties.class);
     when(properties.get(eq(NetworkQueryHostIp.QUERY_URLS_PROPERTY), anyString()))
         .thenReturn("http://localhost,http://8.8.8.8");
-    NetworkQueryHostIp nqhip = (NetworkQueryHostIp) NetworkQueryHostIp.create(properties);
+    NetworkQueryHostIp nqhip = NetworkQueryHostIp.create(properties);
     assertEquals(2, nqhip.count());
   }
 
@@ -116,8 +116,8 @@ public class NetworkQueryHostIpTest {
     doReturn(404).when(conn).getResponseCode();
     URL url = mock(URL.class);
     doReturn(conn).when(url).openConnection();
-    NetworkQueryHostIp nqhip = (NetworkQueryHostIp) NetworkQueryHostIp.create(List.of(url));
-    Optional<String> host = nqhip.hostIp();
+    NetworkQueryHostIp nqhip = NetworkQueryHostIp.create(List.of(url));
+    Optional<HostIp> host = nqhip.queryNetworkHosts().maybeHostIp();
     assertFalse(host.isPresent());
   }
 
@@ -125,25 +125,9 @@ public class NetworkQueryHostIpTest {
   public void testCollectionNotEmptyQueryFailed2() throws IOException {
     URL url = mock(URL.class);
     doThrow(new IOException("test exception")).when(url).openConnection();
-    NetworkQueryHostIp nqhip = (NetworkQueryHostIp) NetworkQueryHostIp.create(List.of(url));
-    Optional<String> host = nqhip.hostIp();
+    NetworkQueryHostIp nqhip = NetworkQueryHostIp.create(List.of(url));
+    Optional<HostIp> host = nqhip.queryNetworkHosts().maybeHostIp();
     assertFalse(host.isPresent());
-  }
-
-  @Test
-  public void testCollectionNotEmpty() throws IOException {
-    String data = "127.0.0.1";
-    try (ByteArrayInputStream input =
-        new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8))) {
-      HttpURLConnection conn = mock(HttpURLConnection.class);
-      doReturn(input).when(conn).getInputStream();
-      URL url = mock(URL.class);
-      doReturn(conn).when(url).openConnection();
-      NetworkQueryHostIp nqhip = (NetworkQueryHostIp) NetworkQueryHostIp.create(List.of(url));
-      Optional<String> host = nqhip.hostIp();
-      assertTrue(host.isPresent());
-      assertEquals(data, host.get());
-    }
   }
 
   @Test
@@ -151,8 +135,8 @@ public class NetworkQueryHostIpTest {
     List<URL> urls =
         List.of(
             makeUrl("127.0.0.1"), makeUrl("127.0.0.2"), makeUrl("127.0.0.3"), makeUrl("127.0.0.4"));
-    NetworkQueryHostIp nqhip = (NetworkQueryHostIp) NetworkQueryHostIp.create(urls);
-    Optional<String> host = nqhip.hostIp();
+    NetworkQueryHostIp nqhip = NetworkQueryHostIp.create(urls);
+    Optional<HostIp> host = nqhip.queryNetworkHosts().maybeHostIp();
     assertFalse(host.isPresent());
   }
 

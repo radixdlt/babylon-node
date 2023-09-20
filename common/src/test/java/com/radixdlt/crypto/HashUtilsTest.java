@@ -69,7 +69,6 @@ import static org.junit.Assert.assertEquals;
 
 import com.google.common.base.Strings;
 import com.google.common.hash.HashCode;
-import com.radixdlt.TestSetupUtils;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Longs;
 import java.nio.charset.StandardCharsets;
@@ -80,16 +79,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class HashUtilsTest {
-
-  @BeforeClass
-  public static void setupBouncyCastle() {
-    TestSetupUtils.installBouncyCastleProvider();
-  }
-
   @Test
   public void verify_that_hexstring_remains_the_same_as_passed_in_constructor() {
     String hex = deadbeefString();
@@ -221,10 +213,6 @@ public class HashUtilsTest {
     assertEquals(expectedHashHex, Bytes.toHexString(hashedData.asBytes()));
   }
 
-  private HashCode deadbeef() {
-    return HashCode.fromString(deadbeefString());
-  }
-
   private String deadbeefString() {
     return Strings.repeat("deadbeef", 8);
   }
@@ -232,7 +220,7 @@ public class HashUtilsTest {
   private HashCode sha2bits256Once(byte[] data) {
     MessageDigest hasher = null;
     try {
-      hasher = MessageDigest.getInstance("SHA-256");
+      hasher = MessageDigest.getInstance("SHA-256", BouncyCastleProviderInstance.get());
     } catch (NoSuchAlgorithmException e) {
       throw new IllegalStateException("Should always be able to sha256 hash", e);
     }

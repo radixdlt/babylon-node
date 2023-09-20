@@ -69,7 +69,7 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.TimestampedECDSASignature;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt192;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -83,9 +83,9 @@ import javax.annotation.concurrent.NotThreadSafe;
 public final class ValidationState {
 
   private final BFTValidatorSet validatorSet;
-  private final Map<BFTValidatorId, TimestampedECDSASignature> signedNodes;
-  private transient UInt256 signedPower;
-  private final transient UInt256 threshold;
+  private final Map<BFTValidatorId, TimestampedECDSASignature> signedValidators;
+  private transient UInt192 signedPower;
+  private final transient UInt192 threshold;
 
   /**
    * Construct empty validation state for given hash and set of validator keys.
@@ -98,22 +98,22 @@ public final class ValidationState {
 
   private ValidationState(BFTValidatorSet validatorSet) {
     this.validatorSet = Objects.requireNonNull(validatorSet);
-    this.signedNodes = new HashMap<>();
-    this.signedPower = UInt256.ZERO;
+    this.signedValidators = new HashMap<>();
+    this.signedPower = UInt192.ZERO;
     this.threshold = threshold(validatorSet.getTotalPower());
   }
 
   /**
    * Removes the signature for the specified key, if present.
    *
-   * @param node the node who's signature is to be removed
+   * @param validatorId the validator whose signature is to be removed
    */
-  public void removeSignature(BFTValidatorId node) {
-    if (this.validatorSet.containsNode(node)) {
-      this.signedNodes.computeIfPresent(
-          node,
+  public void removeSignature(BFTValidatorId validatorId) {
+    if (this.validatorSet.containsValidator(validatorId)) {
+      this.signedValidators.computeIfPresent(
+          validatorId,
           (k, v) -> {
-            this.signedPower = this.signedPower.subtract(this.validatorSet.getPower(node));
+            this.signedPower = this.signedPower.subtract(this.validatorSet.getPower(validatorId));
             return null;
           });
     }
@@ -123,18 +123,19 @@ public final class ValidationState {
    * Adds key and signature to our list of signing keys and signatures. Note that it is assumed that
    * signature validation is performed elsewhere.
    *
-   * @param node The node
+   * @param validatorId The validator ID
    * @param timestamp The timestamp of the signature
    * @param signature The signature to verify
    * @return whether the key was added or not
    */
   public boolean addSignature(
-      BFTValidatorId node, long timestamp, ECDSASecp256k1Signature signature) {
-    if (validatorSet.containsNode(node) && !this.signedNodes.containsKey(node)) {
-      this.signedNodes.computeIfAbsent(
-          node,
+      BFTValidatorId validatorId, long timestamp, ECDSASecp256k1Signature signature) {
+    if (validatorSet.containsValidator(validatorId)
+        && !this.signedValidators.containsKey(validatorId)) {
+      this.signedValidators.computeIfAbsent(
+          validatorId,
           k -> {
-            UInt256 weight = this.validatorSet.getPower(node);
+            UInt192 weight = this.validatorSet.getPower(validatorId);
             this.signedPower = this.signedPower.add(weight);
             return TimestampedECDSASignature.from(timestamp, signature);
           });
@@ -143,48 +144,38 @@ public final class ValidationState {
     return false;
   }
 
-  /**
-   * Return {@code true} if we have not yet accumulated any valid signatures.
-   *
-   * @return {@code true} if we have not accumulated any signatures, {@code false} otherwise.
-   */
+  /** @return {@code true} if we have not accumulated any signatures, {@code false} otherwise. */
   public boolean isEmpty() {
-    return this.signedNodes.isEmpty();
+    return this.signedValidators.isEmpty();
   }
 
-  /**
-   * Returns {@code true} if we have enough valid signatures to form a quorum.
-   *
-   * @return {@code true} if we have enough valid signatures to form a quorum,
-   */
+  /** @return {@code true} if we have enough valid signatures to form a quorum, */
   public boolean complete() {
     return signedPower.compareTo(threshold) >= 0;
   }
 
   /**
-   * Returns an {@link ECDSASignatures} object for our current set of valid signatures.
-   *
-   * @return an {@link ECDSASignatures} object for our current set of valid signatures
+   * @return an {@link TimestampedECDSASignatures} object for our current set of valid signatures
    */
   public TimestampedECDSASignatures signatures() {
-    return new TimestampedECDSASignatures(ImmutableMap.copyOf(this.signedNodes));
+    return new TimestampedECDSASignatures(ImmutableMap.copyOf(this.signedValidators));
   }
 
   @VisibleForTesting
-  static UInt256 threshold(UInt256 n) {
+  static UInt192 threshold(UInt192 n) {
     return n.subtract(acceptableFaults(n));
   }
 
   @VisibleForTesting
-  static UInt256 acceptableFaults(UInt256 n) {
+  static UInt192 acceptableFaults(UInt192 n) {
     // Compute acceptable faults based on Byzantine limit n = 3f + 1
     // i.e. f = (n - 1) / 3
-    return n.isZero() ? n : n.decrement().divide(UInt256.THREE);
+    return n.isZero() ? n : n.decrement().divide(UInt192.THREE);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(validatorSet, signedNodes);
+    return Objects.hash(validatorSet, signedValidators);
   }
 
   @Override
@@ -195,7 +186,7 @@ public final class ValidationState {
     if (obj instanceof ValidationState) {
       ValidationState that = (ValidationState) obj;
       return Objects.equals(this.validatorSet, that.validatorSet)
-          && Objects.equals(this.signedNodes, that.signedNodes);
+          && Objects.equals(this.signedValidators, that.signedValidators);
     }
     return false;
   }
@@ -203,7 +194,7 @@ public final class ValidationState {
   @Override
   public String toString() {
     return String.format(
-        "%s[validatorSet=%s, signedNodes=%s]",
-        getClass().getSimpleName(), validatorSet, signedNodes);
+        "%s[validatorSet=%s, signedValidators=%s]",
+        getClass().getSimpleName(), validatorSet, signedValidators);
   }
 }

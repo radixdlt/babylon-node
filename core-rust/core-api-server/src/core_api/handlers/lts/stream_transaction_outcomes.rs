@@ -2,6 +2,7 @@ use crate::core_api::*;
 use state_manager::store::traits::{
     CommittedTransactionBundle, ConfigurableDatabase, IterableTransactionStore, QueryableProofStore,
 };
+use std::ops::Deref;
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_lts_stream_transaction_outcomes(
@@ -23,15 +24,15 @@ pub(crate) async fn handle_lts_stream_transaction_outcomes(
         return Err(client_error("limit must be positive"));
     }
 
-    if limit > MAX_STREAM_COUNT_PER_REQUEST.into() {
+    if limit > MAX_BATCH_COUNT_PER_REQUEST.into() {
         return Err(client_error(format!(
-            "limit must <= {MAX_STREAM_COUNT_PER_REQUEST}"
+            "limit must <= {MAX_BATCH_COUNT_PER_REQUEST}"
         )));
     }
 
     let limit = limit.try_into().expect("limit out of usize bounds");
 
-    let database = state.database.read();
+    let database = state.state_manager.database.read();
 
     if !database.is_local_transaction_execution_index_enabled() {
         return Err(client_error(
@@ -45,7 +46,7 @@ pub(crate) async fn handle_lts_stream_transaction_outcomes(
 
     let mut response = models::LtsStreamTransactionOutcomesResponse {
         from_state_version: to_api_state_version(from_state_version)?,
-        count: MAX_STREAM_COUNT_PER_REQUEST as i32, // placeholder to get a better size aproximation for the header
+        count: MAX_BATCH_COUNT_PER_REQUEST as i32, // placeholder to get a better size aproximation for the header
         max_ledger_state_version: to_api_state_version(max_state_version)?,
         committed_transaction_outcomes: Vec::new(),
     };
@@ -63,6 +64,7 @@ pub(crate) async fn handle_lts_stream_transaction_outcomes(
             ..
         } = bundle;
         let committed_transaction = to_api_lts_committed_transaction_outcome(
+            database.deref(),
             &mapping_context,
             state_version,
             receipt,
@@ -76,14 +78,14 @@ pub(crate) async fn handle_lts_stream_transaction_outcomes(
             .committed_transaction_outcomes
             .push(committed_transaction);
 
-        if current_total_size > CAP_STREAM_RESPONSE_WHEN_ABOVE_BYTES {
+        if current_total_size > CAP_BATCH_RESPONSE_WHEN_ABOVE_BYTES {
             break;
         }
     }
 
     let count: i32 = {
         let transaction_count = response.committed_transaction_outcomes.len();
-        if transaction_count > MAX_STREAM_COUNT_PER_REQUEST.into() {
+        if transaction_count > MAX_BATCH_COUNT_PER_REQUEST.into() {
             return Err(server_error("Too many transactions were loaded somehow"));
         }
         transaction_count

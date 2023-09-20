@@ -68,6 +68,7 @@ import static com.radixdlt.harness.predicates.NodesPredicate.allAtOrOverEpoch;
 import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransactionSuccess;
 import static org.assertj.core.api.Assertions.*;
 
+import com.google.common.collect.MoreCollectors;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.rev2.Manifest;
@@ -115,13 +116,97 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
 
       assertThat(statusResponse2.getIntentStatus())
           .isEqualTo(TransactionIntentStatus.COMMITTEDSUCCESS);
+      assertThat(
+              statusResponse2.getKnownPayloads().stream()
+                  .filter(
+                      payload -> payload.getStatus() == TransactionPayloadStatus.COMMITTEDSUCCESS)
+                  .collect(MoreCollectors.onlyElement())
+                  .getStateVersion())
+          .isNotNull();
     }
   }
 
   @Test
-  @SuppressWarnings("try")
+  public void test_transaction_rejected_when_same_payload_previously_committed() throws Exception {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
+
+      var transaction = TransactionBuilder.forTests().prepare();
+
+      // Submit transaction
+      getTransactionApi()
+          .transactionSubmitPost(
+              new TransactionSubmitRequest()
+                  .network(networkLogicalName)
+                  .notarizedTransactionHex(transaction.hexPayloadBytes()));
+
+      // Ensure it is committed
+      test.runUntilState(allCommittedTransactionSuccess(transaction.raw()), 1000);
+
+      // Submit the same transaction again
+      var errorResponse =
+          assertErrorResponseOfType(
+              () ->
+                  getTransactionApi()
+                      .transactionSubmitPost(
+                          new TransactionSubmitRequest()
+                              .network(networkLogicalName)
+                              .forceRecalculate(true)
+                              .notarizedTransactionHex(transaction.hexPayloadBytes())),
+              TransactionSubmitErrorResponse.class);
+
+      assertThat(errorResponse.getCode()).isEqualTo(400);
+      var details = (TransactionSubmitIntentAlreadyCommitted) errorResponse.getDetails();
+      var committedAs = details.getCommittedAs();
+      assertThat(committedAs.getPayloadHash()).isEqualTo(transaction.hexNotarizedTransactionHash());
+      assertThat(committedAs.getIsSameTransaction()).isTrue();
+    }
+  }
+
+  @Test
+  public void test_transaction_rejected_when_same_intent_previously_committed() throws Exception {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
+
+      var transaction1 = TransactionBuilder.forTests().nonce(1337).signatories(1).prepare();
+      var transaction2 = TransactionBuilder.forTests().nonce(1337).signatories(2).prepare();
+
+      // Submit transaction
+      getTransactionApi()
+          .transactionSubmitPost(
+              new TransactionSubmitRequest()
+                  .network(networkLogicalName)
+                  .notarizedTransactionHex(transaction1.hexPayloadBytes()));
+
+      // Ensure it is committed
+      test.runUntilState(allCommittedTransactionSuccess(transaction1.raw()), 1000);
+
+      // Submit the same transaction again
+      var errorResponse =
+          assertErrorResponseOfType(
+              () ->
+                  getTransactionApi()
+                      .transactionSubmitPost(
+                          new TransactionSubmitRequest()
+                              .network(networkLogicalName)
+                              .forceRecalculate(true)
+                              .notarizedTransactionHex(transaction2.hexPayloadBytes())),
+              TransactionSubmitErrorResponse.class);
+
+      assertThat(errorResponse.getCode()).isEqualTo(400);
+      var details = (TransactionSubmitIntentAlreadyCommitted) errorResponse.getDetails();
+      var committedAs = details.getCommittedAs();
+      assertThat(committedAs.getPayloadHash())
+          .isEqualTo(transaction1.hexNotarizedTransactionHash());
+      assertThat(committedAs.getIsSameTransaction()).isFalse();
+    }
+  }
+
+  @Test
   public void test_valid_but_rejected_transaction_should_be_rejected() throws Exception {
-    try (var ignored = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
+
       var transaction = TransactionBuilder.forTests().manifest(Manifest.validButReject()).prepare();
 
       var response =
@@ -144,11 +229,8 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
       assertThat(rejectedDetails).isNotNull();
       assertThat(rejectedDetails.getIsPayloadRejectionPermanent()).isFalse();
       assertThat(rejectedDetails.getIsIntentRejectionPermanent()).isFalse();
-      assertThat(rejectedDetails.getIsRejectedBecauseIntentAlreadyCommitted()).isFalse();
       assertThat(rejectedDetails.getIsFresh()).isTrue();
-      assertThat(rejectedDetails.getErrorMessage())
-          .isEqualTo(
-              "ErrorBeforeFeeLoanRepaid(ModuleError(CostingError(FeeReserveError(LoanRepaymentFailed))))");
+      assertThat(rejectedDetails.getErrorMessage()).contains("LoanRepaymentFailed");
     }
   }
 
@@ -157,7 +239,9 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
       test_valid_but_future_epoch_transaction_should_be_rejected_but_resubmittable_immediately_when_epoch_reached()
           throws Exception {
     try (var test = buildRunningServerTest(100)) {
-      var transaction = TransactionBuilder.forTests().fromEpoch(2).prepare();
+      var currentEpoch = 2; // Epoch after genesis is 2
+      var validFromEpoch = 3; // Epoch after genesis is 2, so this needs to be after that
+      var transaction = TransactionBuilder.forTests().fromEpoch(validFromEpoch).prepare();
 
       var response =
           assertErrorResponseOfType(
@@ -179,16 +263,17 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
       assertThat(rejectedDetails).isNotNull();
       assertThat(rejectedDetails.getIsPayloadRejectionPermanent()).isFalse();
       assertThat(rejectedDetails.getIsIntentRejectionPermanent()).isFalse();
-      assertThat(rejectedDetails.getIsRejectedBecauseIntentAlreadyCommitted()).isFalse();
       assertThat(rejectedDetails.getIsFresh()).isTrue();
       assertThat(rejectedDetails.getRetryFromTimestamp()).isNull();
-      assertThat(rejectedDetails.getRetryFromEpoch()).isEqualTo(2);
+      assertThat(rejectedDetails.getRetryFromEpoch()).isEqualTo(validFromEpoch);
       assertThat(rejectedDetails.getErrorMessage())
           .isEqualTo(
-              "TransactionEpochNotYetValid { valid_from: Epoch(2), current_epoch: Epoch(1) }");
+              String.format(
+                  "TransactionEpochNotYetValid { valid_from: Epoch(%s), current_epoch: Epoch(%s) }",
+                  validFromEpoch, currentEpoch));
 
-      // Now we run consensus up to epoch 2
-      test.runUntilState(allAtOrOverEpoch(2), 10000);
+      // Now we run consensus until we get to the validFromEpoch
+      test.runUntilState(allAtOrOverEpoch(validFromEpoch), 10000);
 
       // And we resubmit, as the Gateway would - this time it should be submittable
       var response2 =
@@ -208,7 +293,7 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
               .transactionStatusPost(
                   new TransactionStatusRequest()
                       .network(networkLogicalName)
-                      .intentHash(transaction.hexIntentHash()));
+                      .intentHash(addressing.encode(transaction.intentHash())));
 
       assertThat(statusResponse2.getIntentStatus())
           .isEqualTo(TransactionIntentStatus.COMMITTEDSUCCESS);

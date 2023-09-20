@@ -66,60 +66,77 @@ package com.radixdlt.p2p.transport;
 
 import com.google.inject.Inject;
 import com.radixdlt.addressing.Addressing;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.messaging.MaxMessageSize;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.PeerEvent;
+import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.p2p.capability.Capabilities;
+import com.radixdlt.protocol.Newest;
+import com.radixdlt.protocol.ProtocolVersion;
 import com.radixdlt.serialization.Serialization;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import java.security.SecureRandom;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
+import javax.annotation.Nullable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public final class PeerServerBootstrap {
+  private static final Logger log = LogManager.getLogger();
+
   private static final int BACKLOG_SIZE = 100;
 
+  private final RadixNodeUri self;
   private final P2PConfig config;
   private final Addressing addressing;
   private final Network network;
-  private final String newestForkName;
+  private final ProtocolVersion newestProtocolVersion;
   private final Metrics metrics;
   private final Serialization serialization;
   private final SecureRandom secureRandom;
   private final ECKeyOps ecKeyOps;
   private final EventDispatcher<PeerEvent> peerEventDispatcher;
   private final Capabilities capabilities;
-  private ChannelFuture serverBind;
+  private final int maxMessageSize;
+  private final AtomicReference<ServerBootstrap> serverBootstrap;
 
   @Inject
   public PeerServerBootstrap(
+      @Self RadixNodeUri self,
       P2PConfig config,
       Addressing addressing,
       Network network,
+      @Newest ProtocolVersion newestProtocolVersion,
       Metrics metrics,
       Serialization serialization,
       SecureRandom secureRandom,
       ECKeyOps ecKeyOps,
       EventDispatcher<PeerEvent> peerEventDispatcher,
-      Capabilities capabilities) {
+      Capabilities capabilities,
+      @MaxMessageSize int maxMessageSize) {
+    this.self = Objects.requireNonNull(self);
     this.config = Objects.requireNonNull(config);
     this.addressing = Objects.requireNonNull(addressing);
     this.network = network;
-    this.newestForkName = "SomeForkName";
+    this.newestProtocolVersion = newestProtocolVersion;
     this.metrics = Objects.requireNonNull(metrics);
     this.serialization = Objects.requireNonNull(serialization);
     this.secureRandom = Objects.requireNonNull(secureRandom);
     this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
     this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
     this.capabilities = capabilities;
-    this.serverBind = null;
+    this.maxMessageSize = maxMessageSize;
+    this.serverBootstrap = new AtomicReference<>();
   }
 
   public void start() {
@@ -137,22 +154,27 @@ public final class PeerServerBootstrap {
                 config,
                 addressing,
                 network,
-                newestForkName,
+                newestProtocolVersion,
                 metrics,
                 serialization,
                 secureRandom,
                 ecKeyOps,
                 peerEventDispatcher,
                 Optional.empty(),
-                capabilities));
+                capabilities,
+                maxMessageSize));
 
-    serverBind =
-        serverBootstrap.bind(config.listenAddress(), config.listenPort()).syncUninterruptibly();
+    serverBootstrap.bind(config.listenAddress(), config.listenPort()).syncUninterruptibly();
+    this.serverBootstrap.set(serverBootstrap);
+
+    log.info("P2P server started. Node URI is: {}", self);
   }
 
   public void stop() {
-    if (serverBind != null) {
-      serverBind.channel().close().syncUninterruptibly();
+    @Nullable var runningServerBootstrap = this.serverBootstrap.getAndSet(null);
+    if (runningServerBootstrap != null) {
+      runningServerBootstrap.config().childGroup().shutdownGracefully().syncUninterruptibly();
+      runningServerBootstrap.config().group().shutdownGracefully().syncUninterruptibly();
     }
   }
 }

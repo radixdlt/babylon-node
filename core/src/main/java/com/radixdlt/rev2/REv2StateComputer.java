@@ -64,13 +64,14 @@
 
 package com.radixdlt.rev2;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.LedgerHashes;
 import com.radixdlt.consensus.NextEpoch;
+import com.radixdlt.consensus.ProposalLimitsConfig;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.bft.SelfValidatorInfo;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.ProposerElections;
@@ -93,6 +94,7 @@ import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
@@ -107,49 +109,38 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
 
   private final RustMempool mempool;
 
-  // Maximum number of transactions to include in a proposal
-  private final int maxNumTransactionsPerProposal;
-  // Maximum number of transaction payload bytes to include in a proposal
-  private final int maxProposalTotalTxnsPayloadSize;
-  // Maximum number of transaction payload bytes to include in a proposal and its previous vertices
-  // chain.
-  // Intended to limit the size of a commit batch (i.e. the size of transactions under a single
-  // commit proof).
-  // Note - we can still keep committing round changes, so this is not a guarantee. But should be
-  // reasonably
-  // effective as a limit.
-  private final int maxUncommittedTotalPayloadSize;
+  private final ProposalLimitsConfig proposalLimitsConfig;
   private final EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher;
 
   private final EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher;
   private final Serialization serialization;
   private final Hasher hasher;
   private final Metrics metrics;
+  private final Optional<ComponentAddress> selfValidatorAddress;
   private final AtomicReference<ProposerElection> currentProposerElection;
 
   public REv2StateComputer(
       RustStateComputer stateComputer,
       RustMempool mempool,
-      int maxNumTransactionsPerProposal,
-      int maxProposalTotalTxnsPayloadSize,
-      int maxUncommittedUserTransactionsTotalPayloadSize,
+      ProposalLimitsConfig proposalLimitsConfig,
       Hasher hasher,
       EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher,
       EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher,
       Serialization serialization,
       ProposerElection initialProposerElection,
-      Metrics metrics) {
+      Metrics metrics,
+      SelfValidatorInfo selfValidatorInfo) {
     this.stateComputer = stateComputer;
     this.mempool = mempool;
-    this.maxNumTransactionsPerProposal = maxNumTransactionsPerProposal;
-    this.maxProposalTotalTxnsPayloadSize = maxProposalTotalTxnsPayloadSize;
-    this.maxUncommittedTotalPayloadSize = maxUncommittedUserTransactionsTotalPayloadSize;
+    this.proposalLimitsConfig = proposalLimitsConfig;
     this.hasher = hasher;
     this.ledgerUpdateEventDispatcher = ledgerUpdateEventDispatcher;
     this.mempoolAddSuccessEventDispatcher = mempoolAddSuccessEventDispatcher;
     this.serialization = serialization;
     this.currentProposerElection = new AtomicReference<>(initialProposerElection);
     this.metrics = metrics;
+    this.selfValidatorAddress =
+        selfValidatorInfo.bftValidatorId().map(BFTValidatorId::getValidatorAddress);
   }
 
   @Override
@@ -168,8 +159,8 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                     MempoolAddSuccess.create(
                         RawNotarizedTransaction.create(transaction.getPayload()), origin);
                 mempoolAddSuccessEventDispatcher.dispatch(success);
-              } catch (MempoolFullException | MempoolDuplicateException ignored) {
-                // Ignore these 2 specific subclasses of the `MempoolRejectedException` logged below
+              } catch (MempoolDuplicateException ignored) {
+                // Ignore these specific subclass of the `MempoolRejectedException` logged below
               } catch (MempoolRejectedException e) {
                 log.debug(e);
               }
@@ -191,19 +182,23 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
             .reduce(0, Integer::sum);
 
     final var remainingSizeInUncommittedVertices =
-        maxUncommittedTotalPayloadSize - rawPreviousExecutedTransactionsSize;
+        proposalLimitsConfig.maxUncommittedTransactionsPayloadSize()
+            - rawPreviousExecutedTransactionsSize;
 
     final var maxPayloadSize =
-        Math.min(remainingSizeInUncommittedVertices, maxProposalTotalTxnsPayloadSize);
+        Math.min(
+            remainingSizeInUncommittedVertices, proposalLimitsConfig.maxTransactionsPayloadSize());
 
     metrics.bft().leaderMaxProposalPayloadSize().observe(maxPayloadSize);
 
     // TODO: Don't include transactions if NextEpoch is to occur
     // TODO: This will require Proposer to simulate a NextRound update before proposing
     final var result =
-        maxPayloadSize > 0 && maxNumTransactionsPerProposal > 0
+        maxPayloadSize > 0 && proposalLimitsConfig.maxTransactionCount() > 0
             ? mempool.getTransactionsForProposal(
-                maxNumTransactionsPerProposal, maxPayloadSize, previousTransactionHashes)
+                proposalLimitsConfig.maxTransactionCount(),
+                maxPayloadSize,
+                previousTransactionHashes)
             : List.<PreparedNotarizedTransaction>of();
 
     final var proposedRawTransactions =
@@ -247,7 +242,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
         LongStream.range(roundDetails.previousQcRoundNumber() + 1, roundDetails.roundNumber())
             .mapToObj(Round::of)
             .map(this.currentProposerElection.get()::getProposer)
-            .map(BFTValidatorId::getActiveValidatorAddress)
+            .map(BFTValidatorId::getValidatorAddress)
             .toList();
     var prepareRequest =
         new PrepareRequest(
@@ -260,7 +255,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                 UInt64.fromNonNegativeLong(roundDetails.epoch()),
                 UInt64.fromNonNegativeLong(roundDetails.roundNumber()),
                 gapRoundLeaderAddresses,
-                roundDetails.roundProposer().getActiveValidatorAddress(),
+                roundDetails.roundProposer().getValidatorAddress(),
                 roundDetails.proposerTimestampMs()));
 
     var result = stateComputer.prepare(prepareRequest);
@@ -295,13 +290,17 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
         new CommitRequest(
             ledgerExtension.getTransactions(),
             REv2ToConsensus.ledgerProof(proof),
-            vertexStoreBytes);
+            vertexStoreBytes,
+            Option.from(selfValidatorAddress));
 
-    var result = stateComputer.commit(commitRequest);
-    result.onError(
-        error -> {
-          throw new InvalidCommitRequestException(error);
-        });
+    final var result = stateComputer.commit(commitRequest);
+    final var commitSummary =
+        result
+            .onError(
+                error -> {
+                  throw new InvalidCommitRequestException(error);
+                })
+            .unwrap();
 
     var epochChangeOptional =
         ledgerExtension
@@ -312,19 +311,19 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                   var header = ledgerExtension.getProof();
                   final var initialState = VertexStoreState.createNewForNextEpoch(header, hasher);
                   var validatorSet = BFTValidatorSet.from(nextEpoch.getValidators());
-                  var proposerElection = ProposerElections.defaultRotation(validatorSet);
+                  var proposerElection =
+                      ProposerElections.defaultRotation(nextEpoch.getEpoch(), validatorSet);
                   var bftConfiguration =
                       new BFTConfiguration(proposerElection, validatorSet, initialState);
                   return new EpochChange(header, bftConfiguration);
                 });
 
-    var outputBuilder = ImmutableClassToInstanceMap.builder();
     epochChangeOptional.ifPresent(
-        epochChange -> {
-          this.currentProposerElection.set(epochChange.getBFTConfiguration().getProposerElection());
-          outputBuilder.put(EpochChange.class, epochChange);
-        });
-    var ledgerUpdate = new LedgerUpdate(ledgerExtension, outputBuilder.build());
+        epochChange ->
+            this.currentProposerElection.set(
+                epochChange.getBFTConfiguration().getProposerElection()));
+
+    var ledgerUpdate = new LedgerUpdate(commitSummary, ledgerExtension, epochChangeOptional);
     ledgerUpdateEventDispatcher.dispatch(ledgerUpdate);
   }
 }

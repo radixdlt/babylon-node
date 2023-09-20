@@ -76,7 +76,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.SecureRandom;
-import java.security.Security;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -90,7 +89,6 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public class AWSSecrets {
   private static final Boolean DEFAULT_ENABLE_AWS_SECRETS = false;
@@ -182,10 +180,6 @@ public class AWSSecrets {
       System.out.println("name prefix " + namePrefix);
       generateAndStoreKey(
           networkName, namePrefix, defaultKeyPassword, awsSecretsOutputOptions, nodes);
-      if (namePrefix.equals(CORE_NODE_PREFIX)) {
-        System.out.println("Core node. Generate staking keys");
-        generateAndStoreStakingKey(networkName, defaultKeyPassword, awsSecretsOutputOptions, nodes);
-      }
     } catch (ParseException e) {
       System.out.println(e);
     }
@@ -201,20 +195,6 @@ public class AWSSecrets {
         networkName, namePrefix, defaultKeyPassword, awsSecretsOutputOptions, nodes, Boolean.FALSE);
   }
 
-  private static void generateAndStoreStakingKey(
-      String networkName,
-      String defaultKeyPassword,
-      AWSSecretsOutputOptions awsSecretsOutputOptions,
-      List<String> nodes) {
-    generateAndStoreKey(
-        networkName,
-        CORE_NODE_PREFIX,
-        defaultKeyPassword,
-        awsSecretsOutputOptions,
-        nodes,
-        Boolean.TRUE);
-  }
-
   private static void generateAndStoreKey(
       String networkName,
       String namePrefix,
@@ -224,8 +204,6 @@ public class AWSSecrets {
       Boolean isStaker) {
 
     for (var nodeName : nodes) {
-      Security.insertProviderAt(new BouncyCastleProvider(), 1);
-
       var keyStoreName = String.format("%s.ks", nodeName);
       var keyStoreSecretName = String.format("%s.ks", nodeName);
       var passwordName = "password";
@@ -235,11 +213,17 @@ public class AWSSecrets {
       if (namePrefix.equals(CORE_NODE_PREFIX)) {
         if (isStaker) {
           keyStoreSecretName = "staker_key";
+          // SNYK - this file is ignored in .snyk file
+          // Raised issue: Use of Hardcoded Credentials
+          // Explanation: These are not credentials, but a field name
           passwordName = "staker_password";
           keyStoreName = String.format("%s_stake.ks", nodeName);
           publicKeyFileSecretName = String.format("%s/%s/staker_public_key", networkName, nodeName);
         } else {
           keyStoreSecretName = "validator_key";
+          // SNYK - this file is ignored in .snyk file
+          // Raised issue: Use of Hardcoded Credentials
+          // Explanation: These are not credentials, but a field name
           passwordName = "validator_password";
           publicKeyFileSecretName =
               String.format("%s/%s/validator_public_key", networkName, nodeName);

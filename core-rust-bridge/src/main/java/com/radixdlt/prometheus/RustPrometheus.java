@@ -66,16 +66,19 @@ package com.radixdlt.prometheus;
 
 import com.google.common.reflect.TypeToken;
 import com.google.inject.Inject;
+import com.radixdlt.environment.NodeRustEnvironment;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.sbor.Natives;
-import com.radixdlt.statemanager.StateManager;
 
 public class RustPrometheus {
 
   @Inject
-  public RustPrometheus(StateManager stateManager) {
+  public RustPrometheus(NodeRustEnvironment nodeRustEnvironment) {
     this.prometheusMetricsFunc =
-        Natives.builder(stateManager, RustPrometheus::prometheusMetrics)
+        Natives.builder(nodeRustEnvironment, RustPrometheus::prometheusMetrics)
+            .build(new TypeToken<>() {});
+    this.ledgerStatusFunc =
+        Natives.builder(nodeRustEnvironment, RustPrometheus::ledgerStatus)
             .build(new TypeToken<>() {});
   }
 
@@ -83,7 +86,16 @@ public class RustPrometheus {
     return prometheusMetricsFunc.call(Tuple.tuple());
   }
 
+  public LedgerStatus ledgerStatus() {
+    return ledgerStatusFunc.call(Tuple.tuple());
+  }
+
   private final Natives.Call1<Tuple.Tuple0, String> prometheusMetricsFunc;
 
-  private static native byte[] prometheusMetrics(StateManager stateManager, byte[] args);
+  private final Natives.Call1<Tuple.Tuple0, LedgerStatus> ledgerStatusFunc;
+
+  private static native byte[] prometheusMetrics(
+      NodeRustEnvironment nodeRustEnvironment, byte[] args);
+
+  private static native byte[] ledgerStatus(NodeRustEnvironment nodeRustEnvironment, byte[] args);
 }

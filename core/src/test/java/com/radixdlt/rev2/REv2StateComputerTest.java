@@ -65,16 +65,22 @@
 package com.radixdlt.rev2;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.*;
+import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.ConsensusByzantineEvent;
-import com.radixdlt.consensus.bft.BFTValidatorId;
-import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.ProposalLimitsConfig;
+import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.vertexstore.VertexStoreState;
+import com.radixdlt.environment.DatabaseFlags;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.FatalPanicHandler;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
+import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.genesis.RawGenesisDataWithHash;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.lang.Option;
@@ -92,12 +98,13 @@ import com.radixdlt.rev2.modules.REv2LedgerRecoveryModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statecomputer.commit.ActiveValidatorInfo;
 import com.radixdlt.statecomputer.commit.LedgerHeader;
-import com.radixdlt.statemanager.DatabaseFlags;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawNotarizedTransaction;
+import com.radixdlt.utils.UInt192;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.Test;
 
 public class REv2StateComputerTest {
@@ -107,13 +114,13 @@ public class REv2StateComputerTest {
   private Injector createInjector() {
     return Guice.createInjector(
         new CryptoModule(),
-        REv2StateManagerModule.create(
-            10,
-            10 * 1024 * 1024,
-            50 * 1024 * 1024,
+        REv2StateManagerModule.createForTesting(
+            ProposalLimitsConfig.testDefaults(),
             REv2StateManagerModule.DatabaseType.IN_MEMORY,
             new DatabaseFlags(false, false),
-            Option.none()),
+            Option.none(),
+            false,
+            false),
         new REv2LedgerInitializerModule(
             RawGenesisDataWithHash.fromGenesisData(
                 GenesisBuilder.createGenesisWithValidatorsAndXrdBalances(
@@ -121,7 +128,9 @@ public class REv2StateComputerTest {
                     Decimal.of(1),
                     Address.virtualAccountAddress(ONLY_VALIDATOR_ID.getKey()),
                     Map.of(),
-                    GenesisConsensusManagerConfig.Builder.testDefaults()))),
+                    GenesisConsensusManagerConfig.Builder.testDefaults(),
+                    true,
+                    GenesisData.NO_SCENARIOS))),
         new REv2LedgerRecoveryModule(),
         new AbstractModule() {
           @Override
@@ -137,11 +146,20 @@ public class REv2StateComputerTest {
             bind(NodeId.class)
                 .annotatedWith(Self.class)
                 .toInstance(NodeId.fromPublicKey(ONLY_VALIDATOR_ID.getKey()));
+            bind(SelfValidatorInfo.class)
+                .toInstance(
+                    new SelfValidatorInfo(
+                        ONLY_VALIDATOR_ID.getKey(), Optional.of(ONLY_VALIDATOR_ID)));
+            bind(FatalPanicHandler.class).toInstance(() -> {});
           }
 
           @Provides
-          public ProposerElection proposerElection() {
-            return round -> ONLY_VALIDATOR_ID;
+          public BFTConfiguration initialBftConfiguration() {
+            final ProposerElection proposerElection = round -> ONLY_VALIDATOR_ID;
+            return new BFTConfiguration(
+                proposerElection,
+                BFTValidatorSet.from(List.of(BFTValidator.from(ONLY_VALIDATOR_ID, UInt192.ONE))),
+                mock(VertexStoreState.class));
           }
         });
   }

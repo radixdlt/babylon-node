@@ -160,6 +160,7 @@ public final class BFTHeader {
   @Override
   public String toString() {
     return String.format(
-        "%s{round=%s ledger=%s}", getClass().getSimpleName(), this.round, this.ledgerHeader);
+        "%s{round=%s vertex=%s ledger=%s}",
+        getClass().getSimpleName(), this.round, this.vertexId, this.ledgerHeader);
   }
 }

@@ -138,9 +138,9 @@ public final class OlympiaGenesisService {
     // Every 1000th request we'll ask for a test payload (in case of a not-ready response).
     // The first request does not include the test payload (check basic connectivity).
     final var includeTestPayload = counter % 1000 == 1;
-    if (counter == 0) {
+    if (counter == 0 || includeTestPayload) {
       log.info(
-          "Querying the Olympia node {} for genesis data{}",
+          "Querying the Olympia node {} for genesis data{} (this may take a few minutes)",
           olympiaGenesisConfig.nodeCoreApiUrl(),
           includeTestPayload ? " (with test payload)" : "");
     }
@@ -174,7 +174,8 @@ public final class OlympiaGenesisService {
           return;
         }
 
-        final var signature = ECDSASecp256k1Signature.decodeFromHexDer(readyResponse.signature());
+        final var signature =
+            ECDSASecp256k1Signature.decodeNonRecoverableFromHexDer(readyResponse.signature());
         if (!this.olympiaGenesisConfig.nodePublicKey().verify(contentHash, signature)) {
           completableFuture.completeExceptionally(signatureErr());
           return;
@@ -241,7 +242,8 @@ public final class OlympiaGenesisService {
           }
 
           final var signature =
-              ECDSASecp256k1Signature.decodeFromHexDer(notReadyResponse.signature().get());
+              ECDSASecp256k1Signature.decodeNonRecoverableFromHexDer(
+                  notReadyResponse.signature().get());
 
           if (!this.olympiaGenesisConfig.nodePublicKey().verify(calculatedTestHash, signature)) {
             completableFuture.completeExceptionally(signatureErr());

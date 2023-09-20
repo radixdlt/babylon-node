@@ -64,11 +64,9 @@
 
 package com.radixdlt.p2p.transport;
 
-import com.radixdlt.RadixNodeModule;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.mempool.MempoolRelayer;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.P2PConfig;
@@ -77,7 +75,7 @@ import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.p2p.capability.Capabilities;
 import com.radixdlt.p2p.transport.logging.LogSink;
 import com.radixdlt.p2p.transport.logging.LoggingHandler;
-import com.radixdlt.rev2.REv2TransactionsAndProofReader;
+import com.radixdlt.protocol.ProtocolVersion;
 import com.radixdlt.serialization.Serialization;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
@@ -99,51 +97,18 @@ import org.apache.logging.log4j.Logger;
 public final class PeerChannelInitializer extends ChannelInitializer<SocketChannel> {
   private static final Logger log = LogManager.getLogger();
 
-  // This needs to be larger than both:
-  //  - max proposal and its previous vertices txn size (see
-  // `MAX_PROPOSAL_AND_UNCOMMITTED_VERTICES_TOTAL_TXN_PAYLOAD_SIZE` in `RadixNodeModule`)
-  //    note that the constant specifies txns payload size, it doesn't include proposal overhead
-  // (vertex/QCs)
-  //  - max ledger sync response size (see `MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE` in
-  // `REv2TransactionsAndProofReader`)
-  //    similarly, this doesn't include sync response overhead (proof)
-  //  - `MAX_RELAY_TOTAL_TXNS_PAYLOAD_SIZE` in `MempoolRelayer`
-  private static final int MAX_PACKET_LENGTH;
+  // Send/receive buffers for each open socket
+  private static final int PER_SOCKET_RECEIVE_BUFFER_SIZE = 1024 * 1024;
+  private static final int PER_SOCKET_SEND_BUFFER_SIZE = 1024 * 1024;
 
-  static {
-    final var baseBufferSize =
-        Math.max(
-            Math.max(
-                REv2TransactionsAndProofReader.MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE,
-                RadixNodeModule.MAX_UNCOMMITTED_USER_TRANSACTIONS_TOTAL_PAYLOAD_SIZE),
-            MempoolRelayer.MAX_RELAY_MSG_TOTAL_TXN_PAYLOAD_SIZE);
-    // 30% should be more than enough for any vertex/QCs/proofs/encryption overhead
-    final var additionalBuffer = (int) (0.3 * baseBufferSize);
-    final var bufferSize = baseBufferSize + additionalBuffer;
+  private static final int SOCKET_BACKLOG_SIZE = 100;
 
-    // Just a sanity check that any changes to the constants used above
-    // don't cause excessive (and unintended) increase of p2p buffers.
-    // Might still be changed, if we decide so, but requires manual intervention.
-    final var maxReasonableBufferSize = 15 * 1024 * 1024;
-
-    //noinspection ConstantConditions
-    if (bufferSize > maxReasonableBufferSize) {
-      throw new RuntimeException(
-          "P2P buffer size exceeds "
-              + maxReasonableBufferSize
-              + ", double-check if this is intentional");
-    }
-
-    MAX_PACKET_LENGTH = bufferSize;
-  }
-
-  private static final int FRAME_HEADER_LENGTH = Integer.BYTES;
-  private static final int SOCKET_BACKLOG_SIZE = 1024;
+  private static final int FRAME_HEADER_LENGTH = 4;
 
   private final P2PConfig config;
   private final Addressing addressing;
   private final Network network;
-  private final String newestForkName;
+  private final ProtocolVersion newestProtocolVersion;
   private final Metrics metrics;
   private final Serialization serialization;
   private final SecureRandom secureRandom;
@@ -151,23 +116,25 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
   private final EventDispatcher<PeerEvent> peerEventDispatcher;
   private final Optional<RadixNodeUri> uri;
   private final Capabilities capabilities;
+  private final int maxMessageSize;
 
   public PeerChannelInitializer(
       P2PConfig config,
       Addressing addressing,
       Network network,
-      String newestForkName,
+      ProtocolVersion newestProtocolVersion,
       Metrics metrics,
       Serialization serialization,
       SecureRandom secureRandom,
       ECKeyOps ecKeyOps,
       EventDispatcher<PeerEvent> peerEventDispatcher,
       Optional<RadixNodeUri> uri,
-      Capabilities capabilities) {
+      Capabilities capabilities,
+      int maxMessageSize) {
     this.config = Objects.requireNonNull(config);
     this.addressing = Objects.requireNonNull(addressing);
     this.network = network;
-    this.newestForkName = newestForkName;
+    this.newestProtocolVersion = newestProtocolVersion;
     this.metrics = Objects.requireNonNull(metrics);
     this.serialization = Objects.requireNonNull(serialization);
     this.secureRandom = Objects.requireNonNull(secureRandom);
@@ -175,6 +142,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
     this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
     this.uri = Objects.requireNonNull(uri);
     this.capabilities = capabilities;
+    this.maxMessageSize = maxMessageSize;
   }
 
   @Override
@@ -182,9 +150,8 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
     metrics.networking().channelsInitialized().inc();
 
     final var socketChannelConfig = socketChannel.config();
-    socketChannelConfig.setReceiveBufferSize(MAX_PACKET_LENGTH);
-    socketChannelConfig.setSendBufferSize(MAX_PACKET_LENGTH);
-    socketChannelConfig.setOption(ChannelOption.SO_RCVBUF, MAX_PACKET_LENGTH);
+    socketChannelConfig.setReceiveBufferSize(PER_SOCKET_RECEIVE_BUFFER_SIZE);
+    socketChannelConfig.setSendBufferSize(PER_SOCKET_SEND_BUFFER_SIZE);
     socketChannelConfig.setOption(ChannelOption.SO_BACKLOG, SOCKET_BACKLOG_SIZE);
 
     if (log.isDebugEnabled()) {
@@ -209,7 +176,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
         .addLast("decode_proxy_header_line", new LineBasedFrameDecoder(255, true, true))
         .addLast("decode_proxy_header_bytes", new ByteArrayDecoder())
         .addLast("handle_proxy_header", new ProxyHeaderHandler(socketChannel))
-        .addLast("exception_handler", new ExceptionHandler(Optional.empty()));
+        .addLast("exception_handler", new ExceptionHandler(metrics, Optional.empty()));
   }
 
   private final class ProxyHeaderHandler extends SimpleChannelInboundHandler<byte[]> {
@@ -257,7 +224,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
             config,
             addressing,
             network,
-            newestForkName,
+            newestProtocolVersion,
             metrics,
             serialization,
             secureRandom,
@@ -268,15 +235,22 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
             Optional.ofNullable(remoteAddress),
             capabilities);
 
-    final int packetLength = MAX_PACKET_LENGTH + FRAME_HEADER_LENGTH;
-    final int headerLength = FRAME_HEADER_LENGTH;
+    final var maxFrameLength = maxMessageSize + FrameCodec.FRAME_OVERHEAD;
+
     socketChannel
         .pipeline()
         .addLast(
             "unpack",
-            new LengthFieldBasedFrameDecoder(packetLength, 0, headerLength, 0, headerLength))
+            new LengthFieldBasedFrameDecoder(
+                maxFrameLength,
+                0, // Frames begin with length prefix, so no offset
+                FRAME_HEADER_LENGTH,
+                0, // Length field doesn't include the length of itself, so no need to adjust for
+                // that
+                FRAME_HEADER_LENGTH,
+                true /* Fail fast */))
         .addLast("handler", peerChannel)
-        .addLast("pack", new LengthFieldPrepender(headerLength))
-        .addLast("exception_handler", new ExceptionHandler(Optional.of(peerChannel)));
+        .addLast("pack", new LengthFieldPrepender(FRAME_HEADER_LENGTH))
+        .addLast("exception_handler", new ExceptionHandler(metrics, Optional.of(peerChannel)));
   }
 }

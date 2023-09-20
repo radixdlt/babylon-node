@@ -8,20 +8,20 @@ node-common = { path = "../node-common" }
 
 sbor = { workspace = true }
 transaction = { workspace = true }
+transaction-scenarios = { workspace = true }
 radix-engine-common = { workspace = true }
 radix-engine-interface = { workspace = true }
 radix-engine = { workspace = true }
-radix-engine-constants = { workspace = true }
 radix-engine-stores = { workspace = true }
 radix-engine-store-interface = { workspace = true }
 radix-engine-queries = { workspace = true }
 utils = { workspace = true }
 
 # Non-Radix Engine Dependencies:
+itertools = { workspace = true }
 jni = { workspace = true }
 tracing = { workspace = true }
 tokio = { workspace = true }
-parking_lot = { workspace = true }
 prometheus = { workspace = true }
 blake2 = { workspace = true }
 

@@ -76,10 +76,10 @@ import com.radixdlt.api.system.health.HealthInfoService;
 import com.radixdlt.api.system.health.HealthInfoServiceImpl;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.environment.DatabaseFlags;
 import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
-import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.*;
@@ -91,9 +91,10 @@ import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.p2p.addressbook.AddressBook;
+import com.radixdlt.protocol.Current;
+import com.radixdlt.protocol.ProtocolVersion;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import com.radixdlt.statemanager.DatabaseFlags;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.properties.RuntimeProperties;
@@ -115,6 +116,8 @@ public abstract class SystemApiTestBase {
 
   @Before
   public void setup() {
+    final var p2pConfig = mock(P2PConfig.class);
+    when(p2pConfig.addressBookMaxSize()).thenReturn(1000);
     var injector =
         Guice.createInjector(
             new SingleNodeAndPeersDeterministicNetworkModule(
@@ -127,22 +130,24 @@ public abstract class SystemApiTestBase {
                     LedgerConfig.stateComputerWithSyncRelay(
                         StateComputerConfig.rev2(
                             Network.INTEGRATIONTESTNET.getId(),
-                            GenesisBuilder.createGenesisWithSingleValidator(
+                            GenesisBuilder.createTestGenesisWithSingleValidator(
                                 TEST_KEY.getPublicKey(),
                                 Decimal.of(1),
                                 GenesisConsensusManagerConfig.Builder.testDefaults()),
                             REv2StateManagerModule.DatabaseType.IN_MEMORY,
                             new DatabaseFlags(false, false),
-                            StateComputerConfig.REV2ProposerConfig.mempool(
-                                10, 10 * 1024 * 1024, 10, MempoolRelayConfig.of())),
+                            StateComputerConfig.REV2ProposerConfig.Mempool.defaults()),
                         new SyncRelayConfig(500, 10, 3000, 10, Long.MAX_VALUE)))),
             new TestP2PModule.Builder().build(),
             new TestMessagingModule.Builder().build(),
             new AbstractModule() {
               @Override
               protected void configure() {
+                bind(ProtocolVersion.class)
+                    .annotatedWith(Current.class)
+                    .toInstance(new ProtocolVersion("test"));
                 bind(Network.class).toInstance(Network.INTEGRATIONTESTNET);
-                bind(P2PConfig.class).toInstance(mock(P2PConfig.class));
+                bind(P2PConfig.class).toInstance(p2pConfig);
                 bind(AddressBook.class).in(Scopes.SINGLETON);
                 var selfUri =
                     RadixNodeUri.fromPubKeyAndAddress(

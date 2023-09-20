@@ -75,13 +75,12 @@ import com.radixdlt.genesis.olympia.state.OlympiaStateIRDeserializer;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.identifiers.Address;
-import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
-import com.radixdlt.rev2.REv2StateReader;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
+import com.radixdlt.testutil.TestStateReader;
 import com.radixdlt.utils.Compress;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -110,8 +109,7 @@ public final class REv2GenesisFromOlympiaTest {
                         Network.INTEGRATIONTESTNET.getId(),
                         genesisData,
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
-                        StateComputerConfig.REV2ProposerConfig.mempool(
-                            0, 0, 0, MempoolRelayConfig.of())))));
+                        StateComputerConfig.REV2ProposerConfig.Mempool.zero()))));
   }
 
   @Test
@@ -122,7 +120,7 @@ public final class REv2GenesisFromOlympiaTest {
             olympiaEndState, OlympiaToBabylonConverterConfig.DEFAULT);
     try (var test = createTest(genesisData)) {
       test.startAllNodes();
-      var stateReader = test.getInstance(0, REv2StateReader.class);
+      var stateReader = test.getInstance(0, TestStateReader.class);
       final var xrdIndex =
           OlympiaResourcesConverter.findXrdResourceIndex(olympiaEndState.resources());
       for (var balance : olympiaEndState.balances()) {
@@ -137,6 +135,10 @@ public final class REv2GenesisFromOlympiaTest {
     }
   }
 
+  /**
+   * Deserializes a file captured from Olympia Node's `StateIRSerializationTest` (namely,
+   * `it_should_successfully_construct_and_then_serialize_and_deserialize_the_intermediate_state`).
+   */
   private static OlympiaStateIR readOlympiaStateIRFromResources() throws IOException {
     try (var is =
         REv2GenesisFromOlympiaTest.class

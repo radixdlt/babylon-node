@@ -70,6 +70,9 @@ import static org.awaitility.Awaitility.await;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.RadixKeyStore;
 import com.radixdlt.crypto.exception.KeyStoreException;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.Metrics.Messages.DiscardedInboundMessage;
+import com.radixdlt.monitoring.Metrics.Messages.InboundMessageDiscardedReason;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.utils.FreePortFinder;
@@ -77,15 +80,18 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
-import java.security.Security;
 import java.time.Duration;
 import java.util.List;
 import java.util.Random;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.awaitility.core.ConditionTimeoutException;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
+/**
+ * Tests that sending a large network message doesn't cause a node crash. This test is quite flaky,
+ * and the (warn) output from both processes (nodes) should be inspected manually to verify that: a)
+ * attacker has indeed sent a large message b) large message was discarded on the target node
+ */
 public final class LargeMessageTest {
   private static final Logger log = LogManager.getLogger();
 
@@ -93,11 +99,28 @@ public final class LargeMessageTest {
     private static final Logger log = LogManager.getLogger();
 
     public static void main(String[] args) throws Exception {
-      Security.insertProviderAt(new BouncyCastleProvider(), 1);
-
       log.warn("Starting the target node...");
 
-      nodeBuilder().p2pServer(Integer.parseInt(args[0])).prop("node.key.path", args[1]).build();
+      final var node =
+          nodeBuilder().p2pServer(Integer.parseInt(args[0])).prop("node.key.path", args[1]).build();
+
+      final var metrics = node.getInstance(Metrics.class);
+
+      log.warn("Awaiting for a discarded inbound message (because of it being too large)...");
+      await()
+          .atMost(Duration.ofSeconds(30))
+          .until(
+              () ->
+                  metrics
+                          .messages()
+                          .inbound()
+                          .discarded()
+                          .label(
+                              new DiscardedInboundMessage(
+                                  InboundMessageDiscardedReason.MESSAGE_TOO_LARGE))
+                          .get()
+                      == 1);
+      log.warn("All good! A too large message was discarded.");
     }
   }
 
@@ -105,8 +128,6 @@ public final class LargeMessageTest {
     private static final Logger log = LogManager.getLogger();
 
     public static void main(String[] args) throws Exception {
-      Security.insertProviderAt(new BouncyCastleProvider(), 1);
-
       log.warn("Starting the attacker node...");
 
       final var node =
@@ -115,11 +136,17 @@ public final class LargeMessageTest {
       final var targetUri = RadixNodeUri.fromUri(URI.create(args[2]));
       log.warn("Targeting: " + targetUri);
 
-      // Connect to the target
+      log.warn("Wait 10s...");
+
+      Thread.sleep(10000L);
+
+      log.warn("Connecting to target...");
+
       node.connectTo(targetUri);
 
-      // Await for the connection
-      await().until(() -> node.peers().size() != 1);
+      log.warn("Awaiting target connection...");
+
+      await().until(() -> node.peers().size() == 1);
       log.warn("Target node connected");
 
       log.warn("Allocating 1G of random bytes...");
@@ -173,11 +200,13 @@ public final class LargeMessageTest {
 
     // The target process should survive
     try {
-      // TODO: 15s is enough, but need to find a better way to know when the attack has finished
-      await().atMost(Duration.ofSeconds(15)).until(() -> !targetProc.isAlive());
+      // TODO: 30s is enough, but need to find a better way to know when the attack has finished
+      await().atMost(Duration.ofSeconds(30)).until(() -> !targetProc.isAlive());
       log.error("TEST FAILED: TARGET PROCESS KILLED!");
     } catch (ConditionTimeoutException e) {
-      log.warn("The target node didn't crash! The test succeeded.");
+      log.warn(
+          "The target node didn't crash! Inspect the output from both nodes to verify that the test"
+              + " succeeded.");
     }
   }
 

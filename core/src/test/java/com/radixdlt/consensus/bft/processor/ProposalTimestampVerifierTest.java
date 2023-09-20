@@ -69,6 +69,8 @@ import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import com.google.common.primitives.Bytes;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.ProposalRejected;
@@ -76,18 +78,24 @@ import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
+import com.radixdlt.networks.Network;
+import com.radixdlt.rev2.ComponentAddress;
+import com.radixdlt.utils.PrivateKeys;
+import java.util.Collections;
 import org.junit.Before;
 import org.junit.Test;
 
 public class ProposalTimestampVerifierTest {
   private BFTEventProcessorAtCurrentRound forwardTo;
   private Metrics metrics;
+  private Addressing addressing;
   private EventDispatcher<ProposalRejected> proposalRejectedDispatcher;
 
   @Before
   public void setup() {
     this.forwardTo = mock(BFTEventProcessorAtCurrentRound.class);
     this.metrics = new MetricsInitializer().initialize();
+    this.addressing = Addressing.ofNetwork(Network.INTEGRATIONTESTNET);
     this.proposalRejectedDispatcher = rmock(EventDispatcher.class);
   }
 
@@ -97,7 +105,7 @@ public class ProposalTimestampVerifierTest {
 
     final var sut =
         new ProposalTimestampVerifier(
-            forwardTo, () -> currentSystemTime, metrics, proposalRejectedDispatcher);
+            forwardTo, () -> currentSystemTime, metrics, addressing, proposalRejectedDispatcher);
 
     sut.processProposal(createProposalWithTimestamps(currentSystemTime - 1, currentSystemTime));
     verify(forwardTo, times(1)).processProposal(any());
@@ -110,7 +118,7 @@ public class ProposalTimestampVerifierTest {
 
     final var sut =
         new ProposalTimestampVerifier(
-            forwardTo, () -> currentSystemTime, metrics, proposalRejectedDispatcher);
+            forwardTo, () -> currentSystemTime, metrics, addressing, proposalRejectedDispatcher);
 
     sut.processProposal(createProposalWithTimestamps(currentSystemTime, currentSystemTime));
     verify(forwardTo, times(1)).processProposal(any());
@@ -123,7 +131,7 @@ public class ProposalTimestampVerifierTest {
 
     final var sut =
         new ProposalTimestampVerifier(
-            forwardTo, () -> currentSystemTime, metrics, proposalRejectedDispatcher);
+            forwardTo, () -> currentSystemTime, metrics, addressing, proposalRejectedDispatcher);
 
     sut.processProposal(createProposalWithTimestamps(currentSystemTime, currentSystemTime - 1));
     verify(forwardTo, never()).processProposal(any());
@@ -136,7 +144,7 @@ public class ProposalTimestampVerifierTest {
 
     final var sut =
         new ProposalTimestampVerifier(
-            forwardTo, () -> currentSystemTime, metrics, proposalRejectedDispatcher);
+            forwardTo, () -> currentSystemTime, metrics, addressing, proposalRejectedDispatcher);
 
     sut.processProposal(
         createProposalWithTimestamps(
@@ -147,7 +155,14 @@ public class ProposalTimestampVerifierTest {
   }
 
   private Proposal createProposalWithTimestamps(long prevTimestamp, long currentTimestamp) {
-    final var author = mock(BFTValidatorId.class);
+    // the fake validator ID needs to be renderable, for metrics purposes
+    final var address =
+        new ComponentAddress(
+            Bytes.toArray(
+                Collections.nCopies(
+                    ComponentAddress.BYTE_LENGTH,
+                    ComponentAddress.VALIDATOR_COMPONENT_ADDRESS_ENTITY_ID)));
+    final var author = BFTValidatorId.create(address, PrivateKeys.ofNumeric(1).getPublicKey());
     final var proposal = mock(Proposal.class);
     when(proposal.getAuthor()).thenReturn(author);
     when(proposal.getSignature()).thenReturn(mock(ECDSASecp256k1Signature.class));

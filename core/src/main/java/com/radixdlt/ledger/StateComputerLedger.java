@@ -85,9 +85,14 @@ import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.*;
+import javax.annotation.Nullable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** Synchronizes execution */
 public final class StateComputerLedger implements Ledger, ProposalGenerator {
+
+  private static final Logger log = LogManager.getLogger();
 
   public interface ExecutedTransaction {
     RawLedgerTransaction transaction();
@@ -152,7 +157,6 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
     void commit(LedgerExtension ledgerExtension, VertexStoreState vertexStore);
   }
 
-  private final Comparator<LedgerProof> headerComparator;
   private final StateComputer stateComputer;
   private final Metrics metrics;
   private final TimeSupplier timeSupplier;
@@ -163,11 +167,9 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
   public StateComputerLedger(
       TimeSupplier timeSupplier,
       @LastProof LedgerProof initialLedgerState,
-      Comparator<LedgerProof> headerComparator,
       StateComputer stateComputer,
       Metrics metrics) {
     this.timeSupplier = Objects.requireNonNull(timeSupplier);
-    this.headerComparator = Objects.requireNonNull(headerComparator);
     this.stateComputer = Objects.requireNonNull(stateComputer);
     this.metrics = Objects.requireNonNull(metrics);
     this.currentLedgerHeader = initialLedgerState;
@@ -319,14 +321,47 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
     return p -> metrics.ledger().commit().measure(() -> this.commit(p, null));
   }
 
-  private void commit(LedgerExtension ledgerExtension, VertexStoreState vertexStore) {
+  /**
+   * Appends a useful suffix of the given {@link LedgerExtension} to the persistent ledger (while
+   * also writing the new {@link VertexStoreState}, if non-{@literal null}).
+   *
+   * <p>A "useful suffix" is a sub-list of transactions that are not yet persisted in the local
+   * ledger. The implementation will resolve this sub-list based on the end state version from the
+   * {@link LedgerExtension#getProof() proof}. If the useful suffix is empty, then this method will
+   * no-op and return successfully (with just a trace log, since this kind of situation is most
+   * likely a harmless "stale response").
+   *
+   * <p>This method <b>silently assumes</b> (i.e. does not check) the following facts:
+   *
+   * <ul>
+   *   <li>The proof is signed by a quorum of validators from the current validator set.
+   *   <li>The validators' signatures are valid.
+   * </ul>
+   *
+   * <p>This method <b>verifies</b> the following preconditions:
+   *
+   * <ul>
+   *   <li>The useful suffix does not start with the immediate next state version of the local
+   *       ledger's end - in case of such "gap", an {@link IllegalArgumentException} is thrown.
+   *   <li>Any of the transactions within useful suffix is non-parseable - in this case, a {@link
+   *       InvalidCommitRequestException} is propagated from the Rust state computer.
+   *   <li>A transaction root hash computed while applying the useful suffix differs from the one
+   *       specified by ny of the {@link LedgerExtension#getProof() proof} - in this case, a {@link
+   *       InvalidCommitRequestException} is propagated from the Rust state computer.
+   * </ul>
+   */
+  private void commit(LedgerExtension ledgerExtension, @Nullable VertexStoreState vertexStore) {
     final LedgerProof nextHeader = ledgerExtension.getProof();
 
     final int extensionTransactionCount; // for metrics purposes only
     synchronized (this.commitAndAdvanceLedgerLock) {
       final LedgerProof againstLedgerHeader = this.currentLedgerHeader;
 
-      if (this.headerComparator.compare(nextHeader, againstLedgerHeader) <= 0) {
+      if (nextHeader.getStateVersion() <= againstLedgerHeader.getStateVersion()) {
+        log.trace(
+            "Ignoring the ledger extension {} which would not progress the current ledger {}",
+            nextHeader,
+            againstLedgerHeader);
         return;
       }
 

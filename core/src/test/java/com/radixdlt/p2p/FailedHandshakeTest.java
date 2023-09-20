@@ -108,6 +108,7 @@ public final class FailedHandshakeTest extends DeterministicP2PNetworkTest {
 
     final var entry =
         testNetworkRunner.addressBook(0).findById(messedUpUri.getNodeId()).orElseThrow();
-    assertTrue(entry.getKnownAddresses().stream().findFirst().orElseThrow().blacklisted());
+    assertTrue(
+        entry.getKnownAddresses().stream().findFirst().orElseThrow().failedHandshakeIsPresent());
   }
 }

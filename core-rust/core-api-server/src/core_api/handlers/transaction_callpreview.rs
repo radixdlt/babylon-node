@@ -59,7 +59,7 @@ pub(crate) async fn handle_transaction_callpreview(
             InstructionV1::CallFunction {
                 blueprint_name,
                 function_name,
-                package_address,
+                package_address: package_address.into(),
                 args: args_from_bytes_vec!(args),
             }
         }
@@ -80,6 +80,7 @@ pub(crate) async fn handle_transaction_callpreview(
     };
 
     let result = state
+        .state_manager
         .transaction_previewer
         .preview(PreviewRequest {
             manifest: TransactionManifestV1 {
@@ -87,7 +88,7 @@ pub(crate) async fn handle_transaction_callpreview(
                     InstructionV1::CallMethod {
                         address: FAUCET.into(),
                         method_name: "lock_fee".to_string(),
-                        args: manifest_args!(Decimal::from(100u32)),
+                        args: manifest_args!(Decimal::from(100u32)).into(),
                     },
                     requested_call,
                 ],
@@ -100,11 +101,11 @@ pub(crate) async fn handle_transaction_callpreview(
             nonce: 490,
             signer_public_keys: vec![],
             flags: PreviewFlags {
-                permit_invalid_header_epoch: true,
-                permit_duplicate_intent_hash: true,
-                unlimited_loan: true,
+                use_free_credit: true,
                 assume_all_signature_proofs: true,
+                skip_epoch_check: true,
             },
+            message: MessageV1::None,
         })
         .map_err(|err| match err {
             PreviewError::TransactionValidationError(err) => {
@@ -151,6 +152,10 @@ pub(crate) async fn handle_transaction_callpreview(
     };
 
     Ok(TransactionCallPreviewResponse {
+        at_ledger_state: Box::new(to_api_ledger_state_summary(
+            &mapping_context,
+            &result.base_ledger_header,
+        )?),
         error_message: error,
         output: output.map(Box::new),
         status,

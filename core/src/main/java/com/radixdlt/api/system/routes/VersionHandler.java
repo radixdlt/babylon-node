@@ -64,11 +64,15 @@
 
 package com.radixdlt.api.system.routes;
 
+import com.google.inject.Inject;
 import com.radixdlt.api.system.SystemGetJsonHandler;
 import com.radixdlt.api.system.generated.models.VersionResponse;
 import com.radixdlt.monitoring.ApplicationVersion;
 
 public class VersionHandler extends SystemGetJsonHandler<VersionResponse> {
+
+  @Inject
+  public VersionHandler() {}
 
   @Override
   public VersionResponse handleRequest() {

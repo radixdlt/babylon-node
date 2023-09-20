@@ -1,13 +1,16 @@
+use std::iter;
+
 use crate::core_api::*;
 
 use radix_engine::types::hash;
 
-use radix_engine_common::types::ValidatorIndex;
-use state_manager::store::traits::*;
+use state_manager::store::{traits::*, StateManagerDatabase};
 use state_manager::transaction::*;
-use state_manager::{CommittedTransactionIdentifiers, LocalTransactionReceipt, StateVersion};
+use state_manager::{
+    CommittedTransactionIdentifiers, LedgerHeader, LedgerProof, LocalTransactionReceipt,
+    StateVersion,
+};
 
-use std::collections::HashMap;
 use transaction::manifest;
 use transaction::prelude::*;
 
@@ -36,15 +39,15 @@ pub(crate) async fn handle_stream_transactions(
         return Err(client_error("limit must be positive"));
     }
 
-    if limit > MAX_STREAM_COUNT_PER_REQUEST.into() {
+    if limit > MAX_BATCH_COUNT_PER_REQUEST.into() {
         return Err(client_error(format!(
-            "limit must <= {MAX_STREAM_COUNT_PER_REQUEST}"
+            "limit must <= {MAX_BATCH_COUNT_PER_REQUEST}"
         )));
     }
 
     let limit = limit.try_into().expect("limit out of usize bounds");
 
-    let database = state.database.read();
+    let database = state.state_manager.database.read();
 
     if !database.is_local_transaction_execution_index_enabled() {
         return Err(client_error(
@@ -53,22 +56,46 @@ pub(crate) async fn handle_stream_transactions(
             Please note the resync will take a while.",
         ));
     }
+    let previous_state_identifiers = match from_state_version.previous() {
+        Ok(previous_state_version) => {
+            if previous_state_version.number() == 0 {
+                None
+            } else {
+                let identifiers = database
+                    .get_committed_transaction_identifiers(previous_state_version)
+                    .expect("Txn identifiers are missing");
+                Some(Box::new(to_api_committed_state_identifiers(
+                    previous_state_version,
+                    &identifiers.resultant_ledger_hashes,
+                )?))
+            }
+        }
+        Err(_) => None,
+    };
 
     let max_state_version = database.max_state_version();
 
     let mut response = models::StreamTransactionsResponse {
+        previous_state_identifiers,
         from_state_version: to_api_state_version(from_state_version)?,
-        count: MAX_STREAM_COUNT_PER_REQUEST as i32, // placeholder to get a better size aproximation for the header
+        count: MAX_BATCH_COUNT_PER_REQUEST as i32, // placeholder to get a better size aproximation for the header
         max_ledger_state_version: to_api_state_version(max_state_version)?,
         transactions: Vec::new(),
+        proofs: None,
     };
+
+    let mut proofs = Vec::new();
 
     // Reserve enough for the "header" fields
     let mut current_total_size = response.get_json_size();
-    let bundles = database
-        .get_committed_transaction_bundle_iter(from_state_version)
-        .take(limit);
-    for bundle in bundles {
+    let bundles_iter = database.get_committed_transaction_bundle_iter(from_state_version);
+    let proofs_iter = if request.include_proofs.is_some_and(|value| value) {
+        database.get_proof_iter(from_state_version)
+    } else {
+        Box::new(iter::empty())
+    };
+    let transactions_and_proofs_iter = TransactionAndProofIterator::new(bundles_iter, proofs_iter);
+    for (bundle, maybe_proof) in transactions_and_proofs_iter.take(limit) {
         let CommittedTransactionBundle {
             state_version,
             raw,
@@ -82,6 +109,7 @@ pub(crate) async fn handle_stream_transactions(
             }
         })?;
         let committed_transaction = to_api_committed_transaction(
+            Some(&database),
             &mapping_context,
             state_version,
             raw,
@@ -89,20 +117,27 @@ pub(crate) async fn handle_stream_transactions(
             receipt,
             identifiers,
         )?;
-
-        let committed_transaction_size = committed_transaction.get_json_size();
-        current_total_size += committed_transaction_size;
-
+        current_total_size += committed_transaction.get_json_size();
         response.transactions.push(committed_transaction);
 
-        if current_total_size > CAP_STREAM_RESPONSE_WHEN_ABOVE_BYTES {
+        if let Some(proof) = maybe_proof {
+            let api_proof = to_api_ledger_proof(&mapping_context, proof)?;
+            current_total_size += api_proof.get_json_size();
+            proofs.push(api_proof);
+        }
+
+        if current_total_size > CAP_BATCH_RESPONSE_WHEN_ABOVE_BYTES {
             break;
         }
     }
 
+    if request.include_proofs.is_some_and(|value| value) {
+        response.proofs = Some(proofs);
+    }
+
     let count: i32 = {
         let transaction_count = response.transactions.len();
-        if transaction_count > MAX_STREAM_COUNT_PER_REQUEST.into() {
+        if transaction_count > MAX_BATCH_COUNT_PER_REQUEST.into() {
             return Err(server_error("Too many transactions were loaded somehow"));
         }
         transaction_count
@@ -115,8 +150,90 @@ pub(crate) async fn handle_stream_transactions(
     Ok(response).map(Json)
 }
 
+pub fn to_api_ledger_proof(
+    mapping_context: &MappingContext,
+    proof: LedgerProof,
+) -> Result<models::LedgerProof, MappingError> {
+    let timestamped_signatures = proof
+        .timestamped_signatures
+        .into_iter()
+        .map(|timestamped_validator_signature| {
+            Ok(models::TimestampedValidatorSignature {
+                validator_key: Box::new(to_api_ecdsa_secp256k1_public_key(
+                    &timestamped_validator_signature.key,
+                )),
+                validator_address: to_api_component_address(
+                    mapping_context,
+                    &timestamped_validator_signature.validator_address,
+                )?,
+                timestamp_ms: timestamped_validator_signature.timestamp_ms,
+                signature: Box::new(models::EcdsaSecp256k1Signature {
+                    key_type: models::PublicKeyType::EcdsaSecp256k1,
+                    signature_hex: to_hex(timestamped_validator_signature.signature.to_vec()),
+                }),
+            })
+        })
+        .collect::<Result<_, _>>()?;
+    Ok(models::LedgerProof {
+        opaque_hash: to_api_hash(&proof.opaque),
+        ledger_header: Box::new(to_api_ledger_header(mapping_context, proof.ledger_header)?),
+        timestamped_signatures,
+    })
+}
+
+pub fn to_api_hash(hash: &Hash) -> String {
+    to_hex(hash)
+}
+
+pub fn to_api_ledger_header(
+    mapping_context: &MappingContext,
+    ledger_header: LedgerHeader,
+) -> Result<models::LedgerHeader, MappingError> {
+    let next_epoch = match ledger_header.next_epoch {
+        Some(next_epoch) => {
+            let validators = next_epoch
+                .validator_set
+                .into_iter()
+                .map(|active_validator_info| {
+                    Ok(models::ActiveValidator {
+                        address: to_api_component_address(
+                            mapping_context,
+                            &active_validator_info.address,
+                        )?,
+                        key: Box::new(to_api_ecdsa_secp256k1_public_key(
+                            &active_validator_info.key,
+                        )),
+                        stake: to_api_decimal(&active_validator_info.stake),
+                    })
+                })
+                .collect::<Result<_, _>>()?;
+            Some(Box::new(models::NextEpoch {
+                epoch: to_api_epoch(mapping_context, next_epoch.epoch)?,
+                validators,
+            }))
+        }
+        None => None,
+    };
+    Ok(models::LedgerHeader {
+        epoch: to_api_epoch(mapping_context, ledger_header.epoch)?,
+        round: to_api_round(ledger_header.round)?,
+        state_version: to_api_state_version(ledger_header.state_version)?,
+        hashes: Box::new(models::LedgerHashes {
+            state_tree_hash: to_api_state_tree_hash(&ledger_header.hashes.state_root),
+            transaction_tree_hash: to_api_transaction_tree_hash(
+                &ledger_header.hashes.transaction_root,
+            ),
+            receipt_tree_hash: to_api_receipt_tree_hash(&ledger_header.hashes.receipt_root),
+        }),
+        consensus_parent_round_timestamp_ms: ledger_header.consensus_parent_round_timestamp_ms,
+        proposer_timestamp_ms: ledger_header.proposer_timestamp_ms,
+        next_epoch,
+    })
+}
+
 #[tracing::instrument(skip_all)]
 pub fn to_api_committed_transaction(
+    database: Option<&StateManagerDatabase>,
     context: &MappingContext,
     state_version: StateVersion,
     raw_ledger_transaction: RawLedgerTransaction,
@@ -124,7 +241,7 @@ pub fn to_api_committed_transaction(
     receipt: LocalTransactionReceipt,
     identifiers: CommittedTransactionIdentifiers,
 ) -> Result<models::CommittedTransaction, MappingError> {
-    let receipt = to_api_receipt(context, receipt)?;
+    let receipt = to_api_receipt(database, context, receipt)?;
 
     Ok(models::CommittedTransaction {
         resultant_state_identifiers: Box::new(to_api_committed_state_identifiers(
@@ -137,6 +254,7 @@ pub fn to_api_committed_transaction(
             &ledger_transaction,
             &identifiers.payload,
         )?),
+        proposer_timestamp_ms: identifiers.proposer_timestamp_ms,
         receipt: Box::new(receipt),
     })
 }
@@ -178,9 +296,19 @@ pub fn to_api_ledger_transaction(
                 round_update_transaction: Box::new(to_api_round_update_transaction(context, tx)?),
             }
         }
-        LedgerTransaction::Genesis(tx) => models::LedgerTransaction::GenesisLedgerTransaction {
-            payload_hex,
-            system_transaction: Box::new(to_api_system_transaction(context, tx)?),
+        LedgerTransaction::Genesis(tx) => match tx.as_ref() {
+            GenesisTransaction::Flash => models::LedgerTransaction::GenesisLedgerTransaction {
+                payload_hex,
+                is_flash: true,
+                system_transaction: None,
+            },
+            GenesisTransaction::Transaction(tx) => {
+                models::LedgerTransaction::GenesisLedgerTransaction {
+                    payload_hex,
+                    is_flash: false,
+                    system_transaction: Some(Box::new(to_api_system_transaction(context, tx)?)),
+                }
+            }
         },
     })
 }
@@ -206,6 +334,7 @@ pub fn to_api_notarized_transaction(
 
     Ok(models::NotarizedTransaction {
         hash: to_api_notarized_transaction_hash(notarized_transaction_hash),
+        hash_bech32m: to_api_hash_bech32m(context, notarized_transaction_hash)?,
         payload_hex,
         signed_intent: Box::new(to_api_signed_intent(
             context,
@@ -226,6 +355,7 @@ pub fn to_api_signed_intent(
 ) -> Result<models::SignedTransactionIntent, MappingError> {
     Ok(models::SignedTransactionIntent {
         hash: to_api_signed_intent_hash(signed_intent_hash),
+        hash_bech32m: to_api_hash_bech32m(context, signed_intent_hash)?,
         intent: Box::new(to_api_intent(context, &signed_intent.intent, intent_hash)?),
         intent_signatures: signed_intent
             .intent_signatures
@@ -246,7 +376,7 @@ pub fn to_api_intent(
         header,
         instructions,
         blobs,
-        attachments: _,
+        message,
     } = intent;
 
     let header = Box::new(models::TransactionHeader {
@@ -280,17 +410,111 @@ pub fn to_api_intent(
                 .blobs
                 .iter()
                 .map(|blob| (to_hex(hash(&blob.0)), to_hex(&blob.0)))
-                .collect::<HashMap<String, String>>(),
+                .collect(),
         )
+    } else {
+        None
+    };
+
+    let message = if context.transaction_options.include_message {
+        match message {
+            MessageV1::None => None,
+            MessageV1::Plaintext(plaintext) => Some(to_api_plaintext_message(context, plaintext)?),
+            MessageV1::Encrypted(encrypted) => Some(to_api_encrypted_message(context, encrypted)?),
+        }
+        .map(Box::new)
     } else {
         None
     };
 
     Ok(models::TransactionIntent {
         hash: to_api_intent_hash(intent_hash),
+        hash_bech32m: to_api_hash_bech32m(context, intent_hash)?,
         header,
         instructions,
         blobs_hex,
+        message,
+    })
+}
+
+fn to_api_plaintext_message(
+    context: &MappingContext,
+    plaintext: &PlaintextMessageV1,
+) -> Result<models::TransactionMessage, MappingError> {
+    Ok(models::TransactionMessage::PlaintextTransactionMessage {
+        mime_type: plaintext.mime_type.clone(),
+        content: Box::new(to_api_plaintext_message_content(
+            context,
+            &plaintext.message,
+        )?),
+    })
+}
+
+fn to_api_plaintext_message_content(
+    _context: &MappingContext,
+    content: &MessageContentsV1,
+) -> Result<models::PlaintextMessageContent, MappingError> {
+    Ok(match content {
+        MessageContentsV1::String(string) => {
+            models::PlaintextMessageContent::StringPlaintextMessageContent {
+                value: string.clone(),
+            }
+        }
+        MessageContentsV1::Bytes(bytes) => {
+            models::PlaintextMessageContent::BinaryPlaintextMessageContent {
+                value_hex: to_hex(bytes),
+            }
+        }
+    })
+}
+
+fn to_api_encrypted_message(
+    context: &MappingContext,
+    encrypted: &EncryptedMessageV1,
+) -> Result<models::TransactionMessage, MappingError> {
+    Ok(models::TransactionMessage::EncryptedTransactionMessage {
+        encrypted_hex: to_hex(&encrypted.encrypted.0),
+        curve_decryptor_sets: encrypted
+            .decryptors_by_curve
+            .values()
+            .map(|decryptor_set| to_api_decryptor_set(context, decryptor_set))
+            .collect::<Result<_, _>>()?,
+    })
+}
+
+fn to_api_decryptor_set(
+    context: &MappingContext,
+    decryptor_set: &DecryptorsByCurve,
+) -> Result<models::EncryptedMessageCurveDecryptorSet, MappingError> {
+    let (dh_ephemeral_public_key, decryptors) = match decryptor_set {
+        DecryptorsByCurve::Ed25519 {
+            dh_ephemeral_public_key,
+            decryptors,
+        } => (PublicKey::Ed25519(*dh_ephemeral_public_key), decryptors),
+        DecryptorsByCurve::Secp256k1 {
+            dh_ephemeral_public_key,
+            decryptors,
+        } => (PublicKey::Secp256k1(*dh_ephemeral_public_key), decryptors),
+    };
+    Ok(models::EncryptedMessageCurveDecryptorSet {
+        dh_ephemeral_public_key: Some(to_api_public_key(&dh_ephemeral_public_key)),
+        decryptors: decryptors
+            .iter()
+            .map(|(public_key_fingerprint, aes_wrapped_key)| {
+                to_api_decryptor(context, public_key_fingerprint, aes_wrapped_key)
+            })
+            .collect::<Result<_, _>>()?,
+    })
+}
+
+fn to_api_decryptor(
+    _context: &MappingContext,
+    public_key_fingerprint: &PublicKeyFingerprint,
+    aes_wrapped_key: &AesWrapped128BitKey,
+) -> Result<models::EncryptedMessageDecryptor, MappingError> {
+    Ok(models::EncryptedMessageDecryptor {
+        public_key_fingerprint_hex: to_hex(public_key_fingerprint.0),
+        aes_wrapped_key_hex: to_hex(aes_wrapped_key.0),
     })
 }
 
@@ -320,12 +544,6 @@ pub fn to_api_round_update_transaction(
             is_fallback: leader_proposal_history.is_fallback,
         }),
     })
-}
-
-fn to_api_active_validator_index(index: ValidatorIndex) -> models::ActiveValidatorIndex {
-    models::ActiveValidatorIndex {
-        index: index as i32,
-    }
 }
 
 pub fn to_api_system_transaction(

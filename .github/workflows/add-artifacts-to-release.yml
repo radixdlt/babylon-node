@@ -125,27 +125,20 @@ jobs:
           ls -lah libcorerust-${{ matrix.target }}
           zip -j babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip libcorerust-${{ matrix.target }}/${{ matrix.artifact }}
       - if: github.event_name == 'release'
-        name: Get release
-        id: get_release
-        uses: bruceadams/get-release@74c3d60f5a28f358ccf241a00c9021ea16f0569f
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-      - if: github.event_name == 'release'
         id: get_version
         name: Get radixdlt version
         uses: ./.github/actions/get-version
         with:
-          is_release: true
-      - if: github.event_name == 'release'
-        name: Upload distribution zip
-        uses: actions/upload-release-asset@e8f9f06c4b078e705bd2ea027f0926603fc9b4d5
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          is_release: true      
+
+      - name: Upload distribution zip
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@c9b46fe7aad9f02afd89b12450b780f52dacfb2d
         with:
-          upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip
-          asset_name: babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip
-          asset_content_type: application/zip
+          files: |
+            babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip
+      
+        
 
   publish-distribution-zip:
     if: github.event_name == 'release'
@@ -178,24 +171,43 @@ jobs:
         with:
           is_release: true
           gradle_command: clean build -x test
-      - name: Get release
-        id: get_release
-        uses: bruceadams/get-release@f589ce0779c7bef1faf175f7488c972eb47dc046
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
       - id: get_version
         name: Get radixdlt version
         uses: ./.github/actions/get-version
         with:
           is_release: true
       - name: List files
-        run: ls -la ./core/build/distributions/
+        run: |
+          ls -la ./core/build/distributions/
+          mv ./core/build/distributions/core-${{ steps.get_version.outputs.radixdlt_version }}.zip babylon-node-${{ steps.get_version.outputs.radixdlt_version }}.zip
       - name: Upload distribution zip
-        uses: actions/upload-release-asset@e8f9f06c4b078e705bd2ea027f0926603fc9b4d5
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@c9b46fe7aad9f02afd89b12450b780f52dacfb2d
         with:
-          upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: ./core/build/distributions/core-${{ steps.get_version.outputs.radixdlt_version }}.zip
-          asset_name: babylon-node-${{ steps.get_version.outputs.radixdlt_version }}.zip
-          asset_content_type: application/zip
+          files: |
+            babylon-node-${{ steps.get_version.outputs.radixdlt_version }}.zip
+
+  snyk-sbom:
+    if: github.event_name == 'release'
+    name: SBOM
+    runs-on: ubuntu-latest
+    permissions: write-all
+    steps:
+      - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b
+      - uses: radixdlt/public-iac-resuable-artifacts/fetch-secrets@main
+        with:
+          role_name: ${{ secrets.AWS_ROLE_NAME_SNYK_SECRET }}
+          app_name: 'babylon-node'
+          step_name: 'snyk-sbom'
+          secret_prefix: 'SNYK'
+          secret_name: ${{ secrets.AWS_SECRET_NAME_SNYK }}
+          parse_json: true
+      - name: Generate SBOM
+        uses: snyk/actions/gradle-jdk17@b98d498629f1c368650224d6d212bf7dfa89e4bf # v0.4.0
+        with:
+          args: --all-projects --org=${{ env.SNYK_NETWORK_ORG_ID }} --format=cyclonedx1.4+json --json-file-output sbom.json
+          command: sbom
+      - name: Upload SBOM
+        uses: softprops/action-gh-release@c9b46fe7aad9f02afd89b12450b780f52dacfb2d
+        with:
+          files: |
+            sbom.json
