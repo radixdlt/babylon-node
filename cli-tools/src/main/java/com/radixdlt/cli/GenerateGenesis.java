@@ -65,6 +65,7 @@
 package com.radixdlt.cli;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.primitives.Ints;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
@@ -84,6 +85,7 @@ import com.radixdlt.utils.UniqueListBuilder;
 import java.io.File;
 import java.util.Base64;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.IntStream;
 import org.apache.commons.cli.*;
@@ -197,17 +199,24 @@ public final class GenerateGenesis {
     if (validatorsCount > 0) {
       // For some reason we use the presence of the validatorsCount command to decide whether we are
       // running this for docker, or for an actual environment...
-      System.out.format("export RADIXDLT_GENESIS_DATA=%s%n", compressedGenesisDataBase64);
+      System.out.format(
+          """
+          export RADIXDLT_GENESIS_DATA=%s
+          """, compressedGenesisDataBase64);
     } else {
       System.out.format(
-          "The base64-encoded genesis for use with RADIXDLT_GENESIS_DATA / network.genesis_data"
-              + " is:%n%s%n",
+          """
+          The base64-encoded genesis for use with network.genesis_data (RADIXDLT_GENESIS_DATA) is:
+          %s
+          """,
           compressedGenesisDataBase64);
       System.out.println();
       var filePath = new File("genesis_data.bin").getAbsolutePath();
       System.out.format(
-          "Also saving the genesis data file in binary format for use with"
-              + " RADIXDLT_GENESIS_DATA_FILE / network.genesis_data_file to: %s%n",
+          """
+          Also saving the genesis data file in binary format for use with network.genesis_data_file (RADIXDLT_GENESIS_DATA_FILE) to:
+          %s
+          """,
           filePath);
       try (var outputStream = new java.io.FileOutputStream(filePath)) {
         outputStream.write(compressedGenesisData);
@@ -215,23 +224,19 @@ public final class GenerateGenesis {
     }
   }
 
+  @SuppressWarnings("UnstableApiUsage")
   private static Network parseNetwork(String commandLineValue) {
-    final var asName = Network.ofName(commandLineValue);
-    if (asName.isPresent()) {
-      return asName.get();
-    }
-    try {
-      final var asId = Network.ofId(Integer.parseInt(commandLineValue));
-      if (asId.isPresent()) {
-        return asId.get();
-      }
-      throw new RuntimeException("Was not a valid network id");
-    } catch (Exception ex) {
-      throw new RuntimeException(
-          "Could not resolve (lower case) logical network name, or network id. Try specifying eg"
-              + " -Pnetwork=gilganet",
-          ex);
-    }
+    return Network.ofName(commandLineValue)
+        .orElseGet(
+            () ->
+                Optional.ofNullable(Ints.tryParse(commandLineValue))
+                    .flatMap(Network::ofId)
+                    .orElseThrow(
+                        () ->
+                            new RuntimeException(
+                                """
+                Could not resolve (lower case) logical network name, or network id.
+                Try specifying eg -Pnetwork=gilganet""")));
   }
 
   private static GenesisData createGenesisData(
