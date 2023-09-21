@@ -225,21 +225,22 @@ fn allows_deposit(
     vault_exists: bool,
     is_xrd: bool,
 ) -> bool {
-    match resource_preference {
-        // An explicit resource preference allows it:
-        Some(AccountResourcePreference::Allowed) => true,
-        // An explicit resource preference disallows it, but a present authorized badge can override this:
-        Some(AccountResourcePreference::Disallowed) => badge_of_authorized_depositor == &Some(true),
-        // No explicit resource preference - try the same logic with the default deposit rule:
-        None => {
-            match default_deposit_rule {
-                // The default rule allows it:
-                DefaultDepositRule::Accept => true,
-                // The default rule disallows it, but a present authorized badge can override this:
-                DefaultDepositRule::Reject => badge_of_authorized_depositor == &Some(true),
-                // The extra case of the default rule, allowing existing vaults *or* XRD:
-                DefaultDepositRule::AllowExisting => vault_exists || is_xrd,
-            }
-        }
+    // A presented, valid authorized depositor badge can override all other account settings:
+    if badge_of_authorized_depositor == &Some(true) {
+        return true;
+    }
+    // If not presented (or not in the AD list), then a resource preference decides:
+    if let Some(resource_preference) = resource_preference {
+        return match resource_preference {
+            AccountResourcePreference::Allowed => true,
+            AccountResourcePreference::Disallowed => false,
+        };
+    }
+    // If the preference is not configured for the given resource, then the default rule decides:
+    match default_deposit_rule {
+        DefaultDepositRule::Accept => true,
+        DefaultDepositRule::Reject => false,
+        // The extra case of the default rule, allowing existing vaults *or* XRD:
+        DefaultDepositRule::AllowExisting => vault_exists || is_xrd,
     }
 }
