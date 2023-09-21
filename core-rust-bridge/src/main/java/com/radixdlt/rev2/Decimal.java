@@ -78,12 +78,16 @@ import org.bouncycastle.util.Arrays;
 /**
  * Decimal represents a 192 bit representation of a fixed-scale decimal number. Note that the Java
  * implementation is fairly basic and mostly acts as a container for node<->engine interop.
- * Internally it uses an *unsigned* 192-bit integer representation, and only exposes a handful of
- * operations that behave the same way for signed and unsigned numbers (e.g. add, sub).
+ * Internally it uses an *unsigned* 192-bit integer representation, which Decimal interprets
+ * as a signed integer, and only exposes a handful of operations that behave the same
+ * way for signed and unsigned numbers (e.g. add, sub).
  */
 @SecurityCritical(SecurityKind.NUMERIC)
 public class Decimal implements Comparable<Decimal> {
 
+  /* Note that UInt192.from(new BigInteger(-31...).toByteArray) works here only because
+  the binary representation of this negative integer is 24 bytes, and can be correctly
+  interpreted as a negative Decimal value. This isn't safe for any negative number. */
   public static final Decimal MIN_VALUE =
       Decimal.fromUnsignedFixedPointRepresentation(
           UInt192.from(
