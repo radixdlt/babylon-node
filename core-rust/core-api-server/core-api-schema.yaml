@@ -6140,18 +6140,6 @@ components:
           type: string
           description: |
             A descriptor for the current protocol version that the node is running.
-    Epoch:
-      type: integer
-      format: int64
-      minimum: 0
-      maximum: 10000000000
-      description: An integer between `0` and `10^10`, marking the epoch.
-    Round:
-      type: integer
-      format: int64
-      minimum: 0
-      maximum: 10000000000
-      description: An integer between `0` and `10^10`, marking the current round in an epoch
     EpochRound:
       type: object
       required:
