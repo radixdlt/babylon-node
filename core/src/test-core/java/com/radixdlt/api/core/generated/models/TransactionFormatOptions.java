@@ -120,11 +120,11 @@ public class TransactionFormatOptions {
   }
 
    /**
-   * Whether to return the transaction message (default false)
+   * Whether to return the transaction message (default true)
    * @return message
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "Whether to return the transaction message (default false)")
+  @ApiModelProperty(value = "Whether to return the transaction message (default true)")
   @JsonProperty(JSON_PROPERTY_MESSAGE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 

@@ -32,7 +32,7 @@ export interface TransactionFormatOptions {
      */
     blobs?: boolean;
     /**
-     * Whether to return the transaction message (default false)
+     * Whether to return the transaction message (default true)
      * @type {boolean}
      * @memberof TransactionFormatOptions
      */

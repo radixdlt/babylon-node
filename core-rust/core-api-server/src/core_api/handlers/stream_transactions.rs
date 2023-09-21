@@ -22,7 +22,7 @@ pub(crate) async fn handle_stream_transactions(
     Json(request): Json<models::StreamTransactionsRequest>,
 ) -> Result<Json<models::StreamTransactionsResponse>, ResponseError<()>> {
     assert_matching_network(&request.network, &state.network)?;
-    let mapping_context = MappingContext::new(&state.network)
+    let mapping_context = MappingContext::new_for_transaction_stream(&state.network)
         .with_sbor_formats(&request.sbor_format_options)
         .with_transaction_formats(&request.transaction_format_options)
         .with_substate_formats(&request.substate_format_options);

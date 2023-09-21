@@ -17,7 +17,7 @@ pub struct SborFormatOptions {
     /// Whether to return the raw hex-encoded bytes (default true)
     #[serde(rename = "raw", skip_serializing_if = "Option::is_none")]
     pub raw: Option<bool>,
-    /// Whether to return the programmatic json format (default true)
+    /// Whether to return the programmatic json format (normally default true, defaults false for streamed transactions)
     #[serde(rename = "programmatic_json", skip_serializing_if = "Option::is_none")]
     pub programmatic_json: Option<bool>,
 }

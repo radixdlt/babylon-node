@@ -56,6 +56,12 @@ export interface CommittedTransaction {
      * @memberof CommittedTransaction
      */
     receipt: TransactionReceipt;
+    /**
+     * An integer between `0` and `10^14`, marking the proposer timestamp in ms.
+     * @type {number}
+     * @memberof CommittedTransaction
+     */
+    proposer_timestamp_ms: number;
 }
 
 /**
@@ -66,6 +72,7 @@ export function instanceOfCommittedTransaction(value: object): boolean {
     isInstance = isInstance && "resultant_state_identifiers" in value;
     isInstance = isInstance && "ledger_transaction" in value;
     isInstance = isInstance && "receipt" in value;
+    isInstance = isInstance && "proposer_timestamp_ms" in value;
 
     return isInstance;
 }
@@ -83,6 +90,7 @@ export function CommittedTransactionFromJSONTyped(json: any, ignoreDiscriminator
         'resultant_state_identifiers': CommittedStateIdentifierFromJSON(json['resultant_state_identifiers']),
         'ledger_transaction': LedgerTransactionFromJSON(json['ledger_transaction']),
         'receipt': TransactionReceiptFromJSON(json['receipt']),
+        'proposer_timestamp_ms': json['proposer_timestamp_ms'],
     };
 }
 
@@ -98,6 +106,7 @@ export function CommittedTransactionToJSON(value?: CommittedTransaction | null):
         'resultant_state_identifiers': CommittedStateIdentifierToJSON(value.resultant_state_identifiers),
         'ledger_transaction': LedgerTransactionToJSON(value.ledger_transaction),
         'receipt': TransactionReceiptToJSON(value.receipt),
+        'proposer_timestamp_ms': value.proposer_timestamp_ms,
     };
 }
 

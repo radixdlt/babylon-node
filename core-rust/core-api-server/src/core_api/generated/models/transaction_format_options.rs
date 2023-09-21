@@ -20,7 +20,7 @@ pub struct TransactionFormatOptions {
     /// Whether to return the hex-encoded blobs (default false)
     #[serde(rename = "blobs", skip_serializing_if = "Option::is_none")]
     pub blobs: Option<bool>,
-    /// Whether to return the transaction message (default false)
+    /// Whether to return the transaction message (default true)
     #[serde(rename = "message", skip_serializing_if = "Option::is_none")]
     pub message: Option<bool>,
     /// Whether to return the raw hex-encoded system transaction bytes (default false)

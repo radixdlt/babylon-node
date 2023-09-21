@@ -78,11 +78,11 @@ public class SborFormatOptions {
   }
 
    /**
-   * Whether to return the programmatic json format (default true)
+   * Whether to return the programmatic json format (normally default true, defaults false for streamed transactions)
    * @return programmaticJson
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "Whether to return the programmatic json format (default true)")
+  @ApiModelProperty(value = "Whether to return the programmatic json format (normally default true, defaults false for streamed transactions)")
   @JsonProperty(JSON_PROPERTY_PROGRAMMATIC_JSON)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
