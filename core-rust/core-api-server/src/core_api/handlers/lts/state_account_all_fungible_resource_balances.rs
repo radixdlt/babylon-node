@@ -2,7 +2,7 @@ use crate::core_api::*;
 use radix_engine::types::*;
 use radix_engine_queries::typed_substate_layout::*;
 use state_manager::query::{dump_component_state, VaultData};
-use state_manager::store::traits::QueryableProofStore;
+
 use std::ops::Deref;
 
 #[tracing::instrument(skip(state))]
@@ -33,10 +33,7 @@ pub(crate) async fn handle_lts_state_account_all_fungible_resource_balances(
     }
 
     let database = state.state_manager.database.read();
-    let header = database
-        .get_last_proof()
-        .expect("proof for outputted state must exist")
-        .ledger_header;
+    let header = read_current_ledger_header(database.deref());
 
     let type_info: Option<TypeInfoSubstate> = read_optional_substate::<TypeInfoSubstate>(
         database.deref(),

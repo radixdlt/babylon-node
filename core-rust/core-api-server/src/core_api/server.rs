@@ -130,6 +130,10 @@ pub async fn create_server<F>(
             post(lts::handle_lts_state_account_fungible_resource_balance),
         )
         .route(
+            "/lts/state/account-deposit-behaviour",
+            post(lts::handle_lts_state_account_deposit_behaviour),
+        )
+        .route(
             "/lts/stream/transaction-outcomes",
             post(lts::handle_lts_stream_transaction_outcomes),
         )

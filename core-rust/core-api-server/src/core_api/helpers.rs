@@ -2,12 +2,14 @@ use radix_engine::types::*;
 
 use radix_engine::system::system_substates::{FieldSubstate, KeyValueEntrySubstate};
 use radix_engine_interface::api::CollectionIndex;
+use radix_engine_store_interface::{db_key_mapper::*, interface::SubstateDatabase};
 use serde::Serialize;
+use state_manager::store::traits::*;
 use state_manager::store::StateManagerDatabase;
+use state_manager::LedgerHeader;
 use std::io::Write;
 
 use super::*;
-use radix_engine_store_interface::{db_key_mapper::*, interface::SubstateDatabase};
 
 #[allow(unused)]
 pub(crate) fn read_typed_substate(
@@ -104,6 +106,22 @@ pub(crate) fn read_optional_collection_substate<D: ScryptoDecode>(
 }
 
 #[tracing::instrument(skip_all)]
+pub(crate) fn read_optional_collection_substate_value<D: ScryptoDecode>(
+    database: &StateManagerDatabase,
+    node_id: &NodeId,
+    collection_index: CollectionIndex,
+    substate_key: &SubstateKey,
+) -> Result<Option<D>, MappingError> {
+    read_optional_collection_substate::<D>(database, node_id, collection_index, substate_key)
+        .map(|value| {
+            value
+                .into_value()
+                .ok_or(MappingError::KeyValueStoreEntryUnexpectedlyAbsent)
+        })
+        .transpose()
+}
+
+#[tracing::instrument(skip_all)]
 pub(crate) fn read_optional_substate<D: ScryptoDecode>(
     database: &StateManagerDatabase,
     node_id: &NodeId,
@@ -111,6 +129,14 @@ pub(crate) fn read_optional_substate<D: ScryptoDecode>(
     substate_key: &SubstateKey,
 ) -> Option<D> {
     database.get_mapped::<SpreadPrefixKeyMapper, D>(node_id, partition_number, substate_key)
+}
+
+#[tracing::instrument(skip_all)]
+pub(crate) fn read_current_ledger_header(database: &StateManagerDatabase) -> LedgerHeader {
+    database
+        .get_last_proof()
+        .expect("proof for outputted state must exist")
+        .ledger_header
 }
 
 struct ByteCountWriter<'a> {

@@ -4,7 +4,7 @@ use radix_engine::types::*;
 use radix_engine::blueprints::consensus_manager::ValidatorField;
 use radix_engine::system::node_modules::role_assignment::RoleAssignmentField;
 use state_manager::query::dump_component_state;
-use state_manager::store::traits::QueryableProofStore;
+
 use std::ops::Deref;
 
 use super::component_dump_to_vaults_and_nodes;
@@ -49,10 +49,7 @@ pub(crate) async fn handle_state_validator(
     let (vaults, descendent_nodes) =
         component_dump_to_vaults_and_nodes(&mapping_context, component_dump)?;
 
-    let header = database
-        .get_last_proof()
-        .expect("proof for outputted state must exist")
-        .ledger_header;
+    let header = read_current_ledger_header(database.deref());
 
     Ok(models::StateValidatorResponse {
         at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
