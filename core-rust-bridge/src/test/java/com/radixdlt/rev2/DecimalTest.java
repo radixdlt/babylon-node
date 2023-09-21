@@ -118,9 +118,7 @@ public final class DecimalTest {
 
   @Test
   public void test_negative_and_large_numbers_and_to_string() {
-    assertEquals(
-        "-0.000000000000000001",
-        Decimal.MIN_VALUE.add(Decimal.MAX_VALUE).toString());
+    assertEquals("-0.000000000000000001", Decimal.MIN_VALUE.add(Decimal.MAX_VALUE).toString());
 
     assertEquals(
         Decimal.fromNonNegativeBigIntegerSubunits(BigInteger.ONE).toString(),

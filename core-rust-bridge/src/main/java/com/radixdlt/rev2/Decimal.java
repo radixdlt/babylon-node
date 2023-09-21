@@ -70,11 +70,10 @@ import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.CustomTypeKnownLengthCodec;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.utils.Bytes;
+import com.radixdlt.utils.UInt192;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Objects;
-
-import com.radixdlt.utils.UInt192;
 import org.bouncycastle.util.Arrays;
 
 /**
@@ -175,9 +174,7 @@ public final class Decimal {
     the same way for signed/unsigned representation.
     TODO: consider optimizing */
     return fromBytes(
-        UInt192.from(underlyingValue)
-          .add(UInt192.from(other.underlyingValue))
-        .toByteArray());
+        UInt192.from(underlyingValue).add(UInt192.from(other.underlyingValue)).toByteArray());
   }
 
   public Decimal subtract(Decimal other) {
@@ -185,10 +182,8 @@ public final class Decimal {
     This is currently only used in tests.
     Using UInt192 for calculations - subtraction arithmetic works
     the same way for signed/unsigned representation.
-    TODO: consider optimizing */    return new Decimal(
-        UInt192.from(underlyingValue)
-          .subtract(UInt192.from(other.underlyingValue))
-          .toByteArray());
+    TODO: consider optimizing */ return new Decimal(
+        UInt192.from(underlyingValue).subtract(UInt192.from(other.underlyingValue)).toByteArray());
   }
 
   public byte[] toByteArray() {
