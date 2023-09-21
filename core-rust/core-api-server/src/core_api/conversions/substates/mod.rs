@@ -31,7 +31,7 @@ pub use type_info_module::*;
 //====================================
 
 use super::MappingError;
-use radix_engine::system::system_substates::{KeyValueEntrySubstate, SubstateMutability};
+use radix_engine::system::system_substates::{KeyValueEntrySubstate, LockStatus};
 
 macro_rules! assert_key_type {
     (
@@ -67,7 +67,7 @@ macro_rules! field_substate {
             // redundant - so add this allow statement to allow us just to include it regardless.
             #[allow(redundant_semicolons)]
             models::Substate::[<$substate_type Substate>] {
-                is_locked: matches!($substate.mutability(), SubstateMutability::Immutable),
+                is_locked: matches!($substate.lock_status(), LockStatus::Locked),
                 value: {
                     // NB: We should use compiler to unpack to ensure we map all fields
                     let $value_unpacking = $substate.payload();
@@ -95,7 +95,7 @@ macro_rules! field_substate_versioned {
             // redundant - so add this allow statement to allow us just to include it regardless.
             #[allow(redundant_semicolons)]
             models::Substate::[<$substate_type Substate>] {
-                is_locked: matches!($substate.mutability(), SubstateMutability::Immutable),
+                is_locked: matches!($substate.lock_status(), LockStatus::Locked),
                 value: {
                     // NB: We should use compiler to unpack to ensure we map all fields
                     let $value_unpacking = $substate.payload().as_latest_ref()
@@ -146,7 +146,7 @@ macro_rules! key_value_store_optional_substate {
     ) => {
         paste::paste! {
             models::Substate::[<$substate_type Substate>] {
-                is_locked: matches!($substate.mutability(), SubstateMutability::Immutable),
+                is_locked: matches!($substate.lock_status(), LockStatus::Locked),
                 key: Box::new($key),
                 value: $substate
                     .get_optional_value()
@@ -169,7 +169,7 @@ macro_rules! key_value_store_optional_substate_versioned {
     ) => {
         paste::paste! {
             models::Substate::[<$substate_type Substate>] {
-                is_locked: matches!($substate.mutability(), SubstateMutability::Immutable),
+                is_locked: matches!($substate.lock_status(), LockStatus::Locked),
                 key: Box::new($key),
                 value: $substate
                     .get_optional_value()
@@ -198,7 +198,7 @@ macro_rules! key_value_store_mandatory_substate {
             {
                 let $value_unpacking = $substate.get_definitely_present_value()?;
                 models::Substate::[<$substate_type Substate>] {
-                    is_locked: matches!($substate.mutability(), SubstateMutability::Immutable),
+                    is_locked: matches!($substate.lock_status(), LockStatus::Locked),
                     key: Box::new($key),
                     value: Box::new(models::[<$substate_type Value>] $fields)
                 }
@@ -220,7 +220,7 @@ macro_rules! key_value_store_mandatory_substate_versioned {
                 let $value_unpacking = $substate.get_definitely_present_value()?.as_latest_ref()
                     .ok_or(MappingError::ObsoleteSubstateVersion)?;
                 models::Substate::[<$substate_type Substate>] {
-                    is_locked: matches!($substate.mutability(), SubstateMutability::Immutable),
+                    is_locked: matches!($substate.lock_status(), LockStatus::Locked),
                     key: Box::new($key),
                     value: Box::new(models::[<$substate_type Value>] $fields)
                 }

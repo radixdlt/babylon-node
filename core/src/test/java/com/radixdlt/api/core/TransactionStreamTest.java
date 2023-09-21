@@ -105,26 +105,39 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
 
       test.runUntilState(allCommittedTransactionSuccess(transaction.raw()), 100);
 
-      var lastTransaction =
+      var lastLedgerTransaction =
           (UserLedgerTransaction)
-              Iterables.getLast(
-                      getStreamApi()
-                          .streamTransactionsPost(
-                              new StreamTransactionsRequest()
-                                  .network(networkLogicalName)
-                                  .transactionFormatOptions(
-                                      new TransactionFormatOptions().rawLedgerTransaction(true))
-                                  .limit(1000)
-                                  .fromStateVersion(1L))
-                          .getTransactions())
-                  .getLedgerTransaction();
+              readAllTransactionsFromStreamAndReturnLast().getLedgerTransaction();
 
       // In order for this assertion to pass, we must have downloaded all the scenario transactions
       // in the above first page of data.
       // This ensures that genesis and all scenarios must have data which can be mapped by the
       // Core API Transaction Stream
-      assertThat(lastTransaction.getNotarizedTransaction().getPayloadHex())
+      assertThat(lastLedgerTransaction.getNotarizedTransaction().getPayloadHex())
           .isEqualTo(transaction.hexPayloadBytes());
+    }
+  }
+
+  private CommittedTransaction readAllTransactionsFromStreamAndReturnLast() throws Exception {
+    var fromStateVersion = 1L;
+    while (true) {
+      var pageResponse =
+          getStreamApi()
+              .streamTransactionsPost(
+                  new StreamTransactionsRequest()
+                      .network(networkLogicalName)
+                      .transactionFormatOptions(
+                          new TransactionFormatOptions().rawLedgerTransaction(true))
+                      .limit(1000)
+                      .fromStateVersion(fromStateVersion));
+      var lastItem = Iterables.getLast(pageResponse.getTransactions());
+      if (pageResponse
+          .getMaxLedgerStateVersion()
+          .equals(lastItem.getResultantStateIdentifiers().getStateVersion())) {
+        return lastItem;
+      } else {
+        fromStateVersion = lastItem.getResultantStateIdentifiers().getStateVersion() + 1;
+      }
     }
   }
 

@@ -1,7 +1,6 @@
 use super::super::*;
 use super::*;
 use crate::core_api::models;
-use radix_engine::system::system_substates::SubstateMutability;
 
 use radix_engine::types::*;
 use radix_engine_queries::typed_substate_layout::*;
