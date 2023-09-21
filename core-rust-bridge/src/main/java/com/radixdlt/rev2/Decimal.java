@@ -180,7 +180,7 @@ public final class Decimal {
     TODO: consider optimizing */
     return new Decimal(
         new BigInteger(underlyingValue)
-          .add(new BigInteger(other.underlyingValue))
+          .subtract(new BigInteger(other.underlyingValue))
           .toByteArray());
   }
 
