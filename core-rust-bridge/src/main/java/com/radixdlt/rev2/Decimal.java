@@ -73,12 +73,14 @@ import com.radixdlt.utils.Bytes;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Objects;
+
+import com.radixdlt.utils.UInt192;
 import org.bouncycastle.util.Arrays;
 
 /**
  * Decimal represents a 192 bit representation of a fixed-scale decimal number. Note that the Java
  * implementation is fairly basic and mostly acts as a container for node<->engine interop. Some
- * basic operations (e.g. add, subtract) have been implemented using BigInteger.
+ * basic operations (e.g. add, subtract) have been implemented using UInt192.
  */
 @SecurityCritical(SecurityKind.NUMERIC)
 public final class Decimal {
@@ -167,20 +169,25 @@ public final class Decimal {
   }
 
   public Decimal add(Decimal other) {
-    /* This is currently only used in tests.
+    /*
+    This is currently only used in tests.
+    Using UInt192 for calculations - addition arithmetic works
+    the same way for signed/unsigned representation.
     TODO: consider optimizing */
-    return new Decimal(
-        new BigInteger(underlyingValue)
-          .add(new BigInteger(other.underlyingValue))
+    return fromBytes(
+        UInt192.from(underlyingValue)
+          .add(UInt192.from(other.underlyingValue))
         .toByteArray());
   }
 
   public Decimal subtract(Decimal other) {
-    /* This is currently only used in tests.
-    TODO: consider optimizing */
-    return new Decimal(
-        new BigInteger(underlyingValue)
-          .subtract(new BigInteger(other.underlyingValue))
+    /*
+    This is currently only used in tests.
+    Using UInt192 for calculations - subtraction arithmetic works
+    the same way for signed/unsigned representation.
+    TODO: consider optimizing */    return new Decimal(
+        UInt192.from(underlyingValue)
+          .subtract(UInt192.from(other.underlyingValue))
           .toByteArray());
   }
 
