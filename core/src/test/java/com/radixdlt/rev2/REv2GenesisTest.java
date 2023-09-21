@@ -172,10 +172,13 @@ public final class REv2GenesisTest {
       final var readFaucetAmount =
           stateReader.getComponentXrdAmount(ScryptoConstants.FAUCET_ADDRESS);
       final var maxTotalXrdUsedByScenarios = Decimal.ofNonNegative(100_000);
-      assertThat(readFaucetAmount).isLessThanOrEqualTo(GenesisData.DEFAULT_TEST_FAUCET_SUPPLY);
-      assertThat(readFaucetAmount)
+      assertThat(readFaucetAmount.toBigIntegerSubunits())
+          .isLessThanOrEqualTo(GenesisData.DEFAULT_TEST_FAUCET_SUPPLY.toBigIntegerSubunits());
+      assertThat(readFaucetAmount.toBigIntegerSubunits())
           .isGreaterThan(
-              GenesisData.DEFAULT_TEST_FAUCET_SUPPLY.subtract(maxTotalXrdUsedByScenarios));
+              GenesisData.DEFAULT_TEST_FAUCET_SUPPLY
+                  .subtract(maxTotalXrdUsedByScenarios)
+                  .toBigIntegerSubunits());
 
       // Check genesis XRD alloc
       final var allocatedAmount =

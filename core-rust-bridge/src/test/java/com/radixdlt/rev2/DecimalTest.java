@@ -104,8 +104,7 @@ public final class DecimalTest {
     assertEquals(Decimal.fromNonNegativeBigIntegerSubunits(BigInteger.ZERO), Decimal.ZERO);
     assertEquals(Decimal.ZERO.toBigIntegerSubunits(), BigInteger.ZERO);
     assertEquals(
-        Decimal.fromUnsignedFixedPointRepresentation(UInt192.ONE).toBigIntegerSubunits(),
-        BigInteger.ONE);
+        Decimal.fromBytes(UInt192.ONE.toByteArray()).toBigIntegerSubunits(), BigInteger.ONE);
     assertEquals(Decimal.fromNonNegativeBigIntegerSubunits(BigInteger.TEN.pow(18)), Decimal.ONE);
   }
 
@@ -161,7 +160,7 @@ public final class DecimalTest {
                     new BigInteger("0000000000000000000000000000000000000000000000000000000007"))),
         Decimal.MAX_VALUE);
 
-    final var twoPow152 = Decimal.fromUnsignedFixedPointRepresentation(UInt192.TWO.pow(152));
+    final var twoPow152 = Decimal.fromBytes(UInt192.TWO.pow(152).toByteArray());
     assertEquals(twoPow152.toString(), "5708990770823839524233143877.797980545530986496");
 
     assertEquals(

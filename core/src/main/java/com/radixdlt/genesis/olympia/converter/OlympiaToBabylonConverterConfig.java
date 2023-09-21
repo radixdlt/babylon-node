@@ -89,5 +89,7 @@ public record OlympiaToBabylonConverterConfig(
           1000,
           100,
           1000,
-          Decimal.fromUnsignedFixedPointRepresentation(UInt192.TWO.pow(152)));
+          // Using fromBytes is safe here, 2^152 doesn't overflow
+          // (or turn into a negative Decimal).
+          Decimal.fromBytes(UInt192.TWO.pow(152).toByteArray()));
 }
