@@ -109,7 +109,7 @@ public class SanityTest {
                         Network.INTEGRATIONTESTNET.getId(),
                         GenesisBuilder.createTestGenesisWithNumValidators(
                             4,
-                            Decimal.of(1),
+                            Decimal.ONE,
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(100000)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         REV2ProposerConfig.Mempool.defaults()))))

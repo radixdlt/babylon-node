@@ -80,6 +80,9 @@ public class RustPrometheus {
     this.ledgerStatusFunc =
         Natives.builder(nodeRustEnvironment, RustPrometheus::ledgerStatus)
             .build(new TypeToken<>() {});
+    this.recentSelfProposalMissStatisticFunc =
+        Natives.builder(nodeRustEnvironment, RustPrometheus::recentSelfProposalMissStatistic)
+            .build(new TypeToken<>() {});
   }
 
   public String prometheusMetrics() {
@@ -90,12 +93,22 @@ public class RustPrometheus {
     return ledgerStatusFunc.call(Tuple.tuple());
   }
 
+  public RecentSelfProposalMissStatistic recentSelfProposalMissStatistic() {
+    return recentSelfProposalMissStatisticFunc.call(Tuple.tuple());
+  }
+
   private final Natives.Call1<Tuple.Tuple0, String> prometheusMetricsFunc;
 
   private final Natives.Call1<Tuple.Tuple0, LedgerStatus> ledgerStatusFunc;
+
+  private final Natives.Call1<Tuple.Tuple0, RecentSelfProposalMissStatistic>
+      recentSelfProposalMissStatisticFunc;
 
   private static native byte[] prometheusMetrics(
       NodeRustEnvironment nodeRustEnvironment, byte[] args);
 
   private static native byte[] ledgerStatus(NodeRustEnvironment nodeRustEnvironment, byte[] args);
+
+  private static native byte[] recentSelfProposalMissStatistic(
+      NodeRustEnvironment nodeRustEnvironment, byte[] args);
 }

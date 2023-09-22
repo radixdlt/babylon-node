@@ -143,7 +143,7 @@ public final class MultiNodeRecoveryTest {
                         Network.INTEGRATIONTESTNET.getId(),
                         GenesisBuilder.createTestGenesisWithNumValidators(
                             NUM_VALIDATORS,
-                            Decimal.of(1),
+                            Decimal.ONE,
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
                                 this.roundsPerEpoch)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,

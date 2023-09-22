@@ -110,7 +110,7 @@ public final class REv2ConsensusLedgerRecoveryTest {
                         Network.INTEGRATIONTESTNET.getId(),
                         GenesisBuilder.createTestGenesisWithNumValidators(
                             2,
-                            Decimal.of(1),
+                            Decimal.ONE,
                             GenesisConsensusManagerConfig.Builder.testInfiniteEpochs()),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         StateComputerConfig.REV2ProposerConfig.transactionGenerator(

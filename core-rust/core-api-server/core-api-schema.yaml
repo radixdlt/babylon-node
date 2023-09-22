@@ -347,6 +347,31 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BasicErrorResponse"
+  "/lts/state/account-deposit-behaviour":
+    post:
+      summary: Get Account Deposit Behaviour
+      description: Returns deposit behaviour of a single account for multiple resource addresses
+      tags:
+        - LTS
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LtsStateAccountDepositBehaviourRequest"
+      responses:
+        '200':
+          description: Account deposit behaviour response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LtsStateAccountDepositBehaviourResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
   "/lts/stream/transaction-outcomes":
     post:
       summary: Get Transaction Outcomes
@@ -1603,6 +1628,7 @@ components:
         - Basic
         - TransactionSubmit
         - LtsTransactionSubmit
+        - StreamTransactions
     ErrorResponse:
       type: object
       discriminator:
@@ -1612,6 +1638,7 @@ components:
           Basic: "#/components/schemas/BasicErrorResponse"
           TransactionSubmit: "#/components/schemas/TransactionSubmitErrorResponse"
           LtsTransactionSubmit: "#/components/schemas/LtsTransactionSubmitErrorResponse"
+          StreamTransactions: "#/components/schemas/StreamTransactionsErrorResponse"
       required:
         - error_type
         - code
@@ -2742,6 +2769,40 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/NonFungibleLocalId'
+    PresentedBadgeType:
+      type: string
+      enum:
+        - Resource
+        - NonFungible
+    PresentedBadge:
+      type: object
+      required:
+        - type
+        - resource_address
+      properties:
+        type:
+          $ref: '#/components/schemas/PresentedBadgeType'
+        resource_address:
+          $ref: '#/components/schemas/ResourceAddress'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match PresentedBadgeType options above
+          Resource: '#/components/schemas/ResourcePresentedBadge'
+          NonFungible: '#/components/schemas/NonFungiblePresentedBadge'
+    ResourcePresentedBadge:
+      allOf:
+        - $ref: '#/components/schemas/PresentedBadge'
+        - type: object
+    NonFungiblePresentedBadge:
+      allOf:
+        - $ref: '#/components/schemas/PresentedBadge'
+        - type: object
+          required:
+            - local_id
+          properties:
+            local_id:
+              $ref: '#/components/schemas/NonFungibleLocalIdSimpleRepresentation'
 ##################################
 # GENERAL / SHARED MODELS - SBOR #
 ##################################
@@ -4941,7 +5002,7 @@ components:
         This setting has the following interpretations:
         - Allow: Allows the deposit of all resources - the deny list is honored in this state.
         - Reject: Disallows the deposit of all resources - the allow list is honored in this state.
-        - AllowExisting: Only deposits of existing resources is accepted - both allow and deny lists are honored in this mode.
+        - AllowExisting: Only deposits of existing resources *or* XRD are accepted - both allow and deny lists are honored in this mode.
       enum:
         - Accept
         - Reject
@@ -5544,6 +5605,82 @@ components:
           description: The Bech32m-encoded human readable version of the account's address
         fungible_resource_balance:
           $ref: "#/components/schemas/LtsFungibleResourceBalance"
+#########################################################
+# REQUEST: /lts/state/account-deposit-behaviour #
+#########################################################
+    LtsStateAccountDepositBehaviourRequest:
+      type: object
+      required:
+        - network
+        - account_address
+      properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
+        account_address:
+          description: The Bech32m-encoded human readable version of the account's address.
+          type: string
+        resource_addresses:
+          description: The resource addresses to check the deposit behaviours of.
+          type: array
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/ResourceAddress"
+        badge:
+          description: The depositor badge to check against the account's set of authorized depositors.
+          $ref: '#/components/schemas/PresentedBadge'
+    LtsStateAccountDepositBehaviourResponse:
+      type: object
+      required:
+        - state_version
+        - ledger_header_summary
+        - default_deposit_rule
+      properties:
+        state_version:
+          $ref: "#/components/schemas/StateVersion"
+          description: The state version at which the query was performed.
+        ledger_header_summary:
+          $ref: "#/components/schemas/LedgerHeaderSummary"
+          description: The excerpt from the ledger header committed at the `state_version`.
+        default_deposit_rule:
+          $ref: '#/components/schemas/DefaultDepositRule'
+        is_badge_authorized_depositor:
+          type: boolean
+          description: |
+            Whether the input `badge` belongs to the account's set of authorized depositors.
+            This field will only be present if any badge was passed in the request.
+        resource_specific_behaviours:
+          type: object
+          description: |
+            A map from one of the input `resource_addresses` to its specific deposit behavior configured for this account.
+            This field will only be present if an array of specific resource addresses was passed in the request (even if empty).
+          additionalProperties:
+            $ref: '#/components/schemas/ResourceSpecificDepositBehaviour'
+    ResourceSpecificDepositBehaviour:
+      type: object
+      required:
+        - vault_exists
+        - is_xrd
+        - allows_try_deposit
+      properties:
+        resource_preference:
+          $ref: '#/components/schemas/ResourcePreference'
+          description: Whether the resource is on the allow or the deny list (no preference when missing).
+        vault_exists:
+          type: boolean
+          description: |
+            Whether the account contains a vault for the resource (even if 0 balance).
+            This plays a role when `DefaultDepositRule` is `AllowExisting`.
+        is_xrd:
+          type: boolean
+          description: |
+            Whether the resource represents the native XRD fungible.
+            XRD is a special case which does not require `vault_exists = true` to satisfy the `AllowExisting` rule.
+        allows_try_deposit:
+          type: boolean
+          description: |
+            The fully resolved `try_deposit_*` ability of this resource (which takes all the inputs
+            into account, including the authorized depositor badge, the default deposit rule and
+            the above resource-specific circumstances).
 #############################################
 # REQUEST: /lts/stream/transaction-outcomes #
 #############################################
@@ -6005,18 +6142,6 @@ components:
           type: string
           description: |
             A descriptor for the current protocol version that the node is running.
-    Epoch:
-      type: integer
-      format: int64
-      minimum: 0
-      maximum: 10000000000
-      description: An integer between `0` and `10^10`, marking the epoch.
-    Round:
-      type: integer
-      format: int64
-      minimum: 0
-      maximum: 10000000000
-      description: An integer between `0` and `10^10`, marking the current round in an epoch
     EpochRound:
       type: object
       required:
@@ -6918,6 +7043,45 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/LedgerProof"
+    StreamTransactionsErrorResponse:
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+        - type: object
+          properties:
+            details:
+              $ref: "#/components/schemas/StreamTransactionsErrorDetails"
+    StreamTransactionsErrorDetailsType:
+      type: string
+      enum:
+        - RequestedStateVersionOutOfBounds
+    StreamTransactionsErrorDetails:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/StreamTransactionsErrorDetailsType"
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match StreamTransactionsErrorDetailsType
+          RequestedStateVersionOutOfBounds: '#/components/schemas/RequestedStateVersionOutOfBoundsErrorDetails'
+    RequestedStateVersionOutOfBoundsErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/StreamTransactionsErrorDetails"
+        - type: object
+          required:
+            - max_ledger_state_version
+          properties:
+            max_ledger_state_version:
+              $ref: "#/components/schemas/StateVersion"
+              description: |
+                The maximum state version currently committed on this node's ledger - the same as
+                would be returned by the `max_ledger_state_version` in a successful response.
+                *Note on the bounds:* the requested `from_state_version` cannot be greater than
+                `max_ledger_state_version + 1` (which is an edge case returning valid
+                `previous_state_identifiers` and an empty `transactions`). Any greater requested
+                value triggers this error.
     CommittedTransaction:
       type: object
       required:

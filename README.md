@@ -1,8 +1,10 @@
 # Radix Babylon Node
 
-This is the repository for the upcoming Babylon release of the Radix Node.
+This is the repository for the RadixDLT node, for the Babylon release and beyond.
 
-It includes a variant implementation of the [HotStuff](https://arxiv.org/abs/1803.05069) BFT-style consensus.
+## License
+
+The Babylon node code is released under the [Radix License](LICENSE). Binaries are licensed under the [Radix Node EULA](http://www.radixdlt.com/terms/nodeEULA).
 
 ## Integrators
 
@@ -14,7 +16,7 @@ Also check out the [Babylon documentation for exchanges and integrators](https:/
 
 Here we have:
 
-- [core](core): The core node, consensus and networking modules - written in Java
+- [core](core): The core node, consensus and networking modules - written in Java. It includes a variant implementation of the [HotStuff](https://arxiv.org/abs/1803.05069) BFT-style consensus.
 - [core-rust-bridge](core-rust-bridge): A bridge between the Java core and the Rust `core-rust` - written in Java.
   This will likely be merged into core at some point.
 - [core-rust](core-rust): Includes the Core API, and the "State Manager" which wraps the Babylon engine - this is written in Rust.
@@ -54,7 +56,3 @@ Please follow our [Code of Conduct](CODE_OF_CONDUCT.md) in all your interactions
 [docs-babylon.radixdlt.com](https://docs-babylon.radixdlt.com/) | Radix Babylon Technical Documentation
 [learn.radixdlt.com](https://learn.radixdlt.com/) | Radix Knowledge Base
 [discord invite](https://discord.com/invite/WkB2USt) | Radix Discord Server
-
-## License
-
-The code in this repository is released under the [Radix License](LICENSE).

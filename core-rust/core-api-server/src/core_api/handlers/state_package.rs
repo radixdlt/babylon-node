@@ -2,7 +2,7 @@ use crate::core_api::*;
 use radix_engine::blueprints::package::PackageField;
 use radix_engine::system::attached_modules::role_assignment::RoleAssignmentField;
 use radix_engine::types::*;
-use state_manager::store::traits::QueryableProofStore;
+
 use std::ops::Deref;
 
 pub(crate) async fn handle_state_package(
@@ -32,10 +32,7 @@ pub(crate) async fn handle_state_package(
         &PackageField::RoyaltyAccumulator.into(),
     );
 
-    let header = database
-        .get_last_proof()
-        .expect("proof for outputted state must exist")
-        .ledger_header;
+    let header = read_current_ledger_header(database.deref());
 
     Ok(models::StatePackageResponse {
         at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),

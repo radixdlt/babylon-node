@@ -109,7 +109,7 @@ public final class RandomVoteDropperTest {
                         Network.INTEGRATIONTESTNET.getId(),
                         GenesisBuilder.createTestGenesisWithNumValidators(
                             10,
-                            Decimal.of(1),
+                            Decimal.ONE,
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         StateComputerConfig.REV2ProposerConfig.Mempool.defaults()

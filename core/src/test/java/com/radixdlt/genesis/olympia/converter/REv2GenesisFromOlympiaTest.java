@@ -129,7 +129,7 @@ public final class REv2GenesisFromOlympiaTest {
           final var xrdAmount =
               stateReader.getComponentXrdAmount(
                   Address.virtualAccountAddress(acc.publicKeyBytes().asBytes()));
-          assertEquals(xrdAmount, Decimal.fromBigIntegerSubunits(balance.amount()));
+          assertEquals(xrdAmount, Decimal.fromNonNegativeBigIntegerSubunits(balance.amount()));
         }
       }
     }
