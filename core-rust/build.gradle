@@ -144,9 +144,6 @@ task buildRustForDocker(type: Exec) {
             docker buildx build \
                 --file Dockerfile \
                 --build-arg RUST_PROFILE=$envRustProfile \
-                --build-arg BUILDKIT_INLINE_CACHE=1 \
-                --cache-from type=local,src=/tmp/outputs/cache/docker \
-                --cache-to type=local,dest=/tmp/outputs/cache/docker,mode=max \
                 --platform $dockerPlatform \
                 --target library-container \
                 --output type=local,dest=$outputDir/ \
