@@ -10,3 +10,6 @@ For observability, we use Prometheus. There is support for [Prometheus metrics](
 
 Both sets of Prometheus metric values are passed through and exposed by the Prometheus API in Java.
 This is configured on its own port (by default, port `3335`).
+
+Prometheus is also our default way of exposing high-level information on Node's status and health
+(see [Health metrics](health-metrics.md) for details).
