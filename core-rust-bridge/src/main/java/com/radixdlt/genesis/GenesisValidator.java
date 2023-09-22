@@ -94,7 +94,7 @@ public record GenesisValidator(
         ImmutableList.<Tuple2<String, MetadataValue>>of(
             tuple(
                 "name", new MetadataValue.String(String.format("Default validator %s", index + 1))),
-            tuple("url", new MetadataValue.Url("https://www.radixdlt.com")));
+            tuple("info_url", new MetadataValue.Url("https://www.radixdlt.com")));
     return new GenesisValidator(
         key, true, true, Decimal.of(1), metadata, Address.virtualAccountAddress(key));
   }
