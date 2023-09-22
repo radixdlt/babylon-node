@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.system.generated.models.ExecutedProtocolUpdate;
 import com.radixdlt.api.system.generated.models.PendingProtocolUpdate;
+import com.radixdlt.api.system.generated.models.RecentSelfProposalMissStatistic;
 import com.radixdlt.api.system.generated.models.UnknownReportedPendingProtocolUpdate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -38,6 +39,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   HealthResponse.JSON_PROPERTY_STATUS,
   HealthResponse.JSON_PROPERTY_DETAIL,
+  HealthResponse.JSON_PROPERTY_RECENT_SELF_PROPOSAL_MISS_STATISTIC,
   HealthResponse.JSON_PROPERTY_CURRENT_PROTOCOL_VERSION,
   HealthResponse.JSON_PROPERTY_EXECUTED_PROTOCOL_UPDATES,
   HealthResponse.JSON_PROPERTY_PENDING_PROTOCOL_UPDATE,
@@ -89,6 +91,9 @@ public class HealthResponse {
 
   public static final String JSON_PROPERTY_DETAIL = "detail";
   private String detail;
+
+  public static final String JSON_PROPERTY_RECENT_SELF_PROPOSAL_MISS_STATISTIC = "recent_self_proposal_miss_statistic";
+  private RecentSelfProposalMissStatistic recentSelfProposalMissStatistic;
 
   public static final String JSON_PROPERTY_CURRENT_PROTOCOL_VERSION = "current_protocol_version";
   private String currentProtocolVersion;
@@ -152,6 +157,32 @@ public class HealthResponse {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setDetail(String detail) {
     this.detail = detail;
+  }
+
+
+  public HealthResponse recentSelfProposalMissStatistic(RecentSelfProposalMissStatistic recentSelfProposalMissStatistic) {
+    this.recentSelfProposalMissStatistic = recentSelfProposalMissStatistic;
+    return this;
+  }
+
+   /**
+   * Get recentSelfProposalMissStatistic
+   * @return recentSelfProposalMissStatistic
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_RECENT_SELF_PROPOSAL_MISS_STATISTIC)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public RecentSelfProposalMissStatistic getRecentSelfProposalMissStatistic() {
+    return recentSelfProposalMissStatistic;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_RECENT_SELF_PROPOSAL_MISS_STATISTIC)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setRecentSelfProposalMissStatistic(RecentSelfProposalMissStatistic recentSelfProposalMissStatistic) {
+    this.recentSelfProposalMissStatistic = recentSelfProposalMissStatistic;
   }
 
 
@@ -283,6 +314,7 @@ public class HealthResponse {
     HealthResponse healthResponse = (HealthResponse) o;
     return Objects.equals(this.status, healthResponse.status) &&
         Objects.equals(this.detail, healthResponse.detail) &&
+        Objects.equals(this.recentSelfProposalMissStatistic, healthResponse.recentSelfProposalMissStatistic) &&
         Objects.equals(this.currentProtocolVersion, healthResponse.currentProtocolVersion) &&
         Objects.equals(this.executedProtocolUpdates, healthResponse.executedProtocolUpdates) &&
         Objects.equals(this.pendingProtocolUpdate, healthResponse.pendingProtocolUpdate) &&
@@ -291,7 +323,7 @@ public class HealthResponse {
 
   @Override
   public int hashCode() {
-    return Objects.hash(status, detail, currentProtocolVersion, executedProtocolUpdates, pendingProtocolUpdate, unknownReportedPendingProtocolUpdates);
+    return Objects.hash(status, detail, recentSelfProposalMissStatistic, currentProtocolVersion, executedProtocolUpdates, pendingProtocolUpdate, unknownReportedPendingProtocolUpdates);
   }
 
   @Override
@@ -300,6 +332,7 @@ public class HealthResponse {
     sb.append("class HealthResponse {\n");
     sb.append("    status: ").append(toIndentedString(status)).append("\n");
     sb.append("    detail: ").append(toIndentedString(detail)).append("\n");
+    sb.append("    recentSelfProposalMissStatistic: ").append(toIndentedString(recentSelfProposalMissStatistic)).append("\n");
     sb.append("    currentProtocolVersion: ").append(toIndentedString(currentProtocolVersion)).append("\n");
     sb.append("    executedProtocolUpdates: ").append(toIndentedString(executedProtocolUpdates)).append("\n");
     sb.append("    pendingProtocolUpdate: ").append(toIndentedString(pendingProtocolUpdate)).append("\n");
