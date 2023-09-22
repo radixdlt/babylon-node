@@ -66,12 +66,18 @@ package com.radixdlt.utils;
 
 import com.radixdlt.crypto.Hashable;
 import java.util.Arrays;
+import java.util.Base64;
+
 import org.bouncycastle.util.encoders.Hex;
 
 public record WrappedByteArray(byte[] value) implements Hashable {
 
   public static WrappedByteArray fromHexString(String hex) {
     return new WrappedByteArray(Hex.decode(hex));
+  }
+
+  public static WrappedByteArray fromBase64String(String base64) {
+    return new WrappedByteArray(Base64.getDecoder().decode(base64));
   }
 
   public String toHexString() {

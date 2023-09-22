@@ -68,6 +68,8 @@ import com.google.common.hash.HashCode;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+
+import com.radixdlt.utils.WrappedByteArray;
 import org.bouncycastle.util.encoders.Hex;
 
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
@@ -78,7 +80,9 @@ public enum Network {
   // - stokenet
   // TODO(post-babylon): add a fixed genesis from resources for mainnet
   MAINNET(1 /* 0x01 */, "mainnet", "rdx"),
-  STOKENET(2 /* 0x02 */, "stokenet", "tdx_2_"),
+  STOKENET(2 /* 0x02 */, "stokenet", "tdx_2_", FixedNetworkGenesis.constant(
+          HashCode.fromBytes(Hex.decode("ac79e815b39beb756d9afe261e8c4deff4ed95f8fcc59af001eef060d820b266")),
+          WrappedByteArray.fromBase64String("/wYAAHNOYVBwWQAMAwBiU8n1sgsUXCEGCgEACQEABQkHKAAAIQoJZAAAAAr0DRoICrgLCRsMCuCTBAUKFTQkoOyCkOtRDo+1mgUYGQEgoAAAZKeztuANGRMJARU7FQkgoAAAEGMtXsdrFYENAeAgIgMEASAhAQKA0fJ+apHv10KbZw/zq1+awjGS4SYu/i7pxk+BCLnNoAAAAGCKph7+xG3S1QgAAAAVArABICEEBiAHIQMOUiH/6qS6qKwATwMsKC0vLUfI6NsNeQFACKZxjs1hSAEBAQFiswDwaSAhAgIMBG5hbWUiAAEME0RlZmF1bHQgdmFsaWRhdG9yIDECDAhpbmZvX3VybCINAQwYaHR0cHM6Ly93d3cucmFkaXhkbHQuY29tgNHM4kZLAaLgSTw/J6iepHX7sSUnearOg6P2YHauCAYBq3wW0qUtuYiPbyBCBqyKDUokPNOghqTrU7tt5IPo1+DROvarAAQyAqKrAHDq6EXe01P7c/1/j8hZsyfhZMbvUQM1uVJUJTOsXiVWfJN1Tm8Rj44uiQJFqfg94pPmNJ85dkD9s51S79+5QpbO9qsAADOmqwBwAN4HH7zU6WsZk0PYDprQuPjwqdjsnTOaNJZo8TMFq3iEqPrAaHC6fiSV9z7rXDS6omxpibV70UeaIoWybptX+lYBADSmqwCgRfnth7vLhSpoTGivtN2WrYvg3+a7Oc5gTTk/rg0BAiCAAdHyfmqR79da7QIMICEEAkEnftICECAhAQIJYQkwoAAAAOg8gNCfPC47AwEREQEFR35uAppHAH4KAppHAH6mAYZHAAHuJEDq7XRG0JwsnwwR6/A8AAAAIAwKDHRyYW5zZmVyX3hyZAhyYWRpc3dhcAhtZXRhZGF0YRFmdW5naWJsZV9yZXNvdXJjZRVub25fZj4WALgdYWNjb3VudF9hdXRob3JpemVkX2RlcG9zaXRvcnMOZ2xvYmFsX25fb3duZWQmbk5DAGBfd2l0aF9yZW1vdGVfdHlwZRlrdl9zdG9yRhoAPA9tYXhfdHJhbnNhY3Rpb24="))),
 
   // Temporary networks that match Olympia - for genesis testing mostly
   OLYMPIA_RELEASENET(3, "releasenet", "tdx_3_"),

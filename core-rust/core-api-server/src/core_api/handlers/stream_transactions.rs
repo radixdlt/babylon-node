@@ -63,7 +63,7 @@ pub(crate) async fn handle_stream_transactions(
             } else {
                 let identifiers = database
                     .get_committed_transaction_identifiers(previous_state_version)
-                    .expect("Txn identifiers are missing");
+                    .unwrap_or_else(|| panic!("Txn identifiers are missing for state version: {}", previous_state_version));
                 Some(Box::new(to_api_committed_state_identifiers(
                     previous_state_version,
                     &identifiers.resultant_ledger_hashes,
