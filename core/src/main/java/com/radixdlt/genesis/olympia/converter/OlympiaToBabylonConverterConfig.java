@@ -91,5 +91,5 @@ public record OlympiaToBabylonConverterConfig(
           1000,
           // Using fromBytes is safe here, 2^152 doesn't overflow
           // (or turn into a negative Decimal).
-          Decimal.fromBytes(UInt192.TWO.pow(152).toByteArray()));
+          Decimal.fromBigEndianBytes(UInt192.TWO.pow(152).toBigEndianBytes()));
 }

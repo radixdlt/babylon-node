@@ -305,7 +305,7 @@ public final class OlympiaToBabylonGenesisConverterTest {
                           CONVERTER_CONFIG
                               .maxGenesisResourceUnscaledSupply()
                               .toBigIntegerSubunits()))
-              .reduce(Decimal.ZERO, Decimal::add);
+              .reduce(Decimal.ZERO, Decimal::wrappingAdd);
 
       resourcesSummary.add(
           new ResourceSummary(
@@ -522,7 +522,7 @@ public final class OlympiaToBabylonGenesisConverterTest {
                               final var prevBalance =
                                   babylonResourceSupplies.getOrDefault(resourceAddr, Decimal.ZERO);
                               babylonResourceSupplies.put(
-                                  resourceAddr, prevBalance.add(alloc.amount()));
+                                  resourceAddr, prevBalance.wrappingAdd(alloc.amount()));
                             });
                   });
         });

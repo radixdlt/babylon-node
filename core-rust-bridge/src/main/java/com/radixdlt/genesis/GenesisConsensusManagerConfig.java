@@ -139,11 +139,11 @@ public record GenesisConsensusManagerConfig(
 
       var targetEmissionsPerYear = 300L * 1000L * 1000L;
       var totalXrdEmissionPerEpoch =
-          Decimal.nonNegativeFraction(targetEmissionsPerYear, approxEpochsPerYear);
+          Decimal.ofNonNegativeFraction(targetEmissionsPerYear, approxEpochsPerYear);
 
       // Epochs are shorter than Olympia, hence we have less to work with.
       // So we require 100% reliability in these short epochs to get emissions.
-      var minReliabilityForEmissions = Decimal.nonNegativeFraction(100, 100);
+      var minReliabilityForEmissions = Decimal.ofNonNegativeFraction(100, 100);
 
       var numOwnerStakeUnitsUnlockEpochs = 4 * 7 * approxEpochsPerDay;
       var numFeeIncreaseDelayEpochs = 2 * 7 * approxEpochsPerDay;
@@ -185,7 +185,7 @@ public record GenesisConsensusManagerConfig(
           .epochTargetDurationMillis(100)
           .numUnstakeEpochs(10)
           .totalEmissionXrdPerEpoch(Decimal.ofNonNegative(100))
-          .minValidatorReliability(Decimal.nonNegativeFraction(8, 10))
+          .minValidatorReliability(Decimal.ofNonNegativeFraction(8, 10))
           .numOwnerStakeUnitsUnlockEpochs(100)
           .numFeeIncreaseDelayEpochs(100)
           .validatorCreationUsdCost(Decimal.ONE);

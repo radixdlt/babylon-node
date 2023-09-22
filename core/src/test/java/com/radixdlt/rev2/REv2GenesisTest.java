@@ -177,7 +177,7 @@ public final class REv2GenesisTest {
       assertThat(readFaucetAmount.toBigIntegerSubunits())
           .isGreaterThan(
               GenesisData.DEFAULT_TEST_FAUCET_SUPPLY
-                  .subtract(maxTotalXrdUsedByScenarios)
+                  .wrappingSubtract(maxTotalXrdUsedByScenarios)
                   .toBigIntegerSubunits());
 
       // Check genesis XRD alloc

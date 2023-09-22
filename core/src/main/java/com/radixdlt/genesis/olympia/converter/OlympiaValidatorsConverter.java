@@ -112,7 +112,7 @@ public final class OlympiaValidatorsConverter {
         publicKey,
         olympiaValidator.allowsDelegation(),
         olympiaValidator.isRegistered(),
-        Decimal.nonNegativeFraction(olympiaValidator.feeProportionInTenThousandths(), 10000L),
+        Decimal.ofNonNegativeFraction(olympiaValidator.feeProportionInTenThousandths(), 10000L),
         metadata.build(),
         Address.virtualAccountAddress(owner.publicKeyBytes().asBytes()));
   }

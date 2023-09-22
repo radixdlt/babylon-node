@@ -254,7 +254,7 @@ public final class OlympiaToBabylonGenesisConverterResourceSupplyTest {
                                     .forEach(
                                         alloc ->
                                             totalSupply.set(
-                                                totalSupply.get().add(alloc.amount())))));
+                                                totalSupply.get().wrappingAdd(alloc.amount())))));
     return totalSupply.get();
   }
 }

@@ -74,9 +74,7 @@ import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.lang.Option;
 import com.radixdlt.statecomputer.commit.ActiveValidatorInfo;
 import com.radixdlt.statecomputer.commit.TimestampedValidatorSignature;
-import com.radixdlt.utils.UInt192;
 import com.radixdlt.utils.UInt64;
-import java.math.BigInteger;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -87,23 +85,14 @@ public final class REv2ToConsensus {
   }
 
   public static BFTValidator validator(ActiveValidatorInfo validator) {
-    if (validator.stake().toBigIntegerSubunits().compareTo(BigInteger.ZERO) < 0) {
-      throw new IllegalStateException("Validator stake can't be negative.");
-    }
-    // Stake can't be negative, so this conversion is safe
-    final var powerAsUint = UInt192.from(validator.stake().toByteArray());
     return BFTValidator.from(
-        BFTValidatorId.create(validator.address(), validator.key()), powerAsUint);
+        BFTValidatorId.create(validator.address(), validator.key()),
+        validator.stake().toU192Subunits());
   }
 
   public static ActiveValidatorInfo validator(BFTValidator validator) {
     final var id = validator.getValidatorId();
-
-    final var powerAsDecimal = Decimal.fromBytes(validator.getPower().toByteArray());
-    if (powerAsDecimal.toBigIntegerSubunits().compareTo(BigInteger.ZERO) < 0) {
-      /* Validator stake should never overflow to produce a negative Decimal */
-      throw new IllegalStateException("Validator stake can't be negative.");
-    }
+    final var powerAsDecimal = Decimal.fromU192Subunits(validator.getPower());
 
     return new ActiveValidatorInfo(id.getValidatorAddress(), id.getKey(), powerAsDecimal);
   }

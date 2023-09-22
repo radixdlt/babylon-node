@@ -316,9 +316,9 @@ public class UInt192Test {
     byte[] bytesArray = new byte[UInt192.BYTES];
     Arrays.fill(bytesArray, (byte) 0);
     bytesArray[UInt192.BYTES - 1] = 1;
-    UInt192 m1Bits64 = UInt192.from(m1);
-    UInt192 p1Bits64 = UInt192.from(p1);
-    UInt192 bytesArrayBits64 = UInt192.from(bytesArray);
+    UInt192 m1Bits64 = UInt192.fromBigEndianBytes(m1);
+    UInt192 p1Bits64 = UInt192.fromBigEndianBytes(p1);
+    UInt192 bytesArrayBits64 = UInt192.fromBigEndianBytes(bytesArray);
 
     assertEquals(UInt192.from(255), m1Bits64); // Sign extension did not happen
     assertEquals(UInt192.ONE, p1Bits64); // Zero fill happened correctly
@@ -337,12 +337,12 @@ public class UInt192Test {
     Arrays.fill(bytes2, (byte) -1);
 
     // Make sure we got the value in big-endian order
-    byte[] bytes = bitPattern.toByteArray();
+    byte[] bytes = bitPattern.toBigEndianBytes();
     for (int i = 0; i < UInt192.BYTES; ++i) {
       assertEquals(i, bytes[i]);
     }
 
-    bitPattern.toByteArray(bytes2, UInt192.BYTES);
+    bitPattern.toBigEndianBytes(bytes2, UInt192.BYTES);
     // Make sure we didn't overwrite bytes outside our range
     for (int i = 0; i < UInt192.BYTES; ++i) {
       assertEquals(-1, bytes2[i]);
@@ -463,7 +463,7 @@ public class UInt192Test {
   /** IllegalArgumentException if byte array is empty. */
   @Test(expected = IllegalArgumentException.class)
   public void illegalArgumentExceptionIfByteArrayEmpty() {
-    UInt192.from(new byte[0]);
+    UInt192.fromBigEndianBytes(new byte[0]);
   }
 
   /** IllegalArgumentException on radix too big. */
