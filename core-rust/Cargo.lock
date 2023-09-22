@@ -1141,8 +1141,8 @@ dependencies = [
 
 [[package]]
 name = "native-sdk"
-version = "1.0.0-rc1"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0-rc1#cc142e7494a45add47c49977843856be174161a2"
+version = "1.0.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0#6ab3fab9ca88788a6753649b553ea3b1b3a5e31f"
 dependencies = [
  "radix-engine-common",
  "radix-engine-derive",
@@ -1477,8 +1477,8 @@ dependencies = [
 
 [[package]]
 name = "radix-engine"
-version = "1.0.0-rc1"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0-rc1#cc142e7494a45add47c49977843856be174161a2"
+version = "1.0.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0#6ab3fab9ca88788a6753649b553ea3b1b3a5e31f"
 dependencies = [
  "bitflags 1.3.2",
  "colored",
@@ -1507,8 +1507,8 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-common"
-version = "1.0.0-rc1"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0-rc1#cc142e7494a45add47c49977843856be174161a2"
+version = "1.0.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0#6ab3fab9ca88788a6753649b553ea3b1b3a5e31f"
 dependencies = [
  "bech32",
  "blake2",
@@ -1528,8 +1528,8 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-derive"
-version = "1.0.0-rc1"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0-rc1#cc142e7494a45add47c49977843856be174161a2"
+version = "1.0.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0#6ab3fab9ca88788a6753649b553ea3b1b3a5e31f"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1539,8 +1539,8 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-interface"
-version = "1.0.0-rc1"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0-rc1#cc142e7494a45add47c49977843856be174161a2"
+version = "1.0.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0#6ab3fab9ca88788a6753649b553ea3b1b3a5e31f"
 dependencies = [
  "bitflags 1.3.2",
  "const-sha1",
@@ -1560,8 +1560,8 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-macros"
-version = "1.0.0-rc1"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0-rc1#cc142e7494a45add47c49977843856be174161a2"
+version = "1.0.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0#6ab3fab9ca88788a6753649b553ea3b1b3a5e31f"
 dependencies = [
  "paste",
  "proc-macro2",
@@ -1572,16 +1572,16 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-profiling"
-version = "1.0.0-rc1"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0-rc1#cc142e7494a45add47c49977843856be174161a2"
+version = "1.0.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0#6ab3fab9ca88788a6753649b553ea3b1b3a5e31f"
 dependencies = [
  "fixedstr",
 ]
 
 [[package]]
 name = "radix-engine-queries"
-version = "1.0.0-rc1"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0-rc1#cc142e7494a45add47c49977843856be174161a2"
+version = "1.0.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0#6ab3fab9ca88788a6753649b553ea3b1b3a5e31f"
 dependencies = [
  "hex",
  "itertools 0.10.5",
@@ -1596,8 +1596,8 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-store-interface"
-version = "1.0.0-rc1"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0-rc1#cc142e7494a45add47c49977843856be174161a2"
+version = "1.0.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0#6ab3fab9ca88788a6753649b553ea3b1b3a5e31f"
 dependencies = [
  "hex",
  "itertools 0.10.5",
@@ -1610,8 +1610,8 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-stores"
-version = "1.0.0-rc1"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0-rc1#cc142e7494a45add47c49977843856be174161a2"
+version = "1.0.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0#6ab3fab9ca88788a6753649b553ea3b1b3a5e31f"
 dependencies = [
  "hex",
  "itertools 0.10.5",
@@ -1742,8 +1742,8 @@ checksum = "e5ea92a5b6195c6ef2a0295ea818b312502c6fc94dde986c5553242e18fd4ce2"
 
 [[package]]
 name = "resources-tracker-macro"
-version = "1.0.0-rc1"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0-rc1#cc142e7494a45add47c49977843856be174161a2"
+version = "1.0.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0#6ab3fab9ca88788a6753649b553ea3b1b3a5e31f"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1818,8 +1818,8 @@ dependencies = [
 
 [[package]]
 name = "sbor"
-version = "1.0.0-rc1"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0-rc1#cc142e7494a45add47c49977843856be174161a2"
+version = "1.0.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0#6ab3fab9ca88788a6753649b553ea3b1b3a5e31f"
 dependencies = [
  "const-sha1",
  "hex",
@@ -1832,8 +1832,8 @@ dependencies = [
 
 [[package]]
 name = "sbor-derive"
-version = "1.0.0-rc1"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0-rc1#cc142e7494a45add47c49977843856be174161a2"
+version = "1.0.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0#6ab3fab9ca88788a6753649b553ea3b1b3a5e31f"
 dependencies = [
  "proc-macro2",
  "sbor-derive-common",
@@ -1841,8 +1841,8 @@ dependencies = [
 
 [[package]]
 name = "sbor-derive-common"
-version = "1.0.0-rc1"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0-rc1#cc142e7494a45add47c49977843856be174161a2"
+version = "1.0.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0#6ab3fab9ca88788a6753649b553ea3b1b3a5e31f"
 dependencies = [
  "const-sha1",
  "itertools 0.10.5",
@@ -1868,8 +1868,8 @@ checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
 name = "scrypto"
-version = "1.0.0-rc1"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0-rc1#cc142e7494a45add47c49977843856be174161a2"
+version = "1.0.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0#6ab3fab9ca88788a6753649b553ea3b1b3a5e31f"
 dependencies = [
  "bech32",
  "const-sha1",
@@ -1889,8 +1889,8 @@ dependencies = [
 
 [[package]]
 name = "scrypto-derive"
-version = "1.0.0-rc1"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0-rc1#cc142e7494a45add47c49977843856be174161a2"
+version = "1.0.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0#6ab3fab9ca88788a6753649b553ea3b1b3a5e31f"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1905,8 +1905,8 @@ dependencies = [
 
 [[package]]
 name = "scrypto-schema"
-version = "1.0.0-rc1"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0-rc1#cc142e7494a45add47c49977843856be174161a2"
+version = "1.0.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0#6ab3fab9ca88788a6753649b553ea3b1b3a5e31f"
 dependencies = [
  "bitflags 1.3.2",
  "radix-engine-common",
@@ -2419,8 +2419,8 @@ dependencies = [
 
 [[package]]
 name = "transaction"
-version = "1.0.0-rc1"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0-rc1#cc142e7494a45add47c49977843856be174161a2"
+version = "1.0.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0#6ab3fab9ca88788a6753649b553ea3b1b3a5e31f"
 dependencies = [
  "bech32",
  "ed25519-dalek",
@@ -2436,8 +2436,8 @@ dependencies = [
 
 [[package]]
 name = "transaction-scenarios"
-version = "1.0.0-rc1"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0-rc1#cc142e7494a45add47c49977843856be174161a2"
+version = "1.0.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0#6ab3fab9ca88788a6753649b553ea3b1b3a5e31f"
 dependencies = [
  "hex",
  "itertools 0.10.5",
@@ -2493,8 +2493,8 @@ checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
 
 [[package]]
 name = "utils"
-version = "1.0.0-rc1"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0-rc1#cc142e7494a45add47c49977843856be174161a2"
+version = "1.0.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=v1.0.0#6ab3fab9ca88788a6753649b553ea3b1b3a5e31f"
 dependencies = [
  "indexmap 2.0.0-pre",
  "serde",
