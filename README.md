@@ -4,7 +4,7 @@ This is the repository for the RadixDLT node, for the Babylon release and beyond
 
 ## License
 
-The Babylon node code is released under the [Radix License](LICENSE). Binaries are licensed under the [Radix Node EULA](http://www.radixdlt.com/terms/nodeEULA).
+The Babylon node code is released under the [Radix License](LICENSE). Executable components are licensed under the [Radix Node EULA](http://www.radixdlt.com/terms/nodeEULA).
 
 ## Integrators
 
