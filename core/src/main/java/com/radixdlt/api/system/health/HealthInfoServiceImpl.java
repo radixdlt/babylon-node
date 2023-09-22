@@ -66,6 +66,7 @@ package com.radixdlt.api.system.health;
 
 import com.google.inject.Inject;
 import com.radixdlt.prometheus.LedgerStatus;
+import com.radixdlt.prometheus.RecentSelfProposalMissStatistic;
 import com.radixdlt.prometheus.RustPrometheus;
 
 public final class HealthInfoServiceImpl implements HealthInfoService {
@@ -92,7 +93,7 @@ public final class HealthInfoServiceImpl implements HealthInfoService {
   }
 
   @Override
-  public long recentSelfProposalMissCount() {
-    return this.rustPrometheus.recentSelfProposalMissCount().toNonNegativeLong().or(Long.MAX_VALUE);
+  public RecentSelfProposalMissStatistic recentSelfProposalMissStatistic() {
+    return this.rustPrometheus.recentSelfProposalMissStatistic();
   }
 }

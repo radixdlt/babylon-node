@@ -67,6 +67,7 @@ package com.radixdlt.api.system.routes;
 import com.google.inject.Inject;
 import com.radixdlt.api.system.SystemGetJsonHandler;
 import com.radixdlt.api.system.generated.models.HealthResponse;
+import com.radixdlt.api.system.generated.models.RecentSelfProposalMissStatistic;
 import com.radixdlt.api.system.health.HealthInfoService;
 import com.radixdlt.protocol.Current;
 import com.radixdlt.protocol.ProtocolVersion;
@@ -94,10 +95,14 @@ public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
           case OUT_OF_SYNC -> HealthResponse.StatusEnum.OUT_OF_SYNC;
         };
 
+    final var statistic = healthInfoService.recentSelfProposalMissStatistic();
     return new HealthResponse()
         .status(statusEnum)
         .detail(nodeStatus.detail())
-        .recentSelfProposalMissCount(healthInfoService.recentSelfProposalMissCount())
+        .recentSelfProposalMissStatistic(
+            new RecentSelfProposalMissStatistic()
+                .missedCount(statistic.missedCount().toLong())
+                .recentProposalsTrackedCount(statistic.recentProposalsTrackedCount().toLong()))
         .currentProtocolVersion(currentProtocolVersion.name());
   }
 }

@@ -226,9 +226,15 @@ impl LedgerMetrics {
         }
     }
 
-    /// Returns the current value of [`recent_self_proposal_miss_count`].
-    pub fn get_recent_self_proposal_miss_count(&self) -> u64 {
-        u64::try_from(self.recent_self_proposal_miss_count.gauge.get()).expect("negative count")
+    /// Returns the current value of [`recent_self_proposal_miss_count`] and the tracked history
+    /// length (for context).
+    pub fn get_recent_self_proposal_miss_statistic(&self) -> RecentSelfProposalMissStatistic {
+        RecentSelfProposalMissStatistic {
+            missed_count: u64::try_from(self.recent_self_proposal_miss_count.gauge.get())
+                .expect("negative count"),
+            recent_proposals_tracked_count: u64::try_from(PROPOSAL_HISTORY_LEN)
+                .expect("negative history length"),
+        }
     }
 }
 
@@ -634,6 +640,16 @@ pub enum LedgerStatus {
     /// Ledger's last proposer timestamp is far from wallclock *and* progresses slower than
     /// expected from a [`Self::Syncing`] ledger.
     NotSyncing,
+}
+
+/// A recent statistic on a number of successful/missed proposals.
+/// This information is meant to be surfaced from a `/system/health` API.
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct RecentSelfProposalMissStatistic {
+    /// A number of missed proposals among [`recent_proposals_tracked_count`] most recent ones.
+    missed_count: u64,
+    /// A configured length of proposal miss tracking history.
+    recent_proposals_tracked_count: u64,
 }
 
 /// Returns the `SystemTime::now()` expressed as a fractional number of seconds since epoch.

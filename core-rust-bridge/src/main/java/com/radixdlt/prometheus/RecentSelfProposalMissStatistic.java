@@ -62,63 +62,21 @@
  * permissions under this License.
  */
 
-use crate::{LedgerStatus, RecentSelfProposalMissStatistic};
-use jni::objects::{JClass, JObject};
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
-use node_common::java::jni_sbor_coded_call;
-use prometheus::*;
+package com.radixdlt.prometheus;
 
-use super::node_rust_environment::JNINodeRustEnvironment;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.utils.UInt64;
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_prometheus_RustPrometheus_prometheusMetrics(
-    env: JNIEnv,
-    _class: JClass,
-    j_node_rust_env: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |_no_args: ()| -> String {
-        let registry = &JNINodeRustEnvironment::get(&env, j_node_rust_env).metric_registry;
-        let encoder = TextEncoder::new();
-        let mut buffer = vec![];
-        encoder.encode(&registry.gather(), &mut buffer).unwrap();
-        String::from_utf8(buffer).unwrap()
-    })
+public record RecentSelfProposalMissStatistic(
+    UInt64 missedCount, UInt64 recentProposalsTrackedCount) {
+
+  public static final RecentSelfProposalMissStatistic PRE_GENESIS =
+      new RecentSelfProposalMissStatistic(UInt64.ZERO, UInt64.ZERO);
+
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        RecentSelfProposalMissStatistic.class,
+        codecs -> StructCodec.fromRecordComponents(RecentSelfProposalMissStatistic.class, codecs));
+  }
 }
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_prometheus_RustPrometheus_ledgerStatus(
-    env: JNIEnv,
-    _class: JClass,
-    j_node_rust_env: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |_no_args: ()| -> LedgerStatus {
-        JNINodeRustEnvironment::get(&env, j_node_rust_env)
-            .state_manager
-            .state_computer
-            .get_ledger_status_from_metrics()
-    })
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_prometheus_RustPrometheus_recentSelfProposalMissStatistic(
-    env: JNIEnv,
-    _class: JClass,
-    j_node_rust_env: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(
-        &env,
-        request_payload,
-        |_no_args: ()| -> RecentSelfProposalMissStatistic {
-            JNINodeRustEnvironment::get(&env, j_node_rust_env)
-                .state_manager
-                .state_computer
-                .get_recent_self_proposal_miss_statistic()
-        },
-    )
-}
-
-pub fn export_extern_functions() {}
