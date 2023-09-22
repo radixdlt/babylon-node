@@ -7,6 +7,7 @@ use radix_engine_queries::typed_substate_layout::*;
 
 pub fn to_api_type_info_substate(
     context: &MappingContext,
+    state_mapping_lookups: &StateMappingLookups,
     substate: &TypeInfoSubstate,
 ) -> Result<models::Substate, MappingError> {
     Ok(system_field_substate!(
@@ -30,7 +31,11 @@ pub fn to_api_type_info_substate(
                                 })
                             })
                             .collect::<Result<_, _>>()?,
-                        blueprint_info: Box::new(to_api_blueprint_info(context, blueprint_info)?),
+                        blueprint_info: Box::new(to_api_blueprint_info(
+                            context,
+                            state_mapping_lookups,
+                            blueprint_info,
+                        )?),
                         global,
                     }
                 },
@@ -38,6 +43,7 @@ pub fn to_api_type_info_substate(
                     models::TypeInfoDetails::KeyValueStoreTypeInfoDetails {
                         key_value_store_info: Box::new(to_api_key_value_store_info(
                             context,
+                            state_mapping_lookups,
                             key_value_store_info,
                         )?),
                     }
@@ -62,6 +68,7 @@ pub fn to_api_type_info_substate(
 
 pub fn to_api_blueprint_info(
     context: &MappingContext,
+    state_mapping_lookups: &StateMappingLookups,
     blueprint_info: &BlueprintInfo,
 ) -> Result<models::BlueprintInfo, MappingError> {
     let BlueprintInfo {
@@ -88,7 +95,9 @@ pub fn to_api_blueprint_info(
         },
         generic_substitutions: generic_substitutions
             .iter()
-            .map(|substitution| to_api_generic_substitution(context, substitution))
+            .map(|substitution| {
+                to_api_generic_substitution(context, state_mapping_lookups, substitution)
+            })
             .collect::<Result<Vec<_>, _>>()?,
         features: features.iter().cloned().collect(),
     })
@@ -96,20 +105,31 @@ pub fn to_api_blueprint_info(
 
 pub fn to_api_generic_substitution(
     context: &MappingContext,
+    state_mapping_lookups: &StateMappingLookups,
     substitution: &GenericSubstitution,
 ) -> Result<models::GenericSubstitution, MappingError> {
     Ok(match substitution {
         GenericSubstitution::Local(scoped_type_id) => {
-            models::GenericSubstitution::LocalGenericSubstition {
+            models::GenericSubstitution::LocalGenericSubstitution {
                 scoped_type_id: Box::new(to_api_scoped_type_id(context, scoped_type_id)?),
             }
         }
         GenericSubstitution::Remote(blueprint_type_identifier) => {
-            models::GenericSubstitution::RemoteGenericSubstition {
+            let resolved =
+                state_mapping_lookups.resolve_generic_remote(blueprint_type_identifier)?;
+            models::GenericSubstitution::RemoteGenericSubstitution {
                 blueprint_type_identifier: Box::new(to_api_blueprint_type_identifier(
                     context,
                     blueprint_type_identifier,
                 )?),
+                resolved_full_type_id: resolved
+                    .map(|scoped_type_id| -> Result<_, MappingError> {
+                        Ok(Box::new(to_api_fully_scoped_type_id(
+                            context,
+                            &scoped_type_id,
+                        )?))
+                    })
+                    .transpose()?,
             }
         }
     })
@@ -133,6 +153,7 @@ pub fn to_api_blueprint_type_identifier(
 
 pub fn to_api_key_value_store_info(
     context: &MappingContext,
+    state_mapping_lookups: &StateMappingLookups,
     key_value_store_info: &KeyValueStoreInfo,
 ) -> Result<models::KeyValueStoreInfo, MappingError> {
     let KeyValueStoreInfo {
@@ -146,10 +167,12 @@ pub fn to_api_key_value_store_info(
     Ok(models::KeyValueStoreInfo {
         key_generic_substitution: Some(to_api_generic_substitution(
             context,
+            state_mapping_lookups,
             key_generic_substitution,
         )?),
         value_generic_substitution: Some(to_api_generic_substitution(
             context,
+            state_mapping_lookups,
             value_generic_substitution,
         )?),
         allow_ownership: *allow_ownership,

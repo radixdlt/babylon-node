@@ -136,7 +136,7 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_getTransactionAtSt
                 read_database.get_committed_local_transaction_execution(state_version)?;
 
             Some(ExecutedTransaction {
-                ledger_transaction_hash: committed_identifiers.payload.ledger_payload_hash,
+                ledger_transaction_hash: committed_identifiers.payload.ledger_transaction_hash,
                 outcome: match committed_ledger_transaction_receipt.outcome {
                     LedgerTransactionOutcome::Success => TransactionOutcomeJava::Success,
                     LedgerTransactionOutcome::Failure => TransactionOutcomeJava::Failure,

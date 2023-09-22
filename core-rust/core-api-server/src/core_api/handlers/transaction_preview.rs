@@ -163,7 +163,7 @@ fn to_api_response(
 
             let local_receipt = LocalTransactionReceipt::new(
                 commit_result,
-                result.substate_changes,
+                result.state_changes,
                 result.global_balance_summary,
                 execution_fee_data,
             );
@@ -171,7 +171,7 @@ fn to_api_response(
             models::TransactionPreviewResponse {
                 at_ledger_state,
                 encoded_receipt,
-                receipt: Box::new(to_api_receipt(context, local_receipt)?),
+                receipt: Box::new(to_api_receipt(None, context, local_receipt)?),
                 instruction_resource_changes,
                 logs,
             }

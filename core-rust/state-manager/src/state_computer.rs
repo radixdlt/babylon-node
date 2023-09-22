@@ -170,6 +170,21 @@ impl<S: QueryableProofStore> StateComputer<S> {
             committed_transactions_metrics,
         }
     }
+
+    /// Exposes the [`LedgerMetrics::get_ledger_status()`].
+    /// This abstraction leak is needed to transfer the "overall ledger health" information from a
+    /// Rust-side (derived) metric, via JNI, to the Java-based "system health" endpoint.
+    pub fn get_ledger_status_from_metrics(&self) -> LedgerStatus {
+        self.ledger_metrics.get_ledger_status()
+    }
+
+    /// Exposes the [`LedgerMetrics::get_recent_self_proposal_miss_statistic()`].
+    /// This abstraction leak is needed to transfer this information from a Rust-side (derived)
+    /// metric, via JNI, to the Java-based "system health" endpoint.
+    pub fn get_recent_self_proposal_miss_statistic(&self) -> RecentSelfProposalMissStatistic {
+        self.ledger_metrics
+            .get_recent_self_proposal_miss_statistic()
+    }
 }
 
 pub enum StateComputerRejectReason {
@@ -986,6 +1001,14 @@ where
         // Step 1.: Parse the transactions (and collect specific metrics from them, as a drive-by)
         let mut prepared_transactions = Vec::new();
         let mut leader_round_counters_builder = LeaderRoundCountersBuilder::default();
+        let mut proposer_timestamps = Vec::new();
+        let mut proposer_timestamp_ms = self
+            .store
+            .read()
+            .get_last_proof()
+            .unwrap()
+            .ledger_header
+            .proposer_timestamp_ms;
         for (index, raw_transaction) in commit_request.transactions.iter().enumerate() {
             let result = self
                 .ledger_transaction_validator
@@ -1006,10 +1029,12 @@ where
                     .expect("the same transaction was parsed fine above");
                 if let LedgerTransaction::RoundUpdateV1(round_update) = round_update {
                     leader_round_counters_builder.update(&round_update.leader_proposal_history);
+                    proposer_timestamp_ms = round_update.proposer_timestamp_ms;
                 }
             }
 
             prepared_transactions.push(prepared_transaction);
+            proposer_timestamps.push(proposer_timestamp_ms);
         }
 
         // Step 2.: Start the write DB transaction, check invariants, set-up DB update structures
@@ -1065,10 +1090,11 @@ where
         let mut committed_user_transactions = Vec::new();
 
         // Step 3.: Actually execute the transactions, collect their results into DB structures
-        for (raw, prepared) in commit_request
+        for ((raw, prepared), proposer_timestamp_ms) in commit_request
             .transactions
             .into_iter()
             .zip(prepared_transactions)
+            .zip(proposer_timestamps)
         {
             let validated = self
                 .ledger_transaction_validator
@@ -1110,6 +1136,7 @@ where
                 identifiers: CommittedTransactionIdentifiers {
                     payload: validated.create_identifiers(),
                     resultant_ledger_hashes: *series_executor.latest_ledger_hashes(),
+                    proposer_timestamp_ms,
                 },
             });
         }
@@ -1147,10 +1174,12 @@ where
             transactions: committed_transaction_bundles,
             proof: commit_request.proof,
             substate_store_update,
-            vertex_store: commit_request.vertex_store,
+            vertex_store: commit_request.vertex_store.map(VertexStoreBlobV1),
             state_tree_update,
-            transaction_tree_slice: transaction_tree_slice_merger.into_slice(),
-            receipt_tree_slice: receipt_tree_slice_merger.into_slice(),
+            transaction_tree_slice: TransactionAccuTreeSliceV1(
+                transaction_tree_slice_merger.into_slice(),
+            ),
+            receipt_tree_slice: ReceiptAccuTreeSliceV1(receipt_tree_slice_merger.into_slice()),
             new_substate_node_ancestry_records: new_node_ancestry_records,
         });
         drop(write_store);
@@ -1208,6 +1237,8 @@ where
             .lock()
             .progress_base(&resultant_ledger_hashes.transaction_root);
 
+        let proof = request.proof;
+        let proposer_timestamp_ms = proof.ledger_header.proposer_timestamp_ms;
         let committed_transaction_bundle = CommittedTransactionBundle {
             state_version: resultant_state_version,
             raw: request.raw,
@@ -1215,11 +1246,11 @@ where
             identifiers: CommittedTransactionIdentifiers {
                 payload: request.validated.create_identifiers(),
                 resultant_ledger_hashes,
+                proposer_timestamp_ms,
             },
         };
 
-        let proof = request.proof;
-        let proposer_timestamp_ms = proof.ledger_header.proposer_timestamp_ms; // for metrics only
+        // for metrics only
         let hash_structures_diff = commit.hash_structures_diff;
         write_store.commit(CommitBundle {
             transactions: vec![committed_transaction_bundle],
@@ -1230,8 +1261,12 @@ where
                 resultant_state_version,
                 hash_structures_diff.state_hash_tree_diff,
             ),
-            transaction_tree_slice: hash_structures_diff.transaction_tree_diff.slice,
-            receipt_tree_slice: hash_structures_diff.receipt_tree_diff.slice,
+            transaction_tree_slice: TransactionAccuTreeSliceV1(
+                hash_structures_diff.transaction_tree_diff.slice,
+            ),
+            receipt_tree_slice: ReceiptAccuTreeSliceV1(
+                hash_structures_diff.receipt_tree_diff.slice,
+            ),
             new_substate_node_ancestry_records: commit.new_substate_node_ancestry_records,
         });
         drop(write_store);
@@ -1353,7 +1388,7 @@ mod tests {
             .header(TransactionHeaderV1 {
                 network_id: NetworkDefinition::simulator().id,
                 start_epoch_inclusive: epoch,
-                end_epoch_exclusive: epoch.after(100),
+                end_epoch_exclusive: epoch.after(100).unwrap(),
                 nonce,
                 notary_public_key: notary_private_key.public_key().into(),
                 notary_is_signatory: true,
@@ -1386,7 +1421,7 @@ mod tests {
             .header(TransactionHeaderV1 {
                 network_id: NetworkDefinition::simulator().id,
                 start_epoch_inclusive: epoch,
-                end_epoch_exclusive: epoch.after(100),
+                end_epoch_exclusive: epoch.after(100).unwrap(),
                 nonce,
                 notary_public_key: notary_private_key.public_key().into(),
                 notary_is_signatory: true,

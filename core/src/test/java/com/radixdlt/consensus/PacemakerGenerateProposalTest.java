@@ -207,6 +207,7 @@ public final class PacemakerGenerateProposalTest {
     when(highestQcLedgerHeader.isEndOfEpoch()).thenReturn(false);
     when(highestQcLedgerHeader.proposerTimestamp()).thenReturn(previousTimestamp);
     when(highQc.highestQC()).thenReturn(highestQc);
+    when(highQc.getHighestRound()).thenReturn(Round.of(1L));
 
     return highQc;
   }

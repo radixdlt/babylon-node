@@ -162,16 +162,16 @@ public final class UInt192 implements Comparable<UInt192> {
    * @param bytes The array of bytes to be used.
    * @return {@code bytes} as an {@link UInt192} type.
    * @throws IllegalArgumentException if {@code bytes} is 0 length.
-   * @see #toByteArray()
+   * @see #toBigEndianBytes()
    */
   @JsonCreator
-  public static UInt192 from(byte[] bytes) {
+  public static UInt192 fromBigEndianBytes(byte[] bytes) {
     Objects.requireNonNull(bytes);
     if (bytes.length == 0) {
       throw new IllegalArgumentException("bytes is 0 bytes long");
     }
     byte[] newBytes = extend(bytes);
-    return from(newBytes, 0);
+    return fromBigEndianBytesAtOffset(newBytes, 0);
   }
 
   /**
@@ -181,9 +181,9 @@ public final class UInt192 implements Comparable<UInt192> {
    * @param bytes The array of bytes to be used.
    * @param offset The offset within the array to be used.
    * @return {@code bytes} from {@code offset} as an {@link UInt192} type.
-   * @see #toByteArray()
+   * @see #toBigEndianBytes()
    */
-  public static UInt192 from(byte[] bytes, int offset) {
+  public static UInt192 fromBigEndianBytesAtOffset(byte[] bytes, int offset) {
     UInt64 high = UInt64.from(bytes, offset);
     UInt128 low = UInt128.from(bytes, offset + UInt64.BYTES);
     return from(high, low);
@@ -391,7 +391,7 @@ public final class UInt192 implements Comparable<UInt192> {
   }
 
   public BigInteger toBigInt() {
-    return new BigInteger(1, this.toByteArray());
+    return new BigInteger(1, this.toBigEndianBytes());
   }
 
   /**
@@ -401,8 +401,8 @@ public final class UInt192 implements Comparable<UInt192> {
    *
    * @return An array of {@link #BYTES} bytes representing the value of this {@link UInt192}.
    */
-  public byte[] toByteArray() {
-    return toByteArray(new byte[BYTES], 0);
+  public byte[] toBigEndianBytes() {
+    return toBigEndianBytes(new byte[BYTES], 0);
   }
 
   /**
@@ -413,7 +413,7 @@ public final class UInt192 implements Comparable<UInt192> {
    * @param offset The offset within the array to place the bytes.
    * @return The passed-in value of {@code bytes}.
    */
-  public byte[] toByteArray(byte[] bytes, int offset) {
+  public byte[] toBigEndianBytes(byte[] bytes, int offset) {
     this.high.toByteArray(bytes, offset);
     this.low.toByteArray(bytes, offset + UInt64.BYTES);
     return bytes;
@@ -439,7 +439,7 @@ public final class UInt192 implements Comparable<UInt192> {
 
   @JsonValue
   public byte[] toJson() {
-    return toByteArray();
+    return toBigEndianBytes();
   }
 
   @Override

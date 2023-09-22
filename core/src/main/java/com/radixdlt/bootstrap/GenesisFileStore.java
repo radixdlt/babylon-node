@@ -92,26 +92,25 @@ public final class GenesisFileStore implements GenesisStore {
   @Override
   public void saveGenesisData(RawGenesisDataWithHash genesisDataWithHash) {
     if (!genesisFolder.exists()) {
-      try {
-        if (!genesisFolder.mkdirs()) {
-          throw new RuntimeException("Genesis data folder doesn't exist and failed to create");
-        }
-        if (!genesisDataFile.createNewFile()) {
-          throw new RuntimeException("Genesis data file doesn't exist and failed to create");
-        }
-        if (!genesisHashFile.createNewFile()) {
-          throw new RuntimeException("Genesis hash file doesn't exist and failed to create");
-        }
-      } catch (IOException e) {
-        throw new RuntimeException(
-            "Genesis data or hash file doesn't exist and failed to create", e);
+      if (!genesisFolder.mkdirs()) {
+        throw new RuntimeException("Genesis data folder doesn't exist and failed to create");
       }
+    }
+    try {
+      Files.deleteIfExists(genesisDataFile.toPath());
+    } catch (IOException e) {
+      throw new RuntimeException("Couldn't wipe the potentially pre-existing genesisDataFile", e);
     }
     try (FileOutputStream outputStream = new FileOutputStream(genesisDataFile)) {
       final var compressed = Compress.compress(genesisDataWithHash.genesisData().value());
       outputStream.write(compressed);
     } catch (IOException e) {
       throw new RuntimeException("Couldn't write to the genesis data file", e);
+    }
+    try {
+      Files.deleteIfExists(genesisHashFile.toPath());
+    } catch (IOException e) {
+      throw new RuntimeException("Couldn't wipe the potentially pre-existing genesisHashFile", e);
     }
     try (FileOutputStream outputStream = new FileOutputStream(genesisHashFile)) {
       outputStream.write(Hex.encode(genesisDataWithHash.genesisDataHash().asBytes()));

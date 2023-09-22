@@ -72,7 +72,13 @@ import java.io.IOException;
 public final class FixedGenesisLoader {
   public static WrappedByteArray loadGenesisData(FixedNetworkGenesis fixedNetworkGenesis) {
     return switch (fixedNetworkGenesis) {
-      case FixedNetworkGenesis.Constant constant -> constant.genesisData();
+      case FixedNetworkGenesis.Constant constant -> {
+        try {
+          yield new WrappedByteArray(Compress.uncompress(constant.compressedGenesisData().value()));
+        } catch (IOException e) {
+          throw new RuntimeException("Failed to load fixed network genesis from resources", e);
+        }
+      }
       case FixedNetworkGenesis.Resource resource -> {
         try (var is =
             FixedGenesisLoader.class

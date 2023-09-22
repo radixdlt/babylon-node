@@ -1,10 +1,15 @@
+use std::iter;
+
 use crate::core_api::*;
 
 use radix_engine::types::hash;
 
-use state_manager::store::traits::*;
+use state_manager::store::{traits::*, StateManagerDatabase};
 use state_manager::transaction::*;
-use state_manager::{CommittedTransactionIdentifiers, LocalTransactionReceipt, StateVersion};
+use state_manager::{
+    CommittedTransactionIdentifiers, LedgerHeader, LedgerProof, LocalTransactionReceipt,
+    StateVersion,
+};
 
 use transaction::manifest;
 use transaction::prelude::*;
@@ -15,9 +20,12 @@ use super::to_api_committed_state_identifiers;
 pub(crate) async fn handle_stream_transactions(
     state: State<CoreApiState>,
     Json(request): Json<models::StreamTransactionsRequest>,
-) -> Result<Json<models::StreamTransactionsResponse>, ResponseError<()>> {
+) -> Result<
+    Json<models::StreamTransactionsResponse>,
+    ResponseError<models::StreamTransactionsErrorDetails>,
+> {
     assert_matching_network(&request.network, &state.network)?;
-    let mapping_context = MappingContext::new(&state.network)
+    let mapping_context = MappingContext::new_for_transaction_stream(&state.network)
         .with_sbor_formats(&request.sbor_format_options)
         .with_transaction_formats(&request.transaction_format_options)
         .with_substate_formats(&request.substate_format_options);
@@ -51,6 +59,9 @@ pub(crate) async fn handle_stream_transactions(
             Please note the resync will take a while.",
         ));
     }
+
+    let max_ledger_state_version = to_api_state_version(database.max_state_version())?;
+
     let previous_state_identifiers = match from_state_version.previous() {
         Ok(previous_state_version) => {
             if previous_state_version.number() == 0 {
@@ -58,7 +69,13 @@ pub(crate) async fn handle_stream_transactions(
             } else {
                 let identifiers = database
                     .get_committed_transaction_identifiers(previous_state_version)
-                    .expect("Txn identifiers are missing");
+                    .ok_or_else(|| detailed_error(
+                        StatusCode::BAD_REQUEST,
+                        "The requested state version is out of bounds",
+                        models::StreamTransactionsErrorDetails::RequestedStateVersionOutOfBoundsErrorDetails {
+                            max_ledger_state_version
+                        }
+                    ))?;
                 Some(Box::new(to_api_committed_state_identifiers(
                     previous_state_version,
                     &identifiers.resultant_ledger_hashes,
@@ -68,22 +85,27 @@ pub(crate) async fn handle_stream_transactions(
         Err(_) => None,
     };
 
-    let max_state_version = database.max_state_version();
-
     let mut response = models::StreamTransactionsResponse {
         previous_state_identifiers,
         from_state_version: to_api_state_version(from_state_version)?,
-        count: MAX_BATCH_COUNT_PER_REQUEST as i32, // placeholder to get a better size aproximation for the header
-        max_ledger_state_version: to_api_state_version(max_state_version)?,
+        count: MAX_BATCH_COUNT_PER_REQUEST as i32, // placeholder to get a better size approximation for the header
+        max_ledger_state_version,
         transactions: Vec::new(),
+        proofs: None,
     };
+
+    let mut proofs = Vec::new();
 
     // Reserve enough for the "header" fields
     let mut current_total_size = response.get_json_size();
-    let bundles = database
-        .get_committed_transaction_bundle_iter(from_state_version)
-        .take(limit);
-    for bundle in bundles {
+    let bundles_iter = database.get_committed_transaction_bundle_iter(from_state_version);
+    let proofs_iter = if request.include_proofs.is_some_and(|value| value) {
+        database.get_proof_iter(from_state_version)
+    } else {
+        Box::new(iter::empty())
+    };
+    let transactions_and_proofs_iter = TransactionAndProofIterator::new(bundles_iter, proofs_iter);
+    for (bundle, maybe_proof) in transactions_and_proofs_iter.take(limit) {
         let CommittedTransactionBundle {
             state_version,
             raw,
@@ -97,6 +119,7 @@ pub(crate) async fn handle_stream_transactions(
             }
         })?;
         let committed_transaction = to_api_committed_transaction(
+            Some(&database),
             &mapping_context,
             state_version,
             raw,
@@ -104,15 +127,22 @@ pub(crate) async fn handle_stream_transactions(
             receipt,
             identifiers,
         )?;
-
-        let committed_transaction_size = committed_transaction.get_json_size();
-        current_total_size += committed_transaction_size;
-
+        current_total_size += committed_transaction.get_json_size();
         response.transactions.push(committed_transaction);
+
+        if let Some(proof) = maybe_proof {
+            let api_proof = to_api_ledger_proof(&mapping_context, proof)?;
+            current_total_size += api_proof.get_json_size();
+            proofs.push(api_proof);
+        }
 
         if current_total_size > CAP_BATCH_RESPONSE_WHEN_ABOVE_BYTES {
             break;
         }
+    }
+
+    if request.include_proofs.is_some_and(|value| value) {
+        response.proofs = Some(proofs);
     }
 
     let count: i32 = {
@@ -130,8 +160,90 @@ pub(crate) async fn handle_stream_transactions(
     Ok(response).map(Json)
 }
 
+pub fn to_api_ledger_proof(
+    mapping_context: &MappingContext,
+    proof: LedgerProof,
+) -> Result<models::LedgerProof, MappingError> {
+    let timestamped_signatures = proof
+        .timestamped_signatures
+        .into_iter()
+        .map(|timestamped_validator_signature| {
+            Ok(models::TimestampedValidatorSignature {
+                validator_key: Box::new(to_api_ecdsa_secp256k1_public_key(
+                    &timestamped_validator_signature.key,
+                )),
+                validator_address: to_api_component_address(
+                    mapping_context,
+                    &timestamped_validator_signature.validator_address,
+                )?,
+                timestamp_ms: timestamped_validator_signature.timestamp_ms,
+                signature: Box::new(models::EcdsaSecp256k1Signature {
+                    key_type: models::PublicKeyType::EcdsaSecp256k1,
+                    signature_hex: to_hex(timestamped_validator_signature.signature.to_vec()),
+                }),
+            })
+        })
+        .collect::<Result<_, _>>()?;
+    Ok(models::LedgerProof {
+        opaque_hash: to_api_hash(&proof.opaque),
+        ledger_header: Box::new(to_api_ledger_header(mapping_context, proof.ledger_header)?),
+        timestamped_signatures,
+    })
+}
+
+pub fn to_api_hash(hash: &Hash) -> String {
+    to_hex(hash)
+}
+
+pub fn to_api_ledger_header(
+    mapping_context: &MappingContext,
+    ledger_header: LedgerHeader,
+) -> Result<models::LedgerHeader, MappingError> {
+    let next_epoch = match ledger_header.next_epoch {
+        Some(next_epoch) => {
+            let validators = next_epoch
+                .validator_set
+                .into_iter()
+                .map(|active_validator_info| {
+                    Ok(models::ActiveValidator {
+                        address: to_api_component_address(
+                            mapping_context,
+                            &active_validator_info.address,
+                        )?,
+                        key: Box::new(to_api_ecdsa_secp256k1_public_key(
+                            &active_validator_info.key,
+                        )),
+                        stake: to_api_decimal(&active_validator_info.stake),
+                    })
+                })
+                .collect::<Result<_, _>>()?;
+            Some(Box::new(models::NextEpoch {
+                epoch: to_api_epoch(mapping_context, next_epoch.epoch)?,
+                validators,
+            }))
+        }
+        None => None,
+    };
+    Ok(models::LedgerHeader {
+        epoch: to_api_epoch(mapping_context, ledger_header.epoch)?,
+        round: to_api_round(ledger_header.round)?,
+        state_version: to_api_state_version(ledger_header.state_version)?,
+        hashes: Box::new(models::LedgerHashes {
+            state_tree_hash: to_api_state_tree_hash(&ledger_header.hashes.state_root),
+            transaction_tree_hash: to_api_transaction_tree_hash(
+                &ledger_header.hashes.transaction_root,
+            ),
+            receipt_tree_hash: to_api_receipt_tree_hash(&ledger_header.hashes.receipt_root),
+        }),
+        consensus_parent_round_timestamp_ms: ledger_header.consensus_parent_round_timestamp_ms,
+        proposer_timestamp_ms: ledger_header.proposer_timestamp_ms,
+        next_epoch,
+    })
+}
+
 #[tracing::instrument(skip_all)]
 pub fn to_api_committed_transaction(
+    database: Option<&StateManagerDatabase>,
     context: &MappingContext,
     state_version: StateVersion,
     raw_ledger_transaction: RawLedgerTransaction,
@@ -139,7 +251,7 @@ pub fn to_api_committed_transaction(
     receipt: LocalTransactionReceipt,
     identifiers: CommittedTransactionIdentifiers,
 ) -> Result<models::CommittedTransaction, MappingError> {
-    let receipt = to_api_receipt(context, receipt)?;
+    let receipt = to_api_receipt(database, context, receipt)?;
 
     Ok(models::CommittedTransaction {
         resultant_state_identifiers: Box::new(to_api_committed_state_identifiers(
@@ -152,6 +264,7 @@ pub fn to_api_committed_transaction(
             &ledger_transaction,
             &identifiers.payload,
         )?),
+        proposer_timestamp_ms: identifiers.proposer_timestamp_ms,
         receipt: Box::new(receipt),
     })
 }

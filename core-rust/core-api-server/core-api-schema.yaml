@@ -52,8 +52,9 @@ openapi: 3.1.0
 # => Hex-encoded hashes should end _hash
 # => Hex-encoded bytes/payload should end _hex and not include _bytes
 info:
-  version: '0.5.1'
-  title: 'Babylon Core API - RCnet v3.1'
+  # Should be the release version, and the release display name
+  version: 'v1.0.0'
+  title: 'Radix Core API - Babylon'
   license:
     name: The Radix License, Version 1.0
     url: https://www.radixfoundation.org/licenses/license-v1
@@ -63,8 +64,10 @@ info:
   description: |
     This API is exposed by the Babylon Radix node to give clients access to the Radix Engine, Mempool and State in the node.
 
-    It is intended for use by node-runners on a private network, and is not intended to be exposed publicly.
-    Very heavy load may impact the node's function.
+    The default configuration is intended for use by node-runners on a private network, and is not intended to be exposed publicly.
+    Very heavy load may impact the node's function. The node exposes a configuration flag which allows disabling certain endpoints
+    which may be problematic, but monitoring is advised. This configuration parameter is
+    `api.core.flags.enable_unbounded_endpoints` / `RADIXDLT_CORE_API_FLAGS_ENABLE_UNBOUNDED_ENDPOINTS`.
 
     This API exposes queries against the node's current state (see `/lts/state/` or `/state/`), and streams of transaction history
     (under `/lts/stream/` or `/stream`).
@@ -73,15 +76,19 @@ info:
     [Gateway API](https://docs-babylon.radixdlt.com/).
 
     ## Integration and forward compatibility guarantees
-  
-    This version of the Core API belongs to the fourth release candidate of the Radix Babylon network ("RCnet v3.1").
 
     Integrators (such as exchanges) are recommended to use the `/lts/` endpoints - they have been designed to be clear
     and simple for integrators wishing to create and monitor transactions involving fungible transfers to/from accounts.
 
-    All endpoints under `/lts/` are guaranteed to be forward compatible to Babylon mainnet launch (and beyond).
+    All endpoints under `/lts/` have high guarantees of forward compatibility in future node versions.
     We may add new fields, but existing fields will not be changed. Assuming the integrating code uses a permissive
     JSON parser which ignores unknown fields, any additions will not affect existing code.
+
+    Other endpoints may be changed with new node versions carrying protocol-updates, although any breaking changes
+    will be flagged clearly in the corresponding release notes.
+
+    All responses may have additional fields added, so clients are advised to use JSON parsers which ignore unknown
+    fields on JSON objects.
 
 servers:
   - url: 'localhost:3333/core'
@@ -341,6 +348,31 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/LtsStateAccountFungibleResourceBalanceResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
+  "/lts/state/account-deposit-behaviour":
+    post:
+      summary: Get Account Deposit Behaviour
+      description: Returns deposit behaviour of a single account for multiple resource addresses
+      tags:
+        - LTS
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LtsStateAccountDepositBehaviourRequest"
+      responses:
+        '200':
+          description: Account deposit behaviour response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LtsStateAccountDepositBehaviourResponse"
         '500':
           description: Server error
           content:
@@ -1109,7 +1141,7 @@ components:
           description: Whether to return the raw hex-encoded bytes (default true)
           type: boolean
         programmatic_json:
-          description: Whether to return the programmatic json format (default true)
+          description: Whether to return the programmatic json format (normally default true, defaults false for streamed transactions)
           type: boolean
     TransactionFormatOptions:
       type: object
@@ -1122,7 +1154,7 @@ components:
           description: Whether to return the hex-encoded blobs (default false)
           type: boolean
         message:
-          description: Whether to return the transaction message (default false)
+          description: Whether to return the transaction message (default true)
           type: boolean
         raw_system_transaction:
           description: Whether to return the raw hex-encoded system transaction bytes (default false)
@@ -1603,6 +1635,7 @@ components:
         - Basic
         - TransactionSubmit
         - LtsTransactionSubmit
+        - StreamTransactions
     ErrorResponse:
       type: object
       discriminator:
@@ -1612,6 +1645,7 @@ components:
           Basic: "#/components/schemas/BasicErrorResponse"
           TransactionSubmit: "#/components/schemas/TransactionSubmitErrorResponse"
           LtsTransactionSubmit: "#/components/schemas/LtsTransactionSubmitErrorResponse"
+          StreamTransactions: "#/components/schemas/StreamTransactionsErrorResponse"
       required:
         - error_type
         - code
@@ -1821,11 +1855,16 @@ components:
       type: object
       description: Transaction state updates (only present if status is Succeeded or Failed)
       required:
+        - deleted_partitions
         - created_substates
         - updated_substates
         - deleted_substates
         - new_global_entities
       properties:
+        deleted_partitions:
+          type: array
+          items:
+            $ref: "#/components/schemas/PartitionId"
         created_substates:
           type: array
           items:
@@ -1931,7 +1970,7 @@ components:
           type: boolean
         entity_address:
           $ref: "#/components/schemas/EntityAddress"
-    SubstateId:
+    PartitionId:
       type: object
       required:
         - entity_type
@@ -1939,8 +1978,6 @@ components:
         - entity_module
         - partition_kind
         - partition_number
-        - substate_type
-        - substate_key
       properties:
         entity_type:
           $ref: "#/components/schemas/EntityType"
@@ -1955,10 +1992,18 @@ components:
           format: int32
           minimum: 0
           maximum: 255
-        substate_type:
-          $ref: "#/components/schemas/SubstateType"
-        substate_key:
-          $ref: "#/components/schemas/SubstateKey"
+    SubstateId:
+      allOf:
+        - $ref: "#/components/schemas/PartitionId"
+        - type: object
+          required:
+            - substate_type
+            - substate_key
+          properties:
+            substate_type:
+              $ref: "#/components/schemas/SubstateType"
+            substate_key:
+              $ref: "#/components/schemas/SubstateKey"
     EntityModule:
       type: string
       enum:
@@ -2731,6 +2776,40 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/NonFungibleLocalId'
+    PresentedBadgeType:
+      type: string
+      enum:
+        - Resource
+        - NonFungible
+    PresentedBadge:
+      type: object
+      required:
+        - type
+        - resource_address
+      properties:
+        type:
+          $ref: '#/components/schemas/PresentedBadgeType'
+        resource_address:
+          $ref: '#/components/schemas/ResourceAddress'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match PresentedBadgeType options above
+          Resource: '#/components/schemas/ResourcePresentedBadge'
+          NonFungible: '#/components/schemas/NonFungiblePresentedBadge'
+    ResourcePresentedBadge:
+      allOf:
+        - $ref: '#/components/schemas/PresentedBadge'
+        - type: object
+    NonFungiblePresentedBadge:
+      allOf:
+        - $ref: '#/components/schemas/PresentedBadge'
+        - type: object
+          required:
+            - local_id
+          properties:
+            local_id:
+              $ref: '#/components/schemas/NonFungibleLocalIdSimpleRepresentation'
 ##################################
 # GENERAL / SHARED MODELS - SBOR #
 ##################################
@@ -3931,30 +4010,35 @@ components:
         propertyName: type
         mapping:
           # NOTE: These need to match TypeInfoType options above
-          Local: '#/components/schemas/LocalGenericSubstition'
-          Remote: '#/components/schemas/RemoteGenericSubstition'
-    LocalGenericSubstition:
+          Local: '#/components/schemas/LocalGenericSubstitution'
+          Remote: '#/components/schemas/RemoteGenericSubstitution'
+    LocalGenericSubstitution:
       allOf:
         - $ref: '#/components/schemas/GenericSubstitution'
         - type: object
           description: |
             The generic substitution is provided by the instance itself.
+            The `scoped_type_id` can be expanded to a `FullyScopedTypeId` by including the current entity's address.
           required:
             - scoped_type_id
           properties:
             scoped_type_id:
               $ref: '#/components/schemas/ScopedTypeId'
-    RemoteGenericSubstition:
+    RemoteGenericSubstitution:
       allOf:
         - $ref: '#/components/schemas/GenericSubstitution'
         - type: object
           description: |
             The generic substitution is provided remotely by a blueprint type.
+            The `resolved_full_type_id` is added by the node, and is always present in the model returned from the transaction stream API.
+            Other APIs may not resolve the type from the blueprint definition. 
           required:
             - blueprint_type_identifier
           properties:
             blueprint_type_identifier:
               $ref: '#/components/schemas/BlueprintTypeIdentifier'
+            resolved_full_type_id:
+              $ref: '#/components/schemas/FullyScopedTypeId'
     RoleAssignmentModuleFieldOwnerRoleSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -4925,7 +5009,7 @@ components:
         This setting has the following interpretations:
         - Allow: Allows the deposit of all resources - the deny list is honored in this state.
         - Reject: Disallows the deposit of all resources - the allow list is honored in this state.
-        - AllowExisting: Only deposits of existing resources is accepted - both allow and deny lists are honored in this mode.
+        - AllowExisting: Only deposits of existing resources *or* XRD are accepted - both allow and deny lists are honored in this mode.
       enum:
         - Accept
         - Reject
@@ -5528,6 +5612,82 @@ components:
           description: The Bech32m-encoded human readable version of the account's address
         fungible_resource_balance:
           $ref: "#/components/schemas/LtsFungibleResourceBalance"
+#########################################################
+# REQUEST: /lts/state/account-deposit-behaviour #
+#########################################################
+    LtsStateAccountDepositBehaviourRequest:
+      type: object
+      required:
+        - network
+        - account_address
+      properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
+        account_address:
+          description: The Bech32m-encoded human readable version of the account's address.
+          type: string
+        resource_addresses:
+          description: The resource addresses to check the deposit behaviours of.
+          type: array
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/ResourceAddress"
+        badge:
+          description: The depositor badge to check against the account's set of authorized depositors.
+          $ref: '#/components/schemas/PresentedBadge'
+    LtsStateAccountDepositBehaviourResponse:
+      type: object
+      required:
+        - state_version
+        - ledger_header_summary
+        - default_deposit_rule
+      properties:
+        state_version:
+          $ref: "#/components/schemas/StateVersion"
+          description: The state version at which the query was performed.
+        ledger_header_summary:
+          $ref: "#/components/schemas/LedgerHeaderSummary"
+          description: The excerpt from the ledger header committed at the `state_version`.
+        default_deposit_rule:
+          $ref: '#/components/schemas/DefaultDepositRule'
+        is_badge_authorized_depositor:
+          type: boolean
+          description: |
+            Whether the input `badge` belongs to the account's set of authorized depositors.
+            This field will only be present if any badge was passed in the request.
+        resource_specific_behaviours:
+          type: object
+          description: |
+            A map from one of the input `resource_addresses` to its specific deposit behavior configured for this account.
+            This field will only be present if an array of specific resource addresses was passed in the request (even if empty).
+          additionalProperties:
+            $ref: '#/components/schemas/ResourceSpecificDepositBehaviour'
+    ResourceSpecificDepositBehaviour:
+      type: object
+      required:
+        - vault_exists
+        - is_xrd
+        - allows_try_deposit
+      properties:
+        resource_preference:
+          $ref: '#/components/schemas/ResourcePreference'
+          description: Whether the resource is on the allow or the deny list (no preference when missing).
+        vault_exists:
+          type: boolean
+          description: |
+            Whether the account contains a vault for the resource (even if 0 balance).
+            This plays a role when `DefaultDepositRule` is `AllowExisting`.
+        is_xrd:
+          type: boolean
+          description: |
+            Whether the resource represents the native XRD fungible.
+            XRD is a special case which does not require `vault_exists = true` to satisfy the `AllowExisting` rule.
+        allows_try_deposit:
+          type: boolean
+          description: |
+            The fully resolved `try_deposit_*` ability of this resource (which takes all the inputs
+            into account, including the authorized depositor badge, the default deposit rule and
+            the above resource-specific circumstances).
 #############################################
 # REQUEST: /lts/stream/transaction-outcomes #
 #############################################
@@ -5592,6 +5752,7 @@ components:
       type: object
       required:
         - state_version
+        - proposer_timestamp_ms
         - accumulator_hash
         - status
         - fungible_entity_balance_changes
@@ -5601,6 +5762,12 @@ components:
         state_version:
           $ref: "#/components/schemas/StateVersion"
           description: The resultant state version after the transaction has been committed
+        proposer_timestamp_ms:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100000000000000
+          description: An integer between `0` and `10^14`, marking the proposer timestamp in ms.
         accumulator_hash:
           type: string
           minLength: 64
@@ -6842,6 +7009,9 @@ components:
           $ref: "#/components/schemas/TransactionFormatOptions"
         substate_format_options:
           $ref: "#/components/schemas/SubstateFormatOptions"
+        include_proofs:
+          description: Whether to include LedgerProofs (default false)
+          type: boolean
     StreamTransactionsResponse:
       type: object
       required:
@@ -6875,12 +7045,57 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/CommittedTransaction"
+        proofs:
+          description: A ledger proof list starting from `from_state_version` (inclusive) stored by this node.
+          type: array
+          items:
+            $ref: "#/components/schemas/LedgerProof"
+    StreamTransactionsErrorResponse:
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+        - type: object
+          properties:
+            details:
+              $ref: "#/components/schemas/StreamTransactionsErrorDetails"
+    StreamTransactionsErrorDetailsType:
+      type: string
+      enum:
+        - RequestedStateVersionOutOfBounds
+    StreamTransactionsErrorDetails:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/StreamTransactionsErrorDetailsType"
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match StreamTransactionsErrorDetailsType
+          RequestedStateVersionOutOfBounds: '#/components/schemas/RequestedStateVersionOutOfBoundsErrorDetails'
+    RequestedStateVersionOutOfBoundsErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/StreamTransactionsErrorDetails"
+        - type: object
+          required:
+            - max_ledger_state_version
+          properties:
+            max_ledger_state_version:
+              $ref: "#/components/schemas/StateVersion"
+              description: |
+                The maximum state version currently committed on this node's ledger - the same as
+                would be returned by the `max_ledger_state_version` in a successful response.
+                *Note on the bounds:* the requested `from_state_version` cannot be greater than
+                `max_ledger_state_version + 1` (which is an edge case returning valid
+                `previous_state_identifiers` and an empty `transactions`). Any greater requested
+                value triggers this error.
     CommittedTransaction:
       type: object
       required:
         - resultant_state_identifiers
         - ledger_transaction
         - receipt
+        - proposer_timestamp_ms
       properties:
         resultant_state_identifiers:
           $ref: "#/components/schemas/CommittedStateIdentifier"
@@ -6888,6 +7103,92 @@ components:
           $ref: "#/components/schemas/LedgerTransaction"
         receipt:
           $ref: "#/components/schemas/TransactionReceipt"
+        proposer_timestamp_ms:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100000000000000
+          description: An integer between `0` and `10^14`, marking the proposer timestamp in ms.
+    LedgerProof:
+      type: object
+      required:
+        - opaque_hash
+        - ledger_header
+        - timestamped_signatures
+      properties:
+        opaque_hash: 
+          $ref: "#/components/schemas/OpaqueHash"
+        ledger_header:
+          $ref: "#/components/schemas/LedgerHeader"
+        timestamped_signatures:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimestampedValidatorSignature"
+    LedgerHeader:
+      type: object
+      required:
+        - epoch
+        - round
+        - state_version
+        - hashes
+        - consensus_parent_round_timestamp_ms
+        - proposer_timestamp_ms
+      properties:
+        epoch:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: An integer between `0` and `10^10`, marking the epoch.
+        round:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: An integer between `0` and `10^10`, marking the current round in an epoch
+        state_version:
+          $ref: "#/components/schemas/StateVersion"
+        hashes:
+          $ref: "#/components/schemas/LedgerHashes"
+        consensus_parent_round_timestamp_ms:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100000000000000
+          description: An integer between `0` and `10^14`, marking the consensus parent round timestamp in ms.
+        proposer_timestamp_ms:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100000000000000
+          description: An integer between `0` and `10^14`, marking the proposer timestamp in ms.
+        next_epoch:
+          $ref: "#/components/schemas/NextEpoch"
+    TimestampedValidatorSignature:
+      type: object
+      required:
+        - validator_key
+        - validator_address
+        - timestamp_ms
+        - signature
+      properties:
+        validator_key:
+          $ref: "#/components/schemas/EcdsaSecp256k1PublicKey"
+        validator_address:
+          $ref: "#/components/schemas/ComponentAddress"
+        timestamp_ms:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100000000000000
+          description: An integer between `0` and `10^14`, marking the unix timestamp in ms.
+        signature:
+          $ref: "#/components/schemas/EcdsaSecp256k1Signature"
+    OpaqueHash:
+      type: string
+      minLength: 64
+      maxLength: 64
+      description: A hex-encoded 32-byte vertex VoteData hash on the consensus side, opaque to ledger.
     LedgerTransactionType:
       type: string
       description: The type of the ledger transaction

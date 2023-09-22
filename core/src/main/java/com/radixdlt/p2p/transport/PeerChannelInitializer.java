@@ -75,6 +75,7 @@ import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.p2p.capability.Capabilities;
 import com.radixdlt.p2p.transport.logging.LogSink;
 import com.radixdlt.p2p.transport.logging.LoggingHandler;
+import com.radixdlt.protocol.ProtocolVersion;
 import com.radixdlt.serialization.Serialization;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
@@ -107,7 +108,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
   private final P2PConfig config;
   private final Addressing addressing;
   private final Network network;
-  private final String newestForkName;
+  private final ProtocolVersion newestProtocolVersion;
   private final Metrics metrics;
   private final Serialization serialization;
   private final SecureRandom secureRandom;
@@ -121,7 +122,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
       P2PConfig config,
       Addressing addressing,
       Network network,
-      String newestForkName,
+      ProtocolVersion newestProtocolVersion,
       Metrics metrics,
       Serialization serialization,
       SecureRandom secureRandom,
@@ -133,7 +134,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
     this.config = Objects.requireNonNull(config);
     this.addressing = Objects.requireNonNull(addressing);
     this.network = network;
-    this.newestForkName = newestForkName;
+    this.newestProtocolVersion = newestProtocolVersion;
     this.metrics = Objects.requireNonNull(metrics);
     this.serialization = Objects.requireNonNull(serialization);
     this.secureRandom = Objects.requireNonNull(secureRandom);
@@ -142,7 +143,6 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
     this.uri = Objects.requireNonNull(uri);
     this.capabilities = capabilities;
     this.maxMessageSize = maxMessageSize;
-    ;
   }
 
   @Override
@@ -224,7 +224,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
             config,
             addressing,
             network,
-            newestForkName,
+            newestProtocolVersion,
             metrics,
             serialization,
             secureRandom,

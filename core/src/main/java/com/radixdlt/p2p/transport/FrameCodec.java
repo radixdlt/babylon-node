@@ -103,6 +103,10 @@ public final class FrameCodec {
     enc.init(
         true,
         new ParametersWithIV(
+            // SNYK - this file is ignored in .snyk file
+            // Raised issue: Hardcoded value array {...} is used as a cipher initialization value.
+            // Explanation: The key is always unique (generated during handshake),
+            // so a zero-filled initialization vector isn't an issue.
             new KeyParameter(secrets.getAes()), new byte[encCipher.getBlockSize()]));
 
     final var decCipher = new AESEngine();
@@ -110,6 +114,10 @@ public final class FrameCodec {
     dec.init(
         false,
         new ParametersWithIV(
+            // SNYK - this file is ignored in .snyk file
+            // Raised issue: Hardcoded value array {...} is used as a cipher initialization value.
+            // Explanation: The key is always unique (generated during handshake),
+            // so a zero-filled initialization vector isn't an issue.
             new KeyParameter(secrets.getAes()), new byte[decCipher.getBlockSize()]));
 
     egressMac = secrets.getEgressMac();

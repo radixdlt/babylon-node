@@ -64,7 +64,6 @@
 
 use super::stage_tree::{Accumulator, Delta, DerivedStageKey, StageKey, StageTree};
 use super::ReadableStore;
-use std::collections::Bound::{Included, Unbounded};
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::staging::{
@@ -73,8 +72,8 @@ use crate::staging::{
 };
 use crate::{EpochTransactionIdentifiers, ReceiptTreeHash, StateVersion, TransactionTreeHash};
 use im::hashmap::HashMap as ImmutableHashMap;
+use itertools::Itertools;
 
-use im::ordmap::OrdMap as ImmutableOrdMap;
 use radix_engine_common::prelude::NodeId;
 
 use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
@@ -84,7 +83,8 @@ use crate::staging::overlays::{
 };
 use crate::transaction::{LedgerTransactionHash, TransactionLogic};
 use radix_engine_store_interface::interface::{
-    DatabaseUpdate, DbPartitionKey, DbSortKey, DbSubstateValue, PartitionEntry, SubstateDatabase,
+    DatabaseUpdate, DbPartitionKey, DbSortKey, DbSubstateValue, PartitionDatabaseUpdates,
+    PartitionEntry, SubstateDatabase,
 };
 use radix_engine_stores::hash_tree::tree_store::{NodeKey, ReadableTreeStore, TreeNode};
 
@@ -282,27 +282,6 @@ impl<'s, S> StagedStore<'s, S> {
     pub fn new(root: &'s S, overlay: &'s ImmutableStore) -> Self {
         Self { root, overlay }
     }
-
-    pub fn list_overlayed_entries(
-        &self,
-        partition_key: &DbPartitionKey,
-    ) -> Box<dyn Iterator<Item = (DbSortKey, DatabaseUpdate)> + '_> {
-        let partition_key = partition_key.clone();
-        Box::new(
-            self.overlay
-                .substate_updates
-                .range((
-                    Included(&(partition_key.clone(), DbSortKey(vec![]))),
-                    Unbounded,
-                ))
-                .take_while(move |((next_partition_key, _), _)| {
-                    next_partition_key.eq(&partition_key)
-                })
-                .map(|((_, sort_key), database_update)| {
-                    (sort_key.clone(), database_update.clone())
-                }),
-        )
-    }
 }
 
 impl<'s, S: SubstateDatabase> SubstateDatabase for StagedStore<'s, S> {
@@ -311,14 +290,25 @@ impl<'s, S: SubstateDatabase> SubstateDatabase for StagedStore<'s, S> {
         partition_key: &DbPartitionKey,
         sort_key: &DbSortKey,
     ) -> Option<DbSubstateValue> {
-        let substate_key = (partition_key.clone(), sort_key.clone());
-        if let Some(overlay_update) = self.overlay.substate_updates.get(&substate_key) {
-            match overlay_update {
-                DatabaseUpdate::Set(value) => Some(value.clone()),
-                DatabaseUpdate::Delete => None,
+        let partition_updates = self.overlay.partition_updates.get(partition_key);
+        let Some(partition_updates) = partition_updates else {
+            return self.root.get_substate(partition_key, sort_key);
+        };
+        match partition_updates {
+            ImmutablePartitionUpdates::Delta { substate_updates } => {
+                match substate_updates.get(sort_key) {
+                    None => self.root.get_substate(partition_key, sort_key),
+                    Some(update) => match update {
+                        DatabaseUpdate::Set(value) => Some(value.clone()),
+                        DatabaseUpdate::Delete => None,
+                    },
+                }
             }
-        } else {
-            self.root.get_substate(partition_key, sort_key)
+            ImmutablePartitionUpdates::Batch(batch) => match batch {
+                BatchImmutablePartitionUpdates::Reset {
+                    new_substate_values,
+                } => new_substate_values.get(sort_key).cloned(),
+            },
         }
     }
 
@@ -326,12 +316,32 @@ impl<'s, S: SubstateDatabase> SubstateDatabase for StagedStore<'s, S> {
         &self,
         partition_key: &DbPartitionKey,
     ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
-        let root_iter = self.root.list_entries(partition_key);
-        let overlay_iter = self.list_overlayed_entries(partition_key);
-        Box::new(SubstateOverlayIterator::new(
-            root_iter.peekable(),
-            overlay_iter.peekable(),
-        ))
+        let partition_updates = self.overlay.partition_updates.get(partition_key);
+        let Some(partition_updates) = partition_updates else {
+            return self.root.list_entries(partition_key);
+        };
+        match partition_updates {
+            ImmutablePartitionUpdates::Delta { substate_updates } => {
+                let overlaid_iter = substate_updates
+                    .iter()
+                    .map(|(sort_key, update)| (sort_key.clone(), update.clone()))
+                    .sorted_by(|(left_key, _), (right_key, _)| left_key.cmp(right_key));
+                Box::new(SubstateOverlayIterator::new(
+                    self.root.list_entries(partition_key),
+                    Box::new(overlaid_iter),
+                ))
+            }
+            ImmutablePartitionUpdates::Batch(batch) => match batch {
+                BatchImmutablePartitionUpdates::Reset {
+                    new_substate_values,
+                } => Box::new(
+                    new_substate_values
+                        .iter()
+                        .map(|(sort_key, update)| (sort_key.clone(), update.clone()))
+                        .sorted_by(|(left_key, _), (right_key, _)| left_key.cmp(right_key)),
+                ),
+            },
+        }
     }
 }
 
@@ -384,7 +394,7 @@ impl Delta for ProcessedTransactionReceipt {
         match self {
             ProcessedTransactionReceipt::Commit(commit) => {
                 let ledger_receipt = &commit.local_receipt.on_ledger;
-                ledger_receipt.substate_changes.len()
+                ledger_receipt.state_changes.len()
                     + ledger_receipt.application_events.len()
                     + commit.hash_structures_diff.weight()
             }
@@ -421,17 +431,108 @@ impl<K, N> AccuTreeDiff<K, N> {
 
 #[derive(Clone)]
 pub struct ImmutableStore {
-    substate_updates: ImmutableOrdMap<(DbPartitionKey, DbSortKey), DatabaseUpdate>,
+    partition_updates: ImmutableHashMap<DbPartitionKey, ImmutablePartitionUpdates>,
     state_tree_nodes: ImmutableHashMap<NodeKey, TreeNode>,
     transaction_tree_slices: ImmutableHashMap<StateVersion, TreeSlice<TransactionTreeHash>>,
     receipt_tree_slices: ImmutableHashMap<StateVersion, TreeSlice<ReceiptTreeHash>>,
     node_ancestry_records: ImmutableHashMap<NodeId, SubstateNodeAncestryRecord>,
 }
 
+#[derive(Clone)]
+pub enum ImmutablePartitionUpdates {
+    Delta {
+        substate_updates: ImmutableHashMap<DbSortKey, DatabaseUpdate>,
+    },
+    Batch(BatchImmutablePartitionUpdates),
+}
+
+impl Default for ImmutablePartitionUpdates {
+    fn default() -> Self {
+        Self::Delta {
+            substate_updates: ImmutableHashMap::new(),
+        }
+    }
+}
+
+#[derive(Clone)]
+pub enum BatchImmutablePartitionUpdates {
+    Reset {
+        new_substate_values: ImmutableHashMap<DbSortKey, DbSubstateValue>,
+    },
+}
+
+impl ImmutablePartitionUpdates {
+    pub fn accumulate(&mut self, db_partition_updates: &PartitionDatabaseUpdates) {
+        match self {
+            ImmutablePartitionUpdates::Delta { substate_updates } => match db_partition_updates {
+                PartitionDatabaseUpdates::Delta {
+                    substate_updates: db_substate_updates,
+                } => {
+                    substate_updates.extend(
+                        db_substate_updates
+                            .iter()
+                            .map(|(key, value)| (key.clone(), value.clone())),
+                    );
+                }
+                PartitionDatabaseUpdates::Reset {
+                    new_substate_values: db_new_substate_values,
+                } => {
+                    *self =
+                        ImmutablePartitionUpdates::Batch(BatchImmutablePartitionUpdates::Reset {
+                            new_substate_values: db_new_substate_values
+                                .iter()
+                                .map(|(key, value)| (key.clone(), value.clone()))
+                                .collect(),
+                        })
+                }
+            },
+            ImmutablePartitionUpdates::Batch(batch) => {
+                batch.accumulate(db_partition_updates);
+            }
+        }
+    }
+}
+
+impl BatchImmutablePartitionUpdates {
+    pub fn accumulate(&mut self, db_partition_updates: &PartitionDatabaseUpdates) {
+        match self {
+            BatchImmutablePartitionUpdates::Reset {
+                new_substate_values,
+            } => match db_partition_updates {
+                PartitionDatabaseUpdates::Delta {
+                    substate_updates: db_substate_updates,
+                } => {
+                    for (db_sort_key, database_update) in db_substate_updates {
+                        match database_update {
+                            DatabaseUpdate::Set(value) => {
+                                new_substate_values.insert(db_sort_key.clone(), value.clone());
+                            }
+                            DatabaseUpdate::Delete => {
+                                let existed = new_substate_values.remove(db_sort_key).is_some();
+                                if !existed {
+                                    panic!("broken invariant: deleting non-existent substate");
+                                }
+                            }
+                        }
+                    }
+                }
+                PartitionDatabaseUpdates::Reset {
+                    new_substate_values: db_new_substate_values,
+                } => {
+                    *new_substate_values = db_new_substate_values
+                        .iter()
+                        .map(|(key, value)| (key.clone(), value.clone()))
+                        .collect()
+                }
+            },
+        }
+    }
+}
+
 impl Accumulator<ProcessedTransactionReceipt> for ImmutableStore {
     fn create_empty() -> Self {
         Self {
-            substate_updates: ImmutableOrdMap::new(),
+            partition_updates: ImmutableHashMap::new(),
             state_tree_nodes: ImmutableHashMap::new(),
             transaction_tree_slices: ImmutableHashMap::new(),
             receipt_tree_slices: ImmutableHashMap::new(),
@@ -441,11 +542,16 @@ impl Accumulator<ProcessedTransactionReceipt> for ImmutableStore {
 
     fn accumulate(&mut self, processed: &ProcessedTransactionReceipt) {
         if let ProcessedTransactionReceipt::Commit(commit) = processed {
-            for (db_partition_key, partition_updates) in &commit.database_updates {
-                for (db_sort_key, database_update) in partition_updates {
-                    let db_substate_key = (db_partition_key.clone(), db_sort_key.clone());
-                    self.substate_updates
-                        .insert(db_substate_key, database_update.clone());
+            for (db_node_key, db_node_updates) in &commit.database_updates.node_updates {
+                for (db_partition_num, db_partition_updates) in &db_node_updates.partition_updates {
+                    let db_partition_key = DbPartitionKey {
+                        node_key: db_node_key.clone(),
+                        partition_num: *db_partition_num,
+                    };
+                    self.partition_updates
+                        .entry(db_partition_key)
+                        .or_default()
+                        .accumulate(db_partition_updates);
                 }
             }
 

@@ -64,10 +64,10 @@
 
 package com.radixdlt.api.system.health;
 
-import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.prometheus.RecentSelfProposalMissStatistic;
 
 public interface HealthInfoService {
   NodeStatus nodeStatus();
 
-  EventProcessor<ScheduledStatsCollecting> updateStats();
+  RecentSelfProposalMissStatistic recentSelfProposalMissStatistic();
 }

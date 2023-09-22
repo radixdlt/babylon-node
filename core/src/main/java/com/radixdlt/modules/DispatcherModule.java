@@ -66,7 +66,6 @@ package com.radixdlt.modules;
 
 import com.google.inject.*;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.api.system.health.ScheduledStatsCollecting;
 import com.radixdlt.consensus.ConsensusByzantineEvent;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
@@ -152,9 +151,6 @@ public class DispatcherModule extends AbstractModule {
         .in(Scopes.SINGLETON);
     bind(new TypeLiteral<EventDispatcher<SyncCheckTrigger>>() {})
         .toProvider(Dispatchers.dispatcherProvider(SyncCheckTrigger.class))
-        .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledStatsCollecting>>() {})
-        .toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledStatsCollecting.class))
         .in(Scopes.SINGLETON);
 
     // BFT

@@ -63,7 +63,7 @@
  */
 
 use crate::store::traits::*;
-use crate::{ChangeAction, SubstateReference};
+use crate::{SubstateChangeAction, SubstateReference};
 use std::borrow::Borrow;
 use std::collections::hash_map::Entry;
 
@@ -81,13 +81,13 @@ impl NodeAncestryResolver {
     /// Resolves the [`SubstateNodeAncestryRecord`] for all newly-created Nodes found in the given
     /// substate changes.
     /// The resolution considers the trees (or rather: potentially-incomplete bottom-up tree
-    /// fragments) constructed within the given [`ChangeAction`]s, and the top fragments of these
+    /// fragments) constructed within the given [`SubstateChangeAction`]s, and the top fragments of these
     /// trees already-existing in the given [`SubstateNodeAncestryStore`].
     /// API note: the results are grouped by [`SubstateNodeAncestryRecord`] (since it may be shared
     /// by many child [`NodeId`]s).
     pub fn batch_resolve<S: SubstateNodeAncestryStore>(
         ancestry_store: &S,
-        substate_changes: impl Iterator<Item = (SubstateReference, impl Borrow<ChangeAction>)>,
+        substate_changes: impl Iterator<Item = (SubstateReference, impl Borrow<SubstateChangeAction>)>,
     ) -> impl Iterator<Item = KeyedSubstateNodeAncestryRecord> {
         // Gather the Nodes owned by upserted parent Substates (using `IndexedScryptoValue`).
         // This effectively builds a forest of upserted nodes, using a "parent to child-list map" representation.
@@ -149,15 +149,15 @@ impl NodeAncestryResolver {
 
     /// Inspects the given substate changes (using the [`IndexedScryptoValue`]) to find the Nodes
     /// *directly* owned by each upserted Substate.
-    fn extract_owned_node_sets<T: Borrow<ChangeAction>>(
+    fn extract_owned_node_sets<T: Borrow<SubstateChangeAction>>(
         substate_changes: impl Iterator<Item = (SubstateReference, T)>,
     ) -> impl Iterator<Item = OwnedNodeSet> {
         substate_changes.filter_map(|(substate_reference, action)| {
             let created_directly_owned_nodes = match action.borrow() {
-                ChangeAction::Create { new } => {
+                SubstateChangeAction::Create { new } => {
                     IndexedScryptoValue::from_slice(new).unwrap().unpack().1
                 }
-                ChangeAction::Update { new, previous } => {
+                SubstateChangeAction::Update { new, previous } => {
                     let new_directly_owned_nodes =
                         IndexedScryptoValue::from_slice(new).unwrap().unpack().1;
                     let previous_directly_owned_nodes = IndexedScryptoValue::from_slice(previous)
@@ -171,7 +171,7 @@ impl NodeAncestryResolver {
                         .filter(|node| !previous_directly_owned_node_set.contains(node))
                         .collect::<Vec<_>>()
                 }
-                ChangeAction::Delete { .. } => Vec::new(),
+                SubstateChangeAction::Delete { .. } => Vec::new(),
             };
             if created_directly_owned_nodes.is_empty() {
                 return None;
@@ -584,14 +584,17 @@ mod tests {
         SubstateNodeAncestryRecord { parent, root }
     }
 
-    fn create(new_value: impl ScryptoEncode) -> ChangeAction {
-        ChangeAction::Create {
+    fn create(new_value: impl ScryptoEncode) -> SubstateChangeAction {
+        SubstateChangeAction::Create {
             new: scrypto_encode(&new_value).unwrap(),
         }
     }
 
-    fn update(new_value: impl ScryptoEncode, previous_value: impl ScryptoEncode) -> ChangeAction {
-        ChangeAction::Update {
+    fn update(
+        new_value: impl ScryptoEncode,
+        previous_value: impl ScryptoEncode,
+    ) -> SubstateChangeAction {
+        SubstateChangeAction::Update {
             new: scrypto_encode(&new_value).unwrap(),
             previous: scrypto_encode(&previous_value).unwrap(),
         }

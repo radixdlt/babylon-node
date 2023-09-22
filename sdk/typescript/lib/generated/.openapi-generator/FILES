@@ -216,13 +216,15 @@ models/KeyValueStoreTypeInfoDetails.ts
 models/KeyValueStoreTypeInfoDetailsAllOf.ts
 models/LeaderProposalHistory.ts
 models/LedgerHashes.ts
+models/LedgerHeader.ts
 models/LedgerHeaderSummary.ts
+models/LedgerProof.ts
 models/LedgerStateSummary.ts
 models/LedgerTransaction.ts
 models/LedgerTransactionBase.ts
 models/LedgerTransactionType.ts
-models/LocalGenericSubstition.ts
-models/LocalGenericSubstitionAllOf.ts
+models/LocalGenericSubstitution.ts
+models/LocalGenericSubstitutionAllOf.ts
 models/LocalNonFungibleKey.ts
 models/LocalTypeId.ts
 models/LtsCommittedTransactionOutcome.ts
@@ -236,6 +238,8 @@ models/LtsResultantAccountFungibleBalances.ts
 models/LtsResultantFungibleBalance.ts
 models/LtsStateAccountAllFungibleResourceBalancesRequest.ts
 models/LtsStateAccountAllFungibleResourceBalancesResponse.ts
+models/LtsStateAccountDepositBehaviourRequest.ts
+models/LtsStateAccountDepositBehaviourResponse.ts
 models/LtsStateAccountFungibleResourceBalanceRequest.ts
 models/LtsStateAccountFungibleResourceBalanceResponse.ts
 models/LtsStreamAccountTransactionOutcomesRequest.ts
@@ -298,6 +302,8 @@ models/NonFungibleAuthorizedDepositorBadgeAllOf.ts
 models/NonFungibleGlobalId.ts
 models/NonFungibleIdType.ts
 models/NonFungibleLocalId.ts
+models/NonFungiblePresentedBadge.ts
+models/NonFungiblePresentedBadgeAllOf.ts
 models/NonFungibleRequirement.ts
 models/NonFungibleRequirementAllOf.ts
 models/NonFungibleResourceAmount.ts
@@ -397,6 +403,7 @@ models/ParsedTransactionIntentIdentifiers.ts
 models/ParsedTransactionType.ts
 models/PartitionDescription.ts
 models/PartitionDescriptionType.ts
+models/PartitionId.ts
 models/PartitionKind.ts
 models/PaymentFromVault.ts
 models/PaymentToRoyaltyRecipient.ts
@@ -407,6 +414,9 @@ models/PlaintextMessageContentType.ts
 models/PlaintextTransactionMessage.ts
 models/PlaintextTransactionMessageAllOf.ts
 models/PoolVault.ts
+models/PresentedBadge.ts
+models/PresentedBadgeBase.ts
+models/PresentedBadgeType.ts
 models/PrimaryRoleRecoveryAttempt.ts
 models/ProofAccessRuleNode.ts
 models/ProofAccessRuleNodeAllOf.ts
@@ -425,8 +435,10 @@ models/ReceiverInfo.ts
 models/RecoveryProposal.ts
 models/RecoveryRoleRecoveryAttempt.ts
 models/ReferenceType.ts
-models/RemoteGenericSubstition.ts
-models/RemoteGenericSubstitionAllOf.ts
+models/RemoteGenericSubstitution.ts
+models/RemoteGenericSubstitutionAllOf.ts
+models/RequestedStateVersionOutOfBoundsErrorDetails.ts
+models/RequestedStateVersionOutOfBoundsErrorDetailsAllOf.ts
 models/RequireProofRule.ts
 models/RequireProofRuleAllOf.ts
 models/Requirement.ts
@@ -439,8 +451,11 @@ models/ResourceAuthorizedDepositorBadgeAllOf.ts
 models/ResourceChange.ts
 models/ResourceKey.ts
 models/ResourcePreference.ts
+models/ResourcePresentedBadge.ts
+models/ResourcePresentedBadgeAllOf.ts
 models/ResourceRequirement.ts
 models/ResourceRequirementAllOf.ts
+models/ResourceSpecificDepositBehaviour.ts
 models/ResourceType.ts
 models/RoleAssignmentModuleFieldOwnerRoleSubstate.ts
 models/RoleAssignmentModuleFieldOwnerRoleSubstateAllOf.ts
@@ -508,6 +523,11 @@ models/StateValidatorResponse.ts
 models/StaticBlueprintPayloadDef.ts
 models/StaticBlueprintPayloadDefAllOf.ts
 models/StaticRoleDefinitionAuthTemplate.ts
+models/StreamTransactionsErrorDetails.ts
+models/StreamTransactionsErrorDetailsBase.ts
+models/StreamTransactionsErrorDetailsType.ts
+models/StreamTransactionsErrorResponse.ts
+models/StreamTransactionsErrorResponseAllOf.ts
 models/StreamTransactionsRequest.ts
 models/StreamTransactionsResponse.ts
 models/StringPlaintextMessageContent.ts
@@ -516,6 +536,7 @@ models/Substate.ts
 models/SubstateBase.ts
 models/SubstateFormatOptions.ts
 models/SubstateId.ts
+models/SubstateIdAllOf.ts
 models/SubstateKey.ts
 models/SubstateKeyBase.ts
 models/SubstateKeyType.ts
@@ -533,6 +554,7 @@ models/SystemTransaction.ts
 models/TargetIdentifier.ts
 models/TargetIdentifierBase.ts
 models/TargetIdentifierType.ts
+models/TimestampedValidatorSignature.ts
 models/TransactionCallPreviewRequest.ts
 models/TransactionCallPreviewResponse.ts
 models/TransactionFormatOptions.ts

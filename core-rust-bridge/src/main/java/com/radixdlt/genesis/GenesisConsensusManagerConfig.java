@@ -138,11 +138,12 @@ public record GenesisConsensusManagerConfig(
       var approxEpochsPerYear = SECONDS_PER_YEAR / targetEpochLengthSeconds;
 
       var targetEmissionsPerYear = 300L * 1000L * 1000L;
-      var totalXrdEmissionPerEpoch = Decimal.fraction(targetEmissionsPerYear, approxEpochsPerYear);
+      var totalXrdEmissionPerEpoch =
+          Decimal.ofNonNegativeFraction(targetEmissionsPerYear, approxEpochsPerYear);
 
       // Epochs are shorter than Olympia, hence we have less to work with.
       // So we require 100% reliability in these short epochs to get emissions.
-      var minReliabilityForEmissions = Decimal.fraction(100, 100);
+      var minReliabilityForEmissions = Decimal.ofNonNegativeFraction(100, 100);
 
       var numOwnerStakeUnitsUnlockEpochs = 4 * 7 * approxEpochsPerDay;
       var numFeeIncreaseDelayEpochs = 2 * 7 * approxEpochsPerDay;
@@ -158,7 +159,7 @@ public record GenesisConsensusManagerConfig(
           .minValidatorReliability(minReliabilityForEmissions)
           .numOwnerStakeUnitsUnlockEpochs(numOwnerStakeUnitsUnlockEpochs)
           .numFeeIncreaseDelayEpochs(numFeeIncreaseDelayEpochs)
-          .validatorCreationUsdCost(Decimal.of(1000));
+          .validatorCreationUsdCost(Decimal.ofNonNegative(1000));
     }
 
     public static Builder testEnvironmentDefaults() {
@@ -166,7 +167,7 @@ public record GenesisConsensusManagerConfig(
           .numUnstakeEpochs(1)
           .numOwnerStakeUnitsUnlockEpochs(1)
           .numFeeIncreaseDelayEpochs(1)
-          .validatorCreationUsdCost(Decimal.of(100));
+          .validatorCreationUsdCost(Decimal.ofNonNegative(100));
     }
 
     public static Builder testInfiniteEpochs() {
@@ -183,11 +184,11 @@ public record GenesisConsensusManagerConfig(
           .epochExactRoundCount(100)
           .epochTargetDurationMillis(100)
           .numUnstakeEpochs(10)
-          .totalEmissionXrdPerEpoch(Decimal.of(100))
-          .minValidatorReliability(Decimal.fraction(8, 10))
+          .totalEmissionXrdPerEpoch(Decimal.ofNonNegative(100))
+          .minValidatorReliability(Decimal.ofNonNegativeFraction(8, 10))
           .numOwnerStakeUnitsUnlockEpochs(100)
           .numFeeIncreaseDelayEpochs(100)
-          .validatorCreationUsdCost(Decimal.of(1));
+          .validatorCreationUsdCost(Decimal.ONE);
     }
 
     public GenesisConsensusManagerConfig build() {

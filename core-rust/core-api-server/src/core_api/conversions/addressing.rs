@@ -102,6 +102,26 @@ pub fn to_api_entity_type(entity_type: EntityType) -> models::EntityType {
 }
 
 #[tracing::instrument(skip_all)]
+pub fn to_api_partition_id(
+    context: &MappingContext,
+    node_id: &NodeId,
+    partition_number: PartitionNumber,
+) -> Result<models::PartitionId, MappingError> {
+    let entity_type = node_id.entity_type().ok_or(MappingError::EntityTypeError)?;
+    let entity_address = to_api_entity_address(context, node_id)?;
+    let entity_module = to_api_entity_module(partition_number, entity_address.as_ref())?;
+    let partition_kind =
+        to_api_partition_kind(entity_type, partition_number, entity_address.as_ref())?;
+    Ok(models::PartitionId {
+        entity_type: to_api_entity_type(entity_type),
+        entity_address,
+        entity_module,
+        partition_kind,
+        partition_number: to_api_u8_as_i32(partition_number.0),
+    })
+}
+
+#[tracing::instrument(skip_all)]
 pub fn to_api_substate_id(
     context: &MappingContext,
     node_id: &NodeId,
@@ -439,7 +459,7 @@ pub fn to_api_substate_id(
         entity_address,
         entity_module,
         partition_kind,
-        partition_number: partition_number.0 as i32,
+        partition_number: to_api_u8_as_i32(partition_number.0),
         substate_type,
         substate_key: Some(api_substate_key),
     })
@@ -462,6 +482,163 @@ pub fn to_api_substate_key(substate_key: &SubstateKey) -> models::SubstateKey {
             key_hex: to_hex(map_key),
         },
     }
+}
+
+pub fn to_api_entity_module(
+    partition_number: PartitionNumber,
+    entity_address: &str, // for error-surfacing purposes only
+) -> Result<models::EntityModule, MappingError> {
+    Ok(match partition_number {
+        TYPE_INFO_FIELD_PARTITION => models::EntityModule::TypeInfo,
+        SCHEMAS_PARTITION => models::EntityModule::Schema,
+        METADATA_BASE_PARTITION => models::EntityModule::Metadata,
+        ROYALTY_FIELDS_PARTITION | ROYALTY_CONFIG_PARTITION => models::EntityModule::Royalty,
+        ROLE_ASSIGNMENT_FIELDS_PARTITION | ROLE_ASSIGNMENT_ROLE_DEF_PARTITION => {
+            models::EntityModule::RoleAssignment
+        }
+        _ => {
+            if partition_number > MAIN_BASE_PARTITION {
+                models::EntityModule::Main
+            } else {
+                return Err(MappingError::PartitionNumber {
+                    entity_address: entity_address.to_owned(),
+                    partition_number,
+                    message: "unknown partition".to_owned(),
+                });
+            }
+        }
+    })
+}
+
+pub fn to_api_partition_kind(
+    entity_type: EntityType,
+    partition_number: PartitionNumber,
+    entity_address: &str, // only for error-surfacing purposes only
+) -> Result<models::PartitionKind, MappingError> {
+    Ok(match partition_number {
+        TYPE_INFO_FIELD_PARTITION => models::PartitionKind::Field,
+        SCHEMAS_PARTITION => models::PartitionKind::KeyValue,
+        METADATA_BASE_PARTITION => models::PartitionKind::KeyValue,
+        ROYALTY_FIELDS_PARTITION => models::PartitionKind::Field,
+        ROYALTY_CONFIG_PARTITION => models::PartitionKind::KeyValue,
+        ROLE_ASSIGNMENT_FIELDS_PARTITION => models::PartitionKind::Field,
+        ROLE_ASSIGNMENT_ROLE_DEF_PARTITION => models::PartitionKind::KeyValue,
+        _ => {
+            if partition_number >= MAIN_BASE_PARTITION {
+                to_api_object_module_partition_kind(
+                    entity_type,
+                    PartitionOffset(partition_number.0 - MAIN_BASE_PARTITION.0),
+                )
+                .map_err(|_| MappingError::PartitionNumber {
+                    entity_address: entity_address.to_owned(),
+                    partition_number,
+                    message: "invalid offset within the main partition".to_owned(),
+                })?
+            } else {
+                return Err(MappingError::PartitionNumber {
+                    entity_address: entity_address.to_owned(),
+                    partition_number,
+                    message: "unknown partition".to_owned(),
+                });
+            }
+        }
+    })
+}
+
+pub fn to_api_object_module_partition_kind(
+    entity_type: EntityType,
+    partition_offset: PartitionOffset,
+) -> Result<models::PartitionKind, ()> {
+    Ok(match entity_type {
+        EntityType::InternalGenericComponent | EntityType::GlobalGenericComponent => {
+            models::PartitionKind::Field
+        }
+        EntityType::GlobalPackage => match PackagePartitionOffset::try_from(partition_offset)? {
+            PackagePartitionOffset::Field => models::PartitionKind::Field,
+            PackagePartitionOffset::BlueprintVersionDefinitionKeyValue
+            | PackagePartitionOffset::BlueprintVersionDependenciesKeyValue
+            | PackagePartitionOffset::BlueprintVersionRoyaltyConfigKeyValue
+            | PackagePartitionOffset::BlueprintVersionAuthConfigKeyValue
+            | PackagePartitionOffset::CodeVmTypeKeyValue
+            | PackagePartitionOffset::CodeOriginalCodeKeyValue
+            | PackagePartitionOffset::CodeInstrumentedCodeKeyValue => {
+                models::PartitionKind::KeyValue
+            }
+        },
+        EntityType::GlobalFungibleResourceManager => {
+            match FungibleResourceManagerPartitionOffset::try_from(partition_offset)? {
+                FungibleResourceManagerPartitionOffset::Field => models::PartitionKind::Field,
+            }
+        }
+        EntityType::GlobalNonFungibleResourceManager => {
+            match NonFungibleResourceManagerPartitionOffset::try_from(partition_offset)? {
+                NonFungibleResourceManagerPartitionOffset::Field => models::PartitionKind::Field,
+                NonFungibleResourceManagerPartitionOffset::DataKeyValue => {
+                    models::PartitionKind::KeyValue
+                }
+            }
+        }
+        EntityType::GlobalConsensusManager => {
+            match ConsensusManagerPartitionOffset::try_from(partition_offset)? {
+                ConsensusManagerPartitionOffset::Field => models::PartitionKind::Field,
+                ConsensusManagerPartitionOffset::RegisteredValidatorByStakeSortedIndex => {
+                    models::PartitionKind::SortedIndex
+                }
+            }
+        }
+        EntityType::GlobalValidator => {
+            match ValidatorPartitionOffset::try_from(partition_offset)? {
+                ValidatorPartitionOffset::Field => models::PartitionKind::Field,
+            }
+        }
+        EntityType::GlobalAccessController => {
+            match AccessControllerPartitionOffset::try_from(partition_offset)? {
+                AccessControllerPartitionOffset::Field => models::PartitionKind::Field,
+            }
+        }
+        EntityType::GlobalVirtualSecp256k1Account
+        | EntityType::GlobalVirtualEd25519Account
+        | EntityType::GlobalAccount => match AccountPartitionOffset::try_from(partition_offset)? {
+            AccountPartitionOffset::Field => models::PartitionKind::Field,
+            AccountPartitionOffset::ResourceVaultKeyValue => models::PartitionKind::KeyValue,
+            AccountPartitionOffset::ResourcePreferenceKeyValue => models::PartitionKind::KeyValue,
+            AccountPartitionOffset::AuthorizedDepositorKeyValue => models::PartitionKind::KeyValue,
+        },
+        EntityType::GlobalVirtualSecp256k1Identity
+        | EntityType::GlobalVirtualEd25519Identity
+        | EntityType::GlobalIdentity => Err(())?, // Identity doesn't have any substates
+        EntityType::InternalFungibleVault => {
+            match FungibleVaultPartitionOffset::try_from(partition_offset)? {
+                FungibleVaultPartitionOffset::Field => models::PartitionKind::Field,
+            }
+        }
+        EntityType::InternalNonFungibleVault => {
+            match NonFungibleVaultPartitionOffset::try_from(partition_offset)? {
+                NonFungibleVaultPartitionOffset::Field => models::PartitionKind::Field,
+                NonFungibleVaultPartitionOffset::NonFungibleIndex => models::PartitionKind::Index,
+            }
+        }
+        EntityType::GlobalOneResourcePool => {
+            match OneResourcePoolPartitionOffset::try_from(partition_offset)? {
+                OneResourcePoolPartitionOffset::Field => models::PartitionKind::Field,
+            }
+        }
+        EntityType::GlobalTwoResourcePool => {
+            match TwoResourcePoolPartitionOffset::try_from(partition_offset)? {
+                TwoResourcePoolPartitionOffset::Field => models::PartitionKind::Field,
+            }
+        }
+        EntityType::GlobalMultiResourcePool => {
+            match MultiResourcePoolPartitionOffset::try_from(partition_offset)? {
+                MultiResourcePoolPartitionOffset::Field => models::PartitionKind::Field,
+            }
+        }
+        EntityType::GlobalTransactionTracker => match partition_offset {
+            PartitionOffset(0) => models::PartitionKind::Field,
+            _ => models::PartitionKind::KeyValue,
+        },
+        EntityType::InternalKeyValueStore => models::PartitionKind::KeyValue,
+    })
 }
 
 pub fn extract_global_address(
