@@ -82,17 +82,15 @@ pub(crate) async fn handle_lts_state_account_deposit_behaviour(
     };
 
     // Read out the badge status (`None` when not provided, else `Some<is on AD list?>`):
-    let badge_of_authorized_depositor = badge
-        .map(|badge| {
-            read_optional_collection_substate_value::<AccountAuthorizedDepositorEntryPayload>(
-                database.deref(),
-                account_address.as_node_id(),
-                AccountCollection::AuthorizedDepositorKeyValue.collection_index(),
-                &SubstateKey::Map(scrypto_encode(&badge).unwrap()),
-            )
-            .map(|value| value.is_some())
-        })
-        .transpose()?;
+    let is_badge_authorized_depositor = badge.map(|badge| {
+        read_optional_collection_substate_value::<AccountAuthorizedDepositorEntryPayload>(
+            database.deref(),
+            account_address.as_node_id(),
+            AccountCollection::AuthorizedDepositorKeyValue.collection_index(),
+            &SubstateKey::Map(scrypto_encode(&badge).unwrap()),
+        )
+        .is_some()
+    });
 
     let resource_specific_behaviours = resource_addresses
         .iter()
@@ -106,7 +104,7 @@ pub(crate) async fn handle_lts_state_account_deposit_behaviour(
                     account_address.as_node_id(),
                     AccountCollection::ResourcePreferenceKeyValue.collection_index(),
                     &resource_address_substate_key,
-                )?
+                )
                 .map(|payload| payload.into_latest());
             let vault_exists =
                 read_optional_collection_substate_value::<AccountResourceVaultEntryPayload>(
@@ -114,14 +112,14 @@ pub(crate) async fn handle_lts_state_account_deposit_behaviour(
                     account_address.as_node_id(),
                     AccountCollection::ResourceVaultKeyValue.collection_index(),
                     &resource_address_substate_key,
-                )?
+                )
                 .is_some();
             let is_xrd = resource_address == &XRD;
 
             // Compose a response containing the inputs and the resolution:
-            let deposit_allowed = allows_deposit(
+            let allows_try_deposit = allows_deposit(
                 &default_deposit_rule,
-                &badge_of_authorized_depositor,
+                &is_badge_authorized_depositor,
                 &resource_preference,
                 vault_exists,
                 is_xrd,
@@ -130,7 +128,7 @@ pub(crate) async fn handle_lts_state_account_deposit_behaviour(
                 resource_preference: resource_preference.map(to_api_resource_preference),
                 vault_exists,
                 is_xrd,
-                deposit_allowed,
+                allows_try_deposit,
             })
         })
         .collect::<Result<Vec<_>, MappingError>>()?;
@@ -139,7 +137,7 @@ pub(crate) async fn handle_lts_state_account_deposit_behaviour(
         &mapping_context,
         &header,
         &default_deposit_rule,
-        badge_of_authorized_depositor,
+        is_badge_authorized_depositor,
         requested_resource_addresses.map(|resource_addresses| {
             resource_addresses
                 .into_iter()
@@ -188,7 +186,7 @@ fn empty_virtual_account_resource_specific_bahaviour(
         resource_preference: None,
         vault_exists: false,
         is_xrd: resource_address == XRD,
-        deposit_allowed: true,
+        allows_try_deposit: true,
     }
 }
 
@@ -196,7 +194,7 @@ fn response(
     context: &MappingContext,
     header: &LedgerHeader,
     default_deposit_rule: &DefaultDepositRule,
-    badge_of_authorized_depositor: Option<bool>,
+    is_badge_authorized_depositor: Option<bool>,
     resource_specific_behaviours: Option<
         IndexMap<String, models::ResourceSpecificDepositBehaviour>,
     >,
@@ -209,7 +207,7 @@ fn response(
             DefaultDepositRule::Reject => models::DefaultDepositRule::Reject,
             DefaultDepositRule::AllowExisting => models::DefaultDepositRule::AllowExisting,
         },
-        badge_of_authorized_depositor,
+        is_badge_authorized_depositor,
         resource_specific_behaviours,
     })
     .map(Json)
@@ -220,13 +218,13 @@ fn response(
 /// flow chart.
 fn allows_deposit(
     default_deposit_rule: &DefaultDepositRule,
-    badge_of_authorized_depositor: &Option<bool>,
+    is_badge_authorized_depositor: &Option<bool>,
     resource_preference: &Option<AccountResourcePreference>,
     vault_exists: bool,
     is_xrd: bool,
 ) -> bool {
     // A presented, valid authorized depositor badge can override all other account settings:
-    if badge_of_authorized_depositor == &Some(true) {
+    if is_badge_authorized_depositor == &Some(true) {
         return true;
     }
     // If not presented (or not in the AD list), then a resource preference decides:

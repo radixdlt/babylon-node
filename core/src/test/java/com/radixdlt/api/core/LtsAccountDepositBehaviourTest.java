@@ -102,7 +102,7 @@ public final class LtsAccountDepositBehaviourTest extends DeterministicCoreApiTe
                                   ScryptoConstants.VALIDATOR_OWNER_TOKEN_RESOURCE_ADDRESS))));
 
       // Assert:
-      assertThat(result.getBadgeOfAuthorizedDepositor()).isNull(); // was not requested
+      assertThat(result.getIsBadgeAuthorizedDepositor()).isNull(); // was not requested
       assertThat(result.getDefaultDepositRule()).isEqualTo(DefaultDepositRule.ACCEPT);
       assertThat(result.getResourceSpecificBehaviours())
           .isEqualTo(
@@ -112,13 +112,13 @@ public final class LtsAccountDepositBehaviourTest extends DeterministicCoreApiTe
                       .resourcePreference(null)
                       .vaultExists(false)
                       .isXrd(true)
-                      .depositAllowed(true),
+                      .allowsTryDeposit(true),
                   addressing.encode(ScryptoConstants.VALIDATOR_OWNER_TOKEN_RESOURCE_ADDRESS),
                   new ResourceSpecificDepositBehaviour()
                       .resourcePreference(null)
                       .vaultExists(false)
                       .isXrd(false)
-                      .depositAllowed(true)));
+                      .allowsTryDeposit(true)));
 
       // Follow-up: deposit some actual XRD into that account
       submitAndWaitForSuccess(test, Manifest.depositFromFaucet(accountAddress), List.of());
@@ -138,7 +138,7 @@ public final class LtsAccountDepositBehaviourTest extends DeterministicCoreApiTe
                           List.of(addressing.encode(ScryptoConstants.XRD_RESOURCE_ADDRESS))));
 
       // Assert: a slight change in the response to the same request (XRD vault now exists)
-      assertThat(differentResult.getBadgeOfAuthorizedDepositor())
+      assertThat(differentResult.getIsBadgeAuthorizedDepositor())
           .isFalse(); // badge was given, but no AD list exists
       assertThat(differentResult.getResourceSpecificBehaviours())
           .isEqualTo(
@@ -148,7 +148,7 @@ public final class LtsAccountDepositBehaviourTest extends DeterministicCoreApiTe
                       .resourcePreference(null)
                       .vaultExists(true)
                       .isXrd(true)
-                      .depositAllowed(true)));
+                      .allowsTryDeposit(true)));
     }
   }
 }

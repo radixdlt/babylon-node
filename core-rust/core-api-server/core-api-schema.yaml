@@ -5000,7 +5000,7 @@ components:
         This setting has the following interpretations:
         - Allow: Allows the deposit of all resources - the deny list is honored in this state.
         - Reject: Disallows the deposit of all resources - the allow list is honored in this state.
-        - AllowExisting: Only deposits of existing resources *or* XRD is accepted - both allow and deny lists are honored in this mode.
+        - AllowExisting: Only deposits of existing resources *or* XRD are accepted - both allow and deny lists are honored in this mode.
       enum:
         - Accept
         - Reject
@@ -5641,7 +5641,7 @@ components:
           description: The excerpt from the ledger header committed at the `state_version`.
         default_deposit_rule:
           $ref: '#/components/schemas/DefaultDepositRule'
-        badge_of_authorized_depositor:
+        is_badge_authorized_depositor:
           type: boolean
           description: |
             Whether the input `badge` belongs to the account's set of authorized depositors.
@@ -5658,7 +5658,7 @@ components:
       required:
         - vault_exists
         - is_xrd
-        - deposit_allowed
+        - allows_try_deposit
       properties:
         resource_preference:
           $ref: '#/components/schemas/ResourcePreference'
@@ -5673,12 +5673,12 @@ components:
           description: |
             Whether the resource represents the native XRD fungible.
             XRD is a special case which does not require `vault_exists = true` to satisfy the `AllowExisting` rule.
-        deposit_allowed:
+        allows_try_deposit:
           type: boolean
           description: |
-            The fully resolved deposit ability of this resource (which takes all the inputs into
-            account, including the authorized depositor badge, the default deposit rule and this
-            resource-specific circumstances).
+            The fully resolved `try_deposit_*` ability of this resource (which takes all the inputs
+            into account, including the authorized depositor badge, the default deposit rule and
+            the above resource-specific circumstances).
 #############################################
 # REQUEST: /lts/stream/transaction-outcomes #
 #############################################

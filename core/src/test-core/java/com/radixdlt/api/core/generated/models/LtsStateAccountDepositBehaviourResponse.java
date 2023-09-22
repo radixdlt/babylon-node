@@ -40,7 +40,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   LtsStateAccountDepositBehaviourResponse.JSON_PROPERTY_STATE_VERSION,
   LtsStateAccountDepositBehaviourResponse.JSON_PROPERTY_LEDGER_HEADER_SUMMARY,
   LtsStateAccountDepositBehaviourResponse.JSON_PROPERTY_DEFAULT_DEPOSIT_RULE,
-  LtsStateAccountDepositBehaviourResponse.JSON_PROPERTY_BADGE_OF_AUTHORIZED_DEPOSITOR,
+  LtsStateAccountDepositBehaviourResponse.JSON_PROPERTY_IS_BADGE_AUTHORIZED_DEPOSITOR,
   LtsStateAccountDepositBehaviourResponse.JSON_PROPERTY_RESOURCE_SPECIFIC_BEHAVIOURS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -54,8 +54,8 @@ public class LtsStateAccountDepositBehaviourResponse {
   public static final String JSON_PROPERTY_DEFAULT_DEPOSIT_RULE = "default_deposit_rule";
   private DefaultDepositRule defaultDepositRule;
 
-  public static final String JSON_PROPERTY_BADGE_OF_AUTHORIZED_DEPOSITOR = "badge_of_authorized_depositor";
-  private Boolean badgeOfAuthorizedDepositor;
+  public static final String JSON_PROPERTY_IS_BADGE_AUTHORIZED_DEPOSITOR = "is_badge_authorized_depositor";
+  private Boolean isBadgeAuthorizedDepositor;
 
   public static final String JSON_PROPERTY_RESOURCE_SPECIFIC_BEHAVIOURS = "resource_specific_behaviours";
   private Map<String, ResourceSpecificDepositBehaviour> resourceSpecificBehaviours = null;
@@ -143,29 +143,29 @@ public class LtsStateAccountDepositBehaviourResponse {
   }
 
 
-  public LtsStateAccountDepositBehaviourResponse badgeOfAuthorizedDepositor(Boolean badgeOfAuthorizedDepositor) {
-    this.badgeOfAuthorizedDepositor = badgeOfAuthorizedDepositor;
+  public LtsStateAccountDepositBehaviourResponse isBadgeAuthorizedDepositor(Boolean isBadgeAuthorizedDepositor) {
+    this.isBadgeAuthorizedDepositor = isBadgeAuthorizedDepositor;
     return this;
   }
 
    /**
    * Whether the input &#x60;badge&#x60; belongs to the account&#39;s set of authorized depositors. This field will only be present if any badge was passed in the request. 
-   * @return badgeOfAuthorizedDepositor
+   * @return isBadgeAuthorizedDepositor
   **/
   @javax.annotation.Nullable
   @ApiModelProperty(value = "Whether the input `badge` belongs to the account's set of authorized depositors. This field will only be present if any badge was passed in the request. ")
-  @JsonProperty(JSON_PROPERTY_BADGE_OF_AUTHORIZED_DEPOSITOR)
+  @JsonProperty(JSON_PROPERTY_IS_BADGE_AUTHORIZED_DEPOSITOR)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public Boolean getBadgeOfAuthorizedDepositor() {
-    return badgeOfAuthorizedDepositor;
+  public Boolean getIsBadgeAuthorizedDepositor() {
+    return isBadgeAuthorizedDepositor;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_BADGE_OF_AUTHORIZED_DEPOSITOR)
+  @JsonProperty(JSON_PROPERTY_IS_BADGE_AUTHORIZED_DEPOSITOR)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setBadgeOfAuthorizedDepositor(Boolean badgeOfAuthorizedDepositor) {
-    this.badgeOfAuthorizedDepositor = badgeOfAuthorizedDepositor;
+  public void setIsBadgeAuthorizedDepositor(Boolean isBadgeAuthorizedDepositor) {
+    this.isBadgeAuthorizedDepositor = isBadgeAuthorizedDepositor;
   }
 
 
@@ -218,13 +218,13 @@ public class LtsStateAccountDepositBehaviourResponse {
     return Objects.equals(this.stateVersion, ltsStateAccountDepositBehaviourResponse.stateVersion) &&
         Objects.equals(this.ledgerHeaderSummary, ltsStateAccountDepositBehaviourResponse.ledgerHeaderSummary) &&
         Objects.equals(this.defaultDepositRule, ltsStateAccountDepositBehaviourResponse.defaultDepositRule) &&
-        Objects.equals(this.badgeOfAuthorizedDepositor, ltsStateAccountDepositBehaviourResponse.badgeOfAuthorizedDepositor) &&
+        Objects.equals(this.isBadgeAuthorizedDepositor, ltsStateAccountDepositBehaviourResponse.isBadgeAuthorizedDepositor) &&
         Objects.equals(this.resourceSpecificBehaviours, ltsStateAccountDepositBehaviourResponse.resourceSpecificBehaviours);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(stateVersion, ledgerHeaderSummary, defaultDepositRule, badgeOfAuthorizedDepositor, resourceSpecificBehaviours);
+    return Objects.hash(stateVersion, ledgerHeaderSummary, defaultDepositRule, isBadgeAuthorizedDepositor, resourceSpecificBehaviours);
   }
 
   @Override
@@ -234,7 +234,7 @@ public class LtsStateAccountDepositBehaviourResponse {
     sb.append("    stateVersion: ").append(toIndentedString(stateVersion)).append("\n");
     sb.append("    ledgerHeaderSummary: ").append(toIndentedString(ledgerHeaderSummary)).append("\n");
     sb.append("    defaultDepositRule: ").append(toIndentedString(defaultDepositRule)).append("\n");
-    sb.append("    badgeOfAuthorizedDepositor: ").append(toIndentedString(badgeOfAuthorizedDepositor)).append("\n");
+    sb.append("    isBadgeAuthorizedDepositor: ").append(toIndentedString(isBadgeAuthorizedDepositor)).append("\n");
     sb.append("    resourceSpecificBehaviours: ").append(toIndentedString(resourceSpecificBehaviours)).append("\n");
     sb.append("}");
     return sb.toString();

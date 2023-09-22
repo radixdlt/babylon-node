@@ -111,14 +111,9 @@ pub(crate) fn read_optional_collection_substate_value<D: ScryptoDecode>(
     node_id: &NodeId,
     collection_index: CollectionIndex,
     substate_key: &SubstateKey,
-) -> Result<Option<D>, MappingError> {
+) -> Option<D> {
     read_optional_collection_substate::<D>(database, node_id, collection_index, substate_key)
-        .map(|value| {
-            value
-                .into_value()
-                .ok_or(MappingError::KeyValueStoreEntryUnexpectedlyAbsent)
-        })
-        .transpose()
+        .and_then(|value| value.into_value())
 }
 
 #[tracing::instrument(skip_all)]

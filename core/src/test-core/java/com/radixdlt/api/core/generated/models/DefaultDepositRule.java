@@ -25,7 +25,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
- * This setting has the following interpretations: - Allow: Allows the deposit of all resources - the deny list is honored in this state. - Reject: Disallows the deposit of all resources - the allow list is honored in this state. - AllowExisting: Only deposits of existing resources *or* XRD is accepted - both allow and deny lists are honored in this mode. 
+ * This setting has the following interpretations: - Allow: Allows the deposit of all resources - the deny list is honored in this state. - Reject: Disallows the deposit of all resources - the allow list is honored in this state. - AllowExisting: Only deposits of existing resources *or* XRD are accepted - both allow and deny lists are honored in this mode. 
  */
 public enum DefaultDepositRule {
   

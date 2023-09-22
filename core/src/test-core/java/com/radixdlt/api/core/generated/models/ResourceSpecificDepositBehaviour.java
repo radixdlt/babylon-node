@@ -35,7 +35,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   ResourceSpecificDepositBehaviour.JSON_PROPERTY_RESOURCE_PREFERENCE,
   ResourceSpecificDepositBehaviour.JSON_PROPERTY_VAULT_EXISTS,
   ResourceSpecificDepositBehaviour.JSON_PROPERTY_IS_XRD,
-  ResourceSpecificDepositBehaviour.JSON_PROPERTY_DEPOSIT_ALLOWED
+  ResourceSpecificDepositBehaviour.JSON_PROPERTY_ALLOWS_TRY_DEPOSIT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ResourceSpecificDepositBehaviour {
@@ -48,8 +48,8 @@ public class ResourceSpecificDepositBehaviour {
   public static final String JSON_PROPERTY_IS_XRD = "is_xrd";
   private Boolean isXrd;
 
-  public static final String JSON_PROPERTY_DEPOSIT_ALLOWED = "deposit_allowed";
-  private Boolean depositAllowed;
+  public static final String JSON_PROPERTY_ALLOWS_TRY_DEPOSIT = "allows_try_deposit";
+  private Boolean allowsTryDeposit;
 
   public ResourceSpecificDepositBehaviour() { 
   }
@@ -132,29 +132,29 @@ public class ResourceSpecificDepositBehaviour {
   }
 
 
-  public ResourceSpecificDepositBehaviour depositAllowed(Boolean depositAllowed) {
-    this.depositAllowed = depositAllowed;
+  public ResourceSpecificDepositBehaviour allowsTryDeposit(Boolean allowsTryDeposit) {
+    this.allowsTryDeposit = allowsTryDeposit;
     return this;
   }
 
    /**
-   * The fully resolved deposit ability of this resource (which takes all the inputs into account, including the authorized depositor badge, the default deposit rule and this resource-specific circumstances). 
-   * @return depositAllowed
+   * The fully resolved &#x60;try_deposit_*&#x60; ability of this resource (which takes all the inputs into account, including the authorized depositor badge, the default deposit rule and the above resource-specific circumstances). 
+   * @return allowsTryDeposit
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The fully resolved deposit ability of this resource (which takes all the inputs into account, including the authorized depositor badge, the default deposit rule and this resource-specific circumstances). ")
-  @JsonProperty(JSON_PROPERTY_DEPOSIT_ALLOWED)
+  @ApiModelProperty(required = true, value = "The fully resolved `try_deposit_*` ability of this resource (which takes all the inputs into account, including the authorized depositor badge, the default deposit rule and the above resource-specific circumstances). ")
+  @JsonProperty(JSON_PROPERTY_ALLOWS_TRY_DEPOSIT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Boolean getDepositAllowed() {
-    return depositAllowed;
+  public Boolean getAllowsTryDeposit() {
+    return allowsTryDeposit;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_DEPOSIT_ALLOWED)
+  @JsonProperty(JSON_PROPERTY_ALLOWS_TRY_DEPOSIT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setDepositAllowed(Boolean depositAllowed) {
-    this.depositAllowed = depositAllowed;
+  public void setAllowsTryDeposit(Boolean allowsTryDeposit) {
+    this.allowsTryDeposit = allowsTryDeposit;
   }
 
 
@@ -173,12 +173,12 @@ public class ResourceSpecificDepositBehaviour {
     return Objects.equals(this.resourcePreference, resourceSpecificDepositBehaviour.resourcePreference) &&
         Objects.equals(this.vaultExists, resourceSpecificDepositBehaviour.vaultExists) &&
         Objects.equals(this.isXrd, resourceSpecificDepositBehaviour.isXrd) &&
-        Objects.equals(this.depositAllowed, resourceSpecificDepositBehaviour.depositAllowed);
+        Objects.equals(this.allowsTryDeposit, resourceSpecificDepositBehaviour.allowsTryDeposit);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(resourcePreference, vaultExists, isXrd, depositAllowed);
+    return Objects.hash(resourcePreference, vaultExists, isXrd, allowsTryDeposit);
   }
 
   @Override
@@ -188,7 +188,7 @@ public class ResourceSpecificDepositBehaviour {
     sb.append("    resourcePreference: ").append(toIndentedString(resourcePreference)).append("\n");
     sb.append("    vaultExists: ").append(toIndentedString(vaultExists)).append("\n");
     sb.append("    isXrd: ").append(toIndentedString(isXrd)).append("\n");
-    sb.append("    depositAllowed: ").append(toIndentedString(depositAllowed)).append("\n");
+    sb.append("    allowsTryDeposit: ").append(toIndentedString(allowsTryDeposit)).append("\n");
     sb.append("}");
     return sb.toString();
   }

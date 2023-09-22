@@ -20,8 +20,8 @@ pub struct LtsStateAccountDepositBehaviourResponse {
     #[serde(rename = "default_deposit_rule")]
     pub default_deposit_rule: crate::core_api::generated::models::DefaultDepositRule,
     /// Whether the input `badge` belongs to the account's set of authorized depositors. This field will only be present if any badge was passed in the request. 
-    #[serde(rename = "badge_of_authorized_depositor", skip_serializing_if = "Option::is_none")]
-    pub badge_of_authorized_depositor: Option<bool>,
+    #[serde(rename = "is_badge_authorized_depositor", skip_serializing_if = "Option::is_none")]
+    pub is_badge_authorized_depositor: Option<bool>,
     /// A map from one of the input `resource_addresses` to its specific deposit behavior configured for this account. This field will only be present if an array of specific resource addresses was passed in the request (even if empty). 
     #[serde(rename = "resource_specific_behaviours", skip_serializing_if = "Option::is_none")]
     pub resource_specific_behaviours: Option<::utils::rust::prelude::IndexMap<String, crate::core_api::generated::models::ResourceSpecificDepositBehaviour>>,
@@ -33,7 +33,7 @@ impl LtsStateAccountDepositBehaviourResponse {
             state_version,
             ledger_header_summary: Box::new(ledger_header_summary),
             default_deposit_rule,
-            badge_of_authorized_depositor: None,
+            is_badge_authorized_depositor: None,
             resource_specific_behaviours: None,
         }
     }

@@ -21,18 +21,18 @@ pub struct ResourceSpecificDepositBehaviour {
     /// Whether the resource represents the native XRD fungible. XRD is a special case which does not require `vault_exists = true` to satisfy the `AllowExisting` rule. 
     #[serde(rename = "is_xrd")]
     pub is_xrd: bool,
-    /// The fully resolved deposit ability of this resource (which takes all the inputs into account, including the authorized depositor badge, the default deposit rule and this resource-specific circumstances). 
-    #[serde(rename = "deposit_allowed")]
-    pub deposit_allowed: bool,
+    /// The fully resolved `try_deposit_*` ability of this resource (which takes all the inputs into account, including the authorized depositor badge, the default deposit rule and the above resource-specific circumstances). 
+    #[serde(rename = "allows_try_deposit")]
+    pub allows_try_deposit: bool,
 }
 
 impl ResourceSpecificDepositBehaviour {
-    pub fn new(vault_exists: bool, is_xrd: bool, deposit_allowed: bool) -> ResourceSpecificDepositBehaviour {
+    pub fn new(vault_exists: bool, is_xrd: bool, allows_try_deposit: bool) -> ResourceSpecificDepositBehaviour {
         ResourceSpecificDepositBehaviour {
             resource_preference: None,
             vault_exists,
             is_xrd,
-            deposit_allowed,
+            allows_try_deposit,
         }
     }
 }
