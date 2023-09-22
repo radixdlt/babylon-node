@@ -2,6 +2,12 @@
 
 This SDK is a thin wrapper around the [Babylon Core API](https://docs-babylon.radixdlt.com/main/apis/api-specification.html).
 
+## License
+
+The Core API SDK code is released under an [Apache 2.0 license](https://github.com/radixdlt/babylon-node/blob/main/sdk/typescript/LICENSE). The executable components are licensed under the [Radix Software EULA](http://www.radixdlt.com/terms/genericEULA).
+
+## Structure
+
 The **`CoreApiClient`** is the main exported object. It includes high-level wrappers around every sub-API: 
 - **`LTS`** / **`lts`** - For long term support/backward compatible endpoints aimed at integrators such as exchanges.
 - **`Status`** - For status and configuration details for the node / engine.
