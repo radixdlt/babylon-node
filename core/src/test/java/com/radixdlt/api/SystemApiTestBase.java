@@ -132,7 +132,7 @@ public abstract class SystemApiTestBase {
                             Network.INTEGRATIONTESTNET.getId(),
                             GenesisBuilder.createTestGenesisWithSingleValidator(
                                 TEST_KEY.getPublicKey(),
-                                Decimal.of(1),
+                                Decimal.ONE,
                                 GenesisConsensusManagerConfig.Builder.testDefaults()),
                             REv2StateManagerModule.DatabaseType.IN_MEMORY,
                             new DatabaseFlags(false, false),

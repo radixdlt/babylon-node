@@ -173,7 +173,7 @@ public abstract class DeterministicCoreApiTestBase {
                             Network.INTEGRATIONTESTNET.getId(),
                             GenesisBuilder.createTestGenesisWithNumValidators(
                                 1,
-                                Decimal.of(1),
+                                Decimal.ONE,
                                 GenesisConsensusManagerConfig.Builder.testDefaults()
                                     .epochExactRoundCount(roundsPerEpoch),
                                 scenariosToRun),

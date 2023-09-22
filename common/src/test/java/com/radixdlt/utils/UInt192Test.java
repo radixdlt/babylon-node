@@ -316,9 +316,9 @@ public class UInt192Test {
     byte[] bytesArray = new byte[UInt192.BYTES];
     Arrays.fill(bytesArray, (byte) 0);
     bytesArray[UInt192.BYTES - 1] = 1;
-    UInt192 m1Bits64 = UInt192.from(m1);
-    UInt192 p1Bits64 = UInt192.from(p1);
-    UInt192 bytesArrayBits64 = UInt192.from(bytesArray);
+    UInt192 m1Bits64 = UInt192.fromBigEndianBytes(m1);
+    UInt192 p1Bits64 = UInt192.fromBigEndianBytes(p1);
+    UInt192 bytesArrayBits64 = UInt192.fromBigEndianBytes(bytesArray);
 
     assertEquals(UInt192.from(255), m1Bits64); // Sign extension did not happen
     assertEquals(UInt192.ONE, p1Bits64); // Zero fill happened correctly
@@ -337,12 +337,12 @@ public class UInt192Test {
     Arrays.fill(bytes2, (byte) -1);
 
     // Make sure we got the value in big-endian order
-    byte[] bytes = bitPattern.toByteArray();
+    byte[] bytes = bitPattern.toBigEndianBytes();
     for (int i = 0; i < UInt192.BYTES; ++i) {
       assertEquals(i, bytes[i]);
     }
 
-    bitPattern.toByteArray(bytes2, UInt192.BYTES);
+    bitPattern.toBigEndianBytes(bytes2, UInt192.BYTES);
     // Make sure we didn't overwrite bytes outside our range
     for (int i = 0; i < UInt192.BYTES; ++i) {
       assertEquals(-1, bytes2[i]);
@@ -463,7 +463,7 @@ public class UInt192Test {
   /** IllegalArgumentException if byte array is empty. */
   @Test(expected = IllegalArgumentException.class)
   public void illegalArgumentExceptionIfByteArrayEmpty() {
-    UInt192.from(new byte[0]);
+    UInt192.fromBigEndianBytes(new byte[0]);
   }
 
   /** IllegalArgumentException on radix too big. */
@@ -482,6 +482,48 @@ public class UInt192Test {
   @Test(expected = IllegalArgumentException.class)
   public void illegalArgumentExceptionOnNegativeExponent() {
     UInt192.ONE.pow(-1);
+  }
+
+  /** Test some concrete large values div/mul */
+  @Test
+  public void test_large_number_div_mul() {
+    assertEquals(UInt192.MAX_VALUE.divide(UInt192.MAX_VALUE), UInt192.ONE);
+    assertEquals(UInt192.ONE.divide(UInt192.ONE), UInt192.ONE);
+    assertEquals(UInt192.ONE.divide(UInt192.TWO), UInt192.ZERO);
+    assertEquals(UInt192.ONE.divide(UInt192.MAX_VALUE), UInt192.ZERO);
+    assertEquals(
+        UInt192.MAX_VALUE.toBigInt(),
+        new BigInteger("6277101735386680763835789423207666416102355444464034512895"));
+    assertEquals(
+        UInt192.MAX_VALUE.divide(UInt192.TWO).toBigInt(),
+        new BigInteger("3138550867693340381917894711603833208051177722232017256447"));
+    assertEquals(
+        UInt192.MAX_VALUE.divide(UInt192.FIVE),
+        UInt192.from("1255420347077336152767157884641533283220471088892806902579"));
+    assertEquals(
+        UInt192.MAX_VALUE.divide(UInt192.FIVE).multiply(UInt192.THREE),
+        UInt192.from("3766261041232008458301473653924599849661413266678420707737"));
+    assertEquals(
+        UInt192.from("3138550867693340381917894711603833208051177722232017256448")
+            .divide(UInt192.FOUR),
+        UInt192.from("784637716923335095479473677900958302012794430558004314112"));
+  }
+
+  /** Test some concrete large values add/sub */
+  @Test
+  public void test_large_number_add_sub() {
+    final var u1 = UInt192.from("3766261041232008458301473653924599849661413266678420707737");
+    // An overflow
+    assertEquals(
+        u1.add(u1), UInt192.from("1255420347077336152767157884641533283220471088892806902578"));
+
+    // A transient overflow
+    assertEquals(UInt192.MAX_VALUE.add(UInt192.ONE).subtract(UInt192.ONE), UInt192.MAX_VALUE);
+
+    assertEquals(
+        UInt192.from("6277101735386680763835789423207666416102355444464034512895")
+            .subtract(UInt192.from("6277101735386680763835789423207666416102355444464034512894")),
+        UInt192.ONE);
   }
 
   private static void testRoundTrip(String s) {

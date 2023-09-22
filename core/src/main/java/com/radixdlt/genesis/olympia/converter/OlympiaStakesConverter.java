@@ -132,7 +132,7 @@ public class OlympiaStakesConverter {
                 .toBigInt()
                 .multiply(validator.totalStakedXrd().toBigInt())
                 .divide(validator.totalStakeUnits().toBigInt());
-        final var decimalXrdAmount = Decimal.fromBigIntegerSubunits(xrdAmountBigInt);
+        final var decimalXrdAmount = Decimal.fromNonNegativeBigIntegerSubunits(xrdAmountBigInt);
 
         final var isLast = i == olympiaStakesGrouped.size() - 1 && j == currStakes.size() - 1;
         final var account = accounts.get(stake.accountIndex());

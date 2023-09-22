@@ -105,7 +105,7 @@ public final class RandomValidatorsTest {
   private static final GenesisData GENESIS =
       GenesisBuilder.createTestGenesisWithNumValidators(
           NUM_GENESIS_VALIDATORS,
-          Decimal.of(1000),
+          Decimal.ofNonNegative(1000),
           GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10));
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
