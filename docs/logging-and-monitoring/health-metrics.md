@@ -3,7 +3,8 @@
 This document focuses only on health-related Prometheus metrics: discusses their meaning in detail,
 and suggests some potential "Node status dashboard" ideas.
 
-Note that the summarised statuses are also exposed in the `/system/health` endpoint of the System API.
+Note that the summarised health status is also exposed in the `/system/health` endpoint of the System API,
+and your node's validation status is exposed in the `/system/identity` endpoint of the System API.
 
 ## Overall health factor
 
