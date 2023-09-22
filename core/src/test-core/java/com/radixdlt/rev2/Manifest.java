@@ -237,7 +237,7 @@ public class Manifest {
             params.lockFeeLine(account),
             params.encode(account),
             params.encode(XRD),
-            ScryptoConstants.FREE_AMOUNT_FROM_FAUCET.subtract(Decimal.of(1000)),
+            ScryptoConstants.FREE_AMOUNT_FROM_FAUCET.wrappingSubtract(Decimal.ofNonNegative(1000)),
             params.encode(accountToDrainTo));
   }
 

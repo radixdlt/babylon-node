@@ -101,6 +101,7 @@ import com.radixdlt.statecomputer.commit.LedgerHeader;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt192;
+import java.math.BigInteger;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -125,7 +126,7 @@ public class REv2StateComputerTest {
             RawGenesisDataWithHash.fromGenesisData(
                 GenesisBuilder.createGenesisWithValidatorsAndXrdBalances(
                     ImmutableList.of(ONLY_VALIDATOR_ID.getKey()),
-                    Decimal.of(1),
+                    Decimal.ONE,
                     Address.virtualAccountAddress(ONLY_VALIDATOR_ID.getKey()),
                     Map.of(),
                     GenesisConsensusManagerConfig.Builder.testDefaults(),
@@ -231,7 +232,10 @@ public class REv2StateComputerTest {
   private BFTValidatorId getValidatorFromEpochHeader(LedgerHeader epochHeader, int validatorIndex) {
     final var validator =
         epochHeader.nextEpoch().unwrap().validators().stream()
-            .sorted(Comparator.comparing(ActiveValidatorInfo::stake).reversed())
+            .sorted(
+                Comparator.<ActiveValidatorInfo, BigInteger>comparing(
+                        v -> v.stake().toBigIntegerSubunits())
+                    .reversed())
             .skip(validatorIndex)
             .findFirst()
             .orElseThrow(() -> new IllegalStateException("some validator expected"));

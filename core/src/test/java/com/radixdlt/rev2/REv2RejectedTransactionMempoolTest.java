@@ -132,7 +132,7 @@ public class REv2RejectedTransactionMempoolTest {
                         Network.INTEGRATIONTESTNET.getId(),
                         GenesisBuilder.createTestGenesisWithNumValidators(
                             1,
-                            Decimal.of(1),
+                            Decimal.ONE,
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
                                 this.roundsPerEpoch)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,

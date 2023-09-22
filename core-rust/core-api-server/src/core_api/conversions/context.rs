@@ -30,7 +30,7 @@ impl MappingContext {
 
     /// For the transactions stream, we default to settings which the Gateway requires, and aim to
     /// optimize for performance.
-    /// 
+    ///
     /// We therefore disable programmatic JSON to cut down on bandwidth for large transaction receipts.
     pub fn new_for_transaction_stream(network_definition: &NetworkDefinition) -> Self {
         Self {

@@ -86,13 +86,15 @@ public final class REv2ToConsensus {
 
   public static BFTValidator validator(ActiveValidatorInfo validator) {
     return BFTValidator.from(
-        BFTValidatorId.create(validator.address(), validator.key()), validator.stake().toUInt192());
+        BFTValidatorId.create(validator.address(), validator.key()),
+        validator.stake().toU192Subunits());
   }
 
   public static ActiveValidatorInfo validator(BFTValidator validator) {
-    BFTValidatorId id = validator.getValidatorId();
-    return new ActiveValidatorInfo(
-        id.getValidatorAddress(), id.getKey(), Decimal.from(validator.getPower()));
+    final var id = validator.getValidatorId();
+    final var powerAsDecimal = Decimal.fromU192Subunits(validator.getPower());
+
+    return new ActiveValidatorInfo(id.getValidatorAddress(), id.getKey(), powerAsDecimal);
   }
 
   public static BFTValidatorSet validatorSet(Set<ActiveValidatorInfo> validators) {
