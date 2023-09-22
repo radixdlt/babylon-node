@@ -177,6 +177,13 @@ impl<S: QueryableProofStore> StateComputer<S> {
     pub fn get_ledger_status_from_metrics(&self) -> LedgerStatus {
         self.ledger_metrics.get_ledger_status()
     }
+
+    /// Exposes the [`LedgerMetrics::get_recent_self_proposal_miss_count()`].
+    /// This abstraction leak is needed to transfer this information from a Rust-side (derived)
+    /// metric, via JNI, to the Java-based "system health" endpoint.
+    pub fn get_recent_self_proposal_miss_count_from_metrics(&self) -> u64 {
+        self.ledger_metrics.get_recent_self_proposal_miss_count()
+    }
 }
 
 pub enum StateComputerRejectReason {

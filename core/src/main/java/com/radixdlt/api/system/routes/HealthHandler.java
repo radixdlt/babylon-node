@@ -97,6 +97,7 @@ public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
     return new HealthResponse()
         .status(statusEnum)
         .detail(nodeStatus.detail())
+        .recentSelfProposalMissCount(healthInfoService.recentSelfProposalMissCount())
         .currentProtocolVersion(currentProtocolVersion.name());
   }
 }

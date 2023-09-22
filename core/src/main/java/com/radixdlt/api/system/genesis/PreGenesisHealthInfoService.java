@@ -77,4 +77,9 @@ public final class PreGenesisHealthInfoService implements HealthInfoService {
   public NodeStatus nodeStatus() {
     return NodeStatus.BOOTING_PRE_GENESIS;
   }
+
+  @Override
+  public long recentSelfProposalMissCount() {
+    return 0;
+  }
 }

@@ -66,4 +66,6 @@ package com.radixdlt.api.system.health;
 
 public interface HealthInfoService {
   NodeStatus nodeStatus();
+
+  long recentSelfProposalMissCount();
 }

@@ -102,4 +102,19 @@ extern "system" fn Java_com_radixdlt_prometheus_RustPrometheus_ledgerStatus(
     })
 }
 
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_prometheus_RustPrometheus_recentSelfProposalMissCount(
+    env: JNIEnv,
+    _class: JClass,
+    j_node_rust_env: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_no_args: ()| -> u64 {
+        JNINodeRustEnvironment::get(&env, j_node_rust_env)
+            .state_manager
+            .state_computer
+            .get_recent_self_proposal_miss_count_from_metrics()
+    })
+}
+
 pub fn export_extern_functions() {}

@@ -201,6 +201,7 @@ components:
         - current_protocol_version
         - executed_protocol_updates
         - unknown_reported_pending_protocol_updates
+        - recent_self_proposal_miss_count
       properties:
         status:
           type: string
@@ -212,6 +213,15 @@ components:
         detail:
           type: string
           description: A human-readable message detailing the `status`.
+        recent_self_proposal_miss_count:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4294967295
+          description: |
+            A number of proposals missed by this validator during its N most recent rounds.
+            The history length (`N`) is configured arbitrarily in the metric-collection logic, but
+            represents a reasonable "recent" time (e.g. `N = 100`).
         current_protocol_version:
           $ref: "#/components/schemas/ProtocolVersion"
         executed_protocol_updates:

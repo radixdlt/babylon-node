@@ -90,4 +90,9 @@ public final class HealthInfoServiceImpl implements HealthInfoService {
       case LedgerStatus.NotSyncing ignored -> NodeStatus.OUT_OF_SYNC;
     };
   }
+
+  @Override
+  public long recentSelfProposalMissCount() {
+    return this.rustPrometheus.recentSelfProposalMissCount().toNonNegativeLong().or(Long.MAX_VALUE);
+  }
 }

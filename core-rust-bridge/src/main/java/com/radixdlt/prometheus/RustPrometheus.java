@@ -69,6 +69,7 @@ import com.google.inject.Inject;
 import com.radixdlt.environment.NodeRustEnvironment;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.sbor.Natives;
+import com.radixdlt.utils.UInt64;
 
 public class RustPrometheus {
 
@@ -80,6 +81,9 @@ public class RustPrometheus {
     this.ledgerStatusFunc =
         Natives.builder(nodeRustEnvironment, RustPrometheus::ledgerStatus)
             .build(new TypeToken<>() {});
+    this.recentSelfProposalMissCountFunc =
+        Natives.builder(nodeRustEnvironment, RustPrometheus::recentSelfProposalMissCount)
+            .build(new TypeToken<>() {});
   }
 
   public String prometheusMetrics() {
@@ -90,12 +94,21 @@ public class RustPrometheus {
     return ledgerStatusFunc.call(Tuple.tuple());
   }
 
+  public UInt64 recentSelfProposalMissCount() {
+    return recentSelfProposalMissCountFunc.call(Tuple.tuple());
+  }
+
   private final Natives.Call1<Tuple.Tuple0, String> prometheusMetricsFunc;
 
   private final Natives.Call1<Tuple.Tuple0, LedgerStatus> ledgerStatusFunc;
+
+  private final Natives.Call1<Tuple.Tuple0, UInt64> recentSelfProposalMissCountFunc;
 
   private static native byte[] prometheusMetrics(
       NodeRustEnvironment nodeRustEnvironment, byte[] args);
 
   private static native byte[] ledgerStatus(NodeRustEnvironment nodeRustEnvironment, byte[] args);
+
+  private static native byte[] recentSelfProposalMissCount(
+      NodeRustEnvironment nodeRustEnvironment, byte[] args);
 }

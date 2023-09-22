@@ -225,6 +225,11 @@ impl LedgerMetrics {
             LedgerStatus::NotSyncing
         }
     }
+
+    /// Returns the current value of [`recent_self_proposal_miss_count`].
+    pub fn get_recent_self_proposal_miss_count(&self) -> u64 {
+        u64::try_from(self.recent_self_proposal_miss_count.gauge.get()).expect("negative count")
+    }
 }
 
 pub struct TransactionMetricsData {
