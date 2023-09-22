@@ -70,9 +70,11 @@ import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.DatabaseFlags;
+import com.radixdlt.harness.deterministic.TransactionExecutor;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.rev2.Manifest;
 import com.radixdlt.rev2.ScryptoConstants;
+import com.radixdlt.rev2.TransactionBuilder;
 import java.util.List;
 import java.util.Map;
 import org.junit.Test;
@@ -149,6 +151,147 @@ public final class LtsAccountDepositBehaviourTest extends DeterministicCoreApiTe
                       .vaultExists(true)
                       .isXrd(true)
                       .allowsTryDeposit(true)));
+    }
+  }
+
+  @Test
+  public void account_with_reject_default_rule_disallows_all_deposits() throws Exception {
+    try (final var test = buildRunningServerTest(new DatabaseFlags(true, true))) {
+      test.suppressUnusedWarning();
+
+      // Arrange: create account and set its default deposit rule to `Reject`
+      var accountAddress =
+          TransactionExecutor.executeTransaction(
+                  test,
+                  TransactionBuilder.forTests()
+                      .manifest(
+                          Manifest.newAccountAllowAllOwner()) // we are only testing `try_deposit_*`
+                  )
+              .newComponentAddresses()
+              .get(0);
+      TransactionExecutor.executeTransaction(
+          test,
+          TransactionBuilder.forTests()
+              .manifest(Manifest.setDefaultDepositRule(accountAddress, "Reject")));
+
+      // Act: ask about 2 resources (XRD and not-XRD)
+      final var result =
+          getLtsApi()
+              .ltsStateAccountDepositBehaviourPost(
+                  new LtsStateAccountDepositBehaviourRequest()
+                      .network(networkLogicalName)
+                      .accountAddress(addressing.encode(accountAddress))
+                      .resourceAddresses(
+                          List.of(
+                              addressing.encode(ScryptoConstants.XRD_RESOURCE_ADDRESS),
+                              addressing.encode(
+                                  ScryptoConstants.VALIDATOR_OWNER_TOKEN_RESOURCE_ADDRESS))));
+
+      // Assert:
+      assertThat(result.getIsBadgeAuthorizedDepositor()).isNull(); // was not requested
+      assertThat(result.getDefaultDepositRule()).isEqualTo(DefaultDepositRule.REJECT); // configured
+      assertThat(result.getResourceSpecificBehaviours())
+          .isEqualTo(
+              Map.of(
+                  addressing.encode(ScryptoConstants.XRD_RESOURCE_ADDRESS),
+                  new ResourceSpecificDepositBehaviour()
+                      .resourcePreference(null)
+                      .vaultExists(false)
+                      .isXrd(true)
+                      .allowsTryDeposit(false), // due to the default rule
+                  addressing.encode(ScryptoConstants.VALIDATOR_OWNER_TOKEN_RESOURCE_ADDRESS),
+                  new ResourceSpecificDepositBehaviour()
+                      .resourcePreference(null)
+                      .vaultExists(false)
+                      .isXrd(false)
+                      .allowsTryDeposit(false))); // due to the default rule
+    }
+  }
+
+  @Test
+  public void configured_resource_preference_and_depositor_badge_is_returned() throws Exception {
+    try (final var test = buildRunningServerTest(new DatabaseFlags(true, true))) {
+      test.suppressUnusedWarning();
+
+      // Arrange: create account with some resource preference and some authorized depositor badge
+      var accountAddress =
+          TransactionExecutor.executeTransaction(
+                  test,
+                  TransactionBuilder.forTests()
+                      .manifest(
+                          Manifest.newAccountAllowAllOwner()) // we are only testing `try_deposit_*`
+                  )
+              .newComponentAddresses()
+              .get(0);
+      var depositorBadgeResource = // for easier test, we pick the "fungible" badge
+          TransactionExecutor.executeTransaction(
+                  test,
+                  TransactionBuilder.forTests()
+                      .manifest(Manifest.createDummyFungibleResource("FungibleDepositorBadge")))
+              .newResourceAddresses()
+              .get(0);
+      TransactionExecutor.executeTransaction(
+          test,
+          TransactionBuilder.forTests()
+              .manifest(
+                  Manifest.setResourcePreference(
+                      accountAddress, ScryptoConstants.XRD_RESOURCE_ADDRESS, "Disallowed")));
+      TransactionExecutor.executeTransaction(
+          test,
+          TransactionBuilder.forTests()
+              .manifest(Manifest.addAuthorizedDepositor(accountAddress, depositorBadgeResource)));
+
+      // Act: ask about 2 resources (XRD and not-XRD), providing the right badge
+      final var result =
+          getLtsApi()
+              .ltsStateAccountDepositBehaviourPost(
+                  new LtsStateAccountDepositBehaviourRequest()
+                      .network(networkLogicalName)
+                      .accountAddress(addressing.encode(accountAddress))
+                      .badge(
+                          new ResourcePresentedBadge()
+                              .resourceAddress(addressing.encode(depositorBadgeResource)))
+                      .resourceAddresses(
+                          List.of(
+                              addressing.encode(ScryptoConstants.XRD_RESOURCE_ADDRESS),
+                              addressing.encode(
+                                  ScryptoConstants.VALIDATOR_OWNER_TOKEN_RESOURCE_ADDRESS))));
+
+      // Assert:
+      assertThat(result.getIsBadgeAuthorizedDepositor()).isTrue();
+      assertThat(result.getDefaultDepositRule()).isEqualTo(DefaultDepositRule.ACCEPT);
+      assertThat(result.getResourceSpecificBehaviours())
+          .isEqualTo(
+              Map.of(
+                  addressing.encode(ScryptoConstants.XRD_RESOURCE_ADDRESS),
+                  new ResourceSpecificDepositBehaviour()
+                      .resourcePreference(ResourcePreference.DISALLOWED) // configured
+                      .vaultExists(false)
+                      .isXrd(true)
+                      .allowsTryDeposit(true), // allowed anyway due to AD badge
+                  addressing.encode(ScryptoConstants.VALIDATOR_OWNER_TOKEN_RESOURCE_ADDRESS),
+                  new ResourceSpecificDepositBehaviour()
+                      .resourcePreference(null)
+                      .vaultExists(false)
+                      .isXrd(false)
+                      .allowsTryDeposit(true)));
+
+      // Follow-up: present a badge that is not on the AD list; also, ask about 0 resources
+      final var differentResult =
+          getLtsApi()
+              .ltsStateAccountDepositBehaviourPost(
+                  new LtsStateAccountDepositBehaviourRequest()
+                      .network(networkLogicalName)
+                      .accountAddress(addressing.encode(accountAddress))
+                      .badge(
+                          new ResourcePresentedBadge()
+                              .resourceAddress(
+                                  addressing.encode(ScryptoConstants.XRD_RESOURCE_ADDRESS))));
+
+      // Assert:
+      assertThat(differentResult.getIsBadgeAuthorizedDepositor()).isFalse();
+      assertThat(differentResult.getDefaultDepositRule()).isEqualTo(DefaultDepositRule.ACCEPT);
+      assertThat(differentResult.getResourceSpecificBehaviours()).isNull();
     }
   }
 }
