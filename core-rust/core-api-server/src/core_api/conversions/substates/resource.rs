@@ -267,3 +267,24 @@ pub fn to_api_non_fungible_global_id(
         )),
     })
 }
+
+pub fn extract_resource_or_non_fungible(
+    extraction_context: &ExtractionContext,
+    badge: &models::PresentedBadge,
+) -> Result<ResourceOrNonFungible, ExtractionError> {
+    Ok(match badge {
+        models::PresentedBadge::ResourcePresentedBadge { resource_address } => {
+            ResourceOrNonFungible::from(extract_resource_address(
+                extraction_context,
+                resource_address,
+            )?)
+        }
+        models::PresentedBadge::NonFungiblePresentedBadge {
+            resource_address,
+            local_id,
+        } => ResourceOrNonFungible::from(NonFungibleGlobalId::new(
+            extract_resource_address(extraction_context, resource_address)?,
+            extract_non_fungible_id_from_simple_representation(local_id)?,
+        )),
+    })
+}

@@ -154,6 +154,88 @@ public class Manifest {
             params.faucetLockFeeLine());
   }
 
+  public static Functions.Func1<Parameters, String> setDefaultDepositRule(
+      ComponentAddress account, String defaultDepositRule) {
+    return (params) ->
+        String.format(
+            """
+            %s
+            CALL_METHOD
+                Address("%s")
+                "set_default_deposit_rule"
+                Enum<DefaultDepositRule::%s>();
+            """,
+            params.faucetLockFeeLine(), params.encode(account), defaultDepositRule);
+  }
+
+  public static Functions.Func1<Parameters, String> setResourcePreference(
+      ComponentAddress account, ResourceAddress resource, String resourcePreference) {
+    return (params) ->
+        String.format(
+            """
+            %s
+            CALL_METHOD
+                Address("%s")
+                "set_resource_preference"
+                Address("%s")
+                Enum<ResourcePreference::%s>();
+            """,
+            params.faucetLockFeeLine(),
+            params.encode(account),
+            params.encode(resource),
+            resourcePreference);
+  }
+
+  public static Functions.Func1<Parameters, String> addAuthorizedDepositor(
+      ComponentAddress account, ResourceAddress resourceBadge) {
+    return (params) ->
+        String.format(
+            """
+            %s
+            CALL_METHOD
+                Address("%s")
+                "add_authorized_depositor"
+                Enum<ResourceOrNonFungible::Resource>(Address("%s"));
+            """,
+            params.faucetLockFeeLine(), params.encode(account), params.encode(resourceBadge));
+  }
+
+  public static Functions.Func1<Parameters, String> createDummyFungibleResource(String name) {
+    return (params) ->
+        String.format(
+            """
+                %s
+                CREATE_FUNGIBLE_RESOURCE
+                    Enum<OwnerRole::None>()
+                    true # Track supply?
+                    18u8 # Divisibility
+                    Tuple(
+                        None, # Mint roles
+                        None, # Burn Roles
+                        None, # Freeze Roles
+                        None, # Recall Roles
+                        None, # Withdraw Roles
+                        None  # Deposit Roles
+                    )
+                    Tuple(
+                        Map<String, Tuple>(
+                            "name" => Tuple(
+                                Some(Enum<Metadata::String>("%s")), # Name
+                                true # Locked?
+                            )
+                        ),
+                        Map<String, Enum>(
+                            "metadata_setter" => Some(Enum<AccessRule::AllowAll>()),
+                            "metadata_setter_updater" => None,
+                            "metadata_locker" => Some(Enum<AccessRule::DenyAll>()),
+                            "metadata_locker_updater" => None
+                        )
+                    )
+                    None; # Address Reservation
+                """,
+            params.faucetLockFeeLine(), name);
+  }
+
   public static Functions.Func1<Parameters, String> transferBetweenAccountsFeeFromSender(
       ComponentAddress fromAccount,
       ResourceAddress resource,
