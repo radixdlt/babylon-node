@@ -10,6 +10,7 @@ use radix_engine_interface::network::NetworkDefinition;
 use tower_http::catch_panic::ResponseForPanic;
 
 use super::{models, CoreApiState};
+use crate::core_api::models::StreamTransactionsErrorDetails;
 use models::{
     lts_transaction_submit_error_details::LtsTransactionSubmitErrorDetails,
     transaction_submit_error_details::TransactionSubmitErrorDetails,
@@ -64,6 +65,22 @@ impl ErrorDetails for LtsTransactionSubmitErrorDetails {
         trace_id: Option<String>,
     ) -> models::ErrorResponse {
         models::ErrorResponse::LtsTransactionSubmitErrorResponse {
+            code,
+            message,
+            trace_id,
+            details: details.map(Box::new),
+        }
+    }
+}
+
+impl ErrorDetails for StreamTransactionsErrorDetails {
+    fn to_error_response(
+        details: Option<Self>,
+        code: i32,
+        message: String,
+        trace_id: Option<String>,
+    ) -> models::ErrorResponse {
+        models::ErrorResponse::StreamTransactionsErrorResponse {
             code,
             message,
             trace_id,

@@ -28,10 +28,10 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.BasicErrorResponse;
 import com.radixdlt.api.core.generated.models.ErrorResponse;
 import com.radixdlt.api.core.generated.models.ErrorResponseType;
-import com.radixdlt.api.core.generated.models.LtsTransactionSubmitErrorDetails;
 import com.radixdlt.api.core.generated.models.LtsTransactionSubmitErrorResponse;
-import com.radixdlt.api.core.generated.models.LtsTransactionSubmitErrorResponseAllOf;
+import com.radixdlt.api.core.generated.models.StreamTransactionsErrorDetails;
 import com.radixdlt.api.core.generated.models.StreamTransactionsErrorResponse;
+import com.radixdlt.api.core.generated.models.StreamTransactionsErrorResponseAllOf;
 import com.radixdlt.api.core.generated.models.TransactionSubmitErrorResponse;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -40,10 +40,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * LtsTransactionSubmitErrorResponse
+ * StreamTransactionsErrorResponse
  */
 @JsonPropertyOrder({
-  LtsTransactionSubmitErrorResponse.JSON_PROPERTY_DETAILS
+  StreamTransactionsErrorResponse.JSON_PROPERTY_DETAILS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -58,14 +58,14 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = TransactionSubmitErrorResponse.class, name = "TransactionSubmit"),
 })
 
-public class LtsTransactionSubmitErrorResponse extends ErrorResponse {
+public class StreamTransactionsErrorResponse extends ErrorResponse {
   public static final String JSON_PROPERTY_DETAILS = "details";
-  private LtsTransactionSubmitErrorDetails details;
+  private StreamTransactionsErrorDetails details;
 
-  public LtsTransactionSubmitErrorResponse() { 
+  public StreamTransactionsErrorResponse() { 
   }
 
-  public LtsTransactionSubmitErrorResponse details(LtsTransactionSubmitErrorDetails details) {
+  public StreamTransactionsErrorResponse details(StreamTransactionsErrorDetails details) {
     this.details = details;
     return this;
   }
@@ -79,20 +79,20 @@ public class LtsTransactionSubmitErrorResponse extends ErrorResponse {
   @JsonProperty(JSON_PROPERTY_DETAILS)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public LtsTransactionSubmitErrorDetails getDetails() {
+  public StreamTransactionsErrorDetails getDetails() {
     return details;
   }
 
 
   @JsonProperty(JSON_PROPERTY_DETAILS)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setDetails(LtsTransactionSubmitErrorDetails details) {
+  public void setDetails(StreamTransactionsErrorDetails details) {
     this.details = details;
   }
 
 
   /**
-   * Return true if this LtsTransactionSubmitErrorResponse object is equal to o.
+   * Return true if this StreamTransactionsErrorResponse object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -102,8 +102,8 @@ public class LtsTransactionSubmitErrorResponse extends ErrorResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    LtsTransactionSubmitErrorResponse ltsTransactionSubmitErrorResponse = (LtsTransactionSubmitErrorResponse) o;
-    return Objects.equals(this.details, ltsTransactionSubmitErrorResponse.details) &&
+    StreamTransactionsErrorResponse streamTransactionsErrorResponse = (StreamTransactionsErrorResponse) o;
+    return Objects.equals(this.details, streamTransactionsErrorResponse.details) &&
         super.equals(o);
   }
 
@@ -115,7 +115,7 @@ public class LtsTransactionSubmitErrorResponse extends ErrorResponse {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class LtsTransactionSubmitErrorResponse {\n");
+    sb.append("class StreamTransactionsErrorResponse {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    details: ").append(toIndentedString(details)).append("\n");
     sb.append("}");
@@ -140,8 +140,8 @@ static {
   mappings.put("LtsTransactionSubmit", LtsTransactionSubmitErrorResponse.class);
   mappings.put("StreamTransactions", StreamTransactionsErrorResponse.class);
   mappings.put("TransactionSubmit", TransactionSubmitErrorResponse.class);
-  mappings.put("LtsTransactionSubmitErrorResponse", LtsTransactionSubmitErrorResponse.class);
-  JSON.registerDiscriminator(LtsTransactionSubmitErrorResponse.class, "error_type", mappings);
+  mappings.put("StreamTransactionsErrorResponse", StreamTransactionsErrorResponse.class);
+  JSON.registerDiscriminator(StreamTransactionsErrorResponse.class, "error_type", mappings);
 }
 }
 

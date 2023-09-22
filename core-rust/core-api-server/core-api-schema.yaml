@@ -1628,6 +1628,7 @@ components:
         - Basic
         - TransactionSubmit
         - LtsTransactionSubmit
+        - StreamTransactions
     ErrorResponse:
       type: object
       discriminator:
@@ -1637,6 +1638,7 @@ components:
           Basic: "#/components/schemas/BasicErrorResponse"
           TransactionSubmit: "#/components/schemas/TransactionSubmitErrorResponse"
           LtsTransactionSubmit: "#/components/schemas/LtsTransactionSubmitErrorResponse"
+          StreamTransactions: "#/components/schemas/StreamTransactionsErrorResponse"
       required:
         - error_type
         - code
@@ -7041,6 +7043,45 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/LedgerProof"
+    StreamTransactionsErrorResponse:
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+        - type: object
+          properties:
+            details:
+              $ref: "#/components/schemas/StreamTransactionsErrorDetails"
+    StreamTransactionsErrorDetailsType:
+      type: string
+      enum:
+        - RequestedStateVersionOutOfBounds
+    StreamTransactionsErrorDetails:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/StreamTransactionsErrorDetailsType"
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match StreamTransactionsErrorDetailsType
+          RequestedStateVersionOutOfBounds: '#/components/schemas/RequestedStateVersionOutOfBoundsErrorDetails'
+    RequestedStateVersionOutOfBoundsErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/StreamTransactionsErrorDetails"
+        - type: object
+          required:
+            - max_ledger_state_version
+          properties:
+            max_ledger_state_version:
+              $ref: "#/components/schemas/StateVersion"
+              description: |
+                The maximum state version currently committed on this node's ledger - the same as
+                would be returned by the `max_ledger_state_version` in a successful response.
+                *Note on the bounds:* the requested `from_state_version` cannot be greater than
+                `max_ledger_state_version + 1` (which is an edge case returning valid
+                `previous_state_identifiers` and an empty `transactions`). Any greater requested
+                value triggers this error.
     CommittedTransaction:
       type: object
       required:
