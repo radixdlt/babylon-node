@@ -3,6 +3,8 @@
 This document focuses only on health-related Prometheus metrics: discusses their meaning in detail,
 and suggests some potential "Node status dashboard" ideas.
 
+Note that the summarised statuses are also exposed in the `/system/health` endpoint of the System API.
+
 ## Overall health factor
 
 The Node naturally publishes a few lower-level health metrics (typically: directly reflecting some
@@ -61,8 +63,8 @@ metrics:
 `rn_sync_target_state_version`
 : A maximum state version among those received in the status responses from the Node's peers. It
   becomes a target which the Node will try to achieve via Ledger sync process. _Please note that
-  this information is not trusted (i.e. a single malicious peer can make all Nodes believe that
-  their Ledger needs syncing, but it does not affect safety)._
+  this information is not currently validated against a valid proof (i.e. a malicious peer could
+  give a wrong value and suggest that the Node needs to sync, but it does not affect safety)._
 
 A `rn_sync_current_state_version < rn_sync_target_state_version` is a hint for the Node to fetch
 the missing transactions (together with their end proof) from the peer that declared to have them.
@@ -110,8 +112,8 @@ Additional indicators of a healthy-but-still-syncing Node:
     (or less ambiguously: `rn_sync_current_state_version == rn_sync_target_state_version`).
 
 Please bear in mind that both `rn_sync_target_proposer_timestamp_epoch_second` and
-`rn_sync_target_state_version` come from the Node's peers and are not verified in any way, so the
-"synced node" condition described above cannot be trusted blindly.
+`rn_sync_target_state_version` come from the Node's peers and are not presently validated,
+so the "synced node" condition described above cannot be trusted blindly.
 
 #### State: Synced
 
