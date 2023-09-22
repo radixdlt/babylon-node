@@ -28,7 +28,6 @@ If you wanted to run without using compose you can do so like
 docker run -p 127.0.0.1:3333:3333 127.0.0.1:3334:3334 127.0.0.1:3335:3335 -v ledger-data:/home/radixdlt/RADIXDB -v key-data:/home/radixdlt/key --env-file radix-node.env radixdlt/babylon-node:rcnet-v2-phase2-r4
 ```
 
-
 ## Node volumes
 
 The node makes use of some persistent data, which is set up to be stored as docker volumes.
@@ -37,7 +36,7 @@ The node makes use of some persistent data, which is set up to be stored as dock
 
 The ledger database is stored in a docker volume called `ledger-data`.
 
-Sometimes if updating to a new version of the node, a ledger wipe is needed. To wipe the ledger, run: `docker volume rm radixdlt-testnet-babylon-node_ledger-data` to remove the `ledger-data` volume.
+Sometimes if updating to a new version of the node, a ledger wipe is needed. To wipe the ledger, run: `docker volume rm radixdlt-babylon-node-testnet-node_ledger-data` to remove the `ledger-data` volume. You may need to first remove the container which is using the volume, with `docker rm radixdlt-stokenet-node`. See all containers with `docker ps --all`.
 
 ### Key pair
 
