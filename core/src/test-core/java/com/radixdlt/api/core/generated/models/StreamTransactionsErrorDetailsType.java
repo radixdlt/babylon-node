@@ -24,21 +24,15 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
- * Gets or Sets ErrorResponseType
+ * Gets or Sets StreamTransactionsErrorDetailsType
  */
-public enum ErrorResponseType {
+public enum StreamTransactionsErrorDetailsType {
   
-  BASIC("Basic"),
-  
-  TRANSACTIONSUBMIT("TransactionSubmit"),
-  
-  LTSTRANSACTIONSUBMIT("LtsTransactionSubmit"),
-  
-  STREAMTRANSACTIONS("StreamTransactions");
+  REQUESTEDSTATEVERSIONOUTOFBOUNDS("RequestedStateVersionOutOfBounds");
 
   private String value;
 
-  ErrorResponseType(String value) {
+  StreamTransactionsErrorDetailsType(String value) {
     this.value = value;
   }
 
@@ -53,8 +47,8 @@ public enum ErrorResponseType {
   }
 
   @JsonCreator
-  public static ErrorResponseType fromValue(String value) {
-    for (ErrorResponseType b : ErrorResponseType.values()) {
+  public static StreamTransactionsErrorDetailsType fromValue(String value) {
+    for (StreamTransactionsErrorDetailsType b : StreamTransactionsErrorDetailsType.values()) {
       if (b.value.equals(value)) {
         return b;
       }
