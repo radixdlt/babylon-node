@@ -20,7 +20,10 @@ use super::to_api_committed_state_identifiers;
 pub(crate) async fn handle_stream_transactions(
     state: State<CoreApiState>,
     Json(request): Json<models::StreamTransactionsRequest>,
-) -> Result<Json<models::StreamTransactionsResponse>, ResponseError<()>> {
+) -> Result<
+    Json<models::StreamTransactionsResponse>,
+    ResponseError<models::StreamTransactionsErrorDetails>,
+> {
     assert_matching_network(&request.network, &state.network)?;
     let mapping_context = MappingContext::new_for_transaction_stream(&state.network)
         .with_sbor_formats(&request.sbor_format_options)
@@ -56,6 +59,9 @@ pub(crate) async fn handle_stream_transactions(
             Please note the resync will take a while.",
         ));
     }
+
+    let max_ledger_state_version = to_api_state_version(database.max_state_version())?;
+
     let previous_state_identifiers = match from_state_version.previous() {
         Ok(previous_state_version) => {
             if previous_state_version.number() == 0 {
@@ -63,7 +69,13 @@ pub(crate) async fn handle_stream_transactions(
             } else {
                 let identifiers = database
                     .get_committed_transaction_identifiers(previous_state_version)
-                    .expect("Txn identifiers are missing");
+                    .ok_or_else(|| detailed_error(
+                        StatusCode::BAD_REQUEST,
+                        "The requested state version is out of bounds",
+                        models::StreamTransactionsErrorDetails::RequestedStateVersionOutOfBoundsErrorDetails {
+                            max_ledger_state_version
+                        }
+                    ))?;
                 Some(Box::new(to_api_committed_state_identifiers(
                     previous_state_version,
                     &identifiers.resultant_ledger_hashes,
@@ -73,13 +85,11 @@ pub(crate) async fn handle_stream_transactions(
         Err(_) => None,
     };
 
-    let max_state_version = database.max_state_version();
-
     let mut response = models::StreamTransactionsResponse {
         previous_state_identifiers,
         from_state_version: to_api_state_version(from_state_version)?,
-        count: MAX_BATCH_COUNT_PER_REQUEST as i32, // placeholder to get a better size aproximation for the header
-        max_ledger_state_version: to_api_state_version(max_state_version)?,
+        count: MAX_BATCH_COUNT_PER_REQUEST as i32, // placeholder to get a better size approximation for the header
+        max_ledger_state_version,
         transactions: Vec::new(),
         proofs: None,
     };

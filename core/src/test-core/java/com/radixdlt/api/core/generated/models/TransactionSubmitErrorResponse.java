@@ -29,6 +29,7 @@ import com.radixdlt.api.core.generated.models.BasicErrorResponse;
 import com.radixdlt.api.core.generated.models.ErrorResponse;
 import com.radixdlt.api.core.generated.models.ErrorResponseType;
 import com.radixdlt.api.core.generated.models.LtsTransactionSubmitErrorResponse;
+import com.radixdlt.api.core.generated.models.StreamTransactionsErrorResponse;
 import com.radixdlt.api.core.generated.models.TransactionSubmitErrorDetails;
 import com.radixdlt.api.core.generated.models.TransactionSubmitErrorResponse;
 import com.radixdlt.api.core.generated.models.TransactionSubmitErrorResponseAllOf;
@@ -53,6 +54,7 @@ import com.radixdlt.api.core.generated.client.JSON;
 @JsonSubTypes({
   @JsonSubTypes.Type(value = BasicErrorResponse.class, name = "Basic"),
   @JsonSubTypes.Type(value = LtsTransactionSubmitErrorResponse.class, name = "LtsTransactionSubmit"),
+  @JsonSubTypes.Type(value = StreamTransactionsErrorResponse.class, name = "StreamTransactions"),
   @JsonSubTypes.Type(value = TransactionSubmitErrorResponse.class, name = "TransactionSubmit"),
 })
 
@@ -136,6 +138,7 @@ static {
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
   mappings.put("Basic", BasicErrorResponse.class);
   mappings.put("LtsTransactionSubmit", LtsTransactionSubmitErrorResponse.class);
+  mappings.put("StreamTransactions", StreamTransactionsErrorResponse.class);
   mappings.put("TransactionSubmit", TransactionSubmitErrorResponse.class);
   mappings.put("TransactionSubmitErrorResponse", TransactionSubmitErrorResponse.class);
   JSON.registerDiscriminator(TransactionSubmitErrorResponse.class, "error_type", mappings);
