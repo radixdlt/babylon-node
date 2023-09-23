@@ -81,11 +81,8 @@ import java.io.OutputStream;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.attribute.PosixFilePermission;
-import java.security.GeneralSecurityException;
-import java.security.KeyPair;
-import java.security.KeyStore;
+import java.security.*;
 import java.security.KeyStore.Entry;
-import java.security.PrivateKey;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.time.LocalDateTime;
@@ -204,8 +201,22 @@ public final class RadixKeyStore implements Closeable {
    */
   public ECKeyPair readKeyPair(String name, boolean create)
       throws KeyStoreException, PrivateKeyException, PublicKeyException {
+    Entry entry;
     try {
-      var entry = this.keyStore.getEntry(name, emptyPassword);
+      entry = this.keyStore.getEntry(name, emptyPassword);
+    } catch (GeneralSecurityException e) {
+      try {
+        // Apparently when Java's keytool is used to change a keystore password,
+        // it saves it so that the password protection is also set for each entry.
+        // TODO: investigate why this works on Olympia; could be a BouncyCastle thing?
+        // TODO: confront this against the comment at `emptyPassword` definition (L139)
+        entry = this.keyStore.getEntry(name, new KeyStore.PasswordProtection(storePassword));
+      } catch (GeneralSecurityException e2) {
+        throw new KeyStoreException("Key store error while reading key", e2);
+      }
+    }
+
+    try {
       if (entry == null) {
         if (create) {
           var newKeyPair = ECKeyPair.generateNew();
@@ -217,8 +228,8 @@ public final class RadixKeyStore implements Closeable {
       } else {
         return processEntry(name, entry);
       }
-    } catch (GeneralSecurityException | IOException e) {
-      throw new KeyStoreException("Key store error while reading key", e);
+    } catch (IOException e) {
+      throw new KeyStoreException("Key store error while processing key", e);
     }
   }
 
