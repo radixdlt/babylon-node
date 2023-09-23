@@ -161,7 +161,7 @@ public final class RadixKeyStore implements Closeable {
   public static RadixKeyStore fromFile(File file, char[] storePassword, boolean create)
       throws IOException, KeyStoreException {
     try {
-      var ks = KeyStore.getInstance("pkcs12", BouncyCastleProviderInstance.get());
+      var ks = KeyStore.getInstance("pkcs12");
       var usedStorePassword =
           (storePassword == null || storePassword.length == 0) ? defaultKey : storePassword;
       initializeKeyStore(ks, file, usedStorePassword, create);
@@ -208,7 +208,7 @@ public final class RadixKeyStore implements Closeable {
       try {
         // Apparently when Java's keytool is used to change a keystore password,
         // it saves it so that the password protection is also set for each entry.
-        // TODO: investigate why this works on Olympia; could be a BouncyCastle thing?
+        // TODO: investigate why this works on Olympia
         // TODO: confront this against the comment at `emptyPassword` definition (L139)
         entry = this.keyStore.getEntry(name, new KeyStore.PasswordProtection(storePassword));
       } catch (GeneralSecurityException e2) {
