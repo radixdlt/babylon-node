@@ -306,7 +306,7 @@ public class NodeCapabilityTests {
   private RadixShell.Node startNode(int port, boolean ledgerSyncEnabled) throws Exception {
     final var genesisData =
         GenesisBuilder.createTestGenesisWithNumValidators(
-            1, Decimal.of(1), GenesisConsensusManagerConfig.Builder.testDefaults());
+            1, Decimal.ONE, GenesisConsensusManagerConfig.Builder.testDefaults());
     final var encodedGenesisData =
         NodeSborCodecs.encode(genesisData, NodeSborCodecs.resolveCodec(new TypeToken<>() {}));
     final var genesisDataBase64 =

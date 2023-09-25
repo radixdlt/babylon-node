@@ -170,6 +170,21 @@ impl<S: QueryableProofStore> StateComputer<S> {
             committed_transactions_metrics,
         }
     }
+
+    /// Exposes the [`LedgerMetrics::get_ledger_status()`].
+    /// This abstraction leak is needed to transfer the "overall ledger health" information from a
+    /// Rust-side (derived) metric, via JNI, to the Java-based "system health" endpoint.
+    pub fn get_ledger_status_from_metrics(&self) -> LedgerStatus {
+        self.ledger_metrics.get_ledger_status()
+    }
+
+    /// Exposes the [`LedgerMetrics::get_recent_self_proposal_miss_statistic()`].
+    /// This abstraction leak is needed to transfer this information from a Rust-side (derived)
+    /// metric, via JNI, to the Java-based "system health" endpoint.
+    pub fn get_recent_self_proposal_miss_statistic(&self) -> RecentSelfProposalMissStatistic {
+        self.ledger_metrics
+            .get_recent_self_proposal_miss_statistic()
+    }
 }
 
 pub enum StateComputerRejectReason {
@@ -1159,10 +1174,12 @@ where
             transactions: committed_transaction_bundles,
             proof: commit_request.proof,
             substate_store_update,
-            vertex_store: commit_request.vertex_store,
+            vertex_store: commit_request.vertex_store.map(VertexStoreBlobV1),
             state_tree_update,
-            transaction_tree_slice: transaction_tree_slice_merger.into_slice(),
-            receipt_tree_slice: receipt_tree_slice_merger.into_slice(),
+            transaction_tree_slice: TransactionAccuTreeSliceV1(
+                transaction_tree_slice_merger.into_slice(),
+            ),
+            receipt_tree_slice: ReceiptAccuTreeSliceV1(receipt_tree_slice_merger.into_slice()),
             new_substate_node_ancestry_records: new_node_ancestry_records,
         });
         drop(write_store);
@@ -1244,8 +1261,12 @@ where
                 resultant_state_version,
                 hash_structures_diff.state_hash_tree_diff,
             ),
-            transaction_tree_slice: hash_structures_diff.transaction_tree_diff.slice,
-            receipt_tree_slice: hash_structures_diff.receipt_tree_diff.slice,
+            transaction_tree_slice: TransactionAccuTreeSliceV1(
+                hash_structures_diff.transaction_tree_diff.slice,
+            ),
+            receipt_tree_slice: ReceiptAccuTreeSliceV1(
+                hash_structures_diff.receipt_tree_diff.slice,
+            ),
             new_substate_node_ancestry_records: commit.new_substate_node_ancestry_records,
         });
         drop(write_store);
@@ -1367,7 +1388,7 @@ mod tests {
             .header(TransactionHeaderV1 {
                 network_id: NetworkDefinition::simulator().id,
                 start_epoch_inclusive: epoch,
-                end_epoch_exclusive: epoch.after(100),
+                end_epoch_exclusive: epoch.after(100).unwrap(),
                 nonce,
                 notary_public_key: notary_private_key.public_key().into(),
                 notary_is_signatory: true,
@@ -1400,7 +1421,7 @@ mod tests {
             .header(TransactionHeaderV1 {
                 network_id: NetworkDefinition::simulator().id,
                 start_epoch_inclusive: epoch,
-                end_epoch_exclusive: epoch.after(100),
+                end_epoch_exclusive: epoch.after(100).unwrap(),
                 nonce,
                 notary_public_key: notary_private_key.public_key().into(),
                 notary_is_signatory: true,

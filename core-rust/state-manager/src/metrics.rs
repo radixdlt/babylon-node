@@ -72,7 +72,7 @@ use crate::StateVersion;
 use node_common::config::limits::*;
 use node_common::locks::{LockFactory, Mutex};
 use node_common::metrics::*;
-use prometheus::*;
+use prometheus::{Gauge, Histogram, IntCounter, IntCounterVec, IntGauge, Opts, Registry};
 
 use radix_engine::transaction::TransactionFeeSummary;
 use radix_engine_common::prelude::*;
@@ -209,6 +209,32 @@ impl LedgerMetrics {
             .set(proposer_timestamp_ms as f64 / 1000.0);
         self.recent_proposer_timestamp_progress_rate
             .track(proposer_timestamp_ms);
+    }
+
+    /// Calculates current [`LedgerStatus`] (see the enum's doc for explanation).
+    pub fn get_ledger_status(&self) -> LedgerStatus {
+        if current_wallclock_epoch_sec() - self.last_update_proposer_epoch_second.get()
+            < SYNCED_LEDGER_MAX_DELAY_SEC
+        {
+            LedgerStatus::Synced
+        } else if self.recent_proposer_timestamp_progress_rate.gauge.get()
+            > MIN_PROPOSER_TIMESTAMP_PROGRESS_RATE
+        {
+            LedgerStatus::Syncing
+        } else {
+            LedgerStatus::NotSyncing
+        }
+    }
+
+    /// Returns the current value of [`recent_self_proposal_miss_count`] and the tracked history
+    /// length (for context).
+    pub fn get_recent_self_proposal_miss_statistic(&self) -> RecentSelfProposalMissStatistic {
+        RecentSelfProposalMissStatistic {
+            missed_count: u64::try_from(self.recent_self_proposal_miss_count.gauge.get())
+                .expect("negative count"),
+            recent_proposals_tracked_count: u64::try_from(PROPOSAL_HISTORY_LEN)
+                .expect("negative history length"),
+        }
     }
 }
 
@@ -599,6 +625,31 @@ impl OverallLedgerHealthFactor {
         1.0 - (clamped_recent_proposal_miss_count as f64)
             / (CRITICAL_RECENT_PROPOSAL_MISS_COUNT as f64)
     }
+}
+
+/// A simplified "overall ledger health" (see [`OverallLedgerHealthFactor::syncing_factor()`]).
+/// This enum is meant to be surfaced from a `/system/health` API.
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub enum LedgerStatus {
+    /// Ledger is fully synced, i.e. the last committed proposer timestamp is closer than
+    /// [`SYNCED_LEDGER_MAX_DELAY_SEC`] to wallclock.
+    Synced,
+    /// Ledger's last proposer timestamp is far from wallclock, but progresses at least
+    /// [`MIN_PROPOSER_TIMESTAMP_PROGRESS_RATE`] times faster than wallclock (i.e. catches up).
+    Syncing,
+    /// Ledger's last proposer timestamp is far from wallclock *and* progresses slower than
+    /// expected from a [`Self::Syncing`] ledger.
+    NotSyncing,
+}
+
+/// A recent statistic on a number of successful/missed proposals.
+/// This information is meant to be surfaced from a `/system/health` API.
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct RecentSelfProposalMissStatistic {
+    /// A number of missed proposals among [`recent_proposals_tracked_count`] most recent ones.
+    missed_count: u64,
+    /// A configured length of proposal miss tracking history.
+    recent_proposals_tracked_count: u64,
 }
 
 /// Returns the `SystemTime::now()` expressed as a fractional number of seconds since epoch.

@@ -12,6 +12,11 @@ use crate::core_api::*;
 /// Should be used when there's an error mapping to an API response
 #[derive(Debug, Clone)]
 pub enum MappingError {
+    PartitionNumber {
+        entity_address: String,
+        partition_number: PartitionNumber,
+        message: String,
+    },
     SubstateKey {
         entity_address: String,
         partition_number: PartitionNumber,
@@ -75,6 +80,9 @@ pub enum MappingError {
         message: String,
     },
     MissingSystemStructure {
+        message: String,
+    },
+    CouldNotResolveRemoteGenericSubstitution {
         message: String,
     },
 }

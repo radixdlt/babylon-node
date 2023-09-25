@@ -1,7 +1,8 @@
 openapi: 3.0.0
 info:
-  version: '0.5.1'
-  title: 'Babylon System API - RCnet v3.1'
+  # Should be the release version, and the release display name
+  version: 'v1.0.0'
+  title: 'Radix System API - Babylon'
   license:
     name: The Radix License, Version 1.0
     url: https://www.radixfoundation.org/licenses/license-v1
@@ -17,11 +18,6 @@ info:
 
     If you require queries against ledger state, you may also wish to consider using the
     [Core API or Gateway API instead](https://docs-babylon.radixdlt.com/main/apis/api-specification.html).
-
-    ## Integration and forward compatibility guarantees
-
-    We give no guarantees that endpoints will not change before Babylon mainnet launch,
-    although changes are expected to be minimal.
 servers:
   - url: 'localhost:3334/system'
 paths:
@@ -197,45 +193,36 @@ components:
       type: object
       required:
         - status
-        - current_fork_name
-        - executed_forks
-        - fork_vote_status
-        - unknown_reported_forks
+        - detail
+        - recent_self_proposal_miss_statistic
+        - current_protocol_version
+        - executed_protocol_updates
+        - unknown_reported_pending_protocol_updates
       properties:
         status:
           type: string
           enum:
             - BOOTING_PRE_GENESIS
-            - BOOTING_AT_GENESIS
             - SYNCING
             - UP
-            - STALLED
             - OUT_OF_SYNC
-        current_fork_name:
+        detail:
           type: string
-        executed_forks:
+          description: A human-readable message detailing the `status`.
+        recent_self_proposal_miss_statistic:
+          $ref: "#/components/schemas/RecentSelfProposalMissStatistic"
+        current_protocol_version:
+          $ref: "#/components/schemas/ProtocolVersion"
+        executed_protocol_updates:
           type: array
           items:
-            $ref: "#/components/schemas/ExecutedFork"
-        fork_vote_status:
-          type: string
-          enum:
-            - VOTE_REQUIRED
-            - NO_ACTION_NEEDED
-        unknown_reported_forks:
+            $ref: "#/components/schemas/ExecutedProtocolUpdate"
+        pending_protocol_update:
+          $ref: "#/components/schemas/PendingProtocolUpdate"
+        unknown_reported_pending_protocol_updates:
           type: array
           items:
-            type: object
-            required:
-              - name
-              - reported_by
-            properties:
-              name:
-                type: string
-              reported_by:
-                type: array
-                items:
-                  type: string
+            $ref: "#/components/schemas/UnknownReportedPendingProtocolUpdate"
     SystemConfigurationResponse:
       type: object
       required:
@@ -435,17 +422,63 @@ components:
           format: int32
         message:
           type: string
-    ExecutedFork:
+    ProtocolVersion:
+      type: string
+      description: A name identifying a protocol version.
+    ExecutedProtocolUpdate:
       type: object
       required:
         - epoch
-        - name
+        - resultant_protocol_version
       properties:
         epoch:
           type: integer
           format: int64
-        name:
+        resultant_protocol_version:
+          $ref: "#/components/schemas/ProtocolVersion"
+    PendingProtocolUpdate:
+      type: object
+      required:
+        - protocol_version
+        - readiness_signal_status
+      properties:
+        protocol_version:
+          $ref: "#/components/schemas/ProtocolVersion"
+        readiness_signal_status:
           type: string
+          enum:
+            - READINESS_SIGNAL_REQUIRED
+            - NO_ACTION_NEEDED
+    UnknownReportedPendingProtocolUpdate:
+      type: object
+      required:
+        - protocol_version
+        - reported_by
+      properties:
+        protocol_version:
+          $ref: "#/components/schemas/ProtocolVersion"
+        reported_by_node_addresses:
+          type: array
+          items:
+            type: string
+    RecentSelfProposalMissStatistic:
+      type: object
+      required:
+        - missed_count
+        - recent_proposals_tracked_count
+      properties:
+        missed_count:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4294967295
+          description: A number of missed proposals among [`recent_proposals_tracked_count`] most recent ones.
+        recent_proposals_tracked_count:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4294967295
+          description: A configured length of proposal miss tracking history.
 #################################
 # REQUEST: /network-sync-status #
 #################################

@@ -73,12 +73,14 @@ import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.crypto.EdDSAEd25519PublicKey;
 import com.radixdlt.crypto.PublicKey;
 import com.radixdlt.genesis.GenesisData;
+import com.radixdlt.harness.deterministic.TransactionExecutor;
 import com.radixdlt.message.CurveDecryptorSet;
 import com.radixdlt.message.Decryptor;
 import com.radixdlt.message.MessageContent;
 import com.radixdlt.message.TransactionMessage;
 import com.radixdlt.rev2.TransactionBuilder;
 import com.radixdlt.utils.Bytes;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import java.util.List;
 import org.junit.Test;
 
@@ -105,22 +107,39 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
 
       test.runUntilState(allCommittedTransactionSuccess(transaction.raw()), 100);
 
-      var lastTransaction =
+      var lastLedgerTransaction =
           (UserLedgerTransaction)
-              Iterables.getLast(
-                      getStreamApi()
-                          .streamTransactionsPost(
-                              new StreamTransactionsRequest()
-                                  .network(networkLogicalName)
-                                  .transactionFormatOptions(
-                                      new TransactionFormatOptions().rawLedgerTransaction(true))
-                                  .limit(1000)
-                                  .fromStateVersion(1L))
-                          .getTransactions())
-                  .getLedgerTransaction();
+              readAllTransactionsFromStreamAndReturnLast().getLedgerTransaction();
 
-      assertThat(lastTransaction.getNotarizedTransaction().getPayloadHex())
+      // In order for this assertion to pass, we must have downloaded all the scenario transactions
+      // in the above first page of data.
+      // This ensures that genesis and all scenarios must have data which can be mapped by the
+      // Core API Transaction Stream
+      assertThat(lastLedgerTransaction.getNotarizedTransaction().getPayloadHex())
           .isEqualTo(transaction.hexPayloadBytes());
+    }
+  }
+
+  private CommittedTransaction readAllTransactionsFromStreamAndReturnLast() throws Exception {
+    var fromStateVersion = 1L;
+    while (true) {
+      var pageResponse =
+          getStreamApi()
+              .streamTransactionsPost(
+                  new StreamTransactionsRequest()
+                      .network(networkLogicalName)
+                      .transactionFormatOptions(
+                          new TransactionFormatOptions().rawLedgerTransaction(true))
+                      .limit(1000)
+                      .fromStateVersion(fromStateVersion));
+      var lastItem = Iterables.getLast(pageResponse.getTransactions());
+      if (pageResponse
+          .getMaxLedgerStateVersion()
+          .equals(lastItem.getResultantStateIdentifiers().getStateVersion())) {
+        return lastItem;
+      } else {
+        fromStateVersion = lastItem.getResultantStateIdentifiers().getStateVersion() + 1;
+      }
     }
   }
 
@@ -210,7 +229,82 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
   }
 
   @Test
-  public void test_previous_state_identifiers() throws Exception {
+  public void requesting_state_version_out_of_bounds_returns_error() throws Exception {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
+
+      // Arrange: commit any transaction
+      TransactionExecutor.executeTransaction(test, TransactionBuilder.forTests());
+
+      // Act 1: request a totally valid state version; learn the max ledger state version as a side
+      // effect
+      final var maxLedgerStateVersion =
+          getStreamApi()
+              .streamTransactionsPost(
+                  new StreamTransactionsRequest()
+                      .network(networkLogicalName)
+                      .limit(1000)
+                      .fromStateVersion(1L))
+              .getMaxLedgerStateVersion();
+
+      // Assert 1:
+      assertThat(maxLedgerStateVersion).isGreaterThan(1L);
+
+      // Act 2: request the last transaction
+      final var lastTransactionResponse =
+          getStreamApi()
+              .streamTransactionsPost(
+                  new StreamTransactionsRequest()
+                      .network(networkLogicalName)
+                      .limit(1000)
+                      .fromStateVersion(maxLedgerStateVersion));
+
+      // Assert 2:
+      assertThat(lastTransactionResponse.getMaxLedgerStateVersion())
+          .isEqualTo(maxLedgerStateVersion);
+      assertThat(lastTransactionResponse.getPreviousStateIdentifiers()).isNotNull();
+      assertThat(lastTransactionResponse.getTransactions().size()).isEqualTo(1);
+
+      // Act 3: request the maximum valid state version
+      final var maximumValidStateVersionResponse =
+          getStreamApi()
+              .streamTransactionsPost(
+                  new StreamTransactionsRequest()
+                      .network(networkLogicalName)
+                      .limit(1000)
+                      .fromStateVersion(maxLedgerStateVersion + 1));
+
+      // Assert 3:
+      assertThat(maximumValidStateVersionResponse.getMaxLedgerStateVersion())
+          .isEqualTo(maxLedgerStateVersion);
+      assertThat(maximumValidStateVersionResponse.getPreviousStateIdentifiers()).isNotNull();
+      assertThat(maximumValidStateVersionResponse.getTransactions()).isEmpty();
+
+      // Act 4: request the first out-of-bounds state version
+      final var stateVersionOutOfBoundsResponse =
+          assertErrorResponseOfType(
+              () ->
+                  getStreamApi()
+                      .streamTransactionsPostWithHttpInfo(
+                          new StreamTransactionsRequest()
+                              .network(networkLogicalName)
+                              .limit(1000)
+                              .fromStateVersion(maxLedgerStateVersion + 2)),
+              StreamTransactionsErrorResponse.class);
+
+      // Assert 4:
+      assertThat(stateVersionOutOfBoundsResponse.getCode())
+          .isEqualTo(HttpResponseStatus.BAD_REQUEST.code());
+      assertThat(stateVersionOutOfBoundsResponse.getDetails())
+          .isEqualTo(
+              new RequestedStateVersionOutOfBoundsErrorDetails()
+                  .maxLedgerStateVersion(maxLedgerStateVersion)
+                  .type(StreamTransactionsErrorDetailsType.REQUESTEDSTATEVERSIONOUTOFBOUNDS));
+    }
+  }
+
+  @Test
+  public void test_previous_state_identifiers_and_proofs() throws Exception {
     try (var test = buildRunningServerTest()) {
       test.suppressUnusedWarning();
 
@@ -228,23 +322,48 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
         test.runUntilState(allCommittedTransactionSuccess(transaction.raw()), 100);
       }
 
-      var firstPartCommittedTransactions =
+      var firstPartResponse =
           getStreamApi()
               .streamTransactionsPost(
                   new StreamTransactionsRequest()
                       .network(networkLogicalName)
                       .limit(100)
-                      .fromStateVersion(1L))
-              .getTransactions();
+                      .fromStateVersion(1L));
+      assertThat(firstPartResponse.getProofs()).isNull();
+
+      var firstPartResponseWithProofs =
+          getStreamApi()
+              .streamTransactionsPost(
+                  new StreamTransactionsRequest()
+                      .network(networkLogicalName)
+                      .includeProofs(true)
+                      .limit(100)
+                      .fromStateVersion(1L));
+      assertThat(firstPartResponseWithProofs.getProofs().size()).isEqualTo(13);
+
+      var firstPartCommittedTransactions = firstPartResponse.getTransactions();
 
       assertThat(
               firstPartCommittedTransactions.stream()
                   .map(CommittedTransaction::getProposerTimestampMs))
           .isSorted();
 
+      var proofQuery =
+          getStreamApi()
+              .streamTransactionsPost(
+                  new StreamTransactionsRequest()
+                      .network(networkLogicalName)
+                      .includeProofs(true)
+                      .limit(4)
+                      .fromStateVersion(3L))
+              .getProofs();
+
+      assertThat(proofQuery.size()).isEqualTo(4);
+
       var lastCommittedTransactionIdentifiers =
-          firstPartCommittedTransactions
-              .get(firstPartCommittedTransactions.size() - 1)
+          firstPartResponse
+              .getTransactions()
+              .get(firstPartResponse.getTransactions().size() - 1)
               .getResultantStateIdentifiers();
 
       var secondPartTransactions =

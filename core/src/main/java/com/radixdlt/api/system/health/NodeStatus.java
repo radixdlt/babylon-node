@@ -65,10 +65,35 @@
 package com.radixdlt.api.system.health;
 
 public enum NodeStatus {
-  BOOTING_PRE_GENESIS,
-  BOOTING_AT_GENESIS,
-  SYNCING,
-  UP,
-  STALLED,
-  OUT_OF_SYNC
+  BOOTING_PRE_GENESIS(
+      """
+          The Node is still executing predefined Genesis transactions."""),
+  UP(
+      """
+          The Network's consensus protocol progresses fine, and this Node is up-to-date with the \
+          current state of the ledger.
+          This can be inferred from the latest proposer timestamp committed to the local ledger \
+          being sufficiently close to the wallclock time."""),
+  SYNCING(
+      """
+          The Node is not up-to-date with the current state of the ledger, but it is ingesting the \
+          missing transactions from its peers quickly enough and can be expected to catch up soon.
+          This means that the consecutive proposer timestamps committed to the local ledger are \
+          progressing at a rate much faster than the wallclock time."""),
+  OUT_OF_SYNC(
+      """
+          The latest proposer timestamp committed to the local ledger is far from the wallclock \
+          time, and it is not progressing quickly enough towards it.
+          This may mean that either this Node cannot receive/process the missing transactions, or \
+          the entire Network has problems with reaching consensus.""");
+
+  private String detail;
+
+  NodeStatus(String detail) {
+    this.detail = detail;
+  }
+
+  public String detail() {
+    return detail;
+  }
 }

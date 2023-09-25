@@ -28,6 +28,20 @@ impl MappingContext {
         }
     }
 
+    /// For the transactions stream, we default to settings which the Gateway requires, and aim to
+    /// optimize for performance.
+    ///
+    /// We therefore disable programmatic JSON to cut down on bandwidth for large transaction receipts.
+    pub fn new_for_transaction_stream(network_definition: &NetworkDefinition) -> Self {
+        Self {
+            sbor_options: SborOptions {
+                include_raw: true,
+                include_programmatic_json: false,
+            },
+            ..Self::new(network_definition)
+        }
+    }
+
     pub fn new_for_uncommitted_data(network_definition: &NetworkDefinition) -> Self {
         Self {
             network_definition: network_definition.clone(),
@@ -135,7 +149,7 @@ impl Default for TransactionOptions {
         Self {
             include_manifest: true,
             include_blobs: false,
-            include_message: false,
+            include_message: true,
             include_raw_system: false,
             include_raw_notarized: true,
             include_raw_ledger: false,

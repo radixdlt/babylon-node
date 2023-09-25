@@ -80,6 +80,9 @@ import javax.annotation.Nullable;
 /**
  * An entry point to metrics tracked by the Java part of the Node application.
  *
+ * <p>Note: Our Java-side metric definitions are not all heavily documented, but the health-related
+ * ones should be carefully detailed at `docs/logging-and-monitoring/health-metrics.md`.
+ *
  * <p>We use the official <a href="https://github.com/prometheus/client_java">Prometheus client</a>,
  * directly referencing its measurement primitives and our light wrappers (i.e. we don't hide
  * Prometheus' presence from our business logic).
@@ -165,6 +168,7 @@ public record Metrics(
       LabelledCounter<SuccessfullyProcessedVote> successfullyProcessedVotes,
       LabelledCounter<IgnoredVote> ignoredVotes,
       Counter successfullyProcessedProposals,
+      Counter proposalsReceived,
       Counter preconditionViolations,
       Counter duplicateProposalsReceived,
       Counter eventsReceived,
@@ -190,7 +194,15 @@ public record Metrics(
       Summary numSignaturesInCertificate,
       Counter divergentVertexExecutions) {
 
-    public record SuccessfullyProcessedVote(boolean isTimeout) {}
+    public record SuccessfullyProcessedVote(boolean isTimeout, VoteProcessingResult result) {}
+
+    public enum VoteProcessingResult {
+      ACCEPTED_NO_QUORUM,
+      ACCEPTED_FORMED_QC,
+      ACCEPTED_FORMED_TC,
+      REJECTED_INVALID_AUTHOR,
+      REJECTED_DUPLICATE_VOTE,
+    }
 
     public record QuorumResolution(boolean isTimeout) {}
 
@@ -209,7 +221,10 @@ public record Metrics(
         Counter proposalsSent,
         Counter timedOutRounds,
         Counter proposalsWithSubstituteTimestamp,
-        Timer roundDuration) {}
+        Timer roundDuration,
+        LabelledCounter<SentVote> votesSent) {}
+
+    public record SentVote(boolean isFallbackVertex, boolean isTimeout, boolean sentToAll) {}
 
     public record Sync(Counter requestsSent, Counter requestsReceived, Counter requestTimeouts) {}
 

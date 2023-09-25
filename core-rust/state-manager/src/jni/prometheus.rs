@@ -62,6 +62,7 @@
  * permissions under this License.
  */
 
+use crate::{LedgerStatus, RecentSelfProposalMissStatistic};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -84,6 +85,40 @@ extern "system" fn Java_com_radixdlt_prometheus_RustPrometheus_prometheusMetrics
         encoder.encode(&registry.gather(), &mut buffer).unwrap();
         String::from_utf8(buffer).unwrap()
     })
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_prometheus_RustPrometheus_ledgerStatus(
+    env: JNIEnv,
+    _class: JClass,
+    j_node_rust_env: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_no_args: ()| -> LedgerStatus {
+        JNINodeRustEnvironment::get(&env, j_node_rust_env)
+            .state_manager
+            .state_computer
+            .get_ledger_status_from_metrics()
+    })
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_prometheus_RustPrometheus_recentSelfProposalMissStatistic(
+    env: JNIEnv,
+    _class: JClass,
+    j_node_rust_env: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(
+        &env,
+        request_payload,
+        |_no_args: ()| -> RecentSelfProposalMissStatistic {
+            JNINodeRustEnvironment::get(&env, j_node_rust_env)
+                .state_manager
+                .state_computer
+                .get_recent_self_proposal_miss_statistic()
+        },
+    )
 }
 
 pub fn export_extern_functions() {}

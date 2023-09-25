@@ -14,10 +14,13 @@ pub struct SubstateOverlayIterator<'a> {
 
 impl<'a> SubstateOverlayIterator<'a> {
     pub fn new(
-        root_db: Peekable<Box<dyn Iterator<Item = PartitionEntry> + 'a>>,
-        overlay: Peekable<Box<dyn Iterator<Item = (DbSortKey, DatabaseUpdate)> + 'a>>,
+        root_db: Box<dyn Iterator<Item = PartitionEntry> + 'a>,
+        overlay: Box<dyn Iterator<Item = (DbSortKey, DatabaseUpdate)> + 'a>,
     ) -> Self {
-        Self { root_db, overlay }
+        Self {
+            root_db: root_db.peekable(),
+            overlay: overlay.peekable(),
+        }
     }
 }
 

@@ -84,5 +84,12 @@ public record OlympiaToBabylonConverterConfig(
     Decimal maxGenesisResourceUnscaledSupply) {
   public static final OlympiaToBabylonConverterConfig DEFAULT =
       new OlympiaToBabylonConverterConfig(
-          100, 1000, 1000, 100, 1000, Decimal.from(UInt192.TWO.pow(152)));
+          100,
+          1000,
+          1000,
+          100,
+          1000,
+          // Using fromBytes is safe here, 2^152 doesn't overflow
+          // (or turn into a negative Decimal).
+          Decimal.fromBigEndianBytes(UInt192.TWO.pow(152).toBigEndianBytes()));
 }

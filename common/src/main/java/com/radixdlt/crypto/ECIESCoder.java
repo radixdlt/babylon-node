@@ -123,6 +123,10 @@ public final class ECIESCoder {
     final var e = new byte[] {};
 
     final var p = new IESWithCipherParameters(d, e, KEY_SIZE, KEY_SIZE);
+    // SNYK - this file is ignored in .snyk file
+    // Raised issue: Hardcoded value array {...} is used as a cipher initialization value.
+    // Explanation: iv isn't hardcoded, Snyk can't figure out that earlier ByteArrayInputStream
+    // is being read into this buffer
     final var parametersWithIV = new ParametersWithIV(p, iv);
     iesEngine.init(
         false,
@@ -182,6 +186,10 @@ public final class ECIESCoder {
     final var e = new byte[] {};
 
     final var p = new IESWithCipherParameters(d, e, KEY_SIZE, KEY_SIZE);
+    // SNYK - this file is ignored in .snyk file
+    // Raised issue: Hardcoded value array {...} is used as a cipher initialization value.
+    // Explanation: iv isn't hardcoded, Snyk can't figure out the SecureRandom.nextBytes call that
+    // sets it
     final var parametersWithIV = new ParametersWithIV(p, iv);
     iesEngine.init(
         isEncrypt,

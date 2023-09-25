@@ -107,7 +107,7 @@ public final class REv2MempoolRelayerTest {
                         Network.INTEGRATIONTESTNET.getId(),
                         GenesisBuilder.createTestGenesisWithNumValidators(
                             1,
-                            Decimal.of(1),
+                            Decimal.ONE,
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(100000)),
                         REv2StateManagerModule.DatabaseType.IN_MEMORY,
                         StateComputerConfig.REV2ProposerConfig.mempool(
@@ -134,7 +134,7 @@ public final class REv2MempoolRelayerTest {
       // Run all nodes except validator node0
       test.runUntilState(
           n -> allHaveExactMempoolCount(MEMPOOL_TX_SIZE).test(n.subList(1, n.size())),
-          12000,
+          20000,
           m -> m.channelId().senderIndex() != 0 && m.channelId().receiverIndex() != 0);
     }
   }

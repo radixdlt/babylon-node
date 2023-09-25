@@ -122,7 +122,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
               submitAndWaitForSuccess(
                   test,
                   Manifest.transferBetweenAccountsFeeFromFaucet(
-                      account1Address, XRD, Decimal.of(tx3Amount), account2Address),
+                      account1Address, XRD, Decimal.ofNonNegative(tx3Amount), account2Address),
                   List.of(account1KeyPair)));
       assertThat(
               findAccount(tx3Result.getResultantAccountFungibleBalances(), account1Address)
@@ -138,7 +138,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
               submitAndWaitForSuccess(
                   test,
                   Manifest.transferBetweenAccountsFeeFromFaucet(
-                      account2Address, XRD, Decimal.of(450), account2Address),
+                      account2Address, XRD, Decimal.ofNonNegative(450), account2Address),
                   List.of(account2KeyPair)));
       assertThat(tx4Result.getResultantAccountFungibleBalances()).isEqualTo(List.of());
     }
@@ -159,7 +159,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
 
   private LtsResultantFungibleBalance balance(long amount, ResourceAddress resourceAddress) {
     return new LtsResultantFungibleBalance()
-        .resultantBalance(Decimal.of(amount).toString())
+        .resultantBalance(Decimal.ofNonNegative(amount).toString())
         .resourceAddress(resourceAddress.encode(networkDefinition));
   }
 
@@ -211,7 +211,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
               Manifest.transferBetweenAccountsFeeFromSender(
                   account1Address,
                   ScryptoConstants.XRD_RESOURCE_ADDRESS,
-                  Decimal.of(account1SelfXrdTransferAmount),
+                  Decimal.ofNonNegative(account1SelfXrdTransferAmount),
                   account1Address),
               List.of(account1KeyPair));
 
@@ -222,7 +222,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
               Manifest.transferBetweenAccountsFeeFromSender(
                   account1Address,
                   ScryptoConstants.XRD_RESOURCE_ADDRESS,
-                  Decimal.of(account1ToAccount2XrdTransferWithFeeFromAccount1Amount),
+                  Decimal.ofNonNegative(account1ToAccount2XrdTransferWithFeeFromAccount1Amount),
                   account2Address),
               List.of(account1KeyPair));
 
@@ -233,7 +233,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
               Manifest.transferBetweenAccountsFeeFromReceiver(
                   account1Address,
                   ScryptoConstants.XRD_RESOURCE_ADDRESS,
-                  Decimal.of(account1ToAccount2XrdTransferWithFeeFromAccount2Amount),
+                  Decimal.ofNonNegative(account1ToAccount2XrdTransferWithFeeFromAccount2Amount),
                   account2Address),
               List.of(account1KeyPair, account2KeyPair));
 
@@ -244,7 +244,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
               Manifest.transferBetweenAccountsFeeFromFaucet(
                   account1Address,
                   ScryptoConstants.XRD_RESOURCE_ADDRESS,
-                  Decimal.of(account1ToAccount2XrdTransferWithFeeFromFaucetAmount),
+                  Decimal.ofNonNegative(account1ToAccount2XrdTransferWithFeeFromFaucetAmount),
                   account2Address),
               List.of(account1KeyPair));
 

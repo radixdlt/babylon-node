@@ -2,6 +2,12 @@
 
 This SDK is a thin wrapper around the [Babylon Core API](https://docs-babylon.radixdlt.com/main/apis/api-specification.html).
 
+## License
+
+The Core API SDK code is released under an [Apache 2.0 license](https://github.com/radixdlt/babylon-node/blob/main/sdk/typescript/LICENSE). The executable components are licensed under the [Radix Software EULA](http://www.radixdlt.com/terms/genericEULA).
+
+## Structure
+
 The **`CoreApiClient`** is the main exported object. It includes high-level wrappers around every sub-API: 
 - **`LTS`** / **`lts`** - For long term support/backward compatible endpoints aimed at integrators such as exchanges.
 - **`Status`** - For status and configuration details for the node / engine.
@@ -43,27 +49,16 @@ Behind the scenes, this library uses the fetch API:
 * In Node.JS v18+ or in a browser, `fetch` is provided natively, so you don't need add a `fetch` parameter.
 * If earlier Node.JS versions, a stand-in must be used (see eg [node-fetch](https://www.npmjs.com/package/node-fetch)).
   We suggest adding the following dependencies:
-  * `node-fetch` version `^2.7.3` (as `3.x` can only be imported as an ESModule).
+  * `node-fetch` version `^2.6.13` (as `3.x` can only be imported as an ESModule).
   * `@types/node-fetch` version `^2.6.3`
-
-Note - if using `node-fetch` with Node.JS 20+, there is an [outstanding bug](https://github.com/node-fetch/node-fetch/issues/1735) which you can fix by explicitly turning on `keepAlive` in a http/https agent.
 
 ```typescript
 import fetch from "node-fetch"
-import http from "node:http";
-import https from "node:https";
 import { CoreApiClient } from "@radixdlt/babylon-core-api-sdk";
 
 const coreApiClient = await CoreApiClient.initialize({
     // ...
     fetch,
-    advanced: {
-        // Depending on the scheme of the URL (http/https), you will either need to select a `http.Agent` or a `https.Agent`
-        // EITHER:
-        agent: new http.Agent({ keepAlive: true }),
-        // OR
-        agent: new https.Agent({ keepAlive: true }),
-    }
 });
 ```
 

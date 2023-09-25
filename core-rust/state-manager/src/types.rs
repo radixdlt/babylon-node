@@ -64,7 +64,7 @@
 
 use crate::accumulator_tree::IsMerklizableHash;
 use crate::transaction::*;
-use crate::{LedgerTransactionOutcome, SubstateChange};
+use crate::{LedgerTransactionOutcome, PartitionChange, SubstateChange};
 use radix_engine::types::*;
 use radix_engine_common::prelude::IsHash;
 use std::fmt;
@@ -80,21 +80,29 @@ use transaction::signing::secp256k1::Secp256k1Signature;
 #[derive(Debug, Clone, Hash, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct SubstateReference(pub NodeId, pub PartitionNumber, pub SubstateKey);
 
-define_wrapped_hash!(SubstateChangeHash);
+/// A complete ID of a Partition.
+#[derive(Debug, Clone, Hash, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct PartitionReference(pub NodeId, pub PartitionNumber);
 
-impl Display for SubstateChangeHash {
+define_wrapped_hash!(StateChangeHash);
+
+impl Display for StateChangeHash {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}", self)
     }
 }
 
-impl SubstateChangeHash {
-    pub fn from_substate_change(substate_change: &SubstateChange) -> SubstateChangeHash {
-        SubstateChangeHash(hash(scrypto_encode(substate_change).unwrap()))
+impl StateChangeHash {
+    pub fn from_substate_change(substate_change: &SubstateChange) -> StateChangeHash {
+        StateChangeHash(hash(scrypto_encode(substate_change).unwrap()))
+    }
+
+    pub fn from_partition_change(partition_change: &PartitionChange) -> StateChangeHash {
+        StateChangeHash(hash(scrypto_encode(partition_change).unwrap()))
     }
 }
 
-impl IsMerklizableHash for SubstateChangeHash {}
+impl IsMerklizableHash for StateChangeHash {}
 
 define_wrapped_hash!(EventHash);
 
@@ -117,7 +125,7 @@ pub struct ConsensusReceipt {
     pub outcome: LedgerTransactionOutcome,
     /// The root hash of a merkle tree whose leaves are hashes of the `LedgerTransactionReceipt`'s
     /// `substate_changes`.
-    pub substate_change_root: SubstateChangeHash,
+    pub substate_change_root: StateChangeHash,
     /// The root hash of a merkle tree whose leaves are hashes of the `LedgerTransactionReceipt`'s
     /// `application_events` (see `ApplicationEvent::get_hash()`).
     pub event_root: EventHash,
@@ -399,8 +407,13 @@ pub struct TimestampedValidatorSignature {
     pub signature: Secp256k1Signature,
 }
 
+define_single_versioned! {
+    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub enum VersionedLedgerProof => LedgerProof = LedgerProofV1
+}
+
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct LedgerProof {
+pub struct LedgerProofV1 {
     pub opaque: Hash,
     pub ledger_header: LedgerHeader,
     pub timestamped_signatures: Vec<TimestampedValidatorSignature>,

@@ -64,113 +64,36 @@
 
 package com.radixdlt.api.system.health;
 
-import static com.radixdlt.api.system.health.HealthInfoServiceImpl.ValueHolder.Type.ABSOLUTE;
-import static com.radixdlt.api.system.health.NodeStatus.BOOTING_AT_GENESIS;
-import static com.radixdlt.api.system.health.NodeStatus.OUT_OF_SYNC;
-import static com.radixdlt.api.system.health.NodeStatus.STALLED;
-import static com.radixdlt.api.system.health.NodeStatus.SYNCING;
-import static com.radixdlt.api.system.health.NodeStatus.UP;
-
 import com.google.inject.Inject;
-import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.environment.ScheduledEventDispatcher;
-import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.prometheus.LedgerStatus;
+import com.radixdlt.prometheus.RecentSelfProposalMissStatistic;
+import com.radixdlt.prometheus.RustPrometheus;
 
 public final class HealthInfoServiceImpl implements HealthInfoService {
-  private static final long THRESHOLD = 3; // Maximum difference between ledger and target
-  private static final long DEFAULT_COLLECTING_INTERVAL = 1000L; // 1 second
-  private static final long STATUS_AVERAGING_FACTOR =
-      3L; // averaging time in multiples of collecting interval
-
-  private final Metrics metrics;
-  private final ScheduledEventDispatcher<ScheduledStatsCollecting> scheduledStatsCollecting;
-  private final ValueHolder ledgerStateVersion;
-  private final ValueHolder syncTargetStateVersion;
+  private final RustPrometheus rustPrometheus;
 
   @Inject
-  public HealthInfoServiceImpl(
-      Metrics metrics,
-      ScheduledEventDispatcher<ScheduledStatsCollecting> scheduledStatsCollecting) {
-    this.scheduledStatsCollecting = scheduledStatsCollecting;
-    this.metrics = metrics;
-    this.ledgerStateVersion = new ValueHolder(STATUS_AVERAGING_FACTOR, ABSOLUTE);
-    this.syncTargetStateVersion = new ValueHolder(STATUS_AVERAGING_FACTOR, ABSOLUTE);
-    scheduledStatsCollecting.dispatch(
-        ScheduledStatsCollecting.create(), DEFAULT_COLLECTING_INTERVAL);
+  public HealthInfoServiceImpl(RustPrometheus rustPrometheus) {
+    this.rustPrometheus = rustPrometheus;
   }
 
   @Override
   public NodeStatus nodeStatus() {
-    if (this.ledgerStateVersion.lastValue() == 0) {
-      // Initial status, consensus not started yet
-      return BOOTING_AT_GENESIS;
-    }
-
-    if (this.ledgerStateVersion.isGrowing()) {
-      // Ledger state version is increasing, so we're completely synced up or catching up
-      return ledgerIsCloseToTarget() ? UP : SYNCING;
-    }
-
-    // Ledger is not growing, either node stall or whole network is down or not reachable
-    return this.syncTargetStateVersion.isGrowing() ? STALLED : OUT_OF_SYNC;
-  }
-
-  @Override
-  public EventProcessor<ScheduledStatsCollecting> updateStats() {
-    return flush -> {
-      collectStats();
-      scheduledStatsCollecting.dispatch(
-          ScheduledStatsCollecting.create(), DEFAULT_COLLECTING_INTERVAL);
+    // Note:
+    // The current implementation is based only on the Rust-side "ledger health" indicator, which is
+    // them mapped to _some_ REST-level statuses in a bit arbitrary way (for compatibility reasons,
+    // we did not want to modify the exposed enum).
+    // See the docs of Rust-side `LedgerStatus` enum values and the messages defined with each
+    // `NodeStatus` enum value.
+    return switch (this.rustPrometheus.ledgerStatus()) {
+      case LedgerStatus.Synced ignored -> NodeStatus.UP;
+      case LedgerStatus.Syncing ignored -> NodeStatus.SYNCING;
+      case LedgerStatus.NotSyncing ignored -> NodeStatus.OUT_OF_SYNC;
     };
   }
 
-  private void collectStats() {
-    ledgerStateVersion.update((long) metrics.ledger().stateVersion().get());
-    syncTargetStateVersion.update((long) metrics.sync().targetStateVersion().get());
-  }
-
-  private boolean ledgerIsCloseToTarget() {
-    return (syncTargetStateVersion.lastValue() - ledgerStateVersion.lastValue()) < THRESHOLD;
-  }
-
-  static class ValueHolder {
-    private final MovingAverage calculator;
-    private final MovingAverage deltaCalculator;
-    private final Type type;
-    private long lastValue;
-
-    public enum Type {
-      ABSOLUTE,
-      INCREMENTAL
-    }
-
-    private ValueHolder(long averagingFactor, Type type) {
-      calculator = MovingAverage.create(averagingFactor);
-      deltaCalculator = MovingAverage.create(averagingFactor);
-      this.type = type;
-    }
-
-    public ValueHolder update(long newValue) {
-      var lastDelta = newValue - lastValue;
-
-      lastValue = newValue;
-      deltaCalculator.update(lastDelta);
-
-      if (type == ABSOLUTE) {
-        calculator.update(newValue);
-      } else {
-        calculator.update(lastDelta);
-      }
-
-      return this;
-    }
-
-    public long lastValue() {
-      return lastValue;
-    }
-
-    public boolean isGrowing() {
-      return deltaCalculator.asDouble() > 0.1;
-    }
+  @Override
+  public RecentSelfProposalMissStatistic recentSelfProposalMissStatistic() {
+    return this.rustPrometheus.recentSelfProposalMissStatistic();
   }
 }
