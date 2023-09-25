@@ -83,12 +83,16 @@ use tracing::{error, info};
 // at least "poisoning" the lock).
 //==================================================================================================
 
+/// A factory of panic-safe lock primitives.
 pub struct LockFactory {
     stopper: Arc<TakeOnce<Box<dyn FnOnce() + Send>>>,
     name: String,
 }
 
 impl LockFactory {
+    /// Creates a new factory, which will reliably call the given [`stopper`] function exactly once
+    /// on the first occurrence of "lock guard dropped while panicking" (on any of the lock
+    /// primitives created by this factory).
     pub fn new(stopper: impl FnOnce() + Send + 'static) -> Self {
         Self {
             stopper: Arc::new(TakeOnce::new(Box::new(stopper))),
@@ -96,6 +100,9 @@ impl LockFactory {
         }
     }
 
+    /// Appends another segment to the dot-separated names of the lock primitives created from this
+    /// point on.
+    /// The names are used only for error-surfacing purposes.
     pub fn named(&self, segment: impl Into<String>) -> Self {
         let segment = segment.into();
         Self {
@@ -108,6 +115,7 @@ impl LockFactory {
         }
     }
 
+    /// Creates a new mutex, giving it the currently configured name.
     pub fn new_mutex<T>(&self, value: T) -> Mutex<T> {
         Mutex {
             underlying: parking_lot::const_mutex(value),
@@ -115,6 +123,7 @@ impl LockFactory {
         }
     }
 
+    /// Creates a new RW-lock, giving it the currently configured name.
     pub fn new_rwlock<T>(&self, value: T) -> RwLock<T> {
         RwLock {
             underlying: parking_lot::const_rwlock(value),
@@ -169,6 +178,15 @@ impl<'a, T> Drop for MutexGuard<'a, T> {
 pub struct RwLock<T> {
     underlying: parking_lot::RwLock<T>,
     panic_drop_handler: PanicDropHandler,
+}
+
+impl<T> RwLock<T> {
+    pub fn for_testing(value: T) -> Self {
+        Self {
+            underlying: parking_lot::const_rwlock(value),
+            panic_drop_handler: PanicDropHandler::for_testing(),
+        }
+    }
 }
 
 impl<T> RwLock<T> {
@@ -250,6 +268,12 @@ impl<T> TakeOnce<T> {
         }
     }
 
+    pub fn taken() -> Self {
+        Self {
+            mutex: parking_lot::const_mutex(None),
+        }
+    }
+
     /// Returns the contents if this is the very first invocation on this instance, or [`None`]
     /// otherwise.
     pub fn take(&self) -> Option<T> {
@@ -273,6 +297,13 @@ impl PanicDropHandler {
         Self {
             stopper: factory.stopper.clone(),
             name: factory.name.clone(),
+        }
+    }
+
+    pub fn for_testing() -> Self {
+        Self {
+            stopper: Arc::new(TakeOnce::taken()),
+            name: "test".to_owned(),
         }
     }
 
