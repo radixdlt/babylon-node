@@ -96,12 +96,13 @@ import org.junit.Test;
 public class RadixKeyStoreTest {
   private static final String TEST_SECRET = "secret";
   private static final String TEST_KS_FILENAME = "testfile.ks";
+  private static final char[] DEFAULT_TEST_PASSWORD = "radix".toCharArray();
 
   /** Test method for {@link RadixKeyStore#fromFile(java.io.File, char[], boolean)}. */
   @Test
   public void testFromFileCreate() throws IOException, KeyStoreException {
     File file = newFile(TEST_KS_FILENAME);
-    try (RadixKeyStore ks = RadixKeyStore.fromFile(file, null, true)) {
+    try (RadixKeyStore ks = RadixKeyStore.fromFile(file, DEFAULT_TEST_PASSWORD, true)) {
       assertTrue(file.exists());
       assertTrue(ks.toString().contains(file.toString()));
     }
@@ -111,7 +112,7 @@ public class RadixKeyStoreTest {
   @Test
   public void testFromFileNotFound() throws IOException {
     File file = newFile(TEST_KS_FILENAME);
-    assertThatThrownBy(() -> RadixKeyStore.fromFile(file, null, false))
+    assertThatThrownBy(() -> RadixKeyStore.fromFile(file, DEFAULT_TEST_PASSWORD, false))
         .isInstanceOf(FileNotFoundException.class);
   }
 
@@ -121,11 +122,11 @@ public class RadixKeyStoreTest {
       throws IOException, KeyStoreException, PrivateKeyException, PublicKeyException {
     File file = newFile(TEST_KS_FILENAME);
     ECKeyPair kp1 = ECKeyPair.generateNew();
-    try (RadixKeyStore ks = RadixKeyStore.fromFile(file, null, true)) {
+    try (RadixKeyStore ks = RadixKeyStore.fromFile(file, DEFAULT_TEST_PASSWORD, true)) {
       assertTrue(file.exists());
       ks.writeKeyPair("test", kp1);
     }
-    try (RadixKeyStore ks = RadixKeyStore.fromFile(file, null, false)) {
+    try (RadixKeyStore ks = RadixKeyStore.fromFile(file, DEFAULT_TEST_PASSWORD, false)) {
       ECKeyPair kp2 = ks.readKeyPair("test", false);
       assertArrayEquals(kp1.getPrivateKey(), kp2.getPrivateKey());
       assertArrayEquals(kp1.getPublicKey().getBytes(), kp2.getPublicKey().getBytes());
@@ -138,11 +139,11 @@ public class RadixKeyStoreTest {
       throws IOException, KeyStoreException, PrivateKeyException, PublicKeyException {
     File file = newFile(TEST_KS_FILENAME);
     final ECKeyPair kp1;
-    try (RadixKeyStore ks = RadixKeyStore.fromFile(file, null, true)) {
+    try (RadixKeyStore ks = RadixKeyStore.fromFile(file, DEFAULT_TEST_PASSWORD, true)) {
       assertTrue(file.exists());
       kp1 = ks.readKeyPair("test", true);
     }
-    try (RadixKeyStore ks = RadixKeyStore.fromFile(file, new char[0], false)) {
+    try (RadixKeyStore ks = RadixKeyStore.fromFile(file, DEFAULT_TEST_PASSWORD, false)) {
       ECKeyPair kp2 = ks.readKeyPair("test", false);
       assertArrayEquals(kp1.getPrivateKey(), kp2.getPrivateKey());
       assertArrayEquals(kp1.getPublicKey().getBytes(), kp2.getPublicKey().getBytes());
@@ -167,7 +168,7 @@ public class RadixKeyStoreTest {
   @Test
   public void testReadKeyPairFail() throws IOException, KeyStoreException {
     File file = newFile(TEST_KS_FILENAME);
-    try (RadixKeyStore ks = RadixKeyStore.fromFile(file, null, true)) {
+    try (RadixKeyStore ks = RadixKeyStore.fromFile(file, DEFAULT_TEST_PASSWORD, true)) {
       assertTrue(file.exists());
       assertThatThrownBy(() -> ks.readKeyPair("notexist", false))
           .isInstanceOf(KeyStoreException.class)
@@ -217,7 +218,7 @@ public class RadixKeyStoreTest {
   @Test
   public void testToString() throws IOException, KeyStoreException {
     File file = newFile(TEST_KS_FILENAME);
-    try (RadixKeyStore ks = RadixKeyStore.fromFile(file, null, true)) {
+    try (RadixKeyStore ks = RadixKeyStore.fromFile(file, DEFAULT_TEST_PASSWORD, true)) {
       assertThat(ks.toString()).contains(file.toString());
       assertThat(ks.toString()).contains(RadixKeyStore.class.getSimpleName());
     }
