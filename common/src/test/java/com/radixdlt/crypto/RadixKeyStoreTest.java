@@ -64,6 +64,7 @@
 
 package com.radixdlt.crypto;
 
+import static com.radixdlt.lang.Tuple.tuple;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertArrayEquals;
@@ -71,6 +72,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.crypto.exception.KeyStoreException;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
@@ -264,6 +266,64 @@ public class RadixKeyStoreTest {
         .isInstanceOf(java.security.KeyStoreException.class)
         .hasMessageContaining("PKCS12 does not support non-PrivateKeys")
         .hasNoCause();
+  }
+
+  @Test
+  public void test_read_various_key_stores() throws Exception {
+    /*
+     Java's keytool:
+       - doesn't support secp256k1, so it can't generate Radix keys
+         ("keytool error: java.lang.IllegalArgumentException: Curve not supported: secp256k1 (1.3.132.0.10)")
+       - can't read key stores protected by passwords with non-ascii chars (e.g. keygen-complex-password.ks).
+         ("keytool error: java.io.IOException: keystore password was incorrect")
+       b) can't change the password to one containing non-ascii chars
+         ("keytool error: java.security.KeyStoreException: Key protection algorithm not found: java.security.UnrecoverableKeyException: Encrypt Private Key failed: getSecretKey failed: Password is not ASCII")
+
+     So none of above scenarios are covered in this test.
+    */
+
+    // A list of test key stores (stored in resources):
+    // file name (inside resources/test-keystores), password and
+    // expected public key (in hex).
+    final var testKeyStores =
+        ImmutableList.of(
+            // ./gradlew keygen:run --args='-k keygen-no-password.ks -p ""'
+            tuple(
+                "keygen-no-password.ks",
+                "".toCharArray(),
+                "02db791439871ad46144a3fd15e0b62f9d343746e615d88af51c19be3e3b014dbd"),
+            // ./gradlew keygen:run --args="-k keygen-basic-password.ks -p dupa1dupa1"
+            tuple(
+                "keygen-basic-password.ks",
+                "dupa1dupa1".toCharArray(),
+                "03439b406278b15ac7382c488618b70c978eacb61f93a46f898d393804d29b7c23"),
+            // ./gradlew keygen:run --args="-k keygen-complex-password.ks -p
+            // dupa1dupa1\$\$@11😁😹🙇%)\&^#"
+            tuple(
+                "keygen-complex-password.ks",
+                "dupa1dupa1$$@11\uD83D\uDE01\uD83D\uDE39\uD83D\uDE47%)\\&^#".toCharArray(),
+                "02cd739c5aca13e74b57351c4d12064ed7bc7e18ef9dbd7df52bf1fe32e95a391d"),
+            // keytool -storepasswd -keystore keygen-basic-password.ks -storetype PKCS12 -storepass
+            // "dupa1dupa1" -new
+            // "asdasdasdasdqwelkjaskdjqwejlkqjwelkjasdlkjasdupa1dupa1\$\$@11%)\&^"
+            tuple(
+                "keygen-basic-password-and-then-changed-with-keytool.ks",
+                "asdasdasdasdqwelkjaskdjqwejlkqjwelkjasdlkjasdupa1dupa1$$@11%)\\&^".toCharArray(),
+                "03439b406278b15ac7382c488618b70c978eacb61f93a46f898d393804d29b7c23") // must be
+            // the same as
+            // keygen-basic-password.ks
+            );
+
+    for (var testKeyStore : testKeyStores) {
+      try (var is =
+          getClass()
+              .getClassLoader()
+              .getResourceAsStream(String.format("test-keystores/%s", testKeyStore.first()))) {
+        final var keyStore = RadixKeyStore.fromInputStream(is, testKeyStore.second());
+        final var keyPair = keyStore.readKeyPair("node", false);
+        assertEquals(testKeyStore.third(), keyPair.getPublicKey().toHex());
+      }
+    }
   }
 
   private static File newFile(String filename) throws IOException {
