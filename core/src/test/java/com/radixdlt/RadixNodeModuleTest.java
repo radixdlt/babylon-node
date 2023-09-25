@@ -162,7 +162,8 @@ public class RadixNodeModuleTest {
 
   private void generateKeystore(File keyStore) {
     try {
-      RadixKeyStore.fromFile(keyStore, null, true).writeKeyPair("node", ECKeyPair.generateNew());
+      RadixKeyStore.fromFile(keyStore, "".toCharArray(), true)
+          .writeKeyPair("node", ECKeyPair.generateNew());
     } catch (Exception e) {
       throw new IllegalStateException("Unable to create keystore");
     }
