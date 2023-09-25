@@ -73,14 +73,15 @@ public sealed interface FixedNetworkGenesis {
 
   record Resource(HashCode genesisDataHash, String resourcePath) implements FixedNetworkGenesis {}
 
-  record Constant(HashCode genesisDataHash, WrappedByteArray genesisData)
+  record Constant(HashCode genesisDataHash, WrappedByteArray compressedGenesisData)
       implements FixedNetworkGenesis {}
 
   static FixedNetworkGenesis resource(HashCode genesisDataHash, String resourcePath) {
     return new Resource(genesisDataHash, resourcePath);
   }
 
-  static FixedNetworkGenesis constant(HashCode genesisDataHash, WrappedByteArray genesisData) {
-    return new Constant(genesisDataHash, genesisData);
+  static FixedNetworkGenesis constant(
+      HashCode genesisDataHash, WrappedByteArray compressedGenesisData) {
+    return new Constant(genesisDataHash, compressedGenesisData);
   }
 }

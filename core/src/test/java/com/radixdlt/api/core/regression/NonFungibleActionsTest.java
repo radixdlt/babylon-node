@@ -128,7 +128,7 @@ public class NonFungibleActionsTest extends DeterministicCoreApiTestBase {
               Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
                   resourceAddress, accountAddress, List.of(1), List.of()),
               List.of(accountKeyPair));
-      assertThat(result.errorMessage()).contains("SystemError(MutatingImmutableSubstate)");
+      assertThat(result.errorMessage()).contains("SystemError(KeyValueEntryLocked)");
     }
   }
 
@@ -163,7 +163,7 @@ public class NonFungibleActionsTest extends DeterministicCoreApiTestBase {
               Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
                   resourceAddress, accountAddress, List.of(1), List.of()),
               List.of(accountKeyPair));
-      assertThat(result.errorMessage()).contains("SystemError(MutatingImmutableSubstate)");
+      assertThat(result.errorMessage()).contains("SystemError(KeyValueEntryLocked)");
     }
   }
 

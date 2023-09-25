@@ -119,7 +119,7 @@ public class REv2MempoolToCommittedTest {
                         Network.INTEGRATIONTESTNET.getId(),
                         GenesisBuilder.createTestGenesisWithNumValidators(
                             1,
-                            Decimal.of(1),
+                            Decimal.ONE,
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
                                 this.roundsPerEpoch)),
                         REv2StateManagerModule.DatabaseType.IN_MEMORY,

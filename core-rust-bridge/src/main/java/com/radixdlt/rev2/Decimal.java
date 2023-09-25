@@ -69,17 +69,37 @@ import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.CustomTypeKnownLengthCodec;
 import com.radixdlt.sbor.codec.constants.TypeId;
+import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt192;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Objects;
 import org.bouncycastle.util.Arrays;
 
-/** Decimal represents a 192 bit representation of a fixed-scale decimal number. */
+/**
+ * Decimal represents a 192-bit representation of a fixed-scale decimal number.
+ *
+ * <p>Note that the Java implementation is fairly basic and mostly acts as a container for
+ * node<->engine interop. Some basic operations (e.g. add, subtract) have been implemented using
+ * UInt192.
+ */
+// TODO: Create an explicit I192 type and have Decimal wrap that.
 @SecurityCritical(SecurityKind.NUMERIC)
-public class Decimal implements Comparable<Decimal> {
+public final class Decimal {
+  public static final BigInteger MIN_SUBUNITS =
+      new BigInteger("-3138550867693340381917894711603833208051177722232017256448");
+  public static final BigInteger MAX_SUBUNITS =
+      new BigInteger("3138550867693340381917894711603833208051177722232017256447");
 
-  public static final Decimal ZERO = Decimal.of(0L);
+  // NOTE: These only work because MAX/MIN subunits are also stored as 24 big-endian bytes in a
+  // BigInteger
+  // In general this trick doesn't work - see comment in fromNonNegativeBigIntegerSubunits
+  public static final Decimal MIN_VALUE = fromBigEndianBytes(MIN_SUBUNITS.toByteArray());
+
+  public static final Decimal MAX_VALUE = fromBigEndianBytes(MAX_SUBUNITS.toByteArray());
+  public static final Decimal ONE_SUBUNIT = fromNonNegativeBigIntegerSubunits(BigInteger.ONE);
+  public static final Decimal ZERO = ofNonNegative(0L);
+  public static final Decimal ONE = ofNonNegative(1L);
   private static final int SCALE = 18;
 
   public static void registerCodec(CodecMap codecMap) {
@@ -88,82 +108,119 @@ public class Decimal implements Comparable<Decimal> {
         codecs ->
             new CustomTypeKnownLengthCodec<>(
                 TypeId.TYPE_CUSTOM_DECIMAL,
-                SBOR_BYTE_LENGTH,
-                decimal -> Arrays.reverse(decimal.underlyingValue.toByteArray()),
-                bytes -> new Decimal(UInt192.from(Arrays.reverse(bytes)))));
+                BYTE_LENGTH,
+                // Decimal codec uses little endian
+                decimal -> Arrays.reverse(decimal.underlyingBigEndianBytes),
+                bytes -> new Decimal(Arrays.reverse(bytes))));
   }
 
-  public static final int SBOR_BYTE_LENGTH = 24;
+  public static final int BYTE_LENGTH = 24;
 
-  private final UInt192 underlyingValue;
+  private final byte[] underlyingBigEndianBytes;
 
-  private Decimal(UInt192 underlyingValue) {
-    this.underlyingValue = Objects.requireNonNull(underlyingValue);
+  private Decimal(byte[] underlyingBigEndianBytes) {
+    this.underlyingBigEndianBytes = Objects.requireNonNull(underlyingBigEndianBytes);
   }
 
-  public static Decimal from(UInt192 fixedPointRepresentation) {
-    return new Decimal(fixedPointRepresentation);
+  /** Creates a Decimal from a raw byte array representation. */
+  public static Decimal fromBigEndianBytes(byte[] bigEndianBytes) {
+    if (bigEndianBytes.length != BYTE_LENGTH) {
+      throw new IllegalArgumentException("Wrong number of bytes");
+    }
+    return new Decimal(bigEndianBytes);
   }
 
   /**
    * Creates a Decimal from raw, non-negative BigInteger representation. Note that a BigInteger
-   * value of 1 translates to 1e-18 Decimal unit, not 1. Throws if the BigInteger exceeds UInt192.
+   * value of 1 translates to 1e-18 Decimal unit, not 1. Throws if the BigInteger representation
+   * exceeds 24 bytes.
    */
-  public static Decimal fromBigIntegerSubunits(BigInteger bigInt) {
-    if (bigInt.compareTo(BigInteger.ZERO) < 0) {
-      throw new IllegalArgumentException(
-          "Can't create a Decimal from a negative BigInteger representation");
+  public static Decimal fromNonNegativeBigIntegerSubunits(BigInteger subunits) {
+    // Note - BigInteger also stores its bytes as big endian, but only to the length it needs.
+    // * If it's too small and positive, we can just pad it
+    // * If it's too small and negative, it's more complex to map.
+    //   For now, we have no need for negatives, so we throw an error.
+    Objects.requireNonNull(subunits);
+    if (subunits.compareTo(BigInteger.ZERO) < 0) {
+      throw new IllegalArgumentException("Expected a non-negative BigInteger");
     }
-    final var bigIntSignedBytes = bigInt.toByteArray();
-    final byte[] uint192Bytes;
-    if (bigIntSignedBytes.length == UInt192.BYTES + 1 && bigIntSignedBytes[0] == 0x00) {
-      // A signed representation of a positive 32-bytes integer can actually contain
-      // 33 bytes (additional 0x00 byte), so we just skip it.
-      uint192Bytes = Arrays.copyOfRange(bigIntSignedBytes, 1, bigIntSignedBytes.length);
-    } else if (bigIntSignedBytes.length > UInt192.BYTES) {
-      // Can't fit
-      throw new IllegalArgumentException("Decimal overflow");
-    } else {
-      uint192Bytes = bigIntSignedBytes;
+    if (subunits.compareTo(MAX_SUBUNITS) > 0) {
+      throw new IllegalArgumentException("Value is too large to fit into a Decimal");
     }
-    return Decimal.from(UInt192.from(uint192Bytes));
+    return fromBigEndianBytes(Bytes.leftPadWithZeros(subunits.toByteArray(), BYTE_LENGTH));
   }
 
-  public Decimal add(Decimal other) {
-    var newUnderlying = this.underlyingValue.add(other.underlyingValue);
-    return new Decimal(newUnderlying);
+  /** Creates a Decimal from a raw byte array representation. */
+  public static Decimal fromU192Subunits(UInt192 subunits) {
+    var newDecimal = Decimal.fromBigEndianBytes(subunits.toBigEndianBytes());
+    if (newDecimal.isNegative()) {
+      throw new IllegalArgumentException(
+          "Overflow: UInt192 subunits are too big to fit in the Decimal");
+    }
+    return newDecimal;
+  }
+
+  public static Decimal ofNonNegative(long amount) {
+    return fromNonNegativeBigIntegerSubunits(
+        BigInteger.valueOf(amount).multiply(BigInteger.TEN.pow(SCALE)));
+  }
+
+  public static Decimal ofNonNegativeFraction(long numerator, long denominator) {
+    if (numerator < 0 || denominator < 0) {
+      throw new IllegalArgumentException("Numerator and denominator must be non-negative");
+    }
+    return fromNonNegativeBigIntegerSubunits(
+        BigInteger.valueOf(numerator)
+            .multiply(BigInteger.TEN.pow(SCALE))
+            .divide(BigInteger.valueOf(denominator)));
   }
 
   public BigInteger toBigIntegerSubunits() {
-    return underlyingValue.toBigInt();
+    return new BigInteger(underlyingBigEndianBytes);
   }
 
-  public static Decimal of(long amount) {
-    var underlying = UInt192.from(amount).multiply(UInt192.from(10).pow(SCALE));
-    return new Decimal(underlying);
+  public byte[] toBigEndianBytes() {
+    return underlyingBigEndianBytes;
   }
 
-  public static Decimal fraction(long numerator, long denominator) {
-    return Decimal.of(numerator).divide(denominator);
+  public BigDecimal toBigDecimal() {
+    return new BigDecimal(toBigIntegerSubunits(), SCALE);
   }
 
-  public Decimal subtract(Decimal other) {
-    var newUnderlying = this.underlyingValue.subtract(other.underlyingValue);
-    return new Decimal(newUnderlying);
+  public UInt192 toU192Subunits() {
+    if (isNegative()) {
+      throw new IllegalArgumentException("Can't convert negative decimal to UInt192");
+    }
+    return UInt192.fromBigEndianBytes(toBigEndianBytes());
   }
 
-  public Decimal divide(long divisor) {
-    var newUnderlying = this.underlyingValue.divide(UInt192.from(divisor));
-    return new Decimal(newUnderlying);
+  public boolean isNegative() {
+    return toBigIntegerSubunits().compareTo(BigInteger.ZERO) < 0;
   }
 
-  public UInt192 toUInt192() {
-    return underlyingValue;
+  public Decimal wrappingAdd(Decimal other) {
+    // This is currently only used in tests.
+    // Using UInt192 for calculations - addition arithmetic works, the same way for signed/unsigned
+    // representation.
+    return fromBigEndianBytes(
+        UInt192.fromBigEndianBytes(underlyingBigEndianBytes)
+            .add(UInt192.fromBigEndianBytes(other.underlyingBigEndianBytes))
+            .toBigEndianBytes());
+  }
+
+  public Decimal wrappingSubtract(Decimal other) {
+    // This is currently only used in tests.
+    // Using UInt192 for calculations - addition arithmetic works, the same way for signed/unsigned
+    // representation.
+    return new Decimal(
+        UInt192.fromBigEndianBytes(underlyingBigEndianBytes)
+            .subtract(UInt192.fromBigEndianBytes(other.underlyingBigEndianBytes))
+            .toBigEndianBytes());
   }
 
   @Override
   public String toString() {
-    var str = new BigDecimal(underlyingValue.toBigInt(), SCALE).toString();
+    var str = toBigDecimal().toPlainString();
     if (str.contains(".")) {
       // The outputted string contains the full precision (18 decimals) - but the rust Decimal
       // doesn't include these characters...
@@ -188,17 +245,12 @@ public class Decimal implements Comparable<Decimal> {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(underlyingValue);
+    return Arrays.hashCode(underlyingBigEndianBytes);
   }
 
   @Override
   public boolean equals(Object o) {
     return o instanceof Decimal other
-        && Objects.equals(this.underlyingValue, other.underlyingValue);
-  }
-
-  @Override
-  public int compareTo(Decimal o) {
-    return this.underlyingValue.compareTo(o.underlyingValue);
+        && java.util.Arrays.equals(this.underlyingBigEndianBytes, other.underlyingBigEndianBytes);
   }
 }

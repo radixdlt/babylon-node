@@ -452,7 +452,7 @@ impl GlobalBalanceSummary {
                 .entry(root_address)
                 .or_insert_with(index_map_new::<ResourceAddress, BalanceChange>)
                 .entry(*resource_address)
-                .and_modify(|existing| *existing = existing.clone() + balance_change.clone())
+                .and_modify(|existing| *existing += balance_change.clone())
                 .or_insert_with(|| balance_change.clone());
 
             // Collect (i.e. not sum) resultant balances for fungible resources of global accounts.

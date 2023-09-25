@@ -136,7 +136,7 @@ public final class SanityTest {
                         Network.INTEGRATIONTESTNET.getId(),
                         GenesisBuilder.createTestGenesisWithNumValidators(
                             10,
-                            Decimal.of(1),
+                            Decimal.ONE,
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
                                 roundsPerEpoch)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,

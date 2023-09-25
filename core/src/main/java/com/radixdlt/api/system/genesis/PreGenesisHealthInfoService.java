@@ -67,6 +67,7 @@ package com.radixdlt.api.system.genesis;
 import com.google.inject.Inject;
 import com.radixdlt.api.system.health.HealthInfoService;
 import com.radixdlt.api.system.health.NodeStatus;
+import com.radixdlt.prometheus.RecentSelfProposalMissStatistic;
 
 public final class PreGenesisHealthInfoService implements HealthInfoService {
 
@@ -76,5 +77,10 @@ public final class PreGenesisHealthInfoService implements HealthInfoService {
   @Override
   public NodeStatus nodeStatus() {
     return NodeStatus.BOOTING_PRE_GENESIS;
+  }
+
+  @Override
+  public RecentSelfProposalMissStatistic recentSelfProposalMissStatistic() {
+    return RecentSelfProposalMissStatistic.PRE_GENESIS;
   }
 }

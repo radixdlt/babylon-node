@@ -83,7 +83,7 @@ public record GenesisData(
     Decimal faucetSupply,
     ImmutableList<String> scenarios) {
 
-  public static final Decimal DEFAULT_TEST_FAUCET_SUPPLY = Decimal.of(1000_000_000_000L);
+  public static final Decimal DEFAULT_TEST_FAUCET_SUPPLY = Decimal.ofNonNegative(1000_000_000_000L);
   public static final ImmutableList<String> ALL_SCENARIOS =
       ImmutableList.of(
           "transfer_xrd",
@@ -94,7 +94,8 @@ public record GenesisData(
           "account_authorized_depositors",
           "global_n_owned",
           "non_fungible_resource_with_remote_type",
-          "kv_store_with_remote_type");
+          "kv_store_with_remote_type",
+          "max_transaction");
   public static final ImmutableList<String> NO_SCENARIOS = ImmutableList.of();
 
   public static void registerCodec(CodecMap codecMap) {
@@ -125,7 +126,7 @@ public record GenesisData(
                         validatorKey,
                         ImmutableList.of(
                             new GenesisStakeAllocation(
-                                UInt32.fromNonNegativeInt(0), Decimal.of(1L))))))),
+                                UInt32.fromNonNegativeInt(0), Decimal.ONE)))))),
         DEFAULT_TEST_FAUCET_SUPPLY,
         NO_SCENARIOS);
   }
