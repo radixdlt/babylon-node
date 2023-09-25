@@ -213,11 +213,17 @@ public class AWSSecrets {
       if (namePrefix.equals(CORE_NODE_PREFIX)) {
         if (isStaker) {
           keyStoreSecretName = "staker_key";
+          // SNYK - this file is ignored in .snyk file
+          // Raised issue: Use of Hardcoded Credentials
+          // Explanation: These are not credentials, but a field name
           passwordName = "staker_password";
           keyStoreName = String.format("%s_stake.ks", nodeName);
           publicKeyFileSecretName = String.format("%s/%s/staker_public_key", networkName, nodeName);
         } else {
           keyStoreSecretName = "validator_key";
+          // SNYK - this file is ignored in .snyk file
+          // Raised issue: Use of Hardcoded Credentials
+          // Explanation: These are not credentials, but a field name
           passwordName = "validator_password";
           publicKeyFileSecretName =
               String.format("%s/%s/validator_public_key", networkName, nodeName);

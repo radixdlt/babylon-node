@@ -108,7 +108,7 @@ public final class ConsensusHasher {
             var key = v.getValidatorId().getKey().getBytes();
             outputStream.write(key);
             var power = v.getPower();
-            outputStream.write(power.toByteArray());
+            outputStream.write(power.toBigEndianBytes());
           }
         } else {
           outputStream.writeByte(0); // 1 byte

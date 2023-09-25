@@ -248,12 +248,12 @@ public final class OlympiaNonXrdConverter {
       BigInteger resourceMaxSupplyOnBabylon) {
     if (resourceTotalSupplyOnOlympia.compareTo(resourceMaxSupplyOnBabylon) <= 0) {
       // No need to scale, guaranteed to fit
-      return Decimal.fromBigIntegerSubunits(originalAmount);
+      return Decimal.fromNonNegativeBigIntegerSubunits(originalAmount);
     } else {
       // Scale it down, using integer div rounding
       final var scaledBigInt =
           resourceMaxSupplyOnBabylon.multiply(originalAmount).divide(resourceTotalSupplyOnOlympia);
-      return Decimal.fromBigIntegerSubunits(scaledBigInt);
+      return Decimal.fromNonNegativeBigIntegerSubunits(scaledBigInt);
     }
   }
 

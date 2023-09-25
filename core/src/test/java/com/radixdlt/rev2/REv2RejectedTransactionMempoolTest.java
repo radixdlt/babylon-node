@@ -80,6 +80,7 @@ import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.NodesReader;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
+import com.radixdlt.harness.deterministic.TransactionExecutor;
 import com.radixdlt.mempool.*;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.*;
@@ -87,10 +88,8 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import com.radixdlt.transaction.ExecutedTransaction;
 import com.radixdlt.transactions.NotarizedTransactionHash;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
-import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.Collection;
 import java.util.List;
 import org.junit.Rule;
@@ -132,7 +131,7 @@ public class REv2RejectedTransactionMempoolTest {
                         Network.INTEGRATIONTESTNET.getId(),
                         GenesisBuilder.createTestGenesisWithNumValidators(
                             1,
-                            Decimal.of(1),
+                            Decimal.ONE,
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
                                 this.roundsPerEpoch)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
@@ -171,17 +170,6 @@ public class REv2RejectedTransactionMempoolTest {
     }
   }
 
-  private static ExecutedTransaction executeTransaction(
-      DeterministicTest test, RawNotarizedTransaction transaction) {
-    var mempoolDispatcher =
-        test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
-    mempoolDispatcher.dispatch(MempoolAdd.create(transaction));
-    test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
-
-    test.runUntilState(allCommittedTransactionSuccess(transaction), onlyConsensusEvents());
-    return NodesReader.getCommittedUserTransaction(test.getNodeInjectors(), transaction);
-  }
-
   @Test
   public void later_rejected_transaction_should_not_linger_in_mempool() {
     try (var test = createTest(new RustMempoolConfig(2 * 1024 * 1024, 2))) {
@@ -195,9 +183,7 @@ public class REv2RejectedTransactionMempoolTest {
               .manifest(Manifest.newAccountAllowAllOwner())
               .prepare()
               .raw();
-      executeTransaction(test, accountTxn);
-      var transactionDetails =
-          NodesReader.getCommittedTransactionDetails(test.getNodeInjectors(), accountTxn);
+      var transactionDetails = TransactionExecutor.executeTransaction(test, accountTxn);
       var accountAddress = transactionDetails.newComponentAddresses().get(0);
 
       // deposit xrd into it
@@ -206,7 +192,7 @@ public class REv2RejectedTransactionMempoolTest {
               .manifest(Manifest.depositFromFaucet(accountAddress))
               .prepare()
               .raw();
-      executeTransaction(test, depositTxn);
+      TransactionExecutor.executeTransaction(test, depositTxn);
 
       // dispatch 2 competing transactions (depositing from the above account)
       var mempoolDispatcher =

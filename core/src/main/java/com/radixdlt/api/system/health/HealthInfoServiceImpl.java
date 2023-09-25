@@ -66,6 +66,7 @@ package com.radixdlt.api.system.health;
 
 import com.google.inject.Inject;
 import com.radixdlt.prometheus.LedgerStatus;
+import com.radixdlt.prometheus.RecentSelfProposalMissStatistic;
 import com.radixdlt.prometheus.RustPrometheus;
 
 public final class HealthInfoServiceImpl implements HealthInfoService {
@@ -89,5 +90,10 @@ public final class HealthInfoServiceImpl implements HealthInfoService {
       case LedgerStatus.Syncing ignored -> NodeStatus.SYNCING;
       case LedgerStatus.NotSyncing ignored -> NodeStatus.OUT_OF_SYNC;
     };
+  }
+
+  @Override
+  public RecentSelfProposalMissStatistic recentSelfProposalMissStatistic() {
+    return this.rustPrometheus.recentSelfProposalMissStatistic();
   }
 }

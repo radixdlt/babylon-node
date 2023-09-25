@@ -76,6 +76,7 @@ import com.radixdlt.mempool.ProposalTransactionsRequest;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.message.*;
 import com.radixdlt.prometheus.LedgerStatus;
+import com.radixdlt.prometheus.RecentSelfProposalMissStatistic;
 import com.radixdlt.rev2.*;
 import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.CodecMap;
@@ -195,6 +196,7 @@ public final class NodeSborCodecs {
     Decryptor.registerCodec(codecMap);
     VertexLimitsConfig.registerCodec(codecMap);
     LedgerStatus.registerCodec(codecMap);
+    RecentSelfProposalMissStatistic.registerCodec(codecMap);
   }
 
   public static void registerCodecsForExistingTypes(CodecMap codecMap) {

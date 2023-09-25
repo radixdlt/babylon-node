@@ -74,7 +74,7 @@ public final class ScryptoConstants {
     System.loadLibrary("corerust");
   }
 
-  public static final Decimal FREE_AMOUNT_FROM_FAUCET = Decimal.of(10000);
+  public static final Decimal FREE_AMOUNT_FROM_FAUCET = Decimal.ofNonNegative(10000);
 
   public static final ResourceAddress XRD_RESOURCE_ADDRESS =
       Natives.builder(ScryptoConstants::getXrdResourceAddress)

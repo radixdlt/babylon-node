@@ -149,7 +149,7 @@ public final class RadixNodeModule extends AbstractModule {
     bindConstant().annotatedWith(PacemakerBackoffRate.class).to(1.2);
     bindConstant().annotatedWith(PacemakerMaxExponent.class).to(13);
     bindConstant().annotatedWith(AdditionalRoundTimeIfProposalReceivedMs.class).to(30_000L);
-    bindConstant().annotatedWith(TimeoutQuorumResolutionDelayMs.class).to(1500L);
+    bindConstant().annotatedWith(TimeoutQuorumResolutionDelayMs.class).to(0L);
 
     // System (e.g. time, random)
     install(new SystemModule());

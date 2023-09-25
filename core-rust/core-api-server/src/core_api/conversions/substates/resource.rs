@@ -1,7 +1,6 @@
 use super::super::*;
 use super::*;
 use crate::core_api::models;
-use radix_engine::system::system_substates::SubstateMutability;
 
 use radix_engine::types::*;
 use radix_engine_queries::typed_substate_layout::*;
@@ -264,6 +263,27 @@ pub fn to_api_non_fungible_global_id(
         )?,
         local_id: Box::new(to_api_non_fungible_local_id(
             non_fungible_global_id.local_id(),
+        )),
+    })
+}
+
+pub fn extract_resource_or_non_fungible(
+    extraction_context: &ExtractionContext,
+    badge: &models::PresentedBadge,
+) -> Result<ResourceOrNonFungible, ExtractionError> {
+    Ok(match badge {
+        models::PresentedBadge::ResourcePresentedBadge { resource_address } => {
+            ResourceOrNonFungible::from(extract_resource_address(
+                extraction_context,
+                resource_address,
+            )?)
+        }
+        models::PresentedBadge::NonFungiblePresentedBadge {
+            resource_address,
+            local_id,
+        } => ResourceOrNonFungible::from(NonFungibleGlobalId::new(
+            extract_resource_address(extraction_context, resource_address)?,
+            extract_non_fungible_id_from_simple_representation(local_id)?,
         )),
     })
 }

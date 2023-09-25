@@ -333,7 +333,7 @@ public final class RadixNodeBootstrapperTest {
                         key.getPublicKey(),
                         true,
                         true,
-                        Decimal.of(1),
+                        Decimal.ONE,
                         ImmutableList.of(),
                         Address.virtualAccountAddress(key.getPublicKey()))))),
         GenesisData.DEFAULT_TEST_FAUCET_SUPPLY,
