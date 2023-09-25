@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use std::sync::Arc;
+use std::sync::{mpsc, Arc};
 
 use node_common::{
     config::{limits::VertexLimitsConfig, MempoolConfig},
@@ -180,11 +180,13 @@ impl StateManager {
         );
         let mempool_manager = Arc::new(match mempool_relay_dispatcher {
             None => MempoolManager::new_for_testing(
+                mempool_deferred_updates_rx,
                 mempool.clone(),
                 cached_committability_validator,
                 metrics_registry,
             ),
             Some(mempool_relay_dispatcher) => MempoolManager::new(
+                mempool_deferred_updates_rx,
                 mempool.clone(),
                 mempool_relay_dispatcher,
                 cached_committability_validator,

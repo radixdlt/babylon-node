@@ -3,6 +3,7 @@ use radix_engine_common::types::Epoch;
 use transaction::{errors::TransactionValidationError, model::*};
 
 use crate::{
+    mempool_manager::{MempoolUpdate, StateVersionUpdate},
     transaction::{CheckMetadata, StaticValidation},
     CommittedUserTransactionIdentifiers, MempoolAddRejection, StateVersion,
 };
@@ -498,6 +499,22 @@ impl PendingTransactionResultCache {
         let existing_record = self
             .pending_transaction_records
             .get_mut(&notarized_transaction_hash);
+
+        let mempool_update = {
+            match &attempt.rejection {
+                None => MempoolUpdate::StateVersionUpdate(StateVersionUpdate {
+                    payload_hash: notarized_transaction_hash,
+                    state_version: attempt.against_state.clone().try_into().expect(
+                        "Succesfully executed transaction attempt should have state version",
+                    ),
+                }),
+                Some(_rejection) => MempoolUpdate::TransactionRejected(notarized_transaction_hash),
+            }
+        };
+        self.mempool_deferred_updates_tx
+            .lock()
+            .send(mempool_update)
+            .expect("mempool_deferred_updates_rx has been closed");
 
         if let Some(record) = existing_record {
             record.track_attempt(attempt);
