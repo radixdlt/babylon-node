@@ -66,14 +66,11 @@ use super::metrics::MempoolManagerMetrics;
 use crate::mempool::priority_mempool::*;
 use crate::mempool::*;
 use crate::MempoolAddSource;
-use crate::StateVersion;
-use node_common::locks::Mutex;
 use node_common::metrics::TakesMetricLabels;
 use prometheus::Registry;
 use transaction::model::*;
 
 use std::collections::HashSet;
-use std::sync::mpsc::Receiver;
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -83,22 +80,8 @@ use crate::transaction::{CachedCommittabilityValidator, ForceRecalculation};
 use node_common::locks::RwLock;
 use tracing::warn;
 
-pub enum MempoolUpdate {
-    StateVersionUpdate(StateVersionUpdate),
-    TransactionRejected(NotarizedTransactionHash),
-}
-
-pub struct StateVersionUpdate {
-    pub payload_hash: NotarizedTransactionHash,
-    pub state_version: StateVersion,
-}
-
 /// A high-level API giving a thread-safe access to the `PriorityMempool`.
 pub struct MempoolManager {
-    // TODO(after 100% Rust migration): The mutex is needed solely to circumvent jni`s Sync requirement.
-    // The overhead is just the extra memory access (+ compare) since it will never actually wait.
-    // In a pure Rust environment this is not needed and should be removed in future.
-    deferred_updates_rx: Mutex<Receiver<MempoolUpdate>>,
     mempool: Arc<RwLock<PriorityMempool>>,
     relay_dispatcher: Option<MempoolRelayDispatcher>,
     cached_committability_validator: CachedCommittabilityValidator<StateManagerDatabase>,
@@ -108,14 +91,12 @@ pub struct MempoolManager {
 impl MempoolManager {
     /// Creates a manager and registers its metrics.
     pub fn new(
-        deferred_updates_rx: Mutex<Receiver<MempoolUpdate>>,
         mempool: Arc<RwLock<PriorityMempool>>,
         relay_dispatcher: MempoolRelayDispatcher,
         cached_committability_validator: CachedCommittabilityValidator<StateManagerDatabase>,
         metric_registry: &Registry,
     ) -> Self {
         Self {
-            deferred_updates_rx,
             mempool,
             relay_dispatcher: Some(relay_dispatcher),
             cached_committability_validator,
@@ -125,13 +106,11 @@ impl MempoolManager {
 
     /// Creates a testing manager (without the JNI-based relay dispatcher) and registers its metrics.
     pub fn new_for_testing(
-        deferred_updates_rx: Mutex<Receiver<MempoolUpdate>>,
         mempool: Arc<RwLock<PriorityMempool>>,
         cached_committability_validator: CachedCommittabilityValidator<StateManagerDatabase>,
         metric_registry: &Registry,
     ) -> Self {
         Self {
-            deferred_updates_rx,
             mempool,
             relay_dispatcher: None,
             cached_committability_validator,
@@ -182,30 +161,6 @@ impl MempoolManager {
             })
             .take(max_count)
             .collect()
-    }
-
-    /// Updates the underlying [`PriorityMempool`] with all accumulated updates from [`self.deferred_updates_rx`].
-    /// Currently the only place that sends these updates is [`PendingTransactionResultCache`].
-    pub fn execute_deferred_updates(&self) {
-        let mut write_mempool = self.mempool.write();
-
-        let updates = self.deferred_updates_rx.lock();
-
-        // We use [`try_iter`] instead of [`iter`] because we don't want to wait since this is not called in it's own actor thread yet.
-        for mempool_update in updates.try_iter() {
-            match &mempool_update {
-                MempoolUpdate::StateVersionUpdate(StateVersionUpdate {
-                    payload_hash,
-                    state_version,
-                }) => {
-                    write_mempool
-                        .update_transaction_executed_state_version(payload_hash, *state_version);
-                }
-                MempoolUpdate::TransactionRejected(payload_hash) => {
-                    write_mempool.remove_by_payload_hash(payload_hash);
-                }
-            }
-        }
     }
 
     /// Checks the committability of a subset of transactions executed against earliest state versions
