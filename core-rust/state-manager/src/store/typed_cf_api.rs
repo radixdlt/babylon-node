@@ -65,6 +65,30 @@
 use radix_engine::types::*;
 use rocksdb::{ColumnFamily, Direction, IteratorMode, WriteBatch, DB};
 
+// TODO(wip): docs
+pub struct TypedDbApi {
+    db: DB,
+}
+
+impl TypedDbApi {
+    pub fn commit_batch(&self, batch: WriteBatch) {
+        self.db.write(batch).expect("DB write batch");
+    }
+}
+
+impl TypedDbApi {
+    pub fn new(db: DB) -> Self {
+        Self { db }
+    }
+
+    pub fn cf<'db, K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, D: TypedCf<K, V, KC, VC>>(
+        &'db self,
+        cf: D,
+    ) -> impl TypedCfApi<'db, K, V> {
+        CodecBasedCfApi::new(&self.db, cf)
+    }
+}
+
 /// A higher-level database access API scoped at a specific column family.
 pub trait TypedCfApi<'db, K, V> {
     /// Gets value by key.
@@ -132,6 +156,50 @@ pub trait TypedCfApi<'db, K, V> {
     fn delete_range_with_batch(&self, batch: &mut WriteBatch, from_key: &K, to_key: &K);
 }
 
+pub trait TypedCf<K, V, KC = Box<dyn DbCodec<K>>, VC = Box<dyn DbCodec<V>>> {
+    const NAME: &'static str;
+    fn key_codec(&self) -> KC;
+    fn value_codec(&self) -> VC;
+}
+
+pub trait StaticCf<K, V> {
+    const STATIC_NAME: &'static str;
+    type KeyCodec: Default;
+    type ValueCodec: Default;
+}
+
+impl<K, V, KC: Default, VC: Default, D: StaticCf<K, V, KeyCodec = KC, ValueCodec = VC>>
+    TypedCf<K, V, KC, VC> for D
+{
+    const NAME: &'static str = Self::STATIC_NAME;
+
+    fn key_codec(&self) -> KC {
+        KC::default()
+    }
+
+    fn value_codec(&self) -> VC {
+        VC::default()
+    }
+}
+
+pub trait VersionedCf<K, V> {
+    const VERSIONED_NAME: &'static str;
+    type KeyCodec: Default;
+    type VersionedValue;
+}
+
+impl<K, V, VV, KC, D> StaticCf<K, V> for D
+where
+    V: Into<VV> + Clone,
+    VV: ScryptoEncode + ScryptoDecode + HasLatestVersion<Latest = V>,
+    KC: Default,
+    D: VersionedCf<K, V, KeyCodec = KC, VersionedValue = VV>,
+{
+    const STATIC_NAME: &'static str = Self::VERSIONED_NAME;
+    type KeyCodec = KC;
+    type ValueCodec = VersionedDbCodec<SborDbCodec<VV>, V, VV>;
+}
+
 /// An encoder/decoder of a typed value.
 ///
 /// Design note:
@@ -139,7 +207,7 @@ pub trait TypedCfApi<'db, K, V> {
 /// like `trait DbEncodable` to be implemented by types stored in the database):
 /// - codecs are composable (e.g. `VersioningCodec::new(SborCodec::<MyType>::new())`);
 /// - the same type may have different encodings (e.g. when used for a key vs for a value).
-pub trait DbCodec<T>: Clone {
+pub trait DbCodec<T> {
     /// Encodes the value into bytes.
     fn encode(&self, value: &T) -> Vec<u8>;
     /// Decodes the bytes into value.
@@ -147,22 +215,22 @@ pub trait DbCodec<T>: Clone {
 }
 
 /// A [`DB`]-backed implementation of [`TypedCfApi`] using configured key and value codecs.
-pub struct CodecBasedCfApi<'db, K, KC: DbCodec<K> + 'db, V, VC: DbCodec<V> + 'db> {
+pub struct CodecBasedCfApi<'db, K, V, KC: DbCodec<K>, VC: DbCodec<V>, D: TypedCf<K, V, KC, VC>> {
     db: &'db DB,
-    cf: &'db ColumnFamily,
-    key_codec: KC,
-    value_codec: VC,
-    type_parameters_phantom: PhantomData<(K, V)>,
+    cf_handle: &'db ColumnFamily,
+    typed_cf: D,
+    type_parameters_phantom: PhantomData<(K, V, KC, VC)>,
 }
 
-impl<'db, K, KC: DbCodec<K> + 'db, V, VC: DbCodec<V> + 'db> CodecBasedCfApi<'db, K, KC, V, VC> {
+impl<'db, K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, D: TypedCf<K, V, KC, VC>>
+    CodecBasedCfApi<'db, K, V, KC, VC, D>
+{
     /// Creates an instance for the given column family.
-    pub fn new(db: &'db DB, cf_name: &str, key_codec: KC, value_codec: VC) -> Self {
+    pub fn new(db: &'db DB, cf: D) -> Self {
         Self {
             db,
-            cf: db.cf_handle(cf_name).unwrap(),
-            key_codec,
-            value_codec,
+            cf_handle: db.cf_handle(D::NAME).unwrap(),
+            typed_cf: cf,
             type_parameters_phantom: PhantomData,
         }
     }
@@ -170,44 +238,48 @@ impl<'db, K, KC: DbCodec<K> + 'db, V, VC: DbCodec<V> + 'db> CodecBasedCfApi<'db,
     /// Returns an iterator based on the [`IteratorMode`] (which already contains encoded key).
     ///
     /// This is an internal shared implementation detail for different iteration flavors.
-    /// Implementation note: the key and value codecs are cloned, so that the iterator does not
-    /// have to reference this instance of [`CodecBasedCfApi`] (for borrow-checker's reasons). This
-    /// clone typically uses 0 bytes, though (in practice, iterators are stateless and have no
-    /// dependencies).
     fn iterate_with_mode(&self, mode: IteratorMode) -> Box<dyn Iterator<Item = (K, V)> + 'db> {
-        let key_codec = self.key_codec.clone();
-        let value_codec = self.value_codec.clone();
-        Box::new(self.db.iterator_cf(self.cf, mode).map(move |result| {
-            let (key, value) = result.expect("starting iteration");
-            (
-                key_codec.decode(key.as_ref()),
-                value_codec.decode(value.as_ref()),
-            )
-        }))
+        let key_codec = self.typed_cf.key_codec();
+        let value_codec = self.typed_cf.value_codec();
+        Box::new(
+            self.db
+                .iterator_cf(self.cf_handle, mode)
+                .map(move |result| {
+                    let (key, value) = result.expect("starting iteration");
+                    (
+                        key_codec.decode(key.as_ref()),
+                        value_codec.decode(value.as_ref()),
+                    )
+                }),
+        )
     }
 }
 
-impl<'db, K, KC: DbCodec<K> + 'db, V, VC: DbCodec<V> + 'db> TypedCfApi<'db, K, V>
-    for CodecBasedCfApi<'db, K, KC, V, VC>
+impl<'db, K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, D: TypedCf<K, V, KC, VC>>
+    TypedCfApi<'db, K, V> for CodecBasedCfApi<'db, K, V, KC, VC, D>
 {
     fn get(&self, key: &K) -> Option<V> {
+        let key_codec = self.typed_cf.key_codec();
+        let value_codec = self.typed_cf.value_codec();
         self.db
-            .get_pinned_cf(self.cf, self.key_codec.encode(key).as_slice())
+            .get_pinned_cf(self.cf_handle, key_codec.encode(key).as_slice())
             .expect("database get by key")
-            .map(|pinnable_slice| self.value_codec.decode(pinnable_slice.as_ref()))
+            .map(|pinnable_slice| value_codec.decode(pinnable_slice.as_ref()))
     }
 
     fn get_many(&self, keys: Vec<&K>) -> Vec<Option<V>> {
+        let key_codec = self.typed_cf.key_codec();
+        let value_codec = self.typed_cf.value_codec();
         self.db
             .multi_get_cf(
                 keys.into_iter()
-                    .map(|key| (self.cf, self.key_codec.encode(key))),
+                    .map(|key| (self.cf_handle, key_codec.encode(key))),
             )
             .into_iter()
             .map(|result| {
                 result
                     .expect("multi get")
-                    .map(|bytes| self.value_codec.decode(&bytes))
+                    .map(|bytes| value_codec.decode(&bytes))
             })
             .collect()
     }
@@ -224,74 +296,69 @@ impl<'db, K, KC: DbCodec<K> + 'db, V, VC: DbCodec<V> + 'db> TypedCfApi<'db, K, V
         from: &K,
         direction: Direction,
     ) -> Box<dyn Iterator<Item = (K, V)> + 'db> {
+        let key_codec = self.typed_cf.key_codec();
         self.iterate_with_mode(IteratorMode::From(
-            self.key_codec.encode(from).as_slice(),
+            key_codec.encode(from).as_slice(),
             direction,
         ))
     }
 
     fn put(&self, key: &K, value: &V) {
+        let key_codec = self.typed_cf.key_codec();
+        let value_codec = self.typed_cf.value_codec();
         self.db
             .put_cf(
-                self.cf,
-                self.key_codec.encode(key),
-                self.value_codec.encode(value),
+                self.cf_handle,
+                key_codec.encode(key),
+                value_codec.encode(value),
             )
             .expect("database put");
     }
 
     fn put_with_batch(&self, batch: &mut WriteBatch, key: &K, value: &V) {
+        let key_codec = self.typed_cf.key_codec();
+        let value_codec = self.typed_cf.value_codec();
         batch.put_cf(
-            self.cf,
-            self.key_codec.encode(key),
-            self.value_codec.encode(value),
+            self.cf_handle,
+            key_codec.encode(key),
+            value_codec.encode(value),
         );
     }
 
     fn delete_with_batch(&self, batch: &mut WriteBatch, key: &K) {
-        batch.delete_cf(self.cf, self.key_codec.encode(key));
+        let key_codec = self.typed_cf.key_codec();
+        batch.delete_cf(self.cf_handle, key_codec.encode(key));
     }
 
     fn delete_range_with_batch(&self, batch: &mut WriteBatch, from_key: &K, to_key: &K) {
+        let key_codec = self.typed_cf.key_codec();
         batch.delete_range_cf(
-            self.cf,
-            self.key_codec.encode(from_key),
-            self.key_codec.encode(to_key),
+            self.cf_handle,
+            key_codec.encode(from_key),
+            key_codec.encode(to_key),
         );
     }
 }
 
 /// A reusable versioning decorator for [`DbCodec`]s.
-pub struct VersionedDbCodec<T: Into<VT> + Clone, U: DbCodec<VT>, VT: HasLatestVersion<Latest = T>> {
+pub struct VersionedDbCodec<U: DbCodec<VT>, T: Into<VT> + Clone, VT: HasLatestVersion<Latest = T>> {
     underlying: U,
     type_parameters_phantom: PhantomData<VT>,
 }
 
-impl<T: Into<VT> + Clone, U: DbCodec<VT>, VT: HasLatestVersion<Latest = T>>
-    VersionedDbCodec<T, U, VT>
+impl<U: DbCodec<VT> + Default, T: Into<VT> + Clone, VT: HasLatestVersion<Latest = T>> Default
+    for VersionedDbCodec<U, T, VT>
 {
-    /// Applies versioning for the given codec.
-    pub fn new(underlying: U) -> Self {
+    fn default() -> Self {
         Self {
-            underlying,
+            underlying: U::default(),
             type_parameters_phantom: PhantomData,
         }
     }
 }
 
-impl<T: Into<VT> + Clone, U: DbCodec<VT>, VT: HasLatestVersion<Latest = T>> Clone
-    for VersionedDbCodec<T, U, VT>
-{
-    fn clone(&self) -> Self {
-        Self {
-            underlying: self.underlying.clone(),
-            type_parameters_phantom: PhantomData,
-        }
-    }
-}
-
-impl<T: Into<VT> + Clone, U: DbCodec<VT>, VT: HasLatestVersion<Latest = T>> DbCodec<T>
-    for VersionedDbCodec<T, U, VT>
+impl<U: DbCodec<VT>, T: Into<VT> + Clone, VT: HasLatestVersion<Latest = T>> DbCodec<T>
+    for VersionedDbCodec<U, T, VT>
 {
     fn encode(&self, value: &T) -> Vec<u8> {
         let versioned = value.clone().into();
@@ -314,12 +381,6 @@ impl<T: ScryptoEncode + ScryptoDecode> Default for SborDbCodec<T> {
         Self {
             type_parameters_phantom: PhantomData,
         }
-    }
-}
-
-impl<T: ScryptoEncode + ScryptoDecode> Clone for SborDbCodec<T> {
-    fn clone(&self) -> Self {
-        Self::default()
     }
 }
 
@@ -347,20 +408,27 @@ impl DbCodec<Vec<u8>> for DirectDbCodec {
     }
 }
 
-/// A [`DbCodec]` based on a predefined set of mappings.
+/// A [`DbCodec]` capable of representing only a unit `()` (as an empty array).
+/// This is useful e.g. for "single-row" column families (which do not need keys), or "key-only"
+/// column families (which do not need values).
 #[derive(Clone, Default)]
+pub struct UnitDbCodec {}
+
+impl DbCodec<()> for UnitDbCodec {
+    fn encode(&self, _value: &()) -> Vec<u8> {
+        vec![]
+    }
+
+    fn decode(&self, bytes: &[u8]) {
+        assert_eq!(bytes.len(), 0);
+    }
+}
+
+/// A [`DbCodec]` based on a predefined set of mappings.
+#[derive(Default)]
 pub struct PredefinedDbCodec<T: core::hash::Hash + Eq + Clone> {
     encoding: NonIterMap<T, Vec<u8>>,
     decoding: NonIterMap<Vec<u8>, T>,
-}
-
-impl PredefinedDbCodec<()> {
-    /// Creates an instance capable of representing only a unit `()` (as an empty array).
-    /// This is useful e.g. for "single-row" column families (which do not need keys), or "key-only"
-    /// column families (which do not need values).
-    pub fn for_unit() -> Self {
-        Self::new(vec![((), vec![])])
-    }
 }
 
 impl<T: core::hash::Hash + Eq + Clone> PredefinedDbCodec<T> {
