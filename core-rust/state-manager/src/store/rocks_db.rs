@@ -77,7 +77,7 @@ use radix_engine::types::*;
 use radix_engine_stores::hash_tree::tree_store::{
     encode_key, NodeKey, ReadableTreeStore, TreeNode, VersionedTreeNode,
 };
-use rocksdb::{ColumnFamilyDescriptor, Direction, Options, WriteBatch, DB};
+use rocksdb::{ColumnFamilyDescriptor, Direction, Options, DB};
 use transaction::model::*;
 
 use radix_engine_store_interface::interface::*;
@@ -118,16 +118,16 @@ use super::traits::extensions::*;
 /// family names. Any change would effectively mean a ledger wipe. For this reason, we choose to
 /// define them manually (rather than using the `Into<String>`, which is refactor-sensitive).
 const ALL_COLUMN_FAMILIES: [&str; 19] = [
-    RawLedgerTransactionsCf::STATIC_NAME,
+    RawLedgerTransactionsCf::DEFAULT_NAME,
     CommittedTransactionIdentifiersCf::VERSIONED_NAME,
     TransactionReceiptsCf::VERSIONED_NAME,
     LocalTransactionExecutionsCf::VERSIONED_NAME,
-    IntentHashesCf::STATIC_NAME,
-    NotarizedTransactionHashesCf::STATIC_NAME,
-    LedgerTransactionHashesCf::STATIC_NAME,
+    IntentHashesCf::DEFAULT_NAME,
+    NotarizedTransactionHashesCf::DEFAULT_NAME,
+    LedgerTransactionHashesCf::DEFAULT_NAME,
     LedgerProofsCf::VERSIONED_NAME,
     EpochLedgerProofsCf::VERSIONED_NAME,
-    SubstatesCf::STATIC_NAME,
+    SubstatesCf::DEFAULT_NAME,
     SubstateNodeAncestryRecordsCf::VERSIONED_NAME,
     VertexStoreCf::VERSIONED_NAME,
     StateHashTreeNodesCf::VERSIONED_NAME,
@@ -144,8 +144,8 @@ const ALL_COLUMN_FAMILIES: [&str; 19] = [
 /// Note: This table does not use explicit versioning wrapper, since the serialized content of
 /// [`RawLedgerTransaction`] is itself versioned.
 struct RawLedgerTransactionsCf;
-impl StaticCf<StateVersion, RawLedgerTransaction> for RawLedgerTransactionsCf {
-    const STATIC_NAME: &'static str = "raw_ledger_transactions";
+impl DefaultCf<StateVersion, RawLedgerTransaction> for RawLedgerTransactionsCf {
+    const DEFAULT_NAME: &'static str = "raw_ledger_transactions";
     type KeyCodec = StateVersionDbCodec;
     type ValueCodec = RawLedgerTransactionDbCodec;
 }
@@ -204,8 +204,8 @@ impl VersionedCf<Epoch, LedgerProof> for EpochLedgerProofsCf {
 /// Note: This table does not use explicit versioning wrapper, since the value represents a DB
 /// key of another table (and versioning DB keys is not useful).
 struct IntentHashesCf;
-impl StaticCf<IntentHash, StateVersion> for IntentHashesCf {
-    const STATIC_NAME: &'static str = "intent_hashes";
+impl DefaultCf<IntentHash, StateVersion> for IntentHashesCf {
+    const DEFAULT_NAME: &'static str = "intent_hashes";
     type KeyCodec = HashDbCodec<IntentHash>;
     type ValueCodec = StateVersionDbCodec;
 }
@@ -215,8 +215,8 @@ impl StaticCf<IntentHash, StateVersion> for IntentHashesCf {
 /// Note: This table does not use explicit versioning wrapper, since the value represents a DB
 /// key of another table (and versioning DB keys is not useful).
 struct NotarizedTransactionHashesCf;
-impl StaticCf<NotarizedTransactionHash, StateVersion> for NotarizedTransactionHashesCf {
-    const STATIC_NAME: &'static str = "notarized_transaction_hashes";
+impl DefaultCf<NotarizedTransactionHash, StateVersion> for NotarizedTransactionHashesCf {
+    const DEFAULT_NAME: &'static str = "notarized_transaction_hashes";
     type KeyCodec = HashDbCodec<NotarizedTransactionHash>;
     type ValueCodec = StateVersionDbCodec;
 }
@@ -226,8 +226,8 @@ impl StaticCf<NotarizedTransactionHash, StateVersion> for NotarizedTransactionHa
 /// Note: This table does not use explicit versioning wrapper, since the value represents a DB
 /// key of another table (and versioning DB keys is not useful).
 struct LedgerTransactionHashesCf;
-impl StaticCf<LedgerTransactionHash, StateVersion> for LedgerTransactionHashesCf {
-    const STATIC_NAME: &'static str = "ledger_transaction_hashes";
+impl DefaultCf<LedgerTransactionHash, StateVersion> for LedgerTransactionHashesCf {
+    const DEFAULT_NAME: &'static str = "ledger_transaction_hashes";
     type KeyCodec = HashDbCodec<LedgerTransactionHash>;
     type ValueCodec = StateVersionDbCodec;
 }
@@ -237,8 +237,8 @@ impl StaticCf<LedgerTransactionHash, StateVersion> for LedgerTransactionHashesCf
 /// Note: This table does not use explicit versioning wrapper, since each serialized substate
 /// value is already versioned.
 struct SubstatesCf;
-impl StaticCf<DbSubstateKey, DbSubstateValue> for SubstatesCf {
-    const STATIC_NAME: &'static str = "substates";
+impl DefaultCf<DbSubstateKey, DbSubstateValue> for SubstatesCf {
+    const DEFAULT_NAME: &'static str = "substates";
     type KeyCodec = SubstateKeyDbCodec;
     type ValueCodec = DirectDbCodec;
 }
@@ -385,7 +385,7 @@ impl fmt::Display for ExtensionsDataKey {
 
 pub struct RocksDBStore {
     config: DatabaseFlags,
-    db: TypedDbApi,
+    db: DB,
 }
 
 impl RocksDBStore {
@@ -404,10 +404,7 @@ impl RocksDBStore {
 
         let db = DB::open_cf_descriptors(&db_opts, root.as_path(), column_families).unwrap();
 
-        let mut rocks_db_store = RocksDBStore {
-            config,
-            db: TypedDbApi::new(db),
-        };
+        let mut rocks_db_store = RocksDBStore { config, db };
 
         let current_database_config = rocks_db_store.read_flags_state();
         rocks_db_store.config.validate(&current_database_config)?;
@@ -419,14 +416,18 @@ impl RocksDBStore {
         Ok(rocks_db_store)
     }
 
+    fn open_db_context(&self) -> TypedDbContext {
+        TypedDbContext::new(&self.db)
+    }
+
     fn add_transaction_to_write_batch(
         &self,
-        batch: &mut WriteBatch,
+        db_context: &TypedDbContext,
         transaction_bundle: CommittedTransactionBundle,
     ) {
         if self.is_account_change_index_enabled() {
             self.batch_update_account_change_index_from_committed_transaction(
-                batch,
+                db_context,
                 transaction_bundle.state_version,
                 &transaction_bundle,
             );
@@ -450,7 +451,7 @@ impl RocksDBStore {
             /* For user transactions we only need to check for duplicate intent hashes to know
             that user payload hash and ledger payload hash are also unique. */
 
-            let maybe_existing_state_version = self.db.cf(IntentHashesCf).get(intent_hash);
+            let maybe_existing_state_version = db_context.cf(IntentHashesCf).get(intent_hash);
             if let Some(existing_state_version) = maybe_existing_state_version {
                 panic!(
                     "Attempted to save intent hash {:?} which already exists at state version {:?}",
@@ -458,17 +459,14 @@ impl RocksDBStore {
                 );
             }
 
-            self.db
+            db_context
                 .cf(IntentHashesCf)
-                .put_with_batch(batch, intent_hash, &state_version);
-            self.db.cf(NotarizedTransactionHashesCf).put_with_batch(
-                batch,
-                notarized_transaction_hash,
-                &state_version,
-            );
+                .put(intent_hash, &state_version);
+            db_context
+                .cf(NotarizedTransactionHashesCf)
+                .put(notarized_transaction_hash, &state_version);
         } else {
-            let maybe_existing_state_version = self
-                .db
+            let maybe_existing_state_version = db_context
                 .cf(LedgerTransactionHashesCf)
                 .get(&ledger_transaction_hash);
             if let Some(existing_state_version) = maybe_existing_state_version {
@@ -480,34 +478,31 @@ impl RocksDBStore {
             }
         }
 
-        self.db.cf(LedgerTransactionHashesCf).put_with_batch(
-            batch,
-            &ledger_transaction_hash,
-            &state_version,
-        );
-        self.db
+        db_context
+            .cf(LedgerTransactionHashesCf)
+            .put(&ledger_transaction_hash, &state_version);
+        db_context
             .cf(RawLedgerTransactionsCf)
-            .put_with_batch(batch, &state_version, &raw);
-        self.db
+            .put(&state_version, &raw);
+        db_context
             .cf(CommittedTransactionIdentifiersCf)
-            .put_with_batch(batch, &state_version, &identifiers);
-        self.db
+            .put(&state_version, &identifiers);
+        db_context
             .cf(TransactionReceiptsCf)
-            .put_with_batch(batch, &state_version, &receipt.on_ledger);
+            .put(&state_version, &receipt.on_ledger);
 
         if self.is_local_transaction_execution_index_enabled() {
-            self.db.cf(LocalTransactionExecutionsCf).put_with_batch(
-                batch,
-                &state_version,
-                &receipt.local_execution,
-            );
+            db_context
+                .cf(LocalTransactionExecutionsCf)
+                .put(&state_version, &receipt.local_execution);
         }
     }
 }
 
 impl ConfigurableDatabase for RocksDBStore {
     fn read_flags_state(&self) -> DatabaseFlagsState {
-        let extension_data_cf = self.db.cf(ExtensionsDataCf);
+        let db_context = self.open_db_context();
+        let extension_data_cf = db_context.cf(ExtensionsDataCf);
         let account_change_index_enabled = extension_data_cf
             .get(&ExtensionsDataKey::AccountChangeIndexEnabled)
             .map(|bytes| scrypto_decode::<bool>(&bytes).unwrap());
@@ -521,19 +516,16 @@ impl ConfigurableDatabase for RocksDBStore {
     }
 
     fn write_flags(&mut self, database_config: &DatabaseFlags) {
-        let mut batch = WriteBatch::default();
-        let extension_data_cf = self.db.cf(ExtensionsDataCf);
-        extension_data_cf.put_with_batch(
-            &mut batch,
+        let db_context = self.open_db_context();
+        let extension_data_cf = db_context.cf(ExtensionsDataCf);
+        extension_data_cf.put(
             &ExtensionsDataKey::AccountChangeIndexEnabled,
             &scrypto_encode(&database_config.enable_account_change_index).unwrap(),
         );
-        extension_data_cf.put_with_batch(
-            &mut batch,
+        extension_data_cf.put(
             &ExtensionsDataKey::LocalTransactionExecutionIndexEnabled,
             &scrypto_encode(&database_config.enable_local_transaction_execution_index).unwrap(),
         );
-        self.db.commit_batch(batch);
     }
 
     fn is_account_change_index_enabled(&self) -> bool {
@@ -547,7 +539,7 @@ impl ConfigurableDatabase for RocksDBStore {
 
 impl CommitStore for RocksDBStore {
     fn commit(&mut self, commit_bundle: CommitBundle) {
-        let mut batch = WriteBatch::default();
+        let db_context = self.open_db_context();
 
         // Check for duplicate intent/payload hashes in the commit request
         let mut user_transactions_count = 0;
@@ -567,7 +559,7 @@ impl CommitStore for RocksDBStore {
                 user_transactions_count += 1;
             }
             processed_ledger_transaction_hashes.insert(payload_identifiers.ledger_transaction_hash);
-            self.add_transaction_to_write_batch(&mut batch, transaction_bundle);
+            self.add_transaction_to_write_batch(&db_context, transaction_bundle);
         }
 
         if processed_intent_hashes.len() != user_transactions_count {
@@ -578,20 +570,16 @@ impl CommitStore for RocksDBStore {
             panic!("Commit request contains duplicate ledger transaction hashes");
         }
 
-        self.db.cf(LedgerProofsCf).put_with_batch(
-            &mut batch,
-            &commit_state_version,
-            &commit_bundle.proof,
-        );
+        db_context
+            .cf(LedgerProofsCf)
+            .put(&commit_state_version, &commit_bundle.proof);
         if let Some(next_epoch) = &commit_ledger_header.next_epoch {
-            self.db.cf(EpochLedgerProofsCf).put_with_batch(
-                &mut batch,
-                &next_epoch.epoch,
-                &commit_bundle.proof,
-            );
+            db_context
+                .cf(EpochLedgerProofsCf)
+                .put(&next_epoch.epoch, &commit_bundle.proof);
         }
 
-        let substates_cf = self.db.cf(SubstatesCf);
+        let substates_cf = db_context.cf(SubstatesCf);
         for (node_key, node_updates) in commit_bundle.substate_store_update.updates.node_updates {
             for (partition_num, partition_updates) in node_updates.partition_updates {
                 let partition_key = DbPartitionKey {
@@ -604,14 +592,10 @@ impl CommitStore for RocksDBStore {
                             let substate_key = (partition_key.clone(), sort_key);
                             match update {
                                 DatabaseUpdate::Set(substate_value) => {
-                                    substates_cf.put_with_batch(
-                                        &mut batch,
-                                        &substate_key,
-                                        &substate_value,
-                                    );
+                                    substates_cf.put(&substate_key, &substate_value);
                                 }
                                 DatabaseUpdate::Delete => {
-                                    substates_cf.delete_with_batch(&mut batch, &substate_key);
+                                    substates_cf.delete(&substate_key);
                                 }
                             }
                         }
@@ -619,17 +603,12 @@ impl CommitStore for RocksDBStore {
                     PartitionDatabaseUpdates::Reset {
                         new_substate_values,
                     } => {
-                        substates_cf.delete_range_with_batch(
-                            &mut batch,
+                        substates_cf.delete_range(
                             &(partition_key.clone(), DbSortKey(vec![])),
                             &(partition_key.next(), DbSortKey(vec![])),
                         );
                         for (sort_key, substate_value) in new_substate_values {
-                            substates_cf.put_with_batch(
-                                &mut batch,
-                                &(partition_key.clone(), sort_key),
-                                &substate_value,
-                            );
+                            substates_cf.put(&(partition_key.clone(), sort_key), &substate_value);
                         }
                     }
                 }
@@ -637,57 +616,45 @@ impl CommitStore for RocksDBStore {
         }
 
         if let Some(vertex_store) = commit_bundle.vertex_store {
-            self.db
-                .cf(VertexStoreCf)
-                .put_with_batch(&mut batch, &(), &vertex_store);
+            db_context.cf(VertexStoreCf).put(&(), &vertex_store);
         }
 
         let state_hash_tree_update = commit_bundle.state_tree_update;
         for (key, node) in state_hash_tree_update.new_nodes {
-            self.db
-                .cf(StateHashTreeNodesCf)
-                .put_with_batch(&mut batch, &key, &node);
+            db_context.cf(StateHashTreeNodesCf).put(&key, &node);
         }
         for (version, stale_parts) in state_hash_tree_update.stale_tree_parts_at_state_version {
-            self.db.cf(StaleStateHashTreePartsCf).put_with_batch(
-                &mut batch,
-                &version,
-                &stale_parts,
-            );
+            db_context
+                .cf(StaleStateHashTreePartsCf)
+                .put(&version, &stale_parts);
         }
 
         for (node_ids, record) in commit_bundle.new_substate_node_ancestry_records {
             for node_id in node_ids {
-                self.db
+                db_context
                     .cf(SubstateNodeAncestryRecordsCf)
-                    .put_with_batch(&mut batch, &node_id, &record);
+                    .put(&node_id, &record);
             }
         }
 
-        self.db.cf(TransactionAccuTreeSlicesCf).put_with_batch(
-            &mut batch,
-            &commit_state_version,
-            &commit_bundle.transaction_tree_slice,
-        );
-        self.db.cf(ReceiptAccuTreeSlicesCf).put_with_batch(
-            &mut batch,
-            &commit_state_version,
-            &commit_bundle.receipt_tree_slice,
-        );
-
-        self.db.commit_batch(batch);
+        db_context
+            .cf(TransactionAccuTreeSlicesCf)
+            .put(&commit_state_version, &commit_bundle.transaction_tree_slice);
+        db_context
+            .cf(ReceiptAccuTreeSlicesCf)
+            .put(&commit_state_version, &commit_bundle.receipt_tree_slice);
     }
 }
 
 impl ExecutedGenesisScenarioStore for RocksDBStore {
     fn put_scenario(&mut self, number: ScenarioSequenceNumber, scenario: ExecutedGenesisScenario) {
-        self.db
+        self.open_db_context()
             .cf(ExecutedGenesisScenariosCf)
             .put(&number, &scenario);
     }
 
     fn list_all_scenarios(&self) -> Vec<(ScenarioSequenceNumber, ExecutedGenesisScenario)> {
-        self.db
+        self.open_db_context()
             .cf(ExecutedGenesisScenariosCf)
             .iterate(Direction::Forward)
             .collect()
@@ -705,23 +672,19 @@ pub struct RocksDBCommittedTransactionBundleIterator<'db> {
 }
 
 impl<'db> RocksDBCommittedTransactionBundleIterator<'db> {
-    fn new(from_state_version: StateVersion, store: &'db RocksDBStore) -> Self {
+    fn new(from_state_version: StateVersion, db_context: TypedDbContext<'db>) -> Self {
         Self {
             state_version: from_state_version,
-            txns_iter: store
-                .db
+            txns_iter: db_context
                 .cf(RawLedgerTransactionsCf)
                 .iterate_from(&from_state_version, Direction::Forward),
-            ledger_receipts_iter: store
-                .db
+            ledger_receipts_iter: db_context
                 .cf(TransactionReceiptsCf)
                 .iterate_from(&from_state_version, Direction::Forward),
-            local_executions_iter: store
-                .db
+            local_executions_iter: db_context
                 .cf(LocalTransactionExecutionsCf)
                 .iterate_from(&from_state_version, Direction::Forward),
-            identifiers_iter: store
-                .db
+            identifiers_iter: db_context
                 .cf(CommittedTransactionIdentifiersCf)
                 .iterate_from(&from_state_version, Direction::Forward),
         }
@@ -789,7 +752,7 @@ impl IterableTransactionStore for RocksDBStore {
 
         Box::new(RocksDBCommittedTransactionBundleIterator::new(
             from_state_version,
-            self,
+            self.open_db_context(),
         ))
     }
 }
@@ -799,14 +762,16 @@ impl QueryableTransactionStore for RocksDBStore {
         &self,
         state_version: StateVersion,
     ) -> Option<RawLedgerTransaction> {
-        self.db.cf(RawLedgerTransactionsCf).get(&state_version)
+        self.open_db_context()
+            .cf(RawLedgerTransactionsCf)
+            .get(&state_version)
     }
 
     fn get_committed_transaction_identifiers(
         &self,
         state_version: StateVersion,
     ) -> Option<CommittedTransactionIdentifiers> {
-        self.db
+        self.open_db_context()
             .cf(CommittedTransactionIdentifiersCf)
             .get(&state_version)
     }
@@ -815,14 +780,18 @@ impl QueryableTransactionStore for RocksDBStore {
         &self,
         state_version: StateVersion,
     ) -> Option<LedgerTransactionReceipt> {
-        self.db.cf(TransactionReceiptsCf).get(&state_version)
+        self.open_db_context()
+            .cf(TransactionReceiptsCf)
+            .get(&state_version)
     }
 
     fn get_committed_local_transaction_execution(
         &self,
         state_version: StateVersion,
     ) -> Option<LocalTransactionExecution> {
-        self.db.cf(LocalTransactionExecutionsCf).get(&state_version)
+        self.open_db_context()
+            .cf(LocalTransactionExecutionsCf)
+            .get(&state_version)
     }
 
     fn get_committed_local_transaction_receipt(
@@ -855,7 +824,7 @@ impl TransactionIndex<&IntentHash> for RocksDBStore {
         &self,
         intent_hash: &IntentHash,
     ) -> Option<StateVersion> {
-        self.db.cf(IntentHashesCf).get(intent_hash)
+        self.open_db_context().cf(IntentHashesCf).get(intent_hash)
     }
 }
 
@@ -864,7 +833,7 @@ impl TransactionIndex<&NotarizedTransactionHash> for RocksDBStore {
         &self,
         notarized_transaction_hash: &NotarizedTransactionHash,
     ) -> Option<StateVersion> {
-        self.db
+        self.open_db_context()
             .cf(NotarizedTransactionHashesCf)
             .get(notarized_transaction_hash)
     }
@@ -875,7 +844,7 @@ impl TransactionIndex<&LedgerTransactionHash> for RocksDBStore {
         &self,
         ledger_transaction_hash: &LedgerTransactionHash,
     ) -> Option<StateVersion> {
-        self.db
+        self.open_db_context()
             .cf(LedgerTransactionHashesCf)
             .get(ledger_transaction_hash)
     }
@@ -885,7 +854,9 @@ impl TransactionIdentifierLoader for RocksDBStore {
     fn get_top_transaction_identifiers(
         &self,
     ) -> Option<(StateVersion, CommittedTransactionIdentifiers)> {
-        self.db.cf(CommittedTransactionIdentifiersCf).get_last()
+        self.open_db_context()
+            .cf(CommittedTransactionIdentifiersCf)
+            .get_last()
     }
 }
 
@@ -895,7 +866,7 @@ impl IterableProofStore for RocksDBStore {
         from_state_version: StateVersion,
     ) -> Box<dyn Iterator<Item = LedgerProof> + '_> {
         Box::new(
-            self.db
+            self.open_db_context()
                 .cf(LedgerProofsCf)
                 .iterate_from(&from_state_version, Direction::Forward)
                 .map(|(_, proof)| proof),
@@ -905,7 +876,7 @@ impl IterableProofStore for RocksDBStore {
 
 impl QueryableProofStore for RocksDBStore {
     fn max_state_version(&self) -> StateVersion {
-        self.db
+        self.open_db_context()
             .cf(RawLedgerTransactionsCf)
             .get_last_key()
             .unwrap_or(StateVersion::pre_genesis())
@@ -922,11 +893,11 @@ impl QueryableProofStore for RocksDBStore {
         let mut txns = Vec::new();
 
         let mut proofs_iter = self
-            .db
+            .open_db_context()
             .cf(LedgerProofsCf)
             .iterate_from(&start_state_version_inclusive, Direction::Forward);
         let mut txns_iter = self
-            .db
+            .open_db_context()
             .cf(RawLedgerTransactionsCf)
             .iterate_from(&start_state_version_inclusive, Direction::Forward);
 
@@ -1007,23 +978,27 @@ impl QueryableProofStore for RocksDBStore {
     }
 
     fn get_first_proof(&self) -> Option<LedgerProof> {
-        self.db.cf(LedgerProofsCf).get_first_value()
+        self.open_db_context().cf(LedgerProofsCf).get_first_value()
     }
 
     fn get_post_genesis_epoch_proof(&self) -> Option<LedgerProof> {
-        self.db.cf(EpochLedgerProofsCf).get_first_value()
+        self.open_db_context()
+            .cf(EpochLedgerProofsCf)
+            .get_first_value()
     }
 
     fn get_epoch_proof(&self, epoch: Epoch) -> Option<LedgerProof> {
-        self.db.cf(EpochLedgerProofsCf).get(&epoch)
+        self.open_db_context().cf(EpochLedgerProofsCf).get(&epoch)
     }
 
     fn get_last_proof(&self) -> Option<LedgerProof> {
-        self.db.cf(LedgerProofsCf).get_last_value()
+        self.open_db_context().cf(LedgerProofsCf).get_last_value()
     }
 
     fn get_last_epoch_proof(&self) -> Option<LedgerProof> {
-        self.db.cf(EpochLedgerProofsCf).get_last_value()
+        self.open_db_context()
+            .cf(EpochLedgerProofsCf)
+            .get_last_value()
     }
 }
 
@@ -1033,7 +1008,7 @@ impl SubstateDatabase for RocksDBStore {
         partition_key: &DbPartitionKey,
         sort_key: &DbSortKey,
     ) -> Option<DbSubstateValue> {
-        self.db
+        self.open_db_context()
             .cf(SubstatesCf)
             .get(&(partition_key.clone(), sort_key.clone()))
     }
@@ -1044,7 +1019,7 @@ impl SubstateDatabase for RocksDBStore {
     ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
         let partition_key = partition_key.clone();
         Box::new(
-            self.db
+            self.open_db_context()
                 .cf(SubstatesCf)
                 .iterate_from(
                     &(partition_key.clone(), DbSortKey(vec![])),
@@ -1061,7 +1036,7 @@ impl SubstateNodeAncestryStore for RocksDBStore {
         &self,
         node_ids: impl IntoIterator<Item = &'a NodeId>,
     ) -> Vec<Option<SubstateNodeAncestryRecord>> {
-        self.db
+        self.open_db_context()
             .cf(SubstateNodeAncestryRecordsCf)
             .get_many(Vec::from_iter(node_ids))
     }
@@ -1069,7 +1044,7 @@ impl SubstateNodeAncestryStore for RocksDBStore {
 
 impl ReadableTreeStore for RocksDBStore {
     fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
-        self.db.cf(StateHashTreeNodesCf).get(key)
+        self.open_db_context().cf(StateHashTreeNodesCf).get(key)
     }
 }
 
@@ -1078,7 +1053,7 @@ impl ReadableAccuTreeStore<StateVersion, TransactionTreeHash> for RocksDBStore {
         &self,
         state_version: &StateVersion,
     ) -> Option<TreeSlice<TransactionTreeHash>> {
-        self.db
+        self.open_db_context()
             .cf(TransactionAccuTreeSlicesCf)
             .get(state_version)
             .map(|slice| slice.0)
@@ -1087,7 +1062,7 @@ impl ReadableAccuTreeStore<StateVersion, TransactionTreeHash> for RocksDBStore {
 
 impl ReadableAccuTreeStore<StateVersion, ReceiptTreeHash> for RocksDBStore {
     fn get_tree_slice(&self, state_version: &StateVersion) -> Option<TreeSlice<ReceiptTreeHash>> {
-        self.db
+        self.open_db_context()
             .cf(ReceiptAccuTreeSlicesCf)
             .get(state_version)
             .map(|slice| slice.0)
@@ -1096,13 +1071,13 @@ impl ReadableAccuTreeStore<StateVersion, ReceiptTreeHash> for RocksDBStore {
 
 impl WriteableVertexStore for RocksDBStore {
     fn save_vertex_store(&mut self, blob: VertexStoreBlob) {
-        self.db.cf(VertexStoreCf).put(&(), &blob)
+        self.open_db_context().cf(VertexStoreCf).put(&(), &blob)
     }
 }
 
 impl RecoverableVertexStore for RocksDBStore {
     fn get_vertex_store(&self) -> Option<VertexStoreBlob> {
-        self.db.cf(VertexStoreCf).get(&())
+        self.open_db_context().cf(VertexStoreCf).get(&())
     }
 }
 
@@ -1138,7 +1113,7 @@ fn decode_from_rocksdb_bytes(buffer: &[u8]) -> DbSubstateKey {
 impl RocksDBStore {
     fn batch_update_account_change_index_from_receipt(
         &self,
-        batch: &mut WriteBatch,
+        db_context: &TypedDbContext,
         state_version: StateVersion,
         execution: &LocalTransactionExecution,
     ) {
@@ -1148,28 +1123,25 @@ impl RocksDBStore {
             .keys()
             .filter(|address| address.is_account())
         {
-            self.db.cf(AccountChangeStateVersionsCf).put_with_batch(
-                batch,
-                &(*address, state_version),
-                &(),
-            );
+            db_context
+                .cf(AccountChangeStateVersionsCf)
+                .put(&(*address, state_version), &());
         }
     }
 
     fn batch_update_account_change_index_from_committed_transaction(
         &self,
-        batch: &mut WriteBatch,
+        db_context: &TypedDbContext,
         state_version: StateVersion,
         transaction_bundle: &CommittedTransactionBundle,
     ) {
         self.batch_update_account_change_index_from_receipt(
-            batch,
+            db_context,
             state_version,
             &transaction_bundle.receipt.local_execution,
         );
 
-        self.db.cf(ExtensionsDataCf).put_with_batch(
-            batch,
+        db_context.cf(ExtensionsDataCf).put(
             &ExtensionsDataKey::AccountChangeIndexLastProcessedStateVersion,
             &state_version.to_bytes().to_vec(),
         );
@@ -1180,12 +1152,10 @@ impl RocksDBStore {
         start_state_version_inclusive: StateVersion,
         limit: u64,
     ) -> StateVersion {
-        let mut executions_iter = self
-            .db
+        let db_context = self.open_db_context();
+        let mut executions_iter = db_context
             .cf(LocalTransactionExecutionsCf)
             .iterate_from(&start_state_version_inclusive, Direction::Forward);
-
-        let mut batch = WriteBatch::default();
 
         let mut last_state_version = start_state_version_inclusive;
         let mut index = 0;
@@ -1200,7 +1170,7 @@ impl RocksDBStore {
                     }
                     last_state_version = expected_state_version;
                     self.batch_update_account_change_index_from_receipt(
-                        &mut batch,
+                        &db_context,
                         last_state_version,
                         &next_execution,
                     );
@@ -1212,12 +1182,10 @@ impl RocksDBStore {
             }
         }
 
-        self.db.cf(ExtensionsDataCf).put_with_batch(
-            &mut batch,
+        db_context.cf(ExtensionsDataCf).put(
             &ExtensionsDataKey::AccountChangeIndexLastProcessedStateVersion,
             &last_state_version.to_bytes().to_vec(),
         );
-        self.db.commit_batch(batch);
 
         last_state_version
     }
@@ -1225,7 +1193,7 @@ impl RocksDBStore {
 
 impl AccountChangeIndexExtension for RocksDBStore {
     fn account_change_index_last_processed_state_version(&self) -> StateVersion {
-        self.db
+        self.open_db_context()
             .cf(ExtensionsDataCf)
             .get(&ExtensionsDataKey::AccountChangeIndexLastProcessedStateVersion)
             .map(StateVersion::from_bytes)
@@ -1268,7 +1236,7 @@ impl IterableAccountChangeIndex for RocksDBStore {
         from_state_version: StateVersion,
     ) -> Box<dyn Iterator<Item = StateVersion> + '_> {
         Box::new(
-            self.db
+            self.open_db_context()
                 .cf(AccountChangeStateVersionsCf)
                 .iterate_from(&(account, from_state_version), Direction::Forward)
                 .take_while(move |((next_account, _), _)| next_account == &account)
