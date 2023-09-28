@@ -384,7 +384,17 @@ impl fmt::Display for ExtensionsDataKey {
 }
 
 pub struct RocksDBStore {
+    /// Database feature flags.
+    ///
+    /// These were passed during construction, validated and persisted. They are made available by
+    /// this field as a cache.
     config: DatabaseFlags,
+
+    /// Underlying RocksDB instance.
+    ///
+    /// **Note on usage:**
+    /// A typical use-case should not need to access this field directly, but instead use a
+    /// type-safe, write-buffering [`RocksDBStore::open_db_context()`].
     db: DB,
 }
 
@@ -404,10 +414,14 @@ impl RocksDBStore {
 
         let db = DB::open_cf_descriptors(&db_opts, root.as_path(), column_families).unwrap();
 
-        let mut rocks_db_store = RocksDBStore { config, db };
+        let mut rocks_db_store = RocksDBStore {
+            config: config.clone(),
+            db,
+        };
 
         let current_database_config = rocks_db_store.read_flags_state();
-        rocks_db_store.config.validate(&current_database_config)?;
+        config.validate(&current_database_config)?;
+        rocks_db_store.write_flags(&config);
 
         if rocks_db_store.config.enable_account_change_index {
             rocks_db_store.catchup_account_change_index();
@@ -416,6 +430,7 @@ impl RocksDBStore {
         Ok(rocks_db_store)
     }
 
+    /// Starts a read/batch-write interaction with the DB through per-CF type-safe APIs.
     fn open_db_context(&self) -> TypedDbContext {
         TypedDbContext::new(&self.db)
     }
