@@ -14,3 +14,4 @@
 
 # Except PNG files which shouldn't be treated as text
 *.png -text
+*.bin -text
