@@ -82,6 +82,7 @@ pub struct LedgerMetrics {
     pub state_version: IntGauge,
     pub transactions_committed: IntCounter,
     pub consensus_rounds_committed: IntCounterVec,
+    pub self_consensus_rounds_committed: IntCounterVec, // a subset of the above, for convenience
     pub last_update_epoch_second: Gauge,
     pub last_update_proposer_epoch_second: Gauge,
     pub recent_self_proposal_miss_count: SelfProposalMissTracker,
@@ -125,6 +126,14 @@ impl LedgerMetrics {
                     "Count of rounds processed by consensus that reached the ledger commit.",
                 ),
                 &["leader_component_address", "round_resolution"],
+            )
+            .registered_at(registry),
+            self_consensus_rounds_committed: IntCounterVec::new(
+                opts(
+                    "ledger_self_consensus_rounds_committed",
+                    "Count of rounds lead by this validator that reached the ledger commit.",
+                ),
+                &["round_resolution"],
             )
             .registered_at(registry),
             last_update_epoch_second: Gauge::with_opts(opts(
@@ -178,6 +187,7 @@ impl LedgerMetrics {
         self.transactions_committed
             .inc_by(added_transactions as u64);
         for (validator_address, counter) in validator_proposal_counters {
+            let is_self = self_validator_address == Some(validator_address);
             let encoded_validator_address = self
                 .address_encoder
                 .encode(validator_address.as_ref())
@@ -194,8 +204,13 @@ impl LedgerMetrics {
                 self.consensus_rounds_committed
                     .with_two_labels(&encoded_validator_address, round_resolution)
                     .inc_by(count as u64);
+                if is_self {
+                    self.self_consensus_rounds_committed
+                        .with_label(round_resolution)
+                        .inc_by(count as u64);
+                }
             }
-            if self_validator_address == Some(validator_address) {
+            if is_self {
                 self.recent_self_proposal_miss_count.track(&counter);
             }
         }
