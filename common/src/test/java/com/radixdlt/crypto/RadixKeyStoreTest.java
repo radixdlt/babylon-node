@@ -91,12 +91,16 @@ import java.security.spec.ECGenParameterSpec;
 import java.util.stream.IntStream;
 import javax.crypto.SecretKey;
 import org.bouncycastle.jcajce.PKCS12Key;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public class RadixKeyStoreTest {
   private static final String TEST_SECRET = "secret";
   private static final String TEST_KS_FILENAME = "testfile.ks";
   private static final char[] DEFAULT_TEST_PASSWORD = "radix".toCharArray();
+
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   /** Test method for {@link RadixKeyStore#fromFile(java.io.File, char[], boolean)}. */
   @Test
@@ -188,14 +192,9 @@ public class RadixKeyStoreTest {
 
     try (RadixKeyStore ks = RadixKeyStore.fromFile(file, storePassword, true)) {
       assertTrue(file.exists());
-
       ks.writeKeyPair(keyPairName, originalKeypair);
     }
-
-    final File renamedFile = new File(TEST_KS_FILENAME);
-    file.renameTo(renamedFile);
-
-    try (RadixKeyStore ks = RadixKeyStore.fromFile(renamedFile, storePassword, false)) {
+    try (RadixKeyStore ks = RadixKeyStore.fromFile(file, storePassword, false)) {
       var loadedKeypair = ks.readKeyPair(keyPairName, false);
       assertThat(loadedKeypair).isEqualTo(originalKeypair);
     }
@@ -327,8 +326,8 @@ public class RadixKeyStoreTest {
     }
   }
 
-  private static File newFile(String filename) throws IOException {
-    File file = new File(filename);
+  private File newFile(String filename) throws IOException {
+    File file = folder.newFile(filename);
     if (!Files.deleteIfExists(file.toPath())) {
       // In this case we are fine if "file" does not exist and wasn't deleted.
     }

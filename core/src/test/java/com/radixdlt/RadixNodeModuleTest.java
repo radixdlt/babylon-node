@@ -77,8 +77,8 @@ import com.radixdlt.genesis.RawGenesisDataWithHash;
 import com.radixdlt.networks.Network;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.File;
+import java.io.IOException;
 import org.apache.commons.cli.ParseException;
-import org.assertj.core.util.Files;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -152,12 +152,16 @@ public class RadixNodeModuleTest {
       throw new RuntimeException(e);
     }
     doReturn("127.0.0.1").when(properties).get(eq("host.ip"), anyString());
-    var keyStore = new File("nonesuch.ks");
-    Files.delete(keyStore);
-    generateKeystore(keyStore);
-
-    doReturn("nonesuch.ks").when(properties).get(eq("node.key.path"), anyString());
-    return properties;
+    try {
+      final var keyStoreFile = new File(folder.newFolder(), "test-keystore.ks");
+      generateKeystore(keyStoreFile);
+      doReturn(keyStoreFile.getAbsolutePath())
+          .when(properties)
+          .get(eq("node.key.path"), anyString());
+      return properties;
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private void generateKeystore(File keyStore) {
@@ -165,7 +169,7 @@ public class RadixNodeModuleTest {
       RadixKeyStore.fromFile(keyStore, "".toCharArray(), true)
           .writeKeyPair("node", ECKeyPair.generateNew());
     } catch (Exception e) {
-      throw new IllegalStateException("Unable to create keystore");
+      throw new IllegalStateException("Unable to create keystore", e);
     }
   }
 }
