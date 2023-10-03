@@ -68,13 +68,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeToken;
-import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.bootstrap.RadixNodeBootstrapper;
-import com.radixdlt.bootstrap.RadixNodeBootstrapperModule;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.RadixKeyStore;
@@ -209,15 +207,8 @@ public final class RadixShell {
         properties.set("network.genesis_data", genesisDataBase64);
       }
 
-      final var bootstrapperInjector =
-          Guice.createInjector(new RadixNodeBootstrapperModule(properties));
-      final var unstartedRadixNode =
-          bootstrapperInjector
-              .getInstance(RadixNodeBootstrapper.class)
-              .bootstrapRadixNode()
-              .radixNodeFuture()
-              .get();
-      final var node = new Node(unstartedRadixNode.instantiateRadixNodeModule());
+      final var radixNode = RadixNodeBootstrapper.runNewNode(properties);
+      final var node = new Node(radixNode.injector());
 
       moduleRunnersBuilder.build().forEach(node::startRunner);
 
