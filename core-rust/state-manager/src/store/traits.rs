@@ -567,6 +567,47 @@ pub mod extensions {
     }
 }
 
+pub mod measurement {
+    use super::*;
+
+    /// A database capable of returning some metrics describing itself.
+    #[enum_dispatch]
+    pub trait MeasurableDatabase {
+        /// Gets approximate data volume statistics per table/map/cf (i.e. a category of persisted
+        /// items, however it is called by the specific database implementation).
+        fn get_data_volume_statistics(&self) -> Vec<CategoryDbVolumeStatistic>;
+    }
+
+    /// An approximate data volume statistic of a given category of persisted items.
+    pub struct CategoryDbVolumeStatistic {
+        /// Name of the table/map/cf.
+        pub category_name: String,
+        /// An estimate of the entry count.
+        pub entry_count: u64,
+        /// An estimate of the persisted total size of this category, in bytes.
+        /// This should be measured after applying any database overheads (e.g. uncompacted levels)
+        /// and/or optimizations (e.g. compression).
+        pub size_bytes: usize,
+    }
+
+    impl CategoryDbVolumeStatistic {
+        /// Creates a zero statistic of the given category of items.
+        pub fn zero(category_name: String) -> Self {
+            Self {
+                category_name,
+                entry_count: 0,
+                size_bytes: 0,
+            }
+        }
+
+        /// Accumulates the given count and size into this instance.
+        pub fn add(&mut self, entry_count: u64, size_bytes: usize) {
+            self.entry_count += entry_count;
+            self.size_bytes += size_bytes;
+        }
+    }
+}
+
 pub struct TransactionAndProofIterator<'a> {
     committed_transaction_bundle:
         Peekable<Box<dyn Iterator<Item = CommittedTransactionBundle> + 'a>>,

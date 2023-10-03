@@ -89,6 +89,7 @@ use node_common::locks::{LockFactory, Mutex, RwLock};
 use prometheus::Registry;
 use tracing::{info, warn};
 
+use crate::store::traits::measurement::MeasurableDatabase;
 use crate::store::traits::scenario::{
     DescribedAddress, ExecutedGenesisScenario, ExecutedGenesisScenarioStore,
     ExecutedScenarioTransaction, ScenarioSequenceNumber,
@@ -120,6 +121,7 @@ pub struct StateComputer<S> {
     ledger_metrics: LedgerMetrics,
     committed_transactions_metrics: CommittedTransactionsMetrics,
     vertex_prepare_metrics: VertexPrepareMetrics,
+    raw_db_metrics: RawDbMetrics,
     vertex_limits_config: VertexLimitsConfig,
     logging_config: StateComputerLoggingConfig,
 }
@@ -160,6 +162,7 @@ impl<S: QueryableProofStore> StateComputer<S> {
             ledger_transaction_validator: LedgerTransactionValidator::new(network),
             logging_config: logging_config.state_manager_config,
             vertex_prepare_metrics: VertexPrepareMetrics::new(metrics_registry),
+            raw_db_metrics: RawDbMetrics::new(metrics_registry),
             vertex_limits_config,
             ledger_metrics: LedgerMetrics::new(
                 network,
@@ -715,6 +718,7 @@ where
     S: ReadableStore,
     S: for<'a> TransactionIndex<&'a IntentHash>,
     S: QueryableProofStore + TransactionIdentifierLoader,
+    S: MeasurableDatabase,
 {
     /// Performs an [`execute_genesis()`] with a hardcoded genesis data meant for test purposes.
     pub fn execute_genesis_for_unit_tests(&self) -> LedgerProof {
@@ -1209,6 +1213,11 @@ where
         self.committed_transactions_metrics
             .update(transactions_metrics_data);
 
+        let read_store = self.store.read();
+        self.raw_db_metrics
+            .update(read_store.get_data_volume_statistics());
+        drop(read_store);
+
         Ok(CommitSummary {
             validator_round_counters: round_counters,
             num_user_transactions,
@@ -1250,7 +1259,6 @@ where
             },
         };
 
-        // for metrics only
         let hash_structures_diff = commit.hash_structures_diff;
         write_store.commit(CommitBundle {
             transactions: vec![committed_transaction_bundle],
