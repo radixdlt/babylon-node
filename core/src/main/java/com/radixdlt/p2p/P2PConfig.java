@@ -80,6 +80,9 @@ public interface P2PConfig {
   /** An interval at which peer discovery rounds trigger. */
   long discoveryInterval();
 
+  /** Whether to disable p2p discovery. */
+  boolean discoveryDisabled();
+
   /** Get the host to bind the p2p server to. */
   String listenAddress();
 
@@ -158,6 +161,11 @@ public interface P2PConfig {
       @Override
       public long discoveryInterval() {
         return properties.get("network.p2p.discovery_interval", 30_000);
+      }
+
+      @Override
+      public boolean discoveryDisabled() {
+        return properties.get("network.p2p.discovery_disabled", false);
       }
 
       @Override
