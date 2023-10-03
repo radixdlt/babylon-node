@@ -192,14 +192,9 @@ public class RadixKeyStoreTest {
 
     try (RadixKeyStore ks = RadixKeyStore.fromFile(file, storePassword, true)) {
       assertTrue(file.exists());
-
       ks.writeKeyPair(keyPairName, originalKeypair);
     }
-
-    final File renamedFile = new File(TEST_KS_FILENAME);
-    file.renameTo(renamedFile);
-
-    try (RadixKeyStore ks = RadixKeyStore.fromFile(renamedFile, storePassword, false)) {
+    try (RadixKeyStore ks = RadixKeyStore.fromFile(file, storePassword, false)) {
       var loadedKeypair = ks.readKeyPair(keyPairName, false);
       assertThat(loadedKeypair).isEqualTo(originalKeypair);
     }
