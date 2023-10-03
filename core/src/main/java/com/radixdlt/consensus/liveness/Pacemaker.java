@@ -463,7 +463,7 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
   }
 
   private void rescheduleTimeout(ScheduledLocalTimeout scheduledTimeout) {
-    final var timeout = timeoutCalculator.calculateTimeoutMs(scheduledTimeout.count());
+    final var timeout = timeoutCalculator.calculateTimeoutMs(scheduledTimeout.count() + 1);
     final var nextTimeout = scheduledTimeout.nextRetry(timeout);
     this.scheduledLocalTimeoutDispatcher.dispatch(nextTimeout, timeout);
   }
