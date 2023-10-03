@@ -65,143 +65,96 @@
 use radix_engine::types::*;
 use rocksdb::{ColumnFamily, Direction, IteratorMode, WriteBatch, DB};
 
-/// A higher-level database access API scoped at a specific column family.
-pub trait TypedCfApi<'db, K, V> {
-    /// Gets value by key.
-    fn get(&self, key: &K) -> Option<V>;
-
-    /// Gets multiple values by keys.
-    /// The order of returned values (or [`None`]s) matches the order of requested keys.
-    fn get_many(&self, keys: Vec<&K>) -> Vec<Option<V>> {
-        keys.into_iter().map(|key| self.get(key)).collect()
-    }
-
-    /// Gets the entry of the least key _(according to the database's ordering)_.
-    fn get_first(&self) -> Option<(K, V)> {
-        self.iterate(Direction::Forward).next()
-    }
-
-    /// Gets the least key _(according to the database's ordering)_.
-    fn get_first_key(&self) -> Option<K> {
-        self.get_first().map(|(key, _)| key)
-    }
-
-    /// Gets the value associated with the least key _(according to the database's ordering)_.
-    fn get_first_value(&self) -> Option<V> {
-        self.get_first().map(|(_, value)| value)
-    }
-
-    /// Gets the entry of the greatest key _(according to the database's ordering)_.
-    fn get_last(&self) -> Option<(K, V)> {
-        self.iterate(Direction::Reverse).next()
-    }
-
-    /// Gets the greatest key _(according to the database's ordering)_.
-    fn get_last_key(&self) -> Option<K> {
-        self.get_last().map(|(key, _)| key)
-    }
-
-    /// Gets the value associated with the greatest key _(according to the database's ordering)_.
-    fn get_last_value(&self) -> Option<V> {
-        self.get_last().map(|(_, value)| value)
-    }
-
-    /// Returns an iterator traversing over (potentially) all the entries, in the requested
-    /// direction.
-    fn iterate(&self, direction: Direction) -> Box<dyn Iterator<Item = (K, V)> + 'db>;
-
-    /// Returns an iterator starting at the given key (inclusive) and traversing over (potentially)
-    /// all the entries remaining in the requested direction.
-    fn iterate_from(
-        &self,
-        from: &K,
-        direction: Direction,
-    ) -> Box<dyn Iterator<Item = (K, V)> + 'db>;
-
-    /// Upserts the new value at the given key.
-    fn put(&self, key: &K, value: &V);
-
-    /// Adds the "upsert at key" operation to the given batch.
-    fn put_with_batch(&self, batch: &mut WriteBatch, key: &K, value: &V);
-
-    /// Adds the "delete by key" operation to the given batch.
-    fn delete_with_batch(&self, batch: &mut WriteBatch, key: &K);
-
-    /// Adds the "delete by key range" operation to the given batch.
-    /// Follows the classic convention of "from inclusive, to exclusive".
-    fn delete_range_with_batch(&self, batch: &mut WriteBatch, from_key: &K, to_key: &K);
-}
-
-/// An encoder/decoder of a typed value.
+/// A higher-level database read/write context.
 ///
-/// Design note:
-/// There are reasons why this is a service-like business object (rather than requiring something
-/// like `trait DbEncodable` to be implemented by types stored in the database):
-/// - codecs are composable (e.g. `VersioningCodec::new(SborCodec::<MyType>::new())`);
-/// - the same type may have different encodings (e.g. when used for a key vs for a value).
-pub trait DbCodec<T>: Clone {
-    /// Encodes the value into bytes.
-    fn encode(&self, value: &T) -> Vec<u8>;
-    /// Decodes the bytes into value.
-    fn decode(&self, bytes: &[u8]) -> T;
+/// Operates with the following contract:
+/// - All reads see the current DB state;
+/// - All writes are accumulated in the internal buffer and are not visible to subsequent reads (of
+///   this or other contexts), until [`TypedDbContext::flush()`] (either an explicit one, or an
+///   implicit on [`Drop`]).
+pub struct TypedDbContext<'db> {
+    db: &'db DB,
+    write_buffer: WriteBuffer,
 }
 
-/// A [`DB`]-backed implementation of [`TypedCfApi`] using configured key and value codecs.
-pub struct CodecBasedCfApi<'db, K, KC: DbCodec<K> + 'db, V, VC: DbCodec<V> + 'db> {
+impl<'db> TypedDbContext<'db> {
+    /// Creates a new context, with an empty write buffer.
+    pub fn new(db: &'db DB) -> Self {
+        Self {
+            db,
+            write_buffer: WriteBuffer::default(),
+        }
+    }
+
+    /// Returns a typed helper scoped at the given column family.
+    pub fn cf<K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, V, KC, VC>>(
+        &self,
+        cf: CF,
+    ) -> TypedCfApi<'db, '_, K, V, KC, VC, CF> {
+        TypedCfApi::new(self.db, cf, &self.write_buffer)
+    }
+
+    /// Explicitly flushes the current contents of the write buffer (so that it is visible to
+    /// subsequent reads).
+    pub fn flush(&self) {
+        let write_batch = self.write_buffer.flip();
+        self.db.write(write_batch).expect("DB write batch");
+    }
+}
+
+impl<'db> Drop for TypedDbContext<'db> {
+    fn drop(&mut self) {
+        self.flush();
+    }
+}
+
+/// A higher-level DB access API bound to its [`TypedDbContext`] and scoped at a specific column
+/// family.
+pub struct TypedCfApi<'db, 'wb, K, V, KC, VC, CF> {
     db: &'db DB,
-    cf: &'db ColumnFamily,
-    key_codec: KC,
-    value_codec: VC,
+    typed_cf: CF,
+    write_buffer: &'wb WriteBuffer,
+    cf_handle: &'db ColumnFamily, // only a cache - computable from `typed_cf`
+    key_codec: KC,                // only a cache - computable from `typed_cf`
+    value_codec: VC,              // only a cache - computable from `typed_cf`
     type_parameters_phantom: PhantomData<(K, V)>,
 }
 
-impl<'db, K, KC: DbCodec<K> + 'db, V, VC: DbCodec<V> + 'db> CodecBasedCfApi<'db, K, KC, V, VC> {
+impl<'db, 'wb, K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, V, KC, VC>>
+    TypedCfApi<'db, 'wb, K, V, KC, VC, CF>
+{
     /// Creates an instance for the given column family.
-    pub fn new(db: &'db DB, cf_name: &str, key_codec: KC, value_codec: VC) -> Self {
+    fn new(db: &'db DB, typed_cf: CF, write_buffer: &'wb WriteBuffer) -> Self {
+        // cache a few values:
+        let cf_handle = db.cf_handle(CF::NAME).unwrap();
+        let key_codec = typed_cf.key_codec();
+        let value_codec = typed_cf.value_codec();
         Self {
             db,
-            cf: db.cf_handle(cf_name).unwrap(),
+            typed_cf,
+            write_buffer,
+            cf_handle,
             key_codec,
             value_codec,
             type_parameters_phantom: PhantomData,
         }
     }
 
-    /// Returns an iterator based on the [`IteratorMode`] (which already contains encoded key).
-    ///
-    /// This is an internal shared implementation detail for different iteration flavors.
-    /// Implementation note: the key and value codecs are cloned, so that the iterator does not
-    /// have to reference this instance of [`CodecBasedCfApi`] (for borrow-checker's reasons). This
-    /// clone typically uses 0 bytes, though (in practice, iterators are stateless and have no
-    /// dependencies).
-    fn iterate_with_mode(&self, mode: IteratorMode) -> Box<dyn Iterator<Item = (K, V)> + 'db> {
-        let key_codec = self.key_codec.clone();
-        let value_codec = self.value_codec.clone();
-        Box::new(self.db.iterator_cf(self.cf, mode).map(move |result| {
-            let (key, value) = result.expect("starting iteration");
-            (
-                key_codec.decode(key.as_ref()),
-                value_codec.decode(value.as_ref()),
-            )
-        }))
-    }
-}
-
-impl<'db, K, KC: DbCodec<K> + 'db, V, VC: DbCodec<V> + 'db> TypedCfApi<'db, K, V>
-    for CodecBasedCfApi<'db, K, KC, V, VC>
-{
-    fn get(&self, key: &K) -> Option<V> {
+    /// Gets value by key.
+    pub fn get(&self, key: &K) -> Option<V> {
         self.db
-            .get_pinned_cf(self.cf, self.key_codec.encode(key).as_slice())
+            .get_pinned_cf(self.cf_handle, self.key_codec.encode(key).as_slice())
             .expect("database get by key")
             .map(|pinnable_slice| self.value_codec.decode(pinnable_slice.as_ref()))
     }
 
-    fn get_many(&self, keys: Vec<&K>) -> Vec<Option<V>> {
+    /// Gets multiple values by keys.
+    /// The order of returned values (or [`None`]s) matches the order of requested keys.
+    pub fn get_many(&self, keys: Vec<&K>) -> Vec<Option<V>> {
         self.db
             .multi_get_cf(
                 keys.into_iter()
-                    .map(|key| (self.cf, self.key_codec.encode(key))),
+                    .map(|key| (self.cf_handle, self.key_codec.encode(key))),
             )
             .into_iter()
             .map(|result| {
@@ -212,14 +165,43 @@ impl<'db, K, KC: DbCodec<K> + 'db, V, VC: DbCodec<V> + 'db> TypedCfApi<'db, K, V
             .collect()
     }
 
-    fn iterate(&self, direction: Direction) -> Box<dyn Iterator<Item = (K, V)> + 'db> {
+    /// Gets the entry of the least key _(according to the database's ordering)_.
+    pub fn get_first(&self) -> Option<(K, V)> {
+        self.iterate(Direction::Forward).next()
+    }
+
+    /// Gets the value associated with the least key _(according to the database's ordering)_.
+    pub fn get_first_value(&self) -> Option<V> {
+        self.get_first().map(|(_, value)| value)
+    }
+
+    /// Gets the entry of the greatest key _(according to the database's ordering)_.
+    pub fn get_last(&self) -> Option<(K, V)> {
+        self.iterate(Direction::Reverse).next()
+    }
+
+    /// Gets the greatest key _(according to the database's ordering)_.
+    pub fn get_last_key(&self) -> Option<K> {
+        self.get_last().map(|(key, _)| key)
+    }
+
+    /// Gets the value associated with the greatest key _(according to the database's ordering)_.
+    pub fn get_last_value(&self) -> Option<V> {
+        self.get_last().map(|(_, value)| value)
+    }
+
+    /// Returns an iterator traversing over (potentially) all the entries, in the requested
+    /// direction.
+    pub fn iterate(&self, direction: Direction) -> Box<dyn Iterator<Item = (K, V)> + 'db> {
         self.iterate_with_mode(match direction {
             Direction::Forward => IteratorMode::Start,
             Direction::Reverse => IteratorMode::End,
         })
     }
 
-    fn iterate_from(
+    /// Returns an iterator starting at the given key (inclusive) and traversing over (potentially)
+    /// all the entries remaining in the requested direction.
+    pub fn iterate_from(
         &self,
         from: &K,
         direction: Direction,
@@ -230,68 +212,152 @@ impl<'db, K, KC: DbCodec<K> + 'db, V, VC: DbCodec<V> + 'db> TypedCfApi<'db, K, V
         ))
     }
 
-    fn put(&self, key: &K, value: &V) {
-        self.db
-            .put_cf(
-                self.cf,
-                self.key_codec.encode(key),
-                self.value_codec.encode(value),
-            )
-            .expect("database put");
-    }
-
-    fn put_with_batch(&self, batch: &mut WriteBatch, key: &K, value: &V) {
-        batch.put_cf(
-            self.cf,
+    /// Upserts the new value at the given key.
+    pub fn put(&self, key: &K, value: &V) {
+        self.write_buffer.put(
+            self.cf_handle,
             self.key_codec.encode(key),
             self.value_codec.encode(value),
         );
     }
 
-    fn delete_with_batch(&self, batch: &mut WriteBatch, key: &K) {
-        batch.delete_cf(self.cf, self.key_codec.encode(key));
+    /// Deletes the entry of the given key.
+    pub fn delete(&self, key: &K) {
+        self.write_buffer
+            .delete(self.cf_handle, self.key_codec.encode(key));
     }
 
-    fn delete_range_with_batch(&self, batch: &mut WriteBatch, from_key: &K, to_key: &K) {
-        batch.delete_range_cf(
-            self.cf,
+    /// Deletes the entries from the given key range.
+    /// Follows the classic convention of "from inclusive, to exclusive".
+    pub fn delete_range(&self, from_key: &K, to_key: &K) {
+        self.write_buffer.delete_range(
+            self.cf_handle,
             self.key_codec.encode(from_key),
             self.key_codec.encode(to_key),
         );
     }
+
+    /// Returns an iterator based on the [`IteratorMode`] (which already contains encoded key).
+    ///
+    /// This is an internal shared implementation detail for different iteration flavors.
+    fn iterate_with_mode(&self, mode: IteratorMode) -> Box<dyn Iterator<Item = (K, V)> + 'db> {
+        // create dedicated instances; do not reference those cached by `&self` from returned value:
+        let key_codec = self.typed_cf.key_codec();
+        let value_codec = self.typed_cf.value_codec();
+        Box::new(
+            self.db
+                .iterator_cf(self.cf_handle, mode)
+                .map(move |result| {
+                    let (key, value) = result.expect("starting iteration");
+                    (
+                        key_codec.decode(key.as_ref()),
+                        value_codec.decode(value.as_ref()),
+                    )
+                }),
+        )
+    }
+}
+
+/// A definition of a typed column family.
+///
+/// This is the most verbose and customizable trait. Usual cases can use one of the more convenient
+/// traits defined below.
+pub trait TypedCf<K, V, KC = Box<dyn DbCodec<K>>, VC = Box<dyn DbCodec<V>>> {
+    /// Column family name (as known to the DB).
+    const NAME: &'static str;
+    /// Creates a new [`DbCodec`] for keys within this column family.
+    fn key_codec(&self) -> KC;
+    /// Creates a new [`DbCodec`] for values within this column family.
+    fn value_codec(&self) -> VC;
+}
+
+/// A convenience trait implementing [`TypedCf`] for a simple case where both [`DbCodec`]s have
+/// cheap [`Default`] implementations.
+pub trait DefaultCf<K, V> {
+    /// Column family name (as known to the DB).
+    ///
+    /// Note: this deliberately uses a different identifier than [`TypedCf::NAME`] to avoid awkward
+    /// fully-qualified syntax wherever it is used.
+    const DEFAULT_NAME: &'static str;
+    /// Key codec type.
+    type KeyCodec: Default;
+    /// Value codec type.
+    type ValueCodec: Default;
+}
+
+impl<K, V, KC: Default, VC: Default, D: DefaultCf<K, V, KeyCodec = KC, ValueCodec = VC>>
+    TypedCf<K, V, KC, VC> for D
+{
+    const NAME: &'static str = Self::DEFAULT_NAME;
+
+    fn key_codec(&self) -> KC {
+        KC::default()
+    }
+
+    fn value_codec(&self) -> VC {
+        VC::default()
+    }
+}
+
+/// A convenience trait implementing [`TypedCf`] for a popular case where a "versioned SBOR"
+/// encoding is used for values.
+pub trait VersionedCf<K, V> {
+    /// Column family name (as known to the DB).
+    ///
+    /// Note: this deliberately uses a different identifier than [`TypedCf::NAME`] to avoid awkward
+    /// fully-qualified syntax wherever it is used.
+    const VERSIONED_NAME: &'static str;
+    /// Key codec type.
+    type KeyCodec: Default;
+    /// Versioned **value** type (a codec for it is known, i.e. SBOR-based).
+    type VersionedValue;
+}
+
+impl<K, V, VV, KC, D> DefaultCf<K, V> for D
+where
+    V: Into<VV> + Clone,
+    VV: ScryptoEncode + ScryptoDecode + HasLatestVersion<Latest = V>,
+    KC: Default,
+    D: VersionedCf<K, V, KeyCodec = KC, VersionedValue = VV>,
+{
+    const DEFAULT_NAME: &'static str = Self::VERSIONED_NAME;
+    type KeyCodec = KC;
+    type ValueCodec = VersionedDbCodec<SborDbCodec<VV>, V, VV>;
+}
+
+/// An encoder/decoder of a typed value.
+///
+/// Design note:
+/// There are reasons why this is a service-like business object (rather than requiring something
+/// like `trait DbEncodable` to be implemented by types stored in the database):
+/// - codecs are composable (e.g. `VersioningCodec::new(SborCodec::<MyType>::new())`);
+/// - the same type may have different encodings (e.g. when used for a key vs for a value).
+pub trait DbCodec<T> {
+    /// Encodes the value into bytes.
+    fn encode(&self, value: &T) -> Vec<u8>;
+    /// Decodes the bytes into value.
+    fn decode(&self, bytes: &[u8]) -> T;
 }
 
 /// A reusable versioning decorator for [`DbCodec`]s.
-pub struct VersionedDbCodec<T: Into<VT> + Clone, U: DbCodec<VT>, VT: HasLatestVersion<Latest = T>> {
+pub struct VersionedDbCodec<U: DbCodec<VT>, T: Into<VT> + Clone, VT: HasLatestVersion<Latest = T>> {
     underlying: U,
     type_parameters_phantom: PhantomData<VT>,
 }
 
-impl<T: Into<VT> + Clone, U: DbCodec<VT>, VT: HasLatestVersion<Latest = T>>
-    VersionedDbCodec<T, U, VT>
+impl<U: DbCodec<VT> + Default, T: Into<VT> + Clone, VT: HasLatestVersion<Latest = T>> Default
+    for VersionedDbCodec<U, T, VT>
 {
-    /// Applies versioning for the given codec.
-    pub fn new(underlying: U) -> Self {
+    fn default() -> Self {
         Self {
-            underlying,
+            underlying: U::default(),
             type_parameters_phantom: PhantomData,
         }
     }
 }
 
-impl<T: Into<VT> + Clone, U: DbCodec<VT>, VT: HasLatestVersion<Latest = T>> Clone
-    for VersionedDbCodec<T, U, VT>
-{
-    fn clone(&self) -> Self {
-        Self {
-            underlying: self.underlying.clone(),
-            type_parameters_phantom: PhantomData,
-        }
-    }
-}
-
-impl<T: Into<VT> + Clone, U: DbCodec<VT>, VT: HasLatestVersion<Latest = T>> DbCodec<T>
-    for VersionedDbCodec<T, U, VT>
+impl<U: DbCodec<VT>, T: Into<VT> + Clone, VT: HasLatestVersion<Latest = T>> DbCodec<T>
+    for VersionedDbCodec<U, T, VT>
 {
     fn encode(&self, value: &T) -> Vec<u8> {
         let versioned = value.clone().into();
@@ -314,12 +380,6 @@ impl<T: ScryptoEncode + ScryptoDecode> Default for SborDbCodec<T> {
         Self {
             type_parameters_phantom: PhantomData,
         }
-    }
-}
-
-impl<T: ScryptoEncode + ScryptoDecode> Clone for SborDbCodec<T> {
-    fn clone(&self) -> Self {
-        Self::default()
     }
 }
 
@@ -347,20 +407,27 @@ impl DbCodec<Vec<u8>> for DirectDbCodec {
     }
 }
 
-/// A [`DbCodec]` based on a predefined set of mappings.
+/// A [`DbCodec]` capable of representing only a unit `()` (as an empty array).
+/// This is useful e.g. for "single-row" column families (which do not need keys), or "key-only"
+/// column families (which do not need values).
 #[derive(Clone, Default)]
+pub struct UnitDbCodec {}
+
+impl DbCodec<()> for UnitDbCodec {
+    fn encode(&self, _value: &()) -> Vec<u8> {
+        vec![]
+    }
+
+    fn decode(&self, bytes: &[u8]) {
+        assert_eq!(bytes.len(), 0);
+    }
+}
+
+/// A [`DbCodec]` based on a predefined set of mappings.
+#[derive(Default)]
 pub struct PredefinedDbCodec<T: core::hash::Hash + Eq + Clone> {
     encoding: NonIterMap<T, Vec<u8>>,
     decoding: NonIterMap<Vec<u8>, T>,
-}
-
-impl PredefinedDbCodec<()> {
-    /// Creates an instance capable of representing only a unit `()` (as an empty array).
-    /// This is useful e.g. for "single-row" column families (which do not need keys), or "key-only"
-    /// column families (which do not need values).
-    pub fn for_unit() -> Self {
-        Self::new(vec![((), vec![])])
-    }
 }
 
 impl<T: core::hash::Hash + Eq + Clone> PredefinedDbCodec<T> {
@@ -400,5 +467,29 @@ impl<T: core::hash::Hash + Eq + Clone> DbCodec<T> for PredefinedDbCodec<T> {
             .get(bytes)
             .expect("encoding outside mappings")
             .clone()
+    }
+}
+
+/// An internal wrapper for [`WriteBatch`], allowing to use it with interior mutability.
+#[derive(Default)]
+struct WriteBuffer {
+    write_batch: RefCell<WriteBatch>,
+}
+
+impl WriteBuffer {
+    pub fn put(&self, cf: &ColumnFamily, key: Vec<u8>, value: Vec<u8>) {
+        self.write_batch.borrow_mut().put_cf(cf, key, value);
+    }
+
+    pub fn delete(&self, cf: &ColumnFamily, key: Vec<u8>) {
+        self.write_batch.borrow_mut().delete_cf(cf, key);
+    }
+
+    pub fn delete_range(&self, cf: &ColumnFamily, from: Vec<u8>, to: Vec<u8>) {
+        self.write_batch.borrow_mut().delete_range_cf(cf, from, to);
+    }
+
+    pub fn flip(&self) -> WriteBatch {
+        self.write_batch.replace(WriteBatch::default())
     }
 }

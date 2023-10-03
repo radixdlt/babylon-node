@@ -117,7 +117,6 @@ public final class Keys {
       String keyStorePath, String keyName, String keyStorePasswordEnv, boolean create)
       throws IOException, CryptoException {
     var keyStorePassword = readPassword(keyStorePasswordEnv);
-
     try (var ks = RadixKeyStore.fromFile(new File(keyStorePath), keyStorePassword, create)) {
       return ks.readKeyPair(keyName, create);
     } finally {
@@ -127,6 +126,6 @@ public final class Keys {
 
   private static char[] readPassword(String envVar) {
     var envValue = System.getenv(envVar);
-    return envValue == null ? null : envValue.toCharArray();
+    return envValue == null ? new char[] {} : envValue.toCharArray();
   }
 }

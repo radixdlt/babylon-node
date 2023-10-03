@@ -300,8 +300,8 @@ subprojects {
                 exclude 'com.google.guava:guava'
             }
 
-            dependency 'org.bouncycastle:bcprov-jdk15on:1.68'
-            dependency 'org.bouncycastle:bcpkix-jdk15on:1.68'
+            dependency 'org.bouncycastle:bcprov-jdk15on:1.70'
+            dependency 'org.bouncycastle:bcpkix-jdk15on:1.70'
 
             dependency 'org.json:json:20180813'
 
