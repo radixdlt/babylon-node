@@ -68,11 +68,13 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeToken;
+import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
+import com.google.inject.util.Modules;
+import com.radixdlt.RadixNodeModule;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.bootstrap.RadixNodeBootstrapper;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.RadixKeyStore;
@@ -82,6 +84,8 @@ import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxEnvironment;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
 import com.radixdlt.genesis.GenesisData;
+import com.radixdlt.genesis.GenesisFromPropertiesLoader;
+import com.radixdlt.genesis.RawGenesisDataWithHash;
 import com.radixdlt.messaging.core.Message;
 import com.radixdlt.messaging.core.MessageCentral;
 import com.radixdlt.messaging.core.MessageFromPeer;
@@ -206,9 +210,15 @@ public final class RadixShell {
         final var genesisDataBase64 = Base64.getEncoder().encodeToString(compressedGenesisData);
         properties.set("network.genesis_data", genesisDataBase64);
       }
-
-      final var radixNode = RadixNodeBootstrapper.runNewNode(properties);
-      final var node = new Node(radixNode.injector());
+      final var genesisData =
+          new GenesisFromPropertiesLoader(properties).loadGenesisDataFromProperties().orElseThrow();
+      final var injector =
+          Guice.createInjector(
+              Modules.requireAtInjectOnConstructorsModule(),
+              Modules.disableCircularProxiesModule(),
+              new RadixNodeModule(
+                  properties, network, RawGenesisDataWithHash.fromGenesisDataBytes(genesisData)));
+      final var node = new Node(injector);
 
       moduleRunnersBuilder.build().forEach(node::startRunner);
 
