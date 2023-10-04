@@ -64,19 +64,33 @@
 
 package com.radixdlt.consensus.bft;
 
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import java.util.Optional;
 
 public record SelfValidatorInfo(
     ECDSASecp256k1PublicKey key, Optional<BFTValidatorId> bftValidatorId) {
-  @Override
-  public String toString() {
+  public BFTValidatorId validatorIdOrFakeForTesting() {
+    return bftValidatorId.orElseGet(() -> BFTValidatorId.withKeyAndFakeDeterministicAddress(key));
+  }
+
+  public String toDetailedString(Addressing addressing) {
+    return addressing.encodeNodeAddress(key)
+        + bftValidatorId
+            .map(
+                validatorId ->
+                    String.format(" (%s)", addressing.encode(validatorId.getValidatorAddress())))
+            .orElse("");
+  }
+
+  public String toShortenedHexString() {
     return bftValidatorId
         .map(BFTValidatorId::toString)
         .orElseGet(() -> key.toHex().substring(0, 10));
   }
 
-  public BFTValidatorId validatorIdOrFakeForTesting() {
-    return bftValidatorId.orElseGet(() -> BFTValidatorId.withKeyAndFakeDeterministicAddress(key));
+  @Override
+  public String toString() {
+    return toShortenedHexString();
   }
 }
