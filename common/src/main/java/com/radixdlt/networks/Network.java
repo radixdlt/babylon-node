@@ -77,8 +77,14 @@ public enum Network {
   /// Public Facing Permanent Networks (0x00 - 0x09)
   // - mainnet
   // - stokenet
-  // TODO(post-babylon): add a fixed genesis from resources for mainnet
-  MAINNET(1 /* 0x01 */, "mainnet", "rdx"),
+  MAINNET(
+      1 /* 0x01 */,
+      "mainnet",
+      "rdx",
+      FixedNetworkGenesis.resource(
+          HashCode.fromBytes(
+              Hex.decode("4e7dbd2079a4e0c608a4437a0b51ca383c7f3081038161fa8b1b55d9686797e9")),
+          "genesis/mainnet/mainnet_genesis.bin")),
   STOKENET(
       2 /* 0x02 */,
       "stokenet",
