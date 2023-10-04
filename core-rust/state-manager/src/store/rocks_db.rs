@@ -83,6 +83,7 @@ use transaction::model::*;
 use radix_engine_store_interface::interface::*;
 
 use std::path::PathBuf;
+use itertools::Itertools;
 
 use tracing::{error, info};
 
@@ -1042,6 +1043,22 @@ impl SubstateDatabase for RocksDBStore {
                 )
                 .take_while(move |((next_key, _), _)| next_key == &partition_key)
                 .map(|((_, sort_key), value)| (sort_key, value)),
+        )
+    }
+}
+
+impl ListableSubstateDatabase for RocksDBStore {
+    fn list_partition_keys(&self) -> Box<dyn Iterator<Item=DbPartitionKey> + '_> {
+        Box::new(
+            self.open_db_context()
+                .cf(SubstatesCf)
+                .iterate(Direction::Forward)
+                .map(|(iter_key_bytes, _)| {
+                    iter_key_bytes.0
+                })
+                // Rocksdb iterator returns sorted entries, so ok to to eliminate
+                // duplicates with dedup()
+                .dedup(),
         )
     }
 }
