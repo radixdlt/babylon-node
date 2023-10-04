@@ -63,7 +63,7 @@
  */
 
 use radix_engine::types::GlobalAddress;
-use radix_engine_common::types::EntityType;
+use radix_engine::types::EntityType;
 
 pub trait IsAccountExt {
     fn is_account(&self) -> bool;
