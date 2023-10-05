@@ -85,7 +85,7 @@ pub struct LedgerMetrics {
     pub self_consensus_rounds_committed: IntCounterVec, // a subset of the above, for convenience
     pub last_update_epoch_second: Gauge,
     pub last_update_proposer_epoch_second: Gauge,
-    pub self_proposals_tracker: ValidatorProposalsTracker,
+    pub recent_self_proposal_miss_count: ValidatorProposalMissTracker,
     pub recent_proposer_timestamp_progress_rate: ProposerTimestampProgressRateTracker,
 }
 
@@ -108,37 +108,18 @@ impl LedgerMetrics {
         registry: &Registry,
         current_ledger_proposer_timestamp_ms: i64,
     ) -> Self {
-        let self_proposals_tracker = ValidatorProposalsTracker::new(
-            IntCounter::with_opts(opts(
-                "ledger_self_proposals_succeeded",
-                "A number of proposals successfully completed by this validator since node boot (including historical ledger that has been synced)",
-            ))
-            .registered_at(registry),
-            IntCounter::with_opts(opts(
-                "ledger_self_proposals_missed",
-                "A number of proposals missed by this validator since node boot (including historical ledger that has been synced)",
-            ))
-            .registered_at(registry),
-            IntGauge::with_opts(opts(
-                "ledger_recent_self_proposal_miss_count",
-                &format!("A number of proposals missed by this validator during its {} most recent rounds.", PROPOSAL_HISTORY_LEN),
-            ))
-            .registered_at(registry),
-            &lock_factory.named("self_proposals_tracker"),
-        );
-
         let instance = Self {
             address_encoder: AddressBech32Encoder::new(network),
             state_version: IntGauge::with_opts(opts(
                 "ledger_state_version",
                 "Version of the ledger state.",
             ))
-            .registered_at(registry),
+                .registered_at(registry),
             transactions_committed: IntCounter::with_opts(opts(
                 "ledger_transactions_committed_total",
                 "Count of transactions committed to the ledger.",
             ))
-            .registered_at(registry),
+                .registered_at(registry),
             consensus_rounds_committed: IntCounterVec::new(
                 opts(
                     "ledger_consensus_rounds_committed",
@@ -146,7 +127,7 @@ impl LedgerMetrics {
                 ),
                 &["leader_component_address", "round_resolution"],
             )
-            .registered_at(registry),
+                .registered_at(registry),
             self_consensus_rounds_committed: IntCounterVec::new(
                 opts(
                     "ledger_self_consensus_rounds_committed",
@@ -154,18 +135,25 @@ impl LedgerMetrics {
                 ),
                 &["round_resolution"],
             )
-            .registered_at(registry),
+                .registered_at(registry),
             last_update_epoch_second: Gauge::with_opts(opts(
                 "ledger_last_update_epoch_second",
                 "Last timestamp at which the ledger was updated.",
             ))
-            .registered_at(registry),
+                .registered_at(registry),
             last_update_proposer_epoch_second: Gauge::with_opts(opts(
                 "ledger_last_update_proposer_epoch_second",
                 "Proposer timestamp from the last proof written to the ledger.",
             ))
-            .registered_at(registry),
-            self_proposals_tracker,
+                .registered_at(registry),
+            recent_self_proposal_miss_count: ValidatorProposalMissTracker::new(
+                opts(
+                    "ledger_recent_self_proposal_miss_count",
+                    &format!("A number of proposals missed by this validator during its {} most recent rounds.", PROPOSAL_HISTORY_LEN),
+                ),
+                &lock_factory.named("self_proposal_miss_tracker"),
+                registry,
+            ),
             recent_proposer_timestamp_progress_rate: ProposerTimestampProgressRateTracker::new(
                 current_ledger_proposer_timestamp_ms,
                 opts(
@@ -223,7 +211,7 @@ impl LedgerMetrics {
                 }
             }
             if is_self {
-                self.self_proposals_tracker.track(&counter);
+                self.recent_self_proposal_miss_count.track(&counter);
             }
         }
         self.last_update_epoch_second.set(
@@ -257,10 +245,8 @@ impl LedgerMetrics {
     /// length (for context).
     pub fn get_recent_self_proposal_miss_statistic(&self) -> RecentSelfProposalMissStatistic {
         RecentSelfProposalMissStatistic {
-            missed_count: u64::try_from(
-                self.self_proposals_tracker.recent_proposal_miss_count.get(),
-            )
-            .expect("negative count"),
+            missed_count: u64::try_from(self.recent_self_proposal_miss_count.gauge.get())
+                .expect("negative count"),
             recent_proposals_tracked_count: u64::try_from(PROPOSAL_HISTORY_LEN)
                 .expect("negative history length"),
         }
@@ -441,49 +427,28 @@ enum RoundSlot {
     Missed,
 }
 
-/// A higher-level metric helper, tracking:
-/// - a total number of succeeded/missed proposals of a specific validator
-///     (i.e. validator whose LeaderRoundCounter is passed to `track`)
-/// - a number of recent proposal misses of a specific validator.
-pub struct ValidatorProposalsTracker {
-    proposals_succeeded: IntCounter,
-    proposals_missed: IntCounter,
-    recent_proposal_miss_count: IntGauge,
-    proposal_history_buffer: Mutex<RingBuffer<RoundSlot, PROPOSAL_HISTORY_LEN>>,
+/// A higher-level metric helper, tracking a number of recent proposal misses of a specific
+/// validator (i.e. validator whose LeaderRoundCounter is passed to `track`).
+pub struct ValidatorProposalMissTracker {
+    buffer: Mutex<RingBuffer<RoundSlot, PROPOSAL_HISTORY_LEN>>,
+    gauge: IntGauge,
 }
 
-impl ValidatorProposalsTracker {
-    /// Creates a new tracker.
+impl ValidatorProposalMissTracker {
+    /// Creates a new tracker and registers its resulting [`IntGauge`] (with the given options) at
+    /// the given registry.
     /// Note: the [`LockFactory`] is required to ensure a thread-safe access to a ring-buffer used
     /// for history tracking.
-    pub fn new(
-        proposals_succeeded: IntCounter,
-        proposals_missed: IntCounter,
-        recent_proposal_miss_count: IntGauge,
-        lock_factory: &LockFactory,
-    ) -> Self {
+    pub fn new(opts: Opts, lock_factory: &LockFactory, registry: &Registry) -> Self {
         Self {
-            proposals_succeeded,
-            proposals_missed,
-            recent_proposal_miss_count,
-            proposal_history_buffer: lock_factory.new_mutex(RingBuffer::new(RoundSlot::Success)),
+            buffer: lock_factory.new_mutex(RingBuffer::new(RoundSlot::Success)),
+            gauge: IntGauge::with_opts(opts).registered_at(registry),
         }
     }
 
-    /// Updates proposals succeeded/missed counters and interprets the newest
-    /// round history of the scoped validator and updates the managed gauge of
+    /// Interprets the newest round history of the scoped validator and updates the managed gauge of
     /// recent proposal misses.
     pub fn track(&self, counter: &LeaderRoundCounter) {
-        self.proposals_succeeded
-            .inc_by(u64::try_from(counter.successful).expect("Can't convert usize to u64"));
-        self.proposals_missed.inc_by(
-            u64::try_from(counter.missed_by_fallback + counter.missed_by_gap)
-                .expect("Can't convert usize to u64"),
-        );
-        self.track_recent_proposals_missed(counter);
-    }
-
-    pub fn track_recent_proposals_missed(&self, counter: &LeaderRoundCounter) {
         // Optimization: even if lots of rounds were missed, we track only the "recent" number.
         let new_missed_count = min(
             counter.missed(),
@@ -491,7 +456,7 @@ impl ValidatorProposalsTracker {
         ) as i64;
         // We are not actually getting a time-ordered history - only a statistic. We have to invent
         // the order, so we put the successes first...
-        let mut buffer = self.proposal_history_buffer.lock();
+        let mut buffer = self.buffer.lock();
         let mut outdated_missed_count = 0;
         for _ in 0..counter.successful {
             let outdated = buffer.put(RoundSlot::Success);
@@ -507,8 +472,7 @@ impl ValidatorProposalsTracker {
             }
         }
         // We update the gauge with a delta of new observed misses vs those that ceased to be recent
-        self.recent_proposal_miss_count
-            .add(new_missed_count - outdated_missed_count);
+        self.gauge.add(new_missed_count - outdated_missed_count);
     }
 }
 
@@ -593,7 +557,7 @@ const MIN_PROPOSER_TIMESTAMP_PROGRESS_RATE: f64 = 10.0;
 /// above which a syncing Node is considered fully healthy.
 const HEALTHY_PROPOSER_TIMESTAMP_PROGRESS_RATE: f64 = 50.0;
 
-/// A number of recent proposal misses (see `SelfProposalMissTracker`) at or above which a Validator
+/// A number of recent proposal misses (see `ValidatorProposalMissTracker`) at or above which a Validator
 /// is considered critically unhealthy.
 /// Of course, missing no proposals is fully healthy. Missing some small number of proposals (i.e.
 /// less than this constant) results in some proportionally lower health factor.
@@ -626,8 +590,8 @@ impl OverallLedgerHealthFactor {
                 .gauge
                 .clone(),
             recent_self_proposal_miss_count: ledger_metrics
-                .self_proposals_tracker
-                .recent_proposal_miss_count
+                .recent_self_proposal_miss_count
+                .gauge
                 .clone(),
         };
         let collector = GetterGauge::new(move || health_factor.calculate(), opts);
