@@ -114,12 +114,12 @@ impl LedgerMetrics {
                 "ledger_state_version",
                 "Version of the ledger state.",
             ))
-                .registered_at(registry),
+            .registered_at(registry),
             transactions_committed: IntCounter::with_opts(opts(
                 "ledger_transactions_committed_total",
                 "Count of transactions committed to the ledger.",
             ))
-                .registered_at(registry),
+            .registered_at(registry),
             consensus_rounds_committed: IntCounterVec::new(
                 opts(
                     "ledger_consensus_rounds_committed",
@@ -127,7 +127,7 @@ impl LedgerMetrics {
                 ),
                 &["leader_component_address", "round_resolution"],
             )
-                .registered_at(registry),
+            .registered_at(registry),
             self_consensus_rounds_committed: IntCounterVec::new(
                 opts(
                     "ledger_self_consensus_rounds_committed",
@@ -135,17 +135,17 @@ impl LedgerMetrics {
                 ),
                 &["round_resolution"],
             )
-                .registered_at(registry),
+            .registered_at(registry),
             last_update_epoch_second: Gauge::with_opts(opts(
                 "ledger_last_update_epoch_second",
                 "Last timestamp at which the ledger was updated.",
             ))
-                .registered_at(registry),
+            .registered_at(registry),
             last_update_proposer_epoch_second: Gauge::with_opts(opts(
                 "ledger_last_update_proposer_epoch_second",
                 "Proposer timestamp from the last proof written to the ledger.",
             ))
-                .registered_at(registry),
+            .registered_at(registry),
             recent_self_proposal_miss_count: ValidatorProposalMissTracker::new(
                 opts(
                     "ledger_recent_self_proposal_miss_count",
