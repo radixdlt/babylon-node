@@ -64,9 +64,9 @@
 
 package com.radixdlt;
 
-import com.google.inject.Injector;
-import com.google.inject.Key;
-import com.google.inject.TypeLiteral;
+import com.google.inject.*;
+import com.google.inject.util.Modules;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.api.CoreApiServer;
 import com.radixdlt.api.prometheus.PrometheusApi;
 import com.radixdlt.api.system.SystemApi;
@@ -74,32 +74,42 @@ import com.radixdlt.consensus.bft.SelfValidatorInfo;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.environment.NodeRustEnvironment;
 import com.radixdlt.environment.Runners;
+import com.radixdlt.genesis.GenesisProvider;
 import com.radixdlt.modules.ModuleRunner;
 import com.radixdlt.monitoring.MetricInstaller;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.addressbook.AddressBookPersistence;
 import com.radixdlt.p2p.transport.PeerServerBootstrap;
+import com.radixdlt.utils.properties.RuntimeProperties;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public final class RunningRadixNode {
+public final class RadixNode {
   private static final Logger log = LogManager.getLogger();
 
   private final Injector injector;
 
-  private RunningRadixNode(Injector injector) {
+  private RadixNode(Injector injector) {
     this.injector = injector;
   }
 
-  public static RunningRadixNode run(UnstartedRadixNode unstartedRadixNode) {
-    log.info("Starting Radix node subsystems...");
-    log.info("Using a genesis of hash {}", unstartedRadixNode.genesisProvider().genesisDataHash());
+  public static RadixNode run(
+      RuntimeProperties properties, Network network, GenesisProvider genesisProvider) {
+    log.info("Using a genesis of hash {}", genesisProvider.genesisDataHash());
 
-    final var injector = unstartedRadixNode.instantiateRadixNodeModule();
-    final var runningNode = new RunningRadixNode(injector);
+    final var injector =
+        Guice.createInjector(
+            Modules.requireAtInjectOnConstructorsModule(),
+            Modules.disableCircularProxiesModule(),
+            new RadixNodeModule(properties, network, genesisProvider));
+
+    final var radixNode = new RadixNode(injector);
+
+    log.info("Radix node {} is starting...", radixNode.selfDetailedString());
 
     final var metrics = injector.getInstance(Metrics.class);
     injector.getInstance(MetricInstaller.class).installAt(metrics);
@@ -139,7 +149,16 @@ public final class RunningRadixNode {
     final var coreApiServer = injector.getInstance(CoreApiServer.class);
     coreApiServer.start();
 
-    return runningNode;
+    return radixNode;
+  }
+
+  public Injector injector() {
+    return injector;
+  }
+
+  public String selfDetailedString() {
+    final var addressing = this.injector.getInstance(Addressing.class);
+    return self().toDetailedString(addressing);
   }
 
   public SelfValidatorInfo self() {
@@ -150,9 +169,9 @@ public final class RunningRadixNode {
     this.injector.getInstance(Metrics.class).misc().nodeStartup().observe(startupTimeMs);
   }
 
-  public void onShutdown() {
+  public void shutdown() {
     // using System.out.printf as logger no longer works reliably in a shutdown hook
-    System.out.printf("Node %s is shutting down...\n", this.self());
+    System.out.printf("Node %s is shutting down...\n", this.selfDetailedString());
 
     injector
         .getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() {}))
