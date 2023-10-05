@@ -65,7 +65,6 @@
 package com.radixdlt.statecomputer.commit;
 
 import com.radixdlt.lang.Option;
-import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.transactions.RawLedgerTransaction;
@@ -80,7 +79,7 @@ public record CommitRequest(
     // TODO(after removing validator resolution from genesis): it should be possible to inject this
     // field to the Rust StateManager's constructor instead of passing it in every commit request.
     // It is only needed for metrics calculation.
-    Option<ComponentAddress> selfValidatorAddress) {
+    Option<ValidatorId> selfValidatorId) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         CommitRequest.class,
@@ -97,7 +96,7 @@ public record CommitRequest(
         && Arrays.equals(
             postCommitVertexStoreBytes.or((byte[]) null),
             that.postCommitVertexStoreBytes.or((byte[]) null))
-        && Objects.equals(selfValidatorAddress, that.selfValidatorAddress);
+        && Objects.equals(selfValidatorId, that.selfValidatorId);
   }
 
   @Override
@@ -106,17 +105,17 @@ public record CommitRequest(
         transactions,
         proof,
         Arrays.hashCode(postCommitVertexStoreBytes.or((byte[]) null)),
-        selfValidatorAddress);
+        selfValidatorId);
   }
 
   @Override
   public String toString() {
-    return "%s{transactions=%s, proof=%s, postCommitVertexStoreBytes.length=%s, selfValidatorAddress=%s}"
+    return "%s{transactions=%s, proof=%s, postCommitVertexStoreBytes.length=%s, selfValidatorId=%s}"
         .formatted(
             CommitRequest.class.getSimpleName(),
             transactions,
             proof,
             postCommitVertexStoreBytes.map(bytes -> bytes.length),
-            selfValidatorAddress);
+            selfValidatorId);
   }
 }
