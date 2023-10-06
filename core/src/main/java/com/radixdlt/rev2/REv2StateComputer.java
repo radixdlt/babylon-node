@@ -90,6 +90,7 @@ import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statecomputer.commit.CommitRequest;
 import com.radixdlt.statecomputer.commit.PrepareRequest;
 import com.radixdlt.statecomputer.commit.RoundHistory;
+import com.radixdlt.statecomputer.commit.ValidatorId;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
@@ -116,7 +117,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   private final Serialization serialization;
   private final Hasher hasher;
   private final Metrics metrics;
-  private final Optional<ComponentAddress> selfValidatorAddress;
+  private final Optional<ValidatorId> selfValidatorId;
   private final AtomicReference<ProposerElection> currentProposerElection;
 
   public REv2StateComputer(
@@ -139,8 +140,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
     this.serialization = serialization;
     this.currentProposerElection = new AtomicReference<>(initialProposerElection);
     this.metrics = metrics;
-    this.selfValidatorAddress =
-        selfValidatorInfo.bftValidatorId().map(BFTValidatorId::getValidatorAddress);
+    this.selfValidatorId = selfValidatorInfo.bftValidatorId().map(REv2ToConsensus::validatorId);
   }
 
   @Override
@@ -291,7 +291,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
             ledgerExtension.getTransactions(),
             REv2ToConsensus.ledgerProof(proof),
             vertexStoreBytes,
-            Option.from(selfValidatorAddress));
+            Option.from(selfValidatorId));
 
     final var result = stateComputer.commit(commitRequest);
     final var commitSummary =

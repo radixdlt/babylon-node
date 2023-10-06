@@ -329,12 +329,12 @@ pub struct CommitRequest {
     pub transactions: Vec<RawLedgerTransaction>,
     pub proof: LedgerProof,
     pub vertex_store: Option<Vec<u8>>,
-    pub self_validator_address: Option<ComponentAddress>, // for metrics calculation only
+    pub self_validator_id: Option<ValidatorId>, // for metrics calculation only
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct CommitSummary {
-    pub validator_round_counters: Vec<(ComponentAddress, LeaderRoundCounter)>,
+    pub validator_round_counters: Vec<(ValidatorId, LeaderRoundCounter)>,
     pub num_user_transactions: u32,
 }
 
@@ -451,6 +451,21 @@ impl EpochTransactionIdentifiers {
             state_version: epoch_header.state_version,
             transaction_hash: epoch_header.hashes.transaction_root,
             receipt_hash: epoch_header.hashes.receipt_root,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ValidatorId {
+    pub component_address: ComponentAddress,
+    pub key: Secp256k1PublicKey,
+}
+
+impl ValidatorId {
+    pub fn from(active_validator_info: &ActiveValidatorInfo) -> ValidatorId {
+        ValidatorId {
+            component_address: active_validator_info.address,
+            key: active_validator_info.key,
         }
     }
 }

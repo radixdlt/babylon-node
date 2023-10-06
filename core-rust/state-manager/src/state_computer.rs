@@ -1204,7 +1204,7 @@ where
             commit_state_version,
             round_counters.clone(),
             proposer_timestamp_ms,
-            commit_request.self_validator_address,
+            commit_request.self_validator_id,
         );
         self.committed_transactions_metrics
             .update(transactions_metrics_data);
