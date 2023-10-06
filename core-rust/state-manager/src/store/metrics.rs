@@ -62,14 +62,98 @@
  * permissions under this License.
  */
 
-mod db;
-mod in_memory;
-pub mod metrics;
-mod rocks_db;
-pub mod traits;
-mod typed_cf_api;
+use std::{sync::Arc, time::Duration};
 
-pub use db::{DatabaseBackendConfig, StateManagerDatabase};
-pub use in_memory::InMemoryStore;
-pub use rocks_db::RocksDBStore;
-pub use traits::DatabaseFlags;
+use node_common::{locks::RwLock, metrics::*};
+use prometheus::{IntGaugeVec, Registry};
+use tokio::{runtime::Runtime, sync::oneshot, time::interval};
+
+use super::{
+    traits::measurement::{CategoryDbVolumeStatistic, MeasurableDatabase},
+    StateManagerDatabase,
+};
+
+#[derive(Clone)]
+pub struct RawDbMetrics {
+    pub entries: IntGaugeVec,
+    pub size: IntGaugeVec,
+}
+
+impl RawDbMetrics {
+    pub fn new(registry: &Registry) -> Self {
+        Self {
+            entries: IntGaugeVec::new(
+                opts(
+                    "raw_db_entries",
+                    "An approximate number of entries persisted in the database, by category.",
+                ),
+                &["category"],
+            )
+            .registered_at(registry),
+            size: IntGaugeVec::new(
+                opts(
+                    "raw_db_size",
+                    "An approximate size of the database, in bytes, by category of entries.",
+                ),
+                &["category"],
+            )
+            .registered_at(registry),
+        }
+    }
+
+    pub fn update(&self, statistics: impl IntoIterator<Item = CategoryDbVolumeStatistic>) {
+        for statistic in statistics {
+            self.entries
+                .with_label(&statistic.category_name)
+                .set(i64::try_from(statistic.entry_count).unwrap_or_default());
+            self.size
+                .with_label(&statistic.category_name)
+                .set(i64::try_from(statistic.size_bytes).unwrap_or_default());
+        }
+    }
+}
+
+/// An interval between time-intensive measurement of raw DB metrics.
+/// Some of our raw DB metrics take ~a few milliseconds to collect. We cannot afford the overhead of
+/// updating them every time they change (i.e. on every DB commit) and we also should not perform
+/// this considerable I/O within the Prometheus' exposition servlet thread - hence, a periodic task
+/// (which in practice still runs more often than Prometheus' scraping).
+const RAW_DB_MEASUREMENT_INTERVAL: Duration = Duration::from_secs(10);
+
+#[derive(Clone)]
+pub struct RawDBMetricsReportThread {
+    database: Arc<RwLock<StateManagerDatabase>>,
+    raw_db_metrics: RawDbMetrics,
+}
+
+impl RawDBMetricsReportThread {
+    pub fn new(database: Arc<RwLock<StateManagerDatabase>>, metric_registry: &Registry) -> Self {
+        Self {
+            database,
+            raw_db_metrics: RawDbMetrics::new(metric_registry),
+        }
+    }
+
+    /// Starts a background thread responsible for periodic raw DB metrics collection, and returns a
+    /// handle that keeps it running.
+    /// See [`RAW_DB_MEASUREMENT_INTERVAL`] for more details.
+    pub fn start(&self, runtime: &Runtime, shutdown_signal: oneshot::Receiver<()>) {
+        let context = self.clone();
+        runtime.spawn(async move {
+            let mut shutdown_signal = shutdown_signal;
+            let mut interval = interval(RAW_DB_MEASUREMENT_INTERVAL);
+
+            loop {
+                tokio::select! {
+                    _ = &mut shutdown_signal => {
+                        break;
+                    },
+                    _ = interval.tick() => {
+                        let statistics = context.database.read().get_data_volume_statistics();
+                        context.raw_db_metrics.update(statistics);
+                    },
+                }
+            }
+        });
+    }
+}
