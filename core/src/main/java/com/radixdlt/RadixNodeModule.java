@@ -402,11 +402,11 @@ public final class RadixNodeModule extends AbstractModule {
 
   private StateHashTreeGcConfig parseStateHashTreeGcConfig(RuntimeProperties properties) {
     // How many most recent state versions to keep in our Merkle tree?
-    // The default of "100 * 10 * 60 = 6000" assumes that:
+    // The default of "100 * 10 * 60 = 60000" assumes that:
     // - a peak user transaction throughput is 100 TPS.
     // - we want to offer Merkle proofs verification up to 10 minutes after their generation.
     var stateVersionHistoryLength =
-        properties.get("state_hash_tree.state_version_history_length", 6000);
+        properties.get("state_hash_tree.state_version_history_length", 60000);
     Preconditions.checkArgument(
         stateVersionHistoryLength >= 0,
         "state version history length must not be negative: %s",
