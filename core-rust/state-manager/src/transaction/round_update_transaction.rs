@@ -1,6 +1,6 @@
 use radix_engine::types::*;
 
-use crate::{LedgerHeader, RoundHistory};
+use crate::{LedgerHeader, RoundHistory, ValidatorId};
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use sbor::FixedEnumVariant;
@@ -16,11 +16,11 @@ pub struct RoundUpdateTransactionV1 {
 
 impl RoundUpdateTransactionV1 {
     pub fn new(epoch_header: Option<&LedgerHeader>, round_history: &RoundHistory) -> Self {
-        let validator_index_by_address = iterate_component_addresses(epoch_header)
+        let validator_index_by_address = iterate_validators(epoch_header)
             .enumerate()
-            .map(|(validator_index, validator_address)| {
+            .map(|(validator_index, validator_id)| {
                 (
-                    *validator_address,
+                    validator_id.component_address,
                     ValidatorIndex::try_from(validator_index)
                         .expect("validator set size limit guarantees this"),
                 )
@@ -207,12 +207,12 @@ impl LeaderRoundCountersBuilder {
     pub fn build(
         self,
         epoch_header: Option<&LedgerHeader>,
-    ) -> Vec<(ComponentAddress, LeaderRoundCounter)> {
+    ) -> Vec<(ValidatorId, LeaderRoundCounter)> {
         self.counters_by_index
             .into_iter()
-            .zip(iterate_component_addresses(epoch_header))
+            .zip(iterate_validators(epoch_header))
             .filter(|(counter, _)| counter.is_non_zero())
-            .map(|(counter, validator_address)| (*validator_address, counter))
+            .map(|(counter, validator_id)| (validator_id, counter))
             .collect()
     }
 
@@ -248,11 +248,11 @@ impl LeaderRoundCounter {
     }
 }
 
-/// Extracts an iterator of validator component addresses (in their [`ValidatorIndex`] order) from
+/// Extracts an iterator of validator IDs (in their [`ValidatorIndex`] order) from
 /// the given epoch header (i.e. assumes that it was found and contains the "next epoch").
-fn iterate_component_addresses(
+fn iterate_validators(
     epoch_header: Option<&LedgerHeader>,
-) -> impl Iterator<Item = &ComponentAddress> {
+) -> impl Iterator<Item = ValidatorId> + '_ {
     epoch_header
         .expect("at least genesis epoch is expected")
         .next_epoch
@@ -260,5 +260,5 @@ fn iterate_component_addresses(
         .expect("epoch header must contain next epoch information")
         .validator_set
         .iter()
-        .map(|validator_info| &validator_info.address)
+        .map(ValidatorId::from)
 }

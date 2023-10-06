@@ -83,6 +83,7 @@ import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.rev2.REv2ToConsensus;
 import com.radixdlt.statecomputer.commit.CommitSummary;
 import com.radixdlt.utils.Bytes;
 import java.util.Optional;
@@ -245,7 +246,7 @@ public final class EventLoggerModule extends AbstractModule {
       BFTValidatorId self, CommitSummary commitSummary, RateLimiter logLimiter) {
     final var maybeSelfCounters =
         commitSummary.validatorRoundCounters().stream()
-            .filter(c -> c.first().equals(self.getValidatorAddress()))
+            .filter(c -> REv2ToConsensus.validatorId(c.first()).equals(self))
             .findFirst();
     if (maybeSelfCounters.isEmpty()) {
       return;
