@@ -94,7 +94,6 @@ import com.radixdlt.rev2.modules.*;
 import com.radixdlt.store.NodeStorageLocationFromPropertiesModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.BooleanUtils;
-import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.time.Duration;
@@ -403,7 +402,7 @@ public final class RadixNodeModule extends AbstractModule {
   private StateHashTreeGcConfig parseStateHashTreeGcConfig(RuntimeProperties properties) {
     // How many most recent state versions to keep in our Merkle tree?
     // The default of "100 * 10 * 60 = 60000" assumes that:
-    // - a peak user transaction throughput is 100 TPS.
+    // - a peak user transaction throughput is 100 TPS;
     // - we want to offer Merkle proofs verification up to 10 minutes after their generation.
     var stateVersionHistoryLength =
         properties.get("state_hash_tree.state_version_history_length", 60000);
@@ -411,23 +410,21 @@ public final class RadixNodeModule extends AbstractModule {
         stateVersionHistoryLength >= 0,
         "state version history length must not be negative: %s",
         stateVersionHistoryLength);
-    // How often to run the pruning of our Merkle tree, and how many versions to remove during a
-    // single pruning run?
-    // The default of "1000 state versions every 5 seconds" should easily catch up with the peak TPS
-    // (i.e. 200 deletes/sec vs 100 new transactions/sec), while not overwhelming the DB's time.
-    var maxDeletedStateVersionsDuringRun =
-        properties.get("state_hash_tree.gc.max_deleted_state_versions_during_run", 1000);
+
+    // How long can the GC activity hold the DB lock for in a single cycle?
+    // The default of "50ms" allows to:
+    // - efficiently process the backlog (which is definitely there on the first run);
+    // - avoid starving the other DB activity (e.g. committing to the ledger).
+    var maxDbLockingDurationMillis =
+        properties.get("state_hash_tree.gc.max_db_locking_duration_millis", 50);
     Preconditions.checkArgument(
-        maxDeletedStateVersionsDuringRun > 0,
-        "max deleted state version count must be positive: %s",
-        maxDeletedStateVersionsDuringRun);
-    var intervalSec = properties.get("state_hash_tree.gc.interval_sec", 5);
-    Preconditions.checkArgument(
-        intervalSec > 0, "state hash tree GC interval must be positive: %s sec", intervalSec);
+        maxDbLockingDurationMillis >= 0,
+        "maximum DB locking duration must not be negative: %s",
+        maxDbLockingDurationMillis);
+
     return new StateHashTreeGcConfig(
-        UInt32.fromNonNegativeInt(intervalSec),
         UInt64.fromNonNegativeLong(stateVersionHistoryLength),
-        UInt64.fromNonNegativeLong(maxDeletedStateVersionsDuringRun));
+        UInt64.fromNonNegativeLong(maxDbLockingDurationMillis));
   }
 
   private void warnProtocolPropertySet(String prop) {
