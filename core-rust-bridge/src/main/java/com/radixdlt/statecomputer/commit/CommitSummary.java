@@ -66,13 +66,12 @@ package com.radixdlt.statecomputer.commit;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.lang.Tuple.Tuple2;
-import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.utils.UInt32;
 
 public record CommitSummary(
-    ImmutableList<Tuple2<ComponentAddress, LeaderRoundCounter>> validatorRoundCounters,
+    ImmutableList<Tuple2<ValidatorId, LeaderRoundCounter>> validatorRoundCounters,
     UInt32 numUserTransactions) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(

@@ -72,10 +72,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
-import com.radixdlt.p2p.NodeId;
-import com.radixdlt.p2p.PeerControl;
-import com.radixdlt.p2p.PeerManager;
-import com.radixdlt.p2p.RadixNodeUri;
+import com.radixdlt.p2p.*;
 import com.radixdlt.p2p.addressbook.AddressBook;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -100,6 +97,7 @@ public final class PeerDiscovery {
   private static final int MAX_REQUESTS_SENT_AT_ONCE = 5;
 
   private final RadixNodeUri selfUri;
+  private final P2PConfig p2pConfig;
   private final PeerManager peerManager;
   private final AddressBook addressBook;
   private final PeerControl peerControl;
@@ -113,6 +111,7 @@ public final class PeerDiscovery {
   @Inject
   public PeerDiscovery(
       @Self RadixNodeUri selfUri,
+      P2PConfig p2pConfig,
       PeerManager peerManager,
       AddressBook addressBook,
       PeerControl peerControl,
@@ -121,6 +120,7 @@ public final class PeerDiscovery {
       RemoteEventDispatcher<NodeId, PeersResponse> peersResponseRemoteEventDispatcher,
       Addressing addressing) {
     this.selfUri = Objects.requireNonNull(selfUri);
+    this.p2pConfig = Objects.requireNonNull(p2pConfig);
     this.peerManager = Objects.requireNonNull(peerManager);
     this.addressBook = Objects.requireNonNull(addressBook);
     this.peerControl = Objects.requireNonNull(peerControl);
@@ -141,19 +141,20 @@ public final class PeerDiscovery {
             "Warning! No valid seed nodes have been configured for this node."
                 + " Check your `network.p2p.seed_nodes` configuration!");
       }
-
-      final var channels = new ArrayList<>(this.peerManager.activeChannels());
-      Collections.shuffle(channels);
-      channels.stream()
-          .filter(not(c -> peersAsked.contains(c.getRemoteNodeId())))
-          .limit(MAX_REQUESTS_SENT_AT_ONCE)
-          .forEach(
-              peer -> {
-                peersAsked.add(peer.getRemoteNodeId());
-                getPeersRemoteEventDispatcher.dispatch(peer.getRemoteNodeId(), GetPeers.create());
-              });
-
       this.tryConnectToSomeKnownPeers();
+
+      if (!p2pConfig.discoveryDisabled()) {
+        final var channels = new ArrayList<>(this.peerManager.activeChannels());
+        Collections.shuffle(channels);
+        channels.stream()
+            .filter(not(c -> peersAsked.contains(c.getRemoteNodeId())))
+            .limit(MAX_REQUESTS_SENT_AT_ONCE)
+            .forEach(
+                peer -> {
+                  peersAsked.add(peer.getRemoteNodeId());
+                  getPeersRemoteEventDispatcher.dispatch(peer.getRemoteNodeId(), GetPeers.create());
+                });
+      }
     };
   }
 
@@ -179,23 +180,33 @@ public final class PeerDiscovery {
       }
 
       this.peersAsked.remove(senderNodeId);
-      final var peersUpToLimit =
-          peersResponse.getPeers().stream()
-              .limit(MAX_PEERS_IN_RESPONSE)
-              .collect(ImmutableSet.toImmutableSet());
-      this.addressBook.addUncheckedPeers(peersUpToLimit);
+
+      if (!peersResponse.getPeers().isEmpty()) {
+        final var peersUpToLimit =
+            peersResponse.getPeers().stream()
+                .limit(MAX_PEERS_IN_RESPONSE)
+                .collect(ImmutableSet.toImmutableSet());
+        this.addressBook.addUncheckedPeers(peersUpToLimit);
+      }
     };
   }
 
   public RemoteEventProcessor<NodeId, GetPeers> getPeersRemoteEventProcessor() {
     return (sender, unused) -> {
-      final var peers =
-          Stream.concat(
-                  Stream.of(selfUri),
-                  this.addressBook.bestCandidatesToConnect().limit(MAX_PEERS_IN_RESPONSE - 1))
-              .collect(ImmutableSet.toImmutableSet());
+      final ImmutableSet<RadixNodeUri> peersToSend;
 
-      peersResponseRemoteEventDispatcher.dispatch(sender, PeersResponse.create(peers));
+      if (p2pConfig.discoveryDisabled()) {
+        // Discovery is disabled, so we're just sending an empty response
+        peersToSend = ImmutableSet.of();
+      } else {
+        peersToSend =
+            Stream.concat(
+                    Stream.of(selfUri),
+                    this.addressBook.bestCandidatesToConnect().limit(MAX_PEERS_IN_RESPONSE - 1))
+                .collect(ImmutableSet.toImmutableSet());
+      }
+
+      peersResponseRemoteEventDispatcher.dispatch(sender, PeersResponse.create(peersToSend));
     };
   }
 }

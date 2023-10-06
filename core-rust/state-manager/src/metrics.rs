@@ -68,7 +68,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::limits::VertexLimitsExceeded;
 use crate::transaction::{ExecutionConfigurator, LeaderRoundCounter};
-use crate::StateVersion;
+use crate::{StateVersion, ValidatorId};
 use node_common::config::limits::*;
 use node_common::locks::{LockFactory, Mutex};
 use node_common::metrics::*;
@@ -82,9 +82,10 @@ pub struct LedgerMetrics {
     pub state_version: IntGauge,
     pub transactions_committed: IntCounter,
     pub consensus_rounds_committed: IntCounterVec,
+    pub self_consensus_rounds_committed: IntCounterVec, // a subset of the above, for convenience
     pub last_update_epoch_second: Gauge,
     pub last_update_proposer_epoch_second: Gauge,
-    pub recent_self_proposal_miss_count: SelfProposalMissTracker,
+    pub recent_self_proposal_miss_count: ValidatorProposalMissTracker,
     pub recent_proposer_timestamp_progress_rate: ProposerTimestampProgressRateTracker,
 }
 
@@ -127,6 +128,14 @@ impl LedgerMetrics {
                 &["leader_component_address", "round_resolution"],
             )
             .registered_at(registry),
+            self_consensus_rounds_committed: IntCounterVec::new(
+                opts(
+                    "ledger_self_consensus_rounds_committed",
+                    "Count of rounds lead by this validator that reached the ledger commit.",
+                ),
+                &["round_resolution"],
+            )
+            .registered_at(registry),
             last_update_epoch_second: Gauge::with_opts(opts(
                 "ledger_last_update_epoch_second",
                 "Last timestamp at which the ledger was updated.",
@@ -137,7 +146,7 @@ impl LedgerMetrics {
                 "Proposer timestamp from the last proof written to the ledger.",
             ))
             .registered_at(registry),
-            recent_self_proposal_miss_count: SelfProposalMissTracker::new(
+            recent_self_proposal_miss_count: ValidatorProposalMissTracker::new(
                 opts(
                     "ledger_recent_self_proposal_miss_count",
                     &format!("A number of proposals missed by this validator during its {} most recent rounds.", PROPOSAL_HISTORY_LEN),
@@ -170,19 +179,20 @@ impl LedgerMetrics {
         &self,
         added_transactions: usize,
         new_state_version: StateVersion,
-        validator_proposal_counters: Vec<(ComponentAddress, LeaderRoundCounter)>,
+        validator_proposal_counters: Vec<(ValidatorId, LeaderRoundCounter)>,
         proposer_timestamp_ms: i64,
-        self_validator_address: Option<ComponentAddress>,
+        self_validator_id: Option<ValidatorId>,
     ) {
         self.state_version.set(new_state_version.number() as i64);
         self.transactions_committed
             .inc_by(added_transactions as u64);
-        for (validator_address, counter) in validator_proposal_counters {
+        for (validator_id, counter) in validator_proposal_counters {
+            let is_self = self_validator_id == Some(validator_id);
             let encoded_validator_address = self
                 .address_encoder
-                .encode(validator_address.as_ref())
+                .encode(validator_id.component_address.as_ref())
                 // a fallback for an unlikely encoding error:
-                .unwrap_or_else(|_| validator_address.to_hex());
+                .unwrap_or_else(|_| validator_id.component_address.to_hex());
             for (round_resolution, count) in [
                 (ConsensusRoundResolution::Successful, counter.successful),
                 (
@@ -194,8 +204,13 @@ impl LedgerMetrics {
                 self.consensus_rounds_committed
                     .with_two_labels(&encoded_validator_address, round_resolution)
                     .inc_by(count as u64);
+                if is_self {
+                    self.self_consensus_rounds_committed
+                        .with_label(round_resolution)
+                        .inc_by(count as u64);
+                }
             }
-            if self_validator_address == Some(validator_address) {
+            if is_self {
                 self.recent_self_proposal_miss_count.track(&counter);
             }
         }
@@ -413,13 +428,13 @@ enum RoundSlot {
 }
 
 /// A higher-level metric helper, tracking a number of recent proposal misses of a specific
-/// validator.
-pub struct SelfProposalMissTracker {
+/// validator (i.e. validator whose LeaderRoundCounter is passed to `track`).
+pub struct ValidatorProposalMissTracker {
     buffer: Mutex<RingBuffer<RoundSlot, PROPOSAL_HISTORY_LEN>>,
     gauge: IntGauge,
 }
 
-impl SelfProposalMissTracker {
+impl ValidatorProposalMissTracker {
     /// Creates a new tracker and registers its resulting [`IntGauge`] (with the given options) at
     /// the given registry.
     /// Note: the [`LockFactory`] is required to ensure a thread-safe access to a ring-buffer used
@@ -542,7 +557,7 @@ const MIN_PROPOSER_TIMESTAMP_PROGRESS_RATE: f64 = 10.0;
 /// above which a syncing Node is considered fully healthy.
 const HEALTHY_PROPOSER_TIMESTAMP_PROGRESS_RATE: f64 = 50.0;
 
-/// A number of recent proposal misses (see `SelfProposalMissTracker`) at or above which a Validator
+/// A number of recent proposal misses (see `ValidatorProposalMissTracker`) at or above which a Validator
 /// is considered critically unhealthy.
 /// Of course, missing no proposals is fully healthy. Missing some small number of proposals (i.e.
 /// less than this constant) results in some proportionally lower health factor.
