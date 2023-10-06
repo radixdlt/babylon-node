@@ -118,7 +118,7 @@ use super::traits::extensions::*;
 /// The `NAME` constants defined by `*Cf` structs (and referenced below) are used as database column
 /// family names. Any change would effectively mean a ledger wipe. For this reason, we choose to
 /// define them manually (rather than using the `Into<String>`, which is refactor-sensitive).
-const ALL_COLUMN_FAMILIES: [&str; 19] = [
+pub const ALL_COLUMN_FAMILIES: [&str; 19] = [
     RawLedgerTransactionsCf::DEFAULT_NAME,
     CommittedTransactionIdentifiersCf::VERSIONED_NAME,
     TransactionReceiptsCf::VERSIONED_NAME,
@@ -630,7 +630,6 @@ impl CommitStore for RocksDBStore {
                 }
             }
         }
-
         if let Some(vertex_store) = commit_bundle.vertex_store {
             db_context.cf(VertexStoreCf).put(&(), &vertex_store);
         }
@@ -659,6 +658,51 @@ impl CommitStore for RocksDBStore {
         db_context
             .cf(ReceiptAccuTreeSlicesCf)
             .put(&commit_state_version, &commit_bundle.receipt_tree_slice);
+    }
+
+    fn commit_lite(&mut self, state_version: StateVersion, substate_store_update: SubstateStoreUpdate) {
+        let db_context = self.open_db_context();
+
+        // A bit of a hack: hijacking this CF for storing the latest state version
+        db_context
+            .cf(LedgerTransactionHashesCf)
+            .put(&LedgerTransactionHash(Hash([0; Hash::LENGTH])), &state_version);
+
+        let substates_cf = db_context.cf(SubstatesCf);
+        for (node_key, node_updates) in substate_store_update.updates.node_updates {
+            for (partition_num, partition_updates) in node_updates.partition_updates {
+                let partition_key = DbPartitionKey {
+                    node_key: node_key.clone(),
+                    partition_num,
+                };
+                match partition_updates {
+                    PartitionDatabaseUpdates::Delta { substate_updates } => {
+                        for (sort_key, update) in substate_updates {
+                            let substate_key = (partition_key.clone(), sort_key);
+                            match update {
+                                DatabaseUpdate::Set(substate_value) => {
+                                    substates_cf.put(&substate_key, &substate_value);
+                                }
+                                DatabaseUpdate::Delete => {
+                                    substates_cf.delete(&substate_key);
+                                }
+                            }
+                        }
+                    }
+                    PartitionDatabaseUpdates::Reset {
+                        new_substate_values,
+                    } => {
+                        substates_cf.delete_range(
+                            &(partition_key.clone(), DbSortKey(vec![])),
+                            &(partition_key.next(), DbSortKey(vec![])),
+                        );
+                        for (sort_key, substate_value) in new_substate_values {
+                            substates_cf.put(&(partition_key.clone(), sort_key), &substate_value);
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -873,6 +917,14 @@ impl TransactionIdentifierLoader for RocksDBStore {
         self.open_db_context()
             .cf(CommittedTransactionIdentifiersCf)
             .get_last()
+    }
+
+    fn get_state_computer_lite_latest_state_version(
+        &self,
+    ) -> Option<StateVersion> {
+        self.open_db_context()
+            .cf(LedgerTransactionHashesCf)
+            .get(&LedgerTransactionHash(Hash([0; Hash::LENGTH])))
     }
 }
 

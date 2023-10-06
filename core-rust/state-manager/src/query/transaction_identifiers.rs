@@ -13,4 +13,8 @@ pub trait TransactionIdentifierLoader {
             .map(|(state_version, ids)| (state_version, ids.resultant_ledger_hashes))
             .unwrap_or_else(|| (StateVersion::pre_genesis(), LedgerHashes::pre_genesis()))
     }
+
+    fn get_state_computer_lite_latest_state_version(
+        &self,
+    ) -> Option<StateVersion>;
 }

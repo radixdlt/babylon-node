@@ -337,6 +337,10 @@ impl CommitStore for InMemoryStore {
         self.receipt_tree_slices
             .insert(commit_state_version, commit_bundle.receipt_tree_slice);
     }
+
+    fn commit_lite(&mut self, state_version: StateVersion, substate_store_update: SubstateStoreUpdate) {
+        todo!()
+    }
 }
 
 impl ExecutedGenesisScenarioStore for InMemoryStore {
@@ -475,6 +479,10 @@ impl TransactionIdentifierLoader for InMemoryStore {
             .iter()
             .next_back()
             .map(|(state_version, value)| (*state_version, value.clone()))
+    }
+
+    fn get_state_computer_lite_latest_state_version(&self) -> Option<StateVersion> {
+        todo!()
     }
 }
 

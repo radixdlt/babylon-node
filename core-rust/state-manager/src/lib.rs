@@ -77,6 +77,7 @@ mod state_manager;
 pub mod store;
 pub mod transaction;
 mod types;
+mod state_computer_lite;
 
 pub use crate::mempool::*;
 pub use crate::metrics::*;
@@ -86,3 +87,4 @@ pub use crate::staging::*;
 pub use crate::state_computer::*;
 pub use crate::state_manager::*;
 pub use crate::types::*;
+pub use crate::state_computer_lite::*;

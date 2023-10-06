@@ -491,6 +491,7 @@ pub mod commit {
     #[enum_dispatch]
     pub trait CommitStore {
         fn commit(&mut self, commit_bundle: CommitBundle);
+        fn commit_lite(&mut self, state_version: StateVersion, substate_store_update: SubstateStoreUpdate);
     }
 }
 
