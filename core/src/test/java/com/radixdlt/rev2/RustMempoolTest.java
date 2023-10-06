@@ -122,6 +122,7 @@ public final class RustMempoolTest {
             DatabaseBackendConfig.inMemory(),
             new DatabaseFlags(false, false),
             LoggingConfig.getDefault(),
+            StateHashTreeGcConfig.forTesting(),
             false);
     final var metrics = new MetricsInitializer().initialize();
 
@@ -176,6 +177,7 @@ public final class RustMempoolTest {
             DatabaseBackendConfig.inMemory(),
             new DatabaseFlags(false, false),
             LoggingConfig.getDefault(),
+            StateHashTreeGcConfig.forTesting(),
             false);
     final var metrics = new MetricsInitializer().initialize();
 
@@ -313,6 +315,7 @@ public final class RustMempoolTest {
             DatabaseBackendConfig.inMemory(),
             new DatabaseFlags(false, false),
             LoggingConfig.getDefault(),
+            StateHashTreeGcConfig.forTesting(),
             false);
     final var metrics = new MetricsInitializer().initialize();
 

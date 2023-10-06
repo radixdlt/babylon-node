@@ -89,6 +89,9 @@ use radix_engine_store_interface::interface::{
 use radix_engine_stores::hash_tree::tree_store::*;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::iter;
+
+use crate::store::traits::gc::StateHashTreeGcStore;
 use transaction::model::*;
 
 #[derive(Debug)]
@@ -277,6 +280,23 @@ impl SubstateNodeAncestryStore for InMemoryStore {
 impl ReadableTreeStore for InMemoryStore {
     fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
         self.tree_node_store.get_node(key)
+    }
+}
+
+// Note: the impl is no-op, since we do not need to GC the JMT in tests.
+impl StateHashTreeGcStore for InMemoryStore {
+    fn get_stale_tree_parts_iter(
+        &self,
+    ) -> Box<dyn Iterator<Item = (StateVersion, StaleTreeParts)> + '_> {
+        Box::new(iter::empty())
+    }
+
+    fn batch_delete_node<'a>(&self, _keys: impl IntoIterator<Item = &'a NodeKey>) {}
+
+    fn batch_delete_stale_tree_part<'a>(
+        &self,
+        _state_versions: impl IntoIterator<Item = &'a StateVersion>,
+    ) {
     }
 }
 

@@ -1335,6 +1335,7 @@ struct PendingTransactionResult {
 
 #[cfg(test)]
 mod tests {
+    use clokwerk::Scheduler;
     use std::ops::Deref;
 
     use crate::transaction::{LedgerTransaction, RoundUpdateTransactionV1};
@@ -1445,7 +1446,13 @@ mod tests {
             vertex_limits_config: Some(vertex_limits_config),
             ..StateManagerConfig::new_for_testing()
         };
-        let state_manager = StateManager::new(config, None, &lock_factory, &metrics_registry);
+        let state_manager = StateManager::new(
+            config,
+            None,
+            &lock_factory,
+            &metrics_registry,
+            &mut Scheduler::new(),
+        );
 
         let proof = state_manager
             .state_computer

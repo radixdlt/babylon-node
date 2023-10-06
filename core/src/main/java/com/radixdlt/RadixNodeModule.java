@@ -75,10 +75,7 @@ import com.radixdlt.consensus.ProposalLimitsConfig;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.environment.CoreApiServerFlags;
-import com.radixdlt.environment.DatabaseFlags;
-import com.radixdlt.environment.NodeConstants;
-import com.radixdlt.environment.VertexLimitsConfig;
+import com.radixdlt.environment.*;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.genesis.GenesisProvider;
 import com.radixdlt.keys.PersistedBFTKeyModule;
@@ -97,6 +94,8 @@ import com.radixdlt.rev2.modules.*;
 import com.radixdlt.store.NodeStorageLocationFromPropertiesModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.BooleanUtils;
+import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.UInt64;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.time.Duration;
 import java.util.Optional;
@@ -342,13 +341,17 @@ public final class RadixNodeModule extends AbstractModule {
             vertexMaxTotalTransactionsSize,
             vertexMaxTotalExecutionCostUnitsConsumed,
             vertexMaxTotalFinalizationCostUnitsConsumed);
+
+    var stateHashTreeGcConfig = parseStateHashTreeGcConfig(properties);
+
     install(
         REv2StateManagerModule.create(
             ProposalLimitsConfig.from(vertexLimitsConfig),
             vertexLimitsConfig,
             REv2StateManagerModule.DatabaseType.ROCKS_DB,
             databaseFlags,
-            Option.some(mempoolConfig)));
+            Option.some(mempoolConfig),
+            stateHashTreeGcConfig));
 
     // Recovery
     install(new BerkeleySafetyStoreModule());
@@ -395,6 +398,36 @@ public final class RadixNodeModule extends AbstractModule {
             .map(LedgerSyncCapability.Builder::new)
             .orElse(LedgerSyncCapability.Builder.asDefault());
     install(new CapabilitiesModule(builder.build()));
+  }
+
+  private StateHashTreeGcConfig parseStateHashTreeGcConfig(RuntimeProperties properties) {
+    // How many most recent state versions to keep in our Merkle tree?
+    // The default of "100 * 10 * 60 = 6000" assumes that:
+    // - a peak user transaction throughput is 100 TPS.
+    // - we want to offer Merkle proofs verification up to 10 minutes after their generation.
+    var stateVersionHistoryLength =
+        properties.get("state_hash_tree.state_version_history_length", 6000);
+    Preconditions.checkArgument(
+        stateVersionHistoryLength >= 0,
+        "state version history length must not be negative: %s",
+        stateVersionHistoryLength);
+    // How often to run the pruning of our Merkle tree, and how many versions to remove during a
+    // single pruning run?
+    // The default of "1000 state versions every 5 seconds" should easily catch up with the peak TPS
+    // (i.e. 200 deletes/sec vs 100 new transactions/sec), while not overwhelming the DB's time.
+    var maxDeletedStateVersionsDuringRun =
+        properties.get("state_hash_tree.gc.max_deleted_state_versions_during_run", 1000);
+    Preconditions.checkArgument(
+        maxDeletedStateVersionsDuringRun > 0,
+        "max deleted state version count must be positive: %s",
+        maxDeletedStateVersionsDuringRun);
+    var intervalSec = properties.get("state_hash_tree.gc.interval_sec", 5);
+    Preconditions.checkArgument(
+        intervalSec > 0, "state hash tree GC interval must be positive: %s sec", intervalSec);
+    return new StateHashTreeGcConfig(
+        UInt32.fromNonNegativeInt(intervalSec),
+        UInt64.fromNonNegativeLong(stateVersionHistoryLength),
+        UInt64.fromNonNegativeLong(maxDeletedStateVersionsDuringRun));
   }
 
   private void warnProtocolPropertySet(String prop) {

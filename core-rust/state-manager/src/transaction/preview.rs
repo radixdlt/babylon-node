@@ -133,6 +133,7 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
 #[cfg(test)]
 mod tests {
     use crate::{PreviewRequest, StateManager, StateManagerConfig};
+    use clokwerk::Scheduler;
     use node_common::locks::LockFactory;
     use prometheus::Registry;
     use transaction::builder::ManifestBuilder;
@@ -147,6 +148,7 @@ mod tests {
             None,
             &lock_factory,
             &metrics_registry,
+            &mut Scheduler::new(),
         );
 
         state_manager

@@ -62,6 +62,7 @@
  * permissions under this License.
  */
 
+use clokwerk::{Interval, Scheduler};
 use std::sync::Arc;
 
 use node_common::{
@@ -72,17 +73,28 @@ use prometheus::Registry;
 use radix_engine::transaction::CostingParameters;
 use radix_engine_common::prelude::*;
 
+use crate::store::gc::StateHashTreeGcConfig;
 use crate::{
     mempool_manager::MempoolManager,
     mempool_relay_dispatcher::MempoolRelayDispatcher,
     priority_mempool::PriorityMempool,
-    store::{DatabaseBackendConfig, DatabaseFlags, StateManagerDatabase},
+    store::{
+        gc::StateHashTreeGc, DatabaseBackendConfig, DatabaseFlags, RawDbMetricsCollector,
+        StateManagerDatabase,
+    },
     transaction::{
         CachedCommittabilityValidator, CommittabilityValidator, ExecutionConfigurator,
         TransactionPreviewer,
     },
     LoggingConfig, PendingTransactionResultCache, StateComputer,
 };
+
+/// An interval between time-intensive measurement of raw DB metrics.
+/// Some of our raw DB metrics take ~a few milliseconds to collect. We cannot afford the overhead of
+/// updating them every time they change (i.e. on every DB commit) and we also should not perform
+/// this considerable I/O within the Prometheus' exposition servlet thread - hence, a periodic task
+/// (which in practice still runs more often than Prometheus' scraping).
+const RAW_DB_MEASUREMENT_INTERVAL: Interval = Interval::Seconds(10);
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct StateManagerConfig {
@@ -92,6 +104,7 @@ pub struct StateManagerConfig {
     pub database_backend_config: DatabaseBackendConfig,
     pub database_flags: DatabaseFlags,
     pub logging_config: LoggingConfig,
+    pub state_hash_tree_gc_config: StateHashTreeGcConfig,
     pub no_fees: bool,
 }
 
@@ -104,6 +117,7 @@ impl StateManagerConfig {
             database_backend_config: DatabaseBackendConfig::InMemory,
             database_flags: DatabaseFlags::default(),
             logging_config: LoggingConfig::default(),
+            state_hash_tree_gc_config: StateHashTreeGcConfig::default(),
             no_fees: false,
         }
     }
@@ -126,6 +140,7 @@ impl StateManager {
         mempool_relay_dispatcher: Option<MempoolRelayDispatcher>,
         lock_factory: &LockFactory,
         metrics_registry: &Registry,
+        scheduler: &mut Scheduler,
     ) -> Self {
         let mempool_config = match config.mempool_config {
             Some(mempool_config) => mempool_config,
@@ -205,7 +220,7 @@ impl StateManager {
             None => VertexLimitsConfig::default(),
         };
 
-        // Build the state manager.
+        // Build the state computer:
         let state_computer = Arc::new(StateComputer::new(
             &network,
             vertex_limits_config,
@@ -217,6 +232,20 @@ impl StateManager {
             metrics_registry,
             &lock_factory.named("state_computer"),
         ));
+
+        // Register the periodic background task for collecting the costly raw DB metrics...
+        let raw_db_metrics_collector =
+            RawDbMetricsCollector::new(database.clone(), metrics_registry);
+        scheduler
+            .every(RAW_DB_MEASUREMENT_INTERVAL)
+            .run(move || raw_db_metrics_collector.run());
+
+        // ... and for deleting the stale state hash tree nodes (a.k.a. "JMT GC"):
+        let state_hash_tree_gc =
+            StateHashTreeGc::new(database.clone(), config.state_hash_tree_gc_config);
+        scheduler
+            .every(state_hash_tree_gc.interval())
+            .run(move || state_hash_tree_gc.run());
 
         Self {
             state_computer,

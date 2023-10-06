@@ -106,7 +106,8 @@ pub enum DatabaseBackendConfig {
     IterableAccountChangeIndex,
     IterableTransactionStore,
     IterableProofStore,
-    ExecutedGenesisScenarioStore
+    ExecutedGenesisScenarioStore,
+    StateHashTreeGcStore
 )]
 pub enum StateManagerDatabase {
     InMemory(InMemoryStore),

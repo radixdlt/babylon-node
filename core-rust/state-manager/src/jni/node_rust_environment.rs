@@ -62,7 +62,6 @@
  * permissions under this License.
  */
 
-use clokwerk::Interval;
 use clokwerk::{ScheduleHandle, Scheduler};
 use std::sync::Arc;
 use std::time::Duration;
@@ -75,23 +74,20 @@ use node_common::java::{jni_call, jni_jbytearray_to_vector, StructFromJava};
 use node_common::locks::*;
 use prometheus::Registry;
 use radix_engine_common::prelude::NetworkDefinition;
+
 use tokio::runtime::Runtime;
 
 use crate::mempool_manager::MempoolManager;
 use crate::mempool_relay_dispatcher::MempoolRelayDispatcher;
 use crate::priority_mempool::PriorityMempool;
-use crate::store::traits::measurement::MeasurableDatabase;
+
 use crate::store::StateManagerDatabase;
 
 use super::fatal_panic_handler::FatalPanicHandler;
-use crate::{RawDbMetrics, StateComputer, StateManager, StateManagerConfig};
+use crate::{StateComputer, StateManager, StateManagerConfig};
 
-/// An interval between time-intensive measurement of raw DB metrics.
-/// Some of our raw DB metrics take ~a few milliseconds to collect. We cannot afford the overhead of
-/// updating them every time they change (i.e. on every DB commit) and we also should not perform
-/// this considerable I/O within the Prometheus' exposition servlet thread - hence, a periodic task
-/// (which in practice still runs more often than Prometheus' scraping).
-const RAW_DB_MEASUREMENT_INTERVAL: Interval = Interval::Seconds(10);
+/// An interval at which to run the [`Scheduler`].
+const SCHEDULER_PRECISION: Duration = Duration::from_secs(1);
 
 const POINTER_JNI_FIELD_NAME: &str = "rustNodeRustEnvironmentPointer";
 
@@ -124,10 +120,10 @@ pub struct JNINodeRustEnvironment {
     pub state_manager: StateManager,
     pub metric_registry: Arc<Registry>,
 
-    /// A handle to a running background metric collector thread.
+    /// A handle to a running background scheduler thread.
     /// It is not directly used, but is held by this instance in order for the thread to be stopped
     /// (when this field is dropped by [`Self::cleanup()`]).
-    pub metric_collector_thread: ScheduleHandle,
+    pub scheduler_thread: ScheduleHandle,
 }
 
 impl JNINodeRustEnvironment {
@@ -144,23 +140,22 @@ impl JNINodeRustEnvironment {
         let fatal_panic_handler = FatalPanicHandler::new(env, j_node_rust_env).unwrap();
         let lock_factory = LockFactory::new(move || fatal_panic_handler.handle_fatal_panic());
         let metric_registry = Arc::new(Registry::new());
+        let mut scheduler = Scheduler::new();
 
         let state_manager = StateManager::new(
             config,
             Some(MempoolRelayDispatcher::new(env, j_node_rust_env).unwrap()),
             &lock_factory,
             &metric_registry,
+            &mut scheduler,
         );
-
-        let metric_collector_thread =
-            start_raw_db_metrics_reporting(state_manager.database.clone(), &metric_registry);
 
         let jni_node_rust_env = JNINodeRustEnvironment {
             runtime: Arc::new(runtime),
             network,
             state_manager,
             metric_registry,
-            metric_collector_thread,
+            scheduler_thread: scheduler.watch_thread(SCHEDULER_PRECISION),
         };
 
         env.set_rust_field(j_node_rust_env, POINTER_JNI_FIELD_NAME, jni_node_rust_env)
@@ -219,19 +214,3 @@ impl JNINodeRustEnvironment {
 }
 
 pub fn export_extern_functions() {}
-
-/// Starts a background thread responsible for periodic raw DB metrics collection, and returns a
-/// handle that keeps it running.
-/// See [`RAW_DB_MEASUREMENT_INTERVAL`] for more details.
-fn start_raw_db_metrics_reporting(
-    database: Arc<RwLock<StateManagerDatabase>>,
-    metric_registry: &Registry,
-) -> ScheduleHandle {
-    let raw_db_metrics = RawDbMetrics::new(metric_registry);
-    let mut scheduler = Scheduler::new();
-    scheduler.every(RAW_DB_MEASUREMENT_INTERVAL).run(move || {
-        let statistics = database.read().get_data_volume_statistics();
-        raw_db_metrics.update(statistics);
-    });
-    scheduler.watch_thread(Duration::from_secs(1))
-}

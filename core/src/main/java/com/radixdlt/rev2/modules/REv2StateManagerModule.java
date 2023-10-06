@@ -108,6 +108,7 @@ public final class REv2StateManagerModule extends AbstractModule {
   private final DatabaseFlags databaseFlags;
   private final Option<RustMempoolConfig> mempoolConfig;
   private final boolean debugLogging;
+  private final StateHashTreeGcConfig stateHashTreeGcConfig;
   private final boolean noFees;
 
   private REv2StateManagerModule(
@@ -117,6 +118,7 @@ public final class REv2StateManagerModule extends AbstractModule {
       DatabaseFlags databaseFlags,
       Option<RustMempoolConfig> mempoolConfig,
       boolean debugLogging,
+      StateHashTreeGcConfig stateHashTreeGcConfig,
       boolean noFees) {
     this.proposalLimitsConfig = proposalLimitsConfig;
     this.vertexLimitsConfigOpt = vertexLimitsConfigOpt;
@@ -124,6 +126,7 @@ public final class REv2StateManagerModule extends AbstractModule {
     this.databaseFlags = databaseFlags;
     this.mempoolConfig = mempoolConfig;
     this.debugLogging = debugLogging;
+    this.stateHashTreeGcConfig = stateHashTreeGcConfig;
     this.noFees = noFees;
   }
 
@@ -132,7 +135,8 @@ public final class REv2StateManagerModule extends AbstractModule {
       VertexLimitsConfig vertexLimitsConfig,
       DatabaseType databaseType,
       DatabaseFlags databaseFlags,
-      Option<RustMempoolConfig> mempoolConfig) {
+      Option<RustMempoolConfig> mempoolConfig,
+      StateHashTreeGcConfig stateHashTreeGcConfig) {
     return new REv2StateManagerModule(
         proposalLimitsConfig,
         Option.some(vertexLimitsConfig),
@@ -140,6 +144,7 @@ public final class REv2StateManagerModule extends AbstractModule {
         databaseFlags,
         mempoolConfig,
         false,
+        stateHashTreeGcConfig,
         false);
   }
 
@@ -157,6 +162,7 @@ public final class REv2StateManagerModule extends AbstractModule {
         databaseFlags,
         mempoolConfig,
         debugLogging,
+        StateHashTreeGcConfig.forTesting(),
         noFees);
   }
 
@@ -209,6 +215,7 @@ public final class REv2StateManagerModule extends AbstractModule {
                     databaseBackendConfig,
                     databaseFlags,
                     getLoggingConfig(),
+                    stateHashTreeGcConfig,
                     noFees));
           }
 
