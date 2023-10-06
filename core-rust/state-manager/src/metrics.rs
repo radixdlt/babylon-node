@@ -72,8 +72,11 @@ use crate::{StateVersion, ValidatorId};
 use node_common::config::limits::*;
 use node_common::locks::{LockFactory, Mutex};
 use node_common::metrics::*;
-use prometheus::{Gauge, Histogram, IntCounter, IntCounterVec, IntGauge, Opts, Registry};
+use prometheus::{
+    Gauge, Histogram, IntCounter, IntCounterVec, IntGauge, IntGaugeVec, Opts, Registry,
+};
 
+use crate::store::traits::measurement::CategoryDbVolumeStatistic;
 use radix_engine::transaction::TransactionFeeSummary;
 use radix_engine_common::prelude::*;
 
@@ -99,6 +102,11 @@ pub struct VertexPrepareMetrics {
     pub proposal_transactions_size: Histogram,
     pub wasted_proposal_bandwidth: Histogram,
     pub stop_reason: IntCounterVec,
+}
+
+pub struct RawDbMetrics {
+    pub entries: IntGaugeVec,
+    pub size: IntGaugeVec,
 }
 
 impl LedgerMetrics {
@@ -366,6 +374,40 @@ impl VertexPrepareMetrics {
         self.wasted_proposal_bandwidth
             .observe((total_proposal_size - committed_proposal_size) as f64);
         self.stop_reason.with_label(stop_reason).inc();
+    }
+}
+
+impl RawDbMetrics {
+    pub fn new(registry: &Registry) -> Self {
+        Self {
+            entries: IntGaugeVec::new(
+                opts(
+                    "raw_db_entries",
+                    "An approximate number of entries persisted in the database, by category.",
+                ),
+                &["category"],
+            )
+            .registered_at(registry),
+            size: IntGaugeVec::new(
+                opts(
+                    "raw_db_size",
+                    "An approximate size of the database, in bytes, by category of entries.",
+                ),
+                &["category"],
+            )
+            .registered_at(registry),
+        }
+    }
+
+    pub fn update(&self, statistics: impl IntoIterator<Item = CategoryDbVolumeStatistic>) {
+        for statistic in statistics {
+            self.entries
+                .with_label(&statistic.category_name)
+                .set(i64::try_from(statistic.entry_count).unwrap_or_default());
+            self.size
+                .with_label(&statistic.category_name)
+                .set(i64::try_from(statistic.size_bytes).unwrap_or_default());
+        }
     }
 }
 

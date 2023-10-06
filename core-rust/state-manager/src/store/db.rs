@@ -94,6 +94,7 @@ pub enum DatabaseBackendConfig {
 // Unfortunately this doesn't work across crates since it's a proc_macro (i.e. for ReadableSubstateStore).
 #[enum_dispatch(
     ConfigurableDatabase,
+    MeasurableDatabase,
     QueryableProofStore,
     TransactionIdentifierLoader,
     WriteableVertexStore,
