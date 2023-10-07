@@ -78,6 +78,7 @@ import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.environment.DatabaseFlags;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.FatalPanicHandler;
+import com.radixdlt.environment.StateHashTreeGcConfig;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.genesis.GenesisData;
@@ -121,6 +122,7 @@ public class REv2StateComputerTest {
             new DatabaseFlags(false, false),
             Option.none(),
             false,
+            StateHashTreeGcConfig.forTesting(),
             false),
         new REv2LedgerInitializerModule(
             RawGenesisDataWithHash.fromGenesisData(

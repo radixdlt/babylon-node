@@ -94,6 +94,7 @@ import com.radixdlt.rev2.modules.*;
 import com.radixdlt.store.NodeStorageLocationFromPropertiesModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.BooleanUtils;
+import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.time.Duration;
@@ -400,6 +401,14 @@ public final class RadixNodeModule extends AbstractModule {
   }
 
   private StateHashTreeGcConfig parseStateHashTreeGcConfig(RuntimeProperties properties) {
+    // How often to run the GC.
+    // This only needs to be one order of magnitude shorter than our intended state hash tree
+    // minimum history duration (which is ~10 minutes below), and could be computed/hardcoded.
+    // However, we make it configurable for tests' purposes.
+    var intervalSec = properties.get("state_hash_tree.gc.interval_sec", 5);
+    Preconditions.checkArgument(
+        intervalSec > 0, "state hash tree GC interval must be positive: %s sec", intervalSec);
+
     // How many most recent state versions to keep in our Merkle tree?
     // The default of "100 * 10 * 60 = 60000" assumes that:
     // - a peak user transaction throughput is 100 TPS;
@@ -423,6 +432,7 @@ public final class RadixNodeModule extends AbstractModule {
         maxDbLockingDurationMillis);
 
     return new StateHashTreeGcConfig(
+        UInt32.fromNonNegativeInt(intervalSec),
         UInt64.fromNonNegativeLong(stateVersionHistoryLength),
         UInt64.fromNonNegativeLong(maxDbLockingDurationMillis));
   }

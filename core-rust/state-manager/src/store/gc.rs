@@ -62,6 +62,7 @@
  * permissions under this License.
  */
 
+use clokwerk::Interval;
 use radix_engine::types::{Categorize, Decode, Encode};
 use radix_engine_stores::hash_tree::tree_store::{
     NodeKey, ReadableTreeStore, StaleTreePart, TreeNode,
@@ -86,6 +87,10 @@ const DELETED_NODE_BUFFER_MAX_LEN: usize = 1000000;
 /// A configuration for [`StateHashTreeGc`].
 #[derive(Debug, Categorize, Encode, Decode, Clone, Default)]
 pub struct StateHashTreeGcConfig {
+    /// How often to run the GC, in seconds.
+    /// This should be at least an order of magnitude shorter than an expected duration over which
+    /// the [`state_version_history_length`] spans (to honour the precision of these settings).
+    pub interval_sec: u32,
     /// How many most recent state versions to keep in the state hash tree.
     pub state_version_history_length: usize,
     /// A maximum duration for which a database lock may be held by the potentially-long-running GC
@@ -99,6 +104,7 @@ pub struct StateHashTreeGcConfig {
 /// The implementation is suited for being driven by an external scheduler.
 pub struct StateHashTreeGc {
     database: Arc<RwLock<StateManagerDatabase>>,
+    interval: Interval,
     history_len: StateVersionDelta,
     max_db_locking_duration: Duration,
 }
@@ -108,9 +114,15 @@ impl StateHashTreeGc {
     pub fn new(database: Arc<RwLock<StateManagerDatabase>>, config: StateHashTreeGcConfig) -> Self {
         Self {
             database,
+            interval: Interval::Seconds(config.interval_sec),
             history_len: StateVersionDelta::try_from(config.state_version_history_length).unwrap(),
             max_db_locking_duration: Duration::from_millis(config.max_db_locking_duration_millis),
         }
+    }
+
+    /// An interval between [`run()`]s, to be used by this instance's scheduler.
+    pub fn interval(&self) -> Interval {
+        self.interval
     }
 
     /// Performs a single GC run, which is supposed to permanently delete *all* old-enough state

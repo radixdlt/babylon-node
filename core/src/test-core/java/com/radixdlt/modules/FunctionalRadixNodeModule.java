@@ -422,6 +422,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                         rev2Config.databaseFlags(),
                         Option.none(),
                         rev2Config.debugLogging(),
+                        rev2Config.stateHashTreeGcConfig(),
                         rev2Config.noFees()));
               }
               case REV2ProposerConfig.Mempool mempool -> {
@@ -436,6 +437,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                         rev2Config.databaseFlags(),
                         Option.some(mempool.mempoolConfig()),
                         rev2Config.debugLogging(),
+                        rev2Config.stateHashTreeGcConfig(),
                         rev2Config.noFees()));
               }
             }

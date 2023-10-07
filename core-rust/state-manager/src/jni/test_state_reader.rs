@@ -78,7 +78,9 @@ use node_common::java::*;
 use radix_engine::blueprints::consensus_manager::{ValidatorField, ValidatorStateFieldSubstate};
 use radix_engine::system::type_info::TypeInfoSubstate;
 
-use crate::store::traits::{QueryableTransactionStore, SubstateNodeAncestryStore};
+use crate::store::traits::{
+    gc::StateHashTreeGcStore, QueryableTransactionStore, SubstateNodeAncestryStore,
+};
 use crate::transaction::LedgerTransactionHash;
 use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 
@@ -261,6 +263,25 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_epoch(
         let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
         let read_store = database.read();
         read_store.get_epoch().number()
+    })
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_testutil_TestStateReader_leastStaleStateHashTreeVersion(
+    env: JNIEnv,
+    _class: JClass,
+    j_rust_global_context: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| -> u64 {
+        let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
+        let read_store = database.read();
+        let least_stale_state_version = read_store
+            .get_stale_tree_parts_iter()
+            .next()
+            .map(|(state_version, _)| state_version)
+            .unwrap_or(StateVersion::pre_genesis());
+        least_stale_state_version.number()
     })
 }
 

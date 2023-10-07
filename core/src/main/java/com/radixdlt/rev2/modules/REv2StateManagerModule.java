@@ -154,6 +154,7 @@ public final class REv2StateManagerModule extends AbstractModule {
       DatabaseFlags databaseFlags,
       Option<RustMempoolConfig> mempoolConfig,
       boolean debugLogging,
+      StateHashTreeGcConfig stateHashTreeGcConfig,
       boolean noFees) {
     return new REv2StateManagerModule(
         proposalLimitsConfig,
@@ -162,7 +163,7 @@ public final class REv2StateManagerModule extends AbstractModule {
         databaseFlags,
         mempoolConfig,
         debugLogging,
-        StateHashTreeGcConfig.forTesting(),
+        stateHashTreeGcConfig,
         noFees);
   }
 

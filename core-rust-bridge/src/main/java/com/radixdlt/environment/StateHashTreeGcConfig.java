@@ -66,10 +66,11 @@ package com.radixdlt.environment;
 
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
 
 public record StateHashTreeGcConfig(
-    UInt64 stateVersionHistoryLength, UInt64 maxDbLockingDurationMillis) {
+    UInt32 intervalSec, UInt64 stateVersionHistoryLength, UInt64 maxDbLockingDurationMillis) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         StateHashTreeGcConfig.class,
@@ -78,6 +79,7 @@ public record StateHashTreeGcConfig(
 
   public static StateHashTreeGcConfig forTesting() {
     // Effectively "no GC during tests":
-    return new StateHashTreeGcConfig(UInt64.MAX_VALUE, UInt64.ZERO);
+    return new StateHashTreeGcConfig(
+        UInt32.fromNonNegativeInt(Integer.MAX_VALUE), UInt64.MAX_VALUE, UInt64.ZERO);
   }
 }

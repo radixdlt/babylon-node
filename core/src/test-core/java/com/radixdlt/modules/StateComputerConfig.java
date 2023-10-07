@@ -74,6 +74,7 @@ import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.ProposerElections;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.environment.DatabaseFlags;
+import com.radixdlt.environment.StateHashTreeGcConfig;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.mempool.MempoolReceiverConfig;
@@ -145,7 +146,14 @@ public sealed interface StateComputerConfig {
       boolean debugLogging,
       boolean noFees) {
     return new REv2StateComputerConfig(
-        networkId, genesis, databaseType, databaseFlags, proposerConfig, debugLogging, noFees);
+        networkId,
+        genesis,
+        databaseType,
+        databaseFlags,
+        proposerConfig,
+        debugLogging,
+        StateHashTreeGcConfig.forTesting(),
+        noFees);
   }
 
   static StateComputerConfig rev2(
@@ -155,7 +163,14 @@ public sealed interface StateComputerConfig {
       DatabaseFlags databaseFlags,
       REV2ProposerConfig proposerConfig) {
     return new REv2StateComputerConfig(
-        networkId, genesis, databaseType, databaseFlags, proposerConfig, false, false);
+        networkId,
+        genesis,
+        databaseType,
+        databaseFlags,
+        proposerConfig,
+        false,
+        StateHashTreeGcConfig.forTesting(),
+        false);
   }
 
   static StateComputerConfig rev2(
@@ -170,6 +185,7 @@ public sealed interface StateComputerConfig {
         new DatabaseFlags(true, false),
         proposerConfig,
         false,
+        StateHashTreeGcConfig.forTesting(),
         false);
   }
 
@@ -239,6 +255,7 @@ public sealed interface StateComputerConfig {
       DatabaseFlags databaseFlags,
       REV2ProposerConfig proposerConfig,
       boolean debugLogging,
+      StateHashTreeGcConfig stateHashTreeGcConfig,
       boolean noFees)
       implements StateComputerConfig {}
 

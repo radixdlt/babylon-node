@@ -96,11 +96,6 @@ use crate::{
 /// (which in practice still runs more often than Prometheus' scraping).
 const RAW_DB_MEASUREMENT_INTERVAL: Interval = Interval::Seconds(10);
 
-/// An interval between [`StateHashTreeGc`] runs.
-/// This only needs to be one order of magnitude lower than our intended state hash tree minimum
-/// history duration (which is ~10 minutes).
-const STATE_HASH_TREE_GC_INTERVAL: Interval = Interval::Minutes(1);
-
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct StateManagerConfig {
     pub network_definition: NetworkDefinition,
@@ -249,7 +244,7 @@ impl StateManager {
         let state_hash_tree_gc =
             StateHashTreeGc::new(database.clone(), config.state_hash_tree_gc_config);
         scheduler
-            .every(STATE_HASH_TREE_GC_INTERVAL)
+            .every(state_hash_tree_gc.interval())
             .run(move || state_hash_tree_gc.run());
 
         Self {
