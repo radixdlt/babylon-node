@@ -63,11 +63,11 @@
  */
 
 use clokwerk::Interval;
+use itertools::Itertools;
 use radix_engine::types::{Categorize, Decode, Encode};
 use radix_engine_stores::hash_tree::tree_store::{
-    NodeKey, ReadableTreeStore, StaleTreePart, TreeNode,
+    NodeKey, ReadableTreeStore, StaleTreePart, TreeChildEntry, TreeNode,
 };
-use std::collections::VecDeque;
 use std::iter;
 use std::ops::Deref;
 use std::sync::Arc;
@@ -83,6 +83,11 @@ use node_common::locks::RwLock;
 /// A maximum number of JMT nodes collected into "batch delete" buffer.
 /// Needed only to avoid OOM problems.
 const DELETED_NODE_BUFFER_MAX_LEN: usize = 1000000;
+
+/// A number of iterated JMT nodes between 2 consecutive time measurements in [`try_delete_all()`]
+/// (a method on which we impose a time limit).
+/// Needed only to avoid too frequent [`Instant::now()`] invocations.
+const TIME_MEASUREMENT_CHUNK_LEN: usize = 100;
 
 /// A configuration for [`StateHashTreeGc`].
 #[derive(Debug, Categorize, Encode, Decode, Clone, Default)]
@@ -151,6 +156,10 @@ impl StateHashTreeGc {
         }
     }
 
+    /// Tries to delete all state hash tree nodes referenced by "stale parts" entries up to the
+    /// given state version, in the given time limit.
+    /// Returns `true` if all such nodes were deleted, or `false` if the time limit was reached
+    /// before that.
     fn try_delete_all(
         database: &StateManagerDatabase,
         to_state_version: StateVersion,
@@ -160,14 +169,14 @@ impl StateHashTreeGc {
         let mut all_deleted = true;
 
         // Open an iterator of "stale tree parts" (batched by state version at which they became stale):
-        let stale_tree_parts_entries = database
+        let stale_entries = database
             .get_stale_tree_parts_iter()
             .take_while(|(state_version, _)| state_version < &to_state_version);
 
         // Collect the stale node keys into a "delete buffer":
         let mut deleted_state_versions = Vec::new();
         let mut deleted_nodes = Vec::new();
-        for (state_version, StaleTreePartsV1(stale_tree_parts)) in stale_tree_parts_entries {
+        'version_entries: for (state_version, StaleTreePartsV1(stale_tree_parts)) in stale_entries {
             for stale_tree_part in stale_tree_parts {
                 let part_keys: Box<dyn Iterator<Item = NodeKey>> = match stale_tree_part {
                     StaleTreePart::Node(key) => Box::new(iter::once(key)),
@@ -176,25 +185,33 @@ impl StateHashTreeGc {
                     // children, in case this process is interrupted half-way and need to be
                     // resumed).
                     StaleTreePart::Subtree(subtree_root_key) => {
-                        Box::new(DfsIterator::new(database, &subtree_root_key))
+                        Box::new(iterate_dfs_post_order(database, subtree_root_key))
                     }
                 };
-                for key in part_keys {
-                    deleted_nodes.push(key);
-                    // Periodically rotate the collected buffer of node keys to delete:
-                    if deleted_nodes.len() == DELETED_NODE_BUFFER_MAX_LEN {
-                        database.batch_delete_node(deleted_nodes.iter());
-                        deleted_nodes.clear();
+                for chunk in &part_keys.chunks(TIME_MEASUREMENT_CHUNK_LEN) {
+                    // Check whether the time limit forces us to return without deleting all:
+                    let now = Instant::now();
+                    if now >= return_incomplete_at {
+                        all_deleted = false;
+                        break 'version_entries;
+                    }
+                    for key in chunk {
+                        deleted_nodes.push(key);
+                        // Periodically rotate the collected buffer of node keys to delete:
+                        if deleted_nodes.len() == DELETED_NODE_BUFFER_MAX_LEN {
+                            database.batch_delete_node(deleted_nodes.iter());
+                            deleted_nodes.clear();
+                        }
                     }
                 }
             }
             deleted_state_versions.push(state_version);
 
-            // Check whether the time limit forces us to return without deleting all:
+            // Same as above: check whether the time limit forces us to return without deleting all:
             let now = Instant::now();
             if now >= return_incomplete_at {
                 all_deleted = false;
-                break;
+                break 'version_entries;
             }
         }
 
@@ -205,92 +222,82 @@ impl StateHashTreeGc {
     }
 }
 
-struct DfsIterator<'s, S> {
+/// Iterates the node keys from the state hash tree's subtree starting at the given root key, in a
+/// depth-first-search, post-order way.
+/// Note: the implementation will only traverse internal nodes, reading the leafs' state from their
+/// parent's child-list. This means that it can return node keys of leafs that were already deleted
+/// from the database (in a previous, incomplete GC run).
+fn iterate_dfs_post_order<'s, S: ReadableTreeStore>(
     tree_store: &'s S,
-    levels: Vec<VecDeque<(NodeKey, bool)>>,
+    root_key: NodeKey,
+) -> Box<dyn Iterator<Item = NodeKey> + 's> {
+    let Some(root_node) = tree_store.get_node(&root_key) else {
+        // A "top-level recovery" case: may happen when we resume an interrupted delete of a
+        // state version (i.e. this entire subtree was one of the early entries within some
+        // `StaleTreePartsV1`).
+        return Box::new(iter::empty());
+    };
+    match root_node {
+        TreeNode::Null => {
+            // A special case: this subtree is empty.
+            // Note: at the moment of writing this, this case is impossible in practice: we do
+            // not delete ReNode-Tier tree, and we also do not store empty lower-Tier trees
+            // (i.e. we delete their higher-Tier leaf counterpart instead). However, we can
+            // return a correct empty result here (in case the above assumptions ever change).
+            Box::new(iter::empty())
+        }
+        TreeNode::Leaf(_) => {
+            // A special case: this subtree is just a single leaf.
+            Box::new(iter::once(root_key))
+        }
+        TreeNode::Internal(root_internal_node) => {
+            // A regular case: we have some nested internal nodes, use the DFS post-order recursion.
+            Box::new(recurse_children_and_append_parent(
+                tree_store,
+                root_internal_node.children,
+                root_key,
+            ))
+        }
+    }
 }
 
-impl<'s, S: ReadableTreeStore> DfsIterator<'s, S> {
-    pub fn new(tree_store: &'s S, root_key: &NodeKey) -> Self {
-        let levels = Self::drill_levels(tree_store, root_key);
-        Self { tree_store, levels }
-    }
-
-    fn drill_levels(tree_store: &S, start_key: &NodeKey) -> Vec<VecDeque<(NodeKey, bool)>> {
-        let mut levels = Vec::new();
-        let mut at_key = start_key;
-        // Drill down the leftmost descendants chain, in order to:
-        // - find the starting point of the DFS iteration;
-        // - and record the single chain of "siblings of ancestors" (to easily continue the traversal).
-        loop {
-            let Some(at_node) = tree_store.get_node(at_key) else {
-                break; // let's silently tolerate nodes deleted by any previous incomplete GC run
+/// The recursive part of the [`iterate_dfs_post_order()`] logic.
+fn recurse_children_and_append_parent<'s, S: ReadableTreeStore + 's>(
+    tree_store: &'s S,
+    children: Vec<TreeChildEntry>,
+    parent_key: NodeKey,
+) -> impl Iterator<Item = NodeKey> + 's {
+    let parent_key_to_be_appended_after_children = iter::once(parent_key.clone());
+    children
+        .into_iter()
+        .flat_map(move |child| -> Box<dyn Iterator<Item = NodeKey>> {
+            let child_key = parent_key.gen_child_node_key(child.version, child.nibble);
+            if child.is_leaf {
+                // A terminal case: we do not need to recurse into children (nor load them from DB).
+                return Box::new(iter::once(child_key));
+            }
+            let Some(child_node) = tree_store.get_node(&child_key) else {
+                // A mid-way "recovery" case: may happen when we resume an interrupted
+                // delete of a particular subtree (and reach an already-deleted child).
+                return Box::new(iter::empty());
             };
-            match at_node {
-                TreeNode::Internal(internal) => {
-                    let level = internal
-                        .children
-                        .into_iter()
-                        .map(|entry| {
-                            (
-                                at_key.gen_child_node_key(entry.version, entry.nibble),
-                                entry.is_leaf,
-                            )
-                        })
-                        .collect::<VecDeque<_>>();
-                    levels.push(level);
-                    let (leftmost_child_key, is_leaf) = levels
-                        .last()
-                        .expect("we literally just pushed an element into it")
-                        .front()
-                        .expect("if internal node exists, then it has children");
-                    if *is_leaf {
-                        break;
-                    } else {
-                        at_key = leftmost_child_key;
-                    }
-                }
-                TreeNode::Leaf(_) => {
-                    // This special case may only happen on the initialization (i.e. from `new()`);
-                    // As seen in the branch above, we normally do not even attempt to load the
-                    // final leaf node from DB.
-                    levels.push(VecDeque::from([(at_key.clone(), true)]));
-                    break;
-                }
-                TreeNode::Null => {
-                    // This case does not occur in practice at all (we do not keep empty lower-tier
-                    // trees in the DB - we remove their higher-tier leaf node instead).
-                    break;
-                }
-            }
-        }
-        levels
-    }
-}
-
-impl<'s, S: ReadableTreeStore> Iterator for DfsIterator<'s, S> {
-    type Item = NodeKey;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let Some(mut current_deepest_level) = self.levels.pop() else {
-            return None;
-        };
-        let (returned_key, _is_leaf) = current_deepest_level.pop_front().unwrap();
-        if let Some((sibling_key, is_leaf)) = current_deepest_level.front() {
-            if *is_leaf {
-                self.levels.push(current_deepest_level);
-            } else {
-                let new_deepest_levels = Self::drill_levels(self.tree_store, sibling_key);
-                self.levels.push(current_deepest_level);
-                self.levels.extend(new_deepest_levels);
-            }
-        }
-        Some(returned_key)
-    }
+            let TreeNode::Internal(child_internal_node) = child_node else {
+                panic!("unexpected non-leaf child: {:?}", child_node);
+            };
+            // A recursion case: this internal node has some child internal node.
+            Box::new(recurse_children_and_append_parent(
+                tree_store,
+                child_internal_node.children,
+                child_key,
+            ))
+        })
+        // DFS post-order: as promised, list the parent after its children.
+        .chain(parent_key_to_be_appended_after_children)
 }
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
     use radix_engine::types::indexmap::indexmap;
     use radix_engine_store_interface::interface::{
@@ -298,6 +305,7 @@ mod tests {
     };
     use radix_engine_stores::hash_tree::put_at_next_version;
     use radix_engine_stores::hash_tree::tree_store::{NibblePath, TypedInMemoryTreeStore};
+    use utils::prelude::{index_set_new, IndexSet};
 
     #[test]
     fn iterates_substates_from_deleted_partition_in_dfs_order() {
@@ -379,19 +387,20 @@ mod tests {
             })
             .collect::<Vec<_>>();
         assert_eq!(stale_subtrees.len(), 1);
-        let deleted_partition_root_key = stale_subtrees.remove(0);
+        let deleted_partition_root_key = stale_subtrees.remove(0).clone();
         // Note: "5f" is the tier separator byte - an implementation detail of our [`NestedTreeStore`].
         assert_eq!(
             deleted_partition_root_key,
-            &NodeKey::new(2, nibbles("c0ffee 5f 07 5f"))
+            NodeKey::new(2, nibbles("c0ffee 5f 07 5f"))
         );
 
         // Act: Request a DFS iterator starting at the deleted partition's root
-        let iterator = DfsIterator::new(&tree_store, deleted_partition_root_key);
+        let iterator = iterate_dfs_post_order(&tree_store, deleted_partition_root_key.clone());
+        let iterated_node_keys = iterator.collect::<Vec<_>>();
 
         // Assert: The listed nodes are in DFS order
         assert_eq!(
-            iterator.collect::<Vec<_>>(),
+            iterated_node_keys,
             vec![
                 // this starts leftmost and completes larger and larger subtrees: (like DFS should)
                 NodeKey::new(2, nibbles("c0ffee 5f 07 5f b0")), // leaf b000000000
@@ -407,8 +416,28 @@ mod tests {
                 NodeKey::new(2, nibbles("c0ffee 5f 07 5f d")), // parent of this ^ one (yup, "long common prefix")
                 // and visits the rightmost top-level leaf sibling too: (like DFS should)
                 NodeKey::new(1, nibbles("c0ffee 5f 07 5f e")), // leaf ee
+                // and the root at the end: (like DFS should)
+                NodeKey::new(2, nibbles("c0ffee 5f 07 5f")), // root
             ]
         );
+
+        // Follow-up: assert that remaining nodes keys are listed after partially executed deletes
+        let mut deleted_keys = index_set_new();
+        for node_key_to_delete in iterated_node_keys.clone() {
+            tree_store.tree_nodes.remove(&node_key_to_delete);
+            deleted_keys.insert(node_key_to_delete);
+            let remaining_iterated_node_keys =
+                iterate_dfs_post_order(&tree_store, deleted_partition_root_key.clone())
+                    .collect::<IndexSet<_>>();
+            assert_eq!(
+                // We deliberately use union - the iterator is allowed to return already-deleted nodes:
+                deleted_keys
+                    .union(&remaining_iterated_node_keys)
+                    .cloned()
+                    .collect::<Vec<_>>(),
+                iterated_node_keys
+            )
+        }
     }
 
     #[test]
@@ -434,13 +463,33 @@ mod tests {
         );
 
         // Act: Request a DFS iterator starting at the partition's root
-        let iterator = DfsIterator::new(&tree_store, &NodeKey::new(1, nibbles("c0ffee 5f 03 5f")));
+        let iterator =
+            iterate_dfs_post_order(&tree_store, NodeKey::new(1, nibbles("c0ffee 5f 03 5f")));
 
         // Assert: The single listed node key
         assert_eq!(
             iterator.collect::<Vec<_>>(),
             vec![NodeKey::new(1, nibbles("c0ffee 5f 03 5f"))], // the root is also the leaf afffff
         );
+    }
+
+    #[test]
+    fn supports_already_deleted_entire_subtree() {
+        // Arrange: A handcrafted stale part entry, for which a subtree does not exist
+        let mut tree_store = TypedInMemoryTreeStore::new();
+        tree_store
+            .stale_part_buffer
+            .push(StaleTreePart::Subtree(NodeKey::new(
+                1,
+                nibbles("c0ffee 5f 03 5f"),
+            )));
+
+        // Act: Request a DFS iterator starting at the partition's root
+        let mut iterator =
+            iterate_dfs_post_order(&tree_store, NodeKey::new(1, nibbles("c0ffee 5f 03 5f")));
+
+        // Assert: Empty iterator
+        assert!(iterator.next().is_none());
     }
 
     fn bytes(string: &str) -> Vec<u8> {

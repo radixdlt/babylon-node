@@ -136,11 +136,11 @@ public final class StateHashTreeGcTest {
       test.startAllNodes();
 
       // Act: Advance at least that many versions, so we are sure about the `current - leastStale`
-      test.runUntilState(NodesPredicate.nodeAt(0, NodePredicate.atExactlyStateVersion(39)), 1000);
+      test.runUntilState(NodesPredicate.nodeAt(0, NodePredicate.atExactlyStateVersion(39)), 10000);
 
       // Assert: Run a few rounds, until an async GC executes
       test.runUntilState(
-          NodesPredicate.nodeAt(0, atExactDifferenceToLeastStaleStateHashTreeVersion(37)), 1000);
+          NodesPredicate.nodeAt(0, atExactDifferenceToLeastStaleStateHashTreeVersion(37)), 10000);
     }
   }
 

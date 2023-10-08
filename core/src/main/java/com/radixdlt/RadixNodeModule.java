@@ -400,6 +400,16 @@ public final class RadixNodeModule extends AbstractModule {
     install(new CapabilitiesModule(builder.build()));
   }
 
+  /**
+   * Parses the part of the configuration related to the garbage collection process pruning the
+   * state hash tree. Each {@link StateHashTreeGcConfig#intervalSec()} seconds, we start a GC
+   * process which fully processes the entire backlog of "stale tree parts" recorded in the DB,
+   * <b>except</b> the most recent {@link StateHashTreeGcConfig#stateVersionHistoryLength()}
+   * entries. For technical reasons (i.e. to avoid holding the DB lock for too long and affecting
+   * other processes) the GC process will perform its work in batches driven by wall-clock time - to
+   * be specific, it will simply release and re-acquire that lock after every {@link
+   * StateHashTreeGcConfig#maxDbLockingDurationMillis()} milliseconds.
+   */
   private StateHashTreeGcConfig parseStateHashTreeGcConfig(RuntimeProperties properties) {
     // How often to run the GC.
     // This only needs to be one order of magnitude shorter than our intended state hash tree
