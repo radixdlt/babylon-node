@@ -85,10 +85,11 @@ use radix_engine_store_interface::interface::*;
 use itertools::Itertools;
 use std::path::PathBuf;
 
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::query::TransactionIdentifierLoader;
+use crate::store::traits::measurement::{CategoryDbVolumeStatistic, MeasurableDatabase};
 use crate::store::traits::scenario::{
     ExecutedGenesisScenario, ExecutedGenesisScenarioStore, ScenarioSequenceNumber,
     VersionedExecutedGenesisScenario,
@@ -550,6 +551,35 @@ impl ConfigurableDatabase for RocksDBStore {
 
     fn is_local_transaction_execution_index_enabled(&self) -> bool {
         self.config.enable_local_transaction_execution_index
+    }
+}
+
+impl MeasurableDatabase for RocksDBStore {
+    fn get_data_volume_statistics(&self) -> Vec<CategoryDbVolumeStatistic> {
+        let mut statistics = ALL_COLUMN_FAMILIES
+            .iter()
+            .map(|cf_name| {
+                (
+                    cf_name.to_string(),
+                    CategoryDbVolumeStatistic::zero(cf_name.to_string()),
+                )
+            })
+            .collect::<IndexMap<_, _>>();
+        let live_files = match self.db.live_files() {
+            Ok(live_files) => live_files,
+            Err(err) => {
+                warn!("could not get DB live files; returning 0: {:?}", err);
+                Vec::new()
+            }
+        };
+        for live_file in live_files {
+            let Some(statistic) = statistics.get_mut(&live_file.column_family_name) else {
+                warn!("LiveFile of unknown column family: {:?}", live_file);
+                continue;
+            };
+            statistic.add(live_file.num_entries, live_file.size);
+        }
+        statistics.into_values().collect()
     }
 }
 

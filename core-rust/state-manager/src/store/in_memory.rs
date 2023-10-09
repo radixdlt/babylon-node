@@ -75,6 +75,7 @@ use crate::{
 };
 
 use crate::query::TransactionIdentifierLoader;
+use crate::store::traits::measurement::{CategoryDbVolumeStatistic, MeasurableDatabase};
 use crate::store::traits::scenario::{
     ExecutedGenesisScenario, ExecutedGenesisScenarioStore, ScenarioSequenceNumber,
 };
@@ -203,6 +204,12 @@ impl ConfigurableDatabase for InMemoryStore {
 
     fn is_local_transaction_execution_index_enabled(&self) -> bool {
         self.flags.enable_local_transaction_execution_index
+    }
+}
+
+impl MeasurableDatabase for InMemoryStore {
+    fn get_data_volume_statistics(&self) -> Vec<CategoryDbVolumeStatistic> {
+        Vec::new() // we are not interested in memory usage of the test-only database
     }
 }
 
