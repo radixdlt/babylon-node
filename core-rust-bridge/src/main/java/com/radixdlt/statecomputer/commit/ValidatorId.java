@@ -64,18 +64,15 @@
 
 package com.radixdlt.statecomputer.commit;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.lang.Tuple.Tuple2;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.utils.UInt32;
 
-public record CommitSummary(
-    ImmutableList<Tuple2<ValidatorId, LeaderRoundCounter>> validatorRoundCounters,
-    UInt32 numUserTransactions) {
+public record ValidatorId(ComponentAddress componentAddress, ECDSASecp256k1PublicKey key) {
+
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        CommitSummary.class,
-        codecs -> StructCodec.fromRecordComponents(CommitSummary.class, codecs));
+        ValidatorId.class, codecs -> StructCodec.fromRecordComponents(ValidatorId.class, codecs));
   }
 }

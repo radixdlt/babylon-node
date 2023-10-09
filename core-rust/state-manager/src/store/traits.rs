@@ -583,6 +583,9 @@ pub mod measurement {
         /// Name of the table/map/cf.
         pub category_name: String,
         /// An estimate of the entry count.
+        /// This will be almost definitely an over-estimate: the inaccuracy comes from
+        /// multi-counting the upserts and disregarding deletes (which happen across different SST
+        /// files).
         pub entry_count: u64,
         /// An estimate of the persisted total size of this category, in bytes.
         /// This should be measured after applying any database overheads (e.g. uncompacted levels)

@@ -122,9 +122,7 @@ public final class ECDSASecp256k1PublicKey {
               "Compressed public key has invalid size (expected %s, got %s)",
               LENGTH, compressedPublicKeyBytes.length));
     }
-    if (compressedPublicKeyBytes[0] != 0x02 && compressedPublicKeyBytes[0] != 0x03) {
-      throw new PublicKeyException("Public key prefix is not a compressed format prefix");
-    }
+
     return new ECDSASecp256k1PublicKey(compressedPublicKeyBytes);
   }
 
