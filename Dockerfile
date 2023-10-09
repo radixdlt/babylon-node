@@ -203,9 +203,10 @@ LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 RUN apt-get update -y \
   && apt-get -y --no-install-recommends install \
     openjdk-17-jre-headless=17.0.8+7-1~deb12u1 \
-    curl=7.88.1-10+deb12u1 \
+    curl=7.88.1-10+deb12u3 \
     gettext-base=0.21-12 \
     daemontools=1:0.76-8.1 \
+    // Fixes CVE-2023-4911 can be removed when we update the base OS image to include this fix
     libc6=2.36-9+deb12u3 \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
