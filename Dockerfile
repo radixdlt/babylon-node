@@ -206,6 +206,7 @@ RUN apt-get update -y \
     curl=7.88.1-10+deb12u1 \
     gettext-base=0.21-12 \
     daemontools=1:0.76-8.1 \
+    libc6=2.36-9+deb12u3 \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
