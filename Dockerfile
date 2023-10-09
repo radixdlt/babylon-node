@@ -88,12 +88,12 @@ RUN apt-get update \
   && apt-get -y --no-install-recommends install \
     ca-certificates \
     build-essential=12.9 \
-    curl=7.88.1-10+deb12u1 \
+    curl=7.88.1-10+deb12u3 \
     g++-aarch64-linux-gnu \
     g++-x86-64-linux-gnu \
     libc6-dev-arm64-cross=2.36-8cross1 \
-    libclang-dev=1:14.0-55.6 \
-    libssl-dev=3.0.9-1 \
+    libclang-dev=1:14.0-55.7~deb12u1 \
+    libssl-dev=3.0.11-1~deb12u1 \
     pkg-config=1.8.1-1 \
   && rm -rf /var/lib/apt/lists/*
 
