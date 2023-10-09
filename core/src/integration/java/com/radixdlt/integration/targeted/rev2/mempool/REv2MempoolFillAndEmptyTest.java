@@ -92,8 +92,10 @@ import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.assertj.core.api.Assertions;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.rules.TemporaryFolder;
 
 /**
  * Test which fills a mempool and then empties it checking to make sure there are no stragglers left
@@ -101,6 +103,9 @@ import org.junit.experimental.categories.Category;
  */
 @Category(Slow.class)
 public final class REv2MempoolFillAndEmptyTest {
+
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
+
   private static final int MAX_MEMPOOL_TRANSACTION_COUNT = 1000;
   private static final Logger logger = LogManager.getLogger();
 
@@ -110,7 +115,7 @@ public final class REv2MempoolFillAndEmptyTest {
         .messageSelector(firstSelector())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
-                NodeStorageConfig.none(),
+                NodeStorageConfig.tempFolder(folder),
                 false,
                 SafetyRecoveryConfig.MOCKED,
                 ConsensusConfig.of(1000),
