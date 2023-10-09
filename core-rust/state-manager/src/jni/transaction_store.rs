@@ -119,7 +119,9 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |_: ()| -> Option<LedgerProof> {
         let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
-        let proof = database.access_historical().get_post_genesis_epoch_proof();
+        let proof = database
+            .access_shared_historical()
+            .get_post_genesis_epoch_proof();
         proof
     })
 }
@@ -136,7 +138,7 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
         request_payload,
         |epoch: Epoch| -> Option<LedgerProof> {
             let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
-            let proof = database.access_historical().get_epoch_proof(epoch);
+            let proof = database.access_shared_historical().get_epoch_proof(epoch);
             proof
         },
     )

@@ -83,9 +83,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public final class RustMempoolTest {
+
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   /** A no-op dispatcher of transactions to be relayed. */
   private static final MempoolRelayDispatcher<RawNotarizedTransaction> NOOP_DISPATCHER = tx -> {};
@@ -119,7 +123,7 @@ public final class RustMempoolTest {
             Option.some(
                 new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount)),
             Option.none(),
-            DatabaseBackendConfig.inMemory(),
+            new DatabaseBackendConfig(folder.newFolder().getPath()),
             new DatabaseFlags(false, false),
             LoggingConfig.getDefault(),
             false);
@@ -173,7 +177,7 @@ public final class RustMempoolTest {
             Option.some(
                 new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount)),
             Option.none(),
-            DatabaseBackendConfig.inMemory(),
+            new DatabaseBackendConfig(folder.newFolder().getPath()),
             new DatabaseFlags(false, false),
             LoggingConfig.getDefault(),
             false);
@@ -310,7 +314,7 @@ public final class RustMempoolTest {
             Option.some(
                 new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount)),
             Option.none(),
-            DatabaseBackendConfig.inMemory(),
+            new DatabaseBackendConfig(folder.newFolder().getPath()),
             new DatabaseFlags(false, false),
             LoggingConfig.getDefault(),
             false);

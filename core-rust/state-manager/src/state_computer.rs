@@ -956,7 +956,7 @@ where
                             .collect::<Vec<_>>()
                             .join("\n")
                     );
-                    let mut write_store = self.store.write_current();
+                    let write_store = self.store.write_current();
                     write_store.put_scenario(sequence_number, executed_scenario);
                     return end_state.next_unused_nonce;
                 }
@@ -1038,7 +1038,7 @@ where
         }
 
         // Step 2.: Start the write DB transaction, check invariants, set-up DB update structures
-        let mut write_store = self.store.write_current();
+        let write_store = self.store.write_current();
         let mut series_executor = self.start_series_execution(write_store.deref());
 
         if commit_request_start_state_version != series_executor.latest_state_version() {
@@ -1219,7 +1219,7 @@ where
     /// This method accepts a pre-validated transaction and trusts its contents (i.e. skips some
     /// validations).
     fn commit_genesis(&self, request: GenesisCommitRequest) {
-        let mut write_store = self.store.write_current();
+        let write_store = self.store.write_current();
         let mut series_executor = self.start_series_execution(write_store.deref());
 
         let mut commit = series_executor
@@ -1346,6 +1346,7 @@ mod tests {
     use prometheus::Registry;
     use radix_engine_common::prelude::NetworkDefinition;
     use radix_engine_common::types::{Epoch, Round};
+    use tempfile::TempDir;
     use transaction::builder::ManifestBuilder;
     use transaction::prelude::*;
 
@@ -1436,6 +1437,7 @@ mod tests {
     }
 
     fn setup_state_manager(
+        tmp: &TempDir,
         vertex_limits_config: VertexLimitsConfig,
     ) -> (LedgerProof, StateManager) {
         let lock_factory = LockFactory::new(|| {});
@@ -1443,7 +1445,7 @@ mod tests {
 
         let config = StateManagerConfig {
             vertex_limits_config: Some(vertex_limits_config),
-            ..StateManagerConfig::new_for_testing()
+            ..StateManagerConfig::new_for_testing(tmp.path().to_str().unwrap())
         };
         let state_manager = StateManager::new(config, None, &lock_factory, &metrics_registry);
 
@@ -1455,10 +1457,11 @@ mod tests {
     }
 
     fn prepare_with_vertex_limits(
+        tmp: &TempDir,
         vertex_limits_config: VertexLimitsConfig,
         proposed_transactions: Vec<RawNotarizedTransaction>,
     ) -> PrepareResult {
-        let (proof, state_manager) = setup_state_manager(vertex_limits_config);
+        let (proof, state_manager) = setup_state_manager(tmp, vertex_limits_config);
         state_manager
             .state_computer
             .prepare(build_unit_test_prepare_request(
@@ -1530,7 +1533,8 @@ mod tests {
 
     #[test]
     fn test_prepare_vertex_limits() {
-        let (proof, state_manager) = setup_state_manager(VertexLimitsConfig::max());
+        let tmp = tempfile::tempdir().unwrap();
+        let (proof, state_manager) = setup_state_manager(&tmp, VertexLimitsConfig::max());
 
         let mut proposed_transactions = Vec::new();
         let epoch = proof.ledger_header.epoch;
@@ -1558,7 +1562,9 @@ mod tests {
         assert_eq!(prepare_result.committed.len(), 10); // 9 committable transactions + 1 round update transaction
         assert_eq!(prepare_result.rejected.len(), 5); // 5 rejected transactions
 
+        let tmp = tempfile::tempdir().unwrap();
         let prepare_result = prepare_with_vertex_limits(
+            &tmp,
             VertexLimitsConfig {
                 max_transaction_count: 6,
                 ..VertexLimitsConfig::max()
@@ -1573,7 +1579,9 @@ mod tests {
         let limited_proposal_ledger_hashes = prepare_result.ledger_hashes;
 
         // We now compute PrepareResult only for the first 7 transactions in order to test that indeed resultant states are the same.
+        let tmp = tempfile::tempdir().unwrap();
         let prepare_result = prepare_with_vertex_limits(
+            &tmp,
             VertexLimitsConfig::max(),
             proposed_transactions.clone()[0..7].to_vec(),
         );
@@ -1582,11 +1590,14 @@ mod tests {
         assert_eq!(prepare_result.ledger_hashes, limited_proposal_ledger_hashes);
 
         // Transaction size/count only tests `check_pre_execution`. We also need to test `try_next_transaction`.
+        let tmp = tempfile::tempdir().unwrap();
         let cost_for_first_9_user_transactions = compute_consumed_execution_units(
-            &setup_state_manager(VertexLimitsConfig::max()).1,
+            &setup_state_manager(&tmp, VertexLimitsConfig::max()).1,
             build_unit_test_prepare_request(&proof, proposed_transactions.clone()[0..9].to_vec()),
         );
+        let tmp = tempfile::tempdir().unwrap();
         let prepare_result = prepare_with_vertex_limits(
+            &tmp,
             VertexLimitsConfig {
                 // We add an extra cost unit in order to not trigger the LimitExceeded right at 9th transaction.
                 max_total_execution_cost_units_consumed: cost_for_first_9_user_transactions + 1,
@@ -1598,7 +1609,9 @@ mod tests {
         assert_eq!(prepare_result.rejected.len(), 4); // 3 rejected transactions + last one that is committable but gets discarded due to limits
 
         let limited_proposal_ledger_hashes = prepare_result.ledger_hashes;
+        let tmp = tempfile::tempdir().unwrap();
         let prepare_result = prepare_with_vertex_limits(
+            &tmp,
             VertexLimitsConfig::max(),
             proposed_transactions.clone()[0..9].to_vec(),
         );

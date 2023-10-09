@@ -62,7 +62,6 @@
  * permissions under this License.
  */
 
-use std::cell::UnsafeCell;
 use std::ops::{Deref, DerefMut};
 
 use std::sync::Arc;
@@ -126,7 +125,7 @@ impl LockFactory {
     pub fn new_state_lock<T>(&self, value: T) -> StateLock<T> {
         StateLock {
             underlying: self.new_rwlock(()),
-            value: UnsafeCell::new(value),
+            value,
         }
     }
 }
@@ -252,8 +251,8 @@ impl<'a, T> Drop for RwLockWriteGuard<'a, T> {
 // interface which is more aware of its "current vs historical" nature. Maybe we will naturally go
 // in that direction when introducing DB snapshotting.
 pub struct StateLock<T> {
-    underlying: RwLock<()>, // we use our own primitive lock a marker for current state
-    value: UnsafeCell<T>,   // we need unsafe access across threads
+    underlying: RwLock<()>, // we use our own primitive to lock a marker for current state
+    value: T,
 }
 
 unsafe impl<T: Send> Send for StateLock<T> {}
@@ -273,6 +272,9 @@ impl<T> StateLock<T> {
     /// Locks the current state for writing.
     /// This method should be used when caller wants to update the guarded value in a way which
     /// changes the notion of "current".
+    /// Please note that the returned guard deliberately does not implement [`DerefMut`], since it
+    /// would create an undefined behaviour (`&` and `&mut` co-existing). The guarded value is
+    /// assumed to use an interior mutability (i.e. expose mutating methods via `&`).
     pub fn write_current(&self) -> StateLockWriteGuard<'_, T> {
         StateLockWriteGuard {
             underlying: self.underlying.write(),
@@ -281,10 +283,10 @@ impl<T> StateLock<T> {
     }
 
     /// Returns a direct reference to the guarded value, without locking anything.
-    /// This method should be used when caller wants to interact selectively with pieces of
-    /// historical state.
-    pub fn access_historical(&self) -> &T {
-        unsafe { &*self.value.get() }
+    /// This method should be used when the caller wants to interact selectively with pieces of the
+    /// historical state, in a way known to be safe.
+    pub fn access_shared_historical(&self) -> &T {
+        &self.value
     }
 }
 
@@ -292,14 +294,14 @@ impl<T> StateLock<T> {
 pub struct StateLockReadGuard<'a, T> {
     #[allow(dead_code)] // only held to release the lock when dropped
     underlying: RwLockReadGuard<'a, ()>,
-    value: &'a UnsafeCell<T>,
+    value: &'a T,
 }
 
 impl<'a, T: 'a> Deref for StateLockReadGuard<'a, T> {
     type Target = T;
 
     fn deref(&self) -> &T {
-        unsafe { &*self.value.get() }
+        self.value
     }
 }
 
@@ -315,20 +317,14 @@ impl<'a, T> Drop for StateLockReadGuard<'a, T> {
 pub struct StateLockWriteGuard<'a, T> {
     #[allow(dead_code)] // only held to release the lock when dropped
     underlying: RwLockWriteGuard<'a, ()>,
-    value: &'a UnsafeCell<T>,
+    value: &'a T,
 }
 
 impl<'a, T: 'a> Deref for StateLockWriteGuard<'a, T> {
     type Target = T;
 
     fn deref(&self) -> &T {
-        unsafe { &*self.value.get() }
-    }
-}
-
-impl<'a, T: 'a> DerefMut for StateLockWriteGuard<'a, T> {
-    fn deref_mut(&mut self) -> &mut T {
-        unsafe { &mut *self.value.get() }
+        self.value
     }
 }
 

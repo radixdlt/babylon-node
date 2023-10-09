@@ -230,7 +230,9 @@ fn start_raw_db_metrics_reporting(
     let raw_db_metrics = RawDbMetrics::new(metric_registry);
     let mut scheduler = Scheduler::new();
     scheduler.every(RAW_DB_MEASUREMENT_INTERVAL).run(move || {
-        let statistics = database.access_historical().get_data_volume_statistics();
+        let statistics = database
+            .access_shared_historical()
+            .get_data_volume_statistics();
         raw_db_metrics.update(statistics);
     });
     scheduler.watch_thread(Duration::from_secs(1))

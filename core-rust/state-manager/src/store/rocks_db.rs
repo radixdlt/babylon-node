@@ -416,7 +416,7 @@ impl RocksDBStore {
 
         let db = DB::open_cf_descriptors(&db_opts, root.as_path(), column_families).unwrap();
 
-        let mut rocks_db_store = RocksDBStore {
+        let rocks_db_store = RocksDBStore {
             config: config.clone(),
             db,
         };
@@ -532,7 +532,7 @@ impl ConfigurableDatabase for RocksDBStore {
         }
     }
 
-    fn write_flags(&mut self, database_config: &DatabaseFlags) {
+    fn write_flags(&self, database_config: &DatabaseFlags) {
         let db_context = self.open_db_context();
         let extension_data_cf = db_context.cf(ExtensionsDataCf);
         extension_data_cf.put(
@@ -584,7 +584,7 @@ impl MeasurableDatabase for RocksDBStore {
 }
 
 impl CommitStore for RocksDBStore {
-    fn commit(&mut self, commit_bundle: CommitBundle) {
+    fn commit(&self, commit_bundle: CommitBundle) {
         let db_context = self.open_db_context();
 
         // Check for duplicate intent/payload hashes in the commit request
@@ -693,7 +693,7 @@ impl CommitStore for RocksDBStore {
 }
 
 impl ExecutedGenesisScenarioStore for RocksDBStore {
-    fn put_scenario(&mut self, number: ScenarioSequenceNumber, scenario: ExecutedGenesisScenario) {
+    fn put_scenario(&self, number: ScenarioSequenceNumber, scenario: ExecutedGenesisScenario) {
         self.open_db_context()
             .cf(ExecutedGenesisScenariosCf)
             .put(&number, &scenario);
@@ -1130,7 +1130,7 @@ impl ReadableAccuTreeStore<StateVersion, ReceiptTreeHash> for RocksDBStore {
 }
 
 impl WriteableVertexStore for RocksDBStore {
-    fn save_vertex_store(&mut self, blob: VertexStoreBlob) {
+    fn save_vertex_store(&self, blob: VertexStoreBlob) {
         self.open_db_context().cf(VertexStoreCf).put(&(), &blob)
     }
 }
@@ -1208,7 +1208,7 @@ impl RocksDBStore {
     }
 
     fn update_account_change_index_from_store(
-        &mut self,
+        &self,
         start_state_version_inclusive: StateVersion,
         limit: u64,
     ) -> StateVersion {
@@ -1260,7 +1260,7 @@ impl AccountChangeIndexExtension for RocksDBStore {
             .unwrap_or(StateVersion::pre_genesis())
     }
 
-    fn catchup_account_change_index(&mut self) {
+    fn catchup_account_change_index(&self) {
         const MAX_TRANSACTION_BATCH: u64 = 16 * 1024;
 
         info!("Account Change Index is enabled!");

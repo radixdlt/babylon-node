@@ -96,12 +96,14 @@ pub struct StateManagerConfig {
 }
 
 impl StateManagerConfig {
-    pub fn new_for_testing() -> Self {
+    pub fn new_for_testing(rocks_db_path: impl Into<String>) -> Self {
         StateManagerConfig {
             network_definition: NetworkDefinition::simulator(),
             mempool_config: Some(MempoolConfig::new_for_testing()),
             vertex_limits_config: None,
-            database_backend_config: DatabaseBackendConfig::InMemory,
+            database_backend_config: DatabaseBackendConfig {
+                rocks_db_path: rocks_db_path.into(),
+            },
             database_flags: DatabaseFlags::default(),
             logging_config: LoggingConfig::default(),
             no_fees: false,

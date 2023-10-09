@@ -132,6 +132,7 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
 
 #[cfg(test)]
 mod tests {
+
     use crate::{PreviewRequest, StateManager, StateManagerConfig};
     use node_common::locks::LockFactory;
     use prometheus::Registry;
@@ -140,10 +141,11 @@ mod tests {
 
     #[test]
     fn test_preview_processed_substate_changes() {
+        let tmp = tempfile::tempdir().unwrap();
         let lock_factory = LockFactory::new(|| {});
         let metrics_registry = Registry::new();
         let state_manager = StateManager::new(
-            StateManagerConfig::new_for_testing(),
+            StateManagerConfig::new_for_testing(tmp.path().to_str().unwrap()),
             None,
             &lock_factory,
             &metrics_registry,

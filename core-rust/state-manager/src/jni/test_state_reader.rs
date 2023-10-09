@@ -126,7 +126,7 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_getTransactionAtSt
         |state_version_number: u64| -> Option<ExecutedTransaction> {
             let state_version = StateVersion::of(state_version_number);
             let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
-            let read_database = database.access_historical();
+            let read_database = database.access_shared_historical();
             let committed_transaction = read_database.get_committed_transaction(state_version)?;
             let committed_identifiers =
                 read_database.get_committed_transaction_identifiers(state_version)?;
@@ -168,7 +168,7 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_getTransactionDeta
         |state_version_number: u64| -> Option<TransactionDetails> {
             let state_version = StateVersion::of(state_version_number);
             let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
-            let read_database = database.access_historical();
+            let read_database = database.access_shared_historical();
             let committed_local_transaction_execution =
                 read_database.get_committed_local_transaction_execution(state_version)?;
 
@@ -276,7 +276,7 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_getNodeGlobalRoot(
         request_payload,
         |internal_address: InternalAddress| -> Option<GlobalAddress> {
             let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
-            let read_store = database.access_historical();
+            let read_store = database.access_shared_historical();
             let node_ancestry_record = read_store.get_ancestry(internal_address.as_node_id());
             node_ancestry_record.map(|node_ancestry_record| {
                 GlobalAddress::new_or_panic(node_ancestry_record.root.0 .0)
