@@ -66,12 +66,7 @@ use std::collections::HashSet;
 use std::fmt;
 
 use crate::store::traits::*;
-use crate::{
-    CommittedTransactionIdentifiers, LedgerProof, LedgerTransactionReceipt,
-    LocalTransactionExecution, LocalTransactionReceipt, ReceiptTreeHash, StateVersion,
-    TransactionTreeHash, VersionedCommittedTransactionIdentifiers, VersionedLedgerProof,
-    VersionedLedgerTransactionReceipt, VersionedLocalTransactionExecution,
-};
+use crate::{CommittedTransactionIdentifiers, LedgerProof, LedgerTransactionReceipt, LocalTransactionExecution, LocalTransactionReceipt, ReceiptTreeHash, StateHashTreeDiff, StateVersion, TransactionTreeHash, VersionedCommittedTransactionIdentifiers, VersionedLedgerProof, VersionedLedgerTransactionReceipt, VersionedLocalTransactionExecution};
 use node_common::utils::IsAccountExt;
 use radix_engine::types::*;
 use radix_engine_stores::hash_tree::tree_store::{
@@ -660,13 +655,22 @@ impl CommitStore for RocksDBStore {
             .put(&commit_state_version, &commit_bundle.receipt_tree_slice);
     }
 
-    fn commit_lite(&mut self, state_version: StateVersion, substate_store_update: SubstateStoreUpdate) {
+    fn commit_lite(&mut self, state_version: StateVersion, substate_store_update: SubstateStoreUpdate,
+                   state_hash_tree_diff: StateHashTreeDiff) {
         let db_context = self.open_db_context();
 
         // A bit of a hack: hijacking this CF for storing the latest state version
         db_context
             .cf(LedgerTransactionHashesCf)
             .put(&LedgerTransactionHash(Hash([0; Hash::LENGTH])), &state_version);
+
+        for (key, node) in state_hash_tree_diff.new_nodes {
+            db_context.cf(StateHashTreeNodesCf).put(&key, &node);
+        }
+        db_context
+            .cf(StaleStateHashTreePartsCf)
+            .put(&state_version.previous().unwrap_or(StateVersion::pre_genesis()),
+                 &StaleTreePartsV1(state_hash_tree_diff.stale_tree_parts));
 
         let substates_cf = db_context.cf(SubstatesCf);
         for (node_key, node_updates) in substate_store_update.updates.node_updates {

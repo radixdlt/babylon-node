@@ -382,7 +382,7 @@ impl ProcessedCommitResult {
         }
     }
 
-    fn compute_state_tree_update<S: ReadableStateTreeStore>(
+    pub fn compute_state_tree_update<S: ReadableStateTreeStore>(
         store: &S,
         parent_state_version: StateVersion,
         database_updates: &DatabaseUpdates,

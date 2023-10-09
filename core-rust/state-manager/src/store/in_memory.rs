@@ -68,11 +68,7 @@ use crate::store::traits::*;
 use crate::transaction::{
     LedgerTransactionHash, RawLedgerTransaction, TypedTransactionIdentifiers,
 };
-use crate::{
-    CommittedTransactionIdentifiers, LedgerProof, LedgerTransactionReceipt,
-    LocalTransactionExecution, LocalTransactionReceipt, ReceiptTreeHash, StateVersion,
-    TransactionTreeHash,
-};
+use crate::{CommittedTransactionIdentifiers, LedgerProof, LedgerTransactionReceipt, LocalTransactionExecution, LocalTransactionReceipt, ReceiptTreeHash, StateHashTreeDiff, StateVersion, TransactionTreeHash};
 
 use crate::query::TransactionIdentifierLoader;
 use crate::store::traits::scenario::{
@@ -338,7 +334,8 @@ impl CommitStore for InMemoryStore {
             .insert(commit_state_version, commit_bundle.receipt_tree_slice);
     }
 
-    fn commit_lite(&mut self, state_version: StateVersion, substate_store_update: SubstateStoreUpdate) {
+    fn commit_lite(&mut self, state_version: StateVersion, substate_store_update: SubstateStoreUpdate,
+                   state_hash_tree_diff: StateHashTreeDiff) {
         todo!()
     }
 }
