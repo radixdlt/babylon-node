@@ -62,9 +62,7 @@
  * permissions under this License.
  */
 
-use clokwerk::{ScheduleHandle, Scheduler};
 use std::sync::Arc;
-use std::time::Duration;
 
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
@@ -75,6 +73,7 @@ use node_common::locks::*;
 use prometheus::Registry;
 use radix_engine_common::prelude::NetworkDefinition;
 
+use node_common::scheduler::ClokwerkScheduler;
 use tokio::runtime::Runtime;
 
 use crate::mempool_manager::MempoolManager;
@@ -85,9 +84,6 @@ use crate::store::StateManagerDatabase;
 
 use super::fatal_panic_handler::FatalPanicHandler;
 use crate::{StateComputer, StateManager, StateManagerConfig};
-
-/// An interval at which to run the [`Scheduler`].
-const SCHEDULER_PRECISION: Duration = Duration::from_secs(1);
 
 const POINTER_JNI_FIELD_NAME: &str = "rustNodeRustEnvironmentPointer";
 
@@ -120,10 +116,11 @@ pub struct JNINodeRustEnvironment {
     pub state_manager: StateManager,
     pub metric_registry: Arc<Registry>,
 
-    /// A handle to a running background scheduler thread.
-    /// It is not directly used, but is held by this instance in order for the thread to be stopped
-    /// (when this field is dropped by [`Self::cleanup()`]).
-    pub scheduler_thread: ScheduleHandle,
+    /// An active background scheduler, potentially holding multiple running threads.
+    /// Note: right now the scheduler is not interacted with after construction; we only have to
+    /// hold on to it, since its threads are stopped when this field is dropped (deliberately in
+    /// [`Self::cleanup()`]).
+    pub scheduler: ClokwerkScheduler,
 }
 
 impl JNINodeRustEnvironment {
@@ -140,7 +137,7 @@ impl JNINodeRustEnvironment {
         let fatal_panic_handler = FatalPanicHandler::new(env, j_node_rust_env).unwrap();
         let lock_factory = LockFactory::new(move || fatal_panic_handler.handle_fatal_panic());
         let metric_registry = Arc::new(Registry::new());
-        let mut scheduler = Scheduler::new();
+        let mut scheduler = ClokwerkScheduler::default();
 
         let state_manager = StateManager::new(
             config,
@@ -155,7 +152,7 @@ impl JNINodeRustEnvironment {
             network,
             state_manager,
             metric_registry,
-            scheduler_thread: scheduler.watch_thread(SCHEDULER_PRECISION),
+            scheduler,
         };
 
         env.set_rust_field(j_node_rust_env, POINTER_JNI_FIELD_NAME, jni_node_rust_env)

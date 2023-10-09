@@ -1206,6 +1206,7 @@ version = "0.1.0"
 dependencies = [
  "bech32",
  "blake2",
+ "clokwerk",
  "jni",
  "opentelemetry",
  "opentelemetry-jaeger",
@@ -2158,7 +2159,6 @@ name = "state-manager"
 version = "0.1.0"
 dependencies = [
  "blake2",
- "clokwerk",
  "enum_dispatch",
  "hex",
  "im",

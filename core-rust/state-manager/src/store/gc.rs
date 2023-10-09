@@ -62,7 +62,6 @@
  * permissions under this License.
  */
 
-use clokwerk::Interval;
 use itertools::Itertools;
 use radix_engine::types::{Categorize, Decode, Encode};
 use radix_engine_stores::hash_tree::tree_store::{
@@ -109,7 +108,7 @@ pub struct StateHashTreeGcConfig {
 /// The implementation is suited for being driven by an external scheduler.
 pub struct StateHashTreeGc {
     database: Arc<RwLock<StateManagerDatabase>>,
-    interval: Interval,
+    interval: Duration,
     history_len: StateVersionDelta,
     max_db_locking_duration: Duration,
 }
@@ -119,14 +118,14 @@ impl StateHashTreeGc {
     pub fn new(database: Arc<RwLock<StateManagerDatabase>>, config: StateHashTreeGcConfig) -> Self {
         Self {
             database,
-            interval: Interval::Seconds(config.interval_sec),
+            interval: Duration::from_secs(u64::from(config.interval_sec)),
             history_len: StateVersionDelta::try_from(config.state_version_history_length).unwrap(),
             max_db_locking_duration: Duration::from_millis(config.max_db_locking_duration_millis),
         }
     }
 
     /// An interval between [`run()`]s, to be used by this instance's scheduler.
-    pub fn interval(&self) -> Interval {
+    pub fn interval(&self) -> Duration {
         self.interval
     }
 

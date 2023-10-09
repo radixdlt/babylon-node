@@ -1335,7 +1335,6 @@ struct PendingTransactionResult {
 
 #[cfg(test)]
 mod tests {
-    use clokwerk::Scheduler;
     use std::ops::Deref;
 
     use crate::transaction::{LedgerTransaction, RoundUpdateTransactionV1};
@@ -1344,6 +1343,7 @@ mod tests {
     };
     use node_common::config::limits::VertexLimitsConfig;
     use node_common::locks::LockFactory;
+    use node_common::scheduler::NoopScheduler;
     use prometheus::Registry;
     use radix_engine_common::prelude::NetworkDefinition;
     use radix_engine_common::types::{Epoch, Round};
@@ -1451,7 +1451,7 @@ mod tests {
             None,
             &lock_factory,
             &metrics_registry,
-            &mut Scheduler::new(),
+            &mut NoopScheduler,
         );
 
         let proof = state_manager

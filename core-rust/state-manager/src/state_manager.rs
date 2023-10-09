@@ -62,9 +62,10 @@
  * permissions under this License.
  */
 
-use clokwerk::{Interval, Scheduler};
 use std::sync::Arc;
+use std::time::Duration;
 
+use node_common::scheduler::Scheduler;
 use node_common::{
     config::{limits::VertexLimitsConfig, MempoolConfig},
     locks::*,
@@ -94,7 +95,7 @@ use crate::{
 /// updating them every time they change (i.e. on every DB commit) and we also should not perform
 /// this considerable I/O within the Prometheus' exposition servlet thread - hence, a periodic task
 /// (which in practice still runs more often than Prometheus' scraping).
-const RAW_DB_MEASUREMENT_INTERVAL: Interval = Interval::Seconds(10);
+const RAW_DB_MEASUREMENT_INTERVAL: Duration = Duration::from_secs(10);
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct StateManagerConfig {
@@ -140,7 +141,7 @@ impl StateManager {
         mempool_relay_dispatcher: Option<MempoolRelayDispatcher>,
         lock_factory: &LockFactory,
         metrics_registry: &Registry,
-        scheduler: &mut Scheduler,
+        scheduler: &mut impl Scheduler,
     ) -> Self {
         let mempool_config = match config.mempool_config {
             Some(mempool_config) => mempool_config,
@@ -236,16 +237,16 @@ impl StateManager {
         // Register the periodic background task for collecting the costly raw DB metrics...
         let raw_db_metrics_collector =
             RawDbMetricsCollector::new(database.clone(), metrics_registry);
-        scheduler
-            .every(RAW_DB_MEASUREMENT_INTERVAL)
-            .run(move || raw_db_metrics_collector.run());
+        scheduler.start_periodic(RAW_DB_MEASUREMENT_INTERVAL, move || {
+            raw_db_metrics_collector.run()
+        });
 
         // ... and for deleting the stale state hash tree nodes (a.k.a. "JMT GC"):
         let state_hash_tree_gc =
             StateHashTreeGc::new(database.clone(), config.state_hash_tree_gc_config);
-        scheduler
-            .every(state_hash_tree_gc.interval())
-            .run(move || state_hash_tree_gc.run());
+        scheduler.start_periodic(state_hash_tree_gc.interval(), move || {
+            state_hash_tree_gc.run()
+        });
 
         Self {
             state_computer,
