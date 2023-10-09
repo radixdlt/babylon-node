@@ -32,6 +32,9 @@ pub struct LtsCommittedTransactionOutcome {
     /// A list of the resultant fungible account balances for any balances which changed in this transaction. Only balances for accounts are returned, not any other kind of entity. 
     #[serde(rename = "resultant_account_fungible_balances")]
     pub resultant_account_fungible_balances: Vec<crate::core_api::generated::models::LtsResultantAccountFungibleBalances>,
+    /// Non fungible changes per entity (GlobalAddress) and resource 
+    #[serde(rename = "non_fungible_entity_changes")]
+    pub non_fungible_entity_changes: Vec<crate::core_api::generated::models::LtsEntityNonFungibleChanges>,
     /// The string-encoded decimal representing the total amount of XRD payed as fee (execution, validator tip and royalties). A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. 
     #[serde(rename = "total_fee")]
     pub total_fee: String,
@@ -39,7 +42,7 @@ pub struct LtsCommittedTransactionOutcome {
 
 impl LtsCommittedTransactionOutcome {
     /// For the given transaction, contains the status, total fee summary and individual entity resource balance changes. The balance changes accounts for the fee payments as well. Current implementation does not take into account recalls, but this will change in a future update. For failed transactions, current implementation does not return any balance changes (not even the fee payments). This will also change in a future update. 
-    pub fn new(state_version: i64, proposer_timestamp_ms: i64, accumulator_hash: String, status: crate::core_api::generated::models::LtsCommittedTransactionStatus, fungible_entity_balance_changes: Vec<crate::core_api::generated::models::LtsEntityFungibleBalanceChanges>, resultant_account_fungible_balances: Vec<crate::core_api::generated::models::LtsResultantAccountFungibleBalances>, total_fee: String) -> LtsCommittedTransactionOutcome {
+    pub fn new(state_version: i64, proposer_timestamp_ms: i64, accumulator_hash: String, status: crate::core_api::generated::models::LtsCommittedTransactionStatus, fungible_entity_balance_changes: Vec<crate::core_api::generated::models::LtsEntityFungibleBalanceChanges>, resultant_account_fungible_balances: Vec<crate::core_api::generated::models::LtsResultantAccountFungibleBalances>, non_fungible_entity_changes: Vec<crate::core_api::generated::models::LtsEntityNonFungibleChanges>, total_fee: String) -> LtsCommittedTransactionOutcome {
         LtsCommittedTransactionOutcome {
             state_version,
             proposer_timestamp_ms,
@@ -48,6 +51,7 @@ impl LtsCommittedTransactionOutcome {
             status,
             fungible_entity_balance_changes,
             resultant_account_fungible_balances,
+            non_fungible_entity_changes,
             total_fee,
         }
     }

@@ -1,3 +1,4 @@
+use models::lts_entity_non_fungible_changes::LtsEntityNonFungibleChanges;
 use radix_engine::{
     system::system_modules::costing::RoyaltyRecipient,
     transaction::BalanceChange,
@@ -69,6 +70,12 @@ pub fn to_api_lts_committed_transaction_outcome(
                 .global_balance_summary
                 .global_balance_changes,
         )?,
+        non_fungible_entity_changes: to_api_lts_entity_non_fungible_changes(
+            context,
+            &local_execution
+                .global_balance_summary
+                .global_balance_changes,
+        )?,
         resultant_account_fungible_balances: to_api_lts_resultant_account_fungible_balances(
             context,
             &local_execution
@@ -77,6 +84,35 @@ pub fn to_api_lts_committed_transaction_outcome(
         )?,
         total_fee: to_api_decimal(&local_execution.fee_summary.total_cost()),
     })
+}
+
+pub fn to_api_lts_entity_non_fungible_changes(
+    context: &MappingContext,
+    global_balance_summary: &IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>>,
+) -> Result<Vec<LtsEntityNonFungibleChanges>, MappingError> {
+    let mut changes = Vec::new();
+    for (address, balance_changes) in global_balance_summary.iter() {
+        for (resource, balance_change) in balance_changes.iter() {
+            match balance_change {
+                BalanceChange::Fungible(_) => {}
+                BalanceChange::NonFungible { added, removed } => {
+                    changes.push(LtsEntityNonFungibleChanges {
+                        account_address: to_api_global_address(context, address)?,
+                        resource_address: to_api_resource_address(context, resource)?,
+                        added: added
+                            .iter()
+                            .map(|non_fungible_id| non_fungible_id.to_string())
+                            .collect(),
+                        removed: removed
+                            .iter()
+                            .map(|non_fungible_id| non_fungible_id.to_string())
+                            .collect(),
+                    });
+                }
+            }
+        }
+    }
+    Ok(changes)
 }
 
 pub fn to_api_lts_fungible_balance_changes(

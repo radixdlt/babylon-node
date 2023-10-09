@@ -82,6 +82,75 @@ import org.junit.Test;
 
 public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
   @Test
+  public void test_non_fungible_entity_changes() throws Exception {
+    try (var test = buildRunningServerTest(new DatabaseFlags(true, true))) {
+      test.suppressUnusedWarning();
+
+      var accountKeyPair = ECKeyPair.generateNew();
+      var accountAddress = Address.virtualAccountAddress(accountKeyPair.getPublicKey());
+      var resourceAddress = createFreeMintBurnNonFungibleResource(test);
+
+      // Single NF mint
+      var tx1Result =
+          getSingleCommittedTransactionOutcome(
+              submitAndWaitForSuccess(
+                  test,
+                  Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
+                      resourceAddress, accountAddress, List.of(1), List.of()),
+                  List.of(accountKeyPair)));
+      assertThat(tx1Result.getNonFungibleEntityChanges().size()).isEqualTo(1);
+      assertThat(tx1Result.getNonFungibleEntityChanges().get(0).getAdded().size()).isEqualTo(1);
+      assertThat(tx1Result.getNonFungibleEntityChanges().get(0).getRemoved()).isEmpty();
+      assertThat(tx1Result.getNonFungibleEntityChanges().get(0).getAdded().get(0)).isEqualTo("#1#");
+
+      // Transient token is not reported
+      var tx2Result =
+          getSingleCommittedTransactionOutcome(
+              submitAndWaitForSuccess(
+                  test,
+                  Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
+                      resourceAddress, accountAddress, List.of(2), List.of(2)),
+                  List.of(accountKeyPair)));
+      assertThat(tx2Result.getNonFungibleEntityChanges()).isEmpty();
+
+      // Multiple NF mint
+      var tx3Result =
+          getSingleCommittedTransactionOutcome(
+              submitAndWaitForSuccess(
+                  test,
+                  Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
+                      resourceAddress, accountAddress, List.of(3, 4, 5), List.of()),
+                  List.of(accountKeyPair)));
+      assertThat(tx3Result.getNonFungibleEntityChanges().size()).isEqualTo(1);
+      assertThat(tx3Result.getNonFungibleEntityChanges().get(0).getAdded().size()).isEqualTo(3);
+      assertThat(tx3Result.getNonFungibleEntityChanges().get(0).getRemoved()).isEmpty();
+      assertThat(tx3Result.getNonFungibleEntityChanges().get(0).getAdded().get(0)).isEqualTo("#3#");
+      assertThat(tx3Result.getNonFungibleEntityChanges().get(0).getAdded().get(1)).isEqualTo("#4#");
+      assertThat(tx3Result.getNonFungibleEntityChanges().get(0).getAdded().get(2)).isEqualTo("#5#");
+
+      // Multiple NF burn
+      var tx4Result =
+          getSingleCommittedTransactionOutcome(
+              submitAndWaitForSuccess(
+                  test,
+                  Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
+                      resourceAddress, accountAddress, List.of(), List.of(3, 4, 5, 1)),
+                  List.of(accountKeyPair)));
+      assertThat(tx4Result.getNonFungibleEntityChanges().size()).isEqualTo(1);
+      assertThat(tx4Result.getNonFungibleEntityChanges().get(0).getAdded()).isEmpty();
+      assertThat(tx4Result.getNonFungibleEntityChanges().get(0).getRemoved().size()).isEqualTo(4);
+      assertThat(tx4Result.getNonFungibleEntityChanges().get(0).getRemoved().get(0))
+          .isEqualTo("#1#");
+      assertThat(tx4Result.getNonFungibleEntityChanges().get(0).getRemoved().get(1))
+          .isEqualTo("#3#");
+      assertThat(tx4Result.getNonFungibleEntityChanges().get(0).getRemoved().get(2))
+          .isEqualTo("#4#");
+      assertThat(tx4Result.getNonFungibleEntityChanges().get(0).getRemoved().get(3))
+          .isEqualTo("#5#");
+    }
+  }
+
+  @Test
   public void test_resultant_account_balances() throws Exception {
     // We run all scenarios for the case when RE decides to change invariants (i.e. no vault
     // substate is deleted).
@@ -132,7 +201,6 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
               findAccount(tx3Result.getResultantAccountFungibleBalances(), account2Address)
                   .getResultantBalances())
           .isEqualTo(List.of(balance(account2ExpectedAmount, XRD)));
-
       var tx4Result =
           getSingleCommittedTransactionOutcome(
               submitAndWaitForSuccess(

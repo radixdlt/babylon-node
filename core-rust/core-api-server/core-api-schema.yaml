@@ -5757,6 +5757,7 @@ components:
         - status
         - fungible_entity_balance_changes
         - resultant_account_fungible_balances
+        - non_fungible_entity_changes
         - total_fee
       properties:
         state_version:
@@ -5794,11 +5795,45 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/LtsResultantAccountFungibleBalances"
+        non_fungible_entity_changes:
+          description: |
+            Non fungible changes per entity (GlobalAddress) and resource
+          type: array
+          items:
+            $ref: "#/components/schemas/LtsEntityNonFungibleChanges"
         total_fee:
           type: string
           description: |
             The string-encoded decimal representing the total amount of XRD payed as fee (execution, validator tip and royalties).
             A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
+    LtsEntityNonFungibleChanges:
+      type: object
+      required:
+        - account_address
+        - resource_address
+        - added
+        - removed
+      properties:
+        account_address:
+          type: string
+          description: The Bech32m-encoded human readable version of the account's address
+        resource_address:
+          type: string
+        added:
+          type: array
+          items:
+            $ref: "#/components/schemas/LtsNonFungibleId"
+        removed:
+          type: array
+          items:
+            $ref: "#/components/schemas/LtsNonFungibleId"
+    LtsNonFungibleId:
+      type: string
+      description: |
+        The simple string representation of the non-fungible id.
+        For string id types, this is simply the string itself; for integer types, this is the integer as a decimal; and for the bytes id type, this is the lower case hex representation.
+        A non-fungible resource has a fixed `NonFungibleIdType`, so this representation uniquely identifies this non-fungible
+        under the given resource address.
     LtsEntityFungibleBalanceChanges:
       type: object
       required:

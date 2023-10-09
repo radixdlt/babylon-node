@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.LtsCommittedTransactionStatus;
 import com.radixdlt.api.core.generated.models.LtsEntityFungibleBalanceChanges;
+import com.radixdlt.api.core.generated.models.LtsEntityNonFungibleChanges;
 import com.radixdlt.api.core.generated.models.LtsResultantAccountFungibleBalances;
 import com.radixdlt.api.core.generated.models.TransactionIdentifiers;
 import io.swagger.annotations.ApiModel;
@@ -45,6 +46,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   LtsCommittedTransactionOutcome.JSON_PROPERTY_STATUS,
   LtsCommittedTransactionOutcome.JSON_PROPERTY_FUNGIBLE_ENTITY_BALANCE_CHANGES,
   LtsCommittedTransactionOutcome.JSON_PROPERTY_RESULTANT_ACCOUNT_FUNGIBLE_BALANCES,
+  LtsCommittedTransactionOutcome.JSON_PROPERTY_NON_FUNGIBLE_ENTITY_CHANGES,
   LtsCommittedTransactionOutcome.JSON_PROPERTY_TOTAL_FEE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -69,6 +71,9 @@ public class LtsCommittedTransactionOutcome {
 
   public static final String JSON_PROPERTY_RESULTANT_ACCOUNT_FUNGIBLE_BALANCES = "resultant_account_fungible_balances";
   private List<LtsResultantAccountFungibleBalances> resultantAccountFungibleBalances = new ArrayList<>();
+
+  public static final String JSON_PROPERTY_NON_FUNGIBLE_ENTITY_CHANGES = "non_fungible_entity_changes";
+  private List<LtsEntityNonFungibleChanges> nonFungibleEntityChanges = new ArrayList<>();
 
   public static final String JSON_PROPERTY_TOTAL_FEE = "total_fee";
   private String totalFee;
@@ -272,6 +277,37 @@ public class LtsCommittedTransactionOutcome {
   }
 
 
+  public LtsCommittedTransactionOutcome nonFungibleEntityChanges(List<LtsEntityNonFungibleChanges> nonFungibleEntityChanges) {
+    this.nonFungibleEntityChanges = nonFungibleEntityChanges;
+    return this;
+  }
+
+  public LtsCommittedTransactionOutcome addNonFungibleEntityChangesItem(LtsEntityNonFungibleChanges nonFungibleEntityChangesItem) {
+    this.nonFungibleEntityChanges.add(nonFungibleEntityChangesItem);
+    return this;
+  }
+
+   /**
+   * Non fungible changes per entity (GlobalAddress) and resource 
+   * @return nonFungibleEntityChanges
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "Non fungible changes per entity (GlobalAddress) and resource ")
+  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_ENTITY_CHANGES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public List<LtsEntityNonFungibleChanges> getNonFungibleEntityChanges() {
+    return nonFungibleEntityChanges;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_ENTITY_CHANGES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setNonFungibleEntityChanges(List<LtsEntityNonFungibleChanges> nonFungibleEntityChanges) {
+    this.nonFungibleEntityChanges = nonFungibleEntityChanges;
+  }
+
+
   public LtsCommittedTransactionOutcome totalFee(String totalFee) {
     this.totalFee = totalFee;
     return this;
@@ -317,12 +353,13 @@ public class LtsCommittedTransactionOutcome {
         Objects.equals(this.status, ltsCommittedTransactionOutcome.status) &&
         Objects.equals(this.fungibleEntityBalanceChanges, ltsCommittedTransactionOutcome.fungibleEntityBalanceChanges) &&
         Objects.equals(this.resultantAccountFungibleBalances, ltsCommittedTransactionOutcome.resultantAccountFungibleBalances) &&
+        Objects.equals(this.nonFungibleEntityChanges, ltsCommittedTransactionOutcome.nonFungibleEntityChanges) &&
         Objects.equals(this.totalFee, ltsCommittedTransactionOutcome.totalFee);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(stateVersion, proposerTimestampMs, accumulatorHash, userTransactionIdentifiers, status, fungibleEntityBalanceChanges, resultantAccountFungibleBalances, totalFee);
+    return Objects.hash(stateVersion, proposerTimestampMs, accumulatorHash, userTransactionIdentifiers, status, fungibleEntityBalanceChanges, resultantAccountFungibleBalances, nonFungibleEntityChanges, totalFee);
   }
 
   @Override
@@ -336,6 +373,7 @@ public class LtsCommittedTransactionOutcome {
     sb.append("    status: ").append(toIndentedString(status)).append("\n");
     sb.append("    fungibleEntityBalanceChanges: ").append(toIndentedString(fungibleEntityBalanceChanges)).append("\n");
     sb.append("    resultantAccountFungibleBalances: ").append(toIndentedString(resultantAccountFungibleBalances)).append("\n");
+    sb.append("    nonFungibleEntityChanges: ").append(toIndentedString(nonFungibleEntityChanges)).append("\n");
     sb.append("    totalFee: ").append(toIndentedString(totalFee)).append("\n");
     sb.append("}");
     return sb.toString();
