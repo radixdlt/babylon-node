@@ -53,7 +53,7 @@ pub(crate) async fn handle_lts_state_account_deposit_behaviour(
         .map_err(|err| err.into_response_error("badge"))?;
 
     // If the above checks were al fine, open database (and capture the "at state" information):
-    let database = state.state_manager.database.read();
+    let database = state.state_manager.database.read_current();
     let header = read_current_ledger_header(database.deref());
 
     // Read out the field that must exist for non-virtual addresses:

@@ -112,7 +112,7 @@ impl StateManagerConfig {
 #[derive(Clone)]
 pub struct StateManager {
     pub state_computer: Arc<StateComputer<StateManagerDatabase>>,
-    pub database: Arc<RwLock<StateManagerDatabase>>,
+    pub database: Arc<StateLock<StateManagerDatabase>>,
     pub pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
     pub mempool: Arc<RwLock<PriorityMempool>>,
     pub mempool_manager: Arc<MempoolManager>,
@@ -139,7 +139,7 @@ impl StateManager {
         let network = config.network_definition;
         let logging_config = config.logging_config;
 
-        let database = Arc::new(lock_factory.named("database").new_rwlock(
+        let database = Arc::new(lock_factory.named("database").new_state_lock(
             StateManagerDatabase::from_config(
                 config.database_backend_config,
                 config.database_flags,

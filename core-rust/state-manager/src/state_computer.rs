@@ -85,7 +85,7 @@ use transaction_scenarios::scenario::DescribedAddress as ScenarioDescribedAddres
 use transaction_scenarios::scenario::*;
 use transaction_scenarios::scenarios::*;
 
-use node_common::locks::{LockFactory, Mutex, RwLock};
+use node_common::locks::{LockFactory, Mutex, RwLock, StateLock};
 use prometheus::Registry;
 use tracing::{info, warn};
 
@@ -111,7 +111,7 @@ pub struct StateComputerLoggingConfig {
 
 pub struct StateComputer<S> {
     network: NetworkDefinition,
-    store: Arc<RwLock<S>>,
+    store: Arc<StateLock<S>>,
     mempool_manager: Arc<MempoolManager>,
     execution_configurator: Arc<ExecutionConfigurator>,
     pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
@@ -130,7 +130,7 @@ impl<S: QueryableProofStore> StateComputer<S> {
     pub fn new(
         network: &NetworkDefinition,
         vertex_limits_config: VertexLimitsConfig,
-        store: Arc<RwLock<S>>,
+        store: Arc<StateLock<S>>,
         mempool_manager: Arc<MempoolManager>,
         execution_configurator: Arc<ExecutionConfigurator>,
         pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
@@ -139,7 +139,7 @@ impl<S: QueryableProofStore> StateComputer<S> {
         lock_factory: &LockFactory,
     ) -> StateComputer<S> {
         let (current_transaction_root, current_ledger_proposer_timestamp_ms) = store
-            .read()
+            .read_current()
             .get_last_proof()
             .map(|proof| proof.ledger_header)
             .map(|header| (header.hashes.transaction_root, header.proposer_timestamp_ms))
@@ -283,7 +283,7 @@ where
             .expect("Could not prepare genesis transaction");
         let validated = self.ledger_transaction_validator.validate_genesis(prepared);
 
-        let read_store = self.store.read();
+        let read_store = self.store.read_current();
         let mut series_executor = self.start_series_execution(read_store.deref());
 
         let commit = series_executor
@@ -318,7 +318,7 @@ where
             .validate_user_or_round_update(prepared_ledger_transaction)
             .unwrap_or_else(|_| panic!("Expected that {} was valid", qualified_name));
 
-        let read_store = self.store.read();
+        let read_store = self.store.read_current();
 
         // Note - we first create a basic receipt - because we need it for later
         let basic_receipt = self
@@ -348,7 +348,7 @@ where
         // themselves, which is part of the validation process
         //========================================================================================
 
-        let read_store = self.store.read();
+        let read_store = self.store.read_current();
         let mut series_executor = self.start_series_execution(read_store.deref());
 
         if &prepare_request.committed_ledger_hashes != series_executor.latest_ledger_hashes() {
@@ -777,7 +777,7 @@ where
     ) -> LedgerProof {
         let start_instant = Instant::now();
 
-        let read_db = self.store.read();
+        let read_db = self.store.read_current();
         if read_db.get_post_genesis_epoch_proof().is_some() {
             panic!("Can't execute genesis: database already initialized")
         }
@@ -956,7 +956,7 @@ where
                             .collect::<Vec<_>>()
                             .join("\n")
                     );
-                    let mut write_store = self.store.write();
+                    let mut write_store = self.store.write_current();
                     write_store.put_scenario(sequence_number, executed_scenario);
                     return end_state.next_unused_nonce;
                 }
@@ -1004,7 +1004,7 @@ where
         let mut proposer_timestamps = Vec::new();
         let mut proposer_timestamp_ms = self
             .store
-            .read()
+            .read_current()
             .get_last_proof()
             .unwrap()
             .ledger_header
@@ -1038,7 +1038,7 @@ where
         }
 
         // Step 2.: Start the write DB transaction, check invariants, set-up DB update structures
-        let mut write_store = self.store.write();
+        let mut write_store = self.store.write_current();
         let mut series_executor = self.start_series_execution(write_store.deref());
 
         if commit_request_start_state_version != series_executor.latest_state_version() {
@@ -1219,7 +1219,7 @@ where
     /// This method accepts a pre-validated transaction and trusts its contents (i.e. skips some
     /// validations).
     fn commit_genesis(&self, request: GenesisCommitRequest) {
-        let mut write_store = self.store.write();
+        let mut write_store = self.store.write_current();
         let mut series_executor = self.start_series_execution(write_store.deref());
 
         let mut commit = series_executor
@@ -1471,7 +1471,7 @@ mod tests {
         state_manager: &StateManager,
         prepare_request: PrepareRequest,
     ) -> u32 {
-        let read_store = state_manager.state_computer.store.read();
+        let read_store = state_manager.state_computer.store.read_current();
         let mut series_executor = state_manager
             .state_computer
             .start_series_execution(read_store.deref());
