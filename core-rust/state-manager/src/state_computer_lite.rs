@@ -134,8 +134,11 @@ impl StateComputerLite {
 }
 
 pub fn main() {
+    // Source ledger directory (e.g. `/.../RADIXDB/state_manager`)
     let source_db_path = "...";
+    // Working directory for the secondary database (I believe it's just for logs)
     let source_db_secondary_workdir_path = "...";
+    // "Lite" ledger directory
     let state_computer_lite_db_path = "...";
 
     let mut state_computer_lite = StateComputerLite::new_with_rocksdb(
