@@ -71,6 +71,7 @@ use std::iter;
 use std::ops::Deref;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
+use tracing::info;
 
 use crate::store::traits::gc::StateHashTreeGcStore;
 use crate::store::traits::proofs::QueryableProofStore;
@@ -139,10 +140,17 @@ impl StateHashTreeGc {
     /// access the database at all.
     pub fn run(&self) {
         let mut read_database = self.database.read();
-        let to_state_version = read_database
-            .max_state_version()
+        let current_state_version = read_database.max_state_version();
+        let to_state_version = current_state_version
             .relative(-self.history_len)
             .unwrap_or(StateVersion::pre_genesis());
+
+        info!(
+            "Starting the next GC run: current state version is {:?} and we want to prune JMT up to state version {:?} (locking for {:?})",
+            current_state_version,
+            to_state_version,
+            self.max_db_locking_duration,
+        );
 
         while let false = Self::try_delete_all(
             read_database.deref(),
@@ -151,8 +159,11 @@ impl StateHashTreeGc {
         ) {
             // Rotate the database lock and `try_delete_all()` again:
             drop(read_database);
+            info!("Re-acquiring the DB lock");
             read_database = self.database.read();
         }
+
+        info!("GC run finished");
     }
 
     /// Tries to delete all state hash tree nodes referenced by "stale parts" entries up to the
@@ -164,6 +175,7 @@ impl StateHashTreeGc {
         to_state_version: StateVersion,
         return_incomplete_at: Instant,
     ) -> bool {
+        info!("Starting the GC lock cycle");
         // The indicator to be returned; we flip it to false if we have to return because of the time limit:
         let mut all_deleted = true;
 
@@ -175,7 +187,12 @@ impl StateHashTreeGc {
         // Collect the stale node keys into a "delete buffer":
         let mut deleted_state_versions = Vec::new();
         let mut deleted_nodes = Vec::new();
+        let mut first = true;
         'version_entries: for (state_version, StaleTreePartsV1(stale_tree_parts)) in stale_entries {
+            if first {
+                info!("The first pruned state version is {:?}", state_version);
+                first = false;
+            }
             for stale_tree_part in stale_tree_parts {
                 let part_keys: Box<dyn Iterator<Item = NodeKey>> = match stale_tree_part {
                     StaleTreePart::Node(key) => Box::new(iter::once(key)),
@@ -191,6 +208,7 @@ impl StateHashTreeGc {
                     // Check whether the time limit forces us to return without deleting all:
                     let now = Instant::now();
                     if now >= return_incomplete_at {
+                        info!("Time limit reached in the middle of tree nodes iteration, during version {:?}", state_version);
                         all_deleted = false;
                         break 'version_entries;
                     }
@@ -209,6 +227,7 @@ impl StateHashTreeGc {
             // Same as above: check whether the time limit forces us to return without deleting all:
             let now = Instant::now();
             if now >= return_incomplete_at {
+                info!("Time limit reached in the middle of stale entries iteration, after version {:?}", state_version);
                 all_deleted = false;
                 break 'version_entries;
             }
