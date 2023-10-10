@@ -285,7 +285,7 @@ impl<T> StateLock<T> {
     /// Returns a direct reference to the guarded value, without locking anything.
     /// This method should be used when the caller wants to interact selectively with pieces of the
     /// historical state, in a way known to be safe.
-    pub fn access_shared_historical(&self) -> &T {
+    pub fn access_non_locked_historical(&self) -> &T {
         &self.value
     }
 }

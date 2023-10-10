@@ -231,7 +231,7 @@ fn start_raw_db_metrics_reporting(
     let mut scheduler = Scheduler::new();
     scheduler.every(RAW_DB_MEASUREMENT_INTERVAL).run(move || {
         let statistics = database
-            .access_shared_historical()
+            .access_non_locked_historical()
             .get_data_volume_statistics();
         raw_db_metrics.update(statistics);
     });
