@@ -12,10 +12,11 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct LtsEntityNonFungibleChanges {
-    /// The Bech32m-encoded human readable version of the account's address
-    #[serde(rename = "account_address")]
-    pub account_address: String,
+pub struct LtsEntityNonFungibleBalanceChanges {
+    /// The Bech32m-encoded human readable version of the entity's address
+    #[serde(rename = "entity_address")]
+    pub entity_address: String,
+    /// The Bech32m-encoded human readable version of the non-fungible resource's address 
     #[serde(rename = "resource_address")]
     pub resource_address: String,
     #[serde(rename = "added")]
@@ -24,10 +25,10 @@ pub struct LtsEntityNonFungibleChanges {
     pub removed: Vec<String>,
 }
 
-impl LtsEntityNonFungibleChanges {
-    pub fn new(account_address: String, resource_address: String, added: Vec<String>, removed: Vec<String>) -> LtsEntityNonFungibleChanges {
-        LtsEntityNonFungibleChanges {
-            account_address,
+impl LtsEntityNonFungibleBalanceChanges {
+    pub fn new(entity_address: String, resource_address: String, added: Vec<String>, removed: Vec<String>) -> LtsEntityNonFungibleBalanceChanges {
+        LtsEntityNonFungibleBalanceChanges {
+            entity_address,
             resource_address,
             added,
             removed,

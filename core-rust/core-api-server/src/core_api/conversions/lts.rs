@@ -1,4 +1,4 @@
-use models::lts_entity_non_fungible_changes::LtsEntityNonFungibleChanges;
+use models::*;
 use radix_engine::{
     system::system_modules::costing::RoyaltyRecipient,
     transaction::BalanceChange,
@@ -70,7 +70,7 @@ pub fn to_api_lts_committed_transaction_outcome(
                 .global_balance_summary
                 .global_balance_changes,
         )?,
-        non_fungible_entity_changes: to_api_lts_entity_non_fungible_changes(
+        non_fungible_entity_balance_changes: to_api_lts_entity_non_fungible_balance_changes(
             context,
             &local_execution
                 .global_balance_summary
@@ -86,18 +86,18 @@ pub fn to_api_lts_committed_transaction_outcome(
     })
 }
 
-pub fn to_api_lts_entity_non_fungible_changes(
+pub fn to_api_lts_entity_non_fungible_balance_changes(
     context: &MappingContext,
     global_balance_summary: &IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>>,
-) -> Result<Vec<LtsEntityNonFungibleChanges>, MappingError> {
+) -> Result<Vec<LtsEntityNonFungibleBalanceChanges>, MappingError> {
     let mut changes = Vec::new();
     for (address, balance_changes) in global_balance_summary.iter() {
         for (resource, balance_change) in balance_changes.iter() {
             match balance_change {
                 BalanceChange::Fungible(_) => {}
                 BalanceChange::NonFungible { added, removed } => {
-                    changes.push(LtsEntityNonFungibleChanges {
-                        account_address: to_api_global_address(context, address)?,
+                    changes.push(LtsEntityNonFungibleBalanceChanges {
+                        entity_address: to_api_global_address(context, address)?,
                         resource_address: to_api_resource_address(context, resource)?,
                         added: added
                             .iter()

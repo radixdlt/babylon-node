@@ -223,6 +223,7 @@ export * from './LocalTypeId';
 export * from './LtsCommittedTransactionOutcome';
 export * from './LtsCommittedTransactionStatus';
 export * from './LtsEntityFungibleBalanceChanges';
+export * from './LtsEntityNonFungibleBalanceChanges';
 export * from './LtsFeeFungibleResourceBalanceChange';
 export * from './LtsFeeFungibleResourceBalanceChangeType';
 export * from './LtsFungibleResourceBalance';

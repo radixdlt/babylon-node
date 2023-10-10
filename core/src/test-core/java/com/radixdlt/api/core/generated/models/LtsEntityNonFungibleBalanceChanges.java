@@ -30,18 +30,18 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * LtsEntityNonFungibleChanges
+ * LtsEntityNonFungibleBalanceChanges
  */
 @JsonPropertyOrder({
-  LtsEntityNonFungibleChanges.JSON_PROPERTY_ACCOUNT_ADDRESS,
-  LtsEntityNonFungibleChanges.JSON_PROPERTY_RESOURCE_ADDRESS,
-  LtsEntityNonFungibleChanges.JSON_PROPERTY_ADDED,
-  LtsEntityNonFungibleChanges.JSON_PROPERTY_REMOVED
+  LtsEntityNonFungibleBalanceChanges.JSON_PROPERTY_ENTITY_ADDRESS,
+  LtsEntityNonFungibleBalanceChanges.JSON_PROPERTY_RESOURCE_ADDRESS,
+  LtsEntityNonFungibleBalanceChanges.JSON_PROPERTY_ADDED,
+  LtsEntityNonFungibleBalanceChanges.JSON_PROPERTY_REMOVED
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class LtsEntityNonFungibleChanges {
-  public static final String JSON_PROPERTY_ACCOUNT_ADDRESS = "account_address";
-  private String accountAddress;
+public class LtsEntityNonFungibleBalanceChanges {
+  public static final String JSON_PROPERTY_ENTITY_ADDRESS = "entity_address";
+  private String entityAddress;
 
   public static final String JSON_PROPERTY_RESOURCE_ADDRESS = "resource_address";
   private String resourceAddress;
@@ -52,46 +52,46 @@ public class LtsEntityNonFungibleChanges {
   public static final String JSON_PROPERTY_REMOVED = "removed";
   private List<String> removed = new ArrayList<>();
 
-  public LtsEntityNonFungibleChanges() { 
+  public LtsEntityNonFungibleBalanceChanges() { 
   }
 
-  public LtsEntityNonFungibleChanges accountAddress(String accountAddress) {
-    this.accountAddress = accountAddress;
+  public LtsEntityNonFungibleBalanceChanges entityAddress(String entityAddress) {
+    this.entityAddress = entityAddress;
     return this;
   }
 
    /**
-   * The Bech32m-encoded human readable version of the account&#39;s address
-   * @return accountAddress
+   * The Bech32m-encoded human readable version of the entity&#39;s address
+   * @return entityAddress
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the account's address")
-  @JsonProperty(JSON_PROPERTY_ACCOUNT_ADDRESS)
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the entity's address")
+  @JsonProperty(JSON_PROPERTY_ENTITY_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getAccountAddress() {
-    return accountAddress;
+  public String getEntityAddress() {
+    return entityAddress;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ACCOUNT_ADDRESS)
+  @JsonProperty(JSON_PROPERTY_ENTITY_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAccountAddress(String accountAddress) {
-    this.accountAddress = accountAddress;
+  public void setEntityAddress(String entityAddress) {
+    this.entityAddress = entityAddress;
   }
 
 
-  public LtsEntityNonFungibleChanges resourceAddress(String resourceAddress) {
+  public LtsEntityNonFungibleBalanceChanges resourceAddress(String resourceAddress) {
     this.resourceAddress = resourceAddress;
     return this;
   }
 
    /**
-   * Get resourceAddress
+   * The Bech32m-encoded human readable version of the non-fungible resource&#39;s address 
    * @return resourceAddress
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the non-fungible resource's address ")
   @JsonProperty(JSON_PROPERTY_RESOURCE_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -107,12 +107,12 @@ public class LtsEntityNonFungibleChanges {
   }
 
 
-  public LtsEntityNonFungibleChanges added(List<String> added) {
+  public LtsEntityNonFungibleBalanceChanges added(List<String> added) {
     this.added = added;
     return this;
   }
 
-  public LtsEntityNonFungibleChanges addAddedItem(String addedItem) {
+  public LtsEntityNonFungibleBalanceChanges addAddedItem(String addedItem) {
     this.added.add(addedItem);
     return this;
   }
@@ -138,12 +138,12 @@ public class LtsEntityNonFungibleChanges {
   }
 
 
-  public LtsEntityNonFungibleChanges removed(List<String> removed) {
+  public LtsEntityNonFungibleBalanceChanges removed(List<String> removed) {
     this.removed = removed;
     return this;
   }
 
-  public LtsEntityNonFungibleChanges addRemovedItem(String removedItem) {
+  public LtsEntityNonFungibleBalanceChanges addRemovedItem(String removedItem) {
     this.removed.add(removedItem);
     return this;
   }
@@ -170,7 +170,7 @@ public class LtsEntityNonFungibleChanges {
 
 
   /**
-   * Return true if this LtsEntityNonFungibleChanges object is equal to o.
+   * Return true if this LtsEntityNonFungibleBalanceChanges object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -180,23 +180,23 @@ public class LtsEntityNonFungibleChanges {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    LtsEntityNonFungibleChanges ltsEntityNonFungibleChanges = (LtsEntityNonFungibleChanges) o;
-    return Objects.equals(this.accountAddress, ltsEntityNonFungibleChanges.accountAddress) &&
-        Objects.equals(this.resourceAddress, ltsEntityNonFungibleChanges.resourceAddress) &&
-        Objects.equals(this.added, ltsEntityNonFungibleChanges.added) &&
-        Objects.equals(this.removed, ltsEntityNonFungibleChanges.removed);
+    LtsEntityNonFungibleBalanceChanges ltsEntityNonFungibleBalanceChanges = (LtsEntityNonFungibleBalanceChanges) o;
+    return Objects.equals(this.entityAddress, ltsEntityNonFungibleBalanceChanges.entityAddress) &&
+        Objects.equals(this.resourceAddress, ltsEntityNonFungibleBalanceChanges.resourceAddress) &&
+        Objects.equals(this.added, ltsEntityNonFungibleBalanceChanges.added) &&
+        Objects.equals(this.removed, ltsEntityNonFungibleBalanceChanges.removed);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(accountAddress, resourceAddress, added, removed);
+    return Objects.hash(entityAddress, resourceAddress, added, removed);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class LtsEntityNonFungibleChanges {\n");
-    sb.append("    accountAddress: ").append(toIndentedString(accountAddress)).append("\n");
+    sb.append("class LtsEntityNonFungibleBalanceChanges {\n");
+    sb.append("    entityAddress: ").append(toIndentedString(entityAddress)).append("\n");
     sb.append("    resourceAddress: ").append(toIndentedString(resourceAddress)).append("\n");
     sb.append("    added: ").append(toIndentedString(added)).append("\n");
     sb.append("    removed: ").append(toIndentedString(removed)).append("\n");
