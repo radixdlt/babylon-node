@@ -87,7 +87,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import java.util.List;
@@ -117,7 +116,6 @@ public final class REv2LargeTransactionTest {
                             1,
                             Decimal.ONE,
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10)),
-                        REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         REV2ProposerConfig.Mempool.singleTransaction()),
                     SyncRelayConfig.of(200, 10, 1000))));
   }

@@ -98,6 +98,7 @@ import com.radixdlt.rev2.modules.REv2LedgerRecoveryModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statecomputer.commit.ActiveValidatorInfo;
 import com.radixdlt.statecomputer.commit.LedgerHeader;
+import com.radixdlt.store.NodeStorageLocation;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt192;
@@ -106,9 +107,13 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public class REv2StateComputerTest {
+
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   private static final BFTValidatorId ONLY_VALIDATOR_ID = BFTValidatorId.random();
 
@@ -117,7 +122,6 @@ public class REv2StateComputerTest {
         new CryptoModule(),
         REv2StateManagerModule.createForTesting(
             ProposalLimitsConfig.testDefaults(),
-            REv2StateManagerModule.DatabaseType.IN_MEMORY,
             new DatabaseFlags(false, false),
             Option.none(),
             false,
@@ -151,6 +155,9 @@ public class REv2StateComputerTest {
                 .toInstance(
                     new SelfValidatorInfo(
                         ONLY_VALIDATOR_ID.getKey(), Optional.of(ONLY_VALIDATOR_ID)));
+            bind(String.class)
+                .annotatedWith(NodeStorageLocation.class)
+                .toInstance(folder.getRoot().getAbsolutePath());
             bind(FatalPanicHandler.class).toInstance(() -> {});
           }
 

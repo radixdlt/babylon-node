@@ -43,7 +43,7 @@ pub(crate) async fn handle_lts_state_account_fungible_resource_balance(
         ));
     }
 
-    let database = state.state_manager.database.read();
+    let database = state.state_manager.database.read_current();
 
     if !account_address.as_node_id().is_global_virtual() {
         read_optional_substate::<TypeInfoSubstate>(

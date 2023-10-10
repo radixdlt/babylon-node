@@ -78,7 +78,7 @@ extern "system" fn Java_com_radixdlt_recovery_VertexStoreRecovery_getVertexStore
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |_: ()| -> Option<Vec<u8>> {
         let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
-        let vertex_store_blob = database.read().get_vertex_store();
+        let vertex_store_blob = database.read_current().get_vertex_store();
         vertex_store_blob.map(|blob| blob.0)
     })
 }
@@ -93,7 +93,7 @@ extern "system" fn Java_com_radixdlt_recovery_VertexStoreRecovery_saveVertexStor
     jni_sbor_coded_call(&env, request_payload, |vertex_store_bytes: Vec<u8>| {
         let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
         database
-            .write()
+            .write_current()
             .save_vertex_store(VertexStoreBlobV1(vertex_store_bytes));
     })
 }

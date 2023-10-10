@@ -79,7 +79,6 @@ import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.mempool.MempoolReceiverConfig;
 import com.radixdlt.mempool.MempoolRelayerConfig;
 import com.radixdlt.mempool.RustMempoolConfig;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -139,38 +138,27 @@ public sealed interface StateComputerConfig {
   static StateComputerConfig rev2(
       int networkId,
       GenesisData genesis,
-      REv2StateManagerModule.DatabaseType databaseType,
       DatabaseFlags databaseFlags,
       REV2ProposerConfig proposerConfig,
       boolean debugLogging,
       boolean noFees) {
     return new REv2StateComputerConfig(
-        networkId, genesis, databaseType, databaseFlags, proposerConfig, debugLogging, noFees);
+        networkId, genesis, databaseFlags, proposerConfig, debugLogging, noFees);
   }
 
   static StateComputerConfig rev2(
       int networkId,
       GenesisData genesis,
-      REv2StateManagerModule.DatabaseType databaseType,
       DatabaseFlags databaseFlags,
       REV2ProposerConfig proposerConfig) {
     return new REv2StateComputerConfig(
-        networkId, genesis, databaseType, databaseFlags, proposerConfig, false, false);
+        networkId, genesis, databaseFlags, proposerConfig, false, false);
   }
 
   static StateComputerConfig rev2(
-      int networkId,
-      GenesisData genesis,
-      REv2StateManagerModule.DatabaseType databaseType,
-      REV2ProposerConfig proposerConfig) {
+      int networkId, GenesisData genesis, REV2ProposerConfig proposerConfig) {
     return new REv2StateComputerConfig(
-        networkId,
-        genesis,
-        databaseType,
-        new DatabaseFlags(true, false),
-        proposerConfig,
-        false,
-        false);
+        networkId, genesis, new DatabaseFlags(true, false), proposerConfig, false, false);
   }
 
   sealed interface MockedMempoolConfig {
@@ -235,7 +223,6 @@ public sealed interface StateComputerConfig {
   record REv2StateComputerConfig(
       int networkId,
       GenesisData genesis,
-      REv2StateManagerModule.DatabaseType databaseType,
       DatabaseFlags databaseFlags,
       REV2ProposerConfig proposerConfig,
       boolean debugLogging,

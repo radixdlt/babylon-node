@@ -346,7 +346,6 @@ public final class RadixNodeModule extends AbstractModule {
         REv2StateManagerModule.create(
             ProposalLimitsConfig.from(vertexLimitsConfig),
             vertexLimitsConfig,
-            REv2StateManagerModule.DatabaseType.ROCKS_DB,
             databaseFlags,
             Option.some(mempoolConfig)));
 

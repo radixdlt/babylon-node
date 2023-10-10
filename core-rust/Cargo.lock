@@ -2177,6 +2177,7 @@ dependencies = [
  "rocksdb",
  "sbor",
  "slotmap",
+ "tempfile",
  "tokio",
  "tracing",
  "transaction",

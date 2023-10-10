@@ -196,7 +196,7 @@ impl JNINodeRustEnvironment {
     pub fn get_database(
         env: &JNIEnv,
         j_node_rust_env: JObject,
-    ) -> Arc<RwLock<StateManagerDatabase>> {
+    ) -> Arc<StateLock<StateManagerDatabase>> {
         Self::get(env, j_node_rust_env)
             .state_manager
             .database
@@ -224,13 +224,15 @@ pub fn export_extern_functions() {}
 /// handle that keeps it running.
 /// See [`RAW_DB_MEASUREMENT_INTERVAL`] for more details.
 fn start_raw_db_metrics_reporting(
-    database: Arc<RwLock<StateManagerDatabase>>,
+    database: Arc<StateLock<StateManagerDatabase>>,
     metric_registry: &Registry,
 ) -> ScheduleHandle {
     let raw_db_metrics = RawDbMetrics::new(metric_registry);
     let mut scheduler = Scheduler::new();
     scheduler.every(RAW_DB_MEASUREMENT_INTERVAL).run(move || {
-        let statistics = database.read().get_data_volume_statistics();
+        let statistics = database
+            .access_non_locked_historical()
+            .get_data_volume_statistics();
         raw_db_metrics.update(statistics);
     });
     scheduler.watch_thread(Duration::from_secs(1))
