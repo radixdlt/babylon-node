@@ -74,16 +74,16 @@ public record AppVersionCapability(ApplicationVersion applicationVersion) {
   public static final String CONFIG_COMMIT = "commit";
 
   public RemotePeerCapability toRemotePeerCapability() {
+    final var version = applicationVersion.string();
+    final var commit = applicationVersion.commit();
     return new RemotePeerCapability(
         NAME,
         Map.of(
             CONFIG_VERSION,
-            applicationVersion
-                .string()
-                .substring(0, RemotePeerCapability.CONFIGURATION_MAX_VALUE_SIZE),
+            version.substring(
+                0, Math.min(version.length(), RemotePeerCapability.CONFIGURATION_MAX_VALUE_SIZE)),
             CONFIG_COMMIT,
-            applicationVersion
-                .commit()
-                .substring(0, RemotePeerCapability.CONFIGURATION_MAX_VALUE_SIZE)));
+            commit.substring(
+                0, Math.min(commit.length(), RemotePeerCapability.CONFIGURATION_MAX_VALUE_SIZE))));
   }
 }
