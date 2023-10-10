@@ -16,74 +16,66 @@ import { exists, mapValues } from '../runtime';
 /**
  * 
  * @export
- * @interface NonFungiblePresentedBadge
+ * @interface LtsEntityNonFungibleBalanceChanges
  */
-export interface NonFungiblePresentedBadge {
+export interface LtsEntityNonFungibleBalanceChanges {
     /**
-     * 
+     * The Bech32m-encoded human readable version of the entity's address
      * @type {string}
-     * @memberof NonFungiblePresentedBadge
+     * @memberof LtsEntityNonFungibleBalanceChanges
      */
-    type: NonFungiblePresentedBadgeTypeEnum;
+    entity_address: string;
     /**
-     * The Bech32m-encoded human readable version of the resource address
+     * The Bech32m-encoded human readable version of the non-fungible resource's address
      * @type {string}
-     * @memberof NonFungiblePresentedBadge
+     * @memberof LtsEntityNonFungibleBalanceChanges
      */
     resource_address: string;
     /**
-     * The simple string representation of the non-fungible id.
-     * * For string ids, this is `<the-string-id>`
-     * * For integer ids, this is `#the-integer-id#`
-     * * For bytes ids, this is `[the-lower-case-hex-representation]`
-     * * For RUID ids, this is `{...-...-...-...}` where `...` are each 16 hex characters.
-     * A given non-fungible resource has a fixed `NonFungibleIdType`, so this representation uniquely identifies this non-fungible
-     * under the given resource address.
-     * @type {string}
-     * @memberof NonFungiblePresentedBadge
+     * 
+     * @type {Array<string>}
+     * @memberof LtsEntityNonFungibleBalanceChanges
      */
-    local_id: string;
+    added: Array<string>;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof LtsEntityNonFungibleBalanceChanges
+     */
+    removed: Array<string>;
 }
 
-
 /**
- * @export
+ * Check if a given object implements the LtsEntityNonFungibleBalanceChanges interface.
  */
-export const NonFungiblePresentedBadgeTypeEnum = {
-    NonFungible: 'NonFungible'
-} as const;
-export type NonFungiblePresentedBadgeTypeEnum = typeof NonFungiblePresentedBadgeTypeEnum[keyof typeof NonFungiblePresentedBadgeTypeEnum];
-
-
-/**
- * Check if a given object implements the NonFungiblePresentedBadge interface.
- */
-export function instanceOfNonFungiblePresentedBadge(value: object): boolean {
+export function instanceOfLtsEntityNonFungibleBalanceChanges(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "type" in value;
+    isInstance = isInstance && "entity_address" in value;
     isInstance = isInstance && "resource_address" in value;
-    isInstance = isInstance && "local_id" in value;
+    isInstance = isInstance && "added" in value;
+    isInstance = isInstance && "removed" in value;
 
     return isInstance;
 }
 
-export function NonFungiblePresentedBadgeFromJSON(json: any): NonFungiblePresentedBadge {
-    return NonFungiblePresentedBadgeFromJSONTyped(json, false);
+export function LtsEntityNonFungibleBalanceChangesFromJSON(json: any): LtsEntityNonFungibleBalanceChanges {
+    return LtsEntityNonFungibleBalanceChangesFromJSONTyped(json, false);
 }
 
-export function NonFungiblePresentedBadgeFromJSONTyped(json: any, ignoreDiscriminator: boolean): NonFungiblePresentedBadge {
+export function LtsEntityNonFungibleBalanceChangesFromJSONTyped(json: any, ignoreDiscriminator: boolean): LtsEntityNonFungibleBalanceChanges {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'type': json['type'],
+        'entity_address': json['entity_address'],
         'resource_address': json['resource_address'],
-        'local_id': json['local_id'],
+        'added': json['added'],
+        'removed': json['removed'],
     };
 }
 
-export function NonFungiblePresentedBadgeToJSON(value?: NonFungiblePresentedBadge | null): any {
+export function LtsEntityNonFungibleBalanceChangesToJSON(value?: LtsEntityNonFungibleBalanceChanges | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -92,9 +84,10 @@ export function NonFungiblePresentedBadgeToJSON(value?: NonFungiblePresentedBadg
     }
     return {
         
-        'type': value.type,
+        'entity_address': value.entity_address,
         'resource_address': value.resource_address,
-        'local_id': value.local_id,
+        'added': value.added,
+        'removed': value.removed,
     };
 }
 

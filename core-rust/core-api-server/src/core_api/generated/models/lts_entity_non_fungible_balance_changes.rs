@@ -10,26 +10,30 @@
 
 
 
-#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(tag = "type")]
-pub enum PresentedBadge {
-    #[serde(rename="NonFungible")]
-    NonFungiblePresentedBadge {
-        /// The Bech32m-encoded human readable version of the resource address
-        #[serde(rename = "resource_address")]
-        resource_address: String,
-        /// The simple string representation of the non-fungible id. * For string ids, this is `<the-string-id>` * For integer ids, this is `#the-integer-id#` * For bytes ids, this is `[the-lower-case-hex-representation]` * For RUID ids, this is `{...-...-...-...}` where `...` are each 16 hex characters. A given non-fungible resource has a fixed `NonFungibleIdType`, so this representation uniquely identifies this non-fungible under the given resource address. 
-        #[serde(rename = "local_id")]
-        local_id: String,
-    },
-    #[serde(rename="Resource")]
-    ResourcePresentedBadge {
-        /// The Bech32m-encoded human readable version of the resource address
-        #[serde(rename = "resource_address")]
-        resource_address: String,
-    },
+
+#[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
+pub struct LtsEntityNonFungibleBalanceChanges {
+    /// The Bech32m-encoded human readable version of the entity's address
+    #[serde(rename = "entity_address")]
+    pub entity_address: String,
+    /// The Bech32m-encoded human readable version of the non-fungible resource's address 
+    #[serde(rename = "resource_address")]
+    pub resource_address: String,
+    #[serde(rename = "added")]
+    pub added: Vec<String>,
+    #[serde(rename = "removed")]
+    pub removed: Vec<String>,
 }
 
-
+impl LtsEntityNonFungibleBalanceChanges {
+    pub fn new(entity_address: String, resource_address: String, added: Vec<String>, removed: Vec<String>) -> LtsEntityNonFungibleBalanceChanges {
+        LtsEntityNonFungibleBalanceChanges {
+            entity_address,
+            resource_address,
+            added,
+            removed,
+        }
+    }
+}
 
 

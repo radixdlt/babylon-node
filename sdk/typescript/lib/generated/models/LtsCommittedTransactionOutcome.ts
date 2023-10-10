@@ -25,6 +25,12 @@ import {
     LtsEntityFungibleBalanceChangesFromJSONTyped,
     LtsEntityFungibleBalanceChangesToJSON,
 } from './LtsEntityFungibleBalanceChanges';
+import type { LtsEntityNonFungibleBalanceChanges } from './LtsEntityNonFungibleBalanceChanges';
+import {
+    LtsEntityNonFungibleBalanceChangesFromJSON,
+    LtsEntityNonFungibleBalanceChangesFromJSONTyped,
+    LtsEntityNonFungibleBalanceChangesToJSON,
+} from './LtsEntityNonFungibleBalanceChanges';
 import type { LtsResultantAccountFungibleBalances } from './LtsResultantAccountFungibleBalances';
 import {
     LtsResultantAccountFungibleBalancesFromJSON,
@@ -87,6 +93,12 @@ export interface LtsCommittedTransactionOutcome {
      */
     fungible_entity_balance_changes: Array<LtsEntityFungibleBalanceChanges>;
     /**
+     * Non fungible changes per entity and resource
+     * @type {Array<LtsEntityNonFungibleBalanceChanges>}
+     * @memberof LtsCommittedTransactionOutcome
+     */
+    non_fungible_entity_balance_changes: Array<LtsEntityNonFungibleBalanceChanges>;
+    /**
      * A list of the resultant fungible account balances for any balances which changed in this transaction.
      * Only balances for accounts are returned, not any other kind of entity.
      * @type {Array<LtsResultantAccountFungibleBalances>}
@@ -112,6 +124,7 @@ export function instanceOfLtsCommittedTransactionOutcome(value: object): boolean
     isInstance = isInstance && "accumulator_hash" in value;
     isInstance = isInstance && "status" in value;
     isInstance = isInstance && "fungible_entity_balance_changes" in value;
+    isInstance = isInstance && "non_fungible_entity_balance_changes" in value;
     isInstance = isInstance && "resultant_account_fungible_balances" in value;
     isInstance = isInstance && "total_fee" in value;
 
@@ -134,6 +147,7 @@ export function LtsCommittedTransactionOutcomeFromJSONTyped(json: any, ignoreDis
         'user_transaction_identifiers': !exists(json, 'user_transaction_identifiers') ? undefined : TransactionIdentifiersFromJSON(json['user_transaction_identifiers']),
         'status': LtsCommittedTransactionStatusFromJSON(json['status']),
         'fungible_entity_balance_changes': ((json['fungible_entity_balance_changes'] as Array<any>).map(LtsEntityFungibleBalanceChangesFromJSON)),
+        'non_fungible_entity_balance_changes': ((json['non_fungible_entity_balance_changes'] as Array<any>).map(LtsEntityNonFungibleBalanceChangesFromJSON)),
         'resultant_account_fungible_balances': ((json['resultant_account_fungible_balances'] as Array<any>).map(LtsResultantAccountFungibleBalancesFromJSON)),
         'total_fee': json['total_fee'],
     };
@@ -154,6 +168,7 @@ export function LtsCommittedTransactionOutcomeToJSON(value?: LtsCommittedTransac
         'user_transaction_identifiers': TransactionIdentifiersToJSON(value.user_transaction_identifiers),
         'status': LtsCommittedTransactionStatusToJSON(value.status),
         'fungible_entity_balance_changes': ((value.fungible_entity_balance_changes as Array<any>).map(LtsEntityFungibleBalanceChangesToJSON)),
+        'non_fungible_entity_balance_changes': ((value.non_fungible_entity_balance_changes as Array<any>).map(LtsEntityNonFungibleBalanceChangesToJSON)),
         'resultant_account_fungible_balances': ((value.resultant_account_fungible_balances as Array<any>).map(LtsResultantAccountFungibleBalancesToJSON)),
         'total_fee': value.total_fee,
     };

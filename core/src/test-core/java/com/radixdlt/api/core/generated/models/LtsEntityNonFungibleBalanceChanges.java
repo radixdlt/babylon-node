@@ -24,68 +24,74 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import java.util.ArrayList;
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * StateNonFungibleRequest
+ * LtsEntityNonFungibleBalanceChanges
  */
 @JsonPropertyOrder({
-  StateNonFungibleRequest.JSON_PROPERTY_NETWORK,
-  StateNonFungibleRequest.JSON_PROPERTY_RESOURCE_ADDRESS,
-  StateNonFungibleRequest.JSON_PROPERTY_NON_FUNGIBLE_ID
+  LtsEntityNonFungibleBalanceChanges.JSON_PROPERTY_ENTITY_ADDRESS,
+  LtsEntityNonFungibleBalanceChanges.JSON_PROPERTY_RESOURCE_ADDRESS,
+  LtsEntityNonFungibleBalanceChanges.JSON_PROPERTY_ADDED,
+  LtsEntityNonFungibleBalanceChanges.JSON_PROPERTY_REMOVED
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class StateNonFungibleRequest {
-  public static final String JSON_PROPERTY_NETWORK = "network";
-  private String network;
+public class LtsEntityNonFungibleBalanceChanges {
+  public static final String JSON_PROPERTY_ENTITY_ADDRESS = "entity_address";
+  private String entityAddress;
 
   public static final String JSON_PROPERTY_RESOURCE_ADDRESS = "resource_address";
   private String resourceAddress;
 
-  public static final String JSON_PROPERTY_NON_FUNGIBLE_ID = "non_fungible_id";
-  private String nonFungibleId;
+  public static final String JSON_PROPERTY_ADDED = "added";
+  private List<String> added = new ArrayList<>();
 
-  public StateNonFungibleRequest() { 
+  public static final String JSON_PROPERTY_REMOVED = "removed";
+  private List<String> removed = new ArrayList<>();
+
+  public LtsEntityNonFungibleBalanceChanges() { 
   }
 
-  public StateNonFungibleRequest network(String network) {
-    this.network = network;
+  public LtsEntityNonFungibleBalanceChanges entityAddress(String entityAddress) {
+    this.entityAddress = entityAddress;
     return this;
   }
 
    /**
-   * The logical name of the network
-   * @return network
+   * The Bech32m-encoded human readable version of the entity&#39;s address
+   * @return entityAddress
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(example = "{{network}}", required = true, value = "The logical name of the network")
-  @JsonProperty(JSON_PROPERTY_NETWORK)
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the entity's address")
+  @JsonProperty(JSON_PROPERTY_ENTITY_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getNetwork() {
-    return network;
+  public String getEntityAddress() {
+    return entityAddress;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_NETWORK)
+  @JsonProperty(JSON_PROPERTY_ENTITY_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNetwork(String network) {
-    this.network = network;
+  public void setEntityAddress(String entityAddress) {
+    this.entityAddress = entityAddress;
   }
 
 
-  public StateNonFungibleRequest resourceAddress(String resourceAddress) {
+  public LtsEntityNonFungibleBalanceChanges resourceAddress(String resourceAddress) {
     this.resourceAddress = resourceAddress;
     return this;
   }
 
    /**
-   * The Bech32m-encoded human readable version of the resource&#39;s global address
+   * The Bech32m-encoded human readable version of the non-fungible resource&#39;s address 
    * @return resourceAddress
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the resource's global address")
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the non-fungible resource's address ")
   @JsonProperty(JSON_PROPERTY_RESOURCE_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -101,34 +107,70 @@ public class StateNonFungibleRequest {
   }
 
 
-  public StateNonFungibleRequest nonFungibleId(String nonFungibleId) {
-    this.nonFungibleId = nonFungibleId;
+  public LtsEntityNonFungibleBalanceChanges added(List<String> added) {
+    this.added = added;
+    return this;
+  }
+
+  public LtsEntityNonFungibleBalanceChanges addAddedItem(String addedItem) {
+    this.added.add(addedItem);
     return this;
   }
 
    /**
-   * The simple string representation of the non-fungible id. * For string ids, this is &#x60;&lt;the-string-id&gt;&#x60; * For integer ids, this is &#x60;#the-integer-id#&#x60; * For bytes ids, this is &#x60;[the-lower-case-hex-representation]&#x60; * For RUID ids, this is &#x60;{...-...-...-...}&#x60; where &#x60;...&#x60; are each 16 hex characters. A given non-fungible resource has a fixed &#x60;NonFungibleIdType&#x60;, so this representation uniquely identifies this non-fungible under the given resource address. 
-   * @return nonFungibleId
+   * Get added
+   * @return added
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The simple string representation of the non-fungible id. * For string ids, this is `<the-string-id>` * For integer ids, this is `#the-integer-id#` * For bytes ids, this is `[the-lower-case-hex-representation]` * For RUID ids, this is `{...-...-...-...}` where `...` are each 16 hex characters. A given non-fungible resource has a fixed `NonFungibleIdType`, so this representation uniquely identifies this non-fungible under the given resource address. ")
-  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_ID)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_ADDED)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getNonFungibleId() {
-    return nonFungibleId;
+  public List<String> getAdded() {
+    return added;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_ID)
+  @JsonProperty(JSON_PROPERTY_ADDED)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNonFungibleId(String nonFungibleId) {
-    this.nonFungibleId = nonFungibleId;
+  public void setAdded(List<String> added) {
+    this.added = added;
+  }
+
+
+  public LtsEntityNonFungibleBalanceChanges removed(List<String> removed) {
+    this.removed = removed;
+    return this;
+  }
+
+  public LtsEntityNonFungibleBalanceChanges addRemovedItem(String removedItem) {
+    this.removed.add(removedItem);
+    return this;
+  }
+
+   /**
+   * Get removed
+   * @return removed
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_REMOVED)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public List<String> getRemoved() {
+    return removed;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_REMOVED)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setRemoved(List<String> removed) {
+    this.removed = removed;
   }
 
 
   /**
-   * Return true if this StateNonFungibleRequest object is equal to o.
+   * Return true if this LtsEntityNonFungibleBalanceChanges object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -138,24 +180,26 @@ public class StateNonFungibleRequest {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    StateNonFungibleRequest stateNonFungibleRequest = (StateNonFungibleRequest) o;
-    return Objects.equals(this.network, stateNonFungibleRequest.network) &&
-        Objects.equals(this.resourceAddress, stateNonFungibleRequest.resourceAddress) &&
-        Objects.equals(this.nonFungibleId, stateNonFungibleRequest.nonFungibleId);
+    LtsEntityNonFungibleBalanceChanges ltsEntityNonFungibleBalanceChanges = (LtsEntityNonFungibleBalanceChanges) o;
+    return Objects.equals(this.entityAddress, ltsEntityNonFungibleBalanceChanges.entityAddress) &&
+        Objects.equals(this.resourceAddress, ltsEntityNonFungibleBalanceChanges.resourceAddress) &&
+        Objects.equals(this.added, ltsEntityNonFungibleBalanceChanges.added) &&
+        Objects.equals(this.removed, ltsEntityNonFungibleBalanceChanges.removed);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(network, resourceAddress, nonFungibleId);
+    return Objects.hash(entityAddress, resourceAddress, added, removed);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class StateNonFungibleRequest {\n");
-    sb.append("    network: ").append(toIndentedString(network)).append("\n");
+    sb.append("class LtsEntityNonFungibleBalanceChanges {\n");
+    sb.append("    entityAddress: ").append(toIndentedString(entityAddress)).append("\n");
     sb.append("    resourceAddress: ").append(toIndentedString(resourceAddress)).append("\n");
-    sb.append("    nonFungibleId: ").append(toIndentedString(nonFungibleId)).append("\n");
+    sb.append("    added: ").append(toIndentedString(added)).append("\n");
+    sb.append("    removed: ").append(toIndentedString(removed)).append("\n");
     sb.append("}");
     return sb.toString();
   }
