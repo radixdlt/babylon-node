@@ -565,6 +565,7 @@ pub mod extensions {
 
 pub mod measurement {
     use super::*;
+    use std::cmp::max;
 
     /// A database capable of returning some metrics describing itself.
     #[enum_dispatch]
@@ -578,15 +579,18 @@ pub mod measurement {
     pub struct CategoryDbVolumeStatistic {
         /// Name of the table/map/cf.
         pub category_name: String,
-        /// An estimate of the entry count.
-        /// This will be almost definitely an over-estimate: the inaccuracy comes from
-        /// multi-counting the upserts and disregarding deletes (which happen across different SST
-        /// files).
-        pub entry_count: u64,
+        /// A sum of live entries across SSTs (not accounting for their compaction).
+        pub live_count: u64,
+        /// A sum of tombstone entries across SSTs (not accounting for their compaction).
+        pub tombstone_count: u64,
         /// An estimate of the persisted total size of this category, in bytes.
         /// This should be measured after applying any database overheads (e.g. uncompacted levels)
         /// and/or optimizations (e.g. compression).
         pub size_bytes: usize,
+        /// A number of SSTs used for the category.
+        pub sst_count: usize,
+        /// A maximum SST level.
+        pub max_level: i32,
     }
 
     impl CategoryDbVolumeStatistic {
@@ -594,15 +598,28 @@ pub mod measurement {
         pub fn zero(category_name: String) -> Self {
             Self {
                 category_name,
-                entry_count: 0,
+                live_count: 0,
+                tombstone_count: 0,
                 size_bytes: 0,
+                sst_count: 0,
+                max_level: 0,
             }
         }
 
-        /// Accumulates the given count and size into this instance.
-        pub fn add(&mut self, entry_count: u64, size_bytes: usize) {
-            self.entry_count += entry_count;
+        /// Accumulates the given SST summary into this instance.
+        /// This leaks the detail about our Level-like DB usage.
+        pub fn add_sst_summary(
+            &mut self,
+            live_count: u64,
+            tombstone_count: u64,
+            size_bytes: usize,
+            level: i32,
+        ) {
+            self.live_count += live_count;
+            self.tombstone_count += tombstone_count;
             self.size_bytes += size_bytes;
+            self.sst_count += 1;
+            self.max_level = max(self.max_level, level);
         }
     }
 }
