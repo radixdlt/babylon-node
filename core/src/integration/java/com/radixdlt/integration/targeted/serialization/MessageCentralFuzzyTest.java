@@ -129,7 +129,7 @@ public class MessageCentralFuzzyTest {
             new MetricsInitializer().initialize(),
             () -> peerControl,
             Addressing.ofNetwork(Network.INTEGRATIONTESTNET),
-            new Capabilities(LedgerSyncCapability.Builder.asDefault().build()),
+            Capabilities.testingDefault(),
             Set.of(),
             1024 * 1024);
 
