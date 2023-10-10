@@ -578,7 +578,12 @@ impl MeasurableDatabase for RocksDBStore {
                 warn!("LiveFile of unknown column family: {:?}", live_file);
                 continue;
             };
-            statistic.add(live_file.num_entries, live_file.size);
+            statistic.add_sst_summary(
+                live_file.num_entries,
+                live_file.num_deletions,
+                live_file.size,
+                live_file.level,
+            );
         }
         statistics.into_values().collect()
     }
