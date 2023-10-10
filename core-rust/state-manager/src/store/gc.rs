@@ -156,9 +156,9 @@ impl StateHashTreeGc {
                 let part_keys: Box<dyn Iterator<Item = NodeKey>> = match stale_tree_part {
                     StaleTreePart::Node(key) => Box::new(iter::once(key)),
                     // In case of "delete partition", we have to traverse its entire subtree:
-                    // Note: it is critical to do it DFS (i.e. delete a parent only after its
-                    // children, in case this process is interrupted half-way and need to be
-                    // resumed).
+                    // Note: it is critical to do a post-order DFS here (i.e. to delete a parent
+                    // only after its children, in case this process is interrupted half-way
+                    // and need to be resumed).
                     StaleTreePart::Subtree(subtree_root_key) => {
                         Box::new(iterate_dfs_post_order(database, subtree_root_key))
                     }
@@ -184,7 +184,7 @@ impl StateHashTreeGc {
 }
 
 /// Iterates the node keys from the state hash tree's subtree starting at the given root key, in a
-/// depth-first-search, post-order way.
+/// depth-first-search, post-order way (i.e. parent after children).
 /// Note: the implementation will only traverse internal nodes, reading the leafs' state from their
 /// parent's child-list. This means that it can return node keys of leafs that were already deleted
 /// from the database (in a previous, incomplete GC run).
@@ -235,6 +235,9 @@ fn recurse_children_and_append_parent<'s, S: ReadableTreeStore + 's>(
             let child_key = parent_key.gen_child_node_key(child.version, child.nibble);
             if child.is_leaf {
                 // A terminal case: we do not need to recurse into children (nor load them from DB).
+                // Not loading from the DB is an optimization to speed up the performance.
+                // This can mean that we return children which are already deleted / no longer exist.
+                // This is mentioned in the rust doc for `iterate_dfs_post_order`
                 return Box::new(iter::once(child_key));
             }
             let Some(child_node) = tree_store.get_node(&child_key) else {
