@@ -138,8 +138,9 @@ impl StateHashTreeGc {
             .unwrap_or(StateVersion::pre_genesis());
 
         info!(
-            "Starting a GC run: current state version is {:?}; pruning JMT up to {:?}",
-            current_state_version, to_state_version,
+            "Starting a GC run: current state version is {:?}; pruning JMT up to version {:?}",
+            current_state_version.number(),
+            to_state_version.number(),
         );
 
         // Open an iterator of "stale tree parts" (batched by state version at which they became stale):
@@ -166,7 +167,7 @@ impl StateHashTreeGc {
                     deleted_nodes.push(key);
                     // Periodically rotate the collected buffer of node keys to delete:
                     if deleted_nodes.len() == DELETED_NODE_BUFFER_MAX_LEN {
-                        info!("flushing a full delete buffer at {}", state_version);
+                        info!("flushing a full delete buffer at version {}", state_version);
                         database.batch_delete_node(deleted_nodes.iter());
                         deleted_nodes.clear();
                     }

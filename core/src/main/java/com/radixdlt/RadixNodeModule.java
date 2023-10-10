@@ -411,7 +411,7 @@ public final class RadixNodeModule extends AbstractModule {
     // This only needs to be one order of magnitude shorter than our intended state hash tree
     // minimum history duration (which is ~10 minutes below), and could be computed/hardcoded.
     // However, we make it configurable for tests' purposes.
-    var intervalSec = properties.get("state_hash_tree.gc.interval_sec", 5);
+    var intervalSec = properties.get("state_hash_tree.gc.interval_sec", 60);
     Preconditions.checkArgument(
         intervalSec > 0, "state hash tree GC interval must be positive: %s sec", intervalSec);
 
@@ -425,17 +425,6 @@ public final class RadixNodeModule extends AbstractModule {
         stateVersionHistoryLength >= 0,
         "state version history length must not be negative: %s",
         stateVersionHistoryLength);
-
-    // How long can the GC activity hold the DB lock for in a single cycle?
-    // The default of "50ms" allows to:
-    // - efficiently process the backlog (which is definitely there on the first run);
-    // - avoid starving the other DB activity (e.g. committing to the ledger).
-    var maxDbLockingDurationMillis =
-        properties.get("state_hash_tree.gc.max_db_locking_duration_millis", 50);
-    Preconditions.checkArgument(
-        maxDbLockingDurationMillis >= 0,
-        "maximum DB locking duration must not be negative: %s",
-        maxDbLockingDurationMillis);
 
     return new StateHashTreeGcConfig(
         UInt32.fromNonNegativeInt(intervalSec),
