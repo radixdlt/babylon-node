@@ -28,48 +28,48 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * PeerVersion
+ * PeerApplicationVersion
  */
 @JsonPropertyOrder({
-  PeerVersion.JSON_PROPERTY_STRING,
-  PeerVersion.JSON_PROPERTY_COMMIT
+  PeerApplicationVersion.JSON_PROPERTY_VERSION,
+  PeerApplicationVersion.JSON_PROPERTY_COMMIT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class PeerVersion {
-  public static final String JSON_PROPERTY_STRING = "string";
-  private String string;
+public class PeerApplicationVersion {
+  public static final String JSON_PROPERTY_VERSION = "version";
+  private String version;
 
   public static final String JSON_PROPERTY_COMMIT = "commit";
   private String commit;
 
 
-  public PeerVersion string(String string) {
-    this.string = string;
+  public PeerApplicationVersion version(String version) {
+    this.version = version;
     return this;
   }
 
    /**
-   * Get string
-   * @return string
+   * Get version
+   * @return version
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_STRING)
+  @JsonProperty(JSON_PROPERTY_VERSION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getString() {
-    return string;
+  public String getVersion() {
+    return version;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_STRING)
+  @JsonProperty(JSON_PROPERTY_VERSION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setString(String string) {
-    this.string = string;
+  public void setVersion(String version) {
+    this.version = version;
   }
 
 
-  public PeerVersion commit(String commit) {
+  public PeerApplicationVersion commit(String commit) {
     this.commit = commit;
     return this;
   }
@@ -96,7 +96,7 @@ public class PeerVersion {
 
 
   /**
-   * Return true if this PeerVersion object is equal to o.
+   * Return true if this PeerApplicationVersion object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -106,21 +106,21 @@ public class PeerVersion {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    PeerVersion peerVersion = (PeerVersion) o;
-    return Objects.equals(this.string, peerVersion.string) &&
-        Objects.equals(this.commit, peerVersion.commit);
+    PeerApplicationVersion peerApplicationVersion = (PeerApplicationVersion) o;
+    return Objects.equals(this.version, peerApplicationVersion.version) &&
+        Objects.equals(this.commit, peerApplicationVersion.commit);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(string, commit);
+    return Objects.hash(version, commit);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class PeerVersion {\n");
-    sb.append("    string: ").append(toIndentedString(string)).append("\n");
+    sb.append("class PeerApplicationVersion {\n");
+    sb.append("    version: ").append(toIndentedString(version)).append("\n");
     sb.append("    commit: ").append(toIndentedString(commit)).append("\n");
     sb.append("}");
     return sb.toString();

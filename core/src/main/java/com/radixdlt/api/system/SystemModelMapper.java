@@ -131,10 +131,10 @@ public final class SystemModelMapper {
                       .orElse(Map.of());
               final var versionString =
                   maybeVersionCapability.getOrDefault(
-                      AppVersionCapability.CONFIG_STRING, "unknown (likely pre-1.0.4)");
+                      AppVersionCapability.CONFIG_VERSION, "unknown (likely pre-1.0.4)");
               final var versionCommit =
                   maybeVersionCapability.getOrDefault(
-                      AppVersionCapability.CONFIG_STRING, "unknown");
+                      AppVersionCapability.CONFIG_COMMIT, "unknown");
 
               final var peerChannel =
                   new PeerChannel()
@@ -142,7 +142,10 @@ public final class SystemModelMapper {
                           channel.isOutbound() ? PeerChannel.TypeEnum.OUT : PeerChannel.TypeEnum.IN)
                       .localPort(channel.getPort())
                       .ip(channel.getHost())
-                      .version(new PeerVersion().string(versionString).commit(versionCommit));
+                      .applicationVersion(
+                          new PeerApplicationVersion()
+                              .version(versionString)
+                              .commit(versionCommit));
               channel.getUri().map(RadixNodeUri::toString).ifPresent(peerChannel::uri);
               peer.addChannelsItem(peerChannel);
             });

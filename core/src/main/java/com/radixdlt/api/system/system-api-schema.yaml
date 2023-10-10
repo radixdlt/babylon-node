@@ -324,15 +324,15 @@ components:
           type: string
         uri:
           type: string
-        version:
-          $ref: "#/components/schemas/PeerVersion"
-    PeerVersion:
+        application_version:
+          $ref: "#/components/schemas/PeerApplicationVersion"
+    PeerApplicationVersion:
       type: object
       required:
-        - string
+        - version
         - commit
       properties:
-        string:
+        version:
           type: string
         commit:
           type: string

@@ -70,14 +70,14 @@ import java.util.Map;
 /** A "capability" used for sharing application version */
 public record AppVersionCapability(ApplicationVersion applicationVersion) {
   public static final String NAME = "app-version";
-  public static final String CONFIG_STRING = "string";
+  public static final String CONFIG_VERSION = "version";
   public static final String CONFIG_COMMIT = "commit";
 
   public RemotePeerCapability toRemotePeerCapability() {
     return new RemotePeerCapability(
         NAME,
         Map.of(
-            CONFIG_STRING,
+            CONFIG_VERSION,
             applicationVersion
                 .string()
                 .substring(0, RemotePeerCapability.CONFIGURATION_MAX_VALUE_SIZE),

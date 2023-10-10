@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.system.generated.models.PeerVersion;
+import com.radixdlt.api.system.generated.models.PeerApplicationVersion;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -36,7 +36,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   PeerChannel.JSON_PROPERTY_LOCAL_PORT,
   PeerChannel.JSON_PROPERTY_IP,
   PeerChannel.JSON_PROPERTY_URI,
-  PeerChannel.JSON_PROPERTY_VERSION
+  PeerChannel.JSON_PROPERTY_APPLICATION_VERSION
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class PeerChannel {
@@ -87,8 +87,8 @@ public class PeerChannel {
   public static final String JSON_PROPERTY_URI = "uri";
   private String uri;
 
-  public static final String JSON_PROPERTY_VERSION = "version";
-  private PeerVersion version;
+  public static final String JSON_PROPERTY_APPLICATION_VERSION = "application_version";
+  private PeerApplicationVersion applicationVersion;
 
 
   public PeerChannel type(TypeEnum type) {
@@ -195,29 +195,29 @@ public class PeerChannel {
   }
 
 
-  public PeerChannel version(PeerVersion version) {
-    this.version = version;
+  public PeerChannel applicationVersion(PeerApplicationVersion applicationVersion) {
+    this.applicationVersion = applicationVersion;
     return this;
   }
 
    /**
-   * Get version
-   * @return version
+   * Get applicationVersion
+   * @return applicationVersion
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VERSION)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_APPLICATION_VERSION)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public PeerVersion getVersion() {
-    return version;
+  public PeerApplicationVersion getApplicationVersion() {
+    return applicationVersion;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_VERSION)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setVersion(PeerVersion version) {
-    this.version = version;
+  @JsonProperty(JSON_PROPERTY_APPLICATION_VERSION)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setApplicationVersion(PeerApplicationVersion applicationVersion) {
+    this.applicationVersion = applicationVersion;
   }
 
 
@@ -237,12 +237,12 @@ public class PeerChannel {
         Objects.equals(this.localPort, peerChannel.localPort) &&
         Objects.equals(this.ip, peerChannel.ip) &&
         Objects.equals(this.uri, peerChannel.uri) &&
-        Objects.equals(this.version, peerChannel.version);
+        Objects.equals(this.applicationVersion, peerChannel.applicationVersion);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type, localPort, ip, uri, version);
+    return Objects.hash(type, localPort, ip, uri, applicationVersion);
   }
 
   @Override
@@ -253,7 +253,7 @@ public class PeerChannel {
     sb.append("    localPort: ").append(toIndentedString(localPort)).append("\n");
     sb.append("    ip: ").append(toIndentedString(ip)).append("\n");
     sb.append("    uri: ").append(toIndentedString(uri)).append("\n");
-    sb.append("    version: ").append(toIndentedString(version)).append("\n");
+    sb.append("    applicationVersion: ").append(toIndentedString(applicationVersion)).append("\n");
     sb.append("}");
     return sb.toString();
   }
