@@ -308,6 +308,7 @@ components:
         - type
         - local_port
         - ip
+        - version
       properties:
         type:
           type: string
@@ -319,6 +320,18 @@ components:
         ip:
           type: string
         uri:
+          type: string
+        version:
+          $ref: "#/components/schemas/PeerVersion"
+    PeerVersion:
+      type: object
+      required:
+        - string
+        - commit
+      properties:
+        string:
+          type: string
+        commit:
           type: string
     MempoolConfiguration:
       type: object

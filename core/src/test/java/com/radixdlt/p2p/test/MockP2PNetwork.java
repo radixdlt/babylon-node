@@ -79,7 +79,6 @@ import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.PeerEvent;
 import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.p2p.capability.Capabilities;
-import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.p2p.transport.PeerChannel;
 import com.radixdlt.protocol.ProtocolVersion;
 import com.radixdlt.serialization.Serialization;
@@ -93,8 +92,7 @@ import java.util.Optional;
 final class MockP2PNetwork {
   private ImmutableList<TestNode> nodes;
 
-  private final Capabilities capabilities =
-      new Capabilities(LedgerSyncCapability.Builder.asDefault().build());
+  private final Capabilities capabilities = Capabilities.testingDefault();
 
   // this needs to be mutable due to circular dependency in runner
   void setNodes(ImmutableList<TestNode> nodes) {

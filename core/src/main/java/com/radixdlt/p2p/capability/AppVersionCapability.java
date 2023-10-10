@@ -62,25 +62,28 @@
  * permissions under this License.
  */
 
-package com.radixdlt.modules;
+package com.radixdlt.p2p.capability;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.p2p.capability.Capabilities;
-import com.radixdlt.p2p.capability.LedgerSyncCapability;
+import com.radixdlt.monitoring.ApplicationVersion;
+import java.util.Map;
 
-public class CapabilitiesModule extends AbstractModule {
+/** A "capability" used for sharing application version */
+public record AppVersionCapability(ApplicationVersion applicationVersion) {
+  public static final String NAME = "app-version";
+  public static final String CONFIG_STRING = "string";
+  public static final String CONFIG_COMMIT = "commit";
 
-  private final LedgerSyncCapability ledgerSyncCapability;
-
-  public CapabilitiesModule(LedgerSyncCapability ledgerSyncCapability) {
-    this.ledgerSyncCapability = ledgerSyncCapability;
-  }
-
-  @Provides
-  @Singleton
-  Capabilities provideCapabilities() {
-    return new Capabilities(this.ledgerSyncCapability);
+  public RemotePeerCapability toRemotePeerCapability() {
+    return new RemotePeerCapability(
+        NAME,
+        Map.of(
+            CONFIG_STRING,
+            applicationVersion
+                .string()
+                .substring(0, RemotePeerCapability.CONFIGURATION_MAX_VALUE_SIZE),
+            CONFIG_COMMIT,
+            applicationVersion
+                .commit()
+                .substring(0, RemotePeerCapability.CONFIGURATION_MAX_VALUE_SIZE)));
   }
 }

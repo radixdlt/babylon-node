@@ -90,8 +90,11 @@ import com.radixdlt.logger.EventLoggerModule;
 import com.radixdlt.mempool.*;
 import com.radixdlt.messaging.MessagingModule;
 import com.radixdlt.modules.*;
+import com.radixdlt.monitoring.ApplicationVersion;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.P2PModule;
+import com.radixdlt.p2p.capability.AppVersionCapability;
+import com.radixdlt.p2p.capability.Capabilities;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.rev2.modules.*;
 import com.radixdlt.store.NodeStorageLocationFromPropertiesModule;
@@ -389,11 +392,15 @@ public final class RadixNodeModule extends AbstractModule {
     // Capabilities
     var capabilitiesLedgerSyncEnabled =
         properties.get("capabilities.ledger_sync.enabled", BooleanUtils::parseBoolean);
-    LedgerSyncCapability.Builder builder =
+    LedgerSyncCapability.Builder ledgerSyncCapabilityBuilder =
         capabilitiesLedgerSyncEnabled
             .map(LedgerSyncCapability.Builder::new)
             .orElse(LedgerSyncCapability.Builder.asDefault());
-    install(new CapabilitiesModule(builder.build()));
+    bind(Capabilities.class)
+        .toInstance(
+            new Capabilities(
+                ledgerSyncCapabilityBuilder.build(),
+                new AppVersionCapability(ApplicationVersion.INSTANCE)));
   }
 
   private void warnProtocolPropertySet(String prop) {

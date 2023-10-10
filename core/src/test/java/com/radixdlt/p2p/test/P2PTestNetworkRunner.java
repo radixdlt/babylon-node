@@ -82,15 +82,17 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.messaging.MaxMessageSize;
-import com.radixdlt.modules.CapabilitiesModule;
 import com.radixdlt.modules.DispatcherModule;
 import com.radixdlt.modules.PrefixedNodeStorageLocationModule;
+import com.radixdlt.monitoring.ApplicationVersion;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.*;
 import com.radixdlt.p2p.addressbook.AddressBook;
 import com.radixdlt.p2p.addressbook.AddressBookPersistence;
+import com.radixdlt.p2p.capability.AppVersionCapability;
+import com.radixdlt.p2p.capability.Capabilities;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.p2p.transport.PeerOutboundBootstrap;
 import com.radixdlt.serialization.DefaultSerialization;
@@ -238,9 +240,13 @@ public final class P2PTestNetworkRunner {
             bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
             bind(DeterministicProcessor.class);
             Multibinder.newSetBinder(binder(), StartProcessorOnRunner.class);
+            bind(Capabilities.class)
+                .toInstance(
+                    new Capabilities(
+                        LedgerSyncCapability.Builder.asDefault().build(),
+                        new AppVersionCapability(ApplicationVersion.INSTANCE)));
           }
-        },
-        new CapabilitiesModule(LedgerSyncCapability.Builder.asDefault().build()));
+        });
   }
 
   public void cleanup() {

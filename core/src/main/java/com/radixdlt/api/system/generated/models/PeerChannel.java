@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.system.generated.models.PeerVersion;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -34,7 +35,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   PeerChannel.JSON_PROPERTY_TYPE,
   PeerChannel.JSON_PROPERTY_LOCAL_PORT,
   PeerChannel.JSON_PROPERTY_IP,
-  PeerChannel.JSON_PROPERTY_URI
+  PeerChannel.JSON_PROPERTY_URI,
+  PeerChannel.JSON_PROPERTY_VERSION
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class PeerChannel {
@@ -84,6 +86,9 @@ public class PeerChannel {
 
   public static final String JSON_PROPERTY_URI = "uri";
   private String uri;
+
+  public static final String JSON_PROPERTY_VERSION = "version";
+  private PeerVersion version;
 
 
   public PeerChannel type(TypeEnum type) {
@@ -190,6 +195,32 @@ public class PeerChannel {
   }
 
 
+  public PeerChannel version(PeerVersion version) {
+    this.version = version;
+    return this;
+  }
+
+   /**
+   * Get version
+   * @return version
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VERSION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public PeerVersion getVersion() {
+    return version;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_VERSION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setVersion(PeerVersion version) {
+    this.version = version;
+  }
+
+
   /**
    * Return true if this PeerChannel object is equal to o.
    */
@@ -205,12 +236,13 @@ public class PeerChannel {
     return Objects.equals(this.type, peerChannel.type) &&
         Objects.equals(this.localPort, peerChannel.localPort) &&
         Objects.equals(this.ip, peerChannel.ip) &&
-        Objects.equals(this.uri, peerChannel.uri);
+        Objects.equals(this.uri, peerChannel.uri) &&
+        Objects.equals(this.version, peerChannel.version);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type, localPort, ip, uri);
+    return Objects.hash(type, localPort, ip, uri, version);
   }
 
   @Override
@@ -221,6 +253,7 @@ public class PeerChannel {
     sb.append("    localPort: ").append(toIndentedString(localPort)).append("\n");
     sb.append("    ip: ").append(toIndentedString(ip)).append("\n");
     sb.append("    uri: ").append(toIndentedString(uri)).append("\n");
+    sb.append("    version: ").append(toIndentedString(version)).append("\n");
     sb.append("}");
     return sb.toString();
   }
