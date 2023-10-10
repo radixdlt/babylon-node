@@ -77,6 +77,7 @@ public record StateManagerConfig(
     DatabaseBackendConfig databaseBackendConfig,
     DatabaseFlags databaseFlags,
     LoggingConfig loggingConfig,
+    StateHashTreeGcConfig stateHashTreeGcConfig,
     boolean noFees) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(

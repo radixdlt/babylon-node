@@ -90,7 +90,6 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import java.util.Random;
 import org.junit.Rule;
@@ -127,7 +126,6 @@ public final class RecoveryAfterTimeoutQuorumTest {
                         NUM_VALIDATORS,
                         Decimal.ONE,
                         GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10)),
-                    REv2StateManagerModule.DatabaseType.ROCKS_DB,
                     StateComputerConfig.REV2ProposerConfig.transactionGenerator(
                         new REV2TransactionGenerator(), 1)),
                 SyncRelayConfig.of(5000, 10, 5000L)));

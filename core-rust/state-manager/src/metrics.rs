@@ -105,8 +105,11 @@ pub struct VertexPrepareMetrics {
 }
 
 pub struct RawDbMetrics {
-    pub entries: IntGaugeVec,
+    pub uncompacted_live_entries: IntGaugeVec,
+    pub uncompacted_tombstone_entries: IntGaugeVec,
     pub size: IntGaugeVec,
+    pub files: IntGaugeVec,
+    pub max_level: IntGaugeVec,
 }
 
 impl LedgerMetrics {
@@ -380,10 +383,18 @@ impl VertexPrepareMetrics {
 impl RawDbMetrics {
     pub fn new(registry: &Registry) -> Self {
         Self {
-            entries: IntGaugeVec::new(
+            uncompacted_live_entries: IntGaugeVec::new(
                 opts(
-                    "raw_db_entries",
-                    "An approximate number of entries persisted in the database, by category.",
+                    "raw_db_uncompacted_live_entries",
+                    "A sum of live entry counts across SST files, by category.",
+                ),
+                &["category"],
+            )
+            .registered_at(registry),
+            uncompacted_tombstone_entries: IntGaugeVec::new(
+                opts(
+                    "raw_db_uncompacted_tombstone_entries",
+                    "A sum of tombstone entry counts across SST files, by category.",
                 ),
                 &["category"],
             )
@@ -391,7 +402,23 @@ impl RawDbMetrics {
             size: IntGaugeVec::new(
                 opts(
                     "raw_db_size",
-                    "An approximate size of the database, in bytes, by category of entries.",
+                    "A sum of all SST file sizes holding a specific category, in bytes.",
+                ),
+                &["category"],
+            )
+            .registered_at(registry),
+            files: IntGaugeVec::new(
+                opts(
+                    "raw_db_files",
+                    "A number of SST files holding a specific category, in bytes.",
+                ),
+                &["category"],
+            )
+            .registered_at(registry),
+            max_level: IntGaugeVec::new(
+                opts(
+                    "raw_db_max_level",
+                    "A maximum level of an SST file, by category",
                 ),
                 &["category"],
             )
@@ -401,12 +428,21 @@ impl RawDbMetrics {
 
     pub fn update(&self, statistics: impl IntoIterator<Item = CategoryDbVolumeStatistic>) {
         for statistic in statistics {
-            self.entries
+            self.uncompacted_live_entries
                 .with_label(&statistic.category_name)
-                .set(i64::try_from(statistic.entry_count).unwrap_or_default());
+                .set(i64::try_from(statistic.live_count).unwrap_or_default());
+            self.uncompacted_tombstone_entries
+                .with_label(&statistic.category_name)
+                .set(i64::try_from(statistic.tombstone_count).unwrap_or_default());
             self.size
                 .with_label(&statistic.category_name)
                 .set(i64::try_from(statistic.size_bytes).unwrap_or_default());
+            self.files
+                .with_label(&statistic.category_name)
+                .set(i64::try_from(statistic.sst_count).unwrap_or_default());
+            self.max_level
+                .with_label(&statistic.category_name)
+                .set(i64::try_from(statistic.max_level).unwrap_or_default());
         }
     }
 }

@@ -92,7 +92,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.*;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transactions.IntentHash;
 import com.radixdlt.utils.FreePortFinder;
@@ -171,7 +170,6 @@ public abstract class DeterministicCoreApiTestBase {
                                 GenesisConsensusManagerConfig.Builder.testDefaults()
                                     .epochExactRoundCount(roundsPerEpoch),
                                 scenariosToRun),
-                            REv2StateManagerModule.DatabaseType.ROCKS_DB,
                             databaseConfig,
                             StateComputerConfig.REV2ProposerConfig.Mempool.defaults()),
                         SyncRelayConfig.of(200, 10, 2000))));

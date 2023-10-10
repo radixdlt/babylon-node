@@ -86,7 +86,6 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.modules.MockedVertexStoreModule;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import java.util.*;
 import org.apache.logging.log4j.LogManager;
@@ -220,7 +219,6 @@ public final class MultiNodeRebootTest {
                         GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
                                 this.roundsPerEpoch)
                             .totalEmissionXrdPerEpoch(Decimal.ofNonNegative(0))),
-                    REv2StateManagerModule.DatabaseType.ROCKS_DB,
                     new DatabaseFlags(true, false),
                     StateComputerConfig.REV2ProposerConfig.transactionGenerator(
                         new REV2TransactionGenerator(), 1),

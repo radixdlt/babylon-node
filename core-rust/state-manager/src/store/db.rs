@@ -63,7 +63,7 @@
  */
 
 use crate::store::traits::*;
-use crate::store::{InMemoryStore, RocksDBStore};
+use crate::store::RocksDBStore;
 use crate::transaction::LedgerTransactionHash;
 use std::path::PathBuf;
 
@@ -83,9 +83,8 @@ use radix_engine_stores::hash_tree::tree_store::{NodeKey, ReadableTreeStore, Tre
 use sbor::{Categorize, Decode, Encode};
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
-pub enum DatabaseBackendConfig {
-    InMemory,
-    RocksDB(String),
+pub struct DatabaseBackendConfig {
+    pub rocks_db_path: String,
 }
 
 // As of May 2023, enum_dispatch does not work with generic traits (or other libraries that do the same).
@@ -106,40 +105,33 @@ pub enum DatabaseBackendConfig {
     IterableAccountChangeIndex,
     IterableTransactionStore,
     IterableProofStore,
-    ExecutedGenesisScenarioStore
+    ExecutedGenesisScenarioStore,
+    StateHashTreeGcStore
 )]
 pub enum StateManagerDatabase {
-    InMemory(InMemoryStore),
+    // TODO(clean-up): After InMemoryDb was deleted, we can get rid of this middle-man as well.
     RocksDB(RocksDBStore),
 }
 
 impl StateManagerDatabase {
     pub fn from_config(backend_config: DatabaseBackendConfig, flags: DatabaseFlags) -> Self {
-        match backend_config {
-            DatabaseBackendConfig::InMemory => {
-                let store = InMemoryStore::new(flags);
-                StateManagerDatabase::InMemory(store)
-            }
-            DatabaseBackendConfig::RocksDB(path) => {
-                let db = {
-                    match RocksDBStore::new(PathBuf::from(path), flags) {
-                        Ok(db) => db,
-                        Err(error) => {
-                            match error {
-                                DatabaseConfigValidationError::AccountChangeIndexRequiresLocalTransactionExecutionIndex => {
-                                    panic!("Local transaction execution index needs to be enabled in order for account change index to work.")
-                                },
-                                DatabaseConfigValidationError::LocalTransactionExecutionIndexChanged => {
-                                    panic!("Local transaction execution index can not be changed once configured.\n\
+        let db = {
+            match RocksDBStore::new(PathBuf::from(backend_config.rocks_db_path), flags) {
+                Ok(db) => db,
+                Err(error) => {
+                    match error {
+                        DatabaseConfigValidationError::AccountChangeIndexRequiresLocalTransactionExecutionIndex => {
+                            panic!("Local transaction execution index needs to be enabled in order for account change index to work.")
+                        },
+                        DatabaseConfigValidationError::LocalTransactionExecutionIndexChanged => {
+                            panic!("Local transaction execution index can not be changed once configured.\n\
                                             If you need to change it, please wipe ledger data and resync.\n")
-                                }
-                            }
                         }
                     }
-                };
-                StateManagerDatabase::RocksDB(db)
+                }
             }
-        }
+        };
+        StateManagerDatabase::RocksDB(db)
     }
 }
 
@@ -150,7 +142,6 @@ impl SubstateDatabase for StateManagerDatabase {
         sort_key: &DbSortKey,
     ) -> Option<DbSubstateValue> {
         match self {
-            StateManagerDatabase::InMemory(store) => store.get_substate(partition_key, sort_key),
             StateManagerDatabase::RocksDB(store) => store.get_substate(partition_key, sort_key),
         }
     }
@@ -160,7 +151,6 @@ impl SubstateDatabase for StateManagerDatabase {
         partition_key: &DbPartitionKey,
     ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
         match self {
-            StateManagerDatabase::InMemory(store) => store.list_entries(partition_key),
             StateManagerDatabase::RocksDB(store) => store.list_entries(partition_key),
         }
     }
@@ -169,7 +159,6 @@ impl SubstateDatabase for StateManagerDatabase {
 impl ReadableTreeStore for StateManagerDatabase {
     fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
         match self {
-            StateManagerDatabase::InMemory(store) => store.get_node(key),
             StateManagerDatabase::RocksDB(store) => store.get_node(key),
         }
     }
@@ -181,7 +170,6 @@ impl ReadableAccuTreeStore<StateVersion, TransactionTreeHash> for StateManagerDa
         state_version: &StateVersion,
     ) -> Option<TreeSlice<TransactionTreeHash>> {
         match self {
-            StateManagerDatabase::InMemory(store) => store.get_tree_slice(state_version),
             StateManagerDatabase::RocksDB(store) => store.get_tree_slice(state_version),
         }
     }
@@ -190,7 +178,6 @@ impl ReadableAccuTreeStore<StateVersion, TransactionTreeHash> for StateManagerDa
 impl ReadableAccuTreeStore<StateVersion, ReceiptTreeHash> for StateManagerDatabase {
     fn get_tree_slice(&self, state_version: &StateVersion) -> Option<TreeSlice<ReceiptTreeHash>> {
         match self {
-            StateManagerDatabase::InMemory(store) => store.get_tree_slice(state_version),
             StateManagerDatabase::RocksDB(store) => store.get_tree_slice(state_version),
         }
     }
@@ -199,9 +186,6 @@ impl ReadableAccuTreeStore<StateVersion, ReceiptTreeHash> for StateManagerDataba
 impl TransactionIndex<&IntentHash> for StateManagerDatabase {
     fn get_txn_state_version_by_identifier(&self, identifier: &IntentHash) -> Option<StateVersion> {
         match self {
-            StateManagerDatabase::InMemory(store) => {
-                store.get_txn_state_version_by_identifier(identifier)
-            }
             StateManagerDatabase::RocksDB(store) => {
                 store.get_txn_state_version_by_identifier(identifier)
             }
@@ -215,9 +199,6 @@ impl TransactionIndex<&NotarizedTransactionHash> for StateManagerDatabase {
         identifier: &NotarizedTransactionHash,
     ) -> Option<StateVersion> {
         match self {
-            StateManagerDatabase::InMemory(store) => {
-                store.get_txn_state_version_by_identifier(identifier)
-            }
             StateManagerDatabase::RocksDB(store) => {
                 store.get_txn_state_version_by_identifier(identifier)
             }
@@ -231,9 +212,6 @@ impl TransactionIndex<&LedgerTransactionHash> for StateManagerDatabase {
         identifier: &LedgerTransactionHash,
     ) -> Option<StateVersion> {
         match self {
-            StateManagerDatabase::InMemory(store) => {
-                store.get_txn_state_version_by_identifier(identifier)
-            }
             StateManagerDatabase::RocksDB(store) => {
                 store.get_txn_state_version_by_identifier(identifier)
             }

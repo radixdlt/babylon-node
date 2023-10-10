@@ -62,105 +62,22 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.deterministic.rev2;
+package com.radixdlt.environment;
 
-import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
-import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.*;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.UInt64;
 
-import com.google.inject.*;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.genesis.GenesisBuilder;
-import com.radixdlt.genesis.GenesisConsensusManagerConfig;
-import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
-import com.radixdlt.harness.invariants.Checkers;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
-import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
-import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.Decimal;
-import com.radixdlt.rev2.REV2TransactionGenerator;
-import com.radixdlt.sync.SyncRelayConfig;
-import java.util.Collection;
-import java.util.List;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
-@RunWith(Parameterized.class)
-public final class SanityTest {
-  @Parameterized.Parameters
-  public static Collection<Object[]> parameters() {
-    return List.of(
-        new Object[][] {
-          {false, 100000},
-          {true, 100},
-        });
+public record StateHashTreeGcConfig(UInt32 intervalSec, UInt64 stateVersionHistoryLength) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        StateHashTreeGcConfig.class,
+        codecs -> StructCodec.fromRecordComponents(StateHashTreeGcConfig.class, codecs));
   }
 
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
-
-  private final boolean epochs;
-  private final long roundsPerEpoch;
-
-  public SanityTest(boolean epochs, long roundsPerEpoch) {
-    this.epochs = epochs;
-    this.roundsPerEpoch = roundsPerEpoch;
-  }
-
-  private DeterministicTest createTest() {
-    return DeterministicTest.builder()
-        .addPhysicalNodes(PhysicalNodeConfig.createBatch(20, true))
-        .messageSelector(firstSelector())
-        .addMonitors(
-            byzantineBehaviorNotDetected(),
-            consensusLiveness(3000),
-            noTimeouts(),
-            ledgerTransactionSafety())
-        .functionalNodeModule(
-            new FunctionalRadixNodeModule(
-                NodeStorageConfig.tempFolder(folder),
-                epochs,
-                SafetyRecoveryConfig.BERKELEY_DB,
-                ConsensusConfig.of(1000),
-                LedgerConfig.stateComputerWithSyncRelay(
-                    StateComputerConfig.rev2(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        GenesisBuilder.createTestGenesisWithNumValidators(
-                            10,
-                            Decimal.ONE,
-                            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
-                                roundsPerEpoch)),
-                        REV2ProposerConfig.Mempool.defaults()),
-                    SyncRelayConfig.of(5000, 10, 3000L))));
-  }
-
-  @Test
-  public void normal_run_with_transactions_should_not_cause_unexpected_errors() {
-    final var transactionGenerator = new REV2TransactionGenerator();
-    try (var test = createTest()) {
-      test.startAllNodes();
-
-      // Run
-      for (int i = 0; i < 100; i++) {
-        test.runForCount(1000);
-
-        var mempoolDispatcher =
-            test.getInstance(
-                i % test.numNodes(), Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
-        mempoolDispatcher.dispatch(MempoolAdd.create(transactionGenerator.nextTransaction()));
-      }
-
-      // Post-run assertions
-      Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), 20);
-      Checkers.assertNoInvalidSyncResponses(test.getNodeInjectors());
-    }
+  public static StateHashTreeGcConfig forTesting() {
+    // Remove everything stale, frequently (in tests).
+    return new StateHashTreeGcConfig(UInt32.fromNonNegativeInt(1), UInt64.ZERO);
   }
 }

@@ -62,25 +62,57 @@
  * permissions under this License.
  */
 
-package com.radixdlt.modules;
+use std::ops::Div;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.p2p.capability.Capabilities;
-import com.radixdlt.p2p.capability.LedgerSyncCapability;
+use clokwerk::{Interval, ScheduleHandle};
+use std::time::Duration;
 
-public class CapabilitiesModule extends AbstractModule {
+/// A scheduler for background tasks.
+/// All schedules started with a specific scheduler should be stopped when its instance is dropped.
+pub trait Scheduler {
+    /// Starts a periodic execution of the given task.
+    /// The consecutive runs should be started at approximately the given intervals - however, if
+    /// a particular run takes longer than the interval, then it should not be (in any way) aborted,
+    /// and no concurrent run should be started - the schedule should simply be delayed.
+    fn start_periodic(&mut self, interval: Duration, task: impl 'static + FnMut() + Send);
+}
 
-  private final LedgerSyncCapability ledgerSyncCapability;
+// TODO(metrics): Add a `MeasuredScheduler` decorator (mostly for: task run duration).
 
-  public CapabilitiesModule(LedgerSyncCapability ledgerSyncCapability) {
-    this.ledgerSyncCapability = ledgerSyncCapability;
-  }
+/// A no-op [`Scheduler`] (e.g. for test purposes).
+#[derive(Default)]
+pub struct NoopScheduler;
 
-  @Provides
-  @Singleton
-  Capabilities provideCapabilities() {
-    return new Capabilities(this.ledgerSyncCapability);
-  }
+impl Scheduler for NoopScheduler {
+    fn start_periodic(&mut self, _interval: Duration, _task: impl 'static + FnMut() + Send) {}
+}
+
+/// A [`Scheduler`] based on a "clokwerk" crate.
+/// Implementation note: a separate underlying scheduler instance is used for every task, so that
+/// they run in separate threads.
+// TODO(post-feature refactor): Replace this impl with raw tokio-based and drop the "clokwerk" dep.
+#[derive(Default)]
+pub struct ClokwerkScheduler {
+    underlying_handles: Vec<ScheduleHandle>, // only held for being stopped when scheduler is dropped
+}
+
+impl Scheduler for ClokwerkScheduler {
+    fn start_periodic(&mut self, interval: Duration, task: impl 'static + FnMut() + Send) {
+        assert_eq!(
+            interval.subsec_nanos(),
+            0,
+            "Clokwerk-based scheduler has a 1-second precision and cannot handle interval {:?}",
+            interval
+        );
+        let interval_sec = u32::try_from(interval.as_secs())
+            .ok()
+            .filter(|sec| *sec > 0)
+            .expect("interval outside of valid range");
+        let mut scheduler = clokwerk::Scheduler::new();
+        scheduler.every(Interval::Seconds(interval_sec)).run(task);
+        // Since every task has its own thread in our approach, we can calculate a "good enough"
+        // resolution of the watch thread (here arbitrarily chosen as 1/10 of the run interval):
+        let handle = scheduler.watch_thread(interval.div(10));
+        self.underlying_handles.push(handle);
+    }
 }

@@ -62,19 +62,20 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.deterministic.rev2;
+package com.radixdlt.rev2;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
-import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.*;
 
-import com.google.inject.*;
-import com.radixdlt.environment.EventDispatcher;
+import com.google.inject.Injector;
+import com.radixdlt.environment.DatabaseFlags;
+import com.radixdlt.environment.StateHashTreeGcConfig;
+import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
-import com.radixdlt.harness.invariants.Checkers;
-import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.harness.predicates.NodePredicate;
+import com.radixdlt.harness.predicates.NodesPredicate;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
@@ -83,84 +84,72 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.Decimal;
-import com.radixdlt.rev2.REV2TransactionGenerator;
-import com.radixdlt.sync.SyncRelayConfig;
-import java.util.Collection;
-import java.util.List;
+import com.radixdlt.sync.TransactionsAndProofReader;
+import com.radixdlt.testutil.TestStateReader;
+import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.UInt64;
+import java.util.function.Predicate;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
-@RunWith(Parameterized.class)
-public final class SanityTest {
-  @Parameterized.Parameters
-  public static Collection<Object[]> parameters() {
-    return List.of(
-        new Object[][] {
-          {false, 100000},
-          {true, 100},
-        });
-  }
+public final class StateHashTreeGcTest {
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-  private final boolean epochs;
-  private final long roundsPerEpoch;
-
-  public SanityTest(boolean epochs, long roundsPerEpoch) {
-    this.epochs = epochs;
-    this.roundsPerEpoch = roundsPerEpoch;
-  }
-
-  private DeterministicTest createTest() {
+  private DeterministicTest createTest(long stateVersionHistoryLength) {
     return DeterministicTest.builder()
-        .addPhysicalNodes(PhysicalNodeConfig.createBatch(20, true))
+        .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
         .messageSelector(firstSelector())
-        .addMonitors(
-            byzantineBehaviorNotDetected(),
-            consensusLiveness(3000),
-            noTimeouts(),
-            ledgerTransactionSafety())
+        .messageMutator(MessageMutator.dropTimeouts())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
                 NodeStorageConfig.tempFolder(folder),
-                epochs,
-                SafetyRecoveryConfig.BERKELEY_DB,
+                true,
+                SafetyRecoveryConfig.MOCKED,
                 ConsensusConfig.of(1000),
-                LedgerConfig.stateComputerWithSyncRelay(
-                    StateComputerConfig.rev2(
+                LedgerConfig.stateComputerNoSync(
+                    new StateComputerConfig.REv2StateComputerConfig(
                         Network.INTEGRATIONTESTNET.getId(),
                         GenesisBuilder.createTestGenesisWithNumValidators(
-                            10,
+                            1,
                             Decimal.ONE,
-                            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
-                                roundsPerEpoch)),
-                        REV2ProposerConfig.Mempool.defaults()),
-                    SyncRelayConfig.of(5000, 10, 3000L))));
+                            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(100)),
+                        new DatabaseFlags(false, false),
+                        REV2ProposerConfig.noUserTransactions(),
+                        false,
+                        new StateHashTreeGcConfig(
+                            UInt32.fromNonNegativeInt(1),
+                            UInt64.fromNonNegativeLong(stateVersionHistoryLength)),
+                        false))));
   }
 
   @Test
-  public void normal_run_with_transactions_should_not_cause_unexpected_errors() {
-    final var transactionGenerator = new REV2TransactionGenerator();
-    try (var test = createTest()) {
+  public void node_keeps_exactly_the_configured_number_of_stale_state_hash_tree_versions() {
+    // Arrange: configure 37 historical state versions to be kept in the state hash tree
+    try (var test = createTest(37)) {
       test.startAllNodes();
 
-      // Run
-      for (int i = 0; i < 100; i++) {
-        test.runForCount(1000);
+      // Act: Advance at least that many versions, so we are sure about the `current - leastStale`
+      test.runUntilState(NodesPredicate.nodeAt(0, NodePredicate.atExactlyStateVersion(39)), 10000);
 
-        var mempoolDispatcher =
-            test.getInstance(
-                i % test.numNodes(), Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
-        mempoolDispatcher.dispatch(MempoolAdd.create(transactionGenerator.nextTransaction()));
-      }
-
-      // Post-run assertions
-      Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), 20);
-      Checkers.assertNoInvalidSyncResponses(test.getNodeInjectors());
+      // Assert: Run a few rounds, until an async GC executes
+      test.runUntilState(
+          NodesPredicate.nodeAt(0, atExactDifferenceToLeastStaleStateHashTreeVersion(37)), 50000);
     }
+  }
+
+  private Predicate<Injector> atExactDifferenceToLeastStaleStateHashTreeVersion(long difference) {
+    return injector -> {
+      var currentStateVersion =
+          injector
+              .getInstance(TransactionsAndProofReader.class)
+              .getLastProof()
+              .get()
+              .getStateVersion();
+      var leastStaleStateHashTreeVersion =
+          injector.getInstance(TestStateReader.class).getLeastStaleStateHashTreeVersion();
+      return currentStateVersion - leastStaleStateHashTreeVersion == difference;
+    };
   }
 }

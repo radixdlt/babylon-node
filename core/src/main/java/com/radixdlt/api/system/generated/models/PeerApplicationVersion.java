@@ -22,119 +22,81 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.system.generated.models.PeerChannel;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * Peer
+ * PeerApplicationVersion
  */
 @JsonPropertyOrder({
-  Peer.JSON_PROPERTY_PEER_ID,
-  Peer.JSON_PROPERTY_KEY_HEX,
-  Peer.JSON_PROPERTY_CHANNELS
+  PeerApplicationVersion.JSON_PROPERTY_VERSION,
+  PeerApplicationVersion.JSON_PROPERTY_COMMIT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class Peer {
-  public static final String JSON_PROPERTY_PEER_ID = "peer_id";
-  private String peerId;
+public class PeerApplicationVersion {
+  public static final String JSON_PROPERTY_VERSION = "version";
+  private String version;
 
-  public static final String JSON_PROPERTY_KEY_HEX = "key_hex";
-  private String keyHex;
-
-  public static final String JSON_PROPERTY_CHANNELS = "channels";
-  private List<PeerChannel> channels = new ArrayList<>();
+  public static final String JSON_PROPERTY_COMMIT = "commit";
+  private String commit;
 
 
-  public Peer peerId(String peerId) {
-    this.peerId = peerId;
+  public PeerApplicationVersion version(String version) {
+    this.version = version;
     return this;
   }
 
    /**
-   * Get peerId
-   * @return peerId
+   * Get version
+   * @return version
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_PEER_ID)
+  @JsonProperty(JSON_PROPERTY_VERSION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getPeerId() {
-    return peerId;
+  public String getVersion() {
+    return version;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_PEER_ID)
+  @JsonProperty(JSON_PROPERTY_VERSION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setPeerId(String peerId) {
-    this.peerId = peerId;
+  public void setVersion(String version) {
+    this.version = version;
   }
 
 
-  public Peer keyHex(String keyHex) {
-    this.keyHex = keyHex;
+  public PeerApplicationVersion commit(String commit) {
+    this.commit = commit;
     return this;
   }
 
    /**
-   * Get keyHex
-   * @return keyHex
+   * Get commit
+   * @return commit
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_KEY_HEX)
+  @JsonProperty(JSON_PROPERTY_COMMIT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getKeyHex() {
-    return keyHex;
+  public String getCommit() {
+    return commit;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_KEY_HEX)
+  @JsonProperty(JSON_PROPERTY_COMMIT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setKeyHex(String keyHex) {
-    this.keyHex = keyHex;
-  }
-
-
-  public Peer channels(List<PeerChannel> channels) {
-    this.channels = channels;
-    return this;
-  }
-
-  public Peer addChannelsItem(PeerChannel channelsItem) {
-    this.channels.add(channelsItem);
-    return this;
-  }
-
-   /**
-   * Get channels
-   * @return channels
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_CHANNELS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public List<PeerChannel> getChannels() {
-    return channels;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_CHANNELS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setChannels(List<PeerChannel> channels) {
-    this.channels = channels;
+  public void setCommit(String commit) {
+    this.commit = commit;
   }
 
 
   /**
-   * Return true if this Peer object is equal to o.
+   * Return true if this PeerApplicationVersion object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -144,24 +106,22 @@ public class Peer {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    Peer peer = (Peer) o;
-    return Objects.equals(this.peerId, peer.peerId) &&
-        Objects.equals(this.keyHex, peer.keyHex) &&
-        Objects.equals(this.channels, peer.channels);
+    PeerApplicationVersion peerApplicationVersion = (PeerApplicationVersion) o;
+    return Objects.equals(this.version, peerApplicationVersion.version) &&
+        Objects.equals(this.commit, peerApplicationVersion.commit);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(peerId, keyHex, channels);
+    return Objects.hash(version, commit);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class Peer {\n");
-    sb.append("    peerId: ").append(toIndentedString(peerId)).append("\n");
-    sb.append("    keyHex: ").append(toIndentedString(keyHex)).append("\n");
-    sb.append("    channels: ").append(toIndentedString(channels)).append("\n");
+    sb.append("class PeerApplicationVersion {\n");
+    sb.append("    version: ").append(toIndentedString(version)).append("\n");
+    sb.append("    commit: ").append(toIndentedString(commit)).append("\n");
     sb.append("}");
     return sb.toString();
   }

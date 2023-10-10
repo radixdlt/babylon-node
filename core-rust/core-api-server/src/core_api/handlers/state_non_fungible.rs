@@ -27,7 +27,7 @@ pub(crate) async fn handle_state_non_fungible(
         return Err(client_error("Resource is not a non-fungible resource"));
     }
 
-    let database = state.state_manager.database.read();
+    let database = state.state_manager.database.read_current();
 
     let id_type =
         read_optional_main_field_substate::<NonFungibleResourceManagerIdTypeFieldPayload>(
