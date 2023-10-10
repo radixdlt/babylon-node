@@ -294,9 +294,12 @@ components:
       type: object
       required:
         - peer_id
+        - key_hex
         - channels
       properties:
         peer_id:
+          type: string
+        key_hex:
           type: string
         channels:
           type: array
@@ -308,6 +311,7 @@ components:
         - type
         - local_port
         - ip
+        - version
       properties:
         type:
           type: string
@@ -319,6 +323,18 @@ components:
         ip:
           type: string
         uri:
+          type: string
+        application_version:
+          $ref: "#/components/schemas/PeerApplicationVersion"
+    PeerApplicationVersion:
+      type: object
+      required:
+        - version
+        - commit
+      properties:
+        version:
+          type: string
+        commit:
           type: string
     MempoolConfiguration:
       type: object

@@ -64,10 +64,19 @@
 
 package com.radixdlt.p2p.capability;
 
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.messaging.core.Message;
+import com.radixdlt.monitoring.ApplicationVersion;
 import java.util.Set;
 
-public record Capabilities(LedgerSyncCapability ledgerSyncCapability) {
+public record Capabilities(
+    LedgerSyncCapability ledgerSyncCapability, AppVersionCapability appVersionCapability) {
+
+  public static Capabilities testingDefault() {
+    return new Capabilities(
+        LedgerSyncCapability.Builder.asDefault().build(),
+        new AppVersionCapability(ApplicationVersion.INSTANCE));
+  }
 
   /*
    * This is used to mitigate malicious messages during capabilities exchange.
@@ -97,8 +106,11 @@ public record Capabilities(LedgerSyncCapability ledgerSyncCapability) {
   }
 
   public Set<RemotePeerCapability> toRemotePeerCapabilities() {
-    return isLedgerSyncEnabled()
-        ? Set.of(this.ledgerSyncCapability.toRemotePeerCapability())
-        : Set.of();
+    final var builder = ImmutableSet.<RemotePeerCapability>builder();
+    if (isLedgerSyncEnabled()) {
+      builder.add(this.ledgerSyncCapability.toRemotePeerCapability());
+    }
+    builder.add(this.appVersionCapability.toRemotePeerCapability());
+    return builder.build();
   }
 }
