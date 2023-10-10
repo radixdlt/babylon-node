@@ -116,8 +116,8 @@ public final class SystemModelMapper {
   }
 
   public Peer peer(PeersView.PeerInfo peerInfo) {
-    var peerId = addressing.encodeNodeAddress(peerInfo.getNodeId().getPublicKey());
-    var peer = new Peer().peerId(peerId);
+    final var peerId = addressing.encodeNodeAddress(peerInfo.getNodeId().getPublicKey());
+    final var peer = new Peer().peerId(peerId).keyHex(peerInfo.getNodeId().getPublicKey().toHex());
 
     peerInfo
         .getChannels()
