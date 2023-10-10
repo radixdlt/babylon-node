@@ -348,7 +348,6 @@ public final class RadixNodeModule extends AbstractModule {
         REv2StateManagerModule.create(
             ProposalLimitsConfig.from(vertexLimitsConfig),
             vertexLimitsConfig,
-            REv2StateManagerModule.DatabaseType.ROCKS_DB,
             databaseFlags,
             Option.some(mempoolConfig),
             stateHashTreeGcConfig));
@@ -405,10 +404,7 @@ public final class RadixNodeModule extends AbstractModule {
    * state hash tree. Each {@link StateHashTreeGcConfig#intervalSec()} seconds, we start a GC
    * process which fully processes the entire backlog of "stale tree parts" recorded in the DB,
    * <b>except</b> the most recent {@link StateHashTreeGcConfig#stateVersionHistoryLength()}
-   * entries. For technical reasons (i.e. to avoid holding the DB lock for too long and affecting
-   * other processes) the GC process will perform its work in batches driven by wall-clock time - to
-   * be specific, it will simply release and re-acquire that lock after every {@link
-   * StateHashTreeGcConfig#maxDbLockingDurationMillis()} milliseconds.
+   * entries.
    */
   private StateHashTreeGcConfig parseStateHashTreeGcConfig(RuntimeProperties properties) {
     // How often to run the GC.
@@ -443,8 +439,7 @@ public final class RadixNodeModule extends AbstractModule {
 
     return new StateHashTreeGcConfig(
         UInt32.fromNonNegativeInt(intervalSec),
-        UInt64.fromNonNegativeLong(stateVersionHistoryLength),
-        UInt64.fromNonNegativeLong(maxDbLockingDurationMillis));
+        UInt64.fromNonNegativeLong(stateVersionHistoryLength));
   }
 
   private void warnProtocolPropertySet(String prop) {

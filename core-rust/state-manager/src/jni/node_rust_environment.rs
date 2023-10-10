@@ -188,7 +188,7 @@ impl JNINodeRustEnvironment {
     pub fn get_database(
         env: &JNIEnv,
         j_node_rust_env: JObject,
-    ) -> Arc<RwLock<StateManagerDatabase>> {
+    ) -> Arc<StateLock<StateManagerDatabase>> {
         Self::get(env, j_node_rust_env)
             .state_manager
             .database

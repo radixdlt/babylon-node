@@ -94,7 +94,6 @@ import com.radixdlt.p2p.addressbook.AddressBook;
 import com.radixdlt.protocol.Current;
 import com.radixdlt.protocol.ProtocolVersion;
 import com.radixdlt.rev2.Decimal;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.properties.RuntimeProperties;
@@ -106,8 +105,13 @@ import io.undertow.util.HeaderMap;
 import java.io.ByteArrayInputStream;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 
 public abstract class SystemApiTestBase {
+
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
+
   private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
 
   @Inject private SingleNodeDeterministicRunner runner;
@@ -123,7 +127,7 @@ public abstract class SystemApiTestBase {
             new SingleNodeAndPeersDeterministicNetworkModule(
                 TEST_KEY,
                 new FunctionalRadixNodeModule(
-                    NodeStorageConfig.none(),
+                    NodeStorageConfig.tempFolder(folder),
                     false,
                     SafetyRecoveryConfig.MOCKED,
                     ConsensusConfig.of(),
@@ -134,7 +138,6 @@ public abstract class SystemApiTestBase {
                                 TEST_KEY.getPublicKey(),
                                 Decimal.ONE,
                                 GenesisConsensusManagerConfig.Builder.testDefaults()),
-                            REv2StateManagerModule.DatabaseType.IN_MEMORY,
                             new DatabaseFlags(false, false),
                             StateComputerConfig.REV2ProposerConfig.Mempool.defaults()),
                         new SyncRelayConfig(500, 10, 3000, 10, Long.MAX_VALUE)))),

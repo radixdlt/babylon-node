@@ -83,7 +83,6 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REv2SimpleFuzzerTransactionGenerator;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import java.util.Random;
 import org.junit.Rule;
@@ -113,7 +112,6 @@ public final class SimpleFuzzerTransactionsTest {
                             10,
                             Decimal.ONE,
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10)),
-                        REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         REV2ProposerConfig.transactionGenerator(transactionGenerator, 10)),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }

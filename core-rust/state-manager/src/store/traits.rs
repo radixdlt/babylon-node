@@ -137,7 +137,7 @@ impl DatabaseFlags {
 pub trait ConfigurableDatabase {
     fn read_flags_state(&self) -> DatabaseFlagsState;
 
-    fn write_flags(&mut self, flags: &DatabaseFlags);
+    fn write_flags(&self, flags: &DatabaseFlags);
 
     fn is_account_change_index_enabled(&self) -> bool;
 
@@ -162,7 +162,7 @@ pub mod vertex {
 
     #[enum_dispatch]
     pub trait WriteableVertexStore {
-        fn save_vertex_store(&mut self, blob: VertexStoreBlob);
+        fn save_vertex_store(&self, blob: VertexStoreBlob);
     }
 
     define_single_versioned! {
@@ -490,7 +490,7 @@ pub mod commit {
 
     #[enum_dispatch]
     pub trait CommitStore {
-        fn commit(&mut self, commit_bundle: CommitBundle);
+        fn commit(&self, commit_bundle: CommitBundle);
     }
 }
 
@@ -533,11 +533,7 @@ pub mod scenario {
     pub trait ExecutedGenesisScenarioStore {
         /// Writes the given Scenario under a caller-managed sequence number (which means: it allows
         /// overwriting, writing out-of-order, leaving gaps, etc.).
-        fn put_scenario(
-            &mut self,
-            number: ScenarioSequenceNumber,
-            scenario: ExecutedGenesisScenario,
-        );
+        fn put_scenario(&self, number: ScenarioSequenceNumber, scenario: ExecutedGenesisScenario);
 
         /// Returns all Scenarios written so far, ordered by their sequence numbers (but with no
         /// guarantees regarding gaps; see [`put_scenario()`]'s contract).
@@ -554,7 +550,7 @@ pub mod extensions {
     pub trait AccountChangeIndexExtension {
         fn account_change_index_last_processed_state_version(&self) -> StateVersion;
 
-        fn catchup_account_change_index(&mut self);
+        fn catchup_account_change_index(&self);
     }
 
     #[enum_dispatch]

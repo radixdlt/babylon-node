@@ -65,25 +65,13 @@
 package com.radixdlt.environment;
 
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.EnumCodec;
+import com.radixdlt.sbor.codec.StructCodec;
 
 /** REv2 Database configuration options */
-public sealed interface DatabaseBackendConfig {
-  static void registerCodec(CodecMap codecMap) {
+public record DatabaseBackendConfig(String rocksDbPath) {
+  public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         DatabaseBackendConfig.class,
-        codecs -> EnumCodec.fromPermittedRecordSubclasses(DatabaseBackendConfig.class, codecs));
+        codecs -> StructCodec.fromRecordComponents(DatabaseBackendConfig.class, codecs));
   }
-
-  static DatabaseBackendConfig inMemory() {
-    return new InMemory();
-  }
-
-  static DatabaseBackendConfig rocksDB(String databasePath) {
-    return new RocksDB(databasePath);
-  }
-
-  record InMemory() implements DatabaseBackendConfig {}
-
-  record RocksDB(String databasePath) implements DatabaseBackendConfig {}
 }

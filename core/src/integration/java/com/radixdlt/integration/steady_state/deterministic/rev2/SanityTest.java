@@ -85,7 +85,6 @@ import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import java.util.Collection;
 import java.util.List;
@@ -139,7 +138,6 @@ public final class SanityTest {
                             Decimal.ONE,
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
                                 roundsPerEpoch)),
-                        REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         REV2ProposerConfig.Mempool.defaults()),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }

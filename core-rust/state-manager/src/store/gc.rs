@@ -62,15 +62,14 @@
  * permissions under this License.
  */
 
-use itertools::Itertools;
 use radix_engine::types::{Categorize, Decode, Encode};
 use radix_engine_stores::hash_tree::tree_store::{
     NodeKey, ReadableTreeStore, StaleTreePart, TreeChildEntry, TreeNode,
 };
 use std::iter;
-use std::ops::Deref;
+
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use tracing::info;
 
 use crate::store::traits::gc::StateHashTreeGcStore;
@@ -78,16 +77,11 @@ use crate::store::traits::proofs::QueryableProofStore;
 use crate::store::traits::StaleTreePartsV1;
 use crate::store::StateManagerDatabase;
 use crate::{StateVersion, StateVersionDelta};
-use node_common::locks::RwLock;
+use node_common::locks::StateLock;
 
 /// A maximum number of JMT nodes collected into "batch delete" buffer.
 /// Needed only to avoid OOM problems.
 const DELETED_NODE_BUFFER_MAX_LEN: usize = 1000000;
-
-/// A number of iterated JMT nodes between 2 consecutive time measurements in [`try_delete_all()`]
-/// (a method on which we impose a time limit).
-/// Needed only to avoid too frequent [`Instant::now()`] invocations.
-const TIME_MEASUREMENT_CHUNK_LEN: usize = 100;
 
 /// A configuration for [`StateHashTreeGc`].
 #[derive(Debug, Categorize, Encode, Decode, Clone, Default)]
@@ -98,30 +92,26 @@ pub struct StateHashTreeGcConfig {
     pub interval_sec: u32,
     /// How many most recent state versions to keep in the state hash tree.
     pub state_version_history_length: usize,
-    /// A maximum duration for which a database lock may be held by the potentially-long-running GC
-    /// process.
-    /// Too high value may starve other DB activity (most notably: ledger commits).
-    /// Too low value may result in inefficient batching (and thus: too slow deletes).
-    pub max_db_locking_duration_millis: u64,
 }
 
 /// A garbage collector of sufficiently-old stale state hash tree nodes.
 /// The implementation is suited for being driven by an external scheduler.
 pub struct StateHashTreeGc {
-    database: Arc<RwLock<StateManagerDatabase>>,
+    database: Arc<StateLock<StateManagerDatabase>>,
     interval: Duration,
     history_len: StateVersionDelta,
-    max_db_locking_duration: Duration,
 }
 
 impl StateHashTreeGc {
     /// Creates a new GC.
-    pub fn new(database: Arc<RwLock<StateManagerDatabase>>, config: StateHashTreeGcConfig) -> Self {
+    pub fn new(
+        database: Arc<StateLock<StateManagerDatabase>>,
+        config: StateHashTreeGcConfig,
+    ) -> Self {
         Self {
             database,
             interval: Duration::from_secs(u64::from(config.interval_sec)),
             history_len: StateVersionDelta::try_from(config.state_version_history_length).unwrap(),
-            max_db_locking_duration: Duration::from_millis(config.max_db_locking_duration_millis),
         }
     }
 
@@ -139,45 +129,18 @@ impl StateHashTreeGc {
     /// modifies), but our current "DB management" implementation requires obtaining some lock to
     /// access the database at all.
     pub fn run(&self) {
-        let mut read_database = self.database.read();
-        let current_state_version = read_database.max_state_version();
+        let database = self.database.access_non_locked_historical();
+        // The line below technically reads the "current state" from a "non-locked, historical" DB;
+        // however, we are fine with the current state progressing while we do the GC.
+        let current_state_version = database.max_state_version();
         let to_state_version = current_state_version
             .relative(-self.history_len)
             .unwrap_or(StateVersion::pre_genesis());
 
         info!(
-            "Starting the next GC run: current state version is {:?} and we want to prune JMT up to state version {:?} (locking for {:?})",
-            current_state_version,
-            to_state_version,
-            self.max_db_locking_duration,
+            "Starting a GC run: current state version is {:?}; pruning JMT up to {:?}",
+            current_state_version, to_state_version,
         );
-
-        while let false = Self::try_delete_all(
-            read_database.deref(),
-            to_state_version,
-            Instant::now() + self.max_db_locking_duration,
-        ) {
-            // Rotate the database lock and `try_delete_all()` again:
-            drop(read_database);
-            info!("Re-acquiring the DB lock");
-            read_database = self.database.read();
-        }
-
-        info!("GC run finished");
-    }
-
-    /// Tries to delete all state hash tree nodes referenced by "stale parts" entries up to the
-    /// given state version, in the given time limit.
-    /// Returns `true` if all such nodes were deleted, or `false` if the time limit was reached
-    /// before that.
-    fn try_delete_all(
-        database: &StateManagerDatabase,
-        to_state_version: StateVersion,
-        return_incomplete_at: Instant,
-    ) -> bool {
-        info!("Starting the GC lock cycle");
-        // The indicator to be returned; we flip it to false if we have to return because of the time limit:
-        let mut all_deleted = true;
 
         // Open an iterator of "stale tree parts" (batched by state version at which they became stale):
         let stale_entries = database
@@ -187,12 +150,7 @@ impl StateHashTreeGc {
         // Collect the stale node keys into a "delete buffer":
         let mut deleted_state_versions = Vec::new();
         let mut deleted_nodes = Vec::new();
-        let mut first = true;
-        'version_entries: for (state_version, StaleTreePartsV1(stale_tree_parts)) in stale_entries {
-            if first {
-                info!("The first pruned state version is {:?}", state_version);
-                first = false;
-            }
+        for (state_version, StaleTreePartsV1(stale_tree_parts)) in stale_entries {
             for stale_tree_part in stale_tree_parts {
                 let part_keys: Box<dyn Iterator<Item = NodeKey>> = match stale_tree_part {
                     StaleTreePart::Node(key) => Box::new(iter::once(key)),
@@ -204,39 +162,23 @@ impl StateHashTreeGc {
                         Box::new(iterate_dfs_post_order(database, subtree_root_key))
                     }
                 };
-                for chunk in &part_keys.chunks(TIME_MEASUREMENT_CHUNK_LEN) {
-                    // Check whether the time limit forces us to return without deleting all:
-                    let now = Instant::now();
-                    if now >= return_incomplete_at {
-                        info!("Time limit reached in the middle of tree nodes iteration, during version {:?}", state_version);
-                        all_deleted = false;
-                        break 'version_entries;
-                    }
-                    for key in chunk {
-                        deleted_nodes.push(key);
-                        // Periodically rotate the collected buffer of node keys to delete:
-                        if deleted_nodes.len() == DELETED_NODE_BUFFER_MAX_LEN {
-                            database.batch_delete_node(deleted_nodes.iter());
-                            deleted_nodes.clear();
-                        }
+                for key in part_keys {
+                    deleted_nodes.push(key);
+                    // Periodically rotate the collected buffer of node keys to delete:
+                    if deleted_nodes.len() == DELETED_NODE_BUFFER_MAX_LEN {
+                        info!("flushing a full delete buffer at {}", state_version);
+                        database.batch_delete_node(deleted_nodes.iter());
+                        deleted_nodes.clear();
                     }
                 }
             }
             deleted_state_versions.push(state_version);
-
-            // Same as above: check whether the time limit forces us to return without deleting all:
-            let now = Instant::now();
-            if now >= return_incomplete_at {
-                info!("Time limit reached in the middle of stale entries iteration, after version {:?}", state_version);
-                all_deleted = false;
-                break 'version_entries;
-            }
         }
 
         // Delete the last collected batch of keys, and then delete the processed "stale tree parts" records:
+        info!("flushing the last buffer ({} deletes)", deleted_nodes.len());
         database.batch_delete_node(deleted_nodes.iter());
         database.batch_delete_stale_tree_part(deleted_state_versions.iter());
-        all_deleted
     }
 }
 

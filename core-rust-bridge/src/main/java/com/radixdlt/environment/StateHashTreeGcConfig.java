@@ -70,7 +70,7 @@ import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
 
 public record StateHashTreeGcConfig(
-    UInt32 intervalSec, UInt64 stateVersionHistoryLength, UInt64 maxDbLockingDurationMillis) {
+    UInt32 intervalSec, UInt64 stateVersionHistoryLength) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         StateHashTreeGcConfig.class,
@@ -78,8 +78,7 @@ public record StateHashTreeGcConfig(
   }
 
   public static StateHashTreeGcConfig forTesting() {
-    // Effectively "no GC during tests":
-    return new StateHashTreeGcConfig(
-        UInt32.fromNonNegativeInt(Integer.MAX_VALUE), UInt64.MAX_VALUE, UInt64.ZERO);
+    // Remove everything stale, frequently (in tests).
+    return new StateHashTreeGcConfig(UInt32.fromNonNegativeInt(1), UInt64.ZERO);
   }
 }
