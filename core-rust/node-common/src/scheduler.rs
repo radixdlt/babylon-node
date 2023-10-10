@@ -62,43 +62,57 @@
  * permissions under this License.
  */
 
-mod db;
-pub mod gc;
-mod rocks_db;
-pub mod traits;
-mod typed_cf_api;
+use std::ops::Div;
 
-use crate::store::traits::measurement::MeasurableDatabase;
-use crate::RawDbMetrics;
-pub use db::{DatabaseBackendConfig, StateManagerDatabase};
-use node_common::locks::StateLock;
-use prometheus::Registry;
-pub use rocks_db::RocksDBStore;
-use std::sync::Arc;
-pub use traits::DatabaseFlags;
+use clokwerk::{Interval, ScheduleHandle};
+use std::time::Duration;
 
-/// A synchronous collector of costly (I/O-intensive) raw DB metrics.
-pub struct RawDbMetricsCollector {
-    database: Arc<StateLock<StateManagerDatabase>>,
-    raw_db_metrics: RawDbMetrics,
+/// A scheduler for background tasks.
+/// All schedules started with a specific scheduler should be stopped when its instance is dropped.
+pub trait Scheduler {
+    /// Starts a periodic execution of the given task.
+    /// The consecutive runs should be started at approximately the given intervals - however, if
+    /// a particular run takes longer than the interval, then it should not be (in any way) aborted,
+    /// and no concurrent run should be started - the schedule should simply be delayed.
+    fn start_periodic(&mut self, interval: Duration, task: impl 'static + FnMut() + Send);
 }
 
-impl RawDbMetricsCollector {
-    /// Creates a collector measuring the given DB and updating the metrics in the given registry.
-    pub fn new(database: Arc<StateLock<StateManagerDatabase>>, metric_registry: &Registry) -> Self {
-        Self {
-            database,
-            raw_db_metrics: RawDbMetrics::new(metric_registry),
-        }
-    }
+// TODO(metrics): Add a `MeasuredScheduler` decorator (mostly for: task run duration).
 
-    /// Performs a single "collect measurements + update metric primitives" run.
-    /// Should be called periodically.
-    pub fn run(&self) {
-        let statistics = self
-            .database
-            .access_non_locked_historical()
-            .get_data_volume_statistics();
-        self.raw_db_metrics.update(statistics);
+/// A no-op [`Scheduler`] (e.g. for test purposes).
+#[derive(Default)]
+pub struct NoopScheduler;
+
+impl Scheduler for NoopScheduler {
+    fn start_periodic(&mut self, _interval: Duration, _task: impl 'static + FnMut() + Send) {}
+}
+
+/// A [`Scheduler`] based on a "clokwerk" crate.
+/// Implementation note: a separate underlying scheduler instance is used for every task, so that
+/// they run in separate threads.
+// TODO(post-feature refactor): Replace this impl with raw tokio-based and drop the "clokwerk" dep.
+#[derive(Default)]
+pub struct ClokwerkScheduler {
+    underlying_handles: Vec<ScheduleHandle>, // only held for being stopped when scheduler is dropped
+}
+
+impl Scheduler for ClokwerkScheduler {
+    fn start_periodic(&mut self, interval: Duration, task: impl 'static + FnMut() + Send) {
+        assert_eq!(
+            interval.subsec_nanos(),
+            0,
+            "Clokwerk-based scheduler has a 1-second precision and cannot handle interval {:?}",
+            interval
+        );
+        let interval_sec = u32::try_from(interval.as_secs())
+            .ok()
+            .filter(|sec| *sec > 0)
+            .expect("interval outside of valid range");
+        let mut scheduler = clokwerk::Scheduler::new();
+        scheduler.every(Interval::Seconds(interval_sec)).run(task);
+        // Since every task has its own thread in our approach, we can calculate a "good enough"
+        // resolution of the watch thread (here arbitrarily chosen as 1/10 of the run interval):
+        let handle = scheduler.watch_thread(interval.div(10));
+        self.underlying_handles.push(handle);
     }
 }

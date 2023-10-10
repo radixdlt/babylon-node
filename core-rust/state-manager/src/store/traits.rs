@@ -607,6 +607,30 @@ pub mod measurement {
     }
 }
 
+pub mod gc {
+    use super::*;
+    use radix_engine_stores::hash_tree::tree_store::NodeKey;
+
+    /// A storage API tailored for the [`StateHashTreeGc`].
+    #[enum_dispatch]
+    pub trait StateHashTreeGcStore {
+        /// Returns an iterator of stale hash tree parts, ordered by the state version at which
+        /// they became stale, ascending.
+        fn get_stale_tree_parts_iter(
+            &self,
+        ) -> Box<dyn Iterator<Item = (StateVersion, StaleTreeParts)> + '_>;
+
+        /// Deletes a batch of state hash tree nodes.
+        fn batch_delete_node<'a>(&self, keys: impl IntoIterator<Item = &'a NodeKey>);
+
+        /// Deletes a batch of stale hash tree parts' records.
+        fn batch_delete_stale_tree_part<'a>(
+            &self,
+            state_versions: impl IntoIterator<Item = &'a StateVersion>,
+        );
+    }
+}
+
 pub struct TransactionAndProofIterator<'a> {
     committed_transaction_bundle:
         Peekable<Box<dyn Iterator<Item = CommittedTransactionBundle> + 'a>>,

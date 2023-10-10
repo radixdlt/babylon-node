@@ -103,6 +103,7 @@ public final class REv2StateManagerModule extends AbstractModule {
   private final DatabaseFlags databaseFlags;
   private final Option<RustMempoolConfig> mempoolConfig;
   private final boolean debugLogging;
+  private final StateHashTreeGcConfig stateHashTreeGcConfig;
   private final boolean noFees;
 
   private REv2StateManagerModule(
@@ -111,12 +112,14 @@ public final class REv2StateManagerModule extends AbstractModule {
       DatabaseFlags databaseFlags,
       Option<RustMempoolConfig> mempoolConfig,
       boolean debugLogging,
+      StateHashTreeGcConfig stateHashTreeGcConfig,
       boolean noFees) {
     this.proposalLimitsConfig = proposalLimitsConfig;
     this.vertexLimitsConfigOpt = vertexLimitsConfigOpt;
     this.databaseFlags = databaseFlags;
     this.mempoolConfig = mempoolConfig;
     this.debugLogging = debugLogging;
+    this.stateHashTreeGcConfig = stateHashTreeGcConfig;
     this.noFees = noFees;
   }
 
@@ -124,13 +127,15 @@ public final class REv2StateManagerModule extends AbstractModule {
       ProposalLimitsConfig proposalLimitsConfig,
       VertexLimitsConfig vertexLimitsConfig,
       DatabaseFlags databaseFlags,
-      Option<RustMempoolConfig> mempoolConfig) {
+      Option<RustMempoolConfig> mempoolConfig,
+      StateHashTreeGcConfig stateHashTreeGcConfig) {
     return new REv2StateManagerModule(
         proposalLimitsConfig,
         Option.some(vertexLimitsConfig),
         databaseFlags,
         mempoolConfig,
         false,
+        stateHashTreeGcConfig,
         false);
   }
 
@@ -139,9 +144,16 @@ public final class REv2StateManagerModule extends AbstractModule {
       DatabaseFlags databaseFlags,
       Option<RustMempoolConfig> mempoolConfig,
       boolean debugLogging,
+      StateHashTreeGcConfig stateHashTreeGcConfig,
       boolean noFees) {
     return new REv2StateManagerModule(
-        proposalLimitsConfig, Option.none(), databaseFlags, mempoolConfig, debugLogging, noFees);
+        proposalLimitsConfig,
+        Option.none(),
+        databaseFlags,
+        mempoolConfig,
+        debugLogging,
+        stateHashTreeGcConfig,
+        noFees);
   }
 
   @Override
@@ -181,6 +193,7 @@ public final class REv2StateManagerModule extends AbstractModule {
                     databaseBackendConfig,
                     databaseFlags,
                     getLoggingConfig(),
+                    stateHashTreeGcConfig,
                     noFees));
           }
 

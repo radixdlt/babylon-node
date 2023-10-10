@@ -62,43 +62,22 @@
  * permissions under this License.
  */
 
-mod db;
-pub mod gc;
-mod rocks_db;
-pub mod traits;
-mod typed_cf_api;
+package com.radixdlt.environment;
 
-use crate::store::traits::measurement::MeasurableDatabase;
-use crate::RawDbMetrics;
-pub use db::{DatabaseBackendConfig, StateManagerDatabase};
-use node_common::locks::StateLock;
-use prometheus::Registry;
-pub use rocks_db::RocksDBStore;
-use std::sync::Arc;
-pub use traits::DatabaseFlags;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.UInt64;
 
-/// A synchronous collector of costly (I/O-intensive) raw DB metrics.
-pub struct RawDbMetricsCollector {
-    database: Arc<StateLock<StateManagerDatabase>>,
-    raw_db_metrics: RawDbMetrics,
-}
+public record StateHashTreeGcConfig(UInt32 intervalSec, UInt64 stateVersionHistoryLength) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        StateHashTreeGcConfig.class,
+        codecs -> StructCodec.fromRecordComponents(StateHashTreeGcConfig.class, codecs));
+  }
 
-impl RawDbMetricsCollector {
-    /// Creates a collector measuring the given DB and updating the metrics in the given registry.
-    pub fn new(database: Arc<StateLock<StateManagerDatabase>>, metric_registry: &Registry) -> Self {
-        Self {
-            database,
-            raw_db_metrics: RawDbMetrics::new(metric_registry),
-        }
-    }
-
-    /// Performs a single "collect measurements + update metric primitives" run.
-    /// Should be called periodically.
-    pub fn run(&self) {
-        let statistics = self
-            .database
-            .access_non_locked_historical()
-            .get_data_volume_statistics();
-        self.raw_db_metrics.update(statistics);
-    }
+  public static StateHashTreeGcConfig forTesting() {
+    // Remove everything stale, frequently (in tests).
+    return new StateHashTreeGcConfig(UInt32.fromNonNegativeInt(1), UInt64.ZERO);
+  }
 }

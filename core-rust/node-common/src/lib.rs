@@ -68,4 +68,5 @@ pub mod java;
 pub mod jni;
 pub mod locks;
 pub mod metrics;
+pub mod scheduler;
 pub mod utils;

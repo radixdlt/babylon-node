@@ -89,6 +89,7 @@ use tracing::{error, info, warn};
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::query::TransactionIdentifierLoader;
+use crate::store::traits::gc::StateHashTreeGcStore;
 use crate::store::traits::measurement::{CategoryDbVolumeStatistic, MeasurableDatabase};
 use crate::store::traits::scenario::{
     ExecutedGenesisScenario, ExecutedGenesisScenarioStore, ScenarioSequenceNumber,
@@ -1105,6 +1106,35 @@ impl SubstateNodeAncestryStore for RocksDBStore {
 impl ReadableTreeStore for RocksDBStore {
     fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
         self.open_db_context().cf(StateHashTreeNodesCf).get(key)
+    }
+}
+
+impl StateHashTreeGcStore for RocksDBStore {
+    fn get_stale_tree_parts_iter(
+        &self,
+    ) -> Box<dyn Iterator<Item = (StateVersion, StaleTreeParts)> + '_> {
+        self.open_db_context()
+            .cf(StaleStateHashTreePartsCf)
+            .iterate(Direction::Forward)
+    }
+
+    fn batch_delete_node<'a>(&self, keys: impl IntoIterator<Item = &'a NodeKey>) {
+        let db_context = self.open_db_context();
+        for key in keys {
+            db_context.cf(StateHashTreeNodesCf).delete(key);
+        }
+    }
+
+    fn batch_delete_stale_tree_part<'a>(
+        &self,
+        state_versions: impl IntoIterator<Item = &'a StateVersion>,
+    ) {
+        let db_context = self.open_db_context();
+        for state_version in state_versions {
+            db_context
+                .cf(StaleStateHashTreePartsCf)
+                .delete(state_version);
+        }
     }
 }
 

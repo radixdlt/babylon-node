@@ -74,6 +74,7 @@ import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.ProposerElections;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.environment.DatabaseFlags;
+import com.radixdlt.environment.StateHashTreeGcConfig;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.mempool.MempoolReceiverConfig;
@@ -143,7 +144,13 @@ public sealed interface StateComputerConfig {
       boolean debugLogging,
       boolean noFees) {
     return new REv2StateComputerConfig(
-        networkId, genesis, databaseFlags, proposerConfig, debugLogging, noFees);
+        networkId,
+        genesis,
+        databaseFlags,
+        proposerConfig,
+        debugLogging,
+        StateHashTreeGcConfig.forTesting(),
+        noFees);
   }
 
   static StateComputerConfig rev2(
@@ -152,13 +159,25 @@ public sealed interface StateComputerConfig {
       DatabaseFlags databaseFlags,
       REV2ProposerConfig proposerConfig) {
     return new REv2StateComputerConfig(
-        networkId, genesis, databaseFlags, proposerConfig, false, false);
+        networkId,
+        genesis,
+        databaseFlags,
+        proposerConfig,
+        false,
+        StateHashTreeGcConfig.forTesting(),
+        false);
   }
 
   static StateComputerConfig rev2(
       int networkId, GenesisData genesis, REV2ProposerConfig proposerConfig) {
     return new REv2StateComputerConfig(
-        networkId, genesis, new DatabaseFlags(true, false), proposerConfig, false, false);
+        networkId,
+        genesis,
+        new DatabaseFlags(true, false),
+        proposerConfig,
+        false,
+        StateHashTreeGcConfig.forTesting(),
+        false);
   }
 
   sealed interface MockedMempoolConfig {
@@ -226,6 +245,7 @@ public sealed interface StateComputerConfig {
       DatabaseFlags databaseFlags,
       REV2ProposerConfig proposerConfig,
       boolean debugLogging,
+      StateHashTreeGcConfig stateHashTreeGcConfig,
       boolean noFees)
       implements StateComputerConfig {}
 
