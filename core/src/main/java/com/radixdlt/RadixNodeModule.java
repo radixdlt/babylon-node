@@ -87,8 +87,11 @@ import com.radixdlt.logger.EventLoggerModule;
 import com.radixdlt.mempool.*;
 import com.radixdlt.messaging.MessagingModule;
 import com.radixdlt.modules.*;
+import com.radixdlt.monitoring.ApplicationVersion;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.P2PModule;
+import com.radixdlt.p2p.capability.AppVersionCapability;
+import com.radixdlt.p2p.capability.Capabilities;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.rev2.modules.*;
 import com.radixdlt.store.NodeStorageLocationFromPropertiesModule;
@@ -142,11 +145,10 @@ public final class RadixNodeModule extends AbstractModule {
         .annotatedWith(BFTSyncPatienceMillis.class)
         .to(properties.get("bft.sync.patience", 200));
 
-    // Default values mean that pacemakers will sync if they are within 5 rounds of each other.
-    // 5 consecutive failing rounds will take 1*(2^6)-1 seconds = 63 seconds.
+    // Max timeout = (1.2^8)×3 ~= 13s
     bindConstant().annotatedWith(PacemakerBaseTimeoutMs.class).to(3000L);
     bindConstant().annotatedWith(PacemakerBackoffRate.class).to(1.2);
-    bindConstant().annotatedWith(PacemakerMaxExponent.class).to(13);
+    bindConstant().annotatedWith(PacemakerMaxExponent.class).to(8);
     bindConstant().annotatedWith(AdditionalRoundTimeIfProposalReceivedMs.class).to(30_000L);
     bindConstant().annotatedWith(TimeoutQuorumResolutionDelayMs.class).to(0L);
 
@@ -348,7 +350,6 @@ public final class RadixNodeModule extends AbstractModule {
         REv2StateManagerModule.create(
             ProposalLimitsConfig.from(vertexLimitsConfig),
             vertexLimitsConfig,
-            REv2StateManagerModule.DatabaseType.ROCKS_DB,
             databaseFlags,
             Option.some(mempoolConfig),
             stateHashTreeGcConfig));
@@ -393,11 +394,15 @@ public final class RadixNodeModule extends AbstractModule {
     // Capabilities
     var capabilitiesLedgerSyncEnabled =
         properties.get("capabilities.ledger_sync.enabled", BooleanUtils::parseBoolean);
-    LedgerSyncCapability.Builder builder =
+    LedgerSyncCapability.Builder ledgerSyncCapabilityBuilder =
         capabilitiesLedgerSyncEnabled
             .map(LedgerSyncCapability.Builder::new)
             .orElse(LedgerSyncCapability.Builder.asDefault());
-    install(new CapabilitiesModule(builder.build()));
+    bind(Capabilities.class)
+        .toInstance(
+            new Capabilities(
+                ledgerSyncCapabilityBuilder.build(),
+                new AppVersionCapability(ApplicationVersion.INSTANCE)));
   }
 
   /**
@@ -405,17 +410,14 @@ public final class RadixNodeModule extends AbstractModule {
    * state hash tree. Each {@link StateHashTreeGcConfig#intervalSec()} seconds, we start a GC
    * process which fully processes the entire backlog of "stale tree parts" recorded in the DB,
    * <b>except</b> the most recent {@link StateHashTreeGcConfig#stateVersionHistoryLength()}
-   * entries. For technical reasons (i.e. to avoid holding the DB lock for too long and affecting
-   * other processes) the GC process will perform its work in batches driven by wall-clock time - to
-   * be specific, it will simply release and re-acquire that lock after every {@link
-   * StateHashTreeGcConfig#maxDbLockingDurationMillis()} milliseconds.
+   * entries.
    */
   private StateHashTreeGcConfig parseStateHashTreeGcConfig(RuntimeProperties properties) {
     // How often to run the GC.
     // This only needs to be one order of magnitude shorter than our intended state hash tree
     // minimum history duration (which is ~10 minutes below), and could be computed/hardcoded.
     // However, we make it configurable for tests' purposes.
-    var intervalSec = properties.get("state_hash_tree.gc.interval_sec", 5);
+    var intervalSec = properties.get("state_hash_tree.gc.interval_sec", 60);
     Preconditions.checkArgument(
         intervalSec > 0, "state hash tree GC interval must be positive: %s sec", intervalSec);
 
@@ -430,21 +432,9 @@ public final class RadixNodeModule extends AbstractModule {
         "state version history length must not be negative: %s",
         stateVersionHistoryLength);
 
-    // How long can the GC activity hold the DB lock for in a single cycle?
-    // The default of "50ms" allows to:
-    // - efficiently process the backlog (which is definitely there on the first run);
-    // - avoid starving the other DB activity (e.g. committing to the ledger).
-    var maxDbLockingDurationMillis =
-        properties.get("state_hash_tree.gc.max_db_locking_duration_millis", 50);
-    Preconditions.checkArgument(
-        maxDbLockingDurationMillis >= 0,
-        "maximum DB locking duration must not be negative: %s",
-        maxDbLockingDurationMillis);
-
     return new StateHashTreeGcConfig(
         UInt32.fromNonNegativeInt(intervalSec),
-        UInt64.fromNonNegativeLong(stateVersionHistoryLength),
-        UInt64.fromNonNegativeLong(maxDbLockingDurationMillis));
+        UInt64.fromNonNegativeLong(stateVersionHistoryLength));
   }
 
   private void warnProtocolPropertySet(String prop) {

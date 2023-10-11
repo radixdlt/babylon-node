@@ -76,10 +76,7 @@ import com.radixdlt.addressing.Addressing;
 import com.radixdlt.api.core.generated.api.*;
 import com.radixdlt.api.core.generated.client.ApiClient;
 import com.radixdlt.api.core.generated.client.ApiException;
-import com.radixdlt.api.core.generated.models.LtsTransactionConstructionRequest;
-import com.radixdlt.api.core.generated.models.LtsTransactionStatusRequest;
-import com.radixdlt.api.core.generated.models.LtsTransactionStatusResponse;
-import com.radixdlt.api.core.generated.models.LtsTransactionSubmitRequest;
+import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.CoreApiServerFlags;
 import com.radixdlt.environment.DatabaseFlags;
@@ -94,11 +91,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.Decimal;
-import com.radixdlt.rev2.Manifest;
-import com.radixdlt.rev2.NetworkDefinition;
-import com.radixdlt.rev2.TransactionBuilder;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
+import com.radixdlt.rev2.*;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transactions.IntentHash;
 import com.radixdlt.utils.FreePortFinder;
@@ -177,7 +170,6 @@ public abstract class DeterministicCoreApiTestBase {
                                 GenesisConsensusManagerConfig.Builder.testDefaults()
                                     .epochExactRoundCount(roundsPerEpoch),
                                 scenariosToRun),
-                            REv2StateManagerModule.DatabaseType.ROCKS_DB,
                             databaseConfig,
                             StateComputerConfig.REV2ProposerConfig.Mempool.defaults()),
                         SyncRelayConfig.of(200, 10, 2000))));
@@ -391,6 +383,30 @@ public abstract class DeterministicCoreApiTestBase {
           }
           throw new IllegalStateException("Shouldn't be able to get here");
         });
+  }
+
+  public ResourceAddress createFreeMintBurnNonFungibleResource(DeterministicTest test)
+      throws Exception {
+    var committedNewResourceTxn =
+        submitAndWaitForSuccess(test, Manifest.createAllowAllNonFungibleResource(), List.of());
+
+    final var receipt =
+        getTransactionApi()
+            .transactionReceiptPost(
+                new TransactionReceiptRequest()
+                    .network(networkLogicalName)
+                    .intentHash(committedNewResourceTxn.intentHash().hex()));
+
+    final var newResourceAddressStr =
+        receipt
+            .getCommitted()
+            .getReceipt()
+            .getStateUpdates()
+            .getNewGlobalEntities()
+            .get(0)
+            .getEntityAddress();
+
+    return addressing.decodeResourceAddress(newResourceAddressStr);
   }
 
   public record CommittedResult(

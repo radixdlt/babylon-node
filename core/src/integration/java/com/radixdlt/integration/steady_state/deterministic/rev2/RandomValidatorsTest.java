@@ -87,7 +87,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.*;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.testutil.TestStateReader;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -126,7 +125,6 @@ public final class RandomValidatorsTest {
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         GENESIS,
-                        REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         StateComputerConfig.REV2ProposerConfig.Mempool.defaults()
                             .withReceiverConfig(MempoolReceiverConfig.of(5))),
                     SyncRelayConfig.of(5000, 10, 3000L))));

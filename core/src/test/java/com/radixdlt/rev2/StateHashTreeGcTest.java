@@ -84,7 +84,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.testutil.TestStateReader;
 import com.radixdlt.utils.UInt32;
@@ -116,16 +115,12 @@ public final class StateHashTreeGcTest {
                             1,
                             Decimal.ONE,
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(100)),
-                        REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         new DatabaseFlags(false, false),
                         REV2ProposerConfig.noUserTransactions(),
                         false,
                         new StateHashTreeGcConfig(
-                            UInt32.fromNonNegativeInt(
-                                1), // 1 sec run interval, to keep the test quick
-                            UInt64.fromNonNegativeLong(stateVersionHistoryLength),
-                            UInt64.fromNonNegativeLong(
-                                100)), // holding a lock for 100ms is fine in tests
+                            UInt32.fromNonNegativeInt(1),
+                            UInt64.fromNonNegativeLong(stateVersionHistoryLength)),
                         false))));
   }
 
@@ -140,7 +135,7 @@ public final class StateHashTreeGcTest {
 
       // Assert: Run a few rounds, until an async GC executes
       test.runUntilState(
-          NodesPredicate.nodeAt(0, atExactDifferenceToLeastStaleStateHashTreeVersion(37)), 10000);
+          NodesPredicate.nodeAt(0, atExactDifferenceToLeastStaleStateHashTreeVersion(37)), 50000);
     }
   }
 

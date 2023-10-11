@@ -67,12 +67,9 @@ package com.radixdlt.api.core.regression;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.api.DeterministicCoreApiTestBase;
-import com.radixdlt.api.core.generated.models.TransactionReceiptRequest;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.rev2.Manifest;
-import com.radixdlt.rev2.ResourceAddress;
 import java.util.List;
 import org.junit.Test;
 
@@ -165,29 +162,5 @@ public class NonFungibleActionsTest extends DeterministicCoreApiTestBase {
               List.of(accountKeyPair));
       assertThat(result.errorMessage()).contains("SystemError(KeyValueEntryLocked)");
     }
-  }
-
-  private ResourceAddress createFreeMintBurnNonFungibleResource(DeterministicTest test)
-      throws Exception {
-    var committedNewResourceTxn =
-        submitAndWaitForSuccess(test, Manifest.createAllowAllNonFungibleResource(), List.of());
-
-    final var receipt =
-        getTransactionApi()
-            .transactionReceiptPost(
-                new TransactionReceiptRequest()
-                    .network(networkLogicalName)
-                    .intentHash(committedNewResourceTxn.intentHash().hex()));
-
-    final var newResourceAddressStr =
-        receipt
-            .getCommitted()
-            .getReceipt()
-            .getStateUpdates()
-            .getNewGlobalEntities()
-            .get(0)
-            .getEntityAddress();
-
-    return addressing.decodeResourceAddress(newResourceAddressStr);
   }
 }

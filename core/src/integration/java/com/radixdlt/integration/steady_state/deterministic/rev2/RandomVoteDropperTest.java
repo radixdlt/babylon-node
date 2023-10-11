@@ -82,7 +82,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import org.junit.Rule;
 import org.junit.Test;
@@ -111,7 +110,6 @@ public final class RandomVoteDropperTest {
                             10,
                             Decimal.ONE,
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10)),
-                        REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         StateComputerConfig.REV2ProposerConfig.Mempool.defaults()
                             .withReceiverConfig(MempoolReceiverConfig.of(5))),
                     SyncRelayConfig.of(5000, 10, 3000L))));

@@ -80,16 +80,19 @@ import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import java.util.Collection;
 import java.util.List;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 @RunWith(Parameterized.class)
 public class REv2MempoolToCommittedTest {
+
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   @Parameterized.Parameters
   public static Collection<Object[]> parameters() {
@@ -110,7 +113,7 @@ public class REv2MempoolToCommittedTest {
         .messageSelector(firstSelector())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
-                NodeStorageConfig.none(),
+                NodeStorageConfig.tempFolder(folder),
                 this.epochs,
                 FunctionalRadixNodeModule.SafetyRecoveryConfig.MOCKED,
                 FunctionalRadixNodeModule.ConsensusConfig.of(1000),
@@ -122,7 +125,6 @@ public class REv2MempoolToCommittedTest {
                             Decimal.ONE,
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
                                 this.roundsPerEpoch)),
-                        REv2StateManagerModule.DatabaseType.IN_MEMORY,
                         StateComputerConfig.REV2ProposerConfig.Mempool.singleTransaction()),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }

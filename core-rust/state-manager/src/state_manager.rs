@@ -110,12 +110,14 @@ pub struct StateManagerConfig {
 }
 
 impl StateManagerConfig {
-    pub fn new_for_testing() -> Self {
+    pub fn new_for_testing(rocks_db_path: impl Into<String>) -> Self {
         StateManagerConfig {
             network_definition: NetworkDefinition::simulator(),
             mempool_config: Some(MempoolConfig::new_for_testing()),
             vertex_limits_config: None,
-            database_backend_config: DatabaseBackendConfig::InMemory,
+            database_backend_config: DatabaseBackendConfig {
+                rocks_db_path: rocks_db_path.into(),
+            },
             database_flags: DatabaseFlags::default(),
             logging_config: LoggingConfig::default(),
             state_hash_tree_gc_config: StateHashTreeGcConfig::default(),
@@ -127,7 +129,7 @@ impl StateManagerConfig {
 #[derive(Clone)]
 pub struct StateManager {
     pub state_computer: Arc<StateComputer<StateManagerDatabase>>,
-    pub database: Arc<RwLock<StateManagerDatabase>>,
+    pub database: Arc<StateLock<StateManagerDatabase>>,
     pub pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
     pub mempool: Arc<RwLock<PriorityMempool>>,
     pub mempool_manager: Arc<MempoolManager>,
@@ -155,7 +157,7 @@ impl StateManager {
         let network = config.network_definition;
         let logging_config = config.logging_config;
 
-        let database = Arc::new(lock_factory.named("database").new_rwlock(
+        let database = Arc::new(lock_factory.named("database").new_state_lock(
             StateManagerDatabase::from_config(
                 config.database_backend_config,
                 config.database_flags,

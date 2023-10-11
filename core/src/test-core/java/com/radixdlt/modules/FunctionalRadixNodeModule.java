@@ -418,7 +418,6 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                 install(
                     REv2StateManagerModule.createForTesting(
                         ProposalLimitsConfig.testDefaults(),
-                        rev2Config.databaseType(),
                         rev2Config.databaseFlags(),
                         Option.none(),
                         rev2Config.debugLogging(),
@@ -433,7 +432,6 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                 install(
                     REv2StateManagerModule.createForTesting(
                         mempool.proposalLimitsConfig(),
-                        rev2Config.databaseType(),
                         rev2Config.databaseFlags(),
                         Option.some(mempool.mempoolConfig()),
                         rev2Config.debugLogging(),
