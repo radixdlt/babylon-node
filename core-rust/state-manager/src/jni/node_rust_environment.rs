@@ -73,7 +73,7 @@ use node_common::locks::*;
 use prometheus::Registry;
 use radix_engine_common::prelude::NetworkDefinition;
 
-use node_common::scheduler::ClokwerkScheduler;
+use node_common::scheduler::TokioScheduler;
 use tokio::runtime::Runtime;
 
 use crate::mempool_manager::MempoolManager;
@@ -115,12 +115,7 @@ pub struct JNINodeRustEnvironment {
     pub network: NetworkDefinition,
     pub state_manager: StateManager,
     pub metric_registry: Arc<Registry>,
-
-    /// An active background scheduler, potentially holding multiple running threads.
-    /// Note: right now the scheduler is not interacted with after construction; we only have to
-    /// hold on to it, since its threads are stopped when this field is dropped (deliberately in
-    /// [`Self::cleanup()`]).
-    pub scheduler: ClokwerkScheduler,
+    pub scheduler: TokioScheduler,
 }
 
 impl JNINodeRustEnvironment {
@@ -137,7 +132,8 @@ impl JNINodeRustEnvironment {
         let fatal_panic_handler = FatalPanicHandler::new(env, j_node_rust_env).unwrap();
         let lock_factory = LockFactory::new(move || fatal_panic_handler.handle_fatal_panic());
         let metric_registry = Arc::new(Registry::new());
-        let mut scheduler = ClokwerkScheduler::default();
+        let runtime = Arc::new(runtime);
+        let mut scheduler = TokioScheduler::new(runtime.clone());
 
         let state_manager = StateManager::new(
             config,
@@ -148,7 +144,7 @@ impl JNINodeRustEnvironment {
         );
 
         let jni_node_rust_env = JNINodeRustEnvironment {
-            runtime: Arc::new(runtime),
+            runtime,
             network,
             state_manager,
             metric_registry,
