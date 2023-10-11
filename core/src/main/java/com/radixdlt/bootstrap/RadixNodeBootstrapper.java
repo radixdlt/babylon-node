@@ -135,14 +135,16 @@ public final class RadixNodeBootstrapper {
 
     // Genesis source #2: a fixed genesis associated with the given network
     // We only need its hash at this point.
-    final var fixedNetworkGenesisHash =
+    // Note that to save work on start-up with a large genesis, we verify this hash is correct only
+    // when the genesis data is used.
+    final var fixedNetworkGenesisHardcodedHash =
         network.fixedGenesis().map(FixedNetworkGenesis::genesisDataHash);
 
     // The genesis stored from previous runs
     final var storedGenesisHash = genesisStore.readGenesisDataHash();
 
     final var distinctGenesisHashes =
-        Stream.of(configuredGenesisHash, fixedNetworkGenesisHash, storedGenesisHash)
+        Stream.of(configuredGenesisHash, fixedNetworkGenesisHardcodedHash, storedGenesisHash)
             .filter(Optional::isPresent)
             .map(Optional::get)
             .collect(ImmutableSet.toImmutableSet());
@@ -167,10 +169,17 @@ public final class RadixNodeBootstrapper {
                   configuredGenesis.orElseThrow(), configuredGenesisHash.orElseThrow());
         } else {
           // No configured genesis, so load the fixed network genesis.
+          var genesisData = FixedGenesisLoader.loadGenesisData(network.fixedGenesis().orElseThrow());
+          var genesisDataHash = hasher.hash(genesisData);
+          var hardcodedHash = fixedNetworkGenesisHardcodedHash.orElse(null);
+          // Sanity check that the hardcoded hash is correct
+          if (!genesisDataHash.equals(hardcodedHash)) {
+            throw new RuntimeException(String.format("The fixed genesis definition for network %s is inconsistent. It claims to have hash (%s) but actually has hash (%s).", network, hardcodedHash, genesisDataHash));
+          }
           rawGenesisDataWithHash =
               new RawGenesisDataWithHash(
                   FixedGenesisLoader.loadGenesisData(network.fixedGenesis().orElseThrow()),
-                  fixedNetworkGenesisHash.orElseThrow());
+                  fixedNetworkGenesisHardcodedHash.orElseThrow());
         }
         genesisStore.saveGenesisData(rawGenesisDataWithHash);
       }
@@ -188,7 +197,7 @@ public final class RadixNodeBootstrapper {
                     - genesis hash stored from previous runs: %s
                     Make sure your configuration is correct (check `network.id` and/or \
                     `network.genesis_data` and/or `network.genesis_data_file`).""",
-              configuredGenesisHash, fixedNetworkGenesisHash, storedGenesisHash));
+              configuredGenesisHash, fixedNetworkGenesisHardcodedHash, storedGenesisHash));
     }
   }
 
