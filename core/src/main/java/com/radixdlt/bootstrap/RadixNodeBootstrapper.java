@@ -169,12 +169,17 @@ public final class RadixNodeBootstrapper {
                   configuredGenesis.orElseThrow(), configuredGenesisHash.orElseThrow());
         } else {
           // No configured genesis, so load the fixed network genesis.
-          var genesisData = FixedGenesisLoader.loadGenesisData(network.fixedGenesis().orElseThrow());
+          var genesisData =
+              FixedGenesisLoader.loadGenesisData(network.fixedGenesis().orElseThrow());
           var genesisDataHash = hasher.hash(genesisData);
           var hardcodedHash = fixedNetworkGenesisHardcodedHash.orElse(null);
           // Sanity check that the hardcoded hash is correct
           if (!genesisDataHash.equals(hardcodedHash)) {
-            throw new RuntimeException(String.format("The fixed genesis definition for network %s is inconsistent. It claims to have hash (%s) but actually has hash (%s).", network, hardcodedHash, genesisDataHash));
+            throw new RuntimeException(
+                String.format(
+                    "The fixed genesis definition for network %s is inconsistent. It claims to have"
+                        + " hash (%s) but actually has hash (%s).",
+                    network, hardcodedHash, genesisDataHash));
           }
           rawGenesisDataWithHash =
               new RawGenesisDataWithHash(
