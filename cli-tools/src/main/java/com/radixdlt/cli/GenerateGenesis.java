@@ -255,6 +255,8 @@ public final class GenerateGenesis {
             ? Address.virtualAccountAddress(GENESIS_POWERFUL_STAKING_ACCOUNT_PUBLIC_KEY)
             : Address.virtualAccountAddress(PrivateKeys.ofNumeric(1).getPublicKey());
 
+    final var stakingAccountOwnsAllValidators = usePowerfulStakingAccount;
+
     final Map<ECDSASecp256k1PublicKey, Decimal> xrdBalances =
         usePowerfulStakingAccount
             ? Map.of(
@@ -292,6 +294,7 @@ public final class GenerateGenesis {
         xrdBalances,
         consensusConfig,
         useFaucet,
+        stakingAccountOwnsAllValidators,
         scenariosToRun);
   }
 

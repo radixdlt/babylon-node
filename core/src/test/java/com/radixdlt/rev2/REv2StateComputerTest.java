@@ -137,6 +137,7 @@ public class REv2StateComputerTest {
                     Map.of(),
                     GenesisConsensusManagerConfig.Builder.testDefaults(),
                     true,
+                    false,
                     GenesisData.NO_SCENARIOS))),
         new REv2LedgerRecoveryModule(),
         new AbstractModule() {

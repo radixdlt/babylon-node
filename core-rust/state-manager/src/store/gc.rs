@@ -167,7 +167,7 @@ impl StateHashTreeGc {
                     deleted_nodes.push(key);
                     // Periodically rotate the collected buffer of node keys to delete:
                     if deleted_nodes.len() == DELETED_NODE_BUFFER_MAX_LEN {
-                        info!("flushing a full delete buffer at version {}", state_version);
+                        info!("Flushing a full delete buffer at version {}", state_version);
                         database.batch_delete_node(deleted_nodes.iter());
                         deleted_nodes.clear();
                     }
@@ -177,7 +177,7 @@ impl StateHashTreeGc {
         }
 
         // Delete the last collected batch of keys, and then delete the processed "stale tree parts" records:
-        info!("flushing the last buffer ({} deletes)", deleted_nodes.len());
+        info!("Flushing the last buffer ({} deletes)", deleted_nodes.len());
         database.batch_delete_node(deleted_nodes.iter());
         database.batch_delete_stale_tree_part(deleted_state_versions.iter());
     }
