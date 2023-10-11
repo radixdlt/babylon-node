@@ -84,7 +84,6 @@ import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Rule;
@@ -111,7 +110,6 @@ public class SanityTest {
                             4,
                             Decimal.ONE,
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(100000)),
-                        REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         REV2ProposerConfig.Mempool.defaults()))))
         .addTestModules(
             ConsensusMonitors.safety(),

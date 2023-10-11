@@ -35,12 +35,16 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   Peer.JSON_PROPERTY_PEER_ID,
+  Peer.JSON_PROPERTY_KEY_HEX,
   Peer.JSON_PROPERTY_CHANNELS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class Peer {
   public static final String JSON_PROPERTY_PEER_ID = "peer_id";
   private String peerId;
+
+  public static final String JSON_PROPERTY_KEY_HEX = "key_hex";
+  private String keyHex;
 
   public static final String JSON_PROPERTY_CHANNELS = "channels";
   private List<PeerChannel> channels = new ArrayList<>();
@@ -69,6 +73,32 @@ public class Peer {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setPeerId(String peerId) {
     this.peerId = peerId;
+  }
+
+
+  public Peer keyHex(String keyHex) {
+    this.keyHex = keyHex;
+    return this;
+  }
+
+   /**
+   * Get keyHex
+   * @return keyHex
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_KEY_HEX)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getKeyHex() {
+    return keyHex;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_KEY_HEX)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setKeyHex(String keyHex) {
+    this.keyHex = keyHex;
   }
 
 
@@ -116,12 +146,13 @@ public class Peer {
     }
     Peer peer = (Peer) o;
     return Objects.equals(this.peerId, peer.peerId) &&
+        Objects.equals(this.keyHex, peer.keyHex) &&
         Objects.equals(this.channels, peer.channels);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(peerId, channels);
+    return Objects.hash(peerId, keyHex, channels);
   }
 
   @Override
@@ -129,6 +160,7 @@ public class Peer {
     StringBuilder sb = new StringBuilder();
     sb.append("class Peer {\n");
     sb.append("    peerId: ").append(toIndentedString(peerId)).append("\n");
+    sb.append("    keyHex: ").append(toIndentedString(keyHex)).append("\n");
     sb.append("    channels: ").append(toIndentedString(channels)).append("\n");
     sb.append("}");
     return sb.toString();

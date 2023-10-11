@@ -65,10 +65,7 @@
 package com.radixdlt;
 
 import com.google.common.base.Stopwatch;
-import com.google.inject.Guice;
-import com.google.inject.util.Modules;
 import com.radixdlt.bootstrap.RadixNodeBootstrapper;
-import com.radixdlt.bootstrap.RadixNodeBootstrapperModule;
 import com.radixdlt.monitoring.ApplicationVersion;
 import com.radixdlt.utils.MemoryLeakDetector;
 import com.radixdlt.utils.properties.RuntimeProperties;
@@ -91,55 +88,20 @@ public final class RadixNodeApplication {
       logVersion();
       dumpExecutionLocation();
       final var properties = RuntimeProperties.fromCommandLineArgs(args);
-      bootstrapRadixNode(properties);
+      final var nodeBootStopwatch = Stopwatch.createStarted();
+      final var radixNode = RadixNodeBootstrapper.runNewNode(properties);
+      final var startupTime = nodeBootStopwatch.elapsed();
+      log.info(
+          "Radix node {} started successfully in {} ms",
+          radixNode.selfDetailedString(),
+          startupTime.toMillis());
+      radixNode.reportSelfStartupTime(startupTime);
+      Runtime.getRuntime().addShutdownHook(new Thread(radixNode::shutdown, "Node-Shutdown"));
     } catch (Exception ex) {
       log.fatal("Unable to start", ex);
       LogManager.shutdown(); // Flush any async logs
       System.exit(-1);
     }
-  }
-
-  private static void bootstrapRadixNode(RuntimeProperties properties) {
-    final var nodeBootStopwatch = Stopwatch.createStarted();
-    final var bootstrapperModule =
-        Guice.createInjector(
-            Modules.requireAtInjectOnConstructorsModule(),
-            Modules.disableCircularProxiesModule(),
-            new RadixNodeBootstrapperModule(properties));
-    final var bootstrapper = bootstrapperModule.getInstance(RadixNodeBootstrapper.class);
-    final var radixNodeBootstrapperHandle = bootstrapper.bootstrapRadixNode();
-    /* Note that because some modules obtain the resources at construction (ORAC paradigm), this
-     shutdown hook doesn't guarantee that these resources will be correctly freed up.
-     For example, when an error occurs while Guice is building its object graph,
-     we haven't yet received a reference (Injector) to the modules that have already been initialized,
-     and thus we can't clean them up.
-     TODO: consider refactoring the modules to follow a DNORAC (do NOT obtain resources at construction) paradigm
-           and then re-evaluate if the shutdown hook below (and/or the need for RadixNodeBootstrapperHandle which
-           provides the shutdown functionality) is still needed - for both happy (no errors during initialization)
-           and unhappy (errors during initialization) paths.
-    */
-    Runtime.getRuntime()
-        .addShutdownHook(
-            new Thread(radixNodeBootstrapperHandle::onShutdown, "Bootstrapper-Shutdown"));
-    radixNodeBootstrapperHandle
-        .radixNodeFuture()
-        .thenAccept(
-            (unstartedRadixNode) -> {
-              final var startupTime = nodeBootStopwatch.elapsed();
-              final var runningNode = RunningRadixNode.run(unstartedRadixNode);
-              log.info(
-                  "Radix node {} started successfully in {} ms",
-                  runningNode.self(),
-                  startupTime.toMillis());
-              runningNode.reportSelfStartupTime(startupTime);
-              Runtime.getRuntime()
-                  .addShutdownHook(new Thread(runningNode::onShutdown, "Node-Shutdown"));
-            })
-        // Call .join() to block on the future completing, ensuring that errors during
-        // bootstrapping are not swallowed, and propagate to the "Unable to start" handler.
-        // In particular, errors can come from running genesis during guice initiation in
-        // RunningRadixNode.run(..);
-        .join();
   }
 
   private static void logVersion() {

@@ -408,6 +408,8 @@ pub mod lts_committed_transaction_status;
 pub use self::lts_committed_transaction_status::LtsCommittedTransactionStatus;
 pub mod lts_entity_fungible_balance_changes;
 pub use self::lts_entity_fungible_balance_changes::LtsEntityFungibleBalanceChanges;
+pub mod lts_entity_non_fungible_balance_changes;
+pub use self::lts_entity_non_fungible_balance_changes::LtsEntityNonFungibleBalanceChanges;
 pub mod lts_fee_fungible_resource_balance_change;
 pub use self::lts_fee_fungible_resource_balance_change::LtsFeeFungibleResourceBalanceChange;
 pub mod lts_fee_fungible_resource_balance_change_type;

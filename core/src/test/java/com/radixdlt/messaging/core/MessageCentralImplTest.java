@@ -74,10 +74,12 @@ import com.radixdlt.addressing.Addressing;
 import com.radixdlt.messaging.consensus.ConsensusEventMessage;
 import com.radixdlt.messaging.ledgersync.SyncRequestMessage;
 import com.radixdlt.messaging.ledgersync.SyncResponseMessage;
+import com.radixdlt.monitoring.ApplicationVersion;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeerManager;
+import com.radixdlt.p2p.capability.AppVersionCapability;
 import com.radixdlt.p2p.capability.Capabilities;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.serialization.DeserializeException;
@@ -111,8 +113,7 @@ public class MessageCentralImplTest {
     var peerManager = emitInboundMessages(new byte[0]);
 
     MessageCentralImpl messageCentral =
-        getMessageCentral(
-            peerManager, new Capabilities(LedgerSyncCapability.Builder.asDefault().build()));
+        getMessageCentral(peerManager, Capabilities.testingDefault());
 
     // when
     TestObserver<String> observer = TestObserver.create();
@@ -144,7 +145,10 @@ public class MessageCentralImplTest {
 
     var messageCentral =
         getMessageCentral(
-            peerManager, new Capabilities(new LedgerSyncCapability.Builder(false).build()));
+            peerManager,
+            new Capabilities(
+                new LedgerSyncCapability.Builder(false).build(),
+                new AppVersionCapability(ApplicationVersion.INSTANCE)));
 
     // when
     TestObserver<MessageFromPeer<? extends Message>> observer = TestObserver.create();

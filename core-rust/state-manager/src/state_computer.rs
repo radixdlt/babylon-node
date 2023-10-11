@@ -85,7 +85,7 @@ use transaction_scenarios::scenario::DescribedAddress as ScenarioDescribedAddres
 use transaction_scenarios::scenario::*;
 use transaction_scenarios::scenarios::*;
 
-use node_common::locks::{LockFactory, Mutex, RwLock};
+use node_common::locks::{LockFactory, Mutex, RwLock, StateLock};
 use prometheus::Registry;
 use tracing::{info, warn};
 
@@ -111,7 +111,7 @@ pub struct StateComputerLoggingConfig {
 
 pub struct StateComputer<S> {
     network: NetworkDefinition,
-    store: Arc<RwLock<S>>,
+    store: Arc<StateLock<S>>,
     mempool_manager: Arc<MempoolManager>,
     execution_configurator: Arc<ExecutionConfigurator>,
     pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
@@ -130,7 +130,7 @@ impl<S: QueryableProofStore> StateComputer<S> {
     pub fn new(
         network: &NetworkDefinition,
         vertex_limits_config: VertexLimitsConfig,
-        store: Arc<RwLock<S>>,
+        store: Arc<StateLock<S>>,
         mempool_manager: Arc<MempoolManager>,
         execution_configurator: Arc<ExecutionConfigurator>,
         pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
@@ -139,7 +139,7 @@ impl<S: QueryableProofStore> StateComputer<S> {
         lock_factory: &LockFactory,
     ) -> StateComputer<S> {
         let (current_transaction_root, current_ledger_proposer_timestamp_ms) = store
-            .read()
+            .read_current()
             .get_last_proof()
             .map(|proof| proof.ledger_header)
             .map(|header| (header.hashes.transaction_root, header.proposer_timestamp_ms))
@@ -283,7 +283,7 @@ where
             .expect("Could not prepare genesis transaction");
         let validated = self.ledger_transaction_validator.validate_genesis(prepared);
 
-        let read_store = self.store.read();
+        let read_store = self.store.read_current();
         let mut series_executor = self.start_series_execution(read_store.deref());
 
         let commit = series_executor
@@ -318,7 +318,7 @@ where
             .validate_user_or_round_update(prepared_ledger_transaction)
             .unwrap_or_else(|_| panic!("Expected that {} was valid", qualified_name));
 
-        let read_store = self.store.read();
+        let read_store = self.store.read_current();
 
         // Note - we first create a basic receipt - because we need it for later
         let basic_receipt = self
@@ -348,7 +348,7 @@ where
         // themselves, which is part of the validation process
         //========================================================================================
 
-        let read_store = self.store.read();
+        let read_store = self.store.read_current();
         let mut series_executor = self.start_series_execution(read_store.deref());
 
         if &prepare_request.committed_ledger_hashes != series_executor.latest_ledger_hashes() {
@@ -777,7 +777,7 @@ where
     ) -> LedgerProof {
         let start_instant = Instant::now();
 
-        let read_db = self.store.read();
+        let read_db = self.store.read_current();
         if read_db.get_post_genesis_epoch_proof().is_some() {
             panic!("Can't execute genesis: database already initialized")
         }
@@ -956,7 +956,7 @@ where
                             .collect::<Vec<_>>()
                             .join("\n")
                     );
-                    let mut write_store = self.store.write();
+                    let write_store = self.store.write_current();
                     write_store.put_scenario(sequence_number, executed_scenario);
                     return end_state.next_unused_nonce;
                 }
@@ -1004,7 +1004,7 @@ where
         let mut proposer_timestamps = Vec::new();
         let mut proposer_timestamp_ms = self
             .store
-            .read()
+            .read_current()
             .get_last_proof()
             .unwrap()
             .ledger_header
@@ -1038,7 +1038,7 @@ where
         }
 
         // Step 2.: Start the write DB transaction, check invariants, set-up DB update structures
-        let mut write_store = self.store.write();
+        let write_store = self.store.write_current();
         let mut series_executor = self.start_series_execution(write_store.deref());
 
         if commit_request_start_state_version != series_executor.latest_state_version() {
@@ -1204,7 +1204,7 @@ where
             commit_state_version,
             round_counters.clone(),
             proposer_timestamp_ms,
-            commit_request.self_validator_address,
+            commit_request.self_validator_id,
         );
         self.committed_transactions_metrics
             .update(transactions_metrics_data);
@@ -1219,7 +1219,7 @@ where
     /// This method accepts a pre-validated transaction and trusts its contents (i.e. skips some
     /// validations).
     fn commit_genesis(&self, request: GenesisCommitRequest) {
-        let mut write_store = self.store.write();
+        let write_store = self.store.write_current();
         let mut series_executor = self.start_series_execution(write_store.deref());
 
         let mut commit = series_executor
@@ -1343,9 +1343,11 @@ mod tests {
     };
     use node_common::config::limits::VertexLimitsConfig;
     use node_common::locks::LockFactory;
+    use node_common::scheduler::NoopScheduler;
     use prometheus::Registry;
     use radix_engine_common::prelude::NetworkDefinition;
     use radix_engine_common::types::{Epoch, Round};
+    use tempfile::TempDir;
     use transaction::builder::ManifestBuilder;
     use transaction::prelude::*;
 
@@ -1436,6 +1438,7 @@ mod tests {
     }
 
     fn setup_state_manager(
+        tmp: &TempDir,
         vertex_limits_config: VertexLimitsConfig,
     ) -> (LedgerProof, StateManager) {
         let lock_factory = LockFactory::new(|| {});
@@ -1443,9 +1446,15 @@ mod tests {
 
         let config = StateManagerConfig {
             vertex_limits_config: Some(vertex_limits_config),
-            ..StateManagerConfig::new_for_testing()
+            ..StateManagerConfig::new_for_testing(tmp.path().to_str().unwrap())
         };
-        let state_manager = StateManager::new(config, None, &lock_factory, &metrics_registry);
+        let state_manager = StateManager::new(
+            config,
+            None,
+            &lock_factory,
+            &metrics_registry,
+            &mut NoopScheduler,
+        );
 
         let proof = state_manager
             .state_computer
@@ -1455,10 +1464,11 @@ mod tests {
     }
 
     fn prepare_with_vertex_limits(
+        tmp: &TempDir,
         vertex_limits_config: VertexLimitsConfig,
         proposed_transactions: Vec<RawNotarizedTransaction>,
     ) -> PrepareResult {
-        let (proof, state_manager) = setup_state_manager(vertex_limits_config);
+        let (proof, state_manager) = setup_state_manager(tmp, vertex_limits_config);
         state_manager
             .state_computer
             .prepare(build_unit_test_prepare_request(
@@ -1471,7 +1481,7 @@ mod tests {
         state_manager: &StateManager,
         prepare_request: PrepareRequest,
     ) -> u32 {
-        let read_store = state_manager.state_computer.store.read();
+        let read_store = state_manager.state_computer.store.read_current();
         let mut series_executor = state_manager
             .state_computer
             .start_series_execution(read_store.deref());
@@ -1530,7 +1540,8 @@ mod tests {
 
     #[test]
     fn test_prepare_vertex_limits() {
-        let (proof, state_manager) = setup_state_manager(VertexLimitsConfig::max());
+        let tmp = tempfile::tempdir().unwrap();
+        let (proof, state_manager) = setup_state_manager(&tmp, VertexLimitsConfig::max());
 
         let mut proposed_transactions = Vec::new();
         let epoch = proof.ledger_header.epoch;
@@ -1558,7 +1569,9 @@ mod tests {
         assert_eq!(prepare_result.committed.len(), 10); // 9 committable transactions + 1 round update transaction
         assert_eq!(prepare_result.rejected.len(), 5); // 5 rejected transactions
 
+        let tmp = tempfile::tempdir().unwrap();
         let prepare_result = prepare_with_vertex_limits(
+            &tmp,
             VertexLimitsConfig {
                 max_transaction_count: 6,
                 ..VertexLimitsConfig::max()
@@ -1573,7 +1586,9 @@ mod tests {
         let limited_proposal_ledger_hashes = prepare_result.ledger_hashes;
 
         // We now compute PrepareResult only for the first 7 transactions in order to test that indeed resultant states are the same.
+        let tmp = tempfile::tempdir().unwrap();
         let prepare_result = prepare_with_vertex_limits(
+            &tmp,
             VertexLimitsConfig::max(),
             proposed_transactions.clone()[0..7].to_vec(),
         );
@@ -1582,11 +1597,14 @@ mod tests {
         assert_eq!(prepare_result.ledger_hashes, limited_proposal_ledger_hashes);
 
         // Transaction size/count only tests `check_pre_execution`. We also need to test `try_next_transaction`.
+        let tmp = tempfile::tempdir().unwrap();
         let cost_for_first_9_user_transactions = compute_consumed_execution_units(
-            &setup_state_manager(VertexLimitsConfig::max()).1,
+            &setup_state_manager(&tmp, VertexLimitsConfig::max()).1,
             build_unit_test_prepare_request(&proof, proposed_transactions.clone()[0..9].to_vec()),
         );
+        let tmp = tempfile::tempdir().unwrap();
         let prepare_result = prepare_with_vertex_limits(
+            &tmp,
             VertexLimitsConfig {
                 // We add an extra cost unit in order to not trigger the LimitExceeded right at 9th transaction.
                 max_total_execution_cost_units_consumed: cost_for_first_9_user_transactions + 1,
@@ -1598,7 +1616,9 @@ mod tests {
         assert_eq!(prepare_result.rejected.len(), 4); // 3 rejected transactions + last one that is committable but gets discarded due to limits
 
         let limited_proposal_ledger_hashes = prepare_result.ledger_hashes;
+        let tmp = tempfile::tempdir().unwrap();
         let prepare_result = prepare_with_vertex_limits(
+            &tmp,
             VertexLimitsConfig::max(),
             proposed_transactions.clone()[0..9].to_vec(),
         );

@@ -62,72 +62,28 @@
  * permissions under this License.
  */
 
-package com.radixdlt.genesis.olympia.converter;
+package com.radixdlt.p2p.capability;
 
-import java.util.function.Predicate;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import com.radixdlt.monitoring.ApplicationVersion;
+import java.util.Map;
 
-/**
- * A URL validator enforcing the rules used by the Engine, as captured from <a
- * href="https://github.com/radixdlt/radixdlt-scrypto/blob/rcnet-v3-a74271b8/radix-engine-interface/src/api/node_modules/metadata/models/url.rs">
- * rcnet-v3-a74271b8</a>.
- *
- * <p>We can only propagate URL metadata items which satisfy the Engine's rules, since an invalid
- * URL would cause a transaction to fail.
- */
-public final class EngineUrlPredicate implements Predicate<String> {
+/** A "capability" used for sharing application version */
+public record AppVersionCapability(ApplicationVersion applicationVersion) {
+  public static final String NAME = "app-version";
+  public static final String CONFIG_VERSION = "version";
+  public static final String CONFIG_COMMIT = "commit";
 
-  /** A {@code MAX_URL_LENGTH} value used by the Engine. */
-  private static final int MAX_URL_LENGTH = 1024;
-
-  /** A predicate based on {@code URL_REGEX} used by the Engine. */
-  private static final Predicate<String> ENGINE_URL_PREDICATE =
-      Pattern.compile(
-              Stream.of(
-                      // 1. Start
-                      "^",
-                      // 2. Schema, http or https only
-                      "https?",
-                      // 3. ://
-                      ":\\/\\/",
-                      // 4. Userinfo, not allowed
-                      // 5. Host, ip address or host name
-                      //    From
-                      // https://stackoverflow.com/questions/106179/regular-expression-to-match-dns-hostname-or-ip-address
-                      "(",
-                      "((([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]))",
-                      "|",
-                      "((([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9]))",
-                      ")",
-                      // 6. Port number, optional
-                      //    From
-                      // https://stackoverflow.com/questions/12968093/regex-to-validate-port-number
-                      "(:([1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5]))?",
-                      // 7. Path, optional
-                      //    * -+
-                      //    * a-zA-Z0-9
-                      //    * ()
-                      //    * []
-                      //    * @ : % _ . ~ & =
-                      "(\\/[-\\+a-zA-Z0-9\\(\\)\\[\\]@:%_.~&=]*)*",
-                      // 8. Query, optional
-                      //    * -+
-                      //    * a-zA-Z0-9
-                      //    * ()
-                      //    * []
-                      //    * @ : % _ . ~ & =
-                      //    * /
-                      "(\\?[-\\+a-zA-Z0-9\\(\\)\\[\\]@:%_.~&=\\/]*)?",
-                      // 9. Fragment, not allowed
-                      // 10. End
-                      "$")
-                  .collect(Collectors.joining()))
-          .asMatchPredicate();
-
-  @Override
-  public boolean test(String url) {
-    return url.length() <= MAX_URL_LENGTH && ENGINE_URL_PREDICATE.test(url);
+  public RemotePeerCapability toRemotePeerCapability() {
+    final var version = applicationVersion.string();
+    final var commit = applicationVersion.commit();
+    return new RemotePeerCapability(
+        NAME,
+        Map.of(
+            CONFIG_VERSION,
+            version.substring(
+                0, Math.min(version.length(), RemotePeerCapability.CONFIGURATION_MAX_VALUE_SIZE)),
+            CONFIG_COMMIT,
+            commit.substring(
+                0, Math.min(commit.length(), RemotePeerCapability.CONFIGURATION_MAX_VALUE_SIZE))));
   }
 }

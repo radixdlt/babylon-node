@@ -82,6 +82,68 @@ import org.junit.Test;
 
 public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
   @Test
+  public void test_non_fungible_entity_changes() throws Exception {
+    try (var test = buildRunningServerTest(new DatabaseFlags(true, true))) {
+      test.suppressUnusedWarning();
+
+      var accountKeyPair = ECKeyPair.generateNew();
+      var accountAddress = Address.virtualAccountAddress(accountKeyPair.getPublicKey());
+      var resourceAddress = createFreeMintBurnNonFungibleResource(test);
+
+      // Single NF mint
+      var tx1Result =
+          getSingleCommittedTransactionOutcome(
+              submitAndWaitForSuccess(
+                  test,
+                  Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
+                      resourceAddress, accountAddress, List.of(1), List.of()),
+                  List.of(accountKeyPair)));
+      assertThat(tx1Result.getNonFungibleEntityBalanceChanges().size()).isEqualTo(1);
+      var tx1Changes = tx1Result.getNonFungibleEntityBalanceChanges().get(0);
+      assertThat(tx1Changes.getAdded()).containsExactlyInAnyOrderElementsOf(List.of("#1#"));
+      assertThat(tx1Changes.getRemoved()).isEmpty();
+
+      // Transient token is not reported
+      var tx2Result =
+          getSingleCommittedTransactionOutcome(
+              submitAndWaitForSuccess(
+                  test,
+                  Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
+                      resourceAddress, accountAddress, List.of(2), List.of(2)),
+                  List.of(accountKeyPair)));
+      assertThat(tx2Result.getNonFungibleEntityBalanceChanges()).isEmpty();
+
+      // Multiple NF mint
+      var tx3Result =
+          getSingleCommittedTransactionOutcome(
+              submitAndWaitForSuccess(
+                  test,
+                  Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
+                      resourceAddress, accountAddress, List.of(3, 4, 5), List.of()),
+                  List.of(accountKeyPair)));
+      assertThat(tx3Result.getNonFungibleEntityBalanceChanges().size()).isEqualTo(1);
+      var tx3Changes = tx3Result.getNonFungibleEntityBalanceChanges().get(0);
+      assertThat(tx3Changes.getRemoved()).isEmpty();
+      assertThat(tx3Changes.getAdded())
+          .containsExactlyInAnyOrderElementsOf(List.of("#3#", "#4#", "#5#"));
+
+      // Multiple NF burn
+      var tx4Result =
+          getSingleCommittedTransactionOutcome(
+              submitAndWaitForSuccess(
+                  test,
+                  Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
+                      resourceAddress, accountAddress, List.of(), List.of(3, 4, 5, 1)),
+                  List.of(accountKeyPair)));
+      assertThat(tx4Result.getNonFungibleEntityBalanceChanges().size()).isEqualTo(1);
+      var tx4Changes = tx4Result.getNonFungibleEntityBalanceChanges().get(0);
+      assertThat(tx4Changes.getAdded()).isEmpty();
+      assertThat(tx4Changes.getRemoved())
+          .containsExactlyInAnyOrderElementsOf(List.of("#1#", "#3#", "#4#", "#5#"));
+    }
+  }
+
+  @Test
   public void test_resultant_account_balances() throws Exception {
     // We run all scenarios for the case when RE decides to change invariants (i.e. no vault
     // substate is deleted).

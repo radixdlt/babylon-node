@@ -1,4 +1,4 @@
-use node_common::locks::RwLock;
+use node_common::locks::{RwLock, StateLock};
 use std::ops::Deref;
 use std::sync::Arc;
 use std::time::SystemTime;
@@ -160,7 +160,7 @@ impl From<PrepareError> for LedgerTransactionValidationError {
 /// A validator for `NotarizedTransaction`, deciding whether they would be rejected or not-rejected
 /// (i.e. "committable") at a specific state of the `store`.
 pub struct CommittabilityValidator<S> {
-    store: Arc<RwLock<S>>,
+    store: Arc<StateLock<S>>,
     execution_configurator: Arc<ExecutionConfigurator>,
     user_transaction_validator: NotarizedTransactionValidator,
 }
@@ -168,7 +168,7 @@ pub struct CommittabilityValidator<S> {
 impl<S> CommittabilityValidator<S> {
     pub fn new(
         network: &NetworkDefinition,
-        store: Arc<RwLock<S>>,
+        store: Arc<StateLock<S>>,
         execution_configurator: Arc<ExecutionConfigurator>,
     ) -> Self {
         Self {
@@ -207,7 +207,7 @@ where
         transaction: &ValidatedNotarizedTransactionV1,
         timestamp: SystemTime,
     ) -> TransactionAttempt {
-        let read_store = self.store.read();
+        let read_store = self.store.read_current();
         let executed_at_state_version = read_store.max_state_version();
 
         let existing =
@@ -281,14 +281,14 @@ where
 
 /// A caching wrapper for a `CommittabilityValidator`.
 pub struct CachedCommittabilityValidator<S> {
-    store: Arc<RwLock<S>>,
+    store: Arc<StateLock<S>>,
     committability_validator: Arc<CommittabilityValidator<S>>,
     pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
 }
 
 impl<S> CachedCommittabilityValidator<S> {
     pub fn new(
-        store: Arc<RwLock<S>>,
+        store: Arc<StateLock<S>>,
         committability_validator: Arc<CommittabilityValidator<S>>,
         pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
     ) -> Self {
@@ -491,7 +491,7 @@ where
             return ShouldRecalculate::Yes;
         }
 
-        let current_epoch = self.store.read().get_epoch();
+        let current_epoch = self.store.read_current().get_epoch();
         let record_option = self.read_record(prepared);
 
         if let Some(record) = record_option {

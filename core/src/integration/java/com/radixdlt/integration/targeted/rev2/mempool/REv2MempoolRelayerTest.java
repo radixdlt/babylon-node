@@ -85,11 +85,15 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public final class REv2MempoolRelayerTest {
+
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
+
   private final int MEMPOOL_TX_SIZE = 100;
 
   private DeterministicTest createTest() {
@@ -98,7 +102,7 @@ public final class REv2MempoolRelayerTest {
         .messageSelector(firstSelector())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
-                NodeStorageConfig.none(),
+                NodeStorageConfig.tempFolder(folder),
                 false,
                 SafetyRecoveryConfig.MOCKED,
                 ConsensusConfig.of(1000),
@@ -109,7 +113,6 @@ public final class REv2MempoolRelayerTest {
                             1,
                             Decimal.ONE,
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(100000)),
-                        REv2StateManagerModule.DatabaseType.IN_MEMORY,
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             ProposalLimitsConfig.zero(),
                             new RustMempoolConfig(MEMPOOL_TX_SIZE * 1024 * 1024, MEMPOOL_TX_SIZE),

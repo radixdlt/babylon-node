@@ -1,10 +1,9 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Run Single Validator Olympia Genesis" type="GradleRunConfiguration" factoryName="Gradle">
+  <configuration default="false" name="Run Stokenet Validator (DEV USE ONLY)" type="GradleRunConfiguration" factoryName="Gradle">
     <ExternalSystemSettings>
       <option name="env">
         <map>
-          <entry key="RADIXDLT_HOST_IP_ADDRESS" value="127.0.0.1" />
-          <entry key="RADIXDLT_NODE_KEY" value="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY=" />
+          <entry key="RADIX_NODE_KEYSTORE_PASSWORD" value="developer-password" />
           <entry key="RUST_BACKTRACE" value="1" />
         </map>
       </option>
@@ -18,7 +17,7 @@
       <option name="taskNames">
         <list>
           <option value=":core:run" />
-          <option value="--args='-config olympia-genesis.config'" />
+          <option value="--args=&quot;--config stokenet.config&quot;" />
         </list>
       </option>
       <option name="vmOptions" value="" />

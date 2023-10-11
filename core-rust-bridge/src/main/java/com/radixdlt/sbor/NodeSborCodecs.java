@@ -166,6 +166,7 @@ public final class NodeSborCodecs {
     RejectedTransaction.registerCodec(codecMap);
     NextEpoch.registerCodec(codecMap);
     ActiveValidatorInfo.registerCodec(codecMap);
+    ValidatorId.registerCodec(codecMap);
     CommitRequest.registerCodec(codecMap);
     CommitSummary.registerCodec(codecMap);
     LeaderRoundCounter.registerCodec(codecMap);
@@ -197,6 +198,7 @@ public final class NodeSborCodecs {
     VertexLimitsConfig.registerCodec(codecMap);
     LedgerStatus.registerCodec(codecMap);
     RecentSelfProposalMissStatistic.registerCodec(codecMap);
+    StateHashTreeGcConfig.registerCodec(codecMap);
   }
 
   public static void registerCodecsForExistingTypes(CodecMap codecMap) {

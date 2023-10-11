@@ -86,15 +86,16 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transactions.NotarizedTransactionHash;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.assertj.core.api.Assertions;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.rules.TemporaryFolder;
 
 /**
  * Test which fills a mempool and then empties it checking to make sure there are no stragglers left
@@ -102,6 +103,9 @@ import org.junit.experimental.categories.Category;
  */
 @Category(Slow.class)
 public final class REv2MempoolFillAndEmptyTest {
+
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
+
   private static final int MAX_MEMPOOL_TRANSACTION_COUNT = 1000;
   private static final Logger logger = LogManager.getLogger();
 
@@ -111,7 +115,7 @@ public final class REv2MempoolFillAndEmptyTest {
         .messageSelector(firstSelector())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
-                NodeStorageConfig.none(),
+                NodeStorageConfig.tempFolder(folder),
                 false,
                 SafetyRecoveryConfig.MOCKED,
                 ConsensusConfig.of(1000),
@@ -122,7 +126,6 @@ public final class REv2MempoolFillAndEmptyTest {
                             1,
                             Decimal.ONE,
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(100000)),
-                        REv2StateManagerModule.DatabaseType.IN_MEMORY,
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             ProposalLimitsConfig.testDefaults(),
                             new RustMempoolConfig(100 * 1024 * 1024, MAX_MEMPOOL_TRANSACTION_COUNT),

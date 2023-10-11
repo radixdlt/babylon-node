@@ -25,7 +25,6 @@ jobs:
       id-token: write
       contents: read
       pull-requests: read
-    environment: release
     name: Join Multiarch Image Dockerhub
     runs-on: ubuntu-latest
     needs:
@@ -234,7 +233,6 @@ jobs:
     name: (DockerHub) Docker AMD
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
-      environment: release
       runs_on: ubuntu-latest
       image_registry: "docker.io"
       image_organization: "radixdlt"
@@ -257,7 +255,6 @@ jobs:
     name: (DockerHub) Docker ARM
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
-      environment: release
       runs_on: babylon-node-arm
       image_registry: "docker.io"
       image_organization: "radixdlt"

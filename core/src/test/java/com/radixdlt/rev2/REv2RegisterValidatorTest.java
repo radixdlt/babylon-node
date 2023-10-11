@@ -92,7 +92,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.utils.PrivateKeys;
 import java.util.Collection;
 import java.util.List;
@@ -108,12 +107,20 @@ public final class REv2RegisterValidatorTest {
   @Parameterized.Parameters
   public static Collection<Object[]> parameters() throws PublicKeyException {
     return List.of(
-        new Object[] {PrivateKeys.ofNumeric(2).getPublicKey()},
+        new Object[] {
+          // A regular, valid public key
+          PrivateKeys.ofNumeric(2).getPublicKey()
+        },
         new Object[] {
           // This has correct length but does not decode to a valid point on a curve,
           // and it shouldn't cause any problems on the node side.
           ECDSASecp256k1PublicKey.fromHex(
-              "02f7bdef7bdef7bdef7bdef7bdef7bdef7bdef7bdef7bdef7bdef7bdef7be22351")
+              "02f7bdef7bdef7bdef7bdef7bdef7bdef7bdef7bdef7bdef7bdef7bdef7be22351"),
+        },
+        new Object[] {
+          // This one doesn't even have a correct prefix byte, and it should still work.
+          ECDSASecp256k1PublicKey.fromHex(
+              "000000000000000000000000000000000000000000000000000000000000000000")
         });
   }
 
@@ -146,7 +153,6 @@ public final class REv2RegisterValidatorTest {
                             1,
                             Decimal.ONE,
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10)),
-                        REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         StateComputerConfig.REV2ProposerConfig.Mempool.defaults()))));
   }
 

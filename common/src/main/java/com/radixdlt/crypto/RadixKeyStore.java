@@ -71,13 +71,7 @@ import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.crypto.exception.KeyStoreException;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
-import java.io.Closeable;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.attribute.PosixFilePermission;
@@ -136,9 +130,6 @@ public final class RadixKeyStore implements Closeable {
   private static final String DEFAULT_SUBJECT_DN =
       "CN=Radix DLT Network, OU=Network, O=Radix DLT, C=UK";
 
-  // Default key to use for key store when none is provided.
-  private static final char[] defaultKey = "radix".toCharArray();
-
   // PKCS12 has no mechanism for per-key passwords, but the JCE KeyStore requires a password
   // for a PrivateKeyEntry.  We work around this by providing an empty password.
   private static KeyStore.PasswordProtection emptyPassword =
@@ -164,11 +155,34 @@ public final class RadixKeyStore implements Closeable {
   public static RadixKeyStore fromFile(File file, char[] storePassword, boolean create)
       throws IOException, KeyStoreException {
     try {
-      var ks = KeyStore.getInstance("pkcs12", BouncyCastleProviderInstance.get());
-      var usedStorePassword =
-          (storePassword == null || storePassword.length == 0) ? defaultKey : storePassword;
-      initializeKeyStore(ks, file, usedStorePassword, create);
-      return new RadixKeyStore(file, ks, usedStorePassword.clone());
+      final var ks = KeyStore.getInstance("pkcs12", BouncyCastleProviderInstance.get());
+      try (var is = new FileInputStream(file)) {
+        ks.load(is, storePassword);
+      } catch (FileNotFoundException ex) {
+        if (create) {
+          // Create a new keystore
+          ks.load(null, storePassword);
+          writeKeyStore(file, ks, storePassword);
+        } else {
+          throw ex;
+        }
+      }
+      return new RadixKeyStore(file, ks, storePassword.clone());
+    } catch (GeneralSecurityException ex) {
+      throw new KeyStoreException("Can't load key store", ex);
+    }
+  }
+
+  /**
+   * Creates a read-only KeyStore from the given input stream. Writes (e.g. `writeKeyPair`) to this
+   * key store are a no-op (redirected to /dev/null). Intended for use in tests.
+   */
+  public static RadixKeyStore fromInputStream(InputStream is, char[] storePassword)
+      throws IOException, KeyStoreException {
+    try {
+      final var ks = KeyStore.getInstance("pkcs12", BouncyCastleProviderInstance.get());
+      ks.load(is, storePassword);
+      return new RadixKeyStore(new File("/dev/null"), ks, storePassword);
     } catch (GeneralSecurityException ex) {
       throw new KeyStoreException("Can't load key store", ex);
     }
@@ -296,22 +310,6 @@ public final class RadixKeyStore implements Closeable {
     }
   }
 
-  private static void initializeKeyStore(
-      KeyStore ks, File file, char[] storePassword, boolean create)
-      throws GeneralSecurityException, IOException {
-    try (var is = new FileInputStream(file)) {
-      ks.load(is, storePassword);
-    } catch (FileNotFoundException ex) {
-      if (create) {
-        // Create a new keystore
-        ks.load(null, storePassword);
-        writeKeyStore(file, ks, storePassword);
-      } else {
-        throw ex;
-      }
-    }
-  }
-
   /**
    * Creates a self-signed certificate from the specified key-pair.
    *
@@ -408,6 +406,9 @@ public final class RadixKeyStore implements Closeable {
 
   private static void writeKeyStore(File file, KeyStore ks, char[] storePassword)
       throws GeneralSecurityException, IOException {
+    // Ensure directory for key file is created if it they don't exist
+    Files.createDirectories(file.toPath().getParent());
+    // Now create the key itself
     try (OutputStream os = new FileOutputStream(file)) {
       try {
         // Make some effort to make file read/writable only by owner

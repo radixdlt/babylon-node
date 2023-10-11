@@ -79,7 +79,10 @@ public record RawGenesisDataWithHash(WrappedByteArray genesisData, HashCode gene
   public static RawGenesisDataWithHash fromGenesisData(GenesisData genesisData) {
     final var genesisDataBytes =
         NodeSborCodecs.encode(genesisData, NodeSborCodecs.resolveCodec(new TypeToken<>() {}));
-    return new RawGenesisDataWithHash(
-        new WrappedByteArray(genesisDataBytes), HASHER.hashBytes(genesisDataBytes));
+    return fromGenesisDataBytes(new WrappedByteArray(genesisDataBytes));
+  }
+
+  public static RawGenesisDataWithHash fromGenesisDataBytes(WrappedByteArray bytes) {
+    return new RawGenesisDataWithHash(bytes, HASHER.hashBytes(bytes.hashableBytes()));
   }
 }

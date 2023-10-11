@@ -82,7 +82,6 @@ public final class StandardHostIp {
    * environment variable / property against it.
    */
   public static HostIp defaultHostIp(RuntimeProperties properties) {
-    final var networkQueryResult = NetworkQueryHostIp.create(properties).queryNetworkHosts();
     final var maybeHostIpFromEnv = new EnvironmentHostIp().hostIp();
     final var maybeHostIpFromProperties = new RuntimePropertiesHostIp(properties).hostIp();
 
@@ -97,6 +96,8 @@ public final class StandardHostIp {
                   + " differ. Make sure you configure an unambiguous host IP address.",
               maybeHostIpFromProperties.orElseThrow(), maybeHostIpFromEnv.orElseThrow()));
     } else if (configuredHostIps.size() == 0) {
+      final var networkQueryResult = NetworkQueryHostIp.create(properties).queryNetworkHosts();
+
       if (networkQueryResult.maybeHostIp().isPresent()) {
         // All good, we have an IP address from network query
         log.info(
@@ -121,22 +122,34 @@ public final class StandardHostIp {
 
       final var configuredHostIp = configuredHostIps.iterator().next();
 
-      if (networkQueryResult.maybeHostIp().stream()
-          .anyMatch(hostIpFromNetwork -> !hostIpFromNetwork.equals(configuredHostIp))) {
+      if (configuredHostIp.value().equalsIgnoreCase("127.0.0.1")
+          || configuredHostIp.value().equalsIgnoreCase("localhost")) {
+        // Local address was configured, so no need to query the oracle
         log.warn(
-            "An IP address that was configured for this node ({}) differs from a public IP "
-                + "address reported by an external oracle ({}, services queried: {}). "
-                + "This indicates a likely misconfiguration. "
+            "Using a configured host IP address that is a local address ({})! "
                 + "Make sure your `network.host_ip` property or "
                 + "`RADIXDLT_HOST_IP_ADDRESS` environment variable are set correctly.",
-            configuredHostIp,
-            networkQueryResult.maybeHostIp().orElseThrow(),
-            networkQueryResult.hostsQueried());
+            configuredHostIp);
+        return configuredHostIp;
+      } else {
+        // Non-local address was configured, so let's query the oracle and see if it matches
+        final var networkQueryResult = NetworkQueryHostIp.create(properties).queryNetworkHosts();
+        if (networkQueryResult.maybeHostIp().stream()
+            .anyMatch(hostIpFromNetwork -> !hostIpFromNetwork.equals(configuredHostIp))) {
+          log.warn(
+              "An IP address that was configured for this node ({}) differs from a public IP "
+                  + "address reported by an external oracle ({}, services queried: {}). "
+                  + "This indicates a likely misconfiguration. "
+                  + "Make sure your `network.host_ip` property or "
+                  + "`RADIXDLT_HOST_IP_ADDRESS` environment variable are set correctly.",
+              configuredHostIp,
+              networkQueryResult.maybeHostIp().orElseThrow(),
+              networkQueryResult.hostsQueried());
+        }
+
+        log.info("Using a configured host IP address: {}", configuredHostIp);
+        return configuredHostIp;
       }
-
-      log.info("Using a configured host IP address: {}", configuredHostIp);
-
-      return configuredHostIp;
     }
   }
 }
