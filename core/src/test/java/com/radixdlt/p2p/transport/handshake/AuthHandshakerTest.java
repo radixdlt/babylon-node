@@ -64,12 +64,13 @@
 
 package com.radixdlt.p2p.transport.handshake;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.monitoring.ApplicationVersion;
 import com.radixdlt.networks.Network;
+import com.radixdlt.p2p.capability.AppVersionCapability;
 import com.radixdlt.p2p.capability.Capabilities;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.p2p.capability.RemotePeerCapability;
@@ -80,16 +81,13 @@ import com.radixdlt.serialization.Serialization;
 import io.netty.buffer.Unpooled;
 import java.security.SecureRandom;
 import java.util.Map;
-import java.util.Set;
-import org.junit.Assert;
 import org.junit.Test;
 
 public final class AuthHandshakerTest {
   private final Serialization serialization = DefaultSerialization.getInstance();
   private final SecureRandom secureRandom = new SecureRandom();
 
-  private final Capabilities capabilities =
-      new Capabilities(LedgerSyncCapability.Builder.asDefault().build());
+  private final Capabilities capabilities = Capabilities.testingDefault();
 
   private final byte networkVersion = 0x02;
 
@@ -98,8 +96,7 @@ public final class AuthHandshakerTest {
     final var nodeKey1 = ECKeyPair.generateNew();
     final var nodeKey2 = ECKeyPair.generateNew();
 
-    Capabilities peer1Capabilities =
-        new Capabilities(new LedgerSyncCapability.Builder(true).build());
+    Capabilities peer1Capabilities = Capabilities.testingDefault();
 
     final var handshaker1 =
         new AuthHandshaker(
@@ -133,9 +130,14 @@ public final class AuthHandshakerTest {
     assertArrayEquals(handshaker1Result.secrets().mac, handshaker2Result.secrets().mac);
     assertArrayEquals(handshaker1Result.secrets().token, handshaker2Result.secrets().token);
 
-    Assert.assertEquals(
-        Set.of(new RemotePeerCapability(LedgerSyncCapability.NAME, Map.of())),
-        handshaker2Result.remotePeerCapabilities());
+    assertTrue(
+        handshaker2Result
+            .remotePeerCapabilities()
+            .contains(new RemotePeerCapability(LedgerSyncCapability.NAME, Map.of())));
+
+    assertTrue(
+        handshaker2Result.remotePeerCapabilities().stream()
+            .anyMatch(c -> c.getName().equals(AppVersionCapability.NAME)));
   }
 
   @Test
@@ -144,7 +146,9 @@ public final class AuthHandshakerTest {
     final var nodeKey2 = ECKeyPair.generateNew();
 
     Capabilities peer1Capabilities =
-        new Capabilities(new LedgerSyncCapability.Builder(false).build());
+        new Capabilities(
+            new LedgerSyncCapability.Builder(false).build(),
+            new AppVersionCapability(ApplicationVersion.INSTANCE));
 
     final var handshaker1 =
         new AuthHandshaker(
@@ -178,7 +182,14 @@ public final class AuthHandshakerTest {
     assertArrayEquals(handshaker1Result.secrets().mac, handshaker2Result.secrets().mac);
     assertArrayEquals(handshaker1Result.secrets().token, handshaker2Result.secrets().token);
 
-    Assert.assertEquals(Set.of(), handshaker2Result.remotePeerCapabilities());
+    assertFalse(
+        handshaker2Result
+            .remotePeerCapabilities()
+            .contains(new RemotePeerCapability(LedgerSyncCapability.NAME, Map.of())));
+
+    assertTrue(
+        handshaker2Result.remotePeerCapabilities().stream()
+            .anyMatch(c -> c.getName().equals(AppVersionCapability.NAME)));
   }
 
   @Test

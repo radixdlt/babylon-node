@@ -69,10 +69,11 @@ public interface PacemakerTimeoutCalculator {
   /**
    * Calculates the pacemaker round timeout.
    *
-   * @param consecutiveUncommittedRounds the number of consecutive uncommitted rounds
+   * @param timeoutOccurrences the number of timeout occurrences that have happened so far in the
+   *     current round
    * @return pacemaker round timeout in milliseconds
    */
-  long calculateTimeoutMs(long consecutiveUncommittedRounds);
+  long calculateTimeoutMs(long timeoutOccurrences);
 
   /**
    * Returns the amount of time (in milliseconds) by which the round can be extended if proposal was

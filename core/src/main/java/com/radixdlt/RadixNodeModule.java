@@ -75,10 +75,7 @@ import com.radixdlt.consensus.ProposalLimitsConfig;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.environment.CoreApiServerFlags;
-import com.radixdlt.environment.DatabaseFlags;
-import com.radixdlt.environment.NodeConstants;
-import com.radixdlt.environment.VertexLimitsConfig;
+import com.radixdlt.environment.*;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.genesis.GenesisProvider;
 import com.radixdlt.keys.PersistedBFTKeyModule;
@@ -90,13 +87,18 @@ import com.radixdlt.logger.EventLoggerModule;
 import com.radixdlt.mempool.*;
 import com.radixdlt.messaging.MessagingModule;
 import com.radixdlt.modules.*;
+import com.radixdlt.monitoring.ApplicationVersion;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.P2PModule;
+import com.radixdlt.p2p.capability.AppVersionCapability;
+import com.radixdlt.p2p.capability.Capabilities;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.rev2.modules.*;
 import com.radixdlt.store.NodeStorageLocationFromPropertiesModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.BooleanUtils;
+import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.UInt64;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.time.Duration;
 import java.util.Optional;
@@ -143,11 +145,10 @@ public final class RadixNodeModule extends AbstractModule {
         .annotatedWith(BFTSyncPatienceMillis.class)
         .to(properties.get("bft.sync.patience", 200));
 
-    // Default values mean that pacemakers will sync if they are within 5 rounds of each other.
-    // 5 consecutive failing rounds will take 1*(2^6)-1 seconds = 63 seconds.
+    // Max timeout = (1.2^8)×3 ~= 13s
     bindConstant().annotatedWith(PacemakerBaseTimeoutMs.class).to(3000L);
     bindConstant().annotatedWith(PacemakerBackoffRate.class).to(1.2);
-    bindConstant().annotatedWith(PacemakerMaxExponent.class).to(13);
+    bindConstant().annotatedWith(PacemakerMaxExponent.class).to(8);
     bindConstant().annotatedWith(AdditionalRoundTimeIfProposalReceivedMs.class).to(30_000L);
     bindConstant().annotatedWith(TimeoutQuorumResolutionDelayMs.class).to(0L);
 
@@ -342,13 +343,16 @@ public final class RadixNodeModule extends AbstractModule {
             vertexMaxTotalTransactionsSize,
             vertexMaxTotalExecutionCostUnitsConsumed,
             vertexMaxTotalFinalizationCostUnitsConsumed);
+
+    var stateHashTreeGcConfig = parseStateHashTreeGcConfig(properties);
+
     install(
         REv2StateManagerModule.create(
             ProposalLimitsConfig.from(vertexLimitsConfig),
             vertexLimitsConfig,
-            REv2StateManagerModule.DatabaseType.ROCKS_DB,
             databaseFlags,
-            Option.some(mempoolConfig)));
+            Option.some(mempoolConfig),
+            stateHashTreeGcConfig));
 
     // Recovery
     install(new BerkeleySafetyStoreModule());
@@ -390,11 +394,47 @@ public final class RadixNodeModule extends AbstractModule {
     // Capabilities
     var capabilitiesLedgerSyncEnabled =
         properties.get("capabilities.ledger_sync.enabled", BooleanUtils::parseBoolean);
-    LedgerSyncCapability.Builder builder =
+    LedgerSyncCapability.Builder ledgerSyncCapabilityBuilder =
         capabilitiesLedgerSyncEnabled
             .map(LedgerSyncCapability.Builder::new)
             .orElse(LedgerSyncCapability.Builder.asDefault());
-    install(new CapabilitiesModule(builder.build()));
+    bind(Capabilities.class)
+        .toInstance(
+            new Capabilities(
+                ledgerSyncCapabilityBuilder.build(),
+                new AppVersionCapability(ApplicationVersion.INSTANCE)));
+  }
+
+  /**
+   * Parses the part of the configuration related to the garbage collection process pruning the
+   * state hash tree. Each {@link StateHashTreeGcConfig#intervalSec()} seconds, we start a GC
+   * process which fully processes the entire backlog of "stale tree parts" recorded in the DB,
+   * <b>except</b> the most recent {@link StateHashTreeGcConfig#stateVersionHistoryLength()}
+   * entries.
+   */
+  private StateHashTreeGcConfig parseStateHashTreeGcConfig(RuntimeProperties properties) {
+    // How often to run the GC.
+    // This only needs to be one order of magnitude shorter than our intended state hash tree
+    // minimum history duration (which is ~10 minutes below), and could be computed/hardcoded.
+    // However, we make it configurable for tests' purposes.
+    var intervalSec = properties.get("state_hash_tree.gc.interval_sec", 60);
+    Preconditions.checkArgument(
+        intervalSec > 0, "state hash tree GC interval must be positive: %s sec", intervalSec);
+
+    // How many most recent state versions to keep in our Merkle tree?
+    // The default of "100 * 10 * 60 = 60000" assumes that:
+    // - a peak user transaction throughput is 100 TPS;
+    // - we want to offer Merkle proofs verification up to 10 minutes after their generation.
+    var stateVersionHistoryLength =
+        properties.get("state_hash_tree.state_version_history_length", 60000);
+    Preconditions.checkArgument(
+        stateVersionHistoryLength >= 0,
+        "state version history length must not be negative: %s",
+        stateVersionHistoryLength);
+
+    return new StateHashTreeGcConfig(
+        UInt32.fromNonNegativeInt(intervalSec),
+        UInt64.fromNonNegativeLong(stateVersionHistoryLength));
   }
 
   private void warnProtocolPropertySet(String prop) {

@@ -62,58 +62,22 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system.genesis;
+package com.radixdlt.environment;
 
-import static com.radixdlt.protocol.ProtocolVersion.ONLY_PROTOCOL_VERSION;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.UInt64;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Scopes;
-import com.google.inject.Singleton;
-import com.google.inject.multibindings.MapBinder;
-import com.radixdlt.api.common.HandlerRoute;
-import com.radixdlt.api.system.SystemApi;
-import com.radixdlt.api.system.SystemApiEndpoints;
-import com.radixdlt.api.system.health.HealthInfoService;
-import com.radixdlt.api.system.routes.HealthHandler;
-import com.radixdlt.api.system.routes.VersionHandler;
-import com.radixdlt.protocol.Current;
-import com.radixdlt.protocol.Newest;
-import com.radixdlt.protocol.ProtocolVersion;
-import io.undertow.server.HttpHandler;
-import java.util.Map;
-
-/** A minimal system API module, used while the node is in the pre-genesis state */
-public class PreGenesisSystemApiModule extends AbstractModule {
-  private static final int MAXIMUM_CONCURRENT_REQUESTS =
-      Runtime.getRuntime().availableProcessors() * 8; // same as workerThreads = ioThreads * 8
-  private static final int QUEUE_SIZE = 2000;
-  private final String bindAddress;
-  private final int port;
-
-  public PreGenesisSystemApiModule(String bindAddress, int port) {
-    this.bindAddress = bindAddress;
-    this.port = port;
+public record StateHashTreeGcConfig(UInt32 intervalSec, UInt64 stateVersionHistoryLength) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        StateHashTreeGcConfig.class,
+        codecs -> StructCodec.fromRecordComponents(StateHashTreeGcConfig.class, codecs));
   }
 
-  @Override
-  protected void configure() {
-    // TODO(when introducing actual protocol updates): design how to manage this
-    bind(ProtocolVersion.class).annotatedWith(Current.class).toInstance(ONLY_PROTOCOL_VERSION);
-    bind(ProtocolVersion.class).annotatedWith(Newest.class).toInstance(ONLY_PROTOCOL_VERSION);
-
-    bind(HealthInfoService.class).to(PreGenesisHealthInfoService.class).in(Scopes.SINGLETON);
-
-    final var binder =
-        MapBinder.newMapBinder(
-            binder(), HandlerRoute.class, HttpHandler.class, SystemApiEndpoints.class);
-    binder.addBinding(HandlerRoute.get("/system/health")).to(HealthHandler.class);
-    binder.addBinding(HandlerRoute.get("/system/version")).to(VersionHandler.class);
-  }
-
-  @Provides
-  @Singleton
-  public SystemApi systemApi(@SystemApiEndpoints Map<HandlerRoute, HttpHandler> handlers) {
-    return new SystemApi(bindAddress, port, handlers, MAXIMUM_CONCURRENT_REQUESTS, QUEUE_SIZE);
+  public static StateHashTreeGcConfig forTesting() {
+    // Remove everything stale, frequently (in tests).
+    return new StateHashTreeGcConfig(UInt32.fromNonNegativeInt(1), UInt64.ZERO);
   }
 }

@@ -53,7 +53,7 @@ openapi: 3.1.0
 # => Hex-encoded bytes/payload should end _hex and not include _bytes
 info:
   # Should be the release version, and the release display name
-  version: 'v1.0.0'
+  version: 'v1.0.4'
   title: 'Radix Core API - Babylon'
   license:
     name: The Radix License, Version 1.0
@@ -2718,8 +2718,11 @@ components:
       type: string
       description: |
         The simple string representation of the non-fungible id.
-        For string id types, this is simply the string itself; for integer types, this is the integer as a decimal; and for the bytes id type, this is the lower case hex representation.
-        A non-fungible resource has a fixed `NonFungibleIdType`, so this representation uniquely identifies this non-fungible
+        * For string ids, this is `<the-string-id>`
+        * For integer ids, this is `#the-integer-id#`
+        * For bytes ids, this is `[the-lower-case-hex-representation]`
+        * For RUID ids, this is `{...-...-...-...}` where `...` are each 16 hex characters.
+        A given non-fungible resource has a fixed `NonFungibleIdType`, so this representation uniquely identifies this non-fungible
         under the given resource address.
     NonFungibleGlobalId:
       type: object
@@ -5756,6 +5759,7 @@ components:
         - accumulator_hash
         - status
         - fungible_entity_balance_changes
+        - non_fungible_entity_balance_changes
         - resultant_account_fungible_balances
         - total_fee
       properties:
@@ -5787,6 +5791,12 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/LtsEntityFungibleBalanceChanges"
+        non_fungible_entity_balance_changes:
+          description: |
+            Non fungible changes per entity and resource
+          type: array
+          items:
+            $ref: "#/components/schemas/LtsEntityNonFungibleBalanceChanges"
         resultant_account_fungible_balances:
           description: |
             A list of the resultant fungible account balances for any balances which changed in this transaction.
@@ -5874,6 +5884,39 @@ components:
         - FeeDistributed
         - TipDistributed
         - RoyaltyDistributed
+    LtsEntityNonFungibleBalanceChanges:
+      type: object
+      required:
+        - entity_address
+        - resource_address
+        - added
+        - removed
+      properties:
+        entity_address:
+          type: string
+          description: The Bech32m-encoded human readable version of the entity's address
+        resource_address:
+          type: string
+          description: |
+            The Bech32m-encoded human readable version of the non-fungible resource's address
+        added:
+          type: array
+          items:
+            $ref: "#/components/schemas/LtsNonFungibleLocalId"
+        removed:
+          type: array
+          items:
+            $ref: "#/components/schemas/LtsNonFungibleLocalId"
+    LtsNonFungibleLocalId:
+      type: string
+      description: |
+        The simple string representation of the non-fungible id.
+        * For string ids, this is `<the-string-id>`
+        * For integer ids, this is `#the-integer-id#`
+        * For bytes ids, this is `[the-lower-case-hex-representation]`
+        * For RUID ids, this is `{...-...-...-...}` where `...` are each 16 hex characters.
+        A given non-fungible resource has a fixed local id kind, so this representation uniquely
+        identifies this non-fungible under the given resource address.
     LtsResultantAccountFungibleBalances:
       type: object
       required:

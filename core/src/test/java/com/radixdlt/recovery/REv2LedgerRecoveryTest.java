@@ -82,7 +82,6 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import java.util.*;
 import org.assertj.core.api.Condition;
@@ -130,7 +129,6 @@ public final class REv2LedgerRecoveryTest {
                             1,
                             Decimal.ONE,
                             GenesisConsensusManagerConfig.Builder.testInfiniteEpochs()),
-                        REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         StateComputerConfig.REV2ProposerConfig.transactionGenerator(
                             new REV2TransactionGenerator(), 1)))));
   }

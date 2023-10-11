@@ -66,27 +66,37 @@ package com.radixdlt.p2p.capability;
 
 import static org.junit.Assert.*;
 
+import com.radixdlt.monitoring.ApplicationVersion;
 import java.util.Map;
-import java.util.Set;
 import org.junit.Test;
 
 public class CapabilitiesTest {
 
   @Test
   public void when_ledger_sync_is_enabled_then_it_is_handled_correctly() {
-    Capabilities capabilities = new Capabilities(new LedgerSyncCapability.Builder(true).build());
+    Capabilities capabilities =
+        new Capabilities(
+            new LedgerSyncCapability.Builder(true).build(),
+            new AppVersionCapability(ApplicationVersion.INSTANCE));
 
-    assertEquals(
-        Set.of(new RemotePeerCapability(LedgerSyncCapability.NAME, Map.of())),
-        capabilities.toRemotePeerCapabilities());
+    assertTrue(
+        capabilities
+            .toRemotePeerCapabilities()
+            .contains(new RemotePeerCapability(LedgerSyncCapability.NAME, Map.of())));
     assertTrue(capabilities.isLedgerSyncEnabled());
   }
 
   @Test
   public void when_ledger_sync_is_disabled_then_it_is_handled_correctly() {
-    Capabilities capabilities = new Capabilities(new LedgerSyncCapability.Builder(false).build());
+    Capabilities capabilities =
+        new Capabilities(
+            new LedgerSyncCapability.Builder(false).build(),
+            new AppVersionCapability(ApplicationVersion.INSTANCE));
 
-    assertEquals(Set.of(), capabilities.toRemotePeerCapabilities());
+    assertFalse(
+        capabilities
+            .toRemotePeerCapabilities()
+            .contains(new RemotePeerCapability(LedgerSyncCapability.NAME, Map.of())));
     assertFalse(capabilities.isLedgerSyncEnabled());
   }
 }

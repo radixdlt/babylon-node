@@ -121,6 +121,13 @@ impl LockFactory {
             panic_drop_handler: PanicDropHandler::new(self),
         }
     }
+
+    pub fn new_state_lock<T>(&self, value: T) -> StateLock<T> {
+        StateLock {
+            underlying: self.new_rwlock(()),
+            value,
+        }
+    }
 }
 
 /// A panic-safe facade for a [`parking_lot::Mutex`].
@@ -232,6 +239,100 @@ impl<'a, T: 'a> DerefMut for RwLockWriteGuard<'a, T> {
 impl<'a, T> Drop for RwLockWriteGuard<'a, T> {
     fn drop(&mut self) {
         self.panic_drop_handler.on_drop();
+    }
+}
+
+/// A custom lock primitive guarding a "current state" of a value composed from an (immutable)
+/// "historical" and (live) "current" parts of state.
+/// The assumption is that the current state needs a classic [`RwLock`] access, while the historical
+/// state can be accessed freely, without obtaining any lock.
+/// The lock caller is responsible for distinguishing proper current vs historical access.
+// TODO(future refactoring): It seems like the "weird lock" should not be needed if we had a DB
+// interface which is more aware of its "current vs historical" nature. Maybe we will naturally go
+// in that direction when introducing DB snapshotting.
+pub struct StateLock<T> {
+    underlying: RwLock<()>, // we use our own primitive to lock a marker for current state
+    value: T,
+}
+
+unsafe impl<T: Send> Send for StateLock<T> {}
+unsafe impl<T: Send + Sync> Sync for StateLock<T> {}
+
+impl<T> StateLock<T> {
+    /// Locks the current state for reading.
+    /// This method should be used when caller needs a series of reads referring to the current
+    /// state (it "freezes" the notion of "current").
+    pub fn read_current(&self) -> StateLockReadGuard<'_, T> {
+        StateLockReadGuard {
+            underlying: self.underlying.read(),
+            value: &self.value,
+        }
+    }
+
+    /// Locks the current state for writing.
+    /// This method should be used when caller wants to update the guarded value in a way which
+    /// changes the notion of "current".
+    /// Please note that the returned guard deliberately does not implement [`DerefMut`], since it
+    /// would create an undefined behaviour (`&` and `&mut` co-existing). The guarded value is
+    /// assumed to use an interior mutability (i.e. expose mutating methods via `&`).
+    pub fn write_current(&self) -> StateLockWriteGuard<'_, T> {
+        StateLockWriteGuard {
+            underlying: self.underlying.write(),
+            value: &self.value,
+        }
+    }
+
+    /// Returns a direct reference to the guarded value, without locking anything.
+    /// This method should be used when the caller wants to interact selectively with pieces of the
+    /// historical state, in a way known to be safe.
+    pub fn access_non_locked_historical(&self) -> &T {
+        &self.value
+    }
+}
+
+/// A read guard of a [`StateLock`].
+pub struct StateLockReadGuard<'a, T> {
+    #[allow(dead_code)] // only held to release the lock when dropped
+    underlying: RwLockReadGuard<'a, ()>,
+    value: &'a T,
+}
+
+impl<'a, T: 'a> Deref for StateLockReadGuard<'a, T> {
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        self.value
+    }
+}
+
+impl<'a, T> Drop for StateLockReadGuard<'a, T> {
+    fn drop(&mut self) {
+        // The impl here is deliberately no-op:
+        // The lock guard will be dropped (i.e. lock released) on its own, and in case of reading,
+        // we do not need to abort the process (since unmodified state means consistent state).
+    }
+}
+
+/// A write guard of a [`StateLock`].
+pub struct StateLockWriteGuard<'a, T> {
+    #[allow(dead_code)] // only held to release the lock when dropped
+    underlying: RwLockWriteGuard<'a, ()>,
+    value: &'a T,
+}
+
+impl<'a, T: 'a> Deref for StateLockWriteGuard<'a, T> {
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        self.value
+    }
+}
+
+impl<'a, T> Drop for StateLockWriteGuard<'a, T> {
+    fn drop(&mut self) {
+        // The impl here is deliberately no-op:
+        // The lock guard will be dropped (i.e. lock released) on its own, and since it is a write
+        // guard, it will handle the "panic on drop" by itself already.
     }
 }
 

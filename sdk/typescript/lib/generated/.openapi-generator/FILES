@@ -230,6 +230,7 @@ models/LocalTypeId.ts
 models/LtsCommittedTransactionOutcome.ts
 models/LtsCommittedTransactionStatus.ts
 models/LtsEntityFungibleBalanceChanges.ts
+models/LtsEntityNonFungibleBalanceChanges.ts
 models/LtsFeeFungibleResourceBalanceChange.ts
 models/LtsFeeFungibleResourceBalanceChangeType.ts
 models/LtsFungibleResourceBalance.ts

@@ -4,6 +4,7 @@
 
 # Radix non-versioned files
 /**/RADIXDB/
+/**/NODEMOUNT/
 /**/RADIXDB_TEST/
 /**/logs/
 /**/logger.config

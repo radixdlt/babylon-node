@@ -53,7 +53,7 @@ pub(crate) async fn handle_lts_state_account_deposit_behaviour(
         .map_err(|err| err.into_response_error("badge"))?;
 
     // If the above checks were al fine, open database (and capture the "at state" information):
-    let database = state.state_manager.database.read();
+    let database = state.state_manager.database.read_current();
     let header = read_current_ledger_header(database.deref());
 
     // Read out the field that must exist for non-virtual addresses:
@@ -66,15 +66,18 @@ pub(crate) async fn handle_lts_state_account_deposit_behaviour(
     .map(|substate| substate.into_payload().into_latest().default_deposit_rule);
 
     // If it does not exist, then either it is an empty virtual account, or a bad account address:
-    let Some(default_deposit_rule) = default_deposit_rule else  {
+    let Some(default_deposit_rule) = default_deposit_rule else {
         return if account_address.as_node_id().is_global_virtual() {
             Ok(empty_virtual_account_response(
-                &mapping_context, &header, badge,
-                requested_resource_addresses
-                    .map(|requested_resource_addresses| requested_resource_addresses
+                &mapping_context,
+                &header,
+                badge,
+                requested_resource_addresses.map(|requested_resource_addresses| {
+                    requested_resource_addresses
                         .into_iter()
                         .zip(resource_addresses)
-                        .collect())
+                        .collect()
+                }),
             )?)
         } else {
             Err(not_found_error("Account not found".to_string()))

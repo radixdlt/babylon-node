@@ -67,139 +67,64 @@ package com.radixdlt.bootstrap;
 import static com.radixdlt.lang.Unit.unit;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.reflect.TypeToken;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
-import com.google.inject.Injector;
 import com.google.inject.util.Modules;
-import com.radixdlt.UnstartedRadixNode;
-import com.radixdlt.addressing.Addressing;
-import com.radixdlt.api.system.SystemApi;
-import com.radixdlt.config.SelfValidatorAddressConfig;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.RadixNode;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.genesis.FixedGenesisLoader;
 import com.radixdlt.genesis.GenesisFromPropertiesLoader;
 import com.radixdlt.genesis.RawGenesisDataWithHash;
-import com.radixdlt.genesis.olympia.GenesisFromOlympiaNodeModule;
-import com.radixdlt.genesis.olympia.OlympiaGenesisConfig;
-import com.radixdlt.genesis.olympia.OlympiaGenesisService;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.networks.FixedNetworkGenesis;
 import com.radixdlt.networks.Network;
-import com.radixdlt.p2p.discovery.SeedNodesConfigParser;
-import com.radixdlt.sbor.NodeSborCodecs;
 import com.radixdlt.store.NodeStorageLocation;
-import com.radixdlt.utils.WrappedByteArray;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public final class RadixNodeBootstrapper {
-  private static final Logger log = LogManager.getLogger();
-
-  public sealed interface RadixNodeBootstrapperHandle {
-    CompletableFuture<UnstartedRadixNode> radixNodeFuture();
-
-    void onShutdown();
-
-    record Resolved(UnstartedRadixNode radixNode) implements RadixNodeBootstrapperHandle {
-      @Override
-      public CompletableFuture<UnstartedRadixNode> radixNodeFuture() {
-        return CompletableFuture.completedFuture(radixNode);
-      }
-
-      @Override
-      public void onShutdown() {
-        // no-op
-      }
-    }
-
-    record AsyncFromOlympia(OlympiaGenesisBootstrapper olympiaGenesisBootstrapper)
-        implements RadixNodeBootstrapperHandle {
-      @Override
-      public CompletableFuture<UnstartedRadixNode> radixNodeFuture() {
-        return olympiaGenesisBootstrapper.radixNodeFuture();
-      }
-
-      @Override
-      public void onShutdown() {
-        olympiaGenesisBootstrapper.cleanup();
-      }
-    }
-
-    record Failed(Exception e) implements RadixNodeBootstrapperHandle {
-      @Override
-      public CompletableFuture<UnstartedRadixNode> radixNodeFuture() {
-        return CompletableFuture.failedFuture(e);
-      }
-
-      @Override
-      public void onShutdown() {
-        // no-op
-      }
-    }
-  }
-
-  private final ECDSASecp256k1PublicKey selfPublicKey;
   private final Network network;
-  private final Addressing addressing;
   private final Hasher hasher;
   private final RuntimeProperties properties;
   private final GenesisFromPropertiesLoader genesisFromPropertiesLoader;
   private final GenesisStore genesisStore;
   private final File nodeStorageDir;
-  private final SeedNodesConfigParser seedNodesConfigParser;
+
+  public static RadixNode runNewNode(RuntimeProperties properties) {
+    final var bootstrapperModule =
+        Guice.createInjector(
+            Modules.requireAtInjectOnConstructorsModule(),
+            Modules.disableCircularProxiesModule(),
+            new RadixNodeBootstrapperModule(properties));
+    final var bootstrapper = bootstrapperModule.getInstance(RadixNodeBootstrapper.class);
+    return bootstrapper.bootstrapRadixNode();
+  }
 
   @Inject
-  public RadixNodeBootstrapper(
-      @Self ECDSASecp256k1PublicKey selfPublicKey,
+  RadixNodeBootstrapper(
       Network network,
-      Addressing addressing,
       Hasher hasher,
       RuntimeProperties properties,
       GenesisFromPropertiesLoader genesisFromPropertiesLoader,
       GenesisStore genesisStore,
-      @NodeStorageLocation String nodeStorageLocation,
-      SeedNodesConfigParser seedNodesConfigParser) {
-    this.selfPublicKey = selfPublicKey;
+      @NodeStorageLocation String nodeStorageLocation) {
     this.network = network;
-    this.addressing = addressing;
     this.hasher = hasher;
     this.properties = properties;
     this.genesisFromPropertiesLoader = genesisFromPropertiesLoader;
     this.genesisStore = genesisStore;
     this.nodeStorageDir = new File(nodeStorageLocation);
-    this.seedNodesConfigParser = seedNodesConfigParser;
   }
 
-  public RadixNodeBootstrapperHandle bootstrapRadixNode() {
-    log.info("Radix node {} is booting...", addressing.encodeNodeAddress(selfPublicKey));
-
-    // An early check for validator address misconfiguration
-    final var selfValidatorAddressConfig =
-        SelfValidatorAddressConfig.fromRuntimeProperties(properties, addressing);
-
+  private RadixNode bootstrapRadixNode() {
     // An early check for storage misconfiguration
     final var storageVerifyResult = verifyNodeStorageDirIsWritable();
     if (storageVerifyResult.isError()) {
-      return new RadixNodeBootstrapperHandle.Failed(
-          new RuntimeException(storageVerifyResult.unwrapError()));
-    }
-
-    // An early check for seed nodes misconfiguration
-    final var seedNodes = seedNodesConfigParser.getResolvedSeedNodes();
-    if (seedNodes.isEmpty()) {
-      log.warn(
-          "Warning! No valid seed nodes have been configured for this node."
-              + " Check your `network.p2p.seed_nodes` configuration!");
+      throw new RuntimeException(storageVerifyResult.unwrapError());
     }
 
     // Genesis source #1: node configuration parameters / genesis file
@@ -210,57 +135,27 @@ public final class RadixNodeBootstrapper {
 
     // Genesis source #2: a fixed genesis associated with the given network
     // We only need its hash at this point.
-    final var fixedNetworkGenesisHash =
+    // Note that to save work on start-up with a large genesis, we verify this hash is correct only
+    // when the genesis data is used.
+    final var fixedNetworkGenesisHardcodedHash =
         network.fixedGenesis().map(FixedNetworkGenesis::genesisDataHash);
 
     // The genesis stored from previous runs
     final var storedGenesisHash = genesisStore.readGenesisDataHash();
 
     final var distinctGenesisHashes =
-        Stream.of(configuredGenesisHash, fixedNetworkGenesisHash, storedGenesisHash)
+        Stream.of(configuredGenesisHash, fixedNetworkGenesisHardcodedHash, storedGenesisHash)
             .filter(Optional::isPresent)
             .map(Optional::get)
             .collect(ImmutableSet.toImmutableSet());
 
     if (distinctGenesisHashes.size() == 0) {
-      // No genesis was configured, use Olympia (if configured) or error
-      final var useOlympiaFlagIsSet = properties.get("genesis.use_olympia", false);
-      if (useOlympiaFlagIsSet) {
-        final var olympiaBootstrapper = new OlympiaGenesisBootstrapper();
-        switch (selfValidatorAddressConfig) {
-          case SelfValidatorAddressConfig.Set set -> {
-            log.warn(
-                "This node has been configured to acquire the genesis data from Olympia."
-                    + " The `consensus.validator_address` property that has been set is most likely"
-                    + " a misconfiguration. If you were a registered Olympia validator"
-                    + " (and you are reusing the same node key for this Babylon node) consider"
-                    + " setting `consensus.use_genesis_for_validator_address=true` instead.");
-          }
-          case SelfValidatorAddressConfig.Unset unset -> {
-            log.warn(
-                "This node has been configured to acquire the genesis data from Olympia, and it"
-                    + " will boot up as a non-validating full node. If you were a registered"
-                    + " Olympia validator (and you are reusing the same node key for this Babylon"
-                    + " node) consider setting"
-                    + " `consensus.use_genesis_for_validator_address=true`.");
-          }
-          case SelfValidatorAddressConfig.FromGenesis fromGenesis -> {
-            // All good, no warning here
-          }
-        }
-        olympiaBootstrapper.start();
-        return new RadixNodeBootstrapperHandle.AsyncFromOlympia(olympiaBootstrapper);
-      } else {
-        // TODO(post-babylon): remove Olympia ref from the message below
-        return new RadixNodeBootstrapperHandle.Failed(
-            new RuntimeException(
-                """
-                  Radix node couldn't be initialized. No genesis transaction has been configured. Make \
-                  sure that either `network.genesis_data` or `network.genesis_data_file` is set or that \
-                  you're using a well known network (`network.id`). If you're running an Olympia \
-                  node consider using it as your genesis source (`genesis.use_olympia`). Refer to \
-                  documentation for more details."""));
-      }
+      // No genesis was configured
+      throw new RuntimeException(
+          """
+              Radix node couldn't be initialized. No genesis transaction has been configured. Make \
+              sure that either `network.genesis_data` or `network.genesis_data_file` is set or that \
+              you're using a well known network (`network.id`).""");
     } else if (distinctGenesisHashes.size() == 1) {
       // All genesis sources agree, we can proceed
       // Store the genesis, if needed
@@ -274,30 +169,40 @@ public final class RadixNodeBootstrapper {
                   configuredGenesis.orElseThrow(), configuredGenesisHash.orElseThrow());
         } else {
           // No configured genesis, so load the fixed network genesis.
+          var genesisData =
+              FixedGenesisLoader.loadGenesisData(network.fixedGenesis().orElseThrow());
+          var genesisDataHash = hasher.hash(genesisData);
+          var hardcodedHash = fixedNetworkGenesisHardcodedHash.orElse(null);
+          // Sanity check that the hardcoded hash is correct
+          if (!genesisDataHash.equals(hardcodedHash)) {
+            throw new RuntimeException(
+                String.format(
+                    "The fixed genesis definition for network %s is inconsistent. It claims to have"
+                        + " hash (%s) but actually has hash (%s).",
+                    network, hardcodedHash, genesisDataHash));
+          }
           rawGenesisDataWithHash =
               new RawGenesisDataWithHash(
                   FixedGenesisLoader.loadGenesisData(network.fixedGenesis().orElseThrow()),
-                  fixedNetworkGenesisHash.orElseThrow());
+                  fixedNetworkGenesisHardcodedHash.orElseThrow());
         }
         genesisStore.saveGenesisData(rawGenesisDataWithHash);
       }
 
       // Start the node using the genesisStore as a (lazy) genesis source
-      return new RadixNodeBootstrapperHandle.Resolved(
-          new UnstartedRadixNode(properties, network, genesisStore));
+      return RadixNode.run(properties, network, genesisStore);
     } else {
       // There was more than one genesis configured and the hashes don't match
-      return new RadixNodeBootstrapperHandle.Failed(
-          new RuntimeException(
-              String.format(
-                  """
+      throw new RuntimeException(
+          String.format(
+              """
                     Inconsistent genesis configuration. The following genesis sources were read:
                     - properties genesis hash (based on network.genesis_data or network.genesis_data_file): %s
                     - expected network genesis hash (based on network.id): %s
                     - genesis hash stored from previous runs: %s
                     Make sure your configuration is correct (check `network.id` and/or \
                     `network.genesis_data` and/or `network.genesis_data_file`).""",
-                  configuredGenesisHash, fixedNetworkGenesisHash, storedGenesisHash)));
+              configuredGenesisHash, fixedNetworkGenesisHardcodedHash, storedGenesisHash));
     }
   }
 
@@ -332,71 +237,5 @@ public final class RadixNodeBootstrapper {
     }
 
     return Result.success(unit());
-  }
-
-  /** A utility class encapsulating the Olympia-based genesis functionality */
-  private class OlympiaGenesisBootstrapper {
-    private final Injector injector;
-    private final CompletableFuture<UnstartedRadixNode> radixNodeFuture;
-
-    OlympiaGenesisBootstrapper() {
-      this.injector =
-          Guice.createInjector(
-              Modules.requireAtInjectOnConstructorsModule(),
-              Modules.disableCircularProxiesModule(),
-              new GenesisFromOlympiaNodeModule(properties, network));
-      this.radixNodeFuture = new CompletableFuture<>();
-    }
-
-    void start() {
-      log.info(
-          "Olympia-based genesis was configured ({}). Using core API URL of {}",
-          network.getLogicalName(),
-          injector.getInstance(OlympiaGenesisConfig.class).nodeCoreApiUrl());
-
-      final var systemApi = injector.getInstance(SystemApi.class);
-      systemApi.start();
-
-      final var olympiaGenesisService = injector.getInstance(OlympiaGenesisService.class);
-
-      final var genesisDataFuture = olympiaGenesisService.start();
-
-      genesisDataFuture.whenComplete(
-          (genesisData, ex) -> {
-            this.cleanup();
-
-            if (ex != null) {
-              log.warn(
-                  """
-              Radix node couldn't be initialized. The Olympia-based genesis was configured but \
-              an error occurred.""",
-                  ex);
-              radixNodeFuture.completeExceptionally(ex);
-            } else {
-              log.info(
-                  """
-              Genesis data has been successfully received from the Olympia node \
-              ({} data chunks). Initializing the Babylon node...""",
-                  genesisData.chunks().size());
-              final var encodedGenesisData =
-                  NodeSborCodecs.encode(
-                      genesisData, NodeSborCodecs.resolveCodec(new TypeToken<>() {}));
-              final var genesisDataHash = hasher.hashBytes(encodedGenesisData);
-              genesisStore.saveGenesisData(
-                  new RawGenesisDataWithHash(
-                      new WrappedByteArray(encodedGenesisData), genesisDataHash));
-              radixNodeFuture.complete(new UnstartedRadixNode(properties, network, genesisStore));
-            }
-          });
-    }
-
-    CompletableFuture<UnstartedRadixNode> radixNodeFuture() {
-      return this.radixNodeFuture;
-    }
-
-    void cleanup() {
-      injector.getInstance(SystemApi.class).stop();
-      injector.getInstance(OlympiaGenesisService.class).shutdown();
-    }
   }
 }

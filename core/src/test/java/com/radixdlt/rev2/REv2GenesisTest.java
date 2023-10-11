@@ -83,12 +83,16 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.testutil.TestStateReader;
 import java.util.Map;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public final class REv2GenesisTest {
+
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
+
   private static final Decimal INITIAL_STAKE = Decimal.ONE;
 
   private static final Decimal XRD_ALLOC_AMOUNT = Decimal.ofNonNegative(100123);
@@ -137,7 +141,7 @@ public final class REv2GenesisTest {
         .messageMutator(MessageMutator.dropTimeouts())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
-                NodeStorageConfig.none(),
+                NodeStorageConfig.tempFolder(folder),
                 false,
                 SafetyRecoveryConfig.MOCKED,
                 ConsensusConfig.of(1000),
@@ -150,7 +154,6 @@ public final class REv2GenesisTest {
                             Map.of(XRD_ALLOC_ACCOUNT_PUB_KEY, XRD_ALLOC_AMOUNT),
                             GenesisConsensusManagerConfig.Builder.testDefaults(),
                             GenesisData.ALL_SCENARIOS),
-                        REv2StateManagerModule.DatabaseType.IN_MEMORY,
                         StateComputerConfig.REV2ProposerConfig.Mempool.zero()))));
   }
 

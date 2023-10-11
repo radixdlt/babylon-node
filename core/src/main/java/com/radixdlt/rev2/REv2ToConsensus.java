@@ -74,6 +74,7 @@ import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.lang.Option;
 import com.radixdlt.statecomputer.commit.ActiveValidatorInfo;
 import com.radixdlt.statecomputer.commit.TimestampedValidatorSignature;
+import com.radixdlt.statecomputer.commit.ValidatorId;
 import com.radixdlt.utils.UInt64;
 import java.util.Map;
 import java.util.Set;
@@ -95,6 +96,14 @@ public final class REv2ToConsensus {
     final var powerAsDecimal = Decimal.fromU192Subunits(validator.getPower());
 
     return new ActiveValidatorInfo(id.getValidatorAddress(), id.getKey(), powerAsDecimal);
+  }
+
+  public static BFTValidatorId validatorId(ValidatorId validator) {
+    return BFTValidatorId.create(validator.componentAddress(), validator.key());
+  }
+
+  public static ValidatorId validatorId(BFTValidatorId validatorId) {
+    return new ValidatorId(validatorId.getValidatorAddress(), validatorId.getKey());
   }
 
   public static BFTValidatorSet validatorSet(Set<ActiveValidatorInfo> validators) {

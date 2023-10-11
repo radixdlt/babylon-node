@@ -70,7 +70,10 @@ import com.radixdlt.consensus.bft.PacemakerBackoffRate;
 import com.radixdlt.consensus.bft.PacemakerBaseTimeoutMs;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 
-/** Timeout calculator which exponentially increases based on number of uncommitted rounds. */
+/**
+ * Timeout calculator which exponentially increases based on timeout occurrences in the current
+ * round.
+ */
 public final class ExponentialPacemakerTimeoutCalculator implements PacemakerTimeoutCalculator {
   private final long baseTimeoutMilliseconds;
   private final double rate;
@@ -106,9 +109,8 @@ public final class ExponentialPacemakerTimeoutCalculator implements PacemakerTim
   }
 
   @Override
-  public long calculateTimeoutMs(long consecutiveUncommittedRounds) {
-    double exponential =
-        Math.pow(this.rate, Math.min(this.maxExponent, consecutiveUncommittedRounds));
+  public long calculateTimeoutMs(long timeoutOccurrences) {
+    double exponential = Math.pow(this.rate, Math.min(this.maxExponent, timeoutOccurrences));
     return Math.round(this.baseTimeoutMilliseconds * exponential);
   }
 
