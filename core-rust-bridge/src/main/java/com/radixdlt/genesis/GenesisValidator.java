@@ -68,7 +68,6 @@ import static com.radixdlt.lang.Tuple.tuple;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
-import com.radixdlt.identifiers.Address;
 import com.radixdlt.lang.Tuple.Tuple2;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.Decimal;
@@ -89,13 +88,13 @@ public record GenesisValidator(
         codecs -> StructCodec.fromRecordComponents(GenesisValidator.class, codecs));
   }
 
-  public static GenesisValidator defaultFromPubKey(int index, ECDSASecp256k1PublicKey key) {
+  public static GenesisValidator defaultFromPubKey(
+      int index, ECDSASecp256k1PublicKey key, ComponentAddress ownerAccount) {
     final var metadata =
         ImmutableList.<Tuple2<String, MetadataValue>>of(
             tuple(
                 "name", new MetadataValue.String(String.format("Default validator %s", index + 1))),
             tuple("info_url", new MetadataValue.Url("https://www.radixdlt.com")));
-    return new GenesisValidator(
-        key, true, true, Decimal.ONE, metadata, Address.virtualAccountAddress(key));
+    return new GenesisValidator(key, true, true, Decimal.ONE, metadata, ownerAccount);
   }
 }

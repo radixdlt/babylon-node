@@ -1,4 +1,4 @@
-use node_common::locks::RwLock;
+use node_common::locks::StateLock;
 use radix_engine::transaction::{PreviewError, TransactionReceipt, TransactionResult};
 use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use std::ops::{Deref, Range};
@@ -19,7 +19,7 @@ use transaction::validation::ValidationConfig;
 
 /// A transaction preview runner.
 pub struct TransactionPreviewer<S> {
-    store: Arc<RwLock<S>>,
+    store: Arc<StateLock<S>>,
     execution_configurator: Arc<ExecutionConfigurator>,
     validation_config: ValidationConfig,
 }
@@ -34,7 +34,7 @@ pub struct ProcessedPreviewResult {
 impl<S> TransactionPreviewer<S> {
     pub fn new(
         network: &NetworkDefinition,
-        store: Arc<RwLock<S>>,
+        store: Arc<StateLock<S>>,
         execution_configurator: Arc<ExecutionConfigurator>,
     ) -> Self {
         Self {
@@ -51,7 +51,7 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
         &self,
         preview_request: PreviewRequest,
     ) -> Result<ProcessedPreviewResult, PreviewError> {
-        let read_store = self.store.read();
+        let read_store = self.store.read_current();
         let intent = self.create_intent(preview_request, read_store.deref());
 
         let validator = NotarizedTransactionValidator::new(self.validation_config);
@@ -132,21 +132,25 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
 
 #[cfg(test)]
 mod tests {
+
     use crate::{PreviewRequest, StateManager, StateManagerConfig};
     use node_common::locks::LockFactory;
+    use node_common::scheduler::NoopScheduler;
     use prometheus::Registry;
     use transaction::builder::ManifestBuilder;
     use transaction::model::{MessageV1, PreviewFlags};
 
     #[test]
     fn test_preview_processed_substate_changes() {
+        let tmp = tempfile::tempdir().unwrap();
         let lock_factory = LockFactory::new(|| {});
         let metrics_registry = Registry::new();
         let state_manager = StateManager::new(
-            StateManagerConfig::new_for_testing(),
+            StateManagerConfig::new_for_testing(tmp.path().to_str().unwrap()),
             None,
             &lock_factory,
             &metrics_registry,
+            &mut NoopScheduler,
         );
 
         state_manager

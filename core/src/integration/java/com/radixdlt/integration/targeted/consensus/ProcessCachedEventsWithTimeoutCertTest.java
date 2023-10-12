@@ -83,9 +83,13 @@ import com.radixdlt.monitoring.Metrics;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.Random;
 import java.util.function.Predicate;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public class ProcessCachedEventsWithTimeoutCertTest {
+
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   private static final int TEST_NODE = 4;
   private final Random random = new Random(123456);
@@ -100,7 +104,7 @@ public class ProcessCachedEventsWithTimeoutCertTest {
             dropVotesSentToNode(TEST_NODE))
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
-                NodeStorageConfig.none(),
+                NodeStorageConfig.tempFolder(folder),
                 true,
                 FunctionalRadixNodeModule.SafetyRecoveryConfig.MOCKED,
                 FunctionalRadixNodeModule.ConsensusConfig.of(),

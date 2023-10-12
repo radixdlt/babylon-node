@@ -87,7 +87,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.*;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.transactions.NotarizedTransactionHash;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import java.util.Collection;
@@ -134,7 +133,6 @@ public class REv2RejectedTransactionMempoolTest {
                             Decimal.ONE,
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
                                 this.roundsPerEpoch)),
-                        REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         StateComputerConfig.REV2ProposerConfig.Mempool.singleTransaction()
                             .withMempoolConfig(mempoolConfig)))));
   }

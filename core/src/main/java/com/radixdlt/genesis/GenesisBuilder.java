@@ -85,7 +85,8 @@ public final class GenesisBuilder {
       Decimal initialStake,
       GenesisConsensusManagerConfig.Builder builder) {
     final var validatorsAndStakesChunks =
-        prepareValidatorsAndStakesChunks(ImmutableList.of(tuple(validator, initialStake)));
+        prepareValidatorsAndStakesChunksStakingFromValidatorPublicKeyAccount(
+            ImmutableList.of(tuple(validator, initialStake)));
     return new GenesisData(
         UInt64.fromNonNegativeLong(1),
         0,
@@ -123,7 +124,7 @@ public final class GenesisBuilder {
     }
 
     final var validatorsAndStakesChunks =
-        prepareValidatorsAndStakesChunks(
+        prepareValidatorsAndStakesChunksStakingFromValidatorPublicKeyAccount(
             PrivateKeys.numeric(1)
                 .map(keyPair -> tuple(keyPair.getPublicKey(), initialStake))
                 .limit(numValidators)
@@ -148,6 +149,7 @@ public final class GenesisBuilder {
       Map<ECDSASecp256k1PublicKey, Decimal> xrdBalances,
       GenesisConsensusManagerConfig.Builder configBuilder,
       boolean useFaucet,
+      boolean stakingAccountOwnsAllValidators,
       ImmutableList<String> scenariosToRun) {
     final var chunksBuilder = ImmutableList.<GenesisDataChunk>builder();
 
@@ -156,11 +158,12 @@ public final class GenesisBuilder {
     }
 
     final var validatorsAndStakesChunks =
-        prepareValidatorsAndStakesChunks(
+        prepareValidatorsAndStakesChunksWithSingleStaker(
             validators.stream()
                 .map(v -> tuple(v, initialStake))
                 .collect(ImmutableList.toImmutableList()),
-            stakerAddress);
+            stakerAddress,
+            stakingAccountOwnsAllValidators);
 
     chunksBuilder.add(validatorsAndStakesChunks.first());
     chunksBuilder.add(validatorsAndStakesChunks.last());
@@ -189,11 +192,16 @@ public final class GenesisBuilder {
   // Allocates stakes to the validator's owner account address (which defaults to the account with
   // the same key as the validator)
   private static Tuple.Tuple2<GenesisDataChunk.Validators, GenesisDataChunk.Stakes>
-      prepareValidatorsAndStakesChunks(
+      prepareValidatorsAndStakesChunksStakingFromValidatorPublicKeyAccount(
           ImmutableList<Tuple.Tuple2<ECDSASecp256k1PublicKey, Decimal>> validatorsAndStake) {
     final var validators =
         IntStream.range(0, validatorsAndStake.size())
-            .mapToObj(i -> GenesisValidator.defaultFromPubKey(i, validatorsAndStake.get(i).first()))
+            .mapToObj(
+                i -> {
+                  var key = validatorsAndStake.get(i).first();
+                  var owner = Address.virtualAccountAddress(key);
+                  return GenesisValidator.defaultFromPubKey(i, key, owner);
+                })
             .collect(ImmutableList.toImmutableList());
     final var validatorsChunk = new GenesisDataChunk.Validators(validators);
 
@@ -217,14 +225,24 @@ public final class GenesisBuilder {
     return tuple(validatorsChunk, stakeChunk);
   }
 
-  // Allocates all stakes to a specified staker account
+  // Allocates all stakes to a specified stakerAccount
   private static Tuple.Tuple2<GenesisDataChunk.Validators, GenesisDataChunk.Stakes>
-      prepareValidatorsAndStakesChunks(
+      prepareValidatorsAndStakesChunksWithSingleStaker(
           ImmutableList<Tuple.Tuple2<ECDSASecp256k1PublicKey, Decimal>> validatorsAndStake,
-          ComponentAddress staker) {
+          ComponentAddress stakerAccount,
+          boolean stakingAccountOwnsAllValidators) {
     final var validators =
         IntStream.range(0, validatorsAndStake.size())
-            .mapToObj(i -> GenesisValidator.defaultFromPubKey(i, validatorsAndStake.get(i).first()))
+            .mapToObj(
+                i -> {
+                  var key = validatorsAndStake.get(i).first();
+                  var owner =
+                      stakingAccountOwnsAllValidators
+                          ? stakerAccount
+                          : Address.virtualAccountAddress(key);
+                  return GenesisValidator.defaultFromPubKey(
+                      i, validatorsAndStake.get(i).first(), owner);
+                })
             .collect(ImmutableList.toImmutableList());
     final var validatorsChunk = new GenesisDataChunk.Validators(validators);
 
@@ -240,7 +258,8 @@ public final class GenesisBuilder {
                           new GenesisStakeAllocation(UInt32.fromNonNegativeInt(0), stake)));
                 })
             .collect(ImmutableList.toImmutableList());
-    final var stakeChunk = new GenesisDataChunk.Stakes(ImmutableList.of(staker), stakeAllocations);
+    final var stakeChunk =
+        new GenesisDataChunk.Stakes(ImmutableList.of(stakerAccount), stakeAllocations);
     return tuple(validatorsChunk, stakeChunk);
   }
 }

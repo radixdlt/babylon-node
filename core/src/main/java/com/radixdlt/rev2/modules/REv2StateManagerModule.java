@@ -97,66 +97,62 @@ import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.io.File;
 
 public final class REv2StateManagerModule extends AbstractModule {
-  public enum DatabaseType {
-    IN_MEMORY,
-    ROCKS_DB,
-  }
 
   private final ProposalLimitsConfig proposalLimitsConfig;
   private final Option<VertexLimitsConfig> vertexLimitsConfigOpt;
-  private final DatabaseType databaseType;
   private final DatabaseFlags databaseFlags;
   private final Option<RustMempoolConfig> mempoolConfig;
   private final boolean debugLogging;
+  private final StateHashTreeGcConfig stateHashTreeGcConfig;
   private final boolean noFees;
 
   private REv2StateManagerModule(
       ProposalLimitsConfig proposalLimitsConfig,
       Option<VertexLimitsConfig> vertexLimitsConfigOpt,
-      DatabaseType databaseType,
       DatabaseFlags databaseFlags,
       Option<RustMempoolConfig> mempoolConfig,
       boolean debugLogging,
+      StateHashTreeGcConfig stateHashTreeGcConfig,
       boolean noFees) {
     this.proposalLimitsConfig = proposalLimitsConfig;
     this.vertexLimitsConfigOpt = vertexLimitsConfigOpt;
-    this.databaseType = databaseType;
     this.databaseFlags = databaseFlags;
     this.mempoolConfig = mempoolConfig;
     this.debugLogging = debugLogging;
+    this.stateHashTreeGcConfig = stateHashTreeGcConfig;
     this.noFees = noFees;
   }
 
   public static REv2StateManagerModule create(
       ProposalLimitsConfig proposalLimitsConfig,
       VertexLimitsConfig vertexLimitsConfig,
-      DatabaseType databaseType,
       DatabaseFlags databaseFlags,
-      Option<RustMempoolConfig> mempoolConfig) {
+      Option<RustMempoolConfig> mempoolConfig,
+      StateHashTreeGcConfig stateHashTreeGcConfig) {
     return new REv2StateManagerModule(
         proposalLimitsConfig,
         Option.some(vertexLimitsConfig),
-        databaseType,
         databaseFlags,
         mempoolConfig,
         false,
+        stateHashTreeGcConfig,
         false);
   }
 
   public static REv2StateManagerModule createForTesting(
       ProposalLimitsConfig proposalLimitsConfig,
-      DatabaseType databaseType,
       DatabaseFlags databaseFlags,
       Option<RustMempoolConfig> mempoolConfig,
       boolean debugLogging,
+      StateHashTreeGcConfig stateHashTreeGcConfig,
       boolean noFees) {
     return new REv2StateManagerModule(
         proposalLimitsConfig,
         Option.none(),
-        databaseType,
         databaseFlags,
         mempoolConfig,
         debugLogging,
+        stateHashTreeGcConfig,
         noFees);
   }
 
@@ -169,28 +165,16 @@ public final class REv2StateManagerModule extends AbstractModule {
 
     install(proposalLimitsConfig.asModule());
 
-    switch (databaseType) {
-      case ROCKS_DB -> install(
-          new AbstractModule() {
-            @Provides
-            @Singleton
-            DatabaseBackendConfig databaseBackendConfig(
-                @NodeStorageLocation String nodeStorageLocation) {
-              return DatabaseBackendConfig.rocksDB(
-                  new File(nodeStorageLocation, "state_manager").getPath());
-            }
-          });
-      case IN_MEMORY -> install(
-          new AbstractModule() {
-            @Override
-            protected void configure() {
-              bind(DatabaseBackendConfig.class).toInstance(DatabaseBackendConfig.inMemory());
-            }
-          });
-    }
-
     install(
         new AbstractModule() {
+          @Provides
+          @Singleton
+          DatabaseBackendConfig databaseBackendConfig(
+              @NodeStorageLocation String nodeStorageLocation) {
+            return new DatabaseBackendConfig(
+                new File(nodeStorageLocation, "state_manager").getPath());
+          }
+
           @Provides
           @Singleton
           private NodeRustEnvironment stateManager(
@@ -209,6 +193,7 @@ public final class REv2StateManagerModule extends AbstractModule {
                     databaseBackendConfig,
                     databaseFlags,
                     getLoggingConfig(),
+                    stateHashTreeGcConfig,
                     noFees));
           }
 

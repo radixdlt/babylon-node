@@ -66,21 +66,19 @@ package com.radixdlt.api.system;
 
 import com.google.inject.Inject;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.api.system.generated.models.Address;
-import com.radixdlt.api.system.generated.models.AddressBookEntry;
-import com.radixdlt.api.system.generated.models.NetworkingConfiguration;
-import com.radixdlt.api.system.generated.models.Peer;
-import com.radixdlt.api.system.generated.models.PeerChannel;
-import com.radixdlt.api.system.generated.models.SyncConfiguration;
+import com.radixdlt.api.system.generated.models.*;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.p2p.addressbook.AddressBookEntry.PeerAddressEntry;
 import com.radixdlt.p2p.addressbook.AddressBookEntry.PeerAddressEntry.LatestConnectionStatus;
+import com.radixdlt.p2p.capability.AppVersionCapability;
+import com.radixdlt.p2p.capability.RemotePeerCapability;
 import com.radixdlt.sync.SyncRelayConfig;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Map;
 
 public final class SystemModelMapper {
   private final Addressing addressing;
@@ -118,19 +116,36 @@ public final class SystemModelMapper {
   }
 
   public Peer peer(PeersView.PeerInfo peerInfo) {
-    var peerId = addressing.encodeNodeAddress(peerInfo.getNodeId().getPublicKey());
-    var peer = new Peer().peerId(peerId);
+    final var peerId = addressing.encodeNodeAddress(peerInfo.getNodeId().getPublicKey());
+    final var peer = new Peer().peerId(peerId).keyHex(peerInfo.getNodeId().getPublicKey().toHex());
 
     peerInfo
         .getChannels()
         .forEach(
             channel -> {
-              var peerChannel =
+              final var maybeVersionCapability =
+                  channel.getCapabilities().stream()
+                      .filter(c -> c.getName().equals(AppVersionCapability.NAME))
+                      .findFirst()
+                      .map(RemotePeerCapability::getConfiguration)
+                      .orElse(Map.of());
+              final var versionString =
+                  maybeVersionCapability.getOrDefault(
+                      AppVersionCapability.CONFIG_VERSION, "unknown (likely pre-1.0.4)");
+              final var versionCommit =
+                  maybeVersionCapability.getOrDefault(
+                      AppVersionCapability.CONFIG_COMMIT, "unknown");
+
+              final var peerChannel =
                   new PeerChannel()
                       .type(
                           channel.isOutbound() ? PeerChannel.TypeEnum.OUT : PeerChannel.TypeEnum.IN)
                       .localPort(channel.getPort())
-                      .ip(channel.getHost());
+                      .ip(channel.getHost())
+                      .applicationVersion(
+                          new PeerApplicationVersion()
+                              .version(versionString)
+                              .commit(versionCommit));
               channel.getUri().map(RadixNodeUri::toString).ifPresent(peerChannel::uri);
               peer.addChannelsItem(peerChannel);
             });

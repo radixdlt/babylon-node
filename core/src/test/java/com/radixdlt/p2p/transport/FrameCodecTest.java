@@ -70,7 +70,6 @@ import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.capability.Capabilities;
-import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeSuccess;
 import com.radixdlt.p2p.transport.handshake.AuthHandshaker;
 import com.radixdlt.p2p.transport.handshake.Secrets;
@@ -86,8 +85,7 @@ public final class FrameCodecTest {
   private final Serialization serialization = DefaultSerialization.getInstance();
   private final SecureRandom secureRandom = new SecureRandom();
 
-  private final Capabilities capabilities =
-      new Capabilities(LedgerSyncCapability.Builder.asDefault().build());
+  private final Capabilities capabilities = Capabilities.testingDefault();
 
   @Test
   public void test_frame_codec_write_read() throws Exception {

@@ -81,7 +81,6 @@ import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeerControl;
 import com.radixdlt.p2p.PeerManager;
 import com.radixdlt.p2p.capability.Capabilities;
-import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
@@ -129,7 +128,7 @@ public class MessageCentralFuzzyTest {
             new MetricsInitializer().initialize(),
             () -> peerControl,
             Addressing.ofNetwork(Network.INTEGRATIONTESTNET),
-            new Capabilities(LedgerSyncCapability.Builder.asDefault().build()),
+            Capabilities.testingDefault(),
             Set.of(),
             1024 * 1024);
 

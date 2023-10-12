@@ -92,7 +92,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.utils.PrivateKeys;
 import java.util.Collection;
 import java.util.List;
@@ -154,7 +153,6 @@ public final class REv2RegisterValidatorTest {
                             1,
                             Decimal.ONE,
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10)),
-                        REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         StateComputerConfig.REV2ProposerConfig.Mempool.defaults()))));
   }
 

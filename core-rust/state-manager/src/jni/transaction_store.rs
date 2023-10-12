@@ -97,7 +97,7 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
         request_payload,
         |request: TxnsAndProofRequest| -> Option<TxnsAndProof> {
             let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
-            let txns_and_proof = database.read().get_txns_and_proof(
+            let txns_and_proof = database.read_current().get_txns_and_proof(
                 StateVersion::of(request.start_state_version_inclusive),
                 request.max_number_of_txns_if_more_than_one_proof,
                 request.max_payload_size_in_bytes,
@@ -119,7 +119,9 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |_: ()| -> Option<LedgerProof> {
         let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
-        let proof = database.read().get_post_genesis_epoch_proof();
+        let proof = database
+            .access_non_locked_historical()
+            .get_post_genesis_epoch_proof();
         proof
     })
 }
@@ -136,7 +138,9 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
         request_payload,
         |epoch: Epoch| -> Option<LedgerProof> {
             let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
-            let proof = database.read().get_epoch_proof(epoch);
+            let proof = database
+                .access_non_locked_historical()
+                .get_epoch_proof(epoch);
             proof
         },
     )
@@ -154,7 +158,7 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
         request_payload,
         |_no_args: ()| -> Option<LedgerProof> {
             let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
-            let proof = database.read().get_last_proof();
+            let proof = database.read_current().get_last_proof();
             proof
         },
     )
