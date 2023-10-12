@@ -282,6 +282,24 @@ pub enum RetryFrom {
     Whenever,
 }
 
+#[derive(Debug, Clone)]
+pub struct DynamicValidatedTransaction {
+    pub transaction: Box<ValidatedNotarizedTransactionV1>,
+    pub state_version: StateVersion,
+}
+
+impl DynamicValidatedTransaction {
+    pub fn new(
+        transaction: Box<ValidatedNotarizedTransactionV1>,
+        state_version: StateVersion,
+    ) -> Self {
+        Self {
+            transaction,
+            state_version,
+        }
+    }
+}
+
 impl PendingTransactionRecord {
     pub fn new(
         intent_hash: IntentHash,
@@ -353,7 +371,7 @@ impl PendingTransactionRecord {
     pub fn should_accept_into_mempool(
         self,
         check: CheckMetadata,
-    ) -> Result<(Box<ValidatedNotarizedTransactionV1>, StateVersion), MempoolAddRejection> {
+    ) -> Result<DynamicValidatedTransaction, MempoolAddRejection> {
         if let Some(permanent_rejection) = self.earliest_permanent_rejection {
             return Err(MempoolAddRejection {
                 reason: permanent_rejection.rejection.unwrap(),
@@ -378,13 +396,15 @@ impl PendingTransactionRecord {
             CheckMetadata::Cached => {
                 panic!("Precondition was not met - the result was cached, but the latest attempt was not a rejection")
             }
-            CheckMetadata::Fresh(StaticValidation::Valid(transaction)) => Ok((
-                transaction,
-                self.latest_attempt
-                    .against_state
-                    .specific_version()
-                    .unwrap(),
-            )),
+            CheckMetadata::Fresh(StaticValidation::Valid(transaction)) => {
+                Ok(DynamicValidatedTransaction::new(
+                    transaction,
+                    self.latest_attempt
+                        .against_state
+                        .specific_version()
+                        .unwrap(),
+                ))
+            }
             CheckMetadata::Fresh(StaticValidation::Invalid) => {
                 panic!("A statically invalid transaction should already have been handled in the above")
             }

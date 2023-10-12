@@ -300,9 +300,12 @@ impl MempoolManager {
             .map_err(MempoolAddError::Rejected);
 
         match result {
-            Ok((validated, state_version)) => {
+            Ok(DynamicValidatedTransaction {
+                transaction,
+                state_version,
+            }) => {
                 let mempool_transaction = Arc::new(MempoolTransaction {
-                    validated,
+                    validated: transaction,
                     raw: raw_transaction,
                 });
                 match self.mempool.write().add_transaction(
