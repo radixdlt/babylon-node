@@ -67,7 +67,7 @@ use radix_engine_stores::hash_tree::tree_store::{
     NodeKey, ReadableTreeStore, StaleTreePart, TreeChildEntry, TreeNode,
 };
 use std::iter;
-
+use std::ops::Deref;
 use std::sync::Arc;
 use std::time::Duration;
 use tracing::info;
@@ -160,7 +160,7 @@ impl StateHashTreeGc {
                     // only after its children, in case this process is interrupted half-way
                     // and need to be resumed).
                     StaleTreePart::Subtree(subtree_root_key) => {
-                        Box::new(iterate_dfs_post_order(database, subtree_root_key))
+                        Box::new(iterate_dfs_post_order(database.deref(), subtree_root_key))
                     }
                 };
                 for key in part_keys {

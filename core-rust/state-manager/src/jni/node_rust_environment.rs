@@ -62,6 +62,7 @@
  * permissions under this License.
  */
 
+use std::ops::Deref;
 use std::sync::Arc;
 
 use jni::objects::{JClass, JObject};
@@ -135,8 +136,12 @@ impl JNINodeRustEnvironment {
         setup_tracing(&runtime, std::env::var("JAEGER_AGENT_ENDPOINT").ok());
 
         let fatal_panic_handler = FatalPanicHandler::new(env, j_node_rust_env).unwrap();
-        let lock_factory = LockFactory::new(move || fatal_panic_handler.handle_fatal_panic());
         let metric_registry = Arc::new(Registry::new());
+
+        let lock_factory = LockFactory::new("rn")
+            .stopping_on_panic(move || fatal_panic_handler.handle_fatal_panic())
+            .measured(metric_registry.deref());
+
         let mut scheduler = ClokwerkScheduler::default();
 
         let state_manager = StateManager::new(

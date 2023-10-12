@@ -163,7 +163,7 @@ impl<S: QueryableProofStore> StateComputer<S> {
             vertex_limits_config,
             ledger_metrics: LedgerMetrics::new(
                 network,
-                &lock_factory.named("ledger_metrics"),
+                lock_factory.named("ledger_metrics").not_measured(),
                 metrics_registry,
                 current_ledger_proposer_timestamp_ms,
             ),
@@ -1441,7 +1441,7 @@ mod tests {
         tmp: &TempDir,
         vertex_limits_config: VertexLimitsConfig,
     ) -> (LedgerProof, StateManager) {
-        let lock_factory = LockFactory::new(|| {});
+        let lock_factory = LockFactory::new("testing");
         let metrics_registry = Registry::new();
 
         let config = StateManagerConfig {
