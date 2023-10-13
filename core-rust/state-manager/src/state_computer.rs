@@ -163,6 +163,7 @@ impl<S: QueryableProofStore> StateComputer<S> {
             vertex_limits_config,
             ledger_metrics: LedgerMetrics::new(
                 network,
+                // we deliberately opt-out of measuring the "technical" locks used inside metrics:
                 lock_factory.named("ledger_metrics").not_measured(),
                 metrics_registry,
                 current_ledger_proposer_timestamp_ms,

@@ -103,17 +103,17 @@ pub struct LockFactory {
 impl LockFactory {
     /// Creates a new lock factory.
     /// If left unconfigured, the locks returned by this instance will forward unchanged behaviors
-    /// of their underlying [`parking_lot`] instances.
+    /// of their underlying [`parking_lot`] instances (see the configuration methods below).
     /// The given `base_name` simply becomes the first segment of the constructed locks' names' (see
     /// [`Self::named()`]).
     ///
     /// Important factory API note:
     /// The actual lock-creating methods (i.e. the [`Self::new_*()`] family) *consume* the factory
-    /// instance. This is by design, since we want to avoid 2 locks of the same name (since they
+    /// instance. This is by design, since we want to avoid 2 locks of the same name (i.e. they
     /// could be confused in the log messages or the metrics). If you actually have a use-case for
     /// dynamically-created, unbounded, unidentified locks, you can still achieve it by cloning
-    /// the factory instance - just make sure to unconfigure any features that could lead to
-    /// confusion.
+    /// the factory instance - just make sure to unconfigure any features that could use the names
+    /// (e.g. metrics).
     pub fn new(base_name: impl Display) -> Self {
         Self {
             stopper: None,
@@ -140,6 +140,8 @@ impl LockFactory {
     }
 
     /// Unconfigures the [`Self::stopping_on_panic()`] of locks *created from this point on*.
+    /// This is useful e.g. for a read lock, which never modifies state (and thus is safe to
+    /// recover from panic).
     pub fn not_stopping_on_panic(&self) -> Self {
         let mut derived = self.clone();
         derived.stopper = None;
@@ -150,7 +152,7 @@ impl LockFactory {
     /// Each method returning a guard will measure:
     /// - a number of threads currently waiting for a guard to be returned.
     /// - time it took to wait for the guard.
-    /// - a number of threads currently holding the guard (typically [0, 1], but can be higher e.g.
+    /// - a number of threads currently holding a guard (typically [0, 1], but can be higher e.g.
     ///   in case of a read lock).
     /// - time the guard was held.
     pub fn measured(&self, metrics_registry: &Registry) -> Self {
@@ -160,6 +162,8 @@ impl LockFactory {
     }
 
     /// Unconfigures the [`Self::measured()`] of locks *created from this point on*.
+    /// This is useful e.g. when a mutex is needed for technical reasons (i.e. to satisfy Rust's
+    /// rules) in a place which never blocks in practice and thus is not interesting to measure.
     pub fn not_measured(&self) -> Self {
         let mut derived = self.clone();
         derived.metrics = None;
@@ -174,7 +178,7 @@ impl LockFactory {
         }
     }
 
-    /// Creates a new reader/writer lock with the current configuration.
+    /// Creates a new read/write lock with the current configuration.
     pub fn new_rwlock<T>(self, value: T) -> RwLock<T> {
         RwLock {
             underlying: parking_lot::const_rwlock(value),
@@ -184,7 +188,7 @@ impl LockFactory {
     }
 
     /// Creates a new state lock with the current configuration.
-    /// Note: this is a custom lock primitive, please consult its docs.
+    /// Note: this is a custom lock primitive - please see its documentation.
     pub fn new_state_lock<T>(self, value: T) -> StateLock<T> {
         StateLock {
             underlying: self.named("current").new_rwlock(()),
@@ -612,7 +616,7 @@ impl LockFactoryMetrics {
             holding_threads: IntGaugeVec::new(
                 opts(
                     "locks_holding_threads",
-                    "A number of threads currently holding a specific lock (may actually be >1 e.g. for a reader lock).",
+                    "A number of threads currently holding a specific lock (may actually be >1 e.g. for a read lock).",
                 ),
                 &[Self::LOCK_NAME_LABEL],
             ).registered_at(registry),
