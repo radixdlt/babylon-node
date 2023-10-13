@@ -73,7 +73,7 @@ use node_common::locks::*;
 use prometheus::Registry;
 use radix_engine_common::prelude::NetworkDefinition;
 
-use node_common::scheduler::TokioScheduler;
+use node_common::scheduler::TokioSchedulerWithTaskTracker;
 use tokio::runtime::Runtime;
 
 use crate::mempool_manager::MempoolManager;
@@ -115,7 +115,7 @@ pub struct JNINodeRustEnvironment {
     pub network: NetworkDefinition,
     pub state_manager: StateManager,
     pub metric_registry: Arc<Registry>,
-    pub scheduler: TokioScheduler,
+    pub scheduler: TokioSchedulerWithTaskTracker,
 }
 
 impl JNINodeRustEnvironment {
@@ -133,14 +133,14 @@ impl JNINodeRustEnvironment {
         let lock_factory = LockFactory::new(move || fatal_panic_handler.handle_fatal_panic());
         let metric_registry = Arc::new(Registry::new());
         let runtime = Arc::new(runtime);
-        let mut scheduler = TokioScheduler::new(runtime.clone());
+        let scheduler = TokioSchedulerWithTaskTracker::new(runtime.clone(), &lock_factory);
 
         let state_manager = StateManager::new(
             config,
             Some(MempoolRelayDispatcher::new(env, j_node_rust_env).unwrap()),
             &lock_factory,
             &metric_registry,
-            &mut scheduler,
+            &scheduler,
         );
 
         let jni_node_rust_env = JNINodeRustEnvironment {
