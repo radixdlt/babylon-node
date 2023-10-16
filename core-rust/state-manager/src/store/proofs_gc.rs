@@ -87,6 +87,9 @@ pub struct LedgerProofsGcConfig {
     /// How often to run the GC, in seconds.
     /// Since this GC operates with an epoch precision, we do not need to run more often than epoch
     /// changes.
+    // TODO(after having some event-driven Rust infra): The entire `LedgerProofsGc` could be
+    // migrated away from `Scheduler` into `EventListener<EpochChangeCommittedEvent>` (as noted
+    // above - it wants to run async exactly once after each epoch).
     pub interval_sec: u32,
     /// How many most recent *completed* epochs should be left not GC-ed.
     /// Please note that the current epoch is never GC-ed.
@@ -124,8 +127,8 @@ impl LedgerProofsGc {
         self.interval
     }
 
-    /// Performs a single GC run, which is supposed to permanently delete *all* old-enough state
-    /// hash tree nodes marked as stale.
+    /// Performs a single GC run, which is supposed to permanently delete *all* non-critical ledger
+    /// proofs of configured old-enough epochs.
     pub fn run(&self) {
         // TODO(locks/snapshots): The GC's operation does not interact with the "current state", and
         // intuitively could use the "historical, non-locked" DB access. However, we have a (very
