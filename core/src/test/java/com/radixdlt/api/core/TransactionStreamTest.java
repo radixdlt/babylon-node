@@ -82,6 +82,8 @@ import com.radixdlt.rev2.TransactionBuilder;
 import com.radixdlt.utils.Bytes;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import org.awaitility.Awaitility;
 import org.junit.Test;
 
 public class TransactionStreamTest extends DeterministicCoreApiTestBase {
@@ -339,7 +341,13 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
                       .includeProofs(true)
                       .limit(100)
                       .fromStateVersion(1L));
-      assertThat(firstPartResponseWithProofs.getProofs().size()).isEqualTo(13);
+
+      // An async "proofs pruning" is supposed to run over the genesis' epoch...
+      Awaitility.await()
+          .atMost(2, TimeUnit.SECONDS)
+          // ... leaving 9 (out of original 13) ledger proofs.
+          .untilAsserted(
+              () -> assertThat(firstPartResponseWithProofs.getProofs().size()).isEqualTo(9));
 
       var firstPartCommittedTransactions = firstPartResponse.getTransactions();
 
@@ -358,7 +366,7 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
                       .fromStateVersion(3L))
               .getProofs();
 
-      assertThat(proofQuery.size()).isEqualTo(4);
+      assertThat(proofQuery.size()).isEqualTo(2);
 
       var lastCommittedTransactionIdentifiers =
           firstPartResponse

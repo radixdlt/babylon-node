@@ -67,7 +67,6 @@ package com.radixdlt.rev2;
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.google.common.util.concurrent.Uninterruptibles;
 import com.radixdlt.environment.DatabaseFlags;
 import com.radixdlt.environment.LedgerProofsGcConfig;
 import com.radixdlt.environment.StateHashTreeGcConfig;
@@ -91,13 +90,16 @@ import com.radixdlt.testutil.TestStateReader;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
-import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public final class LedgerProofsGcTest {
+
+  private static final int GC_INTERVAL_SEC = 1;
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
@@ -126,7 +128,7 @@ public final class LedgerProofsGcTest {
                         false,
                         StateHashTreeGcConfig.forTesting(),
                         new LedgerProofsGcConfig(
-                            UInt32.fromNonNegativeInt(1),
+                            UInt32.fromNonNegativeInt(GC_INTERVAL_SEC),
                             UInt64.fromNonNegativeLong(mostRecentFullResolutionEpochCount)),
                         false))));
   }
@@ -140,30 +142,40 @@ public final class LedgerProofsGcTest {
     try (var test = createTest(mostRecentFullResolutionEpochCount, epochLength)) {
       test.startAllNodes();
 
-      // Act: advance to epoch 5 and wait until the async ledger proof GC runs
+      // Act: advance to epoch 5
       test.runUntilState(NodesPredicate.nodeAt(0, NodePredicate.atOrOverEpoch(5)), 10000);
-      Uninterruptibles.sleepUninterruptibly(Duration.ofMillis(1500));
 
-      // Assert: we expect certain number of proofs in each epoch
-      var stateReader = test.getInstance(0, TestStateReader.class);
-      // - An epoch which has just started, hence it has no proofs
-      assertThat(stateReader.countProofsWithinEpoch(5)).isEqualTo(0);
-      // - The 2 most recent completed epochs contain all their proofs (i.e. not pruned)
-      assertThat(stateReader.countProofsWithinEpoch(4)).isEqualTo(epochLength);
-      assertThat(stateReader.countProofsWithinEpoch(3)).isEqualTo(epochLength);
-      // - This epoch was pruned, and it has 2 proofs (a single one would not cover the 12MB limit)
-      assertThat(stateReader.countProofsWithinEpoch(2)).isEqualTo(2);
+      // Assert: after an async GC, we expect certain number of proofs in each epoch:
+      Awaitility.await()
+          .atMost(2 * GC_INTERVAL_SEC, TimeUnit.SECONDS)
+          .untilAsserted(
+              () -> {
+                var stateReader = test.getInstance(0, TestStateReader.class);
+                // - The epoch 5 has just started, hence it has no proofs
+                assertThat(stateReader.countProofsWithinEpoch(5)).isEqualTo(0);
+                // - The 2 most recent completed epochs contain all their proofs (i.e. not pruned)
+                assertThat(stateReader.countProofsWithinEpoch(4)).isEqualTo(epochLength);
+                assertThat(stateReader.countProofsWithinEpoch(3)).isEqualTo(epochLength);
+                // - This epoch was pruned, and it has 2 proofs (1 would not fit the 12MB limit)
+                assertThat(stateReader.countProofsWithinEpoch(2)).isEqualTo(2);
+              });
 
-      // Follow-up: Advance one more epoch and wait until the async ledger proof GC runs:
+      // Follow-up: Advance one more epoch
       test.runUntilState(NodesPredicate.nodeAt(0, NodePredicate.atOrOverEpoch(6)), 10000);
-      Uninterruptibles.sleepUninterruptibly(Duration.ofMillis(1500));
 
-      // Assert: the "pruning window" has progressed (i.e. now epoch 3 got pruned)
-      assertThat(stateReader.countProofsWithinEpoch(6)).isEqualTo(0);
-      assertThat(stateReader.countProofsWithinEpoch(5)).isEqualTo(epochLength);
-      assertThat(stateReader.countProofsWithinEpoch(4)).isEqualTo(epochLength);
-      assertThat(stateReader.countProofsWithinEpoch(3)).isEqualTo(2);
-      assertThat(stateReader.countProofsWithinEpoch(2)).isEqualTo(2);
+      // Assert: after an async GC...
+      Awaitility.await()
+          .atMost(2 * GC_INTERVAL_SEC, TimeUnit.SECONDS)
+          .untilAsserted(
+              () -> {
+                // ... the "pruning window" has progressed (i.e. now epoch 3 got pruned)
+                var stateReader = test.getInstance(0, TestStateReader.class);
+                assertThat(stateReader.countProofsWithinEpoch(6)).isEqualTo(0);
+                assertThat(stateReader.countProofsWithinEpoch(5)).isEqualTo(epochLength);
+                assertThat(stateReader.countProofsWithinEpoch(4)).isEqualTo(epochLength);
+                assertThat(stateReader.countProofsWithinEpoch(3)).isEqualTo(2);
+                assertThat(stateReader.countProofsWithinEpoch(2)).isEqualTo(2);
+              });
     }
   }
 
