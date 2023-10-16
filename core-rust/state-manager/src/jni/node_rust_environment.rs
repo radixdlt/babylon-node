@@ -135,7 +135,11 @@ impl JNINodeRustEnvironment {
         let lock_factory = LockFactory::new("rn")
             .stopping_on_panic(move || fatal_panic_handler.handle_fatal_panic())
             .measured(metric_registry.deref());
-        let scheduler = TokioSchedulerWithTaskTracker::new(runtime.clone(), &lock_factory);
+        let scheduler = TokioSchedulerWithTaskTracker::new(
+            runtime.clone(),
+            // opting-out from measuring the technical lock used by our scheduler
+            lock_factory.named("scheduler").not_measured(),
+        );
 
         let state_manager = StateManager::new(
             config,

@@ -226,11 +226,11 @@ pub struct TokioSchedulerWithTaskTracker {
 }
 
 impl TokioSchedulerWithTaskTracker {
-    pub fn new(runtime: Arc<Runtime>, lock_factory: &LockFactory) -> Self {
+    pub fn new(runtime: Arc<Runtime>, lock_factory: LockFactory) -> Self {
         Self {
             scheduler: TokioScheduler::new(runtime),
             task_tracker: lock_factory
-                .named("scheduler_task_tracker")
+                .named("task_tracker")
                 .new_mutex(TaskTracker::new()),
         }
     }

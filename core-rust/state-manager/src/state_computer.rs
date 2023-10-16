@@ -136,7 +136,7 @@ impl<S: QueryableProofStore> StateComputer<S> {
         pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
         logging_config: LoggingConfig,
         metrics_registry: &Registry,
-        lock_factory: &LockFactory,
+        lock_factory: LockFactory,
     ) -> StateComputer<S> {
         let (current_transaction_root, current_ledger_proposer_timestamp_ms) = store
             .read_current()
