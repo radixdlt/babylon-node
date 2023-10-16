@@ -62,57 +62,190 @@
  * permissions under this License.
  */
 
-use std::ops::Div;
+use std::sync::Arc;
 
-use clokwerk::{Interval, ScheduleHandle};
+use core::{
+    future::Future,
+    pin::Pin,
+    task::{Context, Poll},
+};
 use std::time::Duration;
+
+use tokio::runtime::Runtime;
+use tokio_util::sync::CancellationToken;
+
+use crate::locks::{LockFactory, Mutex};
+
+pub trait CancellableToken {
+    /// Be aware that cancellation is not an atomic operation. It is possible
+    /// for another thread running in parallel with a call to `cancel` to first
+    /// receive `true` from `is_cancelled` on one child node, and then receive
+    /// `false` from `is_cancelled` on another child node. However, once the
+    /// call to `cancel` returns, all child nodes have been fully cancelled.
+    fn cancel(&self);
+}
+
+/// Forward/delegate implementation of [`CancellableToken`] for Tokio's [`CancellationToken`]
+impl CancellableToken for CancellationToken {
+    fn cancel(&self) {
+        self.cancel();
+    }
+}
+
+pub struct NoopCancellationFuture;
+
+impl Future for NoopCancellationFuture {
+    type Output = ();
+
+    fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<()> {
+        Poll::Ready(())
+    }
+}
+
+/// Noop implementation of the [`CancellableToken`]
+pub struct NoopCancellableToken;
+
+impl CancellableToken for NoopCancellableToken {
+    fn cancel(&self) {}
+}
+
+/// A utility wrapper around a [`CancellableToken`] which will
+/// cancel the task when dropped.
+pub struct CancelOnDrop<CT: CancellableToken> {
+    pub cancellation_token: CT,
+}
+
+impl<CT: CancellableToken> CancelOnDrop<CT> {
+    pub fn new(cancellation_token: CT) -> Self {
+        Self { cancellation_token }
+    }
+}
+
+impl<CT: CancellableToken> Drop for CancelOnDrop<CT> {
+    fn drop(&mut self) {
+        self.cancellation_token.cancel();
+    }
+}
 
 /// A scheduler for background tasks.
 /// All schedules started with a specific scheduler should be stopped when its instance is dropped.
 pub trait Scheduler {
+    type CancellationTokenType: CancellableToken;
     /// Starts a periodic execution of the given task.
     /// The consecutive runs should be started at approximately the given intervals - however, if
     /// a particular run takes longer than the interval, then it should not be (in any way) aborted,
     /// and no concurrent run should be started - the schedule should simply be delayed.
-    fn start_periodic(&mut self, interval: Duration, task: impl 'static + FnMut() + Send);
+    fn start_periodic(
+        &self,
+        duration: Duration,
+        task: impl 'static + FnMut() + Send,
+    ) -> Self::CancellationTokenType;
 }
 
 // TODO(metrics): Add a `MeasuredScheduler` decorator (mostly for: task run duration).
 
 /// A no-op [`Scheduler`] (e.g. for test purposes).
-#[derive(Default)]
 pub struct NoopScheduler;
 
 impl Scheduler for NoopScheduler {
-    fn start_periodic(&mut self, _interval: Duration, _task: impl 'static + FnMut() + Send) {}
+    type CancellationTokenType = NoopCancellableToken;
+
+    fn start_periodic(
+        &self,
+        _duration: Duration,
+        _task: impl 'static + FnMut() + Send,
+    ) -> Self::CancellationTokenType {
+        NoopCancellableToken {}
+    }
 }
 
-/// A [`Scheduler`] based on a "clokwerk" crate.
-/// Implementation note: a separate underlying scheduler instance is used for every task, so that
-/// they run in separate threads.
-// TODO(post-feature refactor): Replace this impl with raw tokio-based and drop the "clokwerk" dep.
-#[derive(Default)]
-pub struct ClokwerkScheduler {
-    underlying_handles: Vec<ScheduleHandle>, // only held for being stopped when scheduler is dropped
+pub struct TokioScheduler {
+    runtime: Arc<Runtime>,
 }
 
-impl Scheduler for ClokwerkScheduler {
-    fn start_periodic(&mut self, interval: Duration, task: impl 'static + FnMut() + Send) {
-        assert_eq!(
-            interval.subsec_nanos(),
-            0,
-            "Clokwerk-based scheduler has a 1-second precision and cannot handle interval {:?}",
-            interval
-        );
-        let interval_sec = u32::try_from(interval.as_secs())
-            .ok()
-            .filter(|sec| *sec > 0)
-            .expect("interval outside of valid range");
-        let mut scheduler = clokwerk::Scheduler::new();
-        scheduler.every(Interval::Seconds(interval_sec)).run(task);
-        // Since every task has its own thread in our approach, we can calculate a "good enough"
-        // resolution of the watch thread (here arbitrarily chosen as 1/10 of the run interval):
-        let handle = scheduler.watch_thread(interval.div(10));
-        self.underlying_handles.push(handle);
+impl TokioScheduler {
+    pub fn new(runtime: Arc<Runtime>) -> Self {
+        Self { runtime }
+    }
+}
+
+impl Scheduler for TokioScheduler {
+    type CancellationTokenType = CancellationToken;
+
+    fn start_periodic(
+        &self,
+        duration: Duration,
+        mut task: impl 'static + FnMut() + Send,
+    ) -> Self::CancellationTokenType {
+        let cancellation_token = Self::CancellationTokenType::new();
+        let cloned_token = cancellation_token.clone();
+        self.runtime.spawn(async move {
+            let mut interval = tokio::time::interval(duration);
+
+            loop {
+                tokio::select! {
+                    _ = cloned_token.cancelled() => {
+                        break;
+                    },
+                    _ = interval.tick() => {
+                       task();
+                    },
+                }
+            }
+        });
+        cancellation_token
+    }
+}
+
+/// An auxiliary structure to be used along side a [`Scheduler`] in order to collect
+/// [`CancellableToken`]s for the spawned tasks in order to autostop them on drop.
+pub struct TaskTracker<CT: CancellableToken> {
+    tasks: Vec<CancelOnDrop<CT>>,
+}
+
+impl<CT: CancellableToken> TaskTracker<CT> {
+    pub fn new() -> Self {
+        Self { tasks: Vec::new() }
+    }
+
+    pub fn track(&mut self, cancel_token: CT) {
+        self.tasks.push(CancelOnDrop::new(cancel_token));
+    }
+}
+
+impl<CT: CancellableToken> Default for TaskTracker<CT> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+pub struct TokioSchedulerWithTaskTracker {
+    scheduler: TokioScheduler,
+    /// Note: the mutex is needed to satisfy [`Scheduler`]'s `start_periodic` signature.
+    task_tracker: Mutex<TaskTracker<CancellationToken>>,
+}
+
+impl TokioSchedulerWithTaskTracker {
+    pub fn new(runtime: Arc<Runtime>, lock_factory: &LockFactory) -> Self {
+        Self {
+            scheduler: TokioScheduler::new(runtime),
+            task_tracker: lock_factory
+                .named("scheduler_task_tracker")
+                .new_mutex(TaskTracker::new()),
+        }
+    }
+}
+
+impl Scheduler for TokioSchedulerWithTaskTracker {
+    type CancellationTokenType = CancellationToken;
+
+    fn start_periodic(
+        &self,
+        duration: Duration,
+        task: impl 'static + FnMut() + Send,
+    ) -> Self::CancellationTokenType {
+        let cancellation_token = self.scheduler.start_periodic(duration, task);
+        self.task_tracker.lock().track(cancellation_token.clone());
+        cancellation_token
     }
 }

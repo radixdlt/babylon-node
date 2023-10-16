@@ -146,7 +146,7 @@ impl StateManager {
         mempool_relay_dispatcher: Option<MempoolRelayDispatcher>,
         lock_factory: &LockFactory,
         metrics_registry: &Registry,
-        scheduler: &mut impl Scheduler,
+        scheduler: &impl Scheduler,
     ) -> Self {
         let mempool_config = match config.mempool_config {
             Some(mempool_config) => mempool_config,

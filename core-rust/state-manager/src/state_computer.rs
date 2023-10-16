@@ -1453,7 +1453,7 @@ mod tests {
             None,
             &lock_factory,
             &metrics_registry,
-            &mut NoopScheduler,
+            &NoopScheduler,
         );
 
         let proof = state_manager
