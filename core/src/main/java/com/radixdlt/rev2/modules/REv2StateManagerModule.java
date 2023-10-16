@@ -104,6 +104,7 @@ public final class REv2StateManagerModule extends AbstractModule {
   private final Option<RustMempoolConfig> mempoolConfig;
   private final boolean debugLogging;
   private final StateHashTreeGcConfig stateHashTreeGcConfig;
+  private final LedgerProofsGcConfig ledgerProofsGcConfig;
   private final boolean noFees;
 
   private REv2StateManagerModule(
@@ -113,6 +114,7 @@ public final class REv2StateManagerModule extends AbstractModule {
       Option<RustMempoolConfig> mempoolConfig,
       boolean debugLogging,
       StateHashTreeGcConfig stateHashTreeGcConfig,
+      LedgerProofsGcConfig ledgerProofsGcConfig,
       boolean noFees) {
     this.proposalLimitsConfig = proposalLimitsConfig;
     this.vertexLimitsConfigOpt = vertexLimitsConfigOpt;
@@ -120,6 +122,7 @@ public final class REv2StateManagerModule extends AbstractModule {
     this.mempoolConfig = mempoolConfig;
     this.debugLogging = debugLogging;
     this.stateHashTreeGcConfig = stateHashTreeGcConfig;
+    this.ledgerProofsGcConfig = ledgerProofsGcConfig;
     this.noFees = noFees;
   }
 
@@ -128,7 +131,8 @@ public final class REv2StateManagerModule extends AbstractModule {
       VertexLimitsConfig vertexLimitsConfig,
       DatabaseFlags databaseFlags,
       Option<RustMempoolConfig> mempoolConfig,
-      StateHashTreeGcConfig stateHashTreeGcConfig) {
+      StateHashTreeGcConfig stateHashTreeGcConfig,
+      LedgerProofsGcConfig ledgerProofsGcConfig) {
     return new REv2StateManagerModule(
         proposalLimitsConfig,
         Option.some(vertexLimitsConfig),
@@ -136,6 +140,7 @@ public final class REv2StateManagerModule extends AbstractModule {
         mempoolConfig,
         false,
         stateHashTreeGcConfig,
+        ledgerProofsGcConfig,
         false);
   }
 
@@ -145,6 +150,7 @@ public final class REv2StateManagerModule extends AbstractModule {
       Option<RustMempoolConfig> mempoolConfig,
       boolean debugLogging,
       StateHashTreeGcConfig stateHashTreeGcConfig,
+      LedgerProofsGcConfig ledgerProofsGcConfig,
       boolean noFees) {
     return new REv2StateManagerModule(
         proposalLimitsConfig,
@@ -153,6 +159,7 @@ public final class REv2StateManagerModule extends AbstractModule {
         mempoolConfig,
         debugLogging,
         stateHashTreeGcConfig,
+        ledgerProofsGcConfig,
         noFees);
   }
 
@@ -194,6 +201,7 @@ public final class REv2StateManagerModule extends AbstractModule {
                     databaseFlags,
                     getLoggingConfig(),
                     stateHashTreeGcConfig,
+                    ledgerProofsGcConfig,
                     noFees));
           }
 

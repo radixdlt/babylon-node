@@ -69,14 +69,15 @@ use crate::{LedgerProof, StateVersion};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
+use node_common::config::limits::{
+    MAX_TXNS_FOR_RESPONSES_SPANNING_MORE_THAN_ONE_PROOF, MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE,
+};
 use node_common::java::*;
 use radix_engine::types::*;
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 struct TxnsAndProofRequest {
     start_state_version_inclusive: u64,
-    max_number_of_txns_if_more_than_one_proof: u32,
-    max_payload_size_in_bytes: u32,
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -97,10 +98,12 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
         request_payload,
         |request: TxnsAndProofRequest| -> Option<TxnsAndProof> {
             let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
+            // Note: even though we read a strictly historical state here, we cannot use the
+            // "historical, non-locked" DB access - please see the TODO note at `LedgerProofsGc`.
             let txns_and_proof = database.read_current().get_txns_and_proof(
                 StateVersion::of(request.start_state_version_inclusive),
-                request.max_number_of_txns_if_more_than_one_proof,
-                request.max_payload_size_in_bytes,
+                MAX_TXNS_FOR_RESPONSES_SPANNING_MORE_THAN_ONE_PROOF,
+                MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE,
             );
             txns_and_proof.map(|(transactions, proof)| TxnsAndProof {
                 transactions,

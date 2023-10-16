@@ -74,13 +74,14 @@ use prometheus::Registry;
 use radix_engine::transaction::CostingParameters;
 use radix_engine_common::prelude::*;
 
-use crate::store::gc::StateHashTreeGcConfig;
+use crate::store::jmt_gc::StateHashTreeGcConfig;
+use crate::store::proofs_gc::{LedgerProofsGc, LedgerProofsGcConfig};
 use crate::{
     mempool_manager::MempoolManager,
     mempool_relay_dispatcher::MempoolRelayDispatcher,
     priority_mempool::PriorityMempool,
     store::{
-        gc::StateHashTreeGc, DatabaseBackendConfig, DatabaseFlags, RawDbMetricsCollector,
+        jmt_gc::StateHashTreeGc, DatabaseBackendConfig, DatabaseFlags, RawDbMetricsCollector,
         StateManagerDatabase,
     },
     transaction::{
@@ -106,6 +107,7 @@ pub struct StateManagerConfig {
     pub database_flags: DatabaseFlags,
     pub logging_config: LoggingConfig,
     pub state_hash_tree_gc_config: StateHashTreeGcConfig,
+    pub ledger_proofs_gc_config: LedgerProofsGcConfig,
     pub no_fees: bool,
 }
 
@@ -121,6 +123,7 @@ impl StateManagerConfig {
             database_flags: DatabaseFlags::default(),
             logging_config: LoggingConfig::default(),
             state_hash_tree_gc_config: StateHashTreeGcConfig::default(),
+            ledger_proofs_gc_config: LedgerProofsGcConfig::default(),
             no_fees: false,
         }
     }
@@ -243,12 +246,17 @@ impl StateManager {
             raw_db_metrics_collector.run()
         });
 
-        // ... and for deleting the stale state hash tree nodes (a.k.a. "JMT GC"):
+        // ... and for deleting the stale state hash tree nodes (a.k.a. "JMT GC")...
         let state_hash_tree_gc =
             StateHashTreeGc::new(database.clone(), config.state_hash_tree_gc_config);
         scheduler.start_periodic(state_hash_tree_gc.interval(), move || {
             state_hash_tree_gc.run()
         });
+
+        // ... and for deleting the old, non-critical ledger proofs (a.k.a. "Proofs GC"):
+        let ledger_proofs_gc =
+            LedgerProofsGc::new(database.clone(), config.ledger_proofs_gc_config);
+        scheduler.start_periodic(ledger_proofs_gc.interval(), move || ledger_proofs_gc.run());
 
         Self {
             state_computer,

@@ -70,6 +70,7 @@ use node_common::config::limits::{
     DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED,
     DEFAULT_MAX_TOTAL_VERTEX_FINALIZATION_COST_UNITS_CONSUMED,
     DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE, DEFAULT_MAX_VERTEX_TRANSACTION_COUNT,
+    MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE,
 };
 use node_common::config::{
     DEFAULT_MEMPOOL_MAX_TOTAL_TRANSACTIONS_SIZE, DEFAULT_MEMPOOL_MAX_TRANSACTION_COUNT,
@@ -181,6 +182,17 @@ extern "system" fn Java_com_radixdlt_environment_NodeConstants_getMempoolTransac
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |_: ()| {
         MEMPOOL_TRANSACTION_OVERHEAD_FACTOR_PERCENT
+    })
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_environment_NodeConstants_getMaxTransactionBytesInResponse(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| {
+        MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE
     })
 }
 

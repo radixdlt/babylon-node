@@ -73,7 +73,6 @@ import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.Metrics.MethodId;
 import com.radixdlt.sbor.Natives;
 import com.radixdlt.statecomputer.commit.LedgerProof;
-import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
 import java.util.Optional;
 
@@ -101,15 +100,9 @@ public final class REv2TransactionAndProofStore {
             .build(new TypeToken<>() {});
   }
 
-  public Option<TxnsAndProof> getTxnsAndProof(
-      long startStateVersionInclusive,
-      int maxNumberOfTxnsIfMoreThanOneProof,
-      int maxPayloadSizeInBytes) {
+  public Option<TxnsAndProof> getTxnsAndProof(long startStateVersionInclusive) {
     return this.getTxnsAndProof.call(
-        new TxnsAndProofRequest(
-            UInt64.fromNonNegativeLong(startStateVersionInclusive),
-            UInt32.fromNonNegativeInt(maxNumberOfTxnsIfMoreThanOneProof),
-            UInt32.fromNonNegativeInt(maxPayloadSizeInBytes)));
+        new TxnsAndProofRequest(UInt64.fromNonNegativeLong(startStateVersionInclusive)));
   }
 
   public Optional<LedgerProof> getLastProof() {

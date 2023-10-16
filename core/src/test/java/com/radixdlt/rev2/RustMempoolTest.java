@@ -127,6 +127,7 @@ public final class RustMempoolTest {
             new DatabaseFlags(false, false),
             LoggingConfig.getDefault(),
             StateHashTreeGcConfig.forTesting(),
+            LedgerProofsGcConfig.forTesting(),
             false);
     final var metrics = new MetricsInitializer().initialize();
 
@@ -182,6 +183,7 @@ public final class RustMempoolTest {
             new DatabaseFlags(false, false),
             LoggingConfig.getDefault(),
             StateHashTreeGcConfig.forTesting(),
+            LedgerProofsGcConfig.forTesting(),
             false);
     final var metrics = new MetricsInitializer().initialize();
 
@@ -320,6 +322,7 @@ public final class RustMempoolTest {
             new DatabaseFlags(false, false),
             LoggingConfig.getDefault(),
             StateHashTreeGcConfig.forTesting(),
+            LedgerProofsGcConfig.forTesting(),
             false);
     final var metrics = new MetricsInitializer().initialize();
 

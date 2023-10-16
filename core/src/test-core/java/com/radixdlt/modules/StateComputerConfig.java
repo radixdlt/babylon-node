@@ -74,6 +74,7 @@ import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.ProposerElections;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.environment.DatabaseFlags;
+import com.radixdlt.environment.LedgerProofsGcConfig;
 import com.radixdlt.environment.StateHashTreeGcConfig;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
@@ -150,6 +151,7 @@ public sealed interface StateComputerConfig {
         proposerConfig,
         debugLogging,
         StateHashTreeGcConfig.forTesting(),
+        LedgerProofsGcConfig.forTesting(),
         noFees);
   }
 
@@ -165,6 +167,7 @@ public sealed interface StateComputerConfig {
         proposerConfig,
         false,
         StateHashTreeGcConfig.forTesting(),
+        LedgerProofsGcConfig.forTesting(),
         false);
   }
 
@@ -177,6 +180,7 @@ public sealed interface StateComputerConfig {
         proposerConfig,
         false,
         StateHashTreeGcConfig.forTesting(),
+        LedgerProofsGcConfig.forTesting(),
         false);
   }
 
@@ -246,6 +250,7 @@ public sealed interface StateComputerConfig {
       REV2ProposerConfig proposerConfig,
       boolean debugLogging,
       StateHashTreeGcConfig stateHashTreeGcConfig,
+      LedgerProofsGcConfig ledgerProofsGcConfig,
       boolean noFees)
       implements StateComputerConfig {}
 

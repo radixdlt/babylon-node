@@ -78,6 +78,7 @@ public record StateManagerConfig(
     DatabaseFlags databaseFlags,
     LoggingConfig loggingConfig,
     StateHashTreeGcConfig stateHashTreeGcConfig,
+    LedgerProofsGcConfig ledgerProofsGcConfig,
     boolean noFees) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(

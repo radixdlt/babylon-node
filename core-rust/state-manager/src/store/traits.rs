@@ -310,6 +310,10 @@ pub mod proofs {
     #[enum_dispatch]
     pub trait QueryableProofStore {
         fn max_state_version(&self) -> StateVersion;
+        fn max_epoch(&self) -> Option<Epoch> {
+            self.get_last_epoch_proof()
+                .map(|proof| proof.ledger_header.epoch)
+        }
         fn get_txns_and_proof(
             &self,
             start_state_version_inclusive: StateVersion,
@@ -626,6 +630,7 @@ pub mod measurement {
 
 pub mod gc {
     use super::*;
+    use radix_engine_common::types::Epoch;
     use radix_engine_stores::hash_tree::tree_store::NodeKey;
 
     /// A storage API tailored for the [`StateHashTreeGc`].
@@ -645,6 +650,46 @@ pub mod gc {
             &self,
             state_versions: impl IntoIterator<Item = &'a StateVersion>,
         );
+    }
+
+    /// A storage API tailored for the [`LedgerProofsGc`].
+    #[enum_dispatch]
+    pub trait LedgerProofsGcStore {
+        /// Returns the current state of the GC's progress.
+        fn get_progress(&self) -> Option<LedgerProofsGcProgress>;
+
+        /// Updates the progress.
+        fn set_progress(&self, progress: LedgerProofsGcProgress);
+
+        /// Deletes the given range (from inclusive, to exclusive) of ledger proofs.
+        fn delete_ledger_proofs_range(&self, from: StateVersion, to: StateVersion);
+    }
+
+    define_single_versioned! {
+        #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+        pub enum VersionedLedgerProofsGcProgress => LedgerProofsGcProgress = LedgerProofsGcProgressV1
+    }
+
+    /// A state of the GC's progress.
+    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub struct LedgerProofsGcProgressV1 {
+        /// The last epoch pruned by the GC. The next run should start from the beginning of the
+        /// next epoch.
+        pub last_pruned_epoch: Epoch,
+
+        /// The state version at which the epoch proof of the [`last_pruned_epoch`] was persisted.
+        /// This field simply holds a cached value (which could be read from the DB based on the
+        /// epoch).
+        pub epoch_proof_state_version: StateVersion,
+    }
+
+    impl LedgerProofsGcProgressV1 {
+        pub fn none() -> Self {
+            Self {
+                last_pruned_epoch: Epoch::zero(),
+                epoch_proof_state_version: StateVersion::pre_genesis(),
+            }
+        }
     }
 }
 

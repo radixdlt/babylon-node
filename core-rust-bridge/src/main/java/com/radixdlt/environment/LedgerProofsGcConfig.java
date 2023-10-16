@@ -62,65 +62,22 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2;
+package com.radixdlt.environment;
 
-import com.google.inject.Inject;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.ledger.DtoLedgerProof;
-import com.radixdlt.ledger.LedgerExtension;
-import com.radixdlt.sync.TransactionsAndProofReader;
-import com.radixdlt.transaction.REv2TransactionAndProofStore;
-import com.radixdlt.transactions.RawLedgerTransaction;
-import java.util.Optional;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.UInt64;
 
-public final class REv2TransactionsAndProofReader implements TransactionsAndProofReader {
-
-  private static final Logger log = LogManager.getLogger();
-
-  private final REv2TransactionAndProofStore transactionStore;
-
-  @Inject
-  public REv2TransactionsAndProofReader(REv2TransactionAndProofStore transactionStore) {
-    this.transactionStore = transactionStore;
+public record LedgerProofsGcConfig(UInt32 intervalSec, UInt64 mostRecentFullResolutionEpochCount) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        LedgerProofsGcConfig.class,
+        codecs -> StructCodec.fromRecordComponents(LedgerProofsGcConfig.class, codecs));
   }
 
-  @Override
-  public LedgerExtension getTransactions(DtoLedgerProof start) {
-    final var startStateVersionInclusive = start.getLedgerHeader().getStateVersion() + 1;
-
-    final var rawTxnsAndProofOpt = transactionStore.getTxnsAndProof(startStateVersionInclusive);
-
-    if (rawTxnsAndProofOpt.isEmpty()) {
-      log.error(
-          "Impossible to build a chain of txns from state version {} fitting within the limits",
-          startStateVersionInclusive);
-    }
-
-    return rawTxnsAndProofOpt
-        .map(
-            rawTxnsAndProof ->
-                LedgerExtension.create(
-                    rawTxnsAndProof.transactions().stream()
-                        .map(RawLedgerTransaction::create)
-                        .toList(),
-                    REv2ToConsensus.ledgerProof(rawTxnsAndProof.proof())))
-        .or(() -> null);
-  }
-
-  @Override
-  public Optional<LedgerProof> getPostGenesisEpochProof() {
-    return this.transactionStore.getPostGenesisEpochProof().map(REv2ToConsensus::ledgerProof);
-  }
-
-  @Override
-  public Optional<LedgerProof> getEpochProof(long epoch) {
-    return this.transactionStore.getEpochProof(epoch).map(REv2ToConsensus::ledgerProof);
-  }
-
-  @Override
-  public Optional<LedgerProof> getLastProof() {
-    return this.transactionStore.getLastProof().map(REv2ToConsensus::ledgerProof);
+  public static LedgerProofsGcConfig forTesting() {
+    // Remove everything non-critical, frequently (in tests).
+    return new LedgerProofsGcConfig(UInt32.fromNonNegativeInt(1), UInt64.ZERO);
   }
 }

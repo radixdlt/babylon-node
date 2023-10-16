@@ -65,8 +65,9 @@
 package com.radixdlt.rev2;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import com.google.inject.Injector;
+import com.google.common.util.concurrent.Uninterruptibles;
 import com.radixdlt.environment.DatabaseFlags;
 import com.radixdlt.environment.LedgerProofsGcConfig;
 import com.radixdlt.environment.StateHashTreeGcConfig;
@@ -77,6 +78,7 @@ import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.predicates.NodePredicate;
 import com.radixdlt.harness.predicates.NodesPredicate;
+import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
@@ -85,20 +87,21 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
-import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.testutil.TestStateReader;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
-import java.util.function.Predicate;
+import java.time.Duration;
+import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public final class StateHashTreeGcTest {
+public final class LedgerProofsGcTest {
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-  private DeterministicTest createTest(long stateVersionHistoryLength) {
+  private DeterministicTest createTest(long mostRecentFullResolutionEpochCount, long epochLength) {
     return DeterministicTest.builder()
         .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
         .messageSelector(firstSelector())
@@ -115,43 +118,71 @@ public final class StateHashTreeGcTest {
                         GenesisBuilder.createTestGenesisWithNumValidators(
                             1,
                             Decimal.ONE,
-                            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(100)),
+                            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
+                                epochLength)),
                         new DatabaseFlags(false, false),
-                        REV2ProposerConfig.noUserTransactions(),
+                        REV2ProposerConfig.transactionGenerator(
+                            new MbTransactionGenerator(NetworkDefinition.INT_TEST_NET), 3),
                         false,
-                        new StateHashTreeGcConfig(
+                        StateHashTreeGcConfig.forTesting(),
+                        new LedgerProofsGcConfig(
                             UInt32.fromNonNegativeInt(1),
-                            UInt64.fromNonNegativeLong(stateVersionHistoryLength)),
-                        LedgerProofsGcConfig.forTesting(),
+                            UInt64.fromNonNegativeLong(mostRecentFullResolutionEpochCount)),
                         false))));
   }
 
   @Test
-  public void node_keeps_exactly_the_configured_number_of_stale_state_hash_tree_versions() {
-    // Arrange: configure 37 historical state versions to be kept in the state hash tree
-    try (var test = createTest(37)) {
+  public void node_prunes_non_critical_proofs_from_configured_old_enough_epochs() {
+    // Arrange: configure ledger proof gc to keep 2 most recent completed epochs not pruned
+    var mostRecentFullResolutionEpochCount = 2;
+    /// ... 6 rounds * 3 transactions * 1 MB = 18MB; Limit is 12 MB - so we require 2 proofs
+    var epochLength = 6;
+    try (var test = createTest(mostRecentFullResolutionEpochCount, epochLength)) {
       test.startAllNodes();
 
-      // Act: Advance at least that many versions, so we are sure about the `current - leastStale`
-      test.runUntilState(NodesPredicate.nodeAt(0, NodePredicate.atExactlyStateVersion(39)), 10000);
+      // Act: advance to epoch 5 and wait until the async ledger proof GC runs
+      test.runUntilState(NodesPredicate.nodeAt(0, NodePredicate.atOrOverEpoch(5)), 10000);
+      Uninterruptibles.sleepUninterruptibly(Duration.ofMillis(1500));
 
-      // Assert: Run a few rounds, until an async GC executes
-      test.runUntilState(
-          NodesPredicate.nodeAt(0, atExactDifferenceToLeastStaleStateHashTreeVersion(37)), 50000);
+      // Assert: we expect certain number of proofs in each epoch
+      var stateReader = test.getInstance(0, TestStateReader.class);
+      // - An epoch which has just started, hence it has no proofs
+      assertThat(stateReader.countProofsWithinEpoch(5)).isEqualTo(0);
+      // - The 2 most recent completed epochs contain all their proofs (i.e. not pruned)
+      assertThat(stateReader.countProofsWithinEpoch(4)).isEqualTo(epochLength);
+      assertThat(stateReader.countProofsWithinEpoch(3)).isEqualTo(epochLength);
+      // - This epoch was pruned, and it has 2 proofs (a single one would not cover the 12MB limit)
+      assertThat(stateReader.countProofsWithinEpoch(2)).isEqualTo(2);
+
+      // Follow-up: Advance one more epoch and wait until the async ledger proof GC runs:
+      test.runUntilState(NodesPredicate.nodeAt(0, NodePredicate.atOrOverEpoch(6)), 10000);
+      Uninterruptibles.sleepUninterruptibly(Duration.ofMillis(1500));
+
+      // Assert: the "pruning window" has progressed (i.e. now epoch 3 got pruned)
+      assertThat(stateReader.countProofsWithinEpoch(6)).isEqualTo(0);
+      assertThat(stateReader.countProofsWithinEpoch(5)).isEqualTo(epochLength);
+      assertThat(stateReader.countProofsWithinEpoch(4)).isEqualTo(epochLength);
+      assertThat(stateReader.countProofsWithinEpoch(3)).isEqualTo(2);
+      assertThat(stateReader.countProofsWithinEpoch(2)).isEqualTo(2);
     }
   }
 
-  private Predicate<Injector> atExactDifferenceToLeastStaleStateHashTreeVersion(long difference) {
-    return injector -> {
-      var currentStateVersion =
-          injector
-              .getInstance(TransactionsAndProofReader.class)
-              .getLastProof()
-              .get()
-              .getStateVersion();
-      var leastStaleStateHashTreeVersion =
-          injector.getInstance(TestStateReader.class).getLeastStaleStateHashTreeVersion();
-      return currentStateVersion - leastStaleStateHashTreeVersion == difference;
-    };
+  private static final class MbTransactionGenerator
+      implements TransactionGenerator<RawNotarizedTransaction> {
+
+    private final NetworkDefinition networkDefinition;
+
+    public MbTransactionGenerator(NetworkDefinition networkDefinition) {
+      this.networkDefinition = networkDefinition;
+    }
+
+    @Override
+    public RawNotarizedTransaction nextTransaction() {
+      return TransactionBuilder.forNetwork(networkDefinition)
+          .manifest(Manifest.valid())
+          .blobs(List.of(new byte[1023 * 1024])) // slightly below limit
+          .prepare()
+          .raw();
+    }
   }
 }

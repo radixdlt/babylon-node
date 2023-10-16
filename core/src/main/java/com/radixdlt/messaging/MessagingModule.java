@@ -76,6 +76,7 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
+import com.radixdlt.environment.NodeConstants;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxRemoteDispatcher;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
@@ -95,7 +96,6 @@ import com.radixdlt.p2p.discovery.PeersResponse;
 import com.radixdlt.p2p.liveness.Ping;
 import com.radixdlt.p2p.liveness.Pong;
 import com.radixdlt.p2p.transport.FrameCodec;
-import com.radixdlt.rev2.REv2TransactionsAndProofReader;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
@@ -142,7 +142,7 @@ public final class MessagingModule extends AbstractModule {
     final var maxMessageSizeBaseline =
         Math.max(
             Math.max(
-                REv2TransactionsAndProofReader.MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE,
+                NodeConstants.MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE,
                 proposalMaxUncommittedTransactionsPayloadSize),
             mempoolRelayerMaxMessagePayloadSize);
 

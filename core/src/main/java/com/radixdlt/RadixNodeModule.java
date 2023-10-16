@@ -345,14 +345,15 @@ public final class RadixNodeModule extends AbstractModule {
             vertexMaxTotalFinalizationCostUnitsConsumed);
 
     var stateHashTreeGcConfig = parseStateHashTreeGcConfig(properties);
-
+    var ledgerProofsGcConfig = parseLedgerProofsGcConfig(properties);
     install(
         REv2StateManagerModule.create(
             ProposalLimitsConfig.from(vertexLimitsConfig),
             vertexLimitsConfig,
             databaseFlags,
             Option.some(mempoolConfig),
-            stateHashTreeGcConfig));
+            stateHashTreeGcConfig,
+            ledgerProofsGcConfig));
 
     // Recovery
     install(new BerkeleySafetyStoreModule());
@@ -435,6 +436,36 @@ public final class RadixNodeModule extends AbstractModule {
     return new StateHashTreeGcConfig(
         UInt32.fromNonNegativeInt(intervalSec),
         UInt64.fromNonNegativeLong(stateVersionHistoryLength));
+  }
+
+  /**
+   * Parses the part of the configuration related to the garbage collection process pruning the old,
+   * non-critical ledger proofs. Each {@link LedgerProofsGcConfig#intervalSec()} seconds, we start a
+   * GC process which prunes all new ledger proofs (stored in the database since its previous run)
+   * <b>except</b> the most recent {@link LedgerProofsGcConfig#mostRecentFullResolutionEpochCount()}
+   * epochs.
+   */
+  private LedgerProofsGcConfig parseLedgerProofsGcConfig(RuntimeProperties properties) {
+    // How often to run the GC, in seconds.
+    // Since this GC operates with an epoch precision, we do not need to run more often than epoch
+    // changes.
+    var intervalSec = properties.get("ledger_proofs.gc.interval_sec", 300);
+    Preconditions.checkArgument(
+        intervalSec > 0, "ledger proofs GC interval must be positive: %s sec", intervalSec);
+
+    // How many most recent completed epochs should not be pruned?
+    // Set to 0 to discard non-critical proofs of every completed epoch as soon as possible.
+    // Set to Integer.MAX_VALUE to effectively disable this GC.
+    var mostRecentFullResolutionEpochCount =
+        properties.get("ledger_proofs.most_recent_full_resolution_epoch_count", 1000);
+    Preconditions.checkArgument(
+        mostRecentFullResolutionEpochCount >= 0,
+        "state version history length must not be negative: %s",
+        mostRecentFullResolutionEpochCount);
+
+    return new LedgerProofsGcConfig(
+        UInt32.fromNonNegativeInt(intervalSec),
+        UInt64.fromNonNegativeLong(mostRecentFullResolutionEpochCount));
   }
 
   private void warnProtocolPropertySet(String prop) {

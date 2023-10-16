@@ -122,12 +122,9 @@ impl StateHashTreeGc {
 
     /// Performs a single GC run, which is supposed to permanently delete *all* old-enough state
     /// hash tree nodes marked as stale.
-    /// This can involve a large backlog (i.e. on the first GC run), so the implementation will
-    /// regularly release the database lock (see [`Self::max_db_locking_duration`]).
-    /// Note: despite the GC modifying the database, we only obtain the read lock. In theory, we
-    /// do not need any locking at all (since we only touch very old state, which no other logic
-    /// modifies), but our current "DB management" implementation requires obtaining some lock to
-    /// access the database at all.
+    /// Note: despite the GC modifying the database, we only obtain the "historical" state lock (in
+    /// practice: not locking anything at all). This is valid, since we do not rely on the current
+    /// state's consistency here.
     pub fn run(&self) {
         let database = self.database.access_non_locked_historical();
         // The line below technically reads the "current state" from a "non-locked, historical" DB;
