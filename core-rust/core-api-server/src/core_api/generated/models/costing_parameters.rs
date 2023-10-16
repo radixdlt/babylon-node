@@ -34,7 +34,7 @@ pub struct CostingParameters {
     /// The string-encoded decimal representing the price of 1 byte of storage, expressed in XRD. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. 
     #[serde(rename = "xrd_storage_price")]
     pub xrd_storage_price: String,
-    /// An integer between `0` and `255`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
+    /// An integer between `0` and `65535`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
     #[serde(rename = "tip_percentage")]
     pub tip_percentage: i32,
 }
