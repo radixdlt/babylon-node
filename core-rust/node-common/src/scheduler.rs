@@ -72,50 +72,23 @@ use core::{
 use std::time::Duration;
 
 use tokio::runtime::Runtime;
-use tokio_util::sync::{CancellationToken, WaitForCancellationFuture};
+use tokio_util::sync::CancellationToken;
 
 use crate::locks::{LockFactory, Mutex};
 
 pub trait CancellableToken {
-    type VoidFuture<'a>: Future<Output = ()>
-    where
-        Self: 'a;
-
     /// Be aware that cancellation is not an atomic operation. It is possible
     /// for another thread running in parallel with a call to `cancel` to first
     /// receive `true` from `is_cancelled` on one child node, and then receive
     /// `false` from `is_cancelled` on another child node. However, once the
     /// call to `cancel` returns, all child nodes have been fully cancelled.
     fn cancel(&self);
-
-    /// Returns `true` if the `CancellableToken` is cancelled.
-    fn is_cancelled(&self) -> bool;
-
-    /// Returns a `Future` that gets fulfilled when cancellation is requested.
-    ///
-    /// The future will complete immediately if the token is already cancelled
-    /// when this method is called.
-    ///
-    /// # Cancel safety
-    ///
-    /// This method is cancel safe.
-    fn cancelled(&self) -> Self::VoidFuture<'_>;
 }
 
 /// Forward/delegate implementation of [`CancellableToken`] for Tokio's [`CancellationToken`]
 impl CancellableToken for CancellationToken {
-    type VoidFuture<'a> = WaitForCancellationFuture<'a>;
-
     fn cancel(&self) {
         self.cancel();
-    }
-
-    fn is_cancelled(&self) -> bool {
-        self.is_cancelled()
-    }
-
-    fn cancelled(&self) -> Self::VoidFuture<'_> {
-        self.cancelled()
     }
 }
 
@@ -133,17 +106,7 @@ impl Future for NoopCancellationFuture {
 pub struct NoopCancellableToken;
 
 impl CancellableToken for NoopCancellableToken {
-    type VoidFuture<'a> = NoopCancellationFuture;
-
     fn cancel(&self) {}
-
-    fn is_cancelled(&self) -> bool {
-        true
-    }
-
-    fn cancelled(&self) -> Self::VoidFuture<'_> {
-        NoopCancellationFuture {}
-    }
 }
 
 /// A utility wrapper around a [`CancellableToken`] which will
