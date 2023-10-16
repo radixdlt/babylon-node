@@ -333,21 +333,22 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
                       .fromStateVersion(1L));
       assertThat(firstPartResponse.getProofs()).isNull();
 
-      var firstPartResponseWithProofs =
-          getStreamApi()
-              .streamTransactionsPost(
-                  new StreamTransactionsRequest()
-                      .network(networkLogicalName)
-                      .includeProofs(true)
-                      .limit(100)
-                      .fromStateVersion(1L));
-
       // An async "proofs pruning" is supposed to run over the genesis' epoch...
       Awaitility.await()
           .atMost(2, TimeUnit.SECONDS)
-          // ... leaving 9 (out of original 13) ledger proofs.
           .untilAsserted(
-              () -> assertThat(firstPartResponseWithProofs.getProofs().size()).isEqualTo(9));
+              () -> {
+                var firstPartResponseWithProofs =
+                    getStreamApi()
+                        .streamTransactionsPost(
+                            new StreamTransactionsRequest()
+                                .network(networkLogicalName)
+                                .includeProofs(true)
+                                .limit(100)
+                                .fromStateVersion(1L));
+                // ... leaving 9 (out of original 13) ledger proofs.
+                assertThat(firstPartResponseWithProofs.getProofs().size()).isEqualTo(9);
+              });
 
       var firstPartCommittedTransactions = firstPartResponse.getTransactions();
 
