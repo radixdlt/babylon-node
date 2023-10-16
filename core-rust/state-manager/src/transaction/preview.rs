@@ -150,7 +150,7 @@ mod tests {
             None,
             &lock_factory,
             &metrics_registry,
-            &mut NoopScheduler,
+            &NoopScheduler,
         );
 
         state_manager
