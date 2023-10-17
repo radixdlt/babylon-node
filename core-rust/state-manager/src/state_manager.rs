@@ -233,7 +233,7 @@ impl StateManager {
             pending_transaction_result_cache.clone(),
             logging_config,
             metrics_registry,
-            &lock_factory.named("state_computer"),
+            lock_factory.named("state_computer"),
         ));
 
         // Register the periodic background task for collecting the costly raw DB metrics...
