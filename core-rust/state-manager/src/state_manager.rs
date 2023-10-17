@@ -143,7 +143,7 @@ impl StateManager {
         mempool_relay_dispatcher: Option<MempoolRelayDispatcher>,
         lock_factory: &LockFactory,
         metrics_registry: &Registry,
-        scheduler: &impl Scheduler,
+        scheduler: &Scheduler,
     ) -> Self {
         let mempool_config = match config.mempool_config {
             Some(mempool_config) => mempool_config,
@@ -239,16 +239,20 @@ impl StateManager {
         // Register the periodic background task for collecting the costly raw DB metrics...
         let raw_db_metrics_collector =
             RawDbMetricsCollector::new(database.clone(), metrics_registry);
-        scheduler.start_periodic(RAW_DB_MEASUREMENT_INTERVAL, move || {
-            raw_db_metrics_collector.run()
-        });
+        scheduler
+            .named("raw_db_measurement")
+            .start_periodic(RAW_DB_MEASUREMENT_INTERVAL, move || {
+                raw_db_metrics_collector.run()
+            });
 
         // ... and for deleting the stale state hash tree nodes (a.k.a. "JMT GC"):
         let state_hash_tree_gc =
             StateHashTreeGc::new(database.clone(), config.state_hash_tree_gc_config);
-        scheduler.start_periodic(state_hash_tree_gc.interval(), move || {
-            state_hash_tree_gc.run()
-        });
+        scheduler
+            .named("state_hash_tree_gc")
+            .start_periodic(state_hash_tree_gc.interval(), move || {
+                state_hash_tree_gc.run()
+            });
 
         Self {
             state_computer,

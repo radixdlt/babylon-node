@@ -135,7 +135,7 @@ mod tests {
 
     use crate::{PreviewRequest, StateManager, StateManagerConfig};
     use node_common::locks::LockFactory;
-    use node_common::scheduler::NoopScheduler;
+    use node_common::scheduler::Scheduler;
     use prometheus::Registry;
     use transaction::builder::ManifestBuilder;
     use transaction::model::{MessageV1, PreviewFlags};
@@ -150,7 +150,7 @@ mod tests {
             None,
             &lock_factory,
             &metrics_registry,
-            &NoopScheduler,
+            &Scheduler::for_testing(),
         );
 
         state_manager

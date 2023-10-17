@@ -62,190 +62,216 @@
  * permissions under this License.
  */
 
+use std::fmt::Display;
 use std::sync::Arc;
 
-use core::{
-    future::Future,
-    pin::Pin,
-    task::{Context, Poll},
-};
-use std::time::Duration;
+use prometheus::{HistogramVec, Registry};
+use std::time::{Duration, Instant};
 
 use tokio::runtime::Runtime;
 use tokio_util::sync::CancellationToken;
 
 use crate::locks::{LockFactory, Mutex};
+use crate::metrics::{new_timer_vec, opts, AtDefaultRegistryExt};
 
-pub trait CancellableToken {
-    /// Be aware that cancellation is not an atomic operation. It is possible
-    /// for another thread running in parallel with a call to `cancel` to first
-    /// receive `true` from `is_cancelled` on one child node, and then receive
-    /// `false` from `is_cancelled` on another child node. However, once the
-    /// call to `cancel` returns, all child nodes have been fully cancelled.
-    fn cancel(&self);
+/// A transient starter of periodically-executed tasks.
+///
+/// Important scheduler API note:
+/// The actual task-starting methods (e.g. [`Self::start_periodic()`]) *consume* the scheduler
+/// instance. This is by design, since we want to avoid 2 scheduled tasks of the same name (i.e.
+/// they could be confused in the log messages or the metrics). If you actually have a use-case for
+/// dynamically-created, unbounded, unidentified tasks, you can still achieve it by cloning
+/// the factory instance - just make sure to unconfigure any features that rely on unique names.
+#[derive(Clone)]
+pub struct Scheduler<'a> {
+    runtime: Option<&'a Runtime>,
+    name: String,
+    running_task_tracker: Option<&'a RunningTaskTracker>,
+    metrics: Option<SchedulerMetrics>,
 }
 
-/// Forward/delegate implementation of [`CancellableToken`] for Tokio's [`CancellationToken`]
-impl CancellableToken for CancellationToken {
-    fn cancel(&self) {
-        self.cancel();
+impl<'a> Scheduler<'a> {
+    /// Creates a new scheduler instance using the given tokio `runtime`.
+    /// The given `base_name` simply becomes the first segment of the constructed tasks' names' (see
+    /// [`Self::named()`]).
+    pub fn new(runtime: &'a Runtime, base_name: impl Display) -> Self {
+        Self {
+            runtime: Some(runtime),
+            name: base_name.to_string(),
+            running_task_tracker: None,
+            metrics: None,
+        }
     }
-}
 
-pub struct NoopCancellationFuture;
-
-impl Future for NoopCancellationFuture {
-    type Output = ();
-
-    fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<()> {
-        Poll::Ready(())
+    /// Creates a mock instance for testing purposes.
+    /// The "scheduled" tasks will not actually be started.
+    pub fn for_testing() -> Self {
+        Self {
+            runtime: None,
+            name: "testing".to_string(),
+            running_task_tracker: None,
+            metrics: None,
+        }
     }
-}
 
-/// Noop implementation of the [`CancellableToken`]
-pub struct NoopCancellableToken;
-
-impl CancellableToken for NoopCancellableToken {
-    fn cancel(&self) {}
-}
-
-/// A utility wrapper around a [`CancellableToken`] which will
-/// cancel the task when dropped.
-pub struct CancelOnDrop<CT: CancellableToken> {
-    pub cancellation_token: CT,
-}
-
-impl<CT: CancellableToken> CancelOnDrop<CT> {
-    pub fn new(cancellation_token: CT) -> Self {
-        Self { cancellation_token }
+    /// Appends another segment to the dot-separated names of tasks *created from this point on*.
+    /// The names are used only for error-surfacing and metrics purposes.
+    pub fn named(&self, segment: impl Display) -> Self {
+        let mut derived = self.clone();
+        derived.name = format!("{}.{}", derived.name, segment);
+        derived
     }
-}
 
-impl<CT: CancellableToken> Drop for CancelOnDrop<CT> {
-    fn drop(&mut self) {
-        self.cancellation_token.cancel();
+    /// Configures the auto-tracking of the tasks *created from this point on*.
+    /// Every [`RunningTask`] returned by the task-starting method will also be reported to the
+    /// given tracker (which may be easier for the application's boot-up logic to keep alive).
+    pub fn track_running_tasks(&self, running_task_tracker: &'a RunningTaskTracker) -> Self {
+        let mut derived = self.clone();
+        derived.running_task_tracker = Some(running_task_tracker);
+        derived
     }
-}
 
-/// A scheduler for background tasks.
-/// All schedules started with a specific scheduler should be stopped when its instance is dropped.
-pub trait Scheduler {
-    type CancellationTokenType: CancellableToken;
+    /// Configures the metrics collection for tasks *created from this point on*.
+    pub fn measured(&self, metrics_registry: &Registry) -> Self {
+        let mut derived = self.clone();
+        derived.metrics = Some(SchedulerMetrics::new(metrics_registry));
+        derived
+    }
+
     /// Starts a periodic execution of the given task.
     /// The consecutive runs should be started at approximately the given intervals - however, if
     /// a particular run takes longer than the interval, then it should not be (in any way) aborted,
     /// and no concurrent run should be started - the schedule should simply be delayed.
-    fn start_periodic(
-        &self,
-        duration: Duration,
+    /// The task will keep running periodically until the returned [`RunningTask`] is dropped (to
+    /// be specific - until the *last* of its clones is dropped).
+    /// Note: it is important to either keep the returned value alive, or configure the
+    /// auto-tracking feature (see [`Self::track_running_tasks()`]).
+    pub fn start_periodic(
+        self,
+        interval: Duration,
         task: impl 'static + FnMut() + Send,
-    ) -> Self::CancellationTokenType;
-}
-
-// TODO(metrics): Add a `MeasuredScheduler` decorator (mostly for: task run duration).
-
-/// A no-op [`Scheduler`] (e.g. for test purposes).
-pub struct NoopScheduler;
-
-impl Scheduler for NoopScheduler {
-    type CancellationTokenType = NoopCancellableToken;
-
-    fn start_periodic(
-        &self,
-        _duration: Duration,
-        _task: impl 'static + FnMut() + Send,
-    ) -> Self::CancellationTokenType {
-        NoopCancellableToken {}
+    ) -> RunningTask {
+        let cancellation_token = CancellationToken::new();
+        let running_task = RunningTask::new(cancellation_token.clone());
+        let Some(runtime) = self.runtime else {
+            // No runtime configured - we only fake the running, for test purposes:
+            return running_task;
+        };
+        // The `if` below seems larger than required - this is for "incompatible types" reasons
+        if let Some(metrics) = self.metrics {
+            let task = metrics.wrap(task, self.name.as_str());
+            Self::spawn_periodic_future(runtime, interval, task, cancellation_token)
+        } else {
+            Self::spawn_periodic_future(runtime, interval, task, cancellation_token)
+        };
+        if let Some(task_tracker) = self.running_task_tracker {
+            task_tracker.track(running_task.clone());
+        }
+        running_task
     }
-}
 
-pub struct TokioScheduler {
-    runtime: Arc<Runtime>,
-}
-
-impl TokioScheduler {
-    pub fn new(runtime: Arc<Runtime>) -> Self {
-        Self { runtime }
-    }
-}
-
-impl Scheduler for TokioScheduler {
-    type CancellationTokenType = CancellationToken;
-
-    fn start_periodic(
-        &self,
-        duration: Duration,
+    fn spawn_periodic_future(
+        runtime: &Runtime,
+        interval: Duration,
         mut task: impl 'static + FnMut() + Send,
-    ) -> Self::CancellationTokenType {
-        let cancellation_token = Self::CancellationTokenType::new();
-        let cloned_token = cancellation_token.clone();
-        self.runtime.spawn(async move {
-            let mut interval = tokio::time::interval(duration);
-
+        cancellation_token: CancellationToken,
+    ) {
+        runtime.spawn(async move {
+            let mut interval = tokio::time::interval(interval);
             loop {
                 tokio::select! {
-                    _ = cloned_token.cancelled() => {
+                    _ = cancellation_token.cancelled() => {
                         break;
                     },
                     _ = interval.tick() => {
-                       task();
+                        task();
                     },
                 }
             }
         });
-        cancellation_token
     }
 }
 
-/// An auxiliary structure to be used along side a [`Scheduler`] in order to collect
-/// [`CancellableToken`]s for the spawned tasks in order to autostop them on drop.
-pub struct TaskTracker<CT: CancellableToken> {
-    tasks: Vec<CancelOnDrop<CT>>,
+/// A handle representing a running task started using the scheduler.
+/// Dropping *all* its clones cancels any subsequent executions of the task.
+#[derive(Clone)]
+pub struct RunningTask {
+    cancellation_token: Arc<CancellationToken>,
 }
 
-impl<CT: CancellableToken> TaskTracker<CT> {
-    pub fn new() -> Self {
-        Self { tasks: Vec::new() }
-    }
-
-    pub fn track(&mut self, cancel_token: CT) {
-        self.tasks.push(CancelOnDrop::new(cancel_token));
-    }
-}
-
-impl<CT: CancellableToken> Default for TaskTracker<CT> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-pub struct TokioSchedulerWithTaskTracker {
-    scheduler: TokioScheduler,
-    /// Note: the mutex is needed to satisfy [`Scheduler`]'s `start_periodic` signature.
-    task_tracker: Mutex<TaskTracker<CancellationToken>>,
-}
-
-impl TokioSchedulerWithTaskTracker {
-    pub fn new(runtime: Arc<Runtime>, lock_factory: LockFactory) -> Self {
+impl RunningTask {
+    fn new(cancellation_token: CancellationToken) -> Self {
         Self {
-            scheduler: TokioScheduler::new(runtime),
-            task_tracker: lock_factory
-                .named("task_tracker")
-                .new_mutex(TaskTracker::new()),
+            cancellation_token: Arc::new(cancellation_token),
         }
     }
 }
 
-impl Scheduler for TokioSchedulerWithTaskTracker {
-    type CancellationTokenType = CancellationToken;
+impl Drop for RunningTask {
+    fn drop(&mut self) {
+        if let Some(cancellation_token) = Arc::get_mut(&mut self.cancellation_token) {
+            cancellation_token.cancel();
+        }
+    }
+}
 
-    fn start_periodic(
+/// An auxiliary structure to be used with the [`Scheduler#track_running_tasks()`] method in order
+/// to collect [`RunningTask`]s and keep them alive until this single tracker instance is dropped.
+pub struct RunningTaskTracker {
+    running_tasks: Mutex<Vec<RunningTask>>,
+}
+
+impl RunningTaskTracker {
+    /// Creates a tracker.
+    /// The [`LockFactory`] is used only to allow for interior mutability.
+    pub fn new(factory: LockFactory) -> Self {
+        Self {
+            running_tasks: factory.new_mutex(Vec::new()),
+        }
+    }
+
+    fn track(&self, running_task: RunningTask) {
+        self.running_tasks.lock().push(running_task);
+    }
+}
+
+/// A set of metrics for scheduled tasks / executions.
+// TODO(metrics): Add more: counter of execution overlaps, currently stalled executions, etc.
+#[derive(Debug, Clone)]
+struct SchedulerMetrics {
+    task_execute: HistogramVec,
+}
+
+impl SchedulerMetrics {
+    const TASK_NAME_LABEL: &'static str = "task";
+
+    /// Registers the metrics in the given registry.
+    pub fn new(registry: &Registry) -> Self {
+        Self {
+            task_execute: new_timer_vec(
+                opts(
+                    "scheduler_task_execute",
+                    "Time spent executing a single run of a specific task.",
+                ),
+                &[Self::TASK_NAME_LABEL],
+                vec![0.001, 0.005, 0.02, 0.1, 0.5, 2.0, 5.0],
+            )
+            .registered_at(registry),
+        }
+    }
+
+    /// Wraps the given task in a measuring decorator.
+    pub fn wrap(
         &self,
-        duration: Duration,
-        task: impl 'static + FnMut() + Send,
-    ) -> Self::CancellationTokenType {
-        let cancellation_token = self.scheduler.start_periodic(duration, task);
-        self.task_tracker.lock().track(cancellation_token.clone());
-        cancellation_token
+        mut task: impl 'static + FnMut() + Send,
+        name: &str,
+    ) -> impl 'static + FnMut() + Send {
+        let labels = &[name];
+        let task_execute = self.task_execute.with_label_values(labels);
+        move || {
+            let started_execution_at = Instant::now();
+            task();
+            task_execute.observe(started_execution_at.elapsed().as_secs_f64());
+        }
     }
 }
