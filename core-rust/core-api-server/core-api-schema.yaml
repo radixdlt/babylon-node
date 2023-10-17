@@ -1469,8 +1469,8 @@ components:
           type: integer
           format: int32
           minimum: 0
-          maximum: 255
-          description: An integer between `0` and `255`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
+          maximum: 65535
+          description: An integer between `0` and `65535`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
     NetworkIdentifierByte:
       description: The logical id of the network
       type: integer
@@ -1771,8 +1771,8 @@ components:
           type: integer
           format: int32
           minimum: 0
-          maximum: 255
-          description: An integer between `0` and `255`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
+          maximum: 65535
+          description: An integer between `0` and `65535`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
     FeeSource:
       type: object
       required:
@@ -6963,8 +6963,8 @@ components:
           type: integer
           format: int32
           minimum: 0
-          maximum: 255
-          description: An integer between `0` and `255`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
+          maximum: 65535
+          description: An integer between `0` and `65535`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
         nonce:
           type: integer
           format: int64
