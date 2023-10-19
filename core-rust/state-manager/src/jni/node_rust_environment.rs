@@ -74,7 +74,7 @@ use node_common::locks::*;
 use prometheus::Registry;
 use radix_engine_common::prelude::NetworkDefinition;
 
-use node_common::scheduler::{RunningTaskTracker, Scheduler};
+use node_common::scheduler::{Scheduler, UntilDropTracker};
 use tokio::runtime::Runtime;
 
 use crate::mempool_manager::MempoolManager;
@@ -116,7 +116,7 @@ pub struct JNINodeRustEnvironment {
     pub network: NetworkDefinition,
     pub state_manager: StateManager,
     pub metric_registry: Arc<Registry>,
-    pub running_task_tracker: RunningTaskTracker,
+    pub running_task_tracker: UntilDropTracker,
 }
 
 impl JNINodeRustEnvironment {
@@ -136,11 +136,9 @@ impl JNINodeRustEnvironment {
             .stopping_on_panic(move || fatal_panic_handler.handle_fatal_panic())
             .measured(metric_registry.deref());
 
-        let running_task_tracker = RunningTaskTracker::new(
-            lock_factory.named("scheduled_task_tracker").not_measured(), // opt-out from measuring a technical lock used here
-        );
-        let scheduler = Scheduler::new(runtime.deref(), "rn")
-            .track_running_tasks(&running_task_tracker)
+        let scheduler = Scheduler::new("rn")
+            .use_tokio(runtime.deref())
+            .track_running_tasks()
             .measured(metric_registry.deref());
 
         let state_manager = StateManager::new(
@@ -150,6 +148,8 @@ impl JNINodeRustEnvironment {
             &metric_registry,
             &scheduler,
         );
+
+        let running_task_tracker = scheduler.into_task_tracker();
 
         let jni_node_rust_env = JNINodeRustEnvironment {
             runtime,

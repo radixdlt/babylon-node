@@ -65,7 +65,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use node_common::scheduler::Scheduler;
+use node_common::scheduler::{Metrics, Scheduler, Spawner, Tracker};
 use node_common::{
     config::{limits::VertexLimitsConfig, MempoolConfig},
     locks::*,
@@ -143,7 +143,7 @@ impl StateManager {
         mempool_relay_dispatcher: Option<MempoolRelayDispatcher>,
         lock_factory: &LockFactory,
         metrics_registry: &Registry,
-        scheduler: &Scheduler,
+        scheduler: &Scheduler<impl Spawner, impl Tracker, impl Metrics>,
     ) -> Self {
         let mempool_config = match config.mempool_config {
             Some(mempool_config) => mempool_config,

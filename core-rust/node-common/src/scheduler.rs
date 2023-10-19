@@ -62,7 +62,10 @@
  * permissions under this License.
  */
 
+use std::cell::RefCell;
 use std::fmt::Display;
+
+use std::rc::Rc;
 use std::sync::Arc;
 
 use prometheus::{HistogramVec, Registry};
@@ -71,124 +74,121 @@ use std::time::{Duration, Instant};
 use tokio::runtime::Runtime;
 use tokio_util::sync::CancellationToken;
 
-use crate::locks::{LockFactory, Mutex};
-use crate::metrics::{new_timer_vec, opts, AtDefaultRegistryExt};
+use crate::metrics::{new_timer_vec, opts, AtDefaultRegistryExt, MetricLabel, TakesMetricLabels};
 
 /// A transient starter of periodically-executed tasks.
 ///
 /// Important scheduler API note:
+/// Despite the friendly and short name ("scheduler"), the struct defined below is more of an
+/// "immutable (hierarchical) builder of task schedules". Each configuration method returns a new
+/// "child" scheduler instance which applies the configuration from that point downward in the
+/// hierarchy.
 /// The actual task-starting methods (e.g. [`Self::start_periodic()`]) *consume* the scheduler
 /// instance. This is by design, since we want to avoid 2 scheduled tasks of the same name (i.e.
 /// they could be confused in the log messages or the metrics). If you actually have a use-case for
 /// dynamically-created, unbounded, unidentified tasks, you can still achieve it by cloning
-/// the factory instance - just make sure to unconfigure any features that rely on unique names.
-#[derive(Clone)]
-pub struct Scheduler<'a> {
-    runtime: Option<&'a Runtime>,
+/// the factory instance - just make sure to un-configure any features that rely on unique names.
+pub struct Scheduler<S, T, M> {
     name: String,
-    running_task_tracker: Option<&'a RunningTaskTracker>,
-    metrics: Option<SchedulerMetrics>,
+    spawner: Rc<S>,
+    running_task_tracker: Rc<T>,
+    metrics: Arc<M>, // the thread-safety is only needed for metrics, since only they are referenced from spawned tasks
 }
 
-impl<'a> Scheduler<'a> {
-    /// Creates a new scheduler instance using the given tokio `runtime`.
+impl Scheduler<NoopSpawner, NoTracking, NoMetrics> {
+    /// Starts the build of a new, "bare" schedule.
+    /// Note: such instance will be no-op until you configure an actual [`Spawner`] (see e.g.
+    /// [`Self::use_tokio()`]), suitable probably only for tests.
     /// The given `base_name` simply becomes the first segment of the constructed tasks' names' (see
     /// [`Self::named()`]).
-    pub fn new(runtime: &'a Runtime, base_name: impl Display) -> Self {
+    pub fn new(base_name: impl Display) -> Self {
         Self {
-            runtime: Some(runtime),
             name: base_name.to_string(),
-            running_task_tracker: None,
-            metrics: None,
+            spawner: Rc::new(NoopSpawner),
+            running_task_tracker: Rc::new(NoTracking),
+            metrics: Arc::new(NoMetrics),
         }
     }
+}
 
-    /// Creates a mock instance for testing purposes.
-    /// The "scheduled" tasks will not actually be started.
-    pub fn for_testing() -> Self {
-        Self {
-            runtime: None,
-            name: "testing".to_string(),
-            running_task_tracker: None,
-            metrics: None,
+impl<S, T, M> Scheduler<S, T, M> {
+    /// Configures the given tokio [`Runtime`] to be used for spawning tasks *created from this
+    /// point on*.
+    pub fn use_tokio<'r>(&self, runtime: &'r Runtime) -> Scheduler<TokioSpawner<'r>, T, M> {
+        Scheduler {
+            spawner: Rc::new(TokioSpawner::new(runtime)),
+            name: self.name.clone(),
+            running_task_tracker: self.running_task_tracker.clone(),
+            metrics: self.metrics.clone(),
         }
     }
 
     /// Appends another segment to the dot-separated names of tasks *created from this point on*.
     /// The names are used only for error-surfacing and metrics purposes.
     pub fn named(&self, segment: impl Display) -> Self {
-        let mut derived = self.clone();
-        derived.name = format!("{}.{}", derived.name, segment);
-        derived
+        Scheduler {
+            spawner: self.spawner.clone(),
+            name: format!("{}.{}", self.name, segment),
+            running_task_tracker: self.running_task_tracker.clone(),
+            metrics: self.metrics.clone(),
+        }
     }
 
     /// Configures the auto-tracking of the tasks *created from this point on*.
     /// Every [`RunningTask`] returned by the task-starting method will also be reported to the
-    /// given tracker (which may be easier for the application's boot-up logic to keep alive).
-    pub fn track_running_tasks(&self, running_task_tracker: &'a RunningTaskTracker) -> Self {
-        let mut derived = self.clone();
-        derived.running_task_tracker = Some(running_task_tracker);
-        derived
+    /// internal [`UntilDropTracker`] (which can be obtained upon finalization of the schedules'
+    /// build, in order to keep all schedules alive - see [`Self::into_task_tracker()`]).
+    pub fn track_running_tasks(&self) -> Scheduler<S, UntilDropTracker, M> {
+        Scheduler {
+            spawner: self.spawner.clone(),
+            name: self.name.clone(),
+            running_task_tracker: Rc::new(UntilDropTracker::default()),
+            metrics: self.metrics.clone(),
+        }
     }
 
     /// Configures the metrics collection for tasks *created from this point on*.
-    pub fn measured(&self, metrics_registry: &Registry) -> Self {
-        let mut derived = self.clone();
-        derived.metrics = Some(SchedulerMetrics::new(metrics_registry));
-        derived
+    pub fn measured(&self, metrics_registry: &Registry) -> Scheduler<S, T, SchedulerMetrics> {
+        Scheduler {
+            spawner: self.spawner.clone(),
+            name: self.name.clone(),
+            running_task_tracker: self.running_task_tracker.clone(),
+            metrics: Arc::new(SchedulerMetrics::new(metrics_registry)),
+        }
     }
+}
 
+impl<S: Spawner, T: Tracker, M: Metrics> Scheduler<S, T, M> {
     /// Starts a periodic execution of the given task.
     /// The consecutive runs should be started at approximately the given intervals - however, if
     /// a particular run takes longer than the interval, then it should not be (in any way) aborted,
     /// and no concurrent run should be started - the schedule should simply be delayed.
     /// The task will keep running periodically until the returned [`RunningTask`] is dropped (to
     /// be specific - until the *last* of its clones is dropped).
-    /// Note: it is important to either keep the returned value alive, or configure the
+    /// Note: it is important to either keep the returned instance alive, or configure the
     /// auto-tracking feature (see [`Self::track_running_tasks()`]).
     pub fn start_periodic(
         self,
         interval: Duration,
-        task: impl 'static + FnMut() + Send,
+        mut task: impl 'static + FnMut() + Send,
     ) -> RunningTask {
+        let measured = move || self.metrics.execute_measured(&mut task, &self.name);
         let cancellation_token = CancellationToken::new();
         let running_task = RunningTask::new(cancellation_token.clone());
-        let Some(runtime) = self.runtime else {
-            // No runtime configured - we only fake the running, for test purposes:
-            return running_task;
-        };
-        // The `if` below seems larger than required - this is for "incompatible types" reasons
-        if let Some(metrics) = self.metrics {
-            let task = metrics.wrap(task, self.name.as_str());
-            Self::spawn_periodic_future(runtime, interval, task, cancellation_token)
-        } else {
-            Self::spawn_periodic_future(runtime, interval, task, cancellation_token)
-        };
-        if let Some(task_tracker) = self.running_task_tracker {
-            task_tracker.track(running_task.clone());
-        }
+        self.spawner.spawn(interval, measured, cancellation_token);
+        self.running_task_tracker.track(running_task.clone());
         running_task
     }
+}
 
-    fn spawn_periodic_future(
-        runtime: &Runtime,
-        interval: Duration,
-        mut task: impl 'static + FnMut() + Send,
-        cancellation_token: CancellationToken,
-    ) {
-        runtime.spawn(async move {
-            let mut interval = tokio::time::interval(interval);
-            loop {
-                tokio::select! {
-                    _ = cancellation_token.cancelled() => {
-                        break;
-                    },
-                    _ = interval.tick() => {
-                        task();
-                    },
-                }
-            }
-        });
+impl<S: Spawner, M: Metrics> Scheduler<S, UntilDropTracker, M> {
+    /// Finalizes the build of all schedules using this instance (or its children derived by
+    /// configuration changes) and returns a tracker holding all [`RunningTask`] handlers.
+    /// Please note that this is only available when the actual task-tracking was enabled (see
+    /// [`Self::track_running_tasks()`]).
+    pub fn into_task_tracker(self) -> UntilDropTracker {
+        Rc::into_inner(self.running_task_tracker)
+            .expect("some child Scheduler instance still lives; cannot finalize")
     }
 }
 
@@ -215,38 +215,136 @@ impl Drop for RunningTask {
     }
 }
 
-/// An auxiliary structure to be used with the [`Scheduler#track_running_tasks()`] method in order
-/// to collect [`RunningTask`]s and keep them alive until this single tracker instance is dropped.
-pub struct RunningTaskTracker {
-    running_tasks: Mutex<Vec<RunningTask>>,
+/// A [`RunningTask`] tracker maintained internally by a [`Scheduler`] during its "build" phase,
+/// and returned on finalization.
+pub trait Tracker {
+    /// Takes ownership of the given task handle.
+    fn track(&self, running_task: RunningTask);
 }
 
-impl RunningTaskTracker {
-    /// Creates a tracker.
-    /// The [`LockFactory`] is used only to allow for interior mutability.
-    pub fn new(factory: LockFactory) -> Self {
+/// A no-op [`Tracker`], used when no auto-tracking is configured.
+/// Clients must manually hold all task handles returned while this tracker is effective - otherwise
+/// the tasks will be cancelled immediately.
+pub struct NoTracking;
+
+impl Tracker for NoTracking {
+    fn track(&self, _running_task: RunningTask) {
+        // intentionally empty
+    }
+}
+
+/// A [`Tracker`] implementation enabled by [`Scheduler#track_running_tasks()`] method in order
+/// to collect [`RunningTask`]s and keep them alive until this single tracker instance is dropped.
+pub struct UntilDropTracker {
+    running_tasks: RefCell<Vec<RunningTask>>,
+}
+
+impl Default for UntilDropTracker {
+    fn default() -> Self {
         Self {
-            running_tasks: factory.new_mutex(Vec::new()),
+            running_tasks: RefCell::new(Vec::new()),
         }
     }
+}
 
+impl Tracker for UntilDropTracker {
     fn track(&self, running_task: RunningTask) {
-        self.running_tasks.lock().push(running_task);
+        self.running_tasks.borrow_mut().push(running_task);
     }
 }
 
-/// A set of metrics for scheduled tasks / executions.
+/// A low-level spawner of threads (or other async processing primitives) used by the scheduler.
+pub trait Spawner {
+    /// Starts an asynchronous periodic execution of the given task at the given intervals, until
+    /// [`CancellationToken::cancelled()`].
+    fn spawn(
+        &self,
+        interval: Duration,
+        task: impl 'static + FnMut() + Send,
+        cancellation_token: CancellationToken,
+    );
+}
+
+/// A no-op [`Spawner`], effective until a proper async execution backend is configured for a
+/// scheduler.
+/// No tasks are actually ever executed with this spawner.
+pub struct NoopSpawner;
+
+impl Spawner for NoopSpawner {
+    fn spawn(
+        &self,
+        _interval: Duration,
+        _task: impl 'static + FnMut() + Send,
+        _cancellation_token: CancellationToken,
+    ) {
+        // intentionally empty
+    }
+}
+
+/// A [`Spawner`] backed by a tokio runtime.
+#[derive(Debug, Clone)]
+pub struct TokioSpawner<'r> {
+    runtime: &'r Runtime,
+}
+
+impl<'r> TokioSpawner<'r> {
+    fn new(runtime: &'r Runtime) -> Self {
+        Self { runtime }
+    }
+}
+
+impl<'r> Spawner for TokioSpawner<'r> {
+    fn spawn(
+        &self,
+        interval: Duration,
+        mut task: impl 'static + FnMut() + Send,
+        cancellation_token: CancellationToken,
+    ) {
+        self.runtime.spawn(async move {
+            let mut interval = tokio::time::interval(interval);
+            loop {
+                tokio::select! {
+                    _ = cancellation_token.cancelled() => {
+                        break;
+                    },
+                    _ = interval.tick() => {
+                        task();
+                    },
+                }
+            }
+        });
+    }
+}
+
+/// An internal delegate of a scheduler, handling measurements around each task execution.
+/// Note: the `Sync + Send + 'static` is required here, since we need to refer to metrics from
+/// another thread (the one running the task).
+pub trait Metrics: Sync + Send + 'static {
+    /// Executes the given function synchronously while recording arbitrary measurements related
+    /// to this particular execution.
+    fn execute_measured(&self, task: &mut impl FnMut(), name: impl MetricLabel);
+}
+
+/// A no-op [`Metrics`] which does not measure anything.
+pub struct NoMetrics;
+
+impl Metrics for NoMetrics {
+    fn execute_measured(&self, task: &mut impl FnMut(), _name: impl MetricLabel) {
+        task()
+    }
+}
+
+/// A [`Metrics`] implementation following our Prometheus conventions.
 // TODO(metrics): Add more: counter of execution overlaps, currently stalled executions, etc.
 #[derive(Debug, Clone)]
-struct SchedulerMetrics {
+pub struct SchedulerMetrics {
     task_execute: HistogramVec,
 }
 
 impl SchedulerMetrics {
     const TASK_NAME_LABEL: &'static str = "task";
 
-    /// Registers the metrics in the given registry.
-    pub fn new(registry: &Registry) -> Self {
+    fn new(registry: &Registry) -> Self {
         Self {
             task_execute: new_timer_vec(
                 opts(
@@ -259,19 +357,14 @@ impl SchedulerMetrics {
             .registered_at(registry),
         }
     }
+}
 
-    /// Wraps the given task in a measuring decorator.
-    pub fn wrap(
-        &self,
-        mut task: impl 'static + FnMut() + Send,
-        name: &str,
-    ) -> impl 'static + FnMut() + Send {
-        let labels = &[name];
-        let task_execute = self.task_execute.with_label_values(labels);
-        move || {
-            let started_execution_at = Instant::now();
-            task();
-            task_execute.observe(started_execution_at.elapsed().as_secs_f64());
-        }
+impl Metrics for SchedulerMetrics {
+    fn execute_measured(&self, task: &mut impl FnMut(), name: impl MetricLabel) {
+        let started_execution_at = Instant::now();
+        task();
+        self.task_execute
+            .with_label(name)
+            .observe(started_execution_at.elapsed().as_secs_f64());
     }
 }

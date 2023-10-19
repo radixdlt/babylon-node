@@ -150,7 +150,7 @@ mod tests {
             None,
             &lock_factory,
             &metrics_registry,
-            &Scheduler::for_testing(),
+            &Scheduler::new("testing"),
         );
 
         state_manager
