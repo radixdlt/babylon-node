@@ -143,7 +143,7 @@ mod tests {
     #[test]
     fn test_preview_processed_substate_changes() {
         let tmp = tempfile::tempdir().unwrap();
-        let lock_factory = LockFactory::new(|| {});
+        let lock_factory = LockFactory::new("testing");
         let metrics_registry = Registry::new();
         let state_manager = StateManager::new(
             StateManagerConfig::new_for_testing(tmp.path().to_str().unwrap()),

@@ -66,7 +66,7 @@ export interface CostingParameters {
      */
     xrd_storage_price: string;
     /**
-     * An integer between `0` and `255`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
+     * An integer between `0` and `65535`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
      * @type {number}
      * @memberof CostingParameters
      */
