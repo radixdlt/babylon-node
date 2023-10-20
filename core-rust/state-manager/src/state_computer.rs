@@ -1344,7 +1344,7 @@ mod tests {
     };
     use node_common::config::limits::VertexLimitsConfig;
     use node_common::locks::LockFactory;
-    use node_common::scheduler::NoopScheduler;
+    use node_common::scheduler::Scheduler;
     use prometheus::Registry;
     use radix_engine_common::prelude::NetworkDefinition;
     use radix_engine_common::types::{Epoch, Round};
@@ -1454,7 +1454,7 @@ mod tests {
             None,
             &lock_factory,
             &metrics_registry,
-            &NoopScheduler,
+            &Scheduler::new("testing"),
         );
 
         let proof = state_manager
