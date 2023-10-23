@@ -260,7 +260,9 @@ impl StateManager {
         // ... and for deleting the old, non-critical ledger proofs (a.k.a. "Proofs GC"):
         let ledger_proofs_gc =
             LedgerProofsGc::new(database.clone(), config.ledger_proofs_gc_config);
-        scheduler.start_periodic(ledger_proofs_gc.interval(), move || ledger_proofs_gc.run());
+        scheduler
+            .named("ledger_proofs_gc")
+            .start_periodic(ledger_proofs_gc.interval(), move || ledger_proofs_gc.run());
 
         Self {
             state_computer,
