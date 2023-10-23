@@ -72,20 +72,6 @@ pub const DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED: u32 =
 pub const DEFAULT_MAX_TOTAL_VERTEX_FINALIZATION_COST_UNITS_CONSUMED: u32 =
     FINALIZATION_COST_UNIT_LIMIT * 2;
 
-/// Maximum number of transactions to return in a single "get transactions with their proof"
-/// response, but only if at least one proof can be used. In other words:
-/// - if the next proof covers more than [`MAX_TXNS_FOR_RESPONSES_SPANNING_MORE_THAN_ONE_PROOF`]
-///   transactions, then all those transactions can still be returned (given they fit under the
-///   [`MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE`] limit);
-/// - if the next proof contains less than [`MAX_TXNS_FOR_RESPONSES_SPANNING_MORE_THAN_ONE_PROOF`]
-///   transactions, then its subsequent proof can only be used if its transactions also fit under
-///   this limit.
-pub const MAX_TXNS_FOR_RESPONSES_SPANNING_MORE_THAN_ONE_PROOF: u32 = 1000;
-
-/// Maximum transactions size (in terms of their total byte size) to return in a single "get
-/// transactions with their proof" response.
-pub const MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE: u32 = 12 * 1024 * 1024;
-
 #[derive(Debug, Clone, Copy, ScryptoSbor)]
 pub struct VertexLimitsConfig {
     pub max_transaction_count: u32,

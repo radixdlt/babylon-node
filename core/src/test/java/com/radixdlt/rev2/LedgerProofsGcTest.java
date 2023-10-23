@@ -86,7 +86,9 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
+import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.testutil.TestStateReader;
+import com.radixdlt.transaction.LedgerSyncLimitsConfig;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
@@ -103,9 +105,22 @@ public final class LedgerProofsGcTest {
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-  private DeterministicTest createTest(long mostRecentFullResolutionEpochCount, long epochLength) {
+  /**
+   * A common test set-up. The following hardcoded properties are important to the test asserts:
+   *
+   * <ul>
+   *   <li>every round contains 2 transactions: 1 from the generator, and a round change;
+   *   <li>node 0 is a validator, node 1 is a full node.
+   * </ul>
+   */
+  private DeterministicTest createTest(
+      long mostRecentFullResolutionEpochCount,
+      long roundsPerEpoch,
+      int txnSize,
+      int maxTxnCountUnderProof,
+      int maxTxnPayloadSizeUnderProof) {
     return DeterministicTest.builder()
-        .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
+        .addPhysicalNodes(PhysicalNodeConfig.createBatch(2, true))
         .messageSelector(firstSelector())
         .messageMutator(MessageMutator.dropTimeouts())
         .functionalNodeModule(
@@ -114,36 +129,42 @@ public final class LedgerProofsGcTest {
                 true,
                 SafetyRecoveryConfig.MOCKED,
                 ConsensusConfig.of(1000),
-                LedgerConfig.stateComputerNoSync(
+                LedgerConfig.stateComputerWithSyncRelay(
                     new StateComputerConfig.REv2StateComputerConfig(
                         Network.INTEGRATIONTESTNET.getId(),
                         GenesisBuilder.createTestGenesisWithNumValidators(
                             1,
                             Decimal.ONE,
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
-                                epochLength)),
+                                roundsPerEpoch)),
                         new DatabaseFlags(false, false),
                         REV2ProposerConfig.transactionGenerator(
-                            new MbTransactionGenerator(NetworkDefinition.INT_TEST_NET), 3),
+                            new SizedTransactionGenerator(NetworkDefinition.INT_TEST_NET, txnSize),
+                            1),
                         false,
                         StateHashTreeGcConfig.forTesting(),
                         new LedgerProofsGcConfig(
                             UInt32.fromNonNegativeInt(GC_INTERVAL_SEC),
                             UInt64.fromNonNegativeLong(mostRecentFullResolutionEpochCount)),
-                        false))));
+                        new LedgerSyncLimitsConfig(
+                            UInt32.fromNonNegativeInt(maxTxnCountUnderProof),
+                            UInt32.fromNonNegativeInt(maxTxnPayloadSizeUnderProof)),
+                        false),
+                    SyncRelayConfig.of(100, 2, 200L))));
   }
 
   @Test
-  public void node_prunes_non_critical_proofs_from_configured_old_enough_epochs() {
-    // Arrange: configure ledger proof gc to keep 2 most recent completed epochs not pruned
-    var mostRecentFullResolutionEpochCount = 2;
-    /// ... 6 rounds * 3 transactions * 1 MB = 18MB; Limit is 12 MB - so we require 2 proofs
-    var epochLength = 6;
-    try (var test = createTest(mostRecentFullResolutionEpochCount, epochLength)) {
-      test.startAllNodes();
+  public void node_retains_enough_proofs_to_cover_max_transaction_size_in_old_enough_epochs() {
+    /// 6 rounds * 100 KB = 600KB
+    var roundsPerEpoch = 6;
+    var txnSize = 100 * 1024;
+    /// Limit is 400 KB - so we require 2 proofs to cover 600 KB
+    var maxTxnPayloadSizeUnderProof = 400 * 1024; // cannot be much lower due to genesis' size
+    try (var test = createTest(2, roundsPerEpoch, txnSize, 1000, maxTxnPayloadSizeUnderProof)) {
+      test.startNode(0);
 
       // Act: advance to epoch 5
-      test.runUntilState(NodesPredicate.nodeAt(0, NodePredicate.atOrOverEpoch(5)), 10000);
+      test.runUntilState(NodesPredicate.nodeAt(0, NodePredicate.atOrOverEpoch(5)));
 
       // Assert: after an async GC, we expect certain number of proofs in each epoch:
       Awaitility.await()
@@ -154,14 +175,14 @@ public final class LedgerProofsGcTest {
                 // - The epoch 5 has just started, hence it has no proofs
                 assertThat(stateReader.countProofsWithinEpoch(5)).isEqualTo(0);
                 // - The 2 most recent completed epochs contain all their proofs (i.e. not pruned)
-                assertThat(stateReader.countProofsWithinEpoch(4)).isEqualTo(epochLength);
-                assertThat(stateReader.countProofsWithinEpoch(3)).isEqualTo(epochLength);
-                // - This epoch was pruned, and it has 2 proofs (1 would not fit the 12MB limit)
+                assertThat(stateReader.countProofsWithinEpoch(4)).isEqualTo(roundsPerEpoch);
+                assertThat(stateReader.countProofsWithinEpoch(3)).isEqualTo(roundsPerEpoch);
+                // - This epoch was pruned, and it has 2 proofs (to fit the size limit)
                 assertThat(stateReader.countProofsWithinEpoch(2)).isEqualTo(2);
               });
 
       // Follow-up: Advance one more epoch
-      test.runUntilState(NodesPredicate.nodeAt(0, NodePredicate.atOrOverEpoch(6)), 10000);
+      test.runUntilState(NodesPredicate.nodeAt(0, NodePredicate.atOrOverEpoch(6)));
 
       // Assert: after an async GC...
       Awaitility.await()
@@ -171,28 +192,102 @@ public final class LedgerProofsGcTest {
                 // ... the "pruning window" has progressed (i.e. now epoch 3 got pruned)
                 var stateReader = test.getInstance(0, TestStateReader.class);
                 assertThat(stateReader.countProofsWithinEpoch(6)).isEqualTo(0);
-                assertThat(stateReader.countProofsWithinEpoch(5)).isEqualTo(epochLength);
-                assertThat(stateReader.countProofsWithinEpoch(4)).isEqualTo(epochLength);
+                assertThat(stateReader.countProofsWithinEpoch(5)).isEqualTo(roundsPerEpoch);
+                assertThat(stateReader.countProofsWithinEpoch(4)).isEqualTo(roundsPerEpoch);
                 assertThat(stateReader.countProofsWithinEpoch(3)).isEqualTo(2);
                 assertThat(stateReader.countProofsWithinEpoch(2)).isEqualTo(2);
               });
     }
   }
 
-  private static final class MbTransactionGenerator
+  @Test
+  public void node_retains_enough_proofs_to_cover_max_transaction_count_in_old_enough_epochs() {
+    // 37 rounds, each contains a generated transaction + a round change = 74 transactions
+    var roundsPerEpoch = 37;
+    var maxTxnCountUnderProof = 20; // we will require 4 proofs
+    try (var test = createTest(2, roundsPerEpoch, 1024, maxTxnCountUnderProof, 16 * 1024 * 1024)) {
+      test.startNode(0);
+
+      // Act: advance to epoch 5
+      test.runUntilState(NodesPredicate.nodeAt(0, NodePredicate.atOrOverEpoch(5)));
+
+      // Act: after an async GC, we expect certain number of proofs in each epoch:
+      Awaitility.await()
+          .atMost(2 * GC_INTERVAL_SEC, TimeUnit.SECONDS)
+          .untilAsserted(
+              () -> {
+                var stateReader = test.getInstance(0, TestStateReader.class);
+                // - The epoch 5 has just started, hence it has no proofs
+                assertThat(stateReader.countProofsWithinEpoch(5)).isEqualTo(0);
+                // - The 2 most recent completed epochs contain all their proofs (i.e. not pruned)
+                assertThat(stateReader.countProofsWithinEpoch(4)).isEqualTo(roundsPerEpoch);
+                assertThat(stateReader.countProofsWithinEpoch(3)).isEqualTo(roundsPerEpoch);
+                // - This epoch was pruned, and it has 4 proofs (to fit the count limit)
+                assertThat(stateReader.countProofsWithinEpoch(2)).isEqualTo(4);
+              });
+
+      // Follow-up: Advance one more epoch
+      test.runUntilState(NodesPredicate.nodeAt(0, NodePredicate.atOrOverEpoch(6)));
+
+      // Assert: after an async GC...
+      Awaitility.await()
+          .atMost(2 * GC_INTERVAL_SEC, TimeUnit.SECONDS)
+          .untilAsserted(
+              () -> {
+                // ... the "pruning window" has progressed (i.e. now epoch 3 got pruned)
+                var stateReader = test.getInstance(0, TestStateReader.class);
+                assertThat(stateReader.countProofsWithinEpoch(6)).isEqualTo(0);
+                assertThat(stateReader.countProofsWithinEpoch(5)).isEqualTo(roundsPerEpoch);
+                assertThat(stateReader.countProofsWithinEpoch(4)).isEqualTo(roundsPerEpoch);
+                assertThat(stateReader.countProofsWithinEpoch(3)).isEqualTo(4);
+                assertThat(stateReader.countProofsWithinEpoch(2)).isEqualTo(4);
+              });
+    }
+  }
+
+  @Test
+  public void new_full_node_can_fully_sync_from_node_which_executed_gc() {
+    var roundsPerEpoch = 13;
+    var maxTxnCountUnderProof = 10; // the set-up is count-bounded (and requires 3 proofs per epoch)
+    try (var test = createTest(0, roundsPerEpoch, 256, maxTxnCountUnderProof, 16 * 1024 * 1024)) {
+      test.startNode(0);
+
+      // Act: advance to epoch 9
+      test.runUntilState(NodesPredicate.nodeAt(0, NodePredicate.atOrOverEpoch(9)));
+
+      // Act: wait for (potentially >1) GC, expecting only the critical proofs in epoch 8:
+      Awaitility.await()
+          .atMost(3 * GC_INTERVAL_SEC, TimeUnit.SECONDS)
+          .untilAsserted(
+              () -> {
+                var stateReader = test.getInstance(0, TestStateReader.class);
+                assertThat(stateReader.countProofsWithinEpoch(8)).isEqualTo(3);
+              });
+
+      // Act: spin-up a full-node
+      test.startNode(1);
+
+      // Assert: it finally ledger-syncs up to epoch 9 too:
+      test.runUntilState(NodesPredicate.nodeAt(1, NodePredicate.atOrOverEpoch(9)));
+    }
+  }
+
+  private static final class SizedTransactionGenerator
       implements TransactionGenerator<RawNotarizedTransaction> {
 
     private final NetworkDefinition networkDefinition;
+    private final int size;
 
-    public MbTransactionGenerator(NetworkDefinition networkDefinition) {
+    public SizedTransactionGenerator(NetworkDefinition networkDefinition, int size) {
       this.networkDefinition = networkDefinition;
+      this.size = size;
     }
 
     @Override
     public RawNotarizedTransaction nextTransaction() {
       return TransactionBuilder.forNetwork(networkDefinition)
           .manifest(Manifest.valid())
-          .blobs(List.of(new byte[1023 * 1024])) // slightly below limit
+          .blobs(List.of(new byte[size - 240])) // account for headers, etc.
           .prepare()
           .raw();
     }

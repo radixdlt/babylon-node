@@ -71,12 +71,10 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.ProposalMaxUncommittedTransactionsPayloadSize;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
-import com.radixdlt.environment.NodeConstants;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxRemoteDispatcher;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
@@ -101,6 +99,7 @@ import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
+import com.radixdlt.transaction.LedgerSyncLimitsConfig;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import io.reactivex.rxjava3.core.Flowable;
 import org.apache.logging.log4j.LogManager;
@@ -136,14 +135,11 @@ public final class MessagingModule extends AbstractModule {
   @Provides
   @MaxMessageSize
   private int maxMessageSize(
-      @ProposalMaxUncommittedTransactionsPayloadSize
-          int proposalMaxUncommittedTransactionsPayloadSize,
-      @MempoolRelayerMaxMessagePayloadSize int mempoolRelayerMaxMessagePayloadSize) {
+      @MempoolRelayerMaxMessagePayloadSize int mempoolRelayerMaxMessagePayloadSize,
+      LedgerSyncLimitsConfig ledgerSyncLimitsConfig) {
     final var maxMessageSizeBaseline =
         Math.max(
-            Math.max(
-                NodeConstants.MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE,
-                proposalMaxUncommittedTransactionsPayloadSize),
+            ledgerSyncLimitsConfig.maxTxnBytesForSingleResponse().toInt(),
             mempoolRelayerMaxMessagePayloadSize);
 
     // 30% should be more than enough for any vertex/QCs/proofs

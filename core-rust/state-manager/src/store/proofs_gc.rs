@@ -64,9 +64,6 @@
 
 use radix_engine::types::{Categorize, Decode, Encode};
 
-use node_common::config::limits::{
-    MAX_TXNS_FOR_RESPONSES_SPANNING_MORE_THAN_ONE_PROOF, MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE,
-};
 use radix_engine_common::types::Epoch;
 use std::sync::Arc;
 use std::time::Duration;
@@ -79,6 +76,7 @@ use crate::store::traits::proofs::QueryableProofStore;
 
 use crate::store::StateManagerDatabase;
 
+use crate::jni::LedgerSyncLimitsConfig;
 use node_common::locks::StateLock;
 
 /// A configuration for [`LedgerProofsGc`].
@@ -104,21 +102,24 @@ pub struct LedgerProofsGc {
     database: Arc<StateLock<StateManagerDatabase>>,
     interval: Duration,
     most_recent_full_resolution_epoch_count: u64,
+    limits_config: LedgerSyncLimitsConfig,
 }
 
 impl LedgerProofsGc {
     /// Creates a new GC.
     pub fn new(
         database: Arc<StateLock<StateManagerDatabase>>,
-        config: LedgerProofsGcConfig,
+        gc_config: LedgerProofsGcConfig,
+        limits_config: LedgerSyncLimitsConfig,
     ) -> Self {
         Self {
             database,
-            interval: Duration::from_secs(u64::from(config.interval_sec)),
+            interval: Duration::from_secs(u64::from(gc_config.interval_sec)),
             most_recent_full_resolution_epoch_count: u64::try_from(
-                config.most_recent_full_resolution_epoch_count,
+                gc_config.most_recent_full_resolution_epoch_count,
             )
             .unwrap(),
+            limits_config,
         }
     }
 
@@ -143,9 +144,9 @@ impl LedgerProofsGc {
         // Read the GC's persisted state and initialize the run:
         let read_progress_database = self.database.read_current();
         let to_epoch = read_progress_database
-            .max_epoch()
-            .map(|current_epoch| current_epoch.number())
-            .and_then(|current| current.checked_sub(self.most_recent_full_resolution_epoch_count))
+            .max_completed_epoch()
+            .map(|max_completed_epoch| max_completed_epoch.number())
+            .and_then(|number| number.checked_sub(self.most_recent_full_resolution_epoch_count))
             .map(Epoch::of);
         let Some(to_epoch) = to_epoch else {
             // Nothing to GC ever, yet.
@@ -170,7 +171,7 @@ impl LedgerProofsGc {
 
         let mut retained_proofs = 0; // only for logging purposes
         loop {
-            let at_state_version = last_pruned_state_version
+            let batch_start_state_version_inclusive = last_pruned_state_version
                 .next()
                 .expect("state version overflow");
 
@@ -178,16 +179,17 @@ impl LedgerProofsGc {
             // the business logic responsible for outputting proven transactions:
             let locate_proof_database = self.database.read_current();
             let transactions_and_proof = locate_proof_database.get_txns_and_proof(
-                at_state_version,
-                MAX_TXNS_FOR_RESPONSES_SPANNING_MORE_THAN_ONE_PROOF,
-                MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE,
+                batch_start_state_version_inclusive,
+                self.limits_config
+                    .max_txns_for_responses_spanning_more_than_one_proof,
+                self.limits_config.max_txn_bytes_for_single_response,
             );
             drop(locate_proof_database);
 
             let Some((_transactions, proof)) = transactions_and_proof else {
                 error!(
-                    "A chain of transactions-without-proof from state version {} does not fit within the limits; aborting the GC",
-                    at_state_version,
+                    "A chain of transactions-without-proof from state version {} does not fit within the limits {:?}; aborting the GC",
+                    batch_start_state_version_inclusive, self.limits_config
                 );
                 return;
             };
@@ -196,8 +198,11 @@ impl LedgerProofsGc {
             // Delete all the proofs from the beginning of transactions listing up to (but
             // excluding) the returned proof:
             last_pruned_state_version = header.state_version;
-            let delete_database = self.database.read_current();
-            delete_database.delete_ledger_proofs_range(at_state_version, last_pruned_state_version);
+            let delete_database = self.database.write_current();
+            delete_database.delete_ledger_proofs_range(
+                batch_start_state_version_inclusive,
+                last_pruned_state_version,
+            );
 
             retained_proofs += 1;
             if let Some(next_epoch) = header.next_epoch {

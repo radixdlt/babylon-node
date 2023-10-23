@@ -97,6 +97,7 @@ import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statecomputer.commit.ActiveValidatorInfo;
 import com.radixdlt.statecomputer.commit.LedgerHeader;
 import com.radixdlt.store.NodeStorageLocation;
+import com.radixdlt.transaction.LedgerSyncLimitsConfig;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt192;
@@ -125,6 +126,7 @@ public class REv2StateComputerTest {
             false,
             StateHashTreeGcConfig.forTesting(),
             LedgerProofsGcConfig.forTesting(),
+            LedgerSyncLimitsConfig.defaults(),
             false),
         new REv2LedgerInitializerModule(
             RawGenesisDataWithHash.fromGenesisData(

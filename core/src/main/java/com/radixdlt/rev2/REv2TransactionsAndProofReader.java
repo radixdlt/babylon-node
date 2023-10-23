@@ -69,6 +69,7 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerExtension;
 import com.radixdlt.sync.TransactionsAndProofReader;
+import com.radixdlt.transaction.LedgerSyncLimitsConfig;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import java.util.Optional;
@@ -80,22 +81,27 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
   private static final Logger log = LogManager.getLogger();
 
   private final REv2TransactionAndProofStore transactionStore;
+  private final LedgerSyncLimitsConfig limitsConfig;
 
   @Inject
-  public REv2TransactionsAndProofReader(REv2TransactionAndProofStore transactionStore) {
+  public REv2TransactionsAndProofReader(
+      REv2TransactionAndProofStore transactionStore, LedgerSyncLimitsConfig limitsConfig) {
     this.transactionStore = transactionStore;
+    this.limitsConfig = limitsConfig;
   }
 
   @Override
   public LedgerExtension getTransactions(DtoLedgerProof start) {
     final var startStateVersionInclusive = start.getLedgerHeader().getStateVersion() + 1;
 
-    final var rawTxnsAndProofOpt = transactionStore.getTxnsAndProof(startStateVersionInclusive);
+    final var rawTxnsAndProofOpt =
+        this.transactionStore.getTxnsAndProof(startStateVersionInclusive, this.limitsConfig);
 
     if (rawTxnsAndProofOpt.isEmpty()) {
       log.error(
-          "Impossible to build a chain of txns from state version {} fitting within the limits",
-          startStateVersionInclusive);
+          "Impossible to build a chain of txns from state version {} fitting within the limits {}",
+          startStateVersionInclusive,
+          this.limitsConfig);
     }
 
     return rawTxnsAndProofOpt

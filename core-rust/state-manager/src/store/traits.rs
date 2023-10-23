@@ -310,7 +310,7 @@ pub mod proofs {
     #[enum_dispatch]
     pub trait QueryableProofStore {
         fn max_state_version(&self) -> StateVersion;
-        fn max_epoch(&self) -> Option<Epoch> {
+        fn max_completed_epoch(&self) -> Option<Epoch> {
             self.get_last_epoch_proof()
                 .map(|proof| proof.ledger_header.epoch)
         }

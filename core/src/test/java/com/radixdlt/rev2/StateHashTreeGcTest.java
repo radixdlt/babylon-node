@@ -87,6 +87,7 @@ import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.testutil.TestStateReader;
+import com.radixdlt.transaction.LedgerSyncLimitsConfig;
 import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
 import java.util.function.Predicate;
@@ -123,6 +124,7 @@ public final class StateHashTreeGcTest {
                             UInt32.fromNonNegativeInt(1),
                             UInt64.fromNonNegativeLong(stateVersionHistoryLength)),
                         LedgerProofsGcConfig.forTesting(),
+                        LedgerSyncLimitsConfig.defaults(),
                         false))));
   }
 

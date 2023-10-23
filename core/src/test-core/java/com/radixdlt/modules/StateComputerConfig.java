@@ -81,6 +81,7 @@ import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.mempool.MempoolReceiverConfig;
 import com.radixdlt.mempool.MempoolRelayerConfig;
 import com.radixdlt.mempool.RustMempoolConfig;
+import com.radixdlt.transaction.LedgerSyncLimitsConfig;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -152,6 +153,7 @@ public sealed interface StateComputerConfig {
         debugLogging,
         StateHashTreeGcConfig.forTesting(),
         LedgerProofsGcConfig.forTesting(),
+        LedgerSyncLimitsConfig.defaults(),
         noFees);
   }
 
@@ -168,6 +170,7 @@ public sealed interface StateComputerConfig {
         false,
         StateHashTreeGcConfig.forTesting(),
         LedgerProofsGcConfig.forTesting(),
+        LedgerSyncLimitsConfig.defaults(),
         false);
   }
 
@@ -181,6 +184,7 @@ public sealed interface StateComputerConfig {
         false,
         StateHashTreeGcConfig.forTesting(),
         LedgerProofsGcConfig.forTesting(),
+        LedgerSyncLimitsConfig.defaults(),
         false);
   }
 
@@ -251,6 +255,7 @@ public sealed interface StateComputerConfig {
       boolean debugLogging,
       StateHashTreeGcConfig stateHashTreeGcConfig,
       LedgerProofsGcConfig ledgerProofsGcConfig,
+      LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
       boolean noFees)
       implements StateComputerConfig {}
 

@@ -90,6 +90,7 @@ import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.store.NodeStorageLocation;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.testutil.TestStateReader;
+import com.radixdlt.transaction.LedgerSyncLimitsConfig;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.NotarizedTransactionHash;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
@@ -105,6 +106,7 @@ public final class REv2StateManagerModule extends AbstractModule {
   private final boolean debugLogging;
   private final StateHashTreeGcConfig stateHashTreeGcConfig;
   private final LedgerProofsGcConfig ledgerProofsGcConfig;
+  private final LedgerSyncLimitsConfig ledgerSyncLimitsConfig;
   private final boolean noFees;
 
   private REv2StateManagerModule(
@@ -115,6 +117,7 @@ public final class REv2StateManagerModule extends AbstractModule {
       boolean debugLogging,
       StateHashTreeGcConfig stateHashTreeGcConfig,
       LedgerProofsGcConfig ledgerProofsGcConfig,
+      LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
       boolean noFees) {
     this.proposalLimitsConfig = proposalLimitsConfig;
     this.vertexLimitsConfigOpt = vertexLimitsConfigOpt;
@@ -123,6 +126,7 @@ public final class REv2StateManagerModule extends AbstractModule {
     this.debugLogging = debugLogging;
     this.stateHashTreeGcConfig = stateHashTreeGcConfig;
     this.ledgerProofsGcConfig = ledgerProofsGcConfig;
+    this.ledgerSyncLimitsConfig = ledgerSyncLimitsConfig;
     this.noFees = noFees;
   }
 
@@ -132,7 +136,8 @@ public final class REv2StateManagerModule extends AbstractModule {
       DatabaseFlags databaseFlags,
       Option<RustMempoolConfig> mempoolConfig,
       StateHashTreeGcConfig stateHashTreeGcConfig,
-      LedgerProofsGcConfig ledgerProofsGcConfig) {
+      LedgerProofsGcConfig ledgerProofsGcConfig,
+      LedgerSyncLimitsConfig ledgerSyncLimitsConfig) {
     return new REv2StateManagerModule(
         proposalLimitsConfig,
         Option.some(vertexLimitsConfig),
@@ -141,6 +146,7 @@ public final class REv2StateManagerModule extends AbstractModule {
         false,
         stateHashTreeGcConfig,
         ledgerProofsGcConfig,
+        ledgerSyncLimitsConfig,
         false);
   }
 
@@ -151,6 +157,7 @@ public final class REv2StateManagerModule extends AbstractModule {
       boolean debugLogging,
       StateHashTreeGcConfig stateHashTreeGcConfig,
       LedgerProofsGcConfig ledgerProofsGcConfig,
+      LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
       boolean noFees) {
     return new REv2StateManagerModule(
         proposalLimitsConfig,
@@ -160,6 +167,7 @@ public final class REv2StateManagerModule extends AbstractModule {
         debugLogging,
         stateHashTreeGcConfig,
         ledgerProofsGcConfig,
+        ledgerSyncLimitsConfig,
         noFees);
   }
 
@@ -169,7 +177,7 @@ public final class REv2StateManagerModule extends AbstractModule {
     bind(REv2TransactionsAndProofReader.class).in(Scopes.SINGLETON);
     bind(TransactionsAndProofReader.class).to(REv2TransactionsAndProofReader.class);
     bind(DatabaseFlags.class).toInstance(databaseFlags);
-
+    bind(LedgerSyncLimitsConfig.class).toInstance(ledgerSyncLimitsConfig);
     install(proposalLimitsConfig.asModule());
 
     install(
@@ -202,6 +210,7 @@ public final class REv2StateManagerModule extends AbstractModule {
                     getLoggingConfig(),
                     stateHashTreeGcConfig,
                     ledgerProofsGcConfig,
+                    ledgerSyncLimitsConfig,
                     noFees));
           }
 

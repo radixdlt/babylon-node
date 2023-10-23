@@ -69,7 +69,8 @@ import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.utils.UInt64;
 
 /** A request for listing a batch of transactions together with their proof. */
-public record TxnsAndProofRequest(UInt64 startStateVersionInclusive) {
+public record TxnsAndProofRequest(
+    UInt64 startStateVersionInclusive, LedgerSyncLimitsConfig limitsConfig) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         TxnsAndProofRequest.class,

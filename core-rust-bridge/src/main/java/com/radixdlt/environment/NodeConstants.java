@@ -141,12 +141,6 @@ public final class NodeConstants {
   public static final double MEMPOOL_TRANSACTION_OVERHEAD_FACTOR =
       (double) (MEMPOOL_TRANSACTION_OVERHEAD_FACTOR_PERCENT) / 100.0;
 
-  public static final int MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE =
-      Natives.builder(NodeConstants::getMaxTransactionBytesInResponse)
-          .build(new TypeToken<Natives.Call1<Tuple.Tuple0, UInt32>>() {})
-          .call(Tuple.Tuple0.of())
-          .toInt();
-
   private static native byte[] getDefaultMaxVertexTransactionCount(byte[] unused);
 
   private static native byte[] getDefaultMaxTotalVertexTransactionsSize(byte[] unused);
@@ -166,6 +160,4 @@ public final class NodeConstants {
   private static native byte[] getDefaultFinalizationCostUnitLimit(byte[] unused);
 
   private static native byte[] getMempoolTransactionOverheadFactorPercent(byte[] unused);
-
-  private static native byte[] getMaxTransactionBytesInResponse(byte[] unused);
 }

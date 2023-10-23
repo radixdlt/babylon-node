@@ -69,6 +69,7 @@ import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.transaction.LedgerSyncLimitsConfig;
 
 public record StateManagerConfig(
     NetworkDefinition networkDefinition,
@@ -79,6 +80,7 @@ public record StateManagerConfig(
     LoggingConfig loggingConfig,
     StateHashTreeGcConfig stateHashTreeGcConfig,
     LedgerProofsGcConfig ledgerProofsGcConfig,
+    LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
     boolean noFees) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(

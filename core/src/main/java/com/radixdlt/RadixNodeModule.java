@@ -96,6 +96,7 @@ import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.rev2.modules.*;
 import com.radixdlt.store.NodeStorageLocationFromPropertiesModule;
 import com.radixdlt.sync.SyncRelayConfig;
+import com.radixdlt.transaction.LedgerSyncLimitsConfig;
 import com.radixdlt.utils.BooleanUtils;
 import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
@@ -346,6 +347,10 @@ public final class RadixNodeModule extends AbstractModule {
 
     var stateHashTreeGcConfig = parseStateHashTreeGcConfig(properties);
     var ledgerProofsGcConfig = parseLedgerProofsGcConfig(properties);
+
+    // this is tied to the number of actually-persisted proofs, and should not be configureable:
+    var ledgerSyncLimitsConfig = LedgerSyncLimitsConfig.defaults();
+
     install(
         REv2StateManagerModule.create(
             ProposalLimitsConfig.from(vertexLimitsConfig),
@@ -353,7 +358,8 @@ public final class RadixNodeModule extends AbstractModule {
             databaseFlags,
             Option.some(mempoolConfig),
             stateHashTreeGcConfig,
-            ledgerProofsGcConfig));
+            ledgerProofsGcConfig,
+            ledgerSyncLimitsConfig));
 
     // Recovery
     install(new BerkeleySafetyStoreModule());
@@ -457,7 +463,7 @@ public final class RadixNodeModule extends AbstractModule {
     // Set to 0 to discard non-critical proofs of every completed epoch as soon as possible.
     // Set to Integer.MAX_VALUE to effectively disable this GC.
     var mostRecentFullResolutionEpochCount =
-        properties.get("ledger_proofs.most_recent_full_resolution_epoch_count", 1000);
+        properties.get("ledger_proofs.most_recent_full_resolution_epoch_count", 12);
     Preconditions.checkArgument(
         mostRecentFullResolutionEpochCount >= 0,
         "state version history length must not be negative: %s",

@@ -63,21 +63,20 @@
  */
 
 use crate::jni::node_rust_environment::JNINodeRustEnvironment;
+use crate::jni::LedgerSyncLimitsConfig;
 use crate::store::traits::*;
 use crate::transaction::RawLedgerTransaction;
 use crate::{LedgerProof, StateVersion};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use node_common::config::limits::{
-    MAX_TXNS_FOR_RESPONSES_SPANNING_MORE_THAN_ONE_PROOF, MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE,
-};
 use node_common::java::*;
 use radix_engine::types::*;
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 struct TxnsAndProofRequest {
     start_state_version_inclusive: u64,
+    limits_config: LedgerSyncLimitsConfig,
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -102,8 +101,10 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
             // "historical, non-locked" DB access - please see the TODO note at `LedgerProofsGc`.
             let txns_and_proof = database.read_current().get_txns_and_proof(
                 StateVersion::of(request.start_state_version_inclusive),
-                MAX_TXNS_FOR_RESPONSES_SPANNING_MORE_THAN_ONE_PROOF,
-                MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE,
+                request
+                    .limits_config
+                    .max_txns_for_responses_spanning_more_than_one_proof,
+                request.limits_config.max_txn_bytes_for_single_response,
             );
             txns_and_proof.map(|(transactions, proof)| TxnsAndProof {
                 transactions,
