@@ -226,10 +226,21 @@ public record Metrics(
 
     public record SentVote(boolean isFallbackVertex, boolean isTimeout, boolean sentToAll) {}
 
-    public record Sync(Counter requestsSent, Counter requestsReceived, Counter requestTimeouts) {}
+    public record Sync(
+        Counter requestsSent,
+        Counter requestsReceived,
+        Counter requestTimeouts,
+        LabelledCounter<BftSyncErrorResponse> errorResponsesReceived) {}
+
+    public record BftSyncErrorResponse(boolean higherQcReceived) {}
 
     public record VertexStore(
-        Gauge size, Counter forks, Counter rebuilds, Counter indirectParents) {}
+        Gauge size,
+        Counter forks,
+        Counter rebuilds,
+        Counter indirectParents,
+        Counter verticesDroppedDueToSizeLimit,
+        Counter verticesNotInsertedDueToSizeLimit) {}
   }
 
   public record BerkeleyDb(AddressBook addressBook, SafetyState safetyState) {

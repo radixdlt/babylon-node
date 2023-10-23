@@ -85,6 +85,7 @@ import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.sync.*;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.consensus.vertexstore.PersistentVertexStore;
+import com.radixdlt.consensus.vertexstore.VertexStoreConfig;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
@@ -302,7 +303,7 @@ public class EpochManagerTest {
   public void setup() {
     Guice.createInjector(
             new CryptoModule(),
-            new EpochsConsensusModule(),
+            new EpochsConsensusModule(VertexStoreConfig.testingDefault()),
             new LedgerModule(),
             getExternalModule())
         .injectMembers(this);

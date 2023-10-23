@@ -75,6 +75,7 @@ import com.radixdlt.consensus.ProposalLimitsConfig;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
+import com.radixdlt.consensus.vertexstore.VertexStoreConfig;
 import com.radixdlt.environment.*;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.genesis.GenesisProvider;
@@ -240,7 +241,14 @@ public final class RadixNodeModule extends AbstractModule {
     install(new SyncServiceModule(SyncRelayConfig.of(syncPatience, 10, 3000L)));
 
     // Epochs - Consensus
-    install(new EpochsConsensusModule());
+    final int maxNumVertices =
+        properties.get(
+            "bft.vertex_store.max_num_vertices", VertexStoreConfig.DEFAULT_MAX_NUM_VERTICES);
+    Preconditions.checkArgument(
+        maxNumVertices >= 100,
+        "Invalid configuration: bft.vertex_store.max_num_vertices must be at least 100, but was %s",
+        maxNumVertices);
+    install(new EpochsConsensusModule(new VertexStoreConfig(maxNumVertices)));
     // Epochs - Sync
     install(new EpochsSyncModule());
 

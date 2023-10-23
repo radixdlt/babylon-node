@@ -76,6 +76,7 @@ import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.TimeoutQuorumDela
 import com.radixdlt.consensus.liveness.*;
 import com.radixdlt.consensus.sync.*;
 import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
+import com.radixdlt.consensus.vertexstore.VertexStoreConfig;
 import com.radixdlt.consensus.vertexstore.VertexStoreJavaImpl;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.*;
@@ -91,6 +92,13 @@ import java.util.Random;
 
 /** Module which allows for consensus to have multiple epochs */
 public class EpochsConsensusModule extends AbstractModule {
+
+  private final VertexStoreConfig vertexStoreConfig;
+
+  public EpochsConsensusModule(VertexStoreConfig vertexStoreConfig) {
+    this.vertexStoreConfig = vertexStoreConfig;
+  }
+
   @Override
   protected void configure() {
     bind(ExponentialPacemakerTimeoutCalculator.class).in(Scopes.SINGLETON);
@@ -460,10 +468,12 @@ public class EpochsConsensusModule extends AbstractModule {
       EventDispatcher<BFTHighQCUpdate> highQCUpdateEventDispatcher,
       EventDispatcher<BFTCommittedUpdate> committedDispatcher,
       Ledger ledger,
-      Hasher hasher) {
+      Hasher hasher,
+      Metrics metrics) {
     return vertexStoreState ->
         new VertexStoreAdapter(
-            VertexStoreJavaImpl.create(vertexStoreState, ledger, hasher),
+            VertexStoreJavaImpl.create(
+                vertexStoreState, ledger, hasher, metrics, vertexStoreConfig),
             highQCUpdateEventDispatcher,
             updateSender,
             rebuildUpdateDispatcher,
