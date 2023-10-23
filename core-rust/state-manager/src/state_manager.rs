@@ -65,7 +65,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use node_common::scheduler::Scheduler;
+use node_common::scheduler::{Metrics, Scheduler, Spawner, Tracker};
 use node_common::{
     config::{limits::VertexLimitsConfig, MempoolConfig},
     locks::*,
@@ -146,7 +146,7 @@ impl StateManager {
         mempool_relay_dispatcher: Option<MempoolRelayDispatcher>,
         lock_factory: &LockFactory,
         metrics_registry: &Registry,
-        scheduler: &impl Scheduler,
+        scheduler: &Scheduler<impl Spawner, impl Tracker, impl Metrics>,
     ) -> Self {
         let mempool_config = match config.mempool_config {
             Some(mempool_config) => mempool_config,
@@ -242,16 +242,20 @@ impl StateManager {
         // Register the periodic background task for collecting the costly raw DB metrics...
         let raw_db_metrics_collector =
             RawDbMetricsCollector::new(database.clone(), metrics_registry);
-        scheduler.start_periodic(RAW_DB_MEASUREMENT_INTERVAL, move || {
-            raw_db_metrics_collector.run()
-        });
+        scheduler
+            .named("raw_db_measurement")
+            .start_periodic(RAW_DB_MEASUREMENT_INTERVAL, move || {
+                raw_db_metrics_collector.run()
+            });
 
         // ... and for deleting the stale state hash tree nodes (a.k.a. "JMT GC")...
         let state_hash_tree_gc =
             StateHashTreeGc::new(database.clone(), config.state_hash_tree_gc_config);
-        scheduler.start_periodic(state_hash_tree_gc.interval(), move || {
-            state_hash_tree_gc.run()
-        });
+        scheduler
+            .named("state_hash_tree_gc")
+            .start_periodic(state_hash_tree_gc.interval(), move || {
+                state_hash_tree_gc.run()
+            });
 
         // ... and for deleting the old, non-critical ledger proofs (a.k.a. "Proofs GC"):
         let ledger_proofs_gc =
