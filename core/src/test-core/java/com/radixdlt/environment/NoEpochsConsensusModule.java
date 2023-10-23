@@ -82,6 +82,7 @@ import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.sync.*;
 import com.radixdlt.consensus.vertexstore.VertexStore;
 import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
+import com.radixdlt.consensus.vertexstore.VertexStoreConfig;
 import com.radixdlt.consensus.vertexstore.VertexStoreJavaImpl;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.LedgerUpdate;
@@ -96,6 +97,12 @@ import java.util.Random;
 
 /** A module used in tests - configures a BFT validator logic for a single epoch. */
 public class NoEpochsConsensusModule extends AbstractModule {
+
+  private final VertexStoreConfig vertexStoreConfig;
+
+  public NoEpochsConsensusModule(VertexStoreConfig vertexStoreConfig) {
+    this.vertexStoreConfig = vertexStoreConfig;
+  }
 
   @Override
   public void configure() {
@@ -301,8 +308,10 @@ public class NoEpochsConsensusModule extends AbstractModule {
 
   @Provides
   @Singleton
-  private VertexStore vertexStore(BFTConfiguration bftConfiguration, Ledger ledger, Hasher hasher) {
-    return VertexStoreJavaImpl.create(bftConfiguration.getVertexStoreState(), ledger, hasher);
+  private VertexStore vertexStore(
+      BFTConfiguration bftConfiguration, Ledger ledger, Hasher hasher, Metrics metrics) {
+    return VertexStoreJavaImpl.create(
+        bftConfiguration.getVertexStoreState(), ledger, hasher, metrics, vertexStoreConfig);
   }
 
   @Provides

@@ -67,23 +67,14 @@ package com.radixdlt.consensus.vertexstore;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.Ledger;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.TimeoutCertificate;
-import com.radixdlt.consensus.VertexWithHash;
+import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.MissingParentException;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.lang.Option;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import com.radixdlt.monitoring.Metrics;
+import java.util.*;
 import javax.annotation.concurrent.NotThreadSafe;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -93,8 +84,10 @@ import org.apache.logging.log4j.Logger;
 public final class VertexStoreJavaImpl implements VertexStore {
   private static final Logger logger = LogManager.getLogger();
 
-  private final Hasher hasher;
   private final Ledger ledger;
+  private final Hasher hasher;
+  private final Metrics metrics;
+  private final VertexStoreConfig config;
 
   private final Map<HashCode, VertexWithHash> vertices = new HashMap<>();
   private final Map<HashCode, Set<HashCode>> vertexChildren = new HashMap<>();
@@ -105,19 +98,35 @@ public final class VertexStoreJavaImpl implements VertexStore {
   private HighQC highQC;
 
   private VertexStoreJavaImpl(
-      Ledger ledger, Hasher hasher, VertexWithHash rootVertex, HighQC highQC) {
+      Ledger ledger,
+      Hasher hasher,
+      Metrics metrics,
+      VertexStoreConfig config,
+      VertexWithHash rootVertex,
+      HighQC highQC) {
     this.ledger = Objects.requireNonNull(ledger);
     this.hasher = Objects.requireNonNull(hasher);
+    this.metrics = Objects.requireNonNull(metrics);
+    this.config = Objects.requireNonNull(config);
     this.rootVertex = Objects.requireNonNull(rootVertex);
     this.highQC = Objects.requireNonNull(highQC);
     this.vertexChildren.put(rootVertex.hash(), new HashSet<>());
   }
 
   public static VertexStoreJavaImpl create(
-      VertexStoreState vertexStoreState, Ledger ledger, Hasher hasher) {
+      VertexStoreState vertexStoreState,
+      Ledger ledger,
+      Hasher hasher,
+      Metrics metrics,
+      VertexStoreConfig config) {
     final var vertexStore =
         new VertexStoreJavaImpl(
-            ledger, hasher, vertexStoreState.getRoot(), vertexStoreState.getHighQC());
+            ledger,
+            hasher,
+            metrics,
+            config,
+            vertexStoreState.getRoot(),
+            vertexStoreState.getHighQC());
 
     for (var vertexWithHash : vertexStoreState.getVertices()) {
       vertexStore.vertices.put(vertexWithHash.hash(), vertexWithHash);
@@ -319,28 +328,53 @@ public final class VertexStoreJavaImpl implements VertexStore {
       throw new MissingParentException(vertex.getParentVertexId());
     }
 
-    return insertVertexInternal(vertexWithHash);
-  }
-
-  private Option<BFTInsertUpdate> insertVertexInternal(VertexWithHash vertexWithHash) {
-    LinkedList<ExecutedVertex> previous =
-        getPathFromRoot(vertexWithHash.vertex().getParentVertexId());
+    final var previous = getPathFromRoot(vertexWithHash.vertex().getParentVertexId());
     final var executedVertexOption = Option.from(ledger.prepare(previous, vertexWithHash));
-    return executedVertexOption.map(
+    return executedVertexOption.flatMap(
         executedVertex -> {
           vertices.put(executedVertex.getVertexHash(), executedVertex.getVertexWithHash());
           executedVertices.put(executedVertex.getVertexHash(), executedVertex);
           vertexChildren.put(executedVertex.getVertexHash(), new HashSet<>());
-          Set<HashCode> siblings = vertexChildren.get(executedVertex.getParentId());
+          final var siblings = vertexChildren.get(executedVertex.getParentId());
           siblings.add(executedVertex.getVertexHash());
 
-          VertexStoreState vertexStoreState = getState();
-          return BFTInsertUpdate.insertedVertex(executedVertex, siblings.size(), vertexStoreState);
+          if (vertices.size() <= config.maxNumVertices()) {
+            // All good, we're under (or at) the limit
+            return Option.some(
+                BFTInsertUpdate.insertedVertex(executedVertex, siblings.size(), getState()));
+          } else {
+            /*
+            We're above the capacity and some vertices must be removed!
+            Warning: this technically breaks the protocol and can lead to inconsistencies.
+            E.g. it may lead to a situation where a QC has been formed but no one (not even its signers!)
+            have the corresponding vertex, because it has been removed before the QC was formed.
+            While this isn't 100% correct from protocol's point of view, the node can handle
+            this situation (specifically BFTSync can).
+            This has been introduced to prevent vertex store growing so large that it couldn't be serialized,
+            which would result in a hard-to-recover liveness break.
+            This could happen e.g. during a prolonged liveness break (e.g. due to execution divergence),
+            where there are many TC-based round changes and many vertices are added
+            to the vertex store, but none can get a quorum.
+            We believe this is a safer alternative to an uncontrolled vertex store growth.
+            */
+            final var droppedVertex = dropLeastImportantVertex();
+            if (droppedVertex.hash().equals(vertexWithHash.hash())) {
+              // The vertex we've just tried to insert was considered the least important,
+              // and effectively wasn't inserted.
+              this.metrics.bft().vertexStore().verticesNotInsertedDueToSizeLimit().inc();
+              return Option.empty();
+            } else {
+              // Some other vertex was removed
+              this.metrics.bft().vertexStore().verticesDroppedDueToSizeLimit().inc();
+              return Option.some(
+                  BFTInsertUpdate.insertedVertex(executedVertex, siblings.size(), getState()));
+            }
+          }
         });
   }
 
   private void removeVertexAndPruneInternal(HashCode vertexId, HashCode skip) {
-    vertices.remove(vertexId);
+    final var removedVertexOrNull = vertices.remove(vertexId);
     executedVertices.remove(vertexId);
 
     if (this.rootVertex.hash().equals(vertexId)) {
@@ -353,6 +387,15 @@ public final class VertexStoreJavaImpl implements VertexStore {
         if (!child.equals(skip)) {
           removeVertexAndPruneInternal(child, null);
         }
+      }
+    }
+
+    // Remove this vertex from its parent's children list
+    if (removedVertexOrNull != null) {
+      final var parentVertexId = removedVertexOrNull.vertex().getParentVertexId();
+      if (this.vertexChildren.containsKey(parentVertexId)) {
+        final var parentVertexChildren = this.vertexChildren.get(parentVertexId);
+        parentVertexChildren.remove(vertexId);
       }
     }
   }
@@ -385,8 +428,8 @@ public final class VertexStoreJavaImpl implements VertexStore {
     return new CommittedUpdate(path);
   }
 
-  @Override
   /** Returns a path of vertices up to the root vertex (excluding the root itself) */
+  @Override
   public LinkedList<ExecutedVertex> getPathFromRoot(HashCode vertexId) {
     final LinkedList<ExecutedVertex> path = new LinkedList<>();
 
@@ -437,5 +480,52 @@ public final class VertexStoreJavaImpl implements VertexStore {
   @VisibleForTesting
   Set<HashCode> verticesForWhichChildrenAreBeingStored() {
     return this.vertexChildren.keySet();
+  }
+
+  /** Returns the number of vertices (excluding the root vertex) stored in this vertex store. */
+  @VisibleForTesting
+  int numVertices() {
+    return vertices.size();
+  }
+
+  /**
+   * Removes the least important (as determined by `findLeastImportantVertexToDrop`) vertex from
+   * this vertex store. Throws if no vertices could be removed.
+   */
+  @VisibleForTesting
+  VertexWithHash dropLeastImportantVertex() {
+    final var vertexToRemove =
+        findLeastImportantVertexToDrop()
+            .orElseThrow(
+                () ->
+                    new RuntimeException(
+                        "VertexStore has reached its maximum size of "
+                            + config.maxNumVertices()
+                            + " and no vertices could be removed."));
+    removeVertexAndPruneInternal(vertexToRemove.hash(), null);
+    return vertexToRemove;
+  }
+
+  /**
+   * Finds the next vertex to remove if vertex store determines that some vertex *must* be removed
+   * (e.g. due to reaching its maximum size). The vertex to remove is the oldest (by round) leaf
+   * vertex on the shortest QC path (by QC round). See
+   * VertexStoreTest.test_vertex_store_gc_removal_order for details.
+   */
+  private Optional<VertexWithHash> findLeastImportantVertexToDrop() {
+    return this.vertices.entrySet().stream()
+        .filter(
+            e -> {
+              final var hasChildren =
+                  vertexChildren.containsKey(e.getKey())
+                      && !vertexChildren.get(e.getKey()).isEmpty();
+              // Don't remove any vertices that still have children
+              return !hasChildren;
+            })
+        .map(Map.Entry::getValue)
+        .min(
+            /* Sort by: QC round (lowest first) and then proposed round (lowest first) */
+            Comparator.<VertexWithHash, Round>comparing(v -> v.vertex().getQCToParent().getRound())
+                .thenComparing(v -> v.vertex().getRound()));
   }
 }

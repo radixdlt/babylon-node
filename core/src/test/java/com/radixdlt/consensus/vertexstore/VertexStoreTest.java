@@ -66,9 +66,7 @@ package com.radixdlt.consensus.vertexstore;
 
 import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.assertj.core.api.Assertions.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doAnswer;
@@ -87,6 +85,8 @@ import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.ZeroHasher;
@@ -113,12 +113,18 @@ public class VertexStoreTest {
   private EventDispatcher<BFTHighQCUpdate> bftHighQCUpdateEventDispatcher;
   private EventDispatcher<BFTCommittedUpdate> committedSender;
   private Hasher hasher = new Blake2b256Hasher(DefaultSerialization.getInstance());
+  private Metrics metrics;
 
   private static final LedgerHeader MOCKED_HEADER =
       LedgerHeader.create(0, Round.genesis(), 0, LedgerHashes.zero(), 0, 0);
 
   @Before
   public void setUp() {
+    setUp(VertexStoreConfig.testingDefault());
+  }
+
+  public void setUp(VertexStoreConfig config) {
+    this.metrics = new MetricsInitializer().initialize();
     // No type check issues with mocking generic here
     Ledger ssc = mock(Ledger.class);
     this.ledger = ssc;
@@ -144,7 +150,9 @@ public class VertexStoreTest {
         VertexStoreJavaImpl.create(
             VertexStoreState.create(HighQC.ofInitialEpochQc(rootQC), genesisVertex, hasher),
             ledger,
-            hasher);
+            hasher,
+            metrics,
+            config);
     this.vertexStoreAdapter =
         new VertexStoreAdapter(
             underlyingVertexStore,
@@ -284,25 +292,6 @@ public class VertexStoreTest {
     assertTrue(isVertexStoreChildrenMappingTidy(underlyingVertexStore));
   }
 
-  private VertexWithHash createVertex(
-      BFTHeader greatGrandParent, BFTHeader grandParent, BFTHeader parent, byte[] tx) {
-    final QuorumCertificate qc;
-    if (!parent.getRound().equals(Round.genesis())) {
-      final var data = new VoteData(parent, grandParent, greatGrandParent);
-      qc = new QuorumCertificate(data, new TimestampedECDSASignatures());
-    } else {
-      qc = rootQC;
-    }
-    final var round = parent.getRound().next();
-    return Vertex.create(
-            qc, round, List.of(RawNotarizedTransaction.create(tx)), BFTValidatorId.random(), 0)
-        .withId(hasher);
-  }
-
-  private BFTHeader mockedHeaderOf(VertexWithHash vertexWithHash) {
-    return new BFTHeader(vertexWithHash.vertex().getRound(), vertexWithHash.hash(), MOCKED_HEADER);
-  }
-
   @Test
   public void adding_a_qc_with_commit_should_commit_vertices_to_ledger() {
     // Arrange
@@ -397,5 +386,139 @@ public class VertexStoreTest {
 
     vertexStoreAdapter.insertTimeoutCertificate(initialTC);
     assertEquals(higherTC, vertexStoreAdapter.highQC().highestTC().orElse(null));
+  }
+
+  @Test
+  public void test_vertex_store_gc_removal_order() {
+    // spotless:off
+    /* This test checks that when vertex store size limit is reached
+      vertices are removed in the right (least important) order.
+      Test setup:
+       root - A (round 1) - B (round 2)
+                          - C (round 3)
+                          - D (round 4)
+                          - E (round 5) - J (round 10) - K (round 13)
+                          - F (round 7)
+                          - G (round 8)
+                          - H (round 14)
+                          - I (round 15)
+      Expected removal order: B, C, D, F, G, H, I, K, J, E, A
+    */
+    // spotless:on
+
+    // Arrange
+    // Three mock vertices for A's ancestors
+    final var v1 = new BFTHeader(Round.genesis(), genesisHash, MOCKED_HEADER);
+    final var v2 = new BFTHeader(Round.genesis(), genesisHash, MOCKED_HEADER);
+    final var v3 = new BFTHeader(Round.genesis(), genesisHash, MOCKED_HEADER);
+
+    final var vertexA = createVertex(v3, v2, v1, new byte[] {0});
+    final var vertexB = createVertex(Round.of(2), v2, v1, mockedHeaderOf(vertexA), new byte[] {0});
+    final var vertexC = createVertex(Round.of(3), v2, v1, mockedHeaderOf(vertexA), new byte[] {0});
+    final var vertexD = createVertex(Round.of(4), v2, v1, mockedHeaderOf(vertexA), new byte[] {0});
+    final var vertexE = createVertex(Round.of(5), v2, v1, mockedHeaderOf(vertexA), new byte[] {0});
+    final var vertexF = createVertex(Round.of(7), v2, v1, mockedHeaderOf(vertexA), new byte[] {0});
+    final var vertexG = createVertex(Round.of(8), v2, v1, mockedHeaderOf(vertexA), new byte[] {0});
+    final var vertexH = createVertex(Round.of(14), v2, v1, mockedHeaderOf(vertexA), new byte[] {0});
+    final var vertexI = createVertex(Round.of(15), v2, v1, mockedHeaderOf(vertexA), new byte[] {0});
+    final var vertexJ =
+        createVertex(
+            Round.of(10), v1, mockedHeaderOf(vertexA), mockedHeaderOf(vertexE), new byte[] {0});
+    final var vertexK =
+        createVertex(
+            Round.of(13),
+            mockedHeaderOf(vertexA),
+            mockedHeaderOf(vertexE),
+            mockedHeaderOf(vertexJ),
+            new byte[] {0});
+
+    for (var v :
+        List.of(
+            vertexA, vertexB, vertexC, vertexD, vertexE, vertexF, vertexG, vertexH, vertexI,
+            vertexJ, vertexK)) {
+      vertexStoreAdapter.insertVertex(v);
+    }
+
+    assertEquals(underlyingVertexStore.numVertices(), 11);
+
+    // Expected removal order: B, C, D, F, G, H, I, K, J, E, A
+    for (var v :
+        List.of(
+            vertexB, vertexC, vertexD, vertexF, vertexG, vertexH, vertexI, vertexK, vertexJ,
+            vertexE, vertexA)) {
+      assertEquals(v.hash(), underlyingVertexStore.dropLeastImportantVertex().hash());
+    }
+    // No more vertices can be removed
+    assertThrows(
+        RuntimeException.class, () -> underlyingVertexStore.dropLeastImportantVertex().hash());
+    assertEquals(underlyingVertexStore.numVertices(), 0);
+
+    // Can still insert new vertices
+    final var vertexL = createVertex(Round.of(50), v3, v2, v1, new byte[] {0});
+    vertexStoreAdapter.insertVertex(vertexL);
+    assertEquals(underlyingVertexStore.numVertices(), 1);
+
+    // And remove them
+    assertEquals(vertexL.hash(), underlyingVertexStore.dropLeastImportantVertex().hash());
+    assertEquals(underlyingVertexStore.numVertices(), 0);
+  }
+
+  @Test
+  public void test_vertex_store_removes_vertices_to_keep_the_limit() {
+    // Arrange
+    // Max 5 vertices
+    setUp(new VertexStoreConfig(5));
+
+    // Three mock vertices for A's ancestors
+    final var v1 = new BFTHeader(Round.genesis(), genesisHash, MOCKED_HEADER);
+    final var v2 = new BFTHeader(Round.genesis(), genesisHash, MOCKED_HEADER);
+    final var v3 = new BFTHeader(Round.genesis(), genesisHash, MOCKED_HEADER);
+    final var vertexA = createVertex(v3, v2, v1, new byte[] {0});
+    underlyingVertexStore.insertVertex(vertexA);
+
+    for (int i = 0; i < 4; i++) {
+      // Insert 4 vertices at rounds 10..13
+      final var v = createVertex(Round.of(10 + i), v2, v1, mockedHeaderOf(vertexA), new byte[] {0});
+      assertTrue(underlyingVertexStore.insertVertex(v).isPresent());
+    }
+    // We're at the limit
+    assertEquals(underlyingVertexStore.numVertices(), 5);
+
+    // An older vertex (by round) shouldn't be inserted
+    final var olderVertex =
+        createVertex(Round.of(9), v2, v1, mockedHeaderOf(vertexA), new byte[] {0});
+    assertTrue(underlyingVertexStore.insertVertex(olderVertex).isEmpty());
+
+    assertEquals(underlyingVertexStore.numVertices(), 5);
+
+    // Inserting a newer vertex should succeed
+    final var newerVertex =
+        createVertex(Round.of(15), v2, v1, mockedHeaderOf(vertexA), new byte[] {0});
+    assertTrue(underlyingVertexStore.insertVertex(newerVertex).isPresent());
+
+    assertEquals(underlyingVertexStore.numVertices(), 5);
+  }
+
+  private VertexWithHash createVertex(
+      BFTHeader greatGrandParent, BFTHeader grandParent, BFTHeader parent, byte[] tx) {
+    return createVertex(parent.getRound().next(), greatGrandParent, grandParent, parent, tx);
+  }
+
+  private VertexWithHash createVertex(
+      Round round, BFTHeader greatGrandParent, BFTHeader grandParent, BFTHeader parent, byte[] tx) {
+    final QuorumCertificate qc;
+    if (!parent.getRound().equals(Round.genesis())) {
+      final var data = new VoteData(parent, grandParent, greatGrandParent);
+      qc = new QuorumCertificate(data, new TimestampedECDSASignatures());
+    } else {
+      qc = rootQC;
+    }
+    return Vertex.create(
+            qc, round, List.of(RawNotarizedTransaction.create(tx)), BFTValidatorId.random(), 0)
+        .withId(hasher);
+  }
+
+  private BFTHeader mockedHeaderOf(VertexWithHash vertexWithHash) {
+    return new BFTHeader(vertexWithHash.vertex().getRound(), vertexWithHash.hash(), MOCKED_HEADER);
   }
 }

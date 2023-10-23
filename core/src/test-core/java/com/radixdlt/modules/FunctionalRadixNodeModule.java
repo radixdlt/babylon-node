@@ -73,6 +73,7 @@ import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
+import com.radixdlt.consensus.vertexstore.VertexStoreConfig;
 import com.radixdlt.environment.NoEpochsConsensusModule;
 import com.radixdlt.environment.NoEpochsSyncModule;
 import com.radixdlt.environment.NodeAutoCloseable;
@@ -125,25 +126,13 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
     BERKELEY_DB,
   }
 
-  public static final class ConsensusConfig {
-    private final int bftSyncPatienceMillis;
-    private final long pacemakerBaseTimeoutMs;
-    private final double pacemakerBackoffRate;
-    private final long additionalRoundTimeIfProposalReceivedMs;
-    private final long timeoutQuorumResolutionDelayMs;
-
-    private ConsensusConfig(
-        int bftSyncPatienceMillis,
-        long pacemakerBaseTimeoutMs,
-        double pacemakerBackoffRate,
-        long additionalRoundTimeIfProposalReceivedMs,
-        long timeoutQuorumResolutionDelayMs) {
-      this.bftSyncPatienceMillis = bftSyncPatienceMillis;
-      this.pacemakerBaseTimeoutMs = pacemakerBaseTimeoutMs;
-      this.pacemakerBackoffRate = pacemakerBackoffRate;
-      this.additionalRoundTimeIfProposalReceivedMs = additionalRoundTimeIfProposalReceivedMs;
-      this.timeoutQuorumResolutionDelayMs = timeoutQuorumResolutionDelayMs;
-    }
+  public record ConsensusConfig(
+      int bftSyncPatienceMillis,
+      long pacemakerBaseTimeoutMs,
+      double pacemakerBackoffRate,
+      long additionalRoundTimeIfProposalReceivedMs,
+      long timeoutQuorumResolutionDelayMs,
+      int vertexStoreMaxSize) {
 
     public static ConsensusConfig of(
         int bftSyncPatienceMillis,
@@ -156,7 +145,8 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
           pacemakerBaseTimeoutMs,
           pacemakerBackoffRate,
           additionalRoundTimeIfProposalReceivedMs,
-          timeoutQuorumResolutionDelayMs);
+          timeoutQuorumResolutionDelayMs,
+          VertexStoreConfig.DEFAULT_MAX_NUM_VERTICES);
     }
 
     public static ConsensusConfig of(long pacemakerBaseTimeoutMs) {
@@ -172,7 +162,8 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
           pacemakerBaseTimeoutMs,
           2.0,
           additionalRoundTimeIfProposalReceivedMs,
-          pacemakerBaseTimeoutMs / 2);
+          pacemakerBaseTimeoutMs / 2,
+          VertexStoreConfig.DEFAULT_MAX_NUM_VERTICES);
     }
 
     public static ConsensusConfig of() {
@@ -182,7 +173,8 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
           pacemakerBaseTimeoutMs,
           2.0,
           pacemakerBaseTimeoutMs /* double the timeout if proposal was received */,
-          2000);
+          2000,
+          VertexStoreConfig.DEFAULT_MAX_NUM_VERTICES);
     }
 
     private AbstractModule asModule() {
@@ -323,10 +315,11 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
     // Consensus
     install(consensusConfig.asModule());
     if (this.epochs) {
-      install(new EpochsConsensusModule());
+      install(new EpochsConsensusModule(new VertexStoreConfig(consensusConfig.vertexStoreMaxSize)));
       install(new EpochsSafetyRecoveryModule());
     } else {
-      install(new NoEpochsConsensusModule());
+      install(
+          new NoEpochsConsensusModule(new VertexStoreConfig(consensusConfig.vertexStoreMaxSize)));
       install(new NoEpochsSafetyRecoveryModule());
     }
 

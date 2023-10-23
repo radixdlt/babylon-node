@@ -84,6 +84,7 @@ import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.sync.*;
 import com.radixdlt.consensus.vertexstore.PersistentVertexStore;
 import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
+import com.radixdlt.consensus.vertexstore.VertexStoreConfig;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
@@ -151,7 +152,10 @@ public class ConsensusModuleTest {
     this.responseSender = rmock(RemoteEventDispatcher.class);
     this.errorResponseSender = rmock(RemoteEventDispatcher.class);
 
-    Guice.createInjector(new NoEpochsConsensusModule(), new CryptoModule(), getExternalModule())
+    Guice.createInjector(
+            new NoEpochsConsensusModule(VertexStoreConfig.testingDefault()),
+            new CryptoModule(),
+            getExternalModule())
         .injectMembers(this);
   }
 

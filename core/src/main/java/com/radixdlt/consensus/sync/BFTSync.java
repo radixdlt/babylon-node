@@ -580,10 +580,33 @@ public final class BFTSync implements BFTSyncer {
               .getRound()
               .compareTo(vertexStore.highQC().highestQC().getRound())
           > 0) {
+
+        metrics
+            .bft()
+            .sync()
+            .errorResponsesReceived()
+            .label(new Metrics.Bft.BftSyncErrorResponse(true));
+
         // error response indicates that the node has moved on from last sync so try and sync to a
         // new qc
         syncToQC(
             response.highQC(), sender, HighQcSource.RECEIVED_IN_BFT_SYNC_VERTICES_ERROR_RESPONSE);
+      } else {
+        // The node we've asked doesn't have the vertex we've asked for, and it doesn't have a newer
+        // QC.
+        // This is most likely a case where the vertex has been pruned
+        // (due to reaching vertex store max size limit).
+        // We're falling back to request timeout (so no-op here) and will try with a different
+        // (random) peer there.
+        // TODO (most likely during Rust migration): better handle this corner case
+        // - mark the peers (signers) that we've already asked and didn't get a vertex
+        // - ask a different peer immediately instead of waiting for sync timeout
+        // - explicitly abort if there are no peers left to query
+        metrics
+            .bft()
+            .sync()
+            .errorResponsesReceived()
+            .label(new Metrics.Bft.BftSyncErrorResponse(false));
       }
     }
   }
