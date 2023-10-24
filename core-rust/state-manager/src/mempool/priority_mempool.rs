@@ -345,7 +345,6 @@ impl PriorityMempool {
         if !to_be_removed.is_empty() {
             let best_to_be_removed = to_be_removed.last().unwrap();
             if new_order_data < MempoolDataProposalPriorityOrdering(best_to_be_removed.clone()) {
-                // Note: update when DEFAULT_MAX_TIP_PERCENTAGE is changed/overwriten
                 let min_tip_percentage_required = best_to_be_removed
                     .transaction
                     .tip_percentage()

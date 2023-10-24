@@ -687,7 +687,7 @@ struct CommittedIntentRecord {
 
 #[cfg(test)]
 mod tests {
-    use node_common::config::MempoolConfig;
+    use node_common::{config::MempoolConfig, locks::LockFactory};
     use prometheus::Registry;
     use radix_engine_interface::crypto::blake2b_256_hash;
 
@@ -1017,8 +1017,9 @@ mod tests {
         rejection_limit: u32,
         recently_committed_intents_limit: u32,
     ) -> PendingTransactionResultCache {
+        let lock_factory = LockFactory::new("testing");
         PendingTransactionResultCache::new(
-            Arc::new(RwLock::for_testing(PriorityMempool::new(
+            Arc::new(lock_factory.new_rwlock(PriorityMempool::new(
                 MempoolConfig::default(),
                 &Registry::new(),
             ))),
