@@ -62,80 +62,22 @@
  * permissions under this License.
  */
 
-package com.radixdlt.transaction;
+package com.radixdlt.environment;
 
-import com.google.common.reflect.TypeToken;
-import com.radixdlt.environment.NodeRustEnvironment;
-import com.radixdlt.lang.Option;
-import com.radixdlt.lang.Tuple;
-import com.radixdlt.monitoring.LabelledTimer;
-import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.monitoring.Metrics.MethodId;
-import com.radixdlt.sbor.Natives;
-import com.radixdlt.statecomputer.commit.LedgerProof;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
-import java.util.Optional;
 
-public final class REv2TransactionAndProofStore {
-  public REv2TransactionAndProofStore(Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
-    LabelledTimer<MethodId> timer = metrics.stateManager().nativeCall();
-    this.getTxnsAndProof =
-        Natives.builder(nodeRustEnvironment, REv2TransactionAndProofStore::getTxnsAndProof)
-            .measure(
-                timer.label(new MethodId(REv2TransactionAndProofStore.class, "getTxnsAndProof")))
-            .build(new TypeToken<>() {});
-    this.getLastProofFunc =
-        Natives.builder(nodeRustEnvironment, REv2TransactionAndProofStore::getLastProof)
-            .measure(timer.label(new MethodId(REv2TransactionAndProofStore.class, "getLastProof")))
-            .build(new TypeToken<>() {});
-    this.getPostGenesisEpochProofFunc =
-        Natives.builder(nodeRustEnvironment, REv2TransactionAndProofStore::getPostGenesisEpochProof)
-            .measure(
-                timer.label(
-                    new MethodId(REv2TransactionAndProofStore.class, "getPostGenesisEpochProof")))
-            .build(new TypeToken<>() {});
-    this.getEpochProofFunc =
-        Natives.builder(nodeRustEnvironment, REv2TransactionAndProofStore::getEpochProof)
-            .measure(timer.label(new MethodId(REv2TransactionAndProofStore.class, "getEpochProof")))
-            .build(new TypeToken<>() {});
+public record LedgerProofsGcConfig(UInt32 intervalSec, UInt64 mostRecentFullResolutionEpochCount) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        LedgerProofsGcConfig.class,
+        codecs -> StructCodec.fromRecordComponents(LedgerProofsGcConfig.class, codecs));
   }
 
-  public Option<TxnsAndProof> getTxnsAndProof(
-      long startStateVersionInclusive, LedgerSyncLimitsConfig limitsConfig) {
-    return this.getTxnsAndProof.call(
-        new TxnsAndProofRequest(
-            UInt64.fromNonNegativeLong(startStateVersionInclusive), limitsConfig));
+  public static LedgerProofsGcConfig forTesting() {
+    // Remove everything non-critical, frequently (in tests).
+    return new LedgerProofsGcConfig(UInt32.fromNonNegativeInt(1), UInt64.ZERO);
   }
-
-  public Optional<LedgerProof> getLastProof() {
-    return this.getLastProofFunc.call(Tuple.tuple()).toOptional();
-  }
-
-  public Optional<LedgerProof> getPostGenesisEpochProof() {
-    return this.getPostGenesisEpochProofFunc.call(Tuple.tuple()).toOptional();
-  }
-
-  public Optional<LedgerProof> getEpochProof(long epoch) {
-    return this.getEpochProofFunc.call(UInt64.fromNonNegativeLong(epoch)).toOptional();
-  }
-
-  private final Natives.Call1<TxnsAndProofRequest, Option<TxnsAndProof>> getTxnsAndProof;
-
-  private static native byte[] getTxnsAndProof(
-      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
-
-  private final Natives.Call1<Tuple.Tuple0, Option<LedgerProof>> getLastProofFunc;
-
-  private static native byte[] getLastProof(
-      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
-
-  private final Natives.Call1<Tuple.Tuple0, Option<LedgerProof>> getPostGenesisEpochProofFunc;
-
-  private static native byte[] getPostGenesisEpochProof(
-      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
-
-  private final Natives.Call1<UInt64, Option<LedgerProof>> getEpochProofFunc;
-
-  private static native byte[] getEpochProof(
-      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 }

@@ -89,7 +89,10 @@ use tracing::{error, info, warn};
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::query::TransactionIdentifierLoader;
-use crate::store::traits::gc::StateHashTreeGcStore;
+use crate::store::traits::gc::{
+    LedgerProofsGcProgress, LedgerProofsGcStore, StateHashTreeGcStore,
+    VersionedLedgerProofsGcProgress,
+};
 use crate::store::traits::measurement::{CategoryDbVolumeStatistic, MeasurableDatabase};
 use crate::store::traits::scenario::{
     ExecutedGenesisScenario, ExecutedGenesisScenarioStore, ScenarioSequenceNumber,
@@ -120,7 +123,7 @@ use super::traits::extensions::*;
 /// The `NAME` constants defined by `*Cf` structs (and referenced below) are used as database column
 /// family names. Any change would effectively mean a ledger wipe. For this reason, we choose to
 /// define them manually (rather than using the `Into<String>`, which is refactor-sensitive).
-const ALL_COLUMN_FAMILIES: [&str; 19] = [
+const ALL_COLUMN_FAMILIES: [&str; 20] = [
     RawLedgerTransactionsCf::DEFAULT_NAME,
     CommittedTransactionIdentifiersCf::VERSIONED_NAME,
     TransactionReceiptsCf::VERSIONED_NAME,
@@ -140,6 +143,7 @@ const ALL_COLUMN_FAMILIES: [&str; 19] = [
     ExtensionsDataCf::NAME,
     AccountChangeStateVersionsCf::NAME,
     ExecutedGenesisScenariosCf::VERSIONED_NAME,
+    LedgerProofsGcProgressCf::VERSIONED_NAME,
 ];
 
 /// Committed transactions.
@@ -258,7 +262,7 @@ impl VersionedCf<NodeId, SubstateNodeAncestryRecord> for SubstateNodeAncestryRec
 }
 
 /// Vertex store.
-/// Schema: `[]` -> `scrypto_encode(VersionedVertexStore)`
+/// Schema: `[]` -> `scrypto_encode(VersionedVertexStoreBlob)`
 /// Note: This is a single-entry table (i.e. the empty key is the only allowed key).
 struct VertexStoreCf;
 impl VersionedCf<(), VertexStoreBlob> for VertexStoreCf {
@@ -358,6 +362,16 @@ impl VersionedCf<ScenarioSequenceNumber, ExecutedGenesisScenario> for ExecutedGe
     const VERSIONED_NAME: &'static str = "executed_genesis_scenarios";
     type KeyCodec = ScenarioSequenceNumberDbCodec;
     type VersionedValue = VersionedExecutedGenesisScenario;
+}
+
+/// A progress of the GC process pruning the [`LedgerProofsCf`].
+/// Schema: `[]` -> `scrypto_encode(VersionedLedgerProofsGcProgress)`
+/// Note: This is a single-entry table (i.e. the empty key is the only allowed key).
+struct LedgerProofsGcProgressCf;
+impl VersionedCf<(), LedgerProofsGcProgress> for LedgerProofsGcProgressCf {
+    const VERSIONED_NAME: &'static str = "ledger_proofs_gc_progress";
+    type KeyCodec = UnitDbCodec;
+    type VersionedValue = VersionedLedgerProofsGcProgress;
 }
 
 /// An enum key for [`ExtensionsDataCf`].
@@ -1140,6 +1154,24 @@ impl StateHashTreeGcStore for RocksDBStore {
                 .cf(StaleStateHashTreePartsCf)
                 .delete(state_version);
         }
+    }
+}
+
+impl LedgerProofsGcStore for RocksDBStore {
+    fn get_progress(&self) -> Option<LedgerProofsGcProgress> {
+        self.open_db_context().cf(LedgerProofsGcProgressCf).get(&())
+    }
+
+    fn set_progress(&self, progress: LedgerProofsGcProgress) {
+        self.open_db_context()
+            .cf(LedgerProofsGcProgressCf)
+            .put(&(), &progress);
+    }
+
+    fn delete_ledger_proofs_range(&self, from: StateVersion, to: StateVersion) {
+        self.open_db_context()
+            .cf(LedgerProofsCf)
+            .delete_range(&from, &to);
     }
 }
 

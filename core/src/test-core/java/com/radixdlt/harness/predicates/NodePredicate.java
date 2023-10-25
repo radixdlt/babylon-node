@@ -160,8 +160,7 @@ public class NodePredicate {
   }
 
   public static Predicate<Injector> atOrOverEpoch(long epoch) {
-    return i ->
-        i.getInstance(TestStateReader.class).getEpoch().toNonNegativeLong().unwrap() >= epoch;
+    return i -> i.getInstance(TestStateReader.class).getEpoch() >= epoch;
   }
 
   public static Predicate<Injector> bftAtOrOverRound(Round round) {

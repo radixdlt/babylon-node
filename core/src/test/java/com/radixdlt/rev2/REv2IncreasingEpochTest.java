@@ -112,17 +112,11 @@ public class REv2IncreasingEpochTest {
       // Arrange: Start single node network
       test.startAllNodes();
       var stateReader = test.getInstance(0, TestStateReader.class);
-      var epoch0 = stateReader.getEpoch().toNonNegativeLong().unwrap();
+      var epoch0 = stateReader.getEpoch();
 
       // Act/Assert: Run until next epoch is reached
       test.runUntilMessage(DeterministicTest.epochLedgerUpdate(epoch0 + 2), 1000);
-      assertThat(
-              test.getNodeInjectors()
-                  .get(0)
-                  .getInstance(TestStateReader.class)
-                  .getEpoch()
-                  .toNonNegativeLong()
-                  .unwrap())
+      assertThat(test.getNodeInjectors().get(0).getInstance(TestStateReader.class).getEpoch())
           .isGreaterThanOrEqualTo(epoch0 + 2);
     }
   }

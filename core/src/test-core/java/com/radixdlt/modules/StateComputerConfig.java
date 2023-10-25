@@ -74,12 +74,14 @@ import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.ProposerElections;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.environment.DatabaseFlags;
+import com.radixdlt.environment.LedgerProofsGcConfig;
 import com.radixdlt.environment.StateHashTreeGcConfig;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.mempool.MempoolReceiverConfig;
 import com.radixdlt.mempool.MempoolRelayerConfig;
 import com.radixdlt.mempool.RustMempoolConfig;
+import com.radixdlt.transaction.LedgerSyncLimitsConfig;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -150,6 +152,8 @@ public sealed interface StateComputerConfig {
         proposerConfig,
         debugLogging,
         StateHashTreeGcConfig.forTesting(),
+        LedgerProofsGcConfig.forTesting(),
+        LedgerSyncLimitsConfig.defaults(),
         noFees);
   }
 
@@ -165,6 +169,8 @@ public sealed interface StateComputerConfig {
         proposerConfig,
         false,
         StateHashTreeGcConfig.forTesting(),
+        LedgerProofsGcConfig.forTesting(),
+        LedgerSyncLimitsConfig.defaults(),
         false);
   }
 
@@ -177,6 +183,8 @@ public sealed interface StateComputerConfig {
         proposerConfig,
         false,
         StateHashTreeGcConfig.forTesting(),
+        LedgerProofsGcConfig.forTesting(),
+        LedgerSyncLimitsConfig.defaults(),
         false);
   }
 
@@ -246,6 +254,8 @@ public sealed interface StateComputerConfig {
       REV2ProposerConfig proposerConfig,
       boolean debugLogging,
       StateHashTreeGcConfig stateHashTreeGcConfig,
+      LedgerProofsGcConfig ledgerProofsGcConfig,
+      LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
       boolean noFees)
       implements StateComputerConfig {}
 
