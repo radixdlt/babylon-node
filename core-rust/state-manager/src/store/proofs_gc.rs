@@ -152,9 +152,15 @@ impl LedgerProofsGc {
             // Nothing to GC ever, yet.
             return;
         };
-        let progress_started_at: LedgerProofsGcProgress = read_progress_database
-            .get_progress()
-            .unwrap_or_else(LedgerProofsGcProgress::none);
+        let progress_started_at: LedgerProofsGcProgress =
+            read_progress_database.get_progress().unwrap_or_else(|| {
+                LedgerProofsGcProgress::new(
+                    read_progress_database
+                        .get_post_genesis_epoch_proof()
+                        .expect("we checked that there is some completed epoch above")
+                        .ledger_header,
+                )
+            });
         drop(read_progress_database);
 
         if progress_started_at.last_pruned_epoch >= to_epoch {

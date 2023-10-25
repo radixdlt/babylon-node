@@ -155,11 +155,11 @@ public final class LedgerProofsGcTest {
 
   @Test
   public void node_retains_enough_proofs_to_cover_max_transaction_size_in_old_enough_epochs() {
-    /// 6 rounds * 100 KB = 600KB
+    /// 6 rounds * 1 KB = 6KB
     var roundsPerEpoch = 6;
-    var txnSize = 100 * 1024;
-    /// Limit is 400 KB - so we require 2 proofs to cover 600 KB
-    var maxTxnPayloadSizeUnderProof = 400 * 1024; // cannot be much lower due to genesis' size
+    var txnSize = 1024;
+    /// Limit is 4 KB - so we require 2 proofs to cover 6 KB
+    var maxTxnPayloadSizeUnderProof = 4 * 1024; // the genesis is larger than that, but gets skipped
     try (var test = createTest(2, roundsPerEpoch, txnSize, 1000, maxTxnPayloadSizeUnderProof)) {
       test.startNode(0);
 

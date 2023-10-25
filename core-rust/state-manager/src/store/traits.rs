@@ -630,6 +630,7 @@ pub mod measurement {
 
 pub mod gc {
     use super::*;
+    use crate::LedgerHeader;
     use radix_engine_common::types::Epoch;
     use radix_engine_stores::hash_tree::tree_store::NodeKey;
 
@@ -684,10 +685,11 @@ pub mod gc {
     }
 
     impl LedgerProofsGcProgressV1 {
-        pub fn none() -> Self {
+        /// Initializes the very first progress, which skips over the genesis.
+        pub fn new(post_genesis_ledger_header: LedgerHeader) -> Self {
             Self {
-                last_pruned_epoch: Epoch::zero(),
-                epoch_proof_state_version: StateVersion::pre_genesis(),
+                last_pruned_epoch: post_genesis_ledger_header.epoch,
+                epoch_proof_state_version: post_genesis_ledger_header.state_version,
             }
         }
     }
