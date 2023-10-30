@@ -87,7 +87,7 @@ use transaction_scenarios::scenarios::*;
 
 use node_common::locks::{LockFactory, Mutex, RwLock};
 use prometheus::Registry;
-use tracing::{info, warn};
+use tracing::{error, info, warn};
 
 use crate::store::traits::scenario::{
     DescribedAddress, ExecutedGenesisScenario, ExecutedGenesisScenarioStore,
@@ -1139,10 +1139,20 @@ where
                     proposer_timestamp_ms,
                 },
             });
+
+            // INVESTIGATION LOG
+            // Play here if you want a txn receipt dump of a particular transaction (regardless if it diverges)
+            if series_executor.latest_state_version().number() == 11584503 {
+                log_txn("captured by state version", vec![committed_transaction_bundles.last().unwrap()]);
+            }
         }
 
         // Step 4.: Check final invariants, perform the DB commit
         if series_executor.next_epoch() != commit_ledger_header.next_epoch.as_ref() {
+
+            // INVESTIGATION LOG
+            log_txn("next_epoch diverged", &committed_transaction_bundles);
+
             panic!(
                 "resultant next epoch at version {} differs from the proof ({:?} != {:?})",
                 commit_state_version,
@@ -1153,6 +1163,10 @@ where
 
         let final_ledger_hashes = series_executor.latest_ledger_hashes();
         if final_ledger_hashes != &commit_ledger_header.hashes {
+
+            // INVESTIGATION LOG
+            log_txn("computed ledger hashes diverged", &committed_transaction_bundles);
+
             panic!(
                 "resultant ledger hashes at version {} differ from the proof ({:?} != {:?})",
                 commit_state_version, final_ledger_hashes, commit_ledger_header.hashes
@@ -1317,6 +1331,18 @@ where
                 .collect(),
         );
         *transaction_tree_diff.slice.root()
+    }
+}
+
+fn log_txn<'a>(reason: &str, bundles: impl IntoIterator<Item = &'a CommittedTransactionBundle>) {
+    error!("Dumping transactions after {}.", reason);
+    for bundle in bundles {
+        error!(
+            "version: {:?}\nidentifiers: {:?}\nhex(sbor(receipt)): {}",
+            bundle.state_version,
+            bundle.identifiers,
+            hex::encode(scrypto_encode(&bundle.receipt).unwrap())
+        );
     }
 }
 
