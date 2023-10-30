@@ -450,6 +450,14 @@ impl RocksDBStore {
     /// Creates a readonly [`RocksDBStore`] that allows reading from the store while some other
     /// process is writing to it. Any write operation that happens against a read-only store leads
     /// to a panic.
+    ///
+    /// This is required for the [`ledger-tools`] CLI tool which only reads data from the database
+    /// and does not write anything to it. Without this constructor, if [`RocksDBStore::new`] is
+    /// used by the [`ledger-tools`] CLI then it leads to a lock contention as two threads would
+    /// want to have a write lock over the database. This provides the [`ledger-tools`] CLI with a
+    /// way of making it clear that it only wants read lock and not a write lock.
+    ///
+    /// [`ledger-tools`]: https://github.com/radixdlt/ledger-tools
     pub fn new_read_only(root: PathBuf) -> Result<RocksDBStore, DatabaseConfigValidationError> {
         let mut db_opts = Options::default();
         db_opts.create_if_missing(true);
