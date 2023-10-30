@@ -460,8 +460,8 @@ impl RocksDBStore {
     /// [`ledger-tools`]: https://github.com/radixdlt/ledger-tools
     pub fn new_read_only(root: PathBuf) -> Result<RocksDBStore, DatabaseConfigValidationError> {
         let mut db_opts = Options::default();
-        db_opts.create_if_missing(true);
-        db_opts.create_missing_column_families(true);
+        db_opts.create_if_missing(false);
+        db_opts.create_missing_column_families(false);
 
         let column_families: Vec<ColumnFamilyDescriptor> = ALL_COLUMN_FAMILIES
             .iter()
