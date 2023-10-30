@@ -98,7 +98,9 @@ impl<'db> TypedDbContext<'db> {
     /// subsequent reads).
     pub fn flush(&self) {
         let write_batch = self.write_buffer.flip();
-        self.db.write(write_batch).expect("DB write batch");
+        if !write_batch.is_empty() {
+            self.db.write(write_batch).expect("DB write batch");
+        }
     }
 }
 

@@ -433,6 +433,32 @@ impl RocksDBStore {
         Ok(rocks_db_store)
     }
 
+    /// Creates a readonly [`RocksDBStore`] that allows reading from the store while some other
+    /// process is writing to it. Any write operation that happens against a read-only store leads
+    /// to a panic.
+    pub fn new_read_only(root: PathBuf) -> Result<RocksDBStore, DatabaseConfigValidationError> {
+        let mut db_opts = Options::default();
+        db_opts.create_if_missing(true);
+        db_opts.create_missing_column_families(true);
+
+        let column_families: Vec<ColumnFamilyDescriptor> = ALL_COLUMN_FAMILIES
+            .iter()
+            .map(|cf| ColumnFamilyDescriptor::new(cf.to_string(), Options::default()))
+            .collect();
+
+        let db =
+            DB::open_cf_descriptors_read_only(&db_opts, root.as_path(), column_families, false)
+                .unwrap();
+
+        Ok(RocksDBStore {
+            config: DatabaseFlags {
+                enable_local_transaction_execution_index: false,
+                enable_account_change_index: false,
+            },
+            db,
+        })
+    }
+
     /// Starts a read/batch-write interaction with the DB through per-CF type-safe APIs.
     fn open_db_context(&self) -> TypedDbContext {
         TypedDbContext::new(&self.db)
