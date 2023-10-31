@@ -447,6 +447,55 @@ impl RocksDBStore {
         Ok(rocks_db_store)
     }
 
+    /// Creates a readonly [`RocksDBStore`] that allows reading from the store while some other
+    /// process is writing to it. Any write operation that happens against a read-only store leads
+    /// to a panic.
+    ///
+    /// This is required for the [`ledger-tools`] CLI tool which only reads data from the database
+    /// and does not write anything to it. Without this constructor, if [`RocksDBStore::new`] is
+    /// used by the [`ledger-tools`] CLI then it leads to a lock contention as two threads would
+    /// want to have a write lock over the database. This provides the [`ledger-tools`] CLI with a
+    /// way of making it clear that it only wants read lock and not a write lock.
+    ///
+    /// # Note
+    ///
+    /// Instantiating a new [`RocksDBStore`] through this function does not provide any consistency
+    /// guarantees. Meaning that if substate X and Y are read, there is no guarantee that these two
+    /// substates come from the same state version. Thus, this should only be used for data that is
+    /// guaranteed to be immutable by the Radix Engine or the Node. As an example:
+    ///
+    /// * Receipts are guaranteed to be immutable by the node. Thus, there are no consistency fears
+    /// when it comes to [`ledger-tools`] reading receipts to determine which entities where created
+    /// by which transaction.
+    /// * Similarly, the immutability of receipts is used by [`ledger-tools`] when dumping events.
+    ///
+    /// Thus, this readonly substate store should only be used when the consistency of the data is
+    /// not a concern.
+    ///
+    /// [`ledger-tools`]: https://github.com/radixdlt/ledger-tools
+    pub fn new_read_only(root: PathBuf) -> Result<RocksDBStore, DatabaseConfigValidationError> {
+        let mut db_opts = Options::default();
+        db_opts.create_if_missing(false);
+        db_opts.create_missing_column_families(false);
+
+        let column_families: Vec<ColumnFamilyDescriptor> = ALL_COLUMN_FAMILIES
+            .iter()
+            .map(|cf| ColumnFamilyDescriptor::new(cf.to_string(), Options::default()))
+            .collect();
+
+        let db =
+            DB::open_cf_descriptors_read_only(&db_opts, root.as_path(), column_families, false)
+                .unwrap();
+
+        Ok(RocksDBStore {
+            config: DatabaseFlags {
+                enable_local_transaction_execution_index: false,
+                enable_account_change_index: false,
+            },
+            db,
+        })
+    }
+
     /// Starts a read/batch-write interaction with the DB through per-CF type-safe APIs.
     fn open_db_context(&self) -> TypedDbContext {
         TypedDbContext::new(&self.db)
