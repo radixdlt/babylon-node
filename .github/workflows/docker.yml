@@ -229,6 +229,7 @@ jobs:
   #     workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
   #     service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
+  
   build_push_container_dockerhub:
     if: github.event_name == 'release'
     name: (DockerHub) Docker AMD
