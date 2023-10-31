@@ -35,4 +35,4 @@ jobs:
       uses: actions/upload-artifact@v3.1.0
       with:
         name: keygen
-        path: "${{ github.workspace }}/keygen/build/install/keygen/bin/keygen"
+        path: "${{ github.workspace }}/keygen/build/install/keygen"
