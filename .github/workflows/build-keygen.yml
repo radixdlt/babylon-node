@@ -10,9 +10,8 @@ on:
   pull_request:
     paths:
       - 'keygen/src/**'
-  push:
-    branches:
-      - chore/release-key-gen
+  release:
+    types: [published]
 
 jobs:
   build-keygen-binary:
