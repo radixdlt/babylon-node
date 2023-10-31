@@ -175,9 +175,9 @@ jobs:
     name: (PRIVATE) Docker AMD
     needs:
       - setup_tags
-    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@DO-1928
     with:
-      runs_on: ubuntu-latest
+      runs_on: docker-builder
       image_registry: "docker.io"
       image_organization: "radixdlt"
       image_name: "private-babylon-node"
@@ -194,6 +194,7 @@ jobs:
       dockerfile: "./Dockerfile"
       platforms: "linux/amd64"
       provenance: "false"
+      save_cache: false
       scan_image: true
       snyk_target_ref: ${{ github.ref_name }}
     secrets:
@@ -233,7 +234,7 @@ jobs:
     name: (DockerHub) Docker AMD
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
-      runs_on: ubuntu-latest
+      runs_on: docker-builder
       image_registry: "docker.io"
       image_organization: "radixdlt"
       image_name: "babylon-node"
