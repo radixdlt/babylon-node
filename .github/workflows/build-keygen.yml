@@ -10,6 +10,8 @@ on:
   pull_request:
     paths:
       - 'keygen/src/**'
+  release:
+    types: [published]
 
 jobs:
   build-keygen-binary:
@@ -25,4 +27,11 @@ jobs:
       uses: gradle/gradle-build-action@v2
 
     - name: Execute Gradle build
-      run: ./gradlew keygen:installDist
+      run: | 
+        ./gradlew keygen:installDist
+
+    - name: Upload keygen binary
+      uses: actions/upload-artifact@v3.1.0
+      with:
+        name: keygen
+        path: "${{ github.workspace }}/keygen/build/install/keygen"
