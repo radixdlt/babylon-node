@@ -62,34 +62,48 @@
  * permissions under this License.
  */
 
-mod browse;
-mod constants;
-mod conversions;
-mod errors;
-mod extractors;
-mod handlers;
-mod helpers;
-mod metrics;
-mod metrics_layer;
-mod server;
+package com.radixdlt.api.core;
 
-#[allow(unused)]
-#[rustfmt::skip]
-#[allow(clippy::all)]
-mod generated;
+import static org.assertj.core.api.Assertions.assertThat;
 
-pub(crate) use browse::*;
-pub(crate) use constants::*;
-pub(crate) use conversions::*;
-pub(crate) use errors::*;
-pub(crate) use extractors::*;
-pub(crate) use helpers::*;
-pub(crate) use server::{create_server, CoreApiServerConfig, CoreApiState};
+import com.radixdlt.api.DeterministicCoreApiTestBase;
+import com.radixdlt.api.core.generated.models.BrowseObjectFieldRequest;
+import java.util.List;
+import java.util.Map;
+import org.junit.Test;
 
-pub(crate) mod models {
-    pub(crate) use super::generated::models::*;
-    pub(crate) use super::generated::SCHEMA_VERSION;
+public final class BrowseObjectFieldTest extends DeterministicCoreApiTestBase {
+
+  @Test
+  public void browse_api_returns_object_field() throws Exception {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
+
+      final var wellKnownAddresses =
+          getStatusApi().statusNetworkConfigurationPost().getWellKnownAddresses();
+
+      final var response =
+          getBrowseApi()
+              .browseObjectFieldPost(
+                  new BrowseObjectFieldRequest()
+                      .network(networkLogicalName)
+                      .entityAddress(wellKnownAddresses.getConsensusManager())
+                      // the module is Main by default
+                      .fieldName("proposer_minute_timestamp"));
+
+      assertThat(response.getContent().getProgrammaticJson())
+          .isEqualTo(
+              Map.of(
+                  "kind", "Enum",
+                  "type_name", "ConsensusManagerProposerMinuteTimestampFieldPayload",
+                  "variant_id", "0",
+                  "variant_name", "V1",
+                  "fields",
+                      List.of(
+                          Map.of(
+                              "kind", "I32",
+                              "type_name", "ProposerMinuteTimestampSubstate",
+                              "value", "0"))));
+    }
+  }
 }
-
-// Re-exports for handlers
-pub use hyper::StatusCode;

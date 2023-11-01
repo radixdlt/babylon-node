@@ -641,6 +641,20 @@ pub fn to_api_object_module_partition_kind(
     })
 }
 
+pub fn extract_address_as_node_id(
+    extraction_context: &ExtractionContext,
+    address: &str,
+) -> Result<NodeId, ExtractionError> {
+    let (_entity_type, bytes) = extraction_context
+        .address_decoder
+        .validate_and_decode(address)
+        .map_err(|_error| ExtractionError::InvalidAddress)?;
+    if bytes.len() != NodeId::LENGTH {
+        return Err(ExtractionError::InvalidAddress);
+    }
+    Ok(NodeId::from(copy_u8_array(&bytes)))
+}
+
 pub fn extract_global_address(
     extraction_context: &ExtractionContext,
     package_address: &str,
@@ -693,5 +707,14 @@ pub fn to_api_module_id(object_module_id: &ModuleId) -> models::ModuleId {
         ModuleId::Metadata => models::ModuleId::Metadata,
         ModuleId::Royalty => models::ModuleId::Royalty,
         ModuleId::RoleAssignment => models::ModuleId::RoleAssignment,
+    }
+}
+
+pub fn extract_api_module_id(module_id: &models::ModuleId) -> ModuleId {
+    match module_id {
+        models::ModuleId::Main => ModuleId::Main,
+        models::ModuleId::Metadata => ModuleId::Metadata,
+        models::ModuleId::Royalty => ModuleId::Royalty,
+        models::ModuleId::RoleAssignment => ModuleId::RoleAssignment,
     }
 }

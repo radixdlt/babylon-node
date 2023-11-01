@@ -112,6 +112,7 @@ pub enum ExtractionError {
         expected: NonFungibleIdType,
         actual: NonFungibleIdType,
     },
+    InvalidFieldAlternativesUsage,
 }
 
 impl ExtractionError {

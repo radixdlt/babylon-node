@@ -1,4 +1,5 @@
 .openapi-generator-ignore
+apis/BrowseApi.ts
 apis/LTSApi.ts
 apis/MempoolApi.ts
 apis/StateApi.ts
@@ -77,6 +78,9 @@ models/BlueprintTypeReference.ts
 models/BlueprintTypeReferenceBase.ts
 models/BlueprintTypeReferenceKind.ts
 models/BlueprintVersionKey.ts
+models/BrowseObjectFieldRequest.ts
+models/BrowseObjectFieldResponse.ts
+models/BrowseObjectFieldResponseContent.ts
 models/CommittedIntentMetadata.ts
 models/CommittedStateIdentifier.ts
 models/CommittedStateIdentifierAllOf.ts
