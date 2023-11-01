@@ -64,6 +64,34 @@
 
 use radix_engine::types::*;
 use rocksdb::{ColumnFamily, Direction, IteratorMode, WriteBatch, DB};
+use crate::store::db::ReadCfDb;
+
+// NOTE: this trait (and its impls) exist ONLY to satisfy the "flush on drop" (which may be "write batch" or "safe no-op" behavior)
+// (I know how to get rid of this trait but ONLY IF we sacrifice the "flush on drop" feature; maybe you have some idea how to NOT sacrifice it?)
+pub trait WriteSupport {
+    fn on_flush(&self);
+}
+
+pub struct BatchWriteSupport<'db> {
+    db: &'db DB,
+    buffer: WriteBuffer,
+}
+
+impl<'db> WriteSupport for BatchWriteSupport<'db> {
+    fn on_flush(&self) {
+        let write_batch = self.buffer.flip();
+        if !write_batch.is_empty() {
+            self.db.write(write_batch).expect("DB write batch");
+        }
+    }
+}
+
+pub struct NoWriteSupport;
+
+impl WriteSupport for NoWriteSupport {
+    fn on_flush(&self) {
+    }
+}
 
 /// A higher-level database read/write context.
 ///
@@ -72,39 +100,51 @@ use rocksdb::{ColumnFamily, Direction, IteratorMode, WriteBatch, DB};
 /// - All writes are accumulated in the internal buffer and are not visible to subsequent reads (of
 ///   this or other contexts), until [`TypedDbContext::flush()`] (either an explicit one, or an
 ///   implicit on [`Drop`]).
-pub struct TypedDbContext<'db> {
-    db: &'db DB,
-    write_buffer: WriteBuffer,
+pub struct TypedDbContext<'db, D, W: WriteSupport> {
+    db: &'db D,
+    write_support: W,
 }
 
-impl<'db> TypedDbContext<'db> {
-    /// Creates a new context, with an empty write buffer.
-    pub fn new(db: &'db DB) -> Self {
+impl<'db> TypedDbContext<'db, DB, BatchWriteSupport<'db>> {
+    /// Creates a new read-write context, with an empty write buffer.
+    pub fn new_read_write(db: &'db DB) -> Self {
         Self {
             db,
-            write_buffer: WriteBuffer::default(),
+            write_support: BatchWriteSupport { db, buffer: WriteBuffer::default() },
         }
     }
+}
 
+impl<'db, D: ReadCfDb> TypedDbContext<'db, D, NoWriteSupport> {
+    /// Creates a new read-only context.
+    pub fn new_read_only(db: &'db D) -> Self {
+        Self {
+            db,
+            write_support: NoWriteSupport
+        }
+    }
+}
+
+impl<'db, D: ReadCfDb, W: WriteSupport> TypedDbContext<'db, D, W> {
     /// Returns a typed helper scoped at the given column family.
     pub fn cf<K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, V, KC, VC>>(
         &self,
         cf: CF,
-    ) -> TypedCfApi<'db, '_, K, V, KC, VC, CF> {
-        TypedCfApi::new(self.db, cf, &self.write_buffer)
+    ) -> TypedCfApi<'db, '_, D, W, K, V, KC, VC, CF> {
+        TypedCfApi::new(self.db, cf, &self.write_support)
     }
+}
+
+impl<'db, D, W: WriteSupport> TypedDbContext<'db, D, W> {
 
     /// Explicitly flushes the current contents of the write buffer (so that it is visible to
     /// subsequent reads).
     pub fn flush(&self) {
-        let write_batch = self.write_buffer.flip();
-        if !write_batch.is_empty() {
-            self.db.write(write_batch).expect("DB write batch");
-        }
+        self.write_support.on_flush();
     }
 }
 
-impl<'db> Drop for TypedDbContext<'db> {
+impl<'db, D, W: WriteSupport> Drop for TypedDbContext<'db, D, W> {
     fn drop(&mut self) {
         self.flush();
     }
@@ -112,21 +152,21 @@ impl<'db> Drop for TypedDbContext<'db> {
 
 /// A higher-level DB access API bound to its [`TypedDbContext`] and scoped at a specific column
 /// family.
-pub struct TypedCfApi<'db, 'wb, K, V, KC, VC, CF> {
-    db: &'db DB,
+pub struct TypedCfApi<'db, 'w, D, W, K, V, KC, VC, CF> {
+    db: &'db D,
     typed_cf: CF,
-    write_buffer: &'wb WriteBuffer,
+    write_support: &'w W,
     cf_handle: &'db ColumnFamily, // only a cache - computable from `typed_cf`
     key_codec: KC,                // only a cache - computable from `typed_cf`
     value_codec: VC,              // only a cache - computable from `typed_cf`
     type_parameters_phantom: PhantomData<(K, V)>,
 }
 
-impl<'db, 'wb, K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, V, KC, VC>>
-    TypedCfApi<'db, 'wb, K, V, KC, VC, CF>
+impl<'db, 'w, D: ReadCfDb + 'db, W, K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, V, KC, VC>>
+    TypedCfApi<'db, 'w, D, W, K, V, KC, VC, CF>
 {
     /// Creates an instance for the given column family.
-    fn new(db: &'db DB, typed_cf: CF, write_buffer: &'wb WriteBuffer) -> Self {
+    fn new(db: &'db D, typed_cf: CF, write_support: &'w W) -> Self {
         // cache a few values:
         let cf_handle = db.cf_handle(CF::NAME).unwrap();
         let key_codec = typed_cf.key_codec();
@@ -134,7 +174,7 @@ impl<'db, 'wb, K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, 
         Self {
             db,
             typed_cf,
-            write_buffer,
+            write_support,
             cf_handle,
             key_codec,
             value_codec,
@@ -207,42 +247,17 @@ impl<'db, 'wb, K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, 
         &self,
         from: &K,
         direction: Direction,
-    ) -> Box<dyn Iterator<Item = (K, V)> + 'db> {
+    ) -> Box<dyn Iterator<Item=(K, V)> + 'db> {
         self.iterate_with_mode(IteratorMode::From(
             self.key_codec.encode(from).as_slice(),
             direction,
         ))
     }
 
-    /// Upserts the new value at the given key.
-    pub fn put(&self, key: &K, value: &V) {
-        self.write_buffer.put(
-            self.cf_handle,
-            self.key_codec.encode(key),
-            self.value_codec.encode(value),
-        );
-    }
-
-    /// Deletes the entry of the given key.
-    pub fn delete(&self, key: &K) {
-        self.write_buffer
-            .delete(self.cf_handle, self.key_codec.encode(key));
-    }
-
-    /// Deletes the entries from the given key range.
-    /// Follows the classic convention of "from inclusive, to exclusive".
-    pub fn delete_range(&self, from_key: &K, to_key: &K) {
-        self.write_buffer.delete_range(
-            self.cf_handle,
-            self.key_codec.encode(from_key),
-            self.key_codec.encode(to_key),
-        );
-    }
-
     /// Returns an iterator based on the [`IteratorMode`] (which already contains encoded key).
     ///
     /// This is an internal shared implementation detail for different iteration flavors.
-    fn iterate_with_mode(&self, mode: IteratorMode) -> Box<dyn Iterator<Item = (K, V)> + 'db> {
+    fn iterate_with_mode(&self, mode: IteratorMode) -> Box<dyn Iterator<Item=(K, V)> + 'db> {
         // create dedicated instances; do not reference those cached by `&self` from returned value:
         let key_codec = self.typed_cf.key_codec();
         let value_codec = self.typed_cf.value_codec();
@@ -257,6 +272,35 @@ impl<'db, 'wb, K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, 
                     )
                 }),
         )
+    }
+}
+
+impl<'db, 'w, K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, V, KC, VC>>
+    TypedCfApi<'db, 'w, DB, BatchWriteSupport<'db>, K, V, KC, VC, CF>
+{
+    /// Upserts the new value at the given key.
+    pub fn put(&self, key: &K, value: &V) {
+        self.write_support.buffer.put(
+            self.cf_handle,
+            self.key_codec.encode(key),
+            self.value_codec.encode(value),
+        );
+    }
+
+    /// Deletes the entry of the given key.
+    pub fn delete(&self, key: &K) {
+        self.write_support.buffer
+            .delete(self.cf_handle, self.key_codec.encode(key));
+    }
+
+    /// Deletes the entries from the given key range.
+    /// Follows the classic convention of "from inclusive, to exclusive".
+    pub fn delete_range(&self, from_key: &K, to_key: &K) {
+        self.write_support.buffer.delete_range(
+            self.cf_handle,
+            self.key_codec.encode(from_key),
+            self.key_codec.encode(to_key),
+        );
     }
 }
 

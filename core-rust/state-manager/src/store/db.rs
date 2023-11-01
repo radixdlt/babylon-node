@@ -80,6 +80,7 @@ use radix_engine_store_interface::interface::{
 use transaction::model::*;
 
 use radix_engine_stores::hash_tree::tree_store::{NodeKey, ReadableTreeStore, TreeNode};
+use rocksdb::{AsColumnFamilyRef, ColumnFamily, DB, DBPinnableSlice, Error, IteratorMode, Snapshot};
 use sbor::{Categorize, Decode, Encode};
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
@@ -217,5 +218,66 @@ impl TransactionIndex<&LedgerTransactionHash> for StateManagerDatabase {
                 store.get_txn_state_version_by_identifier(identifier)
             }
         }
+    }
+}
+
+// NOTE: this is the "RocksDbCfProvider" you postulated (i.e. a layer on top of DB || Snapshot)
+// (only read-trait is needed, since writing is actually NOT a shared trait - only the DB can do it, and we only need the single write(batch) method there... but if you want, you can still create a pro-forma WriteCfDb trait, just for elegance)
+pub trait ReadCfDb {
+    fn get_pinned_cf<K: AsRef<[u8]>>(
+        &self,
+        cf: &impl AsColumnFamilyRef,
+        key: K,
+    ) -> Result<Option<DBPinnableSlice>, Error>;
+
+    fn multi_get_cf<'b, K, I, W>(&self, keys_cf: I) -> Vec<Result<Option<Vec<u8>>, Error>>
+        where
+            K: AsRef<[u8]>,
+            I: IntoIterator<Item = (&'b W, K)>,
+            W: AsColumnFamilyRef + 'b;
+
+    fn iterator_cf(
+        &self,
+        cf_handle: &impl AsColumnFamilyRef,
+        mode: IteratorMode,
+    ) -> Box<dyn Iterator<Item = Result<(Box<[u8]>, Box<[u8]>), Error>> + '_>;
+
+    fn cf_handle(&self, name: &str) -> Option<&ColumnFamily>;
+}
+
+impl<'db> ReadCfDb for Snapshot<'db> {
+    fn get_pinned_cf<K: AsRef<[u8]>>(&self, cf: &impl AsColumnFamilyRef, key: K) -> Result<Option<DBPinnableSlice>, Error> {
+        self.get_pinned_cf(cf, key)
+    }
+
+    fn multi_get_cf<'b, K, I, W>(&self, keys_cf: I) -> Vec<Result<Option<Vec<u8>>, Error>> where K: AsRef<[u8]>, I: IntoIterator<Item=(&'b W, K)>, W: AsColumnFamilyRef + 'b {
+        self.multi_get_cf(keys_cf)
+    }
+
+    fn iterator_cf(&self, cf_handle: &impl AsColumnFamilyRef, mode: IteratorMode) -> Box<dyn Iterator<Item = Result<(Box<[u8]>, Box<[u8]>), Error>> + '_> {
+        Box::new(self.iterator_cf(cf_handle, mode))
+    }
+
+    fn cf_handle(&self, _name: &str) -> Option<&ColumnFamily> {
+        // NOTE: funny but true:
+        todo!("it does not exist in the snapshot's API! we gonna have to cache that map ourselves")
+    }
+}
+
+impl ReadCfDb for DB {
+    fn get_pinned_cf<K: AsRef<[u8]>>(&self, cf: &impl AsColumnFamilyRef, key: K) -> Result<Option<DBPinnableSlice>, Error> {
+        self.get_pinned_cf(cf, key)
+    }
+
+    fn multi_get_cf<'b, K, I, W>(&self, keys_cf: I) -> Vec<Result<Option<Vec<u8>>, Error>> where K: AsRef<[u8]>, I: IntoIterator<Item=(&'b W, K)>, W: AsColumnFamilyRef + 'b {
+        self.multi_get_cf(keys_cf)
+    }
+
+    fn iterator_cf(&self, cf_handle: &impl AsColumnFamilyRef, mode: IteratorMode) -> Box<dyn Iterator<Item = Result<(Box<[u8]>, Box<[u8]>), Error>> + '_> {
+        Box::new(self.iterator_cf(cf_handle, mode))
+    }
+
+    fn cf_handle(&self, name: &str) -> Option<&ColumnFamily> {
+        self.cf_handle(name)
     }
 }
