@@ -62,111 +62,56 @@
  * permissions under this License.
  */
 
+use std::borrow::Borrow;
 use radix_engine::types::*;
-use rocksdb::{ColumnFamily, Direction, IteratorMode, WriteBatch, DB};
-use crate::store::db::ReadCfDb;
-
-// NOTE: this trait (and its impls) exist ONLY to satisfy the "flush on drop" (which may be "write batch" or "safe no-op" behavior)
-// (I know how to get rid of this trait but ONLY IF we sacrifice the "flush on drop" feature; maybe you have some idea how to NOT sacrifice it?)
-pub trait WriteSupport {
-    fn on_flush(&self);
-}
-
-pub struct BatchWriteSupport<'db> {
-    db: &'db DB,
-    buffer: WriteBuffer,
-}
-
-impl<'db> WriteSupport for BatchWriteSupport<'db> {
-    fn on_flush(&self) {
-        let write_batch = self.buffer.flip();
-        if !write_batch.is_empty() {
-            self.db.write(write_batch).expect("DB write batch");
-        }
-    }
-}
-
-pub struct NoWriteSupport;
-
-impl WriteSupport for NoWriteSupport {
-    fn on_flush(&self) {
-    }
-}
+use rocksdb::{ColumnFamily, Direction, IteratorMode};
+use crate::store::db::{ReadCfDb, WriteCfDb};
 
 /// A higher-level database read/write context.
 ///
+/// TODO(wip): TBH this contract can now be moved to ReadCfDb and WriteCfDb, respectively:
 /// Operates with the following contract:
 /// - All reads see the current DB state;
 /// - All writes are accumulated in the internal buffer and are not visible to subsequent reads (of
 ///   this or other contexts), until [`TypedDbContext::flush()`] (either an explicit one, or an
 ///   implicit on [`Drop`]).
-pub struct TypedDbContext<'db, D, W: WriteSupport> {
+pub struct TypedDbContext<'db, D> {
     db: &'db D,
-    write_support: W,
 }
 
-impl<'db> TypedDbContext<'db, DB, BatchWriteSupport<'db>> {
+impl<'db, D> TypedDbContext<'db, D> {
     /// Creates a new read-write context, with an empty write buffer.
-    pub fn new_read_write(db: &'db DB) -> Self {
-        Self {
-            db,
-            write_support: BatchWriteSupport { db, buffer: WriteBuffer::default() },
-        }
+    pub fn new(db: &'db D) -> Self {
+        Self { db }
     }
 }
 
-impl<'db, D: ReadCfDb> TypedDbContext<'db, D, NoWriteSupport> {
-    /// Creates a new read-only context.
-    pub fn new_read_only(db: &'db D) -> Self {
-        Self {
-            db,
-            write_support: NoWriteSupport
-        }
-    }
-}
-
-impl<'db, D: ReadCfDb, W: WriteSupport> TypedDbContext<'db, D, W> {
+impl<'db, D: ReadCfDb> TypedDbContext<'db, D> {
     /// Returns a typed helper scoped at the given column family.
     pub fn cf<K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, V, KC, VC>>(
         &self,
         cf: CF,
-    ) -> TypedCfApi<'db, '_, D, W, K, V, KC, VC, CF> {
-        TypedCfApi::new(self.db, cf, &self.write_support)
-    }
-}
-
-impl<'db, D, W: WriteSupport> TypedDbContext<'db, D, W> {
-
-    /// Explicitly flushes the current contents of the write buffer (so that it is visible to
-    /// subsequent reads).
-    pub fn flush(&self) {
-        self.write_support.on_flush();
-    }
-}
-
-impl<'db, D, W: WriteSupport> Drop for TypedDbContext<'db, D, W> {
-    fn drop(&mut self) {
-        self.flush();
+    ) -> TypedCfApi<'db, D, K, V, KC, VC, CF> {
+        TypedCfApi::new(self.db, cf)
     }
 }
 
 /// A higher-level DB access API bound to its [`TypedDbContext`] and scoped at a specific column
 /// family.
-pub struct TypedCfApi<'db, 'w, D, W, K, V, KC, VC, CF> {
+pub struct TypedCfApi<'db, D, K, V, KC, VC, CF> {
     db: &'db D,
     typed_cf: CF,
-    write_support: &'w W,
     cf_handle: &'db ColumnFamily, // only a cache - computable from `typed_cf`
     key_codec: KC,                // only a cache - computable from `typed_cf`
     value_codec: VC,              // only a cache - computable from `typed_cf`
     type_parameters_phantom: PhantomData<(K, V)>,
 }
 
-impl<'db, 'w, D: ReadCfDb + 'db, W, K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, V, KC, VC>>
-    TypedCfApi<'db, 'w, D, W, K, V, KC, VC, CF>
+impl<'db, D: ReadCfDb + 'db, K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, V, KC, VC>>
+    TypedCfApi<'db, D, K, V, KC, VC, CF>
 {
     /// Creates an instance for the given column family.
-    fn new(db: &'db D, typed_cf: CF, write_support: &'w W) -> Self {
+    fn new(db: &'db D, typed_cf: CF) -> Self {
         // cache a few values:
         let cf_handle = db.cf_handle(CF::NAME).unwrap();
         let key_codec = typed_cf.key_codec();
@@ -174,7 +119,6 @@ impl<'db, 'w, D: ReadCfDb + 'db, W, K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> +
         Self {
             db,
             typed_cf,
-            write_support,
             cf_handle,
             key_codec,
             value_codec,
@@ -275,12 +219,12 @@ impl<'db, 'w, D: ReadCfDb + 'db, W, K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> +
     }
 }
 
-impl<'db, 'w, K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, V, KC, VC>>
-    TypedCfApi<'db, 'w, DB, BatchWriteSupport<'db>, K, V, KC, VC, CF>
+impl<'db, D: WriteCfDb, K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, V, KC, VC>>
+    TypedCfApi<'db, D, K, V, KC, VC, CF>
 {
     /// Upserts the new value at the given key.
     pub fn put(&self, key: &K, value: &V) {
-        self.write_support.buffer.put(
+        self.db.put_cf(
             self.cf_handle,
             self.key_codec.encode(key),
             self.value_codec.encode(value),
@@ -289,14 +233,13 @@ impl<'db, 'w, K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, V
 
     /// Deletes the entry of the given key.
     pub fn delete(&self, key: &K) {
-        self.write_support.buffer
-            .delete(self.cf_handle, self.key_codec.encode(key));
+        self.db.delete_cf(self.cf_handle, self.key_codec.encode(key));
     }
 
     /// Deletes the entries from the given key range.
     /// Follows the classic convention of "from inclusive, to exclusive".
     pub fn delete_range(&self, from_key: &K, to_key: &K) {
-        self.write_support.buffer.delete_range(
+        self.db.delete_range_cf(
             self.cf_handle,
             self.key_codec.encode(from_key),
             self.key_codec.encode(to_key),
@@ -513,29 +456,5 @@ impl<T: core::hash::Hash + Eq + Clone> DbCodec<T> for PredefinedDbCodec<T> {
             .get(bytes)
             .expect("encoding outside mappings")
             .clone()
-    }
-}
-
-/// An internal wrapper for [`WriteBatch`], allowing to use it with interior mutability.
-#[derive(Default)]
-struct WriteBuffer {
-    write_batch: RefCell<WriteBatch>,
-}
-
-impl WriteBuffer {
-    pub fn put(&self, cf: &ColumnFamily, key: Vec<u8>, value: Vec<u8>) {
-        self.write_batch.borrow_mut().put_cf(cf, key, value);
-    }
-
-    pub fn delete(&self, cf: &ColumnFamily, key: Vec<u8>) {
-        self.write_batch.borrow_mut().delete_cf(cf, key);
-    }
-
-    pub fn delete_range(&self, cf: &ColumnFamily, from: Vec<u8>, to: Vec<u8>) {
-        self.write_batch.borrow_mut().delete_range_cf(cf, from, to);
-    }
-
-    pub fn flip(&self) -> WriteBatch {
-        self.write_batch.replace(WriteBatch::default())
     }
 }

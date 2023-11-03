@@ -89,7 +89,7 @@ use tracing::{error, info, warn};
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::query::TransactionIdentifierLoader;
-use crate::store::db::ReadCfDb;
+use crate::store::db::{BufferedDB, CfDb, ReadCfDb};
 use crate::store::traits::gc::{
     LedgerProofsGcProgress, LedgerProofsGcStore, StateHashTreeGcStore,
     VersionedLedgerProofsGcProgress,
@@ -498,19 +498,18 @@ impl RocksDBStore {
     }
 
     /// Starts a read/batch-write interaction with the DB through per-CF type-safe APIs.
-    fn open_db_context(&self) -> TypedDbContext<DB, BatchWriteSupport> {
-        TypedDbContext::new_read_write(&self.db)
+    fn open_db_context(&self) -> TypedDbContext<impl CfDb + '_> {
+        TypedDbContext::new(&BufferedDB::new(&self.db))
     }
 
     /// Starts a read-only interaction with the DB through per-CF type-safe APIs.
-    // NOTE: I guess you would feed it a snapshot and thus return TypedDbContext<Snapshot, NoWriteSupport>
-    fn open_read_only_db_context(&self) -> TypedDbContext<DB, NoWriteSupport> {
-        TypedDbContext::new_read_only(&self.db)
+    fn open_read_only_db_context(&self) -> TypedDbContext<impl ReadCfDb + '_> {
+        TypedDbContext::new(&self.db.snapshot())
     }
 
     fn add_transaction_to_write_batch(
         &self,
-        db_context: &TypedDbContext<DB, BatchWriteSupport>,
+        db_context: &TypedDbContext<impl CfDb>,
         transaction_bundle: CommittedTransactionBundle,
     ) {
         if self.is_account_change_index_enabled() {
@@ -794,7 +793,7 @@ pub struct RocksDBCommittedTransactionBundleIterator<'db> {
 }
 
 impl<'db> RocksDBCommittedTransactionBundleIterator<'db> {
-    fn new<D: ReadCfDb, W: WriteSupport>(from_state_version: StateVersion, db_context: TypedDbContext<'db, D, W>) -> Self {
+    fn new<D: ReadCfDb>(from_state_version: StateVersion, db_context: TypedDbContext<'db, D>) -> Self {
         Self {
             state_version: from_state_version,
             txns_iter: db_context
@@ -1256,7 +1255,7 @@ impl WriteableVertexStore for RocksDBStore {
     fn save_vertex_store(&self, blob: VertexStoreBlob) {
         // NOTE: this only demonstrates that compiler guards us against writing to read-only DB context
         // (bring back the .open_db_context() and it will compile and run fine)
-        self.open_read_only_db_context().cf(VertexStoreCf).put(&(), &blob)
+        self.open_db_context().cf(VertexStoreCf).put(&(), &blob)
     }
 }
 
@@ -1298,7 +1297,7 @@ fn decode_from_rocksdb_bytes(buffer: &[u8]) -> DbSubstateKey {
 impl RocksDBStore {
     fn batch_update_account_change_index_from_receipt(
         &self,
-        db_context: &TypedDbContext<DB, BatchWriteSupport>,
+        db_context: &TypedDbContext<impl CfDb>,
         state_version: StateVersion,
         execution: &LocalTransactionExecution,
     ) {
@@ -1316,7 +1315,7 @@ impl RocksDBStore {
 
     fn batch_update_account_change_index_from_committed_transaction(
         &self,
-        db_context: &TypedDbContext<DB, BatchWriteSupport>,
+        db_context: &TypedDbContext<impl CfDb>,
         state_version: StateVersion,
         transaction_bundle: &CommittedTransactionBundle,
     ) {

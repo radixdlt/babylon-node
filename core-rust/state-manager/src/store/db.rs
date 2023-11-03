@@ -62,6 +62,7 @@
  * permissions under this License.
  */
 
+use std::cell::RefCell;
 use crate::store::traits::*;
 use crate::store::RocksDBStore;
 use crate::transaction::LedgerTransactionHash;
@@ -80,7 +81,7 @@ use radix_engine_store_interface::interface::{
 use transaction::model::*;
 
 use radix_engine_stores::hash_tree::tree_store::{NodeKey, ReadableTreeStore, TreeNode};
-use rocksdb::{AsColumnFamilyRef, ColumnFamily, DB, DBPinnableSlice, Error, IteratorMode, Snapshot};
+use rocksdb::{AsColumnFamilyRef, ColumnFamily, DB, DBPinnableSlice, Error, IteratorMode, Snapshot, WriteBatch};
 use sbor::{Categorize, Decode, Encode};
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
@@ -221,8 +222,26 @@ impl TransactionIndex<&LedgerTransactionHash> for StateManagerDatabase {
     }
 }
 
-// NOTE: this is the "RocksDbCfProvider" you postulated (i.e. a layer on top of DB || Snapshot)
-// (only read-trait is needed, since writing is actually NOT a shared trait - only the DB can do it, and we only need the single write(batch) method there... but if you want, you can still create a pro-forma WriteCfDb trait, just for elegance)
+pub struct BufferedDB<'db> {
+    db: &'db DB,
+    write_batch: RefCell<WriteBatch>,
+}
+
+impl<'db> BufferedDB<'db> {
+    pub fn new(db: &'db DB) -> Self {
+        Self {
+            db,
+            write_batch: RefCell::new(WriteBatch::default())
+        }
+    }
+}
+
+impl<'db> Drop for BufferedDB<'db> {
+    fn drop(&mut self) {
+        self.db.write(self.write_batch.take()).expect("DB write batch");
+    }
+}
+
 pub trait ReadCfDb {
     fn get_pinned_cf<K: AsRef<[u8]>>(
         &self,
@@ -264,20 +283,49 @@ impl<'db> ReadCfDb for Snapshot<'db> {
     }
 }
 
-impl ReadCfDb for DB {
+impl<'db> ReadCfDb for BufferedDB<'db> {
     fn get_pinned_cf<K: AsRef<[u8]>>(&self, cf: &impl AsColumnFamilyRef, key: K) -> Result<Option<DBPinnableSlice>, Error> {
-        self.get_pinned_cf(cf, key)
+        self.db.get_pinned_cf(cf, key)
     }
 
     fn multi_get_cf<'b, K, I, W>(&self, keys_cf: I) -> Vec<Result<Option<Vec<u8>>, Error>> where K: AsRef<[u8]>, I: IntoIterator<Item=(&'b W, K)>, W: AsColumnFamilyRef + 'b {
-        self.multi_get_cf(keys_cf)
+        self.db.multi_get_cf(keys_cf)
     }
 
     fn iterator_cf(&self, cf_handle: &impl AsColumnFamilyRef, mode: IteratorMode) -> Box<dyn Iterator<Item = Result<(Box<[u8]>, Box<[u8]>), Error>> + '_> {
-        Box::new(self.iterator_cf(cf_handle, mode))
+        Box::new(self.db.iterator_cf(cf_handle, mode))
     }
 
+    // TODO(wip): it would be best to get rid of this from `ReadCfDb` API, for 2 reasons:
+    // - if we have it here, then the `WriteCfDb` should really have it too if it wants to be self-contained (and this duplication seems weird),
+    // - the `Snapshot` has no easy way to implement it
+    // So I vote to supply the CF mappings to interested callers via other means.
     fn cf_handle(&self, name: &str) -> Option<&ColumnFamily> {
-        self.cf_handle(name)
+        self.db.cf_handle(name)
     }
 }
+
+pub trait WriteCfDb {
+    fn put_cf<K: AsRef<[u8]>, V: AsRef<[u8]>>(&self, cf: &impl AsColumnFamilyRef, key: K, value: V);
+
+    fn delete_cf<K: AsRef<[u8]>>(&self, cf: &impl AsColumnFamilyRef, key: K);
+
+    fn delete_range_cf<K: AsRef<[u8]>>(&self, cf: &impl AsColumnFamilyRef, from: K, to: K);
+}
+
+impl<'db> WriteCfDb for BufferedDB<'db> {
+    fn put_cf<K: AsRef<[u8]>, V: AsRef<[u8]>>(&self, cf: &impl AsColumnFamilyRef, key: K, value: V) {
+        self.write_batch.borrow_mut().put_cf(cf, key, value);
+    }
+
+    fn delete_cf<K: AsRef<[u8]>>(&self, cf: &impl AsColumnFamilyRef, key: K) {
+        self.write_batch.borrow_mut().delete_cf(cf, key);
+    }
+
+    fn delete_range_cf<K: AsRef<[u8]>>(&self, cf: &impl AsColumnFamilyRef, from: K, to: K) {
+        self.write_batch.borrow_mut().delete_range_cf(cf, from, to);
+    }
+}
+
+pub trait CfDb: ReadCfDb + WriteCfDb {}
+impl<T: ReadCfDb + WriteCfDb> CfDb for T {}
