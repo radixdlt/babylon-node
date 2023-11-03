@@ -167,3 +167,21 @@ pub fn to_api_ledger_header_summary(
         )?),
     })
 }
+
+pub fn to_api_sbor_hex_string<T: ScryptoEncode>(
+    sbor_encodable: &T,
+) -> Result<String, MappingError> {
+    let sbor_bytes =
+        scrypto_encode(sbor_encodable).map_err(|error| MappingError::SborEncodeError {
+            encode_error: error,
+            message: "while rendering sbor hex string".to_string(),
+        })?;
+    Ok(to_hex(sbor_bytes))
+}
+
+pub fn extract_api_sbor_hex_string<T: ScryptoDecode>(
+    sbor_hex_string: &String,
+) -> Result<T, ExtractionError> {
+    let sbor_bytes = from_hex(sbor_hex_string)?;
+    scrypto_decode(&sbor_bytes).map_err(ExtractionError::InvalidSbor)
+}

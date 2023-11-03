@@ -1,5 +1,6 @@
 pub(crate) mod lts;
 
+mod browse_entity_iterator;
 mod browse_object_field;
 mod mempool_list;
 mod mempool_transaction;
@@ -22,6 +23,7 @@ mod transaction_receipt;
 mod transaction_status;
 mod transaction_submit;
 
+pub(crate) use browse_entity_iterator::*;
 pub(crate) use browse_object_field::*;
 pub(crate) use mempool_list::*;
 pub(crate) use mempool_transaction::*;

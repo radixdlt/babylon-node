@@ -105,6 +105,7 @@ pub enum ExtractionError {
     InvalidSignature,
     InvalidPublicKey,
     InvalidHash,
+    InvalidSbor(DecodeError),
     InvalidTransaction(TransactionValidationError),
     InvalidAddress,
     InvalidNonFungibleId(ParseNonFungibleLocalIdError),
