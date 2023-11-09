@@ -6,17 +6,22 @@ use radix_engine::types::*;
 use radix_engine_store_interface::interface::{DbPartitionKey, SubstateDatabase};
 
 use convert_case::{Case, Casing};
-use radix_engine::system::system_db_reader::{
-    ResolvedPayloadSchema, SystemDatabaseReader, SystemReaderError,
+
+use radix_engine::system::system_db_reader::{SystemDatabaseReader, SystemReaderError};
+use radix_engine::system::system_type_checker::{BlueprintTypeTarget, SchemaValidationMeta};
+use radix_engine::system::type_info::TypeInfoSubstate;
+use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
+use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
+use radix_engine_interface::blueprints::package::{
+    BlueprintPayloadDef, BlueprintVersion, IndexedStateSchema,
 };
-use radix_engine_interface::blueprints::package::BlueprintPayloadIdentifier;
 use radix_engine_store_interface::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
 use radix_engine_stores::hash_tree::tree_store::{
     Nibble, NibblePath, NodeKey, ReadableTreeStore, TreeNode,
 };
 
 use sbor::representations::{SerializationMode, SerializationParameters};
-use state_manager::store::traits::QueryableProofStore;
+use state_manager::store::traits::{QueryableProofStore, SubstateNodeAncestryStore};
 use tracing::warn;
 
 use super::*;
@@ -30,7 +35,7 @@ pub struct EngineStateMetaLoader<'s, S: SubstateDatabase> {
     reader: SystemDatabaseReader<'s, S>,
 }
 
-impl<'s, S: SubstateDatabase> EngineStateMetaLoader<'s, S> {
+impl<'s, S: SubstateDatabase + SubstateNodeAncestryStore> EngineStateMetaLoader<'s, S> {
     /// Creates an instance reading from the given database.
     pub fn new(database: &'s S) -> Self {
         Self {
@@ -38,12 +43,60 @@ impl<'s, S: SubstateDatabase> EngineStateMetaLoader<'s, S> {
         }
     }
 
-    /// Loads metadata on all fields of the given object's module.
-    pub fn load_object_field_set_meta(
+    /// Loads metadata on the given entity.
+    /// Supports uninstantiated entities.
+    pub fn load_entity_meta(
+        &self,
+        node_id: &NodeId,
+    ) -> Result<EntityMeta, EngineStateBrowsingError> {
+        let type_info = match self.reader.get_type_info(node_id) {
+            Ok(type_info) => type_info,
+            Err(error) => match error {
+                SystemReaderError::NodeIdDoesNotExist => {
+                    if node_id.is_global_virtual() {
+                        return self.derive_uninstantiated_entity_meta(
+                            node_id.entity_type().expect("we just checked its type"),
+                        );
+                    }
+                    return Err(EngineStateBrowsingError::RequestedItemNotFound(
+                        ItemKind::Entity,
+                    ));
+                }
+                unexpected => {
+                    return Err(EngineStateBrowsingError::UnexpectedEngineError(
+                        unexpected,
+                        "when getting type info".to_string(),
+                    ))
+                }
+            },
+        };
+        match type_info {
+            TypeInfoSubstate::Object(object_info) => Ok(EntityMeta::Object(
+                self.load_object_meta(node_id, object_info)?,
+            )),
+            TypeInfoSubstate::KeyValueStore(kv_store_info) => Ok(EntityMeta::KeyValueStore(
+                self.load_kv_store_meta(node_id, kv_store_info)?,
+            )),
+            TypeInfoSubstate::GlobalAddressReservation(_)
+            | TypeInfoSubstate::GlobalAddressPhantom(_) => {
+                Err(EngineStateBrowsingError::RequestedItemInvalid(
+                    ItemKind::Entity,
+                    "entity neither an object nor a KV store".to_string(),
+                ))
+            }
+        }
+    }
+
+    /// Loads metadata on "state" (i.e. all fields and collections) of the given object's module.
+    /// Does *not* support uninstantiated objects.
+    ///
+    /// API note: this is normally a part of the [`Self::load_entity_meta()`] result, but some
+    /// clients are interested only in specific module and can use this cheaper method.
+    pub fn load_object_module_state_meta(
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-    ) -> Result<ObjectFieldSetMeta, EngineStateBrowsingError> {
+    ) -> Result<ObjectModuleStateMeta, EngineStateBrowsingError> {
         let type_target = self
             .reader
             .get_blueprint_type_target(node_id, module_id)
@@ -63,59 +116,340 @@ impl<'s, S: SubstateDatabase> EngineStateMetaLoader<'s, S> {
                     "when getting type target".to_string(),
                 ),
             })?;
-        let blueprint_id = &type_target.blueprint_info.blueprint_id;
-        let blueprint_definition =
-            self.reader
-                .get_blueprint_definition(blueprint_id)
-                .map_err(|error| {
-                    EngineStateBrowsingError::UnexpectedEngineError(
-                        error,
-                        "when getting blueprint definition".to_string(),
-                    )
-                })?;
+        self.load_blueprint_state_meta(&type_target)
+    }
 
-        let fields = (0..blueprint_definition.interface.state.num_fields())
-            .map(|field_index| {
-                field_index
-                    .try_into()
-                    .expect("guaranteed by max field count")
-            })
-            .map(|field_index| {
+    /// An implementation delegate of [`Self::load_entity_meta()`] for `Object`s.
+    fn load_object_meta(
+        &self,
+        node_id: &NodeId,
+        object_info: ObjectInfo,
+    ) -> Result<ObjectMeta, EngineStateBrowsingError> {
+        let ObjectInfo {
+            blueprint_info,
+            object_type,
+        } = object_info;
+        Ok(ObjectMeta {
+            is_instantiated: true,
+            main_module_state: self.load_object_module_state_meta(node_id, ModuleId::Main)?,
+            attached_module_states: match object_type {
+                ObjectType::Global { modules } => modules
+                    .into_keys() // deliberately ignored per-module blueprint versions
+                    .map(|module_id| {
+                        Ok((
+                            module_id,
+                            self.load_object_module_state_meta(node_id, module_id.into())?,
+                        ))
+                    })
+                    .collect::<Result<IndexMap<_, _>, _>>()?,
+                ObjectType::Owned => index_map_new(),
+            },
+            blueprint_reference: BlueprintReference {
+                id: blueprint_info.blueprint_id,
+                version: blueprint_info.blueprint_version,
+            },
+            instance_meta: ObjectInstanceMeta {
+                outer_object: match blueprint_info.outer_obj_info {
+                    OuterObjectInfo::Some { outer_object } => Some(outer_object),
+                    OuterObjectInfo::None => None,
+                },
+                enabled_features: Vec::from_iter(blueprint_info.features),
+                substituted_generic_types: blueprint_info
+                    .generic_substitutions
+                    .into_iter()
+                    .map(|substitution| {
+                        TypeReferenceResolver::new(&self.reader)
+                            .resolve_generic_substitution(Some(node_id), substitution)
+                            .and_then(|resolved_type| self.augment_with_schema(resolved_type))
+                    })
+                    .collect::<Result<Vec<_>, _>>()?,
+            },
+        })
+    }
+
+    /// An implementation delegate of [`Self::load_entity_meta()`] for uninstantiated entities.
+    // TODO(after development in scrypto repo): The implementation here hardcodes the results for
+    // the only currently known uninstantiated entity types (accounts and identities). A more robust
+    // solution could be implemented on the Engine's side (e.g. staged instantiation).
+    fn derive_uninstantiated_entity_meta(
+        &self,
+        entity_type: EntityType,
+    ) -> Result<EntityMeta, EngineStateBrowsingError> {
+        let blueprint_id = match entity_type {
+            EntityType::GlobalVirtualSecp256k1Account | EntityType::GlobalVirtualEd25519Account => {
+                BlueprintId::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT)
+            }
+            EntityType::GlobalVirtualSecp256k1Identity
+            | EntityType::GlobalVirtualEd25519Identity => {
+                BlueprintId::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT)
+            }
+            _ => panic!("not an uninstantiated entity type"),
+        };
+        let blueprint_info = BlueprintInfo {
+            blueprint_id,
+            blueprint_version: BlueprintVersion::default(),
+            outer_obj_info: OuterObjectInfo::None,
+            features: index_set_new(),
+            generic_substitutions: vec![],
+        };
+        Ok(EntityMeta::Object(ObjectMeta {
+            is_instantiated: false,
+            main_module_state: self.load_blueprint_state_meta(&BlueprintTypeTarget {
+                blueprint_info: blueprint_info.clone(),
+                meta: SchemaValidationMeta::Blueprint,
+            })?,
+            attached_module_states: index_map_new(),
+            blueprint_reference: BlueprintReference {
+                id: blueprint_info.blueprint_id,
+                version: blueprint_info.blueprint_version,
+            },
+            instance_meta: ObjectInstanceMeta {
+                outer_object: None,
+                enabled_features: vec![],
+                substituted_generic_types: vec![],
+            },
+        }))
+    }
+
+    /// An implementation delegate of [`Self::load_entity_meta()`] for `KeyValueStore`s.
+    fn load_kv_store_meta(
+        &self,
+        node_id: &NodeId,
+        kv_store_info: KeyValueStoreInfo,
+    ) -> Result<KeyValueStoreMeta, EngineStateBrowsingError> {
+        let KeyValueStoreGenericSubstitutions {
+            key_generic_substitution,
+            value_generic_substitution,
+            ..
+        } = kv_store_info.generic_substitutions;
+        let resolver = TypeReferenceResolver::new(&self.reader);
+        Ok(KeyValueStoreMeta {
+            resolved_key_type: resolver
+                .resolve_generic_substitution(Some(node_id), key_generic_substitution)
+                .and_then(|resolved_type| self.augment_with_schema(resolved_type))?,
+            resolved_value_type: resolver
+                .resolve_generic_substitution(Some(node_id), value_generic_substitution)
+                .and_then(|resolved_type| self.augment_with_schema(resolved_type))?,
+        })
+    }
+
+    /// Loads metadata of all fields and collections within the blueprint referenced by the given
+    /// [`BlueprintTypeTarget`]. The "type target" will also be used while resolving all types (see
+    /// [`TypeReferenceResolver`]).
+    fn load_blueprint_state_meta(
+        &self,
+        type_target: &BlueprintTypeTarget,
+    ) -> Result<ObjectModuleStateMeta, EngineStateBrowsingError> {
+        let blueprint_id = &type_target.blueprint_info.blueprint_id;
+        let IndexedStateSchema {
+            fields,
+            collections,
+            ..
+        } = self
+            .reader
+            .get_blueprint_definition(blueprint_id)
+            .map_err(|error| {
+                EngineStateBrowsingError::UnexpectedEngineError(
+                    error,
+                    "when getting blueprint definition".to_string(),
+                )
+            })?
+            .interface
+            .state;
+
+        let resolver = TypeReferenceResolver::new(&self.reader);
+
+        let fields = fields
+            .into_iter()
+            .flat_map(|(_partition_description, fields)| fields)
+            .enumerate()
+            .map(|(index, schema)| {
                 Ok(ObjectFieldMeta::new(
-                    field_index,
+                    index.try_into().expect("guaranteed by max count"),
                     blueprint_id.blueprint_name.as_str(),
-                    self.reader
-                        .get_blueprint_payload_schema(
-                            &type_target,
-                            &BlueprintPayloadIdentifier::Field(field_index),
-                        )
-                        .map_err(|error| {
-                            EngineStateBrowsingError::UnexpectedEngineError(
-                                error,
-                                "when getting blueprint payload schema".to_string(),
-                            )
-                        })?,
+                    resolver
+                        .resolve_type_from_blueprint_data(type_target, schema.field)
+                        .and_then(|resolved_type| self.augment_with_schema(resolved_type))?,
                 ))
             })
             .collect::<Result<Vec<_>, _>>()?;
 
-        Ok(ObjectFieldSetMeta { fields })
+        let collections = collections
+            .into_iter()
+            .enumerate()
+            .map(|(index, (_partition_description, schema))| {
+                let (kind, collection_schema) = Self::destructure_collection_schema(schema);
+                let BlueprintKeyValueSchema { key, value, .. } = collection_schema;
+                Ok(ObjectCollectionMeta::new(
+                    index.try_into().expect("guaranteed by max count"),
+                    blueprint_id.blueprint_name.as_str(),
+                    kind,
+                    resolver
+                        .resolve_type_from_blueprint_data(type_target, key)
+                        .and_then(|resolved_type| self.augment_with_schema(resolved_type))?,
+                    resolver
+                        .resolve_type_from_blueprint_data(type_target, value)
+                        .and_then(|resolved_type| self.augment_with_schema(resolved_type))?,
+                ))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+
+        Ok(ObjectModuleStateMeta {
+            fields,
+            collections,
+        })
+    }
+
+    /// Wraps the given [`ResolvedTypeReference`] into a [`ResolvedTypeMeta`] by *eagerly* loading
+    /// the actual referenced schema.
+    /// Note: the schema seems irrelevant for many "get meta information" methods, but it is needed
+    /// to resolve human-readable type names (from which some field names are derived as well).
+    fn augment_with_schema(
+        &self,
+        type_reference: ResolvedTypeReference,
+    ) -> Result<ResolvedTypeMeta, EngineStateBrowsingError> {
+        Ok(ResolvedTypeMeta {
+            schema: match &type_reference {
+                ResolvedTypeReference::SchemaBased(schema_based) => {
+                    let SchemaReference {
+                        node_id,
+                        schema_hash,
+                    } = &schema_based.schema_reference;
+                    self.reader
+                        .get_schema(node_id, schema_hash)
+                        .map_err(|error| {
+                            EngineStateBrowsingError::UnexpectedEngineError(
+                                error,
+                                "when locating schema".to_string(),
+                            )
+                        })?
+                        .into_latest()
+                }
+                ResolvedTypeReference::WellKnown(_) => SchemaV1::empty(),
+            },
+            type_reference,
+        })
+    }
+
+    /// Converts the given [`BlueprintCollectionSchema`] to a more direct representation.
+    fn destructure_collection_schema(
+        schema: BlueprintCollectionSchema<BlueprintPayloadDef>,
+    ) -> (
+        ObjectCollectionKind,
+        BlueprintKeyValueSchema<BlueprintPayloadDef>,
+    ) {
+        match schema {
+            BlueprintCollectionSchema::KeyValueStore(schema) => {
+                (ObjectCollectionKind::KeyValue, schema)
+            }
+            BlueprintCollectionSchema::Index(schema) => (ObjectCollectionKind::Index, schema),
+            BlueprintCollectionSchema::SortedIndex(schema) => {
+                (ObjectCollectionKind::SortedIndex, schema)
+            }
+        }
     }
 }
 
-/// Metadata on all fields of a particular object's module.
-pub struct ObjectFieldSetMeta {
-    fields: Vec<ObjectFieldMeta>,
+/// Metadata on a particular object or key-value store.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum EntityMeta {
+    Object(ObjectMeta),
+    KeyValueStore(KeyValueStoreMeta),
 }
 
-impl ObjectFieldSetMeta {
+/// Metadata on a particular object.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ObjectMeta {
+    pub is_instantiated: bool,
+    pub main_module_state: ObjectModuleStateMeta,
+    pub attached_module_states: IndexMap<AttachedModuleId, ObjectModuleStateMeta>,
+    pub blueprint_reference: BlueprintReference,
+    pub instance_meta: ObjectInstanceMeta,
+}
+
+/// A fully-disambiguated reference to a blueprint.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BlueprintReference {
+    pub id: BlueprintId,
+    pub version: BlueprintVersion,
+}
+
+/// Object's metadata details defined on a per-instance basis (i.e. not in blueprint).
+/// In other words: the information that would be required to instantiate an object using a
+/// particular blueprint.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ObjectInstanceMeta {
+    pub outer_object: Option<GlobalAddress>,
+    pub enabled_features: Vec<String>,
+    pub substituted_generic_types: Vec<ResolvedTypeMeta>,
+}
+
+/// Metadata on a particular key-value store.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct KeyValueStoreMeta {
+    pub resolved_key_type: ResolvedTypeMeta,
+    pub resolved_value_type: ResolvedTypeMeta,
+}
+
+/// A fully-disambiguated reference to a well-known or schema-defined type.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ResolvedTypeReference {
+    WellKnown(WellKnownTypeId),
+    SchemaBased(SchemaBasedTypeReference),
+}
+
+impl ResolvedTypeReference {
+    /// Creates a [`LocalTypeId`] from this type reference.
+    /// This is used to interact back with the Engine's "reader" API.
+    fn to_local_type_id(&self) -> LocalTypeId {
+        match self {
+            ResolvedTypeReference::WellKnown(id) => LocalTypeId::WellKnown(*id),
+            ResolvedTypeReference::SchemaBased(id) => LocalTypeId::SchemaLocalIndex(id.index),
+        }
+    }
+}
+
+/// A fully-disambiguated reference to a type defined by the given schema at the given index.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SchemaBasedTypeReference {
+    pub schema_reference: SchemaReference,
+    pub index: usize,
+}
+
+impl ResolvedTypeReference {
+    /// Creates a type reference from the Engine's over-specified representation.
+    fn new(node_id: NodeId, scoped_type_id: ScopedTypeId) -> ResolvedTypeReference {
+        let ScopedTypeId(schema_hash, local_type_id) = scoped_type_id;
+        match local_type_id {
+            LocalTypeId::WellKnown(id) => ResolvedTypeReference::WellKnown(id),
+            LocalTypeId::SchemaLocalIndex(index) => {
+                ResolvedTypeReference::SchemaBased(SchemaBasedTypeReference {
+                    schema_reference: SchemaReference {
+                        node_id,
+                        schema_hash,
+                    },
+                    index,
+                })
+            }
+        }
+    }
+}
+
+/// Metadata on all fields/collections of a particular object's *module*.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ObjectModuleStateMeta {
+    pub fields: Vec<ObjectFieldMeta>,
+    pub collections: Vec<ObjectCollectionMeta>,
+}
+
+impl ObjectModuleStateMeta {
     /// Gets the particular field's metadata by its human-readable name.
     /// Please see [`ObjectFieldMeta::derive_field_name()`] to learn how a human-readable name is
     /// derived.
     /// Note: not every field has a name - either because it is inherently unnamed (e.g. within a
     /// tuple), or because its name does not strictly follow our naming convention (and thus cannot
-    /// be automatically derived). For such cases, [`Self::by_index()`] is the only option.
-    pub fn by_name(
+    /// be automatically derived). For such cases, [`Self::field_by_index()`] is the only option.
+    pub fn field_by_name(
         &self,
         name: impl Into<String>,
     ) -> Result<&ObjectFieldMeta, EngineStateBrowsingError> {
@@ -123,7 +457,7 @@ impl ObjectFieldSetMeta {
         let found_fields = self
             .fields
             .iter()
-            .filter(|field| field.derived_field_name == requested_derived_name)
+            .filter(|field| field.index.derived_name == requested_derived_name)
             .collect::<Vec<_>>();
         match found_fields.len() {
             0 => Err(EngineStateBrowsingError::RequestedItemNotFound(
@@ -138,7 +472,7 @@ impl ObjectFieldSetMeta {
     }
 
     /// Gets the particular field's metadata by its index.
-    pub fn by_index(&self, index: u8) -> Result<&ObjectFieldMeta, EngineStateBrowsingError> {
+    pub fn field_by_index(&self, index: u8) -> Result<&ObjectFieldMeta, EngineStateBrowsingError> {
         self.fields
             .get(usize::from(index))
             .ok_or(EngineStateBrowsingError::RequestedItemNotFound(
@@ -147,50 +481,146 @@ impl ObjectFieldSetMeta {
     }
 }
 
+/// A type reference accompanied by its schema.
+/// Note: the [`ResolvedTypeReference`] already contains a *reference* to the schema, but in many
+/// cases we need the actual schema value - this structure simply allows to load the schema once and
+/// pass it around.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ResolvedTypeMeta {
+    pub type_reference: ResolvedTypeReference,
+    pub schema: SchemaV1<ScryptoCustomSchema>,
+}
+
+/// A fully-disambiguated reference to a schema.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SchemaReference {
+    pub node_id: NodeId,
+    pub schema_hash: SchemaHash,
+}
+
+impl ResolvedTypeMeta {
+    /// Returns the type's name, if it is defined by the schema.
+    pub fn name(&self) -> Option<&str> {
+        self.schema
+            .resolve_type_name_from_metadata(self.type_reference.to_local_type_id())
+    }
+}
+
+/// An index (of a field or collection), accompanied by a human-readable name derived from available
+/// metadata (on a best-effort basis - see [`Self::derive_from_generated()`]).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RichIndex {
+    pub number: u8,
+    pub derived_name: Option<String>,
+}
+
+impl RichIndex {
+    /// Creates an instance with unknown name.
+    fn of(number: u8) -> Self {
+        Self {
+            number,
+            derived_name: None,
+        }
+    }
+
+    /// Adds a human-readable field name (if successfully derived from the given blueprint name and
+    /// type name).
+    fn with_derived_field_name(self, blueprint_name: &str, type_name: Option<&str>) -> Self {
+        Self {
+            number: self.number,
+            derived_name: Self::derive_from_generated(blueprint_name, type_name, "FieldPayload"),
+        }
+    }
+
+    /// Adds a human-readable collection name (if successfully derived from the given blueprint name
+    /// and type name).
+    fn with_derived_collection_name(self, blueprint_name: &str, type_name: Option<&str>) -> Self {
+        Self {
+            number: self.number,
+            derived_name: Self::derive_from_generated(blueprint_name, type_name, "EntryPayload"),
+        }
+    }
+
+    /// Performs a best-effort, heuristic resolution of a human-readable field/collection name,
+    /// given its blueprint name and the auto-generated type name.
+    ///
+    /// Implementation note:
+    /// The type name most often is auto-generated by the Engine's blueprint macro, and thus follows
+    /// a strict naming convention: `<BlueprintName><CamelCaseTypeName><KnownSuffix>`. This allows
+    /// us to extract it and convert to `snake_case`.
+    // TODO(after development in scrypto repo): It would be more bullet-proof to somehow capture the
+    // field/collection name (in the blueprint macro) and simply retrieve it here.
+    fn derive_from_generated(
+        blueprint_name: &str,
+        type_name: Option<&str>,
+        known_suffix: &str,
+    ) -> Option<String> {
+        type_name.and_then(|type_name| {
+            type_name
+                .strip_prefix(blueprint_name)
+                .and_then(|name| name.strip_suffix(known_suffix))
+                .map(|name| name.to_case(Case::Snake))
+        })
+    }
+}
+
 /// Metadata of a particular field.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ObjectFieldMeta {
-    field_index: u8,
-    derived_field_name: Option<String>,
-    schema: SchemaV1<ScryptoCustomSchema>,
-    local_type_id: LocalTypeId,
+    pub index: RichIndex,
+    pub resolved_type: ResolvedTypeMeta,
 }
 
 impl ObjectFieldMeta {
     /// Creates a self-contained field metadata: captures its index, name (if applicable) and a
+    /// fully-resolved type information.
+    /// The [`blueprint_name`] is only used for deriving the human-readable field name.
+    fn new(field_index: u8, blueprint_name: &str, resolved_type: ResolvedTypeMeta) -> Self {
+        let index = RichIndex::of(field_index)
+            .with_derived_field_name(blueprint_name, resolved_type.name());
+        Self {
+            index,
+            resolved_type,
+        }
+    }
+}
+
+/// One of supported kinds of collections within an Object.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ObjectCollectionKind {
+    KeyValue,
+    Index,
+    SortedIndex,
+}
+
+/// Metadata of a particular collection.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ObjectCollectionMeta {
+    pub index: RichIndex,
+    pub kind: ObjectCollectionKind,
+    pub resolved_key_type: ResolvedTypeMeta,
+    pub resolved_value_type: ResolvedTypeMeta,
+}
+
+impl ObjectCollectionMeta {
+    /// Creates a self-contained collection metadata: captures its index, name (if applicable) and a
     /// fully-resolved schema.
     /// The [`blueprint_name`] is only used for deriving the human-readable field name.
     fn new(
-        field_index: u8,
+        collection_index: u8,
         blueprint_name: &str,
-        resolved_payload_schema: ResolvedPayloadSchema,
+        kind: ObjectCollectionKind,
+        resolved_key_type: ResolvedTypeMeta,
+        resolved_value_type: ResolvedTypeMeta,
     ) -> Self {
-        let schema = resolved_payload_schema.schema.into_latest();
-        let local_type_id = resolved_payload_schema.type_id;
-        let derived_field_name = schema
-            .resolve_type_name_from_metadata(local_type_id)
-            .and_then(|type_name| Self::derive_field_name(blueprint_name, type_name));
+        let index = RichIndex::of(collection_index)
+            .with_derived_collection_name(blueprint_name, resolved_value_type.name());
         Self {
-            field_index,
-            derived_field_name,
-            schema,
-            local_type_id,
+            index,
+            kind,
+            resolved_key_type,
+            resolved_value_type,
         }
-    }
-
-    /// Performs a best-effort, heuristic resolution of a human-readable field name, given its type
-    /// name.
-    ///
-    /// Implementation note:
-    /// The type name most often is auto-generated by the Engine's blueprint macro, and thus follows
-    /// a strict naming convention: `<BlueprintName><CamelCasedFieldName>FieldPayload`. This allows
-    /// us to extract it and convert to `snake_case`.
-    // TODO(after development in scrypto repo): It would be more bullet-proof to somehow capture the
-    // field name (in the blueprint macro) and simply retrieve it here.
-    fn derive_field_name(blueprint_name: &str, type_name: &str) -> Option<String> {
-        type_name
-            .strip_prefix(blueprint_name)
-            .and_then(|name| name.strip_suffix("FieldPayload"))
-            .map(|name| name.to_case(Case::Snake))
     }
 }
 
@@ -314,7 +744,7 @@ impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
     ) -> Result<SborData<'m>, EngineStateBrowsingError> {
         let indexed_value = self
             .reader
-            .read_object_field(node_id, module_id, field_meta.field_index)
+            .read_object_field(node_id, module_id, field_meta.index.number)
             .map_err(|error| match error {
                 SystemReaderError::NodeIdDoesNotExist => {
                     EngineStateBrowsingError::RequestedItemNotFound(ItemKind::Entity)
@@ -336,30 +766,23 @@ impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
             })?;
         Ok(SborData::new(
             indexed_value.into(),
-            &field_meta.schema,
-            field_meta.local_type_id,
+            &field_meta.resolved_type,
         ))
     }
 }
 
 /// A top-level SBOR value aware of its schema.
-pub struct SborData<'s> {
+pub struct SborData<'t> {
     payload_bytes: Vec<u8>,
-    schema: &'s SchemaV1<ScryptoCustomSchema>,
-    local_type_id: LocalTypeId,
+    resolved_type: &'t ResolvedTypeMeta,
 }
 
-impl<'s> SborData<'s> {
+impl<'t> SborData<'t> {
     /// Creates an instance.
-    fn new(
-        payload_bytes: Vec<u8>,
-        schema: &'s SchemaV1<ScryptoCustomSchema>,
-        local_type_id: LocalTypeId,
-    ) -> Self {
+    fn new(payload_bytes: Vec<u8>, resolved_type: &'t ResolvedTypeMeta) -> Self {
         Self {
             payload_bytes,
-            schema,
-            local_type_id,
+            resolved_type,
         }
     }
 
@@ -375,14 +798,119 @@ impl<'s> SborData<'s> {
             custom_context: ScryptoValueDisplayContext::with_optional_bech32(Some(
                 &mapping_context.address_encoder,
             )),
-            schema: self.schema,
-            type_id: self.local_type_id,
+            schema: &self.resolved_type.schema,
+            type_id: self.resolved_type.type_reference.to_local_type_id(),
             depth_limit: SCRYPTO_SBOR_V1_MAX_DEPTH,
         });
         serde_json::to_value(serializable).map_err(|_error| MappingError::SubstateValue {
             bytes: raw_payload.payload_bytes().to_vec(),
             message: "cannot render as programmatic json".to_string(),
         })
+    }
+}
+
+/// An internal helper for resolving concrete type references.
+struct TypeReferenceResolver<'s, S: SubstateDatabase> {
+    reader: &'s SystemDatabaseReader<'s, S>,
+}
+
+impl<'s, S: SubstateDatabase> TypeReferenceResolver<'s, S> {
+    /// Creates an instance relying on the given reader.
+    pub fn new(reader: &'s SystemDatabaseReader<'s, S>) -> Self {
+        Self { reader }
+    }
+
+    /// Returns a type reference resolved from the given, already-loada [`BlueprintPayloadDef`]
+    /// using the context from the [`BlueprintTypeTarget`].
+    /// Note: this method does not load anything more from the store; technically it could get rid
+    /// of the `&self` parameter.
+    pub fn resolve_type_from_blueprint_data(
+        &self,
+        type_target: &BlueprintTypeTarget,
+        payload_def: BlueprintPayloadDef,
+    ) -> Result<ResolvedTypeReference, EngineStateBrowsingError> {
+        let BlueprintTypeTarget {
+            blueprint_info,
+            meta,
+        } = type_target;
+        match payload_def {
+            BlueprintPayloadDef::Static(scoped_type_id) => Ok(ResolvedTypeReference::new(
+                blueprint_info.blueprint_id.package_address.into_node_id(),
+                scoped_type_id,
+            )),
+            BlueprintPayloadDef::Generic(instance_index) => {
+                let generic_substitution = blueprint_info
+                    .generic_substitutions
+                    .get(usize::from(instance_index))
+                    .expect("missing generic substitution");
+                let schemas_node_id = match meta {
+                    SchemaValidationMeta::ExistingObject { additional_schemas } => {
+                        Some(additional_schemas)
+                    }
+                    SchemaValidationMeta::NewObject { .. } | SchemaValidationMeta::Blueprint => {
+                        None
+                    }
+                };
+                self.resolve_generic_substitution(schemas_node_id, generic_substitution.clone())
+            }
+        }
+    }
+
+    /// Returns a type reference resolved from the given [`GenericSubstitution`].
+    /// The local Node ID must be present if the substitution points to a [`ScopedTypeId`].
+    pub fn resolve_generic_substitution(
+        &self,
+        local_node_id: Option<&NodeId>,
+        generic_substitution: GenericSubstitution,
+    ) -> Result<ResolvedTypeReference, EngineStateBrowsingError> {
+        match generic_substitution {
+            GenericSubstitution::Local(scoped_type_id) => {
+                let schemas_node_id = local_node_id.ok_or_else(|| {
+                    EngineStateBrowsingError::EngineInvariantBroken(
+                        "local generic substitution requires known entity".to_string(),
+                    )
+                })?;
+                Ok(ResolvedTypeReference::new(*schemas_node_id, scoped_type_id))
+            }
+            GenericSubstitution::Remote(blueprint_type_identifier) => {
+                self.resolve_type_from_blueprint_reference(blueprint_type_identifier)
+            }
+        }
+    }
+
+    /// Returns a type reference resolved by name from a fetched blueprint (according to
+    /// specification from the given [`BlueprintTypeIdentifier`]).
+    fn resolve_type_from_blueprint_reference(
+        &self,
+        blueprint_type_identifier: BlueprintTypeIdentifier,
+    ) -> Result<ResolvedTypeReference, EngineStateBrowsingError> {
+        let BlueprintTypeIdentifier {
+            package_address,
+            blueprint_name,
+            type_name,
+        } = blueprint_type_identifier.clone();
+        let blueprint_id = BlueprintId {
+            package_address,
+            blueprint_name,
+        };
+        let blueprint_definition = self
+            .reader
+            .get_blueprint_payload_def(&blueprint_id)
+            .map_err(|error| {
+                EngineStateBrowsingError::UnexpectedEngineError(
+                    error,
+                    "when getting def by ID known to exist".to_string(),
+                )
+            })?;
+        let scoped_type_id = blueprint_definition.interface.types.get(&type_name).ok_or(
+            EngineStateBrowsingError::EngineInvariantBroken(
+                "no type of declared name found in blueprint definition".to_string(),
+            ),
+        )?;
+        Ok(ResolvedTypeReference::new(
+            package_address.into_node_id(),
+            *scoped_type_id,
+        ))
     }
 }
 
@@ -395,6 +923,8 @@ pub enum EngineStateBrowsingError {
     RequestedItemInvalid(ItemKind, String),
     /// The Engine's "reader" API returned an error which should never occur in the current context.
     UnexpectedEngineError(SystemReaderError, String),
+    /// The Engine's "reader" API returned data inconsistent with its declared behaviors.
+    EngineInvariantBroken(String),
 }
 
 /// A kind of browsable item within Engine State.
@@ -415,8 +945,13 @@ impl<E: ErrorDetails> From<EngineStateBrowsingError> for ResponseError<E> {
                 client_error(format!("Invalid {:?}: {}", item_kind, reason))
             }
             EngineStateBrowsingError::UnexpectedEngineError(system_reader_error, circumstances) => {
-                let public_message = format!("Unexpected state encountered {}", circumstances);
+                let public_message = format!("Unexpected error encountered {}", circumstances);
                 warn!(?system_reader_error, public_message);
+                server_error(public_message)
+            }
+            EngineStateBrowsingError::EngineInvariantBroken(message) => {
+                let public_message = format!("Invalid Engine state: {}", message);
+                warn!(public_message);
                 server_error(public_message)
             }
         }

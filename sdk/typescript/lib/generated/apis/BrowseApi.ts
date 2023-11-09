@@ -16,6 +16,8 @@
 import * as runtime from '../runtime';
 import type {
   BasicErrorResponse,
+  BrowseEntityInfoRequest,
+  BrowseEntityInfoResponse,
   BrowseEntityIteratorRequest,
   BrowseEntityIteratorResponse,
   BrowseObjectFieldRequest,
@@ -24,6 +26,10 @@ import type {
 import {
     BasicErrorResponseFromJSON,
     BasicErrorResponseToJSON,
+    BrowseEntityInfoRequestFromJSON,
+    BrowseEntityInfoRequestToJSON,
+    BrowseEntityInfoResponseFromJSON,
+    BrowseEntityInfoResponseToJSON,
     BrowseEntityIteratorRequestFromJSON,
     BrowseEntityIteratorRequestToJSON,
     BrowseEntityIteratorResponseFromJSON,
@@ -33,6 +39,10 @@ import {
     BrowseObjectFieldResponseFromJSON,
     BrowseObjectFieldResponseToJSON,
 } from '../models';
+
+export interface BrowseEntityInfoPostRequest {
+    browseEntityInfoRequest: BrowseEntityInfoRequest;
+}
 
 export interface BrowseEntityIteratorPostRequest {
     browseEntityIteratorRequest: BrowseEntityIteratorRequest;
@@ -46,6 +56,41 @@ export interface BrowseObjectFieldPostRequest {
  * 
  */
 export class BrowseApi extends runtime.BaseAPI {
+
+    /**
+     * Resolves basic information about an entity: its type, attached modules, fields/collections and blueprint. 
+     * Get Entity Info
+     */
+    async browseEntityInfoPostRaw(requestParameters: BrowseEntityInfoPostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<BrowseEntityInfoResponse>> {
+        if (requestParameters.browseEntityInfoRequest === null || requestParameters.browseEntityInfoRequest === undefined) {
+            throw new runtime.RequiredError('browseEntityInfoRequest','Required parameter requestParameters.browseEntityInfoRequest was null or undefined when calling browseEntityInfoPost.');
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        const response = await this.request({
+            path: `/browse/entity/info`,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: BrowseEntityInfoRequestToJSON(requestParameters.browseEntityInfoRequest),
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => BrowseEntityInfoResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Resolves basic information about an entity: its type, attached modules, fields/collections and blueprint. 
+     * Get Entity Info
+     */
+    async browseEntityInfoPost(requestParameters: BrowseEntityInfoPostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<BrowseEntityInfoResponse> {
+        const response = await this.browseEntityInfoPostRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
 
     /**
      * Lists addresses of all entities, in an iterator-like paged fashion

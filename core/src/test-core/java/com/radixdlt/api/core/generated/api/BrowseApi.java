@@ -18,6 +18,8 @@ import com.radixdlt.api.core.generated.client.ApiResponse;
 import com.radixdlt.api.core.generated.client.Pair;
 
 import com.radixdlt.api.core.generated.models.BasicErrorResponse;
+import com.radixdlt.api.core.generated.models.BrowseEntityInfoRequest;
+import com.radixdlt.api.core.generated.models.BrowseEntityInfoResponse;
 import com.radixdlt.api.core.generated.models.BrowseEntityIteratorRequest;
 import com.radixdlt.api.core.generated.models.BrowseEntityIteratorResponse;
 import com.radixdlt.api.core.generated.models.BrowseObjectFieldRequest;
@@ -78,6 +80,84 @@ public class BrowseApi {
     return operationId + " call failed with: " + statusCode + " - " + body;
   }
 
+  /**
+   * Get Entity Info
+   * Resolves basic information about an entity: its type, attached modules, fields/collections and blueprint. 
+   * @param browseEntityInfoRequest  (required)
+   * @return BrowseEntityInfoResponse
+   * @throws ApiException if fails to make API call
+   */
+  public BrowseEntityInfoResponse browseEntityInfoPost(BrowseEntityInfoRequest browseEntityInfoRequest) throws ApiException {
+    ApiResponse<BrowseEntityInfoResponse> localVarResponse = browseEntityInfoPostWithHttpInfo(browseEntityInfoRequest);
+    return localVarResponse.getData();
+  }
+
+  /**
+   * Get Entity Info
+   * Resolves basic information about an entity: its type, attached modules, fields/collections and blueprint. 
+   * @param browseEntityInfoRequest  (required)
+   * @return ApiResponse&lt;BrowseEntityInfoResponse&gt;
+   * @throws ApiException if fails to make API call
+   */
+  public ApiResponse<BrowseEntityInfoResponse> browseEntityInfoPostWithHttpInfo(BrowseEntityInfoRequest browseEntityInfoRequest) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = browseEntityInfoPostRequestBuilder(browseEntityInfoRequest);
+    try {
+      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
+          localVarRequestBuilder.build(),
+          HttpResponse.BodyHandlers.ofInputStream());
+      if (memberVarResponseInterceptor != null) {
+        memberVarResponseInterceptor.accept(localVarResponse);
+      }
+      try {
+        if (localVarResponse.statusCode()/ 100 != 2) {
+          throw getApiException("browseEntityInfoPost", localVarResponse);
+        }
+        return new ApiResponse<BrowseEntityInfoResponse>(
+          localVarResponse.statusCode(),
+          localVarResponse.headers().map(),
+          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<BrowseEntityInfoResponse>() {}) // closes the InputStream
+          
+        );
+      } finally {
+      }
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new ApiException(e);
+    }
+  }
+
+  private HttpRequest.Builder browseEntityInfoPostRequestBuilder(BrowseEntityInfoRequest browseEntityInfoRequest) throws ApiException {
+    // verify the required parameter 'browseEntityInfoRequest' is set
+    if (browseEntityInfoRequest == null) {
+      throw new ApiException(400, "Missing the required parameter 'browseEntityInfoRequest' when calling browseEntityInfoPost");
+    }
+
+    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
+
+    String localVarPath = "/browse/entity/info";
+
+    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+
+    localVarRequestBuilder.header("Content-Type", "application/json");
+    localVarRequestBuilder.header("Accept", "application/json");
+
+    try {
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(browseEntityInfoRequest);
+      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    if (memberVarReadTimeout != null) {
+      localVarRequestBuilder.timeout(memberVarReadTimeout);
+    }
+    if (memberVarInterceptor != null) {
+      memberVarInterceptor.accept(localVarRequestBuilder);
+    }
+    return localVarRequestBuilder;
+  }
   /**
    * List Entities
    * Lists addresses of all entities, in an iterator-like paged fashion
