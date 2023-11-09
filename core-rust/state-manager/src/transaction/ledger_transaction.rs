@@ -29,6 +29,9 @@ pub enum TypedTransactionIdentifiers {
     RoundUpdateV1 {
         round_update_hash: RoundUpdateTransactionHash,
     },
+    FlashV1 {
+        flash_transaction_hash: FlashTransactionHash,
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -63,11 +66,14 @@ pub enum LedgerTransaction {
     UserV1(Box<NotarizedTransactionV1>),
     #[sbor(discriminator(ROUND_UPDATE_V1_LEDGER_TRANSACTION_DISCRIMINATOR))]
     RoundUpdateV1(Box<RoundUpdateTransactionV1>),
+    #[sbor(discriminator(FLASH_V1_LEDGER_TRANSACTION_DISCRIMINATOR))]
+    FlashV1(Box<FlashTransactionV1>),
 }
 
 const GENESIS_LEDGER_TRANSACTION_DISCRIMINATOR: u8 = 0;
 const USER_V1_LEDGER_TRANSACTION_DISCRIMINATOR: u8 = 1;
 const ROUND_UPDATE_V1_LEDGER_TRANSACTION_DISCRIMINATOR: u8 = 2;
+const FLASH_V1_LEDGER_TRANSACTION_DISCRIMINATOR: u8 = 3;
 
 define_raw_transaction_payload!(RawLedgerTransaction);
 
@@ -118,6 +124,10 @@ pub enum GenesisTransaction {
 const GENESIS_TRANSACTION_FLASH_DISCRIMINATOR: u8 = 0;
 const GENESIS_TRANSACTION_SYSTEM_TRANSACTION_DISCRIMINATOR: u8 = 1;
 
+#[derive(Debug, Clone, PartialEq, Eq, ManifestCategorize, ManifestEncode, ManifestDecode)]
+pub struct FlashTransactionV1 {
+}
+
 pub struct PreparedLedgerTransaction {
     pub inner: PreparedLedgerTransactionInner,
     pub summary: Summary,
@@ -157,6 +167,11 @@ impl PreparedLedgerTransaction {
                         round_update_hash: t.round_update_transaction_hash(),
                     }
                 }
+                PreparedLedgerTransactionInner::FlashV1(t) => {
+                    TypedTransactionIdentifiers::FlashV1 {
+                        flash_transaction_hash: t.flash_transaction_hash(),
+                    }
+                }
             },
         }
     }
@@ -176,6 +191,8 @@ pub enum PreparedLedgerTransactionInner {
     UserV1(Box<PreparedNotarizedTransactionV1>),
     #[sbor(discriminator(ROUND_UPDATE_V1_LEDGER_TRANSACTION_DISCRIMINATOR))]
     RoundUpdateV1(Box<PreparedRoundUpdateTransactionV1>),
+    #[sbor(discriminator(FLASH_V1_LEDGER_TRANSACTION_DISCRIMINATOR))]
+    FlashV1(Box<PreparedFlashTransactionV1>),
 }
 
 impl PreparedLedgerTransactionInner {
@@ -190,6 +207,7 @@ impl HasSummary for PreparedLedgerTransactionInner {
             Self::Genesis(t) => t.get_summary(),
             Self::UserV1(t) => t.get_summary(),
             Self::RoundUpdateV1(t) => t.get_summary(),
+            Self::FlashV1(t) => t.get_summary(),
         }
     }
 }
@@ -281,6 +299,25 @@ impl HasSystemTransactionHash for PreparedGenesisTransaction {
     }
 }
 
+
+
+pub struct PreparedFlashTransactionV1 {
+    summary: Summary,
+}
+
+impl HasSummary for PreparedFlashTransactionV1 {
+    fn get_summary(&self) -> &Summary {
+        &self.summary
+    }
+}
+
+impl HasFlashTransactionHash for PreparedFlashTransactionV1 {
+    fn flash_transaction_hash(&self) -> FlashTransactionHash {
+        FlashTransactionHash(self.summary.hash)
+    }
+}
+
+
 impl TransactionPayloadPreparable for PreparedLedgerTransaction {
     type Raw = RawLedgerTransaction;
 
@@ -312,6 +349,8 @@ pub enum ValidatedLedgerTransactionInner {
     UserV1(Box<ValidatedNotarizedTransactionV1>),
     #[sbor(discriminator(ROUND_UPDATE_V1_LEDGER_TRANSACTION_DISCRIMINATOR))]
     RoundUpdateV1(Box<PreparedRoundUpdateTransactionV1>),
+    #[sbor(discriminator(FLASH_V1_LEDGER_TRANSACTION_DISCRIMINATOR))]
+    FlashV1(Box<PreparedFlashTransactionV1>),
 }
 
 impl ValidatedLedgerTransaction {
@@ -320,6 +359,7 @@ impl ValidatedLedgerTransaction {
             ValidatedLedgerTransactionInner::Genesis(_) => None,
             ValidatedLedgerTransactionInner::UserV1(t) => Some(t.intent_hash()),
             ValidatedLedgerTransactionInner::RoundUpdateV1(_) => None,
+            ValidatedLedgerTransactionInner::FlashV1(_) => None,
         }
     }
 
@@ -339,13 +379,16 @@ impl ValidatedLedgerTransaction {
             ValidatedLedgerTransactionInner::Genesis(genesis) => match genesis.as_ref() {
                 PreparedGenesisTransaction::Flash(_) => {
                     panic!("Should not call get_executable on a genesis flash")
-                }
+                },
                 PreparedGenesisTransaction::Transaction(t) => {
                     t.get_executable(btreeset!(AuthAddresses::system_role()))
-                }
+                },
             },
             ValidatedLedgerTransactionInner::UserV1(t) => t.get_executable(),
             ValidatedLedgerTransactionInner::RoundUpdateV1(t) => t.get_executable(),
+            ValidatedLedgerTransactionInner::FlashV1(_) => {
+                panic!("Should not call get_executable on a flash transaction")
+            }
         }
     }
 
@@ -356,6 +399,7 @@ impl ValidatedLedgerTransaction {
             ValidatedLedgerTransactionInner::Genesis(_) => ConfigType::Genesis,
             ValidatedLedgerTransactionInner::UserV1(_) => ConfigType::Regular,
             ValidatedLedgerTransactionInner::RoundUpdateV1(_) => ConfigType::OtherSystem,
+            ValidatedLedgerTransactionInner::FlashV1(_) => ConfigType::OtherSystem,
         }
     }
 
@@ -378,6 +422,11 @@ impl ValidatedLedgerTransaction {
                         round_update_hash: t.round_update_transaction_hash(),
                     }
                 }
+                ValidatedLedgerTransactionInner::FlashV1(t) => {
+                    TypedTransactionIdentifiers::FlashV1 {
+                        flash_transaction_hash: t.flash_transaction_hash(),
+                    }
+                },
             },
         }
     }

@@ -106,6 +106,9 @@ impl LedgerTransactionValidator {
             PreparedLedgerTransactionInner::RoundUpdateV1(prepared) => {
                 ValidatedLedgerTransactionInner::RoundUpdateV1(prepared)
             }
+            PreparedLedgerTransactionInner::FlashV1(prepared) => {
+                ValidatedLedgerTransactionInner::FlashV1(prepared)
+            }
         };
         Ok(ValidatedLedgerTransaction {
             inner: validated_inner,
