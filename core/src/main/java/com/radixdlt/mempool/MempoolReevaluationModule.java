@@ -70,7 +70,7 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.environment.*;
 import java.time.Duration;
 
-/** Module configuring a periodic reevaluation of commitable transactions waiting in the mempool. */
+/** Module configuring a periodic reevaluation of committable transactions waiting in the mempool. */
 public final class MempoolReevaluationModule extends AbstractModule {
 
   private final Duration reevaluationInterval;
