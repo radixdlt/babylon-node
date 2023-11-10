@@ -174,7 +174,7 @@ fn empty_virtual_account_response(
                 .map(|(requested_resource_address, resource_address)| {
                     (
                         requested_resource_address,
-                        empty_virtual_account_resource_specific_bahaviour(resource_address),
+                        empty_virtual_account_resource_specific_behaviour(resource_address),
                     )
                 })
                 .collect()
@@ -182,7 +182,7 @@ fn empty_virtual_account_response(
     )
 }
 
-fn empty_virtual_account_resource_specific_bahaviour(
+fn empty_virtual_account_resource_specific_behaviour(
     resource_address: ResourceAddress,
 ) -> models::ResourceSpecificDepositBehaviour {
     models::ResourceSpecificDepositBehaviour {

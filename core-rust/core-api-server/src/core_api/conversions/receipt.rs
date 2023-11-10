@@ -563,7 +563,7 @@ impl StateMappingLookups {
                     BlueprintVersionKey::new_default(blueprint_name.clone())
                 )).unwrap()),
             ).ok_or_else(|| MappingError::CouldNotResolveRemoteGenericSubstitution {
-                message: "Could not find blueprint definition referenced in Remote Generic Substition, but this was checked by the engine".to_string(),
+                message: "Could not find blueprint definition referenced in Remote Generic Substitution, but this was checked by the engine".to_string(),
             })?
             .into_value()
             .ok_or_else(|| MappingError::CouldNotResolveRemoteGenericSubstitution {

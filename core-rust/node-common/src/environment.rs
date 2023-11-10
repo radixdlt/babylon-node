@@ -71,7 +71,7 @@ pub fn setup_tracing(runtime: &Runtime, jaeger_agent_endpoint: Option<String>) {
     // work for MacOS (by default, max UDP datagram size is 9216). Since this is not (yet) used
     // in production, minimum value that works on most systems is used (for local testing out of
     // the box). This needs a way of figuring this value at runtime (cross-platform and
-    // preferrably nicer than binary searching it) and/or pass through a configuration parameter.
+    // preferably nicer than binary searching it) and/or pass through a configuration parameter.
     let max_udp_packet_size = 9216;
     runtime.spawn(async move {
         match jaeger_agent_endpoint {
