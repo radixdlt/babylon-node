@@ -37,21 +37,24 @@ pub(crate) async fn handle_browse_entity_iterator(
     let database = state.state_manager.database.read_current();
     let data_loader = EngineNodeLister::new(database.deref());
 
-    let (node_id_page, continuation_token) = OrderAgnosticPager::get_page(
-        FnIterable::wrap(|from| data_loader.iter_node_ids(from)),
+    let page = OrderAgnosticPager::get_page(
+        wrap_error_free(|from| data_loader.iter_node_ids(from)),
         create_paging_policy(requested_max_page_size),
         continuation_token,
-    );
+    )
+    .expect("FnIterable is error-free");
 
     let header = read_current_ledger_header(database.deref());
 
     Ok(models::BrowseEntityIteratorResponse {
         at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
-        page: node_id_page
+        page: page
+            .items
             .into_iter()
             .map(|node_id| to_api_listed_entity_item(&mapping_context, &node_id))
             .collect::<Result<Vec<_>, _>>()?,
-        continuation_token: continuation_token
+        continuation_token: page
+            .continuation_token
             .map(|continuation_token| to_api_sbor_hex_string(&continuation_token))
             .transpose()?,
     })

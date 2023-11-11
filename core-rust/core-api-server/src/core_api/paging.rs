@@ -2,9 +2,38 @@ use radix_engine::types::*;
 use std::ops::Add;
 use std::time::{Duration, Instant};
 
+/// A type holding its key internally.
+/// In the paging use-cases, we list items (e.g. `{id: 7, name: John}`), but we identify a point in
+/// the listing by some item's key (e.g. `7`).
+///
+/// A trivial - and sometimes actually feasible - implementation of keying is to simply use the
+/// entire item (see below).
+pub trait HasKey<K> {
+    /// Returns the key.
+    fn as_key(&self) -> &K;
+}
+
+impl<S> HasKey<S> for S {
+    fn as_key(&self) -> &S {
+        self
+    }
+}
+
 /// A sequence of deterministically-ordered elements, which knows how to efficiently start iteration
 /// from an arbitrarily requested item.
-pub trait RandomAccessIterable<T, I: Iterator<Item = T>> {
+pub trait RandomAccessIterable {
+    /// Each [`Item`]'s key type.
+    type Key;
+
+    /// Item's type.
+    type Item: HasKey<Self::Key>;
+
+    /// Started iterator's type.
+    type Iterator: Iterator<Item = Self::Item>;
+
+    /// Type of error that might occur on starting the iteration.
+    type Error;
+
     /// Turns itself into an iterator which:
     /// - either starts at the beginning of the sequence (if `from.is_none()`),
     /// - or starts at the given `from` element (if it is actually exists in the sequence),
@@ -18,36 +47,55 @@ pub trait RandomAccessIterable<T, I: Iterator<Item = T>> {
     ///
     /// In general, this trait can be thought of as an expansion to the well-known `.iter()`
     /// convention, which simply supports an optional starting point.
-    fn into_iter_from(self, from: Option<&T>) -> I;
+    fn into_iter_from(self, from: Option<&Self::Key>) -> Result<Self::Iterator, Self::Error>;
 }
 
 /// A convenience wrapper that allows any `|from| some_lister.start_listing(from)` closure to be a
 /// [`RandomAccessIterable`].
 ///
-/// Note: in theory, this type could be replaced with just an `impl<T, F: FnOnce(Option<&T>) -> I,
-/// I: Iterator<Item = T>> RandomAccessIterable<T,  I> for F`. However, due to a compiler quirk,
-/// the lifetime of `&T` would not be properly generalized without the awkward explicit type
+/// Note: in theory, this type could be replaced with just an `impl<T, F: FnOnce(Option<&T>) ->
+/// Result<I, E>, I: Iterator<Item = T>, E> RandomAccessIterable for F`. However, due to a compiler
+/// quirk, the lifetime of `&T` would not be properly generalized without the awkward explicit type
 /// annotation - which additionally results in a pretty confusing compilation error message.
 /// The `FnIterable::wrap(|from| ...)` syntax seems easier.
-pub struct FnIterable<T, I: Iterator<Item = T>, F: FnOnce(Option<&T>) -> I> {
+pub struct FnIterable<
+    K,
+    T: HasKey<K>,
+    I: Iterator<Item = T>,
+    F: FnOnce(Option<&K>) -> Result<I, E>,
+    E,
+> {
     function: F,
-    type_parameter_phantom: PhantomData<(T, I)>,
+    type_parameter_phantom: PhantomData<(K, T, I, E)>,
 }
 
-impl<T, I: Iterator<Item = T>, F: FnOnce(Option<&T>) -> I> FnIterable<T, I, F> {
-    /// Turns the given function into a [`RandomAccessIterable`].
-    pub fn wrap(function: F) -> Self {
-        Self {
-            function,
-            type_parameter_phantom: PhantomData,
-        }
+/// Turns the given function into a [`RandomAccessIterable`].
+pub fn wrap<K, T: HasKey<K>, I: Iterator<Item = T>, F: FnOnce(Option<&K>) -> Result<I, E>, E>(
+    function: F,
+) -> FnIterable<K, T, I, F, E> {
+    FnIterable {
+        function,
+        type_parameter_phantom: PhantomData,
     }
 }
 
-impl<T, I: Iterator<Item = T>, F: FnOnce(Option<&T>) -> I> RandomAccessIterable<T, I>
-    for FnIterable<T, I, F>
+/// Turns the given "error-free" function (i.e. returning an [`Iterator`] directly rather than a
+/// [`Result`]) into a [`RandomAccessIterable`].
+pub fn wrap_error_free<K, T: HasKey<K>, I: Iterator<Item = T>, SF: FnOnce(Option<&K>) -> I>(
+    simple_function: SF,
+) -> FnIterable<K, T, I, impl FnOnce(Option<&K>) -> Result<I, ()>, ()> {
+    wrap(|from| Ok(simple_function(from)))
+}
+
+impl<K, T: HasKey<K>, I: Iterator<Item = T>, F: FnOnce(Option<&K>) -> Result<I, E>, E>
+    RandomAccessIterable for FnIterable<K, T, I, F, E>
 {
-    fn into_iter_from(self, from: Option<&T>) -> I {
+    type Key = K;
+    type Item = T;
+    type Iterator = I;
+    type Error = E;
+
+    fn into_iter_from(self, from: Option<&Self::Key>) -> Result<Self::Iterator, Self::Error> {
         (self.function)(from)
     }
 }
@@ -66,20 +114,43 @@ pub trait PagingPolicy<I> {
     fn still_allows(&mut self, item: &I) -> bool;
 }
 
+/// A page of items.
+pub struct Page<K, T: HasKey<K>> {
+    /// Items on this page.
+    pub items: Vec<T>,
+    /// The next continuation token (only present if there are more pages after this one).
+    pub continuation_token: Option<ContinuationToken<K>>,
+}
+
+impl<K, T: HasKey<K>> Page<K, T> {
+    /// Creates a page of the given items; not continued by default.
+    fn of(items: Vec<T>) -> Self {
+        Self {
+            items,
+            continuation_token: None,
+        }
+    }
+
+    /// Adds a continuation token to this page.
+    fn continued(self, continuation_token: ContinuationToken<K>) -> Self {
+        Self {
+            items: self.items,
+            continuation_token: Some(continuation_token),
+        }
+    }
+}
+
 /// A pager capable of extracting a single page from a [`RandomAccessIterable`] and handle both
 /// the input and output continuation tokens.
-pub trait Pager {
+pub trait Pager<I: RandomAccessIterable> {
     /// Reads from the given [`RandomAccessIterable`], starting from the point marked by the given
     /// continuation token, until reaching the *maximum* number of items allowed by the given
     /// [`PagingPolicy`].
-    ///
-    /// Returns the page, optionally accompanied by the next continuation token (only if there are
-    /// more pages after this one).
-    fn get_page<T: PartialEq + Clone, I: Iterator<Item = T>>(
-        iterable: impl RandomAccessIterable<T, I>,
-        policy: impl PagingPolicy<T>,
-        token: Option<ContinuationToken<T>>,
-    ) -> (Vec<T>, Option<ContinuationToken<T>>);
+    fn get_page(
+        iterable: I,
+        policy: impl PagingPolicy<I::Item>,
+        token: Option<ContinuationToken<I::Key>>,
+    ) -> Result<Page<I::Key, I::Item>, I::Error>;
 }
 
 /// A [`Pager`] implementation suitable for items whose order is deterministic, but not known at
@@ -91,29 +162,32 @@ pub trait Pager {
 /// implementation "wastes" 2 unnecessarily-loaded items per page.
 pub struct OrderAgnosticPager;
 
-impl Pager for OrderAgnosticPager {
-    fn get_page<T: PartialEq + Clone, I: Iterator<Item = T>>(
-        iterable: impl RandomAccessIterable<T, I>,
-        policy: impl PagingPolicy<T>,
-        token: Option<ContinuationToken<T>>,
-    ) -> (Vec<T>, Option<ContinuationToken<T>>) {
+impl<I: RandomAccessIterable> Pager<I> for OrderAgnosticPager
+where
+    I::Key: PartialEq + Clone,
+{
+    fn get_page(
+        iterable: I,
+        policy: impl PagingPolicy<I::Item>,
+        token: Option<ContinuationToken<I::Key>>,
+    ) -> Result<Page<I::Key, I::Item>, I::Error> {
         // prepare the inputs and outputs:
-        let last_previously_listed_item = token
+        let last_previously_listed_key = token
             .as_ref()
             .and_then(|token| token.last_listed_item.as_ref());
         let mut policy = policy;
         let mut items = Vec::new();
 
         // start the actual iteration from the previous page's last listed item (inclusive!):
-        let mut item_iter = iterable.into_iter_from(last_previously_listed_item);
+        let mut item_iter = iterable.into_iter_from(last_previously_listed_key)?;
         let mut opt_next_item = item_iter.next();
 
-        if let Some(last_previously_listed_item) = last_previously_listed_item {
+        if let Some(last_previously_listed_key) = last_previously_listed_key {
             let Some(first_item) = &opt_next_item else {
                 // all items of the last page were deleted; we must return an empty page and no continuation:
-                return (Vec::new(), None);
+                return Ok(Page::of(Vec::new()));
             };
-            if first_item == last_previously_listed_item {
+            if first_item.as_key() == last_previously_listed_key {
                 // very much expected (but not guaranteed, since the last previously listed item may have been deleted)
                 opt_next_item = item_iter.next();
             }
@@ -121,33 +195,31 @@ impl Pager for OrderAgnosticPager {
 
         // the continuation token (if any) was handled, so let's enter the page-collecting loop:
         loop {
-            let Some(next_item) = &opt_next_item else {
+            let Some(next_item) = opt_next_item else {
                 // a genuine end of the sequence; we return this last page and no continuation:
-                return (items, None);
+                return Ok(Page::of(items));
             };
-            if !policy.still_allows(next_item) {
+            if !policy.still_allows(&next_item) {
                 // the policy stopped us...
-                if let Some(last_currently_listed_item) = items.last().cloned() {
+                return Ok(if let Some(last_currently_listed_item) = items.last() {
                     // ... and we managed to list something, so we advance the continuation token:
-                    return (
-                        items,
-                        Some(ContinuationToken::after(last_currently_listed_item)),
-                    );
+                    let last_currently_listed_key = last_currently_listed_item.as_key().clone();
+                    Page::of(items).continued(ContinuationToken::after(last_currently_listed_key))
                 } else {
                     // ... but the current page is empty, which forces the pager to return a
                     // confusing "empty page, but please continue iteration" response - see the
                     // `PagingPolicy` documentation describing the well-behaved policies.
-                    if token.is_some() {
+                    if let Some(token) = token {
                         // It is not the first page, so we can make the caller replay the same call:
-                        return (items, token);
+                        Page::of(items).continued(token)
                     } else {
                         // It is the first page, wo we have to use a special "continue from start" token:
-                        return (items, Some(ContinuationToken::from_start()));
+                        Page::of(items).continued(ContinuationToken::from_start())
                     }
-                }
+                });
             }
             // the policy allowed this next element, so let's collect it and advance the iteration:
-            items.push(next_item.clone());
+            items.push(next_item);
             opt_next_item = item_iter.next();
         }
     }
