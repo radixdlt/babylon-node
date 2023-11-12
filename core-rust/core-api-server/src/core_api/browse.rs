@@ -6,6 +6,7 @@ use radix_engine::types::*;
 use radix_engine_store_interface::interface::{DbPartitionKey, SubstateDatabase};
 
 use convert_case::{Case, Casing};
+use itertools::Itertools;
 
 use radix_engine::system::system_db_reader::{SystemDatabaseReader, SystemReaderError};
 use radix_engine::system::system_type_checker::{BlueprintTypeTarget, SchemaValidationMeta};
@@ -822,6 +823,7 @@ impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
             // "faux paging" (functional, although nonsensical - given the performance reasons of
             // even having the paging). This can be easily migrated to true paging after extending
             // the `SubstateDatabase` API.
+            .sorted() // the DB uses different sorting (by hash) - faux paging is order-aware
             .skip_while(move |key| Some(key) < from_key.as_ref()) // any `Some` is greater than `None`
             .map(|substate_key| Self::to_object_collection_key(substate_key, collection_meta)))
     }

@@ -78,12 +78,12 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.junit.Test;
 
-public final class BrowseEntityListTest extends DeterministicCoreApiTestBase {
+public final class BrowseEntityIteratorTest extends DeterministicCoreApiTestBase {
 
   private static final int SMALL_PAGE_SIZE = 7;
 
   @Test
-  public void browse_api_entity_listing_pages_through_all_entities() throws Exception {
+  public void browse_api_entity_iterator_pages_through_all_entities() throws Exception {
     try (var test = buildRunningServerTest()) {
       test.suppressUnusedWarning();
 
