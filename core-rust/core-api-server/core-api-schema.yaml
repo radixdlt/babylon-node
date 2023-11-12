@@ -1227,6 +1227,37 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BasicErrorResponse"
+  "/browse/object/collection/iterator":
+    post:
+      summary: List Object Collection
+      description: Lists keys of all entries from a particular object's collection, in an iterator-like paged fashion
+      tags:
+        - Browse
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BrowseObjectCollectionIteratorRequest"
+      responses:
+        '200':
+          description: A page of entry keys.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BrowseObjectCollectionIteratorResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
 #############################################################################################
 components:
   schemas:
@@ -7865,7 +7896,7 @@ components:
       properties:
         at_ledger_state:
           $ref: "#/components/schemas/LedgerStateSummary"
-          description: A summarized state of the ledger on top of which the preview was performed.
+          description: A summarized state of the ledger at which the query was performed.
         page:
           type: array
           items:
@@ -8061,7 +8092,7 @@ components:
       description: One of supported kinds of collections within an Object.
       type: string
       enum:
-        - KeyValue
+        - KeyValueStore
         - Index
         - SortedIndex
     ResolvedTypeReferenceType:
@@ -8183,6 +8214,7 @@ components:
         entity_address:
           $ref: "#/components/schemas/EntityAddress"
         module_id:
+          description: Module ID; may be skipped to indicate `Main`.
           $ref: "#/components/schemas/ModuleId"
         field_name:
           type: string
@@ -8208,5 +8240,99 @@ components:
           required:
             - programmatic_json
           properties:
+            programmatic_json:
+              type: object
+#########################################################
+# REQUEST: /browse/object/collection/iterator           #
+#########################################################
+    BrowseObjectCollectionIteratorRequest:
+      type: object
+      required:
+        - network
+        - entity_address
+        # additionally, either `collection_name` or `collection_index` is required, but hard to make it work with code generator
+      properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
+        entity_address:
+          $ref: "#/components/schemas/EntityAddress"
+        module_id:
+          description: Module ID; may be skipped to indicate `Main`.
+          $ref: "#/components/schemas/ModuleId"
+        collection_name:
+          type: string
+          description: Name of the collection to read. Either this or `collection_index` is required.
+        collection_index:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 255
+          description: Index of the field to read. Either this or `collection_name` is required.
+        max_page_size:
+          $ref: "#/components/schemas/MaxPageSize"
+        continuation_token:
+          $ref: "#/components/schemas/ContinuationToken"
+    BrowseObjectCollectionIteratorResponse:
+      type: object
+      required:
+        - at_ledger_state
+        - page
+      properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+          description: A summarized state of the ledger at which the query was performed.
+        page:
+          type: array
+          items:
+            $ref: "#/components/schemas/CollectionEntryKey"
+          description: A page of entry keys. If this page is the last one, the `continuation_token` will be not be included.
+        continuation_token:
+          $ref: "#/components/schemas/ContinuationToken"
+    CollectionEntryKey:
+      type: object
+      required:
+        - kind
+      properties:
+        kind:
+          $ref: "#/components/schemas/ObjectCollectionKind"
+      discriminator:
+        propertyName: kind
+        mapping:
+          # NOTE: These need to match ObjectCollectionKind
+          KeyValueStore: '#/components/schemas/KeyValueStoreEntryKey'
+          Index: '#/components/schemas/IndexEntryKey'
+          SortedIndex: '#/components/schemas/SortedIndexEntryKey'
+    KeyValueStoreEntryKey:
+      description: Key within an Object's Key-Value Store collection.
+      allOf:
+        - $ref: "#/components/schemas/CollectionEntryKey"
+        - type: object
+          required:
+            - programmatic_json
+          properties:
+            programmatic_json:
+              type: object
+    IndexEntryKey:
+      description: Key within an Object's Index collection.
+      allOf:
+        - $ref: "#/components/schemas/CollectionEntryKey"
+        - type: object
+          required:
+            - programmatic_json
+          properties:
+            programmatic_json:
+              type: object
+    SortedIndexEntryKey:
+      description: Key within an Object's Sorted Index collection.
+      allOf:
+        - $ref: "#/components/schemas/CollectionEntryKey"
+        - type: object
+          required:
+            - sort_prefix_hex
+            - programmatic_json
+          properties:
+            sort_prefix_hex:
+              type: string
+              description: The hex-encoded bytes of the sorted part of the key.
             programmatic_json:
               type: object

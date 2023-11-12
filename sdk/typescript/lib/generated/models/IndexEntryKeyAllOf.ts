@@ -13,68 +13,62 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { ResolvedTypeReference } from './ResolvedTypeReference';
-import {
-    ResolvedTypeReferenceFromJSON,
-    ResolvedTypeReferenceFromJSONTyped,
-    ResolvedTypeReferenceToJSON,
-} from './ResolvedTypeReference';
-
 /**
- * Details related to the objects blueprint, initialized during instantiation.
- * Not available for uninstantiated objects.
+ * 
  * @export
- * @interface ObjectInstantiation
+ * @interface IndexEntryKeyAllOf
  */
-export interface ObjectInstantiation {
+export interface IndexEntryKeyAllOf {
     /**
-     * The Bech32m-encoded human readable version of any global address
+     * 
+     * @type {object}
+     * @memberof IndexEntryKeyAllOf
+     */
+    programmatic_json: object;
+    /**
+     * 
      * @type {string}
-     * @memberof ObjectInstantiation
+     * @memberof IndexEntryKeyAllOf
      */
-    outer_object_address?: string;
-    /**
-     * Names of the features enabled for this instance.
-     * @type {Array<string>}
-     * @memberof ObjectInstantiation
-     */
-    enabled_features: Array<string>;
-    /**
-     * The actual types used for generics defined by the blueprint.
-     * @type {Array<ResolvedTypeReference>}
-     * @memberof ObjectInstantiation
-     */
-    substituted_generic_types: Array<ResolvedTypeReference>;
+    kind?: IndexEntryKeyAllOfKindEnum;
 }
 
+
 /**
- * Check if a given object implements the ObjectInstantiation interface.
+ * @export
  */
-export function instanceOfObjectInstantiation(value: object): boolean {
+export const IndexEntryKeyAllOfKindEnum = {
+    Index: 'Index'
+} as const;
+export type IndexEntryKeyAllOfKindEnum = typeof IndexEntryKeyAllOfKindEnum[keyof typeof IndexEntryKeyAllOfKindEnum];
+
+
+/**
+ * Check if a given object implements the IndexEntryKeyAllOf interface.
+ */
+export function instanceOfIndexEntryKeyAllOf(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "enabled_features" in value;
-    isInstance = isInstance && "substituted_generic_types" in value;
+    isInstance = isInstance && "programmatic_json" in value;
 
     return isInstance;
 }
 
-export function ObjectInstantiationFromJSON(json: any): ObjectInstantiation {
-    return ObjectInstantiationFromJSONTyped(json, false);
+export function IndexEntryKeyAllOfFromJSON(json: any): IndexEntryKeyAllOf {
+    return IndexEntryKeyAllOfFromJSONTyped(json, false);
 }
 
-export function ObjectInstantiationFromJSONTyped(json: any, ignoreDiscriminator: boolean): ObjectInstantiation {
+export function IndexEntryKeyAllOfFromJSONTyped(json: any, ignoreDiscriminator: boolean): IndexEntryKeyAllOf {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'outer_object_address': !exists(json, 'outer_object_address') ? undefined : json['outer_object_address'],
-        'enabled_features': json['enabled_features'],
-        'substituted_generic_types': ((json['substituted_generic_types'] as Array<any>).map(ResolvedTypeReferenceFromJSON)),
+        'programmatic_json': json['programmatic_json'],
+        'kind': !exists(json, 'kind') ? undefined : json['kind'],
     };
 }
 
-export function ObjectInstantiationToJSON(value?: ObjectInstantiation | null): any {
+export function IndexEntryKeyAllOfToJSON(value?: IndexEntryKeyAllOf | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -83,9 +77,8 @@ export function ObjectInstantiationToJSON(value?: ObjectInstantiation | null): a
     }
     return {
         
-        'outer_object_address': value.outer_object_address,
-        'enabled_features': value.enabled_features,
-        'substituted_generic_types': ((value.substituted_generic_types as Array<any>).map(ResolvedTypeReferenceToJSON)),
+        'programmatic_json': value.programmatic_json,
+        'kind': value.kind,
     };
 }
 

@@ -12,28 +12,62 @@
  * Do not edit the class manually.
  */
 
+import { exists, mapValues } from '../runtime';
+import type { ObjectCollectionKind } from './ObjectCollectionKind';
+import {
+    ObjectCollectionKindFromJSON,
+    ObjectCollectionKindFromJSONTyped,
+    ObjectCollectionKindToJSON,
+} from './ObjectCollectionKind';
 
 /**
- * One of supported kinds of collections within an Object.
+ * 
  * @export
+ * @interface CollectionEntryKeyBase
  */
-export const ObjectCollectionKind = {
-    KeyValueStore: 'KeyValueStore',
-    Index: 'Index',
-    SortedIndex: 'SortedIndex'
-} as const;
-export type ObjectCollectionKind = typeof ObjectCollectionKind[keyof typeof ObjectCollectionKind];
-
-
-export function ObjectCollectionKindFromJSON(json: any): ObjectCollectionKind {
-    return ObjectCollectionKindFromJSONTyped(json, false);
+export interface CollectionEntryKeyBase {
+    /**
+     * 
+     * @type {ObjectCollectionKind}
+     * @memberof CollectionEntryKeyBase
+     */
+    kind: ObjectCollectionKind;
 }
 
-export function ObjectCollectionKindFromJSONTyped(json: any, ignoreDiscriminator: boolean): ObjectCollectionKind {
-    return json as ObjectCollectionKind;
+/**
+ * Check if a given object implements the CollectionEntryKeyBase interface.
+ */
+export function instanceOfCollectionEntryKeyBase(value: object): boolean {
+    let isInstance = true;
+    isInstance = isInstance && "kind" in value;
+
+    return isInstance;
 }
 
-export function ObjectCollectionKindToJSON(value?: ObjectCollectionKind | null): any {
-    return value as any;
+export function CollectionEntryKeyBaseFromJSON(json: any): CollectionEntryKeyBase {
+    return CollectionEntryKeyBaseFromJSONTyped(json, false);
+}
+
+export function CollectionEntryKeyBaseFromJSONTyped(json: any, ignoreDiscriminator: boolean): CollectionEntryKeyBase {
+    if ((json === undefined) || (json === null)) {
+        return json;
+    }
+    return {
+        
+        'kind': ObjectCollectionKindFromJSON(json['kind']),
+    };
+}
+
+export function CollectionEntryKeyBaseToJSON(value?: CollectionEntryKeyBase | null): any {
+    if (value === undefined) {
+        return undefined;
+    }
+    if (value === null) {
+        return null;
+    }
+    return {
+        
+        'kind': ObjectCollectionKindToJSON(value.kind),
+    };
 }
 

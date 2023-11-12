@@ -10,12 +10,12 @@ use std::time::{Duration, Instant};
 /// entire item (see below).
 pub trait HasKey<K> {
     /// Returns the key.
-    fn as_key(&self) -> &K;
+    fn as_key(&self) -> K;
 }
 
-impl<S> HasKey<S> for S {
-    fn as_key(&self) -> &S {
-        self
+impl<S: Clone> HasKey<S> for S {
+    fn as_key(&self) -> S {
+        self.clone()
     }
 }
 
@@ -187,7 +187,7 @@ where
                 // all items of the last page were deleted; we must return an empty page and no continuation:
                 return Ok(Page::of(Vec::new()));
             };
-            if first_item.as_key() == last_previously_listed_key {
+            if &first_item.as_key() == last_previously_listed_key {
                 // very much expected (but not guaranteed, since the last previously listed item may have been deleted)
                 opt_next_item = item_iter.next();
             }

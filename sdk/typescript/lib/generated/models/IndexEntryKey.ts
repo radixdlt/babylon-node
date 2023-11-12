@@ -12,28 +12,74 @@
  * Do not edit the class manually.
  */
 
+import { exists, mapValues } from '../runtime';
+/**
+ * Key within an Object's Index collection.
+ * @export
+ * @interface IndexEntryKey
+ */
+export interface IndexEntryKey {
+    /**
+     * 
+     * @type {string}
+     * @memberof IndexEntryKey
+     */
+    kind: IndexEntryKeyKindEnum;
+    /**
+     * 
+     * @type {object}
+     * @memberof IndexEntryKey
+     */
+    programmatic_json: object;
+}
+
 
 /**
- * One of supported kinds of collections within an Object.
  * @export
  */
-export const ObjectCollectionKind = {
-    KeyValueStore: 'KeyValueStore',
-    Index: 'Index',
-    SortedIndex: 'SortedIndex'
+export const IndexEntryKeyKindEnum = {
+    Index: 'Index'
 } as const;
-export type ObjectCollectionKind = typeof ObjectCollectionKind[keyof typeof ObjectCollectionKind];
+export type IndexEntryKeyKindEnum = typeof IndexEntryKeyKindEnum[keyof typeof IndexEntryKeyKindEnum];
 
 
-export function ObjectCollectionKindFromJSON(json: any): ObjectCollectionKind {
-    return ObjectCollectionKindFromJSONTyped(json, false);
+/**
+ * Check if a given object implements the IndexEntryKey interface.
+ */
+export function instanceOfIndexEntryKey(value: object): boolean {
+    let isInstance = true;
+    isInstance = isInstance && "kind" in value;
+    isInstance = isInstance && "programmatic_json" in value;
+
+    return isInstance;
 }
 
-export function ObjectCollectionKindFromJSONTyped(json: any, ignoreDiscriminator: boolean): ObjectCollectionKind {
-    return json as ObjectCollectionKind;
+export function IndexEntryKeyFromJSON(json: any): IndexEntryKey {
+    return IndexEntryKeyFromJSONTyped(json, false);
 }
 
-export function ObjectCollectionKindToJSON(value?: ObjectCollectionKind | null): any {
-    return value as any;
+export function IndexEntryKeyFromJSONTyped(json: any, ignoreDiscriminator: boolean): IndexEntryKey {
+    if ((json === undefined) || (json === null)) {
+        return json;
+    }
+    return {
+        
+        'kind': json['kind'],
+        'programmatic_json': json['programmatic_json'],
+    };
+}
+
+export function IndexEntryKeyToJSON(value?: IndexEntryKey | null): any {
+    if (value === undefined) {
+        return undefined;
+    }
+    if (value === null) {
+        return null;
+    }
+    return {
+        
+        'kind': value.kind,
+        'programmatic_json': value.programmatic_json,
+    };
 }
 

@@ -83,9 +83,13 @@ models/BrowseEntityInfoRequest.ts
 models/BrowseEntityInfoResponse.ts
 models/BrowseEntityIteratorRequest.ts
 models/BrowseEntityIteratorResponse.ts
+models/BrowseObjectCollectionIteratorRequest.ts
+models/BrowseObjectCollectionIteratorResponse.ts
 models/BrowseObjectFieldRequest.ts
 models/BrowseObjectFieldResponse.ts
 models/BrowseObjectFieldResponseContent.ts
+models/CollectionEntryKey.ts
+models/CollectionEntryKeyBase.ts
 models/CommittedIntentMetadata.ts
 models/CommittedStateIdentifier.ts
 models/CommittedStateIdentifierAllOf.ts
@@ -213,6 +217,8 @@ models/GenesisLedgerTransactionAllOf.ts
 models/HookExport.ts
 models/IndexBlueprintCollectionSchema.ts
 models/IndexBlueprintCollectionSchemaAllOf.ts
+models/IndexEntryKey.ts
+models/IndexEntryKeyAllOf.ts
 models/IndexedStateSchema.ts
 models/InstanceSchemaBlueprintTypeReference.ts
 models/InstanceSchemaBlueprintTypeReferenceAllOf.ts
@@ -223,6 +229,8 @@ models/KeyValueBlueprintCollectionSchema.ts
 models/KeyValueBlueprintCollectionSchemaAllOf.ts
 models/KeyValueStoreEntityInfo.ts
 models/KeyValueStoreEntityInfoAllOf.ts
+models/KeyValueStoreEntryKey.ts
+models/KeyValueStoreEntryKeyAllOf.ts
 models/KeyValueStoreEntryStructure.ts
 models/KeyValueStoreEntryStructureAllOf.ts
 models/KeyValueStoreInfo.ts
@@ -524,6 +532,8 @@ models/SignatureWithPublicKeyBase.ts
 models/SignedTransactionIntent.ts
 models/SortedIndexBlueprintCollectionSchema.ts
 models/SortedIndexBlueprintCollectionSchemaAllOf.ts
+models/SortedIndexEntryKey.ts
+models/SortedIndexEntryKeyAllOf.ts
 models/SortedSubstateKey.ts
 models/SortedSubstateKeyAllOf.ts
 models/StateAccessControllerRequest.ts

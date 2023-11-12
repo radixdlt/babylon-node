@@ -22,6 +22,8 @@ import com.radixdlt.api.core.generated.models.BrowseEntityInfoRequest;
 import com.radixdlt.api.core.generated.models.BrowseEntityInfoResponse;
 import com.radixdlt.api.core.generated.models.BrowseEntityIteratorRequest;
 import com.radixdlt.api.core.generated.models.BrowseEntityIteratorResponse;
+import com.radixdlt.api.core.generated.models.BrowseObjectCollectionIteratorRequest;
+import com.radixdlt.api.core.generated.models.BrowseObjectCollectionIteratorResponse;
 import com.radixdlt.api.core.generated.models.BrowseObjectFieldRequest;
 import com.radixdlt.api.core.generated.models.BrowseObjectFieldResponse;
 
@@ -224,6 +226,84 @@ public class BrowseApi {
 
     try {
       byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(browseEntityIteratorRequest);
+      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    if (memberVarReadTimeout != null) {
+      localVarRequestBuilder.timeout(memberVarReadTimeout);
+    }
+    if (memberVarInterceptor != null) {
+      memberVarInterceptor.accept(localVarRequestBuilder);
+    }
+    return localVarRequestBuilder;
+  }
+  /**
+   * List Object Collection
+   * Lists keys of all entries from a particular object&#39;s collection, in an iterator-like paged fashion
+   * @param browseObjectCollectionIteratorRequest  (required)
+   * @return BrowseObjectCollectionIteratorResponse
+   * @throws ApiException if fails to make API call
+   */
+  public BrowseObjectCollectionIteratorResponse browseObjectCollectionIteratorPost(BrowseObjectCollectionIteratorRequest browseObjectCollectionIteratorRequest) throws ApiException {
+    ApiResponse<BrowseObjectCollectionIteratorResponse> localVarResponse = browseObjectCollectionIteratorPostWithHttpInfo(browseObjectCollectionIteratorRequest);
+    return localVarResponse.getData();
+  }
+
+  /**
+   * List Object Collection
+   * Lists keys of all entries from a particular object&#39;s collection, in an iterator-like paged fashion
+   * @param browseObjectCollectionIteratorRequest  (required)
+   * @return ApiResponse&lt;BrowseObjectCollectionIteratorResponse&gt;
+   * @throws ApiException if fails to make API call
+   */
+  public ApiResponse<BrowseObjectCollectionIteratorResponse> browseObjectCollectionIteratorPostWithHttpInfo(BrowseObjectCollectionIteratorRequest browseObjectCollectionIteratorRequest) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = browseObjectCollectionIteratorPostRequestBuilder(browseObjectCollectionIteratorRequest);
+    try {
+      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
+          localVarRequestBuilder.build(),
+          HttpResponse.BodyHandlers.ofInputStream());
+      if (memberVarResponseInterceptor != null) {
+        memberVarResponseInterceptor.accept(localVarResponse);
+      }
+      try {
+        if (localVarResponse.statusCode()/ 100 != 2) {
+          throw getApiException("browseObjectCollectionIteratorPost", localVarResponse);
+        }
+        return new ApiResponse<BrowseObjectCollectionIteratorResponse>(
+          localVarResponse.statusCode(),
+          localVarResponse.headers().map(),
+          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<BrowseObjectCollectionIteratorResponse>() {}) // closes the InputStream
+          
+        );
+      } finally {
+      }
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new ApiException(e);
+    }
+  }
+
+  private HttpRequest.Builder browseObjectCollectionIteratorPostRequestBuilder(BrowseObjectCollectionIteratorRequest browseObjectCollectionIteratorRequest) throws ApiException {
+    // verify the required parameter 'browseObjectCollectionIteratorRequest' is set
+    if (browseObjectCollectionIteratorRequest == null) {
+      throw new ApiException(400, "Missing the required parameter 'browseObjectCollectionIteratorRequest' when calling browseObjectCollectionIteratorPost");
+    }
+
+    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
+
+    String localVarPath = "/browse/object/collection/iterator";
+
+    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+
+    localVarRequestBuilder.header("Content-Type", "application/json");
+    localVarRequestBuilder.header("Accept", "application/json");
+
+    try {
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(browseObjectCollectionIteratorRequest);
       localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
     } catch (IOException e) {
       throw new ApiException(e);

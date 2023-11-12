@@ -12,28 +12,74 @@
  * Do not edit the class manually.
  */
 
+import { exists, mapValues } from '../runtime';
+/**
+ * Key within an Object's Key-Value Store collection.
+ * @export
+ * @interface KeyValueStoreEntryKey
+ */
+export interface KeyValueStoreEntryKey {
+    /**
+     * 
+     * @type {string}
+     * @memberof KeyValueStoreEntryKey
+     */
+    kind: KeyValueStoreEntryKeyKindEnum;
+    /**
+     * 
+     * @type {object}
+     * @memberof KeyValueStoreEntryKey
+     */
+    programmatic_json: object;
+}
+
 
 /**
- * One of supported kinds of collections within an Object.
  * @export
  */
-export const ObjectCollectionKind = {
-    KeyValueStore: 'KeyValueStore',
-    Index: 'Index',
-    SortedIndex: 'SortedIndex'
+export const KeyValueStoreEntryKeyKindEnum = {
+    KeyValueStore: 'KeyValueStore'
 } as const;
-export type ObjectCollectionKind = typeof ObjectCollectionKind[keyof typeof ObjectCollectionKind];
+export type KeyValueStoreEntryKeyKindEnum = typeof KeyValueStoreEntryKeyKindEnum[keyof typeof KeyValueStoreEntryKeyKindEnum];
 
 
-export function ObjectCollectionKindFromJSON(json: any): ObjectCollectionKind {
-    return ObjectCollectionKindFromJSONTyped(json, false);
+/**
+ * Check if a given object implements the KeyValueStoreEntryKey interface.
+ */
+export function instanceOfKeyValueStoreEntryKey(value: object): boolean {
+    let isInstance = true;
+    isInstance = isInstance && "kind" in value;
+    isInstance = isInstance && "programmatic_json" in value;
+
+    return isInstance;
 }
 
-export function ObjectCollectionKindFromJSONTyped(json: any, ignoreDiscriminator: boolean): ObjectCollectionKind {
-    return json as ObjectCollectionKind;
+export function KeyValueStoreEntryKeyFromJSON(json: any): KeyValueStoreEntryKey {
+    return KeyValueStoreEntryKeyFromJSONTyped(json, false);
 }
 
-export function ObjectCollectionKindToJSON(value?: ObjectCollectionKind | null): any {
-    return value as any;
+export function KeyValueStoreEntryKeyFromJSONTyped(json: any, ignoreDiscriminator: boolean): KeyValueStoreEntryKey {
+    if ((json === undefined) || (json === null)) {
+        return json;
+    }
+    return {
+        
+        'kind': json['kind'],
+        'programmatic_json': json['programmatic_json'],
+    };
+}
+
+export function KeyValueStoreEntryKeyToJSON(value?: KeyValueStoreEntryKey | null): any {
+    if (value === undefined) {
+        return undefined;
+    }
+    if (value === null) {
+        return null;
+    }
+    return {
+        
+        'kind': value.kind,
+        'programmatic_json': value.programmatic_json,
+    };
 }
 

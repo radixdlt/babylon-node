@@ -2,18 +2,8 @@ use crate::core_api::*;
 
 use radix_engine::types::*;
 
+use crate::core_api::handlers::default_paging_policy;
 use std::ops::Deref;
-use std::time::Duration;
-
-/// A default maximum page size (can be further limited by each request).
-const DEFAULT_MAX_PAGE_SIZE: usize = 10000;
-
-/// A maximum wallclock time spent on iteration.
-const MAX_ITERATION_DURATION: Duration = Duration::from_millis(100);
-
-/// A *minimum* number of elements which must be reached even if [`MAX_ITERATION_DURATION`] is
-/// exceeded. This only prevents unreasonably small (or empty) pages.
-const MIN_PAGE_SIZE_DESPITE_MAX_DURATION: usize = 10;
 
 pub(crate) async fn handle_browse_entity_iterator(
     state: State<CoreApiState>,
@@ -39,7 +29,7 @@ pub(crate) async fn handle_browse_entity_iterator(
 
     let page = OrderAgnosticPager::get_page(
         wrap_error_free(|from| data_loader.iter_node_ids(from)),
-        create_paging_policy(requested_max_page_size),
+        default_paging_policy(requested_max_page_size),
         continuation_token,
     )
     .expect("FnIterable is error-free");
@@ -59,16 +49,6 @@ pub(crate) async fn handle_browse_entity_iterator(
             .transpose()?,
     })
     .map(Json)
-}
-
-fn create_paging_policy(requested_max_page_size: Option<usize>) -> impl PagingPolicy<NodeId> {
-    PagingPolicies::until_first_disallowed(
-        PagingPolicies::max_page_size(requested_max_page_size.unwrap_or(DEFAULT_MAX_PAGE_SIZE)),
-        PagingPolicies::max_duration_but_min_page_size(
-            MAX_ITERATION_DURATION,
-            MIN_PAGE_SIZE_DESPITE_MAX_DURATION,
-        ),
-    )
 }
 
 fn to_api_listed_entity_item(

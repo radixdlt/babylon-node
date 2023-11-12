@@ -13,8 +13,8 @@
 /// One of supported kinds of collections within an Object.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
 pub enum ObjectCollectionKind {
-    #[serde(rename = "KeyValue")]
-    KeyValue,
+    #[serde(rename = "KeyValueStore")]
+    KeyValueStore,
     #[serde(rename = "Index")]
     Index,
     #[serde(rename = "SortedIndex")]
@@ -25,7 +25,7 @@ pub enum ObjectCollectionKind {
 impl ToString for ObjectCollectionKind {
     fn to_string(&self) -> String {
         match self {
-            Self::KeyValue => String::from("KeyValue"),
+            Self::KeyValueStore => String::from("KeyValueStore"),
             Self::Index => String::from("Index"),
             Self::SortedIndex => String::from("SortedIndex"),
         }
@@ -34,7 +34,7 @@ impl ToString for ObjectCollectionKind {
 
 impl Default for ObjectCollectionKind {
     fn default() -> ObjectCollectionKind {
-        Self::KeyValue
+        Self::KeyValueStore
     }
 }
 
