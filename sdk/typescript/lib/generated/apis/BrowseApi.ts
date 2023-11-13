@@ -20,6 +20,8 @@ import type {
   BrowseEntityInfoResponse,
   BrowseEntityIteratorRequest,
   BrowseEntityIteratorResponse,
+  BrowseKeyValueStoreIteratorRequest,
+  BrowseKeyValueStoreIteratorResponse,
   BrowseObjectCollectionIteratorRequest,
   BrowseObjectCollectionIteratorResponse,
   BrowseObjectFieldRequest,
@@ -36,6 +38,10 @@ import {
     BrowseEntityIteratorRequestToJSON,
     BrowseEntityIteratorResponseFromJSON,
     BrowseEntityIteratorResponseToJSON,
+    BrowseKeyValueStoreIteratorRequestFromJSON,
+    BrowseKeyValueStoreIteratorRequestToJSON,
+    BrowseKeyValueStoreIteratorResponseFromJSON,
+    BrowseKeyValueStoreIteratorResponseToJSON,
     BrowseObjectCollectionIteratorRequestFromJSON,
     BrowseObjectCollectionIteratorRequestToJSON,
     BrowseObjectCollectionIteratorResponseFromJSON,
@@ -52,6 +58,10 @@ export interface BrowseEntityInfoPostRequest {
 
 export interface BrowseEntityIteratorPostRequest {
     browseEntityIteratorRequest: BrowseEntityIteratorRequest;
+}
+
+export interface BrowseKvStoreIteratorPostRequest {
+    browseKeyValueStoreIteratorRequest: BrowseKeyValueStoreIteratorRequest;
 }
 
 export interface BrowseObjectCollectionIteratorPostRequest {
@@ -134,6 +144,41 @@ export class BrowseApi extends runtime.BaseAPI {
      */
     async browseEntityIteratorPost(requestParameters: BrowseEntityIteratorPostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<BrowseEntityIteratorResponse> {
         const response = await this.browseEntityIteratorPostRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Lists keys of all entries from a particular Key-Value Store, in an iterator-like paged fashion
+     * List Key-Value Store
+     */
+    async browseKvStoreIteratorPostRaw(requestParameters: BrowseKvStoreIteratorPostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<BrowseKeyValueStoreIteratorResponse>> {
+        if (requestParameters.browseKeyValueStoreIteratorRequest === null || requestParameters.browseKeyValueStoreIteratorRequest === undefined) {
+            throw new runtime.RequiredError('browseKeyValueStoreIteratorRequest','Required parameter requestParameters.browseKeyValueStoreIteratorRequest was null or undefined when calling browseKvStoreIteratorPost.');
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        const response = await this.request({
+            path: `/browse/kv_store/iterator`,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: BrowseKeyValueStoreIteratorRequestToJSON(requestParameters.browseKeyValueStoreIteratorRequest),
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => BrowseKeyValueStoreIteratorResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Lists keys of all entries from a particular Key-Value Store, in an iterator-like paged fashion
+     * List Key-Value Store
+     */
+    async browseKvStoreIteratorPost(requestParameters: BrowseKvStoreIteratorPostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<BrowseKeyValueStoreIteratorResponse> {
+        const response = await this.browseKvStoreIteratorPostRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

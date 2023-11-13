@@ -1258,6 +1258,37 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BasicErrorResponse"
+  "/browse/kv_store/iterator":
+    post:
+      summary: List Key-Value Store
+      description: Lists keys of all entries from a particular Key-Value Store, in an iterator-like paged fashion
+      tags:
+        - Browse
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BrowseKeyValueStoreIteratorRequest"
+      responses:
+        '200':
+          description: A page of map keys.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BrowseKeyValueStoreIteratorResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
 #############################################################################################
 components:
   schemas:
@@ -8336,3 +8367,43 @@ components:
               description: The hex-encoded bytes of the sorted part of the key.
             programmatic_json:
               type: object
+#########################################################
+# REQUEST: /browse/kv_store/iterator                    #
+#########################################################
+    BrowseKeyValueStoreIteratorRequest:
+      type: object
+      required:
+        - network
+        - entity_address
+      properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
+        entity_address:
+          $ref: "#/components/schemas/EntityAddress"
+        max_page_size:
+          $ref: "#/components/schemas/MaxPageSize"
+        continuation_token:
+          $ref: "#/components/schemas/ContinuationToken"
+    BrowseKeyValueStoreIteratorResponse:
+      type: object
+      required:
+        - at_ledger_state
+        - page
+      properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+          description: A summarized state of the ledger at which the query was performed.
+        page:
+          type: array
+          items:
+            $ref: "#/components/schemas/KeyValueStoreMapKey"
+          description: A page of map keys. If this page is the last one, the `continuation_token` will be not be included.
+        continuation_token:
+          $ref: "#/components/schemas/ContinuationToken"
+    KeyValueStoreMapKey:
+      type: object
+      required:
+        - programmatic_json
+      properties:
+        programmatic_json:
+          type: object

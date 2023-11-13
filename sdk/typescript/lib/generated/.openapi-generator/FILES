@@ -83,6 +83,8 @@ models/BrowseEntityInfoRequest.ts
 models/BrowseEntityInfoResponse.ts
 models/BrowseEntityIteratorRequest.ts
 models/BrowseEntityIteratorResponse.ts
+models/BrowseKeyValueStoreIteratorRequest.ts
+models/BrowseKeyValueStoreIteratorResponse.ts
 models/BrowseObjectCollectionIteratorRequest.ts
 models/BrowseObjectCollectionIteratorResponse.ts
 models/BrowseObjectFieldRequest.ts
@@ -234,6 +236,7 @@ models/KeyValueStoreEntryKeyAllOf.ts
 models/KeyValueStoreEntryStructure.ts
 models/KeyValueStoreEntryStructureAllOf.ts
 models/KeyValueStoreInfo.ts
+models/KeyValueStoreMapKey.ts
 models/KeyValueStoreTypeInfoDetails.ts
 models/KeyValueStoreTypeInfoDetailsAllOf.ts
 models/LeaderProposalHistory.ts

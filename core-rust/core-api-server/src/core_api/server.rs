@@ -198,6 +198,10 @@ pub async fn create_server<F>(
             "/browse/object/collection/iterator",
             post(handle_browse_object_collection_iterator),
         )
+        .route(
+            "/browse/kv_store/iterator",
+            post(handle_browse_kv_store_iterator),
+        )
         .with_state(core_api_state);
 
     let metrics = Arc::new(CoreApiMetrics::new(metric_registry));
