@@ -112,11 +112,12 @@ impl ExecutionConfigurator {
         transaction: &'a ValidatedLedgerTransaction,
         description: impl ToString,
     ) -> ConfiguredExecutable<'a> {
-        if transaction.as_genesis_flash().is_some() {
+        if let Some(flash_receipt) = transaction.as_flash() {
             return ConfiguredExecutable::Flash {
-                flash_receipt: create_substate_flash_for_genesis(),
+                flash_receipt,
             };
         }
+
         self.wrap_transaction(
             transaction.get_executable(),
             transaction.config_type(),

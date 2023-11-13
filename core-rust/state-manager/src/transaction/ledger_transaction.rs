@@ -1,3 +1,4 @@
+use radix_engine::system::bootstrap::{create_substate_flash_for_genesis, FlashReceipt};
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::prelude::*;
 
@@ -302,6 +303,7 @@ impl HasSystemTransactionHash for PreparedGenesisTransaction {
 
 
 pub struct PreparedFlashTransactionV1 {
+    substate_flash: BTreeMap<(NodeId, PartitionNumber), BTreeMap<SubstateKey, Vec<u8>>>,
     summary: Summary,
 }
 
@@ -363,12 +365,17 @@ impl ValidatedLedgerTransaction {
         }
     }
 
-    pub fn as_genesis_flash(&self) -> Option<&Summary> {
+    pub fn as_flash(&self) -> Option<FlashReceipt> {
         match &self.inner {
             ValidatedLedgerTransactionInner::Genesis(genesis) => match genesis.as_ref() {
-                PreparedGenesisTransaction::Flash(summary) => Some(summary),
+                PreparedGenesisTransaction::Flash(..) => {
+                    Some(create_substate_flash_for_genesis())
+                }
                 PreparedGenesisTransaction::Transaction(_) => None,
             },
+            ValidatedLedgerTransactionInner::FlashV1(_) => {
+                None
+            }
             _ => None,
         }
     }
