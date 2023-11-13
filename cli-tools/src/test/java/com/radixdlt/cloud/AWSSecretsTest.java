@@ -72,7 +72,7 @@ public class AWSSecretsTest {
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   @Test
-  public void testExampleInvocation() {
+  public void testExampleInvocation() throws Exception {
     var args =
         new String[] {
           "--enable-aws-secrets=false",
@@ -81,7 +81,7 @@ public class AWSSecretsTest {
           "--node-name-prefix=node",
           "--node-number=0",
           "--node-names=dumunet_ap_south_1_node0,dumunet_eu_west_1_node0,dumunet_eu_west_1_node1,dumunet_eu_west_1_node2,dumunet_eu_west_1_node3",
-          "--path=" + temporaryFolder
+          "--path=" + temporaryFolder.newFolder()
         };
     AWSSecrets.main(args);
   }
