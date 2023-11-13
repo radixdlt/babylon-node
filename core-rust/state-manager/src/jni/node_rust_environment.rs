@@ -62,6 +62,7 @@
  * permissions under this License.
  */
 
+use std::ops::Deref;
 use std::sync::Arc;
 
 use jni::objects::{JClass, JObject};
@@ -73,7 +74,7 @@ use node_common::locks::*;
 use prometheus::Registry;
 use radix_engine_common::prelude::NetworkDefinition;
 
-use node_common::scheduler::ClokwerkScheduler;
+use node_common::scheduler::{Scheduler, UntilDropTracker};
 use tokio::runtime::Runtime;
 
 use crate::mempool_manager::MempoolManager;
@@ -115,12 +116,7 @@ pub struct JNINodeRustEnvironment {
     pub network: NetworkDefinition,
     pub state_manager: StateManager,
     pub metric_registry: Arc<Registry>,
-
-    /// An active background scheduler, potentially holding multiple running threads.
-    /// Note: right now the scheduler is not interacted with after construction; we only have to
-    /// hold on to it, since its threads are stopped when this field is dropped (deliberately in
-    /// [`Self::cleanup()`]).
-    pub scheduler: ClokwerkScheduler,
+    pub running_task_tracker: UntilDropTracker,
 }
 
 impl JNINodeRustEnvironment {
@@ -130,29 +126,37 @@ impl JNINodeRustEnvironment {
 
         let network = config.network_definition.clone();
 
-        let runtime = Runtime::new().unwrap();
+        let runtime = Arc::new(Runtime::new().unwrap());
 
-        setup_tracing(&runtime, std::env::var("JAEGER_AGENT_ENDPOINT").ok());
+        setup_tracing(runtime.deref(), std::env::var("JAEGER_AGENT_ENDPOINT").ok());
 
         let fatal_panic_handler = FatalPanicHandler::new(env, j_node_rust_env).unwrap();
-        let lock_factory = LockFactory::new(move || fatal_panic_handler.handle_fatal_panic());
         let metric_registry = Arc::new(Registry::new());
-        let mut scheduler = ClokwerkScheduler::default();
+        let lock_factory = LockFactory::new("rn")
+            .stopping_on_panic(move || fatal_panic_handler.handle_fatal_panic())
+            .measured(metric_registry.deref());
+
+        let scheduler = Scheduler::new("rn")
+            .use_tokio(runtime.deref())
+            .track_running_tasks()
+            .measured(metric_registry.deref());
 
         let state_manager = StateManager::new(
             config,
             Some(MempoolRelayDispatcher::new(env, j_node_rust_env).unwrap()),
             &lock_factory,
             &metric_registry,
-            &mut scheduler,
+            &scheduler,
         );
 
+        let running_task_tracker = scheduler.into_task_tracker();
+
         let jni_node_rust_env = JNINodeRustEnvironment {
-            runtime: Arc::new(runtime),
+            runtime,
             network,
             state_manager,
             metric_registry,
-            scheduler,
+            running_task_tracker,
         };
 
         env.set_rust_field(j_node_rust_env, POINTER_JNI_FIELD_NAME, jni_node_rust_env)

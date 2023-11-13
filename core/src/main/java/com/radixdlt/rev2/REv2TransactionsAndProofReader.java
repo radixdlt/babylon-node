@@ -69,6 +69,7 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerExtension;
 import com.radixdlt.sync.TransactionsAndProofReader;
+import com.radixdlt.transaction.LedgerSyncLimitsConfig;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import java.util.Optional;
@@ -76,25 +77,17 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public final class REv2TransactionsAndProofReader implements TransactionsAndProofReader {
-  /* Maximum number of transactions to return in a single getTransactions response, but only if
-   * at least one proof can be used. In other words:
-   * a) if next proof covers more than MAX_TXNS_FOR_RESPONSES_SPANNING_MORE_THAN_ONE_PROOF txns than all those transactions
-   *    can still be returned (given they fit under MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE limit)
-   * b) if next proof contains less than MAX_TXNS_FOR_RESPONSES_SPANNING_MORE_THAN_ONE_PROOF txns then
-   *    subsequent proof can only be used if its txns fit under this limit */
-  private static final int MAX_TXNS_FOR_RESPONSES_SPANNING_MORE_THAN_ONE_PROOF = 1000;
-
-  /* Maximum transactions size (in terms of their total byte size) to return in a single getTransactions response.
-   * See also MAX_PACKET_LENGTH in PeerChannelInitializer and OVERRIDE_MAX_PAYLOAD_SIZE for transaction size */
-  public static final int MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE = 12 * 1024 * 1024;
 
   private static final Logger log = LogManager.getLogger();
 
   private final REv2TransactionAndProofStore transactionStore;
+  private final LedgerSyncLimitsConfig limitsConfig;
 
   @Inject
-  public REv2TransactionsAndProofReader(REv2TransactionAndProofStore transactionStore) {
+  public REv2TransactionsAndProofReader(
+      REv2TransactionAndProofStore transactionStore, LedgerSyncLimitsConfig limitsConfig) {
     this.transactionStore = transactionStore;
+    this.limitsConfig = limitsConfig;
   }
 
   @Override
@@ -102,20 +95,13 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
     final var startStateVersionInclusive = start.getLedgerHeader().getStateVersion() + 1;
 
     final var rawTxnsAndProofOpt =
-        transactionStore.getTxnsAndProof(
-            startStateVersionInclusive,
-            MAX_TXNS_FOR_RESPONSES_SPANNING_MORE_THAN_ONE_PROOF,
-            MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE);
+        this.transactionStore.getTxnsAndProof(startStateVersionInclusive, this.limitsConfig);
 
     if (rawTxnsAndProofOpt.isEmpty()) {
       log.error(
-          "Impossible to build a chain of transactions from state version "
-              + startStateVersionInclusive
-              + " that ends with a proof that is: under "
-              + MAX_TXNS_FOR_RESPONSES_SPANNING_MORE_THAN_ONE_PROOF
-              + " transactions and under "
-              + MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE
-              + " total payload size!");
+          "Impossible to build a chain of txns from state version {} fitting within the limits {}",
+          startStateVersionInclusive,
+          this.limitsConfig);
     }
 
     return rawTxnsAndProofOpt

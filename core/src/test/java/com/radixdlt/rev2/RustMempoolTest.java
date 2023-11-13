@@ -76,6 +76,7 @@ import com.radixdlt.mempool.*;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.statecomputer.RustStateComputer;
+import com.radixdlt.transaction.LedgerSyncLimitsConfig;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -109,7 +110,8 @@ public final class RustMempoolTest {
             new Blake2b256Hasher(DefaultSerialization.getInstance()),
             new RustStateComputer(metrics, nodeRustEnvironment),
             new REv2TransactionsAndProofReader(
-                new REv2TransactionAndProofStore(metrics, nodeRustEnvironment)))
+                new REv2TransactionAndProofStore(metrics, nodeRustEnvironment),
+                LedgerSyncLimitsConfig.defaults()))
         .initialize(genesisProvider);
   }
 
@@ -127,6 +129,8 @@ public final class RustMempoolTest {
             new DatabaseFlags(false, false),
             LoggingConfig.getDefault(),
             StateHashTreeGcConfig.forTesting(),
+            LedgerProofsGcConfig.forTesting(),
+            LedgerSyncLimitsConfig.defaults(),
             false);
     final var metrics = new MetricsInitializer().initialize();
 
@@ -182,6 +186,8 @@ public final class RustMempoolTest {
             new DatabaseFlags(false, false),
             LoggingConfig.getDefault(),
             StateHashTreeGcConfig.forTesting(),
+            LedgerProofsGcConfig.forTesting(),
+            LedgerSyncLimitsConfig.defaults(),
             false);
     final var metrics = new MetricsInitializer().initialize();
 
@@ -320,6 +326,8 @@ public final class RustMempoolTest {
             new DatabaseFlags(false, false),
             LoggingConfig.getDefault(),
             StateHashTreeGcConfig.forTesting(),
+            LedgerProofsGcConfig.forTesting(),
+            LedgerSyncLimitsConfig.defaults(),
             false);
     final var metrics = new MetricsInitializer().initialize();
 

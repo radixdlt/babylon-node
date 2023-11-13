@@ -62,11 +62,17 @@
  * permissions under this License.
  */
 
+use std::fmt::Display;
+
 use std::ops::{Deref, DerefMut};
 
 use std::sync::Arc;
 
+use crate::locks::MeasuredLockState::BeforeRelease;
+use crate::metrics::{new_timer_vec, opts, AtDefaultRegistryExt};
+use prometheus::{Histogram, HistogramVec, IntGauge, IntGaugeVec, Registry};
 use std::thread;
+use std::time::Instant;
 use tracing::{error, info};
 
 //==================================================================================================
@@ -83,162 +89,160 @@ use tracing::{error, info};
 // at least "poisoning" the lock).
 //==================================================================================================
 
+/// A lock factory facade.
+/// Currently can be configured to provide the following features:
+/// - Panic-safety (see the definition in a comment block above).
+/// - Lock wait/hold timing measurements.
+#[derive(Clone)]
 pub struct LockFactory {
-    stopper: Arc<TakeOnce<Box<dyn FnOnce() + Send>>>,
     name: String,
+    stopper: Option<PanicSafetyApplicationStopper>,
+    metrics: Option<LockFactoryMetrics>,
 }
 
 impl LockFactory {
-    pub fn new(stopper: impl FnOnce() + Send + 'static) -> Self {
+    /// Creates a new lock factory.
+    /// If left unconfigured, the locks returned by this instance will forward unchanged behaviors
+    /// of their underlying [`parking_lot`] instances (see the configuration methods below).
+    /// The given `base_name` simply becomes the first segment of the constructed locks' names' (see
+    /// [`Self::named()`]).
+    ///
+    /// Important factory API note:
+    /// The actual lock-creating methods (i.e. the [`Self::new_*()`] family) *consume* the factory
+    /// instance. This is by design, since we want to avoid 2 locks of the same name (i.e. they
+    /// could be confused in the log messages or the metrics). If you actually have a use-case for
+    /// dynamically-created, unbounded, unidentified locks, you can still achieve it by cloning
+    /// the factory instance - just make sure to unconfigure any features that could use the names
+    /// (e.g. metrics).
+    pub fn new(base_name: impl Display) -> Self {
         Self {
-            stopper: Arc::new(TakeOnce::new(Box::new(stopper))),
-            name: "".to_string(),
+            stopper: None,
+            name: base_name.to_string(),
+            metrics: None,
         }
     }
 
-    pub fn named(&self, segment: impl Into<String>) -> Self {
-        let segment = segment.into();
-        Self {
-            stopper: self.stopper.clone(),
-            name: if self.name.is_empty() {
-                segment
-            } else {
-                format!("{}.{}", self.name, segment)
-            },
-        }
+    /// Appends another segment to the dot-separated names of locks *created from this point on*.
+    /// The names are used only for error-surfacing and metrics purposes.
+    pub fn named(&self, segment: impl Display) -> Self {
+        let mut derived = self.clone();
+        derived.name = format!("{}.{}", derived.name, segment);
+        derived
     }
 
-    pub fn new_mutex<T>(&self, value: T) -> Mutex<T> {
+    /// Configures the panic-safety behaviour of locks *created from this point on*.
+    /// The implementations will reliably call the given [`stopper`] function exactly once
+    /// on the first occurrence of "guard (of a state-modification lock) dropped while panicking".
+    pub fn stopping_on_panic(&self, stopper: impl FnOnce() + Send + 'static) -> Self {
+        let mut derived = self.clone();
+        derived.stopper = Some(PanicSafetyApplicationStopper::wrap(stopper));
+        derived
+    }
+
+    /// Unconfigures the [`Self::stopping_on_panic()`] of locks *created from this point on*.
+    /// This is useful e.g. for a read lock, which never modifies state (and thus is safe to
+    /// recover from panic).
+    pub fn not_stopping_on_panic(&self) -> Self {
+        let mut derived = self.clone();
+        derived.stopper = None;
+        derived
+    }
+
+    /// Configures the metrics collection for locks *created from this point on*.
+    /// Each method returning a guard will measure:
+    /// - a number of threads currently waiting for a guard to be returned.
+    /// - time it took to wait for the guard.
+    /// - a number of threads currently holding a guard (typically [0, 1], but can be higher e.g.
+    ///   in case of a read lock).
+    /// - time the guard was held.
+    pub fn measured(&self, metrics_registry: &Registry) -> Self {
+        let mut derived = self.clone();
+        derived.metrics = Some(LockFactoryMetrics::new(metrics_registry));
+        derived
+    }
+
+    /// Unconfigures the [`Self::measured()`] of locks *created from this point on*.
+    /// This is useful e.g. when a mutex is needed for technical reasons (i.e. to satisfy Rust's
+    /// rules) in a place which never blocks in practice and thus is not interesting to measure.
+    pub fn not_measured(&self) -> Self {
+        let mut derived = self.clone();
+        derived.metrics = None;
+        derived
+    }
+
+    /// Creates a new mutex with the current configuration.
+    pub fn new_mutex<T>(self, value: T) -> Mutex<T> {
         Mutex {
             underlying: parking_lot::const_mutex(value),
-            panic_drop_handler: PanicDropHandler::new(self),
+            listener: self.into_listener(),
         }
     }
 
-    pub fn new_rwlock<T>(&self, value: T) -> RwLock<T> {
+    /// Creates a new read/write lock with the current configuration.
+    pub fn new_rwlock<T>(self, value: T) -> RwLock<T> {
         RwLock {
             underlying: parking_lot::const_rwlock(value),
-            panic_drop_handler: PanicDropHandler::new(self),
+            read_listener: self.named("read").not_stopping_on_panic().into_listener(),
+            write_listener: self.named("write").into_listener(),
         }
     }
 
-    pub fn new_state_lock<T>(&self, value: T) -> StateLock<T> {
+    /// Creates a new state lock with the current configuration.
+    /// Note: this is a custom lock primitive - please see its documentation.
+    pub fn new_state_lock<T>(self, value: T) -> StateLock<T> {
         StateLock {
-            underlying: self.new_rwlock(()),
+            underlying: self.named("current").new_rwlock(()),
             value,
+            access_non_locked_historical_listener: self
+                .named("historical")
+                .not_stopping_on_panic()
+                .into_listener(),
+        }
+    }
+
+    /// Turns the factory (i.e. its current configuration) into a [`LockListener`] which adds the
+    /// requested features to the lock.
+    fn into_listener(self) -> ActualLockListener {
+        ChainLockListener {
+            first: self
+                .metrics
+                .map(|metrics| metrics.create_listener_for(self.name.as_str())),
+            second: self
+                .stopper
+                .map(|stopper| stopper.create_listener_for(self.name)),
         }
     }
 }
 
-/// A panic-safe facade for a [`parking_lot::Mutex`].
+/// A facade for a [`parking_lot::Mutex`] with a support for an arbitrary [`LockListener`].
 pub struct Mutex<T> {
     underlying: parking_lot::Mutex<T>,
-    panic_drop_handler: PanicDropHandler,
+    listener: ActualLockListener,
 }
 
 impl<T> Mutex<T> {
-    /// Delegates to the [`parking_lot::Mutex::lock()`], but returns a panic-safe guard.
-    pub fn lock(&self) -> MutexGuard<'_, T> {
-        MutexGuard {
-            underlying: self.underlying.lock(),
-            panic_drop_handler: &self.panic_drop_handler,
-        }
+    /// Delegates to the [`parking_lot::Mutex::lock()`].
+    pub fn lock(&self) -> impl DerefMut<Target = T> + '_ {
+        LockGuard::new(|| self.underlying.lock(), self.listener.clone())
     }
 }
 
-/// A panic-safe facade for a [`parking_lot::MutexGuard`].
-pub struct MutexGuard<'a, T> {
-    underlying: parking_lot::MutexGuard<'a, T>,
-    panic_drop_handler: &'a PanicDropHandler,
-}
-
-impl<'a, T: 'a> Deref for MutexGuard<'a, T> {
-    type Target = T;
-
-    fn deref(&self) -> &T {
-        self.underlying.deref()
-    }
-}
-
-impl<'a, T: 'a> DerefMut for MutexGuard<'a, T> {
-    fn deref_mut(&mut self) -> &mut T {
-        self.underlying.deref_mut()
-    }
-}
-
-impl<'a, T> Drop for MutexGuard<'a, T> {
-    fn drop(&mut self) {
-        self.panic_drop_handler.on_drop();
-    }
-}
-
-/// A panic-safe facade for a [`parking_lot::RwLock`].
+/// A facade for a [`parking_lot::RwLock`] with a support for an arbitrary [`LockListener`].
 pub struct RwLock<T> {
     underlying: parking_lot::RwLock<T>,
-    panic_drop_handler: PanicDropHandler,
+    read_listener: ActualLockListener,
+    write_listener: ActualLockListener,
 }
 
 impl<T> RwLock<T> {
-    /// Delegates to the [`parking_lot::RwLockReadGuard::read()`], but returns a panic-safe guard.
-    pub fn read(&self) -> RwLockReadGuard<'_, T> {
-        RwLockReadGuard {
-            underlying: self.underlying.read(),
-        }
+    /// Delegates to the [`parking_lot::RwLockReadGuard::read()`].
+    pub fn read(&self) -> impl Deref<Target = T> + '_ {
+        LockGuard::new(|| self.underlying.read(), self.read_listener.clone())
     }
 
-    /// Delegates to the [`parking_lot::RwLockReadGuard::write()`], but returns a panic-safe guard.
-    pub fn write(&self) -> RwLockWriteGuard<'_, T> {
-        RwLockWriteGuard {
-            underlying: self.underlying.write(),
-            panic_drop_handler: &self.panic_drop_handler,
-        }
-    }
-}
-
-/// A panic-safe facade for a [`parking_lot::RwLockReadGuard`].
-pub struct RwLockReadGuard<'a, T> {
-    underlying: parking_lot::RwLockReadGuard<'a, T>,
-}
-
-impl<'a, T: 'a> Deref for RwLockReadGuard<'a, T> {
-    type Target = T;
-
-    fn deref(&self) -> &T {
-        self.underlying.deref()
-    }
-}
-
-impl<'a, T> Drop for RwLockReadGuard<'a, T> {
-    fn drop(&mut self) {
-        // The impl here is deliberately no-op:
-        // The lock guard will be dropped (i.e. lock released) on its own, and in case of reading,
-        // we do not need to abort the process (since unmodified state means consistent state).
-    }
-}
-
-/// A panic-safe facade for a [`parking_lot::RwLockWriteGuard`].
-pub struct RwLockWriteGuard<'a, T> {
-    underlying: parking_lot::RwLockWriteGuard<'a, T>,
-    panic_drop_handler: &'a PanicDropHandler,
-}
-
-impl<'a, T: 'a> Deref for RwLockWriteGuard<'a, T> {
-    type Target = T;
-
-    fn deref(&self) -> &T {
-        self.underlying.deref()
-    }
-}
-
-impl<'a, T: 'a> DerefMut for RwLockWriteGuard<'a, T> {
-    fn deref_mut(&mut self) -> &mut T {
-        self.underlying.deref_mut()
-    }
-}
-
-impl<'a, T> Drop for RwLockWriteGuard<'a, T> {
-    fn drop(&mut self) {
-        self.panic_drop_handler.on_drop();
+    /// Delegates to the [`parking_lot::RwLockReadGuard::write()`].
+    pub fn write(&self) -> impl DerefMut<Target = T> + '_ {
+        LockGuard::new(|| self.underlying.write(), self.write_listener.clone())
     }
 }
 
@@ -253,17 +257,15 @@ impl<'a, T> Drop for RwLockWriteGuard<'a, T> {
 pub struct StateLock<T> {
     underlying: RwLock<()>, // we use our own primitive to lock a marker for current state
     value: T,
+    access_non_locked_historical_listener: ActualLockListener, // only for metrics
 }
-
-unsafe impl<T: Send> Send for StateLock<T> {}
-unsafe impl<T: Send + Sync> Sync for StateLock<T> {}
 
 impl<T> StateLock<T> {
     /// Locks the current state for reading.
     /// This method should be used when caller needs a series of reads referring to the current
     /// state (it "freezes" the notion of "current").
-    pub fn read_current(&self) -> StateLockReadGuard<'_, T> {
-        StateLockReadGuard {
+    pub fn read_current(&self) -> impl Deref<Target = T> + '_ {
+        StateLockGuard {
             underlying: self.underlying.read(),
             value: &self.value,
         }
@@ -272,67 +274,123 @@ impl<T> StateLock<T> {
     /// Locks the current state for writing.
     /// This method should be used when caller wants to update the guarded value in a way which
     /// changes the notion of "current".
-    /// Please note that the returned guard deliberately does not implement [`DerefMut`], since it
+    /// Please note that this method deliberately returns [`Deref`] (not [`DerefMut`]), since it
     /// would create an undefined behaviour (`&` and `&mut` co-existing). The guarded value is
     /// assumed to use an interior mutability (i.e. expose mutating methods via `&`).
-    pub fn write_current(&self) -> StateLockWriteGuard<'_, T> {
-        StateLockWriteGuard {
+    pub fn write_current(&self) -> impl Deref<Target = T> + '_ {
+        StateLockGuard {
             underlying: self.underlying.write(),
             value: &self.value,
         }
     }
 
-    /// Returns a direct reference to the guarded value, without locking anything.
+    /// Returns a reference to the guarded value, without locking anything.
     /// This method should be used when the caller wants to interact selectively with pieces of the
     /// historical state, in a way known to be safe.
-    pub fn access_non_locked_historical(&self) -> &T {
-        &self.value
+    /// Note: functionally, we could return a `&T` here directly, but returning a "guard" allows us
+    /// to measure usage of this method (in the same way as we do for lock guards).
+    pub fn access_non_locked_historical(&self) -> impl Deref<Target = T> + '_ {
+        LockGuard::new(
+            || &self.value,
+            self.access_non_locked_historical_listener.clone(),
+        )
     }
 }
 
 /// A read guard of a [`StateLock`].
-pub struct StateLockReadGuard<'a, T> {
+pub struct StateLockGuard<'a, T, U> {
     #[allow(dead_code)] // only held to release the lock when dropped
-    underlying: RwLockReadGuard<'a, ()>,
+    underlying: U,
     value: &'a T,
 }
 
-impl<'a, T: 'a> Deref for StateLockReadGuard<'a, T> {
+impl<'a, T: 'a, U> Deref for StateLockGuard<'a, T, U> {
     type Target = T;
 
-    fn deref(&self) -> &T {
+    fn deref(&self) -> &Self::Target {
         self.value
     }
 }
 
-impl<'a, T> Drop for StateLockReadGuard<'a, T> {
-    fn drop(&mut self) {
-        // The impl here is deliberately no-op:
-        // The lock guard will be dropped (i.e. lock released) on its own, and in case of reading,
-        // we do not need to abort the process (since unmodified state means consistent state).
+// Only iternals below:
+
+/// A static type of a [`LockListener`] which provides the extra features to locks produced by our
+/// facade.
+/// Current value can be interpreted as "a chain of 2 optional listeners: for metrics and for
+/// panic-safety".
+type ActualLockListener =
+    ChainLockListener<Option<MetricsLockListener>, Option<PanicSafetyLockListener>>;
+
+/// A generic lock-guard decorator with listener support.
+/// Note: this struct is private; publicly, we operate on [`Deref`]/[`DerefMut`] traits (since the
+/// caller only care about them - and in particular, this allows us to hide the entire
+/// [`LockListener`] infra from the callers).
+struct LockGuard<U, L: LockListener> {
+    underlying: U,
+    listener: L,
+}
+
+impl<U, L: LockListener> LockGuard<U, L> {
+    /// Acquires the given lock while notifying the given listener on the consecutive stages.
+    /// The lock is expressed as a generic function, so it can be universally used for many lock
+    /// primitives.
+    fn new(lock: impl FnOnce() -> U, mut listener: L) -> Self {
+        listener.on_wait();
+        let underlying = lock();
+        listener.on_hold();
+        Self {
+            underlying,
+            listener,
+        }
     }
 }
 
-/// A write guard of a [`StateLock`].
-pub struct StateLockWriteGuard<'a, T> {
-    #[allow(dead_code)] // only held to release the lock when dropped
-    underlying: RwLockWriteGuard<'a, ()>,
-    value: &'a T,
-}
-
-impl<'a, T: 'a> Deref for StateLockWriteGuard<'a, T> {
+impl<T, U: Deref<Target = T>, L: LockListener> Deref for LockGuard<U, L> {
     type Target = T;
 
-    fn deref(&self) -> &T {
-        self.value
+    fn deref(&self) -> &Self::Target {
+        self.underlying.deref()
     }
 }
 
-impl<'a, T> Drop for StateLockWriteGuard<'a, T> {
+impl<T, U: DerefMut<Target = T>, L: LockListener> DerefMut for LockGuard<U, L> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.underlying.deref_mut()
+    }
+}
+
+impl<U, L: LockListener> Drop for LockGuard<U, L> {
     fn drop(&mut self) {
-        // The impl here is deliberately no-op:
-        // The lock guard will be dropped (i.e. lock released) on its own, and since it is a write
-        // guard, it will handle the "panic on drop" by itself already.
+        self.listener.on_release();
+    }
+}
+
+/// A wrapper around the complex "any thread-safe only-once function" type, used for the application
+/// stopper dependency of our facade.
+#[derive(Clone)]
+struct PanicSafetyApplicationStopper(Arc<TakeOnce<Box<dyn FnOnce() + Send>>>);
+
+impl PanicSafetyApplicationStopper {
+    /// A wraps an arbitrary [`FnOnce`] into this thread-safe wrapper.
+    pub fn wrap(function: impl FnOnce() + Send + 'static) -> Self {
+        Self(Arc::new(TakeOnce::new(Box::new(function))))
+    }
+
+    /// Creates a [`LockListener`] which will call the wrapped function if a lock is released by
+    /// being dropped while panicking.
+    pub fn create_listener_for(&self, lock_name: String) -> PanicSafetyLockListener {
+        PanicSafetyLockListener {
+            stopper: self.clone(),
+            lock_name: Arc::new(lock_name),
+        }
+    }
+}
+
+impl Deref for PanicSafetyApplicationStopper {
+    type Target = TakeOnce<Box<dyn FnOnce() + Send>>;
+
+    fn deref(&self) -> &Self::Target {
+        self.0.deref()
     }
 }
 
@@ -345,6 +403,7 @@ struct TakeOnce<T> {
 }
 
 impl<T> TakeOnce<T> {
+    /// Created a synchronized take-once-box with the given contents.
     pub fn new(value: T) -> Self {
         Self {
             mutex: parking_lot::const_mutex(Some(value)),
@@ -362,38 +421,231 @@ impl<T> TakeOnce<T> {
     }
 }
 
-/// An implementation delegate for all "lock write guards" which need to trigger a "service stopper"
-/// on drop, if the current thread is panicking.
-struct PanicDropHandler {
-    stopper: Arc<TakeOnce<Box<dyn FnOnce() + Send>>>,
-    name: String,
+/// A generic stateful listener of a single *lock interaction* lifecycle of a specific lock.
+///
+/// Implementation shortcut note:
+/// We use a couple of listeners, and technically, each lock should own a listener *factory*, which
+/// it would use to create a new stateful listener dedicated to a specific "lock-hold-release" cycle
+/// (an interaction between a lock and a thread). However, this would require a factory
+/// implementation for each listener, which only bloats the code. Instead, for brevity, our locks
+/// own actual [`LockListener`]s in an "initialized, unused" state, which they clone for each
+/// interaction (a.k.a. "prototype").
+trait LockListener {
+    /// Notices that a thread started waiting to acquire the lock.
+    fn on_wait(&mut self) {}
+
+    /// Notices that a thread has acquired the lock and now holds it.
+    fn on_hold(&mut self) {}
+
+    /// Notices that a thread has released the lock.
+    fn on_release(&mut self) {}
 }
 
-impl PanicDropHandler {
-    fn new(factory: &LockFactory) -> Self {
-        Self {
-            stopper: factory.stopper.clone(),
-            name: factory.name.clone(),
-        }
-    }
+/// A [`LockListener`] to be used by all "lock write guards" which need to trigger an "application
+/// stopper" on drop, if the current thread is panicking.
+#[derive(Clone)]
+struct PanicSafetyLockListener {
+    stopper: PanicSafetyApplicationStopper,
+    lock_name: Arc<String>, // for logging purposes only; Arc<> is used for cheap clone of the immutable String
+}
 
-    /// Attempts to invoke the contents of [`stopper`] if the current thread is panicking. Logs the
-    /// attempt's outcome.
-    pub fn on_drop(&self) {
+impl LockListener for PanicSafetyLockListener {
+    fn on_release(&mut self) {
         if !thread::panicking() {
             return;
         }
         if let Some(stopper) = self.stopper.take() {
             error!(
                 "a write guard of {} was dropped while panicking; stopping",
-                self.name
+                self.lock_name
             );
             stopper();
         } else {
             info!(
                 "a write guard of {} was dropped during stopping; ignoring",
-                self.name
+                self.lock_name
             );
+        }
+    }
+}
+
+/// A trivial chain of 2 [`LockListener`]s.
+#[derive(Clone)]
+struct ChainLockListener<D1, D2> {
+    first: D1,
+    second: D2,
+}
+
+impl<D1: LockListener, D2: LockListener> LockListener for ChainLockListener<D1, D2> {
+    fn on_wait(&mut self) {
+        self.first.on_wait();
+        self.second.on_wait();
+    }
+
+    fn on_hold(&mut self) {
+        self.first.on_hold();
+        self.second.on_hold();
+    }
+
+    fn on_release(&mut self) {
+        self.first.on_release();
+        self.second.on_release();
+    }
+}
+
+/// A [`LockListener`] bumping the [`LockFactoryMetrics`] scoped at a specific lock (via the
+/// [`LockFactoryMetrics::LOCK_NAME_LABEL'] label).
+#[derive(Clone)]
+struct MetricsLockListener {
+    waiting_threads: IntGauge,
+    wait: Histogram,
+    holding_threads: IntGauge,
+    hold: Histogram,
+    state: MeasuredLockState,
+}
+
+/// An internal state of the [`MetricsLockListener`]'s lifecycle.
+#[derive(Debug)]
+enum MeasuredLockState {
+    BeforeWait,
+    BeforeHold { started_waiting_at: Instant },
+    BeforeRelease { started_holding_at: Instant },
+    Dead,
+}
+
+impl Clone for MeasuredLockState {
+    fn clone(&self) -> Self {
+        assert!(
+            matches!(self, MeasuredLockState::BeforeWait),
+            "not an initial state: {:?}",
+            self
+        );
+        MeasuredLockState::BeforeWait
+    }
+}
+
+impl LockListener for MetricsLockListener {
+    fn on_wait(&mut self) {
+        assert!(
+            matches!(self.state, MeasuredLockState::BeforeWait),
+            "unexpected state: {:?}",
+            self.state
+        );
+        self.waiting_threads.inc();
+        self.state = MeasuredLockState::BeforeHold {
+            started_waiting_at: Instant::now(),
+        };
+    }
+
+    fn on_hold(&mut self) {
+        let MeasuredLockState::BeforeHold { started_waiting_at } = self.state else {
+            panic!("unexpected state: {:?}", self.state)
+        };
+        self.waiting_threads.dec();
+        self.holding_threads.inc();
+        let started_holding_at = Instant::now();
+        let wait_duration = started_holding_at.duration_since(started_waiting_at);
+        self.wait.observe(wait_duration.as_secs_f64());
+        self.state = MeasuredLockState::BeforeRelease { started_holding_at };
+    }
+
+    fn on_release(&mut self) {
+        let BeforeRelease { started_holding_at } = self.state else {
+            panic!("unexpected state: {:?}", self.state)
+        };
+        self.holding_threads.dec();
+        self.hold
+            .observe(started_holding_at.elapsed().as_secs_f64());
+        self.state = MeasuredLockState::Dead;
+    }
+}
+
+impl<L: LockListener> LockListener for Option<L> {
+    fn on_wait(&mut self) {
+        if let Some(underlying) = self {
+            underlying.on_wait();
+        }
+    }
+
+    fn on_hold(&mut self) {
+        if let Some(underlying) = self {
+            underlying.on_hold();
+        }
+    }
+
+    fn on_release(&mut self) {
+        if let Some(underlying) = self {
+            underlying.on_release();
+        }
+    }
+}
+
+/// A set of metrics applicable to all "locks" (understood as: "things for which you wait to give
+/// you a lock guard, which you later release by dropping").
+#[derive(Debug, Clone)]
+struct LockFactoryMetrics {
+    waiting_threads: IntGaugeVec,
+    wait: HistogramVec,
+    holding_threads: IntGaugeVec,
+    hold: HistogramVec,
+}
+
+impl LockFactoryMetrics {
+    const LOCK_NAME_LABEL: &'static str = "lock";
+
+    /// Registers the metrics in the given registry.
+    pub fn new(registry: &Registry) -> Self {
+        Self {
+            waiting_threads: IntGaugeVec::new(
+                opts(
+                    "locks_waiting_threads",
+                    "A number of threads currently waiting to acquire a specific lock.",
+                ),
+                &[Self::LOCK_NAME_LABEL],
+            ).registered_at(registry),
+            wait: new_timer_vec(
+                opts(
+                    "locks_acquire",
+                    "Time spent waiting to acquire a specific lock.",
+                ),
+                &[Self::LOCK_NAME_LABEL],
+                vec![
+                    0.0001, 0.0005, 0.002, 0.01, 0.05, 0.2, 1.0, 5.0,
+                ],
+            ).registered_at(registry),
+            holding_threads: IntGaugeVec::new(
+                opts(
+                    "locks_holding_threads",
+                    "A number of threads currently holding a specific lock (may actually be >1 e.g. for a read lock).",
+                ),
+                &[Self::LOCK_NAME_LABEL],
+            ).registered_at(registry),
+            hold: new_timer_vec(
+                opts(
+                    "locks_hold",
+                    "Time spent holding a specific lock.",
+                ),
+                &[Self::LOCK_NAME_LABEL],
+                vec![
+                    0.0001, 0.0005, 0.002, 0.01, 0.05, 0.2, 1.0, 5.0,
+                ],
+            ).registered_at(registry)
+        }
+    }
+
+    /// Creates a [`LockListener`] which will update the metrics scoped at a particular lock (using
+    /// the [`Self::LOCK_NAME_LABEL`] label with the given value).
+    /// Please note that a simple [`Mutex`] uses just a single metrics listener, while e.g. an
+    /// [`RwLock`] needs to separately track read vs write locks - this can be achieved by creating
+    /// 2 listeners with differently suffixed `lock_name`s.
+    pub fn create_listener_for(&self, lock_name: &str) -> MetricsLockListener {
+        let labels = &[lock_name];
+        MetricsLockListener {
+            waiting_threads: self.waiting_threads.with_label_values(labels),
+            wait: self.wait.with_label_values(labels),
+            holding_threads: self.holding_threads.with_label_values(labels),
+            hold: self.hold.with_label_values(labels),
+            state: MeasuredLockState::BeforeWait,
         }
     }
 }

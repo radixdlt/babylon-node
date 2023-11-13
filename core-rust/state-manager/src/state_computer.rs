@@ -136,7 +136,7 @@ impl<S: QueryableProofStore> StateComputer<S> {
         pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
         logging_config: LoggingConfig,
         metrics_registry: &Registry,
-        lock_factory: &LockFactory,
+        lock_factory: LockFactory,
     ) -> StateComputer<S> {
         let (current_transaction_root, current_ledger_proposer_timestamp_ms) = store
             .read_current()
@@ -163,7 +163,8 @@ impl<S: QueryableProofStore> StateComputer<S> {
             vertex_limits_config,
             ledger_metrics: LedgerMetrics::new(
                 network,
-                &lock_factory.named("ledger_metrics"),
+                // we deliberately opt-out of measuring the "technical" locks used inside metrics:
+                lock_factory.named("ledger_metrics").not_measured(),
                 metrics_registry,
                 current_ledger_proposer_timestamp_ms,
             ),
@@ -1343,7 +1344,7 @@ mod tests {
     };
     use node_common::config::limits::VertexLimitsConfig;
     use node_common::locks::LockFactory;
-    use node_common::scheduler::NoopScheduler;
+    use node_common::scheduler::Scheduler;
     use prometheus::Registry;
     use radix_engine_common::prelude::NetworkDefinition;
     use radix_engine_common::types::{Epoch, Round};
@@ -1441,7 +1442,7 @@ mod tests {
         tmp: &TempDir,
         vertex_limits_config: VertexLimitsConfig,
     ) -> (LedgerProof, StateManager) {
-        let lock_factory = LockFactory::new(|| {});
+        let lock_factory = LockFactory::new("testing");
         let metrics_registry = Registry::new();
 
         let config = StateManagerConfig {
@@ -1453,7 +1454,7 @@ mod tests {
             None,
             &lock_factory,
             &metrics_registry,
-            &mut NoopScheduler,
+            &Scheduler::new("testing"),
         );
 
         let proof = state_manager

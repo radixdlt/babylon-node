@@ -33,7 +33,7 @@ pub struct TransactionPreviewRequest {
     /// Whether the notary should count as a signatory (optional, default false)
     #[serde(rename = "notary_is_signatory", skip_serializing_if = "Option::is_none")]
     pub notary_is_signatory: Option<bool>,
-    /// An integer between `0` and `255`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
+    /// An integer between `0` and `65535`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
     #[serde(rename = "tip_percentage")]
     pub tip_percentage: i32,
     /// An integer between `0` and `2^32 - 1`, chosen to allow a unique intent to be created (to enable submitting an otherwise identical/duplicate intent). 

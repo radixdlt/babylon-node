@@ -89,7 +89,10 @@ use tracing::{error, info, warn};
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::query::TransactionIdentifierLoader;
-use crate::store::traits::gc::StateHashTreeGcStore;
+use crate::store::traits::gc::{
+    LedgerProofsGcProgress, LedgerProofsGcStore, StateHashTreeGcStore,
+    VersionedLedgerProofsGcProgress,
+};
 use crate::store::traits::measurement::{CategoryDbVolumeStatistic, MeasurableDatabase};
 use crate::store::traits::scenario::{
     ExecutedGenesisScenario, ExecutedGenesisScenarioStore, ScenarioSequenceNumber,
@@ -120,7 +123,7 @@ use super::traits::extensions::*;
 /// The `NAME` constants defined by `*Cf` structs (and referenced below) are used as database column
 /// family names. Any change would effectively mean a ledger wipe. For this reason, we choose to
 /// define them manually (rather than using the `Into<String>`, which is refactor-sensitive).
-const ALL_COLUMN_FAMILIES: [&str; 19] = [
+const ALL_COLUMN_FAMILIES: [&str; 20] = [
     RawLedgerTransactionsCf::DEFAULT_NAME,
     CommittedTransactionIdentifiersCf::VERSIONED_NAME,
     TransactionReceiptsCf::VERSIONED_NAME,
@@ -140,6 +143,7 @@ const ALL_COLUMN_FAMILIES: [&str; 19] = [
     ExtensionsDataCf::NAME,
     AccountChangeStateVersionsCf::NAME,
     ExecutedGenesisScenariosCf::VERSIONED_NAME,
+    LedgerProofsGcProgressCf::VERSIONED_NAME,
 ];
 
 /// Committed transactions.
@@ -258,7 +262,7 @@ impl VersionedCf<NodeId, SubstateNodeAncestryRecord> for SubstateNodeAncestryRec
 }
 
 /// Vertex store.
-/// Schema: `[]` -> `scrypto_encode(VersionedVertexStore)`
+/// Schema: `[]` -> `scrypto_encode(VersionedVertexStoreBlob)`
 /// Note: This is a single-entry table (i.e. the empty key is the only allowed key).
 struct VertexStoreCf;
 impl VersionedCf<(), VertexStoreBlob> for VertexStoreCf {
@@ -360,6 +364,16 @@ impl VersionedCf<ScenarioSequenceNumber, ExecutedGenesisScenario> for ExecutedGe
     type VersionedValue = VersionedExecutedGenesisScenario;
 }
 
+/// A progress of the GC process pruning the [`LedgerProofsCf`].
+/// Schema: `[]` -> `scrypto_encode(VersionedLedgerProofsGcProgress)`
+/// Note: This is a single-entry table (i.e. the empty key is the only allowed key).
+struct LedgerProofsGcProgressCf;
+impl VersionedCf<(), LedgerProofsGcProgress> for LedgerProofsGcProgressCf {
+    const VERSIONED_NAME: &'static str = "ledger_proofs_gc_progress";
+    type KeyCodec = UnitDbCodec;
+    type VersionedValue = VersionedLedgerProofsGcProgress;
+}
+
 /// An enum key for [`ExtensionsDataCf`].
 #[derive(Eq, PartialEq, Hash, PartialOrd, Ord, Clone, Debug)]
 enum ExtensionsDataKey {
@@ -431,6 +445,55 @@ impl RocksDBStore {
         }
 
         Ok(rocks_db_store)
+    }
+
+    /// Creates a readonly [`RocksDBStore`] that allows reading from the store while some other
+    /// process is writing to it. Any write operation that happens against a read-only store leads
+    /// to a panic.
+    ///
+    /// This is required for the [`ledger-tools`] CLI tool which only reads data from the database
+    /// and does not write anything to it. Without this constructor, if [`RocksDBStore::new`] is
+    /// used by the [`ledger-tools`] CLI then it leads to a lock contention as two threads would
+    /// want to have a write lock over the database. This provides the [`ledger-tools`] CLI with a
+    /// way of making it clear that it only wants read lock and not a write lock.
+    ///
+    /// # Note
+    ///
+    /// Instantiating a new [`RocksDBStore`] through this function does not provide any consistency
+    /// guarantees. Meaning that if substate X and Y are read, there is no guarantee that these two
+    /// substates come from the same state version. Thus, this should only be used for data that is
+    /// guaranteed to be immutable by the Radix Engine or the Node. As an example:
+    ///
+    /// * Receipts are guaranteed to be immutable by the node. Thus, there are no consistency fears
+    /// when it comes to [`ledger-tools`] reading receipts to determine which entities where created
+    /// by which transaction.
+    /// * Similarly, the immutability of receipts is used by [`ledger-tools`] when dumping events.
+    ///
+    /// Thus, this readonly substate store should only be used when the consistency of the data is
+    /// not a concern.
+    ///
+    /// [`ledger-tools`]: https://github.com/radixdlt/ledger-tools
+    pub fn new_read_only(root: PathBuf) -> Result<RocksDBStore, DatabaseConfigValidationError> {
+        let mut db_opts = Options::default();
+        db_opts.create_if_missing(false);
+        db_opts.create_missing_column_families(false);
+
+        let column_families: Vec<ColumnFamilyDescriptor> = ALL_COLUMN_FAMILIES
+            .iter()
+            .map(|cf| ColumnFamilyDescriptor::new(cf.to_string(), Options::default()))
+            .collect();
+
+        let db =
+            DB::open_cf_descriptors_read_only(&db_opts, root.as_path(), column_families, false)
+                .unwrap();
+
+        Ok(RocksDBStore {
+            config: DatabaseFlags {
+                enable_local_transaction_execution_index: false,
+                enable_account_change_index: false,
+            },
+            db,
+        })
     }
 
     /// Starts a read/batch-write interaction with the DB through per-CF type-safe APIs.
@@ -1140,6 +1203,24 @@ impl StateHashTreeGcStore for RocksDBStore {
                 .cf(StaleStateHashTreePartsCf)
                 .delete(state_version);
         }
+    }
+}
+
+impl LedgerProofsGcStore for RocksDBStore {
+    fn get_progress(&self) -> Option<LedgerProofsGcProgress> {
+        self.open_db_context().cf(LedgerProofsGcProgressCf).get(&())
+    }
+
+    fn set_progress(&self, progress: LedgerProofsGcProgress) {
+        self.open_db_context()
+            .cf(LedgerProofsGcProgressCf)
+            .put(&(), &progress);
+    }
+
+    fn delete_ledger_proofs_range(&self, from: StateVersion, to: StateVersion) {
+        self.open_db_context()
+            .cf(LedgerProofsCf)
+            .delete_range(&from, &to);
     }
 }
 
