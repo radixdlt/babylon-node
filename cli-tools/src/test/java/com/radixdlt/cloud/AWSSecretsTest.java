@@ -64,11 +64,13 @@
 
 package com.radixdlt.cloud;
 
-import java.nio.file.Paths;
-import java.util.UUID;
 import org.junit.Test;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 
 public class AWSSecretsTest {
+  @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
+
   @Test
   public void testExampleInvocation() {
     var args =
@@ -79,10 +81,7 @@ public class AWSSecretsTest {
           "--node-name-prefix=node",
           "--node-number=0",
           "--node-names=dumunet_ap_south_1_node0,dumunet_eu_west_1_node0,dumunet_eu_west_1_node1,dumunet_eu_west_1_node2,dumunet_eu_west_1_node3",
-          "--path="
-              + Paths.get(
-                  System.getProperty("java.io.tmpdir"),
-                  UUID.randomUUID().toString().replaceAll("[^a-zA-Z]", ""))
+          "--path=" + temporaryFolder
         };
     AWSSecrets.main(args);
   }

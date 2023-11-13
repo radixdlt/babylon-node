@@ -183,7 +183,7 @@ public class AWSSecrets {
       generateAndStoreKey(
           networkName, namePrefix, defaultKeyPassword, awsSecretsOutputOptions, keyRootPath, nodes);
     } catch (ParseException e) {
-      System.out.println(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -269,7 +269,6 @@ public class AWSSecrets {
         writeBinaryAWSSecret(
             publicKeyFileAwsSecret, publicKeyFileSecretName, awsSecretsOutputOptions, false, false);
       } catch (Exception e) {
-        System.out.println(e);
         throw new RuntimeException(e);
       }
     }
