@@ -120,6 +120,7 @@ public class AWSSecrets {
     options.addOption(
         "k", "network-name", true, "Network name(default: " + DEFAULT_NETWORK_NAME + ")");
     options.addOption("l", "node-names", true, "List of node names");
+    options.addOption("path", "path", true, "Path for generated keys");
 
     var parser = new DefaultParser();
     try {
@@ -163,6 +164,7 @@ public class AWSSecrets {
 
       var networkName = getOption(cmd, 'k').orElse(DEFAULT_NETWORK_NAME);
       var defaultKeyPassword = getOption(cmd, 's').orElse("");
+      var keyRootPath = getOption(cmd, "path").orElse(".");
 
       boolean enableAwsSecrets = Boolean.parseBoolean(cmd.getOptionValue("as"));
       boolean recreateAwsSecrets = Boolean.parseBoolean(cmd.getOptionValue("rs"));
@@ -179,7 +181,7 @@ public class AWSSecrets {
 
       System.out.println("name prefix " + namePrefix);
       generateAndStoreKey(
-          networkName, namePrefix, defaultKeyPassword, awsSecretsOutputOptions, nodes);
+          networkName, namePrefix, defaultKeyPassword, awsSecretsOutputOptions, keyRootPath, nodes);
     } catch (ParseException e) {
       System.out.println(e);
     }
@@ -190,9 +192,16 @@ public class AWSSecrets {
       String namePrefix,
       String defaultKeyPassword,
       AWSSecretsOutputOptions awsSecretsOutputOptions,
+      String keyStoreRoot,
       List<String> nodes) {
     generateAndStoreKey(
-        networkName, namePrefix, defaultKeyPassword, awsSecretsOutputOptions, nodes, Boolean.FALSE);
+        networkName,
+        namePrefix,
+        defaultKeyPassword,
+        awsSecretsOutputOptions,
+        keyStoreRoot,
+        nodes,
+        Boolean.FALSE);
   }
 
   private static void generateAndStoreKey(
@@ -200,6 +209,7 @@ public class AWSSecrets {
       String namePrefix,
       String defaultKeyPassword,
       AWSSecretsOutputOptions awsSecretsOutputOptions,
+      String keyStoreRoot,
       List<String> nodes,
       Boolean isStaker) {
 
@@ -236,7 +246,7 @@ public class AWSSecrets {
       final var password = generatePassword(defaultKeyPassword);
 
       try {
-        var keyFilePath = Paths.get(keyStoreName);
+        var keyFilePath = Paths.get(keyStoreRoot, keyStoreName);
         var keystoreFile = new File(keyFilePath.toString());
         var keyPair = ECKeyPair.generateNew();
 
@@ -260,6 +270,7 @@ public class AWSSecrets {
             publicKeyFileAwsSecret, publicKeyFileSecretName, awsSecretsOutputOptions, false, false);
       } catch (Exception e) {
         System.out.println(e);
+        throw new RuntimeException(e);
       }
     }
   }
@@ -292,7 +303,7 @@ public class AWSSecrets {
 
   private static String generatePassword(String password) {
     if (password == null || password.isEmpty()) {
-      // anphanumeric and special charactrers
+      // alphanumeric and special characters
       int asciiOrigin = 48; // 0
       int asciiBound = 122; // z
       int passwordLength = 8;
@@ -313,6 +324,10 @@ public class AWSSecrets {
   }
 
   private static Optional<String> getOption(CommandLine cmd, char opt) {
+    return Optional.ofNullable(cmd.getOptionValue(opt));
+  }
+
+  private static Optional<String> getOption(CommandLine cmd, String opt) {
     return Optional.ofNullable(cmd.getOptionValue(opt));
   }
 
