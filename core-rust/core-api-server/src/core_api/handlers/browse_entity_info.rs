@@ -100,32 +100,7 @@ fn to_api_entity_ancestry_info(
     })
 }
 
-fn to_api_resolved_type_reference(
-    context: &MappingContext,
-    resolved_type: &ResolvedTypeMeta,
-) -> Result<models::ResolvedTypeReference, MappingError> {
-    let name = resolved_type.name().map(|str| str.to_string());
-    Ok(match &resolved_type.type_reference {
-        ResolvedTypeReference::WellKnown(type_id) => {
-            models::ResolvedTypeReference::WellKnownTypeReference {
-                index: to_api_index_as_i64(type_id.as_index())?,
-                name,
-            }
-        }
-        ResolvedTypeReference::SchemaBased(type_reference) => {
-            models::ResolvedTypeReference::SchemaDefinedTypeReference {
-                schema_reference: Box::new(to_api_schema_reference(
-                    context,
-                    &type_reference.schema_reference,
-                )?),
-                index: to_api_index_as_i64(type_reference.index)?,
-                name,
-            }
-        }
-    })
-}
-
-pub fn to_api_blueprint_reference(
+fn to_api_blueprint_reference(
     context: &MappingContext,
     blueprint_reference: &BlueprintReference,
 ) -> Result<models::BlueprintReference, MappingError> {
@@ -133,20 +108,6 @@ pub fn to_api_blueprint_reference(
         package_address: to_api_package_address(context, &blueprint_reference.id.package_address)?,
         blueprint_name: blueprint_reference.id.blueprint_name.clone(),
         blueprint_version: to_api_blueprint_version(context, &blueprint_reference.version)?,
-    })
-}
-
-pub fn to_api_schema_reference(
-    context: &MappingContext,
-    schema_reference: &SchemaReference,
-) -> Result<models::SchemaReference, MappingError> {
-    let SchemaReference {
-        node_id,
-        schema_hash,
-    } = schema_reference;
-    Ok(models::SchemaReference {
-        entity_address: to_api_entity_address(context, node_id)?,
-        schema_hash: to_api_schema_hash(schema_hash),
     })
 }
 
@@ -220,11 +181,7 @@ fn to_api_object_collection_info(
     Ok(models::ObjectCollectionInfo {
         index: to_api_u8_as_i32(index.number),
         name: index.derived_name.clone(),
-        kind: match kind {
-            ObjectCollectionKind::KeyValueStore => models::ObjectCollectionKind::KeyValueStore,
-            ObjectCollectionKind::Index => models::ObjectCollectionKind::Index,
-            ObjectCollectionKind::SortedIndex => models::ObjectCollectionKind::SortedIndex,
-        },
+        kind: to_api_object_collection_kind(kind),
         key_type_reference: Some(to_api_resolved_type_reference(context, resolved_key_type)?),
         value_type_reference: Some(to_api_resolved_type_reference(
             context,

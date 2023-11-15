@@ -3,6 +3,7 @@ use std::any::type_name;
 use radix_engine_common::math::*;
 use radix_engine_interface::blueprints::package::BlueprintVersion;
 use radix_engine_interface::prelude::*;
+use regex::Regex;
 use sbor::WellKnownTypeId;
 use state_manager::store::traits::scenario::ScenarioSequenceNumber;
 use state_manager::StateVersion;
@@ -90,6 +91,19 @@ pub fn to_api_blueprint_version(
         "{}.{}.{}",
         version.major, version.minor, version.patch
     ))
+}
+
+pub fn extract_blueprint_version(string: &str) -> Result<BlueprintVersion, ExtractionError> {
+    let semver_parts = Regex::new(r"^(\d+)\.(\d+)\.(\d+)$")
+        .ok()
+        .and_then(|regex| regex.captures(string))
+        .map(|captures| captures.extract::<3>().1)
+        .ok_or(ExtractionError::InvalidSemverString)?;
+    Ok(BlueprintVersion {
+        major: u32::from_str(semver_parts[0]).map_err(|_| ExtractionError::InvalidSemverString)?,
+        minor: u32::from_str(semver_parts[1]).map_err(|_| ExtractionError::InvalidSemverString)?,
+        patch: u32::from_str(semver_parts[2]).map_err(|_| ExtractionError::InvalidSemverString)?,
+    })
 }
 
 #[tracing::instrument(skip_all)]

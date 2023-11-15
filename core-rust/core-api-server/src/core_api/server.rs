@@ -188,6 +188,7 @@ pub async fn create_server<F>(
         .route("/state/resource", post(handle_state_resource))
         .route("/state/non-fungible", post(handle_state_non_fungible))
         // Browse Sub-API
+        .route("/browse/blueprint/info", post(handle_browse_blueprint_info))
         .route(
             "/browse/entity/iterator",
             post(handle_browse_entity_iterator),

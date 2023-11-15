@@ -7,6 +7,7 @@ mod keys_and_sigs;
 mod lts;
 mod numerics;
 mod receipt;
+mod schemas;
 mod substates;
 
 pub use addressing::*;
@@ -18,4 +19,5 @@ pub use keys_and_sigs::*;
 pub use lts::*;
 pub use numerics::*;
 pub use receipt::*;
+pub use schemas::*;
 pub use substates::*;

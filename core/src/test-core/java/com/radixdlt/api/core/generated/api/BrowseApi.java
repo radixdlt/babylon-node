@@ -18,6 +18,8 @@ import com.radixdlt.api.core.generated.client.ApiResponse;
 import com.radixdlt.api.core.generated.client.Pair;
 
 import com.radixdlt.api.core.generated.models.BasicErrorResponse;
+import com.radixdlt.api.core.generated.models.BrowseBlueprintInfoRequest;
+import com.radixdlt.api.core.generated.models.BrowseBlueprintInfoResponse;
 import com.radixdlt.api.core.generated.models.BrowseEntityInfoRequest;
 import com.radixdlt.api.core.generated.models.BrowseEntityInfoResponse;
 import com.radixdlt.api.core.generated.models.BrowseEntityIteratorRequest;
@@ -84,6 +86,84 @@ public class BrowseApi {
     return operationId + " call failed with: " + statusCode + " - " + body;
   }
 
+  /**
+   * Get Blueprint Info
+   * Returns all externally-relevant information about a particular blueprint.
+   * @param browseBlueprintInfoRequest  (required)
+   * @return BrowseBlueprintInfoResponse
+   * @throws ApiException if fails to make API call
+   */
+  public BrowseBlueprintInfoResponse browseBlueprintInfoPost(BrowseBlueprintInfoRequest browseBlueprintInfoRequest) throws ApiException {
+    ApiResponse<BrowseBlueprintInfoResponse> localVarResponse = browseBlueprintInfoPostWithHttpInfo(browseBlueprintInfoRequest);
+    return localVarResponse.getData();
+  }
+
+  /**
+   * Get Blueprint Info
+   * Returns all externally-relevant information about a particular blueprint.
+   * @param browseBlueprintInfoRequest  (required)
+   * @return ApiResponse&lt;BrowseBlueprintInfoResponse&gt;
+   * @throws ApiException if fails to make API call
+   */
+  public ApiResponse<BrowseBlueprintInfoResponse> browseBlueprintInfoPostWithHttpInfo(BrowseBlueprintInfoRequest browseBlueprintInfoRequest) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = browseBlueprintInfoPostRequestBuilder(browseBlueprintInfoRequest);
+    try {
+      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
+          localVarRequestBuilder.build(),
+          HttpResponse.BodyHandlers.ofInputStream());
+      if (memberVarResponseInterceptor != null) {
+        memberVarResponseInterceptor.accept(localVarResponse);
+      }
+      try {
+        if (localVarResponse.statusCode()/ 100 != 2) {
+          throw getApiException("browseBlueprintInfoPost", localVarResponse);
+        }
+        return new ApiResponse<BrowseBlueprintInfoResponse>(
+          localVarResponse.statusCode(),
+          localVarResponse.headers().map(),
+          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<BrowseBlueprintInfoResponse>() {}) // closes the InputStream
+          
+        );
+      } finally {
+      }
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new ApiException(e);
+    }
+  }
+
+  private HttpRequest.Builder browseBlueprintInfoPostRequestBuilder(BrowseBlueprintInfoRequest browseBlueprintInfoRequest) throws ApiException {
+    // verify the required parameter 'browseBlueprintInfoRequest' is set
+    if (browseBlueprintInfoRequest == null) {
+      throw new ApiException(400, "Missing the required parameter 'browseBlueprintInfoRequest' when calling browseBlueprintInfoPost");
+    }
+
+    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
+
+    String localVarPath = "/browse/blueprint/info";
+
+    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+
+    localVarRequestBuilder.header("Content-Type", "application/json");
+    localVarRequestBuilder.header("Accept", "application/json");
+
+    try {
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(browseBlueprintInfoRequest);
+      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    if (memberVarReadTimeout != null) {
+      localVarRequestBuilder.timeout(memberVarReadTimeout);
+    }
+    if (memberVarInterceptor != null) {
+      memberVarInterceptor.accept(localVarRequestBuilder);
+    }
+    return localVarRequestBuilder;
+  }
   /**
    * Get Entity Info
    * Resolves basic information about an entity: its type, attached modules, fields/collections and blueprint. 

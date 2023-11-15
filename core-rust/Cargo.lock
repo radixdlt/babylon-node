@@ -380,6 +380,7 @@ dependencies = [
  "radix-engine-queries",
  "radix-engine-store-interface",
  "radix-engine-stores",
+ "regex",
  "sbor",
  "serde",
  "serde_json",
