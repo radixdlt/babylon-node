@@ -1128,6 +1128,25 @@ impl SubstateDatabase for RocksDBStore {
             .get(&(partition_key.clone(), sort_key.clone()))
     }
 
+    fn list_entries_from(
+        &self,
+        partition_key: &DbPartitionKey,
+        from_sort_key: Option<&DbSortKey>,
+    ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
+        let partition_key = partition_key.clone();
+        let from_sort_key = from_sort_key.cloned().unwrap_or(DbSortKey(vec![]));
+        Box::new(
+            self.open_db_context()
+                .cf(SubstatesCf)
+                .iterate_from(
+                    &(partition_key.clone(), from_sort_key),
+                    Direction::Forward,
+                )
+                .take_while(move |((next_key, _), _)| next_key == &partition_key)
+                .map(|((_, sort_key), value)| (sort_key, value)),
+        )
+    }
+
     fn list_entries(
         &self,
         partition_key: &DbPartitionKey,

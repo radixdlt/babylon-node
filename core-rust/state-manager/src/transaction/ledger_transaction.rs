@@ -129,7 +129,9 @@ const GENESIS_TRANSACTION_FLASH_DISCRIMINATOR: u8 = 0;
 const GENESIS_TRANSACTION_SYSTEM_TRANSACTION_DISCRIMINATOR: u8 = 1;
 
 #[derive(Debug, Clone, PartialEq, Eq, ManifestCategorize, ManifestEncode, ManifestDecode)]
-pub struct FlashTransactionV1 {}
+pub struct FlashTransactionV1 {
+    pub state_updates: StateUpdates,
+}
 
 pub struct PreparedLedgerTransaction {
     pub inner: PreparedLedgerTransactionInner,
