@@ -1,12 +1,12 @@
 use radix_engine::system::bootstrap::{create_substate_flash_for_genesis, FlashReceipt};
-use radix_engine::transaction::{
-    execute_transaction, CostingParameters, ExecutionConfig, TransactionReceipt,
-};
+use radix_engine::transaction::{execute_transaction, CostingParameters, ExecutionConfig, TransactionReceipt, SubstateSchemaMapper, TransactionReceiptV1, TransactionOutcome, CommitResult, TransactionResult, StateUpdateSummary, FeeSource, FeeDestination, SystemStructure};
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
 use radix_engine_common::network::NetworkDefinition;
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
+use radix_engine::system::system_db_reader::SystemDatabaseReader;
+use radix_engine::track::StateUpdates;
 
 use radix_engine_interface::*;
 use radix_engine_store_interface::interface::SubstateDatabase;
@@ -15,6 +15,7 @@ use tracing::warn;
 
 use crate::LoggingConfig;
 use transaction::model::*;
+use utils::prelude::index_map_new;
 
 use super::ValidatedLedgerTransaction;
 
@@ -112,10 +113,8 @@ impl ExecutionConfigurator {
         transaction: &'a ValidatedLedgerTransaction,
         description: impl ToString,
     ) -> ConfiguredExecutable<'a> {
-        if let Some(flash_receipt) = transaction.as_flash() {
-            return ConfiguredExecutable::Flash {
-                flash_receipt,
-            };
+        if let Some(executable) = transaction.as_flash() {
+            return executable;
         }
 
         self.wrap_transaction(
@@ -169,8 +168,11 @@ impl ExecutionConfigurator {
 
 /// An `Executable` transaction bound to a specific execution configuration.
 pub enum ConfiguredExecutable<'a> {
-    Flash {
+    GenesisFlash {
         flash_receipt: FlashReceipt,
+    },
+    SystemFlash {
+        state_updates: StateUpdates,
     },
     Transaction {
         executable: Executable<'a>,
@@ -185,7 +187,32 @@ pub enum ConfiguredExecutable<'a> {
 impl<'a, S: SubstateDatabase> TransactionLogic<S> for ConfiguredExecutable<'a> {
     fn execute_on(self, store: &S) -> TransactionReceipt {
         match self {
-            ConfiguredExecutable::Flash { flash_receipt } => flash_receipt.into(),
+            ConfiguredExecutable::GenesisFlash { flash_receipt } => flash_receipt.into(),
+            ConfiguredExecutable::SystemFlash { state_updates } => {
+                let mut substate_schema_mapper =
+                    SubstateSchemaMapper::new(SystemDatabaseReader::new(store));
+                substate_schema_mapper.add_for_all_individually_updated(&state_updates);
+                let substate_system_structures = substate_schema_mapper.done();
+
+                // TODO: Add sanity check that all updates are to existing substates
+
+                let commit_result = CommitResult {
+                    state_updates,
+                    state_update_summary: Default::default(),
+                    fee_source: Default::default(),
+                    fee_destination: Default::default(),
+                    outcome: TransactionOutcome::Success(vec![]),
+                    application_events: vec![],
+                    application_logs: vec![],
+                    system_structure: SystemStructure {
+                        substate_system_structures,
+                        event_system_structures: index_map_new(),
+                    },
+                    execution_trace: None,
+                };
+
+                TransactionReceipt::empty_with_commit(commit_result)
+            },
             ConfiguredExecutable::Transaction {
                 executable,
                 scrypto_interpreter,
