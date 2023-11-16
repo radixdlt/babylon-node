@@ -162,6 +162,10 @@ models/FieldSchemaFeatureConditionIfOwnFeatureAllOf.ts
 models/FieldSchemaFeatureConditionType.ts
 models/FieldSubstateKey.ts
 models/FieldSubstateKeyAllOf.ts
+models/FlashLedgerTransaction.ts
+models/FlashLedgerTransactionAllOf.ts
+models/FlashTransaction.ts
+models/FlashedSubstate.ts
 models/FrozenStatus.ts
 models/FullyScopedTypeId.ts
 models/FunctionAuthType.ts

@@ -13,6 +13,14 @@
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "type")]
 pub enum LedgerTransaction {
+    #[serde(rename="Flash")]
+    FlashLedgerTransaction {
+        /// The hex-encoded full ledger transaction payload. Only returned if enabled in TransactionFormatOptions on your request.
+        #[serde(rename = "payload_hex", skip_serializing_if = "Option::is_none")]
+        payload_hex: Option<String>,
+        #[serde(rename = "flash_transaction")]
+        flash_transaction: Box<crate::core_api::generated::models::FlashTransaction>,
+    },
     #[serde(rename="Genesis")]
     GenesisLedgerTransaction {
         /// The hex-encoded full ledger transaction payload. Only returned if enabled in TransactionFormatOptions on your request.
