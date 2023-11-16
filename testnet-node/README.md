@@ -4,8 +4,7 @@ This is the easiest way to get a Babylon fullnode up and running, for integratio
 
 This set-up is only intended for local running as a developer - it is not intended for running in production - see [our documentation site for information on running a production node](https://docs-babylon.radixdlt.com/main/node-and-gateway/node-setup-introduction.html).
 
-The node connects to the latest public testnet (as of August 2023, this is RCnet v3, known by its logical name `zabanet`).
-If you previously ran a `kisharnet` or `ansharnet` node, you will need to wipe the ledger database as documented in the "Ledger Database" section below.
+The node connects to the our public testnet, called `stokenet`, you will need to wipe the ledger database as documented in the "Ledger Database" section below.
 
 Documentation for integrators is available [here](https://docs.google.com/document/d/1cjc7_alyzIb2QQIGGn1PEpJyjrMRZYHq3VwkOXRP8J0).
 
