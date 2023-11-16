@@ -1,10 +1,9 @@
-use radix_engine::system::bootstrap::{create_substate_flash_for_genesis, FlashReceipt};
-use radix_engine::system::system_db_reader::SystemDatabaseReader;
+use radix_engine::system::bootstrap::create_substate_flash_for_genesis;
+
 use radix_engine::track::StateUpdates;
-use radix_engine::transaction::SubstateSchemaMapper;
+
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::prelude::*;
-use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 
 use crate::transaction::{ConfigType, ConfiguredExecutable};
 use transaction::define_raw_transaction_payload;
@@ -36,7 +35,7 @@ pub enum TypedTransactionIdentifiers {
     },
     FlashV1 {
         flash_transaction_hash: FlashTransactionHash,
-    }
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -130,8 +129,7 @@ const GENESIS_TRANSACTION_FLASH_DISCRIMINATOR: u8 = 0;
 const GENESIS_TRANSACTION_SYSTEM_TRANSACTION_DISCRIMINATOR: u8 = 1;
 
 #[derive(Debug, Clone, PartialEq, Eq, ManifestCategorize, ManifestEncode, ManifestDecode)]
-pub struct FlashTransactionV1 {
-}
+pub struct FlashTransactionV1 {}
 
 pub struct PreparedLedgerTransaction {
     pub inner: PreparedLedgerTransactionInner,
@@ -304,8 +302,6 @@ impl HasSystemTransactionHash for PreparedGenesisTransaction {
     }
 }
 
-
-
 pub struct PreparedFlashTransactionV1 {
     state_updates: StateUpdates,
     summary: Summary,
@@ -322,7 +318,6 @@ impl HasFlashTransactionHash for PreparedFlashTransactionV1 {
         FlashTransactionHash(self.summary.hash)
     }
 }
-
 
 impl TransactionPayloadPreparable for PreparedLedgerTransaction {
     type Raw = RawLedgerTransaction;
@@ -372,16 +367,14 @@ impl ValidatedLedgerTransaction {
     pub fn as_flash(&self) -> Option<ConfiguredExecutable> {
         match &self.inner {
             ValidatedLedgerTransactionInner::Genesis(genesis) => match genesis.as_ref() {
-                PreparedGenesisTransaction::Flash(..) => {
-                    Some(ConfiguredExecutable::GenesisFlash {
-                        flash_receipt: create_substate_flash_for_genesis(),
-                    })
-                }
+                PreparedGenesisTransaction::Flash(..) => Some(ConfiguredExecutable::GenesisFlash {
+                    flash_receipt: create_substate_flash_for_genesis(),
+                }),
                 PreparedGenesisTransaction::Transaction(_) => None,
             },
             ValidatedLedgerTransactionInner::FlashV1(system_flash) => {
                 Some(ConfiguredExecutable::SystemFlash {
-                    state_updates: system_flash.state_updates.clone()
+                    state_updates: system_flash.state_updates.clone(),
                 })
             }
             _ => None,
@@ -394,10 +387,10 @@ impl ValidatedLedgerTransaction {
             ValidatedLedgerTransactionInner::Genesis(genesis) => match genesis.as_ref() {
                 PreparedGenesisTransaction::Flash(_) => {
                     panic!("Should not call get_executable on a genesis flash")
-                },
+                }
                 PreparedGenesisTransaction::Transaction(t) => {
                     t.get_executable(btreeset!(AuthAddresses::system_role()))
-                },
+                }
             },
             ValidatedLedgerTransactionInner::UserV1(t) => t.get_executable(),
             ValidatedLedgerTransactionInner::RoundUpdateV1(t) => t.get_executable(),
@@ -441,7 +434,7 @@ impl ValidatedLedgerTransaction {
                     TypedTransactionIdentifiers::FlashV1 {
                         flash_transaction_hash: t.flash_transaction_hash(),
                     }
-                },
+                }
             },
         }
     }

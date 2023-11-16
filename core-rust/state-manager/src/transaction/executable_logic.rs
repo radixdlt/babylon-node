@@ -1,12 +1,15 @@
-use radix_engine::system::bootstrap::{create_substate_flash_for_genesis, FlashReceipt};
-use radix_engine::transaction::{execute_transaction, CostingParameters, ExecutionConfig, TransactionReceipt, SubstateSchemaMapper, TransactionReceiptV1, TransactionOutcome, CommitResult, TransactionResult, StateUpdateSummary, FeeSource, FeeDestination, SystemStructure};
+use radix_engine::system::bootstrap::FlashReceipt;
+use radix_engine::system::system_db_reader::SystemDatabaseReader;
+use radix_engine::track::StateUpdates;
+use radix_engine::transaction::{
+    execute_transaction, CommitResult, CostingParameters, ExecutionConfig, SubstateSchemaMapper,
+    SystemStructure, TransactionOutcome, TransactionReceipt,
+};
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
 use radix_engine_common::network::NetworkDefinition;
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
-use radix_engine::system::system_db_reader::SystemDatabaseReader;
-use radix_engine::track::StateUpdates;
 
 use radix_engine_interface::*;
 use radix_engine_store_interface::interface::SubstateDatabase;
@@ -194,7 +197,14 @@ impl<'a, S: SubstateDatabase> TransactionLogic<S> for ConfiguredExecutable<'a> {
                 substate_schema_mapper.add_for_all_individually_updated(&state_updates);
                 let substate_system_structures = substate_schema_mapper.done();
 
-                // TODO: Add sanity check that all updates are to existing substates
+                // Sanity check that all updates are to existing nodes so that
+                // we can assure there are no new entities in the receipt
+                let reader = SystemDatabaseReader::new(store);
+                for (node_id, ..) in &state_updates.by_node {
+                    reader
+                        .get_object_info(*node_id)
+                        .expect("Substate flash is currently only supported for existing nodes.");
+                }
 
                 let commit_result = CommitResult {
                     state_updates,
@@ -212,7 +222,7 @@ impl<'a, S: SubstateDatabase> TransactionLogic<S> for ConfiguredExecutable<'a> {
                 };
 
                 TransactionReceipt::empty_with_commit(commit_result)
-            },
+            }
             ConfiguredExecutable::Transaction {
                 executable,
                 scrypto_interpreter,
