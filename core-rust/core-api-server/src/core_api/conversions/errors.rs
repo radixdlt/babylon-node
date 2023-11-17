@@ -115,6 +115,9 @@ pub enum ExtractionError {
     },
     InvalidFieldAlternativesUsage,
     InvalidSemverString,
+    InvalidProgrammaticJson {
+        message: String,
+    },
 }
 
 impl ExtractionError {

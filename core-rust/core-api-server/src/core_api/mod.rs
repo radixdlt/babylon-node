@@ -72,6 +72,7 @@ mod helpers;
 mod metrics;
 mod metrics_layer;
 mod paging;
+mod programmatic_json;
 mod server;
 
 #[allow(unused)]
@@ -86,6 +87,7 @@ pub(crate) use errors::*;
 pub(crate) use extractors::*;
 pub(crate) use helpers::*;
 pub(crate) use paging::*;
+pub(crate) use programmatic_json::*;
 pub(crate) use server::{create_server, CoreApiServerConfig, CoreApiState};
 
 pub(crate) mod models {
