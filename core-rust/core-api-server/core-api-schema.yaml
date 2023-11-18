@@ -1320,6 +1320,38 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BasicErrorResponse"
+  "/browse/kv_store/entry":
+    post:
+      summary: Get Key-Value Store Entry
+      description:  |
+        Reads the current value of a specific entry from a Key-Value Store.
+      tags:
+        - Browse
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BrowseKeyValueStoreEntryRequest"
+      responses:
+        '200':
+          description: Current value of the entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BrowseKeyValueStoreEntryResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
 #############################################################################################
 components:
   schemas:
@@ -8722,3 +8754,37 @@ components:
       properties:
         programmatic_json:
           type: object
+#########################################################
+# REQUEST: /browse/kv_store/entry                       #
+#########################################################
+    BrowseKeyValueStoreEntryRequest:
+      type: object
+      required:
+        - network
+        - entity_address
+        - key
+      properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
+        entity_address:
+          $ref: "#/components/schemas/EntityAddress"
+        key:
+          $ref: "#/components/schemas/KeyValueStoreMapKey"
+          description: The key to look up the entry by.
+    BrowseKeyValueStoreEntryResponse:
+      type: object
+      required:
+        - at_ledger_state
+        - content
+      properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+          description: A summarized state of the ledger at which the query was performed.
+        content:
+          type: object
+          description: The requested entry's value.
+          required:
+            - programmatic_json
+          properties:
+            programmatic_json:
+              type: object

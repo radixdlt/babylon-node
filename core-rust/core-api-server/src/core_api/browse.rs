@@ -1088,6 +1088,38 @@ impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
         ))
     }
 
+    /// Loads an SBOR-encoded value associated with the given key in the given Key-Value Store.
+    /// Note: technically, loading an SBOR does not need the fully-resolved field metadata (just its
+    /// index); however, the object we return is schema-aware, so that it can render itself
+    /// together with field names. Hence the field metadata must first be obtained from the
+    /// [`EngineStateMetaLoader`].
+    pub fn load_kv_store_entry<'m>(
+        &self,
+        node_id: &NodeId,
+        kv_store_meta: &'m KeyValueStoreMeta,
+        key: &MapKey,
+    ) -> Result<SborData<'m>, EngineStateBrowsingError> {
+        // TODO(after development in scrypto repo): we have to do an awkward encoding of (raw bytes)
+        // SBOR key, to a (still rather generic) `ScryptoValue`; we could avoid it if the Engine's
+        // reader accepted SBOR-encoded key (because it `scrypto_encode()`s it right away).
+        let key = scrypto_decode::<ScryptoValue>(key).map_err(|_| {
+            EngineStateBrowsingError::RequestedItemInvalid(
+                ItemKind::EntryKey,
+                "not a valid SBOR".to_string(),
+            )
+        })?;
+        let mapped_value = self
+            .reader
+            .read_typed_kv_entry::<_, ScryptoValue>(node_id, &key)
+            .ok_or(EngineStateBrowsingError::RequestedItemNotFound(
+                ItemKind::EntryKey,
+            ))?;
+        Ok(SborData::new(
+            scrypto_encode(&mapped_value).expect("it was just decoded"),
+            &kv_store_meta.resolved_value_type,
+        ))
+    }
+
     /// Returns an iterator over all keys of the given object's collection, starting from the given
     /// key (or its successor, if it does not exist), in an arbitrary but deterministic order used
     /// by the backing storage.
@@ -1222,6 +1254,30 @@ impl<'t> SborData<'t> {
     }
 }
 
+/// A top-level SBOR value coming from the request,
+/// Please note that on input, type-awareness is irrelevant (unlike the output [`SborData`]).
+pub struct SborDataInput {
+    payload_bytes: Vec<u8>,
+}
+
+impl SborDataInput {
+    /// Parses an instance from a programmatic JSON (rendered as a `serde` JSON tree).
+    pub fn from_programmatic_json(
+        extraction_context: &ExtractionContext,
+        programmatic_json: serde_json::Value,
+    ) -> Result<Self, ExtractionError> {
+        Ok(Self {
+            payload_bytes: ProgrammaticJsonDecoder::new(extraction_context)
+                .decode(programmatic_json)?,
+        })
+    }
+
+    /// Returns raw SBOR bytes.
+    pub fn as_bytes(&self) -> &Vec<u8> {
+        &self.payload_bytes
+    }
+}
+
 /// An internal helper for resolving concrete type references.
 struct TypeReferenceResolver<'s, S: SubstateDatabase> {
     reader: &'s SystemDatabaseReader<'s, S>,
@@ -1348,6 +1404,7 @@ pub enum ItemKind {
     Module,
     Field,
     Collection,
+    EntryKey,
 }
 
 impl<E: ErrorDetails> From<EngineStateBrowsingError> for ResponseError<E> {

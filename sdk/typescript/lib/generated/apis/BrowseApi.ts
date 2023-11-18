@@ -22,6 +22,8 @@ import type {
   BrowseEntityInfoResponse,
   BrowseEntityIteratorRequest,
   BrowseEntityIteratorResponse,
+  BrowseKeyValueStoreEntryRequest,
+  BrowseKeyValueStoreEntryResponse,
   BrowseKeyValueStoreIteratorRequest,
   BrowseKeyValueStoreIteratorResponse,
   BrowseObjectCollectionIteratorRequest,
@@ -44,6 +46,10 @@ import {
     BrowseEntityIteratorRequestToJSON,
     BrowseEntityIteratorResponseFromJSON,
     BrowseEntityIteratorResponseToJSON,
+    BrowseKeyValueStoreEntryRequestFromJSON,
+    BrowseKeyValueStoreEntryRequestToJSON,
+    BrowseKeyValueStoreEntryResponseFromJSON,
+    BrowseKeyValueStoreEntryResponseToJSON,
     BrowseKeyValueStoreIteratorRequestFromJSON,
     BrowseKeyValueStoreIteratorRequestToJSON,
     BrowseKeyValueStoreIteratorResponseFromJSON,
@@ -68,6 +74,10 @@ export interface BrowseEntityInfoPostRequest {
 
 export interface BrowseEntityIteratorPostRequest {
     browseEntityIteratorRequest: BrowseEntityIteratorRequest;
+}
+
+export interface BrowseKvStoreEntryPostRequest {
+    browseKeyValueStoreEntryRequest: BrowseKeyValueStoreEntryRequest;
 }
 
 export interface BrowseKvStoreIteratorPostRequest {
@@ -189,6 +199,41 @@ export class BrowseApi extends runtime.BaseAPI {
      */
     async browseEntityIteratorPost(requestParameters: BrowseEntityIteratorPostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<BrowseEntityIteratorResponse> {
         const response = await this.browseEntityIteratorPostRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Reads the current value of a specific entry from a Key-Value Store. 
+     * Get Key-Value Store Entry
+     */
+    async browseKvStoreEntryPostRaw(requestParameters: BrowseKvStoreEntryPostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<BrowseKeyValueStoreEntryResponse>> {
+        if (requestParameters.browseKeyValueStoreEntryRequest === null || requestParameters.browseKeyValueStoreEntryRequest === undefined) {
+            throw new runtime.RequiredError('browseKeyValueStoreEntryRequest','Required parameter requestParameters.browseKeyValueStoreEntryRequest was null or undefined when calling browseKvStoreEntryPost.');
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        const response = await this.request({
+            path: `/browse/kv_store/entry`,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: BrowseKeyValueStoreEntryRequestToJSON(requestParameters.browseKeyValueStoreEntryRequest),
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => BrowseKeyValueStoreEntryResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Reads the current value of a specific entry from a Key-Value Store. 
+     * Get Key-Value Store Entry
+     */
+    async browseKvStoreEntryPost(requestParameters: BrowseKvStoreEntryPostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<BrowseKeyValueStoreEntryResponse> {
+        const response = await this.browseKvStoreEntryPostRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

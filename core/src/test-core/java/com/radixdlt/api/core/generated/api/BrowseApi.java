@@ -24,6 +24,8 @@ import com.radixdlt.api.core.generated.models.BrowseEntityInfoRequest;
 import com.radixdlt.api.core.generated.models.BrowseEntityInfoResponse;
 import com.radixdlt.api.core.generated.models.BrowseEntityIteratorRequest;
 import com.radixdlt.api.core.generated.models.BrowseEntityIteratorResponse;
+import com.radixdlt.api.core.generated.models.BrowseKeyValueStoreEntryRequest;
+import com.radixdlt.api.core.generated.models.BrowseKeyValueStoreEntryResponse;
 import com.radixdlt.api.core.generated.models.BrowseKeyValueStoreIteratorRequest;
 import com.radixdlt.api.core.generated.models.BrowseKeyValueStoreIteratorResponse;
 import com.radixdlt.api.core.generated.models.BrowseObjectCollectionIteratorRequest;
@@ -308,6 +310,84 @@ public class BrowseApi {
 
     try {
       byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(browseEntityIteratorRequest);
+      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    if (memberVarReadTimeout != null) {
+      localVarRequestBuilder.timeout(memberVarReadTimeout);
+    }
+    if (memberVarInterceptor != null) {
+      memberVarInterceptor.accept(localVarRequestBuilder);
+    }
+    return localVarRequestBuilder;
+  }
+  /**
+   * Get Key-Value Store Entry
+   * Reads the current value of a specific entry from a Key-Value Store. 
+   * @param browseKeyValueStoreEntryRequest  (required)
+   * @return BrowseKeyValueStoreEntryResponse
+   * @throws ApiException if fails to make API call
+   */
+  public BrowseKeyValueStoreEntryResponse browseKvStoreEntryPost(BrowseKeyValueStoreEntryRequest browseKeyValueStoreEntryRequest) throws ApiException {
+    ApiResponse<BrowseKeyValueStoreEntryResponse> localVarResponse = browseKvStoreEntryPostWithHttpInfo(browseKeyValueStoreEntryRequest);
+    return localVarResponse.getData();
+  }
+
+  /**
+   * Get Key-Value Store Entry
+   * Reads the current value of a specific entry from a Key-Value Store. 
+   * @param browseKeyValueStoreEntryRequest  (required)
+   * @return ApiResponse&lt;BrowseKeyValueStoreEntryResponse&gt;
+   * @throws ApiException if fails to make API call
+   */
+  public ApiResponse<BrowseKeyValueStoreEntryResponse> browseKvStoreEntryPostWithHttpInfo(BrowseKeyValueStoreEntryRequest browseKeyValueStoreEntryRequest) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = browseKvStoreEntryPostRequestBuilder(browseKeyValueStoreEntryRequest);
+    try {
+      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
+          localVarRequestBuilder.build(),
+          HttpResponse.BodyHandlers.ofInputStream());
+      if (memberVarResponseInterceptor != null) {
+        memberVarResponseInterceptor.accept(localVarResponse);
+      }
+      try {
+        if (localVarResponse.statusCode()/ 100 != 2) {
+          throw getApiException("browseKvStoreEntryPost", localVarResponse);
+        }
+        return new ApiResponse<BrowseKeyValueStoreEntryResponse>(
+          localVarResponse.statusCode(),
+          localVarResponse.headers().map(),
+          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<BrowseKeyValueStoreEntryResponse>() {}) // closes the InputStream
+          
+        );
+      } finally {
+      }
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new ApiException(e);
+    }
+  }
+
+  private HttpRequest.Builder browseKvStoreEntryPostRequestBuilder(BrowseKeyValueStoreEntryRequest browseKeyValueStoreEntryRequest) throws ApiException {
+    // verify the required parameter 'browseKeyValueStoreEntryRequest' is set
+    if (browseKeyValueStoreEntryRequest == null) {
+      throw new ApiException(400, "Missing the required parameter 'browseKeyValueStoreEntryRequest' when calling browseKvStoreEntryPost");
+    }
+
+    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
+
+    String localVarPath = "/browse/kv_store/entry";
+
+    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+
+    localVarRequestBuilder.header("Content-Type", "application/json");
+    localVarRequestBuilder.header("Accept", "application/json");
+
+    try {
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(browseKeyValueStoreEntryRequest);
       localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
     } catch (IOException e) {
       throw new ApiException(e);
