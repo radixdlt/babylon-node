@@ -62,6 +62,8 @@
  * permissions under this License.
  */
 
+#![allow(clippy::too_many_arguments)]
+
 use super::stage_tree::{Accumulator, Delta, DerivedStageKey, StageKey, StageTree};
 use super::ReadableStore;
 
@@ -70,7 +72,9 @@ use crate::staging::{
     AccuTreeDiff, HashStructuresDiff, HashUpdateContext, ProcessedTransactionReceipt,
     StateHashTreeDiff,
 };
-use crate::{EpochTransactionIdentifiers, ReceiptTreeHash, StateVersion, TransactionTreeHash};
+use crate::{
+    EpochTransactionIdentifiers, ProtocolState, ReceiptTreeHash, StateVersion, TransactionTreeHash,
+};
 use im::hashmap::HashMap as ImmutableHashMap;
 use itertools::Itertools;
 
@@ -164,6 +168,7 @@ impl ExecutionCache {
         epoch_transaction_identifiers: &EpochTransactionIdentifiers,
         parent_state_version: StateVersion,
         parent_transaction_root: &TransactionTreeHash,
+        parent_protocol_state: &ProtocolState,
         ledger_transaction_hash: &LedgerTransactionHash,
         executable: T,
     ) -> &ProcessedTransactionReceipt {
@@ -188,6 +193,7 @@ impl ExecutionCache {
                         ledger_transaction_hash,
                     },
                     transaction_receipt,
+                    parent_protocol_state,
                 );
 
                 let internal_transaction_ids = InternalTransactionIds {

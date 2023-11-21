@@ -62,24 +62,21 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer.commit;
+use crate::ProtocolUpdate;
+use jni::objects::JClass;
+use jni::sys::jbyteArray;
+use jni::JNIEnv;
+use node_common::java::jni_sbor_coded_call;
 
-import com.radixdlt.lang.Option;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.utils.UInt64;
-
-public record LedgerHeader(
-    UInt64 epoch,
-    UInt64 round,
-    UInt64 stateVersion,
-    LedgerHashes hashes,
-    long consensusParentRoundTimestampMs,
-    long proposerTimestampMs,
-    Option<NextEpoch> nextEpoch,
-    Option<String> nextProtocolVersion) {
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        LedgerHeader.class, codecs -> StructCodec.fromRecordComponents(LedgerHeader.class, codecs));
-  }
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_protocol_ProtocolUpdates_nativeReadinessSignalName(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |protocol_update: ProtocolUpdate| {
+        protocol_update.readiness_signal_name()
+    })
 }
+
+pub fn export_extern_functions() {}

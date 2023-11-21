@@ -74,6 +74,7 @@ import com.radixdlt.genesis.RawGenesisDataWithHash;
 import com.radixdlt.lang.Option;
 import com.radixdlt.mempool.*;
 import com.radixdlt.monitoring.MetricsInitializer;
+import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.transaction.LedgerSyncLimitsConfig;
@@ -131,6 +132,7 @@ public final class RustMempoolTest {
             StateHashTreeGcConfig.forTesting(),
             LedgerProofsGcConfig.forTesting(),
             LedgerSyncLimitsConfig.defaults(),
+            ProtocolConfig.testingDefaultNoUpdates(),
             false);
     final var metrics = new MetricsInitializer().initialize();
 
@@ -188,6 +190,7 @@ public final class RustMempoolTest {
             StateHashTreeGcConfig.forTesting(),
             LedgerProofsGcConfig.forTesting(),
             LedgerSyncLimitsConfig.defaults(),
+            ProtocolConfig.testingDefaultNoUpdates(),
             false);
     final var metrics = new MetricsInitializer().initialize();
 
@@ -328,6 +331,7 @@ public final class RustMempoolTest {
             StateHashTreeGcConfig.forTesting(),
             LedgerProofsGcConfig.forTesting(),
             LedgerSyncLimitsConfig.defaults(),
+            ProtocolConfig.testingDefaultNoUpdates(),
             false);
     final var metrics = new MetricsInitializer().initialize();
 

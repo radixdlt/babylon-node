@@ -64,15 +64,30 @@
 
 package com.radixdlt.protocol;
 
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.rev2.Decimal;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.EnumCodec;
+import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.utils.UInt64;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import javax.inject.Qualifier;
+public sealed interface ProtocolUpdateSupportType {
+  static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        ProtocolUpdateSupportType.class,
+        codecs -> EnumCodec.fromPermittedRecordSubclasses(ProtocolUpdateSupportType.class, codecs));
+  }
 
-/** A binding annotation for beans related to the protocol version currently run by this Node. */
-@Qualifier
-@Target({FIELD, PARAMETER, METHOD})
-@Retention(RUNTIME)
-public @interface Current {}
+  record SignalledReadiness(ImmutableList<SignalledReadinessThreshold> thresholds)
+      implements ProtocolUpdateSupportType {
+
+    public record SignalledReadinessThreshold(
+        Decimal requiredRatioOfStakeSupported, UInt64 requiredConsecutiveCompletedEpochsOfSupport) {
+      public static void registerCodec(CodecMap codecMap) {
+        codecMap.register(
+            SignalledReadinessThreshold.class,
+            codecs -> StructCodec.fromRecordComponents(SignalledReadinessThreshold.class, codecs));
+      }
+    }
+  }
+}

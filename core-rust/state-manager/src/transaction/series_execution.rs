@@ -97,6 +97,7 @@ where
         store: &'s S,
         execution_cache: &'s Mutex<ExecutionCache>,
         execution_configurator: &'s ExecutionConfigurator,
+        protocol_state: ProtocolState,
     ) -> Self {
         let epoch_header = store
             .get_last_epoch_proof()
@@ -110,7 +111,7 @@ where
                 .map(EpochTransactionIdentifiers::from)
                 .unwrap_or_else(EpochTransactionIdentifiers::pre_genesis),
             epoch_header,
-            state_tracker: StateTracker::new(store.get_top_ledger_hashes()),
+            state_tracker: StateTracker::new(store.get_top_ledger_hashes(), protocol_state),
         }
     }
 
@@ -168,6 +169,7 @@ where
             self.epoch_identifiers(),
             self.state_tracker.state_version,
             &self.state_tracker.ledger_hashes.transaction_root,
+            &self.state_tracker.protocol_state,
             &description.ledger_hash,
             wrapped_executable,
         );
@@ -207,6 +209,15 @@ where
     pub fn next_epoch(&self) -> Option<&NextEpoch> {
         self.state_tracker.next_epoch.as_ref()
     }
+
+    /// Returns the protocol state resulting from the most recent `execute()` call.
+    pub fn protocol_state(&self) -> ProtocolState {
+        self.state_tracker.protocol_state.clone()
+    }
+
+    pub fn next_protocol_version(&self) -> Option<String> {
+        self.state_tracker.next_protocol_version()
+    }
 }
 
 /// A simple `Display` augmenting the human-readable transaction description with its ledger hash.
@@ -225,25 +236,35 @@ impl Display for DescribedTransactionHash {
     }
 }
 
-/// A low-level tracker of consecutive state version / ledger hashes / epoch changes.
+/// A low-level tracker of consecutive state version / ledger hashes /
+/// epoch changes / protocol state changes.
 struct StateTracker {
     state_version: StateVersion,
     ledger_hashes: LedgerHashes,
     next_epoch: Option<NextEpoch>,
+    protocol_state: ProtocolState,
 }
 
 impl StateTracker {
     /// Initializes the tracker to a known state (assuming it is not an end-state of an epoch).
-    pub fn new(ledger_hashes_entry: (StateVersion, LedgerHashes)) -> Self {
+    pub fn new(
+        ledger_hashes_entry: (StateVersion, LedgerHashes),
+        protocol_state: ProtocolState,
+    ) -> Self {
         Self {
             state_version: ledger_hashes_entry.0,
             ledger_hashes: ledger_hashes_entry.1,
             next_epoch: None,
+            protocol_state,
         }
     }
 
-    /// Bumps the state version and records the next ledger hashes (from the given transaction
-    /// results).
+    /// Updates the internal state of this state tracker according to commit result.
+    /// This includes:
+    /// * bumping the state version
+    /// * recording the next ledger hashes (from the given transaction results)
+    /// * updating the protocol state
+    ///
     /// This method validates that no further transaction should happen after an epoch change.
     pub fn update(&mut self, result: &ProcessedCommitResult) {
         if let Some(next_epoch) = &self.next_epoch {
@@ -255,11 +276,48 @@ impl StateTracker {
                 result.hash_structures_diff.ledger_hashes
             );
         }
+
+        // TODO(protocol-updates): this will need to be adjusted
+        // to allow to execute transactions as part of a protocol update.
+        if let Some(next_protocol_version) = &self.next_protocol_version() {
+            panic!(
+                "the protocol update {:?} has happened at {:?} (version {}) and must not be followed by {:?}",
+                next_protocol_version,
+                self.ledger_hashes,
+                self.state_version,
+                result.hash_structures_diff.ledger_hashes
+            );
+        }
+
         self.state_version = self
             .state_version
             .next()
             .expect("Invalid next state version!");
         self.ledger_hashes = result.hash_structures_diff.ledger_hashes;
         self.next_epoch = result.next_epoch();
+        self.protocol_state = result.new_protocol_state.clone();
+    }
+
+    pub fn next_protocol_version(&self) -> Option<String> {
+        self.protocol_state
+            .in_progress_protocol_update
+            .as_ref()
+            .map(
+                |in_progress_protocol_update| match in_progress_protocol_update {
+                    InProgressProtocolUpdate::EnactedButNotExecuted { protocol_version } => {
+                        protocol_version.clone()
+                    }
+                    InProgressProtocolUpdate::PartiallyExecuted {
+                        protocol_version, ..
+                    } => {
+                        // TODO(protocol-updates): make sure to handle this
+                        // when implementing protocol update execution.
+                        // There should never be a partially executed protocol update
+                        // if we're not executing a protocol update transaction.
+                        // Add a check for this invariant?
+                        protocol_version.clone()
+                    }
+                },
+            )
     }
 }

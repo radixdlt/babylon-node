@@ -130,7 +130,8 @@ public class SerializerTestDataGenerator {
             NextEpoch.create(
                 Math.abs(random.nextLong()) + 1,
                 ImmutableSet.of(
-                    BFTValidator.from(BFTValidatorId.random(), UInt192.from(random.nextLong()))))));
+                    BFTValidator.from(BFTValidatorId.random(), UInt192.from(random.nextLong())))),
+            Long.toString(random.nextLong())));
   }
 
   public static TimestampedECDSASignatures randomTimestampedECDSASignatures() {
