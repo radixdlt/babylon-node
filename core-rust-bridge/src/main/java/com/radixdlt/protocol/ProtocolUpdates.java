@@ -62,24 +62,23 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer.commit;
+package com.radixdlt.protocol;
 
-import com.radixdlt.lang.Option;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.utils.UInt64;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.sbor.Natives;
 
-public record LedgerHeader(
-    UInt64 epoch,
-    UInt64 round,
-    UInt64 stateVersion,
-    LedgerHashes hashes,
-    long consensusParentRoundTimestampMs,
-    long proposerTimestampMs,
-    Option<NextEpoch> nextEpoch,
-    Option<String> nextProtocolVersion) {
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        LedgerHeader.class, codecs -> StructCodec.fromRecordComponents(LedgerHeader.class, codecs));
+public final class ProtocolUpdates {
+  static {
+    // This is idempotent with the other calls
+    System.loadLibrary("corerust");
   }
+
+  public static String readinessSignalName(ProtocolUpdate protocolUpdate) {
+    return readinessSignalNameFunc.call(protocolUpdate);
+  }
+
+  private static final Natives.Call1<ProtocolUpdate, String> readinessSignalNameFunc =
+      Natives.builder(ProtocolUpdates::nativeReadinessSignalName).build(new TypeToken<>() {});
+
+  private static native byte[] nativeReadinessSignalName(byte[] requestPayload);
 }

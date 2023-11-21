@@ -64,15 +64,23 @@
 
 package com.radixdlt.protocol;
 
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import javax.inject.Qualifier;
+public record ProtocolConfig(
+    String genesisProtocolVersion, ImmutableList<ProtocolUpdate> protocolUpdates) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        ProtocolConfig.class,
+        codecs -> StructCodec.fromRecordComponents(ProtocolConfig.class, codecs));
+  }
 
-/** A binding annotation for beans related to the newest protocol version known to this Node. */
-@Qualifier
-@Target({FIELD, PARAMETER, METHOD})
-@Retention(RUNTIME)
-public @interface Newest {}
+  public static ProtocolConfig testingDefaultNoUpdates() {
+    return new ProtocolConfig("babylon-genesis", ImmutableList.of());
+  }
+
+  public static ProtocolConfig productionDefault() {
+    return new ProtocolConfig("babylon-genesis", ImmutableList.of());
+  }
+}

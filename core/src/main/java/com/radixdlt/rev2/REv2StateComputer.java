@@ -269,10 +269,15 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
     // TODO - Some time post Babylon mainnet launch we can consider adding a metric to monitor
     // number of rejected transactions by proposer
 
-    var nextEpoch = result.nextEpoch().map(REv2ToConsensus::nextEpoch).or((NextEpoch) null);
-    var ledgerHashes = REv2ToConsensus.ledgerHashes(result.ledgerHashes());
+    final var nextEpoch = result.nextEpoch().map(REv2ToConsensus::nextEpoch).or((NextEpoch) null);
+    final var nextProtocolVersion = result.nextProtocolVersion().or((String) null);
+    final var ledgerHashes = REv2ToConsensus.ledgerHashes(result.ledgerHashes());
     return new StateComputerLedger.StateComputerResult(
-        committableTransactions, rejectedTransactionsCount, nextEpoch, ledgerHashes);
+        committableTransactions,
+        rejectedTransactionsCount,
+        nextEpoch,
+        nextProtocolVersion,
+        ledgerHashes);
   }
 
   @Override
@@ -302,7 +307,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                 })
             .unwrap();
 
-    var epochChangeOptional =
+    final var maybeEpochChange =
         ledgerExtension
             .getProof()
             .getNextEpoch()
@@ -318,12 +323,17 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                   return new EpochChange(header, bftConfiguration);
                 });
 
-    epochChangeOptional.ifPresent(
+    maybeEpochChange.ifPresent(
         epochChange ->
             this.currentProposerElection.set(
                 epochChange.getBFTConfiguration().getProposerElection()));
 
-    var ledgerUpdate = new LedgerUpdate(commitSummary, ledgerExtension, epochChangeOptional);
+    final var maybeNextProtocolVersion =
+        ledgerExtension.getProof().getHeader().nextProtocolVersion();
+
+    var ledgerUpdate =
+        new LedgerUpdate(
+            commitSummary, ledgerExtension, maybeEpochChange, maybeNextProtocolVersion);
     ledgerUpdateEventDispatcher.dispatch(ledgerUpdate);
   }
 }

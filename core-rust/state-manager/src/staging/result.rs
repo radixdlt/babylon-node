@@ -68,10 +68,10 @@ use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, Writeab
 use crate::staging::epoch_handling::EpochAwareAccuTreeFactory;
 use crate::transaction::LedgerTransactionHash;
 use crate::{
-    ActiveValidatorInfo, ByPartition, BySubstate, DetailedTransactionOutcome,
-    EpochTransactionIdentifiers, LedgerHashes, LedgerStateChanges, LocalTransactionReceipt,
-    NextEpoch, PartitionChangeAction, ReceiptTreeHash, StateHash, StateVersion,
-    SubstateChangeAction, SubstateReference, TransactionTreeHash,
+    compute_new_protocol_state, ActiveValidatorInfo, ByPartition, BySubstate,
+    DetailedTransactionOutcome, EpochTransactionIdentifiers, LedgerHashes, LedgerStateChanges,
+    LocalTransactionReceipt, NextEpoch, PartitionChangeAction, ProtocolState, ReceiptTreeHash,
+    StateHash, StateVersion, SubstateChangeAction, SubstateReference, TransactionTreeHash,
 };
 use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
 use radix_engine::blueprints::resource::{FungibleVaultBalanceFieldSubstate, FungibleVaultField};
@@ -115,6 +115,7 @@ pub struct ProcessedCommitResult {
     pub hash_structures_diff: HashStructuresDiff,
     pub database_updates: DatabaseUpdates,
     pub new_substate_node_ancestry_records: Vec<KeyedSubstateNodeAncestryRecord>,
+    pub new_protocol_state: ProtocolState,
 }
 
 pub struct HashUpdateContext<'s, S> {
@@ -134,6 +135,7 @@ impl ProcessedTransactionReceipt {
     pub fn process<S: ReadableStore, D: DatabaseKeyMapper>(
         hash_update_context: HashUpdateContext<S>,
         receipt: TransactionReceipt,
+        parent_protocol_state: &ProtocolState,
     ) -> Self {
         match receipt.result {
             TransactionResult::Commit(commit) => {
@@ -145,6 +147,7 @@ impl ProcessedTransactionReceipt {
                         engine_costing_parameters: receipt.costing_parameters,
                         transaction_costing_parameters: receipt.transaction_costing_parameters,
                     },
+                    parent_protocol_state,
                 ))
             }
             TransactionResult::Reject(reject) => {
@@ -196,6 +199,7 @@ impl ProcessedCommitResult {
         hash_update_context: HashUpdateContext<S>,
         commit_result: CommitResult,
         execution_fee_data: ExecutionFeeData,
+        parent_protocol_state: &ProtocolState,
     ) -> Self {
         let epoch_identifiers = hash_update_context.epoch_transaction_identifiers;
         let parent_state_version = hash_update_context.parent_state_version;
@@ -245,6 +249,12 @@ impl ProcessedCommitResult {
             receipt_root: *receipt_tree_diff.slice.root(),
         };
 
+        let new_protocol_state = compute_new_protocol_state(
+            parent_protocol_state,
+            &local_receipt,
+            parent_state_version.next().expect("State version overflow"),
+        );
+
         Self {
             local_receipt,
             hash_structures_diff: HashStructuresDiff {
@@ -256,6 +266,7 @@ impl ProcessedCommitResult {
             database_updates,
             new_substate_node_ancestry_records: global_balance_update
                 .new_substate_node_ancestry_records,
+            new_protocol_state,
         }
     }
 
@@ -526,7 +537,6 @@ impl From<EpochChangeEvent> for NextEpoch {
         }
     }
 }
-
 #[derive(Clone, Debug)]
 pub struct HashStructuresDiff {
     pub ledger_hashes: LedgerHashes,

@@ -71,9 +71,11 @@ import com.radixdlt.lang.Tuple;
 import com.radixdlt.monitoring.LabelledTimer;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.Metrics.MethodId;
+import com.radixdlt.rev2.Decimal;
 import com.radixdlt.sbor.Natives;
 import com.radixdlt.statecomputer.commit.LedgerProof;
 import com.radixdlt.utils.UInt64;
+import java.util.Map;
 import java.util.Optional;
 
 public final class REv2TransactionAndProofStore {
@@ -98,6 +100,16 @@ public final class REv2TransactionAndProofStore {
         Natives.builder(nodeRustEnvironment, REv2TransactionAndProofStore::getEpochProof)
             .measure(timer.label(new MethodId(REv2TransactionAndProofStore.class, "getEpochProof")))
             .build(new TypeToken<>() {});
+    this.getSignificantProtocolUpdateReadinessForEpochFunc =
+        Natives.builder(
+                nodeRustEnvironment,
+                REv2TransactionAndProofStore::getSignificantProtocolUpdateReadinessForEpoch)
+            .measure(
+                timer.label(
+                    new MethodId(
+                        REv2TransactionAndProofStore.class,
+                        "getSignificantProtocolUpdateReadinessForEpoch")))
+            .build(new TypeToken<>() {});
   }
 
   public Option<TxnsAndProof> getTxnsAndProof(
@@ -119,6 +131,12 @@ public final class REv2TransactionAndProofStore {
     return this.getEpochProofFunc.call(UInt64.fromNonNegativeLong(epoch)).toOptional();
   }
 
+  public Optional<Map<String, Decimal>> getSignificantProtocolUpdateReadinessForEpoch(long epoch) {
+    return this.getSignificantProtocolUpdateReadinessForEpochFunc
+        .call(UInt64.fromNonNegativeLong(epoch))
+        .toOptional();
+  }
+
   private final Natives.Call1<TxnsAndProofRequest, Option<TxnsAndProof>> getTxnsAndProof;
 
   private static native byte[] getTxnsAndProof(
@@ -137,5 +155,11 @@ public final class REv2TransactionAndProofStore {
   private final Natives.Call1<UInt64, Option<LedgerProof>> getEpochProofFunc;
 
   private static native byte[] getEpochProof(
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
+
+  private final Natives.Call1<UInt64, Option<Map<String, Decimal>>>
+      getSignificantProtocolUpdateReadinessForEpochFunc;
+
+  private static native byte[] getSignificantProtocolUpdateReadinessForEpoch(
       NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 }

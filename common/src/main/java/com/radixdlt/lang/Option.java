@@ -93,6 +93,13 @@ public sealed interface Option<T> permits Some, None {
     return fold(t -> present(mapper.apply(t)), Option::empty);
   }
 
+  default void ifPresent(Consumer<? super T> consumer) {
+    switch (this) {
+      case Some<T> s -> consumer.accept(s.value);
+      case None<T> n -> {}
+    }
+  }
+
   /**
    * Replace current instance with the value returned by provided supplier.
    *
@@ -233,6 +240,29 @@ public sealed interface Option<T> permits Some, None {
    */
   default Option<T> orElse(Option<T> replacement) {
     return fold(unused -> this, () -> replacement);
+  }
+
+  default T orElse(T replacement) {
+    return fold(value -> value, () -> replacement);
+  }
+
+  default T orElseThrow() {
+    return orElseThrow(() -> new RuntimeException("Option value is missing"));
+  }
+
+  default T orElseThrow(Supplier<RuntimeException> exceptionSupplier) {
+    return fold(
+        value -> value,
+        () -> {
+          throw exceptionSupplier.get();
+        });
+  }
+
+  default void ifPresentOrElse(Consumer<T> consumer, Runnable emptyConsumer) {
+    switch (this) {
+      case Some<T> some -> consumer.accept(some.value);
+      case None<T> none -> emptyConsumer.run();
+    }
   }
 
   /**

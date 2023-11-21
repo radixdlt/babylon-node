@@ -69,19 +69,17 @@ import com.radixdlt.api.system.SystemGetJsonHandler;
 import com.radixdlt.api.system.generated.models.HealthResponse;
 import com.radixdlt.api.system.generated.models.RecentSelfProposalMissStatistic;
 import com.radixdlt.api.system.health.HealthInfoService;
-import com.radixdlt.protocol.Current;
-import com.radixdlt.protocol.ProtocolVersion;
+import com.radixdlt.statecomputer.RustStateComputer;
 
 public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
   private final HealthInfoService healthInfoService;
-  private final ProtocolVersion currentProtocolVersion;
+  private final RustStateComputer rustStateComputer;
 
   @Inject
-  HealthHandler(
-      HealthInfoService healthInfoService, @Current ProtocolVersion currentProtocolVersion) {
+  HealthHandler(HealthInfoService healthInfoService, RustStateComputer rustStateComputer) {
     super();
     this.healthInfoService = healthInfoService;
-    this.currentProtocolVersion = currentProtocolVersion;
+    this.rustStateComputer = rustStateComputer;
   }
 
   @Override
@@ -96,6 +94,9 @@ public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
         };
 
     final var statistic = healthInfoService.recentSelfProposalMissStatistic();
+
+    final var currentProtocolVersion = rustStateComputer.currentProtocolVersion();
+
     return new HealthResponse()
         .status(statusEnum)
         .detail(nodeStatus.detail())
@@ -103,6 +104,6 @@ public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
             new RecentSelfProposalMissStatistic()
                 .missedCount(statistic.missedCount().toLong())
                 .recentProposalsTrackedCount(statistic.recentProposalsTrackedCount().toLong()))
-        .currentProtocolVersion(currentProtocolVersion.name());
+        .currentProtocolVersion(currentProtocolVersion);
   }
 }

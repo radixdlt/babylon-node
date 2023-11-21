@@ -71,13 +71,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.lang.Option;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
-import java.util.Optional;
 import javax.annotation.concurrent.Immutable;
 
 /**
@@ -119,9 +119,15 @@ public final class LedgerHeader {
   @DsonOutput(Output.ALL)
   private final long proposerTimestampMs;
 
+  // Nullable
   @JsonProperty("next_epoch")
   @DsonOutput(Output.ALL)
   private final NextEpoch nextEpoch;
+
+  // Nullable
+  @JsonProperty("next_protocol_version")
+  @DsonOutput(Output.ALL)
+  private final String nextProtocolVersion;
 
   @JsonCreator
   @VisibleForTesting
@@ -132,7 +138,8 @@ public final class LedgerHeader {
       @JsonProperty(value = "hashes", required = true) LedgerHashes hashes,
       @JsonProperty("consensus_parent_round_timestamp_ms") long consensusParentRoundTimestampMs,
       @JsonProperty("proposer_timestamp") long proposerTimestampMs,
-      @JsonProperty("next_epoch") NextEpoch nextEpoch) {
+      @JsonProperty("next_epoch") NextEpoch nextEpoch,
+      @JsonProperty("next_protocol_version") String nextProtocolVersion) {
     this(
         epoch,
         Round.of(roundNumber),
@@ -140,7 +147,8 @@ public final class LedgerHeader {
         hashes,
         consensusParentRoundTimestampMs,
         proposerTimestampMs,
-        nextEpoch);
+        nextEpoch,
+        nextProtocolVersion);
   }
 
   private LedgerHeader(
@@ -150,7 +158,8 @@ public final class LedgerHeader {
       LedgerHashes hashes,
       long consensusParentRoundTimestampMs,
       long proposerTimestampMs,
-      NextEpoch nextEpoch) {
+      NextEpoch nextEpoch,
+      String nextProtocolVersion) {
     if (epoch < 0) {
       throw new IllegalArgumentException("Epoch can't be < 0");
     }
@@ -162,9 +171,10 @@ public final class LedgerHeader {
     this.round = round;
     this.stateVersion = stateVersion;
     this.hashes = requireNonNull(hashes);
-    this.nextEpoch = nextEpoch;
     this.consensusParentRoundTimestampMs = consensusParentRoundTimestampMs;
     this.proposerTimestampMs = proposerTimestampMs;
+    this.nextEpoch = nextEpoch;
+    this.nextProtocolVersion = nextProtocolVersion;
   }
 
   public static LedgerHeader genesis(
@@ -180,7 +190,8 @@ public final class LedgerHeader {
         hashes,
         consensusParentRoundTimestamp,
         proposerTimestamp,
-        validatorSet == null ? null : NextEpoch.create(1, validatorSet.getValidators()));
+        validatorSet == null ? null : NextEpoch.create(1, validatorSet.getValidators()),
+        null);
   }
 
   public static LedgerHeader create(
@@ -191,7 +202,14 @@ public final class LedgerHeader {
       long consensusParentRoundTimestamp,
       long proposerTimestamp) {
     return new LedgerHeader(
-        epoch, round, stateVersion, hashes, consensusParentRoundTimestamp, proposerTimestamp, null);
+        epoch,
+        round,
+        stateVersion,
+        hashes,
+        consensusParentRoundTimestamp,
+        proposerTimestamp,
+        null,
+        null);
   }
 
   public static LedgerHeader create(
@@ -201,7 +219,8 @@ public final class LedgerHeader {
       LedgerHashes hashes,
       long consensusParentRoundTimestamp,
       long proposerTimestamp,
-      NextEpoch nextEpoch) {
+      NextEpoch nextEpoch,
+      String nextProtocolVersion) {
     return new LedgerHeader(
         epoch,
         round,
@@ -209,7 +228,8 @@ public final class LedgerHeader {
         hashes,
         consensusParentRoundTimestamp,
         proposerTimestamp,
-        nextEpoch);
+        nextEpoch,
+        nextProtocolVersion);
   }
 
   public LedgerHeader updateRoundAndTimestamps(
@@ -221,7 +241,8 @@ public final class LedgerHeader {
         this.hashes,
         consensusParentRoundTimestamp,
         proposerTimestamp,
-        this.nextEpoch);
+        this.nextEpoch,
+        this.nextProtocolVersion);
   }
 
   @JsonProperty("round")
@@ -234,8 +255,8 @@ public final class LedgerHeader {
     return round;
   }
 
-  public Optional<NextEpoch> getNextEpoch() {
-    return Optional.ofNullable(nextEpoch);
+  public Option<NextEpoch> getNextEpoch() {
+    return Option.option(nextEpoch);
   }
 
   public long getStateVersion() {
@@ -262,6 +283,14 @@ public final class LedgerHeader {
     return this.proposerTimestampMs;
   }
 
+  public Option<String> nextProtocolVersion() {
+    return Option.option(this.nextProtocolVersion);
+  }
+
+  public boolean isProtocolUpdate() {
+    return nextProtocolVersion().isPresent();
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -271,7 +300,8 @@ public final class LedgerHeader {
         this.proposerTimestampMs,
         this.epoch,
         this.round,
-        this.nextEpoch);
+        this.nextEpoch,
+        this.nextProtocolVersion);
   }
 
   @Override
@@ -287,14 +317,15 @@ public final class LedgerHeader {
         && Objects.equals(this.hashes, other.hashes)
         && this.epoch == other.epoch
         && Objects.equals(this.round, other.round)
-        && Objects.equals(this.nextEpoch, other.nextEpoch);
+        && Objects.equals(this.nextEpoch, other.nextEpoch)
+        && Objects.equals(this.nextProtocolVersion, other.nextProtocolVersion);
   }
 
   @Override
   public String toString() {
     return String.format(
         "%s{version=%s hashes=%s consensus_parent_round_timestamp=%s proposer_timestamp=%s"
-            + " epoch=%s round=%s next_epoch=%s}",
+            + " epoch=%s round=%s next_epoch=%s next_protocol_version=%s}",
         getClass().getSimpleName(),
         this.stateVersion,
         this.hashes,
@@ -302,6 +333,7 @@ public final class LedgerHeader {
         this.proposerTimestampMs,
         this.epoch,
         this.round,
-        this.nextEpoch);
+        this.nextEpoch,
+        this.nextProtocolVersion);
   }
 }

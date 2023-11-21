@@ -86,6 +86,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
+import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.testutil.TestStateReader;
 import com.radixdlt.transaction.LedgerSyncLimitsConfig;
@@ -149,6 +150,7 @@ public final class LedgerProofsGcTest {
                         new LedgerSyncLimitsConfig(
                             UInt32.fromNonNegativeInt(maxTxnCountUnderProof),
                             UInt32.fromNonNegativeInt(maxTxnPayloadSizeUnderProof)),
+                        ProtocolConfig.testingDefaultNoUpdates(),
                         false),
                     SyncRelayConfig.of(100, 2, 200L))));
   }

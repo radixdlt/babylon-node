@@ -64,9 +64,12 @@
 
 package com.radixdlt.statecomputer;
 
+import static com.radixdlt.lang.Tuple.tuple;
+
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.environment.NodeRustEnvironment;
 import com.radixdlt.lang.Result;
+import com.radixdlt.lang.Tuple;
 import com.radixdlt.monitoring.LabelledTimer;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.Metrics.MethodId;
@@ -91,6 +94,14 @@ public class RustStateComputer {
     this.commitFunc =
         Natives.builder(nodeRustEnvironment, RustStateComputer::commit)
             .measure(timer.label(new MethodId(RustStateComputer.class, "commit")))
+            .build(new TypeToken<>() {});
+    this.currentProtocolVersionFunc =
+        Natives.builder(nodeRustEnvironment, RustStateComputer::currentProtocolVersion)
+            .measure(timer.label(new MethodId(RustStateComputer.class, "currentProtocolVersion")))
+            .build(new TypeToken<>() {});
+    this.newestProtocolVersionFunc =
+        Natives.builder(nodeRustEnvironment, RustStateComputer::newestProtocolVersion)
+            .measure(timer.label(new MethodId(RustStateComputer.class, "newestProtocolVersion")))
             .build(new TypeToken<>() {});
   }
 
@@ -119,4 +130,22 @@ public class RustStateComputer {
       commitFunc;
 
   private static native byte[] commit(NodeRustEnvironment nodeRustEnvironment, byte[] payload);
+
+  public String currentProtocolVersion() {
+    return currentProtocolVersionFunc.call(tuple());
+  }
+
+  private final Natives.Call1<Tuple.Tuple0, String> currentProtocolVersionFunc;
+
+  private static native byte[] currentProtocolVersion(
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
+
+  public String newestProtocolVersion() {
+    return newestProtocolVersionFunc.call(tuple());
+  }
+
+  private final Natives.Call1<Tuple.Tuple0, String> newestProtocolVersionFunc;
+
+  private static native byte[] newestProtocolVersion(
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 }
