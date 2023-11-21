@@ -123,7 +123,7 @@ use super::traits::extensions::*;
 /// The `NAME` constants defined by `*Cf` structs (and referenced below) are used as database column
 /// family names. Any change would effectively mean a ledger wipe. For this reason, we choose to
 /// define them manually (rather than using the `Into<String>`, which is refactor-sensitive).
-const ALL_COLUMN_FAMILIES: [&str; 20] = [
+const ALL_COLUMN_FAMILIES: [&str; 19] = [
     RawLedgerTransactionsCf::DEFAULT_NAME,
     CommittedTransactionIdentifiersCf::VERSIONED_NAME,
     TransactionReceiptsCf::VERSIONED_NAME,
@@ -143,7 +143,7 @@ const ALL_COLUMN_FAMILIES: [&str; 20] = [
     ExtensionsDataCf::NAME,
     AccountChangeStateVersionsCf::NAME,
     ExecutedGenesisScenariosCf::VERSIONED_NAME,
-    LedgerProofsGcProgressCf::VERSIONED_NAME,
+    //LedgerProofsGcProgressCf::VERSIONED_NAME,
 ];
 
 /// Committed transactions.
@@ -494,6 +494,33 @@ impl RocksDBStore {
             },
             db,
         })
+    }
+
+    pub fn new_secondary(root: PathBuf, temp: PathBuf) -> Result<RocksDBStore, DatabaseConfigValidationError> {
+        let mut db_opts = Options::default();
+        db_opts.create_if_missing(false);
+        db_opts.create_missing_column_families(false);
+
+        let column_families: Vec<ColumnFamilyDescriptor> = ALL_COLUMN_FAMILIES
+            .iter()
+            .map(|cf| ColumnFamilyDescriptor::new(cf.to_string(), Options::default()))
+            .collect();
+
+        let db =
+            DB::open_cf_descriptors_as_secondary(&db_opts, root.as_path(), temp.as_path(), column_families)
+                .unwrap();
+
+        Ok(RocksDBStore {
+            config: DatabaseFlags {
+                enable_local_transaction_execution_index: false,
+                enable_account_change_index: false,
+            },
+            db,
+        })
+    }
+
+    pub fn try_catchup_with_primary(&self) {
+        self.db.try_catch_up_with_primary().unwrap();
     }
 
     /// Starts a read/batch-write interaction with the DB through per-CF type-safe APIs.
@@ -1126,6 +1153,22 @@ impl SubstateDatabase for RocksDBStore {
         self.open_db_context()
             .cf(SubstatesCf)
             .get(&(partition_key.clone(), sort_key.clone()))
+    }
+
+    fn list_entries_from(
+        &self,
+        partition_key: &DbPartitionKey,
+        from_sort_key: Option<&DbSortKey>,
+    ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
+        let partition_key = partition_key.clone();
+        let from_sort_key = from_sort_key.cloned().unwrap_or(DbSortKey(vec![]));
+        Box::new(
+            self.open_db_context()
+                .cf(SubstatesCf)
+                .iterate_from(&(partition_key.clone(), from_sort_key), Direction::Forward)
+                .take_while(move |((next_key, _), _)| next_key == &partition_key)
+                .map(|((_, sort_key), value)| (sort_key, value)),
+        )
     }
 
     fn list_entries(

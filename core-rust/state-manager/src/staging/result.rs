@@ -301,13 +301,17 @@ impl ProcessedCommitResult {
         let overlay = MapSubstateNodeAncestryStore::wrap(&map);
         let staged = StagedSubstateNodeAncestryStore::new(store, &overlay);
 
+        todo!()
+
         // Call the group-by logic and return the results together with the ancestry store update.
+        /*
         let global_balance_summary =
             GlobalBalanceSummary::compute_from(&staged, vault_balance_changes, state_changes);
         GlobalBalanceUpdate {
             global_balance_summary,
             new_substate_node_ancestry_records,
         }
+         */
     }
 
     pub fn compute_ledger_state_changes<S: SubstateDatabase, D: DatabaseKeyMapper>(
