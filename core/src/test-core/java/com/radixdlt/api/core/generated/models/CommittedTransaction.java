@@ -23,8 +23,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.CommittedStateIdentifier;
+import com.radixdlt.api.core.generated.models.CommittedTransactionOutcome;
 import com.radixdlt.api.core.generated.models.LedgerTransaction;
-import com.radixdlt.api.core.generated.models.TransactionOutcomes;
 import com.radixdlt.api.core.generated.models.TransactionReceipt;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -38,7 +38,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   CommittedTransaction.JSON_PROPERTY_RESULTANT_STATE_IDENTIFIERS,
   CommittedTransaction.JSON_PROPERTY_LEDGER_TRANSACTION,
   CommittedTransaction.JSON_PROPERTY_RECEIPT,
-  CommittedTransaction.JSON_PROPERTY_OUTCOMES,
+  CommittedTransaction.JSON_PROPERTY_OUTCOME,
   CommittedTransaction.JSON_PROPERTY_PROPOSER_TIMESTAMP_MS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -52,8 +52,8 @@ public class CommittedTransaction {
   public static final String JSON_PROPERTY_RECEIPT = "receipt";
   private TransactionReceipt receipt;
 
-  public static final String JSON_PROPERTY_OUTCOMES = "outcomes";
-  private TransactionOutcomes outcomes;
+  public static final String JSON_PROPERTY_OUTCOME = "outcome";
+  private CommittedTransactionOutcome outcome;
 
   public static final String JSON_PROPERTY_PROPOSER_TIMESTAMP_MS = "proposer_timestamp_ms";
   private Long proposerTimestampMs;
@@ -139,29 +139,29 @@ public class CommittedTransaction {
   }
 
 
-  public CommittedTransaction outcomes(TransactionOutcomes outcomes) {
-    this.outcomes = outcomes;
+  public CommittedTransaction outcome(CommittedTransactionOutcome outcome) {
+    this.outcome = outcome;
     return this;
   }
 
    /**
-   * Get outcomes
-   * @return outcomes
+   * Get outcome
+   * @return outcome
   **/
   @javax.annotation.Nullable
   @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_OUTCOMES)
+  @JsonProperty(JSON_PROPERTY_OUTCOME)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public TransactionOutcomes getOutcomes() {
-    return outcomes;
+  public CommittedTransactionOutcome getOutcome() {
+    return outcome;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_OUTCOMES)
+  @JsonProperty(JSON_PROPERTY_OUTCOME)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setOutcomes(TransactionOutcomes outcomes) {
-    this.outcomes = outcomes;
+  public void setOutcome(CommittedTransactionOutcome outcome) {
+    this.outcome = outcome;
   }
 
 
@@ -208,13 +208,13 @@ public class CommittedTransaction {
     return Objects.equals(this.resultantStateIdentifiers, committedTransaction.resultantStateIdentifiers) &&
         Objects.equals(this.ledgerTransaction, committedTransaction.ledgerTransaction) &&
         Objects.equals(this.receipt, committedTransaction.receipt) &&
-        Objects.equals(this.outcomes, committedTransaction.outcomes) &&
+        Objects.equals(this.outcome, committedTransaction.outcome) &&
         Objects.equals(this.proposerTimestampMs, committedTransaction.proposerTimestampMs);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(resultantStateIdentifiers, ledgerTransaction, receipt, outcomes, proposerTimestampMs);
+    return Objects.hash(resultantStateIdentifiers, ledgerTransaction, receipt, outcome, proposerTimestampMs);
   }
 
   @Override
@@ -224,7 +224,7 @@ public class CommittedTransaction {
     sb.append("    resultantStateIdentifiers: ").append(toIndentedString(resultantStateIdentifiers)).append("\n");
     sb.append("    ledgerTransaction: ").append(toIndentedString(ledgerTransaction)).append("\n");
     sb.append("    receipt: ").append(toIndentedString(receipt)).append("\n");
-    sb.append("    outcomes: ").append(toIndentedString(outcomes)).append("\n");
+    sb.append("    outcome: ").append(toIndentedString(outcome)).append("\n");
     sb.append("    proposerTimestampMs: ").append(toIndentedString(proposerTimestampMs)).append("\n");
     sb.append("}");
     return sb.toString();

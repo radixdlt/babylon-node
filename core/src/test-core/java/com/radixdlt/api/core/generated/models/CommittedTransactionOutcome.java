@@ -33,16 +33,16 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * For the given transaction, contains individual entity resource balance changes. The balance changes accounts for the fee payments as well. Current implementation does not take into account recalls, but this will change in a future update. For failed transactions, current implementation does not return any balance changes (not even the fee payments). This will also change in a future update. 
+ * For the given transaction, contains individual entity resource balance changes. The balance changes accounts for the fee payments as well. For failed transactions, current implementation does not return any balance changes (not even the fee payments). This will also change in a future update. 
  */
-@ApiModel(description = "For the given transaction, contains individual entity resource balance changes. The balance changes accounts for the fee payments as well. Current implementation does not take into account recalls, but this will change in a future update. For failed transactions, current implementation does not return any balance changes (not even the fee payments). This will also change in a future update. ")
+@ApiModel(description = "For the given transaction, contains individual entity resource balance changes. The balance changes accounts for the fee payments as well. For failed transactions, current implementation does not return any balance changes (not even the fee payments). This will also change in a future update. ")
 @JsonPropertyOrder({
-  TransactionOutcomes.JSON_PROPERTY_FUNGIBLE_ENTITY_BALANCE_CHANGES,
-  TransactionOutcomes.JSON_PROPERTY_NON_FUNGIBLE_ENTITY_BALANCE_CHANGES,
-  TransactionOutcomes.JSON_PROPERTY_RESULTANT_ACCOUNT_FUNGIBLE_BALANCES
+  CommittedTransactionOutcome.JSON_PROPERTY_FUNGIBLE_ENTITY_BALANCE_CHANGES,
+  CommittedTransactionOutcome.JSON_PROPERTY_NON_FUNGIBLE_ENTITY_BALANCE_CHANGES,
+  CommittedTransactionOutcome.JSON_PROPERTY_RESULTANT_ACCOUNT_FUNGIBLE_BALANCES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class TransactionOutcomes {
+public class CommittedTransactionOutcome {
   public static final String JSON_PROPERTY_FUNGIBLE_ENTITY_BALANCE_CHANGES = "fungible_entity_balance_changes";
   private List<LtsEntityFungibleBalanceChanges> fungibleEntityBalanceChanges = new ArrayList<>();
 
@@ -52,15 +52,15 @@ public class TransactionOutcomes {
   public static final String JSON_PROPERTY_RESULTANT_ACCOUNT_FUNGIBLE_BALANCES = "resultant_account_fungible_balances";
   private List<LtsResultantAccountFungibleBalances> resultantAccountFungibleBalances = new ArrayList<>();
 
-  public TransactionOutcomes() { 
+  public CommittedTransactionOutcome() { 
   }
 
-  public TransactionOutcomes fungibleEntityBalanceChanges(List<LtsEntityFungibleBalanceChanges> fungibleEntityBalanceChanges) {
+  public CommittedTransactionOutcome fungibleEntityBalanceChanges(List<LtsEntityFungibleBalanceChanges> fungibleEntityBalanceChanges) {
     this.fungibleEntityBalanceChanges = fungibleEntityBalanceChanges;
     return this;
   }
 
-  public TransactionOutcomes addFungibleEntityBalanceChangesItem(LtsEntityFungibleBalanceChanges fungibleEntityBalanceChangesItem) {
+  public CommittedTransactionOutcome addFungibleEntityBalanceChangesItem(LtsEntityFungibleBalanceChanges fungibleEntityBalanceChangesItem) {
     this.fungibleEntityBalanceChanges.add(fungibleEntityBalanceChangesItem);
     return this;
   }
@@ -86,12 +86,12 @@ public class TransactionOutcomes {
   }
 
 
-  public TransactionOutcomes nonFungibleEntityBalanceChanges(List<LtsEntityNonFungibleBalanceChanges> nonFungibleEntityBalanceChanges) {
+  public CommittedTransactionOutcome nonFungibleEntityBalanceChanges(List<LtsEntityNonFungibleBalanceChanges> nonFungibleEntityBalanceChanges) {
     this.nonFungibleEntityBalanceChanges = nonFungibleEntityBalanceChanges;
     return this;
   }
 
-  public TransactionOutcomes addNonFungibleEntityBalanceChangesItem(LtsEntityNonFungibleBalanceChanges nonFungibleEntityBalanceChangesItem) {
+  public CommittedTransactionOutcome addNonFungibleEntityBalanceChangesItem(LtsEntityNonFungibleBalanceChanges nonFungibleEntityBalanceChangesItem) {
     this.nonFungibleEntityBalanceChanges.add(nonFungibleEntityBalanceChangesItem);
     return this;
   }
@@ -117,12 +117,12 @@ public class TransactionOutcomes {
   }
 
 
-  public TransactionOutcomes resultantAccountFungibleBalances(List<LtsResultantAccountFungibleBalances> resultantAccountFungibleBalances) {
+  public CommittedTransactionOutcome resultantAccountFungibleBalances(List<LtsResultantAccountFungibleBalances> resultantAccountFungibleBalances) {
     this.resultantAccountFungibleBalances = resultantAccountFungibleBalances;
     return this;
   }
 
-  public TransactionOutcomes addResultantAccountFungibleBalancesItem(LtsResultantAccountFungibleBalances resultantAccountFungibleBalancesItem) {
+  public CommittedTransactionOutcome addResultantAccountFungibleBalancesItem(LtsResultantAccountFungibleBalances resultantAccountFungibleBalancesItem) {
     this.resultantAccountFungibleBalances.add(resultantAccountFungibleBalancesItem);
     return this;
   }
@@ -149,7 +149,7 @@ public class TransactionOutcomes {
 
 
   /**
-   * Return true if this TransactionOutcomes object is equal to o.
+   * Return true if this CommittedTransactionOutcome object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -159,10 +159,10 @@ public class TransactionOutcomes {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    TransactionOutcomes transactionOutcomes = (TransactionOutcomes) o;
-    return Objects.equals(this.fungibleEntityBalanceChanges, transactionOutcomes.fungibleEntityBalanceChanges) &&
-        Objects.equals(this.nonFungibleEntityBalanceChanges, transactionOutcomes.nonFungibleEntityBalanceChanges) &&
-        Objects.equals(this.resultantAccountFungibleBalances, transactionOutcomes.resultantAccountFungibleBalances);
+    CommittedTransactionOutcome committedTransactionOutcome = (CommittedTransactionOutcome) o;
+    return Objects.equals(this.fungibleEntityBalanceChanges, committedTransactionOutcome.fungibleEntityBalanceChanges) &&
+        Objects.equals(this.nonFungibleEntityBalanceChanges, committedTransactionOutcome.nonFungibleEntityBalanceChanges) &&
+        Objects.equals(this.resultantAccountFungibleBalances, committedTransactionOutcome.resultantAccountFungibleBalances);
   }
 
   @Override
@@ -173,7 +173,7 @@ public class TransactionOutcomes {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class TransactionOutcomes {\n");
+    sb.append("class CommittedTransactionOutcome {\n");
     sb.append("    fungibleEntityBalanceChanges: ").append(toIndentedString(fungibleEntityBalanceChanges)).append("\n");
     sb.append("    nonFungibleEntityBalanceChanges: ").append(toIndentedString(nonFungibleEntityBalanceChanges)).append("\n");
     sb.append("    resultantAccountFungibleBalances: ").append(toIndentedString(resultantAccountFungibleBalances)).append("\n");
