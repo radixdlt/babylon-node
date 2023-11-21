@@ -1026,6 +1026,8 @@ pub mod transaction_message;
 pub use self::transaction_message::TransactionMessage;
 pub mod transaction_message_type;
 pub use self::transaction_message_type::TransactionMessageType;
+pub mod transaction_outcomes;
+pub use self::transaction_outcomes::TransactionOutcomes;
 pub mod transaction_parse_request;
 pub use self::transaction_parse_request::TransactionParseRequest;
 pub mod transaction_parse_response;

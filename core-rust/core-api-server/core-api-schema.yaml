@@ -1156,6 +1156,9 @@ components:
         message:
           description: Whether to return the transaction message (default true)
           type: boolean
+        outcomes:
+          description: Whether to return the transaction outcomes containing balance changes (default false)
+          type: boolean
         raw_system_transaction:
           description: Whether to return the raw hex-encoded system transaction bytes (default false)
           type: boolean
@@ -7146,6 +7149,8 @@ components:
           $ref: "#/components/schemas/LedgerTransaction"
         receipt:
           $ref: "#/components/schemas/TransactionReceipt"
+        outcomes:
+          $ref: "#/components/schemas/TransactionOutcomes"
         proposer_timestamp_ms:
           type: integer
           format: int64
@@ -7350,6 +7355,39 @@ components:
         payload_hex:
           type: string
           description: The hex-encoded system transaction payload. Only returned if enabled in TransactionFormatOptions on your request.
+    TransactionOutcomes:
+      description: |
+        For the given transaction, contains individual entity resource balance changes.
+        The balance changes accounts for the fee payments as well.
+        Current implementation does not take into account recalls, but this will change in a future update.
+        For failed transactions, current implementation does not return any balance changes (not even the fee payments).
+        This will also change in a future update.
+      type: object
+      required:
+        - fungible_entity_balance_changes
+        - non_fungible_entity_balance_changes
+        - resultant_account_fungible_balances
+      properties:
+        fungible_entity_balance_changes:
+          description: |
+            A list of all fungible balance updates which occurred in this transaction, aggregated by the global entity (such as account)
+            which owns the vaults which were updated.
+          type: array
+          items:
+            $ref: "#/components/schemas/LtsEntityFungibleBalanceChanges"
+        non_fungible_entity_balance_changes:
+          description: |
+            Non fungible changes per entity and resource
+          type: array
+          items:
+            $ref: "#/components/schemas/LtsEntityNonFungibleBalanceChanges"
+        resultant_account_fungible_balances:
+          description: |
+            A list of the resultant fungible account balances for any balances which changed in this transaction.
+            Only balances for accounts are returned, not any other kind of entity.
+          type: array
+          items:
+            $ref: "#/components/schemas/LtsResultantAccountFungibleBalances"
 #####################################
 # REQUEST: /state/consensus-manager #
 #####################################

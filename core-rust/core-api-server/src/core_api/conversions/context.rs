@@ -85,6 +85,9 @@ impl MappingContext {
             if let Some(value) = formats.message {
                 options.include_message = value;
             }
+            if let Some(value) = formats.outcomes {
+                options.include_outcomes = value;
+            }
             if let Some(value) = formats.raw_system_transaction {
                 options.include_raw_system = value;
             }
@@ -139,6 +142,7 @@ pub struct TransactionOptions {
     pub include_manifest: bool,
     pub include_blobs: bool,
     pub include_message: bool,
+    pub include_outcomes: bool,
     pub include_raw_system: bool,
     pub include_raw_notarized: bool,
     pub include_raw_ledger: bool,
@@ -150,6 +154,7 @@ impl Default for TransactionOptions {
             include_manifest: true,
             include_blobs: false,
             include_message: true,
+            include_outcomes: false,
             include_raw_system: false,
             include_raw_notarized: true,
             include_raw_ledger: false,

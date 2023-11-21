@@ -19,6 +19,8 @@ pub struct CommittedTransaction {
     pub ledger_transaction: Option<crate::core_api::generated::models::LedgerTransaction>, // Using Option permits Default trait; Will always be Some in normal use
     #[serde(rename = "receipt")]
     pub receipt: Box<crate::core_api::generated::models::TransactionReceipt>,
+    #[serde(rename = "outcomes", skip_serializing_if = "Option::is_none")]
+    pub outcomes: Option<Box<crate::core_api::generated::models::TransactionOutcomes>>,
     /// An integer between `0` and `10^14`, marking the proposer timestamp in ms.
     #[serde(rename = "proposer_timestamp_ms")]
     pub proposer_timestamp_ms: i64,
@@ -30,6 +32,7 @@ impl CommittedTransaction {
             resultant_state_identifiers: Box::new(resultant_state_identifiers),
             ledger_transaction: Option::Some(ledger_transaction),
             receipt: Box::new(receipt),
+            outcomes: None,
             proposer_timestamp_ms,
         }
     }
