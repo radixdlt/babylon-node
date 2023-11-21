@@ -82,11 +82,11 @@ import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.environment.EventProcessorOnDispatch;
+import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.rev2.REv2ToConsensus;
 import com.radixdlt.statecomputer.commit.CommitSummary;
 import com.radixdlt.utils.Bytes;
-import java.util.Optional;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -190,6 +190,7 @@ public final class EventLoggerModule extends AbstractModule {
         calculateLoggingLevel(ledgerUpdateLogLimiter, ledgerUpdate.epochChange()));
 
     ledgerUpdate.epochChange().ifPresent(epochChange -> logEpochChange(self, epochChange));
+    ledgerUpdate.nextProtocolVersion().ifPresent(EventLoggerModule::logProtocolUpdate);
 
     self.bftValidatorId()
         .ifPresent(
@@ -208,6 +209,10 @@ public final class EventLoggerModule extends AbstractModule {
         included,
         validatorSet.getValidators().size(),
         validatorSet.getTotalPower());
+  }
+
+  private static void logProtocolUpdate(String nextProtocolVersion) {
+    logger.info("protocol_update{next_protocol_version={}}", nextProtocolVersion);
   }
 
   private static void logLedgerUpdate(LedgerUpdate ledgerUpdate, long txnCount, Level logLevel) {
@@ -237,7 +242,7 @@ public final class EventLoggerModule extends AbstractModule {
 
   @SuppressWarnings("UnstableApiUsage")
   private static Level calculateLoggingLevel(
-      RateLimiter logLimiter, Optional<EpochChange> epochChange) {
+      RateLimiter logLimiter, Option<EpochChange> epochChange) {
     return (epochChange.isPresent() || logLimiter.tryAcquire()) ? INFO : TRACE;
   }
 

@@ -104,16 +104,19 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
     private final List<ExecutedTransaction> executedTransactions;
     private final int rejectedTransactionCount;
     private final NextEpoch nextEpoch;
+    private final String nextProtocolVersion;
     private final LedgerHashes ledgerHashes;
 
     public StateComputerResult(
         List<ExecutedTransaction> executedTransactions,
         int rejectedTransactionCount,
         NextEpoch nextEpoch,
+        String nextProtocolVersion,
         LedgerHashes ledgerHashes) {
       this.executedTransactions = Objects.requireNonNull(executedTransactions);
       this.rejectedTransactionCount = rejectedTransactionCount;
       this.nextEpoch = nextEpoch;
+      this.nextProtocolVersion = nextProtocolVersion;
       this.ledgerHashes = ledgerHashes;
     }
 
@@ -121,11 +124,15 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
         List<ExecutedTransaction> executedTransactions,
         int rejectedTransactionCount,
         LedgerHashes ledgerHashes) {
-      this(executedTransactions, rejectedTransactionCount, null, ledgerHashes);
+      this(executedTransactions, rejectedTransactionCount, null, null, ledgerHashes);
     }
 
-    public Optional<NextEpoch> getNextEpoch() {
-      return Optional.ofNullable(nextEpoch);
+    public Option<NextEpoch> getNextEpoch() {
+      return Option.option(nextEpoch);
+    }
+
+    public Option<String> getNextProtocolVersion() {
+      return Option.option(nextProtocolVersion);
     }
 
     public LedgerHashes getLedgerHashes() {
@@ -215,9 +222,10 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
         return Optional.empty();
       }
 
-      if (parentHeader.isEndOfEpoch()) {
+      if (parentHeader.isEndOfEpoch() || parentHeader.isProtocolUpdate()) {
         // Don't execute any transactions and commit to the same LedgerHeader if in the process of
-        // an epoch change. Updates to LedgerHeader here may cause a disagreement on the next epoch
+        // an epoch change or a protocol update.
+        // Updates to LedgerHeader here may cause a disagreement on the next epoch
         // initial vertex if a TC occurs for example.
         return Optional.of(
             new ExecutedVertex(
@@ -270,7 +278,8 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
             result.getLedgerHashes(),
             vertex.getQCToParent().getWeightedTimestampOfSignatures(),
             vertex.proposerTimestamp(),
-            result.getNextEpoch().orElse(null));
+            result.getNextEpoch().or((NextEpoch) null),
+            result.getNextProtocolVersion().or((String) null));
 
     return Optional.of(
         new ExecutedVertex(

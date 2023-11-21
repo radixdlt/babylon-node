@@ -471,6 +471,7 @@ impl MetricLabel for ConsensusRoundResolution {
 pub enum VertexPrepareStopReason {
     ProposalComplete,
     EpochChange,
+    ProtocolUpdate,
     LimitExceeded(VertexLimitsExceeded),
 }
 
@@ -481,6 +482,7 @@ impl MetricLabel for VertexPrepareStopReason {
         match self {
             VertexPrepareStopReason::ProposalComplete => "ProposalComplete",
             VertexPrepareStopReason::EpochChange => "EpochChange",
+            VertexPrepareStopReason::ProtocolUpdate => "ProtocolUpdate",
             VertexPrepareStopReason::LimitExceeded(limit_exceeded) => match limit_exceeded {
                 VertexLimitsExceeded::TransactionsCount => "TransactionsCountLimitReached",
                 VertexLimitsExceeded::TransactionsSize => "TransactionsSizeLimitReached",

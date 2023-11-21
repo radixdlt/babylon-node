@@ -75,7 +75,6 @@ import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.p2p.capability.Capabilities;
 import com.radixdlt.p2p.transport.logging.LogSink;
 import com.radixdlt.p2p.transport.logging.LoggingHandler;
-import com.radixdlt.protocol.ProtocolVersion;
 import com.radixdlt.serialization.Serialization;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
@@ -108,7 +107,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
   private final P2PConfig config;
   private final Addressing addressing;
   private final Network network;
-  private final ProtocolVersion newestProtocolVersion;
+  private final String newestProtocolVersion;
   private final Metrics metrics;
   private final Serialization serialization;
   private final SecureRandom secureRandom;
@@ -122,7 +121,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
       P2PConfig config,
       Addressing addressing,
       Network network,
-      ProtocolVersion newestProtocolVersion,
+      String newestProtocolVersion,
       Metrics metrics,
       Serialization serialization,
       SecureRandom secureRandom,

@@ -91,6 +91,7 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.LedgerExtension;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.RoundDetails;
@@ -336,7 +337,7 @@ public class EpochManagerTest {
     LedgerProof proof = mock(LedgerProof.class);
     when(proof.getEpoch()).thenReturn(header.getEpoch() + 1);
     when(proof.getNextEpoch())
-        .thenReturn(Optional.of(NextEpoch.create(header.getEpoch() + 2, ImmutableSet.of())));
+        .thenReturn(Option.some(NextEpoch.create(header.getEpoch() + 2, ImmutableSet.of())));
     var epochChange = new EpochChange(proof, bftConfiguration);
     final var ledgerUpdateExtension = mock(LedgerExtension.class);
     when(ledgerUpdateExtension.getProof()).thenReturn(mock(LedgerProof.class));
@@ -344,7 +345,8 @@ public class EpochManagerTest {
         new LedgerUpdate(
             new CommitSummary(ImmutableList.of(), UInt32.fromNonNegativeInt(0)),
             ledgerUpdateExtension,
-            Optional.of(epochChange));
+            Option.some(epochChange),
+            Option.empty());
 
     // Act
     epochManager.epochsLedgerUpdateEventProcessor().process(ledgerUpdate);

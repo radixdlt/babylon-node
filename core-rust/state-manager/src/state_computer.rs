@@ -93,6 +93,7 @@ use crate::store::traits::scenario::{
     DescribedAddress, ExecutedGenesisScenario, ExecutedGenesisScenarioStore,
     ExecutedScenarioTransaction, ScenarioSequenceNumber,
 };
+
 use std::ops::Deref;
 use std::sync::Arc;
 use std::time::{Instant, SystemTime};
@@ -122,9 +123,11 @@ pub struct StateComputer<S> {
     vertex_prepare_metrics: VertexPrepareMetrics,
     vertex_limits_config: VertexLimitsConfig,
     logging_config: StateComputerLoggingConfig,
+    protocol_config: ProtocolConfig,
+    protocol_state: RwLock<ProtocolState>,
 }
 
-impl<S: QueryableProofStore> StateComputer<S> {
+impl<S: QueryableProofStore + IterableProofStore + QueryableTransactionStore> StateComputer<S> {
     // TODO: refactor and maybe make clippy happy too
     #[allow(clippy::too_many_arguments)]
     pub fn new(
@@ -137,9 +140,11 @@ impl<S: QueryableProofStore> StateComputer<S> {
         logging_config: LoggingConfig,
         metrics_registry: &Registry,
         lock_factory: LockFactory,
+        protocol_config: ProtocolConfig,
     ) -> StateComputer<S> {
-        let (current_transaction_root, current_ledger_proposer_timestamp_ms) = store
-            .read_current()
+        let read_store = store.read_current();
+
+        let (current_transaction_root, current_ledger_proposer_timestamp_ms) = read_store
             .get_last_proof()
             .map(|proof| proof.ledger_header)
             .map(|header| (header.hashes.transaction_root, header.proposer_timestamp_ms))
@@ -147,6 +152,20 @@ impl<S: QueryableProofStore> StateComputer<S> {
 
         let committed_transactions_metrics =
             CommittedTransactionsMetrics::new(metrics_registry, &execution_configurator);
+
+        if let Err(err) = protocol_config.sanity_check() {
+            panic!(
+                "State computer couldn't be initialized, protocol misconfiguration: {}",
+                err
+            );
+        };
+        let initial_protocol_state =
+            compute_initial_protocol_state(read_store.deref(), &protocol_config);
+
+        // TODO(protocol-updates): resume protocol update if there is
+        // one in progress
+
+        drop(read_store);
 
         StateComputer {
             network: network.clone(),
@@ -169,6 +188,10 @@ impl<S: QueryableProofStore> StateComputer<S> {
                 current_ledger_proposer_timestamp_ms,
             ),
             committed_transactions_metrics,
+            protocol_config,
+            protocol_state: lock_factory
+                .named("protocol_state")
+                .new_rwlock(initial_protocol_state),
         }
     }
 
@@ -244,6 +267,7 @@ impl GenesisCommitRequestFactory {
                 consensus_parent_round_timestamp_ms: self.timestamp,
                 proposer_timestamp_ms: self.timestamp,
                 next_epoch,
+                next_protocol_version: None,
             },
             timestamped_signatures: vec![],
         }
@@ -464,6 +488,14 @@ where
             .into_iter()
             .enumerate()
         {
+            // Don't process any additional transactions if protocol update has been enacted.
+            // Note that if a protocol update happens at the end of epoch
+            // then a ProtocolUpdate stop reason is returned.
+            if series_executor.next_protocol_version().is_some() {
+                stop_reason = VertexPrepareStopReason::ProtocolUpdate;
+                break;
+            }
+
             // Don't process any additional transactions if next epoch has occurred
             if series_executor.next_epoch().is_some() {
                 stop_reason = VertexPrepareStopReason::EpochChange;
@@ -679,6 +711,7 @@ where
             committed: committable_transactions,
             rejected: rejected_transactions,
             next_epoch: series_executor.next_epoch().cloned(),
+            next_protocol_version: series_executor.next_protocol_version(),
             ledger_hashes: *series_executor.latest_ledger_hashes(),
         }
     }
@@ -706,6 +739,7 @@ where
             store,
             &self.execution_cache,
             self.execution_configurator.deref(),
+            self.protocol_state.read().deref().clone(),
         )
     }
 }
@@ -715,7 +749,7 @@ where
     S: CommitStore + ExecutedGenesisScenarioStore,
     S: ReadableStore,
     S: for<'a> TransactionIndex<&'a IntentHash>,
-    S: QueryableProofStore + TransactionIdentifierLoader,
+    S: QueryableProofStore + TransactionIdentifierLoader + QueryableTransactionStore,
 {
     /// Performs an [`execute_genesis()`] with a hardcoded genesis data meant for test purposes.
     pub fn execute_genesis_for_unit_tests(&self) -> LedgerProof {
@@ -1152,6 +1186,15 @@ where
             );
         }
 
+        if series_executor.next_protocol_version() != commit_ledger_header.next_protocol_version {
+            panic!(
+                "resultant protocol update at version {} differs from the proof ({:?} != {:?})",
+                commit_state_version,
+                series_executor.next_protocol_version(),
+                commit_ledger_header.next_protocol_version
+            );
+        }
+
         let final_ledger_hashes = series_executor.latest_ledger_hashes();
         if final_ledger_hashes != &commit_ledger_header.hashes {
             panic!(
@@ -1170,6 +1213,8 @@ where
             .next_epoch
             .as_ref()
             .map(|next_epoch| next_epoch.epoch);
+
+        let new_protocol_state = series_executor.protocol_state();
 
         write_store.commit(CommitBundle {
             transactions: committed_transaction_bundles,
@@ -1210,10 +1255,44 @@ where
         self.committed_transactions_metrics
             .update(transactions_metrics_data);
 
+        let mut locked_protocol_state = self.protocol_state.write();
+        *locked_protocol_state = new_protocol_state;
+        drop(locked_protocol_state);
+
+        self.try_execute_protocol_update();
+
         Ok(CommitSummary {
             validator_round_counters: round_counters,
             num_user_transactions,
         })
+    }
+
+    fn try_execute_protocol_update(&self) {
+        // TODO(protocol-updates): execute the protocol update (if present)
+        // - execute actions/transactions in batches and persist the results
+        //   atomically with progress indicator (checkpoint id), so that we
+        //   know where to resume if a node is restarted mid-protocol update.
+        // Make this method work for both commit and resume (at startup).
+
+        let mut locked_protocol_state = self.protocol_state.write();
+
+        // For now, let's just pretend it executes in full:
+        // - set in_progress_protocol_update to None
+        // - bump current_protocol_version
+        if let Some(in_progress_protocol_update) =
+            locked_protocol_state.in_progress_protocol_update.take()
+        {
+            locked_protocol_state.current_protocol_version = match in_progress_protocol_update {
+                InProgressProtocolUpdate::EnactedButNotExecuted { protocol_version } => {
+                    protocol_version
+                }
+                InProgressProtocolUpdate::PartiallyExecuted {
+                    protocol_version, ..
+                } => protocol_version,
+            };
+        }
+
+        drop(locked_protocol_state);
     }
 
     /// Performs a simplified [`commit()`] flow meant for (internal) genesis transactions.
@@ -1318,6 +1397,18 @@ where
                 .collect(),
         );
         *transaction_tree_diff.slice.root()
+    }
+
+    pub fn current_protocol_version(&self) -> String {
+        self.protocol_state.read().current_protocol_version.clone()
+    }
+
+    pub fn newest_protocol_version(&self) -> String {
+        self.protocol_config
+            .protocol_updates
+            .last()
+            .map(|protocol_update| protocol_update.next_protocol_version.clone())
+            .unwrap_or(self.protocol_config.genesis_protocol_version.clone())
     }
 }
 

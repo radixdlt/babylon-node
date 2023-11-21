@@ -75,6 +75,7 @@ import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.*;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.mempool.MempoolAdd;
@@ -154,7 +155,8 @@ public final class MockedStateComputer implements StateComputer {
         new LedgerUpdate(
             new CommitSummary(ImmutableList.of(), UInt32.fromNonNegativeInt(0)),
             ledgerExtension,
-            maybeEpochChange);
+            maybeEpochChange,
+            Option.empty());
     ledgerUpdateDispatcher.dispatch(ledgerUpdate);
   }
 }

@@ -124,7 +124,7 @@ use super::traits::extensions::*;
 /// The `NAME` constants defined by `*Cf` structs (and referenced below) are used as database column
 /// family names. Any change would effectively mean a ledger wipe. For this reason, we choose to
 /// define them manually (rather than using the `Into<String>`, which is refactor-sensitive).
-const ALL_COLUMN_FAMILIES: [&str; 20] = [
+const ALL_COLUMN_FAMILIES: [&str; 21] = [
     RawLedgerTransactionsCf::DEFAULT_NAME,
     CommittedTransactionIdentifiersCf::VERSIONED_NAME,
     TransactionReceiptsCf::VERSIONED_NAME,
@@ -134,6 +134,7 @@ const ALL_COLUMN_FAMILIES: [&str; 20] = [
     LedgerTransactionHashesCf::DEFAULT_NAME,
     LedgerProofsCf::VERSIONED_NAME,
     EpochLedgerProofsCf::VERSIONED_NAME,
+    ProtocolUpdateLedgerProofsCf::VERSIONED_NAME,
     SubstatesCf::DEFAULT_NAME,
     SubstateNodeAncestryRecordsCf::VERSIONED_NAME,
     VertexStoreCf::VERSIONED_NAME,
@@ -220,6 +221,16 @@ impl VersionedCf for EpochLedgerProofsCf {
 
     const VERSIONED_NAME: &'static str = "epoch_ledger_proofs";
     type KeyCodec = EpochDbCodec;
+    type VersionedValue = VersionedLedgerProof;
+}
+
+/// Ledger proofs of protocol updates.
+/// Schema: `Epoch.to_bytes()` -> `scrypto_encode(VersionedLedgerProof)`
+/// Note: This duplicates a small subset of [`StateVersionToLedgerProof`]'s values.
+struct ProtocolUpdateLedgerProofsCf;
+impl VersionedCf<StateVersion, LedgerProof> for ProtocolUpdateLedgerProofsCf {
+    const VERSIONED_NAME: &'static str = "protocol_update_ledger_proofs";
+    type KeyCodec = StateVersionDbCodec;
     type VersionedValue = VersionedLedgerProof;
 }
 
@@ -771,10 +782,17 @@ impl CommitStore for RocksDBStore {
         db_context
             .cf(LedgerProofsCf)
             .put(&commit_state_version, &commit_bundle.proof);
+
         if let Some(next_epoch) = &commit_ledger_header.next_epoch {
             db_context
                 .cf(EpochLedgerProofsCf)
                 .put(&next_epoch.epoch, &commit_bundle.proof);
+        }
+
+        if commit_ledger_header.next_protocol_version.is_some() {
+            db_context
+                .cf(ProtocolUpdateLedgerProofsCf)
+                .put(&commit_state_version, &commit_bundle.proof);
         }
 
         let substates_cf = db_context.cf(SubstatesCf);
@@ -1067,6 +1085,30 @@ impl IterableProofStore for RocksDBStore {
                 .map(|(_, proof)| proof),
         )
     }
+
+    fn get_epoch_proof_iter(
+        &self,
+        from_epoch: Epoch,
+    ) -> Box<dyn Iterator<Item = LedgerProof> + '_> {
+        Box::new(
+            self.open_db_context()
+                .cf(EpochLedgerProofsCf)
+                .iterate_from(&from_epoch, Direction::Forward)
+                .map(|(_, proof)| proof),
+        )
+    }
+
+    fn get_protocol_update_proof_iter(
+        &self,
+        from_state_version: StateVersion,
+    ) -> Box<dyn Iterator<Item = LedgerProof> + '_> {
+        Box::new(
+            self.open_db_context()
+                .cf(ProtocolUpdateLedgerProofsCf)
+                .iterate_from(&from_state_version, Direction::Forward)
+                .map(|(_, proof)| proof),
+        )
+    }
 }
 
 impl QueryableProofStore for RocksDBStore {
@@ -1122,6 +1164,8 @@ impl QueryableProofStore for RocksDBStore {
                     {
                         match txns_iter.next() {
                             Some((next_txn_state_version, next_txn)) => {
+                                // TODO(protocol-updates): skip protocol update transactions
+                                // TODO(protocol-updates): skip genesis transactions
                                 payload_size_including_next_proof_txns += next_txn.0.len() as u32;
                                 next_proof_txns.push(next_txn);
 
@@ -1148,13 +1192,16 @@ impl QueryableProofStore for RocksDBStore {
                                 <= (max_number_of_txns_if_more_than_one_proof as usize))
                     {
                         // Yup, all good, use next_proof as the result and add its txns
-                        let next_proof_at_epoch = next_proof.ledger_header.next_epoch.is_some();
+                        let next_proof_is_a_protocol_update =
+                            next_proof.ledger_header.next_protocol_version.is_some();
+                        let next_proof_is_an_epoch_change =
+                            next_proof.ledger_header.next_epoch.is_some();
                         latest_usable_proof = Some(next_proof);
                         txns.append(&mut next_proof_txns);
                         payload_size_so_far = payload_size_including_next_proof_txns;
 
-                        if next_proof_at_epoch {
-                            // Stop if we've reached an epoch proof
+                        if next_proof_is_a_protocol_update || next_proof_is_an_epoch_change {
+                            // Stop if we've reached a protocol update or end of epoch
                             break 'proof_loop;
                         }
                     } else {
@@ -1194,6 +1241,17 @@ impl QueryableProofStore for RocksDBStore {
         self.open_db_context()
             .cf(EpochLedgerProofsCf)
             .get_last_value()
+    }
+
+    fn get_closest_epoch_proof_on_or_before(
+        &self,
+        state_version: StateVersion,
+    ) -> Option<LedgerProof> {
+        self.open_db_context()
+            .cf(LedgerProofsCf)
+            .iterate_from(&state_version, Direction::Reverse)
+            .map(|(_, proof)| proof)
+            .find(|proof| proof.ledger_header.next_epoch.is_some())
     }
 }
 

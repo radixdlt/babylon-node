@@ -74,6 +74,7 @@ import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.*;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.p2p.NodeId;
@@ -182,7 +183,8 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
     return new LedgerUpdate(
         new CommitSummary(ImmutableList.of(), UInt32.fromNonNegativeInt(0)),
         ledgerExtension,
-        maybeEpochChange);
+        maybeEpochChange,
+        Option.empty());
   }
 
   @Override

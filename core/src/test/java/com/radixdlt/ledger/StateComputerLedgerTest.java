@@ -166,7 +166,8 @@ public class StateComputerLedgerTest {
                 ? NextEpoch.create(
                     genesisEpoch + 1,
                     ImmutableSet.of(BFTValidator.from(BFTValidatorId.random(), UInt192.ONE)))
-                : null);
+                : null,
+            null);
     this.genesisVertex = Vertex.createInitialEpochVertex(ledgerHeader).withId(hasher);
     this.initialEpochQC = QuorumCertificate.createInitialEpochQC(genesisVertex, ledgerHeader);
     this.currentLedgerHeader =

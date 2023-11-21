@@ -91,8 +91,6 @@ import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.p2p.addressbook.AddressBook;
-import com.radixdlt.protocol.Current;
-import com.radixdlt.protocol.ProtocolVersion;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.PrivateKeys;
@@ -146,9 +144,6 @@ public abstract class SystemApiTestBase {
             new AbstractModule() {
               @Override
               protected void configure() {
-                bind(ProtocolVersion.class)
-                    .annotatedWith(Current.class)
-                    .toInstance(new ProtocolVersion("test"));
                 bind(Network.class).toInstance(Network.INTEGRATIONTESTNET);
                 bind(P2PConfig.class).toInstance(p2pConfig);
                 bind(AddressBook.class).in(Scopes.SINGLETON);

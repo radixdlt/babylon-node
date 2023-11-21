@@ -89,7 +89,7 @@ use crate::{
         CachedCommittabilityValidator, CommittabilityValidator, ExecutionConfigurator,
         TransactionPreviewer,
     },
-    LoggingConfig, PendingTransactionResultCache, StateComputer,
+    LoggingConfig, PendingTransactionResultCache, ProtocolConfig, StateComputer,
 };
 
 /// An interval between time-intensive measurement of raw DB metrics.
@@ -110,6 +110,7 @@ pub struct StateManagerConfig {
     pub state_hash_tree_gc_config: StateHashTreeGcConfig,
     pub ledger_proofs_gc_config: LedgerProofsGcConfig,
     pub ledger_sync_limits_config: LedgerSyncLimitsConfig,
+    pub protocol_config: ProtocolConfig,
     pub no_fees: bool,
 }
 
@@ -127,6 +128,7 @@ impl StateManagerConfig {
             state_hash_tree_gc_config: StateHashTreeGcConfig::default(),
             ledger_proofs_gc_config: LedgerProofsGcConfig::default(),
             ledger_sync_limits_config: LedgerSyncLimitsConfig::default(),
+            protocol_config: ProtocolConfig::for_testing(),
             no_fees: false,
         }
     }
@@ -241,6 +243,7 @@ impl StateManager {
             logging_config,
             metrics_registry,
             lock_factory.named("state_computer"),
+            config.protocol_config,
         ));
 
         // Register the periodic background task for collecting the costly raw DB metrics...

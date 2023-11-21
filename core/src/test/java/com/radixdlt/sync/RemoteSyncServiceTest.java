@@ -76,6 +76,7 @@ import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerExtension;
 import com.radixdlt.ledger.LedgerUpdate;
@@ -87,7 +88,6 @@ import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
 import com.radixdlt.utils.PrivateKeys;
-import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -196,7 +196,7 @@ public class RemoteSyncServiceTest {
 
     final var validatorSet = mock(BFTValidatorSet.class);
     final var proof = mock(LedgerProof.class);
-    when(proof.getNextValidatorSet()).thenReturn(Optional.of(validatorSet));
+    when(proof.getNextValidatorSet()).thenReturn(Option.some(validatorSet));
     when(ledgerUpdate.proof()).thenReturn(proof);
 
     when(this.localSyncService.getSyncState())
