@@ -64,7 +64,63 @@
 
 package com.radixdlt.protocol;
 
-public record ProtocolVersion(String name) {
-  /** The only currently defined protocol version. */
-  public static final ProtocolVersion ONLY_PROTOCOL_VERSION = new ProtocolVersion("babylon-v1");
+import static com.radixdlt.lang.Tuple.tuple;
+
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.lang.Tuple;
+import com.radixdlt.protocol.ProtocolUpdateSupportType.SignalledReadiness.SignalledReadinessThreshold;
+import com.radixdlt.rev2.Decimal;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.EnumCodec;
+import com.radixdlt.utils.UInt64;
+
+public sealed interface ProtocolUpdateEnactmentCondition {
+  static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        ProtocolUpdateEnactmentCondition.class,
+        codecs ->
+            EnumCodec.fromPermittedRecordSubclasses(
+                ProtocolUpdateEnactmentCondition.class, codecs));
+  }
+
+  static ProtocolUpdateEnactmentCondition singleReadinessThresholdBetweenEpochs(
+      long minEpoch,
+      long maxEpoch,
+      Decimal requiredPercentageStakeSupported,
+      long requiredConsecutiveEpochsOfSupport) {
+    return readinessThresholdsBetweenEpochs(
+        minEpoch,
+        maxEpoch,
+        ImmutableList.of(
+            tuple(requiredPercentageStakeSupported, requiredConsecutiveEpochsOfSupport)));
+  }
+
+  static ProtocolUpdateEnactmentCondition readinessThresholdsBetweenEpochs(
+      long minEpoch, long maxEpoch, ImmutableList<Tuple.Tuple2<Decimal, Long>> thresholds) {
+    return new ProtocolUpdateEnactmentCondition.EnactWhenSupportedAndWithinBounds(
+        new ProtocolUpdateEnactmentBound.Epoch(UInt64.fromNonNegativeLong(minEpoch)),
+        new ProtocolUpdateEnactmentBound.Epoch(UInt64.fromNonNegativeLong(maxEpoch)),
+        new ProtocolUpdateSupportType.SignalledReadiness(
+            thresholds.stream()
+                .map(
+                    t ->
+                        new SignalledReadinessThreshold(
+                            t.first(), UInt64.fromNonNegativeLong(t.last())))
+                .collect(ImmutableList.toImmutableList())));
+  }
+
+  static ProtocolUpdateEnactmentCondition unconditionallyAtEpoch(long epoch) {
+    return new EnactUnconditionallyAtEpoch(UInt64.fromNonNegativeLong(epoch));
+  }
+
+  record EnactWhenSupportedAndWithinBounds(
+      ProtocolUpdateEnactmentBound lowerBound,
+      ProtocolUpdateEnactmentBound upperBound,
+      ProtocolUpdateSupportType supportType)
+      implements ProtocolUpdateEnactmentCondition {}
+
+  record EnactUnconditionallyAtEpoch(UInt64 epoch) implements ProtocolUpdateEnactmentCondition {}
+
+  record EnactUnconditionallyAtStateVersion(UInt64 stateVersion)
+      implements ProtocolUpdateEnactmentCondition {}
 }

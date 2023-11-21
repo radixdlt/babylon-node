@@ -109,18 +109,18 @@ public class LedgerHeaderTest {
   @Test(expected = IllegalArgumentException.class)
   public void deserializationWithWrongEpochThrowsException() {
     new LedgerHeader(
-        -1L, 1L, 1L, LedgerHashes.zero(), 1L, 1L, NextEpoch.create(1, ImmutableSet.of()));
+        -1L, 1L, 1L, LedgerHashes.zero(), 1L, 1L, NextEpoch.create(1, ImmutableSet.of()), null);
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void deserializationWithWrongRoundThrowsException() {
     new LedgerHeader(
-        1L, -1L, 1L, LedgerHashes.zero(), 1L, 1L, NextEpoch.create(1, ImmutableSet.of()));
+        1L, -1L, 1L, LedgerHashes.zero(), 1L, 1L, NextEpoch.create(1, ImmutableSet.of()), null);
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void deserializationWithWrongStateVersionThrowsException() {
     new LedgerHeader(
-        1L, 1L, -1L, LedgerHashes.zero(), 1L, 1L, NextEpoch.create(1, ImmutableSet.of()));
+        1L, 1L, -1L, LedgerHashes.zero(), 1L, 1L, NextEpoch.create(1, ImmutableSet.of()), null);
   }
 }

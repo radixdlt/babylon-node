@@ -62,24 +62,17 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer.commit;
+package com.radixdlt.protocol;
 
-import com.radixdlt.lang.Option;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.utils.UInt64;
+import static java.lang.annotation.ElementType.*;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-public record LedgerHeader(
-    UInt64 epoch,
-    UInt64 round,
-    UInt64 stateVersion,
-    LedgerHashes hashes,
-    long consensusParentRoundTimestampMs,
-    long proposerTimestampMs,
-    Option<NextEpoch> nextEpoch,
-    Option<String> nextProtocolVersion) {
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        LedgerHeader.class, codecs -> StructCodec.fromRecordComponents(LedgerHeader.class, codecs));
-  }
-}
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
+
+/** A binding annotation for beans related to the newest protocol version known to this Node. */
+@Qualifier
+@Target({FIELD, PARAMETER, METHOD})
+@Retention(RUNTIME)
+public @interface NewestProtocolVersion {}

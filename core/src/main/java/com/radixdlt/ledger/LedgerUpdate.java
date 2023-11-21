@@ -66,15 +66,16 @@ package com.radixdlt.ledger;
 
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.lang.Option;
 import com.radixdlt.statecomputer.commit.CommitSummary;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import java.util.List;
-import java.util.Optional;
 
 public record LedgerUpdate(
     CommitSummary commitSummary,
     LedgerExtension ledgerExtension,
-    Optional<EpochChange> epochChange) {
+    Option<EpochChange> epochChange,
+    Option<String> nextProtocolVersion) {
 
   public LedgerProof proof() {
     return ledgerExtension.getProof();

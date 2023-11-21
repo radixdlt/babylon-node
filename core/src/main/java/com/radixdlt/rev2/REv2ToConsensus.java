@@ -71,7 +71,6 @@ import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.lang.Option;
 import com.radixdlt.statecomputer.commit.ActiveValidatorInfo;
 import com.radixdlt.statecomputer.commit.TimestampedValidatorSignature;
 import com.radixdlt.statecomputer.commit.ValidatorId;
@@ -186,7 +185,8 @@ public final class REv2ToConsensus {
         REv2ToConsensus.ledgerHashes(ledgerHeader.hashes()),
         ledgerHeader.consensusParentRoundTimestampMs(),
         ledgerHeader.proposerTimestampMs(),
-        ledgerHeader.nextEpoch().map(REv2ToConsensus::nextEpoch).or((NextEpoch) null));
+        ledgerHeader.nextEpoch().map(REv2ToConsensus::nextEpoch).or((NextEpoch) null),
+        ledgerHeader.nextProtocolVersion().or((String) null));
   }
 
   public static com.radixdlt.statecomputer.commit.LedgerHeader ledgerHeader(
@@ -198,6 +198,7 @@ public final class REv2ToConsensus {
         REv2ToConsensus.ledgerHashes(ledgerHeader.getHashes()),
         ledgerHeader.consensusParentRoundTimestamp(),
         ledgerHeader.proposerTimestamp(),
-        Option.from(ledgerHeader.getNextEpoch().map(REv2ToConsensus::nextEpoch)));
+        ledgerHeader.getNextEpoch().map(REv2ToConsensus::nextEpoch),
+        ledgerHeader.nextProtocolVersion());
   }
 }

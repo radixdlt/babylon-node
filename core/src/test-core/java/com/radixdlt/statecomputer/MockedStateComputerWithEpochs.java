@@ -132,6 +132,7 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
           baseResult.getSuccessfullyExecutedTransactions(),
           baseResult.getRejectedTransactionCount(),
           NextEpoch.create(nextEpoch, validatorSetMapping.apply(nextEpoch).getValidators()),
+          null,
           baseResult.getLedgerHashes());
     } else {
       return stateComputer.prepare(

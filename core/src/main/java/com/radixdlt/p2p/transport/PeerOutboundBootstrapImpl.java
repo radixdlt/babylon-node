@@ -75,8 +75,7 @@ import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.PeerEvent;
 import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.p2p.capability.Capabilities;
-import com.radixdlt.protocol.Newest;
-import com.radixdlt.protocol.ProtocolVersion;
+import com.radixdlt.protocol.NewestProtocolVersion;
 import com.radixdlt.serialization.Serialization;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelOption;
@@ -90,7 +89,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
   private final P2PConfig config;
   private final Addressing addressing;
   private final Network network;
-  private final ProtocolVersion newestProtocolVersion;
+  private final String newestProtocolVersion;
   private final Metrics metrics;
   private final Serialization serialization;
   private final SecureRandom secureRandom;
@@ -105,7 +104,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
       P2PConfig config,
       Addressing addressing,
       Network network,
-      @Newest ProtocolVersion newestProtocolVersion,
+      @NewestProtocolVersion String newestProtocolVersion,
       Metrics metrics,
       Serialization serialization,
       SecureRandom secureRandom,

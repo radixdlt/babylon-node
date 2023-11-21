@@ -62,24 +62,21 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer.commit;
+package com.radixdlt.protocol;
 
-import com.radixdlt.lang.Option;
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.sbor.codec.EnumCodec;
 import com.radixdlt.utils.UInt64;
 
-public record LedgerHeader(
-    UInt64 epoch,
-    UInt64 round,
-    UInt64 stateVersion,
-    LedgerHashes hashes,
-    long consensusParentRoundTimestampMs,
-    long proposerTimestampMs,
-    Option<NextEpoch> nextEpoch,
-    Option<String> nextProtocolVersion) {
-  public static void registerCodec(CodecMap codecMap) {
+public sealed interface ProtocolUpdateEnactmentBound {
+  static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        LedgerHeader.class, codecs -> StructCodec.fromRecordComponents(LedgerHeader.class, codecs));
+        ProtocolUpdateEnactmentBound.class,
+        codecs ->
+            EnumCodec.fromPermittedRecordSubclasses(ProtocolUpdateEnactmentBound.class, codecs));
   }
+
+  record Epoch(UInt64 epoch) implements ProtocolUpdateEnactmentBound {}
+
+  record StateVersion(UInt64 stateVersion) implements ProtocolUpdateEnactmentBound {}
 }

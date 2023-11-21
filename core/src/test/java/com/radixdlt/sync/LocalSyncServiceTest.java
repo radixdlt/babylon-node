@@ -75,6 +75,7 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.*;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
@@ -689,7 +690,8 @@ public class LocalSyncServiceTest {
     return new LedgerUpdate(
         new CommitSummary(ImmutableList.of(), UInt32.fromNonNegativeInt(0)),
         LedgerExtension.create(ImmutableList.of(), createHeaderAtStateVersion(stateVersion)),
-        Optional.empty());
+        Option.empty(),
+        Option.empty());
   }
 
   private LedgerProof createHeaderAtStateVersion(long version) {

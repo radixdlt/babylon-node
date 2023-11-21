@@ -74,7 +74,7 @@ import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.NextEpoch;
 import com.radixdlt.crypto.HashUtils;
-import java.util.Optional;
+import com.radixdlt.lang.Option;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
@@ -88,7 +88,7 @@ public class EpochChangeTest {
   public void setup() {
     this.proof = mock(LedgerProof.class);
     when(proof.getEpoch()).thenReturn(323L);
-    when(proof.getNextEpoch()).thenReturn(Optional.of(NextEpoch.create(324, ImmutableSet.of())));
+    when(proof.getNextEpoch()).thenReturn(Option.some(NextEpoch.create(324, ImmutableSet.of())));
     this.configuration = mock(BFTConfiguration.class);
 
     this.epochChange = new EpochChange(proof, configuration);

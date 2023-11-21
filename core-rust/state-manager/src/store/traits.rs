@@ -80,6 +80,7 @@ pub use vertex::*;
 use radix_engine::types::{ScryptoCategorize, ScryptoDecode, ScryptoEncode};
 use sbor::define_single_versioned;
 
+#[derive(Debug, Clone)]
 pub enum DatabaseConfigValidationError {
     AccountChangeIndexRequiresLocalTransactionExecutionIndex,
     LocalTransactionExecutionIndexChanged,
@@ -305,6 +306,16 @@ pub mod proofs {
             &self,
             from_state_version: StateVersion,
         ) -> Box<dyn Iterator<Item = LedgerProof> + '_>;
+
+        fn get_epoch_proof_iter(
+            &self,
+            from_epoch: Epoch,
+        ) -> Box<dyn Iterator<Item = LedgerProof> + '_>;
+
+        fn get_protocol_update_proof_iter(
+            &self,
+            from_state_version: StateVersion,
+        ) -> Box<dyn Iterator<Item = LedgerProof> + '_>;
     }
 
     #[enum_dispatch]
@@ -325,6 +336,11 @@ pub mod proofs {
         fn get_epoch_proof(&self, epoch: Epoch) -> Option<LedgerProof>;
         fn get_last_proof(&self) -> Option<LedgerProof>;
         fn get_last_epoch_proof(&self) -> Option<LedgerProof>;
+
+        fn get_closest_epoch_proof_on_or_before(
+            &self,
+            state_version: StateVersion,
+        ) -> Option<LedgerProof>;
     }
 }
 

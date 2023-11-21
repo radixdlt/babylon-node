@@ -72,6 +72,7 @@ import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -79,7 +80,6 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
-import java.util.Optional;
 import javax.annotation.concurrent.Immutable;
 
 /** Ledger header with proof */
@@ -157,11 +157,11 @@ public final class LedgerProof {
     return ledgerHeader;
   }
 
-  public Optional<BFTValidatorSet> getNextValidatorSet() {
+  public Option<BFTValidatorSet> getNextValidatorSet() {
     return ledgerHeader.getNextEpoch().map(NextEpoch::getValidators).map(BFTValidatorSet::from);
   }
 
-  public Optional<NextEpoch> getNextEpoch() {
+  public Option<NextEpoch> getNextEpoch() {
     return ledgerHeader.getNextEpoch();
   }
 

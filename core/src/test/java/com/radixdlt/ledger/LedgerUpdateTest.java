@@ -66,6 +66,7 @@ package com.radixdlt.ledger;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.lang.Option;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
@@ -74,6 +75,7 @@ public class LedgerUpdateTest {
   public void testEquals() {
     EqualsVerifier.forClass(LedgerUpdate.class)
         .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .withGenericPrefabValues(Option.class, Option::some)
         .verify();
   }
 }

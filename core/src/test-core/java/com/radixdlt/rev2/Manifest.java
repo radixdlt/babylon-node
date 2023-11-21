@@ -341,6 +341,23 @@ public class Manifest {
             params.encode(ownerAccount));
   }
 
+  public static Functions.Func1<Parameters, String> validatorSignalProtocolUpdateReadiness(
+      ComponentAddress validatorAddress,
+      ComponentAddress ownerAccount,
+      String readinessSignalName) {
+    return (params) ->
+        String.format(
+            """
+            %s
+            %s
+            CALL_METHOD Address("%s") "signal_protocol_update_readiness" "%s";
+            """,
+            params.faucetLockFeeLine(),
+            params.createProofOfValidatorOwnerBadge(ownerAccount, validatorAddress),
+            params.encode(validatorAddress),
+            readinessSignalName);
+  }
+
   public static Functions.Func1<Parameters, String> registerValidator(
       ComponentAddress validatorAddress, ComponentAddress ownerAccount) {
     return (params) ->

@@ -363,6 +363,7 @@ pub struct PrepareResult {
     /// Note: this is only used for testing
     pub rejected: Vec<RejectedTransaction>,
     pub next_epoch: Option<NextEpoch>,
+    pub next_protocol_version: Option<String>,
     pub ledger_hashes: LedgerHashes,
 }
 
@@ -428,6 +429,7 @@ pub struct LedgerHeader {
     pub consensus_parent_round_timestamp_ms: i64,
     pub proposer_timestamp_ms: i64,
     pub next_epoch: Option<NextEpoch>,
+    pub next_protocol_version: Option<String>,
 }
 
 pub struct EpochTransactionIdentifiers {

@@ -118,7 +118,7 @@ public final class VertexStoreState {
     if (epochProof.getNextEpoch().isEmpty()) {
       throw new IllegalArgumentException("Expected end of epoch proof");
     }
-    final var nextEpoch = epochProof.getNextEpoch().get();
+    final var nextEpoch = epochProof.getNextEpoch().orElseThrow();
     final var initialEpochVertex =
         Vertex.createInitialEpochVertex(epochProof.getHeader()).withId(hasher);
 
