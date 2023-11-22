@@ -23,9 +23,9 @@ pub struct TransactionFormatOptions {
     /// Whether to return the transaction message (default true)
     #[serde(rename = "message", skip_serializing_if = "Option::is_none")]
     pub message: Option<bool>,
-    /// Whether to return the transaction outcome containing balance changes (default false)
-    #[serde(rename = "outcome", skip_serializing_if = "Option::is_none")]
-    pub outcome: Option<bool>,
+    /// Whether to return the transaction balance changes (default false)
+    #[serde(rename = "balance_changes", skip_serializing_if = "Option::is_none")]
+    pub balance_changes: Option<bool>,
     /// Whether to return the raw hex-encoded system transaction bytes (default false)
     #[serde(rename = "raw_system_transaction", skip_serializing_if = "Option::is_none")]
     pub raw_system_transaction: Option<bool>,
@@ -44,7 +44,7 @@ impl TransactionFormatOptions {
             manifest: None,
             blobs: None,
             message: None,
-            outcome: None,
+            balance_changes: None,
             raw_system_transaction: None,
             raw_notarized_transaction: None,
             raw_ledger_transaction: None,

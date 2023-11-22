@@ -1156,8 +1156,8 @@ components:
         message:
           description: Whether to return the transaction message (default true)
           type: boolean
-        outcome:
-          description: Whether to return the transaction outcome containing balance changes (default false)
+        balance_changes:
+          description: Whether to return the transaction balance changes (default false)
           type: boolean
         raw_system_transaction:
           description: Whether to return the raw hex-encoded system transaction bytes (default false)
@@ -7148,15 +7148,15 @@ components:
           $ref: "#/components/schemas/LedgerTransaction"
         receipt:
           $ref: "#/components/schemas/TransactionReceipt"
-        outcome:
-          $ref: "#/components/schemas/CommittedTransactionOutcome"
+        balance_changes:
+          $ref: "#/components/schemas/CommittedTransactionBalanceChanges"
         proposer_timestamp_ms:
           type: integer
           format: int64
           minimum: 0
           maximum: 100000000000000
           description: An integer between `0` and `10^14`, marking the proposer timestamp in ms.
-    CommittedTransactionOutcome:
+    CommittedTransactionBalanceChanges:
       description: |
         For the given transaction, contains individual entity resource balance changes.
         The balance changes accounts for the fee payments as well.

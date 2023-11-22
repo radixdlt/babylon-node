@@ -251,8 +251,8 @@ pub fn to_api_committed_transaction(
     receipt: LocalTransactionReceipt,
     identifiers: CommittedTransactionIdentifiers,
 ) -> Result<models::CommittedTransaction, MappingError> {
-    let outcome = if context.transaction_options.include_outcome {
-        Some(Box::new(to_api_outcome(database, context, &receipt)?))
+    let balance_changes = if context.transaction_options.include_balance_changes {
+        Some(Box::new(to_api_balance_changes(database, context, &receipt)?))
     } else {
         None
     };
@@ -269,7 +269,7 @@ pub fn to_api_committed_transaction(
             &identifiers.payload,
         )?),
         receipt: Box::new(to_api_receipt(Some(database), context, receipt)?),
-        outcome,
+        balance_changes,
         proposer_timestamp_ms: identifiers.proposer_timestamp_ms,
     })
 }
@@ -578,14 +578,14 @@ pub fn to_api_system_transaction(
     Ok(models::SystemTransaction { payload_hex })
 }
 
-fn to_api_outcome(
+fn to_api_balance_changes(
     database: &StateManagerDatabase,
     context: &MappingContext,
     receipt: &LocalTransactionReceipt
-) -> Result<models::CommittedTransactionOutcome, MappingError> {
+) -> Result<models::CommittedTransactionBalanceChanges, MappingError> {
     let local_execution = &receipt.local_execution;
 
-    Ok(models::CommittedTransactionOutcome {
+    Ok(models::CommittedTransactionBalanceChanges {
         fungible_entity_balance_changes: to_api_lts_fungible_balance_changes(
             database,
             context,
