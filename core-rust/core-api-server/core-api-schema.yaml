@@ -1727,6 +1727,7 @@ components:
         - finalization_cost_unit_limit
         - xrd_usd_price
         - xrd_storage_price
+        - xrd_archive_storage_price
         - tip_percentage
       properties:
         execution_cost_unit_price:
@@ -1765,7 +1766,12 @@ components:
         xrd_storage_price:
           type: string
           description: |
-            The string-encoded decimal representing the price of 1 byte of storage, expressed in XRD.
+            The string-encoded decimal representing the price of 1 byte of state storage, expressed in XRD.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
+        xrd_archive_storage_price:
+          type: string
+          description: |
+            The string-encoded decimal representing the price of 1 byte of archive storage, expressed in XRD.
             A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
         tip_percentage:
           type: integer
