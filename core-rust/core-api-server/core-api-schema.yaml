@@ -5752,8 +5752,6 @@ components:
       description: |
         For the given transaction, contains the status, total fee summary and individual entity resource balance changes.
         The balance changes accounts for the fee payments as well.
-        For failed transactions, current implementation does not return any balance changes (not even the fee payments).
-        This will also change in a future update.
       type: object
       required:
         - state_version
@@ -7158,15 +7156,12 @@ components:
           description: An integer between `0` and `10^14`, marking the proposer timestamp in ms.
     CommittedTransactionBalanceChanges:
       description: |
-        For the given transaction, contains individual entity resource balance changes.
-        The balance changes accounts for the fee payments as well.
-        For failed transactions, current implementation does not return any balance changes (not even the fee payments).
-        This will also change in a future update.
+        The fee-related and non-fee-related balance changes of a transaction, aggregated by resource and global entity 
+        within which the change occurred.
       type: object
       required:
         - fungible_entity_balance_changes
         - non_fungible_entity_balance_changes
-        - resultant_account_fungible_balances
       properties:
         fungible_entity_balance_changes:
           description: |
@@ -7181,13 +7176,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/LtsEntityNonFungibleBalanceChanges"
-        resultant_account_fungible_balances:
-          description: |
-            A list of the resultant fungible account balances for any balances which changed in this transaction.
-            Only balances for accounts are returned, not any other kind of entity.
-          type: array
-          items:
-            $ref: "#/components/schemas/LtsResultantAccountFungibleBalances"
     LedgerProof:
       type: object
       required:

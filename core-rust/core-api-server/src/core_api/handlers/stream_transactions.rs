@@ -601,12 +601,6 @@ fn to_api_balance_changes(
             &local_execution
                 .global_balance_summary
                 .global_balance_changes,
-        )?,
-        resultant_account_fungible_balances: to_api_lts_resultant_account_fungible_balances(
-            context,
-            &local_execution
-                .global_balance_summary
-                .resultant_fungible_account_balances,
         )?
     })
 }

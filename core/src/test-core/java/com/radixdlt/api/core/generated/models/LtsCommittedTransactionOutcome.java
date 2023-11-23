@@ -35,9 +35,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * For the given transaction, contains the status, total fee summary and individual entity resource balance changes. The balance changes accounts for the fee payments as well. For failed transactions, current implementation does not return any balance changes (not even the fee payments). This will also change in a future update. 
+ * For the given transaction, contains the status, total fee summary and individual entity resource balance changes. The balance changes accounts for the fee payments as well. 
  */
-@ApiModel(description = "For the given transaction, contains the status, total fee summary and individual entity resource balance changes. The balance changes accounts for the fee payments as well. For failed transactions, current implementation does not return any balance changes (not even the fee payments). This will also change in a future update. ")
+@ApiModel(description = "For the given transaction, contains the status, total fee summary and individual entity resource balance changes. The balance changes accounts for the fee payments as well. ")
 @JsonPropertyOrder({
   LtsCommittedTransactionOutcome.JSON_PROPERTY_STATE_VERSION,
   LtsCommittedTransactionOutcome.JSON_PROPERTY_PROPOSER_TIMESTAMP_MS,
