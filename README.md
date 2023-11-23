@@ -1,3 +1,4 @@
+[![Docker](https://github.com/radixdlt/babylon-node/actions/workflows/docker.yml/badge.svg?branch=develop)](https://github.com/radixdlt/babylon-node/actions/workflows/docker.yml)
 # Radix Babylon Node
 
 This is the repository for the RadixDLT node, for the Babylon release and beyond.
