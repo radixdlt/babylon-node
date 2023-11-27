@@ -155,6 +155,14 @@ impl SubstateDatabase for StateManagerDatabase {
             StateManagerDatabase::RocksDB(store) => store.list_entries(partition_key),
         }
     }
+
+    fn list_entries_from(
+        &self,
+        partition_key: &DbPartitionKey,
+        from_sort_key: Option<&DbSortKey>,
+    ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
+        todo!()
+    }
 }
 
 impl ReadableTreeStore for StateManagerDatabase {

@@ -343,6 +343,14 @@ impl<'s, S: SubstateDatabase> SubstateDatabase for StagedStore<'s, S> {
             },
         }
     }
+
+    fn list_entries_from(
+        &self,
+        partition_key: &DbPartitionKey,
+        from_sort_key: Option<&DbSortKey>,
+    ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
+        todo!()
+    }
 }
 
 impl<'s, S: ReadableTreeStore> ReadableTreeStore for StagedStore<'s, S> {

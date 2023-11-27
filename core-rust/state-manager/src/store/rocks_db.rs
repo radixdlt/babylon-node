@@ -1144,6 +1144,14 @@ impl SubstateDatabase for RocksDBStore {
                 .map(|((_, sort_key), value)| (sort_key, value)),
         )
     }
+
+    fn list_entries_from(
+        &self,
+        partition_key: &DbPartitionKey,
+        from_sort_key: Option<&DbSortKey>,
+    ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
+        todo!()
+    }
 }
 
 impl ListableSubstateDatabase for RocksDBStore {
