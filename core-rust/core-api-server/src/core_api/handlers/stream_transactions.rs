@@ -1,5 +1,5 @@
-use std::iter;
 use radix_engine::track::{NodeStateUpdates, PartitionStateUpdates};
+use std::iter;
 
 use crate::core_api::*;
 
@@ -15,7 +15,6 @@ use state_manager::{
 
 use transaction::manifest;
 use transaction::prelude::*;
-
 
 use super::to_api_committed_state_identifiers;
 
@@ -323,12 +322,10 @@ pub fn to_api_ledger_transaction(
                 }
             }
         },
-        LedgerTransaction::FlashV1(tx) => {
-            models::LedgerTransaction::FlashLedgerTransaction {
-                payload_hex,
-                flash_transaction: Box::new(to_api_flash_transaction(context, tx)?)
-            }
-        }
+        LedgerTransaction::FlashV1(tx) => models::LedgerTransaction::FlashLedgerTransaction {
+            payload_hex,
+            flash_transaction: Box::new(to_api_flash_transaction(context, tx)?),
+        },
     })
 }
 
@@ -589,14 +586,10 @@ pub fn to_api_flash_transaction(
     let mut flashed_substates = vec![];
     for (node_id, updates) in &flash_transaction.state_updates.by_node {
         match updates {
-            NodeStateUpdates::Delta {
-                by_partition
-            } => {
+            NodeStateUpdates::Delta { by_partition } => {
                 for (partition_number, partition_updates) in by_partition {
                     match partition_updates {
-                        PartitionStateUpdates::Delta {
-                            by_substate,
-                        } => {
+                        PartitionStateUpdates::Delta { by_substate } => {
                             for (key, update) in by_substate {
                                 let address = to_api_entity_address(context, node_id)?;
                                 let partition_num = to_api_u8_as_i32(partition_number.0);
@@ -604,7 +597,12 @@ pub fn to_api_flash_transaction(
                                 match update {
                                     DatabaseUpdate::Set(value) => {
                                         let substate_value = to_hex(value);
-                                        let flashed_substate = models::FlashedSubstate::new(address, partition_num, substate_key, substate_value);
+                                        let flashed_substate = models::FlashedSubstate::new(
+                                            address,
+                                            partition_num,
+                                            substate_key,
+                                            substate_value,
+                                        );
                                         flashed_substates.push(flashed_substate);
                                     }
                                     DatabaseUpdate::Delete => {
@@ -617,7 +615,6 @@ pub fn to_api_flash_transaction(
                             unimplemented!("Flash transactions with partition state updates not yet supported.");
                         }
                     }
-
                 }
             }
         }

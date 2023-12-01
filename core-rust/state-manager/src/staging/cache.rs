@@ -317,7 +317,50 @@ impl<'s, S: SubstateDatabase> SubstateDatabase for StagedStore<'s, S> {
         partition_key: &DbPartitionKey,
         from_sort_key: Option<&DbSortKey>,
     ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
-        todo!()
+        let partition_updates = self.overlay.partition_updates.get(partition_key);
+        let Some(partition_updates) = partition_updates else {
+            return self.root.list_entries_from(partition_key, from_sort_key);
+        };
+
+        let cloned_from_sort_key = from_sort_key.cloned();
+
+        match partition_updates {
+            ImmutablePartitionUpdates::Delta { substate_updates } => {
+                let overlaid_iter = substate_updates
+                    .iter()
+                    .map(|(sort_key, update)| (sort_key.clone(), update.clone()))
+                    .sorted_by(|(left_key, _), (right_key, _)| left_key.cmp(right_key))
+                    .skip_while(move |(key, _)| {
+                        if let Some(from_sort_key) = &cloned_from_sort_key {
+                            key.lt(from_sort_key)
+                        } else {
+                            false
+                        }
+                    });
+
+                Box::new(SubstateOverlayIterator::new(
+                    self.root.list_entries_from(partition_key, from_sort_key),
+                    Box::new(overlaid_iter),
+                ))
+            }
+            ImmutablePartitionUpdates::Batch(batch) => match batch {
+                BatchImmutablePartitionUpdates::Reset {
+                    new_substate_values,
+                } => Box::new(
+                    new_substate_values
+                        .iter()
+                        .map(|(sort_key, update)| (sort_key.clone(), update.clone()))
+                        .sorted_by(|(left_key, _), (right_key, _)| left_key.cmp(right_key))
+                        .skip_while(move |(key, _)| {
+                            if let Some(from_sort_key) = &cloned_from_sort_key {
+                                key.lt(from_sort_key)
+                            } else {
+                                false
+                            }
+                        }),
+                ),
+            },
+        }
     }
 
     fn list_entries(
