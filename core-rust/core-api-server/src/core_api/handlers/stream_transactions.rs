@@ -15,7 +15,7 @@ use state_manager::{
 
 use transaction::manifest;
 use transaction::prelude::*;
-use crate::core_api::models::SubstateId;
+
 
 use super::to_api_committed_state_identifiers;
 
@@ -608,12 +608,14 @@ pub fn to_api_flash_transaction(
                                         flashed_substates.push(flashed_substate);
                                     }
                                     DatabaseUpdate::Delete => {
+                                        unimplemented!("Flash transactions with deleted substates not yet supported.");
                                     }
                                 }
-
                             }
                         }
-                        PartitionStateUpdates::Batch(..) => {}
+                        PartitionStateUpdates::Batch(..) => {
+                            unimplemented!("Flash transactions with partition state updates not yet supported.");
+                        }
                     }
 
                 }
