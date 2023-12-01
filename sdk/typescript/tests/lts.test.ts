@@ -45,6 +45,18 @@ test('can get construction metadata', async () => {
     expect(response.ledger_clock.unix_timestamp_ms).toBeGreaterThanOrEqual(Date.now() - 60 * 1000);
 });
 
+test('can get account deposit behaviour', async () => {
+    const coreApiClient = await newCoreApiClient();
+    const xrdResource = "resource_loc1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxvq32hv";
+    let response = await coreApiClient.LTS.getAccountDepositBehaviour(
+        "account_loc168yqmxxkzmrzv9knya9865me9qktk43rqfuwdy9fq9rlk7a682gzva", [xrdResource]
+    );
+    expect(response.default_deposit_rule).toBe("Accept");
+    let xrdResponse = response.resource_specific_behaviours![xrdResource];
+    expect(xrdResponse.is_xrd).toBe(true);
+    expect(xrdResponse.allows_try_deposit).toBe(true);
+});
+
 test('submit unparsable transaction errors', async () => {
     const coreApiClient = await newCoreApiClient();
     const invalidTransactionPayload = "00";

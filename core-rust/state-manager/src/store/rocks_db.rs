@@ -151,7 +151,10 @@ const ALL_COLUMN_FAMILIES: [&str; 20] = [
 /// Note: This table does not use explicit versioning wrapper, since the serialized content of
 /// [`RawLedgerTransaction`] is itself versioned.
 struct RawLedgerTransactionsCf;
-impl DefaultCf<StateVersion, RawLedgerTransaction> for RawLedgerTransactionsCf {
+impl DefaultCf for RawLedgerTransactionsCf {
+    type Key = StateVersion;
+    type Value = RawLedgerTransaction;
+
     const DEFAULT_NAME: &'static str = "raw_ledger_transactions";
     type KeyCodec = StateVersionDbCodec;
     type ValueCodec = RawLedgerTransactionDbCodec;
@@ -160,9 +163,10 @@ impl DefaultCf<StateVersion, RawLedgerTransaction> for RawLedgerTransactionsCf {
 /// Identifiers of committed transactions.
 /// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedCommittedTransactionIdentifiers)`
 struct CommittedTransactionIdentifiersCf;
-impl VersionedCf<StateVersion, CommittedTransactionIdentifiers>
-    for CommittedTransactionIdentifiersCf
-{
+impl VersionedCf for CommittedTransactionIdentifiersCf {
+    type Key = StateVersion;
+    type Value = CommittedTransactionIdentifiers;
+
     const VERSIONED_NAME: &'static str = "committed_transaction_identifiers";
     type KeyCodec = StateVersionDbCodec;
     type VersionedValue = VersionedCommittedTransactionIdentifiers;
@@ -171,7 +175,10 @@ impl VersionedCf<StateVersion, CommittedTransactionIdentifiers>
 /// Ledger receipts of committed transactions.
 /// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedLedgerTransactionReceipt)`
 struct TransactionReceiptsCf;
-impl VersionedCf<StateVersion, LedgerTransactionReceipt> for TransactionReceiptsCf {
+impl VersionedCf for TransactionReceiptsCf {
+    type Key = StateVersion;
+    type Value = LedgerTransactionReceipt;
+
     const VERSIONED_NAME: &'static str = "transaction_receipts";
     type KeyCodec = StateVersionDbCodec;
     type VersionedValue = VersionedLedgerTransactionReceipt;
@@ -181,7 +188,10 @@ impl VersionedCf<StateVersion, LedgerTransactionReceipt> for TransactionReceipts
 /// `enable_local_transaction_execution_index`).
 /// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedLocalTransactionExecution)`
 struct LocalTransactionExecutionsCf;
-impl VersionedCf<StateVersion, LocalTransactionExecution> for LocalTransactionExecutionsCf {
+impl VersionedCf for LocalTransactionExecutionsCf {
+    type Key = StateVersion;
+    type Value = LocalTransactionExecution;
+
     const VERSIONED_NAME: &'static str = "local_transaction_executions";
     type KeyCodec = StateVersionDbCodec;
     type VersionedValue = VersionedLocalTransactionExecution;
@@ -190,7 +200,10 @@ impl VersionedCf<StateVersion, LocalTransactionExecution> for LocalTransactionEx
 /// Ledger proofs of committed transactions.
 /// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedLedgerProof)`
 struct LedgerProofsCf;
-impl VersionedCf<StateVersion, LedgerProof> for LedgerProofsCf {
+impl VersionedCf for LedgerProofsCf {
+    type Key = StateVersion;
+    type Value = LedgerProof;
+
     const VERSIONED_NAME: &'static str = "ledger_proofs";
     type KeyCodec = StateVersionDbCodec;
     type VersionedValue = VersionedLedgerProof;
@@ -200,7 +213,10 @@ impl VersionedCf<StateVersion, LedgerProof> for LedgerProofsCf {
 /// Schema: `Epoch.to_bytes()` -> `scrypto_encode(VersionedLedgerProof)`
 /// Note: This duplicates a small subset of [`StateVersionToLedgerProof`]'s values.
 struct EpochLedgerProofsCf;
-impl VersionedCf<Epoch, LedgerProof> for EpochLedgerProofsCf {
+impl VersionedCf for EpochLedgerProofsCf {
+    type Key = Epoch;
+    type Value = LedgerProof;
+
     const VERSIONED_NAME: &'static str = "epoch_ledger_proofs";
     type KeyCodec = EpochDbCodec;
     type VersionedValue = VersionedLedgerProof;
@@ -211,7 +227,10 @@ impl VersionedCf<Epoch, LedgerProof> for EpochLedgerProofsCf {
 /// Note: This table does not use explicit versioning wrapper, since the value represents a DB
 /// key of another table (and versioning DB keys is not useful).
 struct IntentHashesCf;
-impl DefaultCf<IntentHash, StateVersion> for IntentHashesCf {
+impl DefaultCf for IntentHashesCf {
+    type Key = IntentHash;
+    type Value = StateVersion;
+
     const DEFAULT_NAME: &'static str = "intent_hashes";
     type KeyCodec = HashDbCodec<IntentHash>;
     type ValueCodec = StateVersionDbCodec;
@@ -222,7 +241,10 @@ impl DefaultCf<IntentHash, StateVersion> for IntentHashesCf {
 /// Note: This table does not use explicit versioning wrapper, since the value represents a DB
 /// key of another table (and versioning DB keys is not useful).
 struct NotarizedTransactionHashesCf;
-impl DefaultCf<NotarizedTransactionHash, StateVersion> for NotarizedTransactionHashesCf {
+impl DefaultCf for NotarizedTransactionHashesCf {
+    type Key = NotarizedTransactionHash;
+    type Value = StateVersion;
+
     const DEFAULT_NAME: &'static str = "notarized_transaction_hashes";
     type KeyCodec = HashDbCodec<NotarizedTransactionHash>;
     type ValueCodec = StateVersionDbCodec;
@@ -233,7 +255,10 @@ impl DefaultCf<NotarizedTransactionHash, StateVersion> for NotarizedTransactionH
 /// Note: This table does not use explicit versioning wrapper, since the value represents a DB
 /// key of another table (and versioning DB keys is not useful).
 struct LedgerTransactionHashesCf;
-impl DefaultCf<LedgerTransactionHash, StateVersion> for LedgerTransactionHashesCf {
+impl DefaultCf for LedgerTransactionHashesCf {
+    type Key = LedgerTransactionHash;
+    type Value = StateVersion;
+
     const DEFAULT_NAME: &'static str = "ledger_transaction_hashes";
     type KeyCodec = HashDbCodec<LedgerTransactionHash>;
     type ValueCodec = StateVersionDbCodec;
@@ -244,7 +269,10 @@ impl DefaultCf<LedgerTransactionHash, StateVersion> for LedgerTransactionHashesC
 /// Note: This table does not use explicit versioning wrapper, since each serialized substate
 /// value is already versioned.
 struct SubstatesCf;
-impl DefaultCf<DbSubstateKey, DbSubstateValue> for SubstatesCf {
+impl DefaultCf for SubstatesCf {
+    type Key = DbSubstateKey;
+    type Value = DbSubstateValue;
+
     const DEFAULT_NAME: &'static str = "substates";
     type KeyCodec = SubstateKeyDbCodec;
     type ValueCodec = DirectDbCodec;
@@ -255,7 +283,10 @@ impl DefaultCf<DbSubstateKey, DbSubstateValue> for SubstatesCf {
 /// Schema: `NodeId.0` -> `scrypto_encode(VersionedSubstateNodeAncestryRecord)`
 /// Note: we do not persist records of root Nodes (which do not have any ancestor).
 struct SubstateNodeAncestryRecordsCf;
-impl VersionedCf<NodeId, SubstateNodeAncestryRecord> for SubstateNodeAncestryRecordsCf {
+impl VersionedCf for SubstateNodeAncestryRecordsCf {
+    type Key = NodeId;
+    type Value = SubstateNodeAncestryRecord;
+
     const VERSIONED_NAME: &'static str = "substate_node_ancestry_records";
     type KeyCodec = NodeIdDbCodec;
     type VersionedValue = VersionedSubstateNodeAncestryRecord;
@@ -265,7 +296,10 @@ impl VersionedCf<NodeId, SubstateNodeAncestryRecord> for SubstateNodeAncestryRec
 /// Schema: `[]` -> `scrypto_encode(VersionedVertexStoreBlob)`
 /// Note: This is a single-entry table (i.e. the empty key is the only allowed key).
 struct VertexStoreCf;
-impl VersionedCf<(), VertexStoreBlob> for VertexStoreCf {
+impl VersionedCf for VertexStoreCf {
+    type Key = ();
+    type Value = VertexStoreBlob;
+
     const VERSIONED_NAME: &'static str = "vertex_store";
     type KeyCodec = UnitDbCodec;
     type VersionedValue = VersionedVertexStoreBlob;
@@ -274,7 +308,10 @@ impl VersionedCf<(), VertexStoreBlob> for VertexStoreCf {
 /// Individual nodes of the Substate database's hash tree.
 /// Schema: `encode_key(NodeKey)` -> `scrypto_encode(VersionedTreeNode)`.
 struct StateHashTreeNodesCf;
-impl VersionedCf<NodeKey, TreeNode> for StateHashTreeNodesCf {
+impl VersionedCf for StateHashTreeNodesCf {
+    type Key = NodeKey;
+    type Value = TreeNode;
+
     const VERSIONED_NAME: &'static str = "state_hash_tree_nodes";
     type KeyCodec = NodeKeyDbCodec;
     type VersionedValue = VersionedTreeNode;
@@ -283,7 +320,10 @@ impl VersionedCf<NodeKey, TreeNode> for StateHashTreeNodesCf {
 /// Parts of the Substate database's hash tree that became stale at a specific state version.
 /// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedStaleTreeParts)`.
 struct StaleStateHashTreePartsCf;
-impl VersionedCf<StateVersion, StaleTreeParts> for StaleStateHashTreePartsCf {
+impl VersionedCf for StaleStateHashTreePartsCf {
+    type Key = StateVersion;
+    type Value = StaleTreeParts;
+
     const VERSIONED_NAME: &'static str = "stale_state_hash_tree_parts";
     type KeyCodec = StateVersionDbCodec;
     type VersionedValue = VersionedStaleTreeParts;
@@ -292,7 +332,10 @@ impl VersionedCf<StateVersion, StaleTreeParts> for StaleStateHashTreePartsCf {
 /// Transaction accumulator tree slices added at a specific state version.
 /// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedTransactionAccuTreeSlice)`.
 struct TransactionAccuTreeSlicesCf;
-impl VersionedCf<StateVersion, TransactionAccuTreeSlice> for TransactionAccuTreeSlicesCf {
+impl VersionedCf for TransactionAccuTreeSlicesCf {
+    type Key = StateVersion;
+    type Value = TransactionAccuTreeSlice;
+
     const VERSIONED_NAME: &'static str = "transaction_accu_tree_slices";
     type KeyCodec = StateVersionDbCodec;
     type VersionedValue = VersionedTransactionAccuTreeSlice;
@@ -301,7 +344,10 @@ impl VersionedCf<StateVersion, TransactionAccuTreeSlice> for TransactionAccuTree
 /// Receipt accumulator tree slices added at a specific state version.
 /// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedReceiptAccuTreeSlice)`.
 struct ReceiptAccuTreeSlicesCf;
-impl VersionedCf<StateVersion, ReceiptAccuTreeSlice> for ReceiptAccuTreeSlicesCf {
+impl VersionedCf for ReceiptAccuTreeSlicesCf {
+    type Key = StateVersion;
+    type Value = ReceiptAccuTreeSlice;
+
     const VERSIONED_NAME: &'static str = "receipt_accu_tree_slices";
     type KeyCodec = StateVersionDbCodec;
     type VersionedValue = VersionedReceiptAccuTreeSlice;
@@ -312,9 +358,13 @@ impl VersionedCf<StateVersion, ReceiptAccuTreeSlice> for ReceiptAccuTreeSlicesCf
 /// Note: This table does not use explicit versioning wrapper, since each extension manages the
 /// serialization of their data (of its custom type).
 struct ExtensionsDataCf;
-impl TypedCf<ExtensionsDataKey, Vec<u8>, PredefinedDbCodec<ExtensionsDataKey>, DirectDbCodec>
-    for ExtensionsDataCf
-{
+impl TypedCf for ExtensionsDataCf {
+    type Key = ExtensionsDataKey;
+    type Value = Vec<u8>;
+
+    type KeyCodec = PredefinedDbCodec<ExtensionsDataKey>;
+    type ValueCodec = DirectDbCodec;
+
     const NAME: &'static str = "extensions_data";
 
     fn key_codec(&self) -> PredefinedDbCodec<ExtensionsDataKey> {
@@ -335,14 +385,13 @@ impl TypedCf<ExtensionsDataKey, Vec<u8>, PredefinedDbCodec<ExtensionsDataKey>, D
 /// Note: This is a key-only table (i.e. the empty value is the only allowed value). Given fast
 /// prefix iterator from RocksDB this emulates a `Map<Account, Set<StateVersion>>`.
 struct AccountChangeStateVersionsCf;
-impl
-    TypedCf<
-        (GlobalAddress, StateVersion),
-        (),
-        PrefixGlobalAddressDbCodec<StateVersion, StateVersionDbCodec>,
-        UnitDbCodec,
-    > for AccountChangeStateVersionsCf
-{
+impl TypedCf for AccountChangeStateVersionsCf {
+    type Key = (GlobalAddress, StateVersion);
+    type Value = ();
+
+    type KeyCodec = PrefixGlobalAddressDbCodec<StateVersion, StateVersionDbCodec>;
+    type ValueCodec = UnitDbCodec;
+
     const NAME: &'static str = "account_change_state_versions";
 
     fn key_codec(&self) -> PrefixGlobalAddressDbCodec<StateVersion, StateVersionDbCodec> {
@@ -358,7 +407,10 @@ impl
 /// keyed by their sequence number (i.e. their index in the list of Scenarios to execute).
 /// Schema: `ScenarioSequenceNumber.to_be_bytes()` -> `scrypto_encode(VersionedExecutedGenesisScenario)`
 struct ExecutedGenesisScenariosCf;
-impl VersionedCf<ScenarioSequenceNumber, ExecutedGenesisScenario> for ExecutedGenesisScenariosCf {
+impl VersionedCf for ExecutedGenesisScenariosCf {
+    type Key = ScenarioSequenceNumber;
+    type Value = ExecutedGenesisScenario;
+
     const VERSIONED_NAME: &'static str = "executed_genesis_scenarios";
     type KeyCodec = ScenarioSequenceNumberDbCodec;
     type VersionedValue = VersionedExecutedGenesisScenario;
@@ -368,7 +420,10 @@ impl VersionedCf<ScenarioSequenceNumber, ExecutedGenesisScenario> for ExecutedGe
 /// Schema: `[]` -> `scrypto_encode(VersionedLedgerProofsGcProgress)`
 /// Note: This is a single-entry table (i.e. the empty key is the only allowed key).
 struct LedgerProofsGcProgressCf;
-impl VersionedCf<(), LedgerProofsGcProgress> for LedgerProofsGcProgressCf {
+impl VersionedCf for LedgerProofsGcProgressCf {
+    type Key = ();
+    type Value = LedgerProofsGcProgress;
+
     const VERSIONED_NAME: &'static str = "ledger_proofs_gc_progress";
     type KeyCodec = UnitDbCodec;
     type VersionedValue = VersionedLedgerProofsGcProgress;
