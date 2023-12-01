@@ -703,8 +703,9 @@ pub fn to_api_costing_parameters(
         finalization_cost_unit_limit: to_api_u32_as_i64(
             engine_costing_parameters.finalization_cost_unit_limit,
         ),
-        xrd_usd_price: to_api_decimal(&engine_costing_parameters.finalization_cost_unit_price),
-        xrd_storage_price: to_api_decimal(&engine_costing_parameters.finalization_cost_unit_price),
+        xrd_usd_price: to_api_decimal(&engine_costing_parameters.usd_price),
+        xrd_storage_price: to_api_decimal(&engine_costing_parameters.state_storage_price),
+        xrd_archive_storage_price: to_api_decimal(&engine_costing_parameters.archive_storage_price),
         tip_percentage: to_api_u16_as_i32(transaction_costing_parameters.tip_percentage),
     })
 }

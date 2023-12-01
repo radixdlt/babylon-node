@@ -406,8 +406,12 @@ public final class RadixKeyStore implements Closeable {
 
   private static void writeKeyStore(File file, KeyStore ks, char[] storePassword)
       throws GeneralSecurityException, IOException {
-    // Ensure directory for key file is created if it they don't exist
-    Files.createDirectories(file.toPath().getParent());
+    var parentDirectory = file.toPath().getParent();
+    if (parentDirectory != null) {
+      // If we're using a path which isn't just local to the working directory,
+      // then ensure that parent directory for key file is created if it doesn't exist
+      Files.createDirectories(parentDirectory);
+    }
     // Now create the key itself
     try (OutputStream os = new FileOutputStream(file)) {
       try {

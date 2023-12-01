@@ -52,12 +52,12 @@ export class CoreApiClient {
       state: new StateApi(configuration),
       status: new StatusApi(configuration),
       stream: new StreamApi(configuration),
-      transaction: new TransactionApi(configuration),      
+      transaction: new TransactionApi(configuration),
     };
     this.lts = new LTS(this.lowLevel.lts, logicalNetworkName);
     this.LTS = this.lts; // NOTE: this is to keep backwards compatibility
-    this.mempool = new Mempool(this.lowLevel.mempool)
-    this.state = new State(this.lowLevel.state)
+    this.mempool = new Mempool(this.lowLevel.mempool);
+    this.state = new State(this.lowLevel.state);
     this.status = new Status(this.lowLevel.status, logicalNetworkName);
     this.stream = new Stream(this.lowLevel.stream);
     this.transaction = new Transaction(this.lowLevel.transaction);
