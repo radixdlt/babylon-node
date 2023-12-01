@@ -187,6 +187,8 @@ pub async fn create_server<F>(
         .route("/state/package", post(handle_state_package))
         .route("/state/resource", post(handle_state_resource))
         .route("/state/non-fungible", post(handle_state_non_fungible))
+        // Browse Sub-API
+        .route("/browse/object/field", post(handle_browse_object_field))
         .with_state(core_api_state);
 
     let metrics = Arc::new(CoreApiMetrics::new(metric_registry));

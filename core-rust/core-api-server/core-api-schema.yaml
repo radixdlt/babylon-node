@@ -108,6 +108,7 @@ x-tagGroups:
       - Mempool
       - State
       - Stream
+      - Browse
 tags:
   - name: SDKs
     x-displayName: SDKs
@@ -208,6 +209,9 @@ tags:
   - name: Stream
     x-displayName: Stream Endpoints
     description: To query the transaction stream of the ledger.
+  - name: Browse
+    x-displayName: Browse Endpoints
+    description: For browsing the current Engine State.
 paths:
 ##################################################
 # Long Term Support backwards compatible Sub-API #
@@ -1113,6 +1117,42 @@ paths:
                 $ref: "#/components/schemas/BasicErrorResponse"
         '404':
           description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
+##################
+# Browse Sub-API #
+##################
+  "/browse/object/field":
+    post:
+      summary: Get Object Field
+      description: |
+        Reads the current value of an object's field, given an entity address, a module (`Main` by
+        default) and either a field index or its human-readable name (if applicable).
+      tags:
+        - Browse
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BrowseObjectFieldRequest"
+      responses:
+        '200':
+          description: Current object field value
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BrowseObjectFieldResponse"
+        '400':
+          description: Client error
           content:
             application/json:
               schema:
@@ -7711,3 +7751,45 @@ components:
           $ref: "#/components/schemas/Substate"
         royalty:
           $ref: "#/components/schemas/Substate"
+#########################################################
+# REQUEST: /browse/object-field                         #
+#########################################################
+    BrowseObjectFieldRequest:
+      type: object
+      required:
+        - network
+        - entity_address
+        # additionally, either `field_name` or `field_index` is required, but hard to make it work with code generator
+      properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
+        entity_address:
+          $ref: "#/components/schemas/EntityAddress"
+        module_id:
+          $ref: "#/components/schemas/ModuleId"
+        field_name:
+          type: string
+          description: Name of the field to read. Either this or `field_index` is required.
+        field_index:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 255
+          description: Index of the field to read. Either this or `field_name` is required.
+    BrowseObjectFieldResponse:
+      type: object
+      required:
+        - at_ledger_state
+        - content
+      properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+          description: A summarized state of the ledger at which the query was performed.
+        content:
+          type: object
+          description: The requested field's value.
+          required:
+            - programmatic_json
+          properties:
+            programmatic_json:
+              type: object

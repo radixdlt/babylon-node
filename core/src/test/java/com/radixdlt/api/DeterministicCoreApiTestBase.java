@@ -250,6 +250,10 @@ public abstract class DeterministicCoreApiTestBase {
     return new StateApi(apiClient);
   }
 
+  protected BrowseApi getBrowseApi() {
+    return new BrowseApi(apiClient);
+  }
+
   protected LtsApi getLtsApi() {
     return new LtsApi(apiClient);
   }
