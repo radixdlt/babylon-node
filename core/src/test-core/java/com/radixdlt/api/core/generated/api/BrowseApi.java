@@ -22,6 +22,8 @@ import com.radixdlt.api.core.generated.models.BrowseEntityInfoRequest;
 import com.radixdlt.api.core.generated.models.BrowseEntityInfoResponse;
 import com.radixdlt.api.core.generated.models.BrowseEntityIteratorRequest;
 import com.radixdlt.api.core.generated.models.BrowseEntityIteratorResponse;
+import com.radixdlt.api.core.generated.models.BrowseKeyValueStoreIteratorRequest;
+import com.radixdlt.api.core.generated.models.BrowseKeyValueStoreIteratorResponse;
 import com.radixdlt.api.core.generated.models.BrowseObjectCollectionIteratorRequest;
 import com.radixdlt.api.core.generated.models.BrowseObjectCollectionIteratorResponse;
 import com.radixdlt.api.core.generated.models.BrowseObjectFieldRequest;
@@ -226,6 +228,84 @@ public class BrowseApi {
 
     try {
       byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(browseEntityIteratorRequest);
+      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    if (memberVarReadTimeout != null) {
+      localVarRequestBuilder.timeout(memberVarReadTimeout);
+    }
+    if (memberVarInterceptor != null) {
+      memberVarInterceptor.accept(localVarRequestBuilder);
+    }
+    return localVarRequestBuilder;
+  }
+  /**
+   * List Key-Value Store
+   * Lists keys of all entries from a particular Key-Value Store, in an iterator-like paged fashion
+   * @param browseKeyValueStoreIteratorRequest  (required)
+   * @return BrowseKeyValueStoreIteratorResponse
+   * @throws ApiException if fails to make API call
+   */
+  public BrowseKeyValueStoreIteratorResponse browseKvStoreIteratorPost(BrowseKeyValueStoreIteratorRequest browseKeyValueStoreIteratorRequest) throws ApiException {
+    ApiResponse<BrowseKeyValueStoreIteratorResponse> localVarResponse = browseKvStoreIteratorPostWithHttpInfo(browseKeyValueStoreIteratorRequest);
+    return localVarResponse.getData();
+  }
+
+  /**
+   * List Key-Value Store
+   * Lists keys of all entries from a particular Key-Value Store, in an iterator-like paged fashion
+   * @param browseKeyValueStoreIteratorRequest  (required)
+   * @return ApiResponse&lt;BrowseKeyValueStoreIteratorResponse&gt;
+   * @throws ApiException if fails to make API call
+   */
+  public ApiResponse<BrowseKeyValueStoreIteratorResponse> browseKvStoreIteratorPostWithHttpInfo(BrowseKeyValueStoreIteratorRequest browseKeyValueStoreIteratorRequest) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = browseKvStoreIteratorPostRequestBuilder(browseKeyValueStoreIteratorRequest);
+    try {
+      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
+          localVarRequestBuilder.build(),
+          HttpResponse.BodyHandlers.ofInputStream());
+      if (memberVarResponseInterceptor != null) {
+        memberVarResponseInterceptor.accept(localVarResponse);
+      }
+      try {
+        if (localVarResponse.statusCode()/ 100 != 2) {
+          throw getApiException("browseKvStoreIteratorPost", localVarResponse);
+        }
+        return new ApiResponse<BrowseKeyValueStoreIteratorResponse>(
+          localVarResponse.statusCode(),
+          localVarResponse.headers().map(),
+          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<BrowseKeyValueStoreIteratorResponse>() {}) // closes the InputStream
+          
+        );
+      } finally {
+      }
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new ApiException(e);
+    }
+  }
+
+  private HttpRequest.Builder browseKvStoreIteratorPostRequestBuilder(BrowseKeyValueStoreIteratorRequest browseKeyValueStoreIteratorRequest) throws ApiException {
+    // verify the required parameter 'browseKeyValueStoreIteratorRequest' is set
+    if (browseKeyValueStoreIteratorRequest == null) {
+      throw new ApiException(400, "Missing the required parameter 'browseKeyValueStoreIteratorRequest' when calling browseKvStoreIteratorPost");
+    }
+
+    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
+
+    String localVarPath = "/browse/kv_store/iterator";
+
+    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+
+    localVarRequestBuilder.header("Content-Type", "application/json");
+    localVarRequestBuilder.header("Accept", "application/json");
+
+    try {
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(browseKeyValueStoreIteratorRequest);
       localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
     } catch (IOException e) {
       throw new ApiException(e);

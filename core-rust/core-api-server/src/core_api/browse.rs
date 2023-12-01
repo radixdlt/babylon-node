@@ -828,6 +828,36 @@ impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
             .map(|substate_key| Self::to_object_collection_key(substate_key, collection_meta)))
     }
 
+    /// Returns an iterator over all keys of the given Key-Value Store entity, starting from the
+    /// given key (or its successor, if it does not exist), in an arbitrary but deterministic order
+    /// used by the backing storage.
+    pub fn iter_kv_store_keys(
+        &self,
+        node_id: &NodeId,
+        kv_store_meta: &'s KeyValueStoreMeta,
+        from_key: Option<&MapKey>,
+    ) -> Result<impl Iterator<Item = SborData> + '_, EngineStateBrowsingError> {
+        let from_key = from_key.cloned();
+        Ok(self
+            .reader
+            .key_value_store_iter(node_id)
+            // if `KeyValueStoreMeta` exists, then the object, module and collection must exist - no errors expected:
+            .map_err(|error| {
+                EngineStateBrowsingError::UnexpectedEngineError(
+                    error,
+                    "when iterating over Key-Value Store".to_string(),
+                )
+            })?
+            .map(|(map_key, _)| map_key)
+            // TODO(after adding "iterate from" support in Engine): The implementation below is a
+            // "faux paging" (functional, although nonsensical - given the performance reasons of
+            // even having the paging). This can be easily migrated to true paging after extending
+            // the `SubstateDatabase` API.
+            .sorted() // the DB uses different sorting (by hash) - faux paging is order-aware
+            .skip_while(move |map_key| Some(map_key) < from_key.as_ref()) // any `Some` is greater than `None`
+            .map(|map_key| SborData::new(map_key, &kv_store_meta.resolved_key_type)))
+    }
+
     /// Creates a business-level representation of the object collection's substate key.
     fn to_object_collection_key(
         substate_key: SubstateKey,
