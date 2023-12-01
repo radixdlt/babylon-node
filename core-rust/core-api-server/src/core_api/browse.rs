@@ -22,7 +22,6 @@ use radix_engine_stores::hash_tree::tree_store::{
     Nibble, NibblePath, NodeKey, ReadableTreeStore, TreeNode,
 };
 
-use sbor::representations::{SerializationMode, SerializationParameters};
 use state_manager::store::traits::{QueryableProofStore, SubstateNodeAncestryStore};
 use tracing::warn;
 
@@ -1210,20 +1209,11 @@ impl<'t> SborData<'t> {
         self,
         mapping_context: &MappingContext,
     ) -> Result<serde_json::Value, MappingError> {
-        let raw_payload = RawScryptoPayload::new_from_valid_owned(self.payload_bytes);
-        let serializable = raw_payload.serializable(SerializationParameters::WithSchema {
-            mode: SerializationMode::Programmatic,
-            custom_context: ScryptoValueDisplayContext::with_optional_bech32(Some(
-                &mapping_context.address_encoder,
-            )),
-            schema: &self.resolved_type.schema,
-            type_id: self.resolved_type.type_reference.to_local_type_id(),
-            depth_limit: SCRYPTO_SBOR_V1_MAX_DEPTH,
-        });
-        serde_json::to_value(serializable).map_err(|_error| MappingError::SubstateValue {
-            bytes: raw_payload.payload_bytes().to_vec(),
-            message: "cannot render as programmatic json".to_string(),
-        })
+        ProgrammaticJsonEncoder::new(mapping_context).encode(
+            self.payload_bytes,
+            &self.resolved_type.schema,
+            self.resolved_type.type_reference.to_local_type_id(),
+        )
     }
 
     /// Returns raw SBOR bytes.
