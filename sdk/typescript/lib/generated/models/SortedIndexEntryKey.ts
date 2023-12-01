@@ -12,28 +12,83 @@
  * Do not edit the class manually.
  */
 
+import { exists, mapValues } from '../runtime';
+/**
+ * Key within an Object's Sorted Index collection.
+ * @export
+ * @interface SortedIndexEntryKey
+ */
+export interface SortedIndexEntryKey {
+    /**
+     * 
+     * @type {string}
+     * @memberof SortedIndexEntryKey
+     */
+    kind: SortedIndexEntryKeyKindEnum;
+    /**
+     * The hex-encoded bytes of the sorted part of the key.
+     * @type {string}
+     * @memberof SortedIndexEntryKey
+     */
+    sort_prefix_hex: string;
+    /**
+     * 
+     * @type {object}
+     * @memberof SortedIndexEntryKey
+     */
+    programmatic_json: object;
+}
+
 
 /**
- * One of supported kinds of collections within an Object.
  * @export
  */
-export const ObjectCollectionKind = {
-    KeyValueStore: 'KeyValueStore',
-    Index: 'Index',
+export const SortedIndexEntryKeyKindEnum = {
     SortedIndex: 'SortedIndex'
 } as const;
-export type ObjectCollectionKind = typeof ObjectCollectionKind[keyof typeof ObjectCollectionKind];
+export type SortedIndexEntryKeyKindEnum = typeof SortedIndexEntryKeyKindEnum[keyof typeof SortedIndexEntryKeyKindEnum];
 
 
-export function ObjectCollectionKindFromJSON(json: any): ObjectCollectionKind {
-    return ObjectCollectionKindFromJSONTyped(json, false);
+/**
+ * Check if a given object implements the SortedIndexEntryKey interface.
+ */
+export function instanceOfSortedIndexEntryKey(value: object): boolean {
+    let isInstance = true;
+    isInstance = isInstance && "kind" in value;
+    isInstance = isInstance && "sort_prefix_hex" in value;
+    isInstance = isInstance && "programmatic_json" in value;
+
+    return isInstance;
 }
 
-export function ObjectCollectionKindFromJSONTyped(json: any, ignoreDiscriminator: boolean): ObjectCollectionKind {
-    return json as ObjectCollectionKind;
+export function SortedIndexEntryKeyFromJSON(json: any): SortedIndexEntryKey {
+    return SortedIndexEntryKeyFromJSONTyped(json, false);
 }
 
-export function ObjectCollectionKindToJSON(value?: ObjectCollectionKind | null): any {
-    return value as any;
+export function SortedIndexEntryKeyFromJSONTyped(json: any, ignoreDiscriminator: boolean): SortedIndexEntryKey {
+    if ((json === undefined) || (json === null)) {
+        return json;
+    }
+    return {
+        
+        'kind': json['kind'],
+        'sort_prefix_hex': json['sort_prefix_hex'],
+        'programmatic_json': json['programmatic_json'],
+    };
+}
+
+export function SortedIndexEntryKeyToJSON(value?: SortedIndexEntryKey | null): any {
+    if (value === undefined) {
+        return undefined;
+    }
+    if (value === null) {
+        return null;
+    }
+    return {
+        
+        'kind': value.kind,
+        'sort_prefix_hex': value.sort_prefix_hex,
+        'programmatic_json': value.programmatic_json,
+    };
 }
 

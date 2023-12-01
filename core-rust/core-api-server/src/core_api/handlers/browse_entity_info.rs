@@ -221,7 +221,7 @@ fn to_api_object_collection_info(
         index: to_api_u8_as_i32(index.number),
         name: index.derived_name.clone(),
         kind: match kind {
-            ObjectCollectionKind::KeyValue => models::ObjectCollectionKind::KeyValue,
+            ObjectCollectionKind::KeyValueStore => models::ObjectCollectionKind::KeyValueStore,
             ObjectCollectionKind::Index => models::ObjectCollectionKind::Index,
             ObjectCollectionKind::SortedIndex => models::ObjectCollectionKind::SortedIndex,
         },

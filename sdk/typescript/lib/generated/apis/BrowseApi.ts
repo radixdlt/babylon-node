@@ -20,6 +20,8 @@ import type {
   BrowseEntityInfoResponse,
   BrowseEntityIteratorRequest,
   BrowseEntityIteratorResponse,
+  BrowseObjectCollectionIteratorRequest,
+  BrowseObjectCollectionIteratorResponse,
   BrowseObjectFieldRequest,
   BrowseObjectFieldResponse,
 } from '../models';
@@ -34,6 +36,10 @@ import {
     BrowseEntityIteratorRequestToJSON,
     BrowseEntityIteratorResponseFromJSON,
     BrowseEntityIteratorResponseToJSON,
+    BrowseObjectCollectionIteratorRequestFromJSON,
+    BrowseObjectCollectionIteratorRequestToJSON,
+    BrowseObjectCollectionIteratorResponseFromJSON,
+    BrowseObjectCollectionIteratorResponseToJSON,
     BrowseObjectFieldRequestFromJSON,
     BrowseObjectFieldRequestToJSON,
     BrowseObjectFieldResponseFromJSON,
@@ -46,6 +52,10 @@ export interface BrowseEntityInfoPostRequest {
 
 export interface BrowseEntityIteratorPostRequest {
     browseEntityIteratorRequest: BrowseEntityIteratorRequest;
+}
+
+export interface BrowseObjectCollectionIteratorPostRequest {
+    browseObjectCollectionIteratorRequest: BrowseObjectCollectionIteratorRequest;
 }
 
 export interface BrowseObjectFieldPostRequest {
@@ -124,6 +134,41 @@ export class BrowseApi extends runtime.BaseAPI {
      */
     async browseEntityIteratorPost(requestParameters: BrowseEntityIteratorPostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<BrowseEntityIteratorResponse> {
         const response = await this.browseEntityIteratorPostRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Lists keys of all entries from a particular object\'s collection, in an iterator-like paged fashion
+     * List Object Collection
+     */
+    async browseObjectCollectionIteratorPostRaw(requestParameters: BrowseObjectCollectionIteratorPostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<BrowseObjectCollectionIteratorResponse>> {
+        if (requestParameters.browseObjectCollectionIteratorRequest === null || requestParameters.browseObjectCollectionIteratorRequest === undefined) {
+            throw new runtime.RequiredError('browseObjectCollectionIteratorRequest','Required parameter requestParameters.browseObjectCollectionIteratorRequest was null or undefined when calling browseObjectCollectionIteratorPost.');
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        const response = await this.request({
+            path: `/browse/object/collection/iterator`,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: BrowseObjectCollectionIteratorRequestToJSON(requestParameters.browseObjectCollectionIteratorRequest),
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => BrowseObjectCollectionIteratorResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Lists keys of all entries from a particular object\'s collection, in an iterator-like paged fashion
+     * List Object Collection
+     */
+    async browseObjectCollectionIteratorPost(requestParameters: BrowseObjectCollectionIteratorPostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<BrowseObjectCollectionIteratorResponse> {
+        const response = await this.browseObjectCollectionIteratorPostRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

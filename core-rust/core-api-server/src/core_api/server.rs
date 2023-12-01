@@ -194,6 +194,10 @@ pub async fn create_server<F>(
         )
         .route("/browse/entity/info", post(handle_browse_entity_info))
         .route("/browse/object/field", post(handle_browse_object_field))
+        .route(
+            "/browse/object/collection/iterator",
+            post(handle_browse_object_collection_iterator),
+        )
         .with_state(core_api_state);
 
     let metrics = Arc::new(CoreApiMetrics::new(metric_registry));

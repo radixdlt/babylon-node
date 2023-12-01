@@ -369,6 +369,7 @@ dependencies = [
  "futures-util",
  "hex",
  "hyper",
+ "itertools 0.11.0",
  "jni",
  "node-common",
  "paste",

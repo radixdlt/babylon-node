@@ -6,6 +6,7 @@ use radix_engine::types::*;
 use radix_engine_store_interface::interface::{DbPartitionKey, SubstateDatabase};
 
 use convert_case::{Case, Casing};
+use itertools::Itertools;
 
 use radix_engine::system::system_db_reader::{SystemDatabaseReader, SystemReaderError};
 use radix_engine::system::system_type_checker::{BlueprintTypeTarget, SchemaValidationMeta};
@@ -340,7 +341,7 @@ impl<'s, S: SubstateDatabase + SubstateNodeAncestryStore> EngineStateMetaLoader<
     ) {
         match schema {
             BlueprintCollectionSchema::KeyValueStore(schema) => {
-                (ObjectCollectionKind::KeyValue, schema)
+                (ObjectCollectionKind::KeyValueStore, schema)
             }
             BlueprintCollectionSchema::Index(schema) => (ObjectCollectionKind::Index, schema),
             BlueprintCollectionSchema::SortedIndex(schema) => {
@@ -444,7 +445,7 @@ pub struct ObjectModuleStateMeta {
 
 impl ObjectModuleStateMeta {
     /// Gets the particular field's metadata by its human-readable name.
-    /// Please see [`ObjectFieldMeta::derive_field_name()`] to learn how a human-readable name is
+    /// Please see [`RichIndex::with_derived_field_name()`] to learn how a human-readable name is
     /// derived.
     /// Note: not every field has a name - either because it is inherently unnamed (e.g. within a
     /// tuple), or because its name does not strictly follow our naming convention (and thus cannot
@@ -454,21 +455,12 @@ impl ObjectModuleStateMeta {
         name: impl Into<String>,
     ) -> Result<&ObjectFieldMeta, EngineStateBrowsingError> {
         let requested_derived_name = Some(name.into());
-        let found_fields = self
-            .fields
-            .iter()
-            .filter(|field| field.index.derived_name == requested_derived_name)
-            .collect::<Vec<_>>();
-        match found_fields.len() {
-            0 => Err(EngineStateBrowsingError::RequestedItemNotFound(
-                ItemKind::Field,
-            )),
-            1 => Ok(found_fields[0]),
-            _ => Err(EngineStateBrowsingError::RequestedItemInvalid(
-                ItemKind::Field,
-                "derived name not unique".to_string(),
-            )),
-        }
+        Self::exactly_one_with_derived_name(
+            self.fields
+                .iter()
+                .filter(|field| field.index.derived_name == requested_derived_name),
+            ItemKind::Field,
+        )
     }
 
     /// Gets the particular field's metadata by its index.
@@ -478,6 +470,53 @@ impl ObjectModuleStateMeta {
             .ok_or(EngineStateBrowsingError::RequestedItemNotFound(
                 ItemKind::Field,
             ))
+    }
+
+    /// Gets the particular collection's metadata by its human-readable name.
+    /// Please see [`RichIndex::with_derived_collection_name()`] to learn how a human-readable name
+    /// is derived.
+    /// Note: not every collection has a name - either because it is inherently unnamed (e.g. within
+    /// a tuple), or because its name does not strictly follow our naming convention (and thus
+    /// cannot be automatically derived). For such cases, [`Self::collection_by_index()`] is the
+    /// only option.
+    pub fn collection_by_name(
+        &self,
+        name: impl Into<String>,
+    ) -> Result<&ObjectCollectionMeta, EngineStateBrowsingError> {
+        let requested_derived_name = Some(name.into());
+        Self::exactly_one_with_derived_name(
+            self.collections
+                .iter()
+                .filter(|collection| collection.index.derived_name == requested_derived_name),
+            ItemKind::Collection,
+        )
+    }
+
+    /// Gets the particular collection's metadata by its index.
+    pub fn collection_by_index(
+        &self,
+        index: u8,
+    ) -> Result<&ObjectCollectionMeta, EngineStateBrowsingError> {
+        self.collections.get(usize::from(index)).ok_or(
+            EngineStateBrowsingError::RequestedItemNotFound(ItemKind::Collection),
+        )
+    }
+
+    /// Returns the only item (supposedly found by its derived name), or an error if not *exactly*
+    /// one such item was found.
+    fn exactly_one_with_derived_name<T>(
+        found_items: impl IntoIterator<Item = T>,
+        item_kind: ItemKind,
+    ) -> Result<T, EngineStateBrowsingError> {
+        let mut found_items = found_items.into_iter().collect::<Vec<_>>();
+        match found_items.len() {
+            0 => Err(EngineStateBrowsingError::RequestedItemNotFound(item_kind)),
+            1 => Ok(found_items.remove(0)),
+            _ => Err(EngineStateBrowsingError::RequestedItemInvalid(
+                item_kind,
+                "derived name not unique".to_string(),
+            )),
+        }
     }
 }
 
@@ -588,7 +627,7 @@ impl ObjectFieldMeta {
 /// One of supported kinds of collections within an Object.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ObjectCollectionKind {
-    KeyValue,
+    KeyValueStore,
     Index,
     SortedIndex,
 }
@@ -745,30 +784,87 @@ impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
         let indexed_value = self
             .reader
             .read_object_field(node_id, module_id, field_meta.index.number)
-            .map_err(|error| match error {
-                SystemReaderError::NodeIdDoesNotExist => {
-                    EngineStateBrowsingError::RequestedItemNotFound(ItemKind::Entity)
-                }
-                SystemReaderError::ModuleDoesNotExist => {
-                    EngineStateBrowsingError::RequestedItemNotFound(ItemKind::Module)
-                }
-                SystemReaderError::FieldDoesNotExist => {
-                    EngineStateBrowsingError::RequestedItemNotFound(ItemKind::Field)
-                }
-                SystemReaderError::NotAnObject => EngineStateBrowsingError::RequestedItemInvalid(
-                    ItemKind::Entity,
-                    "not an object".to_string(),
-                ),
-                unexpected => EngineStateBrowsingError::UnexpectedEngineError(
-                    unexpected,
+            // if `ObjectFieldMeta` exists, then the object, module and field must exist - no errors expected:
+            .map_err(|error| {
+                EngineStateBrowsingError::UnexpectedEngineError(
+                    error,
                     "when reading object field".to_string(),
-                ),
+                )
             })?;
         Ok(SborData::new(
             indexed_value.into(),
             &field_meta.resolved_type,
         ))
     }
+
+    /// Returns an iterator over all keys of the given object's collection, starting from the given
+    /// key (or its successor, if it does not exist), in an arbitrary but deterministic order used
+    /// by the backing storage.
+    pub fn iter_object_collection_keys(
+        &self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        collection_meta: &'s ObjectCollectionMeta,
+        from_key: Option<&SubstateKey>,
+    ) -> Result<impl Iterator<Item = ObjectCollectionKey> + '_, EngineStateBrowsingError> {
+        let from_key = from_key.cloned();
+        Ok(self
+            .reader
+            .collection_iter(node_id, module_id, collection_meta.index.number)
+            // if `ObjectCollectionMeta` exists, then the object, module and collection must exist - no errors expected:
+            .map_err(|error| {
+                EngineStateBrowsingError::UnexpectedEngineError(
+                    error,
+                    "when reading object collection".to_string(),
+                )
+            })?
+            .map(|(substate_key, _)| substate_key)
+            // TODO(after adding "iterate from" support in Engine): The implementation below is a
+            // "faux paging" (functional, although nonsensical - given the performance reasons of
+            // even having the paging). This can be easily migrated to true paging after extending
+            // the `SubstateDatabase` API.
+            .sorted() // the DB uses different sorting (by hash) - faux paging is order-aware
+            .skip_while(move |key| Some(key) < from_key.as_ref()) // any `Some` is greater than `None`
+            .map(|substate_key| Self::to_object_collection_key(substate_key, collection_meta)))
+    }
+
+    /// Creates a business-level representation of the object collection's substate key.
+    fn to_object_collection_key(
+        substate_key: SubstateKey,
+        collection_meta: &ObjectCollectionMeta,
+    ) -> ObjectCollectionKey {
+        match substate_key {
+            SubstateKey::Field(_) => panic!("cannot occur within object collection"),
+            SubstateKey::Map(map_key) => match collection_meta.kind {
+                ObjectCollectionKind::KeyValueStore => ObjectCollectionKey::KeyValueStore(
+                    SborData::new(map_key, &collection_meta.resolved_key_type),
+                ),
+                ObjectCollectionKind::Index => ObjectCollectionKey::Index(SborData::new(
+                    map_key,
+                    &collection_meta.resolved_key_type,
+                )),
+                ObjectCollectionKind::SortedIndex => {
+                    panic!("cannot occur within sorted collection")
+                }
+            },
+            SubstateKey::Sorted(sorted_key) => match collection_meta.kind {
+                ObjectCollectionKind::KeyValueStore | ObjectCollectionKind::Index => {
+                    panic!("cannot occur within unsorted collection")
+                }
+                ObjectCollectionKind::SortedIndex => ObjectCollectionKey::SortedIndex(
+                    sorted_key.0,
+                    SborData::new(sorted_key.1, &collection_meta.resolved_key_type),
+                ),
+            },
+        }
+    }
+}
+
+/// An [`SborData`] in a wrapper depending on the object collection kind.
+pub enum ObjectCollectionKey<'t> {
+    KeyValueStore(SborData<'t>),
+    Index(SborData<'t>),
+    SortedIndex([u8; 2], SborData<'t>),
 }
 
 /// A top-level SBOR value aware of its schema.
@@ -806,6 +902,11 @@ impl<'t> SborData<'t> {
             bytes: raw_payload.payload_bytes().to_vec(),
             message: "cannot render as programmatic json".to_string(),
         })
+    }
+
+    /// Returns raw SBOR bytes.
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.payload_bytes
     }
 }
 
@@ -933,6 +1034,7 @@ pub enum ItemKind {
     Entity,
     Module,
     Field,
+    Collection,
 }
 
 impl<E: ErrorDetails> From<EngineStateBrowsingError> for ResponseError<E> {
