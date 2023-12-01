@@ -203,6 +203,7 @@ pub async fn create_server<F>(
             "/browse/kv_store/iterator",
             post(handle_browse_kv_store_iterator),
         )
+        .route("/browse/kv_store/entry", post(handle_kv_store_entry))
         .with_state(core_api_state);
 
     let metrics = Arc::new(CoreApiMetrics::new(metric_registry));

@@ -66,94 +66,92 @@ package com.radixdlt.api.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.google.common.collect.Iterables;
+import com.google.common.hash.HashCode;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.client.ApiException;
 import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.rev2.Manifest;
-import java.util.ArrayList;
+import com.radixdlt.testutil.TestStateReader;
+import com.radixdlt.transactions.IntentHash;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Nullable;
 import org.junit.Test;
 
-public final class BrowseKeyValueStoreIteratorTest extends DeterministicCoreApiTestBase {
-
-  private static final int FAUCET_TRANSACTION_COUNT = 10;
-
-  private static final int SMALL_PAGE_SIZE = 3;
+public final class BrowseKeyValueStoreEntryTest extends DeterministicCoreApiTestBase {
 
   @Test
-  public void browse_api_kv_store_iterator_pages_through_all_entries() throws Exception {
-    try (var test = buildRunningServerTest()) {
-      test.suppressUnusedWarning();
-
-      // execute a couple of dummy transactions (just to create multiple entries in the Faucet's
-      // KV-Store):
-      for (int i = 0; i < FAUCET_TRANSACTION_COUNT; ++i) {
-        submitAndWaitForSuccess(test, Manifest.newRandomAccount(), List.of());
-      }
-
-      // fetch all keys from that KV-Store
-      final var request =
-          new BrowseKeyValueStoreIteratorRequest()
-              .entityAddress(getTransactionsKeyValueStoreAddress())
-              .network(networkLogicalName);
-      final var allKeys = getBrowseApi().browseKvStoreIteratorPost(request).getPage();
-      assertThat(allKeys.size()).isEqualTo(FAUCET_TRANSACTION_COUNT);
-
-      // now fetch all the same keys, but in small pages
-      final List<KeyValueStoreMapKey> pagedKeys = new ArrayList<>();
-      @Nullable String continuationToken = null;
-
-      while (true) {
-        final var smallResponse =
-            getBrowseApi()
-                .browseKvStoreIteratorPost(
-                    request.continuationToken(continuationToken).maxPageSize(SMALL_PAGE_SIZE));
-        final var smallPageKeys = smallResponse.getPage();
-        pagedKeys.addAll(smallPageKeys);
-        continuationToken = smallResponse.getContinuationToken();
-        if (continuationToken == null) {
-          assertThat(smallPageKeys.size()).isLessThanOrEqualTo(SMALL_PAGE_SIZE);
-          break;
-        } else {
-          assertThat(smallPageKeys.size()).isEqualTo(SMALL_PAGE_SIZE);
-        }
-      }
-
-      // the keys collected via paging should be the same as when returned in one response
-      assertThat(pagedKeys).isEqualTo(allKeys);
-    }
-  }
-
-  @Test
-  public void browse_api_entity_iterator_returns_actual_kv_store_keys() throws Exception {
+  public void browse_api_returns_kv_store_entry() throws Exception {
     try (var test = buildRunningServerTest()) {
       test.suppressUnusedWarning();
 
       // execute a dummy transaction to create a known entry in the Faucet's KV-Store:
       final var intentHash =
           submitAndWaitForSuccess(test, Manifest.newRandomAccount(), List.of()).intentHash();
+      final var epoch = test.getInstance(0, TestStateReader.class).getEpoch();
 
-      // iterate over the only key in that KV-Store
-      final var allKeys =
+      // fetch the value by SBOR-encoded transaction hash in programmatic JSON format:
+      final var key =
+          new KeyValueStoreMapKey()
+              .programmaticJson(
+                  Map.of(
+                      "type_name", "Hash",
+                      "kind", "Bytes",
+                      "element_kind", "U8",
+                      "hex", intentHash.hex()));
+      final var value =
           getBrowseApi()
-              .browseKvStoreIteratorPost(
-                  new BrowseKeyValueStoreIteratorRequest()
+              .browseKvStoreEntryPost(
+                  new BrowseKeyValueStoreEntryRequest()
+                      .network(networkLogicalName)
                       .entityAddress(getTransactionsKeyValueStoreAddress())
-                      .network(networkLogicalName))
-              .getPage();
-      final var theOnlyKey = Iterables.getOnlyElement(allKeys).getProgrammaticJson();
+                      .key(key))
+              .getContent()
+              .getProgrammaticJson();
 
-      // assert it is the executed transaction's hash, as SBOR in programmatic JSON format:
-      assertThat(theOnlyKey)
+      // fetch it is the SBOR epoch in programmatic JSON format:
+      assertThat(value)
           .isEqualTo(
               Map.of(
-                  "type_name", "Hash",
-                  "kind", "Bytes",
-                  "element_kind", "U8",
-                  "hex", intentHash.hex()));
+                  "type_name", "Epoch",
+                  "kind", "U64",
+                  "value", String.valueOf(epoch)));
+    }
+  }
+
+  @Test
+  public void browse_api_returns_not_found_for_unknown_key() throws Exception {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
+
+      // execute a few dummy transactions (so that we test against non-empty KV-Store):
+      for (int i = 0; i < 3; ++i) {
+        submitAndWaitForSuccess(test, Manifest.newRandomAccount(), List.of());
+      }
+
+      // try to fetch something by a made-up key:
+      final var key =
+          new KeyValueStoreMapKey()
+              .programmaticJson(
+                  Map.of(
+                      "type_name", "Hash",
+                      "kind", "Bytes",
+                      "element_kind", "U8",
+                      "hex", new IntentHash(HashCode.fromBytes(new byte[32])).hex()));
+      final var errorResponse =
+          assertErrorResponseOfType(
+              () ->
+                  getBrowseApi()
+                      .browseKvStoreEntryPost(
+                          new BrowseKeyValueStoreEntryRequest()
+                              .network(networkLogicalName)
+                              .entityAddress(getTransactionsKeyValueStoreAddress())
+                              .key(key)),
+              BasicErrorResponse.class);
+
+      // assert that it is "not found" type of error
+      assertThat(errorResponse.getCode())
+          .isEqualTo(400); // we are not RESTful, this is a client error as any other
+      assertThat(errorResponse.getMessage()).contains("not found");
     }
   }
 
