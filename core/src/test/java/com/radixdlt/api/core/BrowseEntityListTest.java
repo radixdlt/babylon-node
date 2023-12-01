@@ -62,36 +62,77 @@
  * permissions under this License.
  */
 
-mod browse;
-mod constants;
-mod conversions;
-mod errors;
-mod extractors;
-mod handlers;
-mod helpers;
-mod metrics;
-mod metrics_layer;
-mod paging;
-mod server;
+package com.radixdlt.api.core;
 
-#[allow(unused)]
-#[rustfmt::skip]
-#[allow(clippy::all)]
-mod generated;
+import static org.assertj.core.api.Assertions.assertThat;
 
-pub(crate) use browse::*;
-pub(crate) use constants::*;
-pub(crate) use conversions::*;
-pub(crate) use errors::*;
-pub(crate) use extractors::*;
-pub(crate) use helpers::*;
-pub(crate) use paging::*;
-pub(crate) use server::{create_server, CoreApiServerConfig, CoreApiState};
+import com.radixdlt.api.DeterministicCoreApiTestBase;
+import com.radixdlt.api.core.generated.models.BrowseEntityIteratorRequest;
+import com.radixdlt.api.core.generated.models.ListedEntityItem;
+import com.radixdlt.api.core.generated.models.SystemType;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import javax.annotation.Nullable;
+import org.junit.Test;
 
-pub(crate) mod models {
-    pub(crate) use super::generated::models::*;
-    pub(crate) use super::generated::SCHEMA_VERSION;
+public final class BrowseEntityListTest extends DeterministicCoreApiTestBase {
+
+  private static final int SMALL_PAGE_SIZE = 7;
+
+  @Test
+  public void browse_api_entity_listing_pages_through_all_entities() throws Exception {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
+
+      // first list all entities with a single request
+      final var allResponse =
+          getBrowseApi()
+              .browseEntityIteratorPost(
+                  new BrowseEntityIteratorRequest().network(networkLogicalName));
+
+      // high default limit of the endpoint should allow to get it all in one page in tests:
+      assertThat(allResponse.getContinuationToken()).isNull();
+      final var allEntities = allResponse.getPage();
+
+      // assert (heuristically) that "all" different kinds of entities are listed:
+      final var allSystemTypes =
+          allEntities.stream().map(ListedEntityItem::getSystemType).collect(Collectors.toSet());
+      assertThat(allSystemTypes).containsAll(EnumSet.allOf(SystemType.class));
+      final var allGlobalOrNonGlobal =
+          allEntities.stream().map(ListedEntityItem::getIsGlobal).collect(Collectors.toSet());
+      assertThat(allGlobalOrNonGlobal).containsAll(Set.of(true, false));
+
+      // make sure that we should expect some continuation tokens when paging
+      assertThat(allEntities.size()).isGreaterThan(SMALL_PAGE_SIZE);
+
+      // now fetch all entities in small pages
+      final List<ListedEntityItem> pagedEntities = new ArrayList<>();
+      @Nullable String continuationToken = null;
+
+      while (true) {
+        final var smallResponse =
+            getBrowseApi()
+                .browseEntityIteratorPost(
+                    new BrowseEntityIteratorRequest()
+                        .network(networkLogicalName)
+                        .continuationToken(continuationToken)
+                        .maxPageSize(SMALL_PAGE_SIZE));
+        final var smallEntities = smallResponse.getPage();
+        pagedEntities.addAll(smallEntities);
+        continuationToken = smallResponse.getContinuationToken();
+        if (continuationToken == null) {
+          assertThat(smallEntities.size()).isLessThanOrEqualTo(SMALL_PAGE_SIZE);
+          break;
+        } else {
+          assertThat(smallEntities.size()).isEqualTo(SMALL_PAGE_SIZE);
+        }
+      }
+
+      // the entities collected via paging should be the same as when returned in one response
+      assertThat(pagedEntities).isEqualTo(allEntities);
+    }
+  }
 }
-
-// Re-exports for handlers
-pub use hyper::StatusCode;

@@ -1130,6 +1130,37 @@ paths:
 ##################
 # Browse Sub-API #
 ##################
+  "/browse/entity/iterator":
+    post:
+      summary: List Entities
+      description: Lists addresses of all entities, in an iterator-like paged fashion
+      tags:
+        - Browse
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BrowseEntityIteratorRequest"
+      responses:
+        '200':
+          description: A page of entity addresses.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BrowseEntityIteratorResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
   "/browse/object/field":
     post:
       summary: Get Object Field
@@ -1221,6 +1252,24 @@ components:
         previous:
           description: Whether to return the previous substate value for updates and deletes (default false)
           type: boolean
+    ContinuationToken:
+      type: string
+      description: |
+        An opaque string conveying the information on where the next page of results starts.
+        It is returned in every paged listing response (except for the last page), and it can be
+        passed in every paged listing request (in order to begin listing from where the previous
+        response ended).
+    MaxPageSize:
+      type: integer
+      format: int32
+      minimum: 1
+      maximum: 1000
+      description: |
+        A maximum number of items to be included in the paged listing response.
+        By default, each paged listing endpoint imposes its own limit on the number of returned
+        items (which may even be driven dynamically by system load, etc). This client-provided
+        maximum page size simply adds a further constraint (i.e. can only lower down the number
+        of returned items).
 ###########################################################
 # GENERAL / SHARED MODELS - General / Numeric / Utilities #
 ###########################################################
@@ -3630,6 +3679,16 @@ components:
         - GlobalTwoResourcePool
         - GlobalMultiResourcePool
         - GlobalTransactionTracker
+    SystemType:
+      type: string
+      enum:
+        - Object
+        - KeyValueStore
+      description: |
+        Determines whether an entity is an object or a key-value store.
+        This categorization is introduced only for convenience / API discoverability (e.g. some
+        endpoints are suited for working only with objects). In fact, the `SystemType` can also be
+        derived from `EntityType`.
     EntityAddress:
       type: string
       description: Bech32m-encoded human readable version of the entity's address (ie the entity's node id)
@@ -7751,6 +7810,53 @@ components:
           $ref: "#/components/schemas/Substate"
         royalty:
           $ref: "#/components/schemas/Substate"
+#########################################################
+# REQUEST: /browse/entity/iterator                      #
+#########################################################
+    BrowseEntityIteratorRequest:
+      type: object
+      required:
+        - network
+      properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
+        max_page_size:
+          $ref: "#/components/schemas/MaxPageSize"
+        continuation_token:
+          $ref: "#/components/schemas/ContinuationToken"
+    BrowseEntityIteratorResponse:
+      type: object
+      required:
+        - at_ledger_state
+        - page
+      properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+          description: A summarized state of the ledger on top of which the preview was performed.
+        page:
+          type: array
+          items:
+            $ref: "#/components/schemas/ListedEntityItem"
+          description: A page of entities. If this page is the last one, the `continuation_token` will be not be included.
+        continuation_token:
+          $ref: "#/components/schemas/ContinuationToken"
+    ListedEntityItem:
+      type: object
+      required:
+        - entity_address
+        - system_type
+        - entity_type
+        - is_global
+      properties:
+        entity_address:
+          $ref: "#/components/schemas/EntityAddress"
+        system_type:
+          $ref: "#/components/schemas/SystemType"
+        entity_type:
+          $ref: "#/components/schemas/EntityType"
+        is_global:
+          type: boolean
+          description: Whether the entity is a top-level root, or a child of some other entity.
 #########################################################
 # REQUEST: /browse/object-field                         #
 #########################################################

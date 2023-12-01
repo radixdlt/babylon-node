@@ -78,6 +78,8 @@ models/BlueprintTypeReference.ts
 models/BlueprintTypeReferenceBase.ts
 models/BlueprintTypeReferenceKind.ts
 models/BlueprintVersionKey.ts
+models/BrowseEntityIteratorRequest.ts
+models/BrowseEntityIteratorResponse.ts
 models/BrowseObjectFieldRequest.ts
 models/BrowseObjectFieldResponse.ts
 models/BrowseObjectFieldResponseContent.ts
@@ -227,6 +229,7 @@ models/LedgerStateSummary.ts
 models/LedgerTransaction.ts
 models/LedgerTransactionBase.ts
 models/LedgerTransactionType.ts
+models/ListedEntityItem.ts
 models/LocalGenericSubstitution.ts
 models/LocalGenericSubstitutionAllOf.ts
 models/LocalNonFungibleKey.ts
@@ -556,6 +559,7 @@ models/SystemFieldStructureAllOf.ts
 models/SystemSchemaStructure.ts
 models/SystemSchemaStructureAllOf.ts
 models/SystemTransaction.ts
+models/SystemType.ts
 models/TargetIdentifier.ts
 models/TargetIdentifierBase.ts
 models/TargetIdentifierType.ts

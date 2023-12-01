@@ -18,6 +18,8 @@ import com.radixdlt.api.core.generated.client.ApiResponse;
 import com.radixdlt.api.core.generated.client.Pair;
 
 import com.radixdlt.api.core.generated.models.BasicErrorResponse;
+import com.radixdlt.api.core.generated.models.BrowseEntityIteratorRequest;
+import com.radixdlt.api.core.generated.models.BrowseEntityIteratorResponse;
 import com.radixdlt.api.core.generated.models.BrowseObjectFieldRequest;
 import com.radixdlt.api.core.generated.models.BrowseObjectFieldResponse;
 
@@ -76,6 +78,84 @@ public class BrowseApi {
     return operationId + " call failed with: " + statusCode + " - " + body;
   }
 
+  /**
+   * List Entities
+   * Lists addresses of all entities, in an iterator-like paged fashion
+   * @param browseEntityIteratorRequest  (required)
+   * @return BrowseEntityIteratorResponse
+   * @throws ApiException if fails to make API call
+   */
+  public BrowseEntityIteratorResponse browseEntityIteratorPost(BrowseEntityIteratorRequest browseEntityIteratorRequest) throws ApiException {
+    ApiResponse<BrowseEntityIteratorResponse> localVarResponse = browseEntityIteratorPostWithHttpInfo(browseEntityIteratorRequest);
+    return localVarResponse.getData();
+  }
+
+  /**
+   * List Entities
+   * Lists addresses of all entities, in an iterator-like paged fashion
+   * @param browseEntityIteratorRequest  (required)
+   * @return ApiResponse&lt;BrowseEntityIteratorResponse&gt;
+   * @throws ApiException if fails to make API call
+   */
+  public ApiResponse<BrowseEntityIteratorResponse> browseEntityIteratorPostWithHttpInfo(BrowseEntityIteratorRequest browseEntityIteratorRequest) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = browseEntityIteratorPostRequestBuilder(browseEntityIteratorRequest);
+    try {
+      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
+          localVarRequestBuilder.build(),
+          HttpResponse.BodyHandlers.ofInputStream());
+      if (memberVarResponseInterceptor != null) {
+        memberVarResponseInterceptor.accept(localVarResponse);
+      }
+      try {
+        if (localVarResponse.statusCode()/ 100 != 2) {
+          throw getApiException("browseEntityIteratorPost", localVarResponse);
+        }
+        return new ApiResponse<BrowseEntityIteratorResponse>(
+          localVarResponse.statusCode(),
+          localVarResponse.headers().map(),
+          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<BrowseEntityIteratorResponse>() {}) // closes the InputStream
+          
+        );
+      } finally {
+      }
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new ApiException(e);
+    }
+  }
+
+  private HttpRequest.Builder browseEntityIteratorPostRequestBuilder(BrowseEntityIteratorRequest browseEntityIteratorRequest) throws ApiException {
+    // verify the required parameter 'browseEntityIteratorRequest' is set
+    if (browseEntityIteratorRequest == null) {
+      throw new ApiException(400, "Missing the required parameter 'browseEntityIteratorRequest' when calling browseEntityIteratorPost");
+    }
+
+    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
+
+    String localVarPath = "/browse/entity/iterator";
+
+    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+
+    localVarRequestBuilder.header("Content-Type", "application/json");
+    localVarRequestBuilder.header("Accept", "application/json");
+
+    try {
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(browseEntityIteratorRequest);
+      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    if (memberVarReadTimeout != null) {
+      localVarRequestBuilder.timeout(memberVarReadTimeout);
+    }
+    if (memberVarInterceptor != null) {
+      memberVarInterceptor.accept(localVarRequestBuilder);
+    }
+    return localVarRequestBuilder;
+  }
   /**
    * Get Object Field
    * Reads the current value of an object&#39;s field, given an entity address, a module (&#x60;Main&#x60; by default) and either a field index or its human-readable name (if applicable). 

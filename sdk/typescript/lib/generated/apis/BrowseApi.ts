@@ -16,17 +16,27 @@
 import * as runtime from '../runtime';
 import type {
   BasicErrorResponse,
+  BrowseEntityIteratorRequest,
+  BrowseEntityIteratorResponse,
   BrowseObjectFieldRequest,
   BrowseObjectFieldResponse,
 } from '../models';
 import {
     BasicErrorResponseFromJSON,
     BasicErrorResponseToJSON,
+    BrowseEntityIteratorRequestFromJSON,
+    BrowseEntityIteratorRequestToJSON,
+    BrowseEntityIteratorResponseFromJSON,
+    BrowseEntityIteratorResponseToJSON,
     BrowseObjectFieldRequestFromJSON,
     BrowseObjectFieldRequestToJSON,
     BrowseObjectFieldResponseFromJSON,
     BrowseObjectFieldResponseToJSON,
 } from '../models';
+
+export interface BrowseEntityIteratorPostRequest {
+    browseEntityIteratorRequest: BrowseEntityIteratorRequest;
+}
 
 export interface BrowseObjectFieldPostRequest {
     browseObjectFieldRequest: BrowseObjectFieldRequest;
@@ -36,6 +46,41 @@ export interface BrowseObjectFieldPostRequest {
  * 
  */
 export class BrowseApi extends runtime.BaseAPI {
+
+    /**
+     * Lists addresses of all entities, in an iterator-like paged fashion
+     * List Entities
+     */
+    async browseEntityIteratorPostRaw(requestParameters: BrowseEntityIteratorPostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<BrowseEntityIteratorResponse>> {
+        if (requestParameters.browseEntityIteratorRequest === null || requestParameters.browseEntityIteratorRequest === undefined) {
+            throw new runtime.RequiredError('browseEntityIteratorRequest','Required parameter requestParameters.browseEntityIteratorRequest was null or undefined when calling browseEntityIteratorPost.');
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        const response = await this.request({
+            path: `/browse/entity/iterator`,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: BrowseEntityIteratorRequestToJSON(requestParameters.browseEntityIteratorRequest),
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => BrowseEntityIteratorResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Lists addresses of all entities, in an iterator-like paged fashion
+     * List Entities
+     */
+    async browseEntityIteratorPost(requestParameters: BrowseEntityIteratorPostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<BrowseEntityIteratorResponse> {
+        const response = await this.browseEntityIteratorPostRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
 
     /**
      * Reads the current value of an object\'s field, given an entity address, a module (`Main` by default) and either a field index or its human-readable name (if applicable). 

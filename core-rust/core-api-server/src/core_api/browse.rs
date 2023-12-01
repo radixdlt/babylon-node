@@ -1,14 +1,22 @@
+use std::collections::VecDeque;
+use std::{iter, mem};
+
 use radix_engine::types::*;
 
-use radix_engine_store_interface::interface::SubstateDatabase;
+use radix_engine_store_interface::interface::{DbPartitionKey, SubstateDatabase};
 
 use convert_case::{Case, Casing};
 use radix_engine::system::system_db_reader::{
     ResolvedPayloadSchema, SystemDatabaseReader, SystemReaderError,
 };
 use radix_engine_interface::blueprints::package::BlueprintPayloadIdentifier;
+use radix_engine_store_interface::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
+use radix_engine_stores::hash_tree::tree_store::{
+    Nibble, NibblePath, NodeKey, ReadableTreeStore, TreeNode,
+};
 
 use sbor::representations::{SerializationMode, SerializationParameters};
+use state_manager::store::traits::QueryableProofStore;
 use tracing::warn;
 
 use super::*;
@@ -183,6 +191,100 @@ impl ObjectFieldMeta {
             .strip_prefix(blueprint_name)
             .and_then(|name| name.strip_suffix("FieldPayload"))
             .map(|name| name.to_case(Case::Snake))
+    }
+}
+
+/// A lister of Engine's Nodes.
+pub struct EngineNodeLister<'s, S> {
+    database: &'s S,
+}
+
+impl<'s, S: QueryableProofStore + ReadableTreeStore> EngineNodeLister<'s, S> {
+    /// Creates an instance reading from the given database.
+    pub fn new(database: &'s S) -> Self {
+        Self { database }
+    }
+
+    /// Returns an iterator of all Engine Node IDs, starting from the given one (or its successor,
+    /// if it does not exist), in an arbitrary but deterministic order used by the backing storage.
+    pub fn iter_node_ids(
+        &self,
+        from_node_id: Option<&NodeId>,
+    ) -> impl Iterator<Item = NodeId> + '_ {
+        let current_version = self.database.max_state_version();
+        let from_nibbles = from_node_id
+            .map(|node_id| NibblePath::new_even(SpreadPrefixKeyMapper::to_db_node_key(node_id)))
+            .map(|nibble_path| nibble_path.nibbles().collect::<VecDeque<_>>())
+            .unwrap_or_default();
+        self.recurse_until_full_leaf_paths(
+            NodeKey::new_empty_path(current_version.number()),
+            from_nibbles,
+        )
+        .map(|path| Self::node_id_from(path.bytes()))
+    }
+
+    /// Returns an iterator of all state hash tree's *leaf* [`NibblePath`]s, starting from some
+    /// specific point.
+    /// The implementation first loads the starting node by `key`, and then drills down the tree,
+    /// following the `from_nibbles` chain - as long as it is possible.
+    ///
+    /// This is the recursive part of the [`Self::iter_node_ids()`] implementation.
+    fn recurse_until_full_leaf_paths(
+        &self,
+        key: NodeKey,
+        from_nibbles: VecDeque<Nibble>,
+    ) -> Box<dyn Iterator<Item = NibblePath> + '_> {
+        let Some(node) = self.database.get_node(&key) else {
+            panic!("{:?} referenced but not found in the storage", key);
+        };
+        match node {
+            TreeNode::Internal(internal) => {
+                let mut child_from_nibbles = from_nibbles;
+                let from_nibble = child_from_nibbles
+                    .pop_front()
+                    .unwrap_or_else(|| Nibble::from(0));
+                Box::new(
+                    internal
+                        .children
+                        .into_iter()
+                        .filter(move |child| child.nibble >= from_nibble)
+                        .flat_map(move |child| {
+                            let child_key = key.gen_child_node_key(child.version, child.nibble);
+                            let child_from_nibbles = if child.nibble == from_nibble {
+                                mem::take(&mut child_from_nibbles)
+                            } else {
+                                VecDeque::new()
+                            };
+                            self.recurse_until_full_leaf_paths(child_key, child_from_nibbles)
+                        }),
+                )
+            }
+            TreeNode::Leaf(leaf) => Box::new(
+                Some(leaf.key_suffix.nibbles())
+                    .filter(|suffix_nibbles| {
+                        suffix_nibbles
+                            .remaining_nibbles()
+                            .ge(from_nibbles.iter().cloned())
+                    })
+                    .map(|suffix_nibbles| {
+                        NibblePath::from_iter(key.nibble_path().nibbles().chain(suffix_nibbles))
+                    })
+                    .into_iter(),
+            ),
+            TreeNode::Null => Box::new(iter::empty()),
+        }
+    }
+
+    /// Extracts an Engine's Node ID from the state hash tree's full Node key.
+    // TODO(after development in scrypto repo): The implementation here fakes a `partition_num: 0`,
+    // but it would be better if `SpreadPrefixKeyMapper` just offered an API to convert the Node ID
+    // alone.
+    fn node_id_from(node_key_bytes: &[u8]) -> NodeId {
+        SpreadPrefixKeyMapper::from_db_partition_key(&DbPartitionKey {
+            node_key: node_key_bytes.to_vec(),
+            partition_num: 0,
+        })
+        .0
     }
 }
 
