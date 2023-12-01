@@ -192,6 +192,7 @@ pub async fn create_server<F>(
             "/browse/entity/iterator",
             post(handle_browse_entity_iterator),
         )
+        .route("/browse/entity/info", post(handle_browse_entity_info))
         .route("/browse/object/field", post(handle_browse_object_field))
         .with_state(core_api_state);
 

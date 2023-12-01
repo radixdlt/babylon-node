@@ -107,6 +107,7 @@ def generate_rust_models(schema_file, tmp_client_folder, out_location):
         fix_broken_discriminator_tag(file_path, "error_type")
         fix_broken_discriminator_tag(file_path, "type")
         fix_broken_discriminator_tag(file_path, "pointer_type")
+        fix_broken_discriminator_tag(file_path, "system_type")
         fix_for_enum_not_implementing_default(file_path, "AccessRule")
         fix_for_enum_not_implementing_default(file_path, "AccessRuleNode")
         fix_for_enum_not_implementing_default(file_path, "ProofRule")
@@ -145,6 +146,8 @@ def generate_rust_models(schema_file, tmp_client_folder, out_location):
         fix_for_enum_not_implementing_default(file_path, "SubstateSystemStructure")
         fix_for_enum_not_implementing_default(file_path, "ObjectSubstateTypeReference")
         fix_for_enum_not_implementing_default(file_path, "GenericSubstitution")
+        fix_for_enum_not_implementing_default(file_path, "EntityInfo")
+        fix_for_enum_not_implementing_default(file_path, "ResolvedTypeReference")
 
     logging.info("Successfully fixed up rust models.")
 

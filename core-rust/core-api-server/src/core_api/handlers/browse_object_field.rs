@@ -24,10 +24,10 @@ pub(crate) async fn handle_browse_object_field(
     let database = state.state_manager.database.read_current();
 
     let meta_loader = EngineStateMetaLoader::new(database.deref());
-    let field_set_meta = meta_loader.load_object_field_set_meta(&node_id, module_id)?;
+    let module_state_meta = meta_loader.load_object_module_state_meta(&node_id, module_id)?;
     let field_meta = match field_coordinate {
-        FieldCoordinate::Name(field_name) => field_set_meta.by_name(field_name),
-        FieldCoordinate::Index(field_index) => field_set_meta.by_index(field_index),
+        FieldCoordinate::Name(field_name) => module_state_meta.field_by_name(field_name),
+        FieldCoordinate::Index(field_index) => module_state_meta.field_by_index(field_index),
     }?;
 
     let data_loader = EngineStateDataLoader::new(database.deref());

@@ -1161,6 +1161,39 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BasicErrorResponse"
+  "/browse/entity/info":
+    post:
+      summary: Get Entity Info
+      description: |
+        Resolves basic information about an entity: its type, attached modules, fields/collections
+        and blueprint.
+      tags:
+        - Browse
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BrowseEntityInfoRequest"
+      responses:
+        '200':
+          description: Meta-information about the requested entity's state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BrowseEntityInfoResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
   "/browse/object/field":
     post:
       summary: Get Object Field
@@ -7858,7 +7891,285 @@ components:
           type: boolean
           description: Whether the entity is a top-level root, or a child of some other entity.
 #########################################################
-# REQUEST: /browse/object-field                         #
+# REQUEST: /browse/entity/info                          #
+#########################################################
+    BrowseEntityInfoRequest:
+      type: object
+      required:
+        - network
+        - entity_address
+      properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
+        entity_address:
+          $ref: "#/components/schemas/EntityAddress"
+    BrowseEntityInfoResponse:
+      type: object
+      required:
+        - at_ledger_state
+        - info
+      properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+          description: A summarized state of the ledger at which the query was performed.
+        info:
+          $ref: "#/components/schemas/EntityInfo"
+    EntityAncestryInfo:
+      type: object
+      description: |
+        Information about the ancestor entities - i.e. the immediate parent, and the root entity.
+        Only present when the subject entity is not a root entity itself.
+      required:
+        - parent_entity_address
+        - root_entity_address
+      properties:
+        parent_entity_address:
+          $ref: "#/components/schemas/EntityAddress"
+        root_entity_address:
+          $ref: "#/components/schemas/GlobalAddress"
+    EntityInfo:
+      type: object
+      required:
+        - system_type
+      properties:
+        system_type:
+          $ref: "#/components/schemas/SystemType"
+        ancestry:
+          $ref: "#/components/schemas/EntityAncestryInfo"
+      discriminator:
+        propertyName: system_type
+        mapping:
+          # NOTE: These need to match SystemType
+          Object: '#/components/schemas/ObjectEntityInfo'
+          KeyValueStore: '#/components/schemas/KeyValueStoreEntityInfo'
+    ObjectEntityInfo:
+      allOf:
+        - $ref: "#/components/schemas/EntityInfo"
+        - type: object
+          description: Information available when the entity is an Object.
+          required:
+            - entity_type
+            - is_global
+            - is_instantiated
+            - main_module_state
+            - attached_modules
+            - blueprint_reference
+            - instance_info
+          properties:
+            entity_type:
+              $ref: "#/components/schemas/EntityType"
+            is_global:
+              type: boolean
+              description: Whether the object is a top-level root, or a child of some other entity.
+            is_instantiated:
+              type: boolean
+              description: Whether the object's state is already physically persisted on ledger.
+            main_module_state:
+              $ref: "#/components/schemas/ObjectModuleStateInfo"
+            attached_modules:
+              description: |
+                Information about the other modules attached to the object (possibly empty, even
+                when `is_global`).
+              type: array
+              items:
+                type: object
+                required:
+                  - module_id
+                  - state
+                properties:
+                  module_id:
+                    $ref: "#/components/schemas/AttachedModuleId"
+                  state:
+                    $ref: "#/components/schemas/ObjectModuleStateInfo"
+            blueprint_reference:
+              $ref: '#/components/schemas/BlueprintReference'
+            instance_info:
+              $ref: '#/components/schemas/ObjectInstanceInfo'
+    KeyValueStoreEntityInfo:
+      allOf:
+        - $ref: "#/components/schemas/EntityInfo"
+        - type: object
+          description: Information available when the entity is a Key-Value Store.
+          required:
+            - key_type_reference
+            - value_type_reference
+          properties:
+            key_type_reference:
+              $ref: "#/components/schemas/ResolvedTypeReference"
+            value_type_reference:
+              $ref: "#/components/schemas/ResolvedTypeReference"
+    ObjectModuleStateInfo:
+      description: |
+        Information about the state held by a particular module of the object.
+      type: object
+      required:
+        - fields
+        - collections
+      properties:
+        fields:
+          type: array
+          items:
+            $ref: "#/components/schemas/ObjectFieldInfo"
+        collections:
+          type: array
+          items:
+            $ref: "#/components/schemas/ObjectCollectionInfo"
+    ObjectFieldInfo:
+      type: object
+      required:
+        - index
+        - type_reference
+      properties:
+        index:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 255
+          description: |
+            Field's index - please note that it will not necessarily be equal to an index of this
+            item within `ObjectModuleStateInfo.fields` (since e.g. not all conditional fields
+            defined by the blueprint must be present for the object).
+        name:
+          $ref: "#/components/schemas/DerivedName"
+        type_reference:
+          $ref: "#/components/schemas/ResolvedTypeReference"
+    ObjectCollectionInfo:
+      type: object
+      required:
+        - index
+        - kind
+        - key_type_reference
+        - value_type_reference
+      properties:
+        index:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 255
+          description: |
+            Collection's index - please note that it will not necessarily be equal to an index of
+            this item within `ObjectModuleStateInfo.collections`.
+        kind:
+          $ref: "#/components/schemas/ObjectCollectionKind"
+        name:
+          $ref: "#/components/schemas/DerivedName"
+        key_type_reference:
+          $ref: "#/components/schemas/ResolvedTypeReference"
+        value_type_reference:
+          $ref: "#/components/schemas/ResolvedTypeReference"
+    ObjectCollectionKind:
+      description: One of supported kinds of collections within an Object.
+      type: string
+      enum:
+        - KeyValue
+        - Index
+        - SortedIndex
+    ResolvedTypeReferenceType:
+      type: string
+      enum:
+        - WellKnown
+        - SchemaDefined
+    ResolvedTypeReference:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/ResolvedTypeReferenceType"
+        name:
+          $ref: "#/components/schemas/DerivedName"
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match ResolvedTypeReferenceType
+          WellKnown: '#/components/schemas/WellKnownTypeReference'
+          SchemaDefined: '#/components/schemas/SchemaDefinedTypeReference'
+    WellKnownTypeReference:
+      description: Reference to a well-known Scrypto type.
+      allOf:
+        - $ref: "#/components/schemas/ResolvedTypeReference"
+        - type: object
+          required:
+            - index
+          properties:
+            index:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 4294967295
+              description: An effective ID of the well-known type.
+    SchemaDefinedTypeReference:
+      description: Reference to a fully-resolved type within a specific schema.
+      allOf:
+        - $ref: "#/components/schemas/ResolvedTypeReference"
+        - type: object
+          required:
+            - schema_reference
+            - index
+          properties:
+            schema_reference:
+              $ref: "#/components/schemas/SchemaReference"
+            index:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 4294967295
+              description: The type's index within the referenced schema.
+    SchemaReference:
+      description: A reference to a schema within the Schema partition of a specific entity.
+      type: object
+      required:
+        - entity_address
+        - schema_hash
+      properties:
+        entity_address:
+          $ref: '#/components/schemas/EntityAddress'
+        schema_hash:
+          $ref: '#/components/schemas/SchemaHash'
+    DerivedName:
+      type: string
+      description: |
+        A human-readable name, derived on a best-effort basis from the type info/blueprint/schema.
+        May be missing either because the subject deliberately has no defined name (e.g. in case of
+        an unnamed tuple) or because the name resolution was not successful (e.g. when certain
+        naming conventions are not observed within the relevant definitions).
+    BlueprintReference:
+      type: object
+      required:
+        - package_address
+        - blueprint_name
+        - blueprint_version
+      properties:
+        package_address:
+          $ref: '#/components/schemas/PackageAddress'
+        blueprint_name:
+          type: string
+        blueprint_version:
+          type: string
+          description: A string of format `Major.Minor.Patch` (all parts being `u32`).
+    ObjectInstanceInfo:
+      type: object
+      description: |
+        Object's metadata details defined on a per-instance basis (i.e. not in blueprint).
+        Please note that even uninstantiated objects do have instance info (i.e. a default one).
+      required:
+        - enabled_features
+        - substituted_generic_types
+      properties:
+        outer_object_address:
+          $ref: '#/components/schemas/GlobalAddress'
+        enabled_features:
+          type: array
+          description: Names of the features enabled for this instance.
+          items:
+            type: string
+        substituted_generic_types:
+          type: array
+          description: The actual types used for generics defined by the blueprint.
+          items:
+            $ref: "#/components/schemas/ResolvedTypeReference"
+#########################################################
+# REQUEST: /browse/object/field                         #
 #########################################################
     BrowseObjectFieldRequest:
       type: object
