@@ -114,6 +114,7 @@ pub enum ExtractionError {
         actual: NonFungibleIdType,
     },
     InvalidFieldAlternativesUsage,
+    InvalidSemverString,
 }
 
 impl ExtractionError {

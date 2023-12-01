@@ -16,6 +16,8 @@
 import * as runtime from '../runtime';
 import type {
   BasicErrorResponse,
+  BrowseBlueprintInfoRequest,
+  BrowseBlueprintInfoResponse,
   BrowseEntityInfoRequest,
   BrowseEntityInfoResponse,
   BrowseEntityIteratorRequest,
@@ -30,6 +32,10 @@ import type {
 import {
     BasicErrorResponseFromJSON,
     BasicErrorResponseToJSON,
+    BrowseBlueprintInfoRequestFromJSON,
+    BrowseBlueprintInfoRequestToJSON,
+    BrowseBlueprintInfoResponseFromJSON,
+    BrowseBlueprintInfoResponseToJSON,
     BrowseEntityInfoRequestFromJSON,
     BrowseEntityInfoRequestToJSON,
     BrowseEntityInfoResponseFromJSON,
@@ -51,6 +57,10 @@ import {
     BrowseObjectFieldResponseFromJSON,
     BrowseObjectFieldResponseToJSON,
 } from '../models';
+
+export interface BrowseBlueprintInfoPostRequest {
+    browseBlueprintInfoRequest: BrowseBlueprintInfoRequest;
+}
 
 export interface BrowseEntityInfoPostRequest {
     browseEntityInfoRequest: BrowseEntityInfoRequest;
@@ -76,6 +86,41 @@ export interface BrowseObjectFieldPostRequest {
  * 
  */
 export class BrowseApi extends runtime.BaseAPI {
+
+    /**
+     * Returns all externally-relevant information about a particular blueprint.
+     * Get Blueprint Info
+     */
+    async browseBlueprintInfoPostRaw(requestParameters: BrowseBlueprintInfoPostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<BrowseBlueprintInfoResponse>> {
+        if (requestParameters.browseBlueprintInfoRequest === null || requestParameters.browseBlueprintInfoRequest === undefined) {
+            throw new runtime.RequiredError('browseBlueprintInfoRequest','Required parameter requestParameters.browseBlueprintInfoRequest was null or undefined when calling browseBlueprintInfoPost.');
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        const response = await this.request({
+            path: `/browse/blueprint/info`,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: BrowseBlueprintInfoRequestToJSON(requestParameters.browseBlueprintInfoRequest),
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => BrowseBlueprintInfoResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Returns all externally-relevant information about a particular blueprint.
+     * Get Blueprint Info
+     */
+    async browseBlueprintInfoPost(requestParameters: BrowseBlueprintInfoPostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<BrowseBlueprintInfoResponse> {
+        const response = await this.browseBlueprintInfoPostRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
 
     /**
      * Resolves basic information about an entity: its type, attached modules, fields/collections and blueprint. 

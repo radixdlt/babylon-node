@@ -1,5 +1,6 @@
 pub(crate) mod lts;
 
+mod browse_blueprint_info;
 mod browse_entity_info;
 mod browse_entity_iterator;
 mod browse_kv_store_iterator;
@@ -26,6 +27,7 @@ mod transaction_receipt;
 mod transaction_status;
 mod transaction_submit;
 
+pub(crate) use browse_blueprint_info::*;
 pub(crate) use browse_entity_info::*;
 pub(crate) use browse_entity_iterator::*;
 pub(crate) use browse_kv_store_iterator::*;

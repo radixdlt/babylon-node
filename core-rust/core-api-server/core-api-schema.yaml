@@ -1161,6 +1161,37 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BasicErrorResponse"
+  "/browse/blueprint/info":
+    post:
+      summary: Get Blueprint Info
+      description: Returns all externally-relevant information about a particular blueprint.
+      tags:
+        - Browse
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BrowseBlueprintInfoRequest"
+      responses:
+        '200':
+          description: Information about the requested blueprint.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BrowseBlueprintInfoResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
   "/browse/entity/info":
     post:
       summary: Get Entity Info
@@ -8230,6 +8261,290 @@ components:
           description: The actual types used for generics defined by the blueprint.
           items:
             $ref: "#/components/schemas/ResolvedTypeReference"
+#########################################################
+# REQUEST: /browse/blueprint/info                       #
+#########################################################
+    BrowseBlueprintInfoRequest:
+      type: object
+      required:
+        - network
+        - package_address
+        - blueprint_name
+      properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
+        package_address:
+          $ref: "#/components/schemas/PackageAddress"
+        blueprint_name:
+          type: string
+        blueprint_version:
+          type: string
+          description: |
+            A string of format `Major.Minor.Patch` (all parts being `u32`). Defaults to `1.0.0`.
+    BrowseBlueprintInfoResponse:
+      type: object
+      required:
+        - at_ledger_state
+        - info
+      properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+          description: A summarized state of the ledger at which the query was performed.
+        info:
+          $ref: "#/components/schemas/DetailedBlueprintInfo"
+    DetailedBlueprintInfo:
+      type: object
+      required:
+        - is_transient
+        - generic_type_parameters
+        - available_features
+        - fields
+        - collections
+        - functions
+        - events
+        - named_types
+      properties:
+        outer_blueprint_name:
+          type: string
+          description: |
+            A name of the outer blueprint within the same package.
+            Only present if this one is an inner blueprint.
+        is_transient:
+          type: boolean
+          description: If true, an instantiation of this blueprint cannot be persisted (e.g. buckets and proofs are transient).
+        generic_type_parameters:
+          description: |
+            Generic type parameters which need to be substituted by an object (when instantiating this blueprint).
+            See `ObjectInstanceInfo.substituted_generic_types`.
+          type: array
+          items:
+            $ref: '#/components/schemas/GenericTypeParameter'
+        available_features:
+          description: |
+            Names of the features that can be enabled for an object (when instantiating this blueprint).
+            See `ObjectInstanceInfo.enabled_features`.
+          type: array
+          items:
+            type: string
+        fields:
+          description: Fields defined by this blueprint.
+          type: array
+          items:
+            $ref: '#/components/schemas/BlueprintFieldInfo'
+        collections:
+          description: Collections defined by this blueprint.
+          type: array
+          items:
+            $ref: '#/components/schemas/BlueprintCollectionInfo'
+        functions:
+          description: Functions defined by this blueprint.
+          type: array
+          items:
+            $ref: '#/components/schemas/BlueprintFunctionInfo'
+        events:
+          description: Events defined by this blueprint.
+          type: array
+          items:
+            $ref: '#/components/schemas/BlueprintEventInfo'
+        named_types:
+          description: Named types defined by this blueprint.
+          type: array
+          items:
+            $ref: '#/components/schemas/BlueprintNamedTypeInfo'
+    BlueprintNamedTypeInfo:
+      type: object
+      required:
+        - name
+        - type_reference
+      properties:
+        name:
+          type: string
+        type_reference:
+          $ref: "#/components/schemas/ResolvedTypeReference"
+    BlueprintEventInfo:
+      type: object
+      required:
+        - name
+        - type_reference
+      properties:
+        name:
+          type: string
+        type_reference:
+          $ref: "#/components/schemas/BlueprintResolvedTypeReference"
+    BlueprintFunctionInfo:
+      type: object
+      required:
+        - name
+        - input_type_reference
+        - output_type_reference
+      properties:
+        name:
+          type: string
+        receiver:
+          $ref: "#/components/schemas/BlueprintFunctionReceiverInfo"
+        input_type_reference:
+          $ref: "#/components/schemas/BlueprintResolvedTypeReference"
+        output_type_reference:
+          $ref: "#/components/schemas/BlueprintResolvedTypeReference"
+    BlueprintFunctionReceiverInfo:
+      type: object
+      required:
+        - receiver_type
+        - reference_types
+      properties:
+        receiver_type:
+          $ref: "#/components/schemas/FunctionReceiverType"
+        reference_types:
+          type: array
+          items:
+            $ref: "#/components/schemas/FunctionReceiverReferenceType"
+    FunctionReceiverType:
+      type: string
+      enum:
+        - SelfRef
+        - SelfRefMut
+    FunctionReceiverReferenceType:
+      type: string
+      enum:
+        - Normal
+        - DirectAccess
+    BlueprintCollectionInfo:
+      type: object
+      required:
+        - index
+        - kind
+        - key_type_reference
+        - value_type_reference
+      properties:
+        index:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 255
+        name:
+          $ref: "#/components/schemas/DerivedName"
+        kind:
+          $ref: "#/components/schemas/ObjectCollectionKind"
+        key_type_reference:
+          $ref: "#/components/schemas/BlueprintResolvedTypeReference"
+        value_type_reference:
+          $ref: "#/components/schemas/BlueprintResolvedTypeReference"
+    BlueprintFieldInfo:
+      type: object
+      required:
+        - index
+        - type_reference
+      properties:
+        index:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 255
+        name:
+          $ref: "#/components/schemas/DerivedName"
+        type_reference:
+          $ref: "#/components/schemas/BlueprintResolvedTypeReference"
+        condition:
+          $ref: "#/components/schemas/BlueprintFieldCondition"
+        transience:
+          $ref: "#/components/schemas/BlueprintFieldTransience"
+    BlueprintFieldTransience:
+      type: object
+      description: Properties related to the field's transience. Only present if the field is transient.
+      required:
+        - default_value
+      properties:
+        default_value:
+          $ref: '#/components/schemas/BlueprintFieldTransienceDefaultValue'
+    BlueprintFieldTransienceDefaultValue:
+      type: object
+      required:
+        - programmatic_json
+      properties:
+        programmatic_json:
+          type: object
+    BlueprintFieldConditionType:
+      type: string
+      enum:
+        - IfOwnFeature
+        - IfOuterObjectFeature
+    BlueprintFieldCondition:
+      type: object
+      description: |
+        A condition under which the field will actually be present on an object (when instantiating this blueprint).
+        If not specified, the field is always present (unconditionally).
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/BlueprintFieldConditionType'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match BlueprintFieldConditionType options
+          IfOwnFeature: '#/components/schemas/IfOwnFeatureFieldCondition'
+          IfOuterObjectFeature: '#/components/schemas/IfOuterObjectFeatureFieldCondition'
+    IfOwnFeatureFieldCondition:
+      allOf:
+        - $ref: "#/components/schemas/BlueprintFieldCondition"
+        - type: object
+          required:
+            - feature_name
+          properties:
+            feature_name:
+              type: string
+    IfOuterObjectFeatureFieldCondition:
+      allOf:
+        - $ref: "#/components/schemas/BlueprintFieldCondition"
+        - type: object
+          required:
+            - feature_name
+          properties:
+            feature_name:
+              type: string
+    BlueprintResolvedTypeReferenceType:
+      type: string
+      enum:
+        - Static
+        - Generic
+    BlueprintResolvedTypeReference:
+      type: object
+      description: |
+        A type, as declared by a blueprint - which means that it may either be a static, fully-resolved
+        type reference, or one of the blueprint's generic type parameters.
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/BlueprintResolvedTypeReferenceType"
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match BlueprintResolvedTypeReferenceType
+          Static: '#/components/schemas/BlueprintStaticTypeReference'
+          Generic: '#/components/schemas/BlueprintGenericTypeReference'
+    BlueprintStaticTypeReference:
+      allOf:
+        - $ref: "#/components/schemas/BlueprintResolvedTypeReference"
+        - type: object
+          required:
+            - static_type_reference
+          properties:
+            static_type_reference:
+              $ref: "#/components/schemas/ResolvedTypeReference"
+    BlueprintGenericTypeReference:
+      allOf:
+        - $ref: "#/components/schemas/BlueprintResolvedTypeReference"
+        - type: object
+          required:
+            - generic_type_parameter_index
+          properties:
+            generic_type_parameter_index:
+              type: integer
+              format: int32
+              minimum: 0
+              maximum: 255
+              description: An index within `DetailedBlueprintInfo.generic_type_parameters`.
 #########################################################
 # REQUEST: /browse/object/field                         #
 #########################################################
