@@ -87,10 +87,7 @@ impl<'db> TypedDbContext<'db> {
     }
 
     /// Returns a typed helper scoped at the given column family.
-    pub fn cf<K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, V, KC, VC>>(
-        &self,
-        cf: CF,
-    ) -> TypedCfApi<'db, '_, K, V, KC, VC, CF> {
+    pub fn cf<CF: TypedCf>(&self, cf: CF) -> TypedCfApi<'db, '_, CF> {
         TypedCfApi::new(self.db, cf, &self.write_buffer)
     }
 
@@ -112,19 +109,16 @@ impl<'db> Drop for TypedDbContext<'db> {
 
 /// A higher-level DB access API bound to its [`TypedDbContext`] and scoped at a specific column
 /// family.
-pub struct TypedCfApi<'db, 'wb, K, V, KC, VC, CF> {
+pub struct TypedCfApi<'db, 'wb, CF: TypedCf> {
     db: &'db DB,
     typed_cf: CF,
     write_buffer: &'wb WriteBuffer,
     cf_handle: &'db ColumnFamily, // only a cache - computable from `typed_cf`
-    key_codec: KC,                // only a cache - computable from `typed_cf`
-    value_codec: VC,              // only a cache - computable from `typed_cf`
-    type_parameters_phantom: PhantomData<(K, V)>,
+    key_codec: CF::KeyCodec,      // only a cache - computable from `typed_cf`
+    value_codec: CF::ValueCodec,  // only a cache - computable from `typed_cf`
 }
 
-impl<'db, 'wb, K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, V, KC, VC>>
-    TypedCfApi<'db, 'wb, K, V, KC, VC, CF>
-{
+impl<'db, 'wb, CF: TypedCf> TypedCfApi<'db, 'wb, CF> {
     /// Creates an instance for the given column family.
     fn new(db: &'db DB, typed_cf: CF, write_buffer: &'wb WriteBuffer) -> Self {
         // cache a few values:
@@ -138,12 +132,11 @@ impl<'db, 'wb, K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, 
             cf_handle,
             key_codec,
             value_codec,
-            type_parameters_phantom: PhantomData,
         }
     }
 
     /// Gets value by key.
-    pub fn get(&self, key: &K) -> Option<V> {
+    pub fn get(&self, key: &CF::Key) -> Option<CF::Value> {
         self.db
             .get_pinned_cf(self.cf_handle, self.key_codec.encode(key).as_slice())
             .expect("database get by key")
@@ -152,7 +145,7 @@ impl<'db, 'wb, K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, 
 
     /// Gets multiple values by keys.
     /// The order of returned values (or [`None`]s) matches the order of requested keys.
-    pub fn get_many(&self, keys: Vec<&K>) -> Vec<Option<V>> {
+    pub fn get_many(&self, keys: Vec<&CF::Key>) -> Vec<Option<CF::Value>> {
         self.db
             .multi_get_cf(
                 keys.into_iter()
@@ -168,33 +161,40 @@ impl<'db, 'wb, K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, 
     }
 
     /// Gets the entry of the least key _(according to the database's ordering)_.
-    pub fn get_first(&self) -> Option<(K, V)> {
+    pub fn get_first(&self) -> Option<(CF::Key, CF::Value)> {
         self.iterate(Direction::Forward).next()
     }
 
     /// Gets the value associated with the least key _(according to the database's ordering)_.
-    pub fn get_first_value(&self) -> Option<V> {
+    pub fn get_first_value(&self) -> Option<CF::Value> {
         self.get_first().map(|(_, value)| value)
     }
 
     /// Gets the entry of the greatest key _(according to the database's ordering)_.
-    pub fn get_last(&self) -> Option<(K, V)> {
+    pub fn get_last(&self) -> Option<(CF::Key, CF::Value)> {
         self.iterate(Direction::Reverse).next()
     }
 
     /// Gets the greatest key _(according to the database's ordering)_.
-    pub fn get_last_key(&self) -> Option<K> {
+    pub fn get_last_key(&self) -> Option<CF::Key> {
         self.get_last().map(|(key, _)| key)
     }
 
     /// Gets the value associated with the greatest key _(according to the database's ordering)_.
-    pub fn get_last_value(&self) -> Option<V> {
+    pub fn get_last_value(&self) -> Option<CF::Value> {
         self.get_last().map(|(_, value)| value)
     }
 
     /// Returns an iterator traversing over (potentially) all the entries, in the requested
     /// direction.
-    pub fn iterate(&self, direction: Direction) -> Box<dyn Iterator<Item = (K, V)> + 'db> {
+    pub fn iterate(
+        &self,
+        direction: Direction,
+    ) -> Box<dyn Iterator<Item = (CF::Key, CF::Value)> + 'db>
+    where
+        <CF as TypedCf>::KeyCodec: 'db,
+        <CF as TypedCf>::ValueCodec: 'db,
+    {
         self.iterate_with_mode(match direction {
             Direction::Forward => IteratorMode::Start,
             Direction::Reverse => IteratorMode::End,
@@ -205,9 +205,13 @@ impl<'db, 'wb, K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, 
     /// all the entries remaining in the requested direction.
     pub fn iterate_from(
         &self,
-        from: &K,
+        from: &CF::Key,
         direction: Direction,
-    ) -> Box<dyn Iterator<Item = (K, V)> + 'db> {
+    ) -> Box<dyn Iterator<Item = (CF::Key, CF::Value)> + 'db>
+    where
+        <CF as TypedCf>::KeyCodec: 'db,
+        <CF as TypedCf>::ValueCodec: 'db,
+    {
         self.iterate_with_mode(IteratorMode::From(
             self.key_codec.encode(from).as_slice(),
             direction,
@@ -215,7 +219,7 @@ impl<'db, 'wb, K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, 
     }
 
     /// Upserts the new value at the given key.
-    pub fn put(&self, key: &K, value: &V) {
+    pub fn put(&self, key: &CF::Key, value: &CF::Value) {
         self.write_buffer.put(
             self.cf_handle,
             self.key_codec.encode(key),
@@ -224,14 +228,14 @@ impl<'db, 'wb, K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, 
     }
 
     /// Deletes the entry of the given key.
-    pub fn delete(&self, key: &K) {
+    pub fn delete(&self, key: &CF::Key) {
         self.write_buffer
             .delete(self.cf_handle, self.key_codec.encode(key));
     }
 
     /// Deletes the entries from the given key range.
     /// Follows the classic convention of "from inclusive, to exclusive".
-    pub fn delete_range(&self, from_key: &K, to_key: &K) {
+    pub fn delete_range(&self, from_key: &CF::Key, to_key: &CF::Key) {
         self.write_buffer.delete_range(
             self.cf_handle,
             self.key_codec.encode(from_key),
@@ -242,7 +246,14 @@ impl<'db, 'wb, K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, 
     /// Returns an iterator based on the [`IteratorMode`] (which already contains encoded key).
     ///
     /// This is an internal shared implementation detail for different iteration flavors.
-    fn iterate_with_mode(&self, mode: IteratorMode) -> Box<dyn Iterator<Item = (K, V)> + 'db> {
+    fn iterate_with_mode(
+        &self,
+        mode: IteratorMode,
+    ) -> Box<dyn Iterator<Item = (CF::Key, CF::Value)> + 'db>
+    where
+        <CF as TypedCf>::KeyCodec: 'db,
+        <CF as TypedCf>::ValueCodec: 'db,
+    {
         // create dedicated instances; do not reference those cached by `&self` from returned value:
         let key_codec = self.typed_cf.key_codec();
         let value_codec = self.typed_cf.value_codec();
@@ -264,18 +275,34 @@ impl<'db, 'wb, K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, 
 ///
 /// This is the most verbose and customizable trait. Usual cases can use one of the more convenient
 /// traits defined below.
-pub trait TypedCf<K, V, KC = Box<dyn DbCodec<K>>, VC = Box<dyn DbCodec<V>>> {
+pub trait TypedCf {
+    /// Type of the key.
+    type Key;
+    /// Type of the value.
+    type Value;
+
+    /// Type of the [`DbCodec`] for the keys.
+    type KeyCodec: DbCodec<Self::Key>;
+
+    /// Type of the [`DbCodec`] for the values.
+    type ValueCodec: DbCodec<Self::Value>;
+
     /// Column family name (as known to the DB).
     const NAME: &'static str;
     /// Creates a new [`DbCodec`] for keys within this column family.
-    fn key_codec(&self) -> KC;
+    fn key_codec(&self) -> Self::KeyCodec;
     /// Creates a new [`DbCodec`] for values within this column family.
-    fn value_codec(&self) -> VC;
+    fn value_codec(&self) -> Self::ValueCodec;
 }
 
 /// A convenience trait implementing [`TypedCf`] for a simple case where both [`DbCodec`]s have
 /// cheap [`Default`] implementations.
-pub trait DefaultCf<K, V> {
+pub trait DefaultCf {
+    /// Type of the key.
+    type Key;
+    /// Type of the value.
+    type Value;
+
     /// Column family name (as known to the DB).
     ///
     /// Note: this deliberately uses a different identifier than [`TypedCf::NAME`] to avoid awkward
@@ -287,9 +314,20 @@ pub trait DefaultCf<K, V> {
     type ValueCodec: Default;
 }
 
-impl<K, V, KC: Default, VC: Default, D: DefaultCf<K, V, KeyCodec = KC, ValueCodec = VC>>
-    TypedCf<K, V, KC, VC> for D
+impl<
+        K,
+        V,
+        KC: Default + DbCodec<K>,
+        VC: Default + DbCodec<V>,
+        D: DefaultCf<Key = K, Value = V, KeyCodec = KC, ValueCodec = VC>,
+    > TypedCf for D
 {
+    type Key = K;
+    type Value = V;
+
+    type KeyCodec = KC;
+    type ValueCodec = VC;
+
     const NAME: &'static str = Self::DEFAULT_NAME;
 
     fn key_codec(&self) -> KC {
@@ -303,7 +341,10 @@ impl<K, V, KC: Default, VC: Default, D: DefaultCf<K, V, KeyCodec = KC, ValueCode
 
 /// A convenience trait implementing [`TypedCf`] for a popular case where a "versioned SBOR"
 /// encoding is used for values.
-pub trait VersionedCf<K, V> {
+pub trait VersionedCf {
+    type Key;
+    type Value;
+
     /// Column family name (as known to the DB).
     ///
     /// Note: this deliberately uses a different identifier than [`TypedCf::NAME`] to avoid awkward
@@ -315,13 +356,16 @@ pub trait VersionedCf<K, V> {
     type VersionedValue;
 }
 
-impl<K, V, VV, KC, D> DefaultCf<K, V> for D
+impl<K, V, VV, KC, D> DefaultCf for D
 where
     V: Into<VV> + Clone,
     VV: ScryptoEncode + ScryptoDecode + HasLatestVersion<Latest = V>,
     KC: Default,
-    D: VersionedCf<K, V, KeyCodec = KC, VersionedValue = VV>,
+    D: VersionedCf<Key = K, Value = V, KeyCodec = KC, VersionedValue = VV>,
 {
+    type Key = K;
+    type Value = V;
+
     const DEFAULT_NAME: &'static str = Self::VERSIONED_NAME;
     type KeyCodec = KC;
     type ValueCodec = VersionedDbCodec<SborDbCodec<VV>, V, VV>;
