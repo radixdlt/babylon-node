@@ -3,6 +3,7 @@ import {
   LtsCommittedTransactionOutcome,
   LtsStateAccountAllFungibleResourceBalancesRequest,
   LtsStateAccountAllFungibleResourceBalancesResponse,
+  LtsStateAccountDepositBehaviourResponse,
   LtsStateAccountFungibleResourceBalanceRequest,
   LtsStateAccountFungibleResourceBalanceResponse,
   LtsStreamAccountTransactionOutcomesRequest,
@@ -69,6 +70,26 @@ export class LTS {
       }
     }
     return response;
+  }
+
+  /**
+   * Checks whether the given account is currently configured to accept the deposits of the given
+   * resources - in other words, this method returns whether such `try_deposit()` call would be
+   * successful, and why.
+   *
+   * @returns Details on the account's settings related to accepting deposits.
+   */
+  public async getAccountDepositBehaviour(
+    targetAccountAddress: string,
+    depositedResourceAddresses: Array<string>
+  ): Promise<LtsStateAccountDepositBehaviourResponse> {
+    return this.innerClient.ltsStateAccountDepositBehaviourPost({
+      ltsStateAccountDepositBehaviourRequest: {
+        network: this.logicalNetworkName,
+        account_address: targetAccountAddress,
+        resource_addresses: depositedResourceAddresses,
+      },
+    });
   }
 
   /**
