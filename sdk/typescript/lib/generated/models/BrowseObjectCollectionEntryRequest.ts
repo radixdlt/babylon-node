@@ -13,6 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { CollectionEntryKey } from './CollectionEntryKey';
+import {
+    CollectionEntryKeyFromJSON,
+    CollectionEntryKeyFromJSONTyped,
+    CollectionEntryKeyToJSON,
+} from './CollectionEntryKey';
 import type { ModuleId } from './ModuleId';
 import {
     ModuleIdFromJSON,
@@ -23,76 +29,64 @@ import {
 /**
  * 
  * @export
- * @interface BrowseObjectCollectionIteratorRequest
+ * @interface BrowseObjectCollectionEntryRequest
  */
-export interface BrowseObjectCollectionIteratorRequest {
+export interface BrowseObjectCollectionEntryRequest {
     /**
      * The logical name of the network
      * @type {string}
-     * @memberof BrowseObjectCollectionIteratorRequest
+     * @memberof BrowseObjectCollectionEntryRequest
      */
     network: string;
     /**
      * Bech32m-encoded human readable version of the entity's address (ie the entity's node id)
      * @type {string}
-     * @memberof BrowseObjectCollectionIteratorRequest
+     * @memberof BrowseObjectCollectionEntryRequest
      */
     entity_address: string;
     /**
      * 
      * @type {ModuleId}
-     * @memberof BrowseObjectCollectionIteratorRequest
+     * @memberof BrowseObjectCollectionEntryRequest
      */
     module_id?: ModuleId;
     /**
      * Name of the collection to read. Either this or `collection_index` is required.
      * @type {string}
-     * @memberof BrowseObjectCollectionIteratorRequest
+     * @memberof BrowseObjectCollectionEntryRequest
      */
     collection_name?: string;
     /**
      * Index of the collection to read. Either this or `collection_name` is required.
      * @type {number}
-     * @memberof BrowseObjectCollectionIteratorRequest
+     * @memberof BrowseObjectCollectionEntryRequest
      */
     collection_index?: number;
     /**
-     * A maximum number of items to be included in the paged listing response.
-     * By default, each paged listing endpoint imposes its own limit on the number of returned
-     * items (which may even be driven dynamically by system load, etc). This client-provided
-     * maximum page size simply adds a further constraint (i.e. can only lower down the number
-     * of returned items).
-     * @type {number}
-     * @memberof BrowseObjectCollectionIteratorRequest
+     * 
+     * @type {CollectionEntryKey}
+     * @memberof BrowseObjectCollectionEntryRequest
      */
-    max_page_size?: number;
-    /**
-     * An opaque string conveying the information on where the next page of results starts.
-     * It is returned in every paged listing response (except for the last page), and it can be
-     * passed in every paged listing request (in order to begin listing from where the previous
-     * response ended).
-     * @type {string}
-     * @memberof BrowseObjectCollectionIteratorRequest
-     */
-    continuation_token?: string;
+    key: CollectionEntryKey;
 }
 
 /**
- * Check if a given object implements the BrowseObjectCollectionIteratorRequest interface.
+ * Check if a given object implements the BrowseObjectCollectionEntryRequest interface.
  */
-export function instanceOfBrowseObjectCollectionIteratorRequest(value: object): boolean {
+export function instanceOfBrowseObjectCollectionEntryRequest(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "network" in value;
     isInstance = isInstance && "entity_address" in value;
+    isInstance = isInstance && "key" in value;
 
     return isInstance;
 }
 
-export function BrowseObjectCollectionIteratorRequestFromJSON(json: any): BrowseObjectCollectionIteratorRequest {
-    return BrowseObjectCollectionIteratorRequestFromJSONTyped(json, false);
+export function BrowseObjectCollectionEntryRequestFromJSON(json: any): BrowseObjectCollectionEntryRequest {
+    return BrowseObjectCollectionEntryRequestFromJSONTyped(json, false);
 }
 
-export function BrowseObjectCollectionIteratorRequestFromJSONTyped(json: any, ignoreDiscriminator: boolean): BrowseObjectCollectionIteratorRequest {
+export function BrowseObjectCollectionEntryRequestFromJSONTyped(json: any, ignoreDiscriminator: boolean): BrowseObjectCollectionEntryRequest {
     if ((json === undefined) || (json === null)) {
         return json;
     }
@@ -103,12 +97,11 @@ export function BrowseObjectCollectionIteratorRequestFromJSONTyped(json: any, ig
         'module_id': !exists(json, 'module_id') ? undefined : ModuleIdFromJSON(json['module_id']),
         'collection_name': !exists(json, 'collection_name') ? undefined : json['collection_name'],
         'collection_index': !exists(json, 'collection_index') ? undefined : json['collection_index'],
-        'max_page_size': !exists(json, 'max_page_size') ? undefined : json['max_page_size'],
-        'continuation_token': !exists(json, 'continuation_token') ? undefined : json['continuation_token'],
+        'key': CollectionEntryKeyFromJSON(json['key']),
     };
 }
 
-export function BrowseObjectCollectionIteratorRequestToJSON(value?: BrowseObjectCollectionIteratorRequest | null): any {
+export function BrowseObjectCollectionEntryRequestToJSON(value?: BrowseObjectCollectionEntryRequest | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -122,8 +115,7 @@ export function BrowseObjectCollectionIteratorRequestToJSON(value?: BrowseObject
         'module_id': ModuleIdToJSON(value.module_id),
         'collection_name': value.collection_name,
         'collection_index': value.collection_index,
-        'max_page_size': value.max_page_size,
-        'continuation_token': value.continuation_token,
+        'key': CollectionEntryKeyToJSON(value.key),
     };
 }
 

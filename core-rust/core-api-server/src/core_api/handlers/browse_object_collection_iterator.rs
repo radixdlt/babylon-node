@@ -71,17 +71,23 @@ pub(crate) async fn handle_browse_object_collection_iterator(
     .map(Json)
 }
 
-// Note: We use the already-defined and very convenient `SubstateKey` as contents of the
-// continuation token (it is simply raw bytes, distinguishing between sorted vs not-sorted).
-impl HasKey<SubstateKey> for ObjectCollectionKey<'_> {
-    fn as_key(&self) -> SubstateKey {
+/// A "raw" representation of an [`ObjectCollectionKey`], suitable for use in a paging continuation
+/// token (see [`HasKey`] below).
+#[derive(Clone, PartialEq, Eq, ScryptoSbor)] // plain `Sbor` cannot be implemented due to `ScryptoValue` there
+pub enum RawCollectionKey {
+    Sorted([u8; 2], ScryptoValue),
+    Unsorted(ScryptoValue),
+}
+
+impl HasKey<RawCollectionKey> for ObjectCollectionKey<'_> {
+    fn as_key(&self) -> RawCollectionKey {
         match self {
             ObjectCollectionKey::KeyValueStore(sbor_data)
             | ObjectCollectionKey::Index(sbor_data) => {
-                SubstateKey::Map(sbor_data.as_bytes().to_vec())
+                RawCollectionKey::Unsorted(sbor_data.to_scrypto_value())
             }
             ObjectCollectionKey::SortedIndex(sorted_prefix, sbor_data) => {
-                SubstateKey::Sorted((*sorted_prefix, sbor_data.as_bytes().to_vec()))
+                RawCollectionKey::Sorted(*sorted_prefix, sbor_data.to_scrypto_value())
             }
         }
     }

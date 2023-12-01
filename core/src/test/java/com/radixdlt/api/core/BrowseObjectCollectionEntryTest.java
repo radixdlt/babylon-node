@@ -66,55 +66,68 @@ package com.radixdlt.api.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
-import com.radixdlt.api.core.generated.client.ApiException;
 import com.radixdlt.api.core.generated.models.*;
-import com.radixdlt.rev2.Manifest;
-import com.radixdlt.testutil.TestStateReader;
-import com.radixdlt.transactions.IntentHash;
 import java.util.List;
 import java.util.Map;
 import org.junit.Test;
 
-public final class BrowseKeyValueStoreEntryTest extends DeterministicCoreApiTestBase {
+public final class BrowseObjectCollectionEntryTest extends DeterministicCoreApiTestBase {
 
   @Test
-  public void browse_api_returns_kv_store_entry() throws Exception {
+  public void browse_api_returns_object_collection_entry() throws Exception {
     try (var test = buildRunningServerTest()) {
       test.suppressUnusedWarning();
 
-      // execute a dummy transaction to create a known entry in the Faucet's KV-Store:
-      final var intentHash =
-          submitAndWaitForSuccess(test, Manifest.newRandomAccount(), List.of()).intentHash();
-      final var epoch = test.getInstance(0, TestStateReader.class).getEpoch();
+      final var wellKnownAddresses =
+          getStatusApi().statusNetworkConfigurationPost().getWellKnownAddresses();
 
-      // fetch the value by SBOR-encoded transaction hash in programmatic JSON format:
+      // fetch the Blueprint of version 1.0.0 from some arbitrary package:
       final var key =
-          new KeyValueStoreMapKey()
+          new KeyValueStoreEntryKey()
               .programmaticJson(
                   Map.of(
-                      "type_name", "Hash",
-                      "kind", "Bytes",
-                      "element_kind", "U8",
-                      "hex", intentHash.hex()));
+                      "type_name", "BlueprintVersionKey",
+                      "kind", "Tuple",
+                      "fields",
+                          List.of(
+                              Map.of(
+                                  "kind", "String",
+                                  "field_name", "blueprint",
+                                  "value", "Identity"),
+                              Map.of(
+                                  "type_name", "BlueprintVersion",
+                                  "kind", "Tuple",
+                                  "field_name", "version",
+                                  "fields",
+                                      List.of(
+                                          Map.of(
+                                              "kind", "U32",
+                                              "field_name", "major",
+                                              "value", "1"),
+                                          Map.of(
+                                              "kind", "U32",
+                                              "field_name", "minor",
+                                              "value", "0"),
+                                          Map.of(
+                                              "kind", "U32",
+                                              "field_name", "patch",
+                                              "value", "0"))))))
+              .kind(ObjectCollectionKind.KEYVALUESTORE);
       final var value =
-          getBrowseApi()
-              .browseKvStoreEntryPost(
-                  new BrowseKeyValueStoreEntryRequest()
-                      .network(networkLogicalName)
-                      .entityAddress(getTransactionsKeyValueStoreAddress())
-                      .key(key))
-              .getContent()
-              .getProgrammaticJson();
+          (Map<?, ?>)
+              getBrowseApi()
+                  .browseObjectCollectionEntryPost(
+                      new BrowseObjectCollectionEntryRequest()
+                          .network(networkLogicalName)
+                          .entityAddress(wellKnownAddresses.getIdentityPackage())
+                          .collectionName("blueprint_version_definition")
+                          .key(key))
+                  .getContent()
+                  .getProgrammaticJson();
 
-      // assert that it is the SBOR epoch in programmatic JSON format:
-      assertThat(value)
-          .isEqualTo(
-              Map.of(
-                  "type_name", "Epoch",
-                  "kind", "U64",
-                  "value", String.valueOf(epoch)));
+      // assert that it is an SBOR struct of the expected type:
+      assertThat(value.get("type_name")).isEqualTo("PackageBlueprintVersionDefinitionEntryPayload");
     }
   }
 
@@ -123,57 +136,42 @@ public final class BrowseKeyValueStoreEntryTest extends DeterministicCoreApiTest
     try (var test = buildRunningServerTest()) {
       test.suppressUnusedWarning();
 
-      // execute a few dummy transactions (so that we test against non-empty KV-Store):
-      for (int i = 0; i < 3; ++i) {
-        submitAndWaitForSuccess(test, Manifest.newRandomAccount(), List.of());
-      }
+      final var wellKnownAddresses =
+          getStatusApi().statusNetworkConfigurationPost().getWellKnownAddresses();
 
-      // try to fetch something by a made-up key:
+      // make up a non-existent validator key:
       final var key =
-          new KeyValueStoreMapKey()
+          new SortedIndexEntryKey()
+              .sortPrefixHex("fffe")
               .programmaticJson(
                   Map.of(
                       "type_name", "Hash",
                       "kind", "Bytes",
                       "element_kind", "U8",
-                      "hex", new IntentHash(HashCode.fromBytes(new byte[32])).hex()));
+                      "hex", "abcd"))
+              .kind(ObjectCollectionKind.INDEX);
+
+      // try to fetch it from the sorted index collection:
       final var errorResponse =
           assertErrorResponseOfType(
               () ->
                   getBrowseApi()
-                      .browseKvStoreEntryPost(
-                          new BrowseKeyValueStoreEntryRequest()
+                      .browseObjectCollectionEntryPost(
+                          new BrowseObjectCollectionEntryRequest()
                               .network(networkLogicalName)
-                              .entityAddress(getTransactionsKeyValueStoreAddress())
+                              .entityAddress(wellKnownAddresses.getConsensusManager())
+                              .collectionName("registered_validators_by_stake")
                               .key(key)),
               BasicErrorResponse.class);
 
-      // assert that it is "not found" type of error
+      // assert that it is "not found" type of error:
       assertThat(errorResponse.getCode())
           .isEqualTo(400); // we are not RESTful, this is a client error as any other
       assertThat(errorResponse.getMessage()).contains("not found");
     }
   }
 
-  private String getTransactionsKeyValueStoreAddress() throws ApiException {
-    final var wellKnownAddresses =
-        getStatusApi().statusNetworkConfigurationPost().getWellKnownAddresses();
-    final var faucetState =
-        (Map<?, ?>)
-            getBrowseApi()
-                .browseObjectFieldPost(
-                    new BrowseObjectFieldRequest()
-                        .network(networkLogicalName)
-                        .entityAddress(wellKnownAddresses.getFaucet())
-                        .fieldIndex(0))
-                .getContent()
-                .getProgrammaticJson();
-    final var faucetFields = (List<?>) faucetState.get("fields");
-    return faucetFields.stream()
-        .map(field -> (Map<?, ?>) field)
-        .filter(field -> field.get("field_name").equals("transactions"))
-        .findAny()
-        .map(field -> (String) field.get("value"))
-        .orElseThrow();
-  }
+  // TODO(after fix in scrypto repo): add a positive test for the "fetch from sorted index" above
+  // (currently it would fail: cannot deserialize SBOR because of missing wrapper type in the
+  // system reader's impl)
 }

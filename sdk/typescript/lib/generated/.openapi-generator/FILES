@@ -108,6 +108,9 @@ models/BrowseKeyValueStoreEntryResponse.ts
 models/BrowseKeyValueStoreEntryResponseContent.ts
 models/BrowseKeyValueStoreIteratorRequest.ts
 models/BrowseKeyValueStoreIteratorResponse.ts
+models/BrowseObjectCollectionEntryRequest.ts
+models/BrowseObjectCollectionEntryResponse.ts
+models/BrowseObjectCollectionEntryResponseContent.ts
 models/BrowseObjectCollectionIteratorRequest.ts
 models/BrowseObjectCollectionIteratorResponse.ts
 models/BrowseObjectFieldRequest.ts

@@ -22,54 +22,85 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.BrowseObjectCollectionEntryResponseContent;
+import com.radixdlt.api.core.generated.models.LedgerStateSummary;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * The requested Key-Value Store entry&#39;s value.
+ * BrowseObjectCollectionEntryResponse
  */
-@ApiModel(description = "The requested Key-Value Store entry's value.")
 @JsonPropertyOrder({
-  BrowseKeyValueStoreEntryResponseContent.JSON_PROPERTY_PROGRAMMATIC_JSON
+  BrowseObjectCollectionEntryResponse.JSON_PROPERTY_AT_LEDGER_STATE,
+  BrowseObjectCollectionEntryResponse.JSON_PROPERTY_CONTENT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class BrowseKeyValueStoreEntryResponseContent {
-  public static final String JSON_PROPERTY_PROGRAMMATIC_JSON = "programmatic_json";
-  private Object programmaticJson;
+public class BrowseObjectCollectionEntryResponse {
+  public static final String JSON_PROPERTY_AT_LEDGER_STATE = "at_ledger_state";
+  private LedgerStateSummary atLedgerState;
 
-  public BrowseKeyValueStoreEntryResponseContent() { 
+  public static final String JSON_PROPERTY_CONTENT = "content";
+  private BrowseObjectCollectionEntryResponseContent content;
+
+  public BrowseObjectCollectionEntryResponse() { 
   }
 
-  public BrowseKeyValueStoreEntryResponseContent programmaticJson(Object programmaticJson) {
-    this.programmaticJson = programmaticJson;
+  public BrowseObjectCollectionEntryResponse atLedgerState(LedgerStateSummary atLedgerState) {
+    this.atLedgerState = atLedgerState;
     return this;
   }
 
    /**
-   * Get programmaticJson
-   * @return programmaticJson
+   * Get atLedgerState
+   * @return atLedgerState
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_PROGRAMMATIC_JSON)
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Object getProgrammaticJson() {
-    return programmaticJson;
+  public LedgerStateSummary getAtLedgerState() {
+    return atLedgerState;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_PROGRAMMATIC_JSON)
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setProgrammaticJson(Object programmaticJson) {
-    this.programmaticJson = programmaticJson;
+  public void setAtLedgerState(LedgerStateSummary atLedgerState) {
+    this.atLedgerState = atLedgerState;
+  }
+
+
+  public BrowseObjectCollectionEntryResponse content(BrowseObjectCollectionEntryResponseContent content) {
+    this.content = content;
+    return this;
+  }
+
+   /**
+   * Get content
+   * @return content
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_CONTENT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public BrowseObjectCollectionEntryResponseContent getContent() {
+    return content;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_CONTENT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setContent(BrowseObjectCollectionEntryResponseContent content) {
+    this.content = content;
   }
 
 
   /**
-   * Return true if this BrowseKeyValueStoreEntryResponse_content object is equal to o.
+   * Return true if this BrowseObjectCollectionEntryResponse object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -79,20 +110,22 @@ public class BrowseKeyValueStoreEntryResponseContent {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    BrowseKeyValueStoreEntryResponseContent browseKeyValueStoreEntryResponseContent = (BrowseKeyValueStoreEntryResponseContent) o;
-    return Objects.equals(this.programmaticJson, browseKeyValueStoreEntryResponseContent.programmaticJson);
+    BrowseObjectCollectionEntryResponse browseObjectCollectionEntryResponse = (BrowseObjectCollectionEntryResponse) o;
+    return Objects.equals(this.atLedgerState, browseObjectCollectionEntryResponse.atLedgerState) &&
+        Objects.equals(this.content, browseObjectCollectionEntryResponse.content);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(programmaticJson);
+    return Objects.hash(atLedgerState, content);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class BrowseKeyValueStoreEntryResponseContent {\n");
-    sb.append("    programmaticJson: ").append(toIndentedString(programmaticJson)).append("\n");
+    sb.append("class BrowseObjectCollectionEntryResponse {\n");
+    sb.append("    atLedgerState: ").append(toIndentedString(atLedgerState)).append("\n");
+    sb.append("    content: ").append(toIndentedString(content)).append("\n");
     sb.append("}");
     return sb.toString();
   }

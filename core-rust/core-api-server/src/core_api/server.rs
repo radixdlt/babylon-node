@@ -200,6 +200,10 @@ pub async fn create_server<F>(
             post(handle_browse_object_collection_iterator),
         )
         .route(
+            "/browse/object/collection/entry",
+            post(handle_object_collection_entry),
+        )
+        .route(
             "/browse/kv_store/iterator",
             post(handle_browse_kv_store_iterator),
         )

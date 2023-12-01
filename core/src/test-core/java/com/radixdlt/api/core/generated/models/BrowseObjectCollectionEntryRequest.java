@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.CollectionEntryKey;
 import com.radixdlt.api.core.generated.models.ModuleId;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -29,19 +30,18 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * BrowseObjectCollectionIteratorRequest
+ * BrowseObjectCollectionEntryRequest
  */
 @JsonPropertyOrder({
-  BrowseObjectCollectionIteratorRequest.JSON_PROPERTY_NETWORK,
-  BrowseObjectCollectionIteratorRequest.JSON_PROPERTY_ENTITY_ADDRESS,
-  BrowseObjectCollectionIteratorRequest.JSON_PROPERTY_MODULE_ID,
-  BrowseObjectCollectionIteratorRequest.JSON_PROPERTY_COLLECTION_NAME,
-  BrowseObjectCollectionIteratorRequest.JSON_PROPERTY_COLLECTION_INDEX,
-  BrowseObjectCollectionIteratorRequest.JSON_PROPERTY_MAX_PAGE_SIZE,
-  BrowseObjectCollectionIteratorRequest.JSON_PROPERTY_CONTINUATION_TOKEN
+  BrowseObjectCollectionEntryRequest.JSON_PROPERTY_NETWORK,
+  BrowseObjectCollectionEntryRequest.JSON_PROPERTY_ENTITY_ADDRESS,
+  BrowseObjectCollectionEntryRequest.JSON_PROPERTY_MODULE_ID,
+  BrowseObjectCollectionEntryRequest.JSON_PROPERTY_COLLECTION_NAME,
+  BrowseObjectCollectionEntryRequest.JSON_PROPERTY_COLLECTION_INDEX,
+  BrowseObjectCollectionEntryRequest.JSON_PROPERTY_KEY
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class BrowseObjectCollectionIteratorRequest {
+public class BrowseObjectCollectionEntryRequest {
   public static final String JSON_PROPERTY_NETWORK = "network";
   private String network;
 
@@ -57,16 +57,13 @@ public class BrowseObjectCollectionIteratorRequest {
   public static final String JSON_PROPERTY_COLLECTION_INDEX = "collection_index";
   private Integer collectionIndex;
 
-  public static final String JSON_PROPERTY_MAX_PAGE_SIZE = "max_page_size";
-  private Integer maxPageSize;
+  public static final String JSON_PROPERTY_KEY = "key";
+  private CollectionEntryKey key;
 
-  public static final String JSON_PROPERTY_CONTINUATION_TOKEN = "continuation_token";
-  private String continuationToken;
-
-  public BrowseObjectCollectionIteratorRequest() { 
+  public BrowseObjectCollectionEntryRequest() { 
   }
 
-  public BrowseObjectCollectionIteratorRequest network(String network) {
+  public BrowseObjectCollectionEntryRequest network(String network) {
     this.network = network;
     return this;
   }
@@ -92,7 +89,7 @@ public class BrowseObjectCollectionIteratorRequest {
   }
 
 
-  public BrowseObjectCollectionIteratorRequest entityAddress(String entityAddress) {
+  public BrowseObjectCollectionEntryRequest entityAddress(String entityAddress) {
     this.entityAddress = entityAddress;
     return this;
   }
@@ -118,7 +115,7 @@ public class BrowseObjectCollectionIteratorRequest {
   }
 
 
-  public BrowseObjectCollectionIteratorRequest moduleId(ModuleId moduleId) {
+  public BrowseObjectCollectionEntryRequest moduleId(ModuleId moduleId) {
     this.moduleId = moduleId;
     return this;
   }
@@ -144,7 +141,7 @@ public class BrowseObjectCollectionIteratorRequest {
   }
 
 
-  public BrowseObjectCollectionIteratorRequest collectionName(String collectionName) {
+  public BrowseObjectCollectionEntryRequest collectionName(String collectionName) {
     this.collectionName = collectionName;
     return this;
   }
@@ -170,7 +167,7 @@ public class BrowseObjectCollectionIteratorRequest {
   }
 
 
-  public BrowseObjectCollectionIteratorRequest collectionIndex(Integer collectionIndex) {
+  public BrowseObjectCollectionEntryRequest collectionIndex(Integer collectionIndex) {
     this.collectionIndex = collectionIndex;
     return this;
   }
@@ -198,62 +195,34 @@ public class BrowseObjectCollectionIteratorRequest {
   }
 
 
-  public BrowseObjectCollectionIteratorRequest maxPageSize(Integer maxPageSize) {
-    this.maxPageSize = maxPageSize;
+  public BrowseObjectCollectionEntryRequest key(CollectionEntryKey key) {
+    this.key = key;
     return this;
   }
 
    /**
-   * A maximum number of items to be included in the paged listing response. By default, each paged listing endpoint imposes its own limit on the number of returned items (which may even be driven dynamically by system load, etc). This client-provided maximum page size simply adds a further constraint (i.e. can only lower down the number of returned items). 
-   * minimum: 1
-   * maximum: 1000
-   * @return maxPageSize
+   * Get key
+   * @return key
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "A maximum number of items to be included in the paged listing response. By default, each paged listing endpoint imposes its own limit on the number of returned items (which may even be driven dynamically by system load, etc). This client-provided maximum page size simply adds a further constraint (i.e. can only lower down the number of returned items). ")
-  @JsonProperty(JSON_PROPERTY_MAX_PAGE_SIZE)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_KEY)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Integer getMaxPageSize() {
-    return maxPageSize;
+  public CollectionEntryKey getKey() {
+    return key;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_MAX_PAGE_SIZE)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setMaxPageSize(Integer maxPageSize) {
-    this.maxPageSize = maxPageSize;
-  }
-
-
-  public BrowseObjectCollectionIteratorRequest continuationToken(String continuationToken) {
-    this.continuationToken = continuationToken;
-    return this;
-  }
-
-   /**
-   * An opaque string conveying the information on where the next page of results starts. It is returned in every paged listing response (except for the last page), and it can be passed in every paged listing request (in order to begin listing from where the previous response ended). 
-   * @return continuationToken
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "An opaque string conveying the information on where the next page of results starts. It is returned in every paged listing response (except for the last page), and it can be passed in every paged listing request (in order to begin listing from where the previous response ended). ")
-  @JsonProperty(JSON_PROPERTY_CONTINUATION_TOKEN)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-
-  public String getContinuationToken() {
-    return continuationToken;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_CONTINUATION_TOKEN)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setContinuationToken(String continuationToken) {
-    this.continuationToken = continuationToken;
+  @JsonProperty(JSON_PROPERTY_KEY)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setKey(CollectionEntryKey key) {
+    this.key = key;
   }
 
 
   /**
-   * Return true if this BrowseObjectCollectionIteratorRequest object is equal to o.
+   * Return true if this BrowseObjectCollectionEntryRequest object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -263,32 +232,30 @@ public class BrowseObjectCollectionIteratorRequest {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    BrowseObjectCollectionIteratorRequest browseObjectCollectionIteratorRequest = (BrowseObjectCollectionIteratorRequest) o;
-    return Objects.equals(this.network, browseObjectCollectionIteratorRequest.network) &&
-        Objects.equals(this.entityAddress, browseObjectCollectionIteratorRequest.entityAddress) &&
-        Objects.equals(this.moduleId, browseObjectCollectionIteratorRequest.moduleId) &&
-        Objects.equals(this.collectionName, browseObjectCollectionIteratorRequest.collectionName) &&
-        Objects.equals(this.collectionIndex, browseObjectCollectionIteratorRequest.collectionIndex) &&
-        Objects.equals(this.maxPageSize, browseObjectCollectionIteratorRequest.maxPageSize) &&
-        Objects.equals(this.continuationToken, browseObjectCollectionIteratorRequest.continuationToken);
+    BrowseObjectCollectionEntryRequest browseObjectCollectionEntryRequest = (BrowseObjectCollectionEntryRequest) o;
+    return Objects.equals(this.network, browseObjectCollectionEntryRequest.network) &&
+        Objects.equals(this.entityAddress, browseObjectCollectionEntryRequest.entityAddress) &&
+        Objects.equals(this.moduleId, browseObjectCollectionEntryRequest.moduleId) &&
+        Objects.equals(this.collectionName, browseObjectCollectionEntryRequest.collectionName) &&
+        Objects.equals(this.collectionIndex, browseObjectCollectionEntryRequest.collectionIndex) &&
+        Objects.equals(this.key, browseObjectCollectionEntryRequest.key);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(network, entityAddress, moduleId, collectionName, collectionIndex, maxPageSize, continuationToken);
+    return Objects.hash(network, entityAddress, moduleId, collectionName, collectionIndex, key);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class BrowseObjectCollectionIteratorRequest {\n");
+    sb.append("class BrowseObjectCollectionEntryRequest {\n");
     sb.append("    network: ").append(toIndentedString(network)).append("\n");
     sb.append("    entityAddress: ").append(toIndentedString(entityAddress)).append("\n");
     sb.append("    moduleId: ").append(toIndentedString(moduleId)).append("\n");
     sb.append("    collectionName: ").append(toIndentedString(collectionName)).append("\n");
     sb.append("    collectionIndex: ").append(toIndentedString(collectionIndex)).append("\n");
-    sb.append("    maxPageSize: ").append(toIndentedString(maxPageSize)).append("\n");
-    sb.append("    continuationToken: ").append(toIndentedString(continuationToken)).append("\n");
+    sb.append("    key: ").append(toIndentedString(key)).append("\n");
     sb.append("}");
     return sb.toString();
   }

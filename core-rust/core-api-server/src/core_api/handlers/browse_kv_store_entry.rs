@@ -14,9 +14,9 @@ pub(crate) async fn handle_kv_store_entry(
 
     let node_id = extract_address_as_node_id(&extraction_context, &request.entity_address)
         .map_err(|err| err.into_response_error("entity_address"))?;
-    let key =
-        SborDataInput::from_programmatic_json(&extraction_context, request.key.programmatic_json)
-            .map_err(|err| err.into_response_error("entity_address"))?;
+    let key = ProgrammaticJsonDecoder::new(&extraction_context)
+        .decode(request.key.programmatic_json)
+        .map_err(|err| err.into_response_error("key"))?;
 
     let database = state.state_manager.database.read_current();
 
@@ -26,7 +26,7 @@ pub(crate) async fn handle_kv_store_entry(
     };
 
     let data_loader = EngineStateDataLoader::new(database.deref());
-    let entry_data = data_loader.load_kv_store_entry(&node_id, &kv_store_meta, key.as_bytes())?;
+    let entry_data = data_loader.load_kv_store_entry(&node_id, &kv_store_meta, &key)?;
     let programmatic_json = entry_data.into_programmatic_json(&mapping_context)?;
 
     let header = read_current_ledger_header(database.deref());

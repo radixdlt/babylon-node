@@ -14,34 +14,34 @@
 
 import { exists, mapValues } from '../runtime';
 /**
- * The requested Key-Value Store entry's value.
+ * The requested Object Collection entry's value.
  * @export
- * @interface BrowseKeyValueStoreEntryResponseContent
+ * @interface BrowseObjectCollectionEntryResponseContent
  */
-export interface BrowseKeyValueStoreEntryResponseContent {
+export interface BrowseObjectCollectionEntryResponseContent {
     /**
      * 
      * @type {object}
-     * @memberof BrowseKeyValueStoreEntryResponseContent
+     * @memberof BrowseObjectCollectionEntryResponseContent
      */
     programmatic_json: object;
 }
 
 /**
- * Check if a given object implements the BrowseKeyValueStoreEntryResponseContent interface.
+ * Check if a given object implements the BrowseObjectCollectionEntryResponseContent interface.
  */
-export function instanceOfBrowseKeyValueStoreEntryResponseContent(value: object): boolean {
+export function instanceOfBrowseObjectCollectionEntryResponseContent(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "programmatic_json" in value;
 
     return isInstance;
 }
 
-export function BrowseKeyValueStoreEntryResponseContentFromJSON(json: any): BrowseKeyValueStoreEntryResponseContent {
-    return BrowseKeyValueStoreEntryResponseContentFromJSONTyped(json, false);
+export function BrowseObjectCollectionEntryResponseContentFromJSON(json: any): BrowseObjectCollectionEntryResponseContent {
+    return BrowseObjectCollectionEntryResponseContentFromJSONTyped(json, false);
 }
 
-export function BrowseKeyValueStoreEntryResponseContentFromJSONTyped(json: any, ignoreDiscriminator: boolean): BrowseKeyValueStoreEntryResponseContent {
+export function BrowseObjectCollectionEntryResponseContentFromJSONTyped(json: any, ignoreDiscriminator: boolean): BrowseObjectCollectionEntryResponseContent {
     if ((json === undefined) || (json === null)) {
         return json;
     }
@@ -51,7 +51,7 @@ export function BrowseKeyValueStoreEntryResponseContentFromJSONTyped(json: any, 
     };
 }
 
-export function BrowseKeyValueStoreEntryResponseContentToJSON(value?: BrowseKeyValueStoreEntryResponseContent | null): any {
+export function BrowseObjectCollectionEntryResponseContentToJSON(value?: BrowseObjectCollectionEntryResponseContent | null): any {
     if (value === undefined) {
         return undefined;
     }

@@ -8,6 +8,7 @@ use radix_engine_store_interface::interface::{DbPartitionKey, SubstateDatabase};
 use convert_case::{Case, Casing};
 use itertools::Itertools;
 
+use radix_engine::system::system_db_reader::ObjectCollectionKey as ScryptoObjectCollectionKey;
 use radix_engine::system::system_db_reader::{SystemDatabaseReader, SystemReaderError};
 use radix_engine::system::system_type_checker::{BlueprintTypeTarget, SchemaValidationMeta};
 use radix_engine::system::type_info::TypeInfoSubstate;
@@ -22,6 +23,7 @@ use radix_engine_stores::hash_tree::tree_store::{
     Nibble, NibblePath, NodeKey, ReadableTreeStore, TreeNode,
 };
 
+use crate::core_api::handlers::RawCollectionKey;
 use state_manager::store::traits::{QueryableProofStore, SubstateNodeAncestryStore};
 use tracing::warn;
 
@@ -1088,6 +1090,38 @@ impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
         ))
     }
 
+    /// Loads an SBOR-encoded value of the given field.
+    /// Note: technically, loading an SBOR does not need the fully-resolved field metadata (just its
+    /// index); however, the object we return is schema-aware, so that it can render itself
+    /// together with field names. Hence the field metadata must first be obtained from the
+    /// [`EngineStateMetaLoader`].
+    pub fn load_collection_entry<'m>(
+        &self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        collection_meta: &'m ObjectCollectionMeta,
+        key: &RawCollectionKey,
+    ) -> Result<SborData<'m>, EngineStateBrowsingError> {
+        let collection_key = Self::to_scrypto_object_collection_key(key, collection_meta)?;
+        let mapped_value = self
+            .reader
+            .read_object_collection_entry::<_, ScryptoValue>(node_id, module_id, collection_key)
+            // if `ObjectCollectionMeta` exists, then the object, module and collection must exist - no errors expected:
+            .map_err(|error| {
+                EngineStateBrowsingError::UnexpectedEngineError(
+                    error,
+                    "when reading object collection".to_string(),
+                )
+            })?
+            .ok_or(EngineStateBrowsingError::RequestedItemNotFound(
+                ItemKind::EntryKey,
+            ))?;
+        Ok(SborData::new(
+            scrypto_encode(&mapped_value).expect("it was just decoded"),
+            &collection_meta.resolved_value_type,
+        ))
+    }
+
     /// Loads an SBOR-encoded value associated with the given key in the given Key-Value Store.
     /// Note: technically, loading an SBOR does not need the fully-resolved field metadata (just its
     /// index); however, the object we return is schema-aware, so that it can render itself
@@ -1097,20 +1131,11 @@ impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
         &self,
         node_id: &NodeId,
         kv_store_meta: &'m KeyValueStoreMeta,
-        key: &MapKey,
+        key: &ScryptoValue,
     ) -> Result<SborData<'m>, EngineStateBrowsingError> {
-        // TODO(after development in scrypto repo): we have to do an awkward encoding of (raw bytes)
-        // SBOR key, to a (still rather generic) `ScryptoValue`; we could avoid it if the Engine's
-        // reader accepted SBOR-encoded key (because it `scrypto_encode()`s it right away).
-        let key = scrypto_decode::<ScryptoValue>(key).map_err(|_| {
-            EngineStateBrowsingError::RequestedItemInvalid(
-                ItemKind::EntryKey,
-                "not a valid SBOR".to_string(),
-            )
-        })?;
         let mapped_value = self
             .reader
-            .read_typed_kv_entry::<_, ScryptoValue>(node_id, &key)
+            .read_typed_kv_entry::<_, ScryptoValue>(node_id, key)
             .ok_or(EngineStateBrowsingError::RequestedItemNotFound(
                 ItemKind::EntryKey,
             ))?;
@@ -1128,9 +1153,9 @@ impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
         node_id: &NodeId,
         module_id: ModuleId,
         collection_meta: &'s ObjectCollectionMeta,
-        from_key: Option<&SubstateKey>,
+        from_key: Option<&RawCollectionKey>,
     ) -> Result<impl Iterator<Item = ObjectCollectionKey> + '_, EngineStateBrowsingError> {
-        let from_key = from_key.cloned();
+        let from_key = from_key.map(|key| Self::to_substate_key(key));
         Ok(self
             .reader
             .collection_iter(node_id, module_id, collection_meta.index.number)
@@ -1181,35 +1206,73 @@ impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
             .map(|map_key| SborData::new(map_key, &kv_store_meta.resolved_key_type)))
     }
 
-    /// Creates a business-level representation of the object collection's substate key.
+    /// Creates an API *output* representation from the low-level object collection's substate key.
     fn to_object_collection_key(
         substate_key: SubstateKey,
         collection_meta: &ObjectCollectionMeta,
     ) -> ObjectCollectionKey {
-        match substate_key {
-            SubstateKey::Field(_) => panic!("cannot occur within object collection"),
-            SubstateKey::Map(map_key) => match collection_meta.kind {
-                ObjectCollectionKind::KeyValueStore => ObjectCollectionKey::KeyValueStore(
-                    SborData::new(map_key, &collection_meta.resolved_key_type),
-                ),
-                ObjectCollectionKind::Index => ObjectCollectionKey::Index(SborData::new(
-                    map_key,
+        match (&collection_meta.kind, substate_key) {
+            (ObjectCollectionKind::KeyValueStore, SubstateKey::Map(key)) => {
+                ObjectCollectionKey::KeyValueStore(SborData::new(
+                    key,
                     &collection_meta.resolved_key_type,
-                )),
-                ObjectCollectionKind::SortedIndex => {
-                    panic!("cannot occur within sorted collection")
-                }
-            },
-            SubstateKey::Sorted(sorted_key) => match collection_meta.kind {
-                ObjectCollectionKind::KeyValueStore | ObjectCollectionKind::Index => {
-                    panic!("cannot occur within unsorted collection")
-                }
-                ObjectCollectionKind::SortedIndex => ObjectCollectionKey::SortedIndex(
-                    sorted_key.0,
-                    SborData::new(sorted_key.1, &collection_meta.resolved_key_type),
-                ),
-            },
+                ))
+            }
+            (ObjectCollectionKind::Index, SubstateKey::Map(key)) => {
+                ObjectCollectionKey::Index(SborData::new(key, &collection_meta.resolved_key_type))
+            }
+            (ObjectCollectionKind::SortedIndex, SubstateKey::Sorted((sorted_prefix, key))) => {
+                ObjectCollectionKey::SortedIndex(
+                    sorted_prefix,
+                    SborData::new(key, &collection_meta.resolved_key_type),
+                )
+            }
+            _ => panic!("persisted key type does not match persisted collection type"),
         }
+    }
+
+    /// Creates a low-level collection key (i.e. for interfacing with the Engine's Substate store)
+    /// from the API *input* representation.
+    fn to_substate_key(collection_key: &RawCollectionKey) -> SubstateKey {
+        match collection_key {
+            RawCollectionKey::Sorted(sort_prefix, value) => SubstateKey::Sorted((
+                *sort_prefix,
+                scrypto_encode(value).expect("scrypto value must be encodable"),
+            )),
+            RawCollectionKey::Unsorted(value) => {
+                SubstateKey::Map(scrypto_encode(value).expect("scrypto value must be encodable"))
+            }
+        }
+    }
+
+    /// Creates a mid-level collection key (i.e. for interfacing with the "system reader") from the
+    /// API *input* representation.
+    fn to_scrypto_object_collection_key<'k>(
+        key: &'k RawCollectionKey,
+        collection_meta: &ObjectCollectionMeta,
+    ) -> Result<ScryptoObjectCollectionKey<'k, ScryptoValue>, EngineStateBrowsingError> {
+        let index = collection_meta.index.number;
+        Ok(match (&collection_meta.kind, key) {
+            (ObjectCollectionKind::KeyValueStore, RawCollectionKey::Unsorted(value)) => {
+                ScryptoObjectCollectionKey::KeyValue(index, value)
+            }
+            (ObjectCollectionKind::Index, RawCollectionKey::Unsorted(value)) => {
+                ScryptoObjectCollectionKey::Index(index, value)
+            }
+            (ObjectCollectionKind::SortedIndex, RawCollectionKey::Sorted(sort_prefix, value)) => {
+                ScryptoObjectCollectionKey::SortedIndex(
+                    index,
+                    u16::from_be_bytes(*sort_prefix),
+                    value,
+                )
+            }
+            _ => {
+                return Err(EngineStateBrowsingError::RequestedItemInvalid(
+                    ItemKind::EntryKey,
+                    "requested key type does not match persisted collection type".to_string(),
+                ))
+            }
+        })
     }
 }
 
@@ -1252,29 +1315,10 @@ impl<'t> SborData<'t> {
     pub fn as_bytes(&self) -> &[u8] {
         &self.payload_bytes
     }
-}
 
-/// A top-level SBOR value coming from the request,
-/// Please note that on input, type-awareness is irrelevant (unlike the output [`SborData`]).
-pub struct SborDataInput {
-    payload_bytes: Vec<u8>,
-}
-
-impl SborDataInput {
-    /// Parses an instance from a programmatic JSON (rendered as a `serde` JSON tree).
-    pub fn from_programmatic_json(
-        extraction_context: &ExtractionContext,
-        programmatic_json: serde_json::Value,
-    ) -> Result<Self, ExtractionError> {
-        Ok(Self {
-            payload_bytes: ProgrammaticJsonDecoder::new(extraction_context)
-                .decode(programmatic_json)?,
-        })
-    }
-
-    /// Returns raw SBOR bytes.
-    pub fn as_bytes(&self) -> &Vec<u8> {
-        &self.payload_bytes
+    /// Creates a [`ScryptoValue`] representation of these SBOR bytes.
+    pub fn to_scrypto_value(&self) -> ScryptoValue {
+        scrypto_decode(self.as_bytes()).expect("bytes read from substate store")
     }
 }
 
