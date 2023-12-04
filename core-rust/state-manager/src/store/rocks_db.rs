@@ -1185,14 +1185,18 @@ fn encode_to_rocksdb_bytes(partition_key: &DbPartitionKey, sort_key: &DbSortKey)
     buffer
 }
 
-fn encode_partition_prefix_range_to_rocksdb_bytes(partition_key: &DbPartitionKey) -> (Vec<u8>, Option<Vec<u8>>) {
+fn encode_partition_prefix_range_to_rocksdb_bytes(
+    partition_key: &DbPartitionKey,
+) -> (Vec<u8>, Option<Vec<u8>>) {
     let from_buffer = encode_partition_prefix_rocksdb_prefix_bytes(partition_key);
 
     let to_buffer = if partition_key.partition_num < u8::MAX {
-        Some(encode_partition_prefix_rocksdb_prefix_bytes(&DbPartitionKey {
-            node_key: partition_key.node_key.clone(),
-            partition_num: partition_key.partition_num + 1,
-        }))
+        Some(encode_partition_prefix_rocksdb_prefix_bytes(
+            &DbPartitionKey {
+                node_key: partition_key.node_key.clone(),
+                partition_num: partition_key.partition_num + 1,
+            },
+        ))
     } else {
         let mut next_node_key = partition_key.node_key.clone();
         // Now we attempt to "add 1", starting at the least significant byte, down to 0
@@ -1205,10 +1209,12 @@ fn encode_partition_prefix_range_to_rocksdb_bytes(partition_key: &DbPartitionKey
             }
         }
         if next_node_key.iter().any(|val| *val != 0) {
-            Some(encode_partition_prefix_rocksdb_prefix_bytes(&DbPartitionKey {
-                node_key: next_node_key,
-                partition_num: 0,
-            }))
+            Some(encode_partition_prefix_rocksdb_prefix_bytes(
+                &DbPartitionKey {
+                    node_key: next_node_key,
+                    partition_num: 0,
+                },
+            ))
         } else {
             // We've rolled over to all 0s
             None
@@ -1492,11 +1498,7 @@ impl PrefixableDbCodec for SubstateKeyDbCodec {
 }
 
 fn max_vec_of_len(length: usize) -> Vec<u8> {
-    let mut output = Vec::with_capacity(length);
-    for _ in 0..length {
-        output.push(255);
-    }
-    output
+    vec![255; length]
 }
 
 #[derive(Default)]

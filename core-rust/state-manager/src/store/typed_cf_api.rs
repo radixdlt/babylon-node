@@ -248,22 +248,36 @@ impl<'db, 'wb, K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, 
     }
 }
 
-impl<'db, 'wb, K, V, KC: DbCodec<K> + PrefixableDbCodec + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, V, KC, VC>> TypedCfApi<'db, 'wb, K, V, KC, VC, CF> {
-        /// Deletes the entries from the given key range.
+impl<
+        'db,
+        'wb,
+        K,
+        V,
+        KC: DbCodec<K> + PrefixableDbCodec + 'db,
+        VC: DbCodec<V> + 'db,
+        CF: TypedCf<K, V, KC, VC>,
+    > TypedCfApi<'db, 'wb, K, V, KC, VC, CF>
+{
+    /// Deletes the entries from the given key range.
     pub fn delete_all_under_prefix(&self, prefix: &KC::Prefix) {
         let (from, to) = self.key_codec.encode_prefix_to_range(prefix);
         // Frustratingly, RocksDB doesn't allow an open range, so we have to work around that
         let to = to.unwrap_or_else(|| self.key_codec.encode_key_greater_than_all_possible(prefix));
-        self.write_buffer.delete_range(
-            self.cf_handle,
-            from,
-            to,
-        );
+        self.write_buffer.delete_range(self.cf_handle, from, to);
     }
 }
 
 #[allow(dead_code)] // This will no longer be dead code once merged into develop
-impl<'db, 'wb, K, V, KC: DbCodec<K> + OrderPreservingDbCodec + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, V, KC, VC>> TypedCfApi<'db, 'wb, K, V, KC, VC, CF> {
+impl<
+        'db,
+        'wb,
+        K,
+        V,
+        KC: DbCodec<K> + OrderPreservingDbCodec + 'db,
+        VC: DbCodec<V> + 'db,
+        CF: TypedCf<K, V, KC, VC>,
+    > TypedCfApi<'db, 'wb, K, V, KC, VC, CF>
+{
     /// Deletes the entries from the given key range.
     /// Follows the classic convention of "from inclusive, to exclusive".
     pub fn delete_range(&self, from_key: &K, to_key: &K) {
