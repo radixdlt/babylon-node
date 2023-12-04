@@ -1359,14 +1359,13 @@ impl RestoreDecember2023LostSubstates for RocksDBStore {
 
             let substates_cf = db_context.cf(SubstatesCf);
 
-            for txn in self.get_committed_transaction_bundle_iter(StateVersion::of(1u64)) {
-                for (substate_ref, change) in txn
-                    .receipt
-                    .on_ledger
-                    .state_changes
-                    .substate_level_changes
-                    .iter()
-                {
+            let receipts_iter: Box<dyn Iterator<Item = (StateVersion, LedgerTransactionReceipt)>> =
+                db_context
+                    .cf(TransactionReceiptsCf)
+                    .iterate_from(&StateVersion::of(1u64), Direction::Forward);
+
+            for (version, receipt) in receipts_iter {
+                for (substate_ref, change) in receipt.state_changes.substate_level_changes.iter() {
                     let db_partition_key =
                         SpreadPrefixKeyMapper::to_db_partition_key(&substate_ref.0, substate_ref.1);
 
@@ -1388,11 +1387,12 @@ impl RestoreDecember2023LostSubstates for RocksDBStore {
                     }
                 }
 
-                if txn.state_version.number() % 10000 == 0 {
+                if version.number() % 10000 == 0 {
                     db_context.flush();
                     info!(
                         "Scanned {} of {} transactions...",
-                        txn.state_version, last_state_version
+                        version.number(),
+                        last_state_version.number()
                     );
                 }
             }
