@@ -262,7 +262,7 @@ impl<'db, 'wb, K, V, KC: DbCodec<K> + PrefixableDbCodec + 'db, VC: DbCodec<V> + 
     }
 }
 
-#[allow(dead_code)] // This can be removed once merged into develop
+#[allow(dead_code)] // This will no longer be dead code once merged into develop
 impl<'db, 'wb, K, V, KC: DbCodec<K> + OrderPreservingDbCodec + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, V, KC, VC>> TypedCfApi<'db, 'wb, K, V, KC, VC, CF> {
     /// Deletes the entries from the given key range.
     /// Follows the classic convention of "from inclusive, to exclusive".
