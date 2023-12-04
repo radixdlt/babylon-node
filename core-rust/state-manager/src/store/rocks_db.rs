@@ -319,6 +319,7 @@ impl TypedCf<ExtensionsDataKey, Vec<u8>, PredefinedDbCodec<ExtensionsDataKey>, D
             ExtensionsDataKey::AccountChangeIndexEnabled,
             ExtensionsDataKey::AccountChangeIndexLastProcessedStateVersion,
             ExtensionsDataKey::LocalTransactionExecutionIndexEnabled,
+            ExtensionsDataKey::December2023LostSubstatesRestored,
         ])
     }
 
@@ -367,6 +368,7 @@ enum ExtensionsDataKey {
     AccountChangeIndexLastProcessedStateVersion,
     AccountChangeIndexEnabled,
     LocalTransactionExecutionIndexEnabled,
+    December2023LostSubstatesRestored,
 }
 
 // IMPORTANT NOTE: the strings defined below are used as database identifiers. Any change would
@@ -382,6 +384,7 @@ impl fmt::Display for ExtensionsDataKey {
             Self::LocalTransactionExecutionIndexEnabled => {
                 "local_transaction_execution_index_enabled"
             }
+            Self::December2023LostSubstatesRestored => "december_2023_lost_substates_restored",
         };
         write!(f, "{str}")
     }
@@ -430,6 +433,8 @@ impl RocksDBStore {
         if rocks_db_store.config.enable_account_change_index {
             rocks_db_store.catchup_account_change_index();
         }
+
+        rocks_db_store.restore_december_2023_lost_substates();
 
         Ok(rocks_db_store)
     }
@@ -1325,44 +1330,80 @@ impl AccountChangeIndexExtension for RocksDBStore {
     }
 }
 
-impl FlashLostSubstates for RocksDBStore {
-    fn flash_lost_substates(&self) {
-        let txn_tracker_db_node_key =
-            SpreadPrefixKeyMapper::to_db_node_key(TRANSACTION_TRACKER.as_node_id());
-
+impl RestoreDecember2023LostSubstates for RocksDBStore {
+    fn restore_december_2023_lost_substates(&self) {
         let db_context = self.open_db_context();
-        let substates_cf = db_context.cf(SubstatesCf);
+        let extension_data_cf = db_context.cf(ExtensionsDataCf);
+        let december_2023_lost_substates_restored =
+            extension_data_cf.get(&ExtensionsDataKey::December2023LostSubstatesRestored);
 
-        for txn in self.get_committed_transaction_bundle_iter(StateVersion::pre_genesis()) {
-            for (substate_ref, change) in txn
-                .receipt
-                .on_ledger
-                .state_changes
-                .substate_level_changes
-                .iter()
-            {
-                let db_partition_key =
-                    SpreadPrefixKeyMapper::to_db_partition_key(&substate_ref.0, substate_ref.1);
+        // Skip restoration if substates already restored
+        if december_2023_lost_substates_restored.is_some() {
+            return;
+        }
 
-                // The substate was deleted if it's DbNodeKey is lexicographically greater than the DbNodeKey
-                // of the transaction tracker. So here we re-flash the substates directly into the state store.
-                if db_partition_key.node_key.gt(&txn_tracker_db_node_key) {
-                    let sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&substate_ref.2);
-                    let substate_key = (db_partition_key.clone(), sort_key);
+        // Substates were deleted on the transition to epoch 51817 so no need to restore
+        // substates if the current epoch has not reached this epoch yet.
+        let should_restore_substates = self.get_last_epoch_proof().map_or(false, |p| {
+            p.ledger_header.next_epoch.unwrap().epoch.number() >= 51817
+        });
 
-                    match change {
-                        SubstateChangeAction::Create { new }
-                        | SubstateChangeAction::Update { new, .. } => {
-                            substates_cf.put(&substate_key, new);
-                        }
-                        SubstateChangeAction::Delete { .. } => {
-                            substates_cf.delete(&substate_key);
+        if should_restore_substates {
+            info!("Restoring lost substates...");
+            let last_state_version = self
+                .get_last_proof()
+                .map_or(StateVersion::of(1u64), |s| s.ledger_header.state_version);
+
+            let txn_tracker_db_node_key =
+                SpreadPrefixKeyMapper::to_db_node_key(TRANSACTION_TRACKER.as_node_id());
+
+            let substates_cf = db_context.cf(SubstatesCf);
+
+            let receipts_iter: Box<dyn Iterator<Item = (StateVersion, LedgerTransactionReceipt)>> =
+                db_context
+                    .cf(TransactionReceiptsCf)
+                    .iterate_from(&StateVersion::of(1u64), Direction::Forward);
+
+            for (version, receipt) in receipts_iter {
+                for (substate_ref, change) in receipt.state_changes.substate_level_changes.iter() {
+                    let db_partition_key =
+                        SpreadPrefixKeyMapper::to_db_partition_key(&substate_ref.0, substate_ref.1);
+
+                    // The substate was deleted if it's DbNodeKey is lexicographically greater than the DbNodeKey
+                    // of the transaction tracker. So here we re-flash the substates directly into the state store.
+                    if db_partition_key.node_key.gt(&txn_tracker_db_node_key) {
+                        let sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&substate_ref.2);
+                        let substate_key = (db_partition_key.clone(), sort_key);
+
+                        match change {
+                            SubstateChangeAction::Create { new }
+                            | SubstateChangeAction::Update { new, .. } => {
+                                substates_cf.put(&substate_key, new);
+                            }
+                            SubstateChangeAction::Delete { .. } => {
+                                substates_cf.delete(&substate_key);
+                            }
                         }
                     }
                 }
+
+                if version.number() % 10000 == 0 {
+                    db_context.flush();
+                    info!(
+                        "Scanned {} of {} transactions...",
+                        version.number(),
+                        last_state_version.number()
+                    );
+                }
             }
+
+            info!("Finished restoring lost substates!");
         }
 
+        db_context.cf(ExtensionsDataCf).put(
+            &ExtensionsDataKey::December2023LostSubstatesRestored,
+            &vec![],
+        );
         db_context.flush();
     }
 }

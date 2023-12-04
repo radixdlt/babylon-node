@@ -554,8 +554,8 @@ pub mod extensions {
     }
 
     #[enum_dispatch]
-    pub trait FlashLostSubstates {
-        fn flash_lost_substates(&self);
+    pub trait RestoreDecember2023LostSubstates {
+        fn restore_december_2023_lost_substates(&self);
     }
 
     #[enum_dispatch]
