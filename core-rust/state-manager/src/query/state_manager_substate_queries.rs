@@ -12,14 +12,15 @@ pub trait StateManagerSubstateQueries {
 
 impl<T: SubstateDatabase> StateManagerSubstateQueries for T {
     fn get_epoch(&self) -> Epoch {
-        self.get_mapped::<SpreadPrefixKeyMapper, ConsensusManagerStateFieldSubstate>(
-            CONSENSUS_MANAGER.as_node_id(),
-            MAIN_BASE_PARTITION,
-            &ConsensusManagerField::State.into(),
-        )
-        .map_or(Epoch::zero(), |substate| {
-            let consensus_manager_state = substate.into_payload().into_latest();
-            consensus_manager_state.epoch
-        })
+        let consensus_manager_state = self
+            .get_mapped::<SpreadPrefixKeyMapper, ConsensusManagerStateFieldSubstate>(
+                CONSENSUS_MANAGER.as_node_id(),
+                MAIN_BASE_PARTITION,
+                &ConsensusManagerField::State.into(),
+            )
+            .unwrap()
+            .into_payload()
+            .into_latest();
+        consensus_manager_state.epoch
     }
 }

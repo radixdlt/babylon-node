@@ -89,7 +89,7 @@ use std::path::PathBuf;
 use tracing::{error, info, warn};
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
-use crate::query::{StateManagerSubstateQueries, TransactionIdentifierLoader};
+use crate::query::TransactionIdentifierLoader;
 use crate::store::traits::gc::StateHashTreeGcStore;
 use crate::store::traits::measurement::{CategoryDbVolumeStatistic, MeasurableDatabase};
 use crate::store::traits::scenario::{
@@ -1342,9 +1342,13 @@ impl RestoreDecember2023LostSubstates for RocksDBStore {
             return;
         }
 
-        // Substates were deleted on the transition to epoch 51817 so no need to flash
+        // Substates were deleted on the transition to epoch 51817 so no need to restore
         // substates if the current epoch has not reached this epoch yet.
-        if self.get_epoch() >= Epoch::of(51817) {
+        let should_restore_substates = self.get_last_epoch_proof().map_or(false, |p| {
+            p.ledger_header.next_epoch.unwrap().epoch.number() >= 51817
+        });
+
+        if should_restore_substates {
             info!("Restoring lost substates...");
             let last_state_version = self
                 .get_last_proof()
@@ -1386,7 +1390,8 @@ impl RestoreDecember2023LostSubstates for RocksDBStore {
                     }
                 }
 
-                if txn.state_version.number() % 1000 == 0 {
+                if txn.state_version.number() % 10000 == 0 {
+                    db_context.flush();
                     info!(
                         "Scanned {} of {} transactions...",
                         txn.state_version, last_state_version
