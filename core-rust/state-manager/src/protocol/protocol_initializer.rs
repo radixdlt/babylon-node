@@ -1,5 +1,7 @@
 // This file contains the protocol update logic for specific protocol versions
 
+use std::io::Empty;
+use radix_engine::track::StateUpdates;
 use radix_engine::transaction::CostingParameters;
 use radix_engine_common::network::NetworkDefinition;
 use radix_engine_common::prelude::Decimal;
@@ -66,62 +68,44 @@ impl ProtocolConfigurator {
 }
 
 impl <'s, S: ReadableStore + QueryableProofStore + CommitStore> ProtocolConfigurator {
-    pub fn update_executor(&self, store: &'s S) -> ProtocolUpdateExecutor<'s, S> {
-        ProtocolUpdateExecutor {
-            protocol_version_name: self.protocol_version_name.clone(),
-            store
+    pub fn update_executor(&self, store: &'s S) -> Box<dyn ProtocolUpdateExecutor> {
+        match self.protocol_version_name {
+            PROTO_BABYLON_GENESIS => Box::new(EmptyProtocolUpdateExecutor::new()),
+            PROTO_TESTING_V2 => FlashProtocolUpdateExecutor::new(store, vec![]),
+            _ => panic!("Unknown protocol version {:?}", self.protocol_version_name)
         }
     }
 }
 
-pub struct ProtocolUpdateExecutor<'s, S: ReadableStore + QueryableProofStore + CommitStore> {
-    protocol_version_name: String,
+trait ProtocolUpdateExecutor {
+    fn commit_remaining_transactions(&self);
+}
+
+struct EmptyProtocolUpdateExecutor {}
+
+impl EmptyProtocolUpdateExecutor {
+    pub fn new() -> EmptyProtocolUpdateExecutor {
+        EmptyProtocolUpdateExecutor {
+        }
+    }
+}
+
+impl ProtocolUpdateExecutor for EmptyProtocolUpdateExecutor {
+    fn commit_remaining_transactions(&self) {
+        // no-op
+    }
+}
+
+struct FlashProtocolUpdateExecutor<'s, S: ReadableStore + QueryableProofStore + CommitStore> {
+    state_updates_batches: Vec<StateUpdates>,
     store: &'s S,
 }
 
-impl <'s, S: ReadableStore + QueryableProofStore + CommitStore> ProtocolUpdateExecutor<'s, S> {
-    pub fn commit_remaining_transactions(&self) {
-        let Some(last_proof) = self.store.get_last_proof() else {
-            return;
-        };
-
-        let mut next_bundle_idx =
-            if let Some(last_proof_protocol_version) = last_proof.ledger_header.next_protocol_version {
-                // We've just committed a protocol update header. No protocol update transactions
-                // have been committed yet. Next batch idx is 0.
-
-                // Just a sanity check to double check that the header matches initial_protocol_state.
-                if last_proof_protocol_version != self.protocol_version_name {
-                    panic!("Protocol state mismatch: last proof doesn't  match initial_protocol_state");
-                }
-
-                0
-            } else {
-                // We're either mid-protocol update (resume after reboot) or already done.
-                // We're reusing the opaque hash in the ledger proof to store the protocol update progress.
-                // In case of mid-protocol update proofs the "hash" (32 bytes) consists of:
-                // - bytes 0-11: 0 padding
-                // - bytes 12-15: u32 index of the last committed batch (zero padded, big endian)
-                // - bytes 16-32: 16 bytes of protocol_version_name (left padded with 0s)
-                // For example a hash of:
-                // 00000000000000000000000000000005000000000000626162796C6F6E2D7632
-                // means the we've last committed batch 5 of the "babylon-v2" protocol update.
-                // If it doesn't match the above pattern for our current protocol_version_name
-                // we consider it to be a "regular" proof (with a consensus-populated opaque hash)
-                // and, consequently, consider the protocol update completed.
-                if last_proof.opaque.0[16..32] ==
-                    padded_protocol_version_name(&self.protocol_state.current_protocol_version).as_bytes() {
-                    // Protocol version name matches, we're mid-protocol update
-                    // or we've just committed the last batch.
-                    u32::from_be_bytes(last_proof.opaque.0[12..15].try_into().unwrap())
-                } else {
-                    return;
-                }
-            };
-
-        while let Some(next_commit_bundle) = self.prepare_next_commit_bundle(next_bundle_idx) {
-            next_bundle_idx += 1;
-            self.store.commit(next_commit_bundle);
+impl <'s, S: ReadableStore + QueryableProofStore + CommitStore> FlashProtocolUpdateExecutor<'s, S> {
+    pub fn new(store: &'s S, state_updates_batches: Vec<StateUpdates>) -> FlashProtocolUpdateExecutor<'s, S> {
+        FlashProtocolUpdateExecutor {
+            state_updates_batches,
+            store,
         }
     }
 
@@ -160,6 +144,57 @@ impl <'s, S: ReadableStore + QueryableProofStore + CommitStore> ProtocolUpdateEx
          */
     }
 }
+
+impl <'s, S> ProtocolUpdateExecutor for FlashProtocolUpdateExecutor<'s, S> {
+    fn commit_remaining_transactions(&self) {
+        let Some(last_proof) = self.store.get_last_proof() else {
+            return;
+        };
+
+        let mut next_batch_idx =
+            if let Some(last_proof_protocol_version) = last_proof.ledger_header.next_protocol_version {
+                // We've just committed a protocol update header. No protocol update transactions
+                // have been committed yet. Next batch idx is 0.
+
+                // Just a sanity check to double check that the header matches initial_protocol_state.
+                if last_proof_protocol_version != self.protocol_version_name {
+                    panic!("Protocol state mismatch: last proof doesn't  match initial_protocol_state");
+                }
+
+                0
+            } else {
+                // We're either mid-protocol update (resume after reboot) or already done.
+                // We're reusing the opaque hash in the ledger proof to store the protocol update progress.
+                // In case of mid-protocol update proofs the "hash" (32 bytes) consists of:
+                // - bytes 0-11: 0 padding
+                // - bytes 12-15: u32 index of the last committed batch (zero padded, big endian)
+                // - bytes 16-32: 16 bytes of protocol_version_name (left padded with 0s)
+                // For example a hash of:
+                // 00000000000000000000000000000005000000000000626162796C6F6E2D7632
+                // means the we've last committed batch 5 of the "babylon-v2" protocol update.
+                // If it doesn't match the above pattern for our current protocol_version_name
+                // we consider it to be a "regular" proof (with a consensus-populated opaque hash)
+                // and, consequently, consider the protocol update completed.
+                if last_proof.opaque.0[16..32] ==
+                    padded_protocol_version_name(&self.protocol_state.current_protocol_version).as_bytes() {
+                    // Protocol version name matches, we're mid-protocol update
+                    // or we've just committed the last batch.
+                    u32::from_be_bytes(last_proof.opaque.0[12..15].try_into().unwrap())
+                } else {
+                    return;
+                }
+            };
+
+        while let Some(next_commit_bundle) = self.prepare_next_commit_bundle(next_batch_idx) {
+            next_batch_idx += 1;
+            self.store.commit(next_commit_bundle);
+        }
+    }
+}
+
+
+
+
 
 /*
 to miałem w state computer:
