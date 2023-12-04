@@ -69,8 +69,8 @@ use crate::store::traits::*;
 use crate::{
     CommittedTransactionIdentifiers, LedgerProof, LedgerTransactionReceipt,
     LocalTransactionExecution, LocalTransactionReceipt, ReceiptTreeHash, StateVersion,
-    TransactionTreeHash, VersionedCommittedTransactionIdentifiers, VersionedLedgerProof,
-    VersionedLedgerTransactionReceipt, VersionedLocalTransactionExecution,
+    SubstateChangeAction, TransactionTreeHash, VersionedCommittedTransactionIdentifiers,
+    VersionedLedgerProof, VersionedLedgerTransactionReceipt, VersionedLocalTransactionExecution,
 };
 use node_common::utils::IsAccountExt;
 use radix_engine::types::*;
@@ -83,6 +83,7 @@ use transaction::model::*;
 use radix_engine_store_interface::interface::*;
 
 use itertools::Itertools;
+use radix_engine_store_interface::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
 use std::path::PathBuf;
 
 use tracing::{error, info, warn};
@@ -1321,6 +1322,48 @@ impl AccountChangeIndexExtension for RocksDBStore {
         }
 
         info!("Account Change Index catchup done!");
+    }
+}
+
+impl FlashLostSubstates for RocksDBStore {
+    fn flash_lost_substates(&self) {
+        let txn_tracker_db_node_key =
+            SpreadPrefixKeyMapper::to_db_node_key(TRANSACTION_TRACKER.as_node_id());
+
+        let db_context = self.open_db_context();
+        let substates_cf = db_context.cf(SubstatesCf);
+
+        for txn in self.get_committed_transaction_bundle_iter(StateVersion::pre_genesis()) {
+            for (substate_ref, change) in txn
+                .receipt
+                .on_ledger
+                .state_changes
+                .substate_level_changes
+                .iter()
+            {
+                let db_partition_key =
+                    SpreadPrefixKeyMapper::to_db_partition_key(&substate_ref.0, substate_ref.1);
+
+                // The substate was deleted if it's DbNodeKey is lexicographically greater than the DbNodeKey
+                // of the transaction tracker. So here we re-flash the substates directly into the state store.
+                if db_partition_key.node_key.gt(&txn_tracker_db_node_key) {
+                    let sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&substate_ref.2);
+                    let substate_key = (db_partition_key.clone(), sort_key);
+
+                    match change {
+                        SubstateChangeAction::Create { new }
+                        | SubstateChangeAction::Update { new, .. } => {
+                            substates_cf.put(&substate_key, new);
+                        }
+                        SubstateChangeAction::Delete { .. } => {
+                            substates_cf.delete(&substate_key);
+                        }
+                    }
+                }
+            }
+        }
+
+        db_context.flush();
     }
 }
 
