@@ -661,7 +661,8 @@ impl CommitStore for RocksDBStore {
                     PartitionDatabaseUpdates::Reset {
                         new_substate_values,
                     } => {
-                        substates_cf.delete_all_under_prefix(&partition_key);
+                        let range = DbSubstateKeyRange::for_partition_delete(&partition_key);
+                        substates_cf.delete_range(&range.from, &range.to);
                         for (sort_key, substate_value) in new_substate_values {
                             substates_cf.put(&(partition_key.clone(), sort_key), &substate_value);
                         }
@@ -1191,56 +1192,6 @@ fn encode_to_rocksdb_bytes(partition_key: &DbPartitionKey, sort_key: &DbSortKey)
     buffer
 }
 
-fn encode_partition_prefix_range_to_rocksdb_bytes(
-    partition_key: &DbPartitionKey,
-) -> (Vec<u8>, Option<Vec<u8>>) {
-    let from_buffer = encode_partition_prefix_rocksdb_prefix_bytes(partition_key);
-
-    let to_buffer = if partition_key.partition_num < u8::MAX {
-        Some(encode_partition_prefix_rocksdb_prefix_bytes(
-            &DbPartitionKey {
-                node_key: partition_key.node_key.clone(),
-                partition_num: partition_key.partition_num + 1,
-            },
-        ))
-    } else {
-        let mut next_node_key = partition_key.node_key.clone();
-        // Now we attempt to "add 1", starting at the least significant byte, down to 0
-        for i in (0..next_node_key.len()).rev() {
-            if next_node_key[i] < u8::MAX {
-                next_node_key[i] += 1;
-                break;
-            } else {
-                next_node_key[i] = 0;
-            }
-        }
-        if next_node_key.iter().any(|val| *val != 0) {
-            Some(encode_partition_prefix_rocksdb_prefix_bytes(
-                &DbPartitionKey {
-                    node_key: next_node_key,
-                    partition_num: 0,
-                },
-            ))
-        } else {
-            // We've rolled over to all 0s
-            None
-        }
-    };
-
-    (from_buffer, to_buffer)
-}
-
-fn encode_partition_prefix_rocksdb_prefix_bytes(partition_key: &DbPartitionKey) -> Vec<u8> {
-    let mut buffer = Vec::with_capacity(2 + partition_key.node_key.len());
-    buffer.push(
-        u8::try_from(partition_key.node_key.len())
-            .expect("Node key length is effectively constant 32 so should fit in a u8"),
-    );
-    buffer.extend(partition_key.node_key.clone());
-    buffer.push(partition_key.partition_num);
-    buffer
-}
-
 fn decode_from_rocksdb_bytes(buffer: &[u8]) -> DbSubstateKey {
     let node_key_start: usize = 1usize;
     let partition_key_start = 1 + usize::from(buffer[0]);
@@ -1486,8 +1437,6 @@ impl DbCodec<StateVersion> for StateVersionDbCodec {
     }
 }
 
-impl OrderPreservingDbCodec for StateVersionDbCodec {}
-
 #[derive(Default)]
 struct EpochDbCodec {}
 
@@ -1563,29 +1512,6 @@ impl DbCodec<DbSubstateKey> for SubstateKeyDbCodec {
     }
 }
 
-impl PrefixableDbCodec for SubstateKeyDbCodec {
-    type Prefix = DbPartitionKey;
-
-    fn encode_prefix_to_range(&self, prefix: &Self::Prefix) -> (Vec<u8>, Option<Vec<u8>>) {
-        encode_partition_prefix_range_to_rocksdb_bytes(prefix)
-    }
-
-    fn encode_key_greater_than_all_possible(&self, example_prefix: &Self::Prefix) -> Vec<u8> {
-        encode_to_rocksdb_bytes(
-            &DbPartitionKey {
-                node_key: max_vec_of_len(example_prefix.node_key.len()),
-                partition_num: 255,
-            },
-            // +1 should be enough, but we add at least another 255 wiggle room just in case the key encoding is larger
-            &DbSortKey(max_vec_of_len(MAX_SUBSTATE_KEY_SIZE + 300)),
-        )
-    }
-}
-
-fn max_vec_of_len(length: usize) -> Vec<u8> {
-    vec![255; length]
-}
-
 #[derive(Default)]
 struct NodeKeyDbCodec {}
 
@@ -1640,6 +1566,91 @@ impl DbCodec<NodeId> for NodeIdDbCodec {
     }
 }
 
+/// A classic (i.e. from-inclusive, to-exclusive) range of [`DbSubstateKey`].
+struct DbSubstateKeyRange {
+    from: DbSubstateKey,
+    to: DbSubstateKey,
+}
+
+impl DbSubstateKeyRange {
+    /// Creates a range of substate keys containing all *and only* keys from the given partition.
+    ///
+    /// Implementation note:
+    /// This method uses knowledge of the internal RocksDB encoding of [`DbSubstateKey`]s (i.e. the
+    /// [`encode_to_rocksdb_bytes()`] method). To be specific, it relies on:
+    /// - the "length|value" encoding of the node key (see [`Self::next_partition_key()`]);
+    /// - and the lexicographical ordering of the substates' DB sort keys.
+    pub fn for_partition_delete(partition_key: &DbPartitionKey) -> Self {
+        Self {
+            from: Self::first_substate_key_within(partition_key.clone()),
+            to: Self::first_substate_key_within(Self::next_partition_key(partition_key)),
+        }
+    }
+
+    /// Generates the first possible substate key belonging to the given partition.
+    ///
+    /// Since substates within each partition strictly follow the lexicographical ordering, this
+    /// simply is a substate of an empty DB sort key.
+    fn first_substate_key_within(partition_key: DbPartitionKey) -> DbSubstateKey {
+        (partition_key, DbSortKey(vec![]))
+    }
+
+    /// Generates the immediate successor of the given [`DbPartitionKey`].
+    ///
+    /// Implementation note:
+    /// This method relies on the "length|value" encoding of the node keys within RocksDB. Hence:
+    /// - if it is *not* the last partition within its node, then the case is trivial (simply
+    ///   increment the partition number);
+    /// - otherwise, we must generate the first partition of the [`Self::next_node_key()`].
+    ///
+    /// Legacy bugfix note:
+    /// The [`DbPartitionKey::next()`] method exists, but is *insuitable* for use with our current
+    /// RocksDB key encoding implementation. It can be now removed, so that it is not mistakenly
+    /// used in any context.
+    fn next_partition_key(partition_key: &DbPartitionKey) -> DbPartitionKey {
+        partition_key
+            .partition_num
+            .checked_add(1)
+            .map(|next_partition_num| DbPartitionKey {
+                node_key: partition_key.node_key.clone(),
+                partition_num: next_partition_num,
+            })
+            .unwrap_or_else(|| DbPartitionKey {
+                node_key: Self::next_node_key(&partition_key.node_key),
+                partition_num: 0,
+            })
+    }
+
+    /// Generates the immediate successor of the given [`DbNodeKey`].
+    ///
+    /// Implementation note:
+    /// This method relies on the "length|value" encoding of the node keys within RocksDB. This
+    /// means that for the edge case of "max key" (let's say `0xffffff`), it will return a strictly
+    /// hypothetical "next" one (`0xffffff00`) which will never occur in our current fixed-key-size
+    /// use-case. It will still be correctly encoded to a valid RocksDB bytes representation (i.e.
+    /// larger than all possible keys - as expected).
+    fn next_node_key(node_key: &DbNodeKey) -> DbNodeKey {
+        let mut next_node_key = node_key.clone();
+        // Attempt to "add 1", starting at the least significant byte:
+        for index in (0..next_node_key.len()).rev() {
+            match next_node_key[index].checked_add(1) {
+                Some(valid_increment) => {
+                    // Increment successful, return the result:
+                    next_node_key[index] = valid_increment;
+                    return next_node_key;
+                }
+                None => {
+                    // Zero the digit and continue the iteration (i.e. "carry):
+                    next_node_key[index] = 0;
+                }
+            }
+        }
+        // If this point is reached, then it means that out input was `0xffff...ff` (i.e. the largest
+        // possible key of this length). Construct the immediate successor in a "length|value" encoding:
+        [node_key.clone(), vec![0]].concat()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1683,8 +1694,7 @@ mod tests {
     }
 
     #[test]
-    fn rocksdb_partition_encoding_is_correct_prefix() {
-        // First - consider some arbitrary partition
+    fn rocksdb_partition_key_range_is_correct_for_sample_partition() {
         let partition = DbPartitionKey {
             node_key: vec![73, 85],
             partition_num: 1,
@@ -1705,9 +1715,9 @@ mod tests {
             node_key: vec![73, 86],
             partition_num: 0,
         };
-        let (from, Some(to)) = encode_partition_prefix_range_to_rocksdb_bytes(&partition) else {
-            panic!("To was unexpectedly None");
-        };
+
+        let (from, to) = encode_partition_range_to_rocksdb_bytes(&partition);
+
         assert!(encode_to_rocksdb_bytes(&prev_partition, &DbSortKey(vec![])) < from);
         assert!(encode_to_rocksdb_bytes(&prev_node, &DbSortKey(vec![])) < from);
         assert!(encode_to_rocksdb_bytes(&partition, &DbSortKey(vec![])) >= from);
@@ -1716,8 +1726,10 @@ mod tests {
         assert!(encode_to_rocksdb_bytes(&partition, &DbSortKey(vec![1])) < to);
         assert!(encode_to_rocksdb_bytes(&next_partition, &DbSortKey(vec![])) >= to);
         assert!(encode_to_rocksdb_bytes(&next_node, &DbSortKey(vec![])) >= to);
+    }
 
-        // Now, consider partition_num 255
+    #[test]
+    fn rocksdb_partition_key_range_is_correct_for_max_partition_num_of_a_sample_node() {
         let partition = DbPartitionKey {
             node_key: vec![73, 85],
             partition_num: 255,
@@ -1738,9 +1750,9 @@ mod tests {
             node_key: vec![73, 86],
             partition_num: 0,
         };
-        let (from, Some(to)) = encode_partition_prefix_range_to_rocksdb_bytes(&partition) else {
-            panic!("To was unexpectedly None");
-        };
+
+        let (from, to) = encode_partition_range_to_rocksdb_bytes(&partition);
+
         assert!(encode_to_rocksdb_bytes(&prev_partition, &DbSortKey(vec![])) < from);
         assert!(encode_to_rocksdb_bytes(&prev_node, &DbSortKey(vec![])) < from);
         assert!(encode_to_rocksdb_bytes(&partition, &DbSortKey(vec![])) >= from);
@@ -1749,8 +1761,10 @@ mod tests {
         assert!(encode_to_rocksdb_bytes(&partition, &DbSortKey(vec![1])) < to);
         assert!(encode_to_rocksdb_bytes(&next_partition, &DbSortKey(vec![])) >= to);
         assert!(encode_to_rocksdb_bytes(&next_node, &DbSortKey(vec![])) >= to);
+    }
 
-        // Finally, consider the final partition - it must delete an open range
+    #[test]
+    fn rocksdb_partition_key_range_is_correct_for_max_partition_num_of_max_node() {
         let partition = DbPartitionKey {
             node_key: vec![255, 255],
             partition_num: 255,
@@ -1763,16 +1777,24 @@ mod tests {
             node_key: vec![255, 254],
             partition_num: 255,
         };
-        let (from, to) = encode_partition_prefix_range_to_rocksdb_bytes(&partition);
+
+        let (from, to) = encode_partition_range_to_rocksdb_bytes(&partition);
+
         assert!(encode_to_rocksdb_bytes(&prev_partition, &DbSortKey(vec![])) < from);
         assert!(encode_to_rocksdb_bytes(&prev_node, &DbSortKey(vec![])) < from);
         assert!(encode_to_rocksdb_bytes(&partition, &DbSortKey(vec![])) >= from);
         assert!(encode_to_rocksdb_bytes(&partition, &DbSortKey(vec![1])) >= from);
-        assert_eq!(to, None);
+        // we cannot test against `next_node`, but we can assert that a super-large substate key is covered:
+        assert!(encode_to_rocksdb_bytes(&partition, &DbSortKey(vec![255; 1000])) < to);
     }
 
-    #[test]
-    fn check_max_vec() {
-        assert_eq!(max_vec_of_len(5), vec![255, 255, 255, 255, 255])
+    /// A test helper calling [`DbSubstateKeyRange::for_partition_delete`] and then
+    /// [`encode_to_rocksdb_bytes()`] on its bounds.
+    fn encode_partition_range_to_rocksdb_bytes(partition: &DbPartitionKey) -> (Vec<u8>, Vec<u8>) {
+        let range = DbSubstateKeyRange::for_partition_delete(partition);
+        (
+            encode_to_rocksdb_bytes(&range.from.0, &range.from.1),
+            encode_to_rocksdb_bytes(&range.to.0, &range.to.1),
+        )
     }
 }
