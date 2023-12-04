@@ -1345,6 +1345,13 @@ impl RestoreDecember2023LostSubstates for RocksDBStore {
         // Substates were deleted on the transition to epoch 51817 so no need to flash
         // substates if the current epoch has not reached this epoch yet.
         if self.get_epoch() >= Epoch::of(51817) {
+            info!("Restoring lost substates...");
+            let last_state_version = self
+                .get_last_proof()
+                .map_or(StateVersion::pre_genesis(), |s| {
+                    s.ledger_header.state_version
+                });
+
             let txn_tracker_db_node_key =
                 SpreadPrefixKeyMapper::to_db_node_key(TRANSACTION_TRACKER.as_node_id());
 
@@ -1378,7 +1385,16 @@ impl RestoreDecember2023LostSubstates for RocksDBStore {
                         }
                     }
                 }
+
+                if txn.state_version.number() % 1000 == 0 {
+                    info!(
+                        "Scanned {} of {} transactions...",
+                        txn.state_version, last_state_version
+                    );
+                }
             }
+
+            info!("Finished restoring lost substates!");
         }
 
         db_context.cf(ExtensionsDataCf).put(
