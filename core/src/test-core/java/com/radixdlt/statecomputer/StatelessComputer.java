@@ -88,11 +88,10 @@ import java.util.List;
  * transaction is correct or not.
  */
 public final class StatelessComputer implements StateComputerLedger.StateComputer {
-  public static class StatelessTransactionException extends Exception {}
-
   private final StatelessTransactionVerifier verifier;
   private final EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher;
   private final Hasher hasher;
+  private final LedgerHashes fixedLedgerHashes;
   private int successCount = 0;
   private int invalidCount = 0;
 
@@ -103,6 +102,18 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
     this.verifier = verifier;
     this.ledgerUpdateDispatcher = ledgerUpdateDispatcher;
     this.hasher = hasher;
+    this.fixedLedgerHashes = LedgerHashes.zero();
+  }
+
+  public StatelessComputer(
+      StatelessTransactionVerifier verifier,
+      EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
+      Hasher hasher,
+      LedgerHashes fixedLedgerHashes) {
+    this.verifier = verifier;
+    this.ledgerUpdateDispatcher = ledgerUpdateDispatcher;
+    this.hasher = hasher;
+    this.fixedLedgerHashes = fixedLedgerHashes;
   }
 
   public int getSuccessCount() {
@@ -145,7 +156,7 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
     invalidCount += invalidTransactionCount;
 
     return new StateComputerLedger.StateComputerResult(
-        successfulTransactions, invalidTransactionCount, LedgerHashes.zero());
+        successfulTransactions, invalidTransactionCount, fixedLedgerHashes);
   }
 
   private LedgerUpdate generateLedgerUpdate(LedgerExtension ledgerExtension) {
