@@ -1352,16 +1352,14 @@ impl RestoreDecember2023LostSubstates for RocksDBStore {
             info!("Restoring lost substates...");
             let last_state_version = self
                 .get_last_proof()
-                .map_or(StateVersion::pre_genesis(), |s| {
-                    s.ledger_header.state_version
-                });
+                .map_or(StateVersion::of(1u64), |s| s.ledger_header.state_version);
 
             let txn_tracker_db_node_key =
                 SpreadPrefixKeyMapper::to_db_node_key(TRANSACTION_TRACKER.as_node_id());
 
             let substates_cf = db_context.cf(SubstatesCf);
 
-            for txn in self.get_committed_transaction_bundle_iter(StateVersion::pre_genesis()) {
+            for txn in self.get_committed_transaction_bundle_iter(StateVersion::of(1u64)) {
                 for (substate_ref, change) in txn
                     .receipt
                     .on_ledger
