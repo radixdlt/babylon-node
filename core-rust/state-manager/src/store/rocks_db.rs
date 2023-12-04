@@ -1492,7 +1492,8 @@ impl PrefixableDbCodec for SubstateKeyDbCodec {
                 node_key: max_vec_of_len(example_prefix.node_key.len()),
                 partition_num: 255,
             },
-            &DbSortKey(max_vec_of_len(MAX_SUBSTATE_KEY_SIZE + 1)),
+            // +1 should be enough, but we add at least another 255 wiggle room just in case the key encoding is larger
+            &DbSortKey(max_vec_of_len(MAX_SUBSTATE_KEY_SIZE + 300)),
         )
     }
 }
