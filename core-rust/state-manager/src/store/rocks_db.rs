@@ -89,7 +89,7 @@ use std::path::PathBuf;
 use tracing::{error, info, warn};
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
-use crate::query::TransactionIdentifierLoader;
+use crate::query::{StateManagerSubstateQueries, TransactionIdentifierLoader};
 use crate::store::traits::gc::StateHashTreeGcStore;
 use crate::store::traits::measurement::{CategoryDbVolumeStatistic, MeasurableDatabase};
 use crate::store::traits::scenario::{
@@ -319,6 +319,7 @@ impl TypedCf<ExtensionsDataKey, Vec<u8>, PredefinedDbCodec<ExtensionsDataKey>, D
             ExtensionsDataKey::AccountChangeIndexEnabled,
             ExtensionsDataKey::AccountChangeIndexLastProcessedStateVersion,
             ExtensionsDataKey::LocalTransactionExecutionIndexEnabled,
+            ExtensionsDataKey::December2023LostSubstatesRestored,
         ])
     }
 
@@ -367,6 +368,7 @@ enum ExtensionsDataKey {
     AccountChangeIndexLastProcessedStateVersion,
     AccountChangeIndexEnabled,
     LocalTransactionExecutionIndexEnabled,
+    December2023LostSubstatesRestored,
 }
 
 // IMPORTANT NOTE: the strings defined below are used as database identifiers. Any change would
@@ -382,6 +384,7 @@ impl fmt::Display for ExtensionsDataKey {
             Self::LocalTransactionExecutionIndexEnabled => {
                 "local_transaction_execution_index_enabled"
             }
+            Self::December2023LostSubstatesRestored => "december_2023_lost_substates_restored",
         };
         write!(f, "{str}")
     }
@@ -430,6 +433,8 @@ impl RocksDBStore {
         if rocks_db_store.config.enable_account_change_index {
             rocks_db_store.catchup_account_change_index();
         }
+
+        rocks_db_store.restore_december_2023_lost_substates();
 
         Ok(rocks_db_store)
     }
@@ -1325,44 +1330,61 @@ impl AccountChangeIndexExtension for RocksDBStore {
     }
 }
 
-impl FlashLostSubstates for RocksDBStore {
-    fn flash_lost_substates(&self) {
-        let txn_tracker_db_node_key =
-            SpreadPrefixKeyMapper::to_db_node_key(TRANSACTION_TRACKER.as_node_id());
-
+impl RestoreDecember2023LostSubstates for RocksDBStore {
+    fn restore_december_2023_lost_substates(&self) {
         let db_context = self.open_db_context();
-        let substates_cf = db_context.cf(SubstatesCf);
+        let extension_data_cf = db_context.cf(ExtensionsDataCf);
+        let december_2023_lost_substates_restored =
+            extension_data_cf.get(&ExtensionsDataKey::December2023LostSubstatesRestored);
 
-        for txn in self.get_committed_transaction_bundle_iter(StateVersion::pre_genesis()) {
-            for (substate_ref, change) in txn
-                .receipt
-                .on_ledger
-                .state_changes
-                .substate_level_changes
-                .iter()
-            {
-                let db_partition_key =
-                    SpreadPrefixKeyMapper::to_db_partition_key(&substate_ref.0, substate_ref.1);
+        // Skip restoration if substates already restored
+        if december_2023_lost_substates_restored.is_some() {
+            return;
+        }
 
-                // The substate was deleted if it's DbNodeKey is lexicographically greater than the DbNodeKey
-                // of the transaction tracker. So here we re-flash the substates directly into the state store.
-                if db_partition_key.node_key.gt(&txn_tracker_db_node_key) {
-                    let sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&substate_ref.2);
-                    let substate_key = (db_partition_key.clone(), sort_key);
+        // Substates were deleted on the transition to epoch 51817 so no need to flash
+        // substates if the current epoch has not reached this epoch yet.
+        if self.get_epoch() >= Epoch::of(51817) {
+            let txn_tracker_db_node_key =
+                SpreadPrefixKeyMapper::to_db_node_key(TRANSACTION_TRACKER.as_node_id());
 
-                    match change {
-                        SubstateChangeAction::Create { new }
-                        | SubstateChangeAction::Update { new, .. } => {
-                            substates_cf.put(&substate_key, new);
-                        }
-                        SubstateChangeAction::Delete { .. } => {
-                            substates_cf.delete(&substate_key);
+            let substates_cf = db_context.cf(SubstatesCf);
+
+            for txn in self.get_committed_transaction_bundle_iter(StateVersion::pre_genesis()) {
+                for (substate_ref, change) in txn
+                    .receipt
+                    .on_ledger
+                    .state_changes
+                    .substate_level_changes
+                    .iter()
+                {
+                    let db_partition_key =
+                        SpreadPrefixKeyMapper::to_db_partition_key(&substate_ref.0, substate_ref.1);
+
+                    // The substate was deleted if it's DbNodeKey is lexicographically greater than the DbNodeKey
+                    // of the transaction tracker. So here we re-flash the substates directly into the state store.
+                    if db_partition_key.node_key.gt(&txn_tracker_db_node_key) {
+                        let sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&substate_ref.2);
+                        let substate_key = (db_partition_key.clone(), sort_key);
+
+                        match change {
+                            SubstateChangeAction::Create { new }
+                            | SubstateChangeAction::Update { new, .. } => {
+                                substates_cf.put(&substate_key, new);
+                            }
+                            SubstateChangeAction::Delete { .. } => {
+                                substates_cf.delete(&substate_key);
+                            }
                         }
                     }
                 }
             }
         }
 
+        db_context.cf(ExtensionsDataCf).put(
+            &ExtensionsDataKey::December2023LostSubstatesRestored,
+            &vec![],
+        );
         db_context.flush();
     }
 }
