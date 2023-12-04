@@ -33,14 +33,14 @@ pub struct ProcessedPreviewResult {
 
 impl<S> TransactionPreviewer<S> {
     pub fn new(
-        network: &NetworkDefinition,
         store: Arc<StateLock<S>>,
         execution_configurator: Arc<ExecutionConfigurator>,
+        validation_config: ValidationConfig,
     ) -> Self {
         Self {
             store,
             execution_configurator,
-            validation_config: ValidationConfig::default(network.id),
+            validation_config,
         }
     }
 }
@@ -159,21 +159,24 @@ mod tests {
 
         let preview_manifest = ManifestBuilder::new().lock_fee_from_faucet().build();
 
-        let preview_response = state_manager.transaction_previewer.preview(PreviewRequest {
-            manifest: preview_manifest,
-            explicit_epoch_range: None,
-            notary_public_key: None,
-            notary_is_signatory: true,
-            tip_percentage: 0,
-            nonce: 0,
-            signer_public_keys: vec![],
-            flags: PreviewFlags {
-                use_free_credit: true,
-                assume_all_signature_proofs: true,
-                skip_epoch_check: false,
-            },
-            message: MessageV1::None,
-        });
+        let preview_response = state_manager
+            .transaction_previewer
+            .read()
+            .preview(PreviewRequest {
+                manifest: preview_manifest,
+                explicit_epoch_range: None,
+                notary_public_key: None,
+                notary_is_signatory: true,
+                tip_percentage: 0,
+                nonce: 0,
+                signer_public_keys: vec![],
+                flags: PreviewFlags {
+                    use_free_credit: true,
+                    assume_all_signature_proofs: true,
+                    skip_epoch_check: false,
+                },
+                message: MessageV1::None,
+            });
 
         // just checking that we're getting some processed substate changes back in the response
         assert!(!preview_response.unwrap().state_changes.is_empty());

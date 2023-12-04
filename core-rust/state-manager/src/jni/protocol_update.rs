@@ -62,29 +62,48 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer;
+use crate::ProtocolUpdate;
+use jni::objects::{JClass, JObject};
+use jni::sys::jbyteArray;
+use jni::JNIEnv;
+use radix_engine::types::*;
 
-import com.google.inject.*;
-import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.targeted.mempool.SimpleMempool;
-import java.util.Random;
+use node_common::java::*;
 
-/** Simple Mempool state computer */
-public class MockedMempoolStateComputerModule extends AbstractModule {
-  private final int mempoolMaxSize;
+use super::node_rust_environment::JNINodeRustEnvironment;
 
-  public MockedMempoolStateComputerModule(int mempoolMaxSize) {
-    this.mempoolMaxSize = mempoolMaxSize;
-  }
+//
+// JNI Interface
+//
 
-  @Override
-  protected void configure() {
-    bind(StateComputerLedger.StateComputer.class).to(MockedMempoolStateComputer.class);
-  }
-
-  @Provides
-  @Singleton
-  private SimpleMempool mempool(Random random) {
-    return new SimpleMempool(mempoolMaxSize, random);
-  }
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_protocol_RustProtocolUpdate_applyProtocolUpdate(
+    env: JNIEnv,
+    _class: JClass,
+    j_node_rust_env: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_fallible_call(
+        &env,
+        request_payload,
+        |protocol_version_name: String| -> JavaResult<()> {
+            JNINodeRustEnvironment::get(&env, j_node_rust_env)
+                .state_manager
+                .apply_protocol_update(&protocol_version_name);
+            Ok(())
+        },
+    )
 }
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_protocol_ProtocolUpdates_nativeReadinessSignalName(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |protocol_update: ProtocolUpdate| {
+        protocol_update.readiness_signal_name()
+    })
+}
+
+pub fn export_extern_functions() {}

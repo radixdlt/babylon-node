@@ -84,6 +84,7 @@ import com.radixdlt.ledger.*;
 import com.radixdlt.mempool.*;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
+import com.radixdlt.protocol.RustProtocolUpdate;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
@@ -107,8 +108,8 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   private static final Logger log = LogManager.getLogger();
 
   private final RustStateComputer stateComputer;
-
   private final RustMempool mempool;
+  private final RustProtocolUpdate rustProtocolUpdate;
 
   private final ProposalLimitsConfig proposalLimitsConfig;
   private final EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher;
@@ -123,6 +124,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   public REv2StateComputer(
       RustStateComputer stateComputer,
       RustMempool mempool,
+      RustProtocolUpdate rustProtocolUpdate,
       ProposalLimitsConfig proposalLimitsConfig,
       Hasher hasher,
       EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher,
@@ -133,6 +135,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
       SelfValidatorInfo selfValidatorInfo) {
     this.stateComputer = stateComputer;
     this.mempool = mempool;
+    this.rustProtocolUpdate = rustProtocolUpdate;
     this.proposalLimitsConfig = proposalLimitsConfig;
     this.hasher = hasher;
     this.ledgerUpdateEventDispatcher = ledgerUpdateEventDispatcher;
@@ -330,6 +333,9 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
 
     final var maybeNextProtocolVersion =
         ledgerExtension.getProof().getHeader().nextProtocolVersion();
+
+    // Synchronously apply a protocol update while we still hold a StateComputerResult lock
+    maybeNextProtocolVersion.ifPresent(this.rustProtocolUpdate::applyProtocolUpdate);
 
     var ledgerUpdate =
         new LedgerUpdate(

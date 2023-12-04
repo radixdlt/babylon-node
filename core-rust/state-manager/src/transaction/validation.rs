@@ -32,8 +32,11 @@ pub struct LedgerTransactionValidator {
 }
 
 impl LedgerTransactionValidator {
-    pub fn new(network: &NetworkDefinition) -> Self {
-        let validation_config = ValidationConfig::default(network.id);
+    pub fn default_from_network(network: &NetworkDefinition) -> Self {
+        Self::default_from_validation_config(ValidationConfig::default(network.id))
+    }
+
+    pub fn default_from_validation_config(validation_config: ValidationConfig) -> Self {
         Self {
             validation_config,
             // Add a few extra bytes for the enum discriminator at the start(!)
@@ -170,16 +173,14 @@ pub struct CommittabilityValidator<S> {
 
 impl<S> CommittabilityValidator<S> {
     pub fn new(
-        network: &NetworkDefinition,
         store: Arc<StateLock<S>>,
         execution_configurator: Arc<ExecutionConfigurator>,
+        user_transaction_validator: NotarizedTransactionValidator,
     ) -> Self {
         Self {
             store,
             execution_configurator,
-            user_transaction_validator: NotarizedTransactionValidator::new(
-                ValidationConfig::default(network.id),
-            ),
+            user_transaction_validator,
         }
     }
 
@@ -285,14 +286,14 @@ where
 /// A caching wrapper for a `CommittabilityValidator`.
 pub struct CachedCommittabilityValidator<S> {
     store: Arc<StateLock<S>>,
-    committability_validator: Arc<CommittabilityValidator<S>>,
+    committability_validator: Arc<RwLock<CommittabilityValidator<S>>>,
     pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
 }
 
 impl<S> CachedCommittabilityValidator<S> {
     pub fn new(
         store: Arc<StateLock<S>>,
-        committability_validator: Arc<CommittabilityValidator<S>>,
+        committability_validator: Arc<RwLock<CommittabilityValidator<S>>>,
         pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
     ) -> Self {
         Self {
@@ -306,7 +307,9 @@ impl<S> CachedCommittabilityValidator<S> {
         &self,
         transaction: &RawNotarizedTransaction,
     ) -> Result<PreparedNotarizedTransactionV1, TransactionValidationError> {
-        self.committability_validator.prepare_from_raw(transaction)
+        self.committability_validator
+            .read()
+            .prepare_from_raw(transaction)
     }
 
     fn read_record(
@@ -425,12 +428,12 @@ where
 
         let metadata = TransactionMetadata::read_from(&prepared);
 
-        match self.committability_validator.validate(prepared) {
+        let read_committability_validator = self.committability_validator.read();
+        match read_committability_validator.validate(prepared) {
             Ok(validated) => {
                 // Transaction was valid - let's also attempt to execute it
-                let attempt = self
-                    .committability_validator
-                    .check_for_rejection(&validated, current_time);
+                let attempt =
+                    read_committability_validator.check_for_rejection(&validated, current_time);
                 (
                     self.write_attempt(metadata, attempt),
                     CheckMetadata::Fresh(StaticValidation::Valid(Box::new(validated))),
@@ -477,6 +480,7 @@ where
 
         let attempt = self
             .committability_validator
+            .read()
             .check_for_rejection(validated, current_time);
         (
             self.write_attempt(metadata, attempt),

@@ -84,6 +84,7 @@ import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.networks.Network;
 import com.radixdlt.protocol.NewestProtocolVersion;
 import com.radixdlt.protocol.ProtocolConfig;
+import com.radixdlt.protocol.RustProtocolUpdate;
 import com.radixdlt.recovery.VertexStoreRecovery;
 import com.radixdlt.rev2.*;
 import com.radixdlt.serialization.DsonOutput;
@@ -228,6 +229,7 @@ public final class REv2StateManagerModule extends AbstractModule {
           REv2StateComputer rEv2StateComputer(
               RustStateComputer stateComputer,
               RustMempool mempool,
+              RustProtocolUpdate rustProtocolUpdate,
               EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher,
               Hasher hasher,
               EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher,
@@ -238,6 +240,7 @@ public final class REv2StateManagerModule extends AbstractModule {
             return new REv2StateComputer(
                 stateComputer,
                 mempool,
+                rustProtocolUpdate,
                 proposalLimitsConfig,
                 hasher,
                 ledgerUpdateEventDispatcher,
@@ -312,6 +315,13 @@ public final class REv2StateManagerModule extends AbstractModule {
   private RustStateComputer rustStateComputer(
       Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
     return new RustStateComputer(metrics, nodeRustEnvironment);
+  }
+
+  @Provides
+  @Singleton
+  private RustProtocolUpdate rustProtocolUpdate(
+      Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
+    return new RustProtocolUpdate(metrics, nodeRustEnvironment);
   }
 
   @Provides

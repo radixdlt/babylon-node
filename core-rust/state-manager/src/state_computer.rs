@@ -117,13 +117,12 @@ pub struct StateComputer<S> {
     execution_configurator: Arc<ExecutionConfigurator>,
     pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
     execution_cache: Mutex<ExecutionCache>,
-    ledger_transaction_validator: LedgerTransactionValidator,
+    ledger_transaction_validator: RwLock<LedgerTransactionValidator>,
     ledger_metrics: LedgerMetrics,
     committed_transactions_metrics: CommittedTransactionsMetrics,
     vertex_prepare_metrics: VertexPrepareMetrics,
     vertex_limits_config: VertexLimitsConfig,
     logging_config: StateComputerLoggingConfig,
-    protocol_config: ProtocolConfig,
     protocol_state: RwLock<ProtocolState>,
 }
 
@@ -140,11 +139,11 @@ impl<S: QueryableProofStore + IterableProofStore + QueryableTransactionStore> St
         logging_config: LoggingConfig,
         metrics_registry: &Registry,
         lock_factory: LockFactory,
-        protocol_config: ProtocolConfig,
+        initial_protocol_configurator: ProtocolConfigurator,
+        initial_protocol_state: ProtocolState,
     ) -> StateComputer<S> {
-        let read_store = store.read_current();
-
-        let (current_transaction_root, current_ledger_proposer_timestamp_ms) = read_store
+        let (current_transaction_root, current_ledger_proposer_timestamp_ms) = store
+            .read_current()
             .get_last_proof()
             .map(|proof| proof.ledger_header)
             .map(|header| (header.hashes.transaction_root, header.proposer_timestamp_ms))
@@ -153,19 +152,9 @@ impl<S: QueryableProofStore + IterableProofStore + QueryableTransactionStore> St
         let committed_transactions_metrics =
             CommittedTransactionsMetrics::new(metrics_registry, &execution_configurator);
 
-        if let Err(err) = protocol_config.sanity_check() {
-            panic!(
-                "State computer couldn't be initialized, protocol misconfiguration: {}",
-                err
-            );
-        };
-        let initial_protocol_state =
-            compute_initial_protocol_state(read_store.deref(), &protocol_config);
-
-        // TODO(protocol-updates): resume protocol update if there is
-        // one in progress
-
-        drop(read_store);
+        initial_protocol_configurator
+            .update_executor(store.write_current())
+            .commit_remaining_transactions();
 
         StateComputer {
             network: network.clone(),
@@ -176,7 +165,9 @@ impl<S: QueryableProofStore + IterableProofStore + QueryableTransactionStore> St
             execution_cache: lock_factory
                 .named("execution_cache")
                 .new_mutex(ExecutionCache::new(current_transaction_root)),
-            ledger_transaction_validator: LedgerTransactionValidator::new(network),
+            ledger_transaction_validator: lock_factory
+                .named("ledger_transaction_validator")
+                .new_rwlock(initial_protocol_configurator.ledger_transaction_validator()),
             logging_config: logging_config.state_manager_config,
             vertex_prepare_metrics: VertexPrepareMetrics::new(metrics_registry),
             vertex_limits_config,
@@ -188,7 +179,6 @@ impl<S: QueryableProofStore + IterableProofStore + QueryableTransactionStore> St
                 current_ledger_proposer_timestamp_ms,
             ),
             committed_transactions_metrics,
-            protocol_config,
             protocol_state: lock_factory
                 .named("protocol_state")
                 .new_rwlock(initial_protocol_state),
@@ -306,7 +296,10 @@ where
             .expect("Could not encode genesis transaction");
         let prepared = PreparedLedgerTransaction::prepare_from_raw(&raw)
             .expect("Could not prepare genesis transaction");
-        let validated = self.ledger_transaction_validator.validate_genesis(prepared);
+        let validated = self
+            .ledger_transaction_validator
+            .read()
+            .validate_genesis(prepared);
 
         let read_store = self.store.read_current();
         let mut series_executor = self.start_series_execution(read_store.deref());
@@ -340,6 +333,7 @@ where
 
         let validated = self
             .ledger_transaction_validator
+            .read()
             .validate_user_or_round_update(prepared_ledger_transaction)
             .unwrap_or_else(|_| panic!("Expected that {} was valid", qualified_name));
 
@@ -399,6 +393,7 @@ where
             // and executable creation) by accessing the execution cache in a more clever way.
             let validated = self
                 .ledger_transaction_validator
+                .read()
                 .validate_user_or_round_update_from_raw(&raw_ancestor)
                 .expect("Ancestor transactions should be valid");
 
@@ -431,6 +426,7 @@ where
         let ledger_round_update = LedgerTransaction::RoundUpdateV1(Box::new(round_update));
         let validated_round_update = self
             .ledger_transaction_validator
+            .read()
             .validate_user_or_round_update_from_model(&ledger_round_update)
             .expect("expected to be able to prepare the round update transaction");
 
@@ -547,6 +543,7 @@ where
             // validated transaction from the mempool.
             let validate_result = self
                 .ledger_transaction_validator
+                .read()
                 .validate_user_or_round_update(prepared_transaction);
 
             let validated = match validate_result {
@@ -729,6 +726,7 @@ where
             })
             .and_then(|raw_ledger_transaction| {
                 self.ledger_transaction_validator
+                    .read()
                     .prepare_from_raw(&raw_ledger_transaction)
                     .map(|prepared_transaction| (raw_ledger_transaction, prepared_transaction))
             })
@@ -1033,7 +1031,7 @@ where
         let commit_request_start_state_version =
             commit_state_version.relative(-(commit_transactions_len as i128)).expect("`commit_request_start_state_version` should be computable from `commit_state_version - commit_transactions_len` and valid.");
 
-        // Step 1.: Parse the transactions (and collect specific metrics from them, as a drive-by)
+        // Step 1.: Parse the transactions (and collect  specific metrics from them, as a drive-by)
         let mut prepared_transactions = Vec::new();
         let mut leader_round_counters_builder = LeaderRoundCountersBuilder::default();
         let mut proposer_timestamps = Vec::new();
@@ -1047,6 +1045,7 @@ where
         for (index, raw_transaction) in commit_request.transactions.iter().enumerate() {
             let result = self
                 .ledger_transaction_validator
+                .read()
                 .prepare_from_raw(raw_transaction);
             let prepared_transaction = match result {
                 Ok(prepared_transaction) => prepared_transaction,
@@ -1133,6 +1132,7 @@ where
         {
             let validated = self
                 .ledger_transaction_validator
+                .read()
                 .validate_user_or_round_update(prepared)
                 .unwrap_or_else(|error| {
                     panic!("cannot validate transaction to be committed: {error:?}");
@@ -1259,40 +1259,69 @@ where
         *locked_protocol_state = new_protocol_state;
         drop(locked_protocol_state);
 
-        self.try_execute_protocol_update();
-
         Ok(CommitSummary {
             validator_round_counters: round_counters,
             num_user_transactions,
         })
     }
 
-    fn try_execute_protocol_update(&self) {
-        // TODO(protocol-updates): execute the protocol update (if present)
-        // - execute actions/transactions in batches and persist the results
-        //   atomically with progress indicator (checkpoint id), so that we
-        //   know where to resume if a node is restarted mid-protocol update.
-        // Make this method work for both commit and resume (at startup).
+    // TODO: add checks in commit/prepare: RETURN IF THERE IS AN IN PROGRESS PROTOCOL UPDATE
 
+    pub fn apply_protocol_update(&self, protocol_configurator: ProtocolConfigurator) {
         let mut locked_protocol_state = self.protocol_state.write();
 
-        // For now, let's just pretend it executes in full:
-        // - set in_progress_protocol_update to None
-        // - bump current_protocol_version
-        if let Some(in_progress_protocol_update) =
-            locked_protocol_state.in_progress_protocol_update.take()
-        {
-            locked_protocol_state.current_protocol_version = match in_progress_protocol_update {
-                InProgressProtocolUpdate::EnactedButNotExecuted { protocol_version } => {
-                    protocol_version
-                }
-                InProgressProtocolUpdate::PartiallyExecuted {
-                    protocol_version, ..
-                } => protocol_version,
-            };
-        }
+        let read_store = self.store.read_current();
+        let current_header = read_store
+            .get_last_proof()
+            .map(|proof| proof.ledger_header)
+            .expect("Can't apply a protocol update  pre-genesis");
+        drop(read_store);
 
-        drop(locked_protocol_state);
+        *self.execution_cache.lock() = ExecutionCache::new(current_header.hashes.transaction_root);
+        *self.ledger_transaction_validator.write() =
+            protocol_configurator.ledger_transaction_validator();
+
+        protocol_configurator
+            .update_executor(self.store.write_current())
+            .commit_remaining_transactions();
+
+
+        // Note the use of .take() here
+        /*
+        let mut next_checkpoint_id = match locked_protocol_state.in_progress_protocol_update.take() {
+            Some(InProgressProtocolUpdate::EnactedButNotExecuted { protocol_version }) => {
+                if protocol_version != protocol_version_name {
+                    panic!("Can't apply a protocol update: protocol state inconsistency");
+                }
+                0u32
+            }
+            Some(InProgressProtocolUpdate::PartiallyExecuted { protocol_version, last_committed_checkpoint_id }) => {
+                if protocol_version != protocol_version_name {
+                    panic!("Can't apply a protocol update: protocol state inconsistency");
+                }
+                last_committed_checkpoint_id + 1
+            }
+            None => {
+                panic!("Can't apply a protocol update: protocol state inconsistency");
+            }
+        };
+
+        let read_store = self.store.read_current();
+        let current_header = read_store
+            .get_last_proof()
+            .map(|proof| proof.ledger_header)
+            .expect("Can't apply a protocol update pre-genesis");
+        drop(read_store);
+
+        // Reconfigure the engine
+        if locked_protocol_state.current_protocol_version != protocol_version_name {
+            *self.execution_cache.lock() = ExecutionCache::new(current_header.hashes.transaction_root);
+            *self.ledger_transaction_validator.write() =
+                protocol_initializer.ledger_transaction_validator();
+
+            locked_protocol_state.current_protocol_version = protocol_version_name.to_owned();
+        }
+         */
     }
 
     /// Performs a simplified [`commit()`] flow meant for (internal) genesis transactions.
@@ -1586,6 +1615,7 @@ mod tests {
         let validated_round_update = state_manager
             .state_computer
             .ledger_transaction_validator
+            .read()
             .validate_user_or_round_update_from_model(&ledger_round_update)
             .expect("expected to be able to prepare the round update transaction");
 
@@ -1605,6 +1635,7 @@ mod tests {
                 let validated = state_manager
                     .state_computer
                     .ledger_transaction_validator
+                    .read()
                     .validate_user_or_round_update(prepared_transaction)
                     .unwrap();
 

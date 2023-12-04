@@ -32,7 +32,7 @@ pub struct ProtocolState {
     pub current_epoch: Option<Epoch>,
     pub current_protocol_version: String,
     pub unenacted_protocol_updates: Vec<UnenactedProtocolUpdate>,
-    pub in_progress_protocol_update: Option<InProgressProtocolUpdate>,
+    pub in_progress_protocol_update: Option<InProgressProtocolUpdate>, // remove?
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

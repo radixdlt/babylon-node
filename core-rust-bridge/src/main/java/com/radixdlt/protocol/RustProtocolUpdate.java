@@ -62,21 +62,30 @@
  * permissions under this License.
  */
 
-use crate::ProtocolUpdate;
-use jni::objects::JClass;
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
-use node_common::java::jni_sbor_coded_call;
+package com.radixdlt.protocol;
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_protocol_ProtocolUpdates_nativeReadinessSignalName(
-    env: JNIEnv,
-    _class: JClass,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |protocol_update: ProtocolUpdate| {
-        protocol_update.readiness_signal_name()
-    })
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.environment.NodeRustEnvironment;
+import com.radixdlt.lang.Unit;
+import com.radixdlt.mempool.RustMempool;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.sbor.Natives;
+
+public final class RustProtocolUpdate {
+  public RustProtocolUpdate(Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
+    final var timer = metrics.stateManager().nativeCall();
+    applyProtocolUpdateFunc =
+        Natives.builder(nodeRustEnvironment, RustProtocolUpdate::applyProtocolUpdate)
+            .measure(timer.label(new Metrics.MethodId(RustMempool.class, "applyProtocolUpdate")))
+            .build(new TypeToken<>() {});
+  }
+
+  public void applyProtocolUpdate(String protocolVersionName) {
+    this.applyProtocolUpdateFunc.call(protocolVersionName);
+  }
+
+  private static native byte[] applyProtocolUpdate(
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
+
+  private final Natives.Call1<String, Unit> applyProtocolUpdateFunc;
 }
-
-pub fn export_extern_functions() {}

@@ -71,13 +71,14 @@ use node_common::{
     locks::*,
 };
 use prometheus::Registry;
-use radix_engine::transaction::CostingParameters;
+
 use radix_engine_common::prelude::*;
 
 use crate::jni::LedgerSyncLimitsConfig;
 use crate::store::jmt_gc::StateHashTreeGcConfig;
 use crate::store::proofs_gc::{LedgerProofsGc, LedgerProofsGcConfig};
 use crate::{
+    compute_initial_protocol_state,
     mempool_manager::MempoolManager,
     mempool_relay_dispatcher::MempoolRelayDispatcher,
     priority_mempool::PriorityMempool,
@@ -85,11 +86,9 @@ use crate::{
         jmt_gc::StateHashTreeGc, DatabaseBackendConfig, DatabaseFlags, RawDbMetricsCollector,
         StateManagerDatabase,
     },
-    transaction::{
-        CachedCommittabilityValidator, CommittabilityValidator, ExecutionConfigurator,
-        TransactionPreviewer,
-    },
-    LoggingConfig, PendingTransactionResultCache, ProtocolConfig, StateComputer,
+    transaction::{CachedCommittabilityValidator, CommittabilityValidator, TransactionPreviewer},
+    LoggingConfig, PendingTransactionResultCache, ProtocolConfig, ProtocolConfigurator,
+    StateComputer,
 };
 
 /// An interval between time-intensive measurement of raw DB metrics.
@@ -99,7 +98,7 @@ use crate::{
 /// (which in practice still runs more often than Prometheus' scraping).
 const RAW_DB_MEASUREMENT_INTERVAL: Duration = Duration::from_secs(10);
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Clone, Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct StateManagerConfig {
     pub network_definition: NetworkDefinition,
     pub mempool_config: Option<MempoolConfig>,
@@ -136,16 +135,23 @@ impl StateManagerConfig {
 
 #[derive(Clone)]
 pub struct StateManager {
+    config: StateManagerConfig,
     pub state_computer: Arc<StateComputer<StateManagerDatabase>>,
     pub database: Arc<StateLock<StateManagerDatabase>>,
     pub pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
     pub mempool: Arc<RwLock<PriorityMempool>>,
     pub mempool_manager: Arc<MempoolManager>,
-    pub committability_validator: Arc<CommittabilityValidator<StateManagerDatabase>>,
-    pub transaction_previewer: Arc<TransactionPreviewer<StateManagerDatabase>>,
+    pub committability_validator: Arc<RwLock<CommittabilityValidator<StateManagerDatabase>>>,
+    pub transaction_previewer: Arc<RwLock<TransactionPreviewer<StateManagerDatabase>>>,
 }
 
 impl StateManager {
+    pub fn test(&self, metrics_registry: &Registry) {
+        let mut write_mempool = self.mempool.write();
+        *write_mempool = PriorityMempool::new(MempoolConfig::default(), metrics_registry);
+        drop(write_mempool);
+    }
+
     pub fn new(
         config: StateManagerConfig,
         mempool_relay_dispatcher: Option<MempoolRelayDispatcher>,
@@ -153,7 +159,7 @@ impl StateManager {
         metrics_registry: &Registry,
         scheduler: &Scheduler<impl Spawner, impl Tracker, impl Metrics>,
     ) -> Self {
-        let mempool_config = match config.mempool_config {
+        let mempool_config = match config.mempool_config.clone() {
             Some(mempool_config) => mempool_config,
             None =>
             // in general, missing mempool config should mean that mempool isn't needed
@@ -162,39 +168,46 @@ impl StateManager {
                 MempoolConfig::default()
             }
         };
-        let network = config.network_definition;
-        let logging_config = config.logging_config;
+        let network = config.network_definition.clone();
+        let logging_config = config.logging_config.clone();
 
-        let database = Arc::new(lock_factory.named("database").new_state_lock(
-            StateManagerDatabase::from_config(
-                config.database_backend_config,
-                config.database_flags,
-                &network,
-            ),
-        ));
+        let raw_db = StateManagerDatabase::from_config(
+	    config.database_backend_config,
+            config.database_flags,
+            &network,
+        );
 
-        let mut costing_parameters = CostingParameters::default();
-        if config.no_fees {
-            costing_parameters.execution_cost_unit_price = Decimal::ZERO;
-            costing_parameters.finalization_cost_unit_price = Decimal::ZERO;
-            costing_parameters.state_storage_price = Decimal::ZERO;
-            costing_parameters.archive_storage_price = Decimal::ZERO;
-        }
-        let execution_configurator = Arc::new(ExecutionConfigurator::new(
+        let database = Arc::new(lock_factory.named("database").new_state_lock(raw_db));
+
+        if let Err(err) = config.protocol_config.sanity_check() {
+            panic!("Protocol misconfiguration: {}", err);
+        };
+        let initial_protocol_state = compute_initial_protocol_state(
+            database.read_current(),
+            &config.protocol_config
+        );
+        let initial_protocol_configurator = ProtocolConfigurator::for_protocol_version(
+            &initial_protocol_state.current_protocol_version,
             &network,
             &logging_config,
-            costing_parameters,
-        ));
+        );
+
+        let execution_configurator =
+            Arc::new(initial_protocol_configurator.execution_configurator(config.no_fees));
+
         let pending_transaction_result_cache = Arc::new(
             lock_factory
                 .named("pending_cache")
                 .new_rwlock(PendingTransactionResultCache::new(10000, 10000)),
         );
-        let committability_validator = Arc::new(CommittabilityValidator::new(
-            &network,
-            database.clone(),
-            execution_configurator.clone(),
-        ));
+        let committability_validator =
+            Arc::new(lock_factory.named("committability_validator").new_rwlock(
+                CommittabilityValidator::new(
+                    database.clone(),
+                    execution_configurator.clone(),
+                    initial_protocol_configurator.user_transaction_validator(),
+                ),
+            ));
         let cached_committability_validator = CachedCommittabilityValidator::new(
             database.clone(),
             committability_validator.clone(),
@@ -221,11 +234,14 @@ impl StateManager {
             ),
         });
 
-        let transaction_previewer = Arc::new(TransactionPreviewer::new(
-            &network,
-            database.clone(),
-            execution_configurator.clone(),
-        ));
+        let transaction_previewer =
+            Arc::new(lock_factory.named("transaction_previewer").new_rwlock(
+                TransactionPreviewer::new(
+                    database.clone(),
+                    execution_configurator.clone(),
+                    initial_protocol_configurator.validation_config(),
+                ),
+            ));
 
         let vertex_limits_config = match config.vertex_limits_config {
             Some(java_vertex_limits_config) => java_vertex_limits_config,
@@ -243,7 +259,8 @@ impl StateManager {
             logging_config,
             metrics_registry,
             lock_factory.named("state_computer"),
-            config.protocol_config,
+            initial_protocol_configurator,
+            initial_protocol_state,
         ));
 
         // Register the periodic background task for collecting the costly raw DB metrics...
@@ -257,7 +274,7 @@ impl StateManager {
 
         // ... and for deleting the stale state hash tree nodes (a.k.a. "JMT GC")...
         let state_hash_tree_gc =
-            StateHashTreeGc::new(database.clone(), config.state_hash_tree_gc_config);
+            StateHashTreeGc::new(database.clone(), config.state_hash_tree_gc_config.clone());
         scheduler
             .named("state_hash_tree_gc")
             .start_periodic(state_hash_tree_gc.interval(), move || {
@@ -267,14 +284,15 @@ impl StateManager {
         // ... and for deleting the old, non-critical ledger proofs (a.k.a. "Proofs GC"):
         let ledger_proofs_gc = LedgerProofsGc::new(
             database.clone(),
-            config.ledger_proofs_gc_config,
-            config.ledger_sync_limits_config,
+            config.ledger_proofs_gc_config.clone(),
+            config.ledger_sync_limits_config.clone(),
         );
         scheduler
             .named("ledger_proofs_gc")
             .start_periodic(ledger_proofs_gc.interval(), move || ledger_proofs_gc.run());
 
         Self {
+            config,
             state_computer,
             database,
             pending_transaction_result_cache,
@@ -284,4 +302,35 @@ impl StateManager {
             transaction_previewer,
         }
     }
-}
+
+    pub fn apply_protocol_update(&self, protocol_version_name: &str) {
+        let protocol_configurator = ProtocolConfigurator::for_protocol_version(
+            protocol_version_name,
+            &self.config.network_definition,
+            &self.config.logging_config,
+        );
+
+        let execution_configurator =
+            Arc::new(protocol_configurator.execution_configurator(self.config.no_fees));
+
+        let mut locked_committability_validator = self.committability_validator.write();
+        *locked_committability_validator = CommittabilityValidator::new(
+            self.database.clone(),
+            execution_configurator.clone(),
+            protocol_configurator.user_transaction_validator(),
+        );
+        drop(locked_committability_validator);
+
+        let mut locked_transaction_previewer = self.transaction_previewer.write();
+        *locked_transaction_previewer = TransactionPreviewer::new(
+            self.database.clone(),
+            execution_configurator,
+            protocol_configurator.validation_config(),
+        );
+        drop(locked_transaction_previewer);
+
+        // TODO: force mempool/txn result cache recalculation?
+
+        self.state_computer.apply_protocol_update(protocol_configurator);
+    }
+}"databnase
