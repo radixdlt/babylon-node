@@ -551,6 +551,40 @@ impl RocksDBStore {
         })
     }
 
+
+    /// Create a RocksDBStore as a secondary instance which may catch up with the primary
+    pub fn new_as_secondary(root: PathBuf, temp: PathBuf, column_families: Vec<&str>) -> RocksDBStore {
+        let mut db_opts = Options::default();
+        db_opts.create_if_missing(false);
+        db_opts.create_missing_column_families(false);
+
+        let column_families: Vec<ColumnFamilyDescriptor> = column_families
+            .iter()
+            .map(|cf| ColumnFamilyDescriptor::new(cf.to_string(), Options::default()))
+            .collect();
+
+        let db = DB::open_cf_descriptors_as_secondary(
+            &db_opts,
+            root.as_path(),
+            temp.as_path(),
+            column_families,
+        )
+            .unwrap();
+
+        RocksDBStore {
+            config: DatabaseFlags {
+                enable_local_transaction_execution_index: false,
+                enable_account_change_index: false,
+            },
+            db,
+        }
+    }
+
+    pub fn try_catchup_with_primary(&self) {
+        self.db.try_catch_up_with_primary().unwrap();
+    }
+
+
     /// Starts a read/batch-write interaction with the DB through per-CF type-safe APIs.
     fn open_db_context(&self) -> TypedDbContext {
         TypedDbContext::new(&self.db)
