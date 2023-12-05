@@ -512,21 +512,6 @@ impl RocksDBStore {
     /// want to have a write lock over the database. This provides the [`ledger-tools`] CLI with a
     /// way of making it clear that it only wants read lock and not a write lock.
     ///
-    /// # Note
-    ///
-    /// Instantiating a new [`RocksDBStore`] through this function does not provide any consistency
-    /// guarantees. Meaning that if substate X and Y are read, there is no guarantee that these two
-    /// substates come from the same state version. Thus, this should only be used for data that is
-    /// guaranteed to be immutable by the Radix Engine or the Node. As an example:
-    ///
-    /// * Receipts are guaranteed to be immutable by the node. Thus, there are no consistency fears
-    /// when it comes to [`ledger-tools`] reading receipts to determine which entities where created
-    /// by which transaction.
-    /// * Similarly, the immutability of receipts is used by [`ledger-tools`] when dumping events.
-    ///
-    /// Thus, this readonly substate store should only be used when the consistency of the data is
-    /// not a concern.
-    ///
     /// [`ledger-tools`]: https://github.com/radixdlt/ledger-tools
     pub fn new_read_only(root: PathBuf) -> Result<RocksDBStore, DatabaseConfigValidationError> {
         let mut db_opts = Options::default();
@@ -551,9 +536,12 @@ impl RocksDBStore {
         })
     }
 
-
     /// Create a RocksDBStore as a secondary instance which may catch up with the primary
-    pub fn new_as_secondary(root: PathBuf, temp: PathBuf, column_families: Vec<&str>) -> RocksDBStore {
+    pub fn new_as_secondary(
+        root: PathBuf,
+        temp: PathBuf,
+        column_families: Vec<&str>,
+    ) -> RocksDBStore {
         let mut db_opts = Options::default();
         db_opts.create_if_missing(false);
         db_opts.create_missing_column_families(false);
@@ -569,7 +557,7 @@ impl RocksDBStore {
             temp.as_path(),
             column_families,
         )
-            .unwrap();
+        .unwrap();
 
         RocksDBStore {
             config: DatabaseFlags {
@@ -583,7 +571,6 @@ impl RocksDBStore {
     pub fn try_catchup_with_primary(&self) {
         self.db.try_catch_up_with_primary().unwrap();
     }
-
 
     /// Starts a read/batch-write interaction with the DB through per-CF type-safe APIs.
     fn open_db_context(&self) -> TypedDbContext {
