@@ -24,13 +24,13 @@ ARG WGET_VERSION="1.21.3-1+b2"
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
     docker.io=20.10.24+dfsg1-1+b3 \
-    libssl-dev=3.0.11-1~deb12u1 \
+    libssl-dev=3.0.11-1~deb12u2 \
     pkg-config=1.8.1-1 \
     unzip=6.0-28 \
     wget=${WGET_VERSION} \
     software-properties-common=0.99.30-4 \
   && apt-get install -y --no-install-recommends \
-    openjdk-17-jdk=17.0.8+7-1~deb12u1 \
+    openjdk-17-jdk=17.0.9+9-1~deb12u1 \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
@@ -94,7 +94,7 @@ RUN apt-get update \
     g++-x86-64-linux-gnu \
     libc6-dev-arm64-cross=2.36-8cross1 \
     libclang-dev=1:14.0-55.7~deb12u1 \
-    libssl-dev=3.0.11-1~deb12u1 \
+    libssl-dev=3.0.11-1~deb12u2 \
     pkg-config=1.8.1-1 \
   && rm -rf /var/lib/apt/lists/*
 
@@ -203,7 +203,7 @@ LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 # - curl is needed for the docker-healthcheck
 RUN apt-get update -y \
   && apt-get -y --no-install-recommends install \
-    openjdk-17-jre-headless=17.0.8+7-1~deb12u1 \
+    openjdk-17-jre-headless=17.0.9+9-1~deb12u1 \
     # https://security-tracker.debian.org/tracker/CVE-2023-38545
     curl=7.88.1-10+deb12u4 \
     gettext-base=0.21-12 \
