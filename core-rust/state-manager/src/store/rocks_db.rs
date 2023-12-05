@@ -1576,78 +1576,22 @@ impl DbSubstateKeyRange {
     /// Creates a range of substate keys containing all *and only* keys from the given partition.
     ///
     /// Implementation note:
-    /// This method uses knowledge of the internal RocksDB encoding of [`DbSubstateKey`]s (i.e. the
-    /// [`encode_to_rocksdb_bytes()`] method). To be specific, it relies on:
-    /// - the "length|value" encoding of the node key (see [`Self::next_partition_key()`]);
-    /// - and the lexicographical ordering of the substates' DB sort keys.
+    /// This method uses some knowledge of the internal RocksDB encoding of [`DbSubstateKey`]s (i.e.
+    /// the [`encode_to_rocksdb_bytes()`] method). To be specific, it relies on:
+    /// - the partition's part bytes preceding the substate's sort key bytes;
+    /// - the lexicographical ordering of the substates' sort keys;
+    /// - and the well-known limit on the substate key size (i.e. [`MAX_SUBSTATE_KEY_SIZE`]).
+    ///
+    /// With these assumptions, we can simply construct a minimum and a larger-than-maximum substate
+    /// key belonging to the given partition.
     pub fn for_partition_delete(partition_key: &DbPartitionKey) -> Self {
         Self {
-            from: Self::first_substate_key_within(partition_key.clone()),
-            to: Self::first_substate_key_within(Self::next_partition_key(partition_key)),
+            from: (partition_key.clone(), DbSortKey(vec![])),
+            to: (
+                partition_key.clone(),
+                DbSortKey(vec![u8::MAX; MAX_SUBSTATE_KEY_SIZE]),
+            ),
         }
-    }
-
-    /// Generates the first possible substate key belonging to the given partition.
-    ///
-    /// Since substates within each partition strictly follow the lexicographical ordering, this
-    /// simply is a substate of an empty DB sort key.
-    fn first_substate_key_within(partition_key: DbPartitionKey) -> DbSubstateKey {
-        (partition_key, DbSortKey(vec![]))
-    }
-
-    /// Generates the immediate successor of the given [`DbPartitionKey`].
-    ///
-    /// Implementation note:
-    /// This method relies on the "length|value" encoding of the node keys within RocksDB. Hence:
-    /// - if it is *not* the last partition within its node, then the case is trivial (simply
-    ///   increment the partition number);
-    /// - otherwise, we must generate the first partition of the [`Self::next_node_key()`].
-    ///
-    /// Legacy bugfix note:
-    /// The [`DbPartitionKey::next()`] method exists, but is *insuitable* for use with our current
-    /// RocksDB key encoding implementation. It can be now removed, so that it is not mistakenly
-    /// used in any context.
-    fn next_partition_key(partition_key: &DbPartitionKey) -> DbPartitionKey {
-        partition_key
-            .partition_num
-            .checked_add(1)
-            .map(|next_partition_num| DbPartitionKey {
-                node_key: partition_key.node_key.clone(),
-                partition_num: next_partition_num,
-            })
-            .unwrap_or_else(|| DbPartitionKey {
-                node_key: Self::next_node_key(&partition_key.node_key),
-                partition_num: 0,
-            })
-    }
-
-    /// Generates the immediate successor of the given [`DbNodeKey`].
-    ///
-    /// Implementation note:
-    /// This method relies on the "length|value" encoding of the node keys within RocksDB. This
-    /// means that for the edge case of "max key" (let's say `0xffffff`), it will return a strictly
-    /// hypothetical "next" one (`0xffffff00`) which will never occur in our current fixed-key-size
-    /// use-case. It will still be correctly encoded to a valid RocksDB bytes representation (i.e.
-    /// larger than all possible keys - as expected).
-    fn next_node_key(node_key: &DbNodeKey) -> DbNodeKey {
-        let mut next_node_key = node_key.clone();
-        // Attempt to "add 1", starting at the least significant byte:
-        for index in (0..next_node_key.len()).rev() {
-            match next_node_key[index].checked_add(1) {
-                Some(valid_increment) => {
-                    // Increment successful, return the result:
-                    next_node_key[index] = valid_increment;
-                    return next_node_key;
-                }
-                None => {
-                    // Zero the digit and continue the iteration (i.e. "carry):
-                    next_node_key[index] = 0;
-                }
-            }
-        }
-        // If this point is reached, then it means that out input was `0xffff...ff` (i.e. the largest
-        // possible key of this length). Construct the immediate successor in a "length|value" encoding:
-        [node_key.clone(), vec![0]].concat()
     }
 }
 
