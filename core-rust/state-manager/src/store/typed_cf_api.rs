@@ -430,17 +430,24 @@ pub trait OrderPreservingDbCodec {}
 /// representations must all share the same prefix (and vice versa).
 ///
 /// Examples:
-/// - a `DbCodec<u32>` which turns an integer into 4 *big-endian* bytes *does* preserve ordering:
-///   - `1u32` <-> `[0, 0, 0, 1]`,
-///   - `7u32` <-> `[0, 0, 0, 7]`,
-///   - `259u32` <-> `[0, 0, 1, 3]`,
-///   - and so on: the left side increases naturally and the right side increases lexicographically.
-/// - a `DbCodec<u32>` which turns an integer into ASCII string bytes *does not* preserve ordering:
-///   - `1u32` <-> `[49]`,
-///   - `7u32` <-> `[55]`,
-///   - `259u32` <-> `[50, 53, 59]`,
-///   - order broken: the right side *does not* consistently increase lexicographically (the bytes
-///     starting with `[50, ...]` are lexicographically before `[55]`).
+/// - a `DbCodec<SocketAddress>` which turns an `(ip: u32, port: u16)` tuple into `ip[4B]|port[2B]`
+///   bytes *does* preserve grouping by host:
+///   - [3, 14, 0, 1, 0, 80] and [3, 14, 0, 1, 0, 22] bytes start with the same 4-byte prefix, and
+///    indeed they represent port 80 and port 22 on the same host `3.14.0.1`.
+///   - the lexicographically-ordered range of *all* socket addresses on host `3.14.0.1` can be
+///     expressed as "from `[3, 14, 0, 1]` inclusive to `[3, 14, 0, 1, 255, 255, 0]` exclusive"
+///     (please note that it requires some knowledge on the maximum length of the part following the
+///     prefix).
+/// - a `DbCodec<Person>` which turns a `(first_name: String, last_name: String)` tuple into
+///   `<first_name> <last_name>` ASCII strings *does not* preserve grouping by families:
+///   - `("John", "Doe")` <-> `[J, o, h, n,  , D, o, e]`,
+///   - `("Ann", "Doe")` <-> `[A, n, n,  , D, o, e]`,
+///   - grouping broken: even though John and Ann belong to the same family, they *do not* share
+///     any well-specified prefix in their byte representations.
+///   - a lexicographically-ordered range covering all members of a family *cannot* be constructed
+///     under this encoding.
+///   - the grouping in this case *could* be preserved e.g. by encoding `<last_name> <first_name>`
+///     (with a variable-length prefix, defined as "everything before the first space character").
 ///
 /// The grouping preservation is important for database *key* codecs of column families which need
 /// to support e.g. a batch delete operation of an entire group.
