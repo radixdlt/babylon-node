@@ -64,6 +64,7 @@
 
 use radix_engine::types::*;
 use rocksdb::{ColumnFamily, Direction, IteratorMode, WriteBatch, DB};
+use std::ops::Range;
 
 /// A higher-level database read/write context.
 ///
@@ -261,13 +262,12 @@ impl<'db, 'wb, CF: TypedCf> TypedCfApi<'db, 'wb, CF> {
     }
 }
 
-impl<'db, 'wb, KC: PrefixableDbCodec, CF: TypedCf<KeyCodec = KC>> TypedCfApi<'db, 'wb, CF> {
-    /// Deletes the entries from the given prefix.
-    pub fn delete_all_under_prefix(&self, prefix: &KC::Prefix) {
-        let (from, to) = self.key_codec.encode_prefix_to_range(prefix);
-        // Frustratingly, RocksDB doesn't allow an open range, so we have to work around that
-        let to = to.unwrap_or_else(|| self.key_codec.encode_key_greater_than_all_possible(prefix));
-        self.write_buffer.delete_range(self.cf_handle, from, to);
+impl<'db, 'wb, KC: GroupPreservingDbCodec, CF: TypedCf<KeyCodec = KC>> TypedCfApi<'db, 'wb, CF> {
+    /// Deletes the entries from the given group.
+    pub fn delete_group(&self, group: &KC::Group) {
+        let prefix_range = self.key_codec.encode_group_range(group);
+        self.write_buffer
+            .delete_range(self.cf_handle, prefix_range.start, prefix_range.end);
     }
 }
 
@@ -399,17 +399,62 @@ pub trait DbCodec<T> {
     fn decode(&self, bytes: &[u8]) -> T;
 }
 
-/// A marker trait which must only be implemented on Codecs which preserve lexicographic ordering.
+/// A marker trait which must only be implemented on [`DbCodec`]s which preserve the business-level
+/// ordering of values when encoding/decoding.
+///
+/// More formally: Such codec must translate the natural ordering (i.e. [`Ord`]) of its `<T>` values
+/// into a *lexicographical* ordering of their byte representations.
+///
+/// Examples:
+/// - a `DbCodec<u32>` which turns an integer into 4 *big-endian* bytes *does* preserve ordering:
+///   - `1u32` <-> `[0, 0, 0, 1]`,
+///   - `7u32` <-> `[0, 0, 0, 7]`,
+///   - `259u32` <-> `[0, 0, 1, 3]`,
+///   - and so on: the left side increases naturally and the right side increases lexicographically.
+/// - a `DbCodec<u32>` which turns an integer into ASCII string bytes *does not* preserve ordering:
+///   - `1u32` <-> `[49]`,
+///   - `7u32` <-> `[55]`,
+///   - `259u32` <-> `[50, 53, 59]`,
+///   - order broken: the right side *does not* consistently increase lexicographically (the bytes
+///     starting with `[50, ...]` are lexicographically before `[55]`).
+///
+/// The order preservation is important for database *key* codecs of column families which need to
+/// support e.g. iteration of elements starting from a particular element, or any batch operations
+/// defined by `[from, to]` ranges.
 pub trait OrderPreservingDbCodec {}
 
-/// A trait where an encoding allows for some prefixes to be preserved in the encoded space.
-/// This is for example used for range deletes.
-pub trait PrefixableDbCodec {
-    type Prefix;
+/// An extra trait to be implemented on [`DbCodec`]s which preserve the business-level grouping of
+/// values when encoding/decoding.
+///
+/// More formally: if a set of values `<T>` all share the same [`Self::Group`], then their byte
+/// representations must all share the same prefix (and vice versa).
+///
+/// Examples:
+/// - a `DbCodec<u32>` which turns an integer into 4 *big-endian* bytes *does* preserve ordering:
+///   - `1u32` <-> `[0, 0, 0, 1]`,
+///   - `7u32` <-> `[0, 0, 0, 7]`,
+///   - `259u32` <-> `[0, 0, 1, 3]`,
+///   - and so on: the left side increases naturally and the right side increases lexicographically.
+/// - a `DbCodec<u32>` which turns an integer into ASCII string bytes *does not* preserve ordering:
+///   - `1u32` <-> `[49]`,
+///   - `7u32` <-> `[55]`,
+///   - `259u32` <-> `[50, 53, 59]`,
+///   - order broken: the right side *does not* consistently increase lexicographically (the bytes
+///     starting with `[50, ...]` are lexicographically before `[55]`).
+///
+/// The grouping preservation is important for database *key* codecs of column families which need
+/// to support e.g. a batch delete operation of an entire group.
+pub trait GroupPreservingDbCodec {
+    type Group;
 
-    fn encode_prefix_to_range(&self, prefix: &Self::Prefix) -> (Vec<u8>, Option<Vec<u8>>);
-
-    fn encode_key_greater_than_all_possible(&self, example_prefix: &Self::Prefix) -> Vec<u8>;
+    /// Encodes the group into a [`Range`] of byte representations that covers all values belonging
+    /// to that group.
+    ///
+    /// Please note that:
+    /// - the returned range *must* cover at least *all valid* group members,
+    /// - it *may* cover some inexistent/invalid/not-occurring-in-practice group members,
+    /// - but it *must not* cover any member of any other group.
+    fn encode_group_range(&self, group: &Self::Group) -> Range<Vec<u8>>;
 }
 
 /// A reusable versioning decorator for [`DbCodec`]s.
