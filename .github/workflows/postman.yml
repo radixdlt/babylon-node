@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: cancel running workflows
-        uses: styfle/cancel-workflow-action@0.11.0
+        uses: RDXWorks-actions/cancel-workflow-action@main
         with:
           access_token: ${{ github.token }}
   sync_collections:
@@ -54,7 +54,7 @@ jobs:
 
       # ========== Mapping whatever network was selected to postman variables ==========
       - name: Map network name to its variables
-        uses: kanga333/variable-mapper@v0.3.0
+        uses: RDXWorks-actions/variable-mapper@master
         with:
             key: "${{ github.event.inputs.network_name || 'gilganet' }}"
             map: |
@@ -95,7 +95,7 @@ jobs:
 
       # ==================== Credentials ====================
       - name: Setup Postman credentials
-        uses: DamianReeves/write-file-action@v1.1
+        uses: RDXWorks-actions/write-file-action@master
         with:
           path: .env
           contents: POSTMAN_API_KEY=${{ env.POSTMAN_API_TOKEN }}
