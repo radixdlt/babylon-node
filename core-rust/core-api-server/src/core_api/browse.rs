@@ -436,7 +436,9 @@ impl<'s, S: SubstateDatabase + SubstateNodeAncestryStore> EngineStateMetaLoader<
         &self,
         type_target: &BlueprintTypeTarget,
     ) -> Result<ObjectModuleStateMeta, EngineStateBrowsingError> {
-        let blueprint_id = &type_target.blueprint_info.blueprint_id;
+        let blueprint_info = &type_target.blueprint_info;
+        let blueprint_id = &blueprint_info.blueprint_id;
+        let blueprint_name = blueprint_id.blueprint_name.as_str();
         let IndexedStateSchema {
             fields,
             collections,
@@ -453,17 +455,19 @@ impl<'s, S: SubstateDatabase + SubstateNodeAncestryStore> EngineStateMetaLoader<
             .interface
             .state;
 
-        let resolver = TypeReferenceResolver::new(&self.reader);
+        let type_resolver = TypeReferenceResolver::new(&self.reader);
+        let conditions_context = self.load_conditions_context(blueprint_info)?;
 
         let fields = fields
             .into_iter()
             .flat_map(|(_partition_description, fields)| fields)
             .enumerate()
+            .filter(|(_index, schema)| conditions_context.meets(&schema.condition))
             .map(|(index, schema)| {
                 Ok(ObjectFieldMeta::new(
                     index,
                     blueprint_id.blueprint_name.as_str(),
-                    resolver
+                    type_resolver
                         .resolve_type_from_blueprint_data(type_target, schema.field)
                         .and_then(|resolved_type| self.augment_with_schema(resolved_type))?,
                 ))
@@ -478,12 +482,12 @@ impl<'s, S: SubstateDatabase + SubstateNodeAncestryStore> EngineStateMetaLoader<
                 let BlueprintKeyValueSchema { key, value, .. } = collection_schema;
                 Ok(ObjectCollectionMeta::new(
                     index,
-                    blueprint_id.blueprint_name.as_str(),
+                    blueprint_name,
                     kind,
-                    resolver
+                    type_resolver
                         .resolve_type_from_blueprint_data(type_target, key)
                         .and_then(|resolved_type| self.augment_with_schema(resolved_type))?,
-                    resolver
+                    type_resolver
                         .resolve_type_from_blueprint_data(type_target, value)
                         .and_then(|resolved_type| self.augment_with_schema(resolved_type))?,
                 ))
@@ -493,6 +497,35 @@ impl<'s, S: SubstateDatabase + SubstateNodeAncestryStore> EngineStateMetaLoader<
         Ok(ObjectModuleStateMeta {
             fields,
             collections,
+        })
+    }
+
+    /// Constructs an [`ObjectConditionsContext`] from the given object's blueprint-related info.
+    /// Note: the method belongs to the `load_*` family, since it may need to actually load the
+    /// outer object's enabled feature set (if it exists) from database.
+    fn load_conditions_context(
+        &self,
+        blueprint_info: &BlueprintInfo,
+    ) -> Result<ObjectConditionsContext, EngineStateBrowsingError> {
+        let object_features = blueprint_info.features.clone();
+        let outer_object_features = match &blueprint_info.outer_obj_info {
+            OuterObjectInfo::Some { outer_object } => {
+                self.reader
+                    .get_object_info(*outer_object.as_node_id())
+                    .map_err(|error| {
+                        EngineStateBrowsingError::UnexpectedEngineError(
+                            error,
+                            "when fetching outer object's info".to_string(),
+                        )
+                    })?
+                    .blueprint_info
+                    .features
+            }
+            OuterObjectInfo::None => index_set_new(),
+        };
+        Ok(ObjectConditionsContext {
+            object_features,
+            outer_object_features,
         })
     }
 
@@ -1319,6 +1352,23 @@ impl<'t> SborData<'t> {
     /// Creates a [`ScryptoValue`] representation of these SBOR bytes.
     pub fn to_scrypto_value(&self) -> ScryptoValue {
         scrypto_decode(self.as_bytes()).expect("bytes read from substate store")
+    }
+}
+
+/// An internal helper holding instance-specific context relevant to [`Condition`] checks.
+struct ObjectConditionsContext {
+    object_features: IndexSet<String>,
+    outer_object_features: IndexSet<String>, // empty when there is no outer object
+}
+
+impl ObjectConditionsContext {
+    /// Checks whether the object's state captured by this context meets the given condition.
+    pub fn meets(&self, condition: &Condition) -> bool {
+        match condition {
+            Condition::Always => true,
+            Condition::IfFeature(feature) => self.object_features.contains(feature),
+            Condition::IfOuterFeature(feature) => self.outer_object_features.contains(feature),
+        }
     }
 }
 
