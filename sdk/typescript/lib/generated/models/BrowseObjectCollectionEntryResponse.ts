@@ -13,45 +13,66 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { BrowseObjectCollectionEntryResponseContent } from './BrowseObjectCollectionEntryResponseContent';
+import {
+    BrowseObjectCollectionEntryResponseContentFromJSON,
+    BrowseObjectCollectionEntryResponseContentFromJSONTyped,
+    BrowseObjectCollectionEntryResponseContentToJSON,
+} from './BrowseObjectCollectionEntryResponseContent';
+import type { LedgerStateSummary } from './LedgerStateSummary';
+import {
+    LedgerStateSummaryFromJSON,
+    LedgerStateSummaryFromJSONTyped,
+    LedgerStateSummaryToJSON,
+} from './LedgerStateSummary';
+
 /**
- * The requested Key-Value Store entry's value.
+ * 
  * @export
- * @interface BrowseKeyValueStoreEntryResponseContent
+ * @interface BrowseObjectCollectionEntryResponse
  */
-export interface BrowseKeyValueStoreEntryResponseContent {
+export interface BrowseObjectCollectionEntryResponse {
     /**
      * 
-     * @type {object}
-     * @memberof BrowseKeyValueStoreEntryResponseContent
+     * @type {LedgerStateSummary}
+     * @memberof BrowseObjectCollectionEntryResponse
      */
-    programmatic_json: object;
+    at_ledger_state: LedgerStateSummary;
+    /**
+     * 
+     * @type {BrowseObjectCollectionEntryResponseContent}
+     * @memberof BrowseObjectCollectionEntryResponse
+     */
+    content: BrowseObjectCollectionEntryResponseContent;
 }
 
 /**
- * Check if a given object implements the BrowseKeyValueStoreEntryResponseContent interface.
+ * Check if a given object implements the BrowseObjectCollectionEntryResponse interface.
  */
-export function instanceOfBrowseKeyValueStoreEntryResponseContent(value: object): boolean {
+export function instanceOfBrowseObjectCollectionEntryResponse(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "programmatic_json" in value;
+    isInstance = isInstance && "at_ledger_state" in value;
+    isInstance = isInstance && "content" in value;
 
     return isInstance;
 }
 
-export function BrowseKeyValueStoreEntryResponseContentFromJSON(json: any): BrowseKeyValueStoreEntryResponseContent {
-    return BrowseKeyValueStoreEntryResponseContentFromJSONTyped(json, false);
+export function BrowseObjectCollectionEntryResponseFromJSON(json: any): BrowseObjectCollectionEntryResponse {
+    return BrowseObjectCollectionEntryResponseFromJSONTyped(json, false);
 }
 
-export function BrowseKeyValueStoreEntryResponseContentFromJSONTyped(json: any, ignoreDiscriminator: boolean): BrowseKeyValueStoreEntryResponseContent {
+export function BrowseObjectCollectionEntryResponseFromJSONTyped(json: any, ignoreDiscriminator: boolean): BrowseObjectCollectionEntryResponse {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'programmatic_json': json['programmatic_json'],
+        'at_ledger_state': LedgerStateSummaryFromJSON(json['at_ledger_state']),
+        'content': BrowseObjectCollectionEntryResponseContentFromJSON(json['content']),
     };
 }
 
-export function BrowseKeyValueStoreEntryResponseContentToJSON(value?: BrowseKeyValueStoreEntryResponseContent | null): any {
+export function BrowseObjectCollectionEntryResponseToJSON(value?: BrowseObjectCollectionEntryResponse | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -60,7 +81,8 @@ export function BrowseKeyValueStoreEntryResponseContentToJSON(value?: BrowseKeyV
     }
     return {
         
-        'programmatic_json': value.programmatic_json,
+        'at_ledger_state': LedgerStateSummaryToJSON(value.at_ledger_state),
+        'content': BrowseObjectCollectionEntryResponseContentToJSON(value.content),
     };
 }
 

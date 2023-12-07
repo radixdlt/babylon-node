@@ -28,6 +28,8 @@ import com.radixdlt.api.core.generated.models.BrowseKeyValueStoreEntryRequest;
 import com.radixdlt.api.core.generated.models.BrowseKeyValueStoreEntryResponse;
 import com.radixdlt.api.core.generated.models.BrowseKeyValueStoreIteratorRequest;
 import com.radixdlt.api.core.generated.models.BrowseKeyValueStoreIteratorResponse;
+import com.radixdlt.api.core.generated.models.BrowseObjectCollectionEntryRequest;
+import com.radixdlt.api.core.generated.models.BrowseObjectCollectionEntryResponse;
 import com.radixdlt.api.core.generated.models.BrowseObjectCollectionIteratorRequest;
 import com.radixdlt.api.core.generated.models.BrowseObjectCollectionIteratorResponse;
 import com.radixdlt.api.core.generated.models.BrowseObjectFieldRequest;
@@ -466,6 +468,84 @@ public class BrowseApi {
 
     try {
       byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(browseKeyValueStoreIteratorRequest);
+      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    if (memberVarReadTimeout != null) {
+      localVarRequestBuilder.timeout(memberVarReadTimeout);
+    }
+    if (memberVarInterceptor != null) {
+      memberVarInterceptor.accept(localVarRequestBuilder);
+    }
+    return localVarRequestBuilder;
+  }
+  /**
+   * Get Object Collection Entry
+   * Reads the current value of a specific entry from an Object&#39;s Collection. 
+   * @param browseObjectCollectionEntryRequest  (required)
+   * @return BrowseObjectCollectionEntryResponse
+   * @throws ApiException if fails to make API call
+   */
+  public BrowseObjectCollectionEntryResponse browseObjectCollectionEntryPost(BrowseObjectCollectionEntryRequest browseObjectCollectionEntryRequest) throws ApiException {
+    ApiResponse<BrowseObjectCollectionEntryResponse> localVarResponse = browseObjectCollectionEntryPostWithHttpInfo(browseObjectCollectionEntryRequest);
+    return localVarResponse.getData();
+  }
+
+  /**
+   * Get Object Collection Entry
+   * Reads the current value of a specific entry from an Object&#39;s Collection. 
+   * @param browseObjectCollectionEntryRequest  (required)
+   * @return ApiResponse&lt;BrowseObjectCollectionEntryResponse&gt;
+   * @throws ApiException if fails to make API call
+   */
+  public ApiResponse<BrowseObjectCollectionEntryResponse> browseObjectCollectionEntryPostWithHttpInfo(BrowseObjectCollectionEntryRequest browseObjectCollectionEntryRequest) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = browseObjectCollectionEntryPostRequestBuilder(browseObjectCollectionEntryRequest);
+    try {
+      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
+          localVarRequestBuilder.build(),
+          HttpResponse.BodyHandlers.ofInputStream());
+      if (memberVarResponseInterceptor != null) {
+        memberVarResponseInterceptor.accept(localVarResponse);
+      }
+      try {
+        if (localVarResponse.statusCode()/ 100 != 2) {
+          throw getApiException("browseObjectCollectionEntryPost", localVarResponse);
+        }
+        return new ApiResponse<BrowseObjectCollectionEntryResponse>(
+          localVarResponse.statusCode(),
+          localVarResponse.headers().map(),
+          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<BrowseObjectCollectionEntryResponse>() {}) // closes the InputStream
+          
+        );
+      } finally {
+      }
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new ApiException(e);
+    }
+  }
+
+  private HttpRequest.Builder browseObjectCollectionEntryPostRequestBuilder(BrowseObjectCollectionEntryRequest browseObjectCollectionEntryRequest) throws ApiException {
+    // verify the required parameter 'browseObjectCollectionEntryRequest' is set
+    if (browseObjectCollectionEntryRequest == null) {
+      throw new ApiException(400, "Missing the required parameter 'browseObjectCollectionEntryRequest' when calling browseObjectCollectionEntryPost");
+    }
+
+    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
+
+    String localVarPath = "/browse/object/collection/entry";
+
+    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+
+    localVarRequestBuilder.header("Content-Type", "application/json");
+    localVarRequestBuilder.header("Accept", "application/json");
+
+    try {
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(browseObjectCollectionEntryRequest);
       localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
     } catch (IOException e) {
       throw new ApiException(e);

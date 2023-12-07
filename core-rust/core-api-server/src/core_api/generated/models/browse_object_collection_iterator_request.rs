@@ -24,7 +24,7 @@ pub struct BrowseObjectCollectionIteratorRequest {
     /// Name of the collection to read. Either this or `collection_index` is required.
     #[serde(rename = "collection_name", skip_serializing_if = "Option::is_none")]
     pub collection_name: Option<String>,
-    /// Index of the field to read. Either this or `collection_name` is required.
+    /// Index of the collection to read. Either this or `collection_name` is required.
     #[serde(rename = "collection_index", skip_serializing_if = "Option::is_none")]
     pub collection_index: Option<i32>,
     /// A maximum number of items to be included in the paged listing response. By default, each paged listing endpoint imposes its own limit on the number of returned items (which may even be driven dynamically by system load, etc). This client-provided maximum page size simply adds a further constraint (i.e. can only lower down the number of returned items). 

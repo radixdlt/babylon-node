@@ -26,6 +26,8 @@ import type {
   BrowseKeyValueStoreEntryResponse,
   BrowseKeyValueStoreIteratorRequest,
   BrowseKeyValueStoreIteratorResponse,
+  BrowseObjectCollectionEntryRequest,
+  BrowseObjectCollectionEntryResponse,
   BrowseObjectCollectionIteratorRequest,
   BrowseObjectCollectionIteratorResponse,
   BrowseObjectFieldRequest,
@@ -54,6 +56,10 @@ import {
     BrowseKeyValueStoreIteratorRequestToJSON,
     BrowseKeyValueStoreIteratorResponseFromJSON,
     BrowseKeyValueStoreIteratorResponseToJSON,
+    BrowseObjectCollectionEntryRequestFromJSON,
+    BrowseObjectCollectionEntryRequestToJSON,
+    BrowseObjectCollectionEntryResponseFromJSON,
+    BrowseObjectCollectionEntryResponseToJSON,
     BrowseObjectCollectionIteratorRequestFromJSON,
     BrowseObjectCollectionIteratorRequestToJSON,
     BrowseObjectCollectionIteratorResponseFromJSON,
@@ -82,6 +88,10 @@ export interface BrowseKvStoreEntryPostRequest {
 
 export interface BrowseKvStoreIteratorPostRequest {
     browseKeyValueStoreIteratorRequest: BrowseKeyValueStoreIteratorRequest;
+}
+
+export interface BrowseObjectCollectionEntryPostRequest {
+    browseObjectCollectionEntryRequest: BrowseObjectCollectionEntryRequest;
 }
 
 export interface BrowseObjectCollectionIteratorPostRequest {
@@ -269,6 +279,41 @@ export class BrowseApi extends runtime.BaseAPI {
      */
     async browseKvStoreIteratorPost(requestParameters: BrowseKvStoreIteratorPostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<BrowseKeyValueStoreIteratorResponse> {
         const response = await this.browseKvStoreIteratorPostRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Reads the current value of a specific entry from an Object\'s Collection. 
+     * Get Object Collection Entry
+     */
+    async browseObjectCollectionEntryPostRaw(requestParameters: BrowseObjectCollectionEntryPostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<BrowseObjectCollectionEntryResponse>> {
+        if (requestParameters.browseObjectCollectionEntryRequest === null || requestParameters.browseObjectCollectionEntryRequest === undefined) {
+            throw new runtime.RequiredError('browseObjectCollectionEntryRequest','Required parameter requestParameters.browseObjectCollectionEntryRequest was null or undefined when calling browseObjectCollectionEntryPost.');
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        const response = await this.request({
+            path: `/browse/object/collection/entry`,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: BrowseObjectCollectionEntryRequestToJSON(requestParameters.browseObjectCollectionEntryRequest),
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => BrowseObjectCollectionEntryResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Reads the current value of a specific entry from an Object\'s Collection. 
+     * Get Object Collection Entry
+     */
+    async browseObjectCollectionEntryPost(requestParameters: BrowseObjectCollectionEntryPostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<BrowseObjectCollectionEntryResponse> {
+        const response = await this.browseObjectCollectionEntryPostRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

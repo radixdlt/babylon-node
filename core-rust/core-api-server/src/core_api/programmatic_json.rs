@@ -57,18 +57,15 @@ impl<'a> ProgrammaticJsonDecoder<'a> {
         }
     }
 
-    /// Encodes the Programmatic JSON (given as `serde` JSON tree) to SBOR bytes.
+    /// Encodes the Programmatic JSON (given as `serde` JSON tree) to [`ScryptoValue`].
     /// Please note that schema/type information is not required for decoding (unlike
     /// [`ProgrammaticJsonEncoder::encode`]).
-    pub fn decode(&self, json_value: serde_json::Value) -> Result<Vec<u8>, ExtractionError> {
-        let value = serde_json::from_value::<ProgrammaticScryptoValue>(json_value)
+    pub fn decode(&self, json_value: serde_json::Value) -> Result<ScryptoValue, ExtractionError> {
+        serde_json::from_value::<ProgrammaticScryptoValue>(json_value)
             .map_err(|_error| ExtractionError::InvalidProgrammaticJson {
                 message: "while building SBOR struct from serde value".to_string(),
             })?
-            .extract_scrypto_value(self.address_decoder)?;
-        scrypto_encode(&value).map_err(|_error| ExtractionError::InvalidProgrammaticJson {
-            message: "while encoding SBOR struct to bytes".to_string(),
-        })
+            .extract_scrypto_value(self.address_decoder)
     }
 }
 
@@ -451,23 +448,21 @@ mod tests {
             ),
         };
 
-        // struct -> sbor_bytes -> serde JSON :
+        // struct -> sbor_bytes -> serde JSON:
         let original_bytes = scrypto_encode(&original_payload).unwrap();
         let json_value = ProgrammaticJsonEncoder::new(&MappingContext::new(&network))
             .encode(original_bytes.clone(), &schema, type_id)
             .unwrap();
 
         // serde JSON -> sbor_bytes -> struct:
-        let retrieved_bytes = ProgrammaticJsonDecoder::new(&ExtractionContext::new(&network))
+        let retrieved_value = ProgrammaticJsonDecoder::new(&ExtractionContext::new(&network))
             .decode(json_value)
             .unwrap();
-        let retrieved_payload =
-            scrypto_decode::<ConsensusManagerCurrentValidatorSetFieldPayload>(&retrieved_bytes)
-                .unwrap();
+        let retrieved_payload: ConsensusManagerCurrentValidatorSetFieldPayload =
+            scrypto_decode(&scrypto_encode(&retrieved_value).unwrap()).unwrap();
 
         // assert the struct survived the round-trip:
         assert_eq!(retrieved_payload, original_payload);
-        assert_eq!(retrieved_bytes, original_bytes); // must pass if the above is successful, but still let's assert
     }
 
     #[test]

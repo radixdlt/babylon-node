@@ -28,21 +28,21 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * The requested Key-Value Store entry&#39;s value.
+ * The requested Object Collection entry&#39;s value.
  */
-@ApiModel(description = "The requested Key-Value Store entry's value.")
+@ApiModel(description = "The requested Object Collection entry's value.")
 @JsonPropertyOrder({
-  BrowseKeyValueStoreEntryResponseContent.JSON_PROPERTY_PROGRAMMATIC_JSON
+  BrowseObjectCollectionEntryResponseContent.JSON_PROPERTY_PROGRAMMATIC_JSON
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class BrowseKeyValueStoreEntryResponseContent {
+public class BrowseObjectCollectionEntryResponseContent {
   public static final String JSON_PROPERTY_PROGRAMMATIC_JSON = "programmatic_json";
   private Object programmaticJson;
 
-  public BrowseKeyValueStoreEntryResponseContent() { 
+  public BrowseObjectCollectionEntryResponseContent() { 
   }
 
-  public BrowseKeyValueStoreEntryResponseContent programmaticJson(Object programmaticJson) {
+  public BrowseObjectCollectionEntryResponseContent programmaticJson(Object programmaticJson) {
     this.programmaticJson = programmaticJson;
     return this;
   }
@@ -69,7 +69,7 @@ public class BrowseKeyValueStoreEntryResponseContent {
 
 
   /**
-   * Return true if this BrowseKeyValueStoreEntryResponse_content object is equal to o.
+   * Return true if this BrowseObjectCollectionEntryResponse_content object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -79,8 +79,8 @@ public class BrowseKeyValueStoreEntryResponseContent {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    BrowseKeyValueStoreEntryResponseContent browseKeyValueStoreEntryResponseContent = (BrowseKeyValueStoreEntryResponseContent) o;
-    return Objects.equals(this.programmaticJson, browseKeyValueStoreEntryResponseContent.programmaticJson);
+    BrowseObjectCollectionEntryResponseContent browseObjectCollectionEntryResponseContent = (BrowseObjectCollectionEntryResponseContent) o;
+    return Objects.equals(this.programmaticJson, browseObjectCollectionEntryResponseContent.programmaticJson);
   }
 
   @Override
@@ -91,7 +91,7 @@ public class BrowseKeyValueStoreEntryResponseContent {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class BrowseKeyValueStoreEntryResponseContent {\n");
+    sb.append("class BrowseObjectCollectionEntryResponseContent {\n");
     sb.append("    programmaticJson: ").append(toIndentedString(programmaticJson)).append("\n");
     sb.append("}");
     return sb.toString();
