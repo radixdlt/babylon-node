@@ -53,7 +53,7 @@ jobs:
         with:
           path: target
           key: ${{ runner.os }}-${{ matrix.target }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
-      - uses: actions-rs/toolchain@v1
+      - uses: RDXWorks-actions/toolchain@master
         with:
           profile: minimal
           toolchain: stable
@@ -137,7 +137,7 @@ jobs:
 
       - name: Upload distribution zip
         if: github.event_name == 'release'
-        uses: softprops/action-gh-release@c9b46fe7aad9f02afd89b12450b780f52dacfb2d
+        uses: RDXWorks-actions/action-gh-release@master
         with:
           files: |
             babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip
@@ -151,7 +151,7 @@ jobs:
     environment: publish-artifacts
     steps:
       - name: Dump context
-        uses: crazy-max/ghaction-dump-context@516dbb0c760f39b4cdd750ae095f1688780f68f4
+        uses: RDXWorks-actions/ghaction-dump-context@master
       - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b
         with:
           ref: ${{ github.event.release.tag_name }}
@@ -185,7 +185,7 @@ jobs:
           ls -la ./core/build/distributions/
           mv ./core/build/distributions/core-${{ steps.get_version.outputs.radixdlt_version }}.zip babylon-node-${{ steps.get_version.outputs.radixdlt_version }}.zip
       - name: Upload distribution zip
-        uses: softprops/action-gh-release@c9b46fe7aad9f02afd89b12450b780f52dacfb2d
+        uses: RDXWorks-actions/action-gh-release@master
         with:
           files: |
             babylon-node-${{ steps.get_version.outputs.radixdlt_version }}.zip
@@ -211,7 +211,7 @@ jobs:
           args: --all-projects --org=${{ env.SNYK_NETWORK_ORG_ID }} --format=cyclonedx1.4+json --json-file-output sbom.json
           command: sbom
       - name: Upload SBOM
-        uses: softprops/action-gh-release@c9b46fe7aad9f02afd89b12450b780f52dacfb2d
+        uses: RDXWorks-actions/action-gh-release@master
         with:
           files: |
             sbom.json
