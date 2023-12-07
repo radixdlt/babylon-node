@@ -69,8 +69,8 @@ use crate::store::traits::*;
 use crate::{
     CommittedTransactionIdentifiers, LedgerProof, LedgerTransactionReceipt,
     LocalTransactionExecution, LocalTransactionReceipt, ReceiptTreeHash, StateVersion,
-    TransactionTreeHash, VersionedCommittedTransactionIdentifiers, VersionedLedgerProof,
-    VersionedLedgerTransactionReceipt, VersionedLocalTransactionExecution,
+    SubstateChangeAction, TransactionTreeHash, VersionedCommittedTransactionIdentifiers,
+    VersionedLedgerProof, VersionedLedgerTransactionReceipt, VersionedLocalTransactionExecution,
 };
 use node_common::utils::IsAccountExt;
 use radix_engine::types::*;
@@ -83,6 +83,7 @@ use transaction::model::*;
 use radix_engine_store_interface::interface::*;
 
 use itertools::Itertools;
+use radix_engine_store_interface::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
 use std::path::PathBuf;
 
 use tracing::{error, info, warn};
@@ -372,6 +373,7 @@ impl TypedCf for ExtensionsDataCf {
             ExtensionsDataKey::AccountChangeIndexEnabled,
             ExtensionsDataKey::AccountChangeIndexLastProcessedStateVersion,
             ExtensionsDataKey::LocalTransactionExecutionIndexEnabled,
+            ExtensionsDataKey::December2023LostSubstatesRestored,
         ])
     }
 
@@ -435,6 +437,7 @@ enum ExtensionsDataKey {
     AccountChangeIndexLastProcessedStateVersion,
     AccountChangeIndexEnabled,
     LocalTransactionExecutionIndexEnabled,
+    December2023LostSubstatesRestored,
 }
 
 // IMPORTANT NOTE: the strings defined below are used as database identifiers. Any change would
@@ -450,6 +453,7 @@ impl fmt::Display for ExtensionsDataKey {
             Self::LocalTransactionExecutionIndexEnabled => {
                 "local_transaction_execution_index_enabled"
             }
+            Self::December2023LostSubstatesRestored => "december_2023_lost_substates_restored",
         };
         write!(f, "{str}")
     }
@@ -499,6 +503,8 @@ impl RocksDBStore {
             rocks_db_store.catchup_account_change_index();
         }
 
+        rocks_db_store.restore_december_2023_lost_substates();
+
         Ok(rocks_db_store)
     }
 
@@ -511,21 +517,6 @@ impl RocksDBStore {
     /// used by the [`ledger-tools`] CLI then it leads to a lock contention as two threads would
     /// want to have a write lock over the database. This provides the [`ledger-tools`] CLI with a
     /// way of making it clear that it only wants read lock and not a write lock.
-    ///
-    /// # Note
-    ///
-    /// Instantiating a new [`RocksDBStore`] through this function does not provide any consistency
-    /// guarantees. Meaning that if substate X and Y are read, there is no guarantee that these two
-    /// substates come from the same state version. Thus, this should only be used for data that is
-    /// guaranteed to be immutable by the Radix Engine or the Node. As an example:
-    ///
-    /// * Receipts are guaranteed to be immutable by the node. Thus, there are no consistency fears
-    /// when it comes to [`ledger-tools`] reading receipts to determine which entities where created
-    /// by which transaction.
-    /// * Similarly, the immutability of receipts is used by [`ledger-tools`] when dumping events.
-    ///
-    /// Thus, this readonly substate store should only be used when the consistency of the data is
-    /// not a concern.
     ///
     /// [`ledger-tools`]: https://github.com/radixdlt/ledger-tools
     pub fn new_read_only(root: PathBuf) -> Result<RocksDBStore, DatabaseConfigValidationError> {
@@ -549,6 +540,42 @@ impl RocksDBStore {
             },
             db,
         })
+    }
+
+    /// Create a RocksDBStore as a secondary instance which may catch up with the primary
+    pub fn new_as_secondary(
+        root: PathBuf,
+        temp: PathBuf,
+        column_families: Vec<&str>,
+    ) -> RocksDBStore {
+        let mut db_opts = Options::default();
+        db_opts.create_if_missing(false);
+        db_opts.create_missing_column_families(false);
+
+        let column_families: Vec<ColumnFamilyDescriptor> = column_families
+            .iter()
+            .map(|cf| ColumnFamilyDescriptor::new(cf.to_string(), Options::default()))
+            .collect();
+
+        let db = DB::open_cf_descriptors_as_secondary(
+            &db_opts,
+            root.as_path(),
+            temp.as_path(),
+            column_families,
+        )
+        .unwrap();
+
+        RocksDBStore {
+            config: DatabaseFlags {
+                enable_local_transaction_execution_index: false,
+                enable_account_change_index: false,
+            },
+            db,
+        }
+    }
+
+    pub fn try_catchup_with_primary(&self) {
+        self.db.try_catch_up_with_primary().unwrap();
     }
 
     /// Starts a read/batch-write interaction with the DB through per-CF type-safe APIs.
@@ -773,10 +800,7 @@ impl CommitStore for RocksDBStore {
                     PartitionDatabaseUpdates::Reset {
                         new_substate_values,
                     } => {
-                        substates_cf.delete_range(
-                            &(partition_key.clone(), DbSortKey(vec![])),
-                            &(partition_key.next(), DbSortKey(vec![])),
-                        );
+                        substates_cf.delete_all_under_prefix(&partition_key);
                         for (sort_key, substate_value) in new_substate_values {
                             substates_cf.put(&(partition_key.clone(), sort_key), &substate_value);
                         }
@@ -1324,6 +1348,56 @@ fn encode_to_rocksdb_bytes(partition_key: &DbPartitionKey, sort_key: &DbSortKey)
     buffer
 }
 
+fn encode_partition_prefix_range_to_rocksdb_bytes(
+    partition_key: &DbPartitionKey,
+) -> (Vec<u8>, Option<Vec<u8>>) {
+    let from_buffer = encode_partition_prefix_rocksdb_prefix_bytes(partition_key);
+
+    let to_buffer = if partition_key.partition_num < u8::MAX {
+        Some(encode_partition_prefix_rocksdb_prefix_bytes(
+            &DbPartitionKey {
+                node_key: partition_key.node_key.clone(),
+                partition_num: partition_key.partition_num + 1,
+            },
+        ))
+    } else {
+        let mut next_node_key = partition_key.node_key.clone();
+        // Now we attempt to "add 1", starting at the least significant byte, down to 0
+        for i in (0..next_node_key.len()).rev() {
+            if next_node_key[i] < u8::MAX {
+                next_node_key[i] += 1;
+                break;
+            } else {
+                next_node_key[i] = 0;
+            }
+        }
+        if next_node_key.iter().any(|val| *val != 0) {
+            Some(encode_partition_prefix_rocksdb_prefix_bytes(
+                &DbPartitionKey {
+                    node_key: next_node_key,
+                    partition_num: 0,
+                },
+            ))
+        } else {
+            // We've rolled over to all 0s
+            None
+        }
+    };
+
+    (from_buffer, to_buffer)
+}
+
+fn encode_partition_prefix_rocksdb_prefix_bytes(partition_key: &DbPartitionKey) -> Vec<u8> {
+    let mut buffer = Vec::with_capacity(2 + partition_key.node_key.len());
+    buffer.push(
+        u8::try_from(partition_key.node_key.len())
+            .expect("Node key length is effectively constant 32 so should fit in a u8"),
+    );
+    buffer.extend(partition_key.node_key.clone());
+    buffer.push(partition_key.partition_num);
+    buffer
+}
+
 fn decode_from_rocksdb_bytes(buffer: &[u8]) -> DbSubstateKey {
     let node_key_start: usize = 1usize;
     let partition_key_start = 1 + usize::from(buffer[0]);
@@ -1374,7 +1448,7 @@ impl RocksDBStore {
 
         db_context.cf(ExtensionsDataCf).put(
             &ExtensionsDataKey::AccountChangeIndexLastProcessedStateVersion,
-            &state_version.to_bytes().to_vec(),
+            &state_version.to_be_bytes().to_vec(),
         );
     }
 
@@ -1415,7 +1489,7 @@ impl RocksDBStore {
 
         db_context.cf(ExtensionsDataCf).put(
             &ExtensionsDataKey::AccountChangeIndexLastProcessedStateVersion,
-            &last_state_version.to_bytes().to_vec(),
+            &last_state_version.to_be_bytes().to_vec(),
         );
 
         last_state_version
@@ -1427,7 +1501,7 @@ impl AccountChangeIndexExtension for RocksDBStore {
         self.open_db_context()
             .cf(ExtensionsDataCf)
             .get(&ExtensionsDataKey::AccountChangeIndexLastProcessedStateVersion)
-            .map(StateVersion::from_bytes)
+            .map(StateVersion::from_be_bytes)
             .unwrap_or(StateVersion::pre_genesis())
     }
 
@@ -1460,6 +1534,84 @@ impl AccountChangeIndexExtension for RocksDBStore {
     }
 }
 
+impl RestoreDecember2023LostSubstates for RocksDBStore {
+    fn restore_december_2023_lost_substates(&self) {
+        let db_context = self.open_db_context();
+        let extension_data_cf = db_context.cf(ExtensionsDataCf);
+        let december_2023_lost_substates_restored =
+            extension_data_cf.get(&ExtensionsDataKey::December2023LostSubstatesRestored);
+
+        // Skip restoration if substates already restored
+        if december_2023_lost_substates_restored.is_some() {
+            return;
+        }
+
+        // Substates were deleted on the transition to epoch 51817 so no need to restore
+        // substates if the current epoch has not reached this epoch yet.
+        let should_restore_substates = self.get_last_epoch_proof().map_or(false, |p| {
+            p.ledger_header.next_epoch.unwrap().epoch.number() >= 51817
+        });
+
+        if should_restore_substates {
+            info!("Restoring lost substates...");
+            let last_state_version = self
+                .get_last_proof()
+                .map_or(StateVersion::of(1u64), |s| s.ledger_header.state_version);
+
+            let txn_tracker_db_node_key =
+                SpreadPrefixKeyMapper::to_db_node_key(TRANSACTION_TRACKER.as_node_id());
+
+            let substates_cf = db_context.cf(SubstatesCf);
+
+            let receipts_iter: Box<dyn Iterator<Item = (StateVersion, LedgerTransactionReceipt)>> =
+                db_context
+                    .cf(TransactionReceiptsCf)
+                    .iterate_from(&StateVersion::of(1u64), Direction::Forward);
+
+            for (version, receipt) in receipts_iter {
+                for (substate_ref, change) in receipt.state_changes.substate_level_changes.iter() {
+                    let db_partition_key =
+                        SpreadPrefixKeyMapper::to_db_partition_key(&substate_ref.0, substate_ref.1);
+
+                    // The substate was deleted if it's DbNodeKey is lexicographically greater than the DbNodeKey
+                    // of the transaction tracker. So here we re-flash the substates directly into the state store.
+                    if db_partition_key.node_key.gt(&txn_tracker_db_node_key) {
+                        let sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&substate_ref.2);
+                        let substate_key = (db_partition_key.clone(), sort_key);
+
+                        match change {
+                            SubstateChangeAction::Create { new }
+                            | SubstateChangeAction::Update { new, .. } => {
+                                substates_cf.put(&substate_key, new);
+                            }
+                            SubstateChangeAction::Delete { .. } => {
+                                substates_cf.delete(&substate_key);
+                            }
+                        }
+                    }
+                }
+
+                if version.number() % 10000 == 0 {
+                    db_context.flush();
+                    info!(
+                        "Scanned {} of {} transactions...",
+                        version.number(),
+                        last_state_version.number()
+                    );
+                }
+            }
+
+            info!("Finished restoring lost substates!");
+        }
+
+        db_context.cf(ExtensionsDataCf).put(
+            &ExtensionsDataKey::December2023LostSubstatesRestored,
+            &vec![],
+        );
+        db_context.flush();
+    }
+}
+
 impl IterableAccountChangeIndex for RocksDBStore {
     fn get_state_versions_for_account_iter(
         &self,
@@ -1483,13 +1635,15 @@ struct StateVersionDbCodec {}
 
 impl DbCodec<StateVersion> for StateVersionDbCodec {
     fn encode(&self, value: &StateVersion) -> Vec<u8> {
-        value.to_bytes().to_vec()
+        value.to_be_bytes().to_vec()
     }
 
     fn decode(&self, bytes: &[u8]) -> StateVersion {
-        StateVersion::from_bytes(bytes)
+        StateVersion::from_be_bytes(bytes)
     }
 }
+
+impl OrderPreservingDbCodec for StateVersionDbCodec {}
 
 #[derive(Default)]
 struct EpochDbCodec {}
@@ -1564,6 +1718,29 @@ impl DbCodec<DbSubstateKey> for SubstateKeyDbCodec {
     fn decode(&self, bytes: &[u8]) -> DbSubstateKey {
         decode_from_rocksdb_bytes(bytes)
     }
+}
+
+impl PrefixableDbCodec for SubstateKeyDbCodec {
+    type Prefix = DbPartitionKey;
+
+    fn encode_prefix_to_range(&self, prefix: &Self::Prefix) -> (Vec<u8>, Option<Vec<u8>>) {
+        encode_partition_prefix_range_to_rocksdb_bytes(prefix)
+    }
+
+    fn encode_key_greater_than_all_possible(&self, example_prefix: &Self::Prefix) -> Vec<u8> {
+        encode_to_rocksdb_bytes(
+            &DbPartitionKey {
+                node_key: max_vec_of_len(example_prefix.node_key.len()),
+                partition_num: 255,
+            },
+            // +1 should be enough, but we add at least another 255 wiggle room just in case the key encoding is larger
+            &DbSortKey(max_vec_of_len(MAX_SUBSTATE_KEY_SIZE + 300)),
+        )
+    }
+}
+
+fn max_vec_of_len(length: usize) -> Vec<u8> {
+    vec![255; length]
 }
 
 #[derive(Default)]
@@ -1660,5 +1837,99 @@ mod tests {
             iterator_start < encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![0, 5, 7]))
         );
         assert!(iterator_start < encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![1, 51])));
+    }
+
+    #[test]
+    fn rocksdb_partition_encoding_is_correct_prefix() {
+        // First - consider some arbitrary partition
+        let partition = DbPartitionKey {
+            node_key: vec![73, 85],
+            partition_num: 1,
+        };
+        let prev_partition = DbPartitionKey {
+            node_key: vec![73, 85],
+            partition_num: 0,
+        };
+        let prev_node = DbPartitionKey {
+            node_key: vec![73, 84],
+            partition_num: 255,
+        };
+        let next_partition = DbPartitionKey {
+            node_key: vec![73, 85],
+            partition_num: 2,
+        };
+        let next_node = DbPartitionKey {
+            node_key: vec![73, 86],
+            partition_num: 0,
+        };
+        let (from, Some(to)) = encode_partition_prefix_range_to_rocksdb_bytes(&partition) else {
+            panic!("To was unexpectedly None");
+        };
+        assert!(encode_to_rocksdb_bytes(&prev_partition, &DbSortKey(vec![])) < from);
+        assert!(encode_to_rocksdb_bytes(&prev_node, &DbSortKey(vec![])) < from);
+        assert!(encode_to_rocksdb_bytes(&partition, &DbSortKey(vec![])) >= from);
+        assert!(encode_to_rocksdb_bytes(&partition, &DbSortKey(vec![])) < to);
+        assert!(encode_to_rocksdb_bytes(&partition, &DbSortKey(vec![1])) >= from);
+        assert!(encode_to_rocksdb_bytes(&partition, &DbSortKey(vec![1])) < to);
+        assert!(encode_to_rocksdb_bytes(&next_partition, &DbSortKey(vec![])) >= to);
+        assert!(encode_to_rocksdb_bytes(&next_node, &DbSortKey(vec![])) >= to);
+
+        // Now, consider partition_num 255
+        let partition = DbPartitionKey {
+            node_key: vec![73, 85],
+            partition_num: 255,
+        };
+        let prev_partition = DbPartitionKey {
+            node_key: vec![73, 85],
+            partition_num: 254,
+        };
+        let prev_node = DbPartitionKey {
+            node_key: vec![73, 84],
+            partition_num: 255,
+        };
+        let next_partition = DbPartitionKey {
+            node_key: vec![73, 86],
+            partition_num: 0,
+        };
+        let next_node = DbPartitionKey {
+            node_key: vec![73, 86],
+            partition_num: 0,
+        };
+        let (from, Some(to)) = encode_partition_prefix_range_to_rocksdb_bytes(&partition) else {
+            panic!("To was unexpectedly None");
+        };
+        assert!(encode_to_rocksdb_bytes(&prev_partition, &DbSortKey(vec![])) < from);
+        assert!(encode_to_rocksdb_bytes(&prev_node, &DbSortKey(vec![])) < from);
+        assert!(encode_to_rocksdb_bytes(&partition, &DbSortKey(vec![])) >= from);
+        assert!(encode_to_rocksdb_bytes(&partition, &DbSortKey(vec![])) < to);
+        assert!(encode_to_rocksdb_bytes(&partition, &DbSortKey(vec![1])) >= from);
+        assert!(encode_to_rocksdb_bytes(&partition, &DbSortKey(vec![1])) < to);
+        assert!(encode_to_rocksdb_bytes(&next_partition, &DbSortKey(vec![])) >= to);
+        assert!(encode_to_rocksdb_bytes(&next_node, &DbSortKey(vec![])) >= to);
+
+        // Finally, consider the final partition - it must delete an open range
+        let partition = DbPartitionKey {
+            node_key: vec![255, 255],
+            partition_num: 255,
+        };
+        let prev_partition = DbPartitionKey {
+            node_key: vec![255, 255],
+            partition_num: 254,
+        };
+        let prev_node = DbPartitionKey {
+            node_key: vec![255, 254],
+            partition_num: 255,
+        };
+        let (from, to) = encode_partition_prefix_range_to_rocksdb_bytes(&partition);
+        assert!(encode_to_rocksdb_bytes(&prev_partition, &DbSortKey(vec![])) < from);
+        assert!(encode_to_rocksdb_bytes(&prev_node, &DbSortKey(vec![])) < from);
+        assert!(encode_to_rocksdb_bytes(&partition, &DbSortKey(vec![])) >= from);
+        assert!(encode_to_rocksdb_bytes(&partition, &DbSortKey(vec![1])) >= from);
+        assert_eq!(to, None);
+    }
+
+    #[test]
+    fn check_max_vec() {
+        assert_eq!(max_vec_of_len(5), vec![255, 255, 255, 255, 255])
     }
 }
