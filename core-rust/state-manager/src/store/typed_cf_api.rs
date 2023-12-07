@@ -233,16 +233,6 @@ impl<'db, 'wb, CF: TypedCf> TypedCfApi<'db, 'wb, CF> {
             .delete(self.cf_handle, self.key_codec.encode(key));
     }
 
-    /// Deletes the entries from the given key range.
-    /// Follows the classic convention of "from inclusive, to exclusive".
-    pub fn delete_range(&self, from_key: &CF::Key, to_key: &CF::Key) {
-        self.write_buffer.delete_range(
-            self.cf_handle,
-            self.key_codec.encode(from_key),
-            self.key_codec.encode(to_key),
-        );
-    }
-
     /// Returns an iterator based on the [`IteratorMode`] (which already contains encoded key).
     ///
     /// This is an internal shared implementation detail for different iteration flavors.
@@ -268,6 +258,30 @@ impl<'db, 'wb, CF: TypedCf> TypedCfApi<'db, 'wb, CF> {
                     )
                 }),
         )
+    }
+}
+
+impl<'db, 'wb, KC: PrefixableDbCodec, CF: TypedCf<KeyCodec = KC>> TypedCfApi<'db, 'wb, CF> {
+    /// Deletes the entries from the given prefix.
+    pub fn delete_all_under_prefix(&self, prefix: &KC::Prefix) {
+        let (from, to) = self.key_codec.encode_prefix_to_range(prefix);
+        // Frustratingly, RocksDB doesn't allow an open range, so we have to work around that
+        let to = to.unwrap_or_else(|| self.key_codec.encode_key_greater_than_all_possible(prefix));
+        self.write_buffer.delete_range(self.cf_handle, from, to);
+    }
+}
+
+impl<'db, 'wb, K, KC: OrderPreservingDbCodec + DbCodec<K>, CF: TypedCf<Key = K, KeyCodec = KC>>
+    TypedCfApi<'db, 'wb, CF>
+{
+    /// Deletes the entries from the given key range.
+    /// Follows the classic convention of "from inclusive, to exclusive".
+    pub fn delete_range(&self, from_key: &CF::Key, to_key: &CF::Key) {
+        self.write_buffer.delete_range(
+            self.cf_handle,
+            self.key_codec.encode(from_key),
+            self.key_codec.encode(to_key),
+        );
     }
 }
 
@@ -383,6 +397,19 @@ pub trait DbCodec<T> {
     fn encode(&self, value: &T) -> Vec<u8>;
     /// Decodes the bytes into value.
     fn decode(&self, bytes: &[u8]) -> T;
+}
+
+/// A marker trait which must only be implemented on Codecs which preserve lexicographic ordering.
+pub trait OrderPreservingDbCodec {}
+
+/// A trait where an encoding allows for some prefixes to be preserved in the encoded space.
+/// This is for example used for range deletes.
+pub trait PrefixableDbCodec {
+    type Prefix;
+
+    fn encode_prefix_to_range(&self, prefix: &Self::Prefix) -> (Vec<u8>, Option<Vec<u8>>);
+
+    fn encode_key_greater_than_all_possible(&self, example_prefix: &Self::Prefix) -> Vec<u8>;
 }
 
 /// A reusable versioning decorator for [`DbCodec`]s.
