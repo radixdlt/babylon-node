@@ -13,7 +13,6 @@ use crate::{
 };
 use radix_engine_common::prelude::*;
 use transaction::model::*;
-use transaction::signing::secp256k1::Secp256k1PrivateKey;
 use transaction::validation::NotarizedTransactionValidator;
 use transaction::validation::ValidationConfig;
 
