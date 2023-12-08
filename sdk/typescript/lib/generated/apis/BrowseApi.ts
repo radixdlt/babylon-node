@@ -22,6 +22,8 @@ import type {
   BrowseEntityInfoResponse,
   BrowseEntityIteratorRequest,
   BrowseEntityIteratorResponse,
+  BrowseEntitySchemaEntryRequest,
+  BrowseEntitySchemaEntryResponse,
   BrowseKeyValueStoreEntryRequest,
   BrowseKeyValueStoreEntryResponse,
   BrowseKeyValueStoreIteratorRequest,
@@ -48,6 +50,10 @@ import {
     BrowseEntityIteratorRequestToJSON,
     BrowseEntityIteratorResponseFromJSON,
     BrowseEntityIteratorResponseToJSON,
+    BrowseEntitySchemaEntryRequestFromJSON,
+    BrowseEntitySchemaEntryRequestToJSON,
+    BrowseEntitySchemaEntryResponseFromJSON,
+    BrowseEntitySchemaEntryResponseToJSON,
     BrowseKeyValueStoreEntryRequestFromJSON,
     BrowseKeyValueStoreEntryRequestToJSON,
     BrowseKeyValueStoreEntryResponseFromJSON,
@@ -80,6 +86,10 @@ export interface BrowseEntityInfoPostRequest {
 
 export interface BrowseEntityIteratorPostRequest {
     browseEntityIteratorRequest: BrowseEntityIteratorRequest;
+}
+
+export interface BrowseEntitySchemaEntryPostRequest {
+    browseEntitySchemaEntryRequest: BrowseEntitySchemaEntryRequest;
 }
 
 export interface BrowseKvStoreEntryPostRequest {
@@ -209,6 +219,41 @@ export class BrowseApi extends runtime.BaseAPI {
      */
     async browseEntityIteratorPost(requestParameters: BrowseEntityIteratorPostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<BrowseEntityIteratorResponse> {
         const response = await this.browseEntityIteratorPostRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Reads the contents of a specific schema associated with an entity. 
+     * Get Schema
+     */
+    async browseEntitySchemaEntryPostRaw(requestParameters: BrowseEntitySchemaEntryPostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<BrowseEntitySchemaEntryResponse>> {
+        if (requestParameters.browseEntitySchemaEntryRequest === null || requestParameters.browseEntitySchemaEntryRequest === undefined) {
+            throw new runtime.RequiredError('browseEntitySchemaEntryRequest','Required parameter requestParameters.browseEntitySchemaEntryRequest was null or undefined when calling browseEntitySchemaEntryPost.');
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        const response = await this.request({
+            path: `/browse/entity/schema/entry`,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: BrowseEntitySchemaEntryRequestToJSON(requestParameters.browseEntitySchemaEntryRequest),
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => BrowseEntitySchemaEntryResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Reads the contents of a specific schema associated with an entity. 
+     * Get Schema
+     */
+    async browseEntitySchemaEntryPost(requestParameters: BrowseEntitySchemaEntryPostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<BrowseEntitySchemaEntryResponse> {
+        const response = await this.browseEntitySchemaEntryPostRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

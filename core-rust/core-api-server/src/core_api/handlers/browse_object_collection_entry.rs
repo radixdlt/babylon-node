@@ -5,7 +5,7 @@ use radix_engine::types::*;
 use crate::core_api::handlers::RawCollectionKey;
 use std::ops::Deref;
 
-pub(crate) async fn handle_object_collection_entry(
+pub(crate) async fn handle_browse_object_collection_entry(
     state: State<CoreApiState>,
     Json(request): Json<models::BrowseObjectCollectionEntryRequest>,
 ) -> Result<Json<models::BrowseObjectCollectionEntryResponse>, ResponseError<()>> {

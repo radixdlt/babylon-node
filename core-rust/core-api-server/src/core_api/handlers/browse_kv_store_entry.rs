@@ -4,7 +4,7 @@ use radix_engine::types::*;
 
 use std::ops::Deref;
 
-pub(crate) async fn handle_kv_store_entry(
+pub(crate) async fn handle_browse_kv_store_entry(
     state: State<CoreApiState>,
     Json(request): Json<models::BrowseKeyValueStoreEntryRequest>,
 ) -> Result<Json<models::BrowseKeyValueStoreEntryResponse>, ResponseError<()>> {

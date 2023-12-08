@@ -83,3 +83,9 @@ pub fn extract_notarized_transaction_hash(
         })
         .ok_or(ExtractionError::InvalidHash)
 }
+
+pub fn extract_schema_hash(hash_str: &str) -> Result<SchemaHash, ExtractionError> {
+    Hash::from_str(hash_str)
+        .map(SchemaHash::from_hash)
+        .map_err(|_| ExtractionError::InvalidHash)
+}

@@ -201,13 +201,17 @@ pub async fn create_server<F>(
         )
         .route(
             "/browse/object/collection/entry",
-            post(handle_object_collection_entry),
+            post(handle_browse_object_collection_entry),
         )
         .route(
             "/browse/kv_store/iterator",
             post(handle_browse_kv_store_iterator),
         )
-        .route("/browse/kv_store/entry", post(handle_kv_store_entry))
+        .route("/browse/kv_store/entry", post(handle_browse_kv_store_entry))
+        .route(
+            "/browse/entity/schema/entry",
+            post(handle_browse_entity_schema_entry),
+        )
         .with_state(core_api_state);
 
     let metrics = Arc::new(CoreApiMetrics::new(metric_registry));
