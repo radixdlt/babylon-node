@@ -42,7 +42,7 @@ jobs:
           yarn build
 
       - name: Update package.json version
-        uses: jossef/action-set-json-field@2a0f7d953b580b828717daf4de7fafc7e4135e97
+        uses: RDXWorks-actions/action-set-json-field@master
         with:
           file: ./sdk/typescript/package.json
           field: version

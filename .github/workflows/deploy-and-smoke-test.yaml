@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: cancel running workflows
-        uses: styfle/cancel-workflow-action@0.8.0
+        uses: RDXWorks-actions/cancel-workflow-action@main
         with:
           access_token: ${{ github.token }}
   deploy:
@@ -34,7 +34,7 @@ jobs:
           secret_name: "github-actions/radixdlt/babylon-node/jenkins-api-token"
           parse_json: true
       - name: Deploy
-        uses: toptal/jenkins-job-trigger-action@1.0.0
+        uses: RDXWorks-actions/jenkins-job-trigger-action@master
         with:
           jenkins_url: "${{ env.JENKINS_URL }}"
           jenkins_user: ${{ env.JENKINS_USER }}
@@ -69,7 +69,7 @@ jobs:
           secret_name: "github-actions/radixdlt/babylon-node/jenkins-api-token"
           parse_json: true
       - name: SmokeTests
-        uses: toptal/jenkins-job-trigger-action@1.0.0
+        uses: RDXWorks-actions/jenkins-job-trigger-action@master
         with:
           jenkins_url: "${{ env.JENKINS_URL }}"
           jenkins_user: ${{ env.JENKINS_USER }}
