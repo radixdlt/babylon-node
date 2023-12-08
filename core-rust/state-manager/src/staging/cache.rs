@@ -321,7 +321,6 @@ impl<'s, S: SubstateDatabase> SubstateDatabase for StagedStore<'s, S> {
         let Some(partition_updates) = partition_updates else {
             return self.root.list_entries_from(partition_key, from_sort_key);
         };
-
         let cloned_from_sort_key = from_sort_key.cloned();
 
         match partition_updates {
