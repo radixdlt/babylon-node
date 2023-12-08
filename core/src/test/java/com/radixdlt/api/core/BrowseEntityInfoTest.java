@@ -72,6 +72,8 @@ import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.Address;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.junit.Test;
 
 public final class BrowseEntityInfoTest extends DeterministicCoreApiTestBase {
@@ -136,6 +138,40 @@ public final class BrowseEntityInfoTest extends DeterministicCoreApiTestBase {
   }
 
   @Test
+  public void browse_api_object_info_returns_fields_respecting_conditions() throws Exception {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
+
+      // fetch info of 2 well-known objects instantiating the same blueprint with different features
+      final var wellKnownAddresses =
+          getStatusApi().statusNetworkConfigurationPost().getWellKnownAddresses();
+      final var toFieldMap = Collectors.toMap(ObjectFieldInfo::getIndex, ObjectFieldInfo::getName);
+
+      final var packageOwnerRes =
+          (ObjectEntityInfo)
+              getBrowseApi()
+                  .browseEntityInfoPost(
+                      new BrowseEntityInfoRequest()
+                          .network(networkLogicalName)
+                          .entityAddress(wellKnownAddresses.getPackageOwnerBadge()))
+                  .getInfo();
+      assertThat(packageOwnerRes.getMainModuleState().getFields().stream().collect(toFieldMap))
+          .isEqualTo(Map.of(0, "id_type", 1, "mutable_fields"));
+
+      final var validatorOwnerRes =
+          (ObjectEntityInfo) // this one additionally tracks total supply
+              getBrowseApi()
+                  .browseEntityInfoPost(
+                      new BrowseEntityInfoRequest()
+                          .network(networkLogicalName)
+                          .entityAddress(wellKnownAddresses.getValidatorOwnerBadge()))
+                  .getInfo();
+      assertThat(validatorOwnerRes.getMainModuleState().getFields().stream().collect(toFieldMap))
+          .isEqualTo(Map.of(0, "id_type", 1, "mutable_fields", 2, "total_supply"));
+    }
+  }
+
+  @Test
   public void browse_api_returns_kv_store_info() throws Exception {
     try (var test = buildRunningServerTest()) {
       test.suppressUnusedWarning();
@@ -164,8 +200,7 @@ public final class BrowseEntityInfoTest extends DeterministicCoreApiTestBase {
       assertThat(entityInfo.getAncestry()).isNotNull();
 
       assertThat(entityInfo).isInstanceOf(KeyValueStoreEntityInfo.class);
-      // the `KeyValueStoreEntityInfo` only has key/value type references, which are hard to assert
-      // on
+      // `KeyValueStoreEntityInfo` only has key/value type references, which are hard to assert on
     }
   }
 

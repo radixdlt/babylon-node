@@ -558,6 +558,11 @@ pub mod extensions {
     }
 
     #[enum_dispatch]
+    pub trait RestoreDecember2023LostSubstates {
+        fn restore_december_2023_lost_substates(&self);
+    }
+
+    #[enum_dispatch]
     pub trait IterableAccountChangeIndex {
         fn get_state_versions_for_account_iter(
             &self,

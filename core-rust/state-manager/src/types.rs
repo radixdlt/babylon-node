@@ -219,12 +219,12 @@ impl StateVersion {
     }
 
     /// Parses the given big-endian bytes to a version.
-    pub fn from_bytes(be_bytes: impl AsRef<[u8]>) -> Self {
+    pub fn from_be_bytes(be_bytes: impl AsRef<[u8]>) -> Self {
         Self(u64::from_be_bytes(be_bytes.as_ref().try_into().unwrap()))
     }
 
     /// Converts this version to big-endian bytes.
-    pub fn to_bytes(self) -> [u8; StateVersion::BYTE_LEN] {
+    pub fn to_be_bytes(self) -> [u8; StateVersion::BYTE_LEN] {
         self.0.to_be_bytes()
     }
 
