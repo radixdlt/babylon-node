@@ -12,6 +12,7 @@
 # =================================================================================================
 FROM debian:12.1-slim AS java-build-stage
 
+LABEL org.opencontainers.image.source https://github.com/radixdlt/babylon-node
 LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 LABEL org.opencontainers.image.description="Java + Debian 12 (OpenJDK)"
 
@@ -193,6 +194,8 @@ COPY --from=library-build-stage /libcorerust.so /
 # The application container which will actually run the application
 # =================================================================================================
 FROM debian:12.1-slim as app-container
+
+LABEL org.opencontainers.image.source https://github.com/radixdlt/babylon-node
 LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 
 # Install dependencies needed for building the image or running the application
