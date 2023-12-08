@@ -21,16 +21,16 @@ members = [
 #   $ git push origin "release_name-BLAH"
 # * Then use tag="release_name-BLAH" in the below dependencies.
 #
-sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto",  branch = "release/bls-precompiles", features = ["serde"] }
-transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto",  branch = "release/bls-precompiles" }
-transaction-scenarios = { git = "https://github.com/radixdlt/radixdlt-scrypto",  branch = "release/bls-precompiles" }
-radix-engine-common = { git = "https://github.com/radixdlt/radixdlt-scrypto",  branch = "release/bls-precompiles", features = ["serde"] }
-radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto",  branch = "release/bls-precompiles" }
-radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto",  branch = "release/bls-precompiles" }
-radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto",  branch = "release/bls-precompiles" }
-radix-engine-store-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto",  branch = "release/bls-precompiles" }
-radix-engine-queries = { git = "https://github.com/radixdlt/radixdlt-scrypto",  branch = "release/bls-precompiles" }
-utils = { git = "https://github.com/radixdlt/radixdlt-scrypto",  branch = "release/bls-precompiles", features = ["serde"] }
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto",  tag = "bls-precompiles-v1", features = ["serde"] }
+transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto",  tag = "bls-precompiles-v1" }
+transaction-scenarios = { git = "https://github.com/radixdlt/radixdlt-scrypto",  tag = "bls-precompiles-v1" }
+radix-engine-common = { git = "https://github.com/radixdlt/radixdlt-scrypto",  tag = "bls-precompiles-v1", features = ["serde"] }
+radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto",  tag = "bls-precompiles-v1" }
+radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto",  tag = "bls-precompiles-v1" }
+radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto",  tag = "bls-precompiles-v1" }
+radix-engine-store-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto",  tag = "bls-precompiles-v1" }
+radix-engine-queries = { git = "https://github.com/radixdlt/radixdlt-scrypto",  tag = "bls-precompiles-v1" }
+utils = { git = "https://github.com/radixdlt/radixdlt-scrypto",  tag = "bls-precompiles-v1", features = ["serde"] }
 
 itertools = { version = "0.11.0" }
 jni = { version = "0.19.0" }
