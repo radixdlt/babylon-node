@@ -158,15 +158,6 @@ impl SubstateDatabase for StateManagerDatabase {
             }
         }
     }
-
-    fn list_entries(
-        &self,
-        partition_key: &DbPartitionKey,
-    ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
-        match self {
-            StateManagerDatabase::RocksDB(store) => store.list_entries(partition_key),
-        }
-    }
 }
 
 impl ReadableTreeStore for StateManagerDatabase {
