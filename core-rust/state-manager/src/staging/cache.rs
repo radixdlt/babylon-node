@@ -351,7 +351,11 @@ impl<'s, S: SubstateDatabase> SubstateDatabase for StagedStore<'s, S> {
                         .map(|(sort_key, update)| (sort_key.clone(), update.clone()))
                         .sorted_by(|(left_key, _), (right_key, _)| left_key.cmp(right_key))
                         .skip_while(move |(key, _)| {
-                            cloned_from_sort_key.as_ref().map_or(false, |k| key.lt(k))
+                            if let Some(from_sort_key) = &cloned_from_sort_key {
+                                key.lt(from_sort_key)
+                            } else {
+                                false
+                            }
                         }),
                 ),
             },
