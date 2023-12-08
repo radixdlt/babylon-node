@@ -13,6 +13,13 @@
  */
 
 import {
+    FlashLedgerTransaction,
+    instanceOfFlashLedgerTransaction,
+    FlashLedgerTransactionFromJSON,
+    FlashLedgerTransactionFromJSONTyped,
+    FlashLedgerTransactionToJSON,
+} from './FlashLedgerTransaction';
+import {
     GenesisLedgerTransaction,
     instanceOfGenesisLedgerTransaction,
     GenesisLedgerTransactionFromJSON,
@@ -39,7 +46,7 @@ import {
  * 
  * @export
  */
-export type LedgerTransaction = { type: 'Genesis' } & GenesisLedgerTransaction | { type: 'RoundUpdate' } & RoundUpdateLedgerTransaction | { type: 'User' } & UserLedgerTransaction;
+export type LedgerTransaction = { type: 'Flash' } & FlashLedgerTransaction | { type: 'Genesis' } & GenesisLedgerTransaction | { type: 'RoundUpdate' } & RoundUpdateLedgerTransaction | { type: 'User' } & UserLedgerTransaction;
 
 export function LedgerTransactionFromJSON(json: any): LedgerTransaction {
     return LedgerTransactionFromJSONTyped(json, false);
@@ -50,6 +57,8 @@ export function LedgerTransactionFromJSONTyped(json: any, ignoreDiscriminator: b
         return json;
     }
     switch (json['type']) {
+        case 'Flash':
+            return {...FlashLedgerTransactionFromJSONTyped(json, true), type: 'Flash'};
         case 'Genesis':
             return {...GenesisLedgerTransactionFromJSONTyped(json, true), type: 'Genesis'};
         case 'RoundUpdate':
@@ -69,6 +78,8 @@ export function LedgerTransactionToJSON(value?: LedgerTransaction | null): any {
         return null;
     }
     switch (value['type']) {
+        case 'Flash':
+            return FlashLedgerTransactionToJSON(value);
         case 'Genesis':
             return GenesisLedgerTransactionToJSON(value);
         case 'RoundUpdate':

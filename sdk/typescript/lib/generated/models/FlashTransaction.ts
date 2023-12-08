@@ -12,29 +12,62 @@
  * Do not edit the class manually.
  */
 
+import { exists, mapValues } from '../runtime';
+import type { FlashedSubstate } from './FlashedSubstate';
+import {
+    FlashedSubstateFromJSON,
+    FlashedSubstateFromJSONTyped,
+    FlashedSubstateToJSON,
+} from './FlashedSubstate';
 
 /**
- * The type of the ledger transaction
+ * 
  * @export
+ * @interface FlashTransaction
  */
-export const LedgerTransactionType = {
-    Genesis: 'Genesis',
-    User: 'User',
-    RoundUpdate: 'RoundUpdate',
-    Flash: 'Flash'
-} as const;
-export type LedgerTransactionType = typeof LedgerTransactionType[keyof typeof LedgerTransactionType];
-
-
-export function LedgerTransactionTypeFromJSON(json: any): LedgerTransactionType {
-    return LedgerTransactionTypeFromJSONTyped(json, false);
+export interface FlashTransaction {
+    /**
+     * 
+     * @type {Array<FlashedSubstate>}
+     * @memberof FlashTransaction
+     */
+    flashed_substates: Array<FlashedSubstate>;
 }
 
-export function LedgerTransactionTypeFromJSONTyped(json: any, ignoreDiscriminator: boolean): LedgerTransactionType {
-    return json as LedgerTransactionType;
+/**
+ * Check if a given object implements the FlashTransaction interface.
+ */
+export function instanceOfFlashTransaction(value: object): boolean {
+    let isInstance = true;
+    isInstance = isInstance && "flashed_substates" in value;
+
+    return isInstance;
 }
 
-export function LedgerTransactionTypeToJSON(value?: LedgerTransactionType | null): any {
-    return value as any;
+export function FlashTransactionFromJSON(json: any): FlashTransaction {
+    return FlashTransactionFromJSONTyped(json, false);
+}
+
+export function FlashTransactionFromJSONTyped(json: any, ignoreDiscriminator: boolean): FlashTransaction {
+    if ((json === undefined) || (json === null)) {
+        return json;
+    }
+    return {
+        
+        'flashed_substates': ((json['flashed_substates'] as Array<any>).map(FlashedSubstateFromJSON)),
+    };
+}
+
+export function FlashTransactionToJSON(value?: FlashTransaction | null): any {
+    if (value === undefined) {
+        return undefined;
+    }
+    if (value === null) {
+        return null;
+    }
+    return {
+        
+        'flashed_substates': ((value.flashed_substates as Array<any>).map(FlashedSubstateToJSON)),
+    };
 }
 

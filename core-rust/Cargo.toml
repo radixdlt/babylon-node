@@ -21,16 +21,16 @@ members = [
 #   $ git push origin "release_name-BLAH"
 # * Then use tag="release_name-BLAH" in the below dependencies.
 # 
-sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "babylon-a200e868", features = ["serde"] }
-transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "babylon-a200e868" }
-transaction-scenarios = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "babylon-a200e868" }
-radix-engine-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "babylon-a200e868", features = ["serde"] }
-radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "babylon-a200e868" }
-radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "babylon-a200e868" }
-radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "babylon-a200e868" }
-radix-engine-store-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "babylon-a200e868" }
-radix-engine-queries = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "babylon-a200e868" }
-utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "babylon-a200e868", features = ["serde"] }
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-34e9b2", features = ["serde"] }
+transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-34e9b2" }
+transaction-scenarios = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-34e9b2" }
+radix-engine-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-34e9b2", features = ["serde"] }
+radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-34e9b2" }
+radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-34e9b2" }
+radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-34e9b2" }
+radix-engine-store-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-34e9b2" }
+radix-engine-queries = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-34e9b2" }
+utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-34e9b2", features = ["serde"] }
 
 itertools = { version = "0.11.0" }
 jni = { version = "0.19.0" }
