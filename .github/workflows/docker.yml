@@ -193,6 +193,8 @@ jobs:
       context: "."
       dockerfile: "./Dockerfile"
       platforms: "linux/amd64"
+      cache_tag_suffix: "amd64"
+      use_gh_remote_cache: true
       provenance: "false"
       scan_image: true
       snyk_target_ref: ${{ github.ref_name }}
@@ -221,6 +223,7 @@ jobs:
   #     dockerfile: "./Dockerfile"
   #     platforms: "linux/arm64"
   #     cache_tag_suffix: arm64
+  #     use_gh_remote_cache: true
   #     provenance: "false"
   #     build-args: |
   #       WGET_VERSION=1.21.3-1+b1
@@ -243,6 +246,8 @@ jobs:
       context: "."
       dockerfile: "./Dockerfile"
       platforms: "linux/amd64"
+      cache_tag_suffix: "amd64"
+      use_gh_remote_cache: true
       enable_dockerhub: "true"
       provenance: "false"
     secrets:
@@ -265,8 +270,9 @@ jobs:
       context: "."
       dockerfile: "./Dockerfile"
       platforms: "linux/arm64"
+      cache_tag_suffix: "arm64"
+      use_gh_remote_cache: true
       enable_dockerhub: "true"
-      cache_tag_suffix: arm64
       provenance: "false"
       build-args: |
         WGET_VERSION=1.21.3-1+b1
