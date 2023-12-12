@@ -26,12 +26,12 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.FlashLedgerTransaction;
+import com.radixdlt.api.core.generated.models.FlashLedgerTransactionAllOf;
+import com.radixdlt.api.core.generated.models.FlashTransaction;
 import com.radixdlt.api.core.generated.models.GenesisLedgerTransaction;
 import com.radixdlt.api.core.generated.models.LedgerTransaction;
 import com.radixdlt.api.core.generated.models.LedgerTransactionType;
 import com.radixdlt.api.core.generated.models.RoundUpdateLedgerTransaction;
-import com.radixdlt.api.core.generated.models.RoundUpdateLedgerTransactionAllOf;
-import com.radixdlt.api.core.generated.models.RoundUpdateTransaction;
 import com.radixdlt.api.core.generated.models.UserLedgerTransaction;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -40,10 +40,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * RoundUpdateLedgerTransaction
+ * FlashLedgerTransaction
  */
 @JsonPropertyOrder({
-  RoundUpdateLedgerTransaction.JSON_PROPERTY_ROUND_UPDATE_TRANSACTION
+  FlashLedgerTransaction.JSON_PROPERTY_FLASH_TRANSACTION
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -58,41 +58,41 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = UserLedgerTransaction.class, name = "User"),
 })
 
-public class RoundUpdateLedgerTransaction extends LedgerTransaction {
-  public static final String JSON_PROPERTY_ROUND_UPDATE_TRANSACTION = "round_update_transaction";
-  private RoundUpdateTransaction roundUpdateTransaction;
+public class FlashLedgerTransaction extends LedgerTransaction {
+  public static final String JSON_PROPERTY_FLASH_TRANSACTION = "flash_transaction";
+  private FlashTransaction flashTransaction;
 
-  public RoundUpdateLedgerTransaction() { 
+  public FlashLedgerTransaction() { 
   }
 
-  public RoundUpdateLedgerTransaction roundUpdateTransaction(RoundUpdateTransaction roundUpdateTransaction) {
-    this.roundUpdateTransaction = roundUpdateTransaction;
+  public FlashLedgerTransaction flashTransaction(FlashTransaction flashTransaction) {
+    this.flashTransaction = flashTransaction;
     return this;
   }
 
    /**
-   * Get roundUpdateTransaction
-   * @return roundUpdateTransaction
+   * Get flashTransaction
+   * @return flashTransaction
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ROUND_UPDATE_TRANSACTION)
+  @JsonProperty(JSON_PROPERTY_FLASH_TRANSACTION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public RoundUpdateTransaction getRoundUpdateTransaction() {
-    return roundUpdateTransaction;
+  public FlashTransaction getFlashTransaction() {
+    return flashTransaction;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ROUND_UPDATE_TRANSACTION)
+  @JsonProperty(JSON_PROPERTY_FLASH_TRANSACTION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setRoundUpdateTransaction(RoundUpdateTransaction roundUpdateTransaction) {
-    this.roundUpdateTransaction = roundUpdateTransaction;
+  public void setFlashTransaction(FlashTransaction flashTransaction) {
+    this.flashTransaction = flashTransaction;
   }
 
 
   /**
-   * Return true if this RoundUpdateLedgerTransaction object is equal to o.
+   * Return true if this FlashLedgerTransaction object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -102,22 +102,22 @@ public class RoundUpdateLedgerTransaction extends LedgerTransaction {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    RoundUpdateLedgerTransaction roundUpdateLedgerTransaction = (RoundUpdateLedgerTransaction) o;
-    return Objects.equals(this.roundUpdateTransaction, roundUpdateLedgerTransaction.roundUpdateTransaction) &&
+    FlashLedgerTransaction flashLedgerTransaction = (FlashLedgerTransaction) o;
+    return Objects.equals(this.flashTransaction, flashLedgerTransaction.flashTransaction) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(roundUpdateTransaction, super.hashCode());
+    return Objects.hash(flashTransaction, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class RoundUpdateLedgerTransaction {\n");
+    sb.append("class FlashLedgerTransaction {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    roundUpdateTransaction: ").append(toIndentedString(roundUpdateTransaction)).append("\n");
+    sb.append("    flashTransaction: ").append(toIndentedString(flashTransaction)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -140,8 +140,8 @@ static {
   mappings.put("Genesis", GenesisLedgerTransaction.class);
   mappings.put("RoundUpdate", RoundUpdateLedgerTransaction.class);
   mappings.put("User", UserLedgerTransaction.class);
-  mappings.put("RoundUpdateLedgerTransaction", RoundUpdateLedgerTransaction.class);
-  JSON.registerDiscriminator(RoundUpdateLedgerTransaction.class, "type", mappings);
+  mappings.put("FlashLedgerTransaction", FlashLedgerTransaction.class);
+  JSON.registerDiscriminator(FlashLedgerTransaction.class, "type", mappings);
 }
 }
 
