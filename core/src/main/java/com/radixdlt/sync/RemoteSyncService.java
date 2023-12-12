@@ -132,7 +132,7 @@ public final class RemoteSyncService {
     final var ledgerExtension = getLedgerExtensionForSyncRequest(remoteCurrentHeader);
 
     if (ledgerExtension == null) {
-      log.warn(
+      log.trace(
           "REMOTE_SYNC_REQUEST: Unable to serve sync request {} from sender {}.",
           remoteCurrentHeader,
           sender);
