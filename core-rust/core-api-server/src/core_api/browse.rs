@@ -1,4 +1,5 @@
 use std::collections::VecDeque;
+use std::ops::Deref;
 use std::{iter, mem};
 
 use radix_engine::types::*;
@@ -28,6 +29,16 @@ use state_manager::store::traits::{QueryableProofStore, SubstateNodeAncestryStor
 use tracing::warn;
 
 use super::*;
+
+lazy_static::lazy_static! {
+    /// The schema (and local type index) of the [`VersionedScryptoSchema`] Rust struct.
+    /// Needed to return Scrypto schemas as (annotated) Programmatic JSON.
+    static ref VERSIONED_SCHEMA_TYPE: (SchemaV1<ScryptoCustomSchema>, LocalTypeId) = {
+        let (local_type_id, versioned_schema) =
+            generate_full_schema_from_single_type::<VersionedScryptoSchema, ScryptoCustomSchema>();
+        (versioned_schema.into_latest(), local_type_id)
+    };
+}
 
 /// A loader of Engine State's metadata required by the Browse API.
 pub struct EngineStateMetaLoader<'s, S: SubstateDatabase> {
@@ -1239,6 +1250,31 @@ impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
             .map(|map_key| SborData::new(map_key, &kv_store_meta.resolved_key_type)))
     }
 
+    /// Loads schema by its reference, returning SBOR bytes of [`VersionedScryptoSchema`].
+    pub fn load_schema(
+        &self,
+        reference: &SchemaReference,
+    ) -> Result<SborData, EngineStateBrowsingError> {
+        let versioned_schema = self
+            .reader
+            .get_schema(&reference.node_id, &reference.schema_hash)
+            .map_err(|error| match error {
+                SystemReaderError::SchemaDoesNotExist => {
+                    EngineStateBrowsingError::RequestedItemNotFound(ItemKind::Schema)
+                }
+                _ => EngineStateBrowsingError::UnexpectedEngineError(
+                    error,
+                    "when fetching schema".to_string(),
+                ),
+            })?;
+        let (meta_schema, meta_type_id) = VERSIONED_SCHEMA_TYPE.deref();
+        Ok(SborData {
+            payload_bytes: scrypto_encode(&versioned_schema).expect("it was just decoded"),
+            schema: meta_schema,
+            local_type_id: *meta_type_id,
+        })
+    }
+
     /// Creates an API *output* representation from the low-level object collection's substate key.
     fn to_object_collection_key(
         substate_key: SubstateKey,
@@ -1319,7 +1355,8 @@ pub enum ObjectCollectionKey<'t> {
 /// A top-level SBOR value aware of its schema.
 pub struct SborData<'t> {
     payload_bytes: Vec<u8>,
-    resolved_type: &'t ResolvedTypeMeta,
+    schema: &'t SchemaV1<ScryptoCustomSchema>,
+    local_type_id: LocalTypeId,
 }
 
 impl<'t> SborData<'t> {
@@ -1327,7 +1364,8 @@ impl<'t> SborData<'t> {
     fn new(payload_bytes: Vec<u8>, resolved_type: &'t ResolvedTypeMeta) -> Self {
         Self {
             payload_bytes,
-            resolved_type,
+            schema: &resolved_type.schema,
+            local_type_id: resolved_type.type_reference.to_local_type_id(),
         }
     }
 
@@ -1339,8 +1377,8 @@ impl<'t> SborData<'t> {
     ) -> Result<serde_json::Value, MappingError> {
         ProgrammaticJsonEncoder::new(mapping_context).encode(
             self.payload_bytes,
-            &self.resolved_type.schema,
-            self.resolved_type.type_reference.to_local_type_id(),
+            self.schema,
+            self.local_type_id,
         )
     }
 
@@ -1494,6 +1532,7 @@ pub enum EngineStateBrowsingError {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ItemKind {
     Blueprint,
+    Schema,
     Entity,
     Module,
     Field,

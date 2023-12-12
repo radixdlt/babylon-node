@@ -24,6 +24,8 @@ import com.radixdlt.api.core.generated.models.BrowseEntityInfoRequest;
 import com.radixdlt.api.core.generated.models.BrowseEntityInfoResponse;
 import com.radixdlt.api.core.generated.models.BrowseEntityIteratorRequest;
 import com.radixdlt.api.core.generated.models.BrowseEntityIteratorResponse;
+import com.radixdlt.api.core.generated.models.BrowseEntitySchemaEntryRequest;
+import com.radixdlt.api.core.generated.models.BrowseEntitySchemaEntryResponse;
 import com.radixdlt.api.core.generated.models.BrowseKeyValueStoreEntryRequest;
 import com.radixdlt.api.core.generated.models.BrowseKeyValueStoreEntryResponse;
 import com.radixdlt.api.core.generated.models.BrowseKeyValueStoreIteratorRequest;
@@ -312,6 +314,84 @@ public class BrowseApi {
 
     try {
       byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(browseEntityIteratorRequest);
+      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    if (memberVarReadTimeout != null) {
+      localVarRequestBuilder.timeout(memberVarReadTimeout);
+    }
+    if (memberVarInterceptor != null) {
+      memberVarInterceptor.accept(localVarRequestBuilder);
+    }
+    return localVarRequestBuilder;
+  }
+  /**
+   * Get Schema
+   * Reads the contents of a specific schema associated with an entity. 
+   * @param browseEntitySchemaEntryRequest  (required)
+   * @return BrowseEntitySchemaEntryResponse
+   * @throws ApiException if fails to make API call
+   */
+  public BrowseEntitySchemaEntryResponse browseEntitySchemaEntryPost(BrowseEntitySchemaEntryRequest browseEntitySchemaEntryRequest) throws ApiException {
+    ApiResponse<BrowseEntitySchemaEntryResponse> localVarResponse = browseEntitySchemaEntryPostWithHttpInfo(browseEntitySchemaEntryRequest);
+    return localVarResponse.getData();
+  }
+
+  /**
+   * Get Schema
+   * Reads the contents of a specific schema associated with an entity. 
+   * @param browseEntitySchemaEntryRequest  (required)
+   * @return ApiResponse&lt;BrowseEntitySchemaEntryResponse&gt;
+   * @throws ApiException if fails to make API call
+   */
+  public ApiResponse<BrowseEntitySchemaEntryResponse> browseEntitySchemaEntryPostWithHttpInfo(BrowseEntitySchemaEntryRequest browseEntitySchemaEntryRequest) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = browseEntitySchemaEntryPostRequestBuilder(browseEntitySchemaEntryRequest);
+    try {
+      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
+          localVarRequestBuilder.build(),
+          HttpResponse.BodyHandlers.ofInputStream());
+      if (memberVarResponseInterceptor != null) {
+        memberVarResponseInterceptor.accept(localVarResponse);
+      }
+      try {
+        if (localVarResponse.statusCode()/ 100 != 2) {
+          throw getApiException("browseEntitySchemaEntryPost", localVarResponse);
+        }
+        return new ApiResponse<BrowseEntitySchemaEntryResponse>(
+          localVarResponse.statusCode(),
+          localVarResponse.headers().map(),
+          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<BrowseEntitySchemaEntryResponse>() {}) // closes the InputStream
+          
+        );
+      } finally {
+      }
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new ApiException(e);
+    }
+  }
+
+  private HttpRequest.Builder browseEntitySchemaEntryPostRequestBuilder(BrowseEntitySchemaEntryRequest browseEntitySchemaEntryRequest) throws ApiException {
+    // verify the required parameter 'browseEntitySchemaEntryRequest' is set
+    if (browseEntitySchemaEntryRequest == null) {
+      throw new ApiException(400, "Missing the required parameter 'browseEntitySchemaEntryRequest' when calling browseEntitySchemaEntryPost");
+    }
+
+    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
+
+    String localVarPath = "/browse/entity/schema/entry";
+
+    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+
+    localVarRequestBuilder.header("Content-Type", "application/json");
+    localVarRequestBuilder.header("Accept", "application/json");
+
+    try {
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(browseEntitySchemaEntryRequest);
       localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
     } catch (IOException e) {
       throw new ApiException(e);

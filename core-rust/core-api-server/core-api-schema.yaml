@@ -1384,6 +1384,38 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BasicErrorResponse"
+  "/browse/entity/schema/entry":
+    post:
+      summary: Get Schema
+      description: |
+        Reads the contents of a specific schema associated with an entity.
+      tags:
+        - Browse
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BrowseEntitySchemaEntryRequest"
+      responses:
+        '200':
+          description: Schema contents
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BrowseEntitySchemaEntryResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
 #############################################################################################
 components:
   schemas:
@@ -8868,6 +8900,39 @@ components:
         content:
           type: object
           description: The requested Key-Value Store entry's value.
+          required:
+            - programmatic_json
+          properties:
+            programmatic_json:
+              type: object
+#########################################################
+# REQUEST: /browse/entity/schema/entry                  #
+#########################################################
+    BrowseEntitySchemaEntryRequest:
+      type: object
+      required:
+        - network
+        - entity_address
+        - schema_hash
+      properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
+        entity_address:
+          $ref: "#/components/schemas/EntityAddress"
+        schema_hash:
+          $ref: '#/components/schemas/SchemaHash'
+    BrowseEntitySchemaEntryResponse:
+      type: object
+      required:
+        - at_ledger_state
+        - content
+      properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+          description: A summarized state of the ledger at which the query was performed.
+        content:
+          type: object
+          description: The requested schema's value.
           required:
             - programmatic_json
           properties:
