@@ -242,6 +242,14 @@ public record Decoder(ByteArrayInputStream input) implements DecoderApi {
   public byte[] readBytes(int length) {
     var bytes = new byte[length];
 
+    // Early return if the length is 0.
+    // This is needed because, contrary to JavaDoc,
+    // ByteArrayInputStream always returns -1
+    // if we're at the end of stream - even if 0 bytes were requested.
+    if (length == 0) {
+      return bytes;
+    }
+
     try {
       var readLength = input.read(bytes);
       if (readLength != length) {
