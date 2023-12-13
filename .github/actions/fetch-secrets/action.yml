@@ -31,7 +31,7 @@ runs:
   using: "composite"
   steps:
     - name: Install AWS CLI
-      uses: unfor19/install-aws-cli-action@ee0eb151cf1bca186ccf8c35d314b08d62e0e878 # v1
+      uses: RDXWorks-actions/install-aws-cli-action@master
       with:
         version: 2
 

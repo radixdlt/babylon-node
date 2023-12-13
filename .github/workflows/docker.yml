@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: cancel running workflows
-        uses: styfle/cancel-workflow-action@0.8.0
+        uses: RDXWorks-actions/cancel-workflow-action@main
         with:
           access_token: ${{ github.token }}
 
@@ -101,7 +101,7 @@ jobs:
             type=sha
           flavor: |
             latest=false
-      - uses: actions-rs/toolchain@v1
+      - uses: RDXWorks-actions/toolchain@master
         with:
           toolchain: stable
       - name: Set up JDK 17
@@ -193,6 +193,8 @@ jobs:
       context: "."
       dockerfile: "./Dockerfile"
       platforms: "linux/amd64"
+      cache_tag_suffix: "amd64"
+      use_gh_remote_cache: true
       provenance: "false"
       scan_image: true
       snyk_target_ref: ${{ github.ref_name }}
@@ -221,6 +223,7 @@ jobs:
   #     dockerfile: "./Dockerfile"
   #     platforms: "linux/arm64"
   #     cache_tag_suffix: arm64
+  #     use_gh_remote_cache: true
   #     provenance: "false"
   #     build-args: |
   #       WGET_VERSION=1.21.3-1+b1
@@ -243,6 +246,8 @@ jobs:
       context: "."
       dockerfile: "./Dockerfile"
       platforms: "linux/amd64"
+      cache_tag_suffix: "amd64"
+      use_gh_remote_cache: true
       enable_dockerhub: "true"
       provenance: "false"
     secrets:
@@ -265,8 +270,9 @@ jobs:
       context: "."
       dockerfile: "./Dockerfile"
       platforms: "linux/arm64"
+      cache_tag_suffix: "arm64"
+      use_gh_remote_cache: true
       enable_dockerhub: "true"
-      cache_tag_suffix: arm64
       provenance: "false"
       build-args: |
         WGET_VERSION=1.21.3-1+b1
@@ -342,7 +348,7 @@ jobs:
 #         echo "DOCKER_TAG=$DOCKER_TAG" >> $GITHUB_ENV
 #         echo "BABYLON_NODE_BRANCH=$GITHUB_HEAD_REF" >> $GITHUB_ENV
 #     - name: Deploy and test on ephemeral network
-#       uses: toptal/jenkins-job-trigger-action@1.0.0
+#       uses: RDXWorks-actions/jenkins-job-trigger-action@master
 #       with:
 #         jenkins_url: "${{ env.JENKINS_URL }}"
 #         jenkins_user: ${{ env.JENKINS_USER }}

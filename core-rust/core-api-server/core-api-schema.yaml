@@ -7245,6 +7245,7 @@ components:
         - Genesis
         - User
         - RoundUpdate
+        - Flash
     LedgerTransaction:
       type: object
       required:
@@ -7262,6 +7263,7 @@ components:
           Genesis: '#/components/schemas/GenesisLedgerTransaction'
           User: '#/components/schemas/UserLedgerTransaction'
           RoundUpdate: '#/components/schemas/RoundUpdateLedgerTransaction'
+          Flash: '#/components/schemas/FlashLedgerTransaction'
     GenesisLedgerTransaction:
       allOf:
         - $ref: "#/components/schemas/LedgerTransaction"
@@ -7294,6 +7296,15 @@ components:
           properties:
             round_update_transaction:
               $ref: "#/components/schemas/RoundUpdateTransaction"
+    FlashLedgerTransaction:
+      allOf:
+        - $ref: "#/components/schemas/LedgerTransaction"
+        - type: object
+          required:
+            - flash_transaction
+          properties:
+            flash_transaction:
+              $ref: "#/components/schemas/FlashTransaction"
     RoundUpdateTransaction:
       type: object
       required:
@@ -7321,6 +7332,35 @@ components:
         leader_proposal_history:
           $ref: '#/components/schemas/LeaderProposalHistory'
           description: A recent history (i.e. since the previous `RoundUpdateValidatorTransaction`) of consensus round leaders' reliability. Used for validator emissions calculation.
+    FlashTransaction:
+      type: object
+      required:
+        - flashed_substates
+      properties:
+        flashed_substates:
+          type: array
+          items:
+            $ref: "#/components/schemas/FlashedSubstate"
+    FlashedSubstate:
+      type: object
+      required:
+        - entity_address
+        - partition_number
+        - substate_key
+        - value
+      properties:
+        entity_address:
+          $ref: "#/components/schemas/EntityAddress"
+        partition_number:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 255
+        substate_key:
+          $ref: "#/components/schemas/SubstateKey"
+        value:
+          type: string
+          description: The hex-encoded, SBOR-encoded substate data bytes.
     LeaderProposalHistory:
       type: object
       required:

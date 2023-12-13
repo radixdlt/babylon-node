@@ -25,6 +25,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.FlashLedgerTransaction;
 import com.radixdlt.api.core.generated.models.GenesisLedgerTransaction;
 import com.radixdlt.api.core.generated.models.LedgerTransaction;
 import com.radixdlt.api.core.generated.models.LedgerTransactionType;
@@ -51,6 +52,7 @@ import com.radixdlt.api.core.generated.client.JSON;
 )
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
+  @JsonSubTypes.Type(value = FlashLedgerTransaction.class, name = "Flash"),
   @JsonSubTypes.Type(value = GenesisLedgerTransaction.class, name = "Genesis"),
   @JsonSubTypes.Type(value = RoundUpdateLedgerTransaction.class, name = "RoundUpdate"),
   @JsonSubTypes.Type(value = UserLedgerTransaction.class, name = "User"),
@@ -134,6 +136,7 @@ public class UserLedgerTransaction extends LedgerTransaction {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
+  mappings.put("Flash", FlashLedgerTransaction.class);
   mappings.put("Genesis", GenesisLedgerTransaction.class);
   mappings.put("RoundUpdate", RoundUpdateLedgerTransaction.class);
   mappings.put("User", UserLedgerTransaction.class);

@@ -12,29 +12,80 @@
  * Do not edit the class manually.
  */
 
+import { exists, mapValues } from '../runtime';
+import type { FlashTransaction } from './FlashTransaction';
+import {
+    FlashTransactionFromJSON,
+    FlashTransactionFromJSONTyped,
+    FlashTransactionToJSON,
+} from './FlashTransaction';
 
 /**
- * The type of the ledger transaction
+ * 
+ * @export
+ * @interface FlashLedgerTransactionAllOf
+ */
+export interface FlashLedgerTransactionAllOf {
+    /**
+     * 
+     * @type {FlashTransaction}
+     * @memberof FlashLedgerTransactionAllOf
+     */
+    flash_transaction: FlashTransaction;
+    /**
+     * 
+     * @type {string}
+     * @memberof FlashLedgerTransactionAllOf
+     */
+    type?: FlashLedgerTransactionAllOfTypeEnum;
+}
+
+
+/**
  * @export
  */
-export const LedgerTransactionType = {
-    Genesis: 'Genesis',
-    User: 'User',
-    RoundUpdate: 'RoundUpdate',
+export const FlashLedgerTransactionAllOfTypeEnum = {
     Flash: 'Flash'
 } as const;
-export type LedgerTransactionType = typeof LedgerTransactionType[keyof typeof LedgerTransactionType];
+export type FlashLedgerTransactionAllOfTypeEnum = typeof FlashLedgerTransactionAllOfTypeEnum[keyof typeof FlashLedgerTransactionAllOfTypeEnum];
 
 
-export function LedgerTransactionTypeFromJSON(json: any): LedgerTransactionType {
-    return LedgerTransactionTypeFromJSONTyped(json, false);
+/**
+ * Check if a given object implements the FlashLedgerTransactionAllOf interface.
+ */
+export function instanceOfFlashLedgerTransactionAllOf(value: object): boolean {
+    let isInstance = true;
+    isInstance = isInstance && "flash_transaction" in value;
+
+    return isInstance;
 }
 
-export function LedgerTransactionTypeFromJSONTyped(json: any, ignoreDiscriminator: boolean): LedgerTransactionType {
-    return json as LedgerTransactionType;
+export function FlashLedgerTransactionAllOfFromJSON(json: any): FlashLedgerTransactionAllOf {
+    return FlashLedgerTransactionAllOfFromJSONTyped(json, false);
 }
 
-export function LedgerTransactionTypeToJSON(value?: LedgerTransactionType | null): any {
-    return value as any;
+export function FlashLedgerTransactionAllOfFromJSONTyped(json: any, ignoreDiscriminator: boolean): FlashLedgerTransactionAllOf {
+    if ((json === undefined) || (json === null)) {
+        return json;
+    }
+    return {
+        
+        'flash_transaction': FlashTransactionFromJSON(json['flash_transaction']),
+        'type': !exists(json, 'type') ? undefined : json['type'],
+    };
+}
+
+export function FlashLedgerTransactionAllOfToJSON(value?: FlashLedgerTransactionAllOf | null): any {
+    if (value === undefined) {
+        return undefined;
+    }
+    if (value === null) {
+        return null;
+    }
+    return {
+        
+        'flash_transaction': FlashTransactionToJSON(value.flash_transaction),
+        'type': value.type,
+    };
 }
 
