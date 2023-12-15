@@ -339,8 +339,8 @@ mod tests {
         );
 
         // - Expect that subtree of our partition became stale:
-        let mut stale_subtrees = tree_store
-            .stale_part_buffer
+        let binding = tree_store.stale_part_buffer.borrow();
+        let mut stale_subtrees = binding
             .iter()
             .filter_map(|part| match part {
                 StaleTreePart::Node(_) => None,
@@ -385,7 +385,10 @@ mod tests {
         // Follow-up: assert that remaining nodes keys are listed after partially executed deletes
         let mut deleted_keys = index_set_new();
         for node_key_to_delete in iterated_node_keys.clone() {
-            tree_store.tree_nodes.remove(&node_key_to_delete);
+            tree_store
+                .tree_nodes
+                .borrow_mut()
+                .remove(&node_key_to_delete);
             deleted_keys.insert(node_key_to_delete);
             let remaining_iterated_node_keys =
                 iterate_dfs_post_order(&tree_store, deleted_partition_root_key.clone())
@@ -437,9 +440,10 @@ mod tests {
     #[test]
     fn supports_already_deleted_entire_subtree() {
         // Arrange: A handcrafted stale part entry, for which a subtree does not exist
-        let mut tree_store = TypedInMemoryTreeStore::new();
+        let tree_store = TypedInMemoryTreeStore::new();
         tree_store
             .stale_part_buffer
+            .borrow_mut()
             .push(StaleTreePart::Subtree(NodeKey::new(
                 1,
                 nibbles("c0ffee 5f 03 5f"),

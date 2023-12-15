@@ -455,18 +455,20 @@ pub mod commit {
 
         pub fn from_single(at_state_version: StateVersion, diff: StateHashTreeDiff) -> Self {
             Self {
-                new_nodes: diff.new_nodes,
+                new_nodes: diff.new_nodes.take(),
                 stale_tree_parts_at_state_version: vec![(
                     at_state_version,
-                    StaleTreePartsV1(diff.stale_tree_parts),
+                    StaleTreePartsV1(diff.stale_tree_parts.take()),
                 )],
             }
         }
 
         pub fn add(&mut self, at_state_version: StateVersion, diff: StateHashTreeDiff) {
-            self.new_nodes.extend(diff.new_nodes);
-            self.stale_tree_parts_at_state_version
-                .push((at_state_version, StaleTreePartsV1(diff.stale_tree_parts)));
+            self.new_nodes.extend(diff.new_nodes.take());
+            self.stale_tree_parts_at_state_version.push((
+                at_state_version,
+                StaleTreePartsV1(diff.stale_tree_parts.take()),
+            ));
         }
     }
 
