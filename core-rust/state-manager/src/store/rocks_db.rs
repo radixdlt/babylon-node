@@ -1385,7 +1385,7 @@ impl RestoreDecember2023LostSubstates for RocksDBStore {
         let december_2023_lost_substates_restored =
             extension_data_cf.get(&ExtensionsDataKey::December2023LostSubstatesRestored);
 
-        let should_restore_substates = if network == &NetworkDefinition::mainnet() {
+        let should_restore_substates = if network.id == NetworkDefinition::mainnet().id {
             // For mainnet, we have a tested, working fix at an epoch learnt during investigation:
 
             // Skip restoration if substates already restored
@@ -1405,7 +1405,7 @@ impl RestoreDecember2023LostSubstates for RocksDBStore {
             };
             let first_epoch = first_proof.ledger_header.epoch.number();
             let last_epoch = last_epoch_proof.ledger_header.epoch.number();
-            let problem_epoch = first_epoch + (255 * 3 / 4) * 100;
+            let problem_epoch = first_epoch + 19100; // (256 * 3 / 4 - 1) * 100
             // Due to another bug, stokenet nodes may mistakenly believe that they already applied
             // the fix. Thus, we have to ignore the `december_2023_lost_substates_restored` flag and
             // make a decision based on "being stuck in the problematic epoch range". The fix is
