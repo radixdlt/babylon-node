@@ -1405,12 +1405,12 @@ impl RestoreDecember2023LostSubstates for RocksDBStore {
             };
             let first_epoch = first_proof.ledger_header.epoch.number();
             let last_epoch = last_epoch_proof.ledger_header.epoch.number();
-            let problem_epoch = first_epoch + 19100; // (256 * 3 / 4 - 1) * 100
+            let problem_at_end_of_epoch = first_epoch + 19099; // (256 * 3 / 4 - 1) * 100 - 1
             // Due to another bug, stokenet nodes may mistakenly believe that they already applied
             // the fix. Thus, we have to ignore the `december_2023_lost_substates_restored` flag and
             // make a decision based on "being stuck in the problematic epoch range". The fix is
             // effectively idempotent, so we are fine with re-running it in an edge case.
-            last_epoch >= problem_epoch && last_epoch <= (problem_epoch + 2)
+            last_epoch >= problem_at_end_of_epoch && last_epoch <= (problem_at_end_of_epoch + 2)
         };
 
         if should_restore_substates {
