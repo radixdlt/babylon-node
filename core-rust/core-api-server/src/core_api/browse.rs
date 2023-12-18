@@ -4,10 +4,9 @@ use std::{iter, mem};
 
 use radix_engine::types::*;
 
-use radix_engine_store_interface::interface::{DbPartitionKey, SubstateDatabase};
+use radix_engine_store_interface::interface::SubstateDatabase;
 
 use convert_case::{Case, Casing};
-use itertools::Itertools;
 
 use radix_engine::system::system_db_reader::ObjectCollectionKey as ScryptoObjectCollectionKey;
 use radix_engine::system::system_db_reader::{SystemDatabaseReader, SystemReaderError};
@@ -91,7 +90,7 @@ impl<'s, S: SubstateDatabase + SubstateNodeAncestryStore> EngineStateMetaLoader<
             functions,
             events,
             types,
-        } = definition.interface;
+        } = definition.interface.clone();
         let IndexedStateSchema {
             fields,
             collections,
@@ -464,7 +463,8 @@ impl<'s, S: SubstateDatabase + SubstateNodeAncestryStore> EngineStateMetaLoader<
                 )
             })?
             .interface
-            .state;
+            .state
+            .clone();
 
         let type_resolver = TypeReferenceResolver::new(&self.reader);
         let conditions_context = self.load_conditions_context(blueprint_info)?;
@@ -563,7 +563,7 @@ impl<'s, S: SubstateDatabase + SubstateNodeAncestryStore> EngineStateMetaLoader<
                                 "when locating schema".to_string(),
                             )
                         })?
-                        .into_latest()
+                        .clone_into_latest()
                 }
                 ResolvedTypeReference::WellKnown(_) => SchemaV1::empty(),
             },
@@ -1026,7 +1026,7 @@ impl<'s, S: QueryableProofStore + ReadableTreeStore> EngineNodeLister<'s, S> {
             NodeKey::new_empty_path(current_version.number()),
             from_nibbles,
         )
-        .map(|path| Self::node_id_from(path.bytes()))
+        .map(|path| SpreadPrefixKeyMapper::from_db_node_key(&path.bytes().to_vec()))
     }
 
     /// Returns an iterator of all state hash tree's *leaf* [`NibblePath`]s, starting from some
@@ -1079,18 +1079,6 @@ impl<'s, S: QueryableProofStore + ReadableTreeStore> EngineNodeLister<'s, S> {
             ),
             TreeNode::Null => Box::new(iter::empty()),
         }
-    }
-
-    /// Extracts an Engine's Node ID from the state hash tree's full Node key.
-    // TODO(after development in scrypto repo): The implementation here fakes a `partition_num: 0`,
-    // but it would be better if `SpreadPrefixKeyMapper` just offered an API to convert the Node ID
-    // alone.
-    fn node_id_from(node_key_bytes: &[u8]) -> NodeId {
-        SpreadPrefixKeyMapper::from_db_partition_key(&DbPartitionKey {
-            node_key: node_key_bytes.to_vec(),
-            partition_num: 0,
-        })
-        .0
     }
 }
 
@@ -1199,10 +1187,11 @@ impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
         collection_meta: &'s ObjectCollectionMeta,
         from_key: Option<&RawCollectionKey>,
     ) -> Result<impl Iterator<Item = ObjectCollectionKey> + '_, EngineStateBrowsingError> {
+        let collection_index = collection_meta.index.number;
         let from_key = from_key.map(|key| Self::to_substate_key(key));
         Ok(self
             .reader
-            .collection_iter(node_id, module_id, collection_meta.index.number)
+            .collection_iter_advanced(node_id, module_id, collection_index, from_key.as_ref())
             // if `ObjectCollectionMeta` exists, then the object, module and collection must exist - no errors expected:
             .map_err(|error| {
                 EngineStateBrowsingError::UnexpectedEngineError(
@@ -1210,14 +1199,8 @@ impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
                     "when reading object collection".to_string(),
                 )
             })?
-            .map(|(substate_key, _)| substate_key)
-            // TODO(after adding "iterate from" support in Engine): The implementation below is a
-            // "faux paging" (functional, although nonsensical - given the performance reasons of
-            // even having the paging). This can be easily migrated to true paging after extending
-            // the `SubstateDatabase` API.
-            .sorted() // the DB uses different sorting (by hash) - faux paging is order-aware
-            .skip_while(move |key| Some(key) < from_key.as_ref()) // any `Some` is greater than `None`
-            .map(|substate_key| Self::to_object_collection_key(substate_key, collection_meta)))
+            .0
+            .map(|(substate_key, _)| Self::to_object_collection_key(substate_key, collection_meta)))
     }
 
     /// Returns an iterator over all keys of the given Key-Value Store entity, starting from the
@@ -1229,10 +1212,9 @@ impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
         kv_store_meta: &'s KeyValueStoreMeta,
         from_key: Option<&MapKey>,
     ) -> Result<impl Iterator<Item = SborData> + '_, EngineStateBrowsingError> {
-        let from_key = from_key.cloned();
         Ok(self
             .reader
-            .key_value_store_iter(node_id)
+            .key_value_store_iter(node_id, from_key)
             // if `KeyValueStoreMeta` exists, then the object, module and collection must exist - no errors expected:
             .map_err(|error| {
                 EngineStateBrowsingError::UnexpectedEngineError(
@@ -1240,14 +1222,7 @@ impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
                     "when iterating over Key-Value Store".to_string(),
                 )
             })?
-            .map(|(map_key, _)| map_key)
-            // TODO(after adding "iterate from" support in Engine): The implementation below is a
-            // "faux paging" (functional, although nonsensical - given the performance reasons of
-            // even having the paging). This can be easily migrated to true paging after extending
-            // the `SubstateDatabase` API.
-            .sorted() // the DB uses different sorting (by hash) - faux paging is order-aware
-            .skip_while(move |map_key| Some(map_key) < from_key.as_ref()) // any `Some` is greater than `None`
-            .map(|map_key| SborData::new(map_key, &kv_store_meta.resolved_key_type)))
+            .map(|(map_key, _)| SborData::new(map_key, &kv_store_meta.resolved_key_type)))
     }
 
     /// Loads schema by its reference, returning SBOR bytes of [`VersionedScryptoSchema`].
