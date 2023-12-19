@@ -37,12 +37,24 @@ import {
     BlueprintFunctionInfoFromJSONTyped,
     BlueprintFunctionInfoToJSON,
 } from './BlueprintFunctionInfo';
+import type { BlueprintMethodInfo } from './BlueprintMethodInfo';
+import {
+    BlueprintMethodInfoFromJSON,
+    BlueprintMethodInfoFromJSONTyped,
+    BlueprintMethodInfoToJSON,
+} from './BlueprintMethodInfo';
 import type { BlueprintNamedTypeInfo } from './BlueprintNamedTypeInfo';
 import {
     BlueprintNamedTypeInfoFromJSON,
     BlueprintNamedTypeInfoFromJSONTyped,
     BlueprintNamedTypeInfoToJSON,
 } from './BlueprintNamedTypeInfo';
+import type { BlueprintRolesDefinition } from './BlueprintRolesDefinition';
+import {
+    BlueprintRolesDefinitionFromJSON,
+    BlueprintRolesDefinitionFromJSONTyped,
+    BlueprintRolesDefinitionToJSON,
+} from './BlueprintRolesDefinition';
 import type { GenericTypeParameter } from './GenericTypeParameter';
 import {
     GenericTypeParameterFromJSON,
@@ -102,6 +114,18 @@ export interface DetailedBlueprintInfo {
      */
     functions: Array<BlueprintFunctionInfo>;
     /**
+     * Methods defined by this blueprint.
+     * @type {Array<BlueprintMethodInfo>}
+     * @memberof DetailedBlueprintInfo
+     */
+    methods: Array<BlueprintMethodInfo>;
+    /**
+     * 
+     * @type {BlueprintRolesDefinition}
+     * @memberof DetailedBlueprintInfo
+     */
+    roles: BlueprintRolesDefinition;
+    /**
      * Events defined by this blueprint.
      * @type {Array<BlueprintEventInfo>}
      * @memberof DetailedBlueprintInfo
@@ -126,6 +150,8 @@ export function instanceOfDetailedBlueprintInfo(value: object): boolean {
     isInstance = isInstance && "fields" in value;
     isInstance = isInstance && "collections" in value;
     isInstance = isInstance && "functions" in value;
+    isInstance = isInstance && "methods" in value;
+    isInstance = isInstance && "roles" in value;
     isInstance = isInstance && "events" in value;
     isInstance = isInstance && "named_types" in value;
 
@@ -149,6 +175,8 @@ export function DetailedBlueprintInfoFromJSONTyped(json: any, ignoreDiscriminato
         'fields': ((json['fields'] as Array<any>).map(BlueprintFieldInfoFromJSON)),
         'collections': ((json['collections'] as Array<any>).map(BlueprintCollectionInfoFromJSON)),
         'functions': ((json['functions'] as Array<any>).map(BlueprintFunctionInfoFromJSON)),
+        'methods': ((json['methods'] as Array<any>).map(BlueprintMethodInfoFromJSON)),
+        'roles': BlueprintRolesDefinitionFromJSON(json['roles']),
         'events': ((json['events'] as Array<any>).map(BlueprintEventInfoFromJSON)),
         'named_types': ((json['named_types'] as Array<any>).map(BlueprintNamedTypeInfoFromJSON)),
     };
@@ -170,6 +198,8 @@ export function DetailedBlueprintInfoToJSON(value?: DetailedBlueprintInfo | null
         'fields': ((value.fields as Array<any>).map(BlueprintFieldInfoToJSON)),
         'collections': ((value.collections as Array<any>).map(BlueprintCollectionInfoToJSON)),
         'functions': ((value.functions as Array<any>).map(BlueprintFunctionInfoToJSON)),
+        'methods': ((value.methods as Array<any>).map(BlueprintMethodInfoToJSON)),
+        'roles': BlueprintRolesDefinitionToJSON(value.roles),
         'events': ((value.events as Array<any>).map(BlueprintEventInfoToJSON)),
         'named_types': ((value.named_types as Array<any>).map(BlueprintNamedTypeInfoToJSON)),
     };

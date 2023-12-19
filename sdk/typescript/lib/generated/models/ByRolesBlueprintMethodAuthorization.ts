@@ -13,82 +13,63 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { BlueprintFunctionAuthorization } from './BlueprintFunctionAuthorization';
-import {
-    BlueprintFunctionAuthorizationFromJSON,
-    BlueprintFunctionAuthorizationFromJSONTyped,
-    BlueprintFunctionAuthorizationToJSON,
-} from './BlueprintFunctionAuthorization';
-import type { BlueprintResolvedTypeReference } from './BlueprintResolvedTypeReference';
-import {
-    BlueprintResolvedTypeReferenceFromJSON,
-    BlueprintResolvedTypeReferenceFromJSONTyped,
-    BlueprintResolvedTypeReferenceToJSON,
-} from './BlueprintResolvedTypeReference';
-
 /**
  * 
  * @export
- * @interface BlueprintFunctionInfo
+ * @interface ByRolesBlueprintMethodAuthorization
  */
-export interface BlueprintFunctionInfo {
+export interface ByRolesBlueprintMethodAuthorization {
     /**
      * 
      * @type {string}
-     * @memberof BlueprintFunctionInfo
+     * @memberof ByRolesBlueprintMethodAuthorization
      */
-    name: string;
+    type: ByRolesBlueprintMethodAuthorizationTypeEnum;
     /**
      * 
-     * @type {BlueprintResolvedTypeReference}
-     * @memberof BlueprintFunctionInfo
+     * @type {Array<string>}
+     * @memberof ByRolesBlueprintMethodAuthorization
      */
-    input_type_reference: BlueprintResolvedTypeReference;
-    /**
-     * 
-     * @type {BlueprintResolvedTypeReference}
-     * @memberof BlueprintFunctionInfo
-     */
-    output_type_reference: BlueprintResolvedTypeReference;
-    /**
-     * 
-     * @type {BlueprintFunctionAuthorization}
-     * @memberof BlueprintFunctionInfo
-     */
-    authorization: BlueprintFunctionAuthorization;
+    role_keys: Array<string>;
 }
 
+
 /**
- * Check if a given object implements the BlueprintFunctionInfo interface.
+ * @export
  */
-export function instanceOfBlueprintFunctionInfo(value: object): boolean {
+export const ByRolesBlueprintMethodAuthorizationTypeEnum = {
+    ByRoles: 'ByRoles'
+} as const;
+export type ByRolesBlueprintMethodAuthorizationTypeEnum = typeof ByRolesBlueprintMethodAuthorizationTypeEnum[keyof typeof ByRolesBlueprintMethodAuthorizationTypeEnum];
+
+
+/**
+ * Check if a given object implements the ByRolesBlueprintMethodAuthorization interface.
+ */
+export function instanceOfByRolesBlueprintMethodAuthorization(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "name" in value;
-    isInstance = isInstance && "input_type_reference" in value;
-    isInstance = isInstance && "output_type_reference" in value;
-    isInstance = isInstance && "authorization" in value;
+    isInstance = isInstance && "type" in value;
+    isInstance = isInstance && "role_keys" in value;
 
     return isInstance;
 }
 
-export function BlueprintFunctionInfoFromJSON(json: any): BlueprintFunctionInfo {
-    return BlueprintFunctionInfoFromJSONTyped(json, false);
+export function ByRolesBlueprintMethodAuthorizationFromJSON(json: any): ByRolesBlueprintMethodAuthorization {
+    return ByRolesBlueprintMethodAuthorizationFromJSONTyped(json, false);
 }
 
-export function BlueprintFunctionInfoFromJSONTyped(json: any, ignoreDiscriminator: boolean): BlueprintFunctionInfo {
+export function ByRolesBlueprintMethodAuthorizationFromJSONTyped(json: any, ignoreDiscriminator: boolean): ByRolesBlueprintMethodAuthorization {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'name': json['name'],
-        'input_type_reference': BlueprintResolvedTypeReferenceFromJSON(json['input_type_reference']),
-        'output_type_reference': BlueprintResolvedTypeReferenceFromJSON(json['output_type_reference']),
-        'authorization': BlueprintFunctionAuthorizationFromJSON(json['authorization']),
+        'type': json['type'],
+        'role_keys': json['role_keys'],
     };
 }
 
-export function BlueprintFunctionInfoToJSON(value?: BlueprintFunctionInfo | null): any {
+export function ByRolesBlueprintMethodAuthorizationToJSON(value?: ByRolesBlueprintMethodAuthorization | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -97,10 +78,8 @@ export function BlueprintFunctionInfoToJSON(value?: BlueprintFunctionInfo | null
     }
     return {
         
-        'name': value.name,
-        'input_type_reference': BlueprintResolvedTypeReferenceToJSON(value.input_type_reference),
-        'output_type_reference': BlueprintResolvedTypeReferenceToJSON(value.output_type_reference),
-        'authorization': BlueprintFunctionAuthorizationToJSON(value.authorization),
+        'type': value.type,
+        'role_keys': value.role_keys,
     };
 }
 

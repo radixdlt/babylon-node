@@ -51,6 +51,8 @@ fn to_api_blueprint_info(
         fields,
         collections,
         functions,
+        methods,
+        roles,
         events,
         named_types,
     } = meta;
@@ -78,6 +80,11 @@ fn to_api_blueprint_info(
             .into_iter()
             .map(|function| to_api_blueprint_function_info(context, function))
             .collect::<Result<Vec<_>, _>>()?,
+        methods: methods
+            .into_iter()
+            .map(|method| to_api_blueprint_method_info(context, method))
+            .collect::<Result<Vec<_>, _>>()?,
+        roles: Some(to_api_blueprint_roles_definition(roles)),
         events: events
             .into_iter()
             .map(|event| to_api_blueprint_event_info(context, event))
@@ -146,41 +153,86 @@ fn to_api_blueprint_function_info(
 ) -> Result<models::BlueprintFunctionInfo, MappingError> {
     let BlueprintFunctionMeta {
         name,
-        receiver,
         declared_input_type,
         declared_output_type,
+        authorization,
     } = function;
     Ok(models::BlueprintFunctionInfo {
         name,
-        receiver: receiver
-            .map(|receiver| Ok(Box::new(to_api_receiver_info(context, receiver)?)))
-            .transpose()?,
         input_type_reference: Some(to_api_blueprint_type_info(context, declared_input_type)?),
         output_type_reference: Some(to_api_blueprint_type_info(context, declared_output_type)?),
+        authorization: Some(match authorization {
+            BlueprintFunctionAuthorization::Public => {
+                models::BlueprintFunctionAuthorization::PublicBlueprintFunctionAuthorization {}
+            }
+            BlueprintFunctionAuthorization::RootOnly => {
+                models::BlueprintFunctionAuthorization::RootOnlyBlueprintFunctionAuthorization {}
+            }
+            BlueprintFunctionAuthorization::ByAccessRule(access_rule) => {
+                models::BlueprintFunctionAuthorization::ByAccessRuleBlueprintFunctionAuthorization {
+                    rule: Box::new(to_api_access_rule(context, &access_rule)?),
+                }
+            }
+        }),
+    })
+}
+
+fn to_api_blueprint_method_info(
+    context: &MappingContext,
+    method: BlueprintMethodMeta,
+) -> Result<models::BlueprintMethodInfo, MappingError> {
+    let BlueprintMethodMeta {
+        name,
+        receiver,
+        declared_input_type,
+        declared_output_type,
+        authorization,
+    } = method;
+    Ok(models::BlueprintMethodInfo {
+        name,
+        receiver: Box::new(to_api_receiver_info(context, receiver)?),
+        input_type_reference: Some(to_api_blueprint_type_info(context, declared_input_type)?),
+        output_type_reference: Some(to_api_blueprint_type_info(context, declared_output_type)?),
+        authorization: Some(match authorization {
+            BlueprintMethodAuthorization::Public => {
+                models::BlueprintMethodAuthorization::PublicBlueprintMethodAuthorization {}
+            }
+            BlueprintMethodAuthorization::OuterObjectOnly => {
+                models::BlueprintMethodAuthorization::OuterObjectOnlyBlueprintMethodAuthorization {}
+            }
+            BlueprintMethodAuthorization::OwnPackageOnly => {
+                models::BlueprintMethodAuthorization::OwnPackageOnlyBlueprintMethodAuthorization {}
+            }
+            BlueprintMethodAuthorization::ByRoles(roles) => {
+                models::BlueprintMethodAuthorization::ByRolesBlueprintMethodAuthorization {
+                    role_keys: roles.into_iter().map(|key| key.key).collect(),
+                }
+            }
+        }),
     })
 }
 
 fn to_api_receiver_info(
     _context: &MappingContext,
     receiver: ReceiverInfo,
-) -> Result<models::BlueprintFunctionReceiverInfo, MappingError> {
+) -> Result<models::BlueprintMethodReceiverInfo, MappingError> {
     let ReceiverInfo {
         receiver,
         ref_types,
     } = receiver;
-    Ok(models::BlueprintFunctionReceiverInfo {
+    Ok(models::BlueprintMethodReceiverInfo {
         receiver_type: match receiver {
-            Receiver::SelfRef => models::FunctionReceiverType::SelfRef,
-            Receiver::SelfRefMut => models::FunctionReceiverType::SelfRefMut,
+            Receiver::SelfRef => models::MethodReceiverType::SelfRef,
+            Receiver::SelfRefMut => models::MethodReceiverType::SelfRefMut,
         },
         reference_types: [
             (
                 ref_types.contains(RefTypes::NORMAL),
-                models::FunctionReceiverReferenceType::Normal,
+                models::MethodReceiverReferenceType::Normal,
             ),
             (
                 ref_types.contains(RefTypes::DIRECT_ACCESS),
-                models::FunctionReceiverReferenceType::DirectAccess,
+                models::MethodReceiverReferenceType::DirectAccess,
             ),
         ]
         .into_iter()
@@ -188,6 +240,31 @@ fn to_api_receiver_info(
         .map(|(_, value)| value)
         .collect(),
     })
+}
+
+fn to_api_blueprint_roles_definition(
+    roles: BlueprintRolesDefinition,
+) -> models::BlueprintRolesDefinition {
+    match roles {
+        BlueprintRolesDefinition::Local(roles) => {
+            models::BlueprintRolesDefinition::LocalBlueprintRolesDefinition {
+                definitions: roles
+                    .into_iter()
+                    .map(|role| models::BlueprintRoleInfo {
+                        key: role.key.key,
+                        updater_role_keys: role
+                            .updater_role_keys
+                            .into_iter()
+                            .map(|key| key.key)
+                            .collect(),
+                    })
+                    .collect(),
+            }
+        }
+        BlueprintRolesDefinition::Outer => {
+            models::BlueprintRolesDefinition::OuterBlueprintRolesDefinition {}
+        }
+    }
 }
 
 fn to_api_blueprint_event_info(

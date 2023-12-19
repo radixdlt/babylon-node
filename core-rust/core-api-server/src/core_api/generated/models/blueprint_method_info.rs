@@ -12,21 +12,24 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct BlueprintFunctionInfo {
+pub struct BlueprintMethodInfo {
     #[serde(rename = "name")]
     pub name: String,
+    #[serde(rename = "receiver")]
+    pub receiver: Box<crate::core_api::generated::models::BlueprintMethodReceiverInfo>,
     #[serde(rename = "input_type_reference")]
     pub input_type_reference: Option<crate::core_api::generated::models::BlueprintResolvedTypeReference>, // Using Option permits Default trait; Will always be Some in normal use
     #[serde(rename = "output_type_reference")]
     pub output_type_reference: Option<crate::core_api::generated::models::BlueprintResolvedTypeReference>, // Using Option permits Default trait; Will always be Some in normal use
     #[serde(rename = "authorization")]
-    pub authorization: Option<crate::core_api::generated::models::BlueprintFunctionAuthorization>, // Using Option permits Default trait; Will always be Some in normal use
+    pub authorization: Option<crate::core_api::generated::models::BlueprintMethodAuthorization>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
-impl BlueprintFunctionInfo {
-    pub fn new(name: String, input_type_reference: crate::core_api::generated::models::BlueprintResolvedTypeReference, output_type_reference: crate::core_api::generated::models::BlueprintResolvedTypeReference, authorization: crate::core_api::generated::models::BlueprintFunctionAuthorization) -> BlueprintFunctionInfo {
-        BlueprintFunctionInfo {
+impl BlueprintMethodInfo {
+    pub fn new(name: String, receiver: crate::core_api::generated::models::BlueprintMethodReceiverInfo, input_type_reference: crate::core_api::generated::models::BlueprintResolvedTypeReference, output_type_reference: crate::core_api::generated::models::BlueprintResolvedTypeReference, authorization: crate::core_api::generated::models::BlueprintMethodAuthorization) -> BlueprintMethodInfo {
+        BlueprintMethodInfo {
             name,
+            receiver: Box::new(receiver),
             input_type_reference: Option::Some(input_type_reference),
             output_type_reference: Option::Some(output_type_reference),
             authorization: Option::Some(authorization),

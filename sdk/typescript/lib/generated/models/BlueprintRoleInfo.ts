@@ -13,82 +13,53 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { BlueprintFunctionAuthorization } from './BlueprintFunctionAuthorization';
-import {
-    BlueprintFunctionAuthorizationFromJSON,
-    BlueprintFunctionAuthorizationFromJSONTyped,
-    BlueprintFunctionAuthorizationToJSON,
-} from './BlueprintFunctionAuthorization';
-import type { BlueprintResolvedTypeReference } from './BlueprintResolvedTypeReference';
-import {
-    BlueprintResolvedTypeReferenceFromJSON,
-    BlueprintResolvedTypeReferenceFromJSONTyped,
-    BlueprintResolvedTypeReferenceToJSON,
-} from './BlueprintResolvedTypeReference';
-
 /**
  * 
  * @export
- * @interface BlueprintFunctionInfo
+ * @interface BlueprintRoleInfo
  */
-export interface BlueprintFunctionInfo {
+export interface BlueprintRoleInfo {
     /**
-     * 
+     * Identifier of a role.
      * @type {string}
-     * @memberof BlueprintFunctionInfo
+     * @memberof BlueprintRoleInfo
      */
-    name: string;
+    key: string;
     /**
      * 
-     * @type {BlueprintResolvedTypeReference}
-     * @memberof BlueprintFunctionInfo
+     * @type {Array<string>}
+     * @memberof BlueprintRoleInfo
      */
-    input_type_reference: BlueprintResolvedTypeReference;
-    /**
-     * 
-     * @type {BlueprintResolvedTypeReference}
-     * @memberof BlueprintFunctionInfo
-     */
-    output_type_reference: BlueprintResolvedTypeReference;
-    /**
-     * 
-     * @type {BlueprintFunctionAuthorization}
-     * @memberof BlueprintFunctionInfo
-     */
-    authorization: BlueprintFunctionAuthorization;
+    updater_role_keys: Array<string>;
 }
 
 /**
- * Check if a given object implements the BlueprintFunctionInfo interface.
+ * Check if a given object implements the BlueprintRoleInfo interface.
  */
-export function instanceOfBlueprintFunctionInfo(value: object): boolean {
+export function instanceOfBlueprintRoleInfo(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "name" in value;
-    isInstance = isInstance && "input_type_reference" in value;
-    isInstance = isInstance && "output_type_reference" in value;
-    isInstance = isInstance && "authorization" in value;
+    isInstance = isInstance && "key" in value;
+    isInstance = isInstance && "updater_role_keys" in value;
 
     return isInstance;
 }
 
-export function BlueprintFunctionInfoFromJSON(json: any): BlueprintFunctionInfo {
-    return BlueprintFunctionInfoFromJSONTyped(json, false);
+export function BlueprintRoleInfoFromJSON(json: any): BlueprintRoleInfo {
+    return BlueprintRoleInfoFromJSONTyped(json, false);
 }
 
-export function BlueprintFunctionInfoFromJSONTyped(json: any, ignoreDiscriminator: boolean): BlueprintFunctionInfo {
+export function BlueprintRoleInfoFromJSONTyped(json: any, ignoreDiscriminator: boolean): BlueprintRoleInfo {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'name': json['name'],
-        'input_type_reference': BlueprintResolvedTypeReferenceFromJSON(json['input_type_reference']),
-        'output_type_reference': BlueprintResolvedTypeReferenceFromJSON(json['output_type_reference']),
-        'authorization': BlueprintFunctionAuthorizationFromJSON(json['authorization']),
+        'key': json['key'],
+        'updater_role_keys': json['updater_role_keys'],
     };
 }
 
-export function BlueprintFunctionInfoToJSON(value?: BlueprintFunctionInfo | null): any {
+export function BlueprintRoleInfoToJSON(value?: BlueprintRoleInfo | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -97,10 +68,8 @@ export function BlueprintFunctionInfoToJSON(value?: BlueprintFunctionInfo | null
     }
     return {
         
-        'name': value.name,
-        'input_type_reference': BlueprintResolvedTypeReferenceToJSON(value.input_type_reference),
-        'output_type_reference': BlueprintResolvedTypeReferenceToJSON(value.output_type_reference),
-        'authorization': BlueprintFunctionAuthorizationToJSON(value.authorization),
+        'key': value.key,
+        'updater_role_keys': value.updater_role_keys,
     };
 }
 

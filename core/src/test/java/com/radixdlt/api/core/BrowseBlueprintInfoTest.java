@@ -66,10 +66,13 @@ package com.radixdlt.api.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.*;
 import java.util.List;
+import java.util.Set;
 import org.junit.Test;
 
 public final class BrowseBlueprintInfoTest extends DeterministicCoreApiTestBase {
@@ -115,18 +118,61 @@ public final class BrowseBlueprintInfoTest extends DeterministicCoreApiTestBase 
           Lists.transform(blueprintInfo.getCollections(), BlueprintCollectionInfo::getName);
       assertThat(collectionNames).isEqualTo(List.of("registered_validator_by_stake"));
 
-      final var functionNames =
-          Lists.transform(blueprintInfo.getFunctions(), BlueprintFunctionInfo::getName);
-      assertThat(functionNames)
+      // the only function there is convenient to assert the access rule on:
+      final var createFunction = Iterables.getOnlyElement(blueprintInfo.getFunctions());
+      assertThat(createFunction.getName()).isEqualTo("create");
+      assertThat(createFunction.getAuthorization())
           .isEqualTo(
-              List.of(
-                  "create",
+              new ByAccessRuleBlueprintFunctionAuthorization()
+                  .rule(
+                      new ProtectedAccessRule()
+                          .accessRule(
+                              new ProofAccessRuleNode()
+                                  .proofRule(
+                                      new RequireProofRule()
+                                          .requirement(
+                                              new NonFungibleRequirement()
+                                                  .nonFungible(
+                                                      new NonFungibleGlobalId()
+                                                          .resourceAddress(
+                                                              "resource_test1nfxxxxxxxxxxsystxnxxxxxxxxx002683325037xxxxxxxxx39ajmy")
+                                                          .localId(
+                                                              new NonFungibleLocalId()
+                                                                  .idType(NonFungibleIdType.INTEGER)
+                                                                  .simpleRep("#0#")
+                                                                  .sborHex(
+                                                                      "5cc0010000000000000000")))
+                                                  .type(RequirementType.NONFUNGIBLE))
+                                          .type(ProofRuleType.REQUIRE))
+                                  .type(AccessRuleNodeType.PROOFRULE))
+                          .type(AccessRuleType.PROTECTED))
+                  .type(BlueprintFunctionAuthorizationType.BYACCESSRULE));
+
+      // assert on all methods, and some example authorization configs:
+      final var methods =
+          Maps.uniqueIndex(blueprintInfo.getMethods(), BlueprintMethodInfo::getName);
+      assertThat(methods.keySet())
+          .isEqualTo(
+              Set.of(
                   "get_current_epoch",
                   "start",
                   "get_current_time",
                   "compare_current_time",
                   "next_round",
                   "create_validator"));
+      assertThat(methods.get("get_current_epoch").getAuthorization())
+          .isEqualTo(
+              new PublicBlueprintMethodAuthorization()
+                  .type(BlueprintMethodAuthorizationType.PUBLIC));
+      assertThat(methods.get("next_round").getAuthorization())
+          .isEqualTo(
+              new ByRolesBlueprintMethodAuthorization()
+                  .roleKeys(List.of("validator"))
+                  .type(BlueprintMethodAuthorizationType.BYROLES));
+
+      final var roles = (LocalBlueprintRolesDefinition) blueprintInfo.getRoles();
+      final var roleKeys = Lists.transform(roles.getDefinitions(), BlueprintRoleInfo::getKey);
+      assertThat(roleKeys).isEqualTo(List.of("validator"));
 
       final var eventNames =
           Lists.transform(blueprintInfo.getEvents(), BlueprintEventInfo::getName);

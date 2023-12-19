@@ -13,82 +13,70 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { BlueprintFunctionAuthorization } from './BlueprintFunctionAuthorization';
+import type { AccessRule } from './AccessRule';
 import {
-    BlueprintFunctionAuthorizationFromJSON,
-    BlueprintFunctionAuthorizationFromJSONTyped,
-    BlueprintFunctionAuthorizationToJSON,
-} from './BlueprintFunctionAuthorization';
-import type { BlueprintResolvedTypeReference } from './BlueprintResolvedTypeReference';
-import {
-    BlueprintResolvedTypeReferenceFromJSON,
-    BlueprintResolvedTypeReferenceFromJSONTyped,
-    BlueprintResolvedTypeReferenceToJSON,
-} from './BlueprintResolvedTypeReference';
+    AccessRuleFromJSON,
+    AccessRuleFromJSONTyped,
+    AccessRuleToJSON,
+} from './AccessRule';
 
 /**
  * 
  * @export
- * @interface BlueprintFunctionInfo
+ * @interface ByAccessRuleBlueprintFunctionAuthorization
  */
-export interface BlueprintFunctionInfo {
+export interface ByAccessRuleBlueprintFunctionAuthorization {
     /**
      * 
      * @type {string}
-     * @memberof BlueprintFunctionInfo
+     * @memberof ByAccessRuleBlueprintFunctionAuthorization
      */
-    name: string;
+    type: ByAccessRuleBlueprintFunctionAuthorizationTypeEnum;
     /**
      * 
-     * @type {BlueprintResolvedTypeReference}
-     * @memberof BlueprintFunctionInfo
+     * @type {AccessRule}
+     * @memberof ByAccessRuleBlueprintFunctionAuthorization
      */
-    input_type_reference: BlueprintResolvedTypeReference;
-    /**
-     * 
-     * @type {BlueprintResolvedTypeReference}
-     * @memberof BlueprintFunctionInfo
-     */
-    output_type_reference: BlueprintResolvedTypeReference;
-    /**
-     * 
-     * @type {BlueprintFunctionAuthorization}
-     * @memberof BlueprintFunctionInfo
-     */
-    authorization: BlueprintFunctionAuthorization;
+    rule: AccessRule;
 }
 
+
 /**
- * Check if a given object implements the BlueprintFunctionInfo interface.
+ * @export
  */
-export function instanceOfBlueprintFunctionInfo(value: object): boolean {
+export const ByAccessRuleBlueprintFunctionAuthorizationTypeEnum = {
+    ByAccessRule: 'ByAccessRule'
+} as const;
+export type ByAccessRuleBlueprintFunctionAuthorizationTypeEnum = typeof ByAccessRuleBlueprintFunctionAuthorizationTypeEnum[keyof typeof ByAccessRuleBlueprintFunctionAuthorizationTypeEnum];
+
+
+/**
+ * Check if a given object implements the ByAccessRuleBlueprintFunctionAuthorization interface.
+ */
+export function instanceOfByAccessRuleBlueprintFunctionAuthorization(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "name" in value;
-    isInstance = isInstance && "input_type_reference" in value;
-    isInstance = isInstance && "output_type_reference" in value;
-    isInstance = isInstance && "authorization" in value;
+    isInstance = isInstance && "type" in value;
+    isInstance = isInstance && "rule" in value;
 
     return isInstance;
 }
 
-export function BlueprintFunctionInfoFromJSON(json: any): BlueprintFunctionInfo {
-    return BlueprintFunctionInfoFromJSONTyped(json, false);
+export function ByAccessRuleBlueprintFunctionAuthorizationFromJSON(json: any): ByAccessRuleBlueprintFunctionAuthorization {
+    return ByAccessRuleBlueprintFunctionAuthorizationFromJSONTyped(json, false);
 }
 
-export function BlueprintFunctionInfoFromJSONTyped(json: any, ignoreDiscriminator: boolean): BlueprintFunctionInfo {
+export function ByAccessRuleBlueprintFunctionAuthorizationFromJSONTyped(json: any, ignoreDiscriminator: boolean): ByAccessRuleBlueprintFunctionAuthorization {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'name': json['name'],
-        'input_type_reference': BlueprintResolvedTypeReferenceFromJSON(json['input_type_reference']),
-        'output_type_reference': BlueprintResolvedTypeReferenceFromJSON(json['output_type_reference']),
-        'authorization': BlueprintFunctionAuthorizationFromJSON(json['authorization']),
+        'type': json['type'],
+        'rule': AccessRuleFromJSON(json['rule']),
     };
 }
 
-export function BlueprintFunctionInfoToJSON(value?: BlueprintFunctionInfo | null): any {
+export function ByAccessRuleBlueprintFunctionAuthorizationToJSON(value?: ByAccessRuleBlueprintFunctionAuthorization | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -97,10 +85,8 @@ export function BlueprintFunctionInfoToJSON(value?: BlueprintFunctionInfo | null
     }
     return {
         
-        'name': value.name,
-        'input_type_reference': BlueprintResolvedTypeReferenceToJSON(value.input_type_reference),
-        'output_type_reference': BlueprintResolvedTypeReferenceToJSON(value.output_type_reference),
-        'authorization': BlueprintFunctionAuthorizationToJSON(value.authorization),
+        'type': value.type,
+        'rule': AccessRuleToJSON(value.rule),
     };
 }
 

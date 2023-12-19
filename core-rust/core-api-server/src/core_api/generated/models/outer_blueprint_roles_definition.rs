@@ -12,18 +12,15 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct BlueprintFunctionReceiverInfo {
-    #[serde(rename = "receiver_type")]
-    pub receiver_type: crate::core_api::generated::models::FunctionReceiverType,
-    #[serde(rename = "reference_types")]
-    pub reference_types: Vec<crate::core_api::generated::models::FunctionReceiverReferenceType>,
+pub struct OuterBlueprintRolesDefinition {
+    #[serde(rename = "type")]
+    pub _type: crate::core_api::generated::models::BlueprintRolesDefinitionType,
 }
 
-impl BlueprintFunctionReceiverInfo {
-    pub fn new(receiver_type: crate::core_api::generated::models::FunctionReceiverType, reference_types: Vec<crate::core_api::generated::models::FunctionReceiverReferenceType>) -> BlueprintFunctionReceiverInfo {
-        BlueprintFunctionReceiverInfo {
-            receiver_type,
-            reference_types,
+impl OuterBlueprintRolesDefinition {
+    pub fn new(_type: crate::core_api::generated::models::BlueprintRolesDefinitionType) -> OuterBlueprintRolesDefinition {
+        OuterBlueprintRolesDefinition {
+            _type,
         }
     }
 }

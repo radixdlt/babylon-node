@@ -13,43 +13,43 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { FunctionReceiverReferenceType } from './FunctionReceiverReferenceType';
+import type { MethodReceiverReferenceType } from './MethodReceiverReferenceType';
 import {
-    FunctionReceiverReferenceTypeFromJSON,
-    FunctionReceiverReferenceTypeFromJSONTyped,
-    FunctionReceiverReferenceTypeToJSON,
-} from './FunctionReceiverReferenceType';
-import type { FunctionReceiverType } from './FunctionReceiverType';
+    MethodReceiverReferenceTypeFromJSON,
+    MethodReceiverReferenceTypeFromJSONTyped,
+    MethodReceiverReferenceTypeToJSON,
+} from './MethodReceiverReferenceType';
+import type { MethodReceiverType } from './MethodReceiverType';
 import {
-    FunctionReceiverTypeFromJSON,
-    FunctionReceiverTypeFromJSONTyped,
-    FunctionReceiverTypeToJSON,
-} from './FunctionReceiverType';
+    MethodReceiverTypeFromJSON,
+    MethodReceiverTypeFromJSONTyped,
+    MethodReceiverTypeToJSON,
+} from './MethodReceiverType';
 
 /**
  * 
  * @export
- * @interface BlueprintFunctionReceiverInfo
+ * @interface BlueprintMethodReceiverInfo
  */
-export interface BlueprintFunctionReceiverInfo {
+export interface BlueprintMethodReceiverInfo {
     /**
      * 
-     * @type {FunctionReceiverType}
-     * @memberof BlueprintFunctionReceiverInfo
+     * @type {MethodReceiverType}
+     * @memberof BlueprintMethodReceiverInfo
      */
-    receiver_type: FunctionReceiverType;
+    receiver_type: MethodReceiverType;
     /**
      * 
-     * @type {Array<FunctionReceiverReferenceType>}
-     * @memberof BlueprintFunctionReceiverInfo
+     * @type {Array<MethodReceiverReferenceType>}
+     * @memberof BlueprintMethodReceiverInfo
      */
-    reference_types: Array<FunctionReceiverReferenceType>;
+    reference_types: Array<MethodReceiverReferenceType>;
 }
 
 /**
- * Check if a given object implements the BlueprintFunctionReceiverInfo interface.
+ * Check if a given object implements the BlueprintMethodReceiverInfo interface.
  */
-export function instanceOfBlueprintFunctionReceiverInfo(value: object): boolean {
+export function instanceOfBlueprintMethodReceiverInfo(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "receiver_type" in value;
     isInstance = isInstance && "reference_types" in value;
@@ -57,22 +57,22 @@ export function instanceOfBlueprintFunctionReceiverInfo(value: object): boolean 
     return isInstance;
 }
 
-export function BlueprintFunctionReceiverInfoFromJSON(json: any): BlueprintFunctionReceiverInfo {
-    return BlueprintFunctionReceiverInfoFromJSONTyped(json, false);
+export function BlueprintMethodReceiverInfoFromJSON(json: any): BlueprintMethodReceiverInfo {
+    return BlueprintMethodReceiverInfoFromJSONTyped(json, false);
 }
 
-export function BlueprintFunctionReceiverInfoFromJSONTyped(json: any, ignoreDiscriminator: boolean): BlueprintFunctionReceiverInfo {
+export function BlueprintMethodReceiverInfoFromJSONTyped(json: any, ignoreDiscriminator: boolean): BlueprintMethodReceiverInfo {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'receiver_type': FunctionReceiverTypeFromJSON(json['receiver_type']),
-        'reference_types': ((json['reference_types'] as Array<any>).map(FunctionReceiverReferenceTypeFromJSON)),
+        'receiver_type': MethodReceiverTypeFromJSON(json['receiver_type']),
+        'reference_types': ((json['reference_types'] as Array<any>).map(MethodReceiverReferenceTypeFromJSON)),
     };
 }
 
-export function BlueprintFunctionReceiverInfoToJSON(value?: BlueprintFunctionReceiverInfo | null): any {
+export function BlueprintMethodReceiverInfoToJSON(value?: BlueprintMethodReceiverInfo | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -81,8 +81,8 @@ export function BlueprintFunctionReceiverInfoToJSON(value?: BlueprintFunctionRec
     }
     return {
         
-        'receiver_type': FunctionReceiverTypeToJSON(value.receiver_type),
-        'reference_types': ((value.reference_types as Array<any>).map(FunctionReceiverReferenceTypeToJSON)),
+        'receiver_type': MethodReceiverTypeToJSON(value.receiver_type),
+        'reference_types': ((value.reference_types as Array<any>).map(MethodReceiverReferenceTypeToJSON)),
     };
 }
 

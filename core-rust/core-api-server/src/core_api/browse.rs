@@ -7,6 +7,9 @@ use radix_engine::types::*;
 use radix_engine_store_interface::interface::SubstateDatabase;
 
 use convert_case::{Case, Casing};
+use radix_engine::blueprints::package::{
+    PackageCollection, VersionedPackageBlueprintVersionAuthConfig,
+};
 
 use radix_engine::system::system_db_reader::ObjectCollectionKey as ScryptoObjectCollectionKey;
 use radix_engine::system::system_db_reader::{SystemDatabaseReader, SystemReaderError};
@@ -15,8 +18,9 @@ use radix_engine::system::type_info::TypeInfoSubstate;
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::package::{
-    BlueprintInterface, BlueprintPayloadDef, BlueprintType, BlueprintVersion, CanonicalBlueprintId,
-    FunctionSchema, IndexedStateSchema,
+    AuthConfig, BlueprintInterface, BlueprintPayloadDef, BlueprintType, BlueprintVersion,
+    BlueprintVersionKey, CanonicalBlueprintId, FunctionAuth, FunctionSchema, IndexedStateSchema,
+    MethodAuthTemplate, RoleSpecification,
 };
 use radix_engine_store_interface::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
 use radix_engine_stores::hash_tree::tree_store::{
@@ -100,6 +104,12 @@ impl<'s, S: SubstateDatabase + SubstateNodeAncestryStore> EngineStateMetaLoader<
         let node_id = blueprint_id.package_address.as_node_id();
         let blueprint_name = blueprint_id.blueprint_name.as_str();
 
+        let AuthorizedCallablesMeta {
+            functions,
+            methods,
+            roles,
+        } = self.load_authorized_callables_meta(node_id, blueprint_name, functions)?;
+
         Ok(BlueprintMeta {
             outer_blueprint_name: match blueprint_type {
                 BlueprintType::Outer => None,
@@ -123,10 +133,9 @@ impl<'s, S: SubstateDatabase + SubstateNodeAncestryStore> EngineStateMetaLoader<
                     self.load_blueprint_collection_meta(node_id, blueprint_name, index, collection)
                 })
                 .collect::<Result<Vec<_>, _>>()?,
-            functions: functions
-                .into_iter()
-                .map(|(name, function)| self.load_blueprint_function_meta(node_id, name, function))
-                .collect::<Result<Vec<_>, _>>()?,
+            functions,
+            methods,
+            roles,
             events: events
                 .into_iter()
                 .map(|(name, event)| self.load_blueprint_event_meta(node_id, name, event))
@@ -242,6 +251,132 @@ impl<'s, S: SubstateDatabase + SubstateNodeAncestryStore> EngineStateMetaLoader<
         })
     }
 
+    /// Loads extra metadata on authorization-aware callables (i.e. methods and functions) belonging
+    /// to the given blueprint (a part of [`Self::load_blueprint_meta()`]).
+    fn load_authorized_callables_meta(
+        &self,
+        node_id: &NodeId,
+        blueprint_name: &str,
+        callables: IndexMap<String, FunctionSchema>,
+    ) -> Result<AuthorizedCallablesMeta, EngineStateBrowsingError> {
+        let AuthConfig {
+            function_auth,
+            method_auth,
+        } = self
+            .reader
+            .read_object_collection_entry::<_, VersionedPackageBlueprintVersionAuthConfig>(
+                node_id,
+                ModuleId::Main,
+                ScryptoObjectCollectionKey::KeyValue(
+                    PackageCollection::BlueprintVersionAuthConfigKeyValue.collection_index(),
+                    &BlueprintVersionKey::new_default(blueprint_name),
+                ),
+            )
+            .map_err(|error| {
+                EngineStateBrowsingError::UnexpectedEngineError(
+                    error,
+                    "when getting blueprint auth config".to_string(),
+                )
+            })?
+            .ok_or_else(|| {
+                EngineStateBrowsingError::EngineInvariantBroken(
+                    "no auth config found for blueprint".to_string(),
+                )
+            })?
+            .into_latest();
+
+        let mut functions = Vec::new();
+        let mut methods = Vec::new();
+
+        for (name, schema) in callables {
+            let FunctionSchema {
+                receiver,
+                input,
+                output,
+            } = schema;
+            let declared_input_type = self.load_blueprint_type_meta(node_id, input)?;
+            let declared_output_type = self.load_blueprint_type_meta(node_id, output)?;
+            match receiver {
+                None => {
+                    let authorization = match &function_auth {
+                        FunctionAuth::AllowAll => BlueprintFunctionAuthorization::Public,
+                        FunctionAuth::AccessRules(rules) => {
+                            let rule = rules.get(&name).ok_or_else(|| {
+                                EngineStateBrowsingError::EngineInvariantBroken(
+                                    "no rule found for function".to_string(),
+                                )
+                            })?;
+                            BlueprintFunctionAuthorization::ByAccessRule(rule.clone())
+                        }
+                        FunctionAuth::RootOnly => BlueprintFunctionAuthorization::RootOnly,
+                    };
+                    functions.push(BlueprintFunctionMeta {
+                        name,
+                        declared_input_type,
+                        declared_output_type,
+                        authorization,
+                    });
+                }
+                Some(receiver) => {
+                    let authorization = match &method_auth {
+                        MethodAuthTemplate::AllowAll => BlueprintMethodAuthorization::Public,
+                        MethodAuthTemplate::StaticRoleDefinition(definitions) => {
+                            let accessibility = definitions
+                                .methods
+                                .get(&MethodKey::new(&name))
+                                .ok_or_else(|| {
+                                    EngineStateBrowsingError::EngineInvariantBroken(
+                                        "no accessibility found for method".to_string(),
+                                    )
+                                })?;
+                            match accessibility {
+                                MethodAccessibility::Public => BlueprintMethodAuthorization::Public,
+                                MethodAccessibility::OuterObjectOnly => {
+                                    BlueprintMethodAuthorization::OuterObjectOnly
+                                }
+                                MethodAccessibility::RoleProtected(role_list) => {
+                                    BlueprintMethodAuthorization::ByRoles(role_list.list.clone())
+                                }
+                                MethodAccessibility::OwnPackageOnly => {
+                                    BlueprintMethodAuthorization::OwnPackageOnly
+                                }
+                            }
+                        }
+                    };
+                    methods.push(BlueprintMethodMeta {
+                        name,
+                        receiver,
+                        declared_input_type,
+                        declared_output_type,
+                        authorization,
+                    });
+                }
+            }
+        }
+
+        let roles = match method_auth {
+            MethodAuthTemplate::AllowAll => BlueprintRolesDefinition::Local(Vec::new()),
+            MethodAuthTemplate::StaticRoleDefinition(definition) => match definition.roles {
+                RoleSpecification::Normal(roles) => BlueprintRolesDefinition::Local(
+                    roles
+                        .into_iter()
+                        .map(|(key, updaters)| BlueprintRoleMeta {
+                            key,
+                            updater_role_keys: updaters.list,
+                        })
+                        .collect(),
+                ),
+                RoleSpecification::UseOuter => BlueprintRolesDefinition::Outer,
+            },
+        };
+
+        Ok(AuthorizedCallablesMeta {
+            functions,
+            methods,
+            roles,
+        })
+    }
+
     /// Loads extra metadata on the given collection (a part of [`Self::load_blueprint_meta()`]).
     fn load_blueprint_collection_meta(
         &self,
@@ -260,26 +395,6 @@ impl<'s, S: SubstateDatabase + SubstateNodeAncestryStore> EngineStateMetaLoader<
             kind,
             declared_key_type,
             declared_value_type,
-        })
-    }
-
-    /// Loads extra metadata on the given function (a part of [`Self::load_blueprint_meta()`]).
-    fn load_blueprint_function_meta(
-        &self,
-        node_id: &NodeId,
-        name: String,
-        schema: FunctionSchema,
-    ) -> Result<BlueprintFunctionMeta, EngineStateBrowsingError> {
-        let FunctionSchema {
-            receiver,
-            input,
-            output,
-        } = schema;
-        Ok(BlueprintFunctionMeta {
-            name,
-            receiver,
-            declared_input_type: self.load_blueprint_type_meta(node_id, input)?,
-            declared_output_type: self.load_blueprint_type_meta(node_id, output)?,
         })
     }
 
@@ -600,6 +715,8 @@ pub struct BlueprintMeta {
     pub fields: Vec<BlueprintFieldMeta>,
     pub collections: Vec<BlueprintCollectionMeta>,
     pub functions: Vec<BlueprintFunctionMeta>,
+    pub methods: Vec<BlueprintMethodMeta>,
+    pub roles: BlueprintRolesDefinition,
     pub events: Vec<BlueprintEventMeta>,
     pub named_types: Vec<BlueprintNamedTypeMeta>,
 }
@@ -644,9 +761,49 @@ pub struct FieldTransienceMeta<'t> {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BlueprintFunctionMeta {
     pub name: String,
-    pub receiver: Option<ReceiverInfo>,
     pub declared_input_type: BlueprintTypeMeta,
     pub declared_output_type: BlueprintTypeMeta,
+    pub authorization: BlueprintFunctionAuthorization,
+}
+
+/// Authorization configuration of a function.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum BlueprintFunctionAuthorization {
+    Public,
+    ByAccessRule(AccessRule),
+    RootOnly,
+}
+
+/// Metadata on a method's definition within a blueprint.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BlueprintMethodMeta {
+    pub name: String,
+    pub receiver: ReceiverInfo,
+    pub declared_input_type: BlueprintTypeMeta,
+    pub declared_output_type: BlueprintTypeMeta,
+    pub authorization: BlueprintMethodAuthorization,
+}
+
+/// Authorization configuration of a method.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum BlueprintMethodAuthorization {
+    Public,
+    ByRoles(Vec<RoleKey>),
+    OuterObjectOnly,
+    OwnPackageOnly,
+}
+
+/// Roles defined by a blueprint (which may mean delegating to the outer object's blueprint).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum BlueprintRolesDefinition {
+    Local(Vec<BlueprintRoleMeta>),
+    Outer,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BlueprintRoleMeta {
+    pub key: RoleKey,
+    pub updater_role_keys: Vec<RoleKey>,
 }
 
 /// Metadata on an event's definition within a blueprint.
@@ -998,6 +1155,14 @@ impl ObjectCollectionMeta {
             resolved_value_type,
         }
     }
+}
+
+/// Authorization-aware callables (i.e. methods and functions) belonging to a specific blueprint.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct AuthorizedCallablesMeta {
+    functions: Vec<BlueprintFunctionMeta>,
+    methods: Vec<BlueprintMethodMeta>,
+    roles: BlueprintRolesDefinition,
 }
 
 /// A lister of Engine's Nodes.

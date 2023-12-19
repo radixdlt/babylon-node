@@ -13,12 +13,18 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { BlueprintFunctionAuthorization } from './BlueprintFunctionAuthorization';
+import type { BlueprintMethodAuthorization } from './BlueprintMethodAuthorization';
 import {
-    BlueprintFunctionAuthorizationFromJSON,
-    BlueprintFunctionAuthorizationFromJSONTyped,
-    BlueprintFunctionAuthorizationToJSON,
-} from './BlueprintFunctionAuthorization';
+    BlueprintMethodAuthorizationFromJSON,
+    BlueprintMethodAuthorizationFromJSONTyped,
+    BlueprintMethodAuthorizationToJSON,
+} from './BlueprintMethodAuthorization';
+import type { BlueprintMethodReceiverInfo } from './BlueprintMethodReceiverInfo';
+import {
+    BlueprintMethodReceiverInfoFromJSON,
+    BlueprintMethodReceiverInfoFromJSONTyped,
+    BlueprintMethodReceiverInfoToJSON,
+} from './BlueprintMethodReceiverInfo';
 import type { BlueprintResolvedTypeReference } from './BlueprintResolvedTypeReference';
 import {
     BlueprintResolvedTypeReferenceFromJSON,
@@ -29,41 +35,48 @@ import {
 /**
  * 
  * @export
- * @interface BlueprintFunctionInfo
+ * @interface BlueprintMethodInfo
  */
-export interface BlueprintFunctionInfo {
+export interface BlueprintMethodInfo {
     /**
      * 
      * @type {string}
-     * @memberof BlueprintFunctionInfo
+     * @memberof BlueprintMethodInfo
      */
     name: string;
     /**
      * 
+     * @type {BlueprintMethodReceiverInfo}
+     * @memberof BlueprintMethodInfo
+     */
+    receiver: BlueprintMethodReceiverInfo;
+    /**
+     * 
      * @type {BlueprintResolvedTypeReference}
-     * @memberof BlueprintFunctionInfo
+     * @memberof BlueprintMethodInfo
      */
     input_type_reference: BlueprintResolvedTypeReference;
     /**
      * 
      * @type {BlueprintResolvedTypeReference}
-     * @memberof BlueprintFunctionInfo
+     * @memberof BlueprintMethodInfo
      */
     output_type_reference: BlueprintResolvedTypeReference;
     /**
      * 
-     * @type {BlueprintFunctionAuthorization}
-     * @memberof BlueprintFunctionInfo
+     * @type {BlueprintMethodAuthorization}
+     * @memberof BlueprintMethodInfo
      */
-    authorization: BlueprintFunctionAuthorization;
+    authorization: BlueprintMethodAuthorization;
 }
 
 /**
- * Check if a given object implements the BlueprintFunctionInfo interface.
+ * Check if a given object implements the BlueprintMethodInfo interface.
  */
-export function instanceOfBlueprintFunctionInfo(value: object): boolean {
+export function instanceOfBlueprintMethodInfo(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "name" in value;
+    isInstance = isInstance && "receiver" in value;
     isInstance = isInstance && "input_type_reference" in value;
     isInstance = isInstance && "output_type_reference" in value;
     isInstance = isInstance && "authorization" in value;
@@ -71,24 +84,25 @@ export function instanceOfBlueprintFunctionInfo(value: object): boolean {
     return isInstance;
 }
 
-export function BlueprintFunctionInfoFromJSON(json: any): BlueprintFunctionInfo {
-    return BlueprintFunctionInfoFromJSONTyped(json, false);
+export function BlueprintMethodInfoFromJSON(json: any): BlueprintMethodInfo {
+    return BlueprintMethodInfoFromJSONTyped(json, false);
 }
 
-export function BlueprintFunctionInfoFromJSONTyped(json: any, ignoreDiscriminator: boolean): BlueprintFunctionInfo {
+export function BlueprintMethodInfoFromJSONTyped(json: any, ignoreDiscriminator: boolean): BlueprintMethodInfo {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
         'name': json['name'],
+        'receiver': BlueprintMethodReceiverInfoFromJSON(json['receiver']),
         'input_type_reference': BlueprintResolvedTypeReferenceFromJSON(json['input_type_reference']),
         'output_type_reference': BlueprintResolvedTypeReferenceFromJSON(json['output_type_reference']),
-        'authorization': BlueprintFunctionAuthorizationFromJSON(json['authorization']),
+        'authorization': BlueprintMethodAuthorizationFromJSON(json['authorization']),
     };
 }
 
-export function BlueprintFunctionInfoToJSON(value?: BlueprintFunctionInfo | null): any {
+export function BlueprintMethodInfoToJSON(value?: BlueprintMethodInfo | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -98,9 +112,10 @@ export function BlueprintFunctionInfoToJSON(value?: BlueprintFunctionInfo | null
     return {
         
         'name': value.name,
+        'receiver': BlueprintMethodReceiverInfoToJSON(value.receiver),
         'input_type_reference': BlueprintResolvedTypeReferenceToJSON(value.input_type_reference),
         'output_type_reference': BlueprintResolvedTypeReferenceToJSON(value.output_type_reference),
-        'authorization': BlueprintFunctionAuthorizationToJSON(value.authorization),
+        'authorization': BlueprintMethodAuthorizationToJSON(value.authorization),
     };
 }
 

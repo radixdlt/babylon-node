@@ -9,29 +9,34 @@
  */
 
 
+/// 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
+pub enum BlueprintFunctionAuthorizationType {
+    #[serde(rename = "Public")]
+    Public,
+    #[serde(rename = "ByAccessRule")]
+    ByAccessRule,
+    #[serde(rename = "RootOnly")]
+    RootOnly,
 
-
-#[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct BlueprintFunctionInfo {
-    #[serde(rename = "name")]
-    pub name: String,
-    #[serde(rename = "input_type_reference")]
-    pub input_type_reference: Option<crate::core_api::generated::models::BlueprintResolvedTypeReference>, // Using Option permits Default trait; Will always be Some in normal use
-    #[serde(rename = "output_type_reference")]
-    pub output_type_reference: Option<crate::core_api::generated::models::BlueprintResolvedTypeReference>, // Using Option permits Default trait; Will always be Some in normal use
-    #[serde(rename = "authorization")]
-    pub authorization: Option<crate::core_api::generated::models::BlueprintFunctionAuthorization>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
-impl BlueprintFunctionInfo {
-    pub fn new(name: String, input_type_reference: crate::core_api::generated::models::BlueprintResolvedTypeReference, output_type_reference: crate::core_api::generated::models::BlueprintResolvedTypeReference, authorization: crate::core_api::generated::models::BlueprintFunctionAuthorization) -> BlueprintFunctionInfo {
-        BlueprintFunctionInfo {
-            name,
-            input_type_reference: Option::Some(input_type_reference),
-            output_type_reference: Option::Some(output_type_reference),
-            authorization: Option::Some(authorization),
+impl ToString for BlueprintFunctionAuthorizationType {
+    fn to_string(&self) -> String {
+        match self {
+            Self::Public => String::from("Public"),
+            Self::ByAccessRule => String::from("ByAccessRule"),
+            Self::RootOnly => String::from("RootOnly"),
         }
     }
 }
+
+impl Default for BlueprintFunctionAuthorizationType {
+    fn default() -> BlueprintFunctionAuthorizationType {
+        Self::Public
+    }
+}
+
+
 
 

@@ -9,31 +9,20 @@
  */
 
 
-/// 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
-pub enum FunctionReceiverReferenceType {
-    #[serde(rename = "Normal")]
-    Normal,
-    #[serde(rename = "DirectAccess")]
-    DirectAccess,
 
+
+#[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
+pub struct PublicBlueprintFunctionAuthorization {
+    #[serde(rename = "type")]
+    pub _type: crate::core_api::generated::models::BlueprintFunctionAuthorizationType,
 }
 
-impl ToString for FunctionReceiverReferenceType {
-    fn to_string(&self) -> String {
-        match self {
-            Self::Normal => String::from("Normal"),
-            Self::DirectAccess => String::from("DirectAccess"),
+impl PublicBlueprintFunctionAuthorization {
+    pub fn new(_type: crate::core_api::generated::models::BlueprintFunctionAuthorizationType) -> PublicBlueprintFunctionAuthorization {
+        PublicBlueprintFunctionAuthorization {
+            _type,
         }
     }
 }
-
-impl Default for FunctionReceiverReferenceType {
-    fn default() -> FunctionReceiverReferenceType {
-        Self::Normal
-    }
-}
-
-
 
 

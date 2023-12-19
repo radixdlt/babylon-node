@@ -22,7 +22,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.BlueprintFunctionAuthorization;
+import com.radixdlt.api.core.generated.models.BlueprintMethodAuthorization;
+import com.radixdlt.api.core.generated.models.BlueprintMethodReceiverInfo;
 import com.radixdlt.api.core.generated.models.BlueprintResolvedTypeReference;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -30,18 +31,22 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * BlueprintFunctionInfo
+ * BlueprintMethodInfo
  */
 @JsonPropertyOrder({
-  BlueprintFunctionInfo.JSON_PROPERTY_NAME,
-  BlueprintFunctionInfo.JSON_PROPERTY_INPUT_TYPE_REFERENCE,
-  BlueprintFunctionInfo.JSON_PROPERTY_OUTPUT_TYPE_REFERENCE,
-  BlueprintFunctionInfo.JSON_PROPERTY_AUTHORIZATION
+  BlueprintMethodInfo.JSON_PROPERTY_NAME,
+  BlueprintMethodInfo.JSON_PROPERTY_RECEIVER,
+  BlueprintMethodInfo.JSON_PROPERTY_INPUT_TYPE_REFERENCE,
+  BlueprintMethodInfo.JSON_PROPERTY_OUTPUT_TYPE_REFERENCE,
+  BlueprintMethodInfo.JSON_PROPERTY_AUTHORIZATION
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class BlueprintFunctionInfo {
+public class BlueprintMethodInfo {
   public static final String JSON_PROPERTY_NAME = "name";
   private String name;
+
+  public static final String JSON_PROPERTY_RECEIVER = "receiver";
+  private BlueprintMethodReceiverInfo receiver;
 
   public static final String JSON_PROPERTY_INPUT_TYPE_REFERENCE = "input_type_reference";
   private BlueprintResolvedTypeReference inputTypeReference;
@@ -50,12 +55,12 @@ public class BlueprintFunctionInfo {
   private BlueprintResolvedTypeReference outputTypeReference;
 
   public static final String JSON_PROPERTY_AUTHORIZATION = "authorization";
-  private BlueprintFunctionAuthorization authorization;
+  private BlueprintMethodAuthorization authorization;
 
-  public BlueprintFunctionInfo() { 
+  public BlueprintMethodInfo() { 
   }
 
-  public BlueprintFunctionInfo name(String name) {
+  public BlueprintMethodInfo name(String name) {
     this.name = name;
     return this;
   }
@@ -81,7 +86,33 @@ public class BlueprintFunctionInfo {
   }
 
 
-  public BlueprintFunctionInfo inputTypeReference(BlueprintResolvedTypeReference inputTypeReference) {
+  public BlueprintMethodInfo receiver(BlueprintMethodReceiverInfo receiver) {
+    this.receiver = receiver;
+    return this;
+  }
+
+   /**
+   * Get receiver
+   * @return receiver
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_RECEIVER)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public BlueprintMethodReceiverInfo getReceiver() {
+    return receiver;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_RECEIVER)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setReceiver(BlueprintMethodReceiverInfo receiver) {
+    this.receiver = receiver;
+  }
+
+
+  public BlueprintMethodInfo inputTypeReference(BlueprintResolvedTypeReference inputTypeReference) {
     this.inputTypeReference = inputTypeReference;
     return this;
   }
@@ -107,7 +138,7 @@ public class BlueprintFunctionInfo {
   }
 
 
-  public BlueprintFunctionInfo outputTypeReference(BlueprintResolvedTypeReference outputTypeReference) {
+  public BlueprintMethodInfo outputTypeReference(BlueprintResolvedTypeReference outputTypeReference) {
     this.outputTypeReference = outputTypeReference;
     return this;
   }
@@ -133,7 +164,7 @@ public class BlueprintFunctionInfo {
   }
 
 
-  public BlueprintFunctionInfo authorization(BlueprintFunctionAuthorization authorization) {
+  public BlueprintMethodInfo authorization(BlueprintMethodAuthorization authorization) {
     this.authorization = authorization;
     return this;
   }
@@ -147,20 +178,20 @@ public class BlueprintFunctionInfo {
   @JsonProperty(JSON_PROPERTY_AUTHORIZATION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public BlueprintFunctionAuthorization getAuthorization() {
+  public BlueprintMethodAuthorization getAuthorization() {
     return authorization;
   }
 
 
   @JsonProperty(JSON_PROPERTY_AUTHORIZATION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAuthorization(BlueprintFunctionAuthorization authorization) {
+  public void setAuthorization(BlueprintMethodAuthorization authorization) {
     this.authorization = authorization;
   }
 
 
   /**
-   * Return true if this BlueprintFunctionInfo object is equal to o.
+   * Return true if this BlueprintMethodInfo object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -170,23 +201,25 @@ public class BlueprintFunctionInfo {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    BlueprintFunctionInfo blueprintFunctionInfo = (BlueprintFunctionInfo) o;
-    return Objects.equals(this.name, blueprintFunctionInfo.name) &&
-        Objects.equals(this.inputTypeReference, blueprintFunctionInfo.inputTypeReference) &&
-        Objects.equals(this.outputTypeReference, blueprintFunctionInfo.outputTypeReference) &&
-        Objects.equals(this.authorization, blueprintFunctionInfo.authorization);
+    BlueprintMethodInfo blueprintMethodInfo = (BlueprintMethodInfo) o;
+    return Objects.equals(this.name, blueprintMethodInfo.name) &&
+        Objects.equals(this.receiver, blueprintMethodInfo.receiver) &&
+        Objects.equals(this.inputTypeReference, blueprintMethodInfo.inputTypeReference) &&
+        Objects.equals(this.outputTypeReference, blueprintMethodInfo.outputTypeReference) &&
+        Objects.equals(this.authorization, blueprintMethodInfo.authorization);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, inputTypeReference, outputTypeReference, authorization);
+    return Objects.hash(name, receiver, inputTypeReference, outputTypeReference, authorization);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class BlueprintFunctionInfo {\n");
+    sb.append("class BlueprintMethodInfo {\n");
     sb.append("    name: ").append(toIndentedString(name)).append("\n");
+    sb.append("    receiver: ").append(toIndentedString(receiver)).append("\n");
     sb.append("    inputTypeReference: ").append(toIndentedString(inputTypeReference)).append("\n");
     sb.append("    outputTypeReference: ").append(toIndentedString(outputTypeReference)).append("\n");
     sb.append("    authorization: ").append(toIndentedString(authorization)).append("\n");

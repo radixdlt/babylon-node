@@ -26,7 +26,9 @@ import com.radixdlt.api.core.generated.models.BlueprintCollectionInfo;
 import com.radixdlt.api.core.generated.models.BlueprintEventInfo;
 import com.radixdlt.api.core.generated.models.BlueprintFieldInfo;
 import com.radixdlt.api.core.generated.models.BlueprintFunctionInfo;
+import com.radixdlt.api.core.generated.models.BlueprintMethodInfo;
 import com.radixdlt.api.core.generated.models.BlueprintNamedTypeInfo;
+import com.radixdlt.api.core.generated.models.BlueprintRolesDefinition;
 import com.radixdlt.api.core.generated.models.GenericTypeParameter;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -46,6 +48,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   DetailedBlueprintInfo.JSON_PROPERTY_FIELDS,
   DetailedBlueprintInfo.JSON_PROPERTY_COLLECTIONS,
   DetailedBlueprintInfo.JSON_PROPERTY_FUNCTIONS,
+  DetailedBlueprintInfo.JSON_PROPERTY_METHODS,
+  DetailedBlueprintInfo.JSON_PROPERTY_ROLES,
   DetailedBlueprintInfo.JSON_PROPERTY_EVENTS,
   DetailedBlueprintInfo.JSON_PROPERTY_NAMED_TYPES
 })
@@ -71,6 +75,12 @@ public class DetailedBlueprintInfo {
 
   public static final String JSON_PROPERTY_FUNCTIONS = "functions";
   private List<BlueprintFunctionInfo> functions = new ArrayList<>();
+
+  public static final String JSON_PROPERTY_METHODS = "methods";
+  private List<BlueprintMethodInfo> methods = new ArrayList<>();
+
+  public static final String JSON_PROPERTY_ROLES = "roles";
+  private BlueprintRolesDefinition roles;
 
   public static final String JSON_PROPERTY_EVENTS = "events";
   private List<BlueprintEventInfo> events = new ArrayList<>();
@@ -288,6 +298,63 @@ public class DetailedBlueprintInfo {
   }
 
 
+  public DetailedBlueprintInfo methods(List<BlueprintMethodInfo> methods) {
+    this.methods = methods;
+    return this;
+  }
+
+  public DetailedBlueprintInfo addMethodsItem(BlueprintMethodInfo methodsItem) {
+    this.methods.add(methodsItem);
+    return this;
+  }
+
+   /**
+   * Methods defined by this blueprint.
+   * @return methods
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "Methods defined by this blueprint.")
+  @JsonProperty(JSON_PROPERTY_METHODS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public List<BlueprintMethodInfo> getMethods() {
+    return methods;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_METHODS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setMethods(List<BlueprintMethodInfo> methods) {
+    this.methods = methods;
+  }
+
+
+  public DetailedBlueprintInfo roles(BlueprintRolesDefinition roles) {
+    this.roles = roles;
+    return this;
+  }
+
+   /**
+   * Get roles
+   * @return roles
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_ROLES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public BlueprintRolesDefinition getRoles() {
+    return roles;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ROLES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setRoles(BlueprintRolesDefinition roles) {
+    this.roles = roles;
+  }
+
+
   public DetailedBlueprintInfo events(List<BlueprintEventInfo> events) {
     this.events = events;
     return this;
@@ -369,13 +436,15 @@ public class DetailedBlueprintInfo {
         Objects.equals(this.fields, detailedBlueprintInfo.fields) &&
         Objects.equals(this.collections, detailedBlueprintInfo.collections) &&
         Objects.equals(this.functions, detailedBlueprintInfo.functions) &&
+        Objects.equals(this.methods, detailedBlueprintInfo.methods) &&
+        Objects.equals(this.roles, detailedBlueprintInfo.roles) &&
         Objects.equals(this.events, detailedBlueprintInfo.events) &&
         Objects.equals(this.namedTypes, detailedBlueprintInfo.namedTypes);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(outerBlueprintName, isTransient, genericTypeParameters, availableFeatures, fields, collections, functions, events, namedTypes);
+    return Objects.hash(outerBlueprintName, isTransient, genericTypeParameters, availableFeatures, fields, collections, functions, methods, roles, events, namedTypes);
   }
 
   @Override
@@ -389,6 +458,8 @@ public class DetailedBlueprintInfo {
     sb.append("    fields: ").append(toIndentedString(fields)).append("\n");
     sb.append("    collections: ").append(toIndentedString(collections)).append("\n");
     sb.append("    functions: ").append(toIndentedString(functions)).append("\n");
+    sb.append("    methods: ").append(toIndentedString(methods)).append("\n");
+    sb.append("    roles: ").append(toIndentedString(roles)).append("\n");
     sb.append("    events: ").append(toIndentedString(events)).append("\n");
     sb.append("    namedTypes: ").append(toIndentedString(namedTypes)).append("\n");
     sb.append("}");
