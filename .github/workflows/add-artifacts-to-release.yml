@@ -73,7 +73,7 @@ jobs:
       - if: matrix.os == 'ubuntu-latest'
         name: Build dependencies ubuntu
         run: |
-          sudo apt install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+          sudo apt-get update -y && sudo apt install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
           # sudo apt install -y gcc-i686-linux-gnu g++-i686-linux-gnu
       - name: Build core-rust
         run: |
