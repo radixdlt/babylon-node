@@ -102,6 +102,8 @@ impl DbCodec<Epoch> for EpochDbCodec {
     }
 }
 
+impl OrderPreservingDbCodec for EpochDbCodec {}
+
 #[derive(Default)]
 pub struct ScenarioSequenceNumberDbCodec {}
 
@@ -114,6 +116,8 @@ impl DbCodec<ScenarioSequenceNumber> for ScenarioSequenceNumberDbCodec {
         ScenarioSequenceNumber::from_be_bytes(copy_u8_array(bytes))
     }
 }
+
+impl OrderPreservingDbCodec for ScenarioSequenceNumberDbCodec {}
 
 #[derive(Default)]
 pub struct RawLedgerTransactionDbCodec {}
@@ -217,6 +221,12 @@ impl GroupPreservingDbCodec for SubstateKeyDbCodec {
     }
 }
 
+impl GroupOrderPreservingDbCodec<DbSubstateKey> for SubstateKeyDbCodec {
+    fn resolve_group_of(&self, key: &DbSubstateKey) -> <Self as GroupPreservingDbCodec>::Group {
+        key.0.clone()
+    }
+}
+
 impl SubstateKeyDbCodec {
     /// Returns a [`Range`] guaranteed to cover all allowed [`DbSortKey`]s.
     ///
@@ -274,6 +284,11 @@ impl<S, SC: DbCodec<S>> DbCodec<(GlobalAddress, S)> for PrefixGlobalAddressDbCod
         let suffix = self.suffix_codec.decode(&bytes[NodeId::LENGTH..]);
         (global_address, suffix)
     }
+}
+
+impl<S, SC: DbCodec<S> + OrderPreservingDbCodec> OrderPreservingDbCodec
+    for PrefixGlobalAddressDbCodec<S, SC>
+{
 }
 
 #[derive(Default)]

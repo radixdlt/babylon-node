@@ -1219,7 +1219,7 @@ impl SubstateDatabase for RocksDBStore {
         Box::new(
             self.open_db_context()
                 .cf(SubstatesCf)
-                .iterate_from(&(partition_key.clone(), from_sort_key), Direction::Forward)
+                .iterate_group_from(&(partition_key.clone(), from_sort_key), Direction::Forward)
                 .take_while(move |((next_key, _), _)| next_key == &partition_key)
                 .map(|((_, sort_key), value)| (sort_key, value)),
         )
@@ -1231,10 +1231,7 @@ impl ListableSubstateDatabase for RocksDBStore {
         Box::new(
             self.open_db_context()
                 .cf(SubstatesCf)
-                .iterate(Direction::Forward)
-                .map(|(iter_key_bytes, _)| iter_key_bytes.0)
-                // Rocksdb iterator returns sorted entries, so ok to to eliminate
-                // duplicates with dedup()
+                .iterate_key_groups()
                 .dedup(),
         )
     }
@@ -1484,10 +1481,10 @@ impl RestoreDecember2023LostSubstates for RocksDBStore {
             let first_epoch = first_proof.ledger_header.epoch.number();
             let last_epoch = last_epoch_proof.ledger_header.epoch.number();
             let problem_at_end_of_epoch = first_epoch + 19099; // (256 * 3 / 4 - 1) * 100 - 1
-            // Due to another bug, stokenet nodes may mistakenly believe that they already applied
-            // the fix. Thus, we have to ignore the `december_2023_lost_substates_restored` flag and
-            // make a decision based on "being stuck in the problematic epoch range". The fix is
-            // effectively idempotent, so we are fine with re-running it in an edge case.
+                                                               // Due to another bug, stokenet nodes may mistakenly believe that they already applied
+                                                               // the fix. Thus, we have to ignore the `december_2023_lost_substates_restored` flag and
+                                                               // make a decision based on "being stuck in the problematic epoch range". The fix is
+                                                               // effectively idempotent, so we are fine with re-running it in an edge case.
             last_epoch >= problem_at_end_of_epoch && last_epoch <= (problem_at_end_of_epoch + 2)
         };
 
