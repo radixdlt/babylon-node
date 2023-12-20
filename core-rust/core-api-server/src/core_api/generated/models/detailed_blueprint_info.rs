@@ -34,6 +34,11 @@ pub struct DetailedBlueprintInfo {
     /// Functions defined by this blueprint.
     #[serde(rename = "functions")]
     pub functions: Vec<crate::core_api::generated::models::BlueprintFunctionInfo>,
+    /// Methods defined by this blueprint.
+    #[serde(rename = "methods")]
+    pub methods: Vec<crate::core_api::generated::models::BlueprintMethodInfo>,
+    #[serde(rename = "roles")]
+    pub roles: Option<crate::core_api::generated::models::BlueprintRolesDefinition>, // Using Option permits Default trait; Will always be Some in normal use
     /// Events defined by this blueprint.
     #[serde(rename = "events")]
     pub events: Vec<crate::core_api::generated::models::BlueprintEventInfo>,
@@ -43,7 +48,7 @@ pub struct DetailedBlueprintInfo {
 }
 
 impl DetailedBlueprintInfo {
-    pub fn new(is_transient: bool, generic_type_parameters: Vec<crate::core_api::generated::models::GenericTypeParameter>, available_features: Vec<String>, fields: Vec<crate::core_api::generated::models::BlueprintFieldInfo>, collections: Vec<crate::core_api::generated::models::BlueprintCollectionInfo>, functions: Vec<crate::core_api::generated::models::BlueprintFunctionInfo>, events: Vec<crate::core_api::generated::models::BlueprintEventInfo>, named_types: Vec<crate::core_api::generated::models::BlueprintNamedTypeInfo>) -> DetailedBlueprintInfo {
+    pub fn new(is_transient: bool, generic_type_parameters: Vec<crate::core_api::generated::models::GenericTypeParameter>, available_features: Vec<String>, fields: Vec<crate::core_api::generated::models::BlueprintFieldInfo>, collections: Vec<crate::core_api::generated::models::BlueprintCollectionInfo>, functions: Vec<crate::core_api::generated::models::BlueprintFunctionInfo>, methods: Vec<crate::core_api::generated::models::BlueprintMethodInfo>, roles: crate::core_api::generated::models::BlueprintRolesDefinition, events: Vec<crate::core_api::generated::models::BlueprintEventInfo>, named_types: Vec<crate::core_api::generated::models::BlueprintNamedTypeInfo>) -> DetailedBlueprintInfo {
         DetailedBlueprintInfo {
             outer_blueprint_name: None,
             is_transient,
@@ -52,6 +57,8 @@ impl DetailedBlueprintInfo {
             fields,
             collections,
             functions,
+            methods,
+            roles: Option::Some(roles),
             events,
             named_types,
         }

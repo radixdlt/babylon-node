@@ -12,27 +12,62 @@
  * Do not edit the class manually.
  */
 
+import { exists, mapValues } from '../runtime';
+import type { BlueprintFunctionAuthorizationType } from './BlueprintFunctionAuthorizationType';
+import {
+    BlueprintFunctionAuthorizationTypeFromJSON,
+    BlueprintFunctionAuthorizationTypeFromJSONTyped,
+    BlueprintFunctionAuthorizationTypeToJSON,
+} from './BlueprintFunctionAuthorizationType';
 
 /**
  * 
  * @export
+ * @interface BlueprintFunctionAuthorizationBase
  */
-export const FunctionReceiverType = {
-    SelfRef: 'SelfRef',
-    SelfRefMut: 'SelfRefMut'
-} as const;
-export type FunctionReceiverType = typeof FunctionReceiverType[keyof typeof FunctionReceiverType];
-
-
-export function FunctionReceiverTypeFromJSON(json: any): FunctionReceiverType {
-    return FunctionReceiverTypeFromJSONTyped(json, false);
+export interface BlueprintFunctionAuthorizationBase {
+    /**
+     * 
+     * @type {BlueprintFunctionAuthorizationType}
+     * @memberof BlueprintFunctionAuthorizationBase
+     */
+    type: BlueprintFunctionAuthorizationType;
 }
 
-export function FunctionReceiverTypeFromJSONTyped(json: any, ignoreDiscriminator: boolean): FunctionReceiverType {
-    return json as FunctionReceiverType;
+/**
+ * Check if a given object implements the BlueprintFunctionAuthorizationBase interface.
+ */
+export function instanceOfBlueprintFunctionAuthorizationBase(value: object): boolean {
+    let isInstance = true;
+    isInstance = isInstance && "type" in value;
+
+    return isInstance;
 }
 
-export function FunctionReceiverTypeToJSON(value?: FunctionReceiverType | null): any {
-    return value as any;
+export function BlueprintFunctionAuthorizationBaseFromJSON(json: any): BlueprintFunctionAuthorizationBase {
+    return BlueprintFunctionAuthorizationBaseFromJSONTyped(json, false);
+}
+
+export function BlueprintFunctionAuthorizationBaseFromJSONTyped(json: any, ignoreDiscriminator: boolean): BlueprintFunctionAuthorizationBase {
+    if ((json === undefined) || (json === null)) {
+        return json;
+    }
+    return {
+        
+        'type': BlueprintFunctionAuthorizationTypeFromJSON(json['type']),
+    };
+}
+
+export function BlueprintFunctionAuthorizationBaseToJSON(value?: BlueprintFunctionAuthorizationBase | null): any {
+    if (value === undefined) {
+        return undefined;
+    }
+    if (value === null) {
+        return null;
+    }
+    return {
+        
+        'type': BlueprintFunctionAuthorizationTypeToJSON(value.type),
+    };
 }
 

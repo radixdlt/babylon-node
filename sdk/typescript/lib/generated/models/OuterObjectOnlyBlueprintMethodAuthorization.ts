@@ -12,27 +12,65 @@
  * Do not edit the class manually.
  */
 
-
+import { exists, mapValues } from '../runtime';
 /**
  * 
  * @export
+ * @interface OuterObjectOnlyBlueprintMethodAuthorization
  */
-export const FunctionReceiverReferenceType = {
-    Normal: 'Normal',
-    DirectAccess: 'DirectAccess'
+export interface OuterObjectOnlyBlueprintMethodAuthorization {
+    /**
+     * 
+     * @type {string}
+     * @memberof OuterObjectOnlyBlueprintMethodAuthorization
+     */
+    type: OuterObjectOnlyBlueprintMethodAuthorizationTypeEnum;
+}
+
+
+/**
+ * @export
+ */
+export const OuterObjectOnlyBlueprintMethodAuthorizationTypeEnum = {
+    OuterObjectOnly: 'OuterObjectOnly'
 } as const;
-export type FunctionReceiverReferenceType = typeof FunctionReceiverReferenceType[keyof typeof FunctionReceiverReferenceType];
+export type OuterObjectOnlyBlueprintMethodAuthorizationTypeEnum = typeof OuterObjectOnlyBlueprintMethodAuthorizationTypeEnum[keyof typeof OuterObjectOnlyBlueprintMethodAuthorizationTypeEnum];
 
 
-export function FunctionReceiverReferenceTypeFromJSON(json: any): FunctionReceiverReferenceType {
-    return FunctionReceiverReferenceTypeFromJSONTyped(json, false);
+/**
+ * Check if a given object implements the OuterObjectOnlyBlueprintMethodAuthorization interface.
+ */
+export function instanceOfOuterObjectOnlyBlueprintMethodAuthorization(value: object): boolean {
+    let isInstance = true;
+    isInstance = isInstance && "type" in value;
+
+    return isInstance;
 }
 
-export function FunctionReceiverReferenceTypeFromJSONTyped(json: any, ignoreDiscriminator: boolean): FunctionReceiverReferenceType {
-    return json as FunctionReceiverReferenceType;
+export function OuterObjectOnlyBlueprintMethodAuthorizationFromJSON(json: any): OuterObjectOnlyBlueprintMethodAuthorization {
+    return OuterObjectOnlyBlueprintMethodAuthorizationFromJSONTyped(json, false);
 }
 
-export function FunctionReceiverReferenceTypeToJSON(value?: FunctionReceiverReferenceType | null): any {
-    return value as any;
+export function OuterObjectOnlyBlueprintMethodAuthorizationFromJSONTyped(json: any, ignoreDiscriminator: boolean): OuterObjectOnlyBlueprintMethodAuthorization {
+    if ((json === undefined) || (json === null)) {
+        return json;
+    }
+    return {
+        
+        'type': json['type'],
+    };
+}
+
+export function OuterObjectOnlyBlueprintMethodAuthorizationToJSON(value?: OuterObjectOnlyBlueprintMethodAuthorization | null): any {
+    if (value === undefined) {
+        return undefined;
+    }
+    if (value === null) {
+        return null;
+    }
+    return {
+        
+        'type': value.type,
+    };
 }
 

@@ -24,17 +24,17 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
- * Gets or Sets FunctionReceiverType
+ * Gets or Sets BlueprintRolesDefinitionType
  */
-public enum FunctionReceiverType {
+public enum BlueprintRolesDefinitionType {
   
-  SELFREF("SelfRef"),
+  LOCAL("Local"),
   
-  SELFREFMUT("SelfRefMut");
+  OUTER("Outer");
 
   private String value;
 
-  FunctionReceiverType(String value) {
+  BlueprintRolesDefinitionType(String value) {
     this.value = value;
   }
 
@@ -49,8 +49,8 @@ public enum FunctionReceiverType {
   }
 
   @JsonCreator
-  public static FunctionReceiverType fromValue(String value) {
-    for (FunctionReceiverType b : FunctionReceiverType.values()) {
+  public static BlueprintRolesDefinitionType fromValue(String value) {
+    for (BlueprintRolesDefinitionType b : BlueprintRolesDefinitionType.values()) {
       if (b.value.equals(value)) {
         return b;
       }

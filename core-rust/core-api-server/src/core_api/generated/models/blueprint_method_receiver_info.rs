@@ -12,24 +12,18 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct BlueprintFunctionInfo {
-    #[serde(rename = "name")]
-    pub name: String,
-    #[serde(rename = "input_type_reference")]
-    pub input_type_reference: Option<crate::core_api::generated::models::BlueprintResolvedTypeReference>, // Using Option permits Default trait; Will always be Some in normal use
-    #[serde(rename = "output_type_reference")]
-    pub output_type_reference: Option<crate::core_api::generated::models::BlueprintResolvedTypeReference>, // Using Option permits Default trait; Will always be Some in normal use
-    #[serde(rename = "authorization")]
-    pub authorization: Option<crate::core_api::generated::models::BlueprintFunctionAuthorization>, // Using Option permits Default trait; Will always be Some in normal use
+pub struct BlueprintMethodReceiverInfo {
+    #[serde(rename = "receiver_type")]
+    pub receiver_type: crate::core_api::generated::models::MethodReceiverType,
+    #[serde(rename = "reference_types")]
+    pub reference_types: Vec<crate::core_api::generated::models::MethodReceiverReferenceType>,
 }
 
-impl BlueprintFunctionInfo {
-    pub fn new(name: String, input_type_reference: crate::core_api::generated::models::BlueprintResolvedTypeReference, output_type_reference: crate::core_api::generated::models::BlueprintResolvedTypeReference, authorization: crate::core_api::generated::models::BlueprintFunctionAuthorization) -> BlueprintFunctionInfo {
-        BlueprintFunctionInfo {
-            name,
-            input_type_reference: Option::Some(input_type_reference),
-            output_type_reference: Option::Some(output_type_reference),
-            authorization: Option::Some(authorization),
+impl BlueprintMethodReceiverInfo {
+    pub fn new(receiver_type: crate::core_api::generated::models::MethodReceiverType, reference_types: Vec<crate::core_api::generated::models::MethodReceiverReferenceType>) -> BlueprintMethodReceiverInfo {
+        BlueprintMethodReceiverInfo {
+            receiver_type,
+            reference_types,
         }
     }
 }

@@ -8443,6 +8443,8 @@ components:
         - fields
         - collections
         - functions
+        - methods
+        - roles
         - events
         - named_types
       properties:
@@ -8483,6 +8485,13 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/BlueprintFunctionInfo'
+        methods:
+          description: Methods defined by this blueprint.
+          type: array
+          items:
+            $ref: '#/components/schemas/BlueprintMethodInfo'
+        roles:
+          $ref: '#/components/schemas/BlueprintRolesDefinition'
         events:
           description: Events defined by this blueprint.
           type: array
@@ -8519,37 +8528,196 @@ components:
         - name
         - input_type_reference
         - output_type_reference
+        - authorization
       properties:
         name:
           type: string
-        receiver:
-          $ref: "#/components/schemas/BlueprintFunctionReceiverInfo"
         input_type_reference:
           $ref: "#/components/schemas/BlueprintResolvedTypeReference"
         output_type_reference:
           $ref: "#/components/schemas/BlueprintResolvedTypeReference"
-    BlueprintFunctionReceiverInfo:
+        authorization:
+          $ref: "#/components/schemas/BlueprintFunctionAuthorization"
+    BlueprintFunctionAuthorizationType:
+      type: string
+      enum:
+        - Public
+        - ByAccessRule
+        - RootOnly
+    BlueprintFunctionAuthorization:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/BlueprintFunctionAuthorizationType'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match BlueprintFunctionAuthorizationType options
+          Public: '#/components/schemas/PublicBlueprintFunctionAuthorization'
+          ByAccessRule: '#/components/schemas/ByAccessRuleBlueprintFunctionAuthorization'
+          RootOnly: '#/components/schemas/RootOnlyBlueprintFunctionAuthorization'
+    ByAccessRuleBlueprintFunctionAuthorization:
+      allOf:
+        - $ref: "#/components/schemas/BlueprintFunctionAuthorization"
+        - type: object
+          required:
+            - rule
+          properties:
+            rule:
+              $ref: "#/components/schemas/AccessRule"
+    PublicBlueprintFunctionAuthorization:
+      allOf:
+        - $ref: "#/components/schemas/BlueprintFunctionAuthorization"
+        - type: object
+          description: All callers have access.
+    RootOnlyBlueprintFunctionAuthorization:
+      allOf:
+        - $ref: "#/components/schemas/BlueprintFunctionAuthorization"
+        - type: object
+          description: Only the root call frame has access.
+    BlueprintMethodInfo:
+      type: object
+      required:
+        - name
+        - receiver
+        - input_type_reference
+        - output_type_reference
+        - authorization
+      properties:
+        name:
+          type: string
+        receiver:
+          $ref: "#/components/schemas/BlueprintMethodReceiverInfo"
+        input_type_reference:
+          $ref: "#/components/schemas/BlueprintResolvedTypeReference"
+        output_type_reference:
+          $ref: "#/components/schemas/BlueprintResolvedTypeReference"
+        authorization:
+          $ref: "#/components/schemas/BlueprintMethodAuthorization"
+    BlueprintMethodReceiverInfo:
       type: object
       required:
         - receiver_type
         - reference_types
       properties:
         receiver_type:
-          $ref: "#/components/schemas/FunctionReceiverType"
+          $ref: "#/components/schemas/MethodReceiverType"
         reference_types:
           type: array
           items:
-            $ref: "#/components/schemas/FunctionReceiverReferenceType"
-    FunctionReceiverType:
+            $ref: "#/components/schemas/MethodReceiverReferenceType"
+    MethodReceiverType:
       type: string
       enum:
         - SelfRef
         - SelfRefMut
-    FunctionReceiverReferenceType:
+    MethodReceiverReferenceType:
       type: string
       enum:
         - Normal
         - DirectAccess
+    BlueprintMethodAuthorizationType:
+      type: string
+      enum:
+        - Public
+        - ByRoles
+        - OuterObjectOnly
+        - OwnPackageOnly
+    BlueprintMethodAuthorization:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/BlueprintMethodAuthorizationType'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match BlueprintMethodAuthorizationType options
+          Public: '#/components/schemas/PublicBlueprintMethodAuthorization'
+          ByRoles: '#/components/schemas/ByRolesBlueprintMethodAuthorization'
+          OuterObjectOnly: '#/components/schemas/OuterObjectOnlyBlueprintMethodAuthorization'
+          OwnPackageOnly: '#/components/schemas/OwnPackageOnlyBlueprintMethodAuthorization'
+    ByRolesBlueprintMethodAuthorization:
+      allOf:
+        - $ref: "#/components/schemas/BlueprintMethodAuthorization"
+        - type: object
+          description: Only the listed roles have access.
+          required:
+            - role_keys
+          properties:
+            role_keys:
+              type: array
+              items:
+                type: string
+    PublicBlueprintMethodAuthorization:
+      allOf:
+        - $ref: "#/components/schemas/BlueprintMethodAuthorization"
+        - type: object
+          description: All callers have access.
+    OuterObjectOnlyBlueprintMethodAuthorization:
+      allOf:
+        - $ref: "#/components/schemas/BlueprintMethodAuthorization"
+        - type: object
+          description: Only outer objects have access.
+    OwnPackageOnlyBlueprintMethodAuthorization:
+      allOf:
+        - $ref: "#/components/schemas/BlueprintMethodAuthorization"
+        - type: object
+          description: Only the package this method is a part of has access.
+    BlueprintRolesDefinitionType:
+      type: string
+      enum:
+        - Local
+        - Outer
+    BlueprintRolesDefinition:
+      type: object
+      description: Blueprint's definition of authorization roles.
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/BlueprintRolesDefinitionType'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match BlueprintRolesDefinitionType options
+          Local: '#/components/schemas/LocalBlueprintRolesDefinition'
+          Outer: '#/components/schemas/OuterBlueprintRolesDefinition'
+    LocalBlueprintRolesDefinition:
+      allOf:
+        - $ref: "#/components/schemas/BlueprintRolesDefinition"
+        - type: object
+          description: Roles are specified by the blueprint.
+          required:
+            - definitions
+          properties:
+            definitions:
+              type: array
+              items:
+                $ref: "#/components/schemas/BlueprintRoleInfo"
+    OuterBlueprintRolesDefinition:
+      allOf:
+        - $ref: "#/components/schemas/BlueprintRolesDefinition"
+        - type: object
+          description: |
+            Roles are specified in the outer blueprint and defined in the instantiated outer object.
+    BlueprintRoleInfo:
+      type: object
+      required:
+        - key
+        - updater_role_keys
+      properties:
+        key:
+          type: string
+          description: Identifier of a role.
+        updater_role_keys:
+          type: array
+          items:
+            type: string
+            description: Identifiers of roles authorized to update this role.
     BlueprintCollectionInfo:
       type: object
       required:
