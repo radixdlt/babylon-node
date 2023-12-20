@@ -479,6 +479,7 @@ impl RocksDBStore {
     pub fn new(
         root: PathBuf,
         config: DatabaseFlags,
+        network: &NetworkDefinition,
     ) -> Result<RocksDBStore, DatabaseConfigValidationError> {
         let mut db_opts = Options::default();
         db_opts.create_if_missing(true);
@@ -504,7 +505,7 @@ impl RocksDBStore {
             rocks_db_store.catchup_account_change_index();
         }
 
-        rocks_db_store.restore_december_2023_lost_substates();
+        rocks_db_store.restore_december_2023_lost_substates(network);
 
         Ok(rocks_db_store)
     }
@@ -1456,22 +1457,39 @@ impl AccountChangeIndexExtension for RocksDBStore {
 }
 
 impl RestoreDecember2023LostSubstates for RocksDBStore {
-    fn restore_december_2023_lost_substates(&self) {
+    fn restore_december_2023_lost_substates(&self, network: &NetworkDefinition) {
         let db_context = self.open_db_context();
         let extension_data_cf = db_context.cf(ExtensionsDataCf);
         let december_2023_lost_substates_restored =
             extension_data_cf.get(&ExtensionsDataKey::December2023LostSubstatesRestored);
 
-        // Skip restoration if substates already restored
-        if december_2023_lost_substates_restored.is_some() {
-            return;
-        }
+        let should_restore_substates = if network.id == NetworkDefinition::mainnet().id {
+            // For mainnet, we have a tested, working fix at an epoch learnt during investigation:
 
-        // Substates were deleted on the transition to epoch 51817 so no need to restore
-        // substates if the current epoch has not reached this epoch yet.
-        let should_restore_substates = self.get_last_epoch_proof().map_or(false, |p| {
-            p.ledger_header.next_epoch.unwrap().epoch.number() >= 51817
-        });
+            // Skip restoration if substates already restored
+            if december_2023_lost_substates_restored.is_some() {
+                return;
+            }
+
+            // Substates were deleted on the transition to epoch 51817 so no need to restore
+            // substates if the current epoch has not reached this epoch yet.
+            self.get_last_epoch_proof().map_or(false, |p| {
+                p.ledger_header.next_epoch.unwrap().epoch.number() >= 51817
+            })
+        } else {
+            // For other networks, we can calculate the "problem" epoch from theoretical principles:
+            let (Some(first_proof), Some(last_epoch_proof)) = (self.get_first_proof(), self.get_last_epoch_proof()) else {
+                return; // empty ledger; no fix needed
+            };
+            let first_epoch = first_proof.ledger_header.epoch.number();
+            let last_epoch = last_epoch_proof.ledger_header.epoch.number();
+            let problem_at_end_of_epoch = first_epoch + 19099; // (256 * 3 / 4 - 1) * 100 - 1
+            // Due to another bug, stokenet nodes may mistakenly believe that they already applied
+            // the fix. Thus, we have to ignore the `december_2023_lost_substates_restored` flag and
+            // make a decision based on "being stuck in the problematic epoch range". The fix is
+            // effectively idempotent, so we are fine with re-running it in an edge case.
+            last_epoch >= problem_at_end_of_epoch && last_epoch <= (problem_at_end_of_epoch + 2)
+        };
 
         if should_restore_substates {
             info!("Restoring lost substates...");

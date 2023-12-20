@@ -73,7 +73,7 @@ jobs:
       - if: matrix.os == 'ubuntu-latest'
         name: Build dependencies ubuntu
         run: |
-          sudo apt install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+          sudo apt-get update -y && sudo apt install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
           # sudo apt install -y gcc-i686-linux-gnu g++-i686-linux-gnu
       - name: Build core-rust
         run: |
@@ -83,7 +83,7 @@ jobs:
           ls  ./target/${{ matrix.target }}/release/
         env:
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: "${{ matrix.target == 'aarch64-unknown-linux-gnu' && '' || 'aarch64-linux-gnu-gcc' }}"
-      - uses: actions/upload-artifact@master
+      - uses: actions/upload-artifact@v3
         with:
           name: libcorerust-${{ matrix.target }}
           path: ./core-rust/target/${{ matrix.target }}/release/${{ matrix.artifact }}
