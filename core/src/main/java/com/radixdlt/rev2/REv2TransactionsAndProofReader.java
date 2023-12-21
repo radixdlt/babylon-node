@@ -94,6 +94,18 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
   public LedgerExtension getTransactions(DtoLedgerProof start) {
     final var startStateVersionInclusive = start.getLedgerHeader().getStateVersion() + 1;
 
+    final var latestStateVersion =
+        transactionStore
+            .getLastProof()
+            .map(proof -> proof.ledgerHeader().stateVersion().toLong())
+            .orElse(0L);
+
+    // Early return if we got a query for a higher
+    // state version than our latest.
+    if (startStateVersionInclusive > latestStateVersion) {
+      return null;
+    }
+
     final var rawTxnsAndProofOpt =
         this.transactionStore.getTxnsAndProof(startStateVersionInclusive, this.limitsConfig);
 

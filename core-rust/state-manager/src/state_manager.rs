@@ -167,6 +167,7 @@ impl StateManager {
             StateManagerDatabase::from_config(
                 config.database_backend_config,
                 config.database_flags,
+                &network,
             ),
         ));
 
