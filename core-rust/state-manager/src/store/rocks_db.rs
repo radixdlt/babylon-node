@@ -67,7 +67,7 @@ use std::fmt;
 
 use crate::store::traits::*;
 use crate::{
-    CommittedTransactionIdentifiers, LedgerProof, LedgerTransactionReceipt,
+    BySubstate, CommittedTransactionIdentifiers, LedgerProof, LedgerTransactionReceipt,
     LocalTransactionExecution, LocalTransactionReceipt, ReceiptTreeHash, StateVersion,
     SubstateChangeAction, TransactionTreeHash, VersionedCommittedTransactionIdentifiers,
     VersionedLedgerProof, VersionedLedgerTransactionReceipt, VersionedLocalTransactionExecution,
@@ -83,6 +83,7 @@ use transaction::model::*;
 use radix_engine_store_interface::interface::*;
 
 use itertools::Itertools;
+use radix_engine::system::type_info::TypeInfoSubstate;
 use radix_engine_store_interface::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
 use std::path::PathBuf;
 
@@ -93,6 +94,10 @@ use crate::query::TransactionIdentifierLoader;
 use crate::store::traits::gc::{
     LedgerProofsGcProgress, LedgerProofsGcStore, StateHashTreeGcStore,
     VersionedLedgerProofsGcProgress,
+};
+use crate::store::traits::indices::{
+    CreationId, EntityBlueprintId, ObjectBlueprintName, ObjectBlueprintNameV1,
+    VersionedEntityBlueprintId, VersionedObjectBlueprintName,
 };
 use crate::store::traits::measurement::{CategoryDbVolumeStatistic, MeasurableDatabase};
 use crate::store::traits::scenario::{
@@ -124,7 +129,7 @@ use super::traits::extensions::*;
 /// The `NAME` constants defined by `*Cf` structs (and referenced below) are used as database column
 /// family names. Any change would effectively mean a ledger wipe. For this reason, we choose to
 /// define them manually (rather than using the `Into<String>`, which is refactor-sensitive).
-const ALL_COLUMN_FAMILIES: [&str; 20] = [
+const ALL_COLUMN_FAMILIES: [&str; 22] = [
     RawLedgerTransactionsCf::DEFAULT_NAME,
     CommittedTransactionIdentifiersCf::VERSIONED_NAME,
     TransactionReceiptsCf::VERSIONED_NAME,
@@ -145,6 +150,8 @@ const ALL_COLUMN_FAMILIES: [&str; 20] = [
     AccountChangeStateVersionsCf::NAME,
     ExecutedGenesisScenariosCf::VERSIONED_NAME,
     LedgerProofsGcProgressCf::VERSIONED_NAME,
+    TypeAndCreationIndexedEntitiesCf::VERSIONED_NAME,
+    BlueprintAndCreationIndexedObjectsCf::VERSIONED_NAME,
 ];
 
 /// Committed transactions.
@@ -374,6 +381,7 @@ impl TypedCf for ExtensionsDataCf {
             ExtensionsDataKey::AccountChangeIndexLastProcessedStateVersion,
             ExtensionsDataKey::LocalTransactionExecutionIndexEnabled,
             ExtensionsDataKey::December2023LostSubstatesRestored,
+            ExtensionsDataKey::ReNodeListingIndicesLastProcessedStateVersion,
         ])
     }
 
@@ -431,6 +439,30 @@ impl VersionedCf for LedgerProofsGcProgressCf {
     type VersionedValue = VersionedLedgerProofsGcProgress;
 }
 
+/// Node IDs and blueprints of all entities, indexed by their type and creation order.
+/// Schema: `[EntityType as u8, StateVersion.to_be_bytes(), (index_within_txn as u32).to_be_bytes()].concat()` -> `scrypto_encode(VersionedEntityBlueprintId)`
+struct TypeAndCreationIndexedEntitiesCf;
+impl VersionedCf for TypeAndCreationIndexedEntitiesCf {
+    type Key = (EntityType, CreationId);
+    type Value = EntityBlueprintId;
+
+    const VERSIONED_NAME: &'static str = "type_and_creation_indexed_entities";
+    type KeyCodec = TypeAndCreationIndexKeyDbCodec;
+    type VersionedValue = VersionedEntityBlueprintId;
+}
+
+/// Node IDs and blueprints of all objects, indexed by their blueprint ID and creation order.
+/// Schema: `[PackageAddress.0, hash(blueprint_name), StateVersion.to_be_bytes(), (index_within_txn as u32).to_be_bytes()].concat()` -> `scrypto_encode(VersionedObjectBlueprintName)`
+struct BlueprintAndCreationIndexedObjectsCf;
+impl VersionedCf for BlueprintAndCreationIndexedObjectsCf {
+    type Key = (PackageAddress, Hash, CreationId);
+    type Value = ObjectBlueprintName;
+
+    const VERSIONED_NAME: &'static str = "blueprint_and_creation_indexed_objects";
+    type KeyCodec = BlueprintAndCreationIndexKeyDbCodec;
+    type VersionedValue = VersionedObjectBlueprintName;
+}
+
 /// An enum key for [`ExtensionsDataCf`].
 #[derive(Eq, PartialEq, Hash, PartialOrd, Ord, Clone, Debug)]
 enum ExtensionsDataKey {
@@ -438,6 +470,7 @@ enum ExtensionsDataKey {
     AccountChangeIndexEnabled,
     LocalTransactionExecutionIndexEnabled,
     December2023LostSubstatesRestored,
+    ReNodeListingIndicesLastProcessedStateVersion,
 }
 
 // IMPORTANT NOTE: the strings defined below are used as database identifiers. Any change would
@@ -454,6 +487,9 @@ impl fmt::Display for ExtensionsDataKey {
                 "local_transaction_execution_index_enabled"
             }
             Self::December2023LostSubstatesRestored => "december_2023_lost_substates_restored",
+            Self::ReNodeListingIndicesLastProcessedStateVersion => {
+                "re_node_listing_indices_last_processed_state_version"
+            }
         };
         write!(f, "{str}")
     }
@@ -506,6 +542,10 @@ impl RocksDBStore {
 
         rocks_db_store.restore_december_2023_lost_substates(network);
 
+        if rocks_db_store.config.enable_re_node_listing_indices {
+            rocks_db_store.catchup_re_node_listing_indices()
+        }
+
         Ok(rocks_db_store)
     }
 
@@ -538,6 +578,7 @@ impl RocksDBStore {
             config: DatabaseFlags {
                 enable_local_transaction_execution_index: false,
                 enable_account_change_index: false,
+                enable_re_node_listing_indices: false,
             },
             db,
         })
@@ -570,6 +611,7 @@ impl RocksDBStore {
             config: DatabaseFlags {
                 enable_local_transaction_execution_index: false,
                 enable_account_change_index: false,
+                enable_re_node_listing_indices: false,
             },
             db,
         }
@@ -592,8 +634,19 @@ impl RocksDBStore {
         if self.is_account_change_index_enabled() {
             self.batch_update_account_change_index_from_committed_transaction(
                 db_context,
-                transaction_bundle.state_version,
                 &transaction_bundle,
+            );
+        }
+
+        if self.config.enable_re_node_listing_indices {
+            self.batch_update_re_node_listing_indices(
+                db_context,
+                transaction_bundle.state_version,
+                &transaction_bundle
+                    .receipt
+                    .on_ledger
+                    .state_changes
+                    .substate_level_changes,
             );
         }
 
@@ -1437,9 +1490,9 @@ impl RocksDBStore {
     fn batch_update_account_change_index_from_committed_transaction(
         &self,
         db_context: &TypedDbContext,
-        state_version: StateVersion,
         transaction_bundle: &CommittedTransactionBundle,
     ) {
+        let state_version = transaction_bundle.state_version;
         self.batch_update_account_change_index_from_receipt(
             db_context,
             state_version,
@@ -1493,6 +1546,101 @@ impl RocksDBStore {
         );
 
         last_state_version
+    }
+
+    fn batch_update_re_node_listing_indices(
+        &self,
+        db_context: &TypedDbContext,
+        state_version: StateVersion,
+        substate_changes: &BySubstate<SubstateChangeAction>,
+    ) {
+        for (index_within_txn, node_id) in substate_changes.iter_node_ids().enumerate() {
+            let type_info_creation = substate_changes.get(
+                node_id,
+                &TYPE_INFO_FIELD_PARTITION,
+                &TypeInfoField::TypeInfo.into(),
+            );
+            let Some(type_info_creation) = type_info_creation else {
+                continue;
+            };
+            let SubstateChangeAction::Create { new } = type_info_creation else {
+                panic!("type info substate should be immutable: {:?}", type_info_creation);
+            };
+            let type_info = scrypto_decode::<TypeInfoSubstate>(new).expect("decode type info");
+
+            let entity_type = node_id.entity_type().expect("type of upserted ReNode");
+            let creation_id = CreationId::new(state_version, index_within_txn);
+
+            match type_info {
+                TypeInfoSubstate::Object(object_info) => {
+                    let blueprint_id = object_info.blueprint_info.blueprint_id;
+                    let BlueprintId {
+                        package_address,
+                        blueprint_name,
+                    } = blueprint_id.clone();
+                    db_context.cf(TypeAndCreationIndexedEntitiesCf).put(
+                        &(entity_type, creation_id.clone()),
+                        &EntityBlueprintId::of_object(*node_id, blueprint_id),
+                    );
+                    db_context.cf(BlueprintAndCreationIndexedObjectsCf).put(
+                        &(package_address, hash(&blueprint_name), creation_id),
+                        &ObjectBlueprintNameV1 {
+                            node_id: *node_id,
+                            blueprint_name,
+                        },
+                    );
+                }
+                TypeInfoSubstate::KeyValueStore(_kv_store_info) => {
+                    db_context.cf(TypeAndCreationIndexedEntitiesCf).put(
+                        &(entity_type, creation_id),
+                        &EntityBlueprintId::of_kv_store(*node_id),
+                    );
+                }
+                TypeInfoSubstate::GlobalAddressReservation(_)
+                | TypeInfoSubstate::GlobalAddressPhantom(_) => {
+                    panic!("should not be persisted: {:?}", type_info)
+                }
+            }
+        }
+    }
+
+    fn catchup_re_node_listing_indices(&self) {
+        const TXN_FLUSH_INTERVAL: u64 = 10_000;
+
+        info!("ReNode listing indices are enabled.");
+        let db_context = self.open_db_context();
+        let catchup_from_version = db_context
+            .cf(ExtensionsDataCf)
+            .get(&ExtensionsDataKey::ReNodeListingIndicesLastProcessedStateVersion)
+            .map(StateVersion::from_be_bytes)
+            .unwrap_or(StateVersion::pre_genesis())
+            .next()
+            .expect("next version");
+
+        let mut receipts_iter = db_context
+            .cf(TransactionReceiptsCf)
+            .iterate_from(&catchup_from_version, Direction::Forward)
+            .peekable();
+
+        while let Some((state_version, receipt)) = receipts_iter.next() {
+            self.batch_update_re_node_listing_indices(
+                &db_context,
+                state_version,
+                &receipt.state_changes.substate_level_changes,
+            );
+            if state_version.number() % TXN_FLUSH_INTERVAL == 0 || receipts_iter.peek().is_none() {
+                info!(
+                    "ReNode listing indices updated to {}; flushing...",
+                    state_version
+                );
+                db_context.cf(ExtensionsDataCf).put(
+                    &ExtensionsDataKey::ReNodeListingIndicesLastProcessedStateVersion,
+                    &state_version.to_be_bytes().to_vec(),
+                );
+                db_context.flush();
+            }
+        }
+        info!("ReNode listing indices are caught up.");
     }
 }
 
@@ -1811,6 +1959,87 @@ impl DbCodec<NodeId> for NodeIdDbCodec {
 
     fn decode(&self, bytes: &[u8]) -> NodeId {
         NodeId(copy_u8_array(bytes))
+    }
+}
+
+#[derive(Default)]
+struct TypeAndCreationIndexKeyDbCodec {}
+
+impl DbCodec<(EntityType, CreationId)> for TypeAndCreationIndexKeyDbCodec {
+    fn encode(&self, value: &(EntityType, CreationId)) -> Vec<u8> {
+        let (
+            entity_type,
+            CreationId {
+                state_version,
+                index_within_txn,
+            },
+        ) = value;
+        let mut bytes = Vec::new();
+        bytes.push(*entity_type as u8);
+        bytes.extend_from_slice(&state_version.to_be_bytes());
+        bytes.extend_from_slice(&index_within_txn.to_be_bytes());
+        bytes
+    }
+
+    fn decode(&self, bytes: &[u8]) -> (EntityType, CreationId) {
+        let (entity_type_byte, bytes) = bytes.split_at(1);
+        let entity_type = EntityType::from_repr(entity_type_byte[0]).expect("unexpected type byte");
+
+        let (state_version_bytes, index_within_txn_bytes) = bytes.split_at(StateVersion::BYTE_LEN);
+        let state_version = StateVersion::from_be_bytes(state_version_bytes);
+        let index_within_txn = u32::from_be_bytes(copy_u8_array(index_within_txn_bytes));
+
+        (
+            entity_type,
+            CreationId {
+                state_version,
+                index_within_txn,
+            },
+        )
+    }
+}
+
+#[derive(Default)]
+struct BlueprintAndCreationIndexKeyDbCodec {}
+
+impl DbCodec<(PackageAddress, Hash, CreationId)> for BlueprintAndCreationIndexKeyDbCodec {
+    fn encode(&self, value: &(PackageAddress, Hash, CreationId)) -> Vec<u8> {
+        let (
+            package_address,
+            blueprint_name_hash,
+            CreationId {
+                state_version,
+                index_within_txn,
+            },
+        ) = value;
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(&package_address.as_node_id().0);
+        bytes.extend_from_slice(&blueprint_name_hash.0);
+        bytes.extend_from_slice(&state_version.to_be_bytes());
+        bytes.extend_from_slice(&index_within_txn.to_be_bytes());
+        bytes
+    }
+
+    fn decode(&self, bytes: &[u8]) -> (PackageAddress, Hash, CreationId) {
+        let (package_address_bytes, bytes) = bytes.split_at(NodeId::LENGTH);
+        let package_address =
+            PackageAddress::try_from(package_address_bytes).expect("invalid package address");
+
+        let (blueprint_name_hash_bytes, bytes) = bytes.split_at(Hash::LENGTH);
+        let blueprint_name_hash = Hash::from_bytes(copy_u8_array(blueprint_name_hash_bytes));
+
+        let (state_version_bytes, index_within_txn_bytes) = bytes.split_at(StateVersion::BYTE_LEN);
+        let state_version = StateVersion::from_be_bytes(state_version_bytes);
+        let index_within_txn = u32::from_be_bytes(copy_u8_array(index_within_txn_bytes));
+
+        (
+            package_address,
+            blueprint_name_hash,
+            CreationId {
+                state_version,
+                index_within_txn,
+            },
+        )
     }
 }
 

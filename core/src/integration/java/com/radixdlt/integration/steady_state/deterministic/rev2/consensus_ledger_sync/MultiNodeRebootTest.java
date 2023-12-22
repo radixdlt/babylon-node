@@ -219,7 +219,7 @@ public final class MultiNodeRebootTest {
                         GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
                                 this.roundsPerEpoch)
                             .totalEmissionXrdPerEpoch(Decimal.ofNonNegative(0))),
-                    new DatabaseFlags(true, false),
+                    new DatabaseFlags(true, false, false),
                     StateComputerConfig.REV2ProposerConfig.transactionGenerator(
                         new REV2TransactionGenerator(), 1),
                     false,

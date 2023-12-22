@@ -121,11 +121,11 @@ public abstract class DeterministicCoreApiTestBase {
 
   protected DeterministicTest buildRunningServerTest() {
     return buildRunningServerTest(
-        1000000, new DatabaseFlags(true, false), GenesisData.NO_SCENARIOS);
+        1000000, new DatabaseFlags(true, false, true), GenesisData.NO_SCENARIOS);
   }
 
   protected DeterministicTest buildRunningServerTestWithScenarios(ImmutableList<String> scenarios) {
-    return buildRunningServerTest(1000000, new DatabaseFlags(true, false), scenarios);
+    return buildRunningServerTest(1000000, new DatabaseFlags(true, false, true), scenarios);
   }
 
   protected DeterministicTest buildRunningServerTest(DatabaseFlags databaseFlags) {
@@ -134,7 +134,7 @@ public abstract class DeterministicCoreApiTestBase {
 
   protected DeterministicTest buildRunningServerTest(int roundsPerEpoch) {
     return buildRunningServerTest(
-        roundsPerEpoch, new DatabaseFlags(true, false), GenesisData.NO_SCENARIOS);
+        roundsPerEpoch, new DatabaseFlags(true, false, true), GenesisData.NO_SCENARIOS);
   }
 
   protected DeterministicTest buildRunningServerTest(
