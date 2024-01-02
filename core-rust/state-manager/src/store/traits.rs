@@ -551,6 +551,7 @@ pub mod scenario {
 pub mod extensions {
     use super::*;
     use radix_engine::types::GlobalAddress;
+    use radix_engine_common::network::NetworkDefinition;
 
     #[enum_dispatch]
     pub trait AccountChangeIndexExtension {
@@ -561,7 +562,7 @@ pub mod extensions {
 
     #[enum_dispatch]
     pub trait RestoreDecember2023LostSubstates {
-        fn restore_december_2023_lost_substates(&self);
+        fn restore_december_2023_lost_substates(&self, network: &NetworkDefinition);
     }
 
     #[enum_dispatch]
