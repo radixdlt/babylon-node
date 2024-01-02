@@ -22,7 +22,7 @@ jobs:
         working-directory: ./sdk/typescript
 
     steps:
-      - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b
+      - uses: RDXWorks-actions/checkout@main
       - uses: ./.github/actions/fetch-secrets
         with: 
           role_name: "${{ secrets.BABYLON_SECRETS_ROLE_ARN }}"
@@ -32,7 +32,7 @@ jobs:
           secret_name: "github-actions/radixdlt/babylon-node/npm-publishing-secret"
           parse_json: true
       - name: Use Node.js
-        uses: actions/setup-node@8c91899e586c5b171469028077307d293428b516
+        uses: RDXWorks-actions/setup-node@main
         with:
           node-version: "18.x"
           registry-url: "https://registry.npmjs.org"

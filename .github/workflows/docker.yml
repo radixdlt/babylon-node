@@ -31,27 +31,23 @@ jobs:
       - build_push_container_dockerhub
       - build_push_container_dockerhub_arm
     steps:
-      - uses: actions/checkout@v2
+      - uses: RDXWorks-actions/checkout@main
         with:
           fetch-depth: 0
       ## Dockerhub
-      # This is version v1.7.0
-      # https://github.com/aws-actions/configure-aws-credentials/releases/tag/v1.7.0
       - name: "Configure AWS credentials"
-        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838
+        uses: RDXWorks-actions/configure-aws-credentials@main
         with:
           role-to-assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
           aws-region: eu-west-2
       - name: Read secrets from AWS Secrets Manager into environment variables
-        uses: aws-actions/aws-secretsmanager-get-secrets@v1
+        uses: RDXWorks-actions/aws-secretsmanager-get-secrets@main
         with:
           secret-ids: |
             DOCKERHUB, github-actions/rdxworks/dockerhub-images/release-credentials
           parse-json-secrets: true
-      # This is version v2.1.0
-      # https://github.com/docker/login-action/releases/tag/v2.1.0
       - name: Login to Docker Hub
-        uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a
+        uses: RDXWorks-actions/login-action@master
         with:
           username: ${{ env.DOCKERHUB_USERNAME }}
           password: ${{ env.DOCKERHUB_TOKEN }}
@@ -82,12 +78,12 @@ jobs:
       contents: read
       pull-requests: read
     steps:
-      - uses: actions/checkout@v2
+      - uses: RDXWorks-actions/checkout@main
         with:
           fetch-depth: 0
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@v4
+        uses: RDXWorks-actions/metadata-action@master
         with:
           images: |
             docker.io/radixdlt/babylon-node
@@ -105,18 +101,18 @@ jobs:
         with:
           toolchain: stable
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: RDXWorks-actions/setup-java@main
         with:
           distribution: 'zulu'
           java-version: '17'
       - name: Cache Gradle packages
-        uses: actions/cache@v3
+        uses: RDXWorks-actions/cache@main
         with:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}-deb
           restore-keys: ${{ runner.os }}-gradle-deb
       - id: auth
-        uses: google-github-actions/auth@a61909d048e0be579b6c15b27088d19668493851
+        uses: RDXWorks-actions/auth@main
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
@@ -128,14 +124,14 @@ jobs:
         run: |
           gcloud auth configure-docker -q
       - name: Login to Artifact Registry
-        uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a
+        uses: RDXWorks-actions/login-action@master
         with:
           registry: europe-west2-docker.pkg.dev
           username: oauth2accesstoken
           password: ${{ steps.auth.outputs.access_token }}
       - name: Restore cached image-cache
         id: cache-image-restore
-        uses: actions/cache/restore@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
+        uses: RDXWorks-actions/cache/restore@main
         with:
           path: /tmp/outputs/cache/docker
           key: babylon-node-default-${{ hashFiles('./Dockerfile') }}
@@ -154,7 +150,7 @@ jobs:
           sudo apt-get update && sudo apt-get install -y make
           cd core && make build-core
       - name: Upload generated debian package
-        uses: actions/upload-artifact@v3.1.0
+        uses: RDXWorks-actions/upload-artifact@main
         with:
           name: deb4docker
           path: "${{ github.workspace }}/docker/*.deb"
@@ -165,7 +161,7 @@ jobs:
     outputs:
       tag: ${{ steps.setup_tags.outputs.tag }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: RDXWorks-actions/checkout@main
         with:
           fetch-depth: 0
       - id: setup_tags
@@ -316,7 +312,7 @@ jobs:
       contents: read
       deployments: write
     steps:
-      - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b
+      - uses: RDXWorks-actions/checkout@main
       - uses: radixdlt/public-iac-resuable-artifacts/fetch-secrets@main
         with:
           role_name: ${{ secrets.AWS_ROLE_NAME_SNYK_SECRET }}
@@ -326,7 +322,7 @@ jobs:
           secret_name: ${{ secrets.AWS_SECRET_NAME_SNYK }}
           parse_json: true
       - name: Enable Snyk online monitoring to check for vulnerabilities
-        uses: snyk/actions/gradle-jdk17@b98d498629f1c368650224d6d212bf7dfa89e4bf # v0.4.0
+        uses: RDXWorks-actions/snyk-actions/gradle-jdk17@master
         with:
           args: --all-projects --org=${{ env.SNYK_NETWORK_ORG_ID }} --target-reference=${{ github.ref_name }}
           command: monitor

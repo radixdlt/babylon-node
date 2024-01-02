@@ -34,7 +34,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout core repo
-        uses: actions/checkout@v2
+        uses: RDXWorks-actions/checkout@main
         with:
           fetch-depth: 0
       - uses: ./.github/actions/fetch-secrets
