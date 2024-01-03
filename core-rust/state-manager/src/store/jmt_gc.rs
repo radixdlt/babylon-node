@@ -339,8 +339,8 @@ mod tests {
         );
 
         // - Expect that subtree of our partition became stale:
-        let binding = tree_store.stale_part_buffer.borrow();
-        let mut stale_subtrees = binding
+        let stale_part_buffer = tree_store.stale_part_buffer.borrow();
+        let mut stale_subtrees = stale_part_buffer
             .iter()
             .filter_map(|part| match part {
                 StaleTreePart::Node(_) => None,
