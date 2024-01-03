@@ -228,7 +228,7 @@ jobs:
           toolchain: stable
           targets: x86_64-pc-windows-msvc
       - name: Install clang
-        run: sudo apt-get update -y && sudo apt-get install -y clang-17 libclang-dev llvm llvm-dev
+        run: sudo apt-get update -y && sudo apt-get install -y clang-16 libclang-dev llvm llvm-dev
       - name: Install cargo-xwin
         run: cargo install cargo-xwin
       - name: cross compile to windows
