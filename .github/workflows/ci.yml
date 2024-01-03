@@ -228,7 +228,7 @@ jobs:
           toolchain: stable
           targets: x86_64-pc-windows-msvc
       - name: Install clang
-        run: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 16 && sudo apt-get update -y && sudo apt-get install -y libclang-dev llvm llvm-dev
+        run: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 16
       - name: Check clang version
         run: clang --version
       - name: Install cargo-xwin
