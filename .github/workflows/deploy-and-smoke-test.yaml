@@ -21,7 +21,7 @@ jobs:
     name: Deploy to Gilganet
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: RDXWorks-actions/checkout@main
         with:
           # Shallow clones should be disabled for a better relevancy of analysis
           fetch-depth: 0
@@ -56,7 +56,7 @@ jobs:
     name: Run smoke tests
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: RDXWorks-actions/checkout@main
         with:
           # Shallow clones should be disabled for a better relevancy of analysis
           fetch-depth: 0
