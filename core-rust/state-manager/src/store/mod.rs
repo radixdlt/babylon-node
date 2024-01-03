@@ -62,6 +62,7 @@
  * permissions under this License.
  */
 
+mod codecs;
 mod db;
 pub mod jmt_gc;
 pub mod proofs_gc;
