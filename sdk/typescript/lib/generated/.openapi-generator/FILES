@@ -713,6 +713,7 @@ models/TypeInfoModuleFieldTypeInfoSubstate.ts
 models/TypeInfoModuleFieldTypeInfoSubstateAllOf.ts
 models/TypeInfoModuleFieldTypeInfoValue.ts
 models/TypeInfoType.ts
+models/UnversionedBlueprintReference.ts
 models/UpdatedSubstate.ts
 models/UserLedgerTransaction.ts
 models/UserLedgerTransactionAllOf.ts

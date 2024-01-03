@@ -1,12 +1,11 @@
-use std::collections::VecDeque;
 use std::ops::Deref;
-use std::{iter, mem};
 
 use radix_engine::types::*;
 
 use radix_engine_store_interface::interface::SubstateDatabase;
 
 use convert_case::{Case, Casing};
+use itertools::Itertools;
 use radix_engine::blueprints::package::{
     PackageCollection, VersionedPackageBlueprintVersionAuthConfig,
 };
@@ -22,13 +21,10 @@ use radix_engine_interface::blueprints::package::{
     BlueprintVersionKey, CanonicalBlueprintId, FunctionAuth, FunctionSchema, IndexedStateSchema,
     MethodAuthTemplate, RoleSpecification,
 };
-use radix_engine_store_interface::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
-use radix_engine_stores::hash_tree::tree_store::{
-    Nibble, NibblePath, NodeKey, ReadableTreeStore, TreeNode,
-};
 
 use crate::core_api::handlers::RawCollectionKey;
-use state_manager::store::traits::{QueryableProofStore, SubstateNodeAncestryStore};
+use state_manager::store::traits::indices::{CreationId, EntityBlueprintIdV1, ReNodeListingIndex};
+use state_manager::store::traits::SubstateNodeAncestryStore;
 use tracing::warn;
 
 use super::*;
@@ -1165,85 +1161,55 @@ struct AuthorizedCallablesMeta {
     roles: BlueprintRolesDefinition,
 }
 
-/// A lister of Engine's Nodes.
-pub struct EngineNodeLister<'s, S> {
+/// A lister of entities.
+pub struct EngineEntityLister<'s, S> {
     database: &'s S,
 }
 
-impl<'s, S: QueryableProofStore + ReadableTreeStore> EngineNodeLister<'s, S> {
+/// Basic information about an entity (i.e. read from a DB index, for listing purposes).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EntitySummary {
+    pub node_id: NodeId,
+    pub creation_id: CreationId,
+    pub blueprint_id: Option<BlueprintId>, // only present for Object entities
+}
+
+impl<'s, S: ReNodeListingIndex> EngineEntityLister<'s, S> {
     /// Creates an instance reading from the given database.
     pub fn new(database: &'s S) -> Self {
         Self { database }
     }
 
-    /// Returns an iterator of all Engine Node IDs, starting from the given one (or its successor,
-    /// if it does not exist), in an arbitrary but deterministic order used by the backing storage.
-    pub fn iter_node_ids(
+    /// Returns an iterator of all entities, starting from the given [`CreationId`] (or its
+    /// successor, if it does not exist), in the [`CreationId`]'s natural order (ascending).
+    pub fn iter_entities(
         &self,
-        from_node_id: Option<&NodeId>,
-    ) -> impl Iterator<Item = NodeId> + '_ {
-        let current_version = self.database.max_state_version();
-        let from_nibbles = from_node_id
-            .map(|node_id| NibblePath::new_even(SpreadPrefixKeyMapper::to_db_node_key(node_id)))
-            .map(|nibble_path| nibble_path.nibbles().collect::<VecDeque<_>>())
-            .unwrap_or_default();
-        self.recurse_until_full_leaf_paths(
-            NodeKey::new_empty_path(current_version.number()),
-            from_nibbles,
-        )
-        .map(|path| SpreadPrefixKeyMapper::from_db_node_key(&path.bytes().to_vec()))
+        from_creation_id: Option<&CreationId>,
+    ) -> impl Iterator<Item = EntitySummary> + '_ {
+        Self::all_entity_types()
+            .map(|entity_type| {
+                self.database
+                    .get_created_entity_iter(entity_type, from_creation_id)
+            })
+            .kmerge_by(|(a_creation_id, _), (b_creation_id, _)| a_creation_id < b_creation_id)
+            .map(
+                |(
+                    creation_id,
+                    EntityBlueprintIdV1 {
+                        node_id,
+                        blueprint_id,
+                    },
+                )| EntitySummary {
+                    node_id,
+                    creation_id,
+                    blueprint_id,
+                },
+            )
     }
 
-    /// Returns an iterator of all state hash tree's *leaf* [`NibblePath`]s, starting from some
-    /// specific point.
-    /// The implementation first loads the starting node by `key`, and then drills down the tree,
-    /// following the `from_nibbles` chain - as long as it is possible.
-    ///
-    /// This is the recursive part of the [`Self::iter_node_ids()`] implementation.
-    fn recurse_until_full_leaf_paths(
-        &self,
-        key: NodeKey,
-        from_nibbles: VecDeque<Nibble>,
-    ) -> Box<dyn Iterator<Item = NibblePath> + '_> {
-        let Some(node) = self.database.get_node(&key) else {
-            panic!("{:?} referenced but not found in the storage", key);
-        };
-        match node {
-            TreeNode::Internal(internal) => {
-                let mut child_from_nibbles = from_nibbles;
-                let from_nibble = child_from_nibbles
-                    .pop_front()
-                    .unwrap_or_else(|| Nibble::from(0));
-                Box::new(
-                    internal
-                        .children
-                        .into_iter()
-                        .filter(move |child| child.nibble >= from_nibble)
-                        .flat_map(move |child| {
-                            let child_key = key.gen_child_node_key(child.version, child.nibble);
-                            let child_from_nibbles = if child.nibble == from_nibble {
-                                mem::take(&mut child_from_nibbles)
-                            } else {
-                                VecDeque::new()
-                            };
-                            self.recurse_until_full_leaf_paths(child_key, child_from_nibbles)
-                        }),
-                )
-            }
-            TreeNode::Leaf(leaf) => Box::new(
-                Some(leaf.key_suffix.nibbles())
-                    .filter(|suffix_nibbles| {
-                        suffix_nibbles
-                            .remaining_nibbles()
-                            .ge(from_nibbles.iter().cloned())
-                    })
-                    .map(|suffix_nibbles| {
-                        NibblePath::from_iter(key.nibble_path().nibbles().chain(suffix_nibbles))
-                    })
-                    .into_iter(),
-            ),
-            TreeNode::Null => Box::new(iter::empty()),
-        }
+    /// Lists all possible [`EntityType`]s.
+    fn all_entity_types() -> impl Iterator<Item = EntityType> {
+        (0..=u8::MAX).filter_map(EntityType::from_repr)
     }
 }
 

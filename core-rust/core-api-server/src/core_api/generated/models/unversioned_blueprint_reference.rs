@@ -12,32 +12,19 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct ListedEntityItem {
-    /// Bech32m-encoded human readable version of the entity's address (ie the entity's node id)
-    #[serde(rename = "entity_address")]
-    pub entity_address: String,
-    #[serde(rename = "system_type")]
-    pub system_type: crate::core_api::generated::models::SystemType,
-    #[serde(rename = "entity_type")]
-    pub entity_type: crate::core_api::generated::models::EntityType,
-    /// Whether the entity is a top-level root, or a child of some other entity.
-    #[serde(rename = "is_global")]
-    pub is_global: bool,
-    #[serde(rename = "created_at_state_version")]
-    pub created_at_state_version: i64,
-    #[serde(rename = "blueprint", skip_serializing_if = "Option::is_none")]
-    pub blueprint: Option<Box<crate::core_api::generated::models::UnversionedBlueprintReference>>,
+pub struct UnversionedBlueprintReference {
+    /// The Bech32m-encoded human readable version of the package address
+    #[serde(rename = "package_address")]
+    pub package_address: String,
+    #[serde(rename = "blueprint_name")]
+    pub blueprint_name: String,
 }
 
-impl ListedEntityItem {
-    pub fn new(entity_address: String, system_type: crate::core_api::generated::models::SystemType, entity_type: crate::core_api::generated::models::EntityType, is_global: bool, created_at_state_version: i64) -> ListedEntityItem {
-        ListedEntityItem {
-            entity_address,
-            system_type,
-            entity_type,
-            is_global,
-            created_at_state_version,
-            blueprint: None,
+impl UnversionedBlueprintReference {
+    pub fn new(package_address: String, blueprint_name: String) -> UnversionedBlueprintReference {
+        UnversionedBlueprintReference {
+            package_address,
+            blueprint_name,
         }
     }
 }

@@ -25,6 +25,12 @@ import {
     SystemTypeFromJSONTyped,
     SystemTypeToJSON,
 } from './SystemType';
+import type { UnversionedBlueprintReference } from './UnversionedBlueprintReference';
+import {
+    UnversionedBlueprintReferenceFromJSON,
+    UnversionedBlueprintReferenceFromJSONTyped,
+    UnversionedBlueprintReferenceToJSON,
+} from './UnversionedBlueprintReference';
 
 /**
  * 
@@ -56,6 +62,18 @@ export interface ListedEntityItem {
      * @memberof ListedEntityItem
      */
     is_global: boolean;
+    /**
+     * 
+     * @type {number}
+     * @memberof ListedEntityItem
+     */
+    created_at_state_version: number;
+    /**
+     * 
+     * @type {UnversionedBlueprintReference}
+     * @memberof ListedEntityItem
+     */
+    blueprint?: UnversionedBlueprintReference;
 }
 
 /**
@@ -67,6 +85,7 @@ export function instanceOfListedEntityItem(value: object): boolean {
     isInstance = isInstance && "system_type" in value;
     isInstance = isInstance && "entity_type" in value;
     isInstance = isInstance && "is_global" in value;
+    isInstance = isInstance && "created_at_state_version" in value;
 
     return isInstance;
 }
@@ -85,6 +104,8 @@ export function ListedEntityItemFromJSONTyped(json: any, ignoreDiscriminator: bo
         'system_type': SystemTypeFromJSON(json['system_type']),
         'entity_type': EntityTypeFromJSON(json['entity_type']),
         'is_global': json['is_global'],
+        'created_at_state_version': json['created_at_state_version'],
+        'blueprint': !exists(json, 'blueprint') ? undefined : UnversionedBlueprintReferenceFromJSON(json['blueprint']),
     };
 }
 
@@ -101,6 +122,8 @@ export function ListedEntityItemToJSON(value?: ListedEntityItem | null): any {
         'system_type': SystemTypeToJSON(value.system_type),
         'entity_type': EntityTypeToJSON(value.entity_type),
         'is_global': value.is_global,
+        'created_at_state_version': value.created_at_state_version,
+        'blueprint': UnversionedBlueprintReferenceToJSON(value.blueprint),
     };
 }
 

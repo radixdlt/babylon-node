@@ -96,7 +96,7 @@ use crate::store::traits::gc::{
     VersionedLedgerProofsGcProgress,
 };
 use crate::store::traits::indices::{
-    CreationId, EntityBlueprintId, ObjectBlueprintName, ObjectBlueprintNameV1,
+    CreationId, EntityBlueprintId, ObjectBlueprintName, ObjectBlueprintNameV1, ReNodeListingIndex,
     VersionedEntityBlueprintId, VersionedObjectBlueprintName,
 };
 use crate::store::traits::measurement::{CategoryDbVolumeStatistic, MeasurableDatabase};
@@ -751,6 +751,10 @@ impl ConfigurableDatabase for RocksDBStore {
 
     fn is_local_transaction_execution_index_enabled(&self) -> bool {
         self.config.enable_local_transaction_execution_index
+    }
+
+    fn are_re_node_listing_indices_enabled(&self) -> bool {
+        self.config.enable_re_node_listing_indices
     }
 }
 
@@ -1710,10 +1714,10 @@ impl RestoreDecember2023LostSubstates for RocksDBStore {
             let first_epoch = first_proof.ledger_header.epoch.number();
             let last_epoch = last_epoch_proof.ledger_header.epoch.number();
             let problem_at_end_of_epoch = first_epoch + 19099; // (256 * 3 / 4 - 1) * 100 - 1
-            // Due to another bug, stokenet nodes may mistakenly believe that they already applied
-            // the fix. Thus, we have to ignore the `december_2023_lost_substates_restored` flag and
-            // make a decision based on "being stuck in the problematic epoch range". The fix is
-            // effectively idempotent, so we are fine with re-running it in an edge case.
+                                                               // Due to another bug, stokenet nodes may mistakenly believe that they already applied
+                                                               // the fix. Thus, we have to ignore the `december_2023_lost_substates_restored` flag and
+                                                               // make a decision based on "being stuck in the problematic epoch range". The fix is
+                                                               // effectively idempotent, so we are fine with re-running it in an edge case.
             last_epoch >= problem_at_end_of_epoch && last_epoch <= (problem_at_end_of_epoch + 2)
         };
 
@@ -1789,6 +1793,25 @@ impl IterableAccountChangeIndex for RocksDBStore {
                 .iterate_from(&(account, from_state_version), Direction::Forward)
                 .take_while(move |((next_account, _), _)| next_account == &account)
                 .map(|((_, state_version), _)| state_version),
+        )
+    }
+}
+
+impl ReNodeListingIndex for RocksDBStore {
+    fn get_created_entity_iter(
+        &self,
+        entity_type: EntityType,
+        from_creation_id: Option<&CreationId>,
+    ) -> Box<dyn Iterator<Item = (CreationId, EntityBlueprintId)> + '_> {
+        let from_creation_id = from_creation_id
+            .cloned()
+            .unwrap_or_else(|| CreationId::new(StateVersion::pre_genesis(), 0));
+        Box::new(
+            self.open_db_context()
+                .cf(TypeAndCreationIndexedEntitiesCf)
+                .iterate_from(&(entity_type, from_creation_id), Direction::Forward)
+                .take_while(move |((listed_entity_type, _), _)| *listed_entity_type == entity_type)
+                .map(|((_, creation_id), entity_blueprint_id)| (creation_id, entity_blueprint_id)),
         )
     }
 }
@@ -1998,6 +2021,8 @@ impl DbCodec<(EntityType, CreationId)> for TypeAndCreationIndexKeyDbCodec {
         )
     }
 }
+
+impl OrderPreservingDbCodec for TypeAndCreationIndexKeyDbCodec {}
 
 #[derive(Default)]
 struct BlueprintAndCreationIndexKeyDbCodec {}

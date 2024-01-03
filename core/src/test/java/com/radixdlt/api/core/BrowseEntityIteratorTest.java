@@ -135,4 +135,24 @@ public final class BrowseEntityIteratorTest extends DeterministicCoreApiTestBase
       assertThat(pagedEntities).isEqualTo(allEntities);
     }
   }
+
+  @Test
+  public void browse_api_entity_iterator_sorts_by_creation_asc() throws Exception {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
+
+      final var allResponse =
+          getBrowseApi()
+              .browseEntityIteratorPost(
+                  new BrowseEntityIteratorRequest().network(networkLogicalName));
+
+      final var creationVersions =
+          allResponse.getPage().stream()
+              .mapToLong(ListedEntityItem::getCreatedAtStateVersion)
+              .toArray();
+
+      assertThat(creationVersions).isSorted();
+      assertThat(creationVersions[0]).isLessThan(creationVersions[creationVersions.length - 1]);
+    }
+  }
 }

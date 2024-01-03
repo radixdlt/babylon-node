@@ -1290,6 +1290,8 @@ pub mod type_info_module_field_type_info_value;
 pub use self::type_info_module_field_type_info_value::TypeInfoModuleFieldTypeInfoValue;
 pub mod type_info_type;
 pub use self::type_info_type::TypeInfoType;
+pub mod unversioned_blueprint_reference;
+pub use self::unversioned_blueprint_reference::UnversionedBlueprintReference;
 pub mod updated_substate;
 pub use self::updated_substate::UpdatedSubstate;
 pub mod user_ledger_transaction;

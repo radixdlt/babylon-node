@@ -8115,6 +8115,7 @@ components:
         - system_type
         - entity_type
         - is_global
+        - created_at_state_version
       properties:
         entity_address:
           $ref: "#/components/schemas/EntityAddress"
@@ -8125,6 +8126,24 @@ components:
         is_global:
           type: boolean
           description: Whether the entity is a top-level root, or a child of some other entity.
+        created_at_state_version:
+          $ref: "#/components/schemas/StateVersion"
+          description: The state version identifying the transaction which created this entity.
+        blueprint:
+          $ref: "#/components/schemas/UnversionedBlueprintReference"
+          description: |
+            The blueprint used to instantiate this entity (disregarding the blueprint's exact version).
+            In practice, it can only be present when `system_type: Object`.
+    UnversionedBlueprintReference:
+      type: object
+      required:
+        - package_address
+        - blueprint_name
+      properties:
+        package_address:
+          $ref: '#/components/schemas/PackageAddress'
+        blueprint_name:
+          type: string
 #########################################################
 # REQUEST: /browse/entity/info                          #
 #########################################################
