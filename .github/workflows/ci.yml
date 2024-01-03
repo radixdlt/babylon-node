@@ -227,12 +227,10 @@ jobs:
         with:
           toolchain: stable
           targets: x86_64-pc-windows-msvc
-      - name: Check clang previous version
-        run: clang --version
       - name: Update clang version to 16
-        run: sudo apt remove clang-14 && sudo apt autoclean && sudo apt autoremove && wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 16 && sudo ls /usr/bin/ | grep clang && sudo ln -sf /usr/bin/clang-16 /usr/bin/clang && sudo ln -sf /usr/bin/clang++-16 /usr/bin/clang++
-      - name: Check clang version
-        run: clang --version
+        run: sudo apt remove clang-14 && sudo apt autoclean && sudo apt autoremove && wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 16 && sudo ls /usr/bin/ | grep clang && sudo ln -sf /usr/bin/clang-16 /usr/bin/clang && sudo ln -sf /usr/bin/clang++-16 /usr/bin/clang++ && sudo apt-get install -y libclang-dev llvm llvm-dev
+      - name: Update clang version to 16
+        run: sudo clang --version
       - name: Install cargo-xwin
         run: cargo install cargo-xwin
       - name: cross compile to windows
