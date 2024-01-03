@@ -221,7 +221,7 @@ impl GroupPreservingDbCodec for SubstateKeyDbCodec {
     }
 }
 
-impl GroupOrderPreservingDbCodec<DbSubstateKey> for SubstateKeyDbCodec {
+impl IntraGroupOrderPreservingDbCodec<DbSubstateKey> for SubstateKeyDbCodec {
     fn resolve_group_of(&self, key: &DbSubstateKey) -> <Self as GroupPreservingDbCodec>::Group {
         key.0.clone()
     }

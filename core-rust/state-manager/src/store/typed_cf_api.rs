@@ -290,7 +290,7 @@ impl<
         'db,
         'wb,
         K,
-        KC: GroupOrderPreservingDbCodec<K> + DbCodec<K>,
+        KC: IntraGroupOrderPreservingDbCodec<K> + DbCodec<K>,
         CF: TypedCf<Key = K, KeyCodec = KC>,
     > TypedCfApi<'db, 'wb, CF>
 {
@@ -548,7 +548,7 @@ pub trait GroupPreservingDbCodec {
 ///
 /// The group's order preservation is important for database *key* codecs of column families which
 /// follow a classic "partition key + sort key" pattern.
-pub trait GroupOrderPreservingDbCodec<T>: GroupPreservingDbCodec {
+pub trait IntraGroupOrderPreservingDbCodec<T>: GroupPreservingDbCodec {
     /// Determines the group which the given value belongs to.
     fn resolve_group_of(&self, value: &T) -> <Self as GroupPreservingDbCodec>::Group;
 }

@@ -82,7 +82,6 @@ use transaction::model::*;
 
 use radix_engine_store_interface::interface::*;
 
-use itertools::Itertools;
 use radix_engine_store_interface::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
 use std::path::PathBuf;
 
@@ -1228,12 +1227,7 @@ impl SubstateDatabase for RocksDBStore {
 
 impl ListableSubstateDatabase for RocksDBStore {
     fn list_partition_keys(&self) -> Box<dyn Iterator<Item = DbPartitionKey> + '_> {
-        Box::new(
-            self.open_db_context()
-                .cf(SubstatesCf)
-                .iterate_key_groups()
-                .dedup(),
-        )
+        self.open_db_context().cf(SubstatesCf).iterate_key_groups()
     }
 }
 
