@@ -12,6 +12,7 @@
 # =================================================================================================
 FROM debian:12.1-slim AS java-build-stage
 
+LABEL org.opencontainers.image.source https://github.com/radixdlt/babylon-node
 LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 LABEL org.opencontainers.image.description="Java + Debian 12 (OpenJDK)"
 
@@ -30,7 +31,7 @@ RUN apt-get update \
     wget=${WGET_VERSION} \
     software-properties-common=0.99.30-4 \
   && apt-get install -y --no-install-recommends \
-    openjdk-17-jdk=17.0.8+7-1~deb12u1 \
+    openjdk-17-jdk=17.0.9+9-1~deb12u1 \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
@@ -193,6 +194,8 @@ COPY --from=library-build-stage /libcorerust.so /
 # The application container which will actually run the application
 # =================================================================================================
 FROM debian:12.1-slim as app-container
+
+LABEL org.opencontainers.image.source https://github.com/radixdlt/babylon-node
 LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 
 # Install dependencies needed for building the image or running the application
@@ -203,7 +206,7 @@ LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 # - curl is needed for the docker-healthcheck
 RUN apt-get update -y \
   && apt-get -y --no-install-recommends install \
-    openjdk-17-jre-headless=17.0.8+7-1~deb12u1 \
+    openjdk-17-jre-headless=17.0.9+9-1~deb12u1 \
     # https://security-tracker.debian.org/tracker/CVE-2023-38545
     curl=7.88.1-10+deb12u4 \
     gettext-base=0.21-12 \

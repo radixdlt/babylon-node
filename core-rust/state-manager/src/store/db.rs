@@ -74,6 +74,7 @@ use crate::{
     TransactionTreeHash,
 };
 use enum_dispatch::enum_dispatch;
+use radix_engine_common::network::NetworkDefinition;
 use radix_engine_store_interface::interface::{
     DbPartitionKey, DbSortKey, DbSubstateValue, PartitionEntry, SubstateDatabase,
 };
@@ -115,9 +116,13 @@ pub enum StateManagerDatabase {
 }
 
 impl StateManagerDatabase {
-    pub fn from_config(backend_config: DatabaseBackendConfig, flags: DatabaseFlags) -> Self {
+    pub fn from_config(
+        backend_config: DatabaseBackendConfig,
+        flags: DatabaseFlags,
+        network: &NetworkDefinition,
+    ) -> Self {
         let db = {
-            match RocksDBStore::new(PathBuf::from(backend_config.rocks_db_path), flags) {
+            match RocksDBStore::new(PathBuf::from(backend_config.rocks_db_path), flags, network) {
                 Ok(db) => db,
                 Err(error) => {
                     match error {
@@ -147,12 +152,15 @@ impl SubstateDatabase for StateManagerDatabase {
         }
     }
 
-    fn list_entries(
+    fn list_entries_from(
         &self,
         partition_key: &DbPartitionKey,
+        from_sort_key: Option<&DbSortKey>,
     ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
         match self {
-            StateManagerDatabase::RocksDB(store) => store.list_entries(partition_key),
+            StateManagerDatabase::RocksDB(store) => {
+                store.list_entries_from(partition_key, from_sort_key)
+            }
         }
     }
 }
