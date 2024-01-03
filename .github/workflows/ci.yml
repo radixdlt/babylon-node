@@ -230,7 +230,7 @@ jobs:
       - name: Check clang previous version
         run: clang --version
       - name: Update clang version to 16
-        run: sudo apt remove clang-14 && sudo apt autoclean && sudo apt autoremove && wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 16
+        run: sudo apt remove clang-14 && sudo apt autoclean && sudo apt autoremove && wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 16 && sudo ls /usr/bin/ | grep clang && sudo ln -s /usr/bin/clang-16 /usr/bin/clang && sudo ln -s /usr/bin/clang++-16 /usr/bin/clang++
       - name: Check clang version
         run: clang --version
       - name: Install cargo-xwin
