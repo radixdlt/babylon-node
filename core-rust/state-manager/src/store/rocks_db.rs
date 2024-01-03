@@ -82,7 +82,6 @@ use transaction::model::*;
 
 use radix_engine_store_interface::interface::*;
 
-use itertools::Itertools;
 use radix_engine::system::type_info::TypeInfoSubstate;
 use radix_engine_store_interface::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
 use std::path::PathBuf;

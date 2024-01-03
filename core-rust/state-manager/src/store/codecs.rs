@@ -66,10 +66,10 @@ use std::ops::Range;
 
 use crate::StateVersion;
 
+use crate::store::traits::indices::CreationId;
 use radix_engine::types::*;
 use radix_engine_store_interface::interface::*;
 use radix_engine_stores::hash_tree::tree_store::{encode_key, NodeKey};
-use crate::store::traits::indices::CreationId;
 
 use crate::store::traits::scenario::ScenarioSequenceNumber;
 use crate::store::typed_cf_api::*;
@@ -306,7 +306,7 @@ impl DbCodec<NodeId> for NodeIdDbCodec {
 }
 
 #[derive(Default)]
-struct TypeAndCreationIndexKeyDbCodec {}
+pub struct TypeAndCreationIndexKeyDbCodec {}
 
 impl DbCodec<(EntityType, CreationId)> for TypeAndCreationIndexKeyDbCodec {
     fn encode(&self, value: &(EntityType, CreationId)) -> Vec<u8> {
@@ -343,7 +343,7 @@ impl DbCodec<(EntityType, CreationId)> for TypeAndCreationIndexKeyDbCodec {
 }
 
 #[derive(Default)]
-struct BlueprintAndCreationIndexKeyDbCodec {}
+pub struct BlueprintAndCreationIndexKeyDbCodec {}
 
 impl DbCodec<(PackageAddress, Hash, CreationId)> for BlueprintAndCreationIndexKeyDbCodec {
     fn encode(&self, value: &(PackageAddress, Hash, CreationId)) -> Vec<u8> {
