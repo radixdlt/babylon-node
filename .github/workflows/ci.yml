@@ -227,6 +227,8 @@ jobs:
         with:
           toolchain: stable
           targets: x86_64-pc-windows-msvc
+      - name: Check clang previous version
+        run: clang --version
       - name: Install clang
         run: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 16
       - name: Check clang version
