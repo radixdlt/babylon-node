@@ -103,10 +103,24 @@ public final class ProtocolUpdateWithEpochBoundsTest {
 
   @Parameterized.Parameters
   public static Collection<Object[]> testParameters() {
-    return Stream.of(scenariosA(), scenariosB())
+    return Stream.of(scenariosA(), scenariosB(), fixedEpochScenarios())
         .flatMap(List::stream)
         .map(scenario -> new Object[] {scenario})
         .toList();
+  }
+
+  static List<TestScenario> fixedEpochScenarios() {
+    final var numValidators = 1;
+    final var protocolUpdate =
+        new ProtocolUpdate("v2", ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(5));
+    final ImmutableList<ProtocolUpdate> protocolUpdates = ImmutableList.of(protocolUpdate);
+
+    final var scenario1 =
+        new ScenarioBuilder(numValidators, protocolUpdates)
+            .atEpoch(5, expectEnactment(protocolUpdate))
+            .runUntilEpoch(7);
+
+    return List.of(scenario1);
   }
 
   static List<TestScenario> scenariosA() {
@@ -294,7 +308,9 @@ public final class ProtocolUpdateWithEpochBoundsTest {
 
   @Test
   public void test_protocol_update_scenario() {
-    final var protocolConfig = new ProtocolConfig("genesis", scenario.protocolUpdates);
+    final var protocolConfig =
+        new ProtocolConfig(
+            ProtocolConfig.testingDefault().genesisProtocolVersion(), scenario.protocolUpdates);
     try (var test = createTest(protocolConfig)) {
       test.startAllNodes();
 

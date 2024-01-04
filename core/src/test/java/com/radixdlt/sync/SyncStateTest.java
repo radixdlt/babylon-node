@@ -70,7 +70,7 @@ import static org.mockito.Mockito.mock;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.LedgerProofV1;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.p2p.NodeId;
@@ -103,12 +103,12 @@ public class SyncStateTest {
   public void idle_state_should_update_current_header() {
     final var peer = mock(BFTValidatorId.class);
 
-    final var initialState = SyncState.IdleState.init(mock(LedgerProof.class));
+    final var initialState = SyncState.IdleState.init(mock(LedgerProofV1.class));
 
-    final var header2 = mock(LedgerProof.class);
-    final var newState = initialState.withCurrentHeader(header2);
+    final var latestProofs2 = mock(LedgerProofV1.class);
+    final var newState = initialState.withLatestProof(latestProofs2);
 
-    assertEquals(header2, newState.getCurrentHeader());
+    assertEquals(latestProofs2, newState.getLatestProof());
   }
 
   @Test
@@ -116,12 +116,12 @@ public class SyncStateTest {
     final var peer = mock(NodeId.class);
 
     final var initialState =
-        SyncState.SyncCheckState.init(mock(LedgerProof.class), ImmutableSet.of(peer));
+        SyncState.SyncCheckState.init(mock(LedgerProofV1.class), ImmutableSet.of(peer));
 
-    final var header2 = mock(LedgerProof.class);
-    final var newState = initialState.withCurrentHeader(header2);
+    final var latestProofs2 = mock(LedgerProofV1.class);
+    final var newState = initialState.withLatestProof(latestProofs2);
 
-    assertEquals(header2, newState.getCurrentHeader());
+    assertEquals(latestProofs2, newState.getLatestProof());
   }
 
   @Test
@@ -129,7 +129,7 @@ public class SyncStateTest {
     final var peer = mock(NodeId.class);
 
     final var initialState =
-        SyncState.SyncCheckState.init(mock(LedgerProof.class), ImmutableSet.of(peer));
+        SyncState.SyncCheckState.init(mock(LedgerProofV1.class), ImmutableSet.of(peer));
 
     final var statusResponse = mock(StatusResponse.class);
     final var newState = initialState.withStatusResponse(peer, statusResponse);
@@ -144,21 +144,21 @@ public class SyncStateTest {
 
   @Test
   public void syncing_state_should_update_current_header() {
-    final var targetHeader = mock(LedgerProof.class);
+    final var targetHeader = mock(LedgerProofV1.class);
     final var initialState =
-        SyncState.SyncingState.init(mock(LedgerProof.class), ImmutableList.of(), targetHeader);
+        SyncState.SyncingState.init(mock(LedgerProofV1.class), ImmutableList.of(), targetHeader);
 
-    final var header2 = mock(LedgerProof.class);
-    final var newState = initialState.withCurrentHeader(header2);
+    final var latestProofs2 = mock(LedgerProofV1.class);
+    final var newState = initialState.withLatestProof(latestProofs2);
 
-    assertEquals(header2, newState.getCurrentHeader());
+    assertEquals(latestProofs2, newState.getLatestProof());
   }
 
   @Test
   public void syncing_state_should_update_waiting_for_peer() {
-    final var targetHeader = mock(LedgerProof.class);
+    final var targetHeader = mock(LedgerProofV1.class);
     final var initialState =
-        SyncState.SyncingState.init(mock(LedgerProof.class), ImmutableList.of(), targetHeader);
+        SyncState.SyncingState.init(mock(LedgerProofV1.class), ImmutableList.of(), targetHeader);
 
     assertFalse(initialState.waitingForResponse());
 
@@ -173,9 +173,9 @@ public class SyncStateTest {
 
   @Test
   public void syncing_state_should_update_candidate_peers() {
-    final var targetHeader = mock(LedgerProof.class);
+    final var targetHeader = mock(LedgerProofV1.class);
     final var initialState =
-        SyncState.SyncingState.init(mock(LedgerProof.class), ImmutableList.of(), targetHeader);
+        SyncState.SyncingState.init(mock(LedgerProofV1.class), ImmutableList.of(), targetHeader);
 
     // there's no next candidate peer
     assertTrue(initialState.fetchNextCandidatePeer().getSecond().isEmpty());
@@ -195,10 +195,10 @@ public class SyncStateTest {
 
   @Test
   public void syncing_state_should_update_target_header() {
-    final var targetHeader1 = mock(LedgerProof.class);
-    final var targetHeader2 = mock(LedgerProof.class);
+    final var targetHeader1 = mock(LedgerProofV1.class);
+    final var targetHeader2 = mock(LedgerProofV1.class);
     final var initialState =
-        SyncState.SyncingState.init(mock(LedgerProof.class), ImmutableList.of(), targetHeader1);
+        SyncState.SyncingState.init(mock(LedgerProofV1.class), ImmutableList.of(), targetHeader1);
 
     assertEquals(targetHeader1, initialState.getTargetHeader());
 

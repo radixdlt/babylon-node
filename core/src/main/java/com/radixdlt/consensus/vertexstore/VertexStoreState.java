@@ -95,7 +95,7 @@ public final class VertexStoreState {
   private static final Logger logger = LogManager.getLogger();
 
   private final VertexWithHash root;
-  private final LedgerProof rootHeader;
+  private final LedgerProofV1 rootHeader;
   private final HighQC highQC;
   // TODO: collapse the following two
   private final ImmutableList<VertexWithHash> vertices;
@@ -103,7 +103,7 @@ public final class VertexStoreState {
 
   private VertexStoreState(
       HighQC highQC,
-      LedgerProof rootHeader,
+      LedgerProofV1 rootHeader,
       VertexWithHash root,
       ImmutableMap<HashCode, VertexWithHash> idToVertex,
       ImmutableList<VertexWithHash> vertices) {
@@ -114,22 +114,18 @@ public final class VertexStoreState {
     this.vertices = vertices;
   }
 
-  public static VertexStoreState createNewForNextEpoch(LedgerProof epochProof, Hasher hasher) {
-    if (epochProof.getNextEpoch().isEmpty()) {
-      throw new IllegalArgumentException("Expected end of epoch proof");
-    }
-    final var nextEpoch = epochProof.getNextEpoch().orElseThrow();
-    final var initialEpochVertex =
-        Vertex.createInitialEpochVertex(epochProof.getHeader()).withId(hasher);
+  public static VertexStoreState createNewForNextEpoch(
+      LedgerHeader initialHeader, long nextEpoch, Hasher hasher) {
+    final var initialEpochVertex = Vertex.createInitialEpochVertex(initialHeader).withId(hasher);
 
     final var nextLedgerHeader =
         LedgerHeader.create(
-            nextEpoch.getEpoch(),
+            nextEpoch,
             Round.genesis(),
-            epochProof.getStateVersion(),
-            epochProof.getLedgerHashes(),
-            epochProof.consensusParentRoundTimestamp(),
-            epochProof.proposerTimestamp());
+            initialHeader.getStateVersion(),
+            initialHeader.getHashes(),
+            initialHeader.consensusParentRoundTimestamp(),
+            initialHeader.proposerTimestamp());
     final var initialEpochQC =
         QuorumCertificate.createInitialEpochQC(initialEpochVertex, nextLedgerHeader);
 
@@ -143,7 +139,6 @@ public final class VertexStoreState {
 
   public static VertexStoreState create(
       HighQC highQC, VertexWithHash root, ImmutableList<VertexWithHash> vertices, Hasher hasher) {
-
     final var headers =
         highQC
             .highestCommittedQC()
@@ -251,7 +246,7 @@ public final class VertexStoreState {
     return vertices;
   }
 
-  public LedgerProof getRootHeader() {
+  public LedgerProofV1 getRootHeader() {
     return rootHeader;
   }
 
@@ -279,6 +274,8 @@ public final class VertexStoreState {
     return "VertexStoreState{"
         + "root="
         + root
+        + "rootHeader="
+        + rootHeader.getHeader()
         + ", highQC="
         + highQC
         + ", vertices="

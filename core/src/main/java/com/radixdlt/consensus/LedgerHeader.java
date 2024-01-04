@@ -151,7 +151,7 @@ public final class LedgerHeader {
         nextProtocolVersion);
   }
 
-  private LedgerHeader(
+  public LedgerHeader(
       long epoch,
       Round round,
       long stateVersion,

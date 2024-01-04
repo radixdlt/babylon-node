@@ -70,20 +70,20 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.LedgerProofV1;
 import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
 
 public class LedgerExtensionTest {
-  private LedgerProof ledgerProof;
+  private LedgerProofV1 ledgerProof;
   private LedgerExtension emptyLedgerExtension;
   private final long stateVersion = 232L;
 
   @Before
   public void setUp() {
-    this.ledgerProof = mock(LedgerProof.class);
+    this.ledgerProof = mock(LedgerProofV1.class);
     when(ledgerProof.getStateVersion()).thenReturn(stateVersion);
 
     this.emptyLedgerExtension = LedgerExtension.create(ImmutableList.of(), ledgerProof);

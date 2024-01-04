@@ -68,7 +68,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
-import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.LedgerProofV1;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
@@ -269,7 +269,7 @@ public final class LocalSyncService {
     this.syncCheckReceiveStatusTimeoutDispatcher.dispatch(
         SyncCheckReceiveStatusTimeout.create(), this.syncRelayConfig.requestTimeout());
 
-    return SyncCheckState.init(currentState.getCurrentHeader(), peersToAsk);
+    return SyncCheckState.init(currentState.getLatestProof(), peersToAsk);
   }
 
   private ImmutableSet<NodeId> choosePeersForSyncCheck() {
@@ -321,8 +321,8 @@ public final class LocalSyncService {
     final var maybeMaxPeerHeader =
         currentState.responses().values().stream()
             .map(StatusResponse::getHeader)
-            .max(Comparator.comparing(LedgerProof::getStateVersion))
-            .filter(h -> h.getStateVersion() > currentState.getCurrentHeader().getStateVersion());
+            .max(Comparator.comparing(LedgerProofV1::getStateVersion))
+            .filter(h -> h.getStateVersion() > currentState.getLatestProof().getStateVersion());
 
     return maybeMaxPeerHeader
         .map(
@@ -357,17 +357,17 @@ public final class LocalSyncService {
   }
 
   private SyncState goToIdle(SyncState currentState) {
-    return IdleState.init(currentState.getCurrentHeader());
+    return IdleState.init(currentState.getLatestProof());
   }
 
   private SyncState startSync(
-      SyncState currentState, ImmutableList<NodeId> candidatePeers, LedgerProof targetHeader) {
+      SyncState currentState, ImmutableList<NodeId> candidatePeers, LedgerProofV1 targetHeader) {
     log.trace(
         "LocalSync: Syncing to target header {}, got {} candidate peers",
         targetHeader,
         candidatePeers.size());
     return this.processSync(
-        SyncingState.init(currentState.getCurrentHeader(), candidatePeers, targetHeader));
+        SyncingState.init(currentState.getLatestProof(), candidatePeers, targetHeader));
   }
 
   private SyncState processSync(SyncingState currentState) {
@@ -393,17 +393,17 @@ public final class LocalSyncService {
             () -> {
               // there's no connected peer on our candidates list, starting a fresh sync check
               // immediately
-              return this.initSyncCheck(IdleState.init(stateWithUpdatedQueue.getCurrentHeader()));
+              return this.initSyncCheck(IdleState.init(stateWithUpdatedQueue.getLatestProof()));
             });
   }
 
   private SyncState sendSyncRequest(SyncingState currentState, NodeId peer) {
     log.trace("LocalSync: Sending sync request to {}", peer);
 
-    final var currentHeader = currentState.getCurrentHeader();
+    final var latestProof = currentState.getLatestProof();
 
     final var requestId = requestIdCounter.incrementAndGet();
-    this.syncRequestDispatcher.dispatch(peer, SyncRequest.create(currentHeader.toDto()));
+    this.syncRequestDispatcher.dispatch(peer, SyncRequest.create(latestProof.toDto()));
     this.syncRequestTimeoutDispatcher.dispatch(
         SyncRequestTimeout.create(peer, requestId), this.syncRelayConfig.requestTimeout());
 
@@ -411,7 +411,7 @@ public final class LocalSyncService {
   }
 
   private boolean isFullySynced(SyncState.SyncingState syncingState) {
-    return syncingState.getCurrentHeader().getStateVersion()
+    return syncingState.getLatestProof().getStateVersion()
         >= syncingState.getTargetHeader().getStateVersion();
   }
 
@@ -424,7 +424,7 @@ public final class LocalSyncService {
       this.metrics.sync().validResponsesReceived().inc();
       this.peerControl.reportHighPriorityPeer(sender);
       this.syncLedgerUpdateTimeoutDispatcher.dispatch(
-          SyncLedgerUpdateTimeout.create(currentState.getCurrentHeader().getStateVersion()), 1000L);
+          SyncLedgerUpdateTimeout.create(currentState.getLatestProof().getStateVersion()), 1000L);
       return currentState.clearPendingRequest();
     } catch (InvalidSyncResponseException isre) {
       // Implementation note:
@@ -461,7 +461,7 @@ public final class LocalSyncService {
           log.trace(
               "LocalSync: Received sync response {} while current state is at {}",
               syncResponse,
-              currentState.getCurrentHeader());
+              currentState.getLatestProof().getStateVersion());
           metrics
               .sync()
               .unexpectedResponsesReceived()
@@ -572,7 +572,7 @@ public final class LocalSyncService {
 
   private SyncState processSyncLedgerUpdateTimeout(
       SyncingState currentState, SyncLedgerUpdateTimeout event) {
-    if (event.stateVersion() != currentState.getCurrentHeader().getStateVersion()) {
+    if (event.stateVersion() != currentState.getLatestProof().getStateVersion()) {
       return currentState; // obsolete timeout event; ignore
     } else {
       return this.processSync(currentState);
@@ -580,11 +580,9 @@ public final class LocalSyncService {
   }
 
   private SyncState updateCurrentHeaderIfNeeded(SyncState currentState, LedgerUpdate ledgerUpdate) {
-    final var updatedHeader = ledgerUpdate.proof();
-    final var isNewerState =
-        updatedHeader.getStateVersion() > currentState.getCurrentHeader().getStateVersion();
-    if (isNewerState) {
-      final var newState = currentState.withCurrentHeader(updatedHeader);
+    final var latestV1Proof = ledgerUpdate.latestProof().closestNonProtocolUpdateProofV1();
+    if (latestV1Proof.getStateVersion() > currentState.getLatestProof().getStateVersion()) {
+      final var newState = currentState.withLatestProof(latestV1Proof);
       updateCurrentAndTargetMetrics(newState);
       return newState;
     } else {
@@ -593,7 +591,7 @@ public final class LocalSyncService {
   }
 
   private SyncingState updateTargetIfNeeded(
-      SyncingState currentState, ImmutableList<NodeId> peers, LedgerProof header) {
+      SyncingState currentState, ImmutableList<NodeId> peers, LedgerProofV1 header) {
     final var isNewerState =
         header.getStateVersion() > currentState.getTargetHeader().getStateVersion();
     if (isNewerState) {
@@ -607,7 +605,7 @@ public final class LocalSyncService {
   }
 
   private void updateCurrentAndTargetMetrics(SyncState syncState) {
-    this.metrics.sync().currentStateVersion().set(syncState.getCurrentHeader().getStateVersion());
+    this.metrics.sync().currentStateVersion().set(syncState.getLatestProof().getStateVersion());
     if (syncState instanceof final SyncingState syncingState) {
       this.metrics
           .sync()
@@ -618,11 +616,11 @@ public final class LocalSyncService {
           .targetProposerTimestampEpochSecond()
           .set(syncingState.getTargetHeader().getProposerTimestamp() / 1000.0);
     } else {
-      this.metrics.sync().targetStateVersion().set(syncState.getCurrentHeader().getStateVersion());
+      this.metrics.sync().targetStateVersion().set(syncState.getLatestProof().getStateVersion());
       this.metrics
           .sync()
           .targetProposerTimestampEpochSecond()
-          .set(syncState.getCurrentHeader().getProposerTimestamp() / 1000.0);
+          .set(syncState.getLatestProof().proposerTimestamp() / 1000.0);
     }
   }
 

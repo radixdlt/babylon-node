@@ -128,7 +128,7 @@ public class REv2StateComputerTest {
             StateHashTreeGcConfig.forTesting(),
             LedgerProofsGcConfig.forTesting(),
             LedgerSyncLimitsConfig.defaults(),
-            ProtocolConfig.testingDefaultNoUpdates(),
+            ProtocolConfig.testingDefault(),
             false),
         new REv2LedgerInitializerModule(
             RawGenesisDataWithHash.fromGenesisData(

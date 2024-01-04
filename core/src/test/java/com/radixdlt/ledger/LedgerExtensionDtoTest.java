@@ -83,17 +83,18 @@ public class LedgerExtensionDtoTest {
 
   @Test(expected = NullPointerException.class)
   public void deserializationWithNullHeadThrowsException() {
-    new DtoLedgerExtension(List.of(), null, mock(DtoLedgerProof.class));
+    new DtoLedgerExtension(List.of(), null, mock(DtoLedgerProofV1.class));
   }
 
   @Test(expected = NullPointerException.class)
   public void deserializationWithNullTailThrowsException() {
-    new DtoLedgerExtension(List.of(), mock(DtoLedgerProof.class), null);
+    new DtoLedgerExtension(List.of(), mock(DtoLedgerProofV1.class), null);
   }
 
   @Test
   public void deserializationWithNullTxnListIsSafe() {
-    var dto = new DtoLedgerExtension(null, mock(DtoLedgerProof.class), mock(DtoLedgerProof.class));
+    var dto =
+        new DtoLedgerExtension(null, mock(DtoLedgerProofV1.class), mock(DtoLedgerProofV1.class));
 
     assertNotNull(dto.getTransactions());
   }

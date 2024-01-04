@@ -126,7 +126,7 @@ public final class StateHashTreeGcTest {
                             UInt64.fromNonNegativeLong(stateVersionHistoryLength)),
                         LedgerProofsGcConfig.forTesting(),
                         LedgerSyncLimitsConfig.defaults(),
-                        ProtocolConfig.testingDefaultNoUpdates(),
+                        ProtocolConfig.testingDefault(),
                         false))));
   }
 
@@ -150,9 +150,9 @@ public final class StateHashTreeGcTest {
       var currentStateVersion =
           injector
               .getInstance(TransactionsAndProofReader.class)
-              .getLastProof()
-              .get()
-              .getStateVersion();
+              .getLatestProofBundle()
+              .orElseThrow()
+              .stateVersion();
       var leastStaleStateHashTreeVersion =
           injector.getInstance(TestStateReader.class).getLeastStaleStateHashTreeVersion();
       return currentStateVersion - leastStaleStateHashTreeVersion == difference;

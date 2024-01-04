@@ -190,7 +190,8 @@ public final class EventLoggerModule extends AbstractModule {
         calculateLoggingLevel(ledgerUpdateLogLimiter, ledgerUpdate.epochChange()));
 
     ledgerUpdate.epochChange().ifPresent(epochChange -> logEpochChange(self, epochChange));
-    ledgerUpdate.nextProtocolVersion().ifPresent(EventLoggerModule::logProtocolUpdate);
+    // TODO: fixme
+    //    ledgerUpdate.().ifPresent(EventLoggerModule::logProtocolUpdate);
 
     self.bftValidatorId()
         .ifPresent(
@@ -201,11 +202,11 @@ public final class EventLoggerModule extends AbstractModule {
   }
 
   private static void logEpochChange(SelfValidatorInfo self, EpochChange epochChange) {
-    var validatorSet = epochChange.getBFTConfiguration().getValidatorSet();
+    var validatorSet = epochChange.bftConfiguration().getValidatorSet();
     final var included = self.bftValidatorId().stream().anyMatch(validatorSet::containsValidator);
     logger.info(
         "lgr_nepoch{epoch={} included={} num_validators={} total_stake={}}",
-        epochChange.getNextEpoch(),
+        epochChange.nextEpoch(),
         included,
         validatorSet.getValidators().size(),
         validatorSet.getTotalPower());
@@ -220,17 +221,18 @@ public final class EventLoggerModule extends AbstractModule {
       return;
     }
 
-    final var proof = ledgerUpdate.proof();
-    final var ledgerHashes = proof.getLedgerHashes();
+    final var header =
+        REv2ToConsensus.ledgerHeader(ledgerUpdate.latestProof().primaryProof().ledgerHeader());
+    final var ledgerHashes = header.getHashes();
     logger.log(
         logLevel,
         "lgr_commit{epoch={} round={} version={} num_txns={}, ts={}, state_root={}, txn_root={},"
             + " receipt_root={}}",
-        proof.getEpoch(),
-        proof.getRound().number(),
-        proof.getStateVersion(),
+        header.getEpoch(),
+        header.getRound().number(),
+        header.getStateVersion(),
         txnCount,
-        proof.getProposerTimestamp(),
+        header.proposerTimestamp(),
         shortFormatLedgerHash(ledgerHashes.getStateRoot()),
         shortFormatLedgerHash(ledgerHashes.getTransactionRoot()),
         shortFormatLedgerHash(ledgerHashes.getReceiptRoot()));

@@ -176,4 +176,72 @@ public final class SystemModelMapper {
 
     return addressBookEntry;
   }
+
+  public ProtocolConfiguration protocolConfiguration(
+      com.radixdlt.protocol.ProtocolConfig protocolConfig) {
+    return new ProtocolConfiguration()
+        .genesisProtocolVersion(protocolConfig.genesisProtocolVersion())
+        .protocolUpdates(
+            protocolConfig.protocolUpdates().stream()
+                .map(
+                    protocolUpdate ->
+                        new ProtocolUpdate()
+                            .nextProtocolVersion(protocolUpdate.nextProtocolVersion())
+                            .enactmentCondition(
+                                enactmentCondition(protocolUpdate.enactmentCondition())))
+                .toList());
+  }
+
+  private ProtocolUpdateEnactmentCondition enactmentCondition(
+      com.radixdlt.protocol.ProtocolUpdateEnactmentCondition enactmentCondition) {
+    return switch (enactmentCondition) {
+      case com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactWhenSupportedAndWithinBounds
+      enactWhenSupportedAndWithinBounds -> new EnactWhenSupportedAndWithinBoundsCondition()
+          .lowerBound(protocolUpdateEnactmentBound(enactWhenSupportedAndWithinBounds.lowerBound()))
+          .upperBound(protocolUpdateEnactmentBound(enactWhenSupportedAndWithinBounds.upperBound()))
+          .supportType(protocolUpdateSupportType(enactWhenSupportedAndWithinBounds.supportType()))
+          .type(ProtocolUpdateEnactmentConditionType.ENACTWHENSUPPORTEDANDWITHINBOUNDS);
+      case com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactUnconditionallyAtEpoch
+      enactUnconditionallyAtEpoch -> new EnactUnconditionallyAtEpochCondition()
+          .epoch(enactUnconditionallyAtEpoch.epoch().toLong())
+          .type(ProtocolUpdateEnactmentConditionType.ENACTUNCONDITIONALLYATEPOCH);
+      case com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactUnconditionallyAtStateVersion
+      enactUnconditionallyAtStateVersion -> new EnactUnconditionallyAtStateVersionCondition()
+          .stateVersion(enactUnconditionallyAtStateVersion.stateVersion().toLong())
+          .type(ProtocolUpdateEnactmentConditionType.ENACTUNCONDITIONALLYATSTATEVERSION);
+    };
+  }
+
+  private ProtocolUpdateEnactmentBound protocolUpdateEnactmentBound(
+      com.radixdlt.protocol.ProtocolUpdateEnactmentBound bound) {
+    return switch (bound) {
+      case com.radixdlt.protocol.ProtocolUpdateEnactmentBound.Epoch
+      epoch -> new EpochProtocolUpdateEnactmentBound()
+          .epoch(epoch.epoch().toLong())
+          .type(ProtocolUpdateEnactmentBoundType.EPOCH);
+      case com.radixdlt.protocol.ProtocolUpdateEnactmentBound.StateVersion
+      stateVersion -> new StateVersionProtocolUpdateEnactmentBound()
+          .stateVersion(stateVersion.stateVersion().toLong())
+          .type(ProtocolUpdateEnactmentBoundType.STATEVERSION);
+    };
+  }
+
+  private ProtocolUpdateSupportType protocolUpdateSupportType(
+      com.radixdlt.protocol.ProtocolUpdateSupportType supportType) {
+    return switch (supportType) {
+      case com.radixdlt.protocol.ProtocolUpdateSupportType.SignalledReadiness
+      signalledReadiness -> new ProtocolUpdateSignalledReadinessSupport()
+          .thresholds(
+              signalledReadiness.thresholds().stream()
+                  .map(
+                      threshold ->
+                          new SignalledReadinessThreshold()
+                              .requiredRatioOfStakeSupported(
+                                  threshold.requiredRatioOfStakeSupported().toString())
+                              .requiredConsecutiveCompletedEpochsOfSupport(
+                                  threshold.requiredConsecutiveCompletedEpochsOfSupport().toLong()))
+                  .toList())
+          .type(ProtocolUpdateSupportTypeDiscriminator.SIGNALLEDREADINESS);
+    };
+  }
 }

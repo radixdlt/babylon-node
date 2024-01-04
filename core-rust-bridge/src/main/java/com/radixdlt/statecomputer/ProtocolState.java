@@ -62,52 +62,60 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.epoch;
+package com.radixdlt.statecomputer;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import com.google.common.collect.ImmutableSet;
-import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.NextEpoch;
-import com.radixdlt.crypto.HashUtils;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.lang.Option;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Before;
-import org.junit.Test;
+import com.radixdlt.lang.Tuple;
+import com.radixdlt.protocol.ProtocolUpdate;
+import com.radixdlt.protocol.ProtocolUpdateSupportType;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.EnumCodec;
+import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.utils.UInt64;
 
-public class EpochChangeTest {
-  private LedgerProof proof;
-  private BFTConfiguration configuration;
-  private EpochChange epochChange;
+public record ProtocolState(
+    Option<UInt64> currentEpoch,
+    String currentProtocolVersion,
+    ImmutableMap<UInt64, String> enactedProtocolUpdates,
+    ImmutableList<UnenactedProtocolUpdate> unenactedProtocolUpdates) {
 
-  @Before
-  public void setup() {
-    this.proof = mock(LedgerProof.class);
-    when(proof.getEpoch()).thenReturn(323L);
-    when(proof.getNextEpoch()).thenReturn(Option.some(NextEpoch.create(324, ImmutableSet.of())));
-    this.configuration = mock(BFTConfiguration.class);
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        ProtocolState.class,
+        codecs -> StructCodec.fromRecordComponents(ProtocolState.class, codecs));
 
-    this.epochChange = new EpochChange(proof, configuration);
+    codecMap.register(
+        UnenactedProtocolUpdate.class,
+        codecs -> StructCodec.fromRecordComponents(UnenactedProtocolUpdate.class, codecs));
+
+    codecMap.register(
+        UnenactedProtocolUpdateState.class,
+        codecs ->
+            EnumCodec.fromPermittedRecordSubclasses(UnenactedProtocolUpdateState.class, codecs));
+
+    codecMap.register(
+        UnenactedProtocolUpdateState.SignalledReadinessThresholdState.class,
+        codecs ->
+            StructCodec.fromRecordComponents(
+                UnenactedProtocolUpdateState.SignalledReadinessThresholdState.class, codecs));
   }
 
-  @Test
-  public void equalsContract() {
-    EqualsVerifier.forClass(EpochChange.class)
-        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-        .verify();
-  }
+  public record UnenactedProtocolUpdate(
+      ProtocolUpdate protocolUpdate, UnenactedProtocolUpdateState state) {}
 
-  @Test
-  public void when_get_next_epoch__then_should_be_epoch_after_proof() {
-    assertThat(epochChange.getNextEpoch()).isEqualTo(324L);
-  }
+  public sealed interface UnenactedProtocolUpdateState {
+    record ForSignalledReadinessSupportCondition(
+        ImmutableList<
+                Tuple.Tuple2<
+                    ProtocolUpdateSupportType.SignalledReadiness.SignalledReadinessThreshold,
+                    SignalledReadinessThresholdState>>
+            thresholdsState)
+        implements UnenactedProtocolUpdateState {}
 
-  @Test
-  public void when_get_configuration__then_should_return_configuration() {
-    assertThat(epochChange.getBFTConfiguration()).isEqualTo(configuration);
+    record Empty() implements UnenactedProtocolUpdateState {}
+
+    record SignalledReadinessThresholdState(UInt64 consecutiveStartedEpochsOfSupport) {}
   }
 }

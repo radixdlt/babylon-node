@@ -70,7 +70,7 @@ import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.LedgerProofV1;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.p2p.NodeId;
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -80,12 +80,12 @@ import org.junit.Test;
 public class LocalSyncRequestTest {
   private LocalSyncRequest request;
   private ImmutableList<NodeId> targetNodes;
-  private LedgerProof target;
+  private LedgerProofV1 target;
 
   @Before
   public void setup() {
     this.targetNodes = rmock(ImmutableList.class);
-    this.target = mock(LedgerProof.class);
+    this.target = mock(LedgerProofV1.class);
     request = new LocalSyncRequest(target, targetNodes);
   }
 

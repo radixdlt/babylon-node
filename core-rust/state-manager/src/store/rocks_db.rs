@@ -67,7 +67,7 @@ use std::fmt;
 
 use crate::store::traits::*;
 use crate::{
-    CommittedTransactionIdentifiers, LedgerProof, LedgerTransactionReceipt,
+    CommittedTransactionIdentifiers, LedgerProof, LedgerProofOrigin, LedgerTransactionReceipt,
     LocalTransactionExecution, LocalTransactionReceipt, ReceiptTreeHash, StateVersion,
     SubstateChangeAction, TransactionTreeHash, VersionedCommittedTransactionIdentifiers,
     VersionedLedgerProof, VersionedLedgerTransactionReceipt, VersionedLocalTransactionExecution,
@@ -124,7 +124,7 @@ use super::traits::extensions::*;
 /// The `NAME` constants defined by `*Cf` structs (and referenced below) are used as database column
 /// family names. Any change would effectively mean a ledger wipe. For this reason, we choose to
 /// define them manually (rather than using the `Into<String>`, which is refactor-sensitive).
-const ALL_COLUMN_FAMILIES: [&str; 21] = [
+const ALL_COLUMN_FAMILIES: [&str; 22] = [
     RawLedgerTransactionsCf::DEFAULT_NAME,
     CommittedTransactionIdentifiersCf::VERSIONED_NAME,
     TransactionReceiptsCf::VERSIONED_NAME,
@@ -135,6 +135,7 @@ const ALL_COLUMN_FAMILIES: [&str; 21] = [
     LedgerProofsCf::VERSIONED_NAME,
     EpochLedgerProofsCf::VERSIONED_NAME,
     ProtocolUpdateLedgerProofsCf::VERSIONED_NAME,
+    PostProtocolUpdateLedgerProofsCf::VERSIONED_NAME,
     SubstatesCf::DEFAULT_NAME,
     SubstateNodeAncestryRecordsCf::VERSIONED_NAME,
     VertexStoreCf::VERSIONED_NAME,
@@ -228,8 +229,25 @@ impl VersionedCf for EpochLedgerProofsCf {
 /// Schema: `Epoch.to_bytes()` -> `scrypto_encode(VersionedLedgerProof)`
 /// Note: This duplicates a small subset of [`StateVersionToLedgerProof`]'s values.
 struct ProtocolUpdateLedgerProofsCf;
-impl VersionedCf<StateVersion, LedgerProof> for ProtocolUpdateLedgerProofsCf {
+impl VersionedCf for ProtocolUpdateLedgerProofsCf {
+    type Key = StateVersion;
+    type Value = LedgerProof;
+
     const VERSIONED_NAME: &'static str = "protocol_update_ledger_proofs";
+    type KeyCodec = StateVersionDbCodec;
+    type VersionedValue = VersionedLedgerProof;
+}
+
+// TODO: fix comments and naming of these two CFs
+/// Ledger proofs of protocol updates.
+/// Schema: `Epoch.to_bytes()` -> `scrypto_encode(VersionedLedgerProof)`
+/// Note: This duplicates a small subset of [`StateVersionToLedgerProof`]'s values.
+struct PostProtocolUpdateLedgerProofsCf;
+impl VersionedCf for PostProtocolUpdateLedgerProofsCf {
+    type Key = StateVersion;
+    type Value = LedgerProof;
+
+    const VERSIONED_NAME: &'static str = "post_protocol_update_ledger_proofs";
     type KeyCodec = StateVersionDbCodec;
     type VersionedValue = VersionedLedgerProof;
 }
@@ -795,6 +813,13 @@ impl CommitStore for RocksDBStore {
                 .put(&commit_state_version, &commit_bundle.proof);
         }
 
+        // TODO:  cleanup?
+        if let LedgerProofOrigin::ProtocolUpdate { .. } = &commit_bundle.proof.origin {
+            db_context
+                .cf(PostProtocolUpdateLedgerProofsCf)
+                .put(&commit_state_version, &commit_bundle.proof);
+        }
+
         let substates_cf = db_context.cf(SubstatesCf);
         for (node_key, node_updates) in commit_bundle.substate_store_update.updates.node_updates {
             for (partition_num, partition_updates) in node_updates.partition_updates {
@@ -1243,6 +1268,19 @@ impl QueryableProofStore for RocksDBStore {
             .get_last_value()
     }
 
+    // TODO: rename this CF to include "trigger"??? to avoid confusion with proofs { origin = ProtocolUpdate }
+    fn get_latest_protocol_update_trigger_proof(&self) -> Option<LedgerProof> {
+        self.open_db_context()
+            .cf(ProtocolUpdateLedgerProofsCf)
+            .get_last_value()
+    }
+
+    fn get_latest_post_protocol_update_proof(&self) -> Option<LedgerProof> {
+        self.open_db_context()
+            .cf(PostProtocolUpdateLedgerProofsCf)
+            .get_last_value()
+    }
+
     fn get_closest_epoch_proof_on_or_before(
         &self,
         state_version: StateVersion,
@@ -1527,7 +1565,9 @@ impl RestoreDecember2023LostSubstates for RocksDBStore {
             })
         } else {
             // For other networks, we can calculate the "problem" epoch from theoretical principles:
-            let (Some(first_proof), Some(last_epoch_proof)) = (self.get_first_proof(), self.get_last_epoch_proof()) else {
+            let (Some(first_proof), Some(last_epoch_proof)) =
+                (self.get_first_proof(), self.get_last_epoch_proof())
+            else {
                 return; // empty ledger; no fix needed
             };
             let first_epoch = first_proof.ledger_header.epoch.number();

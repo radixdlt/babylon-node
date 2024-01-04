@@ -67,8 +67,6 @@ package com.radixdlt.statecomputer;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.*;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.ProposerElections;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
@@ -80,6 +78,7 @@ import com.radixdlt.ledger.*;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.p2p.NodeId;
+import com.radixdlt.rev2.REv2ToConsensus;
 import com.radixdlt.statecomputer.commit.CommitSummary;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt32;
@@ -90,11 +89,16 @@ import javax.annotation.Nullable;
 public final class MockedStateComputer implements StateComputer {
   private final EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher;
   private final Hasher hasher;
+  private LedgerProofBundle latestProof;
 
   @Inject
-  public MockedStateComputer(EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher, Hasher hasher) {
+  public MockedStateComputer(
+      EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
+      Hasher hasher,
+      LedgerProofBundle initialLatestProof) {
     this.ledgerUpdateDispatcher = ledgerUpdateDispatcher;
     this.hasher = hasher;
+    this.latestProof = initialLatestProof;
   }
 
   @Override
@@ -107,56 +111,59 @@ public final class MockedStateComputer implements StateComputer {
   }
 
   @Override
-  public StateComputerLedger.StateComputerResult prepare(
+  public StateComputerLedger.StateComputerPrepareResult prepare(
       LedgerHashes committedLedgerHashes,
       List<ExecutedVertex> preparedUncommittedVertices,
       LedgerHashes preparedUncommittedLedgerHashes,
       List<RawNotarizedTransaction> proposedTransactions,
       RoundDetails roundDetails) {
-    return new StateComputerLedger.StateComputerResult(
+    return new StateComputerLedger.StateComputerPrepareResult(
         proposedTransactions.stream().map(MockExecuted::new).collect(Collectors.toList()),
         0,
         LedgerHashes.zero());
   }
 
   @Override
-  public void commit(LedgerExtension ledgerExtension, VertexStoreState vertexStoreState) {
+  public LedgerProofBundle commit(
+      LedgerExtension ledgerExtension, VertexStoreState vertexStoreState) {
+    latestProof =
+        new LedgerProofBundle(
+            REv2ToConsensus.ledgerProof(ledgerExtension.getProof()),
+            ledgerExtension.getProof().getNextEpoch().isPresent()
+                ? REv2ToConsensus.ledgerProof(ledgerExtension.getProof())
+                : latestProof.closestEpochProofOnOrBefore(),
+            ledgerExtension.getProof().getHeader().nextProtocolVersion().isPresent()
+                ? Option.some(REv2ToConsensus.ledgerProof(ledgerExtension.getProof()))
+                : latestProof.closestProtocolUpdateTriggerProofOnOrBefore(),
+            Option.empty());
+
     final var maybeEpochChange =
-        ledgerExtension
-            .getProof()
-            .getNextEpoch()
+        latestProof
+            .latestNonProtocolUpdateProof()
+            .ledgerHeader()
+            .nextEpoch()
             .map(
                 nextEpoch -> {
-                  LedgerProof proof = ledgerExtension.getProof();
-                  VertexWithHash genesisVertex =
-                      Vertex.createInitialEpochVertex(proof.getHeader()).withId(hasher);
-                  LedgerHeader nextLedgerHeader =
-                      LedgerHeader.create(
-                          nextEpoch.getEpoch(),
-                          Round.genesis(),
-                          proof.getStateVersion(),
-                          proof.getLedgerHashes(),
-                          proof.consensusParentRoundTimestamp(),
-                          proof.proposerTimestamp());
-                  QuorumCertificate initialEpochQC =
-                      QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
                   final var initialState =
-                      VertexStoreState.create(
-                          HighQC.ofInitialEpochQc(initialEpochQC), genesisVertex, hasher);
-                  var validatorSet = BFTValidatorSet.from(nextEpoch.getValidators());
-                  var proposerElection =
-                      ProposerElections.defaultRotation(nextEpoch.getEpoch(), validatorSet);
-                  var bftConfiguration =
+                      VertexStoreState.createNewForNextEpoch(
+                          REv2ToConsensus.ledgerHeader(latestProof.epochInitialHeader()),
+                          nextEpoch.epoch().toLong(),
+                          hasher);
+                  final var validatorSet = REv2ToConsensus.validatorSet(nextEpoch.validators());
+                  final var proposerElection =
+                      ProposerElections.defaultRotation(nextEpoch.epoch().toLong(), validatorSet);
+                  final var bftConfiguration =
                       new BFTConfiguration(proposerElection, validatorSet, initialState);
-                  return new EpochChange(proof, bftConfiguration);
+                  return new EpochChange(latestProof, bftConfiguration);
                 });
 
     var ledgerUpdate =
         new LedgerUpdate(
             new CommitSummary(ImmutableList.of(), UInt32.fromNonNegativeInt(0)),
-            ledgerExtension,
+            latestProof,
             maybeEpochChange,
-            Option.empty());
+            ledgerExtension.getTransactions());
     ledgerUpdateDispatcher.dispatch(ledgerUpdate);
+    return latestProof;
   }
 }

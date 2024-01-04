@@ -72,6 +72,7 @@ import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.statecomputer.commit.ActiveValidatorInfo;
+import com.radixdlt.statecomputer.commit.LedgerProofOrigin;
 import com.radixdlt.statecomputer.commit.TimestampedValidatorSignature;
 import com.radixdlt.statecomputer.commit.ValidatorId;
 import com.radixdlt.utils.UInt64;
@@ -140,23 +141,44 @@ public final class REv2ToConsensus {
         ledgerHashes.getReceiptRoot());
   }
 
-  public static LedgerProof ledgerProof(com.radixdlt.statecomputer.commit.LedgerProof ledgerProof) {
-    return new LedgerProof(
-        ledgerProof.opaque(),
-        REv2ToConsensus.ledgerHeader(ledgerProof.ledgerHeader()),
-        new TimestampedECDSASignatures(
-            ledgerProof.signatures().stream()
-                .map(REv2ToConsensus::timestampedValidatorSignature)
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))));
+  public static LedgerProofV1 ledgerProof(
+      com.radixdlt.statecomputer.commit.LedgerProof ledgerProof) {
+    // V1 ledger proofs are either Genesis-originated or Consensus-originated
+    if (ledgerProof.origin() instanceof LedgerProofOrigin.Consensus consensusOrigin) {
+      return new LedgerProofV1(
+          consensusOrigin.opaque(),
+          REv2ToConsensus.ledgerHeader(ledgerProof.ledgerHeader()),
+          new TimestampedECDSASignatures(
+              consensusOrigin.signatures().stream()
+                  .map(REv2ToConsensus::timestampedValidatorSignature)
+                  .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))));
+    } else if (ledgerProof.origin() instanceof LedgerProofOrigin.Genesis genesisOrigin) {
+      return new LedgerProofV1(
+          genesisOrigin.genesisOpaqueHash(),
+          REv2ToConsensus.ledgerHeader(ledgerProof.ledgerHeader()),
+          new TimestampedECDSASignatures());
+    } else {
+      throw new IllegalArgumentException("Invalid V1 LedgerProof");
+    }
   }
 
-  public static com.radixdlt.statecomputer.commit.LedgerProof ledgerProof(LedgerProof ledgerProof) {
-    return new com.radixdlt.statecomputer.commit.LedgerProof(
-        ledgerProof.getOpaque(),
-        REv2ToConsensus.ledgerHeader(ledgerProof.getHeader()),
-        ledgerProof.getSignatures().getSignatures().entrySet().stream()
-            .map(e -> REv2ToConsensus.timestampedValidatorSignature(e.getKey(), e.getValue()))
-            .toList());
+  public static com.radixdlt.statecomputer.commit.LedgerProof ledgerProof(
+      LedgerProofV1 ledgerProof) {
+    final var isGenesis =
+        ledgerProof.getSignatures().getSignatures().isEmpty() && ledgerProof.isEndOfEpoch();
+    if (isGenesis) {
+      return new com.radixdlt.statecomputer.commit.LedgerProof(
+          REv2ToConsensus.ledgerHeader(ledgerProof.getHeader()),
+          new LedgerProofOrigin.Genesis(ledgerProof.getOpaque()));
+    } else {
+      return new com.radixdlt.statecomputer.commit.LedgerProof(
+          REv2ToConsensus.ledgerHeader(ledgerProof.getHeader()),
+          new LedgerProofOrigin.Consensus(
+              ledgerProof.getOpaque(),
+              ledgerProof.getSignatures().getSignatures().entrySet().stream()
+                  .map(e -> REv2ToConsensus.timestampedValidatorSignature(e.getKey(), e.getValue()))
+                  .toList()));
+    }
   }
 
   public static Map.Entry<BFTValidatorId, TimestampedECDSASignature> timestampedValidatorSignature(

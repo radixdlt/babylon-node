@@ -71,7 +71,7 @@ import static org.mockito.Mockito.*;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.LedgerProofV1;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
@@ -154,7 +154,7 @@ public class LocalSyncServiceTest {
 
     setupPeersView(peer1, peer2, peer3);
 
-    final LedgerProof currentHeader = mock(LedgerProof.class);
+    final LedgerProofV1 currentHeader = mock(LedgerProofV1.class);
     this.setupSyncServiceWithState(SyncState.IdleState.init(currentHeader));
 
     this.localSyncService.syncCheckTriggerEventProcessor().process(SyncCheckTrigger.create());
@@ -166,7 +166,7 @@ public class LocalSyncServiceTest {
 
   @Test
   public void when_sync_check_is_triggered_at_non_idle__then_should_be_ignored() {
-    final LedgerProof currentHeader = mock(LedgerProof.class);
+    final LedgerProofV1 currentHeader = mock(LedgerProofV1.class);
 
     this.setupSyncServiceWithState(SyncState.SyncCheckState.init(currentHeader, ImmutableSet.of()));
     this.localSyncService.syncCheckTriggerEventProcessor().process(SyncCheckTrigger.create());
@@ -181,8 +181,8 @@ public class LocalSyncServiceTest {
 
   @Test
   public void when_status_response_received_at_non_sync_check__then_should_be_ignored() {
-    final LedgerProof currentHeader = mock(LedgerProof.class);
-    final LedgerProof statusHeader = mock(LedgerProof.class);
+    final LedgerProofV1 currentHeader = mock(LedgerProofV1.class);
+    final LedgerProofV1 statusHeader = mock(LedgerProofV1.class);
     final NodeId sender = createPeer();
 
     this.setupSyncServiceWithState(
@@ -200,8 +200,8 @@ public class LocalSyncServiceTest {
 
   @Test
   public void when_unexpected_status_response_received__then_should_be_ignored() {
-    final LedgerProof currentHeader = mock(LedgerProof.class);
-    final LedgerProof statusHeader = mock(LedgerProof.class);
+    final LedgerProofV1 currentHeader = mock(LedgerProofV1.class);
+    final LedgerProofV1 statusHeader = mock(LedgerProofV1.class);
     final NodeId expectedPeer = createPeer();
     final NodeId unexpectedPeer = createPeer();
 
@@ -220,8 +220,8 @@ public class LocalSyncServiceTest {
 
   @Test
   public void when_duplicate_status_response_received__then_should_be_ignored() {
-    final LedgerProof currentHeader = mock(LedgerProof.class);
-    final LedgerProof statusHeader = mock(LedgerProof.class);
+    final LedgerProofV1 currentHeader = mock(LedgerProofV1.class);
+    final LedgerProofV1 statusHeader = mock(LedgerProofV1.class);
     final NodeId expectedPeer = createPeer();
     final NodeId alreadyReceivedPeer = createPeer();
 
@@ -243,10 +243,10 @@ public class LocalSyncServiceTest {
 
   @Test
   public void when_all_status_responses_received__then_should_start_sync() {
-    final LedgerProof currentHeader = createHeaderAtStateVersion(10L);
-    final LedgerProof statusHeader1 = createHeaderAtStateVersion(2L);
-    final LedgerProof statusHeader2 = createHeaderAtStateVersion(20L);
-    final LedgerProof statusHeader3 = createHeaderAtStateVersion(15L);
+    final LedgerProofV1 currentHeader = createHeaderAtStateVersion(10L);
+    final LedgerProofV1 statusHeader1 = createHeaderAtStateVersion(2L);
+    final LedgerProofV1 statusHeader2 = createHeaderAtStateVersion(20L);
+    final LedgerProofV1 statusHeader3 = createHeaderAtStateVersion(15L);
     final NodeId waiting1 = createPeer();
     final NodeId waiting2 = createPeer();
     final NodeId waiting3 = createPeer();
@@ -272,7 +272,7 @@ public class LocalSyncServiceTest {
 
   @Test
   public void when_status_timeout_with_no_responses__then_should_reschedule_another_check() {
-    final LedgerProof currentHeader = createHeaderAtStateVersion(10L);
+    final LedgerProofV1 currentHeader = createHeaderAtStateVersion(10L);
     final NodeId waiting1 = createPeer();
     setupPeersView(waiting1);
 
@@ -288,9 +288,9 @@ public class LocalSyncServiceTest {
 
   @Test
   public void when_status_timeout_with_at_least_one_response__then_should_start_sync() {
-    final LedgerProof currentHeader = createHeaderAtStateVersion(10L);
-    final LedgerProof statusHeader1 = createHeaderAtStateVersion(12L);
-    final LedgerProof statusHeader2 = createHeaderAtStateVersion(20L);
+    final LedgerProofV1 currentHeader = createHeaderAtStateVersion(10L);
+    final LedgerProofV1 statusHeader1 = createHeaderAtStateVersion(12L);
+    final LedgerProofV1 statusHeader2 = createHeaderAtStateVersion(20L);
     final var waiting1 = createPeer();
     final var waiting2 = createPeer();
     setupPeersView(waiting1, waiting2);
@@ -687,15 +687,18 @@ public class LocalSyncServiceTest {
   }
 
   private LedgerUpdate ledgerUpdateAtStateVersion(long stateVersion) {
+    final LedgerProofBundle latestProof = mock(LedgerProofBundle.class);
+    final var header = createHeaderAtStateVersion(stateVersion);
+    when(latestProof.closestNonProtocolUpdateProofV1()).thenReturn(header);
     return new LedgerUpdate(
         new CommitSummary(ImmutableList.of(), UInt32.fromNonNegativeInt(0)),
-        LedgerExtension.create(ImmutableList.of(), createHeaderAtStateVersion(stateVersion)),
+        latestProof,
         Option.empty(),
-        Option.empty());
+        ImmutableList.of());
   }
 
-  private LedgerProof createHeaderAtStateVersion(long version) {
-    final LedgerProof header = mock(LedgerProof.class);
+  private LedgerProofV1 createHeaderAtStateVersion(long version) {
+    final LedgerProofV1 header = mock(LedgerProofV1.class);
     when(header.getStateVersion()).thenReturn(version);
     when(header.getProposerTimestamp()).thenReturn(version * 1000);
     return header;

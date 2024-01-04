@@ -65,7 +65,7 @@
 package com.radixdlt.ledger;
 
 import com.google.common.primitives.Ints;
-import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.LedgerProofV1;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import java.util.List;
 import java.util.Objects;
@@ -91,14 +91,15 @@ import java.util.Objects;
  */
 public final class LedgerExtension {
   private final List<RawLedgerTransaction> transactions;
-  private final LedgerProof proof;
+  private final LedgerProofV1 proof;
 
-  private LedgerExtension(List<RawLedgerTransaction> transactions, LedgerProof proof) {
+  private LedgerExtension(List<RawLedgerTransaction> transactions, LedgerProofV1 proof) {
     this.transactions = Objects.requireNonNull(transactions);
     this.proof = Objects.requireNonNull(proof);
   }
 
-  public static LedgerExtension create(List<RawLedgerTransaction> transactions, LedgerProof proof) {
+  public static LedgerExtension create(
+      List<RawLedgerTransaction> transactions, LedgerProofV1 proof) {
     return new LedgerExtension(transactions, proof);
   }
 
@@ -110,7 +111,7 @@ public final class LedgerExtension {
     return transactions.contains(transaction);
   }
 
-  public LedgerProof getProof() {
+  public LedgerProofV1 getProof() {
     return proof;
   }
 

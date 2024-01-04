@@ -67,7 +67,7 @@ package com.radixdlt.harness.predicates;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.LedgerProofV1;
 import com.radixdlt.mempool.MempoolReader;
 import com.radixdlt.transactions.NotarizedTransactionHash;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
@@ -138,7 +138,7 @@ public final class NodesPredicate {
             .anyMatch(NodePredicate.atOrOverStateVersion(stateVersion));
   }
 
-  public static Predicate<List<Injector>> anyCommittedProof(Predicate<LedgerProof> predicate) {
+  public static Predicate<List<Injector>> anyCommittedProof(Predicate<LedgerProofV1> predicate) {
     return n ->
         n.stream().filter(Objects::nonNull).anyMatch(NodePredicate.proofCommitted(predicate));
   }

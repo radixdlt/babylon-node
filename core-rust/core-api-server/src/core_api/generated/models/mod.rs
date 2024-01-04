@@ -902,6 +902,8 @@ pub mod signature_with_public_key;
 pub use self::signature_with_public_key::SignatureWithPublicKey;
 pub mod signed_transaction_intent;
 pub use self::signed_transaction_intent::SignedTransactionIntent;
+pub mod significant_protocol_update_readiness_entry;
+pub use self::significant_protocol_update_readiness_entry::SignificantProtocolUpdateReadinessEntry;
 pub mod sorted_index_blueprint_collection_schema;
 pub use self::sorted_index_blueprint_collection_schema::SortedIndexBlueprintCollectionSchema;
 pub mod sorted_index_blueprint_collection_schema_all_of;

@@ -180,6 +180,9 @@ impl ExecutionCache {
         match transaction_key {
             Some(new_key) => self.stage_tree.get_delta(new_key),
             None => {
+                // okay....bo transakcji protocol update nie ma w cachu....
+                // zrobić nowy cache?????? albo zrobić tak, żeby ta transakcja była
+
                 let parent_key = self.get_existing_stage_key(parent_transaction_root);
                 let staged_store =
                     StagedStore::new(root_store, self.stage_tree.get_accumulator(&parent_key));

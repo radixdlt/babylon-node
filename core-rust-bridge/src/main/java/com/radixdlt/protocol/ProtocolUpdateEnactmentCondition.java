@@ -113,6 +113,10 @@ public sealed interface ProtocolUpdateEnactmentCondition {
     return new EnactUnconditionallyAtEpoch(UInt64.fromNonNegativeLong(epoch));
   }
 
+  static ProtocolUpdateEnactmentCondition unconditionallyAtStateVersion(long stateVersion) {
+    return new EnactUnconditionallyAtStateVersion(UInt64.fromNonNegativeLong(stateVersion));
+  }
+
   record EnactWhenSupportedAndWithinBounds(
       ProtocolUpdateEnactmentBound lowerBound,
       ProtocolUpdateEnactmentBound upperBound,

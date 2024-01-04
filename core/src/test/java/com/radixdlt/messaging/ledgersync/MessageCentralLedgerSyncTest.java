@@ -67,11 +67,11 @@ package com.radixdlt.messaging.ledgersync;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.LedgerProofV1;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.ledger.DtoLedgerExtension;
-import com.radixdlt.ledger.DtoLedgerProof;
+import com.radixdlt.ledger.DtoLedgerProofV1;
 import com.radixdlt.messaging.core.MessageCentral;
 import com.radixdlt.messaging.core.MessageCentralMockProvider;
 import com.radixdlt.p2p.NodeId;
@@ -99,13 +99,13 @@ public class MessageCentralLedgerSyncTest {
         this.messageCentralLedgerSync.syncRequests().test();
     final var peer = createPeer();
     SyncRequestMessage syncRequestMessage = mock(SyncRequestMessage.class);
-    DtoLedgerProof header = mock(DtoLedgerProof.class);
+    DtoLedgerProofV1 header = mock(DtoLedgerProofV1.class);
     when(syncRequestMessage.getCurrentHeader()).thenReturn(header);
     messageCentral.send(peer, syncRequestMessage);
     testObserver.awaitCount(1);
     testObserver.assertValue(
         syncRequest ->
-            syncRequest.getEvent().getHeader().equals(header)
+            syncRequest.getEvent().getProof().equals(header)
                 && syncRequest.getOrigin().equals(peer));
   }
 
@@ -139,7 +139,7 @@ public class MessageCentralLedgerSyncTest {
     TestSubscriber<RemoteEvent<NodeId, StatusResponse>> testObserver =
         this.messageCentralLedgerSync.statusResponses().test();
     final var peer = createPeer();
-    final var header = mock(LedgerProof.class);
+    final var header = mock(LedgerProofV1.class);
     StatusResponseMessage statusResponseMessage = mock(StatusResponseMessage.class);
     when(statusResponseMessage.getHeader()).thenReturn(header);
     messageCentral.send(peer, statusResponseMessage);

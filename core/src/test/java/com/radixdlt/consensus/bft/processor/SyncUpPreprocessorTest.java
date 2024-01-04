@@ -73,7 +73,7 @@ import static org.mockito.Mockito.when;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.LedgerProofV1;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.BFTSyncer;
@@ -109,7 +109,7 @@ public class SyncUpPreprocessorTest {
     final var proposal = mock(Proposal.class);
     final var proposalHighQc = mock(HighQC.class);
     final var proposalHighestCommittedQc = mock(QuorumCertificate.class);
-    final var proposalLedgerProof = mock(LedgerProof.class);
+    final var proposalLedgerProof = mock(LedgerProofV1.class);
     when(initialRoundUpdate.getCurrentRound()).thenReturn(Round.of(2));
     when(proposal.getAuthor())
         .thenReturn(

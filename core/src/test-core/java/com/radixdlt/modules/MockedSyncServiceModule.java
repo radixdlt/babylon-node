@@ -70,7 +70,7 @@ import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.LedgerProofV1;
 import com.radixdlt.consensus.NextEpoch;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
@@ -81,9 +81,9 @@ import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.ledger.LedgerExtension;
+import com.radixdlt.ledger.LedgerProofBundle;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.p2p.NodeId;
-import com.radixdlt.rev2.LastEpochProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
@@ -98,14 +98,10 @@ import com.radixdlt.transactions.RawLedgerTransaction;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.LongStream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class MockedSyncServiceModule extends AbstractModule {
-  private static final Logger logger = LogManager.getLogger();
-
   private final ConcurrentMap<Long, RawLedgerTransaction> sharedCommittedTransactions;
-  private final ConcurrentMap<Long, LedgerProof> sharedEpochProofs;
+  private final ConcurrentMap<Long, LedgerProofV1> sharedEpochProofs;
 
   public MockedSyncServiceModule() {
     this.sharedCommittedTransactions = new ConcurrentHashMap<>();
@@ -130,19 +126,24 @@ public class MockedSyncServiceModule extends AbstractModule {
     return new EventProcessorOnDispatch<>(
         LedgerUpdate.class,
         update -> {
-          final LedgerProof headerAndProof = update.proof();
-          long stateVersion = headerAndProof.getStateVersion();
-          long firstVersion = stateVersion - update.transactions().size() + 1;
-          for (int i = 0; i < update.transactions().size(); i++) {
-            sharedCommittedTransactions.put(firstVersion + i, update.transactions().get(i));
+          long stateVersion =
+              update.latestProof().primaryProof().ledgerHeader().stateVersion().toLong();
+          // TODO: this won't work with protocol updates
+          long firstVersion = stateVersion - update.committedTransactions().size() + 1;
+          for (int i = 0; i < update.committedTransactions().size(); i++) {
+            sharedCommittedTransactions.put(
+                firstVersion + i, update.committedTransactions().get(i));
           }
 
           update
-              .proof()
+              .latestProof()
+              .closestNonProtocolUpdateProofV1()
               .getNextEpoch()
               .ifPresent(
                   nextEpoch -> {
-                    sharedEpochProofs.put(nextEpoch.getEpoch(), update.proof());
+                    sharedEpochProofs.put(
+                        nextEpoch.getEpoch(),
+                        update.latestProof().closestNonProtocolUpdateProofV1());
                   });
         });
   }
@@ -151,13 +152,13 @@ public class MockedSyncServiceModule extends AbstractModule {
   @Singleton
   @ProcessOnDispatch
   EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor(
-      @LastEpochProof LedgerProof genesis,
+      LedgerProofBundle latestProof,
       EventDispatcher<LedgerExtension> syncedTransactionRunDispatcher) {
     return new EventProcessor<>() {
-      long currentVersion = genesis.getStateVersion();
-      long currentEpoch = genesis.getNextEpoch().orElseThrow().getEpoch();
+      long currentVersion = latestProof.stateVersion();
+      long currentEpoch = latestProof.resultantEpoch();
 
-      private void syncTo(LedgerProof proof) {
+      private void syncTo(LedgerProofV1 proof) {
         var transactions =
             LongStream.range(currentVersion + 1, proof.getStateVersion() + 1)
                 .mapToObj(sharedCommittedTransactions::get)

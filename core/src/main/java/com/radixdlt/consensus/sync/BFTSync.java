@@ -79,11 +79,13 @@ import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.*;
+import com.radixdlt.ledger.LedgerProofBundle;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.Metrics.RoundChange.CertificateType;
 import com.radixdlt.monitoring.Metrics.RoundChange.HighQcSource;
 import com.radixdlt.p2p.NodeId;
+import com.radixdlt.rev2.REv2ToConsensus;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import java.util.*;
 import java.util.stream.Stream;
@@ -115,7 +117,7 @@ public final class BFTSync implements BFTSyncer {
     private final HashCode localSyncId;
     private final HighQC highQC;
     private final BFTHeader committedHeader;
-    private final LedgerProof committedProof;
+    private final LedgerProofV1 committedProof;
     private final NodeId author;
     private SyncStage syncStage;
     private final HighQcSource highQcSource;
@@ -170,7 +172,7 @@ public final class BFTSync implements BFTSyncer {
   private final int bftSyncPatienceMillis;
   private final Metrics metrics;
 
-  private LedgerHeader currentLedgerHeader;
+  private LedgerProofBundle latestProof;
 
   // FIXME: Remove this once sync is fixed
   private final RateLimiter syncRequestRateLimiter;
@@ -187,7 +189,7 @@ public final class BFTSync implements BFTSyncer {
       EventDispatcher<LocalSyncRequest> localSyncRequestEventDispatcher,
       ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher,
       EventDispatcher<ConsensusByzantineEvent> unexpectedEventEventDispatcher,
-      LedgerHeader currentLedgerHeader,
+      LedgerProofBundle initialLatestProof,
       Random random,
       int bftSyncPatienceMillis,
       Metrics metrics) {
@@ -202,7 +204,7 @@ public final class BFTSync implements BFTSyncer {
     this.localSyncRequestEventDispatcher = Objects.requireNonNull(localSyncRequestEventDispatcher);
     this.timeoutDispatcher = Objects.requireNonNull(timeoutDispatcher);
     this.unexpectedEventEventDispatcher = Objects.requireNonNull(unexpectedEventEventDispatcher);
-    this.currentLedgerHeader = Objects.requireNonNull(currentLedgerHeader);
+    this.latestProof = Objects.requireNonNull(initialLatestProof);
     this.random = random;
     this.bftSyncPatienceMillis = bftSyncPatienceMillis;
     this.metrics = Objects.requireNonNull(metrics);
@@ -240,7 +242,7 @@ public final class BFTSync implements BFTSyncer {
       return SyncResult.INVALID;
     }
 
-    if (qc.getProposedHeader().getRound().lt(this.currentLedgerHeader.getRound())) {
+    if (qc.getProposedHeader().getRound().lt(this.latestProof.resultantRound())) {
       return SyncResult.INVALID;
     }
 
@@ -488,16 +490,16 @@ public final class BFTSync implements BFTSyncer {
   private void processVerticesResponseForCommittedSync(
       SyncState syncState, NodeId sender, GetVerticesResponse response) {
     log.debug(
-        "SYNC_STATE: Processing vertices {} Round {} From {} CurrentLedgerHeader {}",
+        "SYNC_STATE: Processing vertices {} Round {} From {} LatestProof {}",
         syncState,
         response.getVertices().get(0).vertex().getRound(),
         sender,
-        this.currentLedgerHeader);
+        this.latestProof);
 
     syncState.fetched.addAll(response.getVertices());
 
     // TODO: verify actually extends rather than just state version comparison
-    if (syncState.committedProof.getStateVersion() <= this.currentLedgerHeader.getStateVersion()) {
+    if (syncState.committedProof.getStateVersion() <= this.latestProof.stateVersion()) {
       rebuildAndSyncQC(syncState);
     } else {
       syncState.setSyncStage(SyncStage.LEDGER_SYNC);
@@ -636,12 +638,9 @@ public final class BFTSync implements BFTSyncer {
 
   // TODO: Verify headers match
   private void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
-    final var proof = ledgerUpdate.proof();
-    log.trace("SYNC_STATE: update {}", proof);
-
-    this.currentLedgerHeader = proof.getHeader();
-
-    var listeners = this.ledgerSyncing.headMap(proof.getHeader(), true).values();
+    this.latestProof = ledgerUpdate.latestProof();
+    final var header = REv2ToConsensus.ledgerHeader(latestProof.primaryProof().ledgerHeader());
+    var listeners = this.ledgerSyncing.headMap(header, true).values();
     var listenersIterator = listeners.iterator();
 
     while (listenersIterator.hasNext()) {
@@ -658,6 +657,6 @@ public final class BFTSync implements BFTSyncer {
 
     syncing
         .entrySet()
-        .removeIf(e -> e.getValue().highQC.highestQC().getRound().lte(proof.getRound()));
+        .removeIf(e -> e.getValue().highQC.highestQC().getRound().lte(header.getRound()));
   }
 }

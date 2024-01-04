@@ -64,12 +64,12 @@
 
 package com.radixdlt.consensus.epoch;
 
-import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
+import com.radixdlt.ledger.LedgerProofBundle;
 
 public interface BFTSyncFactory {
   BFTSync create(
@@ -77,5 +77,5 @@ public interface BFTSyncFactory {
       SafetyRules safetyRules,
       VertexStoreAdapter vertexStore,
       PacemakerState pacemakerState,
-      LedgerHeader currentLedgerHeader);
+      LedgerProofBundle latestProof);
 }

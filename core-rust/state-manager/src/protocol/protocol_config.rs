@@ -4,10 +4,12 @@ use radix_engine_common::prelude::{hash, scrypto_encode};
 
 use radix_engine_common::types::Epoch;
 
-use crate::StateVersion;
+use crate::{ProtocolUpdaterFactory, StateVersion};
 use utils::btreeset;
 
 // This file contains types for node's local static protocol configuration
+
+pub const GENESIS_PROTOCOL_VERSION: &str = "babylon-genesis";
 
 const MAX_PROTOCOL_VERSION_NAME_LEN: usize = 16;
 
@@ -15,9 +17,9 @@ const MAX_PROTOCOL_VERSION_NAME_LEN: usize = 16;
 pub fn padded_protocol_version_name(unpadded_protocol_version_name: &str) -> String {
     let mut res = "".to_owned();
     for _ in 0..16 - unpadded_protocol_version_name.len() {
-        res.push('\0');
+        res.push('0');
     }
-    res.push_str(&unpadded_protocol_version_name);
+    res.push_str(unpadded_protocol_version_name);
     res
 }
 
@@ -32,7 +34,7 @@ impl ProtocolUpdate {
         // Readiness signal name is 32 bytes long and consists of:
         // - 16 leading bytes of `hash(enactment_condition + next_protocol_version)`
         // - protocol version name: 16 bytes,
-        //      left padded with 0s if protocol version name is shorter than 16 characters
+        //      left padded with ASCII 0's if protocol version name is shorter than 16 characters
         let mut bytes_to_hash = scrypto_encode(&self.enactment_condition).unwrap();
         bytes_to_hash.extend_from_slice(self.next_protocol_version.as_bytes());
         let protocol_update_hash = hash(&bytes_to_hash);
@@ -86,27 +88,40 @@ pub struct SignalledReadinessThreshold {
 }
 
 impl ProtocolConfig {
-    pub fn for_testing() -> ProtocolConfig {
+    pub fn mainnet() -> ProtocolConfig {
         Self {
-            genesis_protocol_version: "babylon-genesis".to_string(),
-            protocol_updates: vec![ProtocolUpdate {
-                next_protocol_version: "testing-v2".to_string(),
-                enactment_condition: ProtocolUpdateEnactmentCondition::EnactUnconditionallyAtEpoch(
-                    Epoch::of(3),
-                ),
-            }],
+            genesis_protocol_version: GENESIS_PROTOCOL_VERSION.to_string(),
+            protocol_updates: vec![],
         }
     }
 
-    pub fn sanity_check(&self) -> Result<(), String> {
+    pub fn testing_default() -> ProtocolConfig {
+        Self {
+            genesis_protocol_version: GENESIS_PROTOCOL_VERSION.to_string(),
+            protocol_updates: vec![],
+        }
+    }
+
+    pub fn sanity_check(
+        &self,
+        protocol_updater_factory: &(dyn ProtocolUpdaterFactory + Send + Sync),
+    ) -> Result<(), String> {
         let mut protocol_versions = btreeset!();
 
         if self.genesis_protocol_version.len() > MAX_PROTOCOL_VERSION_NAME_LEN {
             return Err("Genesis protocol version name is too long".to_string());
         }
 
-        if !self.genesis_protocol_version.is_ascii(){
+        if !self.genesis_protocol_version.is_ascii() {
             return Err("Genesis protocol version name can't use non-ascii characters".to_string());
+        }
+
+        if !protocol_updater_factory
+            .supports_protocol_version(self.genesis_protocol_version.as_str())
+        {
+            return Err(
+                "Protocol updater factory does not support genesis protocol version".to_string(),
+            );
         }
 
         for protocol_update in self.protocol_updates.iter() {
@@ -114,8 +129,14 @@ impl ProtocolConfig {
                 return Err("Protocol version name is too long".to_string());
             }
 
-            if !protocol_update.next_protocol_version.is_ascii(){
+            if !protocol_update.next_protocol_version.is_ascii() {
                 return Err("Protocol version name can't use non-ascii characters".to_string());
+            }
+
+            if !protocol_updater_factory
+                .supports_protocol_version(protocol_update.next_protocol_version.as_str())
+            {
+                return Err("Protocol updater factory does not support a configured update protocol version".to_string());
             }
 
             protocol_versions.insert(&protocol_update.next_protocol_version);

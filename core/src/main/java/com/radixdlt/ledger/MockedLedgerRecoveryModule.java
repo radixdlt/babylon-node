@@ -67,22 +67,20 @@ package com.radixdlt.ledger;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.consensus.*;
-import com.radixdlt.consensus.bft.*;
-import com.radixdlt.rev2.LastEpochProof;
-import com.radixdlt.rev2.LastProof;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.lang.Option;
+import com.radixdlt.rev2.REv2ToConsensus;
 
 /** Starting configuration for simulation/deterministic steady state tests. */
 public class MockedLedgerRecoveryModule extends AbstractModule {
-
   @Provides
-  @LastEpochProof
-  public LedgerProof lastEpochProof(BFTValidatorSet validatorSet) {
-    return LedgerProof.genesis(0, LedgerHashes.zero(), validatorSet, 0, 0);
-  }
-
-  @Provides
-  @LastProof
-  private LedgerProof lastProof(BFTConfiguration bftConfiguration) {
-    return bftConfiguration.getVertexStoreState().getRootHeader();
+  private LedgerProofBundle latestProof(BFTValidatorSet validatorSet) {
+    return new LedgerProofBundle(
+        REv2ToConsensus.ledgerProof(
+            LedgerProofV1.genesis(0, LedgerHashes.zero(), validatorSet, 0, 0)),
+        REv2ToConsensus.ledgerProof(
+            LedgerProofV1.genesis(0, LedgerHashes.zero(), validatorSet, 0, 0)),
+        Option.none(),
+        Option.none());
   }
 }

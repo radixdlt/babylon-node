@@ -67,7 +67,7 @@ package com.radixdlt.sync.validation;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.ConsensusHasher;
 import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.LedgerProofV1;
 import com.radixdlt.consensus.TimestampedECDSASignature;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.crypto.Hasher;
@@ -87,7 +87,7 @@ public final class RemoteSyncResponseSignaturesVerifier {
     this.hashVerifier = Objects.requireNonNull(hashVerifier);
   }
 
-  public boolean verifyResponseSignatures(LedgerProof ledgerProof) {
+  public boolean verifyResponseSignatures(LedgerProofV1 ledgerProof) {
     final var signatures = ledgerProof.getSignatures().getSignatures();
     for (Entry<BFTValidatorId, TimestampedECDSASignature> nodeAndSignature :
         signatures.entrySet()) {

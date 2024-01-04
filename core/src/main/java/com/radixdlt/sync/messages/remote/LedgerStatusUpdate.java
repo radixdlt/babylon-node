@@ -64,7 +64,7 @@
 
 package com.radixdlt.sync.messages.remote;
 
-import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.LedgerProofV1;
 import java.util.Objects;
 
 /**
@@ -73,17 +73,17 @@ import java.util.Objects;
  */
 public final class LedgerStatusUpdate {
 
-  private final LedgerProof header;
+  private final LedgerProofV1 header;
 
-  public static LedgerStatusUpdate create(LedgerProof header) {
+  public static LedgerStatusUpdate create(LedgerProofV1 header) {
     return new LedgerStatusUpdate(header);
   }
 
-  private LedgerStatusUpdate(LedgerProof header) {
+  private LedgerStatusUpdate(LedgerProofV1 header) {
     this.header = header;
   }
 
-  public LedgerProof getHeader() {
+  public LedgerProofV1 getHeader() {
     return header;
   }
 

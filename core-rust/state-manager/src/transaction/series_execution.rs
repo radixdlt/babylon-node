@@ -71,14 +71,14 @@ use crate::transaction::*;
 use crate::*;
 
 use ::transaction::prelude::*;
-use node_common::locks::Mutex;
+use node_common::locks::{Mutex, RwLock};
 
 /// An internal delegate for executing a series of consecutive transactions while tracking their
 /// progress.
 pub struct TransactionSeriesExecutor<'s, S> {
     store: &'s S,
     execution_cache: &'s Mutex<ExecutionCache>,
-    execution_configurator: &'s ExecutionConfigurator,
+    execution_configurator: &'s RwLock<ExecutionConfigurator>,
     epoch_identifiers: EpochTransactionIdentifiers,
     epoch_header: Option<LedgerHeader>,
     state_tracker: StateTracker,
@@ -96,7 +96,7 @@ where
     pub fn new(
         store: &'s S,
         execution_cache: &'s Mutex<ExecutionCache>,
-        execution_configurator: &'s ExecutionConfigurator,
+        execution_configurator: &'s RwLock<ExecutionConfigurator>,
         protocol_state: ProtocolState,
     ) -> Self {
         let epoch_header = store
@@ -154,6 +154,7 @@ where
         self.execute_wrapped_no_state_update(
             &description,
             self.execution_configurator
+                .read()
                 .wrap_ledger_transaction(transaction, &description),
         )
     }
@@ -243,6 +244,7 @@ struct StateTracker {
     ledger_hashes: LedgerHashes,
     next_epoch: Option<NextEpoch>,
     protocol_state: ProtocolState,
+    next_protocol_version: Option<String>,
 }
 
 impl StateTracker {
@@ -256,6 +258,7 @@ impl StateTracker {
             ledger_hashes: ledger_hashes_entry.1,
             next_epoch: None,
             protocol_state,
+            next_protocol_version: None,
         }
     }
 
@@ -277,8 +280,6 @@ impl StateTracker {
             );
         }
 
-        // TODO(protocol-updates): this will need to be adjusted
-        // to allow to execute transactions as part of a protocol update.
         if let Some(next_protocol_version) = &self.next_protocol_version() {
             panic!(
                 "the protocol update {:?} has happened at {:?} (version {}) and must not be followed by {:?}",
@@ -296,28 +297,10 @@ impl StateTracker {
         self.ledger_hashes = result.hash_structures_diff.ledger_hashes;
         self.next_epoch = result.next_epoch();
         self.protocol_state = result.new_protocol_state.clone();
+        self.next_protocol_version = result.next_protocol_version.clone();
     }
 
     pub fn next_protocol_version(&self) -> Option<String> {
-        self.protocol_state
-            .in_progress_protocol_update
-            .as_ref()
-            .map(
-                |in_progress_protocol_update| match in_progress_protocol_update {
-                    InProgressProtocolUpdate::EnactedButNotExecuted { protocol_version } => {
-                        protocol_version.clone()
-                    }
-                    InProgressProtocolUpdate::PartiallyExecuted {
-                        protocol_version, ..
-                    } => {
-                        // TODO(protocol-updates): make sure to handle this
-                        // when implementing protocol update execution.
-                        // There should never be a partially executed protocol update
-                        // if we're not executing a protocol update transaction.
-                        // Add a check for this invariant?
-                        protocol_version.clone()
-                    }
-                },
-            )
+        self.next_protocol_version.clone()
     }
 }

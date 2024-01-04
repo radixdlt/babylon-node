@@ -64,7 +64,7 @@
 
 package com.radixdlt.sync.messages.remote;
 
-import com.radixdlt.ledger.DtoLedgerProof;
+import com.radixdlt.ledger.DtoLedgerProofV1;
 import java.util.Objects;
 
 /**
@@ -73,23 +73,23 @@ import java.util.Objects;
  */
 public final class SyncRequest {
 
-  private final DtoLedgerProof header;
+  private final DtoLedgerProofV1 proof;
 
-  public static SyncRequest create(DtoLedgerProof header) {
-    return new SyncRequest(header);
+  public static SyncRequest create(DtoLedgerProofV1 proof) {
+    return new SyncRequest(proof);
   }
 
-  private SyncRequest(DtoLedgerProof header) {
-    this.header = header;
+  private SyncRequest(DtoLedgerProofV1 proof) {
+    this.proof = proof;
   }
 
-  public DtoLedgerProof getHeader() {
-    return header;
+  public DtoLedgerProofV1 getProof() {
+    return proof;
   }
 
   @Override
   public String toString() {
-    return String.format("%s{header=%s}", this.getClass().getSimpleName(), this.header);
+    return String.format("%s{proof=%s}", this.getClass().getSimpleName(), this.proof);
   }
 
   @Override
@@ -101,11 +101,11 @@ public final class SyncRequest {
       return false;
     }
     SyncRequest that = (SyncRequest) o;
-    return Objects.equals(header, that.header);
+    return Objects.equals(proof, that.proof);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(header);
+    return Objects.hash(proof);
   }
 }

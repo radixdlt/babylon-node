@@ -62,19 +62,16 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2;
+package com.radixdlt.protocol;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.statecomputer.commit.LedgerProof;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import javax.inject.Qualifier;
-
-/** Marks the proof as the last one stored */
-@Qualifier
-@Target({FIELD, PARAMETER, METHOD})
-@Retention(RUNTIME)
-public @interface LastStoredProof {}
+public record ProtocolUpdateResult(LedgerProof postUpdateProof) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        ProtocolUpdateResult.class,
+        codecs -> StructCodec.fromRecordComponents(ProtocolUpdateResult.class, codecs));
+  }
+}

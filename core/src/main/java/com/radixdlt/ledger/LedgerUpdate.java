@@ -64,7 +64,6 @@
 
 package com.radixdlt.ledger;
 
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.lang.Option;
 import com.radixdlt.statecomputer.commit.CommitSummary;
@@ -72,16 +71,9 @@ import com.radixdlt.transactions.RawLedgerTransaction;
 import java.util.List;
 
 public record LedgerUpdate(
-    CommitSummary commitSummary,
-    LedgerExtension ledgerExtension,
+    CommitSummary commitSummary, // TODO: rename?
+    LedgerProofBundle latestProof,
     Option<EpochChange> epochChange,
-    Option<String> nextProtocolVersion) {
-
-  public LedgerProof proof() {
-    return ledgerExtension.getProof();
-  }
-
-  public List<RawLedgerTransaction> transactions() {
-    return ledgerExtension.getTransactions();
-  }
-}
+    // Only used in tests
+    // TODO: does not contain protocol update transactions, is that an issue?
+    List<RawLedgerTransaction> committedTransactions) {}

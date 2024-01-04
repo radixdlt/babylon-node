@@ -62,23 +62,69 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2;
+package com.radixdlt.consensus;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.SerializerConstants;
+import com.radixdlt.serialization.SerializerDummy;
+import com.radixdlt.serialization.SerializerId2;
+import java.util.Objects;
+import javax.annotation.concurrent.Immutable;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import javax.inject.Qualifier;
+@Immutable
+@SerializerId2("consensus.protocol_update_proof_metadata")
+public final class ProtocolUpdateProofMetadata {
+  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+  @DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
+  SerializerDummy serializer = SerializerDummy.DUMMY;
 
-/**
- * Identifies that the target is the last proof. This includes the mocked genesis
- * VerifiedLedgerHeaderAndProof. That is, the header associated with this annotation should never
- * have isEndOfEpoch() == true.
- */
-@Qualifier
-@Target({FIELD, PARAMETER, METHOD})
-@Retention(RUNTIME)
-public @interface LastProof {}
+  @JsonProperty("protocol_version_name")
+  @DsonOutput(Output.ALL)
+  private final String protocolVersionName;
+
+  @JsonProperty("batch_idx")
+  @DsonOutput(Output.ALL)
+  private final long batchIdx;
+
+  @JsonCreator
+  public ProtocolUpdateProofMetadata(
+      @JsonProperty("protocol_version_name") String protocolVersionName,
+      @JsonProperty("batch_idx") long batchIdx) {
+    this.protocolVersionName = protocolVersionName;
+    this.batchIdx = batchIdx;
+  }
+
+  public String getProtocolVersionName() {
+    return this.protocolVersionName;
+  }
+
+  public long getBatchIdx() {
+    return this.batchIdx;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(this.protocolVersionName, this.batchIdx);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o == this) {
+      return true;
+    }
+
+    return (o instanceof ProtocolUpdateProofMetadata other)
+        && Objects.equals(this.protocolVersionName, other.protocolVersionName)
+        && this.batchIdx == other.batchIdx;
+  }
+
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{protocol_version_name=%s batch_idx=%s}",
+        getClass().getSimpleName(), this.protocolVersionName, this.batchIdx);
+  }
+}

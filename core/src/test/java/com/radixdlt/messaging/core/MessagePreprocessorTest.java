@@ -78,11 +78,11 @@ import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.LedgerProofV1;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.lang.Tuple.Tuple2;
 import com.radixdlt.ledger.DtoLedgerExtension;
-import com.radixdlt.ledger.DtoLedgerProof;
+import com.radixdlt.ledger.DtoLedgerProofV1;
 import com.radixdlt.messaging.consensus.ConsensusEventMessage;
 import com.radixdlt.messaging.consensus.GetVerticesErrorResponseMessage;
 import com.radixdlt.messaging.consensus.GetVerticesRequestMessage;
@@ -133,10 +133,10 @@ public class MessagePreprocessorTest {
               "request"),
           tuple(new GetVerticesRequestMessage(mock(HashCode.class), 1), "vertexId"),
           tuple(new GetVerticesResponseMessage(mock(List.class)), "vertices"),
-          tuple(new LedgerStatusUpdateMessage(mock(LedgerProof.class)), "header"),
+          tuple(new LedgerStatusUpdateMessage(mock(LedgerProofV1.class)), "header"),
           tuple(new MempoolAddMessage(mock(List.class)), "txns"),
-          tuple(new StatusResponseMessage(mock(LedgerProof.class)), "header"),
-          tuple(new SyncRequestMessage(mock(DtoLedgerProof.class)), "currentHeader"),
+          tuple(new StatusResponseMessage(mock(LedgerProofV1.class)), "header"),
+          tuple(new SyncRequestMessage(mock(DtoLedgerProofV1.class)), "currentHeader"),
           tuple(new SyncResponseMessage(mock(DtoLedgerExtension.class)), "ledgerExtension"));
 
   private static final Serialization SERIALIZATION = DefaultSerialization.getInstance();

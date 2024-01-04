@@ -65,22 +65,22 @@
 package com.radixdlt.sync.messages.local;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.LedgerProofV1;
 import com.radixdlt.p2p.NodeId;
 import java.util.Objects;
 
 /** A request to sync ledger to a given version. */
 public final class LocalSyncRequest {
 
-  private final LedgerProof target;
+  private final LedgerProofV1 target;
   private final ImmutableList<NodeId> targetNodes;
 
-  public LocalSyncRequest(LedgerProof target, ImmutableList<NodeId> targetNodes) {
+  public LocalSyncRequest(LedgerProofV1 target, ImmutableList<NodeId> targetNodes) {
     this.target = Objects.requireNonNull(target);
     this.targetNodes = Objects.requireNonNull(targetNodes);
   }
 
-  public LedgerProof getTarget() {
+  public LedgerProofV1 getTarget() {
     return target;
   }
 

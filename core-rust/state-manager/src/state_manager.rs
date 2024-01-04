@@ -62,6 +62,7 @@
  * permissions under this License.
  */
 
+use std::ops::Deref;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -77,6 +78,7 @@ use radix_engine_common::prelude::*;
 use crate::jni::LedgerSyncLimitsConfig;
 use crate::store::jmt_gc::StateHashTreeGcConfig;
 use crate::store::proofs_gc::{LedgerProofsGc, LedgerProofsGcConfig};
+use crate::transaction::ExecutionConfigurator;
 use crate::{
     compute_initial_protocol_state,
     mempool_manager::MempoolManager,
@@ -87,8 +89,8 @@ use crate::{
         StateManagerDatabase,
     },
     transaction::{CachedCommittabilityValidator, CommittabilityValidator, TransactionPreviewer},
-    LoggingConfig, PendingTransactionResultCache, ProtocolConfig, ProtocolConfigurator,
-    StateComputer,
+    LoggingConfig, PendingTransactionResultCache, ProtocolConfig, ProtocolUpdateResult,
+    ProtocolUpdaterFactory, StateComputer,
 };
 
 /// An interval between time-intensive measurement of raw DB metrics.
@@ -127,7 +129,7 @@ impl StateManagerConfig {
             state_hash_tree_gc_config: StateHashTreeGcConfig::default(),
             ledger_proofs_gc_config: LedgerProofsGcConfig::default(),
             ledger_sync_limits_config: LedgerSyncLimitsConfig::default(),
-            protocol_config: ProtocolConfig::for_testing(),
+            protocol_config: ProtocolConfig::testing_default(),
             no_fees: false,
         }
     }
@@ -141,8 +143,10 @@ pub struct StateManager {
     pub pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
     pub mempool: Arc<RwLock<PriorityMempool>>,
     pub mempool_manager: Arc<MempoolManager>,
+    pub execution_configurator: Arc<RwLock<ExecutionConfigurator>>,
     pub committability_validator: Arc<RwLock<CommittabilityValidator<StateManagerDatabase>>>,
     pub transaction_previewer: Arc<RwLock<TransactionPreviewer<StateManagerDatabase>>>,
+    pub protocol_updater_factory: Arc<dyn ProtocolUpdaterFactory + Sync + Send>,
 }
 
 impl StateManager {
@@ -156,6 +160,7 @@ impl StateManager {
         config: StateManagerConfig,
         mempool_relay_dispatcher: Option<MempoolRelayDispatcher>,
         lock_factory: &LockFactory,
+        protocol_updater_factory: Box<dyn ProtocolUpdaterFactory + Sync + Send>,
         metrics_registry: &Registry,
         scheduler: &Scheduler<impl Spawner, impl Tracker, impl Metrics>,
     ) -> Self {
@@ -172,28 +177,36 @@ impl StateManager {
         let logging_config = config.logging_config.clone();
 
         let raw_db = StateManagerDatabase::from_config(
-	    config.database_backend_config,
-            config.database_flags,
+            config.database_backend_config.clone(),
+            config.database_flags.clone(),
             &network,
         );
 
         let database = Arc::new(lock_factory.named("database").new_state_lock(raw_db));
 
-        if let Err(err) = config.protocol_config.sanity_check() {
+        if let Err(err) = config
+            .protocol_config
+            .sanity_check(protocol_updater_factory.deref())
+        {
             panic!("Protocol misconfiguration: {}", err);
         };
-        let initial_protocol_state = compute_initial_protocol_state(
-            database.read_current(),
-            &config.protocol_config
-        );
-        let initial_protocol_configurator = ProtocolConfigurator::for_protocol_version(
-            &initial_protocol_state.current_protocol_version,
-            &network,
-            &logging_config,
-        );
 
-        let execution_configurator =
-            Arc::new(initial_protocol_configurator.execution_configurator(config.no_fees));
+        let read_db = database.read_current();
+        let initial_protocol_state =
+            compute_initial_protocol_state(read_db.deref(), &config.protocol_config);
+        drop(read_db);
+
+        let initial_protocol_updater = protocol_updater_factory.updater_for(
+            &initial_protocol_state.current_protocol_version,
+            database.clone(),
+        );
+        let initial_protocol_configurator = initial_protocol_updater.state_computer_configurator();
+
+        let execution_configurator = Arc::new(
+            lock_factory
+                .named("execution_configurator")
+                .new_rwlock(initial_protocol_configurator.execution_configurator(config.no_fees)),
+        );
 
         let pending_transaction_result_cache = Arc::new(
             lock_factory
@@ -254,12 +267,12 @@ impl StateManager {
             vertex_limits_config,
             database.clone(),
             mempool_manager.clone(),
-            execution_configurator,
+            execution_configurator.clone(),
             pending_transaction_result_cache.clone(),
             logging_config,
             metrics_registry,
             lock_factory.named("state_computer"),
-            initial_protocol_configurator,
+            initial_protocol_updater,
             initial_protocol_state,
         ));
 
@@ -298,39 +311,54 @@ impl StateManager {
             pending_transaction_result_cache,
             mempool,
             mempool_manager,
+            execution_configurator,
             committability_validator,
             transaction_previewer,
+            protocol_updater_factory: protocol_updater_factory.into(),
         }
     }
 
-    pub fn apply_protocol_update(&self, protocol_version_name: &str) {
-        let protocol_configurator = ProtocolConfigurator::for_protocol_version(
-            protocol_version_name,
-            &self.config.network_definition,
-            &self.config.logging_config,
-        );
+    pub fn apply_protocol_update(&self, protocol_version_name: &str) -> ProtocolUpdateResult {
+        let protocol_updater = self
+            .protocol_updater_factory
+            .updater_for(protocol_version_name, self.database.clone());
+        let state_computer_configurator = protocol_updater.state_computer_configurator();
 
-        let execution_configurator =
-            Arc::new(protocol_configurator.execution_configurator(self.config.no_fees));
+        let new_execution_configurator =
+            state_computer_configurator.execution_configurator(self.config.no_fees);
+
+        let mut locked_execution_configurator = self.execution_configurator.write();
+        *locked_execution_configurator = new_execution_configurator;
+        drop(locked_execution_configurator);
 
         let mut locked_committability_validator = self.committability_validator.write();
         *locked_committability_validator = CommittabilityValidator::new(
             self.database.clone(),
-            execution_configurator.clone(),
-            protocol_configurator.user_transaction_validator(),
+            self.execution_configurator.clone(),
+            state_computer_configurator.user_transaction_validator(),
         );
         drop(locked_committability_validator);
 
         let mut locked_transaction_previewer = self.transaction_previewer.write();
         *locked_transaction_previewer = TransactionPreviewer::new(
             self.database.clone(),
-            execution_configurator,
-            protocol_configurator.validation_config(),
+            self.execution_configurator.clone(),
+            state_computer_configurator.validation_config(),
         );
         drop(locked_transaction_previewer);
 
-        // TODO: force mempool/txn result cache recalculation?
+        // TODO: recalculate mempool/txn result cache
 
-        self.state_computer.apply_protocol_update(protocol_configurator);
+        self.state_computer
+            .apply_protocol_update(protocol_updater.deref())
     }
-}"databnase
+
+    pub fn newest_protocol_version(&self) -> String {
+        let protocol_config = &self.config.protocol_config;
+        protocol_config
+            .protocol_updates
+            .last()
+            .map(|protocol_update| protocol_update.next_protocol_version.clone())
+            .unwrap_or(protocol_config.genesis_protocol_version.clone())
+    }
+}

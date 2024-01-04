@@ -62,19 +62,25 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2;
+package com.radixdlt.statecomputer.commit;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import com.google.common.hash.HashCode;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.EnumCodec;
+import com.radixdlt.utils.UInt32;
+import java.util.List;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import javax.inject.Qualifier;
+public sealed interface LedgerProofOrigin {
+  static void registerCodec(CodecMap codecMap) {
+    codecMap.registerForSealedClassAndSubclasses(
+        LedgerProofOrigin.class,
+        (codecs) -> EnumCodec.fromPermittedRecordSubclasses(LedgerProofOrigin.class, codecs));
+  }
 
-/** Identifies that the target is the last epoch proof */
-@Qualifier
-@Target({FIELD, PARAMETER, METHOD})
-@Retention(RUNTIME)
-public @interface LastEpochProof {}
+  record Genesis(HashCode genesisOpaqueHash) implements LedgerProofOrigin {}
+
+  record Consensus(HashCode opaque, List<TimestampedValidatorSignature> signatures)
+      implements LedgerProofOrigin {}
+
+  record ProtocolUpdate(String protocolVersionName, UInt32 batchIdx) implements LedgerProofOrigin {}
+}

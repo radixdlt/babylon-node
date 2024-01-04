@@ -207,7 +207,7 @@ public final class IncreasingValidatorsTest {
           10000);
 
       // Post-run assertions
-      Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), 20);
+      Checkers.assertNodesSyncedToVersionAtLeast(test.getNodeInjectors(), 20);
       Checkers.assertNoInvalidSyncResponses(test.getNodeInjectors());
     }
   }

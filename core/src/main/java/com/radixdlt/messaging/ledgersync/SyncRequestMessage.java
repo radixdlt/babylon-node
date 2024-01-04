@@ -66,7 +66,7 @@ package com.radixdlt.messaging.ledgersync;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.ledger.DtoLedgerProof;
+import com.radixdlt.ledger.DtoLedgerProofV1;
 import com.radixdlt.messaging.core.Message;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -78,15 +78,15 @@ import java.util.Objects;
 public final class SyncRequestMessage extends Message {
   @JsonProperty("currentHeader")
   @DsonOutput(Output.ALL)
-  private final DtoLedgerProof currentHeader;
+  private final DtoLedgerProofV1 currentHeader;
 
   @JsonCreator
   public SyncRequestMessage(
-      @JsonProperty(value = "currentHeader", required = true) DtoLedgerProof currentHeader) {
+      @JsonProperty(value = "currentHeader", required = true) DtoLedgerProofV1 currentHeader) {
     this.currentHeader = Objects.requireNonNull(currentHeader);
   }
 
-  public DtoLedgerProof getCurrentHeader() {
+  public DtoLedgerProofV1 getCurrentHeader() {
     return currentHeader;
   }
 

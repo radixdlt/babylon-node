@@ -65,23 +65,26 @@
 package com.radixdlt.monitoring;
 
 import com.google.inject.Inject;
-import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.LedgerProofV1;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.EpochRound;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.ledger.LedgerProofBundle;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.rev2.LastEpochProof;
+import com.radixdlt.rev2.REv2ToConsensus;
 import java.util.concurrent.atomic.AtomicReference;
 
 /** Manages system information to be consumed by clients such as the api. */
 public final class InMemorySystemInfo {
   private final AtomicReference<EpochRound> currentEpochRound =
       new AtomicReference<>(EpochRound.of(0L, Round.genesis()));
-  private final AtomicReference<LedgerProof> epochsLedgerProof;
+  private final AtomicReference<LedgerProofV1> epochsLedgerProof;
 
   @Inject
-  public InMemorySystemInfo(@LastEpochProof LedgerProof lastEpochProof) {
-    this.epochsLedgerProof = new AtomicReference<>(lastEpochProof);
+  public InMemorySystemInfo(LedgerProofBundle latestProof) {
+    this.epochsLedgerProof =
+        new AtomicReference<>(
+            REv2ToConsensus.ledgerProof(latestProof.closestEpochProofOnOrBefore()));
   }
 
   public void processEpochRound(EpochRound epochRound) {
@@ -89,15 +92,12 @@ public final class InMemorySystemInfo {
   }
 
   public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
-    return update -> {
-      var ledgerProof = update.proof();
-      if (ledgerProof.getNextEpoch().isPresent()) {
-        epochsLedgerProof.set(ledgerProof);
-      }
-    };
+    return update ->
+        epochsLedgerProof.set(
+            REv2ToConsensus.ledgerProof(update.latestProof().closestEpochProofOnOrBefore()));
   }
 
-  public LedgerProof getEpochProof() {
+  public LedgerProofV1 getEpochProof() {
     return epochsLedgerProof.get();
   }
 

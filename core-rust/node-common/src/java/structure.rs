@@ -92,7 +92,9 @@ impl<T: ScryptoEncode> StructToJava for T {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use sbor::{Decode, Encode};
+    use radix_engine::prelude::ScryptoCategorize;
+    use radix_engine_common::prelude::Epoch;
+    use sbor::{define_versioned, Decode, Encode, HasLatestVersion};
 
     #[derive(Debug, Encode, Decode, PartialEq, Eq)]
     pub struct TypeA {
@@ -119,5 +121,57 @@ mod tests {
         assert!(r.is_ok());
         let b1 = r.unwrap();
         assert_eq!(b0, b1);
+    }
+
+    define_versioned!(
+        #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+        enum VersionedA {
+            previous_versions: [
+                1 => AV1: { updates_to: 2 },
+            ],
+            latest_version: {
+                2 => A = AV2,
+            },
+        }
+    );
+
+    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub struct AV1 {
+        pub epoch: Epoch,
+        pub state_version: u64,
+        pub next_epoch: Option<String>,
+    }
+
+    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub struct AV2 {
+        pub epoch: Epoch,
+        pub state_version: u64,
+        pub next_epoch: Option<String>,
+        pub new_field: Option<String>,
+    }
+
+    impl From<AV1> for AV2 {
+        fn from(value: AV1) -> Self {
+            AV2 {
+                epoch: value.epoch,
+                state_version: value.state_version,
+                next_epoch: value.next_epoch,
+                new_field: None,
+            }
+        }
+    }
+
+    #[test]
+    fn enc_dec_new_field() {
+        let enc = scrypto_encode(&VersionedA::V1(AV1 {
+            epoch: Epoch::of(2),
+            state_version: 100,
+            next_epoch: Some("String".to_string()),
+        }))
+        .unwrap();
+
+        let dec: VersionedA = scrypto_decode(enc.as_ref()).unwrap();
+
+        println!("{:?}", dec.into_latest());
     }
 }

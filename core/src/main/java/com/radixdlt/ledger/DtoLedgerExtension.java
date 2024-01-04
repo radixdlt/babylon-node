@@ -97,17 +97,17 @@ public final class DtoLedgerExtension {
 
   @JsonProperty("start")
   @DsonOutput(Output.ALL)
-  private final DtoLedgerProof start;
+  private final DtoLedgerProofV1 start;
 
   @JsonProperty("end")
   @DsonOutput(Output.ALL)
-  private final DtoLedgerProof end;
+  private final DtoLedgerProofV1 end;
 
   @JsonCreator
   public DtoLedgerExtension(
       @JsonProperty("txns") List<RawLedgerTransaction> transactions,
-      @JsonProperty(value = "start", required = true) DtoLedgerProof start,
-      @JsonProperty(value = "end", required = true) DtoLedgerProof end) {
+      @JsonProperty(value = "start", required = true) DtoLedgerProofV1 start,
+      @JsonProperty(value = "end", required = true) DtoLedgerProofV1 end) {
     this.transactions = transactions == null ? ImmutableList.of() : transactions;
     this.start = requireNonNull(start);
     this.end = requireNonNull(end);
@@ -119,11 +119,11 @@ public final class DtoLedgerExtension {
     return transactions;
   }
 
-  public DtoLedgerProof getStart() {
+  public DtoLedgerProofV1 getStart() {
     return start;
   }
 
-  public DtoLedgerProof getEnd() {
+  public DtoLedgerProofV1 getEnd() {
     return end;
   }
 

@@ -134,6 +134,64 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
 }
 
 #[no_mangle]
+extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getLatestEpochProof(
+    env: JNIEnv,
+    _class: JClass,
+    j_rust_global_context: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(
+        &env,
+        request_payload,
+        |_no_args: ()| -> Option<LedgerProof> {
+            let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
+            let proof = database.read_current().get_last_epoch_proof();
+            proof
+        },
+    )
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getLatestProtocolUpdateTriggerProof(
+    env: JNIEnv,
+    _class: JClass,
+    j_rust_global_context: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(
+        &env,
+        request_payload,
+        |_no_args: ()| -> Option<LedgerProof> {
+            let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
+            let proof = database
+                .read_current()
+                .get_latest_protocol_update_trigger_proof();
+            proof
+        },
+    )
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getLatestPostProtocolUpdateProof(
+    env: JNIEnv,
+    _class: JClass,
+    j_rust_global_context: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(
+        &env,
+        request_payload,
+        |_no_args: ()| -> Option<LedgerProof> {
+            let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
+            let proof = database
+                .read_current()
+                .get_latest_post_protocol_update_proof();
+            proof
+        },
+    )
+}
+
+#[no_mangle]
 extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getPostGenesisEpochProof(
     env: JNIEnv,
     _class: JClass,

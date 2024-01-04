@@ -264,6 +264,8 @@ public final class SafetyRules {
     }
 
     if (isGenesisQc(qc)) {
+      // TODO: this is an initial epoch QC, consider renaming
+
       // A genesis QC doesn't require any signatures
       return true;
     }

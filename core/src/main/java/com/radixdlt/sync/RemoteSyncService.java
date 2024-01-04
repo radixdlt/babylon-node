@@ -66,7 +66,7 @@ package com.radixdlt.sync;
 
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
-import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.LedgerProofV1;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
@@ -74,7 +74,6 @@ import com.radixdlt.ledger.*;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeersView;
-import com.radixdlt.rev2.LastProof;
 import com.radixdlt.sync.messages.remote.*;
 import java.util.Collections;
 import java.util.Objects;
@@ -96,7 +95,7 @@ public final class RemoteSyncService {
   private final Metrics metrics;
   private final RateLimiter ledgerStatusUpdateSendRateLimiter;
 
-  private LedgerProof currentHeader;
+  private LedgerProofBundle latestProof;
 
   @Inject
   public RemoteSyncService(
@@ -108,7 +107,7 @@ public final class RemoteSyncService {
       RemoteEventDispatcher<NodeId, LedgerStatusUpdate> statusUpdateDispatcher,
       SyncRelayConfig syncRelayConfig,
       Metrics metrics,
-      @LastProof LedgerProof initialHeader) {
+      LedgerProofBundle initialLatestProof) {
     this.peersView = Objects.requireNonNull(peersView);
     this.localSyncService = Objects.requireNonNull(localSyncService);
     this.committedReader = Objects.requireNonNull(committedReader);
@@ -120,7 +119,7 @@ public final class RemoteSyncService {
     this.ledgerStatusUpdateSendRateLimiter =
         RateLimiter.create(syncRelayConfig.maxLedgerUpdatesRate());
 
-    this.currentHeader = initialHeader;
+    this.latestProof = initialLatestProof;
   }
 
   public RemoteEventProcessor<NodeId, SyncRequest> syncRequestEventProcessor() {
@@ -128,7 +127,7 @@ public final class RemoteSyncService {
   }
 
   private void processSyncRequest(NodeId sender, SyncRequest syncRequest) {
-    final var remoteCurrentHeader = syncRequest.getHeader();
+    final var remoteCurrentHeader = syncRequest.getProof();
     final var ledgerExtension = getLedgerExtensionForSyncRequest(remoteCurrentHeader);
 
     if (ledgerExtension == null) {
@@ -155,8 +154,8 @@ public final class RemoteSyncService {
     syncResponseDispatcher.dispatch(sender, SyncResponse.create(verifiable));
   }
 
-  private LedgerExtension getLedgerExtensionForSyncRequest(DtoLedgerProof startHeader) {
-    return committedReader.getTransactions(startHeader);
+  private LedgerExtension getLedgerExtensionForSyncRequest(DtoLedgerProofV1 startHeader) {
+    return committedReader.getTransactions(startHeader.getLedgerHeader().getStateVersion());
   }
 
   public RemoteEventProcessor<NodeId, StatusRequest> statusRequestEventProcessor() {
@@ -164,7 +163,8 @@ public final class RemoteSyncService {
   }
 
   private void processStatusRequest(NodeId sender, StatusRequest statusRequest) {
-    statusResponseDispatcher.dispatch(sender, StatusResponse.create(this.currentHeader));
+    statusResponseDispatcher.dispatch(
+        sender, StatusResponse.create(latestProof.closestNonProtocolUpdateProofV1()));
   }
 
   public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
@@ -172,19 +172,18 @@ public final class RemoteSyncService {
   }
 
   private void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
-    final LedgerProof updatedHeader = ledgerUpdate.proof();
-    if (updatedHeader.getStateVersion() > this.currentHeader.getStateVersion()) {
-      this.currentHeader = updatedHeader;
-      this.sendStatusUpdateToSomePeers(updatedHeader);
+    if (ledgerUpdate.latestProof().stateVersion() > this.latestProof.stateVersion()) {
+      this.latestProof = ledgerUpdate.latestProof();
+      this.sendStatusUpdateToSomePeers(latestProof.closestNonProtocolUpdateProofV1());
     }
   }
 
-  private void sendStatusUpdateToSomePeers(LedgerProof header) {
+  private void sendStatusUpdateToSomePeers(LedgerProofV1 latestCanonicalProof) {
     if (!(this.localSyncService.getSyncState() instanceof SyncState.IdleState)) {
       return; // not sending any updates if the node is syncing itself
     }
 
-    final var statusUpdate = LedgerStatusUpdate.create(header);
+    final var statusUpdate = LedgerStatusUpdate.create(latestCanonicalProof);
 
     final var currentPeers = this.peersView.peers().collect(Collectors.toList());
     Collections.shuffle(currentPeers);

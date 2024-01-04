@@ -66,7 +66,7 @@ package com.radixdlt.messaging.ledgersync;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.LedgerProofV1;
 import com.radixdlt.messaging.core.Message;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -78,15 +78,15 @@ import java.util.Objects;
 public final class LedgerStatusUpdateMessage extends Message {
   @JsonProperty("header")
   @DsonOutput(Output.ALL)
-  private final LedgerProof header;
+  private final LedgerProofV1 header;
 
   @JsonCreator
   public LedgerStatusUpdateMessage(
-      @JsonProperty(value = "header", required = true) LedgerProof header) {
+      @JsonProperty(value = "header", required = true) LedgerProofV1 header) {
     this.header = Objects.requireNonNull(header);
   }
 
-  public LedgerProof getHeader() {
+  public LedgerProofV1 getHeader() {
     return header;
   }
 

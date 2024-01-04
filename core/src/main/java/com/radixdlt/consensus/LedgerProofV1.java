@@ -73,7 +73,7 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.lang.Option;
-import com.radixdlt.ledger.DtoLedgerProof;
+import com.radixdlt.ledger.DtoLedgerProofV1;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -82,10 +82,15 @@ import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
 
-/** Ledger header with proof */
+// TODO: we should be able to create a v2 proof from ANYY v1 proof (even if its non-genesis and
+// empty signatures)!
+/**
+ * A legacy (V1) ledger proof. It can represent either a Genesis-originated or Consensus-originated
+ * LedgerProofs. It can't represent ProtocolUpdate-originated proofs.
+ */
 @Immutable
 @SerializerId2("ledger.proof")
-public final class LedgerProof {
+public final class LedgerProofV1 {
   @JsonProperty(SerializerConstants.SERIALIZER_NAME)
   @DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
   SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -105,7 +110,7 @@ public final class LedgerProof {
   private final TimestampedECDSASignatures signatures;
 
   @JsonCreator
-  public LedgerProof(
+  public LedgerProofV1(
       @JsonProperty(value = "opaque", required = true) HashCode opaque,
       @JsonProperty(value = "ledgerState", required = true) LedgerHeader ledgerHeader,
       @JsonProperty(value = "signatures", required = true) TimestampedECDSASignatures signatures) {
@@ -114,17 +119,22 @@ public final class LedgerProof {
     this.signatures = Objects.requireNonNull(signatures);
   }
 
-  public static LedgerProof mockAtStateVersion(long stateVersion) {
+  public static LedgerProofV1 mockAtStateVersion(long stateVersion) {
     final var header =
         LedgerHeader.create(0, Round.genesis(), stateVersion, LedgerHashes.zero(), 0, 0);
-    return new LedgerProof(HashUtils.zero256(), header, new TimestampedECDSASignatures());
+    return mockOfHeader(header);
   }
 
-  public static LedgerProof mock() {
+  public static LedgerProofV1 mockOfHeader(LedgerHeader ledgerHeader) {
+    return new LedgerProofV1(HashUtils.zero256(), ledgerHeader, new TimestampedECDSASignatures());
+  }
+
+  public static LedgerProofV1 mock() {
     return mockAtStateVersion(0L);
   }
 
-  public static LedgerProof genesis(
+  // LUK: only used in tests, mocks
+  public static LedgerProofV1 genesis(
       long stateVersion,
       LedgerHashes ledgerHashes,
       BFTValidatorSet nextValidators,
@@ -137,16 +147,18 @@ public final class LedgerProof {
             nextValidators,
             consensusParentRoundTimestamp,
             ledgerTimestamp);
-    return new LedgerProof(
+    return new LedgerProofV1(
         HashUtils.zero256(), genesisLedgerHeader, new TimestampedECDSASignatures());
   }
 
-  public static LedgerProof fromDto(DtoLedgerProof dto) {
-    return new LedgerProof(dto.getOpaque(), dto.getLedgerHeader(), dto.getSignatures());
+  // LUK: a to jest w sync...
+  // w ogóle to po chuj to DTOO???
+  public static LedgerProofV1 fromDto(DtoLedgerProofV1 dto) {
+    return new LedgerProofV1(dto.getOpaque(), dto.getLedgerHeader(), dto.getSignatures());
   }
 
-  public DtoLedgerProof toDto() {
-    return new DtoLedgerProof(opaque, ledgerHeader, signatures);
+  public DtoLedgerProofV1 toDto() {
+    return new DtoLedgerProofV1(opaque, ledgerHeader, signatures);
   }
 
   public HashCode getOpaque() {
@@ -219,11 +231,11 @@ public final class LedgerProof {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof LedgerProof)) {
+    if (!(o instanceof LedgerProofV1)) {
       return false;
     }
 
-    LedgerProof other = (LedgerProof) o;
+    LedgerProofV1 other = (LedgerProofV1) o;
     return Objects.equals(this.opaque, other.opaque)
         && Objects.equals(this.ledgerHeader, other.ledgerHeader)
         && Objects.equals(this.signatures, other.signatures);

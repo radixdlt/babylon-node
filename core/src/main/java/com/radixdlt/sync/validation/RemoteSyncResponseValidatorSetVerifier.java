@@ -64,7 +64,7 @@
 
 package com.radixdlt.sync.validation;
 
-import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.LedgerProofV1;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import java.util.Objects;
 
@@ -80,7 +80,7 @@ public class RemoteSyncResponseValidatorSetVerifier {
     this.validatorSet = Objects.requireNonNull(validatorSet);
   }
 
-  public boolean verifyValidatorSet(LedgerProof ledgerProof) {
+  public boolean verifyValidatorSet(LedgerProofV1 ledgerProof) {
     final var validationState = validatorSet.newValidationState();
 
     ledgerProof

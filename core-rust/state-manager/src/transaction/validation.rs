@@ -131,6 +131,19 @@ impl LedgerTransactionValidator {
             summary: prepared.summary,
         }
     }
+
+    pub fn validate_flash(
+        &self,
+        prepared: PreparedLedgerTransaction,
+    ) -> ValidatedLedgerTransaction {
+        let PreparedLedgerTransactionInner::FlashV1(t) = prepared.inner else {
+            panic!("Flash transaction was not a system transaction")
+        };
+        ValidatedLedgerTransaction {
+            inner: ValidatedLedgerTransactionInner::FlashV1(t),
+            summary: prepared.summary,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -167,14 +180,14 @@ impl From<PrepareError> for LedgerTransactionValidationError {
 /// (i.e. "committable") at a specific state of the `store`.
 pub struct CommittabilityValidator<S> {
     store: Arc<StateLock<S>>,
-    execution_configurator: Arc<ExecutionConfigurator>,
+    execution_configurator: Arc<RwLock<ExecutionConfigurator>>,
     user_transaction_validator: NotarizedTransactionValidator,
 }
 
 impl<S> CommittabilityValidator<S> {
     pub fn new(
         store: Arc<StateLock<S>>,
-        execution_configurator: Arc<ExecutionConfigurator>,
+        execution_configurator: Arc<RwLock<ExecutionConfigurator>>,
         user_transaction_validator: NotarizedTransactionValidator,
     ) -> Self {
         Self {
@@ -278,6 +291,7 @@ where
         transaction: &ValidatedNotarizedTransactionV1,
     ) -> TransactionReceipt {
         self.execution_configurator
+            .read()
             .wrap_pending_transaction(transaction)
             .execute_on(root_store)
     }

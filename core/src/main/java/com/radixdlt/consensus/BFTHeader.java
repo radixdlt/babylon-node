@@ -118,10 +118,6 @@ public final class BFTHeader {
     return new BFTHeader(Round.of(roundNumber), vertexId, ledgerHeader);
   }
 
-  public static BFTHeader ofGenesisAncestor(LedgerHeader ledgerHeader) {
-    return new BFTHeader(Round.genesis(), HashUtils.zero256(), ledgerHeader);
-  }
-
   public LedgerHeader getLedgerHeader() {
     return ledgerHeader;
   }
@@ -132,6 +128,10 @@ public final class BFTHeader {
 
   public HashCode getVertexId() {
     return vertexId;
+  }
+
+  public static BFTHeader ofGenesisAncestor(LedgerHeader ledgerHeader) {
+    return new BFTHeader(Round.genesis(), HashUtils.zero256(), ledgerHeader);
   }
 
   @JsonProperty("round")

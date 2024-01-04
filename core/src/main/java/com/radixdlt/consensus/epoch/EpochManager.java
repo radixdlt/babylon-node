@@ -86,10 +86,10 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
+import com.radixdlt.ledger.LedgerProofBundle;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
-import com.radixdlt.rev2.LastProof;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import java.util.*;
 import javax.annotation.concurrent.NotThreadSafe;
@@ -118,7 +118,7 @@ public final class EpochManager {
   private final BFTFactory bftFactory;
   private final PacemakerStateFactory pacemakerStateFactory;
 
-  private LedgerHeader currentLedgerHeader;
+  private LedgerProofBundle latestProof;
   private EpochChange lastEpochChange;
 
   private ValidationStatus validationStatus;
@@ -142,7 +142,7 @@ public final class EpochManager {
   @Inject
   public EpochManager(
       SelfValidatorInfo selfValidatorInfo,
-      @LastProof LedgerProof currentProof,
+      LedgerProofBundle initialLatestProof,
       RemoteEventDispatcher<NodeId, LedgerStatusUpdate> ledgerStatusUpdateDispatcher,
       EpochChange lastEpochChange,
       PacemakerFactory pacemakerFactory,
@@ -160,7 +160,7 @@ public final class EpochManager {
       InitialSafetyStateProvider initialSafetyStateProvider,
       PersistentSafetyStateStore persistentSafetyStateStore) {
     this.ledgerStatusUpdateDispatcher = requireNonNull(ledgerStatusUpdateDispatcher);
-    this.currentLedgerHeader = currentProof.getHeader();
+    this.latestProof = initialLatestProof;
     this.lastEpochChange = requireNonNull(lastEpochChange);
     this.selfValidatorInfo = requireNonNull(selfValidatorInfo);
     this.pacemakerFactory = requireNonNull(pacemakerFactory);
@@ -182,7 +182,7 @@ public final class EpochManager {
   }
 
   private void updateEpochState(InitialSafetyStateProvider initialSafetyStateProvider) {
-    final var validatorSet = this.lastEpochChange.getBFTConfiguration().getValidatorSet();
+    final var validatorSet = this.lastEpochChange.bftConfiguration().getValidatorSet();
 
     selfValidatorInfo
         .bftValidatorId()
@@ -209,7 +209,7 @@ public final class EpochManager {
                             + " this nodes key ({}), therefore this node can't participate in the"
                             + " consensus on its behalf.",
                         selfValidatorId.getValidatorAddress(),
-                        this.lastEpochChange.getNextEpoch(),
+                        this.lastEpochChange.nextEpoch(),
                         validator.getValidatorId().getKey().toHex(),
                         selfValidatorId.getKey().toHex());
                   } else if (keysMatch && !addressesMatch) {
@@ -218,7 +218,7 @@ public final class EpochManager {
                             + " registered key matches this node's public key, but this node hasn't"
                             + " been configured to validate. If you wish to validate consider"
                             + " setting `consensus.validator_address={}`.",
-                        this.lastEpochChange.getNextEpoch(),
+                        this.lastEpochChange.nextEpoch(),
                         addressing.encode(validator.getValidatorId().getValidatorAddress()));
                   }
                 }
@@ -246,7 +246,7 @@ public final class EpochManager {
   }
 
   private void configureAsActiveValidator(BFTValidatorId selfValidatorId, SafetyState safetyState) {
-    final var bftConfiguration = this.lastEpochChange.getBFTConfiguration();
+    final var bftConfiguration = this.lastEpochChange.bftConfiguration();
     final var validatorSet = bftConfiguration.getValidatorSet();
 
     this.validationStatus = ValidationStatus.VALIDATING_IN_CURRENT_EPOCH;
@@ -258,7 +258,7 @@ public final class EpochManager {
       validatorNodeIds.add(nodeId);
     }
 
-    final var nextEpoch = this.lastEpochChange.getNextEpoch();
+    final var nextEpoch = this.lastEpochChange.nextEpoch();
 
     // Config
     final var proposerElection = bftConfiguration.getProposerElection();
@@ -306,19 +306,20 @@ public final class EpochManager {
     // So here we're using the highest state version ledger header out of the two.
     // Note that this is a bit of a workaround and ideally should at some
     // point be addresses by refactoring how VertexStore/BFTSync interact with Ledger.
+
+    // TODO: is this still needed? we use a correct round now in BftSync
+    /*
     final var vertexStoreRootHeader =
         bftConfiguration.getVertexStoreState().getRootHeader().getHeader();
     final var highestStateVersionLedgerHeader =
-        vertexStoreRootHeader.getStateVersion() >= currentLedgerHeader.getStateVersion()
+        vertexStoreRootHeader.getStateVersion() >= latestProof.stateVersion()
             ? vertexStoreRootHeader
-            : currentLedgerHeader;
+            : latestProof.latestEffectiveHeader();
+     */
+
     final var bftSync =
         bftSyncFactory.create(
-            selfValidatorId,
-            safetyRules,
-            vertexStore,
-            pacemakerState,
-            highestStateVersionLedgerHeader);
+            selfValidatorId, safetyRules, vertexStore, pacemakerState, latestProof);
 
     this.syncLedgerUpdateProcessor = bftSync.baseLedgerUpdateEventProcessor();
     this.syncTimeoutProcessor = bftSync.vertexRequestTimeoutEventProcessor();
@@ -352,7 +353,7 @@ public final class EpochManager {
   }
 
   private long currentEpoch() {
-    return this.lastEpochChange.getNextEpoch();
+    return this.lastEpochChange.nextEpoch();
   }
 
   public EventProcessor<LedgerUpdate> epochsLedgerUpdateEventProcessor() {
@@ -360,7 +361,7 @@ public final class EpochManager {
   }
 
   private void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
-    this.currentLedgerHeader = ledgerUpdate.proof().getHeader();
+    this.latestProof = ledgerUpdate.latestProof();
 
     ledgerUpdate
         .epochChange()
@@ -370,7 +371,7 @@ public final class EpochManager {
 
   private void processEpochChange(EpochChange epochChange) {
     // Sanity check
-    if (epochChange.getNextEpoch() != this.currentEpoch() + 1) {
+    if (epochChange.nextEpoch() != this.currentEpoch() + 1) {
       // safe, as message is internal
       throw new IllegalStateException(
           "Bad Epoch change: " + epochChange + " current epoch: " + this.lastEpochChange);
@@ -379,10 +380,10 @@ public final class EpochManager {
     if (this.validationStatus == ValidationStatus.VALIDATING_IN_CURRENT_EPOCH) {
       final var currentAndNextValidators =
           ImmutableSet.<BFTValidator>builder()
-              .addAll(epochChange.getBFTConfiguration().getValidatorSet().getValidators())
-              .addAll(this.lastEpochChange.getBFTConfiguration().getValidatorSet().getValidators())
+              .addAll(epochChange.bftConfiguration().getValidatorSet().getValidators())
+              .addAll(this.lastEpochChange.bftConfiguration().getValidatorSet().getValidators())
               .build();
-      final var ledgerStatusUpdate = LedgerStatusUpdate.create(epochChange.getGenesisHeader());
+      final var ledgerStatusUpdate = LedgerStatusUpdate.create(epochChange.genesisHeader());
       for (var validator : currentAndNextValidators) {
         if (!validator.getValidatorId().getKey().equals(selfValidatorInfo.key())) {
           var nodeId = NodeId.fromPublicKey(validator.getValidatorId().getKey());
@@ -397,7 +398,7 @@ public final class EpochManager {
 
     // Execute any queued up consensus events
     final List<ConsensusEvent> queuedEventsForEpoch =
-        queuedEvents.getOrDefault(epochChange.getNextEpoch(), Collections.emptyList());
+        queuedEvents.getOrDefault(epochChange.nextEpoch(), Collections.emptyList());
     var highestSeenRound =
         queuedEventsForEpoch.stream()
             .map(ConsensusEvent::getRound)
@@ -408,7 +409,7 @@ public final class EpochManager {
         .filter(e -> e.getRound().equals(highestSeenRound))
         .forEach(this::processConsensusEventInternal);
 
-    queuedEvents.remove(epochChange.getNextEpoch());
+    queuedEvents.remove(epochChange.nextEpoch());
   }
 
   private void processConsensusEventInternal(ConsensusEvent consensusEvent) {

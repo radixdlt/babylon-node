@@ -80,6 +80,7 @@ import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.Manifest;
 import com.radixdlt.rev2.TransactionBuilder;
 import com.radixdlt.statecomputer.commit.NextEpoch;
+import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.utils.PrivateKeys;
 import java.util.Map;
@@ -87,11 +88,10 @@ import java.util.function.Function;
 
 public final class ProtocolUpdateTestUtils {
   public static long runUntilNextEpoch(DeterministicTest test) {
-    final var store = test.getInstance(0, REv2TransactionAndProofStore.class);
-    final var lastProofHeader = store.getLastProof().orElseThrow().ledgerHeader();
-    final var currentEpoch =
-        lastProofHeader.nextEpoch().map(NextEpoch::epoch).or(lastProofHeader.epoch());
-    final var nextEpoch = currentEpoch.toLong() + 1;
+    final var store = test.getInstance(0, TransactionsAndProofReader.class);
+    final var latestProof = store.getLatestProofBundle().orElseThrow();
+    final var currentEpoch = latestProof.resultantEpoch();
+    final var nextEpoch = currentEpoch + 1;
     test.runUntilState(allAtOrOverEpoch(nextEpoch));
     return nextEpoch;
   }

@@ -70,7 +70,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.LedgerProofV1;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.ValidationState;
@@ -80,13 +80,13 @@ import org.junit.Test;
 public class RemoteSyncResponseValidatorSetVerifierTest {
   private BFTValidatorSet validatorSet;
   private RemoteSyncResponseValidatorSetVerifier validatorSetVerifier;
-  private LedgerProof headerAndProof;
+  private LedgerProofV1 headerAndProof;
 
   @Before
   public void setup() {
     this.validatorSet = mock(BFTValidatorSet.class);
     this.validatorSetVerifier = new RemoteSyncResponseValidatorSetVerifier(validatorSet);
-    this.headerAndProof = mock(LedgerProof.class);
+    this.headerAndProof = mock(LedgerProofV1.class);
     TimestampedECDSASignatures signatures = mock(TimestampedECDSASignatures.class);
     when(signatures.getSignatures()).thenReturn(ImmutableMap.of());
     when(headerAndProof.getSignatures()).thenReturn(signatures);

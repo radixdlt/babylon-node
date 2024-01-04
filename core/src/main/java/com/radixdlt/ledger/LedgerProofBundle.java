@@ -64,82 +64,85 @@
 
 package com.radixdlt.ledger;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializerConstants;
-import com.radixdlt.serialization.SerializerDummy;
-import com.radixdlt.serialization.SerializerId2;
-import java.util.Objects;
-import javax.annotation.concurrent.Immutable;
+import com.radixdlt.consensus.LedgerProofV1;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.lang.Option;
+import com.radixdlt.rev2.REv2ToConsensus;
+import com.radixdlt.statecomputer.commit.LedgerProof;
 
-/** A ledger header and proof which has not been verified */
-@Immutable
-@SerializerId2("ledger.dto_proof")
-public final class DtoLedgerProof {
-  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
-  @DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
-  SerializerDummy serializer = SerializerDummy.DUMMY;
+/** A container for an arbitrary LedgerProof and related proofs that are relevant. */
+public record LedgerProofBundle(
+    // A primary subject of this wrapper record
+    LedgerProof primaryProof,
+    // Latest (with respect to `primaryProof`) epoch change proof.
+    // Could be the `primaryProof` itself.
+    LedgerProof closestEpochProofOnOrBefore,
+    // Latest (with respect to `primaryProof`) proof that triggered a protocol update.
+    // Could be the `primaryProof` itself.
+    Option<LedgerProof> closestProtocolUpdateTriggerProofOnOrBefore,
+    // Latest (with respect to `primaryProof`) proof of protocol update origin.
+    Option<LedgerProof> closestPostProtocolUpdateProofOnOrBefore) {
 
-  // proposed
-  @JsonProperty("opaque")
-  @DsonOutput(Output.ALL)
-  private final HashCode opaque;
-
-  // committed ledgerState
-  @JsonProperty("ledgerState")
-  @DsonOutput(Output.ALL)
-  private final LedgerHeader ledgerHeader;
-
-  @JsonProperty("signatures")
-  @DsonOutput(Output.ALL)
-  private final TimestampedECDSASignatures signatures;
-
-  @JsonCreator
-  public DtoLedgerProof(
-      @JsonProperty(value = "opaque", required = true) HashCode opaque,
-      @JsonProperty(value = "ledgerState", required = true) LedgerHeader ledgerHeader,
-      @JsonProperty(value = "signatures", required = true) TimestampedECDSASignatures signatures) {
-    this.opaque = Objects.requireNonNull(opaque);
-    this.ledgerHeader = Objects.requireNonNull(ledgerHeader);
-    this.signatures = Objects.requireNonNull(signatures);
+  public static LedgerProofBundle mockedOfHeader(LedgerHeader ledgerHeader) {
+    final var proof = REv2ToConsensus.ledgerProof(LedgerProofV1.mockOfHeader(ledgerHeader));
+    return new LedgerProofBundle(proof, proof, Option.empty(), Option.empty());
   }
 
-  public HashCode getOpaque() {
-    return opaque;
+  public com.radixdlt.statecomputer.commit.LedgerHeader epochInitialHeader() {
+    return closestPostProtocolUpdateProofOnOrBefore
+        .map(
+            postProtocolUpdateProof -> {
+              if (postProtocolUpdateProof.ledgerHeader().stateVersion().toLong()
+                  >= closestEpochProofOnOrBefore.ledgerHeader().stateVersion().toLong()) {
+                return postProtocolUpdateProof.ledgerHeader();
+              } else {
+                return closestEpochProofOnOrBefore.ledgerHeader();
+              }
+            })
+        .orElse(closestEpochProofOnOrBefore.ledgerHeader());
   }
 
-  public TimestampedECDSASignatures getSignatures() {
-    return signatures;
+  public Round resultantRound() {
+    final var baseHeader =
+        switch (primaryProof.origin()) {
+          case com.radixdlt.statecomputer.commit.LedgerProofOrigin.Consensus
+          consensus -> primaryProof.ledgerHeader();
+          case com.radixdlt.statecomputer.commit.LedgerProofOrigin.Genesis genesis -> primaryProof
+              .ledgerHeader();
+          case com.radixdlt.statecomputer.commit.LedgerProofOrigin.ProtocolUpdate protocolUpdate ->
+          // This assumes that protocol updates always happen at epoch boundary (which is true, for
+          // now)
+          closestProtocolUpdateTriggerProofOnOrBefore.unwrap().ledgerHeader();
+        };
+
+    return baseHeader.nextEpoch().isPresent()
+        ? Round.genesis()
+        : Round.of(primaryProof.ledgerHeader().round().toLong());
   }
 
-  public LedgerHeader getLedgerHeader() {
-    return ledgerHeader;
+  public long resultantEpoch() {
+    return closestEpochProofOnOrBefore.ledgerHeader().nextEpoch().unwrap().epoch().toLong();
   }
 
-  @Override
-  public String toString() {
-    return String.format("%s{header=%s}", this.getClass().getSimpleName(), this.ledgerHeader);
+  public long stateVersion() {
+    return primaryProof().ledgerHeader().stateVersion().toLong();
   }
 
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-
-    return (o instanceof DtoLedgerProof that)
-        && Objects.equals(opaque, that.opaque)
-        && Objects.equals(ledgerHeader, that.ledgerHeader)
-        && Objects.equals(signatures, that.signatures);
+  // TODO: rename?
+  public LedgerProofV1 closestNonProtocolUpdateProofV1() {
+    return REv2ToConsensus.ledgerProof(latestNonProtocolUpdateProof());
   }
 
-  @Override
-  public int hashCode() {
-    return Objects.hash(opaque, ledgerHeader, signatures);
+  // TODO: rename?....(protocol update proof here == origin of prot update)
+  public LedgerProof latestNonProtocolUpdateProof() {
+    return switch (primaryProof.origin()) {
+      case com.radixdlt.statecomputer.commit.LedgerProofOrigin.Consensus consensus -> primaryProof;
+      case com.radixdlt.statecomputer.commit.LedgerProofOrigin.Genesis genesis -> primaryProof;
+      case com.radixdlt.statecomputer.commit.LedgerProofOrigin.ProtocolUpdate protocolUpdate ->
+      // Our latest proof is a protocol update, so there MUST exist a previous trigger proof,
+      // which is the latest non-protocol update proof.
+      closestProtocolUpdateTriggerProofOnOrBefore().unwrap();
+    };
   }
 }

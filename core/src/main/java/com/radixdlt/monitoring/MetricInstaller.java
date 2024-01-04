@@ -128,7 +128,7 @@ public final class MetricInstaller {
                 .bftValidatorId()
                 .map(id -> this.addressing.encode(id.getValidatorAddress()))
                 .orElse(null),
-            this.ledgerInitialization.postGenesisEpochProof().getLedgerHashes().getStateRoot());
+            this.ledgerInitialization.postGenesisEpochProof().ledgerHeader().hashes().stateRoot());
     metrics.misc().config().set(config);
     metrics.misc().peerCount().initialize(() -> this.peersView.peers().count());
     metrics

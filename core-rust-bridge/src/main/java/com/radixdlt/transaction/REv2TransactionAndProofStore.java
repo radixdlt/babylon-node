@@ -90,6 +90,29 @@ public final class REv2TransactionAndProofStore {
         Natives.builder(nodeRustEnvironment, REv2TransactionAndProofStore::getLastProof)
             .measure(timer.label(new MethodId(REv2TransactionAndProofStore.class, "getLastProof")))
             .build(new TypeToken<>() {});
+    this.getLatestEpochProofFunc =
+        Natives.builder(nodeRustEnvironment, REv2TransactionAndProofStore::getLatestEpochProof)
+            .measure(
+                timer.label(
+                    new MethodId(REv2TransactionAndProofStore.class, "getLatestEpochProof")))
+            .build(new TypeToken<>() {});
+    this.getLatestProtocolUpdateTriggerProofFunc =
+        Natives.builder(
+                nodeRustEnvironment,
+                REv2TransactionAndProofStore::getLatestProtocolUpdateTriggerProof)
+            .measure(
+                timer.label(
+                    new MethodId(
+                        REv2TransactionAndProofStore.class, "getLatestProtocolUpdateTriggerProof")))
+            .build(new TypeToken<>() {});
+    this.getLatestPostProtocolUpdateProofFunc =
+        Natives.builder(
+                nodeRustEnvironment, REv2TransactionAndProofStore::getLatestPostProtocolUpdateProof)
+            .measure(
+                timer.label(
+                    new MethodId(
+                        REv2TransactionAndProofStore.class, "getLatestPostProtocolUpdateProof")))
+            .build(new TypeToken<>() {});
     this.getPostGenesisEpochProofFunc =
         Natives.builder(nodeRustEnvironment, REv2TransactionAndProofStore::getPostGenesisEpochProof)
             .measure(
@@ -123,6 +146,18 @@ public final class REv2TransactionAndProofStore {
     return this.getLastProofFunc.call(Tuple.tuple()).toOptional();
   }
 
+  public Optional<LedgerProof> getLatestEpochProof() {
+    return this.getLatestEpochProofFunc.call(Tuple.tuple()).toOptional();
+  }
+
+  public Optional<LedgerProof> getLatestProtocolUpdateTriggerProof() {
+    return this.getLatestProtocolUpdateTriggerProofFunc.call(Tuple.tuple()).toOptional();
+  }
+
+  public Optional<LedgerProof> getLatestPostProtocolUpdateProof() {
+    return this.getLatestPostProtocolUpdateProofFunc.call(Tuple.tuple()).toOptional();
+  }
+
   public Optional<LedgerProof> getPostGenesisEpochProof() {
     return this.getPostGenesisEpochProofFunc.call(Tuple.tuple()).toOptional();
   }
@@ -145,6 +180,23 @@ public final class REv2TransactionAndProofStore {
   private final Natives.Call1<Tuple.Tuple0, Option<LedgerProof>> getLastProofFunc;
 
   private static native byte[] getLastProof(
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
+
+  private final Natives.Call1<Tuple.Tuple0, Option<LedgerProof>> getLatestEpochProofFunc;
+
+  private static native byte[] getLatestEpochProof(
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
+
+  private final Natives.Call1<Tuple.Tuple0, Option<LedgerProof>>
+      getLatestProtocolUpdateTriggerProofFunc;
+
+  private static native byte[] getLatestProtocolUpdateTriggerProof(
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
+
+  private final Natives.Call1<Tuple.Tuple0, Option<LedgerProof>>
+      getLatestPostProtocolUpdateProofFunc;
+
+  private static native byte[] getLatestPostProtocolUpdateProof(
       NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
   private final Natives.Call1<Tuple.Tuple0, Option<LedgerProof>> getPostGenesisEpochProofFunc;

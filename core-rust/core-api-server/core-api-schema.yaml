@@ -1904,6 +1904,20 @@ components:
           items:
             $ref: '#/components/schemas/ActiveValidator'
           description: Active validator set for the new epoch, ordered by stake descending.
+        significant_protocol_update_readiness:
+          type: array
+          items:
+            $ref: '#/components/schemas/SignificantProtocolUpdateReadinessEntry'
+    SignificantProtocolUpdateReadinessEntry:
+      type: object
+      required:
+        - readiness_signal_name
+        - signalled_stake
+      properties:
+        readiness_signal_name:
+          type: string
+        signalled_stake:
+          type: string
     CreatedSubstate:
       type: object
       required:

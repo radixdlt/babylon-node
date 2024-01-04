@@ -150,14 +150,14 @@ public final class QuorumCertificate {
     return voteData.getCommitted();
   }
 
-  public Optional<Pair<BFTHeader, LedgerProof>> getCommittedAndLedgerStateProof(Hasher hasher) {
+  public Optional<Pair<BFTHeader, LedgerProofV1>> getCommittedAndLedgerStateProof(Hasher hasher) {
     return voteData
         .getCommitted()
         .map(
             committed -> {
               var opaque = hasher.hashDsonEncoded(voteData);
               var ledgerStateProof =
-                  new LedgerProof(opaque, committed.getLedgerHeader(), signatures);
+                  new LedgerProofV1(opaque, committed.getLedgerHeader(), signatures);
               return Pair.of(committed, ledgerStateProof);
             });
   }

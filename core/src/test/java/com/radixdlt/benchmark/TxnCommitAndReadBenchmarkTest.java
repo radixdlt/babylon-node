@@ -67,13 +67,13 @@ package com.radixdlt.benchmark;
 import com.google.common.base.Stopwatch;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.StreamTransactionsRequest;
-import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.LedgerProofV1;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.lang.Option;
-import com.radixdlt.ledger.DtoLedgerProof;
+import com.radixdlt.ledger.DtoLedgerProofV1;
 import com.radixdlt.rev2.*;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statecomputer.commit.CommitRequest;
@@ -106,7 +106,7 @@ public final class TxnCommitAndReadBenchmarkTest extends DeterministicCoreApiTes
         /* Using a mocked proof here is quite fragile, and I imagine at some point this may break.
         When that happens, make sure this benchmark is still relevant before spending the time
         fixing the lines below :) */
-        final var proof = LedgerProof.mockAtStateVersion(stateVersion + NUM_TXNS_IN_A_COMMIT);
+        final var proof = LedgerProofV1.mockAtStateVersion(stateVersion + NUM_TXNS_IN_A_COMMIT);
         final var commitRequest =
             new CommitRequest(
                 createUniqueTransactions(NUM_TXNS_IN_A_COMMIT, i),
@@ -169,9 +169,9 @@ public final class TxnCommitAndReadBenchmarkTest extends DeterministicCoreApiTes
 
     long totalTxnsRead = 0;
     long totalTxnReaderCalls = 0;
-    DtoLedgerProof proof = LedgerProof.mockAtStateVersion(1L).toDto();
+    DtoLedgerProofV1 proof = LedgerProofV1.mockAtStateVersion(1L).toDto();
     while (true) {
-      var res = txnReader.getTransactions(proof);
+      var res = txnReader.getTransactions(proof.getLedgerHeader().getStateVersion());
       totalTxnReaderCalls += 1;
       if (res == null) {
         break;

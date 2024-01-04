@@ -72,8 +72,9 @@ import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.ledger.LedgerProofBundle;
 import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.rev2.LastEpochProof;
+import com.radixdlt.rev2.REv2ToConsensus;
 import com.radixdlt.statecomputer.EpochMaxRound;
 import com.radixdlt.utils.PrivateKeys;
 import java.util.function.Function;
@@ -133,26 +134,13 @@ public class MockedEpochsConsensusRecoveryModule extends AbstractModule {
 
   @Provides
   private BFTConfiguration configuration(
-      @LastEpochProof LedgerProof proof, BFTValidatorSet validatorSet, Hasher hasher) {
-    VertexWithHash genesisVertex =
-        Vertex.createInitialEpochVertex(
-                LedgerHeader.genesis(0, this.preGenesisLedgerHashes, validatorSet, 0, 0))
-            .withId(hasher);
-    LedgerHeader nextLedgerHeader =
-        LedgerHeader.create(
-            proof.getNextEpoch().orElseThrow().getEpoch(),
-            Round.genesis(),
-            proof.getStateVersion(),
-            proof.getLedgerHashes(),
-            proof.consensusParentRoundTimestamp(),
-            proof.proposerTimestamp());
-    final var initialEpochQC =
-        QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
-    final var proposerElection =
-        this.proposerElectionMode.instantiate(proof.getEpoch(), validatorSet);
-    return new BFTConfiguration(
-        proposerElection,
-        validatorSet,
-        VertexStoreState.create(HighQC.ofInitialEpochQc(initialEpochQC), genesisVertex, hasher));
+      LedgerProofBundle latestProof, BFTValidatorSet validatorSet, Hasher hasher) {
+    final var nextEpoch = latestProof.resultantEpoch();
+    final var initialState =
+        VertexStoreState.createNewForNextEpoch(
+            REv2ToConsensus.ledgerHeader(latestProof.epochInitialHeader()), nextEpoch, hasher);
+    final var proposerElection = this.proposerElectionMode.instantiate(nextEpoch, validatorSet);
+    final var init = new BFTConfiguration(proposerElection, validatorSet, initialState);
+    return init;
   }
 }

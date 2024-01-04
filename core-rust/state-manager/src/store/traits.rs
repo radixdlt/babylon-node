@@ -336,7 +336,8 @@ pub mod proofs {
         fn get_epoch_proof(&self, epoch: Epoch) -> Option<LedgerProof>;
         fn get_last_proof(&self) -> Option<LedgerProof>;
         fn get_last_epoch_proof(&self) -> Option<LedgerProof>;
-
+        fn get_latest_protocol_update_trigger_proof(&self) -> Option<LedgerProof>;
+        fn get_latest_post_protocol_update_proof(&self) -> Option<LedgerProof>;
         fn get_closest_epoch_proof_on_or_before(
             &self,
             state_version: StateVersion,

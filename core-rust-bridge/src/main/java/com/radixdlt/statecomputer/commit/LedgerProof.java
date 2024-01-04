@@ -64,43 +64,12 @@
 
 package com.radixdlt.statecomputer.commit;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-import java.util.List;
-import java.util.Objects;
 
-public record LedgerProof(
-    HashCode opaque, LedgerHeader ledgerHeader, List<TimestampedValidatorSignature> signatures) {
+public record LedgerProof(LedgerHeader ledgerHeader, LedgerProofOrigin origin) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         LedgerProof.class, codecs -> StructCodec.fromRecordComponents(LedgerProof.class, codecs));
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    LedgerProof that = (LedgerProof) o;
-    return Objects.equals(opaque, that.opaque)
-        && Objects.equals(ledgerHeader, that.ledgerHeader)
-        && Objects.equals(signatures, that.signatures);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(opaque, ledgerHeader, signatures);
-  }
-
-  @Override
-  public String toString() {
-    return "LedgerProof{"
-        + "opaque="
-        + opaque
-        + ", ledgerHeader="
-        + ledgerHeader
-        + ", signatures="
-        + signatures
-        + '}';
   }
 }

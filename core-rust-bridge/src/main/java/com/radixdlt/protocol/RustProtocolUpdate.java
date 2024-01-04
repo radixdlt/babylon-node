@@ -66,8 +66,6 @@ package com.radixdlt.protocol;
 
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.environment.NodeRustEnvironment;
-import com.radixdlt.lang.Unit;
-import com.radixdlt.mempool.RustMempool;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.sbor.Natives;
 
@@ -76,16 +74,17 @@ public final class RustProtocolUpdate {
     final var timer = metrics.stateManager().nativeCall();
     applyProtocolUpdateFunc =
         Natives.builder(nodeRustEnvironment, RustProtocolUpdate::applyProtocolUpdate)
-            .measure(timer.label(new Metrics.MethodId(RustMempool.class, "applyProtocolUpdate")))
+            .measure(
+                timer.label(new Metrics.MethodId(RustProtocolUpdate.class, "applyProtocolUpdate")))
             .build(new TypeToken<>() {});
   }
 
-  public void applyProtocolUpdate(String protocolVersionName) {
-    this.applyProtocolUpdateFunc.call(protocolVersionName);
+  public ProtocolUpdateResult applyProtocolUpdate(String protocolVersionName) {
+    return this.applyProtocolUpdateFunc.call(protocolVersionName);
   }
 
   private static native byte[] applyProtocolUpdate(
       NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
-  private final Natives.Call1<String, Unit> applyProtocolUpdateFunc;
+  private final Natives.Call1<String, ProtocolUpdateResult> applyProtocolUpdateFunc;
 }

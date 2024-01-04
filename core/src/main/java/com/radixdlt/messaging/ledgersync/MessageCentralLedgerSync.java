@@ -143,7 +143,7 @@ public final class MessageCentralLedgerSync {
   }
 
   private void sendSyncRequest(NodeId nodeId, SyncRequest syncRequest) {
-    final var msg = new SyncRequestMessage(syncRequest.getHeader());
+    final var msg = new SyncRequestMessage(syncRequest.getProof());
     this.messageCentral.send(nodeId, msg);
   }
 
