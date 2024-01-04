@@ -75,14 +75,13 @@ use crate::{
 use node_common::utils::IsAccountExt;
 use radix_engine::types::*;
 use radix_engine_stores::hash_tree::tree_store::{
-    encode_key, NodeKey, ReadableTreeStore, TreeNode, VersionedTreeNode,
+    NodeKey, ReadableTreeStore, TreeNode, VersionedTreeNode,
 };
 use rocksdb::{ColumnFamilyDescriptor, Direction, Options, DB};
 use transaction::model::*;
 
 use radix_engine_store_interface::interface::*;
 
-use itertools::Itertools;
 use radix_engine_store_interface::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
 use std::path::PathBuf;
 
@@ -90,6 +89,7 @@ use tracing::{error, info, warn};
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::query::TransactionIdentifierLoader;
+use crate::store::codecs::*;
 use crate::store::traits::gc::{
     LedgerProofsGcProgress, LedgerProofsGcStore, StateHashTreeGcStore,
     VersionedLedgerProofsGcProgress,
@@ -801,7 +801,7 @@ impl CommitStore for RocksDBStore {
                     PartitionDatabaseUpdates::Reset {
                         new_substate_values,
                     } => {
-                        substates_cf.delete_all_under_prefix(&partition_key);
+                        substates_cf.delete_group(&partition_key);
                         for (sort_key, substate_value) in new_substate_values {
                             substates_cf.put(&(partition_key.clone(), sort_key), &substate_value);
                         }
@@ -1218,7 +1218,7 @@ impl SubstateDatabase for RocksDBStore {
         Box::new(
             self.open_db_context()
                 .cf(SubstatesCf)
-                .iterate_from(&(partition_key.clone(), from_sort_key), Direction::Forward)
+                .iterate_group_from(&(partition_key.clone(), from_sort_key), Direction::Forward)
                 .take_while(move |((next_key, _), _)| next_key == &partition_key)
                 .map(|((_, sort_key), value)| (sort_key, value)),
         )
@@ -1227,15 +1227,7 @@ impl SubstateDatabase for RocksDBStore {
 
 impl ListableSubstateDatabase for RocksDBStore {
     fn list_partition_keys(&self) -> Box<dyn Iterator<Item = DbPartitionKey> + '_> {
-        Box::new(
-            self.open_db_context()
-                .cf(SubstatesCf)
-                .iterate(Direction::Forward)
-                .map(|(iter_key_bytes, _)| iter_key_bytes.0)
-                // Rocksdb iterator returns sorted entries, so ok to to eliminate
-                // duplicates with dedup()
-                .dedup(),
-        )
+        self.open_db_context().cf(SubstatesCf).iterate_key_groups()
     }
 }
 
@@ -1334,85 +1326,6 @@ impl RecoverableVertexStore for RocksDBStore {
     fn get_vertex_store(&self) -> Option<VertexStoreBlob> {
         self.open_db_context().cf(VertexStoreCf).get(&())
     }
-}
-
-fn encode_to_rocksdb_bytes(partition_key: &DbPartitionKey, sort_key: &DbSortKey) -> Vec<u8> {
-    let mut buffer = Vec::with_capacity(1 + partition_key.node_key.len() + 1 + sort_key.0.len());
-    buffer.push(
-        u8::try_from(partition_key.node_key.len())
-            .expect("Node key length is effectively constant 32 so should fit in a u8"),
-    );
-    buffer.extend(partition_key.node_key.clone());
-    buffer.push(partition_key.partition_num);
-    buffer.extend(sort_key.0.clone());
-    buffer
-}
-
-fn encode_partition_prefix_range_to_rocksdb_bytes(
-    partition_key: &DbPartitionKey,
-) -> (Vec<u8>, Option<Vec<u8>>) {
-    let from_buffer = encode_partition_prefix_rocksdb_prefix_bytes(partition_key);
-
-    let to_buffer = if partition_key.partition_num < u8::MAX {
-        Some(encode_partition_prefix_rocksdb_prefix_bytes(
-            &DbPartitionKey {
-                node_key: partition_key.node_key.clone(),
-                partition_num: partition_key.partition_num + 1,
-            },
-        ))
-    } else {
-        let mut next_node_key = partition_key.node_key.clone();
-        // Now we attempt to "add 1", starting at the least significant byte, down to 0
-        for i in (0..next_node_key.len()).rev() {
-            if next_node_key[i] < u8::MAX {
-                next_node_key[i] += 1;
-                break;
-            } else {
-                next_node_key[i] = 0;
-            }
-        }
-        if next_node_key.iter().any(|val| *val != 0) {
-            Some(encode_partition_prefix_rocksdb_prefix_bytes(
-                &DbPartitionKey {
-                    node_key: next_node_key,
-                    partition_num: 0,
-                },
-            ))
-        } else {
-            // We've rolled over to all 0s
-            None
-        }
-    };
-
-    (from_buffer, to_buffer)
-}
-
-fn encode_partition_prefix_rocksdb_prefix_bytes(partition_key: &DbPartitionKey) -> Vec<u8> {
-    let mut buffer = Vec::with_capacity(2 + partition_key.node_key.len());
-    buffer.push(
-        u8::try_from(partition_key.node_key.len())
-            .expect("Node key length is effectively constant 32 so should fit in a u8"),
-    );
-    buffer.extend(partition_key.node_key.clone());
-    buffer.push(partition_key.partition_num);
-    buffer
-}
-
-fn decode_from_rocksdb_bytes(buffer: &[u8]) -> DbSubstateKey {
-    let node_key_start: usize = 1usize;
-    let partition_key_start = 1 + usize::from(buffer[0]);
-    let sort_key_start = 1 + partition_key_start;
-
-    let node_key = buffer[node_key_start..partition_key_start].to_vec();
-    let partition_num = buffer[partition_key_start];
-    let sort_key = buffer[sort_key_start..].to_vec();
-    (
-        DbPartitionKey {
-            node_key,
-            partition_num,
-        },
-        DbSortKey(sort_key),
-    )
 }
 
 impl RocksDBStore {
@@ -1562,10 +1475,10 @@ impl RestoreDecember2023LostSubstates for RocksDBStore {
             let first_epoch = first_proof.ledger_header.epoch.number();
             let last_epoch = last_epoch_proof.ledger_header.epoch.number();
             let problem_at_end_of_epoch = first_epoch + 19099; // (256 * 3 / 4 - 1) * 100 - 1
-            // Due to another bug, stokenet nodes may mistakenly believe that they already applied
-            // the fix. Thus, we have to ignore the `december_2023_lost_substates_restored` flag and
-            // make a decision based on "being stuck in the problematic epoch range". The fix is
-            // effectively idempotent, so we are fine with re-running it in an edge case.
+                                                               // Due to another bug, stokenet nodes may mistakenly believe that they already applied
+                                                               // the fix. Thus, we have to ignore the `december_2023_lost_substates_restored` flag and
+                                                               // make a decision based on "being stuck in the problematic epoch range". The fix is
+                                                               // effectively idempotent, so we are fine with re-running it in an edge case.
             last_epoch >= problem_at_end_of_epoch && last_epoch <= (problem_at_end_of_epoch + 2)
         };
 
@@ -1642,311 +1555,5 @@ impl IterableAccountChangeIndex for RocksDBStore {
                 .take_while(move |((next_account, _), _)| next_account == &account)
                 .map(|((_, state_version), _)| state_version),
         )
-    }
-}
-
-// Concrete DB-level codecs of keys/values:
-
-#[derive(Default)]
-struct StateVersionDbCodec {}
-
-impl DbCodec<StateVersion> for StateVersionDbCodec {
-    fn encode(&self, value: &StateVersion) -> Vec<u8> {
-        value.to_be_bytes().to_vec()
-    }
-
-    fn decode(&self, bytes: &[u8]) -> StateVersion {
-        StateVersion::from_be_bytes(bytes)
-    }
-}
-
-impl OrderPreservingDbCodec for StateVersionDbCodec {}
-
-#[derive(Default)]
-struct EpochDbCodec {}
-
-impl DbCodec<Epoch> for EpochDbCodec {
-    fn encode(&self, value: &Epoch) -> Vec<u8> {
-        value.number().to_be_bytes().to_vec()
-    }
-
-    fn decode(&self, bytes: &[u8]) -> Epoch {
-        Epoch::of(u64::from_be_bytes(copy_u8_array(bytes)))
-    }
-}
-
-#[derive(Default)]
-struct ScenarioSequenceNumberDbCodec {}
-
-impl DbCodec<ScenarioSequenceNumber> for ScenarioSequenceNumberDbCodec {
-    fn encode(&self, value: &ScenarioSequenceNumber) -> Vec<u8> {
-        value.to_be_bytes().to_vec()
-    }
-
-    fn decode(&self, bytes: &[u8]) -> ScenarioSequenceNumber {
-        ScenarioSequenceNumber::from_be_bytes(copy_u8_array(bytes))
-    }
-}
-
-#[derive(Default)]
-struct RawLedgerTransactionDbCodec {}
-
-impl DbCodec<RawLedgerTransaction> for RawLedgerTransactionDbCodec {
-    fn encode(&self, value: &RawLedgerTransaction) -> Vec<u8> {
-        value.0.to_vec()
-    }
-
-    fn decode(&self, bytes: &[u8]) -> RawLedgerTransaction {
-        RawLedgerTransaction(bytes.to_vec())
-    }
-}
-
-struct HashDbCodec<T: IsHash> {
-    type_parameters_phantom: PhantomData<T>,
-}
-
-impl<T: IsHash> Default for HashDbCodec<T> {
-    fn default() -> Self {
-        Self {
-            type_parameters_phantom: PhantomData,
-        }
-    }
-}
-
-impl<T: IsHash> DbCodec<T> for HashDbCodec<T> {
-    fn encode(&self, value: &T) -> Vec<u8> {
-        value.as_slice().to_vec()
-    }
-
-    fn decode(&self, bytes: &[u8]) -> T {
-        T::from_bytes(copy_u8_array(bytes))
-    }
-}
-
-#[derive(Default)]
-struct SubstateKeyDbCodec {}
-
-impl DbCodec<DbSubstateKey> for SubstateKeyDbCodec {
-    fn encode(&self, value: &DbSubstateKey) -> Vec<u8> {
-        let (partition_key, sort_key) = value;
-        encode_to_rocksdb_bytes(partition_key, sort_key)
-    }
-
-    fn decode(&self, bytes: &[u8]) -> DbSubstateKey {
-        decode_from_rocksdb_bytes(bytes)
-    }
-}
-
-impl PrefixableDbCodec for SubstateKeyDbCodec {
-    type Prefix = DbPartitionKey;
-
-    fn encode_prefix_to_range(&self, prefix: &Self::Prefix) -> (Vec<u8>, Option<Vec<u8>>) {
-        encode_partition_prefix_range_to_rocksdb_bytes(prefix)
-    }
-
-    fn encode_key_greater_than_all_possible(&self, example_prefix: &Self::Prefix) -> Vec<u8> {
-        encode_to_rocksdb_bytes(
-            &DbPartitionKey {
-                node_key: max_vec_of_len(example_prefix.node_key.len()),
-                partition_num: 255,
-            },
-            // +1 should be enough, but we add at least another 255 wiggle room just in case the key encoding is larger
-            &DbSortKey(max_vec_of_len(MAX_SUBSTATE_KEY_SIZE + 300)),
-        )
-    }
-}
-
-fn max_vec_of_len(length: usize) -> Vec<u8> {
-    vec![255; length]
-}
-
-#[derive(Default)]
-struct NodeKeyDbCodec {}
-
-impl DbCodec<NodeKey> for NodeKeyDbCodec {
-    fn encode(&self, value: &NodeKey) -> Vec<u8> {
-        encode_key(value)
-    }
-
-    fn decode(&self, _bytes: &[u8]) -> NodeKey {
-        unimplemented!("no use-case for decoding hash tree's `NodeKey`s exists yet")
-    }
-}
-
-struct PrefixGlobalAddressDbCodec<S, SC: DbCodec<S>> {
-    suffix_codec: SC,
-    type_parameters_phantom: PhantomData<S>,
-}
-
-impl<S, SC: DbCodec<S>> PrefixGlobalAddressDbCodec<S, SC> {
-    pub fn new(suffix_codec: SC) -> Self {
-        Self {
-            suffix_codec,
-            type_parameters_phantom: PhantomData,
-        }
-    }
-}
-
-impl<S, SC: DbCodec<S>> DbCodec<(GlobalAddress, S)> for PrefixGlobalAddressDbCodec<S, SC> {
-    fn encode(&self, (global_address, suffix): &(GlobalAddress, S)) -> Vec<u8> {
-        let mut encoding = global_address.to_vec();
-        encoding.extend_from_slice(self.suffix_codec.encode(suffix).as_slice());
-        encoding
-    }
-
-    fn decode(&self, bytes: &[u8]) -> (GlobalAddress, S) {
-        let global_address = GlobalAddress::new_or_panic(copy_u8_array(&bytes[..NodeId::LENGTH]));
-        let suffix = self.suffix_codec.decode(&bytes[NodeId::LENGTH..]);
-        (global_address, suffix)
-    }
-}
-
-#[derive(Default)]
-struct NodeIdDbCodec {}
-
-impl DbCodec<NodeId> for NodeIdDbCodec {
-    fn encode(&self, value: &NodeId) -> Vec<u8> {
-        value.0.to_vec()
-    }
-
-    fn decode(&self, bytes: &[u8]) -> NodeId {
-        NodeId(copy_u8_array(bytes))
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn rocksdb_key_encoding_is_invertible() {
-        let partition_key = DbPartitionKey {
-            node_key: vec![1, 2, 3, 4, 132],
-            partition_num: 224,
-        };
-        let sort_key = DbSortKey(vec![13, 5]);
-        let buffer = encode_to_rocksdb_bytes(&partition_key, &sort_key);
-
-        let decoded = decode_from_rocksdb_bytes(&buffer);
-
-        assert_eq!(partition_key, decoded.0);
-        assert_eq!(sort_key, decoded.1);
-    }
-
-    /// This is needed for the iteration to work correctly
-    #[test]
-    fn rocksdb_key_encoding_respects_lexicographic_ordering_on_sort_keys() {
-        let partition_key = DbPartitionKey {
-            node_key: vec![73, 85],
-            partition_num: 1,
-        };
-        let sort_key = DbSortKey(vec![0, 4]);
-        let iterator_start = encode_to_rocksdb_bytes(&partition_key, &sort_key);
-
-        assert!(encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![0])) < iterator_start);
-        assert!(encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![0, 3])) < iterator_start);
-        assert_eq!(
-            encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![0, 4])),
-            iterator_start
-        );
-        assert!(iterator_start < encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![0, 5])));
-        assert!(
-            iterator_start < encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![0, 5, 7]))
-        );
-        assert!(iterator_start < encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![1, 51])));
-    }
-
-    #[test]
-    fn rocksdb_partition_encoding_is_correct_prefix() {
-        // First - consider some arbitrary partition
-        let partition = DbPartitionKey {
-            node_key: vec![73, 85],
-            partition_num: 1,
-        };
-        let prev_partition = DbPartitionKey {
-            node_key: vec![73, 85],
-            partition_num: 0,
-        };
-        let prev_node = DbPartitionKey {
-            node_key: vec![73, 84],
-            partition_num: 255,
-        };
-        let next_partition = DbPartitionKey {
-            node_key: vec![73, 85],
-            partition_num: 2,
-        };
-        let next_node = DbPartitionKey {
-            node_key: vec![73, 86],
-            partition_num: 0,
-        };
-        let (from, Some(to)) = encode_partition_prefix_range_to_rocksdb_bytes(&partition) else {
-            panic!("To was unexpectedly None");
-        };
-        assert!(encode_to_rocksdb_bytes(&prev_partition, &DbSortKey(vec![])) < from);
-        assert!(encode_to_rocksdb_bytes(&prev_node, &DbSortKey(vec![])) < from);
-        assert!(encode_to_rocksdb_bytes(&partition, &DbSortKey(vec![])) >= from);
-        assert!(encode_to_rocksdb_bytes(&partition, &DbSortKey(vec![])) < to);
-        assert!(encode_to_rocksdb_bytes(&partition, &DbSortKey(vec![1])) >= from);
-        assert!(encode_to_rocksdb_bytes(&partition, &DbSortKey(vec![1])) < to);
-        assert!(encode_to_rocksdb_bytes(&next_partition, &DbSortKey(vec![])) >= to);
-        assert!(encode_to_rocksdb_bytes(&next_node, &DbSortKey(vec![])) >= to);
-
-        // Now, consider partition_num 255
-        let partition = DbPartitionKey {
-            node_key: vec![73, 85],
-            partition_num: 255,
-        };
-        let prev_partition = DbPartitionKey {
-            node_key: vec![73, 85],
-            partition_num: 254,
-        };
-        let prev_node = DbPartitionKey {
-            node_key: vec![73, 84],
-            partition_num: 255,
-        };
-        let next_partition = DbPartitionKey {
-            node_key: vec![73, 86],
-            partition_num: 0,
-        };
-        let next_node = DbPartitionKey {
-            node_key: vec![73, 86],
-            partition_num: 0,
-        };
-        let (from, Some(to)) = encode_partition_prefix_range_to_rocksdb_bytes(&partition) else {
-            panic!("To was unexpectedly None");
-        };
-        assert!(encode_to_rocksdb_bytes(&prev_partition, &DbSortKey(vec![])) < from);
-        assert!(encode_to_rocksdb_bytes(&prev_node, &DbSortKey(vec![])) < from);
-        assert!(encode_to_rocksdb_bytes(&partition, &DbSortKey(vec![])) >= from);
-        assert!(encode_to_rocksdb_bytes(&partition, &DbSortKey(vec![])) < to);
-        assert!(encode_to_rocksdb_bytes(&partition, &DbSortKey(vec![1])) >= from);
-        assert!(encode_to_rocksdb_bytes(&partition, &DbSortKey(vec![1])) < to);
-        assert!(encode_to_rocksdb_bytes(&next_partition, &DbSortKey(vec![])) >= to);
-        assert!(encode_to_rocksdb_bytes(&next_node, &DbSortKey(vec![])) >= to);
-
-        // Finally, consider the final partition - it must delete an open range
-        let partition = DbPartitionKey {
-            node_key: vec![255, 255],
-            partition_num: 255,
-        };
-        let prev_partition = DbPartitionKey {
-            node_key: vec![255, 255],
-            partition_num: 254,
-        };
-        let prev_node = DbPartitionKey {
-            node_key: vec![255, 254],
-            partition_num: 255,
-        };
-        let (from, to) = encode_partition_prefix_range_to_rocksdb_bytes(&partition);
-        assert!(encode_to_rocksdb_bytes(&prev_partition, &DbSortKey(vec![])) < from);
-        assert!(encode_to_rocksdb_bytes(&prev_node, &DbSortKey(vec![])) < from);
-        assert!(encode_to_rocksdb_bytes(&partition, &DbSortKey(vec![])) >= from);
-        assert!(encode_to_rocksdb_bytes(&partition, &DbSortKey(vec![1])) >= from);
-        assert_eq!(to, None);
-    }
-
-    #[test]
-    fn check_max_vec() {
-        assert_eq!(max_vec_of_len(5), vec![255, 255, 255, 255, 255])
     }
 }
