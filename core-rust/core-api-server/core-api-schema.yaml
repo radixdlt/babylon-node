@@ -7153,6 +7153,7 @@ components:
         receipt:
           $ref: "#/components/schemas/TransactionReceipt"
         balance_changes:
+          description: Only returned if available and enabled in `TransactionFormatOptions` on your request.
           $ref: "#/components/schemas/CommittedTransactionBalanceChanges"
         proposer_timestamp_ms:
           type: integer
@@ -7162,7 +7163,7 @@ components:
           description: An integer between `0` and `10^14`, marking the proposer timestamp in ms.
     CommittedTransactionBalanceChanges:
       description: |
-        The fee-related and non-fee-related balance changes of a transaction, aggregated by resource and global entity 
+        All balance changes of a transaction (including those fee-related), aggregated by resource and global entity 
         within which the change occurred.
       type: object
       required:
