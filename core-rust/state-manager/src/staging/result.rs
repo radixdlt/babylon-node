@@ -538,16 +538,16 @@ pub struct HashStructuresDiff {
 #[derive(Clone, Debug)]
 pub struct StateHashTreeDiff {
     pub new_root: StateHash,
-    pub new_nodes: RefCell<Vec<(NodeKey, TreeNode)>>,
-    pub stale_tree_parts: RefCell<Vec<StaleTreePart>>,
+    pub new_nodes: Vec<(NodeKey, TreeNode)>,
+    pub stale_tree_parts: Vec<StaleTreePart>,
 }
 
 impl StateHashTreeDiff {
     pub fn new() -> Self {
         Self {
             new_root: StateHash::from(Hash([0; Hash::LENGTH])),
-            new_nodes: RefCell::new(Vec::new()),
-            stale_tree_parts: RefCell::new(Vec::new()),
+            new_nodes: Vec::new(),
+            stale_tree_parts: Vec::new(),
         }
     }
 }
@@ -607,19 +607,19 @@ impl<'s, S, K, N> WriteableAccuTreeStore<K, N> for CollectingAccuTreeStore<'s, S
 
 struct CollectingTreeStore<'s, S> {
     readable_delegate: &'s S,
-    diff: StateHashTreeDiff,
+    diff: RefCell<StateHashTreeDiff>,
 }
 
 impl<'s, S: ReadableStateTreeStore> CollectingTreeStore<'s, S> {
     pub fn new(readable_delegate: &'s S) -> Self {
         Self {
             readable_delegate,
-            diff: StateHashTreeDiff::new(),
+            diff: RefCell::new(StateHashTreeDiff::new()),
         }
     }
 
     pub fn into_diff_with(self, new_root: Hash) -> StateHashTreeDiff {
-        let mut diff = self.diff;
+        let mut diff = self.diff.take();
         diff.new_root = StateHash::from(new_root);
         diff
     }
@@ -633,10 +633,10 @@ impl<'s, S: ReadableTreeStore> ReadableTreeStore for CollectingTreeStore<'s, S> 
 
 impl<'s, S> WriteableTreeStore for CollectingTreeStore<'s, S> {
     fn insert_node(&self, key: NodeKey, node: TreeNode) {
-        self.diff.new_nodes.borrow_mut().push((key, node));
+        self.diff.borrow_mut().new_nodes.push((key, node));
     }
 
     fn record_stale_tree_part(&self, part: StaleTreePart) {
-        self.diff.stale_tree_parts.borrow_mut().push(part);
+        self.diff.borrow_mut().stale_tree_parts.push(part);
     }
 }

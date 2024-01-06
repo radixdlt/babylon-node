@@ -431,7 +431,7 @@ impl HashStructuresDiff {
 
 impl StateHashTreeDiff {
     pub fn weight(&self) -> usize {
-        self.new_nodes.borrow().len()
+        self.new_nodes.len()
     }
 }
 
@@ -576,7 +576,7 @@ impl Accumulator<ProcessedTransactionReceipt> for ImmutableStore {
             let hash_structures_diff = &commit.hash_structures_diff;
             let state_tree_diff = &hash_structures_diff.state_hash_tree_diff;
             self.state_tree_nodes
-                .extend(state_tree_diff.new_nodes.borrow().iter().cloned());
+                .extend(state_tree_diff.new_nodes.iter().cloned());
             let transaction_tree_diff = &hash_structures_diff.transaction_tree_diff;
             self.transaction_tree_slices.insert(
                 transaction_tree_diff.key,
