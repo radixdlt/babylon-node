@@ -254,7 +254,9 @@ pub fn to_api_committed_transaction(
     identifiers: CommittedTransactionIdentifiers,
 ) -> Result<models::CommittedTransaction, MappingError> {
     let balance_changes = if context.transaction_options.include_balance_changes {
-        Some(Box::new(to_api_balance_changes(database, context, &receipt)?))
+        Some(Box::new(to_api_balance_changes(
+            database, context, &receipt,
+        )?))
     } else {
         None
     };
@@ -587,7 +589,7 @@ pub fn to_api_system_transaction(
 fn to_api_balance_changes(
     database: &StateManagerDatabase,
     context: &MappingContext,
-    receipt: &LocalTransactionReceipt
+    receipt: &LocalTransactionReceipt,
 ) -> Result<models::CommittedTransactionBalanceChanges, MappingError> {
     let local_execution = &receipt.local_execution;
 
@@ -607,7 +609,7 @@ fn to_api_balance_changes(
             &local_execution
                 .global_balance_summary
                 .global_balance_changes,
-        )?
+        )?,
     })
 }
 
