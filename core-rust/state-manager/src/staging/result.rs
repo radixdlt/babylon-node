@@ -607,19 +607,19 @@ impl<'s, S, K, N> WriteableAccuTreeStore<K, N> for CollectingAccuTreeStore<'s, S
 
 struct CollectingTreeStore<'s, S> {
     readable_delegate: &'s S,
-    diff: StateHashTreeDiff,
+    diff: RefCell<StateHashTreeDiff>,
 }
 
 impl<'s, S: ReadableStateTreeStore> CollectingTreeStore<'s, S> {
     pub fn new(readable_delegate: &'s S) -> Self {
         Self {
             readable_delegate,
-            diff: StateHashTreeDiff::new(),
+            diff: RefCell::new(StateHashTreeDiff::new()),
         }
     }
 
     pub fn into_diff_with(self, new_root: Hash) -> StateHashTreeDiff {
-        let mut diff = self.diff;
+        let mut diff = self.diff.take();
         diff.new_root = StateHash::from(new_root);
         diff
     }
@@ -632,11 +632,11 @@ impl<'s, S: ReadableTreeStore> ReadableTreeStore for CollectingTreeStore<'s, S> 
 }
 
 impl<'s, S> WriteableTreeStore for CollectingTreeStore<'s, S> {
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode) {
-        self.diff.new_nodes.push((key, node));
+    fn insert_node(&self, key: NodeKey, node: TreeNode) {
+        self.diff.borrow_mut().new_nodes.push((key, node));
     }
 
-    fn record_stale_tree_part(&mut self, part: StaleTreePart) {
-        self.diff.stale_tree_parts.push(part);
+    fn record_stale_tree_part(&self, part: StaleTreePart) {
+        self.diff.borrow_mut().stale_tree_parts.push(part);
     }
 }
