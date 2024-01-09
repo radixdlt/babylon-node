@@ -86,9 +86,34 @@ public final class REv2TransactionAndProofStore {
             .measure(
                 timer.label(new MethodId(REv2TransactionAndProofStore.class, "getTxnsAndProof")))
             .build(new TypeToken<>() {});
-    this.getLastProofFunc =
-        Natives.builder(nodeRustEnvironment, REv2TransactionAndProofStore::getLastProof)
-            .measure(timer.label(new MethodId(REv2TransactionAndProofStore.class, "getLastProof")))
+    this.getLatestProofFunc =
+        Natives.builder(nodeRustEnvironment, REv2TransactionAndProofStore::getLatestProof)
+            .measure(
+                timer.label(new MethodId(REv2TransactionAndProofStore.class, "getLatestProof")))
+            .build(new TypeToken<>() {});
+    this.getLatestEpochProofFunc =
+        Natives.builder(nodeRustEnvironment, REv2TransactionAndProofStore::getLatestEpochProof)
+            .measure(
+                timer.label(
+                    new MethodId(REv2TransactionAndProofStore.class, "getLatestEpochProof")))
+            .build(new TypeToken<>() {});
+    this.getLatestProtocolUpdateInitProofFunc =
+        Natives.builder(
+                nodeRustEnvironment, REv2TransactionAndProofStore::getLatestProtocolUpdateInitProof)
+            .measure(
+                timer.label(
+                    new MethodId(
+                        REv2TransactionAndProofStore.class, "getLatestProtocolUpdateInitProof")))
+            .build(new TypeToken<>() {});
+    this.getLatestProtocolUpdateExecutionProofFunc =
+        Natives.builder(
+                nodeRustEnvironment,
+                REv2TransactionAndProofStore::getLatestProtocolUpdateExecutionProof)
+            .measure(
+                timer.label(
+                    new MethodId(
+                        REv2TransactionAndProofStore.class,
+                        "getLatestProtocolUpdateExecutionProof")))
             .build(new TypeToken<>() {});
     this.getPostGenesisEpochProofFunc =
         Natives.builder(nodeRustEnvironment, REv2TransactionAndProofStore::getPostGenesisEpochProof)
@@ -119,8 +144,20 @@ public final class REv2TransactionAndProofStore {
             UInt64.fromNonNegativeLong(startStateVersionInclusive), limitsConfig));
   }
 
-  public Optional<LedgerProof> getLastProof() {
-    return this.getLastProofFunc.call(Tuple.tuple()).toOptional();
+  public Optional<LedgerProof> getLatestProof() {
+    return this.getLatestProofFunc.call(Tuple.tuple()).toOptional();
+  }
+
+  public Optional<LedgerProof> getLatestEpochProof() {
+    return this.getLatestEpochProofFunc.call(Tuple.tuple()).toOptional();
+  }
+
+  public Optional<LedgerProof> getLatestProtocolUpdateInitProof() {
+    return this.getLatestProtocolUpdateInitProofFunc.call(Tuple.tuple()).toOptional();
+  }
+
+  public Optional<LedgerProof> getLatestProtocolUpdateExecutionProof() {
+    return this.getLatestProtocolUpdateExecutionProofFunc.call(Tuple.tuple()).toOptional();
   }
 
   public Optional<LedgerProof> getPostGenesisEpochProof() {
@@ -142,9 +179,26 @@ public final class REv2TransactionAndProofStore {
   private static native byte[] getTxnsAndProof(
       NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
-  private final Natives.Call1<Tuple.Tuple0, Option<LedgerProof>> getLastProofFunc;
+  private final Natives.Call1<Tuple.Tuple0, Option<LedgerProof>> getLatestProofFunc;
 
-  private static native byte[] getLastProof(
+  private static native byte[] getLatestProof(
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
+
+  private final Natives.Call1<Tuple.Tuple0, Option<LedgerProof>> getLatestEpochProofFunc;
+
+  private static native byte[] getLatestEpochProof(
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
+
+  private final Natives.Call1<Tuple.Tuple0, Option<LedgerProof>>
+      getLatestProtocolUpdateInitProofFunc;
+
+  private static native byte[] getLatestProtocolUpdateInitProof(
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
+
+  private final Natives.Call1<Tuple.Tuple0, Option<LedgerProof>>
+      getLatestProtocolUpdateExecutionProofFunc;
+
+  private static native byte[] getLatestProtocolUpdateExecutionProof(
       NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
   private final Natives.Call1<Tuple.Tuple0, Option<LedgerProof>> getPostGenesisEpochProofFunc;

@@ -136,7 +136,7 @@ public final class HighQC {
    * @return A new {@link HighQC}
    */
   public static HighQC ofInitialEpochQc(QuorumCertificate qc) {
-    if (!qc.getRound().isGenesis()) {
+    if (!qc.getRound().isEpochInitial()) {
       throw new IllegalArgumentException("Expected initial epoch QC");
     }
 

@@ -26,6 +26,7 @@ pub(crate) async fn handle_transaction_preview(
     let result = state
         .state_manager
         .transaction_previewer
+        .read()
         .preview(preview_request)
         .map_err(|err| match err {
             PreviewError::TransactionValidationError(err) => {

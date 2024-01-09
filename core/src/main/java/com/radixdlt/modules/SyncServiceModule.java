@@ -71,12 +71,11 @@ import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.*;
+import com.radixdlt.ledger.LedgerProofBundle;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.p2p.NodeId;
-import com.radixdlt.rev2.LastProof;
 import com.radixdlt.sync.*;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 import com.radixdlt.sync.messages.remote.StatusRequest;
@@ -100,8 +99,8 @@ public class SyncServiceModule extends AbstractModule {
   }
 
   @Provides
-  private SyncState initialSyncState(@LastProof LedgerProof currentHeader) {
-    return SyncState.IdleState.init(currentHeader);
+  private SyncState initialSyncState(LedgerProofBundle latestProof) {
+    return SyncState.IdleState.init(latestProof.primaryProof());
   }
 
   @ProvidesIntoSet

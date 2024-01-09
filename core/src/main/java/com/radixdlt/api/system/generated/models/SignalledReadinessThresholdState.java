@@ -28,75 +28,45 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * ExecutedProtocolUpdate
+ * SignalledReadinessThresholdState
  */
 @JsonPropertyOrder({
-  ExecutedProtocolUpdate.JSON_PROPERTY_EPOCH,
-  ExecutedProtocolUpdate.JSON_PROPERTY_RESULTANT_PROTOCOL_VERSION
+  SignalledReadinessThresholdState.JSON_PROPERTY_CONSECUTIVE_STARTED_EPOCHS_OF_SUPPORT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class ExecutedProtocolUpdate {
-  public static final String JSON_PROPERTY_EPOCH = "epoch";
-  private Long epoch;
-
-  public static final String JSON_PROPERTY_RESULTANT_PROTOCOL_VERSION = "resultant_protocol_version";
-  private String resultantProtocolVersion;
+public class SignalledReadinessThresholdState {
+  public static final String JSON_PROPERTY_CONSECUTIVE_STARTED_EPOCHS_OF_SUPPORT = "consecutive_started_epochs_of_support";
+  private Long consecutiveStartedEpochsOfSupport;
 
 
-  public ExecutedProtocolUpdate epoch(Long epoch) {
-    this.epoch = epoch;
+  public SignalledReadinessThresholdState consecutiveStartedEpochsOfSupport(Long consecutiveStartedEpochsOfSupport) {
+    this.consecutiveStartedEpochsOfSupport = consecutiveStartedEpochsOfSupport;
     return this;
   }
 
    /**
-   * Get epoch
-   * @return epoch
+   * Get consecutiveStartedEpochsOfSupport
+   * @return consecutiveStartedEpochsOfSupport
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_EPOCH)
+  @JsonProperty(JSON_PROPERTY_CONSECUTIVE_STARTED_EPOCHS_OF_SUPPORT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Long getEpoch() {
-    return epoch;
+  public Long getConsecutiveStartedEpochsOfSupport() {
+    return consecutiveStartedEpochsOfSupport;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_EPOCH)
+  @JsonProperty(JSON_PROPERTY_CONSECUTIVE_STARTED_EPOCHS_OF_SUPPORT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEpoch(Long epoch) {
-    this.epoch = epoch;
-  }
-
-
-  public ExecutedProtocolUpdate resultantProtocolVersion(String resultantProtocolVersion) {
-    this.resultantProtocolVersion = resultantProtocolVersion;
-    return this;
-  }
-
-   /**
-   * A name identifying a protocol version.
-   * @return resultantProtocolVersion
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "A name identifying a protocol version.")
-  @JsonProperty(JSON_PROPERTY_RESULTANT_PROTOCOL_VERSION)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getResultantProtocolVersion() {
-    return resultantProtocolVersion;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_RESULTANT_PROTOCOL_VERSION)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setResultantProtocolVersion(String resultantProtocolVersion) {
-    this.resultantProtocolVersion = resultantProtocolVersion;
+  public void setConsecutiveStartedEpochsOfSupport(Long consecutiveStartedEpochsOfSupport) {
+    this.consecutiveStartedEpochsOfSupport = consecutiveStartedEpochsOfSupport;
   }
 
 
   /**
-   * Return true if this ExecutedProtocolUpdate object is equal to o.
+   * Return true if this SignalledReadinessThresholdState object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -106,22 +76,20 @@ public class ExecutedProtocolUpdate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ExecutedProtocolUpdate executedProtocolUpdate = (ExecutedProtocolUpdate) o;
-    return Objects.equals(this.epoch, executedProtocolUpdate.epoch) &&
-        Objects.equals(this.resultantProtocolVersion, executedProtocolUpdate.resultantProtocolVersion);
+    SignalledReadinessThresholdState signalledReadinessThresholdState = (SignalledReadinessThresholdState) o;
+    return Objects.equals(this.consecutiveStartedEpochsOfSupport, signalledReadinessThresholdState.consecutiveStartedEpochsOfSupport);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(epoch, resultantProtocolVersion);
+    return Objects.hash(consecutiveStartedEpochsOfSupport);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ExecutedProtocolUpdate {\n");
-    sb.append("    epoch: ").append(toIndentedString(epoch)).append("\n");
-    sb.append("    resultantProtocolVersion: ").append(toIndentedString(resultantProtocolVersion)).append("\n");
+    sb.append("class SignalledReadinessThresholdState {\n");
+    sb.append("    consecutiveStartedEpochsOfSupport: ").append(toIndentedString(consecutiveStartedEpochsOfSupport)).append("\n");
     sb.append("}");
     return sb.toString();
   }

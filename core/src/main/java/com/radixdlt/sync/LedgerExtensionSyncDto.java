@@ -62,131 +62,93 @@
  * permissions under this License.
  */
 
-package com.radixdlt.shell;
+package com.radixdlt.sync;
+
+import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.ledger.DtoLedgerProof;
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.ledger.LedgerExtension;
 import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.Serialization;
+import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transactions.RawLedgerTransaction;
-import com.radixdlt.utils.Compress;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
 
-/** Utility class to write/restore ledger sync data from a file. */
-public final class LedgerFileSync {
+/**
+ * A data transfer object for a {@link LedgerExtension}, including a proof at the start of the run.
+ *
+ * <p>This may not have been verified yet.
+ */
+@Immutable
+@SerializerId2("ledger.extension")
+public final class LedgerExtensionSyncDto {
+  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+  @DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
+  SerializerDummy serializer = SerializerDummy.DUMMY;
 
-  /** Writes node's ledger sync data to a file. */
-  public static void writeToFile(
-      String fileName, Serialization serialization, TransactionsAndProofReader committedReader)
-      throws IOException {
-    final var initialProof = committedReader.getPostGenesisEpochProof();
-    final var endProofOpt = committedReader.getLastProof();
-    if (initialProof.isPresent() && endProofOpt.isPresent()) {
-      final var endProof = endProofOpt.get();
-      try (var out = new FileOutputStream(fileName)) {
-        var currentProof = initialProof.get();
-        var nextTransactions = committedReader.getTransactions(currentProof.toDto());
-        while (nextTransactions != null
-            && nextTransactions.getProof().getStateVersion() <= endProof.getStateVersion()) {
-          final var transactionsWithProofDto =
-              new CommittedTransactionsWithProofDto(
-                  nextTransactions.getTransactions(), nextTransactions.getProof().toDto());
-          final var serialized =
-              Compress.compress(
-                  serialization.toDson(transactionsWithProofDto, DsonOutput.Output.WIRE));
-          out.write(ByteBuffer.allocate(4).putInt(serialized.length).array());
-          out.write(serialized);
-          currentProof = nextTransactions.getProof();
-          nextTransactions = committedReader.getTransactions(currentProof.toDto());
-        }
-      }
-    }
+  @JsonProperty("txns")
+  @DsonOutput(Output.ALL)
+  private final List<RawLedgerTransaction> transactions;
+
+  @JsonProperty("start")
+  @DsonOutput(Output.ALL)
+  private final LedgerProofSyncDto start;
+
+  @JsonProperty("end")
+  @DsonOutput(Output.ALL)
+  private final LedgerProofSyncDto end;
+
+  @JsonCreator
+  public LedgerExtensionSyncDto(
+      @JsonProperty("txns") List<RawLedgerTransaction> transactions,
+      @JsonProperty(value = "start", required = true) LedgerProofSyncDto start,
+      @JsonProperty(value = "end", required = true) LedgerProofSyncDto end) {
+    this.transactions = transactions == null ? ImmutableList.of() : transactions;
+    this.start = requireNonNull(start);
+    this.end = requireNonNull(end);
+
+    this.transactions.forEach(Objects::requireNonNull);
   }
 
-  /** Reads and processes ledger sync data from a file. */
-  public static void restoreFromFile(
-      String fileName,
-      Serialization serialization,
-      EventDispatcher<LedgerExtension> ledgerExtensionDispatcher)
-      throws IOException {
-    try (var in = new FileInputStream(fileName)) {
-      while (in.available() > 0) {
-        final var len = ByteBuffer.wrap(in.readNBytes(4)).getInt();
-        final var data = in.readNBytes(len);
-        final var wrapper =
-            serialization.fromDson(
-                Compress.uncompress(data), CommittedTransactionsWithProofDto.class);
-        final var proof = wrapper.getProof();
-        // TODO: verify the proof
-        final var ledgerExtension =
-            LedgerExtension.create(
-                wrapper.getTxns(),
-                new LedgerProof(proof.getOpaque(), proof.getLedgerHeader(), proof.getSignatures()));
-        ledgerExtensionDispatcher.dispatch(ledgerExtension);
-      }
-    }
+  public List<RawLedgerTransaction> getTransactions() {
+    return transactions;
   }
 
-  @Immutable
-  @SerializerId2("ledger_file_sync.committed_transactions_with_proof")
-  private static final class CommittedTransactionsWithProofDto {
-    @JsonProperty(SerializerConstants.SERIALIZER_NAME)
-    @DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
-    SerializerDummy serializer = SerializerDummy.DUMMY;
+  public LedgerProofSyncDto getStart() {
+    return start;
+  }
 
-    @JsonProperty("txns")
-    @DsonOutput(DsonOutput.Output.ALL)
-    private final List<RawLedgerTransaction> transactions;
+  public LedgerProofSyncDto getEnd() {
+    return end;
+  }
 
-    @JsonProperty("proof")
-    @DsonOutput(DsonOutput.Output.ALL)
-    private final DtoLedgerProof proof;
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{start=%s, transactions.len=%s, end=%s}",
+        this.getClass().getSimpleName(), start, transactions.size(), end);
+  }
 
-    @JsonCreator
-    public CommittedTransactionsWithProofDto(
-        @JsonProperty("txns") List<RawLedgerTransaction> transactions,
-        @JsonProperty("proof") DtoLedgerProof proof) {
-      this.transactions = Objects.requireNonNull(transactions);
-      this.proof = Objects.requireNonNull(proof);
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
     }
 
-    public List<RawLedgerTransaction> getTxns() {
-      return transactions;
-    }
+    return (o instanceof LedgerExtensionSyncDto that)
+        && Objects.equals(transactions, that.transactions)
+        && Objects.equals(start, that.start)
+        && Objects.equals(end, that.end);
+  }
 
-    public DtoLedgerProof getProof() {
-      return proof;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      final var that = (CommittedTransactionsWithProofDto) o;
-      return Objects.equals(transactions, that.transactions) && Objects.equals(proof, that.proof);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(transactions, proof);
-    }
+  @Override
+  public int hashCode() {
+    return Objects.hash(transactions, start, end);
   }
 }

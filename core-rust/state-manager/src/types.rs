@@ -408,16 +408,75 @@ pub struct TimestampedValidatorSignature {
     pub signature: Secp256k1Signature,
 }
 
-define_single_versioned! {
+define_versioned!(
     #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-    pub enum VersionedLedgerProof => LedgerProof = LedgerProofV1
-}
+    pub enum VersionedLedgerProof {
+        previous_versions: [
+            1 => LedgerProofV1: { updates_to: 2 },
+        ],
+        latest_version: {
+            2 => LedgerProof = LedgerProofV2,
+        },
+    }
+);
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct LedgerProofV1 {
     pub opaque: Hash,
-    pub ledger_header: LedgerHeader,
+    pub ledger_header: LedgerHeaderV1,
     pub timestamped_signatures: Vec<TimestampedValidatorSignature>,
+}
+
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct LedgerProofV2 {
+    pub ledger_header: LedgerHeader,
+    pub origin: LedgerProofOrigin,
+}
+
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub enum LedgerProofOrigin {
+    Genesis {
+        genesis_opaque_hash: Hash,
+    },
+    Consensus {
+        opaque: Hash,
+        timestamped_signatures: Vec<TimestampedValidatorSignature>,
+    },
+    ProtocolUpdate {
+        protocol_version_name: String,
+        batch_idx: u32,
+    },
+}
+
+impl From<LedgerProofV1> for LedgerProofV2 {
+    fn from(proof: LedgerProofV1) -> Self {
+        let origin = if proof.timestamped_signatures.is_empty() {
+            // The only V1 proofs without signatures are genesis
+            LedgerProofOrigin::Genesis {
+                genesis_opaque_hash: proof.opaque,
+            }
+        } else {
+            LedgerProofOrigin::Consensus {
+                opaque: proof.opaque,
+                timestamped_signatures: proof.timestamped_signatures,
+            }
+        };
+        LedgerProofV2 {
+            ledger_header: proof.ledger_header.into(),
+            origin,
+        }
+    }
+}
+
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct LedgerHeaderV1 {
+    pub epoch: Epoch,
+    pub round: Round,
+    pub state_version: StateVersion,
+    pub hashes: LedgerHashes,
+    pub consensus_parent_round_timestamp_ms: i64,
+    pub proposer_timestamp_ms: i64,
+    pub next_epoch: Option<NextEpoch>,
 }
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -430,6 +489,26 @@ pub struct LedgerHeader {
     pub proposer_timestamp_ms: i64,
     pub next_epoch: Option<NextEpoch>,
     pub next_protocol_version: Option<String>,
+}
+
+impl From<LedgerHeaderV1> for LedgerHeader {
+    fn from(header: LedgerHeaderV1) -> Self {
+        LedgerHeader {
+            epoch: header.epoch,
+            round: header.round,
+            state_version: header.state_version,
+            hashes: header.hashes,
+            consensus_parent_round_timestamp_ms: header.consensus_parent_round_timestamp_ms,
+            proposer_timestamp_ms: header.proposer_timestamp_ms,
+            next_epoch: header.next_epoch,
+            next_protocol_version: None,
+        }
+    }
+}
+
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ProtocolUpdateResult {
+    pub post_update_proof: LedgerProof,
 }
 
 pub struct EpochTransactionIdentifiers {

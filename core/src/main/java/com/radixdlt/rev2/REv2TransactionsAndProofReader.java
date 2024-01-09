@@ -65,9 +65,10 @@
 package com.radixdlt.rev2;
 
 import com.google.inject.Inject;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.ledger.DtoLedgerProof;
+import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.LedgerExtension;
+import com.radixdlt.ledger.LedgerProofBundle;
+import com.radixdlt.statecomputer.commit.LedgerProof;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.LedgerSyncLimitsConfig;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
@@ -77,7 +78,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public final class REv2TransactionsAndProofReader implements TransactionsAndProofReader {
-
   private static final Logger log = LogManager.getLogger();
 
   private final REv2TransactionAndProofStore transactionStore;
@@ -91,14 +91,11 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
   }
 
   @Override
-  public LedgerExtension getTransactions(DtoLedgerProof start) {
-    final var startStateVersionInclusive = start.getLedgerHeader().getStateVersion() + 1;
+  public LedgerExtension getTransactions(long startStateVersionExclusive) {
+    final var startStateVersionInclusive = startStateVersionExclusive + 1;
 
     final var latestStateVersion =
-        transactionStore
-            .getLastProof()
-            .map(proof -> proof.ledgerHeader().stateVersion().toLong())
-            .orElse(0L);
+        transactionStore.getLatestProof().map(proof -> proof.stateVersion()).orElse(0L);
 
     // Early return if we got a query for a higher
     // state version than our latest.
@@ -123,22 +120,32 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
                     rawTxnsAndProof.transactions().stream()
                         .map(RawLedgerTransaction::create)
                         .toList(),
-                    REv2ToConsensus.ledgerProof(rawTxnsAndProof.proof())))
+                    rawTxnsAndProof.proof()))
         .or(() -> null);
   }
 
   @Override
   public Optional<LedgerProof> getPostGenesisEpochProof() {
-    return this.transactionStore.getPostGenesisEpochProof().map(REv2ToConsensus::ledgerProof);
+    return this.transactionStore.getPostGenesisEpochProof();
   }
 
   @Override
-  public Optional<LedgerProof> getEpochProof(long epoch) {
-    return this.transactionStore.getEpochProof(epoch).map(REv2ToConsensus::ledgerProof);
-  }
-
-  @Override
-  public Optional<LedgerProof> getLastProof() {
-    return this.transactionStore.getLastProof().map(REv2ToConsensus::ledgerProof);
+  public Optional<LedgerProofBundle> getLatestProofBundle() {
+    return this.transactionStore
+        .getLatestProof()
+        .map(
+            latestProof -> {
+              final var latestEpochProof =
+                  this.transactionStore.getLatestEpochProof().orElseThrow();
+              final var latestProtocolUpdateProof =
+                  this.transactionStore.getLatestProtocolUpdateInitProof();
+              final var latestPostProtocolUpdateProof =
+                  this.transactionStore.getLatestProtocolUpdateExecutionProof();
+              return new LedgerProofBundle(
+                  latestProof,
+                  latestEpochProof,
+                  Option.from(latestProtocolUpdateProof),
+                  Option.from(latestPostProtocolUpdateProof));
+            });
   }
 }

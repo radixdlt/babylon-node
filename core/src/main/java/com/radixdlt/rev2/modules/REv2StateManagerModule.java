@@ -77,6 +77,7 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.NodeAutoCloseable;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.lang.Option;
+import com.radixdlt.ledger.LedgerProofBundle;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.*;
@@ -84,6 +85,7 @@ import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.networks.Network;
 import com.radixdlt.protocol.NewestProtocolVersion;
 import com.radixdlt.protocol.ProtocolConfig;
+import com.radixdlt.protocol.RustProtocolUpdate;
 import com.radixdlt.recovery.VertexStoreRecovery;
 import com.radixdlt.rev2.*;
 import com.radixdlt.serialization.DsonOutput;
@@ -142,7 +144,8 @@ public final class REv2StateManagerModule extends AbstractModule {
       Option<RustMempoolConfig> mempoolConfig,
       StateHashTreeGcConfig stateHashTreeGcConfig,
       LedgerProofsGcConfig ledgerProofsGcConfig,
-      LedgerSyncLimitsConfig ledgerSyncLimitsConfig) {
+      LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
+      ProtocolConfig protocolConfig) {
     return new REv2StateManagerModule(
         proposalLimitsConfig,
         Option.some(vertexLimitsConfig),
@@ -152,7 +155,7 @@ public final class REv2StateManagerModule extends AbstractModule {
         stateHashTreeGcConfig,
         ledgerProofsGcConfig,
         ledgerSyncLimitsConfig,
-        ProtocolConfig.productionDefault(),
+        protocolConfig,
         false);
   }
 
@@ -186,6 +189,7 @@ public final class REv2StateManagerModule extends AbstractModule {
     bind(TransactionsAndProofReader.class).to(REv2TransactionsAndProofReader.class);
     bind(DatabaseFlags.class).toInstance(databaseFlags);
     bind(LedgerSyncLimitsConfig.class).toInstance(ledgerSyncLimitsConfig);
+    bind(ProtocolConfig.class).toInstance(protocolConfig);
     install(proposalLimitsConfig.asModule());
 
     install(
@@ -228,16 +232,19 @@ public final class REv2StateManagerModule extends AbstractModule {
           REv2StateComputer rEv2StateComputer(
               RustStateComputer stateComputer,
               RustMempool mempool,
+              RustProtocolUpdate rustProtocolUpdate,
               EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher,
               Hasher hasher,
               EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher,
               Serialization serialization,
               BFTConfiguration initialBftConfiguration,
               Metrics metrics,
-              SelfValidatorInfo selfValidatorInfo) {
+              SelfValidatorInfo selfValidatorInfo,
+              LedgerProofBundle initialLatestProof) {
             return new REv2StateComputer(
                 stateComputer,
                 mempool,
+                rustProtocolUpdate,
                 proposalLimitsConfig,
                 hasher,
                 ledgerUpdateEventDispatcher,
@@ -245,7 +252,8 @@ public final class REv2StateManagerModule extends AbstractModule {
                 serialization,
                 initialBftConfiguration.getProposerElection(),
                 metrics,
-                selfValidatorInfo);
+                selfValidatorInfo,
+                initialLatestProof);
           }
 
           @Provides
@@ -312,6 +320,13 @@ public final class REv2StateManagerModule extends AbstractModule {
   private RustStateComputer rustStateComputer(
       Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
     return new RustStateComputer(metrics, nodeRustEnvironment);
+  }
+
+  @Provides
+  @Singleton
+  private RustProtocolUpdate rustProtocolUpdate(
+      Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
+    return new RustProtocolUpdate(metrics, nodeRustEnvironment);
   }
 
   @Provides

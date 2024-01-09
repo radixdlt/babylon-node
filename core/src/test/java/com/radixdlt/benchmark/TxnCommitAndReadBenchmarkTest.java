@@ -67,16 +67,20 @@ package com.radixdlt.benchmark;
 import com.google.common.base.Stopwatch;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.StreamTransactionsRequest;
-import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.LedgerHashes;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.lang.Option;
-import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.rev2.*;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statecomputer.commit.CommitRequest;
+import com.radixdlt.statecomputer.commit.LedgerProof;
+import com.radixdlt.statecomputer.commit.LedgerProofOrigin;
 import com.radixdlt.transaction.TransactionPreparer;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.utils.Longs;
@@ -106,15 +110,20 @@ public final class TxnCommitAndReadBenchmarkTest extends DeterministicCoreApiTes
         /* Using a mocked proof here is quite fragile, and I imagine at some point this may break.
         When that happens, make sure this benchmark is still relevant before spending the time
         fixing the lines below :) */
-        final var proof = LedgerProof.mockAtStateVersion(stateVersion + NUM_TXNS_IN_A_COMMIT);
+        final var header =
+            LedgerHeader.create(0, Round.epochInitial(), stateVersion, LedgerHashes.zero(), 0, 0);
+        final var proof =
+            new LedgerProof(
+                REv2ToConsensus.ledgerHeader(header),
+                new LedgerProofOrigin.Consensus(HashUtils.zero256(), List.of()));
         final var commitRequest =
             new CommitRequest(
                 createUniqueTransactions(NUM_TXNS_IN_A_COMMIT, i),
-                REv2ToConsensus.ledgerProof(proof),
+                proof,
                 Option.none(),
                 Option.none());
         stateComputer.commit(commitRequest);
-        stateVersion = proof.getStateVersion();
+        stateVersion = proof.stateVersion();
       }
       log.info(
           "It took {} ms to commit {} txns in {} batches.",
@@ -169,15 +178,15 @@ public final class TxnCommitAndReadBenchmarkTest extends DeterministicCoreApiTes
 
     long totalTxnsRead = 0;
     long totalTxnReaderCalls = 0;
-    DtoLedgerProof proof = LedgerProof.mockAtStateVersion(1L).toDto();
+    long stateVersion = 1;
     while (true) {
-      var res = txnReader.getTransactions(proof);
+      var res = txnReader.getTransactions(stateVersion);
       totalTxnReaderCalls += 1;
       if (res == null) {
         break;
       }
-      totalTxnsRead += res.getTransactions().size();
-      proof = res.getProof().toDto();
+      totalTxnsRead += res.transactions().size();
+      stateVersion = res.proof().stateVersion();
     }
 
     log.info(

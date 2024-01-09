@@ -116,6 +116,7 @@ pub struct ProcessedCommitResult {
     pub database_updates: DatabaseUpdates,
     pub new_substate_node_ancestry_records: Vec<KeyedSubstateNodeAncestryRecord>,
     pub new_protocol_state: ProtocolState,
+    pub next_protocol_version: Option<String>,
 }
 
 pub struct HashUpdateContext<'s, S> {
@@ -249,7 +250,7 @@ impl ProcessedCommitResult {
             receipt_root: *receipt_tree_diff.slice.root(),
         };
 
-        let new_protocol_state = compute_new_protocol_state(
+        let (new_protocol_state, next_protocol_version) = compute_new_protocol_state(
             parent_protocol_state,
             &local_receipt,
             parent_state_version.next().expect("State version overflow"),
@@ -267,6 +268,7 @@ impl ProcessedCommitResult {
             new_substate_node_ancestry_records: global_balance_update
                 .new_substate_node_ancestry_records,
             new_protocol_state,
+            next_protocol_version,
         }
     }
 

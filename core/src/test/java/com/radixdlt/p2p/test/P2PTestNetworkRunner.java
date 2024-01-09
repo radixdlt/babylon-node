@@ -237,7 +237,7 @@ public final class P2PTestNetworkRunner {
                         selfNodeIndex));
             bind(String.class)
                 .annotatedWith(NewestProtocolVersion.class)
-                .toInstance(ProtocolConfig.productionDefault().genesisProtocolVersion());
+                .toInstance(ProtocolConfig.mainnet().genesisProtocolVersion());
             bind(RuntimeProperties.class).toInstance(properties);
             bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
             bind(DeterministicProcessor.class);

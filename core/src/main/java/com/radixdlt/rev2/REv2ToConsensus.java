@@ -67,14 +67,16 @@ package com.radixdlt.rev2;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.radixdlt.consensus.*;
+import com.radixdlt.consensus.LedgerHashes;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.NextEpoch;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.statecomputer.commit.ActiveValidatorInfo;
-import com.radixdlt.statecomputer.commit.TimestampedValidatorSignature;
-import com.radixdlt.statecomputer.commit.ValidatorId;
+import com.radixdlt.statecomputer.commit.*;
 import com.radixdlt.utils.UInt64;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -109,6 +111,17 @@ public final class REv2ToConsensus {
     return BFTValidatorSet.from(validators.stream().map(REv2ToConsensus::validator));
   }
 
+  public static ImmutableSet<ActiveValidatorInfo> validatorSet(BFTValidatorSet validatorSet) {
+    return validatorSet(validatorSet.getValidators());
+  }
+
+  public static ImmutableSet<ActiveValidatorInfo> validatorSet(
+      ImmutableSet<BFTValidator> validators) {
+    return validators.stream()
+        .map(REv2ToConsensus::validator)
+        .collect(ImmutableSet.toImmutableSet());
+  }
+
   public static NextEpoch nextEpoch(com.radixdlt.statecomputer.commit.NextEpoch nextEpoch) {
     var validators =
         nextEpoch.validators().stream()
@@ -118,12 +131,8 @@ public final class REv2ToConsensus {
   }
 
   public static com.radixdlt.statecomputer.commit.NextEpoch nextEpoch(NextEpoch nextEpoch) {
-    ImmutableSet<ActiveValidatorInfo> validators =
-        nextEpoch.getValidators().stream()
-            .map(REv2ToConsensus::validator)
-            .collect(ImmutableSet.toImmutableSet());
     return new com.radixdlt.statecomputer.commit.NextEpoch(
-        UInt64.fromNonNegativeLong(nextEpoch.getEpoch()), validators);
+        UInt64.fromNonNegativeLong(nextEpoch.getEpoch()), validatorSet(nextEpoch.getValidators()));
   }
 
   public static LedgerHashes ledgerHashes(
@@ -140,31 +149,20 @@ public final class REv2ToConsensus {
         ledgerHashes.getReceiptRoot());
   }
 
-  public static LedgerProof ledgerProof(com.radixdlt.statecomputer.commit.LedgerProof ledgerProof) {
-    return new LedgerProof(
-        ledgerProof.opaque(),
-        REv2ToConsensus.ledgerHeader(ledgerProof.ledgerHeader()),
-        new TimestampedECDSASignatures(
-            ledgerProof.signatures().stream()
-                .map(REv2ToConsensus::timestampedValidatorSignature)
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))));
-  }
-
-  public static com.radixdlt.statecomputer.commit.LedgerProof ledgerProof(LedgerProof ledgerProof) {
-    return new com.radixdlt.statecomputer.commit.LedgerProof(
-        ledgerProof.getOpaque(),
-        REv2ToConsensus.ledgerHeader(ledgerProof.getHeader()),
-        ledgerProof.getSignatures().getSignatures().entrySet().stream()
-            .map(e -> REv2ToConsensus.timestampedValidatorSignature(e.getKey(), e.getValue()))
-            .toList());
-  }
-
   public static Map.Entry<BFTValidatorId, TimestampedECDSASignature> timestampedValidatorSignature(
       TimestampedValidatorSignature timestampedSignature) {
     return Maps.immutableEntry(
         BFTValidatorId.create(timestampedSignature.validatorAddress(), timestampedSignature.key()),
         TimestampedECDSASignature.from(
             timestampedSignature.timestampMs(), timestampedSignature.signature()));
+  }
+
+  public static TimestampedECDSASignatures signatures(
+      List<TimestampedValidatorSignature> validatorSignatures) {
+    return new TimestampedECDSASignatures(
+        validatorSignatures.stream()
+            .map(REv2ToConsensus::timestampedValidatorSignature)
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
   }
 
   public static TimestampedValidatorSignature timestampedValidatorSignature(
@@ -174,6 +172,13 @@ public final class REv2ToConsensus {
         id.getValidatorAddress(),
         timestampedSignature.timestamp(),
         timestampedSignature.signature());
+  }
+
+  public static List<TimestampedValidatorSignature> signatures(
+      TimestampedECDSASignatures timestampedSignatures) {
+    return timestampedSignatures.getSignatures().entrySet().stream()
+        .map(e -> timestampedValidatorSignature(e.getKey(), e.getValue()))
+        .toList();
   }
 
   public static LedgerHeader ledgerHeader(

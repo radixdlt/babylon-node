@@ -9,8 +9,8 @@ use radix_engine_store_interface::interface::DatabaseUpdate;
 use state_manager::store::{traits::*, StateManagerDatabase};
 use state_manager::transaction::*;
 use state_manager::{
-    CommittedTransactionIdentifiers, LedgerHeader, LedgerProof, LocalTransactionReceipt,
-    StateVersion,
+    CommittedTransactionIdentifiers, LedgerHeader, LedgerProof, LedgerProofOrigin,
+    LocalTransactionReceipt, StateVersion,
 };
 
 use transaction::manifest;
@@ -166,8 +166,18 @@ pub fn to_api_ledger_proof(
     mapping_context: &MappingContext,
     proof: LedgerProof,
 ) -> Result<models::LedgerProof, MappingError> {
-    let timestamped_signatures = proof
-        .timestamped_signatures
+    // TODO(protocol-update): update the model to include different proof origins
+    let (opaque_hash, timestamped_signatures) = match proof.origin {
+        LedgerProofOrigin::Genesis {
+            genesis_opaque_hash,
+        } => (genesis_opaque_hash, vec![]),
+        LedgerProofOrigin::Consensus {
+            opaque,
+            timestamped_signatures,
+        } => (opaque, timestamped_signatures),
+        LedgerProofOrigin::ProtocolUpdate { .. } => (Hash([0; Hash::LENGTH]), vec![]),
+    };
+    let api_timestamped_signatures = timestamped_signatures
         .into_iter()
         .map(|timestamped_validator_signature| {
             Ok(models::TimestampedValidatorSignature {
@@ -187,9 +197,9 @@ pub fn to_api_ledger_proof(
         })
         .collect::<Result<_, _>>()?;
     Ok(models::LedgerProof {
-        opaque_hash: to_api_hash(&proof.opaque),
+        opaque_hash: to_api_hash(&opaque_hash),
         ledger_header: Box::new(to_api_ledger_header(mapping_context, proof.ledger_header)?),
-        timestamped_signatures,
+        timestamped_signatures: api_timestamped_signatures,
     })
 }
 
@@ -222,6 +232,7 @@ pub fn to_api_ledger_header(
             Some(Box::new(models::NextEpoch {
                 epoch: to_api_epoch(mapping_context, next_epoch.epoch)?,
                 validators,
+                significant_protocol_update_readiness: None,
             }))
         }
         None => None,
@@ -254,7 +265,9 @@ pub fn to_api_committed_transaction(
     identifiers: CommittedTransactionIdentifiers,
 ) -> Result<models::CommittedTransaction, MappingError> {
     let balance_changes = if context.transaction_options.include_balance_changes {
-        Some(Box::new(to_api_balance_changes(database, context, &receipt)?))
+        Some(Box::new(to_api_balance_changes(
+            database, context, &receipt,
+        )?))
     } else {
         None
     };
@@ -587,7 +600,7 @@ pub fn to_api_system_transaction(
 fn to_api_balance_changes(
     database: &StateManagerDatabase,
     context: &MappingContext,
-    receipt: &LocalTransactionReceipt
+    receipt: &LocalTransactionReceipt,
 ) -> Result<models::CommittedTransactionBalanceChanges, MappingError> {
     let local_execution = &receipt.local_execution;
 
@@ -607,7 +620,7 @@ fn to_api_balance_changes(
             &local_execution
                 .global_balance_summary
                 .global_balance_changes,
-        )?
+        )?,
     })
 }
 

@@ -22,9 +22,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.system.generated.models.ExecutedProtocolUpdate;
-import com.radixdlt.api.system.generated.models.PendingProtocolUpdate;
+import com.radixdlt.api.system.generated.models.EnactedProtocolUpdate;
 import com.radixdlt.api.system.generated.models.RecentSelfProposalMissStatistic;
+import com.radixdlt.api.system.generated.models.UnenactedProtocolUpdate;
 import com.radixdlt.api.system.generated.models.UnknownReportedPendingProtocolUpdate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -41,8 +41,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   HealthResponse.JSON_PROPERTY_DETAIL,
   HealthResponse.JSON_PROPERTY_RECENT_SELF_PROPOSAL_MISS_STATISTIC,
   HealthResponse.JSON_PROPERTY_CURRENT_PROTOCOL_VERSION,
-  HealthResponse.JSON_PROPERTY_EXECUTED_PROTOCOL_UPDATES,
-  HealthResponse.JSON_PROPERTY_PENDING_PROTOCOL_UPDATE,
+  HealthResponse.JSON_PROPERTY_ENACTED_PROTOCOL_UPDATES,
+  HealthResponse.JSON_PROPERTY_UNENACTED_PROTOCOL_UPDATES,
   HealthResponse.JSON_PROPERTY_UNKNOWN_REPORTED_PENDING_PROTOCOL_UPDATES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -98,11 +98,11 @@ public class HealthResponse {
   public static final String JSON_PROPERTY_CURRENT_PROTOCOL_VERSION = "current_protocol_version";
   private String currentProtocolVersion;
 
-  public static final String JSON_PROPERTY_EXECUTED_PROTOCOL_UPDATES = "executed_protocol_updates";
-  private List<ExecutedProtocolUpdate> executedProtocolUpdates = new ArrayList<>();
+  public static final String JSON_PROPERTY_ENACTED_PROTOCOL_UPDATES = "enacted_protocol_updates";
+  private List<EnactedProtocolUpdate> enactedProtocolUpdates = new ArrayList<>();
 
-  public static final String JSON_PROPERTY_PENDING_PROTOCOL_UPDATE = "pending_protocol_update";
-  private PendingProtocolUpdate pendingProtocolUpdate;
+  public static final String JSON_PROPERTY_UNENACTED_PROTOCOL_UPDATES = "unenacted_protocol_updates";
+  private List<UnenactedProtocolUpdate> unenactedProtocolUpdates = new ArrayList<>();
 
   public static final String JSON_PROPERTY_UNKNOWN_REPORTED_PENDING_PROTOCOL_UPDATES = "unknown_reported_pending_protocol_updates";
   private List<UnknownReportedPendingProtocolUpdate> unknownReportedPendingProtocolUpdates = new ArrayList<>();
@@ -212,60 +212,65 @@ public class HealthResponse {
   }
 
 
-  public HealthResponse executedProtocolUpdates(List<ExecutedProtocolUpdate> executedProtocolUpdates) {
-    this.executedProtocolUpdates = executedProtocolUpdates;
+  public HealthResponse enactedProtocolUpdates(List<EnactedProtocolUpdate> enactedProtocolUpdates) {
+    this.enactedProtocolUpdates = enactedProtocolUpdates;
     return this;
   }
 
-  public HealthResponse addExecutedProtocolUpdatesItem(ExecutedProtocolUpdate executedProtocolUpdatesItem) {
-    this.executedProtocolUpdates.add(executedProtocolUpdatesItem);
+  public HealthResponse addEnactedProtocolUpdatesItem(EnactedProtocolUpdate enactedProtocolUpdatesItem) {
+    this.enactedProtocolUpdates.add(enactedProtocolUpdatesItem);
     return this;
   }
 
    /**
-   * Get executedProtocolUpdates
-   * @return executedProtocolUpdates
+   * Get enactedProtocolUpdates
+   * @return enactedProtocolUpdates
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_EXECUTED_PROTOCOL_UPDATES)
+  @JsonProperty(JSON_PROPERTY_ENACTED_PROTOCOL_UPDATES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<ExecutedProtocolUpdate> getExecutedProtocolUpdates() {
-    return executedProtocolUpdates;
+  public List<EnactedProtocolUpdate> getEnactedProtocolUpdates() {
+    return enactedProtocolUpdates;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_EXECUTED_PROTOCOL_UPDATES)
+  @JsonProperty(JSON_PROPERTY_ENACTED_PROTOCOL_UPDATES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setExecutedProtocolUpdates(List<ExecutedProtocolUpdate> executedProtocolUpdates) {
-    this.executedProtocolUpdates = executedProtocolUpdates;
+  public void setEnactedProtocolUpdates(List<EnactedProtocolUpdate> enactedProtocolUpdates) {
+    this.enactedProtocolUpdates = enactedProtocolUpdates;
   }
 
 
-  public HealthResponse pendingProtocolUpdate(PendingProtocolUpdate pendingProtocolUpdate) {
-    this.pendingProtocolUpdate = pendingProtocolUpdate;
+  public HealthResponse unenactedProtocolUpdates(List<UnenactedProtocolUpdate> unenactedProtocolUpdates) {
+    this.unenactedProtocolUpdates = unenactedProtocolUpdates;
+    return this;
+  }
+
+  public HealthResponse addUnenactedProtocolUpdatesItem(UnenactedProtocolUpdate unenactedProtocolUpdatesItem) {
+    this.unenactedProtocolUpdates.add(unenactedProtocolUpdatesItem);
     return this;
   }
 
    /**
-   * Get pendingProtocolUpdate
-   * @return pendingProtocolUpdate
+   * Get unenactedProtocolUpdates
+   * @return unenactedProtocolUpdates
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_PENDING_PROTOCOL_UPDATE)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_UNENACTED_PROTOCOL_UPDATES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public PendingProtocolUpdate getPendingProtocolUpdate() {
-    return pendingProtocolUpdate;
+  public List<UnenactedProtocolUpdate> getUnenactedProtocolUpdates() {
+    return unenactedProtocolUpdates;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_PENDING_PROTOCOL_UPDATE)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setPendingProtocolUpdate(PendingProtocolUpdate pendingProtocolUpdate) {
-    this.pendingProtocolUpdate = pendingProtocolUpdate;
+  @JsonProperty(JSON_PROPERTY_UNENACTED_PROTOCOL_UPDATES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setUnenactedProtocolUpdates(List<UnenactedProtocolUpdate> unenactedProtocolUpdates) {
+    this.unenactedProtocolUpdates = unenactedProtocolUpdates;
   }
 
 
@@ -316,14 +321,14 @@ public class HealthResponse {
         Objects.equals(this.detail, healthResponse.detail) &&
         Objects.equals(this.recentSelfProposalMissStatistic, healthResponse.recentSelfProposalMissStatistic) &&
         Objects.equals(this.currentProtocolVersion, healthResponse.currentProtocolVersion) &&
-        Objects.equals(this.executedProtocolUpdates, healthResponse.executedProtocolUpdates) &&
-        Objects.equals(this.pendingProtocolUpdate, healthResponse.pendingProtocolUpdate) &&
+        Objects.equals(this.enactedProtocolUpdates, healthResponse.enactedProtocolUpdates) &&
+        Objects.equals(this.unenactedProtocolUpdates, healthResponse.unenactedProtocolUpdates) &&
         Objects.equals(this.unknownReportedPendingProtocolUpdates, healthResponse.unknownReportedPendingProtocolUpdates);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(status, detail, recentSelfProposalMissStatistic, currentProtocolVersion, executedProtocolUpdates, pendingProtocolUpdate, unknownReportedPendingProtocolUpdates);
+    return Objects.hash(status, detail, recentSelfProposalMissStatistic, currentProtocolVersion, enactedProtocolUpdates, unenactedProtocolUpdates, unknownReportedPendingProtocolUpdates);
   }
 
   @Override
@@ -334,8 +339,8 @@ public class HealthResponse {
     sb.append("    detail: ").append(toIndentedString(detail)).append("\n");
     sb.append("    recentSelfProposalMissStatistic: ").append(toIndentedString(recentSelfProposalMissStatistic)).append("\n");
     sb.append("    currentProtocolVersion: ").append(toIndentedString(currentProtocolVersion)).append("\n");
-    sb.append("    executedProtocolUpdates: ").append(toIndentedString(executedProtocolUpdates)).append("\n");
-    sb.append("    pendingProtocolUpdate: ").append(toIndentedString(pendingProtocolUpdate)).append("\n");
+    sb.append("    enactedProtocolUpdates: ").append(toIndentedString(enactedProtocolUpdates)).append("\n");
+    sb.append("    unenactedProtocolUpdates: ").append(toIndentedString(unenactedProtocolUpdates)).append("\n");
     sb.append("    unknownReportedPendingProtocolUpdates: ").append(toIndentedString(unknownReportedPendingProtocolUpdates)).append("\n");
     sb.append("}");
     return sb.toString();

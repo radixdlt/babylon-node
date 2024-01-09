@@ -92,7 +92,10 @@ public class VoteTest {
     BFTHeader parent =
         new BFTHeader(Round.of(1234567890L), HashUtils.random256(), mock(LedgerHeader.class));
     this.voteData =
-        new VoteData(BFTHeader.ofGenesisAncestor(mock(LedgerHeader.class)), parent, null);
+        new VoteData(
+            new BFTHeader(Round.epochInitial(), HashUtils.zero256(), mock(LedgerHeader.class)),
+            parent,
+            null);
     this.author = mock(BFTValidatorId.class);
     this.highQC = mock(HighQC.class);
     this.testObject =

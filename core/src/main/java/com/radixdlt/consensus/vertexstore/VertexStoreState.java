@@ -95,7 +95,6 @@ public final class VertexStoreState {
   private static final Logger logger = LogManager.getLogger();
 
   private final VertexWithHash root;
-  private final LedgerProof rootHeader;
   private final HighQC highQC;
   // TODO: collapse the following two
   private final ImmutableList<VertexWithHash> vertices;
@@ -103,33 +102,27 @@ public final class VertexStoreState {
 
   private VertexStoreState(
       HighQC highQC,
-      LedgerProof rootHeader,
       VertexWithHash root,
       ImmutableMap<HashCode, VertexWithHash> idToVertex,
       ImmutableList<VertexWithHash> vertices) {
     this.highQC = highQC;
-    this.rootHeader = rootHeader;
     this.root = root;
     this.idToVertex = idToVertex;
     this.vertices = vertices;
   }
 
-  public static VertexStoreState createNewForNextEpoch(LedgerProof epochProof, Hasher hasher) {
-    if (epochProof.getNextEpoch().isEmpty()) {
-      throw new IllegalArgumentException("Expected end of epoch proof");
-    }
-    final var nextEpoch = epochProof.getNextEpoch().orElseThrow();
-    final var initialEpochVertex =
-        Vertex.createInitialEpochVertex(epochProof.getHeader()).withId(hasher);
+  public static VertexStoreState createNewForNextEpoch(
+      LedgerHeader initialHeader, long nextEpoch, Hasher hasher) {
+    final var initialEpochVertex = Vertex.createInitialEpochVertex(initialHeader).withId(hasher);
 
     final var nextLedgerHeader =
         LedgerHeader.create(
-            nextEpoch.getEpoch(),
-            Round.genesis(),
-            epochProof.getStateVersion(),
-            epochProof.getLedgerHashes(),
-            epochProof.consensusParentRoundTimestamp(),
-            epochProof.proposerTimestamp());
+            nextEpoch,
+            Round.epochInitial(),
+            initialHeader.getStateVersion(),
+            initialHeader.getHashes(),
+            initialHeader.consensusParentRoundTimestamp(),
+            initialHeader.proposerTimestamp());
     final var initialEpochQC =
         QuorumCertificate.createInitialEpochQC(initialEpochVertex, nextLedgerHeader);
 
@@ -143,20 +136,18 @@ public final class VertexStoreState {
 
   public static VertexStoreState create(
       HighQC highQC, VertexWithHash root, ImmutableList<VertexWithHash> vertices, Hasher hasher) {
-
-    final var headers =
+    final var processedQcCommit =
         highQC
             .highestCommittedQC()
-            .getCommittedAndLedgerStateProof(hasher)
+            .getProcessedCommit(hasher)
             .orElseThrow(
                 () ->
                     new IllegalStateException(
                         String.format("highQC=%s does not have commit", highQC)));
-    var bftHeader = headers.getFirst();
-
-    if (!bftHeader.getVertexId().equals(root.hash())) {
+    final var committedHeader = processedQcCommit.committedHeader();
+    if (!committedHeader.getVertexId().equals(root.hash())) {
       throw new IllegalStateException(
-          String.format("committedHeader=%s does not match rootVertex=%s", bftHeader, root));
+          String.format("committedHeader=%s does not match rootVertex=%s", committedHeader, root));
     }
 
     var seen = new HashMap<HashCode, VertexWithHash>();
@@ -226,8 +217,7 @@ public final class VertexStoreState {
        */
     }
 
-    return new VertexStoreState(
-        highQC, headers.getSecond(), root, ImmutableMap.copyOf(seen), vertices);
+    return new VertexStoreState(highQC, root, ImmutableMap.copyOf(seen), vertices);
   }
 
   public SerializedVertexStoreState toSerialized() {
@@ -251,13 +241,9 @@ public final class VertexStoreState {
     return vertices;
   }
 
-  public LedgerProof getRootHeader() {
-    return rootHeader;
-  }
-
   @Override
   public int hashCode() {
-    return Objects.hash(root, rootHeader, highQC, idToVertex, vertices);
+    return Objects.hash(root, highQC, idToVertex, vertices);
   }
 
   @Override
@@ -268,7 +254,6 @@ public final class VertexStoreState {
 
     return o instanceof VertexStoreState other
         && Objects.equals(this.root, other.root)
-        && Objects.equals(this.rootHeader, other.rootHeader)
         && Objects.equals(this.highQC, other.highQC)
         && Objects.equals(this.vertices, other.vertices)
         && Objects.equals(this.idToVertex, other.idToVertex);

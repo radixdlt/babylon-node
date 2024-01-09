@@ -62,19 +62,29 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2;
+package com.radixdlt.protocol;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.environment.NodeRustEnvironment;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.sbor.Natives;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import javax.inject.Qualifier;
+public final class RustProtocolUpdate {
+  public RustProtocolUpdate(Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
+    final var timer = metrics.stateManager().nativeCall();
+    applyProtocolUpdateFunc =
+        Natives.builder(nodeRustEnvironment, RustProtocolUpdate::applyProtocolUpdate)
+            .measure(
+                timer.label(new Metrics.MethodId(RustProtocolUpdate.class, "applyProtocolUpdate")))
+            .build(new TypeToken<>() {});
+  }
 
-/** Marks the proof as the last one stored */
-@Qualifier
-@Target({FIELD, PARAMETER, METHOD})
-@Retention(RUNTIME)
-public @interface LastStoredProof {}
+  public ProtocolUpdateResult applyProtocolUpdate(String protocolVersionName) {
+    return this.applyProtocolUpdateFunc.call(protocolVersionName);
+  }
+
+  private static native byte[] applyProtocolUpdate(
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
+
+  private final Natives.Call1<String, ProtocolUpdateResult> applyProtocolUpdateFunc;
+}

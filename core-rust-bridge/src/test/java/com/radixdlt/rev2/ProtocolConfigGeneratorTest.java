@@ -62,84 +62,37 @@
  * permissions under this License.
  */
 
-package com.radixdlt.ledger;
+package com.radixdlt.rev2;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializerConstants;
-import com.radixdlt.serialization.SerializerDummy;
-import com.radixdlt.serialization.SerializerId2;
-import java.util.Objects;
-import javax.annotation.concurrent.Immutable;
+import com.google.common.collect.ImmutableList;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.protocol.ProtocolConfig;
+import com.radixdlt.protocol.ProtocolUpdate;
+import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition;
+import com.radixdlt.sbor.NodeSborCodecs;
+import org.bouncycastle.util.encoders.Hex;
+import org.junit.Ignore;
+import org.junit.Test;
 
-/** A ledger header and proof which has not been verified */
-@Immutable
-@SerializerId2("ledger.dto_proof")
-public final class DtoLedgerProof {
-  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
-  @DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
-  SerializerDummy serializer = SerializerDummy.DUMMY;
+@Ignore
+// Just a utility for testing, intended to be run manually
+public final class ProtocolConfigGeneratorTest {
+  @Test
+  public void generateProtocolConfig() {
+    // Change this, then run the test to generate the config
+    final var protocolConfig =
+        new ProtocolConfig(
+            "babylon-genesis",
+            ImmutableList.of(
+                new ProtocolUpdate(
+                    "v2",
+                    ProtocolUpdateEnactmentCondition.singleReadinessThresholdBetweenEpochs(
+                        5, 20, Decimal.ofNonNegativeFraction(7, 10), 1))));
 
-  // proposed
-  @JsonProperty("opaque")
-  @DsonOutput(Output.ALL)
-  private final HashCode opaque;
+    final var protocolConfigBytes =
+        NodeSborCodecs.encode(protocolConfig, NodeSborCodecs.resolveCodec(new TypeToken<>() {}));
 
-  // committed ledgerState
-  @JsonProperty("ledgerState")
-  @DsonOutput(Output.ALL)
-  private final LedgerHeader ledgerHeader;
-
-  @JsonProperty("signatures")
-  @DsonOutput(Output.ALL)
-  private final TimestampedECDSASignatures signatures;
-
-  @JsonCreator
-  public DtoLedgerProof(
-      @JsonProperty(value = "opaque", required = true) HashCode opaque,
-      @JsonProperty(value = "ledgerState", required = true) LedgerHeader ledgerHeader,
-      @JsonProperty(value = "signatures", required = true) TimestampedECDSASignatures signatures) {
-    this.opaque = Objects.requireNonNull(opaque);
-    this.ledgerHeader = Objects.requireNonNull(ledgerHeader);
-    this.signatures = Objects.requireNonNull(signatures);
-  }
-
-  public HashCode getOpaque() {
-    return opaque;
-  }
-
-  public TimestampedECDSASignatures getSignatures() {
-    return signatures;
-  }
-
-  public LedgerHeader getLedgerHeader() {
-    return ledgerHeader;
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s{header=%s}", this.getClass().getSimpleName(), this.ledgerHeader);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-
-    return (o instanceof DtoLedgerProof that)
-        && Objects.equals(opaque, that.opaque)
-        && Objects.equals(ledgerHeader, that.ledgerHeader)
-        && Objects.equals(signatures, that.signatures);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(opaque, ledgerHeader, signatures);
+    System.out.println("protocol.custom_config=" + Hex.toHexString(protocolConfigBytes));
+    System.out.println("RADIXDLT_PROTOCOL_CUSTOM_CONFIG=" + Hex.toHexString(protocolConfigBytes));
   }
 }

@@ -181,7 +181,7 @@ public final class SafetyRules {
     // Add a vertex to commit if creating a quorum for the proposed vertex would
     // create three consecutive qcs.
     final BFTHeader toCommit;
-    if (proposedVertex.touchesGenesis()
+    if (proposedVertex.touchesEpochInitialRound()
         || !proposedVertex.hasDirectParent()
         || !proposedVertex.parentHasDirectParent()) {
       toCommit = null;
@@ -263,8 +263,8 @@ public final class SafetyRules {
       return true;
     }
 
-    if (isGenesisQc(qc)) {
-      // A genesis QC doesn't require any signatures
+    if (isEpochInitialQc(qc)) {
+      // Epoch initial QC doesn't require any signatures
       return true;
     }
 
@@ -291,7 +291,7 @@ public final class SafetyRules {
     return isQcValid;
   }
 
-  private boolean isGenesisQc(QuorumCertificate qc) {
+  private boolean isEpochInitialQc(QuorumCertificate qc) {
     final var committedAndParentAndProposedAreTheSame =
         qc.getCommittedHeader()
             .map(
@@ -300,9 +300,9 @@ public final class SafetyRules {
                         && qc.getParentHeader().equals(committed))
             .orElse(false);
 
-    final var isGenesisRound = qc.getProposedHeader().getRound().isGenesis();
+    final var isEpochInitialRound = qc.getProposedHeader().getRound().isEpochInitial();
 
-    return committedAndParentAndProposedAreTheSame && isGenesisRound;
+    return committedAndParentAndProposedAreTheSame && isEpochInitialRound;
   }
 
   private boolean areAllQcTimestampedSignaturesValid(QuorumCertificate qc) {

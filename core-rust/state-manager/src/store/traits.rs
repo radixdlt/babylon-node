@@ -312,7 +312,7 @@ pub mod proofs {
             from_epoch: Epoch,
         ) -> Box<dyn Iterator<Item = LedgerProof> + '_>;
 
-        fn get_protocol_update_proof_iter(
+        fn get_protocol_update_init_proof_iter(
             &self,
             from_state_version: StateVersion,
         ) -> Box<dyn Iterator<Item = LedgerProof> + '_>;
@@ -322,7 +322,7 @@ pub mod proofs {
     pub trait QueryableProofStore {
         fn max_state_version(&self) -> StateVersion;
         fn max_completed_epoch(&self) -> Option<Epoch> {
-            self.get_last_epoch_proof()
+            self.get_latest_epoch_proof()
                 .map(|proof| proof.ledger_header.epoch)
         }
         fn get_txns_and_proof(
@@ -334,13 +334,14 @@ pub mod proofs {
         fn get_first_proof(&self) -> Option<LedgerProof>;
         fn get_post_genesis_epoch_proof(&self) -> Option<LedgerProof>;
         fn get_epoch_proof(&self, epoch: Epoch) -> Option<LedgerProof>;
-        fn get_last_proof(&self) -> Option<LedgerProof>;
-        fn get_last_epoch_proof(&self) -> Option<LedgerProof>;
-
+        fn get_latest_proof(&self) -> Option<LedgerProof>;
+        fn get_latest_epoch_proof(&self) -> Option<LedgerProof>;
         fn get_closest_epoch_proof_on_or_before(
             &self,
             state_version: StateVersion,
         ) -> Option<LedgerProof>;
+        fn get_latest_protocol_update_init_proof(&self) -> Option<LedgerProof>;
+        fn get_latest_protocol_update_execution_proof(&self) -> Option<LedgerProof>;
     }
 }
 

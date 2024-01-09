@@ -1,4 +1,4 @@
-use node_common::locks::StateLock;
+use node_common::locks::{RwLock, StateLock};
 use radix_engine::transaction::{PreviewError, TransactionReceipt, TransactionResult};
 use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use std::ops::{Deref, Range};
@@ -20,7 +20,7 @@ use transaction::validation::ValidationConfig;
 /// A transaction preview runner.
 pub struct TransactionPreviewer<S> {
     store: Arc<StateLock<S>>,
-    execution_configurator: Arc<ExecutionConfigurator>,
+    execution_configurator: Arc<RwLock<ExecutionConfigurator>>,
     validation_config: ValidationConfig,
 }
 
@@ -33,14 +33,14 @@ pub struct ProcessedPreviewResult {
 
 impl<S> TransactionPreviewer<S> {
     pub fn new(
-        network: &NetworkDefinition,
         store: Arc<StateLock<S>>,
-        execution_configurator: Arc<ExecutionConfigurator>,
+        execution_configurator: Arc<RwLock<ExecutionConfigurator>>,
+        validation_config: ValidationConfig,
     ) -> Self {
         Self {
             store,
             execution_configurator,
-            validation_config: ValidationConfig::default(network.id),
+            validation_config,
         }
     }
 }
@@ -58,9 +58,8 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
         let validated = validator
             .validate_preview_intent_v1(intent)
             .map_err(PreviewError::TransactionValidationError)?;
-        let transaction_logic = self
-            .execution_configurator
-            .wrap_preview_transaction(&validated);
+        let read_execution_configurator = self.execution_configurator.read();
+        let transaction_logic = read_execution_configurator.wrap_preview_transaction(&validated);
 
         let receipt = transaction_logic.execute_on(read_store.deref());
         let (state_changes, global_balance_summary) = match &receipt.result {
@@ -83,7 +82,7 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
         };
 
         let base_ledger_header = read_store
-            .get_last_proof()
+            .get_latest_proof()
             .expect("proof for preview's base state")
             .ledger_header;
 
@@ -133,10 +132,13 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
 #[cfg(test)]
 mod tests {
 
-    use crate::{PreviewRequest, StateManager, StateManagerConfig};
+    use crate::{
+        PreviewRequest, StateManager, StateManagerConfig, TestingDefaultProtocolUpdaterFactory,
+    };
     use node_common::locks::LockFactory;
     use node_common::scheduler::Scheduler;
     use prometheus::Registry;
+    use radix_engine_common::prelude::NetworkDefinition;
     use transaction::builder::ManifestBuilder;
     use transaction::model::{MessageV1, PreviewFlags};
 
@@ -149,6 +151,9 @@ mod tests {
             StateManagerConfig::new_for_testing(tmp.path().to_str().unwrap()),
             None,
             &lock_factory,
+            Box::new(TestingDefaultProtocolUpdaterFactory::new(
+                NetworkDefinition::simulator(),
+            )),
             &metrics_registry,
             &Scheduler::new("testing"),
         );
@@ -159,21 +164,24 @@ mod tests {
 
         let preview_manifest = ManifestBuilder::new().lock_fee_from_faucet().build();
 
-        let preview_response = state_manager.transaction_previewer.preview(PreviewRequest {
-            manifest: preview_manifest,
-            explicit_epoch_range: None,
-            notary_public_key: None,
-            notary_is_signatory: true,
-            tip_percentage: 0,
-            nonce: 0,
-            signer_public_keys: vec![],
-            flags: PreviewFlags {
-                use_free_credit: true,
-                assume_all_signature_proofs: true,
-                skip_epoch_check: false,
-            },
-            message: MessageV1::None,
-        });
+        let preview_response = state_manager
+            .transaction_previewer
+            .read()
+            .preview(PreviewRequest {
+                manifest: preview_manifest,
+                explicit_epoch_range: None,
+                notary_public_key: None,
+                notary_is_signatory: true,
+                tip_percentage: 0,
+                nonce: 0,
+                signer_public_keys: vec![],
+                flags: PreviewFlags {
+                    use_free_credit: true,
+                    assume_all_signature_proofs: true,
+                    skip_epoch_check: false,
+                },
+                message: MessageV1::None,
+            });
 
         // just checking that we're getting some processed substate changes back in the response
         assert!(!preview_response.unwrap().state_changes.is_empty());

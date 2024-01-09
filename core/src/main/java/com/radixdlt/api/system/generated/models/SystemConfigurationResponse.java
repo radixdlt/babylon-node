@@ -25,6 +25,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.system.generated.models.BFTConfiguration;
 import com.radixdlt.api.system.generated.models.MempoolConfiguration;
 import com.radixdlt.api.system.generated.models.NetworkingConfiguration;
+import com.radixdlt.api.system.generated.models.ProtocolConfiguration;
 import com.radixdlt.api.system.generated.models.SyncConfiguration;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -38,7 +39,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   SystemConfigurationResponse.JSON_PROPERTY_MEMPOOL,
   SystemConfigurationResponse.JSON_PROPERTY_BFT,
   SystemConfigurationResponse.JSON_PROPERTY_SYNC,
-  SystemConfigurationResponse.JSON_PROPERTY_NETWORKING
+  SystemConfigurationResponse.JSON_PROPERTY_NETWORKING,
+  SystemConfigurationResponse.JSON_PROPERTY_PROTOCOL
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class SystemConfigurationResponse {
@@ -53,6 +55,9 @@ public class SystemConfigurationResponse {
 
   public static final String JSON_PROPERTY_NETWORKING = "networking";
   private NetworkingConfiguration networking;
+
+  public static final String JSON_PROPERTY_PROTOCOL = "protocol";
+  private ProtocolConfiguration protocol;
 
 
   public SystemConfigurationResponse mempool(MempoolConfiguration mempool) {
@@ -159,6 +164,32 @@ public class SystemConfigurationResponse {
   }
 
 
+  public SystemConfigurationResponse protocol(ProtocolConfiguration protocol) {
+    this.protocol = protocol;
+    return this;
+  }
+
+   /**
+   * Get protocol
+   * @return protocol
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_PROTOCOL)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public ProtocolConfiguration getProtocol() {
+    return protocol;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_PROTOCOL)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setProtocol(ProtocolConfiguration protocol) {
+    this.protocol = protocol;
+  }
+
+
   /**
    * Return true if this SystemConfigurationResponse object is equal to o.
    */
@@ -174,12 +205,13 @@ public class SystemConfigurationResponse {
     return Objects.equals(this.mempool, systemConfigurationResponse.mempool) &&
         Objects.equals(this.bft, systemConfigurationResponse.bft) &&
         Objects.equals(this.sync, systemConfigurationResponse.sync) &&
-        Objects.equals(this.networking, systemConfigurationResponse.networking);
+        Objects.equals(this.networking, systemConfigurationResponse.networking) &&
+        Objects.equals(this.protocol, systemConfigurationResponse.protocol);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(mempool, bft, sync, networking);
+    return Objects.hash(mempool, bft, sync, networking, protocol);
   }
 
   @Override
@@ -190,6 +222,7 @@ public class SystemConfigurationResponse {
     sb.append("    bft: ").append(toIndentedString(bft)).append("\n");
     sb.append("    sync: ").append(toIndentedString(sync)).append("\n");
     sb.append("    networking: ").append(toIndentedString(networking)).append("\n");
+    sb.append("    protocol: ").append(toIndentedString(protocol)).append("\n");
     sb.append("}");
     return sb.toString();
   }

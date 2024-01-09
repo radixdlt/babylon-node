@@ -69,6 +69,8 @@ import static org.mockito.Mockito.mock;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.sync.LedgerExtensionSyncDto;
+import com.radixdlt.sync.LedgerProofSyncDto;
 import java.util.List;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
@@ -76,24 +78,26 @@ import org.junit.Test;
 public class LedgerExtensionDtoTest {
   @Test
   public void equalsContract() {
-    EqualsVerifier.forClass(DtoLedgerExtension.class)
+    EqualsVerifier.forClass(LedgerExtensionSyncDto.class)
         .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
         .verify();
   }
 
   @Test(expected = NullPointerException.class)
   public void deserializationWithNullHeadThrowsException() {
-    new DtoLedgerExtension(List.of(), null, mock(DtoLedgerProof.class));
+    new LedgerExtensionSyncDto(List.of(), null, mock(LedgerProofSyncDto.class));
   }
 
   @Test(expected = NullPointerException.class)
   public void deserializationWithNullTailThrowsException() {
-    new DtoLedgerExtension(List.of(), mock(DtoLedgerProof.class), null);
+    new LedgerExtensionSyncDto(List.of(), mock(LedgerProofSyncDto.class), null);
   }
 
   @Test
   public void deserializationWithNullTxnListIsSafe() {
-    var dto = new DtoLedgerExtension(null, mock(DtoLedgerProof.class), mock(DtoLedgerProof.class));
+    var dto =
+        new LedgerExtensionSyncDto(
+            null, mock(LedgerProofSyncDto.class), mock(LedgerProofSyncDto.class));
 
     assertNotNull(dto.getTransactions());
   }

@@ -62,76 +62,92 @@
  * permissions under this License.
  */
 
-package com.radixdlt.ledger;
-
-import static java.util.Objects.requireNonNull;
+package com.radixdlt.sync;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableList;
+import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.LedgerHashes;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.TimestampedECDSASignatures;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.transactions.RawLedgerTransaction;
-import java.util.List;
 import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
 
 /**
- * A data transfer object for a {@link LedgerExtension}, including a proof at the start of the run.
- *
- * <p>This may not have been verified yet.
+ * A legacy ledger proof DTO, currently only used in ledger sync request (directly) and response
+ * (via LedgerExtensionSyncDto) messages. Note that this can't be unified with
+ * LedgerProofSyncStatusDto without breaking the p2p protocol due to different serializer ID.
  */
 @Immutable
-@SerializerId2("ledger.extension")
-public final class DtoLedgerExtension {
+@SerializerId2("ledger.dto_proof")
+public final class LedgerProofSyncDto {
   @JsonProperty(SerializerConstants.SERIALIZER_NAME)
   @DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
   SerializerDummy serializer = SerializerDummy.DUMMY;
 
-  @JsonProperty("txns")
+  // proposed
+  @JsonProperty("opaque")
   @DsonOutput(Output.ALL)
-  private final List<RawLedgerTransaction> transactions;
+  private final HashCode opaque;
 
-  @JsonProperty("start")
+  // committed ledgerState
+  @JsonProperty("ledgerState")
   @DsonOutput(Output.ALL)
-  private final DtoLedgerProof start;
+  private final LedgerHeader ledgerHeader;
 
-  @JsonProperty("end")
+  @JsonProperty("signatures")
   @DsonOutput(Output.ALL)
-  private final DtoLedgerProof end;
+  private final TimestampedECDSASignatures signatures;
 
   @JsonCreator
-  public DtoLedgerExtension(
-      @JsonProperty("txns") List<RawLedgerTransaction> transactions,
-      @JsonProperty(value = "start", required = true) DtoLedgerProof start,
-      @JsonProperty(value = "end", required = true) DtoLedgerProof end) {
-    this.transactions = transactions == null ? ImmutableList.of() : transactions;
-    this.start = requireNonNull(start);
-    this.end = requireNonNull(end);
-
-    this.transactions.forEach(Objects::requireNonNull);
+  public LedgerProofSyncDto(
+      @JsonProperty(value = "opaque", required = true) HashCode opaque,
+      @JsonProperty(value = "ledgerState", required = true) LedgerHeader ledgerHeader,
+      @JsonProperty(value = "signatures", required = true) TimestampedECDSASignatures signatures) {
+    this.opaque = Objects.requireNonNull(opaque);
+    this.ledgerHeader = Objects.requireNonNull(ledgerHeader);
+    this.signatures = Objects.requireNonNull(signatures);
   }
 
-  public List<RawLedgerTransaction> getTransactions() {
-    return transactions;
+  public static LedgerProofSyncDto testingGenesis(
+      long stateVersion,
+      LedgerHashes ledgerHashes,
+      BFTValidatorSet nextValidators,
+      long consensusParentRoundTimestamp,
+      long ledgerTimestamp) {
+    final var genesisLedgerHeader =
+        LedgerHeader.genesis(
+            stateVersion,
+            ledgerHashes,
+            nextValidators,
+            consensusParentRoundTimestamp,
+            ledgerTimestamp);
+    return new LedgerProofSyncDto(
+        HashUtils.zero256(), genesisLedgerHeader, new TimestampedECDSASignatures());
   }
 
-  public DtoLedgerProof getStart() {
-    return start;
+  public HashCode getOpaque() {
+    return opaque;
   }
 
-  public DtoLedgerProof getEnd() {
-    return end;
+  public TimestampedECDSASignatures getSignatures() {
+    return signatures;
+  }
+
+  public LedgerHeader getLedgerHeader() {
+    return ledgerHeader;
   }
 
   @Override
   public String toString() {
-    return String.format(
-        "%s{start=%s, transactions.len=%s, end=%s}",
-        this.getClass().getSimpleName(), start, transactions.size(), end);
+    return String.format("%s{header=%s}", this.getClass().getSimpleName(), this.ledgerHeader);
   }
 
   @Override
@@ -140,14 +156,14 @@ public final class DtoLedgerExtension {
       return true;
     }
 
-    return (o instanceof DtoLedgerExtension that)
-        && Objects.equals(transactions, that.transactions)
-        && Objects.equals(start, that.start)
-        && Objects.equals(end, that.end);
+    return (o instanceof LedgerProofSyncDto that)
+        && Objects.equals(opaque, that.opaque)
+        && Objects.equals(ledgerHeader, that.ledgerHeader)
+        && Objects.equals(signatures, that.signatures);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(transactions, start, end);
+    return Objects.hash(opaque, ledgerHeader, signatures);
   }
 }

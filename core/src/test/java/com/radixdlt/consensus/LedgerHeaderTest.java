@@ -83,7 +83,7 @@ public class LedgerHeaderTest {
   public void setup() {
     this.timestamp = 12345678L;
     this.ledgerHeader =
-        LedgerHeader.create(0, Round.genesis(), 0, LedgerHashes.zero(), timestamp, timestamp);
+        LedgerHeader.create(0, Round.epochInitial(), 0, LedgerHashes.zero(), timestamp, timestamp);
   }
 
   @Test

@@ -66,7 +66,7 @@ pub(crate) async fn handle_status_network_status(
             &current_ledger_hashes,
         )?)),
         current_epoch_round: database
-            .get_last_proof()
+            .get_latest_proof()
             .map(|proof| -> Result<_, MappingError> {
                 Ok(Box::new(to_api_epoch_round(
                     &mapping_context,

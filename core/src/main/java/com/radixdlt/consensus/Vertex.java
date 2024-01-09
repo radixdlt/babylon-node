@@ -174,12 +174,12 @@ public final class Vertex {
   }
 
   public static Vertex createInitialEpochVertex(LedgerHeader ledgerHeader) {
-    BFTHeader header = BFTHeader.ofGenesisAncestor(ledgerHeader);
+    BFTHeader header = BFTHeader.ofEpochInitialAncestor(ledgerHeader);
     final VoteData voteData = new VoteData(header, header, header);
     final QuorumCertificate parentQC =
         new QuorumCertificate(voteData, new TimestampedECDSASignatures());
     return new Vertex(
-        parentQC, Round.genesis(), null, null, false, ledgerHeader.proposerTimestamp());
+        parentQC, Round.epochInitial(), null, null, false, ledgerHeader.proposerTimestamp());
   }
 
   public static Vertex createFallback(
@@ -197,7 +197,7 @@ public final class Vertex {
       BFTValidatorId proposer,
       long proposerTimestamp) {
     if (round.number() == 0) {
-      throw new IllegalArgumentException("Only genesis can have round 0.");
+      throw new IllegalArgumentException("Only epoch initial vertex can have round 0.");
     }
 
     var transactionBytes = transactions.stream().map(RawNotarizedTransaction::getPayload).toList();
@@ -260,17 +260,17 @@ public final class Vertex {
   public long getEpoch() {
     var epoch = getParentHeader().getLedgerHeader().getEpoch();
     // If vertex is genesis, the parent will point to the previous epoch so must add 1
-    return round.isGenesis() ? epoch + 1 : epoch;
+    return round.isEpochInitial() ? epoch + 1 : epoch;
   }
 
   public BFTHeader getGrandParentHeader() {
     return getQCToParent().getParentHeader();
   }
 
-  public boolean touchesGenesis() {
-    return this.getRound().isGenesis()
-        || this.getParentHeader().getRound().isGenesis()
-        || this.getGrandParentHeader().getRound().isGenesis();
+  public boolean touchesEpochInitialRound() {
+    return this.getRound().isEpochInitial()
+        || this.getParentHeader().getRound().isEpochInitial()
+        || this.getGrandParentHeader().getRound().isEpochInitial();
   }
 
   public boolean hasDirectParent() {

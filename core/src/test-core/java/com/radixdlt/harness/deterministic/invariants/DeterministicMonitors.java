@@ -138,7 +138,7 @@ public final class DeterministicMonitors {
   }
 
   private static class LivenessMessageMonitor implements MessageMonitor {
-    private EpochRound highestEpochRoundSeen = EpochRound.of(1, Round.genesis());
+    private EpochRound highestEpochRoundSeen = EpochRound.of(1, Round.epochInitial());
     private long timeOfHighestEpochRoundSeen = 0;
     private final long duration;
 

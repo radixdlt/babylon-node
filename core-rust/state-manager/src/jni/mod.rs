@@ -66,7 +66,7 @@ pub mod fatal_panic_handler;
 pub mod mempool;
 pub mod node_rust_environment;
 pub mod prometheus;
-pub mod protocol_updates;
+pub mod protocol_update;
 pub mod state_computer;
 pub mod test_state_reader;
 pub mod transaction_preparer;

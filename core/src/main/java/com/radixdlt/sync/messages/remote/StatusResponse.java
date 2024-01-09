@@ -64,29 +64,29 @@
 
 package com.radixdlt.sync.messages.remote;
 
-import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.sync.LedgerProofSyncStatusDto;
 import java.util.Objects;
 
 /** Node status response message. */
 public final class StatusResponse {
 
-  private final LedgerProof header;
+  private final LedgerProofSyncStatusDto proof;
 
-  public static StatusResponse create(LedgerProof header) {
-    return new StatusResponse(header);
+  public static StatusResponse create(LedgerProofSyncStatusDto proof) {
+    return new StatusResponse(proof);
   }
 
-  private StatusResponse(LedgerProof header) {
-    this.header = header;
+  private StatusResponse(LedgerProofSyncStatusDto proof) {
+    this.proof = proof;
   }
 
-  public LedgerProof getHeader() {
-    return header;
+  public LedgerProofSyncStatusDto getProof() {
+    return proof;
   }
 
   @Override
   public String toString() {
-    return String.format("%s{header=%s}", this.getClass().getSimpleName(), this.header);
+    return String.format("%s{proof=%s}", this.getClass().getSimpleName(), this.proof);
   }
 
   @Override
@@ -98,11 +98,11 @@ public final class StatusResponse {
       return false;
     }
     StatusResponse that = (StatusResponse) o;
-    return Objects.equals(header, that.header);
+    return Objects.equals(proof, that.proof);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(header);
+    return Objects.hash(proof);
   }
 }

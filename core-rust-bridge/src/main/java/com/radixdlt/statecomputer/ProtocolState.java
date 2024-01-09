@@ -62,48 +62,60 @@
  * permissions under this License.
  */
 
-package com.radixdlt.sync.messages.local;
-
-import static com.radixdlt.utils.TypedMocks.rmock;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
+package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.p2p.NodeId;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Before;
-import org.junit.Test;
+import com.google.common.collect.ImmutableMap;
+import com.radixdlt.lang.Option;
+import com.radixdlt.lang.Tuple;
+import com.radixdlt.protocol.ProtocolUpdate;
+import com.radixdlt.protocol.ProtocolUpdateSupportType;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.EnumCodec;
+import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.utils.UInt64;
 
-public class LocalSyncRequestTest {
-  private LocalSyncRequest request;
-  private ImmutableList<NodeId> targetNodes;
-  private LedgerProof target;
+public record ProtocolState(
+    Option<UInt64> currentEpoch,
+    String currentProtocolVersion,
+    ImmutableMap<UInt64, String> enactedProtocolUpdates,
+    ImmutableList<UnenactedProtocolUpdate> unenactedProtocolUpdates) {
 
-  @Before
-  public void setup() {
-    this.targetNodes = rmock(ImmutableList.class);
-    this.target = mock(LedgerProof.class);
-    request = new LocalSyncRequest(target, targetNodes);
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        ProtocolState.class,
+        codecs -> StructCodec.fromRecordComponents(ProtocolState.class, codecs));
+
+    codecMap.register(
+        UnenactedProtocolUpdate.class,
+        codecs -> StructCodec.fromRecordComponents(UnenactedProtocolUpdate.class, codecs));
+
+    codecMap.register(
+        UnenactedProtocolUpdateState.class,
+        codecs ->
+            EnumCodec.fromPermittedRecordSubclasses(UnenactedProtocolUpdateState.class, codecs));
+
+    codecMap.register(
+        UnenactedProtocolUpdateState.SignalledReadinessThresholdState.class,
+        codecs ->
+            StructCodec.fromRecordComponents(
+                UnenactedProtocolUpdateState.SignalledReadinessThresholdState.class, codecs));
   }
 
-  @Test
-  public void testGetters() {
-    assertThat(request.getTarget()).isEqualTo(target);
-    assertThat(request.getTargetNodes()).isEqualTo(targetNodes);
-  }
+  public record UnenactedProtocolUpdate(
+      ProtocolUpdate protocolUpdate, UnenactedProtocolUpdateState state) {}
 
-  @Test
-  public void sensibleToString() {
-    assertThat(request.toString()).contains(LocalSyncRequest.class.getSimpleName());
-  }
+  public sealed interface UnenactedProtocolUpdateState {
+    record ForSignalledReadinessSupportCondition(
+        ImmutableList<
+                Tuple.Tuple2<
+                    ProtocolUpdateSupportType.SignalledReadiness.SignalledReadinessThreshold,
+                    SignalledReadinessThresholdState>>
+            thresholdsState)
+        implements UnenactedProtocolUpdateState {}
 
-  @Test
-  public void equalsContract() {
-    EqualsVerifier.forClass(LocalSyncRequest.class)
-        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-        .verify();
+    record Empty() implements UnenactedProtocolUpdateState {}
+
+    record SignalledReadinessThresholdState(UInt64 consecutiveStartedEpochsOfSupport) {}
   }
 }

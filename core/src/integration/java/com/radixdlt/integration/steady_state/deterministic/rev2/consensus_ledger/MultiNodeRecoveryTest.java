@@ -170,7 +170,7 @@ public final class MultiNodeRecoveryTest {
       }
 
       // Post-run assertions
-      Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), 100);
+      Checkers.assertNodesSyncedToVersionAtLeast(test.getNodeInjectors(), 100);
     }
   }
 }

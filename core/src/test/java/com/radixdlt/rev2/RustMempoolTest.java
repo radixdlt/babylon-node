@@ -132,7 +132,7 @@ public final class RustMempoolTest {
             StateHashTreeGcConfig.forTesting(),
             LedgerProofsGcConfig.forTesting(),
             LedgerSyncLimitsConfig.defaults(),
-            ProtocolConfig.testingDefaultNoUpdates(),
+            ProtocolConfig.testingDefault(),
             false);
     final var metrics = new MetricsInitializer().initialize();
 
@@ -190,7 +190,7 @@ public final class RustMempoolTest {
             StateHashTreeGcConfig.forTesting(),
             LedgerProofsGcConfig.forTesting(),
             LedgerSyncLimitsConfig.defaults(),
-            ProtocolConfig.testingDefaultNoUpdates(),
+            ProtocolConfig.testingDefault(),
             false);
     final var metrics = new MetricsInitializer().initialize();
 
@@ -331,7 +331,7 @@ public final class RustMempoolTest {
             StateHashTreeGcConfig.forTesting(),
             LedgerProofsGcConfig.forTesting(),
             LedgerSyncLimitsConfig.defaults(),
-            ProtocolConfig.testingDefaultNoUpdates(),
+            ProtocolConfig.testingDefault(),
             false);
     final var metrics = new MetricsInitializer().initialize();
 

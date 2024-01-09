@@ -62,42 +62,70 @@
  * permissions under this License.
  */
 
-package com.radixdlt.ledger;
+package com.radixdlt.sync;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.crypto.HashUtils;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Before;
-import org.junit.Test;
+import com.radixdlt.rev2.REv2ToConsensus;
+import com.radixdlt.statecomputer.commit.LedgerProof;
+import com.radixdlt.statecomputer.commit.LedgerProofOrigin;
+import com.radixdlt.utils.Pair;
 
-public class LedgerExtensionTest {
-  private LedgerProof ledgerProof;
-  private LedgerExtension emptyLedgerExtension;
-  private final long stateVersion = 232L;
+public final class LedgerSyncDtoConversions {
 
-  @Before
-  public void setUp() {
-    this.ledgerProof = mock(LedgerProof.class);
-    when(ledgerProof.getStateVersion()).thenReturn(stateVersion);
-
-    this.emptyLedgerExtension = LedgerExtension.create(ImmutableList.of(), ledgerProof);
+  public static LedgerProofSyncDto ledgerProofToSyncDto(LedgerProof ledgerProof) {
+    final var opaqueAndSignatures = toDtoOpaqueAndSignatures(ledgerProof.origin());
+    return new LedgerProofSyncDto(
+        opaqueAndSignatures.getFirst(),
+        REv2ToConsensus.ledgerHeader(ledgerProof.ledgerHeader()),
+        opaqueAndSignatures.getSecond());
   }
 
-  @Test
-  public void testGetters() {
-    assertThat(this.emptyLedgerExtension.getProof()).isEqualTo(ledgerProof);
+  public static LedgerProofSyncStatusDto ledgerProofToSyncStatusDto(LedgerProof ledgerProof) {
+    final var opaqueAndSignatures = toDtoOpaqueAndSignatures(ledgerProof.origin());
+    return new LedgerProofSyncStatusDto(
+        opaqueAndSignatures.getFirst(),
+        REv2ToConsensus.ledgerHeader(ledgerProof.ledgerHeader()),
+        opaqueAndSignatures.getSecond());
   }
 
-  @Test
-  public void equalsContract() {
-    EqualsVerifier.forClass(LedgerExtension.class)
-        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-        .verify();
+  private static Pair<HashCode, TimestampedECDSASignatures> toDtoOpaqueAndSignatures(
+      LedgerProofOrigin origin) {
+    return switch (origin) {
+      case LedgerProofOrigin.Consensus consensusOrigin -> Pair.of(
+          consensusOrigin.opaque(), REv2ToConsensus.signatures(consensusOrigin.signatures()));
+      case LedgerProofOrigin.Genesis genesisOrigin -> Pair.of(
+          genesisOrigin.genesisOpaqueHash(), new TimestampedECDSASignatures());
+      case LedgerProofOrigin.ProtocolUpdate protocolUpdateOrigin -> Pair.of(
+          HashUtils.zero256(), new TimestampedECDSASignatures());
+    };
+  }
+
+  /**
+   * Converts the given DTO to a ledger proof of Consensus origin (even if the signatures list is
+   * empty). The validity of the proof should be verified by the caller.
+   */
+  public static LedgerProof syncDtoToConsensusOriginatedLedgerProof(
+      LedgerProofSyncDto ledgerProof) {
+    return new LedgerProof(
+        REv2ToConsensus.ledgerHeader(ledgerProof.getLedgerHeader()),
+        new LedgerProofOrigin.Consensus(
+            ledgerProof.getOpaque(), REv2ToConsensus.signatures(ledgerProof.getSignatures())));
+  }
+
+  public static LedgerProof syncStatusDtoToLedgerProof(LedgerProofSyncStatusDto ledgerProof) {
+    final var isGenesis =
+        ledgerProof.getSignatures().getSignatures().isEmpty() && ledgerProof.isEndOfEpoch();
+    if (isGenesis) {
+      return new LedgerProof(
+          REv2ToConsensus.ledgerHeader(ledgerProof.getHeader()),
+          new LedgerProofOrigin.Genesis(ledgerProof.getOpaque()));
+    } else {
+      return new LedgerProof(
+          REv2ToConsensus.ledgerHeader(ledgerProof.getHeader()),
+          new LedgerProofOrigin.Consensus(
+              ledgerProof.getOpaque(), REv2ToConsensus.signatures(ledgerProof.getSignatures())));
+    }
   }
 }

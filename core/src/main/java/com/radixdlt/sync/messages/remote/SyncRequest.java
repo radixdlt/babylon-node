@@ -64,7 +64,7 @@
 
 package com.radixdlt.sync.messages.remote;
 
-import com.radixdlt.ledger.DtoLedgerProof;
+import com.radixdlt.sync.LedgerProofSyncDto;
 import java.util.Objects;
 
 /**
@@ -73,23 +73,23 @@ import java.util.Objects;
  */
 public final class SyncRequest {
 
-  private final DtoLedgerProof header;
+  private final LedgerProofSyncDto startProofExclusive;
 
-  public static SyncRequest create(DtoLedgerProof header) {
-    return new SyncRequest(header);
+  public static SyncRequest create(LedgerProofSyncDto startProofExclusive) {
+    return new SyncRequest(startProofExclusive);
   }
 
-  private SyncRequest(DtoLedgerProof header) {
-    this.header = header;
+  private SyncRequest(LedgerProofSyncDto startProofExclusive) {
+    this.startProofExclusive = startProofExclusive;
   }
 
-  public DtoLedgerProof getHeader() {
-    return header;
+  public LedgerProofSyncDto getStartProofExclusive() {
+    return startProofExclusive;
   }
 
   @Override
   public String toString() {
-    return String.format("%s{header=%s}", this.getClass().getSimpleName(), this.header);
+    return String.format("%s{proof=%s}", this.getClass().getSimpleName(), this.startProofExclusive);
   }
 
   @Override
@@ -101,11 +101,11 @@ public final class SyncRequest {
       return false;
     }
     SyncRequest that = (SyncRequest) o;
-    return Objects.equals(header, that.header);
+    return Objects.equals(startProofExclusive, that.startProofExclusive);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(header);
+    return Objects.hash(startProofExclusive);
   }
 }

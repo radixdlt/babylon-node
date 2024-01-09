@@ -64,7 +64,7 @@
 
 package com.radixdlt.rev2.modules;
 
-import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.statecomputer.commit.LedgerProof;
 
 /**
  * A marker object that can be used as a Guice dependency to ensure that the ledger database has

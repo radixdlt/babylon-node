@@ -99,13 +99,10 @@ import com.radixdlt.p2p.transport.PeerOutboundBootstrap;
 import com.radixdlt.p2p.transport.PeerServerBootstrap;
 import com.radixdlt.sbor.NodeSborCodecs;
 import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import io.reactivex.rxjava3.disposables.Disposable;
 import java.io.File;
-import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.util.*;
@@ -373,24 +370,6 @@ public final class RadixShell {
     public void cleanMsgConsumers() {
       msgConsumers.forEach(Disposable::dispose);
       msgConsumers.clear();
-    }
-
-    public void writeLedgerSyncToFile(String fileName) throws IOException {
-      final var start = System.currentTimeMillis();
-      LedgerFileSync.writeToFile(
-          fileName,
-          getInstance(Serialization.class),
-          getInstance(TransactionsAndProofReader.class));
-      final var time = System.currentTimeMillis() - start;
-      System.out.printf("Dump finished. Took %ss%n", time / 1000);
-    }
-
-    public void restoreLedgerFromFile(String fileName) throws IOException {
-      final var start = System.currentTimeMillis();
-      LedgerFileSync.restoreFromFile(
-          fileName, getInstance(Serialization.class), getInstance(new Key<>() {}));
-      final var time = System.currentTimeMillis() - start;
-      System.out.printf("Restore finished. Took %ss%n", time / 1000);
     }
 
     @Override

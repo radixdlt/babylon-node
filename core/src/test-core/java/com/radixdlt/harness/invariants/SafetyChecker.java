@@ -149,9 +149,9 @@ public final class SafetyChecker {
     lastCommittedByNode.put(node, epochRound);
     final EpochRound lowest =
         nodes.stream()
-            .map(n -> lastCommittedByNode.getOrDefault(n, EpochRound.of(0, Round.genesis())))
+            .map(n -> lastCommittedByNode.getOrDefault(n, EpochRound.of(0, Round.epochInitial())))
             .reduce((v0, v1) -> v0.compareTo(v1) < 0 ? v0 : v1)
-            .orElse(EpochRound.of(0, Round.genesis()));
+            .orElse(EpochRound.of(0, Round.epochInitial()));
     committedVertices.headMap(lowest).clear();
 
     return Optional.empty();

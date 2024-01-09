@@ -118,7 +118,7 @@ public class EpochsLocalSyncService {
               this.localSyncService =
                   localSyncServiceFactory.create(
                       new RemoteSyncResponseValidatorSetVerifier(
-                          epochChange.getBFTConfiguration().getValidatorSet()),
+                          epochChange.bftConfiguration().getValidatorSet()),
                       this.localSyncService.getSyncState());
             });
     this.localSyncService.ledgerUpdateEventProcessor().process(ledgerUpdate);
@@ -129,13 +129,13 @@ public class EpochsLocalSyncService {
   }
 
   private void processLocalSyncRequest(LocalSyncRequest request) {
-    final long targetEpoch = request.getTarget().getEpoch();
+    final long targetEpoch = request.target().ledgerHeader().epoch().toLong();
 
-    if (targetEpoch < currentEpoch.getNextEpoch()) {
+    if (targetEpoch < currentEpoch.nextEpoch()) {
       log.trace(
           "Request epoch {} is lower from current {} ignoring: {}",
           targetEpoch,
-          currentEpoch.getNextEpoch(),
+          currentEpoch.nextEpoch(),
           request);
       return;
     }

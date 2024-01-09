@@ -69,12 +69,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.rev2.REv2ToConsensus;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.utils.Pair;
+import com.radixdlt.statecomputer.commit.LedgerProof;
+import com.radixdlt.statecomputer.commit.LedgerProofOrigin;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -110,7 +112,7 @@ public final class QuorumCertificate {
   public static QuorumCertificate createInitialEpochQC(
       VertexWithHash genesisVertexWithHash, LedgerHeader ledgerHeader) {
     final var vertex = genesisVertexWithHash.vertex();
-    if (!vertex.getRound().isGenesis()) {
+    if (!vertex.getRound().isEpochInitial()) {
       throw new IllegalArgumentException(String.format("Vertex is not genesis: %s", vertex));
     }
 
@@ -133,7 +135,7 @@ public final class QuorumCertificate {
     // NB - this does have the edge case of never increasing timestamps if configuration is
     // one round per epoch but this is likely good enough
 
-    return getProposedHeader().getRound().isGenesis()
+    return getProposedHeader().getRound().isEpochInitial()
         ? getProposedHeader().getLedgerHeader().consensusParentRoundTimestamp()
         : getTimestampedSignatures().weightedTimestampMillis();
   }
@@ -150,15 +152,22 @@ public final class QuorumCertificate {
     return voteData.getCommitted();
   }
 
-  public Optional<Pair<BFTHeader, LedgerProof>> getCommittedAndLedgerStateProof(Hasher hasher) {
+  public Optional<ProcessedQcCommit> getProcessedCommit(Hasher hasher) {
     return voteData
         .getCommitted()
         .map(
             committed -> {
-              var opaque = hasher.hashDsonEncoded(voteData);
-              var ledgerStateProof =
-                  new LedgerProof(opaque, committed.getLedgerHeader(), signatures);
-              return Pair.of(committed, ledgerStateProof);
+              if (signatures.count() == 0) {
+                return new ProcessedQcCommit.OfInitialEpochQc(committed);
+              } else {
+                final var proofOrigin =
+                    new LedgerProofOrigin.Consensus(
+                        hasher.hashDsonEncoded(voteData), REv2ToConsensus.signatures(signatures));
+                final var ledgerProof =
+                    new LedgerProof(
+                        REv2ToConsensus.ledgerHeader(committed.getLedgerHeader()), proofOrigin);
+                return new ProcessedQcCommit.OfConensusQc(committed, ledgerProof, proofOrigin);
+              }
             });
   }
 

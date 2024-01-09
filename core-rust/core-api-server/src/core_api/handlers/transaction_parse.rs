@@ -35,6 +35,7 @@ pub(crate) async fn handle_transaction_parse(
     let bytes =
         from_hex(request.payload_hex).map_err(|err| err.into_response_error("payload_hex"))?;
 
+    let read_commitability_validator = state.state_manager.committability_validator.read();
     let context = ParseContext {
         mapping_context: MappingContext::new(&state.network)
             .with_transaction_formats(&request.transaction_format_options),
@@ -43,7 +44,7 @@ pub(crate) async fn handle_transaction_parse(
         user_transaction_validator: NotarizedTransactionValidator::new(ValidationConfig::default(
             state.network.id,
         )),
-        committability_validator: state.state_manager.committability_validator.deref(),
+        committability_validator: read_commitability_validator.deref(),
     };
 
     let parse_mode = request.parse_mode.unwrap_or(ParseMode::Any);

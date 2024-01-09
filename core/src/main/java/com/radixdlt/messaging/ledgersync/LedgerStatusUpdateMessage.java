@@ -66,33 +66,35 @@ package com.radixdlt.messaging.ledgersync;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.messaging.core.Message;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
+import com.radixdlt.sync.LedgerProofSyncStatusDto;
 import java.util.Objects;
 
 /** A push message with the latest ledger status update. */
 @SerializerId2("message.sync.ledger_status_update")
 public final class LedgerStatusUpdateMessage extends Message {
+  /* Watch out: this property name is wrong, but it can't easily be changed. */
   @JsonProperty("header")
   @DsonOutput(Output.ALL)
-  private final LedgerProof header;
+  private final LedgerProofSyncStatusDto proof;
 
   @JsonCreator
   public LedgerStatusUpdateMessage(
-      @JsonProperty(value = "header", required = true) LedgerProof header) {
-    this.header = Objects.requireNonNull(header);
+      /* Watch out: this property name is wrong, but it can't easily be changed. */
+      @JsonProperty(value = "header", required = true) LedgerProofSyncStatusDto proof) {
+    this.proof = Objects.requireNonNull(proof);
   }
 
-  public LedgerProof getHeader() {
-    return header;
+  public LedgerProofSyncStatusDto getProof() {
+    return proof;
   }
 
   @Override
   public String toString() {
-    return String.format("%s{header=%s}", getClass().getSimpleName(), header);
+    return String.format("%s{proof=%s}", getClass().getSimpleName(), proof);
   }
 
   @Override
@@ -102,12 +104,12 @@ public final class LedgerStatusUpdateMessage extends Message {
     }
 
     return (o instanceof LedgerStatusUpdateMessage that)
-        && Objects.equals(header, that.header)
+        && Objects.equals(proof, that.proof)
         && Objects.equals(getTimestamp(), that.getTimestamp());
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(header, getTimestamp());
+    return Objects.hash(proof, getTimestamp());
   }
 }

@@ -65,6 +65,7 @@
 package com.radixdlt;
 
 import com.google.common.base.Preconditions;
+import com.google.common.reflect.TypeToken;
 import com.google.inject.AbstractModule;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.api.CoreApiServerModule;
@@ -93,7 +94,9 @@ import com.radixdlt.p2p.P2PModule;
 import com.radixdlt.p2p.capability.AppVersionCapability;
 import com.radixdlt.p2p.capability.Capabilities;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
+import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.rev2.modules.*;
+import com.radixdlt.sbor.NodeSborCodecs;
 import com.radixdlt.store.NodeStorageLocationFromPropertiesModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transaction.LedgerSyncLimitsConfig;
@@ -105,6 +108,7 @@ import java.time.Duration;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.bouncycastle.util.encoders.Hex;
 
 /** Module which manages everything in a single node */
 public final class RadixNodeModule extends AbstractModule {
@@ -351,6 +355,19 @@ public final class RadixNodeModule extends AbstractModule {
     // this is tied to the number of actually-persisted proofs, and should not be configureable:
     var ledgerSyncLimitsConfig = LedgerSyncLimitsConfig.defaults();
 
+    final var customProtocolConfig = properties.get("protocol.custom_config", "");
+
+    final ProtocolConfig protocolConfig;
+    if (!customProtocolConfig.isEmpty()) {
+      protocolConfig =
+          NodeSborCodecs.decode(
+              Hex.decode(customProtocolConfig), NodeSborCodecs.resolveCodec(new TypeToken<>() {}));
+    } else if (network.getId() == Network.MAINNET.getId()) {
+      protocolConfig = ProtocolConfig.mainnet();
+    } else {
+      protocolConfig = ProtocolConfig.testingDefault();
+    }
+
     install(
         REv2StateManagerModule.create(
             ProposalLimitsConfig.from(vertexLimitsConfig),
@@ -359,7 +376,8 @@ public final class RadixNodeModule extends AbstractModule {
             Option.some(mempoolConfig),
             stateHashTreeGcConfig,
             ledgerProofsGcConfig,
-            ledgerSyncLimitsConfig));
+            ledgerSyncLimitsConfig,
+            protocolConfig));
 
     // Recovery
     install(new BerkeleySafetyStoreModule());

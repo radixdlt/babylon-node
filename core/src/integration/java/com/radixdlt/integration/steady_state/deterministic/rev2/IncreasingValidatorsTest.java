@@ -201,13 +201,14 @@ public final class IncreasingValidatorsTest {
       test.runUntilState(
           NodesPredicate.anyCommittedProof(
               p ->
-                  p.getNextEpoch()
-                      .map(e -> e.getValidators().size() >= NUM_VALIDATORS)
+                  p.ledgerHeader()
+                      .nextEpoch()
+                      .map(e -> e.validators().size() >= NUM_VALIDATORS)
                       .orElse(false)),
           10000);
 
       // Post-run assertions
-      Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), 20);
+      Checkers.assertNodesSyncedToVersionAtLeast(test.getNodeInjectors(), 20);
       Checkers.assertNoInvalidSyncResponses(test.getNodeInjectors());
     }
   }
