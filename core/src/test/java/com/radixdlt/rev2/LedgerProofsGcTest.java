@@ -150,7 +150,7 @@ public final class LedgerProofsGcTest {
                         new LedgerSyncLimitsConfig(
                             UInt32.fromNonNegativeInt(maxTxnCountUnderProof),
                             UInt32.fromNonNegativeInt(maxTxnPayloadSizeUnderProof)),
-                        ProtocolConfig.testingDefaultNoUpdates(),
+                        ProtocolConfig.testingDefault(),
                         false),
                     SyncRelayConfig.of(100, 2, 200L))));
   }

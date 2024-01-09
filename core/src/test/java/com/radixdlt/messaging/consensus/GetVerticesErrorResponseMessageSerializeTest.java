@@ -65,11 +65,12 @@
 package com.radixdlt.messaging.consensus;
 
 import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.ledger.LedgerProofBundle;
+import com.radixdlt.rev2.REv2ToConsensus;
 import com.radixdlt.serialization.SerializeMessageObject;
 import com.radixdlt.utils.LedgerHeaderMock;
 import com.radixdlt.utils.ZeroHasher;
@@ -82,10 +83,13 @@ public class GetVerticesErrorResponseMessageSerializeTest
   }
 
   private static GetVerticesErrorResponseMessage get() {
-    LedgerHeader ledgerHeader = LedgerHeaderMock.get();
+    LedgerProofBundle proof = LedgerProofBundle.mockedOfHeader(LedgerHeaderMock.get());
     VertexWithHash vertexWithHash =
-        Vertex.createInitialEpochVertex(ledgerHeader).withId(ZeroHasher.INSTANCE);
-    QuorumCertificate qc = QuorumCertificate.createInitialEpochQC(vertexWithHash, ledgerHeader);
+        Vertex.createInitialEpochVertex(REv2ToConsensus.ledgerHeader(proof.epochInitialHeader()))
+            .withId(ZeroHasher.INSTANCE);
+    QuorumCertificate qc =
+        QuorumCertificate.createInitialEpochQC(
+            vertexWithHash, REv2ToConsensus.ledgerHeader(proof.epochInitialHeader()));
     HighQC highQC = HighQC.from(qc, qc, Optional.empty());
     final var request = new GetVerticesRequestMessage(HashUtils.random256(), 3);
     return new GetVerticesErrorResponseMessage(highQC, request);

@@ -124,7 +124,7 @@ public class ExecutedGenesisScenario {
 
    /**
    * Transactions successfully committed by the Scenario.
-   * @return committedTransactions
+   * @return committedNonProtocolUpdateTransactions
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "Transactions successfully committed by the Scenario.")
@@ -203,7 +203,7 @@ public class ExecutedGenesisScenario {
     sb.append("class ExecutedGenesisScenario {\n");
     sb.append("    sequenceNumber: ").append(toIndentedString(sequenceNumber)).append("\n");
     sb.append("    logicalName: ").append(toIndentedString(logicalName)).append("\n");
-    sb.append("    committedTransactions: ").append(toIndentedString(committedTransactions)).append("\n");
+    sb.append("    committedNonProtocolUpdateTransactions: ").append(toIndentedString(committedTransactions)).append("\n");
     sb.append("    addresses: ").append(toIndentedString(addresses)).append("\n");
     sb.append("}");
     return sb.toString();

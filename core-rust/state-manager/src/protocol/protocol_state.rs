@@ -1,4 +1,5 @@
 use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
+use radix_engine::prelude::{ScryptoCategorize, ScryptoDecode, ScryptoEncode};
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 
@@ -11,7 +12,7 @@ use radix_engine_common::types::Epoch;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::prelude::CheckedMul;
 use radix_engine_interface::prelude::Emitter;
-use tracing::log::info;
+use tracing::info;
 
 use crate::traits::{IterableProofStore, QueryableProofStore, QueryableTransactionStore};
 use crate::ProtocolUpdateEnactmentCondition::{
@@ -25,50 +26,39 @@ use crate::{
 };
 
 // This file contains types and utilities for
-// managing the (dynamic) protocol state of a running node
+// managing the (dynamic) protocol state of a running node.
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ProtocolState {
     pub current_epoch: Option<Epoch>,
     pub current_protocol_version: String,
+    pub enacted_protocol_updates: BTreeMap<StateVersion, String>,
     pub unenacted_protocol_updates: Vec<UnenactedProtocolUpdate>,
-    pub in_progress_protocol_update: Option<InProgressProtocolUpdate>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct UnenactedProtocolUpdate {
     pub protocol_update: ProtocolUpdate,
     pub state: UnenactedProtocolUpdateState,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum UnenactedProtocolUpdateState {
     ForSignalledReadinessSupportCondition {
         thresholds_state: Vec<(
-            SignalledReadinessThreshold,
-            SignalledReadinessThresholdState,
+            SignalledReadinessThreshold,      // z configa
+            SignalledReadinessThresholdState, // to jest per-threshold
         )>,
     },
     // Empty placeholder for all other stateless conditions
     Empty,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct SignalledReadinessThresholdState {
     /// A number of consecutive epochs on or above the threshold,
     /// including the current (uncompleted) epoch.
     pub consecutive_started_epochs_of_support: u64,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum InProgressProtocolUpdate {
-    EnactedButNotExecuted {
-        protocol_version: String,
-    },
-    PartiallyExecuted {
-        protocol_version: String,
-        last_committed_checkpoint_id: u32,
-    },
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -160,8 +150,8 @@ fn compute_initial_signalled_readiness_protocol_update_status<
         ),
         RelativeProtocolUpdateEnactmentBound::FutureStateVersion(_)
         | RelativeProtocolUpdateEnactmentBound::FutureEpoch(_) => {
-            if let Some(last_epoch_proof) = store.get_last_epoch_proof() {
-                let current_epoch = last_epoch_proof
+            if let Some(latest_epoch_proof) = store.get_latest_epoch_proof() {
+                let current_epoch = latest_epoch_proof
                     .ledger_header
                     .next_epoch
                     .expect("next_epoch is missing in epoch proof")
@@ -282,7 +272,7 @@ fn compute_initial_signalled_readiness_protocol_update_status<
     // We need to inspect the state post-last iteration to catch mid-epoch enactment.
     // See the comment above the loop.
     let current_state_version = store
-        .get_last_proof()
+        .get_latest_proof()
         .map(|proof| proof.ledger_header.state_version)
         .unwrap_or_else(StateVersion::pre_genesis);
     if let Some(previous_state_version) = previous_iter_state_version_if_threshold_passes {
@@ -361,10 +351,7 @@ fn compute_initial_at_state_version_protocol_update_status<S: QueryableProofStor
     store: &S,
     state_version: StateVersion,
 ) -> InitialProtocolUpdateStatus {
-    let current_state_version = store
-        .get_last_proof()
-        .map(|proof| proof.ledger_header.state_version)
-        .unwrap_or_else(StateVersion::pre_genesis);
+    let current_state_version = store.max_state_version();
     if state_version <= current_state_version {
         InitialProtocolUpdateStatus::ExpectedToHaveBeenEnactedAtStateVersion(state_version)
     } else {
@@ -379,7 +366,7 @@ pub fn compute_initial_protocol_state<
     protocol_config: &ProtocolConfig,
 ) -> ProtocolState {
     let current_epoch_opt = store
-        .get_last_epoch_proof()
+        .get_latest_epoch_proof()
         .map(|proof| proof.ledger_header.next_epoch.unwrap().epoch);
 
     // For each configured protocol update we calculate it's expected status against
@@ -419,7 +406,7 @@ pub fn compute_initial_protocol_state<
             .collect();
 
     let actually_enacted_protocol_updates: BTreeMap<StateVersion, String> = store
-        .get_protocol_update_proof_iter(StateVersion::pre_genesis())
+        .get_protocol_update_init_proof_iter(StateVersion::pre_genesis())
         .map(|proof| {
             (
                 proof.ledger_header.state_version,
@@ -461,22 +448,21 @@ pub fn compute_initial_protocol_state<
         })
         .collect();
 
-    // TODO(protocol-updates): read in-progress protocol update state form the database
-
     ProtocolState {
         current_epoch: current_epoch_opt,
         current_protocol_version,
+        enacted_protocol_updates: actually_enacted_protocol_updates,
         unenacted_protocol_updates,
-        in_progress_protocol_update: None,
     }
 }
 
-/// Computes a new protocol state (after executing a transaction)
+/// Computes a new protocol state (after executing a transaction) and
+/// optionally returns a next protocol version if a protocol update has been enacted.
 pub fn compute_new_protocol_state(
     parent_protocol_state: &ProtocolState,
     local_receipt: &LocalTransactionReceipt,
     post_execute_state_version: StateVersion,
-) -> ProtocolState {
+) -> (ProtocolState, Option<String>) {
     let mut new_protocol_state = parent_protocol_state.clone();
 
     let Some(post_execute_epoch) = local_receipt
@@ -487,7 +473,7 @@ pub fn compute_new_protocol_state(
         .or(parent_protocol_state.current_epoch)
     else {
         // We're pre-genesis, so just return the current state
-        return new_protocol_state;
+        return (new_protocol_state, None);
     };
     new_protocol_state.current_epoch = Some(post_execute_epoch);
 
@@ -549,7 +535,11 @@ pub fn compute_new_protocol_state(
                 };
 
                 if has_sufficient_support && on_or_above_lower_bound && on_or_below_upper_bound {
-                    enactable_protocol_updates.push(unenacted_protocol_update.protocol_update);
+                    enactable_protocol_updates.push(
+                        unenacted_protocol_update
+                            .protocol_update
+                            .next_protocol_version,
+                    );
                 } else if on_or_below_upper_bound {
                     non_expired_unenacted_protocol_updates.push(unenacted_protocol_update);
                 } else {
@@ -562,8 +552,11 @@ pub fn compute_new_protocol_state(
                         Ordering::Less => {
                             non_expired_unenacted_protocol_updates.push(unenacted_protocol_update)
                         }
-                        Ordering::Equal => enactable_protocol_updates
-                            .push(unenacted_protocol_update.protocol_update),
+                        Ordering::Equal => enactable_protocol_updates.push(
+                            unenacted_protocol_update
+                                .protocol_update
+                                .next_protocol_version,
+                        ),
                         Ordering::Greater => {
                             expired_protocol_updates.push(unenacted_protocol_update)
                         }
@@ -578,20 +571,15 @@ pub fn compute_new_protocol_state(
                     Ordering::Less => {
                         non_expired_unenacted_protocol_updates.push(unenacted_protocol_update)
                     }
-                    Ordering::Equal => {
-                        enactable_protocol_updates.push(unenacted_protocol_update.protocol_update)
-                    }
+                    Ordering::Equal => enactable_protocol_updates.push(
+                        unenacted_protocol_update
+                            .protocol_update
+                            .next_protocol_version,
+                    ),
                     Ordering::Greater => expired_protocol_updates.push(unenacted_protocol_update),
                 }
             }
         }
-    }
-
-    if enactable_protocol_updates.len() > 1 {
-        panic!(
-            "Invalid state: more than one protocol update is enactable at state version {:?}",
-            post_execute_state_version
-        )
     }
 
     // This isn't really a right place for this log, but will do for now
@@ -605,16 +593,23 @@ pub fn compute_new_protocol_state(
         );
     }
 
-    new_protocol_state.unenacted_protocol_updates = non_expired_unenacted_protocol_updates;
+    if enactable_protocol_updates.len() > 1 {
+        panic!(
+            "Invalid state: more than one protocol update is enactable at state version {:?}",
+            post_execute_state_version
+        )
+    }
+    let next_protocol_version = enactable_protocol_updates.into_iter().next();
 
-    if let Some(enactable_protocol_update) = enactable_protocol_updates.into_iter().next() {
-        new_protocol_state.in_progress_protocol_update =
-            Some(InProgressProtocolUpdate::EnactedButNotExecuted {
-                protocol_version: enactable_protocol_update.next_protocol_version,
-            })
+    new_protocol_state.unenacted_protocol_updates = non_expired_unenacted_protocol_updates;
+    if let Some(next_protocol_version) = next_protocol_version.as_ref() {
+        new_protocol_state.enacted_protocol_updates.insert(
+            post_execute_state_version,
+            next_protocol_version.to_string(),
+        );
     }
 
-    new_protocol_state
+    (new_protocol_state, next_protocol_version)
 }
 
 fn any_threshold_passes(

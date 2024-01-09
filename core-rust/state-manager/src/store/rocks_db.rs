@@ -67,7 +67,7 @@ use std::fmt;
 
 use crate::store::traits::*;
 use crate::{
-    CommittedTransactionIdentifiers, LedgerProof, LedgerTransactionReceipt,
+    CommittedTransactionIdentifiers, LedgerProof, LedgerProofOrigin, LedgerTransactionReceipt,
     LocalTransactionExecution, LocalTransactionReceipt, ReceiptTreeHash, StateVersion,
     SubstateChangeAction, TransactionTreeHash, VersionedCommittedTransactionIdentifiers,
     VersionedLedgerProof, VersionedLedgerTransactionReceipt, VersionedLocalTransactionExecution,
@@ -124,7 +124,7 @@ use super::traits::extensions::*;
 /// The `NAME` constants defined by `*Cf` structs (and referenced below) are used as database column
 /// family names. Any change would effectively mean a ledger wipe. For this reason, we choose to
 /// define them manually (rather than using the `Into<String>`, which is refactor-sensitive).
-const ALL_COLUMN_FAMILIES: [&str; 21] = [
+const ALL_COLUMN_FAMILIES: [&str; 22] = [
     RawLedgerTransactionsCf::DEFAULT_NAME,
     CommittedTransactionIdentifiersCf::VERSIONED_NAME,
     TransactionReceiptsCf::VERSIONED_NAME,
@@ -134,7 +134,8 @@ const ALL_COLUMN_FAMILIES: [&str; 21] = [
     LedgerTransactionHashesCf::DEFAULT_NAME,
     LedgerProofsCf::VERSIONED_NAME,
     EpochLedgerProofsCf::VERSIONED_NAME,
-    ProtocolUpdateLedgerProofsCf::VERSIONED_NAME,
+    ProtocolUpdateInitLedgerProofsCf::VERSIONED_NAME,
+    ProtocolUpdateExecutionLedgerProofsCf::VERSIONED_NAME,
     SubstatesCf::DEFAULT_NAME,
     SubstateNodeAncestryRecordsCf::VERSIONED_NAME,
     VertexStoreCf::VERSIONED_NAME,
@@ -224,12 +225,30 @@ impl VersionedCf for EpochLedgerProofsCf {
     type VersionedValue = VersionedLedgerProof;
 }
 
-/// Ledger proofs of protocol updates.
+/// Ledger proofs that initialize protocol updates, i.e. proofs of Consensus `origin`,
+/// with headers containing a non-empty `next_protocol_version`.
 /// Schema: `Epoch.to_bytes()` -> `scrypto_encode(VersionedLedgerProof)`
 /// Note: This duplicates a small subset of [`StateVersionToLedgerProof`]'s values.
-struct ProtocolUpdateLedgerProofsCf;
-impl VersionedCf<StateVersion, LedgerProof> for ProtocolUpdateLedgerProofsCf {
-    const VERSIONED_NAME: &'static str = "protocol_update_ledger_proofs";
+struct ProtocolUpdateInitLedgerProofsCf;
+impl VersionedCf for ProtocolUpdateInitLedgerProofsCf {
+    type Key = StateVersion;
+    type Value = LedgerProof;
+
+    const VERSIONED_NAME: &'static str = "protocol_update_init_ledger_proofs";
+    type KeyCodec = StateVersionDbCodec;
+    type VersionedValue = VersionedLedgerProof;
+}
+
+/// Ledger proofs of ProtocolUpdate `origin`, i.e. proofs created locally
+/// while protocol update state modifications were being applied.
+/// Schema: `Epoch.to_bytes()` -> `scrypto_encode(VersionedLedgerProof)`
+/// Note: This duplicates a small subset of [`StateVersionToLedgerProof`]'s values.
+struct ProtocolUpdateExecutionLedgerProofsCf;
+impl VersionedCf for ProtocolUpdateExecutionLedgerProofsCf {
+    type Key = StateVersion;
+    type Value = LedgerProof;
+
+    const VERSIONED_NAME: &'static str = "protocol_update_execution_ledger_proofs";
     type KeyCodec = StateVersionDbCodec;
     type VersionedValue = VersionedLedgerProof;
 }
@@ -791,7 +810,13 @@ impl CommitStore for RocksDBStore {
 
         if commit_ledger_header.next_protocol_version.is_some() {
             db_context
-                .cf(ProtocolUpdateLedgerProofsCf)
+                .cf(ProtocolUpdateInitLedgerProofsCf)
+                .put(&commit_state_version, &commit_bundle.proof);
+        }
+
+        if let LedgerProofOrigin::ProtocolUpdate { .. } = &commit_bundle.proof.origin {
+            db_context
+                .cf(ProtocolUpdateExecutionLedgerProofsCf)
                 .put(&commit_state_version, &commit_bundle.proof);
         }
 
@@ -1098,13 +1123,13 @@ impl IterableProofStore for RocksDBStore {
         )
     }
 
-    fn get_protocol_update_proof_iter(
+    fn get_protocol_update_init_proof_iter(
         &self,
         from_state_version: StateVersion,
     ) -> Box<dyn Iterator<Item = LedgerProof> + '_> {
         Box::new(
             self.open_db_context()
-                .cf(ProtocolUpdateLedgerProofsCf)
+                .cf(ProtocolUpdateInitLedgerProofsCf)
                 .iterate_from(&from_state_version, Direction::Forward)
                 .map(|(_, proof)| proof),
         )
@@ -1233,11 +1258,11 @@ impl QueryableProofStore for RocksDBStore {
         self.open_db_context().cf(EpochLedgerProofsCf).get(&epoch)
     }
 
-    fn get_last_proof(&self) -> Option<LedgerProof> {
+    fn get_latest_proof(&self) -> Option<LedgerProof> {
         self.open_db_context().cf(LedgerProofsCf).get_last_value()
     }
 
-    fn get_last_epoch_proof(&self) -> Option<LedgerProof> {
+    fn get_latest_epoch_proof(&self) -> Option<LedgerProof> {
         self.open_db_context()
             .cf(EpochLedgerProofsCf)
             .get_last_value()
@@ -1252,6 +1277,18 @@ impl QueryableProofStore for RocksDBStore {
             .iterate_from(&state_version, Direction::Reverse)
             .map(|(_, proof)| proof)
             .find(|proof| proof.ledger_header.next_epoch.is_some())
+    }
+
+    fn get_latest_protocol_update_init_proof(&self) -> Option<LedgerProof> {
+        self.open_db_context()
+            .cf(ProtocolUpdateInitLedgerProofsCf)
+            .get_last_value()
+    }
+
+    fn get_latest_protocol_update_execution_proof(&self) -> Option<LedgerProof> {
+        self.open_db_context()
+            .cf(ProtocolUpdateExecutionLedgerProofsCf)
+            .get_last_value()
     }
 }
 
@@ -1522,16 +1559,18 @@ impl RestoreDecember2023LostSubstates for RocksDBStore {
 
             // Substates were deleted on the transition to epoch 51817 so no need to restore
             // substates if the current epoch has not reached this epoch yet.
-            self.get_last_epoch_proof().map_or(false, |p| {
+            self.get_latest_epoch_proof().map_or(false, |p| {
                 p.ledger_header.next_epoch.unwrap().epoch.number() >= 51817
             })
         } else {
             // For other networks, we can calculate the "problem" epoch from theoretical principles:
-            let (Some(first_proof), Some(last_epoch_proof)) = (self.get_first_proof(), self.get_last_epoch_proof()) else {
+            let (Some(first_proof), Some(latest_epoch_proof)) =
+                (self.get_first_proof(), self.get_latest_epoch_proof())
+            else {
                 return; // empty ledger; no fix needed
             };
             let first_epoch = first_proof.ledger_header.epoch.number();
-            let last_epoch = last_epoch_proof.ledger_header.epoch.number();
+            let last_epoch = latest_epoch_proof.ledger_header.epoch.number();
             let problem_at_end_of_epoch = first_epoch + 19099; // (256 * 3 / 4 - 1) * 100 - 1
                                                                // Due to another bug, stokenet nodes may mistakenly believe that they already applied
                                                                // the fix. Thus, we have to ignore the `december_2023_lost_substates_restored` flag and
@@ -1543,7 +1582,7 @@ impl RestoreDecember2023LostSubstates for RocksDBStore {
         if should_restore_substates {
             info!("Restoring lost substates...");
             let last_state_version = self
-                .get_last_proof()
+                .get_latest_proof()
                 .map_or(StateVersion::of(1u64), |s| s.ledger_header.state_version);
 
             let txn_tracker_db_node_key =

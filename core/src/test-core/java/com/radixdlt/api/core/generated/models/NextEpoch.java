@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.ActiveValidator;
+import com.radixdlt.api.core.generated.models.SignificantProtocolUpdateReadinessEntry;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -35,7 +36,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   NextEpoch.JSON_PROPERTY_EPOCH,
-  NextEpoch.JSON_PROPERTY_VALIDATORS
+  NextEpoch.JSON_PROPERTY_VALIDATORS,
+  NextEpoch.JSON_PROPERTY_SIGNIFICANT_PROTOCOL_UPDATE_READINESS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class NextEpoch {
@@ -44,6 +46,9 @@ public class NextEpoch {
 
   public static final String JSON_PROPERTY_VALIDATORS = "validators";
   private List<ActiveValidator> validators = new ArrayList<>();
+
+  public static final String JSON_PROPERTY_SIGNIFICANT_PROTOCOL_UPDATE_READINESS = "significant_protocol_update_readiness";
+  private List<SignificantProtocolUpdateReadinessEntry> significantProtocolUpdateReadiness = null;
 
   public NextEpoch() { 
   }
@@ -107,6 +112,40 @@ public class NextEpoch {
   }
 
 
+  public NextEpoch significantProtocolUpdateReadiness(List<SignificantProtocolUpdateReadinessEntry> significantProtocolUpdateReadiness) {
+    this.significantProtocolUpdateReadiness = significantProtocolUpdateReadiness;
+    return this;
+  }
+
+  public NextEpoch addSignificantProtocolUpdateReadinessItem(SignificantProtocolUpdateReadinessEntry significantProtocolUpdateReadinessItem) {
+    if (this.significantProtocolUpdateReadiness == null) {
+      this.significantProtocolUpdateReadiness = new ArrayList<>();
+    }
+    this.significantProtocolUpdateReadiness.add(significantProtocolUpdateReadinessItem);
+    return this;
+  }
+
+   /**
+   * Get significantProtocolUpdateReadiness
+   * @return significantProtocolUpdateReadiness
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_SIGNIFICANT_PROTOCOL_UPDATE_READINESS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public List<SignificantProtocolUpdateReadinessEntry> getSignificantProtocolUpdateReadiness() {
+    return significantProtocolUpdateReadiness;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_SIGNIFICANT_PROTOCOL_UPDATE_READINESS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setSignificantProtocolUpdateReadiness(List<SignificantProtocolUpdateReadinessEntry> significantProtocolUpdateReadiness) {
+    this.significantProtocolUpdateReadiness = significantProtocolUpdateReadiness;
+  }
+
+
   /**
    * Return true if this NextEpoch object is equal to o.
    */
@@ -120,12 +159,13 @@ public class NextEpoch {
     }
     NextEpoch nextEpoch = (NextEpoch) o;
     return Objects.equals(this.epoch, nextEpoch.epoch) &&
-        Objects.equals(this.validators, nextEpoch.validators);
+        Objects.equals(this.validators, nextEpoch.validators) &&
+        Objects.equals(this.significantProtocolUpdateReadiness, nextEpoch.significantProtocolUpdateReadiness);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(epoch, validators);
+    return Objects.hash(epoch, validators, significantProtocolUpdateReadiness);
   }
 
   @Override
@@ -134,6 +174,7 @@ public class NextEpoch {
     sb.append("class NextEpoch {\n");
     sb.append("    epoch: ").append(toIndentedString(epoch)).append("\n");
     sb.append("    validators: ").append(toIndentedString(validators)).append("\n");
+    sb.append("    significantProtocolUpdateReadiness: ").append(toIndentedString(significantProtocolUpdateReadiness)).append("\n");
     sb.append("}");
     return sb.toString();
   }

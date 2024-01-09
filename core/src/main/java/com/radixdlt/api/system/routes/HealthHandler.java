@@ -66,9 +66,11 @@ package com.radixdlt.api.system.routes;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.system.SystemGetJsonHandler;
-import com.radixdlt.api.system.generated.models.HealthResponse;
-import com.radixdlt.api.system.generated.models.RecentSelfProposalMissStatistic;
+import com.radixdlt.api.system.generated.models.*;
 import com.radixdlt.api.system.health.HealthInfoService;
+import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition;
+import com.radixdlt.protocol.ProtocolUpdates;
+import com.radixdlt.statecomputer.ProtocolState;
 import com.radixdlt.statecomputer.RustStateComputer;
 
 public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
@@ -95,7 +97,7 @@ public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
 
     final var statistic = healthInfoService.recentSelfProposalMissStatistic();
 
-    final var currentProtocolVersion = rustStateComputer.currentProtocolVersion();
+    final var protocolState = rustStateComputer.protocolState();
 
     return new HealthResponse()
         .status(statusEnum)
@@ -104,6 +106,73 @@ public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
             new RecentSelfProposalMissStatistic()
                 .missedCount(statistic.missedCount().toLong())
                 .recentProposalsTrackedCount(statistic.recentProposalsTrackedCount().toLong()))
-        .currentProtocolVersion(currentProtocolVersion);
+        .currentProtocolVersion(protocolState.currentProtocolVersion())
+        .enactedProtocolUpdates(
+            protocolState.enactedProtocolUpdates().entrySet().stream()
+                .map(
+                    e ->
+                        new EnactedProtocolUpdate()
+                            .stateVersion(e.getKey().toLong())
+                            .resultantProtocolVersion(e.getValue()))
+                .toList())
+        .unenactedProtocolUpdates(
+            protocolState.unenactedProtocolUpdates().stream()
+                .map(this::unenactedProtocolUpdate)
+                .toList());
+  }
+
+  private com.radixdlt.api.system.generated.models.UnenactedProtocolUpdate unenactedProtocolUpdate(
+      ProtocolState.UnenactedProtocolUpdate unenactedProtocolUpdate) {
+    final var state =
+        switch (unenactedProtocolUpdate.state()) {
+          case ProtocolState.UnenactedProtocolUpdateState.Empty
+          empty -> new EmptyUnenactedProtocolUpdateState()
+              .type(UnenactedProtocolUpdateStateType.EMPTY);
+          case ProtocolState.UnenactedProtocolUpdateState.ForSignalledReadinessSupportCondition
+          forSignalledReadinessSupportCondition -> new SignalledReadinessUnenactedProtocolUpdateState()
+              .thresholdsState(
+                  forSignalledReadinessSupportCondition.thresholdsState().stream()
+                      .map(
+                          thresholdState ->
+                              new SignalledReadinessUnenactedProtocolUpdateStateAllOfThresholdsState()
+                                  .threshold(
+                                      new SignalledReadinessThreshold()
+                                          .requiredRatioOfStakeSupported(
+                                              thresholdState
+                                                  .first()
+                                                  .requiredRatioOfStakeSupported()
+                                                  .toString())
+                                          .requiredConsecutiveCompletedEpochsOfSupport(
+                                              thresholdState
+                                                  .first()
+                                                  .requiredConsecutiveCompletedEpochsOfSupport()
+                                                  .toLong()))
+                                  .thresholdState(
+                                      new SignalledReadinessThresholdState()
+                                          .consecutiveStartedEpochsOfSupport(
+                                              thresholdState
+                                                  .last()
+                                                  .consecutiveStartedEpochsOfSupport()
+                                                  .toLong())))
+                      .toList())
+              .type(UnenactedProtocolUpdateStateType.FORSIGNALLEDREADINESSSUPPORTCONDITION);
+        };
+
+    final var res =
+        new com.radixdlt.api.system.generated.models.UnenactedProtocolUpdate()
+            .protocolVersion(unenactedProtocolUpdate.protocolUpdate().nextProtocolVersion())
+            .state(state)
+            .readinessSignalStatus(
+                UnenactedProtocolUpdate.ReadinessSignalStatusEnum
+                    .NO_ACTION_NEEDED /* TODO(protocol-update): implement me */);
+
+    if (unenactedProtocolUpdate.protocolUpdate().enactmentCondition()
+        instanceof ProtocolUpdateEnactmentCondition.EnactWhenSupportedAndWithinBounds) {
+      final var readinessSignalName =
+          ProtocolUpdates.readinessSignalName(unenactedProtocolUpdate.protocolUpdate());
+      res.setReadinessSignalName(readinessSignalName);
+    }
+
+    return res;
   }
 }

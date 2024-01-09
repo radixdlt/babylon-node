@@ -225,7 +225,7 @@ public final class MultiNodeRebootTest {
                         new REV2TransactionGenerator(), 1),
                     false,
                     noFees,
-                    ProtocolConfig.testingDefaultNoUpdates()),
+                    ProtocolConfig.testingDefault()),
                 // This test can, in some cases, rely on ledger sync
                 // requests timing out in reasonable time,
                 // so setting the request timeout to 100 ms

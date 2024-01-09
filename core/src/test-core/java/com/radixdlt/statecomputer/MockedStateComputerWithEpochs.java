@@ -76,7 +76,7 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.*;
 import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
-import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
+import com.radixdlt.ledger.StateComputerLedger.StateComputerPrepareResult;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -96,10 +96,11 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
       @EpochMaxRound Round epochMaxRound,
       Function<Long, BFTValidatorSet> validatorSetMapping,
       EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
-      Hasher hasher) {
+      Hasher hasher,
+      LedgerProofBundle latestProofs) {
     this.validatorSetMapping = Objects.requireNonNull(validatorSetMapping);
     this.epochMaxRound = Objects.requireNonNull(epochMaxRound);
-    this.stateComputer = new MockedStateComputer(ledgerUpdateDispatcher, hasher);
+    this.stateComputer = new MockedStateComputer(ledgerUpdateDispatcher, hasher, latestProofs);
   }
 
   @Override
@@ -112,7 +113,7 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
   }
 
   @Override
-  public StateComputerResult prepare(
+  public StateComputerPrepareResult prepare(
       LedgerHashes committedLedgerHashes,
       List<ExecutedVertex> preparedUncommittedVertices,
       LedgerHashes preparedUncommittedLedgerHashes,
@@ -128,7 +129,7 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
               Collections.singletonList(RawNotarizedTransaction.create(new byte[0])),
               roundDetails);
       final var nextEpoch = roundDetails.epoch() + 1; // adjust the base result with "next epoch"
-      return new StateComputerResult(
+      return new StateComputerPrepareResult(
           baseResult.getSuccessfullyExecutedTransactions(),
           baseResult.getRejectedTransactionCount(),
           NextEpoch.create(nextEpoch, validatorSetMapping.apply(nextEpoch).getValidators()),
@@ -145,7 +146,7 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
   }
 
   @Override
-  public void commit(LedgerExtension ledgerExtension, VertexStoreState vertexStore) {
-    this.stateComputer.commit(ledgerExtension, vertexStore);
+  public LedgerProofBundle commit(LedgerExtension ledgerExtension, VertexStoreState vertexStore) {
+    return this.stateComputer.commit(ledgerExtension, vertexStore);
   }
 }

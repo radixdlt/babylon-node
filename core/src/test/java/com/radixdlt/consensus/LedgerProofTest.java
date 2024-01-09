@@ -71,6 +71,7 @@ import static org.mockito.Mockito.when;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.sync.LedgerProofSyncStatusDto;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
@@ -78,7 +79,7 @@ public class LedgerProofTest {
 
   @Test
   public void equalsContract() {
-    EqualsVerifier.forClass(LedgerProof.class)
+    EqualsVerifier.forClass(LedgerProofSyncStatusDto.class)
         .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
         .verify();
   }
@@ -86,7 +87,6 @@ public class LedgerProofTest {
   @Test
   public void testGetters() {
     LedgerHeader l0 = mock(LedgerHeader.class);
-    HashCode accumulatorHash = mock(HashCode.class);
     Round round = mock(Round.class);
     when(l0.getEpoch()).thenReturn(3L);
     when(l0.getStateVersion()).thenReturn(12345L);
@@ -94,7 +94,8 @@ public class LedgerProofTest {
     when(l0.consensusParentRoundTimestamp()).thenReturn(2468L);
     when(l0.isEndOfEpoch()).thenReturn(true);
     var ledgerHeaderAndProof =
-        new LedgerProof(HashUtils.random256(), l0, mock(TimestampedECDSASignatures.class));
+        new LedgerProofSyncStatusDto(
+            HashUtils.random256(), l0, mock(TimestampedECDSASignatures.class));
     assertThat(ledgerHeaderAndProof.getEpoch()).isEqualTo(3L);
     assertThat(ledgerHeaderAndProof.getStateVersion()).isEqualTo(12345L);
     assertThat(ledgerHeaderAndProof.getRound()).isEqualTo(round);
@@ -104,16 +105,18 @@ public class LedgerProofTest {
 
   @Test(expected = NullPointerException.class)
   public void deserializationWithNullThrowsException1() {
-    new LedgerProof(null, mock(LedgerHeader.class), mock(TimestampedECDSASignatures.class));
+    new LedgerProofSyncStatusDto(
+        null, mock(LedgerHeader.class), mock(TimestampedECDSASignatures.class));
   }
 
   @Test(expected = NullPointerException.class)
   public void deserializationWithNullThrowsException2() {
-    new LedgerProof(mock(HashCode.class), null, mock(TimestampedECDSASignatures.class));
+    new LedgerProofSyncStatusDto(
+        mock(HashCode.class), null, mock(TimestampedECDSASignatures.class));
   }
 
   @Test(expected = NullPointerException.class)
   public void deserializationWithNullThrowsException3() {
-    new LedgerProof(mock(HashCode.class), mock(LedgerHeader.class), null);
+    new LedgerProofSyncStatusDto(mock(HashCode.class), mock(LedgerHeader.class), null);
   }
 }

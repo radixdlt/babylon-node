@@ -62,11 +62,38 @@
  * permissions under this License.
  */
 
-use crate::ProtocolUpdate;
-use jni::objects::JClass;
+use crate::{ProtocolConfig, ProtocolUpdate, ProtocolUpdateResult};
+use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use node_common::java::jni_sbor_coded_call;
+use radix_engine::types::*;
+
+use node_common::java::*;
+
+use super::node_rust_environment::JNINodeRustEnvironment;
+
+//
+// JNI Interface
+//
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_protocol_RustProtocolUpdate_applyProtocolUpdate(
+    env: JNIEnv,
+    _class: JClass,
+    j_node_rust_env: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_fallible_call(
+        &env,
+        request_payload,
+        |protocol_version_name: String| -> JavaResult<ProtocolUpdateResult> {
+            let result = JNINodeRustEnvironment::get(&env, j_node_rust_env)
+                .state_manager
+                .apply_protocol_update(&protocol_version_name);
+            Ok(result)
+        },
+    )
+}
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_protocol_ProtocolUpdates_nativeReadinessSignalName(
@@ -76,6 +103,26 @@ extern "system" fn Java_com_radixdlt_protocol_ProtocolUpdates_nativeReadinessSig
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |protocol_update: ProtocolUpdate| {
         protocol_update.readiness_signal_name()
+    })
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_protocol_ProtocolUpdates_nativeMainnetConfig(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| ProtocolConfig::mainnet())
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_protocol_ProtocolUpdates_nativeTestingDefaultConfig(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| {
+        ProtocolConfig::testing_default()
     })
 }
 

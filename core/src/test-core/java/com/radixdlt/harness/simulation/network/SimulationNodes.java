@@ -300,9 +300,7 @@ public class SimulationNodes {
           .concatWith(
               epochChanges
                   .map(Pair::getSecond)
-                  .scan(
-                      (cur, next) ->
-                          next.getProof().getEpoch() > cur.getProof().getEpoch() ? next : cur)
+                  .scan((cur, next) -> next.nextEpoch() > cur.nextEpoch() ? next : cur)
                   .distinctUntilChanged());
     }
 

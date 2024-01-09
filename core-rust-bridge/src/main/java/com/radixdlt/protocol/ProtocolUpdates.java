@@ -64,7 +64,10 @@
 
 package com.radixdlt.protocol;
 
+import static com.radixdlt.lang.Tuple.tuple;
+
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.lang.Tuple;
 import com.radixdlt.sbor.Natives;
 
 public final class ProtocolUpdates {
@@ -81,4 +84,22 @@ public final class ProtocolUpdates {
       Natives.builder(ProtocolUpdates::nativeReadinessSignalName).build(new TypeToken<>() {});
 
   private static native byte[] nativeReadinessSignalName(byte[] requestPayload);
+
+  public static ProtocolConfig mainnetConfig() {
+    return mainnetConfigFunc.call(tuple());
+  }
+
+  private static final Natives.Call1<Tuple.Tuple0, ProtocolConfig> mainnetConfigFunc =
+      Natives.builder(ProtocolUpdates::nativeMainnetConfig).build(new TypeToken<>() {});
+
+  private static native byte[] nativeMainnetConfig(byte[] requestPayload);
+
+  public static ProtocolConfig testingDefaultConfig() {
+    return testingDefaultConfigFunc.call(tuple());
+  }
+
+  private static final Natives.Call1<Tuple.Tuple0, ProtocolConfig> testingDefaultConfigFunc =
+      Natives.builder(ProtocolUpdates::nativeTestingDefaultConfig).build(new TypeToken<>() {});
+
+  private static native byte[] nativeTestingDefaultConfig(byte[] requestPayload);
 }

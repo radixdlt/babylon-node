@@ -83,6 +83,7 @@ import com.radixdlt.rev2.*;
 import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.statecomputer.ProtocolState;
 import com.radixdlt.statecomputer.commit.*;
 import com.radixdlt.testutil.InternalAddress;
 import com.radixdlt.testutil.TransactionDetails;
@@ -131,6 +132,8 @@ public final class NodeSborCodecs {
     ProtocolUpdateEnactmentBound.registerCodec(codecMap);
     ProtocolUpdateSupportType.registerCodec(codecMap);
     SignalledReadinessThreshold.registerCodec(codecMap);
+    ProtocolState.registerCodec(codecMap);
+    ProtocolUpdateResult.registerCodec(codecMap);
     RawLedgerTransaction.registerCodec(codecMap);
     RawNotarizedTransaction.registerCodec(codecMap);
     PreparedIntent.registerCodec(codecMap);
@@ -165,6 +168,7 @@ public final class NodeSborCodecs {
     SignatureWithPublicKey.registerCodec(codecMap);
     LedgerHashes.registerCodec(codecMap);
     LedgerProof.registerCodec(codecMap);
+    LedgerProofOrigin.registerCodec(codecMap);
     LedgerHeader.registerCodec(codecMap);
     TimestampedValidatorSignature.registerCodec(codecMap);
     PrepareRequest.registerCodec(codecMap);

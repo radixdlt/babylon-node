@@ -70,29 +70,30 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.sync.LedgerProofSyncDto;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
 public class DtoLedgerProofTest {
   @Test
   public void equalsContract() {
-    EqualsVerifier.forClass(DtoLedgerProof.class)
+    EqualsVerifier.forClass(LedgerProofSyncDto.class)
         .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
         .verify();
   }
 
   @Test(expected = NullPointerException.class)
   public void deserializationWithNullThrowsException1() {
-    new DtoLedgerProof(null, mock(LedgerHeader.class), mock(TimestampedECDSASignatures.class));
+    new LedgerProofSyncDto(null, mock(LedgerHeader.class), mock(TimestampedECDSASignatures.class));
   }
 
   @Test(expected = NullPointerException.class)
   public void deserializationWithNullThrowsException2() {
-    new DtoLedgerProof(mock(HashCode.class), null, mock(TimestampedECDSASignatures.class));
+    new LedgerProofSyncDto(mock(HashCode.class), null, mock(TimestampedECDSASignatures.class));
   }
 
   @Test(expected = NullPointerException.class)
   public void deserializationWithNullThrowsException3() {
-    new DtoLedgerProof(mock(HashCode.class), mock(LedgerHeader.class), null);
+    new LedgerProofSyncDto(mock(HashCode.class), mock(LedgerHeader.class), null);
   }
 }

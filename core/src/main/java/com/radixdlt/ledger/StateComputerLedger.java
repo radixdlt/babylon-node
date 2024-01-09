@@ -73,13 +73,14 @@ import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.lang.Option;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
-import com.radixdlt.rev2.LastProof;
+import com.radixdlt.rev2.REv2ToConsensus;
 import com.radixdlt.transactions.NotarizedTransactionHash;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -100,14 +101,14 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
     Option<NotarizedTransactionHash> notarizedTransactionHash();
   }
 
-  public static class StateComputerResult {
+  public static class StateComputerPrepareResult {
     private final List<ExecutedTransaction> executedTransactions;
     private final int rejectedTransactionCount;
     private final NextEpoch nextEpoch;
     private final String nextProtocolVersion;
     private final LedgerHashes ledgerHashes;
 
-    public StateComputerResult(
+    public StateComputerPrepareResult(
         List<ExecutedTransaction> executedTransactions,
         int rejectedTransactionCount,
         NextEpoch nextEpoch,
@@ -120,7 +121,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       this.ledgerHashes = ledgerHashes;
     }
 
-    public StateComputerResult(
+    public StateComputerPrepareResult(
         List<ExecutedTransaction> executedTransactions,
         int rejectedTransactionCount,
         LedgerHashes ledgerHashes) {
@@ -154,32 +155,35 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
     List<RawNotarizedTransaction> getTransactionsForProposal(
         List<ExecutedTransaction> executedTransactions);
 
-    StateComputerResult prepare(
+    StateComputerPrepareResult prepare(
         LedgerHashes committedLedgerHashes,
         List<ExecutedVertex> preparedUncommittedVertices,
         LedgerHashes preparedUncommittedLedgerHashes,
         List<RawNotarizedTransaction> proposedTransactions,
         RoundDetails roundDetails);
 
-    void commit(LedgerExtension ledgerExtension, VertexStoreState vertexStore);
+    LedgerProofBundle commit(LedgerExtension ledgerExtension, VertexStoreState vertexStore);
   }
 
   private final StateComputer stateComputer;
+  private final Hasher hasher;
   private final Metrics metrics;
   private final TimeSupplier timeSupplier;
   private final Object commitAndAdvanceLedgerLock;
-  private LedgerProof currentLedgerHeader;
+  private LedgerProofBundle latestProof;
 
   @Inject
   public StateComputerLedger(
       TimeSupplier timeSupplier,
-      @LastProof LedgerProof initialLedgerState,
+      LedgerProofBundle initialLatestProof,
       StateComputer stateComputer,
+      Hasher hasher,
       Metrics metrics) {
     this.timeSupplier = Objects.requireNonNull(timeSupplier);
     this.stateComputer = Objects.requireNonNull(stateComputer);
+    this.hasher = Objects.requireNonNull(hasher);
     this.metrics = Objects.requireNonNull(metrics);
-    this.currentLedgerHeader = initialLedgerState;
+    this.latestProof = initialLatestProof;
     this.commitAndAdvanceLedgerLock = new Object();
   }
 
@@ -212,12 +216,13 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
     final var vertex = vertexWithHash.vertex();
     final LedgerHeader parentHeader = vertex.getParentHeader().getLedgerHeader();
 
-    final StateComputerResult result;
+    final StateComputerPrepareResult result;
     synchronized (this.commitAndAdvanceLedgerLock) {
-      final var committedLedgerHeader = this.currentLedgerHeader.getHeader();
-      final var committedStateVersion = committedLedgerHeader.getStateVersion();
+      final var latestStateVersion = this.latestProof.resultantStateVersion();
+      final var latestLedgerHashes =
+          REv2ToConsensus.ledgerHashes(this.latestProof.primaryProof().ledgerHeader().hashes());
 
-      if (committedStateVersion > parentHeader.getStateVersion()) {
+      if (latestStateVersion > parentHeader.getStateVersion()) {
         // We have received a stale vertex to prepare - ignore it.
         return Optional.empty();
       }
@@ -239,8 +244,8 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       while (previousVertexIterator.hasNext()) {
         final var previousVertexBaseHeader =
             previousVertexIterator.peek().vertex().getParentHeader().getLedgerHeader();
-        if (previousVertexBaseHeader.getStateVersion() == committedStateVersion) {
-          if (!previousVertexBaseHeader.getHashes().equals(committedLedgerHeader.getHashes())) {
+        if (previousVertexBaseHeader.getStateVersion() == latestStateVersion) {
+          if (!previousVertexBaseHeader.getHashes().equals(latestLedgerHashes)) {
             // Some vertex has matched on the state version (which isn't particularly improbable,
             // since only a number of transactions must coincide). However, the ledger hashes did
             // not match, which means that other vertices than ours were committed.
@@ -256,14 +261,14 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
         // None of the previous vertices has matched our current top of ledger. There is still a
         // possibility that the proposed vertex is built right on that top. But if not, then we
         // cannot progress.
-        if (!parentHeader.getHashes().equals(committedLedgerHeader.getHashes())) {
+        if (!parentHeader.getHashes().equals(latestLedgerHashes)) {
           return Optional.empty();
         }
       }
 
       result =
           this.stateComputer.prepare(
-              committedLedgerHeader.getHashes(),
+              latestLedgerHashes,
               verticesInExtension,
               parentHeader.getHashes(),
               vertex.getTransactions(),
@@ -298,12 +303,36 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
               .flatMap(ExecutedVertex::successfulTransactions)
               .map(ExecutedTransaction::transaction)
               .collect(ImmutableList.toImmutableList());
-      var proof = committedUpdate.vertexStoreState().getRootHeader();
-      var ledgerExtension = LedgerExtension.create(transactions, proof);
-      metrics
-          .ledger()
-          .commit()
-          .measure(() -> this.commit(ledgerExtension, committedUpdate.vertexStoreState()));
+
+      final var maybeProcessedQcCommit =
+          committedUpdate
+              .vertexStoreState()
+              .getHighQC()
+              .highestCommittedQC()
+              .getProcessedCommit(hasher);
+
+      maybeProcessedQcCommit.ifPresentOrElse(
+          processedQcCommit -> {
+            switch (processedQcCommit) {
+              case ProcessedQcCommit.OfConensusQc ofConensusQc -> {
+                final var ledgerExtension =
+                    LedgerExtension.create(transactions, ofConensusQc.ledgerProof());
+                metrics
+                    .ledger()
+                    .commit()
+                    .measure(
+                        () -> this.commit(ledgerExtension, committedUpdate.vertexStoreState()));
+              }
+              case ProcessedQcCommit.OfInitialEpochQc ofInitialEpochQc -> {
+                // no-op, ignore
+                this.metrics.ledger().ignoredBftCommittedUpdates().inc();
+              }
+            }
+          },
+          () -> {
+            // no-op, ignore
+            this.metrics.ledger().ignoredBftCommittedUpdates().inc();
+          });
     };
   }
 
@@ -336,7 +365,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
    *
    * <p>A "useful suffix" is a sub-list of transactions that are not yet persisted in the local
    * ledger. The implementation will resolve this sub-list based on the end state version from the
-   * {@link LedgerExtension#getProof() proof}. If the useful suffix is empty, then this method will
+   * {@link LedgerExtension#proof() proof}. If the useful suffix is empty, then this method will
    * no-op and return successfully (with just a trace log, since this kind of situation is most
    * likely a harmless "stale response").
    *
@@ -355,39 +384,37 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
    *   <li>Any of the transactions within useful suffix is non-parseable - in this case, a {@link
    *       InvalidCommitRequestException} is propagated from the Rust state computer.
    *   <li>A transaction root hash computed while applying the useful suffix differs from the one
-   *       specified by ny of the {@link LedgerExtension#getProof() proof} - in this case, a {@link
+   *       specified by ny of the {@link LedgerExtension#proof() proof} - in this case, a {@link
    *       InvalidCommitRequestException} is propagated from the Rust state computer.
    * </ul>
    */
   private void commit(LedgerExtension ledgerExtension, @Nullable VertexStoreState vertexStore) {
-    final LedgerProof nextHeader = ledgerExtension.getProof();
+    final var proofToCommit = ledgerExtension.proof();
 
     final int extensionTransactionCount; // for metrics purposes only
     synchronized (this.commitAndAdvanceLedgerLock) {
-      final LedgerProof againstLedgerHeader = this.currentLedgerHeader;
+      final var latestStateVersion = this.latestProof.resultantStateVersion();
 
-      if (nextHeader.getStateVersion() <= againstLedgerHeader.getStateVersion()) {
+      if (proofToCommit.stateVersion() <= latestStateVersion) {
         log.trace(
             "Ignoring the ledger extension {} which would not progress the current ledger {}",
-            nextHeader,
-            againstLedgerHeader);
+            proofToCommit,
+            latestProof);
         return;
       }
 
-      final var extensionToCommit =
-          ledgerExtension.getExtensionFrom(againstLedgerHeader.getStateVersion());
+      final var extensionToCommit = ledgerExtension.getExtensionFrom(latestStateVersion);
 
       // persist
-      this.stateComputer.commit(extensionToCommit, vertexStore);
+      this.latestProof = this.stateComputer.commit(extensionToCommit, vertexStore);
 
-      // TODO: move all of the following to post-persist event handling (while considering the
-      // synchronization theoretically needed here).
-      this.currentLedgerHeader = nextHeader;
-
-      extensionTransactionCount = extensionToCommit.getTransactions().size();
+      extensionTransactionCount = extensionToCommit.transactions().size();
     }
 
-    this.metrics.ledger().stateVersion().set(nextHeader.getStateVersion());
+    // TODO: move all of the following to post-persist event handling (while considering the
+    // synchronization theoretically needed here).
+
+    this.metrics.ledger().stateVersion().set(this.latestProof.resultantStateVersion());
     if (vertexStore == null) {
       this.metrics.ledger().syncTransactionsProcessed().inc(extensionTransactionCount);
     } else {

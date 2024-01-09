@@ -95,13 +95,13 @@ public class RustStateComputer {
         Natives.builder(nodeRustEnvironment, RustStateComputer::commit)
             .measure(timer.label(new MethodId(RustStateComputer.class, "commit")))
             .build(new TypeToken<>() {});
-    this.currentProtocolVersionFunc =
-        Natives.builder(nodeRustEnvironment, RustStateComputer::currentProtocolVersion)
-            .measure(timer.label(new MethodId(RustStateComputer.class, "currentProtocolVersion")))
-            .build(new TypeToken<>() {});
     this.newestProtocolVersionFunc =
         Natives.builder(nodeRustEnvironment, RustStateComputer::newestProtocolVersion)
             .measure(timer.label(new MethodId(RustStateComputer.class, "newestProtocolVersion")))
+            .build(new TypeToken<>() {});
+    this.protocolStateFunc =
+        Natives.builder(nodeRustEnvironment, RustStateComputer::protocolState)
+            .measure(timer.label(new MethodId(RustStateComputer.class, "protocolState")))
             .build(new TypeToken<>() {});
   }
 
@@ -131,15 +131,6 @@ public class RustStateComputer {
 
   private static native byte[] commit(NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
-  public String currentProtocolVersion() {
-    return currentProtocolVersionFunc.call(tuple());
-  }
-
-  private final Natives.Call1<Tuple.Tuple0, String> currentProtocolVersionFunc;
-
-  private static native byte[] currentProtocolVersion(
-      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
-
   public String newestProtocolVersion() {
     return newestProtocolVersionFunc.call(tuple());
   }
@@ -147,5 +138,14 @@ public class RustStateComputer {
   private final Natives.Call1<Tuple.Tuple0, String> newestProtocolVersionFunc;
 
   private static native byte[] newestProtocolVersion(
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
+
+  public ProtocolState protocolState() {
+    return protocolStateFunc.call(tuple());
+  }
+
+  private final Natives.Call1<Tuple.Tuple0, ProtocolState> protocolStateFunc;
+
+  private static native byte[] protocolState(
       NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 }

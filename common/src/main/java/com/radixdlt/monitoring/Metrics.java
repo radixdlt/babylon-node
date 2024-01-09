@@ -226,7 +226,11 @@ public record Metrics(
 
     public record SentVote(boolean isFallbackVertex, boolean isTimeout, boolean sentToAll) {}
 
-    public record Sync(Counter requestsSent, Counter requestsReceived, Counter requestTimeouts) {}
+    public record Sync(
+        Counter requestsSent,
+        Counter requestsReceived,
+        Counter requestTimeouts,
+        Counter invalidEpochInitialQcSyncStates) {}
 
     public record VertexStore(
         Gauge size, Counter forks, Counter rebuilds, Counter indirectParents) {}
@@ -245,7 +249,8 @@ public record Metrics(
       Counter syncTransactionsProcessed,
       Counter bftTransactionsProcessed,
       Timer commit,
-      Timer prepare) {}
+      Timer prepare,
+      Counter ignoredBftCommittedUpdates) {}
 
   public record LedgerSync(
       Counter validResponsesReceived,

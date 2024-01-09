@@ -62,18 +62,19 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.sync;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.bft.BFTValidatorId;
+import com.radixdlt.consensus.LedgerHashes;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.NextEpoch;
+import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.lang.Option;
-import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -82,10 +83,14 @@ import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
 
-/** Ledger header with proof */
+/**
+ * A legacy ledger proof DTO, currently only used in ledger sync status messages: StatusResponse and
+ * LedgerStatusUpdate. Note that this can't be unified with LedgerProofSyncDto without breaking the
+ * p2p protocol due to different serializer ID.
+ */
 @Immutable
 @SerializerId2("ledger.proof")
-public final class LedgerProof {
+public final class LedgerProofSyncStatusDto {
   @JsonProperty(SerializerConstants.SERIALIZER_NAME)
   @DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
   SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -105,7 +110,7 @@ public final class LedgerProof {
   private final TimestampedECDSASignatures signatures;
 
   @JsonCreator
-  public LedgerProof(
+  public LedgerProofSyncStatusDto(
       @JsonProperty(value = "opaque", required = true) HashCode opaque,
       @JsonProperty(value = "ledgerState", required = true) LedgerHeader ledgerHeader,
       @JsonProperty(value = "signatures", required = true) TimestampedECDSASignatures signatures) {
@@ -114,17 +119,7 @@ public final class LedgerProof {
     this.signatures = Objects.requireNonNull(signatures);
   }
 
-  public static LedgerProof mockAtStateVersion(long stateVersion) {
-    final var header =
-        LedgerHeader.create(0, Round.genesis(), stateVersion, LedgerHashes.zero(), 0, 0);
-    return new LedgerProof(HashUtils.zero256(), header, new TimestampedECDSASignatures());
-  }
-
-  public static LedgerProof mock() {
-    return mockAtStateVersion(0L);
-  }
-
-  public static LedgerProof genesis(
+  public static LedgerProofSyncStatusDto testingGenesis(
       long stateVersion,
       LedgerHashes ledgerHashes,
       BFTValidatorSet nextValidators,
@@ -137,16 +132,8 @@ public final class LedgerProof {
             nextValidators,
             consensusParentRoundTimestamp,
             ledgerTimestamp);
-    return new LedgerProof(
+    return new LedgerProofSyncStatusDto(
         HashUtils.zero256(), genesisLedgerHeader, new TimestampedECDSASignatures());
-  }
-
-  public static LedgerProof fromDto(DtoLedgerProof dto) {
-    return new LedgerProof(dto.getOpaque(), dto.getLedgerHeader(), dto.getSignatures());
-  }
-
-  public DtoLedgerProof toDto() {
-    return new DtoLedgerProof(opaque, ledgerHeader, signatures);
   }
 
   public HashCode getOpaque() {
@@ -155,10 +142,6 @@ public final class LedgerProof {
 
   public LedgerHeader getHeader() {
     return ledgerHeader;
-  }
-
-  public Option<BFTValidatorSet> getNextValidatorSet() {
-    return ledgerHeader.getNextEpoch().map(NextEpoch::getValidators).map(BFTValidatorSet::from);
   }
 
   public Option<NextEpoch> getNextEpoch() {
@@ -177,11 +160,6 @@ public final class LedgerProof {
     return ledgerHeader.getRound();
   }
 
-  public LedgerHashes getLedgerHashes() {
-    return ledgerHeader.getHashes();
-  }
-
-  // TODO: Remove
   public long getStateVersion() {
     return ledgerHeader.getStateVersion();
   }
@@ -206,12 +184,6 @@ public final class LedgerProof {
     return signatures;
   }
 
-  public ImmutableList<BFTValidatorId> getSignersWithout(BFTValidatorId remove) {
-    return signatures.getSignatures().keySet().stream()
-        .filter(n -> !n.equals(remove))
-        .collect(ImmutableList.toImmutableList());
-  }
-
   @Override
   public int hashCode() {
     return Objects.hash(opaque, ledgerHeader, signatures);
@@ -219,11 +191,11 @@ public final class LedgerProof {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof LedgerProof)) {
+    if (!(o instanceof LedgerProofSyncStatusDto)) {
       return false;
     }
 
-    LedgerProof other = (LedgerProof) o;
+    LedgerProofSyncStatusDto other = (LedgerProofSyncStatusDto) o;
     return Objects.equals(this.opaque, other.opaque)
         && Objects.equals(this.ledgerHeader, other.ledgerHeader)
         && Objects.equals(this.signatures, other.signatures);

@@ -148,26 +148,16 @@ public final class Checkers {
         });
   }
 
-  /** Verifies that all nodes have synced at an exact stateVersion */
-  public static void assertNodesSyncedToExactVersion(
-      List<Injector> nodeInjectors, long stateVersion) {
-    nodeInjectors.forEach(
-        injector -> {
-          var reader = injector.getInstance(TransactionsAndProofReader.class);
-          var nodeStateVersion = reader.getLastProof().orElseThrow().getStateVersion();
-          assertThat(nodeStateVersion).isEqualTo(stateVersion);
-        });
-  }
-
   /** Verifies that all nodes have synced to atleast some given stateVersion */
-  public static void assertNodesSyncedToVersionAtleast(
+  public static void assertNodesSyncedToVersionAtLeast(
       List<Injector> nodeInjectors, long stateVersion) {
     var stateVersionStatistics =
         nodeInjectors.stream()
             .mapToLong(
                 injector -> {
                   var reader = injector.getInstance(TransactionsAndProofReader.class);
-                  var nodeStateVersion = reader.getLastProof().orElseThrow().getStateVersion();
+                  var nodeStateVersion =
+                      reader.getLatestProofBundle().orElseThrow().resultantStateVersion();
                   assertThat(nodeStateVersion).isGreaterThanOrEqualTo(stateVersion);
                   return nodeStateVersion;
                 })
@@ -191,11 +181,11 @@ public final class Checkers {
       var reader = injector.getInstance(TestStateReader.class);
       injector
           .getInstance(TransactionsAndProofReader.class)
-          .getLastProof()
+          .getLatestProofBundle()
           .ifPresent(
-              proof -> {
+              latestProofs -> {
                 for (long txnStateVersion = 1;
-                    txnStateVersion <= proof.getStateVersion();
+                    txnStateVersion <= latestProofs.resultantStateVersion();
                     txnStateVersion++) {
                   var executedTxnOption = reader.getTransactionAtStateVersion(txnStateVersion);
                   assertThat(executedTxnOption.isPresent())

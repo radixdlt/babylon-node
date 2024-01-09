@@ -62,23 +62,27 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2;
+package com.radixdlt.consensus;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import javax.inject.Qualifier;
+import com.radixdlt.statecomputer.commit.LedgerProof;
+import com.radixdlt.statecomputer.commit.LedgerProofOrigin;
 
 /**
- * Identifies that the target is the last proof. This includes the mocked genesis
- * VerifiedLedgerHeaderAndProof. That is, the header associated with this annotation should never
- * have isEndOfEpoch() == true.
+ * This represents a possible commit created out of a QuorumCertificate, while explicitly handling a
+ * fake/mocked "commit" created out of initial epoch QC (with no signatures) - where the
+ * corresponding ledger header is already committed with a real proof. This aims to improve the
+ * visibility of this hack :)
  */
-@Qualifier
-@Target({FIELD, PARAMETER, METHOD})
-@Retention(RUNTIME)
-public @interface LastProof {}
+public sealed interface ProcessedQcCommit {
+  BFTHeader committedHeader();
+
+  record OfConensusQc(
+      BFTHeader committedHeader,
+      LedgerProof ledgerProof,
+      /* This acts as an explicit requirement that we expect a
+      valid consensus-originated proof here. */
+      LedgerProofOrigin.Consensus origin)
+      implements ProcessedQcCommit {}
+
+  record OfInitialEpochQc(BFTHeader committedHeader) implements ProcessedQcCommit {}
+}

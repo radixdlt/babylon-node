@@ -462,7 +462,7 @@ public final class DeterministicTest implements AutoCloseable {
       final var message = timedMsg.value();
       if (message.message() instanceof final LedgerUpdate ledgerUpdate) {
         var epochChange = ledgerUpdate.epochChange();
-        return epochChange.isPresent() && epochChange.orElseThrow().getNextEpoch() == epoch;
+        return epochChange.isPresent() && epochChange.orElseThrow().nextEpoch() == epoch;
       }
 
       return false;

@@ -143,6 +143,7 @@ public abstract class DeterministicCoreApiTestBase {
         DeterministicTest.builder()
             .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
             .messageSelector(firstSelector())
+            .addMonitors()
             .addModule(
                 new CoreApiServerModule("127.0.0.1", coreApiPort, new CoreApiServerFlags(true)))
             .addModule(

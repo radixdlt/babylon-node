@@ -18,10 +18,7 @@ pub fn to_relative_bound<S: QueryableProofStore + IterableProofStore>(
     store: &S,
     bound: &ProtocolUpdateEnactmentBound,
 ) -> RelativeProtocolUpdateEnactmentBound {
-    let current_state_version = store
-        .get_last_proof()
-        .map(|proof| proof.ledger_header.state_version)
-        .unwrap_or_else(StateVersion::pre_genesis);
+    let current_state_version = store.max_state_version();
     match bound {
         ProtocolUpdateEnactmentBound::StateVersion(state_version) => {
             if state_version <= &current_state_version {

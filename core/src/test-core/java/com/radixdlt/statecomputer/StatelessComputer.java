@@ -66,7 +66,6 @@ package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.*;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.ProposerElections;
@@ -78,6 +77,7 @@ import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.*;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.p2p.NodeId;
+import com.radixdlt.rev2.REv2ToConsensus;
 import com.radixdlt.statecomputer.commit.CommitSummary;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt32;
@@ -89,8 +89,6 @@ import java.util.List;
  * transaction is correct or not.
  */
 public final class StatelessComputer implements StateComputerLedger.StateComputer {
-  public static class StatelessTransactionException extends Exception {}
-
   private final StatelessTransactionVerifier verifier;
   private final EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher;
   private final Hasher hasher;
@@ -124,7 +122,7 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
   }
 
   @Override
-  public StateComputerLedger.StateComputerResult prepare(
+  public StateComputerLedger.StateComputerPrepareResult prepare(
       LedgerHashes committedLedgerHashes,
       List<ExecutedVertex> preparedUncommittedVertices,
       LedgerHashes preparedUncommittedLedgerHashes,
@@ -145,51 +143,59 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
     successCount += successfulTransactions.size();
     invalidCount += invalidTransactionCount;
 
-    return new StateComputerLedger.StateComputerResult(
+    return new StateComputerLedger.StateComputerPrepareResult(
         successfulTransactions, invalidTransactionCount, LedgerHashes.zero());
   }
 
   private LedgerUpdate generateLedgerUpdate(LedgerExtension ledgerExtension) {
+    // `closestEpochProofOnOrBefore` isn't really correct here, but that's fine
+    final var latestProof =
+        new LedgerProofBundle(
+            ledgerExtension.proof(), ledgerExtension.proof(), Option.none(), Option.none());
     final var maybeEpochChange =
         ledgerExtension
-            .getProof()
-            .getNextEpoch()
+            .proof()
+            .ledgerHeader()
+            .nextEpoch()
             .map(
                 nextEpoch -> {
-                  LedgerProof proof = ledgerExtension.getProof();
+                  final var initialHeader =
+                      REv2ToConsensus.ledgerHeader(latestProof.epochInitialHeader());
                   VertexWithHash genesisVertex =
-                      Vertex.createInitialEpochVertex(proof.getHeader()).withId(hasher);
+                      Vertex.createInitialEpochVertex(initialHeader).withId(hasher);
                   LedgerHeader nextLedgerHeader =
                       LedgerHeader.create(
-                          nextEpoch.getEpoch(),
-                          Round.genesis(),
-                          proof.getStateVersion(),
-                          proof.getLedgerHashes(),
-                          proof.consensusParentRoundTimestamp(),
-                          proof.proposerTimestamp());
+                          nextEpoch.epoch().toLong(),
+                          Round.epochInitial(),
+                          initialHeader.getStateVersion(),
+                          initialHeader.getHashes(),
+                          initialHeader.consensusParentRoundTimestamp(),
+                          initialHeader.proposerTimestamp());
                   QuorumCertificate initialEpochQC =
                       QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
                   final var initialState =
                       VertexStoreState.create(
                           HighQC.ofInitialEpochQc(initialEpochQC), genesisVertex, hasher);
-                  var validatorSet = BFTValidatorSet.from(nextEpoch.getValidators());
+                  var validatorSet = REv2ToConsensus.validatorSet(nextEpoch.validators());
                   var proposerElection =
-                      ProposerElections.defaultRotation(nextEpoch.getEpoch(), validatorSet);
+                      ProposerElections.defaultRotation(nextEpoch.epoch().toLong(), validatorSet);
                   var bftConfiguration =
                       new BFTConfiguration(proposerElection, validatorSet, initialState);
-                  return new EpochChange(proof, bftConfiguration);
+                  return new EpochChange(latestProof, bftConfiguration);
                 });
 
     return new LedgerUpdate(
         new CommitSummary(ImmutableList.of(), UInt32.fromNonNegativeInt(0)),
-        ledgerExtension,
+        latestProof,
         maybeEpochChange,
-        Option.empty());
+        ledgerExtension.transactions());
   }
 
   @Override
-  public void commit(LedgerExtension ledgerExtension, VertexStoreState vertexStoreState) {
+  public LedgerProofBundle commit(
+      LedgerExtension ledgerExtension, VertexStoreState vertexStoreState) {
     var ledgerUpdate = this.generateLedgerUpdate(ledgerExtension);
     ledgerUpdateDispatcher.dispatch(ledgerUpdate);
+    return ledgerUpdate.committedProof();
   }
 }

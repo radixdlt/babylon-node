@@ -66,13 +66,12 @@ package com.radixdlt.monitoring;
 
 import com.google.inject.Inject;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.SelfValidatorInfo;
 import com.radixdlt.monitoring.Metrics.Config;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.rev2.modules.REv2LedgerInitializerToken;
 import com.radixdlt.utils.TimeSupplier;
-import java.util.Collection;
 
 /** An installer of extra metrics which do not follow the conventional Prometheus usage patterns. */
 public final class MetricInstaller {
@@ -128,7 +127,7 @@ public final class MetricInstaller {
                 .bftValidatorId()
                 .map(id -> this.addressing.encode(id.getValidatorAddress()))
                 .orElse(null),
-            this.ledgerInitialization.postGenesisEpochProof().getLedgerHashes().getStateRoot());
+            this.ledgerInitialization.postGenesisEpochProof().ledgerHeader().hashes().stateRoot());
     metrics.misc().config().set(config);
     metrics.misc().peerCount().initialize(() -> this.peersView.peers().count());
     metrics
@@ -153,17 +152,24 @@ public final class MetricInstaller {
             selfValidatorId ->
                 this.inMemorySystemInfo
                     .getEpochProof()
-                    .getNextValidatorSet()
-                    .map(set -> set.containsValidator(selfValidatorId))
+                    .ledgerHeader()
+                    .nextEpoch()
+                    .map(
+                        nextEpoch ->
+                            nextEpoch.validators().stream()
+                                .anyMatch(
+                                    v ->
+                                        BFTValidatorId.create(v.address(), v.key())
+                                            .equals(selfValidatorId)))
                     .orElse(false));
   }
 
   private int countValidators() {
     return this.inMemorySystemInfo
         .getEpochProof()
-        .getNextValidatorSet()
-        .map(BFTValidatorSet::getValidators)
-        .map(Collection::size)
+        .ledgerHeader()
+        .nextEpoch()
+        .map(ne -> ne.validators().size())
         .orElse(0);
   }
 }

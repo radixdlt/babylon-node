@@ -62,52 +62,16 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.epoch;
+package com.radixdlt.protocol;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.statecomputer.commit.LedgerProof;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.NextEpoch;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.lang.Option;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Before;
-import org.junit.Test;
-
-public class EpochChangeTest {
-  private LedgerProof proof;
-  private BFTConfiguration configuration;
-  private EpochChange epochChange;
-
-  @Before
-  public void setup() {
-    this.proof = mock(LedgerProof.class);
-    when(proof.getEpoch()).thenReturn(323L);
-    when(proof.getNextEpoch()).thenReturn(Option.some(NextEpoch.create(324, ImmutableSet.of())));
-    this.configuration = mock(BFTConfiguration.class);
-
-    this.epochChange = new EpochChange(proof, configuration);
-  }
-
-  @Test
-  public void equalsContract() {
-    EqualsVerifier.forClass(EpochChange.class)
-        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-        .verify();
-  }
-
-  @Test
-  public void when_get_next_epoch__then_should_be_epoch_after_proof() {
-    assertThat(epochChange.getNextEpoch()).isEqualTo(324L);
-  }
-
-  @Test
-  public void when_get_configuration__then_should_return_configuration() {
-    assertThat(epochChange.getBFTConfiguration()).isEqualTo(configuration);
+public record ProtocolUpdateResult(LedgerProof postUpdateProof) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        ProtocolUpdateResult.class,
+        codecs -> StructCodec.fromRecordComponents(ProtocolUpdateResult.class, codecs));
   }
 }

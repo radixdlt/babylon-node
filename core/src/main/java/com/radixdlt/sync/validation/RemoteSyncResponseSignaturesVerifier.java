@@ -67,11 +67,10 @@ package com.radixdlt.sync.validation;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.ConsensusHasher;
 import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.TimestampedECDSASignature;
-import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.crypto.Hasher;
-import java.util.Map.Entry;
+import com.radixdlt.rev2.REv2ToConsensus;
+import com.radixdlt.statecomputer.commit.LedgerProof;
+import com.radixdlt.statecomputer.commit.LedgerProofOrigin;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -88,22 +87,25 @@ public final class RemoteSyncResponseSignaturesVerifier {
   }
 
   public boolean verifyResponseSignatures(LedgerProof ledgerProof) {
-    final var signatures = ledgerProof.getSignatures().getSignatures();
-    for (Entry<BFTValidatorId, TimestampedECDSASignature> nodeAndSignature :
-        signatures.entrySet()) {
-      var node = nodeAndSignature.getKey();
-      var signature = nodeAndSignature.getValue();
-      final var consensusVoteHash =
-          ConsensusHasher.toHash(
-              ledgerProof.getOpaque(),
-              Optional.of(ledgerProof.getHeader()),
-              signature.timestamp(),
-              hasher);
-      if (!hashVerifier.verify(node.getKey(), consensusVoteHash, signature.signature())) {
-        return false;
+    return switch (ledgerProof.origin()) {
+      case LedgerProofOrigin.Consensus consensusOrigin -> {
+        for (var timestampedSignature : consensusOrigin.signatures()) {
+          final var key = timestampedSignature.key();
+          final var ecdsaSignature = timestampedSignature.signature();
+          final var consensusVoteHash =
+              ConsensusHasher.toHash(
+                  consensusOrigin.opaque(),
+                  Optional.of(REv2ToConsensus.ledgerHeader(ledgerProof.ledgerHeader())),
+                  timestampedSignature.timestampMs(),
+                  hasher);
+          if (!hashVerifier.verify(key, consensusVoteHash, ecdsaSignature)) {
+            yield false;
+          }
+        }
+        yield true;
       }
-    }
-
-    return true;
+      case LedgerProofOrigin.Genesis genesisOrigin -> false;
+      case LedgerProofOrigin.ProtocolUpdate protocolUpdateOrigin -> false;
+    };
   }
 }

@@ -174,7 +174,7 @@ public sealed interface StateComputerConfig {
         StateHashTreeGcConfig.forTesting(),
         LedgerProofsGcConfig.forTesting(),
         LedgerSyncLimitsConfig.defaults(),
-        ProtocolConfig.testingDefaultNoUpdates(),
+        ProtocolConfig.testingDefault(),
         false);
   }
 
@@ -189,7 +189,7 @@ public sealed interface StateComputerConfig {
         StateHashTreeGcConfig.forTesting(),
         LedgerProofsGcConfig.forTesting(),
         LedgerSyncLimitsConfig.defaults(),
-        ProtocolConfig.testingDefaultNoUpdates(),
+        ProtocolConfig.testingDefault(),
         false);
   }
 

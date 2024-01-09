@@ -76,11 +76,11 @@ public record ProtocolConfig(
         codecs -> StructCodec.fromRecordComponents(ProtocolConfig.class, codecs));
   }
 
-  public static ProtocolConfig testingDefaultNoUpdates() {
-    return new ProtocolConfig("babylon-genesis", ImmutableList.of());
+  public static ProtocolConfig testingDefault() {
+    return ProtocolUpdates.testingDefaultConfig();
   }
 
-  public static ProtocolConfig productionDefault() {
-    return new ProtocolConfig("babylon-genesis", ImmutableList.of());
+  public static ProtocolConfig mainnet() {
+    return ProtocolUpdates.mainnetConfig();
   }
 }

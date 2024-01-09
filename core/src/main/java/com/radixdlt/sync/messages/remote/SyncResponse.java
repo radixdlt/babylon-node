@@ -64,23 +64,23 @@
 
 package com.radixdlt.sync.messages.remote;
 
-import com.radixdlt.ledger.DtoLedgerExtension;
+import com.radixdlt.sync.LedgerExtensionSyncDto;
 import java.util.Objects;
 
 /** A response to the SyncRequest message. */
 public final class SyncResponse {
 
-  private final DtoLedgerExtension dtoLedgerExtension;
+  private final LedgerExtensionSyncDto dtoLedgerExtension;
 
-  public static SyncResponse create(DtoLedgerExtension dtoLedgerExtension) {
+  public static SyncResponse create(LedgerExtensionSyncDto dtoLedgerExtension) {
     return new SyncResponse(dtoLedgerExtension);
   }
 
-  private SyncResponse(DtoLedgerExtension dtoLedgerExtension) {
+  private SyncResponse(LedgerExtensionSyncDto dtoLedgerExtension) {
     this.dtoLedgerExtension = Objects.requireNonNull(dtoLedgerExtension);
   }
 
-  public DtoLedgerExtension getLedgerExtension() {
+  public LedgerExtensionSyncDto getLedgerExtension() {
     return dtoLedgerExtension;
   }
 
