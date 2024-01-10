@@ -1172,6 +1172,20 @@ impl QueryableProofStore for RocksDBStore {
             // If we're out of proofs (or some txns are missing): also break the loop
             match proofs_iter.next() {
                 Some((next_proof_state_version, next_proof)) => {
+                    match next_proof.origin {
+                        LedgerProofOrigin::Genesis { .. }
+                        | LedgerProofOrigin::ProtocolUpdate { .. } => {
+                            // We're not serving any genesis or protocol update transactions.
+                            // All nodes should have them hardcoded/configured/generated locally.
+                            // Stop iterating the proofs and return whatever txns/proof we have
+                            // collected so far (or an empty response).
+                            break 'proof_loop;
+                        }
+                        LedgerProofOrigin::Consensus { .. } => {
+                            // All good, let's continue
+                        }
+                    }
+
                     let mut payload_size_including_next_proof_txns = payload_size_so_far;
                     let mut next_proof_txns = Vec::new();
 
@@ -1189,8 +1203,6 @@ impl QueryableProofStore for RocksDBStore {
                     {
                         match txns_iter.next() {
                             Some((next_txn_state_version, next_txn)) => {
-                                // TODO(protocol-updates): skip protocol update transactions
-                                // TODO(protocol-updates): skip genesis transactions
                                 payload_size_including_next_proof_txns += next_txn.0.len() as u32;
                                 next_proof_txns.push(next_txn);
 
