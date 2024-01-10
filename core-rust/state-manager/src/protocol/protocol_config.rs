@@ -1,4 +1,4 @@
-use radix_engine::prelude::{ScryptoCategorize, ScryptoDecode, ScryptoEncode};
+use radix_engine::prelude::{dec, ScryptoCategorize, ScryptoDecode, ScryptoEncode};
 use radix_engine_common::math::Decimal;
 use radix_engine_common::prelude::{hash, scrypto_encode};
 
@@ -10,6 +10,7 @@ use utils::btreeset;
 // This file contains types for node's local static protocol configuration
 
 pub const GENESIS_PROTOCOL_VERSION: &str = "babylon-genesis";
+pub const BABYLON_V2_PROTOCOL_VERSION: &str = "babylon-v2";
 
 const MAX_PROTOCOL_VERSION_NAME_LEN: usize = 16;
 
@@ -91,7 +92,20 @@ impl ProtocolConfig {
     pub fn mainnet() -> ProtocolConfig {
         Self {
             genesis_protocol_version: GENESIS_PROTOCOL_VERSION.to_string(),
-            protocol_updates: vec![],
+            protocol_updates: vec![ProtocolUpdate {
+                next_protocol_version: BABYLON_V2_PROTOCOL_VERSION.to_string(),
+                enactment_condition:
+                    ProtocolUpdateEnactmentCondition::EnactWhenSupportedAndWithinBounds {
+                        lower_bound: ProtocolUpdateEnactmentBound::Epoch(Epoch::of(10000)),
+                        upper_bound: ProtocolUpdateEnactmentBound::Epoch(Epoch::of(20000)),
+                        support_type: ProtocolUpdateSupportType::SignalledReadiness(vec![
+                            SignalledReadinessThreshold {
+                                required_ratio_of_stake_supported: dec!("0.80"),
+                                required_consecutive_completed_epochs_of_support: 10,
+                            },
+                        ]),
+                    },
+            }],
         }
     }
 

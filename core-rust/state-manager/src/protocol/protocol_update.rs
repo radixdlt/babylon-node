@@ -1,12 +1,24 @@
 // This file contains the protocol update logic for specific protocol versions
 
 use node_common::locks::{LockFactory, RwLock, StateLock};
+use radix_engine::blueprints::consensus_manager::{
+    ConsensusManagerConfigSubstate, ConsensusManagerConfigurationFieldPayload,
+    ConsensusManagerField, VersionedConsensusManagerConfiguration,
+};
+use radix_engine::prelude::dec;
 use radix_engine::track::StateUpdates;
 use radix_engine::transaction::CostingParameters;
 use radix_engine_common::network::NetworkDefinition;
-use radix_engine_common::prelude::Decimal;
+use radix_engine_common::prelude::{scrypto_encode, Decimal, CONSENSUS_MANAGER};
 use std::ops::Deref;
 use std::sync::Arc;
+
+use radix_engine::system::system_substates::{FieldSubstate, FieldSubstateV1, LockStatus};
+use radix_engine_interface::blueprints::consensus_manager::{
+    ConsensusManagerConfig, EpochChangeCondition,
+};
+use radix_engine_interface::prelude::MAIN_BASE_PARTITION;
+use radix_engine_store_interface::interface::DatabaseUpdate;
 use transaction::prelude::TransactionPayloadPreparable;
 use transaction::validation::{NotarizedTransactionValidator, ValidationConfig};
 use utils::btreemap;
@@ -22,7 +34,8 @@ use crate::transaction::{
 };
 use crate::{
     CommittedTransactionIdentifiers, ExecutionCache, LedgerHeader, LedgerProof, LedgerProofOrigin,
-    LoggingConfig, ProtocolState, StateManagerDatabase, GENESIS_PROTOCOL_VERSION,
+    LoggingConfig, ProtocolState, StateManagerDatabase, BABYLON_V2_PROTOCOL_VERSION,
+    GENESIS_PROTOCOL_VERSION,
 };
 
 pub trait ProtocolUpdaterFactory {
@@ -59,19 +72,13 @@ pub trait StateUpdateExecutor {
 pub struct NoStateUpdatesProtocolUpdater {
     protocol_version_name: String,
     state_computer_configurator: StateComputerConfigurator,
-    store: Arc<StateLock<StateManagerDatabase>>,
 }
 
 impl NoStateUpdatesProtocolUpdater {
-    pub fn default(
-        protocol_version_name: String,
-        network: NetworkDefinition,
-        store: Arc<StateLock<StateManagerDatabase>>,
-    ) -> Self {
+    pub fn default(protocol_version_name: String, network: NetworkDefinition) -> Self {
         Self {
             protocol_version_name,
             state_computer_configurator: StateComputerConfigurator::default(network),
-            store,
         }
     }
 }
@@ -86,31 +93,15 @@ impl ProtocolUpdater for NoStateUpdatesProtocolUpdater {
     }
 
     fn state_update_executor(&self) -> Box<dyn StateUpdateExecutor> {
-        Box::new(NoOpStateUpdateExecutor {
-            protocol_version_name: self.protocol_version_name.clone(),
-            store: self.store.clone(),
-            state_computer_configurator: self.state_computer_configurator(),
-        })
+        Box::new(NoOpStateUpdateExecutor {})
     }
 }
 
-struct NoOpStateUpdateExecutor {
-    protocol_version_name: String,
-    store: Arc<StateLock<StateManagerDatabase>>,
-    state_computer_configurator: StateComputerConfigurator,
-}
+struct NoOpStateUpdateExecutor {}
 
 impl StateUpdateExecutor for NoOpStateUpdateExecutor {
     fn execute_remaining_state_updates(&self) {
-        FlashStateUpdateExecutor::new(
-            self.protocol_version_name.clone(),
-            self.store.clone(),
-            vec![StateUpdates {
-                by_node: Default::default(),
-            }],
-            self.state_computer_configurator.clone(),
-        )
-        .execute_remaining_state_updates();
+        // No-op
     }
 }
 
@@ -481,17 +472,69 @@ impl MainnetProtocolUpdaterFactory {
     pub fn new() -> MainnetProtocolUpdaterFactory {
         MainnetProtocolUpdaterFactory {}
     }
+
+    fn genesis_protocol_updater(&self, protocol_version_name: &str) -> Box<dyn ProtocolUpdater> {
+        Box::new(NoStateUpdatesProtocolUpdater::default(
+            protocol_version_name.to_owned(),
+            NetworkDefinition::mainnet(),
+        ))
+    }
+
+    fn v2_protocol_updater(
+        &self,
+        protocol_version_name: &str,
+        store: Arc<StateLock<StateManagerDatabase>>,
+    ) -> Box<dyn ProtocolUpdater> {
+        // TODO(protocol-updates): this is just a draft
+        let new_consensus_manager_config = ConsensusManagerConfig {
+            max_validators: 100,
+            epoch_change_condition: EpochChangeCondition {
+                min_round_count: 500,
+                max_round_count: 3000,
+                target_duration_millis: 300000,
+            },
+            num_unstake_epochs: 2016,
+            total_emission_xrd_per_epoch: dec!("2853.881278538812785388"),
+            min_validator_reliability: dec!("1"),
+            num_owner_stake_units_unlock_epochs: 8064,
+            num_fee_increase_delay_epochs: 4032,
+            validator_creation_usd_cost: dec!("100"),
+        };
+        let state_updates_to_flash = consensus_manager_config_flash(new_consensus_manager_config);
+        Box::new(FlashProtocolUpdater::new_with_default_configurator(
+            protocol_version_name.to_owned(),
+            store,
+            NetworkDefinition::mainnet(),
+            vec![state_updates_to_flash],
+        ))
+    }
 }
 
-impl Default for MainnetProtocolUpdaterFactory {
-    fn default() -> Self {
-        Self::new()
-    }
+pub fn consensus_manager_config_flash(new_config: ConsensusManagerConfig) -> StateUpdates {
+    let mut state_updates = StateUpdates::default();
+    state_updates
+        .of_node(CONSENSUS_MANAGER.into_node_id())
+        .of_partition(MAIN_BASE_PARTITION)
+        .update_substates(vec![(
+            ConsensusManagerField::Configuration.into(),
+            DatabaseUpdate::Set(
+                scrypto_encode(&FieldSubstate::V1(FieldSubstateV1 {
+                    payload: ConsensusManagerConfigurationFieldPayload {
+                        content: VersionedConsensusManagerConfiguration::V1(
+                            ConsensusManagerConfigSubstate { config: new_config },
+                        ),
+                    },
+                    lock_status: LockStatus::Locked,
+                }))
+                .unwrap(),
+            ),
+        )]);
+    state_updates
 }
 
 impl ProtocolUpdaterFactory for MainnetProtocolUpdaterFactory {
     fn supports_protocol_version(&self, protocol_version_name: &str) -> bool {
-        [GENESIS_PROTOCOL_VERSION].contains(&protocol_version_name)
+        [GENESIS_PROTOCOL_VERSION, BABYLON_V2_PROTOCOL_VERSION].contains(&protocol_version_name)
     }
 
     fn updater_for(
@@ -500,11 +543,8 @@ impl ProtocolUpdaterFactory for MainnetProtocolUpdaterFactory {
         store: Arc<StateLock<StateManagerDatabase>>,
     ) -> Box<dyn ProtocolUpdater> {
         match protocol_version_name {
-            GENESIS_PROTOCOL_VERSION => Box::new(NoStateUpdatesProtocolUpdater::default(
-                protocol_version_name.to_owned(),
-                NetworkDefinition::mainnet(),
-                store,
-            )),
+            GENESIS_PROTOCOL_VERSION => self.genesis_protocol_updater(protocol_version_name),
+            BABYLON_V2_PROTOCOL_VERSION => self.v2_protocol_updater(protocol_version_name, store),
             _ => panic!("Unknown protocol version {:?}", protocol_version_name),
         }
     }
@@ -531,10 +571,11 @@ impl ProtocolUpdaterFactory for TestingDefaultProtocolUpdaterFactory {
         store: Arc<StateLock<StateManagerDatabase>>,
     ) -> Box<dyn ProtocolUpdater> {
         // All default testing protocol updates are no-op
-        Box::new(NoStateUpdatesProtocolUpdater::default(
+        Box::new(FlashProtocolUpdater::new_with_default_configurator(
             protocol_version_name.to_owned(),
-            self.network.clone(),
             store,
+            self.network.clone(),
+            vec![StateUpdates::default()],
         ))
     }
 }

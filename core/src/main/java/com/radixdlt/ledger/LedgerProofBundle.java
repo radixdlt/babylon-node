@@ -80,9 +80,7 @@ public record LedgerProofBundle(
     // Latest (with respect to `primaryProof`) epoch change proof.
     // Could be the `primaryProof` itself.
     LedgerProof closestEpochProofOnOrBefore,
-    // Latest (with respect to `
-    //
-    // primaryProof`) proof that initiated a protocol update.
+    // Latest (with respect to primaryProof) proof that initiated a protocol update.
     // Could be the `primaryProof` itself.
     Option<LedgerProof> closestProtocolUpdateInitProofOnOrBefore,
     // Latest (with respect to `primaryProof`) proof of ProtocolUpdate `origin`.
