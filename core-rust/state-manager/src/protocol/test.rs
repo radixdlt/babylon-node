@@ -67,14 +67,13 @@ use std::sync::Arc;
 
 use crate::traits::QueryableProofStore;
 use radix_engine::blueprints::consensus_manager::{
-    ConsensusManagerConfigSubstate, ConsensusManagerConfigurationFieldPayload,
-    ConsensusManagerField, VersionedConsensusManagerConfiguration,
+    ConsensusManagerConfigurationFieldPayload, ConsensusManagerField,
 };
-use radix_engine::system::system_substates::{FieldSubstate, FieldSubstateV1, LockStatus};
-use radix_engine::track::StateUpdates;
+use radix_engine::system::system_substates::FieldSubstate;
+
 use radix_engine_common::crypto::Hash;
 use radix_engine_common::network::NetworkDefinition;
-use radix_engine_common::prelude::{scrypto_encode, Decimal, Epoch, CONSENSUS_MANAGER};
+use radix_engine_common::prelude::{Decimal, Epoch, CONSENSUS_MANAGER};
 use radix_engine_common::types::Round;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerConfig, EpochChangeCondition,
@@ -82,7 +81,6 @@ use radix_engine_interface::blueprints::consensus_manager::{
 use radix_engine_interface::prelude::MAIN_BASE_PARTITION;
 use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 
-use radix_engine_store_interface::interface::DatabaseUpdate;
 use sbor::HasLatestVersion;
 
 use node_common::locks::{LockFactory, StateLock};
@@ -90,11 +88,11 @@ use node_common::scheduler::Scheduler;
 
 use crate::ProtocolUpdateEnactmentCondition::EnactUnconditionallyAtStateVersion;
 use crate::{
-    CommitRequest, CommitSummary, FlashProtocolUpdater, LedgerHeader, LedgerProof,
-    LedgerProofOrigin, NoStateUpdatesProtocolUpdater, PrepareRequest, PrepareResult,
-    ProtocolConfig, ProtocolUpdate, ProtocolUpdateEnactmentCondition, ProtocolUpdater,
-    ProtocolUpdaterFactory, RoundHistory, StateManager, StateManagerConfig, StateManagerDatabase,
-    StateVersion,
+    consensus_manager_config_flash, CommitRequest, CommitSummary, FlashProtocolUpdater,
+    LedgerHeader, LedgerProof, LedgerProofOrigin, NoStateUpdatesProtocolUpdater, PrepareRequest,
+    PrepareResult, ProtocolConfig, ProtocolUpdate, ProtocolUpdateEnactmentCondition,
+    ProtocolUpdater, ProtocolUpdaterFactory, RoundHistory, StateManager, StateManagerConfig,
+    StateManagerDatabase, StateVersion,
 };
 
 use crate::query::TransactionIdentifierLoader;
@@ -119,7 +117,6 @@ impl ProtocolUpdaterFactory for TestProtocolUpdaterFactory {
             GENESIS_PROTOCOL_VERSION => Box::new(NoStateUpdatesProtocolUpdater::default(
                 protocol_version_name.to_string(),
                 NetworkDefinition::simulator(),
-                store,
             )),
             V2_PROTOCOL_VERSION => {
                 let new_config = ConsensusManagerConfig {
@@ -312,26 +309,4 @@ fn prepare_and_commit_round_update(state_manager: StateManager) -> (PrepareResul
         .unwrap();
 
     (prepare_result, commit_result)
-}
-
-fn consensus_manager_config_flash(new_config: ConsensusManagerConfig) -> StateUpdates {
-    let mut state_updates = StateUpdates::default();
-    state_updates
-        .of_node(CONSENSUS_MANAGER.into_node_id())
-        .of_partition(MAIN_BASE_PARTITION)
-        .update_substates(vec![(
-            ConsensusManagerField::Configuration.into(),
-            DatabaseUpdate::Set(
-                scrypto_encode(&FieldSubstate::V1(FieldSubstateV1 {
-                    payload: ConsensusManagerConfigurationFieldPayload {
-                        content: VersionedConsensusManagerConfiguration::V1(
-                            ConsensusManagerConfigSubstate { config: new_config },
-                        ),
-                    },
-                    lock_status: LockStatus::Locked,
-                }))
-                .unwrap(),
-            ),
-        )]);
-    state_updates
 }
