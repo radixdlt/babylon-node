@@ -35,6 +35,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   TransactionFormatOptions.JSON_PROPERTY_MANIFEST,
   TransactionFormatOptions.JSON_PROPERTY_BLOBS,
   TransactionFormatOptions.JSON_PROPERTY_MESSAGE,
+  TransactionFormatOptions.JSON_PROPERTY_BALANCE_CHANGES,
   TransactionFormatOptions.JSON_PROPERTY_RAW_SYSTEM_TRANSACTION,
   TransactionFormatOptions.JSON_PROPERTY_RAW_NOTARIZED_TRANSACTION,
   TransactionFormatOptions.JSON_PROPERTY_RAW_LEDGER_TRANSACTION
@@ -49,6 +50,9 @@ public class TransactionFormatOptions {
 
   public static final String JSON_PROPERTY_MESSAGE = "message";
   private Boolean message;
+
+  public static final String JSON_PROPERTY_BALANCE_CHANGES = "balance_changes";
+  private Boolean balanceChanges;
 
   public static final String JSON_PROPERTY_RAW_SYSTEM_TRANSACTION = "raw_system_transaction";
   private Boolean rawSystemTransaction;
@@ -137,6 +141,32 @@ public class TransactionFormatOptions {
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setMessage(Boolean message) {
     this.message = message;
+  }
+
+
+  public TransactionFormatOptions balanceChanges(Boolean balanceChanges) {
+    this.balanceChanges = balanceChanges;
+    return this;
+  }
+
+   /**
+   * Whether to return the transaction balance changes (default false)
+   * @return balanceChanges
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "Whether to return the transaction balance changes (default false)")
+  @JsonProperty(JSON_PROPERTY_BALANCE_CHANGES)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public Boolean getBalanceChanges() {
+    return balanceChanges;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_BALANCE_CHANGES)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setBalanceChanges(Boolean balanceChanges) {
+    this.balanceChanges = balanceChanges;
   }
 
 
@@ -233,6 +263,7 @@ public class TransactionFormatOptions {
     return Objects.equals(this.manifest, transactionFormatOptions.manifest) &&
         Objects.equals(this.blobs, transactionFormatOptions.blobs) &&
         Objects.equals(this.message, transactionFormatOptions.message) &&
+        Objects.equals(this.balanceChanges, transactionFormatOptions.balanceChanges) &&
         Objects.equals(this.rawSystemTransaction, transactionFormatOptions.rawSystemTransaction) &&
         Objects.equals(this.rawNotarizedTransaction, transactionFormatOptions.rawNotarizedTransaction) &&
         Objects.equals(this.rawLedgerTransaction, transactionFormatOptions.rawLedgerTransaction);
@@ -240,7 +271,7 @@ public class TransactionFormatOptions {
 
   @Override
   public int hashCode() {
-    return Objects.hash(manifest, blobs, message, rawSystemTransaction, rawNotarizedTransaction, rawLedgerTransaction);
+    return Objects.hash(manifest, blobs, message, balanceChanges, rawSystemTransaction, rawNotarizedTransaction, rawLedgerTransaction);
   }
 
   @Override
@@ -250,6 +281,7 @@ public class TransactionFormatOptions {
     sb.append("    manifest: ").append(toIndentedString(manifest)).append("\n");
     sb.append("    blobs: ").append(toIndentedString(blobs)).append("\n");
     sb.append("    message: ").append(toIndentedString(message)).append("\n");
+    sb.append("    balanceChanges: ").append(toIndentedString(balanceChanges)).append("\n");
     sb.append("    rawSystemTransaction: ").append(toIndentedString(rawSystemTransaction)).append("\n");
     sb.append("    rawNotarizedTransaction: ").append(toIndentedString(rawNotarizedTransaction)).append("\n");
     sb.append("    rawLedgerTransaction: ").append(toIndentedString(rawLedgerTransaction)).append("\n");

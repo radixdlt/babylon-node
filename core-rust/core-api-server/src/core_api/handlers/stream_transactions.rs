@@ -121,7 +121,7 @@ pub(crate) async fn handle_stream_transactions(
             }
         })?;
         let committed_transaction = to_api_committed_transaction(
-            Some(&database),
+            &database,
             &mapping_context,
             state_version,
             raw,
@@ -245,7 +245,7 @@ pub fn to_api_ledger_header(
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_committed_transaction(
-    database: Option<&StateManagerDatabase>,
+    database: &StateManagerDatabase,
     context: &MappingContext,
     state_version: StateVersion,
     raw_ledger_transaction: RawLedgerTransaction,
@@ -253,7 +253,11 @@ pub fn to_api_committed_transaction(
     receipt: LocalTransactionReceipt,
     identifiers: CommittedTransactionIdentifiers,
 ) -> Result<models::CommittedTransaction, MappingError> {
-    let receipt = to_api_receipt(database, context, receipt)?;
+    let balance_changes = if context.transaction_options.include_balance_changes {
+        Some(Box::new(to_api_balance_changes(database, context, &receipt)?))
+    } else {
+        None
+    };
 
     Ok(models::CommittedTransaction {
         resultant_state_identifiers: Box::new(to_api_committed_state_identifiers(
@@ -266,8 +270,9 @@ pub fn to_api_committed_transaction(
             &ledger_transaction,
             &identifiers.payload,
         )?),
+        receipt: Box::new(to_api_receipt(Some(database), context, receipt)?),
+        balance_changes,
         proposer_timestamp_ms: identifiers.proposer_timestamp_ms,
-        receipt: Box::new(receipt),
     })
 }
 
@@ -577,6 +582,33 @@ pub fn to_api_system_transaction(
         None
     };
     Ok(models::SystemTransaction { payload_hex })
+}
+
+fn to_api_balance_changes(
+    database: &StateManagerDatabase,
+    context: &MappingContext,
+    receipt: &LocalTransactionReceipt
+) -> Result<models::CommittedTransactionBalanceChanges, MappingError> {
+    let local_execution = &receipt.local_execution;
+
+    Ok(models::CommittedTransactionBalanceChanges {
+        fungible_entity_balance_changes: to_api_lts_fungible_balance_changes(
+            database,
+            context,
+            &local_execution.fee_summary,
+            &local_execution.fee_source,
+            &local_execution.fee_destination,
+            &local_execution
+                .global_balance_summary
+                .global_balance_changes,
+        )?,
+        non_fungible_entity_balance_changes: to_api_lts_entity_non_fungible_balance_changes(
+            context,
+            &local_execution
+                .global_balance_summary
+                .global_balance_changes,
+        )?
+    })
 }
 
 pub fn to_api_flash_transaction(

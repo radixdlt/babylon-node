@@ -230,6 +230,8 @@ pub mod committed_state_identifier_all_of;
 pub use self::committed_state_identifier_all_of::CommittedStateIdentifierAllOf;
 pub mod committed_transaction;
 pub use self::committed_transaction::CommittedTransaction;
+pub mod committed_transaction_balance_changes;
+pub use self::committed_transaction_balance_changes::CommittedTransactionBalanceChanges;
 pub mod component_method_target_identifier;
 pub use self::component_method_target_identifier::ComponentMethodTargetIdentifier;
 pub mod component_method_target_identifier_all_of;

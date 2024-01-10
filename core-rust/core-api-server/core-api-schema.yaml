@@ -1449,6 +1449,9 @@ components:
         message:
           description: Whether to return the transaction message (default true)
           type: boolean
+        balance_changes:
+          description: Whether to return the transaction balance changes (default false)
+          type: boolean
         raw_system_transaction:
           description: Whether to return the raw hex-encoded system transaction bytes (default false)
           type: boolean
@@ -6076,9 +6079,6 @@ components:
       description: |
         For the given transaction, contains the status, total fee summary and individual entity resource balance changes.
         The balance changes accounts for the fee payments as well.
-        Current implementation does not take into account recalls, but this will change in a future update.
-        For failed transactions, current implementation does not return any balance changes (not even the fee payments).
-        This will also change in a future update.
       type: object
       required:
         - state_version
@@ -7473,12 +7473,36 @@ components:
           $ref: "#/components/schemas/LedgerTransaction"
         receipt:
           $ref: "#/components/schemas/TransactionReceipt"
+        balance_changes:
+          description: |
+            All balance changes of a transaction (including those fee-related), aggregated by resource and global entity
+            within which the change occurred. Only returned if available and enabled in `TransactionFormatOptions` on your request.
+          $ref: "#/components/schemas/CommittedTransactionBalanceChanges"
         proposer_timestamp_ms:
           type: integer
           format: int64
           minimum: 0
           maximum: 100000000000000
           description: An integer between `0` and `10^14`, marking the proposer timestamp in ms.
+    CommittedTransactionBalanceChanges:
+      type: object
+      required:
+        - fungible_entity_balance_changes
+        - non_fungible_entity_balance_changes
+      properties:
+        fungible_entity_balance_changes:
+          description: |
+            A list of all fungible balance updates which occurred in this transaction, aggregated by the global entity (such as account)
+            which owns the vaults which were updated.
+          type: array
+          items:
+            $ref: "#/components/schemas/LtsEntityFungibleBalanceChanges"
+        non_fungible_entity_balance_changes:
+          description: |
+            Non fungible changes per entity and resource
+          type: array
+          items:
+            $ref: "#/components/schemas/LtsEntityNonFungibleBalanceChanges"
     LedgerProof:
       type: object
       required:
