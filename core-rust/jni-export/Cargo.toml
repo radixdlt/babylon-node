@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 node-common = { path = "../node-common" }
 state-manager = { path = "../state-manager" }
-core-api-server = { path = "../core-api-server" }
+node-http-apis = { path = "../node-http-apis" }
 
 sbor = { workspace = true }
 transaction = { workspace = true }

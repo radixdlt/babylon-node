@@ -7,7 +7,7 @@ import urllib.request, logging, subprocess, os, shutil, re, yaml
 logger = logging.getLogger()
 logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', level=logging.INFO)
 
-API_SCHEMA_LOCATION = '../../../core-rust/core-api-server/core-api-schema.yaml'
+API_SCHEMA_LOCATION = '../../../core-rust/node-http-apis/core-api-schema.yaml'
 API_GENERATED_DESTINATION = '../lib/generated'
 
 OPENAPI_GENERATION_FOLDER='.'

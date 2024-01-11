@@ -1,5 +1,5 @@
 [package]
-name = "core-api-server"
+name = "node-http-apis"
 version = "0.1.0"
 edition = "2021"
 
