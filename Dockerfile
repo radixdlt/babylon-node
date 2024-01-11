@@ -90,7 +90,7 @@ RUN apt-get update \
     ca-certificates \
     build-essential=12.9 \
     # https://security-tracker.debian.org/tracker/CVE-2023-38545
-    curl=7.88.1-10+deb12u4 \
+    curl=7.88.1-10+deb12u5 \
     g++-aarch64-linux-gnu \
     g++-x86-64-linux-gnu \
     libc6-dev-arm64-cross=2.36-8cross1 \
@@ -104,7 +104,7 @@ RUN apt-get update \
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o rustup.sh \
   && sh rustup.sh -y --target 1.71.1-aarch64-unknown-linux-gnu 1.71.1-x86_64-unknown-linux-gnu
 
-RUN "$HOME/.cargo/bin/cargo" install sccache --version 0.3.3
+RUN "$HOME/.cargo/bin/cargo" install sccache --version 0.7.4
 
 ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
 ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc
@@ -208,7 +208,7 @@ RUN apt-get update -y \
   && apt-get -y --no-install-recommends install \
     openjdk-17-jre-headless=17.0.9+9-1~deb12u1 \
     # https://security-tracker.debian.org/tracker/CVE-2023-38545
-    curl=7.88.1-10+deb12u4 \
+    curl=7.88.1-10+deb12u5 \
     gettext-base=0.21-12 \
     daemontools=1:0.76-8.1 \
     # https://security-tracker.debian.org/tracker/CVE-2023-4911

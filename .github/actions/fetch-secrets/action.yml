@@ -36,14 +36,14 @@ runs:
         version: 2
 
     - name: Configure AWS credentials to fetch secrets
-      uses: aws-actions/configure-aws-credentials@97271860067ec931c45b8d104fbf0d15954ab85c # branch v1-node16
+      uses: RDXWorks-actions/configure-aws-credentials@main
       with:
         role-to-assume: ${{ inputs.role_name }}
         aws-region: ${{ inputs.region }}
         role-session-name: ${{ inputs.app_name }}-${{ github.run_id }}-${{ github.run_attempt }}
 
     - name: Fetch AWS secrets
-      uses: aws-actions/aws-secretsmanager-get-secrets@287592d14d9c9c48199db83dc182ae12af3df18e # v1.0.1
+      uses: RDXWorks-actions/aws-secretsmanager-get-secrets@main
       with:
         secret-ids: |
           ${{ inputs.secret_prefix }}, ${{ inputs.secret_name }}
