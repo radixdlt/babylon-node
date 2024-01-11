@@ -91,6 +91,7 @@ pub enum DatabaseConfigValidationError {
 pub struct DatabaseFlags {
     pub enable_local_transaction_execution_index: bool,
     pub enable_account_change_index: bool,
+    pub enable_re_node_listing_indices: bool,
 }
 
 impl Default for DatabaseFlags {
@@ -98,6 +99,7 @@ impl Default for DatabaseFlags {
         DatabaseFlags {
             enable_local_transaction_execution_index: true,
             enable_account_change_index: true,
+            enable_re_node_listing_indices: true,
         }
     }
 }
@@ -570,6 +572,84 @@ pub mod extensions {
             account: GlobalAddress,
             from_state_version: StateVersion,
         ) -> Box<dyn Iterator<Item = StateVersion> + '_>;
+    }
+}
+
+pub mod indices {
+    use super::*;
+    use radix_engine_common::types::NodeId;
+    use radix_engine_interface::types::BlueprintId;
+
+    /// A unique ID of a ReNode, based on creation order.
+    #[derive(Debug, Clone)]
+    pub struct CreationId {
+        /// State version of the transaction which created the ReNode (i.e. which created the first
+        /// substate under this ReNode).
+        pub state_version: StateVersion,
+
+        /// An index in a list of ReNodes created by a single transaction.
+        pub index_within_txn: u32,
+    }
+
+    impl CreationId {
+        /// Creates an ID, ensuring that the given index fits within `u32`.
+        pub fn new(state_version: StateVersion, index_within_txn: usize) -> Self {
+            Self {
+                state_version,
+                index_within_txn: index_within_txn.try_into().expect("unexpected index"),
+            }
+        }
+    }
+
+    define_single_versioned! {
+        #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+        pub enum VersionedEntityBlueprintId => EntityBlueprintId = EntityBlueprintIdV1
+    }
+
+    /// An entity's ID and its blueprint reference.
+    /// This is a "technical" structure stored in one of the ReNode-listing indices.
+    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub struct EntityBlueprintIdV1 {
+        /// Node ID.
+        pub node_id: NodeId,
+
+        /// Blueprint reference, present only for "Object" entities.
+        pub blueprint_id: Option<BlueprintId>,
+    }
+
+    impl EntityBlueprintIdV1 {
+        /// Creates an instance representing an entity of "Object" type.
+        pub fn of_object(object_node_id: NodeId, blueprint_id: BlueprintId) -> Self {
+            Self {
+                node_id: object_node_id,
+                blueprint_id: Some(blueprint_id),
+            }
+        }
+
+        /// Creates an instance representing an entity of "Key-Value Store" type.
+        pub fn of_kv_store(kv_store_node_id: NodeId) -> Self {
+            Self {
+                node_id: kv_store_node_id,
+                blueprint_id: None,
+            }
+        }
+    }
+
+    define_single_versioned! {
+        #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+        pub enum VersionedObjectBlueprintName => ObjectBlueprintName = ObjectBlueprintNameV1
+    }
+
+    /// An Object's ID and its blueprint name.
+    /// This is a "technical" structure stored in one of the ReNode-listing indices.
+    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub struct ObjectBlueprintNameV1 {
+        /// Node ID - guaranteed to *not* be a Key-Value Store.
+        pub node_id: NodeId,
+
+        /// The name alone of the Object's blueprint.
+        /// Package address is not needed here, since it is stored on the key's side of the index.
+        pub blueprint_name: String,
     }
 }
 

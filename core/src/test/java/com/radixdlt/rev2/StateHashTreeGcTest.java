@@ -117,7 +117,7 @@ public final class StateHashTreeGcTest {
                             1,
                             Decimal.ONE,
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(100)),
-                        new DatabaseFlags(false, false),
+                        new DatabaseFlags(false, false, false),
                         REV2ProposerConfig.noUserTransactions(),
                         false,
                         new StateHashTreeGcConfig(

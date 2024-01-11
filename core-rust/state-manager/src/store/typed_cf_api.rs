@@ -93,8 +93,11 @@ impl<'db> TypedDbContext<'db> {
         TypedCfApi::new(self.db, cf, &self.write_buffer)
     }
 
-    /// Explicitly flushes the current contents of the write buffer (so that it is visible to
-    /// subsequent reads).
+    /// Explicitly flushes the current contents of the write buffer.
+    ///
+    /// This has the following effects:
+    /// - the writes from the buffer become visible to subsequent reads,
+    /// - the memory consumed by the buffer is freed (see
     pub fn flush(&self) {
         let write_batch = self.write_buffer.flip();
         if !write_batch.is_empty() {

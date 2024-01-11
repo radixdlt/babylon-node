@@ -66,6 +66,7 @@ use std::ops::Range;
 
 use crate::StateVersion;
 
+use crate::store::traits::indices::CreationId;
 use radix_engine::types::*;
 use radix_engine_store_interface::interface::*;
 use radix_engine_stores::hash_tree::tree_store::{encode_key, NodeKey};
@@ -301,6 +302,87 @@ impl DbCodec<NodeId> for NodeIdDbCodec {
 
     fn decode(&self, bytes: &[u8]) -> NodeId {
         NodeId(copy_u8_array(bytes))
+    }
+}
+
+#[derive(Default)]
+pub struct TypeAndCreationIndexKeyDbCodec {}
+
+impl DbCodec<(EntityType, CreationId)> for TypeAndCreationIndexKeyDbCodec {
+    fn encode(&self, value: &(EntityType, CreationId)) -> Vec<u8> {
+        let (
+            entity_type,
+            CreationId {
+                state_version,
+                index_within_txn,
+            },
+        ) = value;
+        let mut bytes = Vec::new();
+        bytes.push(*entity_type as u8);
+        bytes.extend_from_slice(&state_version.to_be_bytes());
+        bytes.extend_from_slice(&index_within_txn.to_be_bytes());
+        bytes
+    }
+
+    fn decode(&self, bytes: &[u8]) -> (EntityType, CreationId) {
+        let (entity_type_byte, bytes) = bytes.split_at(1);
+        let entity_type = EntityType::from_repr(entity_type_byte[0]).expect("unexpected type byte");
+
+        let (state_version_bytes, index_within_txn_bytes) = bytes.split_at(StateVersion::BYTE_LEN);
+        let state_version = StateVersion::from_be_bytes(state_version_bytes);
+        let index_within_txn = u32::from_be_bytes(copy_u8_array(index_within_txn_bytes));
+
+        (
+            entity_type,
+            CreationId {
+                state_version,
+                index_within_txn,
+            },
+        )
+    }
+}
+
+#[derive(Default)]
+pub struct BlueprintAndCreationIndexKeyDbCodec {}
+
+impl DbCodec<(PackageAddress, Hash, CreationId)> for BlueprintAndCreationIndexKeyDbCodec {
+    fn encode(&self, value: &(PackageAddress, Hash, CreationId)) -> Vec<u8> {
+        let (
+            package_address,
+            blueprint_name_hash,
+            CreationId {
+                state_version,
+                index_within_txn,
+            },
+        ) = value;
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(&package_address.as_node_id().0);
+        bytes.extend_from_slice(&blueprint_name_hash.0);
+        bytes.extend_from_slice(&state_version.to_be_bytes());
+        bytes.extend_from_slice(&index_within_txn.to_be_bytes());
+        bytes
+    }
+
+    fn decode(&self, bytes: &[u8]) -> (PackageAddress, Hash, CreationId) {
+        let (package_address_bytes, bytes) = bytes.split_at(NodeId::LENGTH);
+        let package_address =
+            PackageAddress::try_from(package_address_bytes).expect("invalid package address");
+
+        let (blueprint_name_hash_bytes, bytes) = bytes.split_at(Hash::LENGTH);
+        let blueprint_name_hash = Hash::from_bytes(copy_u8_array(blueprint_name_hash_bytes));
+
+        let (state_version_bytes, index_within_txn_bytes) = bytes.split_at(StateVersion::BYTE_LEN);
+        let state_version = StateVersion::from_be_bytes(state_version_bytes);
+        let index_within_txn = u32::from_be_bytes(copy_u8_array(index_within_txn_bytes));
+
+        (
+            package_address,
+            blueprint_name_hash,
+            CreationId {
+                state_version,
+                index_within_txn,
+            },
+        )
     }
 }
 

@@ -179,7 +179,7 @@ public sealed interface StateComputerConfig {
     return new REv2StateComputerConfig(
         networkId,
         genesis,
-        new DatabaseFlags(true, false),
+        new DatabaseFlags(true, false, false),
         proposerConfig,
         false,
         StateHashTreeGcConfig.forTesting(),
