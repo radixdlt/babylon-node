@@ -12,18 +12,15 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct LedgerProof {
-    #[serde(rename = "ledger_header")]
-    pub ledger_header: Box<crate::core_api::generated::models::LedgerHeader>,
-    #[serde(rename = "origin")]
-    pub origin: Option<crate::core_api::generated::models::LedgerProofOrigin>, // Using Option permits Default trait; Will always be Some in normal use
+pub struct GenesisLedgerProofOriginAllOf {
+    #[serde(rename = "genesis_opaque_hash")]
+    pub genesis_opaque_hash: String,
 }
 
-impl LedgerProof {
-    pub fn new(ledger_header: crate::core_api::generated::models::LedgerHeader, origin: crate::core_api::generated::models::LedgerProofOrigin) -> LedgerProof {
-        LedgerProof {
-            ledger_header: Box::new(ledger_header),
-            origin: Option::Some(origin),
+impl GenesisLedgerProofOriginAllOf {
+    pub fn new(genesis_opaque_hash: String) -> GenesisLedgerProofOriginAllOf {
+        GenesisLedgerProofOriginAllOf {
+            genesis_opaque_hash,
         }
     }
 }

@@ -159,7 +159,7 @@ public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
         };
 
     final var res =
-        new com.radixdlt.api.system.generated.models.UnenactedProtocolUpdate()
+        new UnenactedProtocolUpdate()
             .protocolVersion(unenactedProtocolUpdate.protocolUpdate().nextProtocolVersion())
             .state(state)
             .readinessSignalStatus(

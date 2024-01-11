@@ -86,17 +86,15 @@ use sbor::HasLatestVersion;
 use node_common::locks::{LockFactory, StateLock};
 use node_common::scheduler::Scheduler;
 
-use crate::ProtocolUpdateEnactmentCondition::EnactUnconditionallyAtStateVersion;
+use crate::ProtocolUpdateEnactmentCondition::EnactUnconditionallyAtEpoch;
 use crate::{
     consensus_manager_config_flash, CommitRequest, CommitSummary, FlashProtocolUpdater,
     LedgerHeader, LedgerProof, LedgerProofOrigin, NoStateUpdatesProtocolUpdater, PrepareRequest,
-    PrepareResult, ProtocolConfig, ProtocolUpdate, ProtocolUpdateEnactmentCondition,
-    ProtocolUpdater, ProtocolUpdaterFactory, RoundHistory, StateManager, StateManagerConfig,
-    StateManagerDatabase, StateVersion,
+    PrepareResult, ProtocolConfig, ProtocolUpdate, ProtocolUpdater, ProtocolUpdaterFactory,
+    RoundHistory, StateManager, StateManagerConfig, StateManagerDatabase,
 };
 
 use crate::query::TransactionIdentifierLoader;
-// use crate::traits::CommitStore;
 
 const GENESIS_PROTOCOL_VERSION: &str = "testing-genesis";
 const V2_PROTOCOL_VERSION: &str = "testing-v2";
@@ -151,29 +149,16 @@ fn flash_protocol_update_test() {
 
     let mut state_manager_config =
         StateManagerConfig::new_for_testing(tempfile::tempdir().unwrap().path().to_str().unwrap());
-    state_manager_config.protocol_config = ProtocolConfig {
-        genesis_protocol_version: GENESIS_PROTOCOL_VERSION.to_string(),
-        protocol_updates: vec![ProtocolUpdate {
-            next_protocol_version: V2_PROTOCOL_VERSION.to_string(),
-            enactment_condition: ProtocolUpdateEnactmentCondition::EnactUnconditionallyAtEpoch(
-                Epoch::of(3),
-            ),
-        }],
-    };
 
-    // Genesis happens to end at version 5
-    let post_genesis_state_version = StateVersion::of(5);
     // We're enacting an update after another transaction commit
-    let protocol_update_state_version = post_genesis_state_version.next().unwrap();
-    // And expecting a single transaction committed during an update
-    let expected_post_protocol_update_state_version = protocol_update_state_version.next().unwrap();
+    let protocol_update_epoch = Epoch::of(3);
 
     // Updating to "testing-v2" at post_genesis_state_version + 1
     state_manager_config.protocol_config = ProtocolConfig {
         genesis_protocol_version: GENESIS_PROTOCOL_VERSION.to_string(),
         protocol_updates: vec![ProtocolUpdate {
             next_protocol_version: V2_PROTOCOL_VERSION.to_string(),
-            enactment_condition: EnactUnconditionallyAtStateVersion(protocol_update_state_version),
+            enactment_condition: EnactUnconditionallyAtEpoch(protocol_update_epoch),
         }],
     };
     let state_manager = StateManager::new(
@@ -190,14 +175,15 @@ fn flash_protocol_update_test() {
         .state_computer
         .execute_genesis_for_unit_tests();
 
-    // Verify that the post-genesis state version is what we expect
-    let read_db = state_manager.database.read_current();
-    assert_eq!(read_db.max_state_version(), post_genesis_state_version);
-    drop(read_db);
-
-    // Commit a single round update, which should bring us to state version 6
-    // and result in protocol update enactment.
+    // Commit 3 round updates to get us to the next epoch (3).
+    let _ = prepare_and_commit_round_update(state_manager.clone());
+    let _ = prepare_and_commit_round_update(state_manager.clone());
     let (prepare_result, _commit_summary) = prepare_and_commit_round_update(state_manager.clone());
+
+    assert_eq!(
+        prepare_result.next_epoch.unwrap().epoch,
+        protocol_update_epoch
+    );
 
     assert_eq!(
         prepare_result.next_protocol_version,
@@ -205,7 +191,7 @@ fn flash_protocol_update_test() {
     );
 
     let read_db = state_manager.database.read_current();
-    assert_eq!(read_db.max_state_version(), protocol_update_state_version);
+    let pre_protocol_update_state_version = read_db.max_state_version();
     drop(read_db);
 
     // Now let's apply the protocol update (this would normally be called by Java)
@@ -230,7 +216,7 @@ fn flash_protocol_update_test() {
 
     assert_eq!(
         read_db.max_state_version(),
-        expected_post_protocol_update_state_version
+        pre_protocol_update_state_version.next().unwrap()
     );
 }
 

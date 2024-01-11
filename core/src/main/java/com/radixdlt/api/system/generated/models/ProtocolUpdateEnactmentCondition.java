@@ -25,7 +25,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.system.generated.models.EnactUnconditionallyAtEpochCondition;
-import com.radixdlt.api.system.generated.models.EnactUnconditionallyAtStateVersionCondition;
 import com.radixdlt.api.system.generated.models.EnactWhenSupportedAndWithinBoundsCondition;
 import com.radixdlt.api.system.generated.models.ProtocolUpdateEnactmentConditionType;
 import io.swagger.annotations.ApiModel;
@@ -45,8 +44,6 @@ import com.radixdlt.api.common.JSON;
 @JsonSubTypes({
   @JsonSubTypes.Type(value = EnactUnconditionallyAtEpochCondition.class, name = "EnactUnconditionallyAtEpoch"),
   @JsonSubTypes.Type(value = EnactUnconditionallyAtEpochCondition.class, name = "EnactUnconditionallyAtEpochCondition"),
-  @JsonSubTypes.Type(value = EnactUnconditionallyAtStateVersionCondition.class, name = "EnactUnconditionallyAtStateVersion"),
-  @JsonSubTypes.Type(value = EnactUnconditionallyAtStateVersionCondition.class, name = "EnactUnconditionallyAtStateVersionCondition"),
   @JsonSubTypes.Type(value = EnactWhenSupportedAndWithinBoundsCondition.class, name = "EnactWhenSupportedAndWithinBounds"),
   @JsonSubTypes.Type(value = EnactWhenSupportedAndWithinBoundsCondition.class, name = "EnactWhenSupportedAndWithinBoundsCondition"),
 })
@@ -127,8 +124,6 @@ static {
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
   mappings.put("EnactUnconditionallyAtEpoch", EnactUnconditionallyAtEpochCondition.class);
   mappings.put("EnactUnconditionallyAtEpochCondition", EnactUnconditionallyAtEpochCondition.class);
-  mappings.put("EnactUnconditionallyAtStateVersion", EnactUnconditionallyAtStateVersionCondition.class);
-  mappings.put("EnactUnconditionallyAtStateVersionCondition", EnactUnconditionallyAtStateVersionCondition.class);
   mappings.put("EnactWhenSupportedAndWithinBounds", EnactWhenSupportedAndWithinBoundsCondition.class);
   mappings.put("EnactWhenSupportedAndWithinBoundsCondition", EnactWhenSupportedAndWithinBoundsCondition.class);
   mappings.put("ProtocolUpdateEnactmentCondition", ProtocolUpdateEnactmentCondition.class);

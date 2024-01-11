@@ -166,40 +166,54 @@ pub fn to_api_ledger_proof(
     mapping_context: &MappingContext,
     proof: LedgerProof,
 ) -> Result<models::LedgerProof, MappingError> {
-    // TODO(protocol-update): update the model to include different proof origins
-    let (opaque_hash, timestamped_signatures) = match proof.origin {
+    let api_origin = match &proof.origin {
         LedgerProofOrigin::Genesis {
             genesis_opaque_hash,
-        } => (genesis_opaque_hash, vec![]),
+        } => models::LedgerProofOrigin::GenesisLedgerProofOrigin {
+            genesis_opaque_hash: to_api_hash(genesis_opaque_hash),
+        },
         LedgerProofOrigin::Consensus {
             opaque,
             timestamped_signatures,
-        } => (opaque, timestamped_signatures),
-        LedgerProofOrigin::ProtocolUpdate { .. } => (Hash([0; Hash::LENGTH]), vec![]),
+        } => {
+            let api_timestamped_signatures = timestamped_signatures
+                .iter()
+                .map(|timestamped_validator_signature| {
+                    Ok(models::TimestampedValidatorSignature {
+                        validator_key: Box::new(to_api_ecdsa_secp256k1_public_key(
+                            &timestamped_validator_signature.key,
+                        )),
+                        validator_address: to_api_component_address(
+                            mapping_context,
+                            &timestamped_validator_signature.validator_address,
+                        )?,
+                        timestamp_ms: timestamped_validator_signature.timestamp_ms,
+                        signature: Box::new(models::EcdsaSecp256k1Signature {
+                            key_type: models::PublicKeyType::EcdsaSecp256k1,
+                            signature_hex: to_hex(
+                                timestamped_validator_signature.signature.to_vec(),
+                            ),
+                        }),
+                    })
+                })
+                .collect::<Result<_, _>>()?;
+
+            models::LedgerProofOrigin::ConsensusLedgerProofOrigin {
+                opaque_hash: to_api_hash(opaque),
+                timestamped_signatures: api_timestamped_signatures,
+            }
+        }
+        LedgerProofOrigin::ProtocolUpdate {
+            protocol_version_name,
+            batch_idx,
+        } => models::LedgerProofOrigin::ProtocolUpdateLedgerProofOrigin {
+            protocol_version_name: protocol_version_name.to_string(),
+            batch_idx: to_api_u32_as_i64(*batch_idx),
+        },
     };
-    let api_timestamped_signatures = timestamped_signatures
-        .into_iter()
-        .map(|timestamped_validator_signature| {
-            Ok(models::TimestampedValidatorSignature {
-                validator_key: Box::new(to_api_ecdsa_secp256k1_public_key(
-                    &timestamped_validator_signature.key,
-                )),
-                validator_address: to_api_component_address(
-                    mapping_context,
-                    &timestamped_validator_signature.validator_address,
-                )?,
-                timestamp_ms: timestamped_validator_signature.timestamp_ms,
-                signature: Box::new(models::EcdsaSecp256k1Signature {
-                    key_type: models::PublicKeyType::EcdsaSecp256k1,
-                    signature_hex: to_hex(timestamped_validator_signature.signature.to_vec()),
-                }),
-            })
-        })
-        .collect::<Result<_, _>>()?;
     Ok(models::LedgerProof {
-        opaque_hash: to_api_hash(&opaque_hash),
         ledger_header: Box::new(to_api_ledger_header(mapping_context, proof.ledger_header)?),
-        timestamped_signatures: api_timestamped_signatures,
+        origin: Some(api_origin),
     })
 }
 

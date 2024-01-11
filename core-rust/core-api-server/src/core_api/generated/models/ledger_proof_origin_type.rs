@@ -9,23 +9,34 @@
  */
 
 
+/// 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
+pub enum LedgerProofOriginType {
+    #[serde(rename = "Genesis")]
+    Genesis,
+    #[serde(rename = "Consensus")]
+    Consensus,
+    #[serde(rename = "ProtocolUpdate")]
+    ProtocolUpdate,
 
-
-#[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct LedgerProof {
-    #[serde(rename = "ledger_header")]
-    pub ledger_header: Box<crate::core_api::generated::models::LedgerHeader>,
-    #[serde(rename = "origin")]
-    pub origin: Option<crate::core_api::generated::models::LedgerProofOrigin>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
-impl LedgerProof {
-    pub fn new(ledger_header: crate::core_api::generated::models::LedgerHeader, origin: crate::core_api::generated::models::LedgerProofOrigin) -> LedgerProof {
-        LedgerProof {
-            ledger_header: Box::new(ledger_header),
-            origin: Option::Some(origin),
+impl ToString for LedgerProofOriginType {
+    fn to_string(&self) -> String {
+        match self {
+            Self::Genesis => String::from("Genesis"),
+            Self::Consensus => String::from("Consensus"),
+            Self::ProtocolUpdate => String::from("ProtocolUpdate"),
         }
     }
 }
+
+impl Default for LedgerProofOriginType {
+    fn default() -> LedgerProofOriginType {
+        Self::Genesis
+    }
+}
+
+
 
 

@@ -16,13 +16,11 @@ use tracing::info;
 
 use crate::traits::{IterableProofStore, QueryableProofStore, QueryableTransactionStore};
 use crate::ProtocolUpdateEnactmentCondition::{
-    EnactUnconditionallyAtEpoch, EnactUnconditionallyAtStateVersion,
-    EnactWhenSupportedAndWithinBounds,
+    EnactUnconditionallyAtEpoch, EnactWhenSupportedAndWithinBounds,
 };
 use crate::{
-    to_relative_bound, LocalTransactionReceipt, ProtocolConfig, ProtocolUpdate,
-    ProtocolUpdateEnactmentBound, ProtocolUpdateSupportType, RelativeProtocolUpdateEnactmentBound,
-    SignalledReadinessThreshold, StateVersion,
+    LocalTransactionReceipt, ProtocolConfig, ProtocolUpdate, SignalledReadinessThreshold,
+    StateVersion,
 };
 
 // This file contains types and utilities for
@@ -46,8 +44,8 @@ pub struct UnenactedProtocolUpdate {
 pub enum UnenactedProtocolUpdateState {
     ForSignalledReadinessSupportCondition {
         thresholds_state: Vec<(
-            SignalledReadinessThreshold,      // z configa
-            SignalledReadinessThresholdState, // to jest per-threshold
+            SignalledReadinessThreshold,
+            SignalledReadinessThresholdState,
         )>,
     },
     // Empty placeholder for all other stateless conditions
@@ -78,27 +76,16 @@ fn compute_initial_protocol_update_status<
         EnactWhenSupportedAndWithinBounds {
             lower_bound,
             upper_bound,
-            support_type,
-        } => {
-            let relative_lower_bound = to_relative_bound(store, lower_bound);
-            let relative_upper_bound = to_relative_bound(store, upper_bound);
-            match support_type {
-                ProtocolUpdateSupportType::SignalledReadiness(thresholds) => {
-                    compute_initial_signalled_readiness_protocol_update_status(
-                        store,
-                        protocol_update,
-                        relative_lower_bound,
-                        relative_upper_bound,
-                        thresholds,
-                    )
-                }
-            }
-        }
+            readiness_thresholds,
+        } => compute_initial_signalled_readiness_protocol_update_status(
+            store,
+            protocol_update,
+            lower_bound,
+            upper_bound,
+            readiness_thresholds,
+        ),
         EnactUnconditionallyAtEpoch(epoch) => {
             compute_initial_at_epoch_protocol_update_status(store, *epoch)
-        }
-        EnactUnconditionallyAtStateVersion(state_version) => {
-            compute_initial_at_state_version_protocol_update_status(store, *state_version)
         }
     }
 }
@@ -108,8 +95,8 @@ fn compute_initial_signalled_readiness_protocol_update_status<
 >(
     store: &S,
     protocol_update: &ProtocolUpdate,
-    relative_lower_bound: RelativeProtocolUpdateEnactmentBound,
-    relative_upper_bound: RelativeProtocolUpdateEnactmentBound,
+    lower_bound: &Epoch,
+    upper_bound: &Epoch,
     thresholds: &[SignalledReadinessThreshold],
 ) -> InitialProtocolUpdateStatus {
     // Mutable var for the initial state that we'll compute in this fn
@@ -135,80 +122,18 @@ fn compute_initial_signalled_readiness_protocol_update_status<
         .max()
         .expect("No thresholds found in signalled readiness protocol update");
 
-    // The earliest epoch where we need to consider the readiness signals.
-    // Basically: `lower_bound_epoch - max_required_consecutive_epochs_of_support`
-    // with some extra logic to handle future epochs and state version bounds.
-    let earliest_relevant_epoch = match relative_lower_bound {
-        RelativeProtocolUpdateEnactmentBound::Past {
-            ref closest_epoch_change_on_or_before,
-            ..
-        } => Epoch::of(
-            closest_epoch_change_on_or_before
-                .epoch
-                .number()
-                .saturating_sub(max_required_consecutive_epochs_of_support),
-        ),
-        RelativeProtocolUpdateEnactmentBound::FutureStateVersion(_)
-        | RelativeProtocolUpdateEnactmentBound::FutureEpoch(_) => {
-            if let Some(latest_epoch_proof) = store.get_latest_epoch_proof() {
-                let current_epoch = latest_epoch_proof
-                    .ledger_header
-                    .next_epoch
-                    .expect("next_epoch is missing in epoch proof")
-                    .epoch
-                    .number();
-                Epoch::of(current_epoch.saturating_sub(max_required_consecutive_epochs_of_support))
-            } else {
-                // We're before genesis, so just return the initial state.
-                return InitialProtocolUpdateStatus::UnenactedButStillPossible(
-                    UnenactedProtocolUpdateState::ForSignalledReadinessSupportCondition {
-                        thresholds_state,
-                    },
-                );
-            }
-        }
-    };
+    // The earliest epoch where we need to consider the readiness signals
+    let earliest_relevant_epoch = Epoch::of(
+        lower_bound
+            .number()
+            .saturating_sub(max_required_consecutive_epochs_of_support),
+    );
 
     // Start iterating from the earliest relevant epoch
     // (or the earliest epoch we have, i.e. genesis)
     let epoch_change_event_iter = epoch_change_iter(store, earliest_relevant_epoch);
 
-    // We need to handle the case where we have enough support at the beginning
-    // of the given epoch, but the lower bound is at a later state version within this epoch.
-    // (e.g. epoch change [with support] at state 100, but lower bound at state 110).
-    // For this, we use this helper variable that, if a threshold was passing on a previous iter,
-    // holds its corresponding state version, or None if previous iter threshold wasn't passing.
-    // We examine it in the _next_ iteration and after the whole loop.
-    let mut previous_iter_state_version_if_threshold_passes = None;
     for (state_version, epoch_change_event) in epoch_change_event_iter {
-        // See the comment above, if we had a passing threshold (but haven't returned
-        // a result), we need to reevaluate the bounds in the next iteration
-        // (here) and after the loop.
-        if let Some(previous_state_version) = previous_iter_state_version_if_threshold_passes {
-            if let Some(lower_bound_state_version) = bound_in_between_inclusive(
-                relative_lower_bound.clone(),
-                previous_state_version,
-                state_version,
-            ) {
-                // Lower bound is between the previous epoch state version
-                // and the current epoch state version. Since we know we had enough support
-                // at the beginning of the previous epoch, the protocol update enacts right at the
-                // lower bound.
-                return InitialProtocolUpdateStatus::ExpectedToHaveBeenEnactedAtStateVersion(
-                    lower_bound_state_version,
-                );
-            } else if let Some(upper_bound_state_version) = bound_in_between_inclusive(
-                relative_upper_bound.clone(),
-                previous_state_version,
-                state_version,
-            ) {
-                // Same logic applies to the upper bound (if not enacted at a lower bound)
-                return InitialProtocolUpdateStatus::ExpectedToHaveBeenEnactedAtStateVersion(
-                    upper_bound_state_version,
-                );
-            } // else: no-op
-        } // else: no-op
-
         // Update the thresholds
         update_thresholds_state_at_epoch_change(
             protocol_update,
@@ -218,48 +143,18 @@ fn compute_initial_signalled_readiness_protocol_update_status<
 
         // Check if any threshold passes
         let any_threshold_passes = any_threshold_passes(&thresholds_state);
-
-        // Update the helper variable (see the comment above)
-        if any_threshold_passes {
-            previous_iter_state_version_if_threshold_passes = Some(state_version);
-        } else {
-            previous_iter_state_version_if_threshold_passes = None;
-        }
-
         if !any_threshold_passes {
             continue;
         }
 
         // Check if we're on or above the lower bound
-        let on_or_above_lower_bound = match relative_lower_bound {
-            RelativeProtocolUpdateEnactmentBound::Past {
-                state_version: lower_bound_state_version,
-                ..
-            } => state_version >= lower_bound_state_version,
-            RelativeProtocolUpdateEnactmentBound::FutureStateVersion(_)
-            | RelativeProtocolUpdateEnactmentBound::FutureEpoch(_) => {
-                // Lower bound is in the future, so it can't possibly match
-                false
-            }
-        };
-
+        let on_or_above_lower_bound = epoch_change_event.epoch.number() >= lower_bound.number();
         if !on_or_above_lower_bound {
             continue;
         }
 
         // Check if we're on or below the upper bound
-        let on_or_below_upper_bound = match relative_upper_bound {
-            RelativeProtocolUpdateEnactmentBound::Past {
-                state_version: upper_bound_state_version,
-                ..
-            } => state_version <= upper_bound_state_version,
-            RelativeProtocolUpdateEnactmentBound::FutureStateVersion(_)
-            | RelativeProtocolUpdateEnactmentBound::FutureEpoch(_) => {
-                // Upper bound is in the future, so it matches
-                true
-            }
-        };
-
+        let on_or_below_upper_bound = epoch_change_event.epoch.number() <= upper_bound.number();
         if !on_or_below_upper_bound {
             continue;
         }
@@ -269,69 +164,11 @@ fn compute_initial_signalled_readiness_protocol_update_status<
         return InitialProtocolUpdateStatus::ExpectedToHaveBeenEnactedAtStateVersion(state_version);
     }
 
-    // We need to inspect the state post-last iteration to catch mid-epoch enactment.
-    // See the comment above the loop.
-    let current_state_version = store
-        .get_latest_proof()
-        .map(|proof| proof.ledger_header.state_version)
-        .unwrap_or_else(StateVersion::pre_genesis);
-    if let Some(previous_state_version) = previous_iter_state_version_if_threshold_passes {
-        if let Some(lower_bound_state_version) = bound_in_between_inclusive(
-            relative_lower_bound.clone(),
-            previous_state_version,
-            current_state_version,
-        ) {
-            // Lower bound is between the current epoch state version
-            // and our latest state version. Since we know we had enough support
-            // at the beginning of the current epoch, the protocol update enacts right at the
-            // lower bound.
-            return InitialProtocolUpdateStatus::ExpectedToHaveBeenEnactedAtStateVersion(
-                lower_bound_state_version,
-            );
-        } else if let Some(upper_bound_state_version) = bound_in_between_inclusive(
-            relative_upper_bound.clone(),
-            previous_state_version,
-            current_state_version,
-        ) {
-            // Same logic applies to the upper bound (if not enacted at a lower bound)
-            return InitialProtocolUpdateStatus::ExpectedToHaveBeenEnactedAtStateVersion(
-                upper_bound_state_version,
-            );
-        } // else: no-op
-    } // else: no-op
-
     // The protocol update wasn't enacted yet, so just return the latest computed state
     // as the initial state.
     InitialProtocolUpdateStatus::UnenactedButStillPossible(
         UnenactedProtocolUpdateState::ForSignalledReadinessSupportCondition { thresholds_state },
     )
-}
-
-/// A helper that returns the relative bound state version
-/// if it is known to be in between the two provided
-/// state versions (both inclusive).
-/// Returns None otherwise.
-fn bound_in_between_inclusive(
-    relative_bound: RelativeProtocolUpdateEnactmentBound,
-    lower_state_version: StateVersion,
-    upper_state_version: StateVersion,
-) -> Option<StateVersion> {
-    match relative_bound {
-        RelativeProtocolUpdateEnactmentBound::Past {
-            state_version: bound_state_version,
-            ..
-        } => {
-            if bound_state_version >= lower_state_version
-                && bound_state_version <= upper_state_version
-            {
-                Some(bound_state_version)
-            } else {
-                None
-            }
-        }
-        RelativeProtocolUpdateEnactmentBound::FutureStateVersion(_)
-        | RelativeProtocolUpdateEnactmentBound::FutureEpoch(_) => None,
-    }
 }
 
 fn compute_initial_at_epoch_protocol_update_status<S: QueryableProofStore>(
@@ -342,18 +179,6 @@ fn compute_initial_at_epoch_protocol_update_status<S: QueryableProofStore>(
         InitialProtocolUpdateStatus::ExpectedToHaveBeenEnactedAtStateVersion(
             epoch_proof.ledger_header.state_version,
         )
-    } else {
-        InitialProtocolUpdateStatus::UnenactedButStillPossible(UnenactedProtocolUpdateState::Empty)
-    }
-}
-
-fn compute_initial_at_state_version_protocol_update_status<S: QueryableProofStore>(
-    store: &S,
-    state_version: StateVersion,
-) -> InitialProtocolUpdateStatus {
-    let current_state_version = store.max_state_version();
-    if state_version <= current_state_version {
-        InitialProtocolUpdateStatus::ExpectedToHaveBeenEnactedAtStateVersion(state_version)
     } else {
         InitialProtocolUpdateStatus::UnenactedButStillPossible(UnenactedProtocolUpdateState::Empty)
     }
@@ -490,49 +315,35 @@ pub fn compute_new_protocol_state(
             EnactWhenSupportedAndWithinBounds {
                 lower_bound,
                 upper_bound,
-                support_type,
+                ..
             } => {
                 // Note: this is not a pure boolean calculation,
                 // it also updates the state.
-                let has_sufficient_support = match support_type {
-                    ProtocolUpdateSupportType::SignalledReadiness(_) => {
-                        if let UnenactedProtocolUpdateState::ForSignalledReadinessSupportCondition {
-                            ref mut thresholds_state
-                        } = &mut unenacted_protocol_update.state {
-                            // If this was an epoch change, update the thresholds state
-                            if let Some(epoch_change_event) = &local_receipt.local_execution.next_epoch {
-                                update_thresholds_state_at_epoch_change(
-                                    &unenacted_protocol_update.protocol_update,
-                                    epoch_change_event,
-                                    thresholds_state
-                                );
-                            }
-                            // Regardless of whether this was an epoch change or not,
-                            // check if any threshold currently passes.
-                            any_threshold_passes(thresholds_state)
-                        } else {
-                            panic!("Invalid protocol state")
+                let has_sufficient_support = {
+                    if let UnenactedProtocolUpdateState::ForSignalledReadinessSupportCondition {
+                        ref mut thresholds_state,
+                    } = &mut unenacted_protocol_update.state
+                    {
+                        // If this was an epoch change, update the thresholds state
+                        if let Some(epoch_change_event) = &local_receipt.local_execution.next_epoch
+                        {
+                            update_thresholds_state_at_epoch_change(
+                                &unenacted_protocol_update.protocol_update,
+                                epoch_change_event,
+                                thresholds_state,
+                            );
                         }
+                        // Regardless of whether this was an epoch change or not,
+                        // check if any threshold currently passes.
+                        any_threshold_passes(thresholds_state)
+                    } else {
+                        panic!("Invalid protocol state")
                     }
                 };
 
-                let on_or_above_lower_bound = match lower_bound {
-                    ProtocolUpdateEnactmentBound::Epoch(lower_bound_epoch) => {
-                        post_execute_epoch >= *lower_bound_epoch
-                    }
-                    ProtocolUpdateEnactmentBound::StateVersion(lower_bound_state_version) => {
-                        post_execute_state_version >= *lower_bound_state_version
-                    }
-                };
+                let on_or_above_lower_bound = post_execute_epoch >= *lower_bound;
 
-                let on_or_below_upper_bound = match upper_bound {
-                    ProtocolUpdateEnactmentBound::Epoch(upper_bound_epoch) => {
-                        post_execute_epoch <= *upper_bound_epoch
-                    }
-                    ProtocolUpdateEnactmentBound::StateVersion(upper_bound_state_version) => {
-                        post_execute_state_version <= *upper_bound_state_version
-                    }
-                };
+                let on_or_below_upper_bound = post_execute_epoch <= *upper_bound;
 
                 if has_sufficient_support && on_or_above_lower_bound && on_or_below_upper_bound {
                     enactable_protocol_updates.push(
@@ -564,19 +375,6 @@ pub fn compute_new_protocol_state(
                 } else {
                     // Not an epoch change
                     non_expired_unenacted_protocol_updates.push(unenacted_protocol_update);
-                }
-            }
-            EnactUnconditionallyAtStateVersion(enactment_state_version) => {
-                match post_execute_state_version.cmp(enactment_state_version) {
-                    Ordering::Less => {
-                        non_expired_unenacted_protocol_updates.push(unenacted_protocol_update)
-                    }
-                    Ordering::Equal => enactable_protocol_updates.push(
-                        unenacted_protocol_update
-                            .protocol_update
-                            .next_protocol_version,
-                    ),
-                    Ordering::Greater => expired_protocol_updates.push(unenacted_protocol_update),
                 }
             }
         }

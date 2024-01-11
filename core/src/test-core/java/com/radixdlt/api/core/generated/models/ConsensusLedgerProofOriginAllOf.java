@@ -22,85 +22,91 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.LedgerHeader;
-import com.radixdlt.api.core.generated.models.LedgerProofOrigin;
+import com.radixdlt.api.core.generated.models.TimestampedValidatorSignature;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import java.util.ArrayList;
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * LedgerProof
+ * ConsensusLedgerProofOriginAllOf
  */
 @JsonPropertyOrder({
-  LedgerProof.JSON_PROPERTY_LEDGER_HEADER,
-  LedgerProof.JSON_PROPERTY_ORIGIN
+  ConsensusLedgerProofOriginAllOf.JSON_PROPERTY_OPAQUE_HASH,
+  ConsensusLedgerProofOriginAllOf.JSON_PROPERTY_TIMESTAMPED_SIGNATURES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class LedgerProof {
-  public static final String JSON_PROPERTY_LEDGER_HEADER = "ledger_header";
-  private LedgerHeader ledgerHeader;
+public class ConsensusLedgerProofOriginAllOf {
+  public static final String JSON_PROPERTY_OPAQUE_HASH = "opaque_hash";
+  private String opaqueHash;
 
-  public static final String JSON_PROPERTY_ORIGIN = "origin";
-  private LedgerProofOrigin origin;
+  public static final String JSON_PROPERTY_TIMESTAMPED_SIGNATURES = "timestamped_signatures";
+  private List<TimestampedValidatorSignature> timestampedSignatures = new ArrayList<>();
 
-  public LedgerProof() { 
+  public ConsensusLedgerProofOriginAllOf() { 
   }
 
-  public LedgerProof ledgerHeader(LedgerHeader ledgerHeader) {
-    this.ledgerHeader = ledgerHeader;
+  public ConsensusLedgerProofOriginAllOf opaqueHash(String opaqueHash) {
+    this.opaqueHash = opaqueHash;
     return this;
   }
 
    /**
-   * Get ledgerHeader
-   * @return ledgerHeader
+   * A hex-encoded 32-byte vertex VoteData hash on the consensus side, opaque to ledger.
+   * @return opaqueHash
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_LEDGER_HEADER)
+  @ApiModelProperty(required = true, value = "A hex-encoded 32-byte vertex VoteData hash on the consensus side, opaque to ledger.")
+  @JsonProperty(JSON_PROPERTY_OPAQUE_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public LedgerHeader getLedgerHeader() {
-    return ledgerHeader;
+  public String getOpaqueHash() {
+    return opaqueHash;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_LEDGER_HEADER)
+  @JsonProperty(JSON_PROPERTY_OPAQUE_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setLedgerHeader(LedgerHeader ledgerHeader) {
-    this.ledgerHeader = ledgerHeader;
+  public void setOpaqueHash(String opaqueHash) {
+    this.opaqueHash = opaqueHash;
   }
 
 
-  public LedgerProof origin(LedgerProofOrigin origin) {
-    this.origin = origin;
+  public ConsensusLedgerProofOriginAllOf timestampedSignatures(List<TimestampedValidatorSignature> timestampedSignatures) {
+    this.timestampedSignatures = timestampedSignatures;
+    return this;
+  }
+
+  public ConsensusLedgerProofOriginAllOf addTimestampedSignaturesItem(TimestampedValidatorSignature timestampedSignaturesItem) {
+    this.timestampedSignatures.add(timestampedSignaturesItem);
     return this;
   }
 
    /**
-   * Get origin
-   * @return origin
+   * Get timestampedSignatures
+   * @return timestampedSignatures
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ORIGIN)
+  @JsonProperty(JSON_PROPERTY_TIMESTAMPED_SIGNATURES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public LedgerProofOrigin getOrigin() {
-    return origin;
+  public List<TimestampedValidatorSignature> getTimestampedSignatures() {
+    return timestampedSignatures;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ORIGIN)
+  @JsonProperty(JSON_PROPERTY_TIMESTAMPED_SIGNATURES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setOrigin(LedgerProofOrigin origin) {
-    this.origin = origin;
+  public void setTimestampedSignatures(List<TimestampedValidatorSignature> timestampedSignatures) {
+    this.timestampedSignatures = timestampedSignatures;
   }
 
 
   /**
-   * Return true if this LedgerProof object is equal to o.
+   * Return true if this ConsensusLedgerProofOrigin_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -110,22 +116,22 @@ public class LedgerProof {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    LedgerProof ledgerProof = (LedgerProof) o;
-    return Objects.equals(this.ledgerHeader, ledgerProof.ledgerHeader) &&
-        Objects.equals(this.origin, ledgerProof.origin);
+    ConsensusLedgerProofOriginAllOf consensusLedgerProofOriginAllOf = (ConsensusLedgerProofOriginAllOf) o;
+    return Objects.equals(this.opaqueHash, consensusLedgerProofOriginAllOf.opaqueHash) &&
+        Objects.equals(this.timestampedSignatures, consensusLedgerProofOriginAllOf.timestampedSignatures);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(ledgerHeader, origin);
+    return Objects.hash(opaqueHash, timestampedSignatures);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class LedgerProof {\n");
-    sb.append("    ledgerHeader: ").append(toIndentedString(ledgerHeader)).append("\n");
-    sb.append("    origin: ").append(toIndentedString(origin)).append("\n");
+    sb.append("class ConsensusLedgerProofOriginAllOf {\n");
+    sb.append("    opaqueHash: ").append(toIndentedString(opaqueHash)).append("\n");
+    sb.append("    timestampedSignatures: ").append(toIndentedString(timestampedSignatures)).append("\n");
     sb.append("}");
     return sb.toString();
   }

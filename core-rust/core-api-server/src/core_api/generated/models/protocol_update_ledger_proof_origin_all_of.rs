@@ -12,18 +12,18 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct LedgerProof {
-    #[serde(rename = "ledger_header")]
-    pub ledger_header: Box<crate::core_api::generated::models::LedgerHeader>,
-    #[serde(rename = "origin")]
-    pub origin: Option<crate::core_api::generated::models::LedgerProofOrigin>, // Using Option permits Default trait; Will always be Some in normal use
+pub struct ProtocolUpdateLedgerProofOriginAllOf {
+    #[serde(rename = "protocol_version_name")]
+    pub protocol_version_name: String,
+    #[serde(rename = "batch_idx")]
+    pub batch_idx: i64,
 }
 
-impl LedgerProof {
-    pub fn new(ledger_header: crate::core_api::generated::models::LedgerHeader, origin: crate::core_api::generated::models::LedgerProofOrigin) -> LedgerProof {
-        LedgerProof {
-            ledger_header: Box::new(ledger_header),
-            origin: Option::Some(origin),
+impl ProtocolUpdateLedgerProofOriginAllOf {
+    pub fn new(protocol_version_name: String, batch_idx: i64) -> ProtocolUpdateLedgerProofOriginAllOf {
+        ProtocolUpdateLedgerProofOriginAllOf {
+            protocol_version_name,
+            batch_idx,
         }
     }
 }

@@ -22,85 +22,53 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.LedgerHeader;
-import com.radixdlt.api.core.generated.models.LedgerProofOrigin;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * LedgerProof
+ * GenesisLedgerProofOriginAllOf
  */
 @JsonPropertyOrder({
-  LedgerProof.JSON_PROPERTY_LEDGER_HEADER,
-  LedgerProof.JSON_PROPERTY_ORIGIN
+  GenesisLedgerProofOriginAllOf.JSON_PROPERTY_GENESIS_OPAQUE_HASH
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class LedgerProof {
-  public static final String JSON_PROPERTY_LEDGER_HEADER = "ledger_header";
-  private LedgerHeader ledgerHeader;
+public class GenesisLedgerProofOriginAllOf {
+  public static final String JSON_PROPERTY_GENESIS_OPAQUE_HASH = "genesis_opaque_hash";
+  private String genesisOpaqueHash;
 
-  public static final String JSON_PROPERTY_ORIGIN = "origin";
-  private LedgerProofOrigin origin;
-
-  public LedgerProof() { 
+  public GenesisLedgerProofOriginAllOf() { 
   }
 
-  public LedgerProof ledgerHeader(LedgerHeader ledgerHeader) {
-    this.ledgerHeader = ledgerHeader;
+  public GenesisLedgerProofOriginAllOf genesisOpaqueHash(String genesisOpaqueHash) {
+    this.genesisOpaqueHash = genesisOpaqueHash;
     return this;
   }
 
    /**
-   * Get ledgerHeader
-   * @return ledgerHeader
+   * Get genesisOpaqueHash
+   * @return genesisOpaqueHash
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_LEDGER_HEADER)
+  @JsonProperty(JSON_PROPERTY_GENESIS_OPAQUE_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public LedgerHeader getLedgerHeader() {
-    return ledgerHeader;
+  public String getGenesisOpaqueHash() {
+    return genesisOpaqueHash;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_LEDGER_HEADER)
+  @JsonProperty(JSON_PROPERTY_GENESIS_OPAQUE_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setLedgerHeader(LedgerHeader ledgerHeader) {
-    this.ledgerHeader = ledgerHeader;
-  }
-
-
-  public LedgerProof origin(LedgerProofOrigin origin) {
-    this.origin = origin;
-    return this;
-  }
-
-   /**
-   * Get origin
-   * @return origin
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ORIGIN)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public LedgerProofOrigin getOrigin() {
-    return origin;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_ORIGIN)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setOrigin(LedgerProofOrigin origin) {
-    this.origin = origin;
+  public void setGenesisOpaqueHash(String genesisOpaqueHash) {
+    this.genesisOpaqueHash = genesisOpaqueHash;
   }
 
 
   /**
-   * Return true if this LedgerProof object is equal to o.
+   * Return true if this GenesisLedgerProofOrigin_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -110,22 +78,20 @@ public class LedgerProof {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    LedgerProof ledgerProof = (LedgerProof) o;
-    return Objects.equals(this.ledgerHeader, ledgerProof.ledgerHeader) &&
-        Objects.equals(this.origin, ledgerProof.origin);
+    GenesisLedgerProofOriginAllOf genesisLedgerProofOriginAllOf = (GenesisLedgerProofOriginAllOf) o;
+    return Objects.equals(this.genesisOpaqueHash, genesisLedgerProofOriginAllOf.genesisOpaqueHash);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(ledgerHeader, origin);
+    return Objects.hash(genesisOpaqueHash);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class LedgerProof {\n");
-    sb.append("    ledgerHeader: ").append(toIndentedString(ledgerHeader)).append("\n");
-    sb.append("    origin: ").append(toIndentedString(origin)).append("\n");
+    sb.append("class GenesisLedgerProofOriginAllOf {\n");
+    sb.append("    genesisOpaqueHash: ").append(toIndentedString(genesisOpaqueHash)).append("\n");
     sb.append("}");
     return sb.toString();
   }

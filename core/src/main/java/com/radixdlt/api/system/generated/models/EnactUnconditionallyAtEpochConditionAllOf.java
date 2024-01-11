@@ -22,59 +22,51 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.system.generated.models.SignalledReadinessThreshold;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * ProtocolUpdateSignalledReadinessSupportAllOf
+ * EnactUnconditionallyAtEpochConditionAllOf
  */
 @JsonPropertyOrder({
-  ProtocolUpdateSignalledReadinessSupportAllOf.JSON_PROPERTY_THRESHOLDS
+  EnactUnconditionallyAtEpochConditionAllOf.JSON_PROPERTY_EPOCH
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class ProtocolUpdateSignalledReadinessSupportAllOf {
-  public static final String JSON_PROPERTY_THRESHOLDS = "thresholds";
-  private List<SignalledReadinessThreshold> thresholds = new ArrayList<>();
+public class EnactUnconditionallyAtEpochConditionAllOf {
+  public static final String JSON_PROPERTY_EPOCH = "epoch";
+  private Long epoch;
 
 
-  public ProtocolUpdateSignalledReadinessSupportAllOf thresholds(List<SignalledReadinessThreshold> thresholds) {
-    this.thresholds = thresholds;
-    return this;
-  }
-
-  public ProtocolUpdateSignalledReadinessSupportAllOf addThresholdsItem(SignalledReadinessThreshold thresholdsItem) {
-    this.thresholds.add(thresholdsItem);
+  public EnactUnconditionallyAtEpochConditionAllOf epoch(Long epoch) {
+    this.epoch = epoch;
     return this;
   }
 
    /**
-   * Get thresholds
-   * @return thresholds
+   * Get epoch
+   * @return epoch
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_THRESHOLDS)
+  @JsonProperty(JSON_PROPERTY_EPOCH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<SignalledReadinessThreshold> getThresholds() {
-    return thresholds;
+  public Long getEpoch() {
+    return epoch;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_THRESHOLDS)
+  @JsonProperty(JSON_PROPERTY_EPOCH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setThresholds(List<SignalledReadinessThreshold> thresholds) {
-    this.thresholds = thresholds;
+  public void setEpoch(Long epoch) {
+    this.epoch = epoch;
   }
 
 
   /**
-   * Return true if this ProtocolUpdateSignalledReadinessSupport_allOf object is equal to o.
+   * Return true if this EnactUnconditionallyAtEpochCondition_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -84,20 +76,20 @@ public class ProtocolUpdateSignalledReadinessSupportAllOf {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ProtocolUpdateSignalledReadinessSupportAllOf protocolUpdateSignalledReadinessSupportAllOf = (ProtocolUpdateSignalledReadinessSupportAllOf) o;
-    return Objects.equals(this.thresholds, protocolUpdateSignalledReadinessSupportAllOf.thresholds);
+    EnactUnconditionallyAtEpochConditionAllOf enactUnconditionallyAtEpochConditionAllOf = (EnactUnconditionallyAtEpochConditionAllOf) o;
+    return Objects.equals(this.epoch, enactUnconditionallyAtEpochConditionAllOf.epoch);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(thresholds);
+    return Objects.hash(epoch);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ProtocolUpdateSignalledReadinessSupportAllOf {\n");
-    sb.append("    thresholds: ").append(toIndentedString(thresholds)).append("\n");
+    sb.append("class EnactUnconditionallyAtEpochConditionAllOf {\n");
+    sb.append("    epoch: ").append(toIndentedString(epoch)).append("\n");
     sb.append("}");
     return sb.toString();
   }

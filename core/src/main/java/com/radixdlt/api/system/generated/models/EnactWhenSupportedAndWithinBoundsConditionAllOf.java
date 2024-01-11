@@ -22,10 +22,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.system.generated.models.ProtocolUpdateEnactmentBound;
-import com.radixdlt.api.system.generated.models.ProtocolUpdateSupportType;
+import com.radixdlt.api.system.generated.models.SignalledReadinessThreshold;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import java.util.ArrayList;
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -33,97 +34,105 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * EnactWhenSupportedAndWithinBoundsConditionAllOf
  */
 @JsonPropertyOrder({
-  EnactWhenSupportedAndWithinBoundsConditionAllOf.JSON_PROPERTY_LOWER_BOUND,
-  EnactWhenSupportedAndWithinBoundsConditionAllOf.JSON_PROPERTY_UPPER_BOUND,
-  EnactWhenSupportedAndWithinBoundsConditionAllOf.JSON_PROPERTY_SUPPORT_TYPE
+  EnactWhenSupportedAndWithinBoundsConditionAllOf.JSON_PROPERTY_LOWER_BOUND_EPOCH,
+  EnactWhenSupportedAndWithinBoundsConditionAllOf.JSON_PROPERTY_UPPER_BOUND_EPOCH,
+  EnactWhenSupportedAndWithinBoundsConditionAllOf.JSON_PROPERTY_READINESS_THRESHOLDS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class EnactWhenSupportedAndWithinBoundsConditionAllOf {
-  public static final String JSON_PROPERTY_LOWER_BOUND = "lower_bound";
-  private ProtocolUpdateEnactmentBound lowerBound;
+  public static final String JSON_PROPERTY_LOWER_BOUND_EPOCH = "lower_bound_epoch";
+  private Long lowerBoundEpoch;
 
-  public static final String JSON_PROPERTY_UPPER_BOUND = "upper_bound";
-  private ProtocolUpdateEnactmentBound upperBound;
+  public static final String JSON_PROPERTY_UPPER_BOUND_EPOCH = "upper_bound_epoch";
+  private Long upperBoundEpoch;
 
-  public static final String JSON_PROPERTY_SUPPORT_TYPE = "support_type";
-  private ProtocolUpdateSupportType supportType;
+  public static final String JSON_PROPERTY_READINESS_THRESHOLDS = "readiness_thresholds";
+  private List<SignalledReadinessThreshold> readinessThresholds = null;
 
 
-  public EnactWhenSupportedAndWithinBoundsConditionAllOf lowerBound(ProtocolUpdateEnactmentBound lowerBound) {
-    this.lowerBound = lowerBound;
+  public EnactWhenSupportedAndWithinBoundsConditionAllOf lowerBoundEpoch(Long lowerBoundEpoch) {
+    this.lowerBoundEpoch = lowerBoundEpoch;
     return this;
   }
 
    /**
-   * Get lowerBound
-   * @return lowerBound
+   * Get lowerBoundEpoch
+   * @return lowerBoundEpoch
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_LOWER_BOUND)
+  @JsonProperty(JSON_PROPERTY_LOWER_BOUND_EPOCH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ProtocolUpdateEnactmentBound getLowerBound() {
-    return lowerBound;
+  public Long getLowerBoundEpoch() {
+    return lowerBoundEpoch;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_LOWER_BOUND)
+  @JsonProperty(JSON_PROPERTY_LOWER_BOUND_EPOCH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setLowerBound(ProtocolUpdateEnactmentBound lowerBound) {
-    this.lowerBound = lowerBound;
+  public void setLowerBoundEpoch(Long lowerBoundEpoch) {
+    this.lowerBoundEpoch = lowerBoundEpoch;
   }
 
 
-  public EnactWhenSupportedAndWithinBoundsConditionAllOf upperBound(ProtocolUpdateEnactmentBound upperBound) {
-    this.upperBound = upperBound;
+  public EnactWhenSupportedAndWithinBoundsConditionAllOf upperBoundEpoch(Long upperBoundEpoch) {
+    this.upperBoundEpoch = upperBoundEpoch;
     return this;
   }
 
    /**
-   * Get upperBound
-   * @return upperBound
+   * Get upperBoundEpoch
+   * @return upperBoundEpoch
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_UPPER_BOUND)
+  @JsonProperty(JSON_PROPERTY_UPPER_BOUND_EPOCH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ProtocolUpdateEnactmentBound getUpperBound() {
-    return upperBound;
+  public Long getUpperBoundEpoch() {
+    return upperBoundEpoch;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_UPPER_BOUND)
+  @JsonProperty(JSON_PROPERTY_UPPER_BOUND_EPOCH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setUpperBound(ProtocolUpdateEnactmentBound upperBound) {
-    this.upperBound = upperBound;
+  public void setUpperBoundEpoch(Long upperBoundEpoch) {
+    this.upperBoundEpoch = upperBoundEpoch;
   }
 
 
-  public EnactWhenSupportedAndWithinBoundsConditionAllOf supportType(ProtocolUpdateSupportType supportType) {
-    this.supportType = supportType;
+  public EnactWhenSupportedAndWithinBoundsConditionAllOf readinessThresholds(List<SignalledReadinessThreshold> readinessThresholds) {
+    this.readinessThresholds = readinessThresholds;
+    return this;
+  }
+
+  public EnactWhenSupportedAndWithinBoundsConditionAllOf addReadinessThresholdsItem(SignalledReadinessThreshold readinessThresholdsItem) {
+    if (this.readinessThresholds == null) {
+      this.readinessThresholds = new ArrayList<>();
+    }
+    this.readinessThresholds.add(readinessThresholdsItem);
     return this;
   }
 
    /**
-   * Get supportType
-   * @return supportType
+   * Get readinessThresholds
+   * @return readinessThresholds
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_SUPPORT_TYPE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_READINESS_THRESHOLDS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public ProtocolUpdateSupportType getSupportType() {
-    return supportType;
+  public List<SignalledReadinessThreshold> getReadinessThresholds() {
+    return readinessThresholds;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_SUPPORT_TYPE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSupportType(ProtocolUpdateSupportType supportType) {
-    this.supportType = supportType;
+  @JsonProperty(JSON_PROPERTY_READINESS_THRESHOLDS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setReadinessThresholds(List<SignalledReadinessThreshold> readinessThresholds) {
+    this.readinessThresholds = readinessThresholds;
   }
 
 
@@ -139,23 +148,23 @@ public class EnactWhenSupportedAndWithinBoundsConditionAllOf {
       return false;
     }
     EnactWhenSupportedAndWithinBoundsConditionAllOf enactWhenSupportedAndWithinBoundsConditionAllOf = (EnactWhenSupportedAndWithinBoundsConditionAllOf) o;
-    return Objects.equals(this.lowerBound, enactWhenSupportedAndWithinBoundsConditionAllOf.lowerBound) &&
-        Objects.equals(this.upperBound, enactWhenSupportedAndWithinBoundsConditionAllOf.upperBound) &&
-        Objects.equals(this.supportType, enactWhenSupportedAndWithinBoundsConditionAllOf.supportType);
+    return Objects.equals(this.lowerBoundEpoch, enactWhenSupportedAndWithinBoundsConditionAllOf.lowerBoundEpoch) &&
+        Objects.equals(this.upperBoundEpoch, enactWhenSupportedAndWithinBoundsConditionAllOf.upperBoundEpoch) &&
+        Objects.equals(this.readinessThresholds, enactWhenSupportedAndWithinBoundsConditionAllOf.readinessThresholds);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(lowerBound, upperBound, supportType);
+    return Objects.hash(lowerBoundEpoch, upperBoundEpoch, readinessThresholds);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class EnactWhenSupportedAndWithinBoundsConditionAllOf {\n");
-    sb.append("    lowerBound: ").append(toIndentedString(lowerBound)).append("\n");
-    sb.append("    upperBound: ").append(toIndentedString(upperBound)).append("\n");
-    sb.append("    supportType: ").append(toIndentedString(supportType)).append("\n");
+    sb.append("    lowerBoundEpoch: ").append(toIndentedString(lowerBoundEpoch)).append("\n");
+    sb.append("    upperBoundEpoch: ").append(toIndentedString(upperBoundEpoch)).append("\n");
+    sb.append("    readinessThresholds: ").append(toIndentedString(readinessThresholds)).append("\n");
     sb.append("}");
     return sb.toString();
   }

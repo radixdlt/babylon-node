@@ -12,18 +12,19 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct LedgerProof {
-    #[serde(rename = "ledger_header")]
-    pub ledger_header: Box<crate::core_api::generated::models::LedgerHeader>,
-    #[serde(rename = "origin")]
-    pub origin: Option<crate::core_api::generated::models::LedgerProofOrigin>, // Using Option permits Default trait; Will always be Some in normal use
+pub struct ConsensusLedgerProofOriginAllOf {
+    /// A hex-encoded 32-byte vertex VoteData hash on the consensus side, opaque to ledger.
+    #[serde(rename = "opaque_hash")]
+    pub opaque_hash: String,
+    #[serde(rename = "timestamped_signatures")]
+    pub timestamped_signatures: Vec<crate::core_api::generated::models::TimestampedValidatorSignature>,
 }
 
-impl LedgerProof {
-    pub fn new(ledger_header: crate::core_api::generated::models::LedgerHeader, origin: crate::core_api::generated::models::LedgerProofOrigin) -> LedgerProof {
-        LedgerProof {
-            ledger_header: Box::new(ledger_header),
-            origin: Option::Some(origin),
+impl ConsensusLedgerProofOriginAllOf {
+    pub fn new(opaque_hash: String, timestamped_signatures: Vec<crate::core_api::generated::models::TimestampedValidatorSignature>) -> ConsensusLedgerProofOriginAllOf {
+        ConsensusLedgerProofOriginAllOf {
+            opaque_hash,
+            timestamped_signatures,
         }
     }
 }

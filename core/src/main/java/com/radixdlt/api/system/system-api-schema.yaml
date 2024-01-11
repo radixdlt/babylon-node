@@ -455,33 +455,6 @@ components:
           type: string
         enactment_condition:
           $ref: "#/components/schemas/ProtocolUpdateEnactmentCondition"
-    ProtocolUpdateSupportTypeDiscriminator:
-      type: string
-      enum:
-        - SignalledReadiness
-    ProtocolUpdateSupportType:
-      type: object
-      required:
-        - type
-      properties:
-        type:
-          $ref: "#/components/schemas/ProtocolUpdateSupportTypeDiscriminator"
-      discriminator:
-        propertyName: type
-        mapping:
-          # NOTE: These need to match ProtocolUpdateSupportTypeDiscriminator
-          SignalledReadiness: '#/components/schemas/ProtocolUpdateSignalledReadinessSupport'
-    ProtocolUpdateSignalledReadinessSupport:
-      allOf:
-        - $ref: "#/components/schemas/ProtocolUpdateSupportType"
-        - type: object
-          required:
-            - thresholds
-          properties:
-            thresholds:
-              type: array
-              items:
-                $ref: "#/components/schemas/SignalledReadinessThreshold"
     SignalledReadinessThreshold:
       type: object
       required:
@@ -493,50 +466,11 @@ components:
         required_consecutive_completed_epochs_of_support:
           type: integer
           format: int64
-    ProtocolUpdateEnactmentBoundType:
-      type: string
-      enum:
-        - Epoch
-        - StateVersion
-    ProtocolUpdateEnactmentBound:
-      type: object
-      required:
-        - type
-      properties:
-        type:
-          $ref: "#/components/schemas/ProtocolUpdateEnactmentBoundType"
-      discriminator:
-        propertyName: type
-        mapping:
-          # NOTE: These need to match ProtocolUpdateEnactmentBoundType
-          Epoch: '#/components/schemas/EpochProtocolUpdateEnactmentBound'
-          StateVersion: '#/components/schemas/StateVersionProtocolUpdateEnactmentBound'
-    EpochProtocolUpdateEnactmentBound:
-      allOf:
-        - $ref: "#/components/schemas/ProtocolUpdateEnactmentBound"
-        - type: object
-          required:
-            - epoch
-          properties:
-            epoch:
-              type: integer
-              format: int64
-    StateVersionProtocolUpdateEnactmentBound:
-      allOf:
-        - $ref: "#/components/schemas/ProtocolUpdateEnactmentBound"
-        - type: object
-          required:
-            - state_version
-          properties:
-            state_version:
-              type: integer
-              format: int64
     ProtocolUpdateEnactmentConditionType:
       type: string
       enum:
         - EnactWhenSupportedAndWithinBounds
         - EnactUnconditionallyAtEpoch
-        - EnactUnconditionallyAtStateVersion
     ProtocolUpdateEnactmentCondition:
       type: object
       required:
@@ -550,22 +484,25 @@ components:
           # NOTE: These need to match ProtocolUpdateEnactmentConditionType
           EnactWhenSupportedAndWithinBounds: '#/components/schemas/EnactWhenSupportedAndWithinBoundsCondition'
           EnactUnconditionallyAtEpoch: '#/components/schemas/EnactUnconditionallyAtEpochCondition'
-          EnactUnconditionallyAtStateVersion: '#/components/schemas/EnactUnconditionallyAtStateVersionCondition'
     EnactWhenSupportedAndWithinBoundsCondition:
       allOf:
         - $ref: "#/components/schemas/ProtocolUpdateEnactmentCondition"
         - type: object
           required:
-            - lower_bound
-            - upper_bound
+            - lower_bound_epoch
+            - upper_bound_epoch
             - support_type
           properties:
-            lower_bound:
-              $ref: "#/components/schemas/ProtocolUpdateEnactmentBound"
-            upper_bound:
-              $ref: "#/components/schemas/ProtocolUpdateEnactmentBound"
-            support_type:
-              $ref: "#/components/schemas/ProtocolUpdateSupportType"
+            lower_bound_epoch:
+              type: integer
+              format: int64
+            upper_bound_epoch:
+              type: integer
+              format: int64
+            readiness_thresholds:
+              type: array
+              items:
+                $ref: "#/components/schemas/SignalledReadinessThreshold"
     EnactUnconditionallyAtEpochCondition:
       allOf:
         - $ref: "#/components/schemas/ProtocolUpdateEnactmentCondition"
@@ -574,16 +511,6 @@ components:
             - epoch
           properties:
             epoch:
-              type: integer
-              format: int64
-    EnactUnconditionallyAtStateVersionCondition:
-      allOf:
-        - $ref: "#/components/schemas/ProtocolUpdateEnactmentCondition"
-        - type: object
-          required:
-            - state_version
-          properties:
-            state_version:
               type: integer
               format: int64
     Error:
@@ -644,7 +571,7 @@ components:
       discriminator:
         propertyName: type
         mapping:
-          # NOTE: These need to match ProtocolUpdateEnactmentBoundType
+          # NOTE: These need to match UnenactedProtocolUpdateStateType
           ForSignalledReadinessSupportCondition: '#/components/schemas/SignalledReadinessUnenactedProtocolUpdateState'
           Empty: '#/components/schemas/EmptyUnenactedProtocolUpdateState'
     SignalledReadinessUnenactedProtocolUpdateState:

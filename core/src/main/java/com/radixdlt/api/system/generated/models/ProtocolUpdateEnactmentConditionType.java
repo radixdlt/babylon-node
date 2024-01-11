@@ -30,9 +30,7 @@ public enum ProtocolUpdateEnactmentConditionType {
   
   ENACTWHENSUPPORTEDANDWITHINBOUNDS("EnactWhenSupportedAndWithinBounds"),
   
-  ENACTUNCONDITIONALLYATEPOCH("EnactUnconditionallyAtEpoch"),
-  
-  ENACTUNCONDITIONALLYATSTATEVERSION("EnactUnconditionallyAtStateVersion");
+  ENACTUNCONDITIONALLYATEPOCH("EnactUnconditionallyAtEpoch");
 
   private String value;
 

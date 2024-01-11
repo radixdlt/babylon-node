@@ -197,42 +197,10 @@ public final class SystemModelMapper {
     return switch (enactmentCondition) {
       case com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactWhenSupportedAndWithinBounds
       enactWhenSupportedAndWithinBounds -> new EnactWhenSupportedAndWithinBoundsCondition()
-          .lowerBound(protocolUpdateEnactmentBound(enactWhenSupportedAndWithinBounds.lowerBound()))
-          .upperBound(protocolUpdateEnactmentBound(enactWhenSupportedAndWithinBounds.upperBound()))
-          .supportType(protocolUpdateSupportType(enactWhenSupportedAndWithinBounds.supportType()))
-          .type(ProtocolUpdateEnactmentConditionType.ENACTWHENSUPPORTEDANDWITHINBOUNDS);
-      case com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactUnconditionallyAtEpoch
-      enactUnconditionallyAtEpoch -> new EnactUnconditionallyAtEpochCondition()
-          .epoch(enactUnconditionallyAtEpoch.epoch().toLong())
-          .type(ProtocolUpdateEnactmentConditionType.ENACTUNCONDITIONALLYATEPOCH);
-      case com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactUnconditionallyAtStateVersion
-      enactUnconditionallyAtStateVersion -> new EnactUnconditionallyAtStateVersionCondition()
-          .stateVersion(enactUnconditionallyAtStateVersion.stateVersion().toLong())
-          .type(ProtocolUpdateEnactmentConditionType.ENACTUNCONDITIONALLYATSTATEVERSION);
-    };
-  }
-
-  private ProtocolUpdateEnactmentBound protocolUpdateEnactmentBound(
-      com.radixdlt.protocol.ProtocolUpdateEnactmentBound bound) {
-    return switch (bound) {
-      case com.radixdlt.protocol.ProtocolUpdateEnactmentBound.Epoch
-      epoch -> new EpochProtocolUpdateEnactmentBound()
-          .epoch(epoch.epoch().toLong())
-          .type(ProtocolUpdateEnactmentBoundType.EPOCH);
-      case com.radixdlt.protocol.ProtocolUpdateEnactmentBound.StateVersion
-      stateVersion -> new StateVersionProtocolUpdateEnactmentBound()
-          .stateVersion(stateVersion.stateVersion().toLong())
-          .type(ProtocolUpdateEnactmentBoundType.STATEVERSION);
-    };
-  }
-
-  private ProtocolUpdateSupportType protocolUpdateSupportType(
-      com.radixdlt.protocol.ProtocolUpdateSupportType supportType) {
-    return switch (supportType) {
-      case com.radixdlt.protocol.ProtocolUpdateSupportType.SignalledReadiness
-      signalledReadiness -> new ProtocolUpdateSignalledReadinessSupport()
-          .thresholds(
-              signalledReadiness.thresholds().stream()
+          .lowerBoundEpoch(enactWhenSupportedAndWithinBounds.lowerBound().toLong())
+          .upperBoundEpoch(enactWhenSupportedAndWithinBounds.upperBound().toLong())
+          .readinessThresholds(
+              enactWhenSupportedAndWithinBounds.readinessThresholds().stream()
                   .map(
                       threshold ->
                           new SignalledReadinessThreshold()
@@ -241,7 +209,11 @@ public final class SystemModelMapper {
                               .requiredConsecutiveCompletedEpochsOfSupport(
                                   threshold.requiredConsecutiveCompletedEpochsOfSupport().toLong()))
                   .toList())
-          .type(ProtocolUpdateSupportTypeDiscriminator.SIGNALLEDREADINESS);
+          .type(ProtocolUpdateEnactmentConditionType.ENACTWHENSUPPORTEDANDWITHINBOUNDS);
+      case com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactUnconditionallyAtEpoch
+      enactUnconditionallyAtEpoch -> new EnactUnconditionallyAtEpochCondition()
+          .epoch(enactUnconditionallyAtEpoch.epoch().toLong())
+          .type(ProtocolUpdateEnactmentConditionType.ENACTUNCONDITIONALLYATEPOCH);
     };
   }
 }

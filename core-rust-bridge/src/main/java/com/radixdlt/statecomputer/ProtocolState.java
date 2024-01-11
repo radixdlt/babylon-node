@@ -69,7 +69,7 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.protocol.ProtocolUpdate;
-import com.radixdlt.protocol.ProtocolUpdateSupportType;
+import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.EnumCodec;
 import com.radixdlt.sbor.codec.StructCodec;
@@ -109,7 +109,7 @@ public record ProtocolState(
     record ForSignalledReadinessSupportCondition(
         ImmutableList<
                 Tuple.Tuple2<
-                    ProtocolUpdateSupportType.SignalledReadiness.SignalledReadinessThreshold,
+                    ProtocolUpdateEnactmentCondition.SignalledReadinessThreshold,
                     SignalledReadinessThresholdState>>
             thresholdsState)
         implements UnenactedProtocolUpdateState {}

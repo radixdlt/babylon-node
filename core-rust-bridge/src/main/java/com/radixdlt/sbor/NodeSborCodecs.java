@@ -78,7 +78,6 @@ import com.radixdlt.message.*;
 import com.radixdlt.prometheus.LedgerStatus;
 import com.radixdlt.prometheus.RecentSelfProposalMissStatistic;
 import com.radixdlt.protocol.*;
-import com.radixdlt.protocol.ProtocolUpdateSupportType.SignalledReadiness.SignalledReadinessThreshold;
 import com.radixdlt.rev2.*;
 import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.CodecMap;
@@ -129,9 +128,7 @@ public final class NodeSborCodecs {
     ProtocolConfig.registerCodec(codecMap);
     ProtocolUpdate.registerCodec(codecMap);
     ProtocolUpdateEnactmentCondition.registerCodec(codecMap);
-    ProtocolUpdateEnactmentBound.registerCodec(codecMap);
-    ProtocolUpdateSupportType.registerCodec(codecMap);
-    SignalledReadinessThreshold.registerCodec(codecMap);
+    ProtocolUpdateEnactmentCondition.SignalledReadinessThreshold.registerCodec(codecMap);
     ProtocolState.registerCodec(codecMap);
     ProtocolUpdateResult.registerCodec(codecMap);
     RawLedgerTransaction.registerCodec(codecMap);

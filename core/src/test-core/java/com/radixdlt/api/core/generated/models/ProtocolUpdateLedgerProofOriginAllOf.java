@@ -22,85 +22,83 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.LedgerHeader;
-import com.radixdlt.api.core.generated.models.LedgerProofOrigin;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * LedgerProof
+ * ProtocolUpdateLedgerProofOriginAllOf
  */
 @JsonPropertyOrder({
-  LedgerProof.JSON_PROPERTY_LEDGER_HEADER,
-  LedgerProof.JSON_PROPERTY_ORIGIN
+  ProtocolUpdateLedgerProofOriginAllOf.JSON_PROPERTY_PROTOCOL_VERSION_NAME,
+  ProtocolUpdateLedgerProofOriginAllOf.JSON_PROPERTY_BATCH_IDX
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class LedgerProof {
-  public static final String JSON_PROPERTY_LEDGER_HEADER = "ledger_header";
-  private LedgerHeader ledgerHeader;
+public class ProtocolUpdateLedgerProofOriginAllOf {
+  public static final String JSON_PROPERTY_PROTOCOL_VERSION_NAME = "protocol_version_name";
+  private String protocolVersionName;
 
-  public static final String JSON_PROPERTY_ORIGIN = "origin";
-  private LedgerProofOrigin origin;
+  public static final String JSON_PROPERTY_BATCH_IDX = "batch_idx";
+  private Long batchIdx;
 
-  public LedgerProof() { 
+  public ProtocolUpdateLedgerProofOriginAllOf() { 
   }
 
-  public LedgerProof ledgerHeader(LedgerHeader ledgerHeader) {
-    this.ledgerHeader = ledgerHeader;
+  public ProtocolUpdateLedgerProofOriginAllOf protocolVersionName(String protocolVersionName) {
+    this.protocolVersionName = protocolVersionName;
     return this;
   }
 
    /**
-   * Get ledgerHeader
-   * @return ledgerHeader
+   * Get protocolVersionName
+   * @return protocolVersionName
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_LEDGER_HEADER)
+  @JsonProperty(JSON_PROPERTY_PROTOCOL_VERSION_NAME)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public LedgerHeader getLedgerHeader() {
-    return ledgerHeader;
+  public String getProtocolVersionName() {
+    return protocolVersionName;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_LEDGER_HEADER)
+  @JsonProperty(JSON_PROPERTY_PROTOCOL_VERSION_NAME)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setLedgerHeader(LedgerHeader ledgerHeader) {
-    this.ledgerHeader = ledgerHeader;
+  public void setProtocolVersionName(String protocolVersionName) {
+    this.protocolVersionName = protocolVersionName;
   }
 
 
-  public LedgerProof origin(LedgerProofOrigin origin) {
-    this.origin = origin;
+  public ProtocolUpdateLedgerProofOriginAllOf batchIdx(Long batchIdx) {
+    this.batchIdx = batchIdx;
     return this;
   }
 
    /**
-   * Get origin
-   * @return origin
+   * Get batchIdx
+   * @return batchIdx
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ORIGIN)
+  @JsonProperty(JSON_PROPERTY_BATCH_IDX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public LedgerProofOrigin getOrigin() {
-    return origin;
+  public Long getBatchIdx() {
+    return batchIdx;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ORIGIN)
+  @JsonProperty(JSON_PROPERTY_BATCH_IDX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setOrigin(LedgerProofOrigin origin) {
-    this.origin = origin;
+  public void setBatchIdx(Long batchIdx) {
+    this.batchIdx = batchIdx;
   }
 
 
   /**
-   * Return true if this LedgerProof object is equal to o.
+   * Return true if this ProtocolUpdateLedgerProofOrigin_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -110,22 +108,22 @@ public class LedgerProof {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    LedgerProof ledgerProof = (LedgerProof) o;
-    return Objects.equals(this.ledgerHeader, ledgerProof.ledgerHeader) &&
-        Objects.equals(this.origin, ledgerProof.origin);
+    ProtocolUpdateLedgerProofOriginAllOf protocolUpdateLedgerProofOriginAllOf = (ProtocolUpdateLedgerProofOriginAllOf) o;
+    return Objects.equals(this.protocolVersionName, protocolUpdateLedgerProofOriginAllOf.protocolVersionName) &&
+        Objects.equals(this.batchIdx, protocolUpdateLedgerProofOriginAllOf.batchIdx);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(ledgerHeader, origin);
+    return Objects.hash(protocolVersionName, batchIdx);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class LedgerProof {\n");
-    sb.append("    ledgerHeader: ").append(toIndentedString(ledgerHeader)).append("\n");
-    sb.append("    origin: ").append(toIndentedString(origin)).append("\n");
+    sb.append("class ProtocolUpdateLedgerProofOriginAllOf {\n");
+    sb.append("    protocolVersionName: ").append(toIndentedString(protocolVersionName)).append("\n");
+    sb.append("    batchIdx: ").append(toIndentedString(batchIdx)).append("\n");
     sb.append("}");
     return sb.toString();
   }

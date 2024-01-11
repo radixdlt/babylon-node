@@ -4,7 +4,7 @@ use radix_engine_common::prelude::{hash, scrypto_encode};
 
 use radix_engine_common::types::Epoch;
 
-use crate::{ProtocolUpdaterFactory, StateVersion};
+use crate::ProtocolUpdaterFactory;
 use utils::btreeset;
 
 // This file contains types for node's local static protocol configuration
@@ -54,23 +54,11 @@ pub struct ProtocolConfig {
 #[derive(Clone, Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ProtocolUpdateEnactmentCondition {
     EnactWhenSupportedAndWithinBounds {
-        lower_bound: ProtocolUpdateEnactmentBound,
-        upper_bound: ProtocolUpdateEnactmentBound,
-        support_type: ProtocolUpdateSupportType,
+        lower_bound: Epoch,
+        upper_bound: Epoch,
+        readiness_thresholds: Vec<SignalledReadinessThreshold>,
     },
     EnactUnconditionallyAtEpoch(Epoch),
-    EnactUnconditionallyAtStateVersion(StateVersion),
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum ProtocolUpdateEnactmentBound {
-    Epoch(Epoch),
-    StateVersion(StateVersion),
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum ProtocolUpdateSupportType {
-    SignalledReadiness(Vec<SignalledReadinessThreshold>),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -96,14 +84,12 @@ impl ProtocolConfig {
                 next_protocol_version: BABYLON_V2_PROTOCOL_VERSION.to_string(),
                 enactment_condition:
                     ProtocolUpdateEnactmentCondition::EnactWhenSupportedAndWithinBounds {
-                        lower_bound: ProtocolUpdateEnactmentBound::Epoch(Epoch::of(10000)),
-                        upper_bound: ProtocolUpdateEnactmentBound::Epoch(Epoch::of(20000)),
-                        support_type: ProtocolUpdateSupportType::SignalledReadiness(vec![
-                            SignalledReadinessThreshold {
-                                required_ratio_of_stake_supported: dec!("0.80"),
-                                required_consecutive_completed_epochs_of_support: 10,
-                            },
-                        ]),
+                        lower_bound: Epoch::of(10000),
+                        upper_bound: Epoch::of(20000),
+                        readiness_thresholds: vec![SignalledReadinessThreshold {
+                            required_ratio_of_stake_supported: dec!("0.80"),
+                            required_consecutive_completed_epochs_of_support: 10,
+                        }],
                     },
             }],
         }
@@ -159,51 +145,25 @@ impl ProtocolConfig {
                 ProtocolUpdateEnactmentCondition::EnactWhenSupportedAndWithinBounds {
                     lower_bound,
                     upper_bound,
-                    support_type,
+                    readiness_thresholds,
                 } => {
-                    match (lower_bound, upper_bound) {
-                        (
-                            ProtocolUpdateEnactmentBound::Epoch(lower_epoch),
-                            ProtocolUpdateEnactmentBound::Epoch(upper_epoch),
-                        ) => {
-                            if lower_epoch >= upper_epoch {
-                                return Err(
-                                    "Upper bound must be greater than lower bound".to_string()
-                                );
-                            }
-                        }
-                        (
-                            ProtocolUpdateEnactmentBound::StateVersion(lower_state_version),
-                            ProtocolUpdateEnactmentBound::StateVersion(upper_state_version),
-                        ) => {
-                            if lower_state_version >= upper_state_version {
-                                return Err(
-                                    "Upper bound must be greater than lower bound".to_string()
-                                );
-                            }
-                        }
-
-                        _ => {
-                            // No-op
-                        }
+                    if lower_bound >= upper_bound {
+                        return Err("Upper bound must be greater than lower bound".to_string());
                     }
-                    match support_type {
-                        ProtocolUpdateSupportType::SignalledReadiness(thresholds) => {
-                            if thresholds.is_empty() {
-                                return Err("SignalledReadiness protocol update must specify at least one threshold".to_string());
-                            }
-                            for threshold in thresholds {
-                                if threshold.required_ratio_of_stake_supported <= Decimal::zero()
-                                    || threshold.required_ratio_of_stake_supported > Decimal::one()
-                                {
-                                    return Err("Required ratio of stake supported must be between 0 (exclusive) and 1 (inclusive)".to_string());
-                                }
-                            }
+                    if readiness_thresholds.is_empty() {
+                        return Err(
+                            "Protocol update must specify at least one threshold".to_string()
+                        );
+                    }
+                    for threshold in readiness_thresholds {
+                        if threshold.required_ratio_of_stake_supported <= Decimal::zero()
+                            || threshold.required_ratio_of_stake_supported > Decimal::one()
+                        {
+                            return Err("Required ratio of stake supported must be between 0 (exclusive) and 1 (inclusive)".to_string());
                         }
                     }
                 }
-                ProtocolUpdateEnactmentCondition::EnactUnconditionallyAtEpoch(_)
-                | ProtocolUpdateEnactmentCondition::EnactUnconditionallyAtStateVersion(_) => {
+                ProtocolUpdateEnactmentCondition::EnactUnconditionallyAtEpoch(_) => {
                     // Nothing to check here
                 }
             }

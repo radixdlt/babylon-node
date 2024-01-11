@@ -83,9 +83,11 @@ import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.lang.Option;
+import com.radixdlt.ledger.LedgerProofBundle;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.rev2.REv2ToConsensus;
 import com.radixdlt.statecomputer.commit.CommitSummary;
+import com.radixdlt.statecomputer.commit.LedgerProofOrigin;
 import com.radixdlt.utils.Bytes;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -190,7 +192,7 @@ public final class EventLoggerModule extends AbstractModule {
         calculateLoggingLevel(ledgerUpdateLogLimiter, ledgerUpdate.epochChange()));
 
     ledgerUpdate.epochChange().ifPresent(epochChange -> logEpochChange(self, epochChange));
-    // TODO(protocol-update): call EventLoggerModule::logProtocolUpdate
+    logProtocolUpdate(ledgerUpdate.committedProof());
 
     self.bftValidatorId()
         .ifPresent(
@@ -211,8 +213,34 @@ public final class EventLoggerModule extends AbstractModule {
         validatorSet.getTotalPower());
   }
 
-  private static void logProtocolUpdate(String nextProtocolVersion) {
-    logger.info("protocol_update{next_protocol_version={}}", nextProtocolVersion);
+  private static void logProtocolUpdate(LedgerProofBundle proof) {
+    if (proof.primaryProof().ledgerHeader().nextProtocolVersion().isPresent()) {
+      // Primary (latest) proof is a protocol update (and there's no later ProtocolUpdate-originated
+      // proof)
+      // this means that there were no transactions committed during this protocol update.
+      final var stateVersion = proof.primaryProof().stateVersion();
+      logger.info(
+          "protocol_update{next_protocol_version={} init_state_version={} post_state_version={} (0"
+              + " txns committed)}",
+          proof.primaryProof().ledgerHeader().nextProtocolVersion().or(""),
+          stateVersion,
+          stateVersion);
+    } else if (proof.primaryProof().origin()
+        instanceof LedgerProofOrigin.ProtocolUpdate protocolUpdateOrigin) {
+      // Protocol update init proof must be present if latest proof is of ProtocolUpdate origin.
+      final var protocolUpdateInitHeader =
+          proof.closestProtocolUpdateInitProofOnOrBefore().unwrap().ledgerHeader();
+      final var postProtocolUpdateHeader = proof.primaryProof().ledgerHeader();
+      final var initStateVersion = protocolUpdateInitHeader.stateVersion().toLong();
+      final var postStateVersion = postProtocolUpdateHeader.stateVersion().toLong();
+      logger.info(
+          "protocol_update{next_protocol_version={} init_state_version={} post_state_version={} ({}"
+              + " txns committed)}",
+          protocolUpdateInitHeader.nextProtocolVersion().or(""),
+          initStateVersion,
+          postStateVersion,
+          (postStateVersion - initStateVersion));
+    }
   }
 
   private static void logLedgerUpdate(LedgerUpdate ledgerUpdate, long txnCount, Level logLevel) {

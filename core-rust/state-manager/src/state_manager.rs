@@ -347,8 +347,6 @@ impl StateManager {
         );
         drop(locked_transaction_previewer);
 
-        // TODO: recalculate mempool/txn result cache
-
         self.state_computer
             .apply_protocol_update(protocol_updater.deref())
     }

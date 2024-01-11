@@ -68,10 +68,10 @@ import static com.radixdlt.lang.Tuple.tuple;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.lang.Tuple;
-import com.radixdlt.protocol.ProtocolUpdateSupportType.SignalledReadiness.SignalledReadinessThreshold;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.EnumCodec;
+import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.utils.UInt64;
 
 public sealed interface ProtocolUpdateEnactmentCondition {
@@ -98,33 +98,34 @@ public sealed interface ProtocolUpdateEnactmentCondition {
   static ProtocolUpdateEnactmentCondition readinessThresholdsBetweenEpochs(
       long minEpoch, long maxEpoch, ImmutableList<Tuple.Tuple2<Decimal, Long>> thresholds) {
     return new ProtocolUpdateEnactmentCondition.EnactWhenSupportedAndWithinBounds(
-        new ProtocolUpdateEnactmentBound.Epoch(UInt64.fromNonNegativeLong(minEpoch)),
-        new ProtocolUpdateEnactmentBound.Epoch(UInt64.fromNonNegativeLong(maxEpoch)),
-        new ProtocolUpdateSupportType.SignalledReadiness(
-            thresholds.stream()
-                .map(
-                    t ->
-                        new SignalledReadinessThreshold(
-                            t.first(), UInt64.fromNonNegativeLong(t.last())))
-                .collect(ImmutableList.toImmutableList())));
+        UInt64.fromNonNegativeLong(minEpoch),
+        UInt64.fromNonNegativeLong(maxEpoch),
+        thresholds.stream()
+            .map(
+                t ->
+                    new SignalledReadinessThreshold(
+                        t.first(), UInt64.fromNonNegativeLong(t.last())))
+            .collect(ImmutableList.toImmutableList()));
   }
 
   static ProtocolUpdateEnactmentCondition unconditionallyAtEpoch(long epoch) {
     return new EnactUnconditionallyAtEpoch(UInt64.fromNonNegativeLong(epoch));
   }
 
-  static ProtocolUpdateEnactmentCondition unconditionallyAtStateVersion(long stateVersion) {
-    return new EnactUnconditionallyAtStateVersion(UInt64.fromNonNegativeLong(stateVersion));
+  record EnactWhenSupportedAndWithinBounds(
+      UInt64 lowerBound,
+      UInt64 upperBound,
+      ImmutableList<SignalledReadinessThreshold> readinessThresholds)
+      implements ProtocolUpdateEnactmentCondition {}
+
+  record SignalledReadinessThreshold(
+      Decimal requiredRatioOfStakeSupported, UInt64 requiredConsecutiveCompletedEpochsOfSupport) {
+    public static void registerCodec(CodecMap codecMap) {
+      codecMap.register(
+          SignalledReadinessThreshold.class,
+          codecs -> StructCodec.fromRecordComponents(SignalledReadinessThreshold.class, codecs));
+    }
   }
 
-  record EnactWhenSupportedAndWithinBounds(
-      ProtocolUpdateEnactmentBound lowerBound,
-      ProtocolUpdateEnactmentBound upperBound,
-      ProtocolUpdateSupportType supportType)
-      implements ProtocolUpdateEnactmentCondition {}
-
   record EnactUnconditionallyAtEpoch(UInt64 epoch) implements ProtocolUpdateEnactmentCondition {}
-
-  record EnactUnconditionallyAtStateVersion(UInt64 stateVersion)
-      implements ProtocolUpdateEnactmentCondition {}
 }
