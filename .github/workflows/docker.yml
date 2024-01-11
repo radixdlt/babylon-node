@@ -186,6 +186,8 @@ jobs:
         type=semver,pattern={{major}}.{{minor}}
         type=semver,pattern={{major}}
         type=sha
+      flavor:
+        ${{ contains( github.event.pull_request.labels.*.name, 'ARM-TEST') && 'suffix=-amd64' || '' }}
       context: "."
       dockerfile: "./Dockerfile"
       platforms: "linux/amd64"
@@ -194,38 +196,72 @@ jobs:
       provenance: "false"
       scan_image: true
       snyk_target_ref: ${{ github.ref_name }}
-    secrets:
-      workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
-      service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
-  # build_push_container_private_arm:
-  #   name: (PRIVATE) Docker ARM
-  #   uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
-  #   with:
-  #     runs_on: babylon-node-arm
-  #     image_registry: "docker.io"
-  #     image_organization: "radixdlt"
-  #     image_name: "private-babylon-node"
-  #     tags: |
-  #       type=ref,event=branch
-  #       type=ref,event=pr
-  #       type=semver,pattern={{version}}
-  #       type=semver,pattern={{major}}.{{minor}}
-  #       type=semver,pattern={{major}}
-  #       type=sha
-  #     flavor: |
-  #       suffix=-arm64
-  #     context: "."
-  #     dockerfile: "./Dockerfile"
-  #     platforms: "linux/arm64"
-  #     cache_tag_suffix: arm64
-  #     use_gh_remote_cache: true
-  #     provenance: "false"
-  #     build-args: |
-  #       WGET_VERSION=1.21.3-1+b1
-  #   secrets:
-  #     workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
-  #     service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+  build_push_container_private_arm:
+    if: contains( github.event.pull_request.labels.*.name, 'ARM-TEST')
+    name: (PRIVATE) Docker ARM
+    needs:
+      - setup_tags
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
+    with:
+      runs_on: babylon-node-arm
+      image_registry: "docker.io"
+      image_organization: "radixdlt"
+      image_name: "private-babylon-node"
+      tag: ${{ needs.setup_tags.outputs.tag }}
+      tags: |
+        type=ref,event=branch
+        type=ref,event=pr
+        type=ref,event=tag
+        type=semver,pattern={{version}}
+        type=semver,pattern={{major}}.{{minor}}
+        type=semver,pattern={{major}}
+        type=sha
+      flavor: |
+        suffix=-arm64
+      context: "."
+      dockerfile: "./Dockerfile"
+      use_gh_remote_cache: true
+      provenance: "false"
+      scan_image: false
+      snyk_target_ref: ${{ github.ref_name }}
+      platforms: "linux/arm64"
+      cache_tag_suffix: arm64
+      build-args: |
+        WGET_VERSION=1.21.3-1+b1
+
+  tag_suffix_remover:
+    if: contains( github.event.pull_request.labels.*.name, 'ARM-TEST')
+    name: Calculate base tag
+    runs-on: ubuntu-latest
+    outputs:
+      BASE_TAG: ${{ steps.tag_suffix_remover.outputs.BASE_TAG }}
+    needs:
+      - build_push_container_private
+      - build_push_container_private_arm
+    steps:
+      - name: tag_suffix_remover
+        id: tag_suffix_remover
+        run: |
+          echo ${{needs.build_push_container_private.outputs.default_tag}} | rev |  cut -d- -f2- | rev
+          echo BASE_TAG=$(echo ${{needs.build_push_container_private.outputs.default_tag}} | rev |  cut -d- -f2- | rev) >> $GITHUB_OUTPUT
+
+  join_multiarch_image_private_dockerhub:
+    if: contains( github.event.pull_request.labels.*.name, 'ARM-TEST')
+    name: Join Multiarch Image Private Dockerhub
+    needs:
+      - build_push_container_private
+      - build_push_container_private_arm
+      - tag_suffix_remover
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/merge-docker-images.yml@main
+    with:
+      aws_dockerhub_secret: github-actions/common/dockerhub-credentials
+      image_tag: ${{needs.tag_suffix_remover.outputs.BASE_TAG}}
+      image_name: "private-babylon-node"
+      tag_suffix_1: "amd64"
+      tag_suffix_2: "arm64"
+    secrets:
+      role-to-assume: "arn:aws:iam::308190735829:role/gh-common-secrets-read-access"
 
   build_push_container_dockerhub:
     if: github.event_name == 'release'
