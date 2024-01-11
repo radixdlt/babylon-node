@@ -74,4 +74,8 @@ public record ProtocolUpdate(
         ProtocolUpdate.class,
         codecs -> StructCodec.fromRecordComponents(ProtocolUpdate.class, codecs));
   }
+
+  public String readinessSignalName() {
+    return RustProtocolUpdate.readinessSignalName(this);
+  }
 }

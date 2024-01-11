@@ -96,7 +96,7 @@ extern "system" fn Java_com_radixdlt_protocol_RustProtocolUpdate_applyProtocolUp
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_protocol_ProtocolUpdates_nativeReadinessSignalName(
+extern "system" fn Java_com_radixdlt_protocol_RustProtocolUpdate_nativeReadinessSignalName(
     env: JNIEnv,
     _class: JClass,
     request_payload: jbyteArray,
@@ -107,23 +107,12 @@ extern "system" fn Java_com_radixdlt_protocol_ProtocolUpdates_nativeReadinessSig
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_protocol_ProtocolUpdates_nativeMainnetConfig(
+extern "system" fn Java_com_radixdlt_protocol_RustProtocolUpdate_nativeMainnetConfig(
     env: JNIEnv,
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |_: ()| ProtocolConfig::mainnet())
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_protocol_ProtocolUpdates_nativeTestingDefaultConfig(
-    env: JNIEnv,
-    _class: JClass,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |_: ()| {
-        ProtocolConfig::testing_default()
-    })
 }
 
 pub fn export_extern_functions() {}

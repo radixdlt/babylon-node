@@ -70,6 +70,7 @@ import com.radixdlt.api.system.generated.models.*;
 import com.radixdlt.api.system.health.HealthInfoService;
 import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition;
 import com.radixdlt.protocol.ProtocolUpdates;
+import com.radixdlt.protocol.RustProtocolUpdate;
 import com.radixdlt.statecomputer.ProtocolState;
 import com.radixdlt.statecomputer.RustStateComputer;
 
@@ -169,7 +170,7 @@ public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
     if (unenactedProtocolUpdate.protocolUpdate().enactmentCondition()
         instanceof ProtocolUpdateEnactmentCondition.EnactWhenSupportedAndWithinBounds) {
       final var readinessSignalName =
-          ProtocolUpdates.readinessSignalName(unenactedProtocolUpdate.protocolUpdate());
+          unenactedProtocolUpdate.protocolUpdate().readinessSignalName();
       res.setReadinessSignalName(readinessSignalName);
     }
 

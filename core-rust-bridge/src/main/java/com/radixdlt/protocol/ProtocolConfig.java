@@ -77,10 +77,12 @@ public record ProtocolConfig(
   }
 
   public static ProtocolConfig testingDefault() {
-    return ProtocolUpdates.testingDefaultConfig();
+    return new ProtocolConfig(
+      "testing-genesis",
+      ImmutableList.of());
   }
 
   public static ProtocolConfig mainnet() {
-    return ProtocolUpdates.mainnetConfig();
+    return RustProtocolUpdate.mainnetConfig();
   }
 }

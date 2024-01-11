@@ -1,3 +1,5 @@
+pub mod flash_templates;
+pub mod mainnet_updates;
 mod protocol_config;
 mod protocol_state;
 mod protocol_update;

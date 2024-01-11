@@ -10,7 +10,7 @@ use utils::btreeset;
 // This file contains types for node's local static protocol configuration
 
 pub const GENESIS_PROTOCOL_VERSION: &str = "babylon-genesis";
-pub const BABYLON_V2_PROTOCOL_VERSION: &str = "babylon-v2";
+pub const ANEMONE_PROTOCOL_VERSION: &str = "anemone";
 
 const MAX_PROTOCOL_VERSION_NAME_LEN: usize = 16;
 
@@ -81,7 +81,7 @@ impl ProtocolConfig {
         Self {
             genesis_protocol_version: GENESIS_PROTOCOL_VERSION.to_string(),
             protocol_updates: vec![ProtocolUpdate {
-                next_protocol_version: BABYLON_V2_PROTOCOL_VERSION.to_string(),
+                next_protocol_version: ANEMONE_PROTOCOL_VERSION.to_string(),
                 enactment_condition:
                     ProtocolUpdateEnactmentCondition::EnactWhenSupportedAndWithinBounds {
                         lower_bound: Epoch::of(10000),
@@ -95,9 +95,9 @@ impl ProtocolConfig {
         }
     }
 
-    pub fn testing_default() -> ProtocolConfig {
+    pub fn no_updates(genesis_protocol_version: String) -> ProtocolConfig {
         Self {
-            genesis_protocol_version: GENESIS_PROTOCOL_VERSION.to_string(),
+            genesis_protocol_version,
             protocol_updates: vec![],
         }
     }

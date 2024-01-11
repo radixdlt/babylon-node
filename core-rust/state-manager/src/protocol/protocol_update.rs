@@ -1,29 +1,19 @@
 // This file contains the protocol update logic for specific protocol versions
 
 use node_common::locks::{LockFactory, RwLock, StateLock};
-use radix_engine::blueprints::consensus_manager::{
-    ConsensusManagerConfigSubstate, ConsensusManagerConfigurationFieldPayload,
-    ConsensusManagerField, VersionedConsensusManagerConfiguration,
-};
-use radix_engine::prelude::dec;
 use radix_engine::track::StateUpdates;
 use radix_engine::transaction::CostingParameters;
 use radix_engine_common::network::NetworkDefinition;
-use radix_engine_common::prelude::{scrypto_encode, Decimal, CONSENSUS_MANAGER};
+use radix_engine_common::prelude::Decimal;
 use std::ops::Deref;
 use std::sync::Arc;
 
-use radix_engine::system::system_substates::{FieldSubstate, FieldSubstateV1, LockStatus};
-use radix_engine_interface::blueprints::consensus_manager::{
-    ConsensusManagerConfig, EpochChangeCondition,
-};
-use radix_engine_interface::prelude::MAIN_BASE_PARTITION;
-use radix_engine_store_interface::interface::DatabaseUpdate;
 use transaction::prelude::TransactionPayloadPreparable;
 use transaction::validation::{NotarizedTransactionValidator, ValidationConfig};
 use utils::btreemap;
 
 use crate::epoch_handling::EpochAwareAccuTreeFactory;
+use crate::mainnet_updates::MainnetProtocolUpdaterFactory;
 use crate::traits::{
     CommitBundle, CommitStore, CommittedTransactionBundle, HashTreeUpdate, QueryableProofStore,
     ReceiptAccuTreeSliceV1, SubstateStoreUpdate, TransactionAccuTreeSliceV1,
@@ -34,8 +24,7 @@ use crate::transaction::{
 };
 use crate::{
     CommittedTransactionIdentifiers, ExecutionCache, LedgerHeader, LedgerProof, LedgerProofOrigin,
-    LoggingConfig, ProtocolState, StateManagerDatabase, BABYLON_V2_PROTOCOL_VERSION,
-    GENESIS_PROTOCOL_VERSION,
+    LoggingConfig, ProtocolState, StateManagerDatabase,
 };
 
 pub trait ProtocolUpdaterFactory {
@@ -58,6 +47,51 @@ pub trait ProtocolUpdater {
     fn protocol_version_name(&self) -> String;
     fn state_computer_configurator(&self) -> StateComputerConfigurator;
     fn state_update_executor(&self) -> Box<dyn StateUpdateExecutor>;
+}
+
+#[derive(Clone, Debug)]
+pub struct StateComputerConfigurator {
+    pub network: NetworkDefinition,
+    pub logging_config: LoggingConfig,
+    pub validation_config: ValidationConfig,
+    pub costing_parameters: CostingParameters,
+}
+
+impl StateComputerConfigurator {
+    pub fn default(network: NetworkDefinition) -> StateComputerConfigurator {
+        let network_id = network.id;
+        StateComputerConfigurator {
+            network,
+            logging_config: LoggingConfig::default(),
+            validation_config: ValidationConfig::default(network_id),
+            costing_parameters: CostingParameters::default(),
+        }
+    }
+}
+
+impl StateComputerConfigurator {
+    pub fn ledger_transaction_validator(&self) -> LedgerTransactionValidator {
+        LedgerTransactionValidator::default_from_validation_config(self.validation_config)
+    }
+
+    pub fn user_transaction_validator(&self) -> NotarizedTransactionValidator {
+        NotarizedTransactionValidator::new(self.validation_config)
+    }
+
+    pub fn validation_config(&self) -> ValidationConfig {
+        self.validation_config
+    }
+
+    pub fn execution_configurator(&self, no_fees: bool) -> ExecutionConfigurator {
+        let mut costing_parameters = self.costing_parameters;
+        if no_fees {
+            costing_parameters.execution_cost_unit_price = Decimal::ZERO;
+            costing_parameters.finalization_cost_unit_price = Decimal::ZERO;
+            costing_parameters.state_storage_price = Decimal::ZERO;
+            costing_parameters.archive_storage_price = Decimal::ZERO;
+        }
+        ExecutionConfigurator::new(&self.network, &self.logging_config, costing_parameters)
+    }
 }
 
 pub trait StateUpdateExecutor {
@@ -105,14 +139,14 @@ impl StateUpdateExecutor for NoOpStateUpdateExecutor {
     }
 }
 
-pub struct FlashProtocolUpdater {
+pub struct FixedFlashProtocolUpdater {
     protocol_version_name: String,
     store: Arc<StateLock<StateManagerDatabase>>,
     state_computer_configurator: StateComputerConfigurator,
     flash_transactions_updates: Vec<StateUpdates>,
 }
 
-impl FlashProtocolUpdater {
+impl FixedFlashProtocolUpdater {
     pub fn new_with_default_configurator(
         protocol_version_name: String,
         store: Arc<StateLock<StateManagerDatabase>>,
@@ -128,7 +162,7 @@ impl FlashProtocolUpdater {
     }
 }
 
-impl ProtocolUpdater for FlashProtocolUpdater {
+impl ProtocolUpdater for FixedFlashProtocolUpdater {
     fn protocol_version_name(&self) -> String {
         self.protocol_version_name.clone()
     }
@@ -138,10 +172,7 @@ impl ProtocolUpdater for FlashProtocolUpdater {
     }
 
     fn state_update_executor(&self) -> Box<dyn StateUpdateExecutor> {
-        // We're reusing a flash updater to commit a single empty flash
-        // transactions and a corresponding proof to get us
-        // to the next (post update) header.
-        Box::new(FlashStateUpdateExecutor::new(
+        Box::new(FixedFlashStateUpdateExecutor::new(
             self.protocol_version_name.clone(),
             self.store.clone(),
             self.flash_transactions_updates.clone(),
@@ -150,77 +181,12 @@ impl ProtocolUpdater for FlashProtocolUpdater {
     }
 }
 
-struct FlashStateUpdateExecutor {
-    protocol_version_name: String,
-    store: Arc<StateLock<StateManagerDatabase>>,
-    flash_transactions_updates: Vec<StateUpdates>,
-    state_computer_configurator: StateComputerConfigurator,
-}
-
-impl FlashStateUpdateExecutor {
-    pub fn new(
+enum ProtocolUpdateProgress {
+    UpdateInitiatedButNothingCommitted {
         protocol_version_name: String,
-        store: Arc<StateLock<StateManagerDatabase>>,
-        flash_transactions_updates: Vec<StateUpdates>,
-        state_computer_configurator: StateComputerConfigurator,
-    ) -> Self {
-        Self {
-            protocol_version_name,
-            store,
-            flash_transactions_updates,
-            state_computer_configurator,
-        }
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct StateComputerConfigurator {
-    network: NetworkDefinition,
-    logging_config: LoggingConfig,
-    validation_config: ValidationConfig,
-    costing_parameters: CostingParameters,
-}
-
-impl StateComputerConfigurator {
-    pub fn default(network: NetworkDefinition) -> StateComputerConfigurator {
-        let network_id = network.id;
-        StateComputerConfigurator {
-            network,
-            logging_config: LoggingConfig::default(),
-            validation_config: ValidationConfig::default(network_id),
-            costing_parameters: CostingParameters::default(),
-        }
-    }
-}
-
-impl StateComputerConfigurator {
-    pub fn ledger_transaction_validator(&self) -> LedgerTransactionValidator {
-        LedgerTransactionValidator::default_from_validation_config(self.validation_config)
-    }
-
-    pub fn user_transaction_validator(&self) -> NotarizedTransactionValidator {
-        NotarizedTransactionValidator::new(self.validation_config)
-    }
-
-    pub fn validation_config(&self) -> ValidationConfig {
-        self.validation_config
-    }
-
-    pub fn execution_configurator(&self, no_fees: bool) -> ExecutionConfigurator {
-        let mut costing_parameters = self.costing_parameters;
-        if no_fees {
-            costing_parameters.execution_cost_unit_price = Decimal::ZERO;
-            costing_parameters.finalization_cost_unit_price = Decimal::ZERO;
-            costing_parameters.state_storage_price = Decimal::ZERO;
-            costing_parameters.archive_storage_price = Decimal::ZERO;
-        }
-        ExecutionConfigurator::new(&self.network, &self.logging_config, costing_parameters)
-    }
-}
-
-enum TxnCommitExecutorState {
-    UpdateInitiatedButNothingCommitted,
+    },
     UpdateInProgress {
+        protocol_version_name: String,
         last_batch_idx: u32,
     },
     /// This means that the last proof contains no notion of a protocol update,
@@ -231,26 +197,24 @@ enum TxnCommitExecutorState {
 }
 
 /// A helper (to the) `StateUpdateExecutor` that manages
-/// transaction committing-based state updates.
+/// flash transaction committing state updates.
 /// It handles the logic to fulfill the resumability contract of "execute_remaining_state_updates"
-/// by storing the index of a previously committed transaction batch in the `opaque` hash
-/// of the proof. This hash is usually used to store the (consensus) vertex hash, but since
-/// we're not working with vertices here, we repurpose it for protocol update needs.
-struct TxnCommitStateUpdateExecutorHelper {
+/// by storing the index of a previously committed transaction batch in the ledger proof.
+pub struct ProtocolUpdateFlashTxnCommitter {
     protocol_version_name: String,
     store: Arc<StateLock<StateManagerDatabase>>,
     execution_configurator: RwLock<ExecutionConfigurator>,
     ledger_transaction_validator: LedgerTransactionValidator,
 }
 
-impl TxnCommitStateUpdateExecutorHelper {
+impl ProtocolUpdateFlashTxnCommitter {
     pub fn new(
-        protocol_version_name: &str,
+        protocol_version_name: String,
         store: Arc<StateLock<StateManagerDatabase>>,
         state_computer_configurator: StateComputerConfigurator,
     ) -> Self {
         Self {
-            protocol_version_name: protocol_version_name.to_string(),
+            protocol_version_name,
             store,
             execution_configurator: LockFactory::new("protocol_update")
                 .new_rwlock(state_computer_configurator.execution_configurator(true)),
@@ -259,63 +223,72 @@ impl TxnCommitStateUpdateExecutorHelper {
         }
     }
 
-    fn read_state_from_latest_proof(&self) -> TxnCommitExecutorState {
+    fn read_protocol_update_progress(&self) -> ProtocolUpdateProgress {
         let Some(latest_proof) = self.store.read_current().get_latest_proof() else {
-            return TxnCommitExecutorState::NotUpdating;
+            return ProtocolUpdateProgress::NotUpdating;
         };
 
         match &latest_proof.origin {
-            LedgerProofOrigin::Genesis { .. } => TxnCommitExecutorState::NotUpdating,
+            LedgerProofOrigin::Genesis { .. } => ProtocolUpdateProgress::NotUpdating,
             LedgerProofOrigin::Consensus { .. } => {
                 if let Some(latest_proof_protocol_version) =
                     latest_proof.ledger_header.next_protocol_version
                 {
-                    // We've just committed a protocol update header. No protocol update transactions
-                    // have been committed yet. Next batch idx is 0.
-
-                    // Just a sanity check to double check that the header matches initial_protocol_state.
-                    if latest_proof_protocol_version != self.protocol_version_name {
-                        panic!("Protocol state mismatch: last proof doesn't  match initial_protocol_state");
+                    ProtocolUpdateProgress::UpdateInitiatedButNothingCommitted {
+                        protocol_version_name: latest_proof_protocol_version,
                     }
-
-                    TxnCommitExecutorState::UpdateInitiatedButNothingCommitted
                 } else {
-                    TxnCommitExecutorState::NotUpdating
+                    ProtocolUpdateProgress::NotUpdating
                 }
             }
             LedgerProofOrigin::ProtocolUpdate {
                 protocol_version_name,
                 batch_idx,
+            } => ProtocolUpdateProgress::UpdateInProgress {
+                protocol_version_name: protocol_version_name.to_string(),
+                last_batch_idx: *batch_idx,
+            },
+        }
+    }
+
+    pub fn next_committable_batch_idx(&self) -> Option<u32> {
+        match self.read_protocol_update_progress() {
+            ProtocolUpdateProgress::UpdateInitiatedButNothingCommitted {
+                protocol_version_name: state_protocol_version_name,
             } => {
-                if *protocol_version_name == self.protocol_version_name {
-                    TxnCommitExecutorState::UpdateInProgress {
-                        last_batch_idx: *batch_idx,
-                    }
+                if self.protocol_version_name == state_protocol_version_name {
+                    Some(0)
                 } else {
-                    TxnCommitExecutorState::NotUpdating
+                    None
                 }
             }
+            ProtocolUpdateProgress::UpdateInProgress {
+                protocol_version_name: state_protocol_version_name,
+                last_batch_idx,
+            } => {
+                if self.protocol_version_name == state_protocol_version_name {
+                    Some(last_batch_idx.checked_add(1).unwrap())
+                } else {
+                    None
+                }
+            }
+            ProtocolUpdateProgress::NotUpdating => None,
         }
     }
 
-    pub fn is_protocol_update_in_progress(&self) -> bool {
-        match self.read_state_from_latest_proof() {
-            TxnCommitExecutorState::UpdateInitiatedButNothingCommitted => true,
-            TxnCommitExecutorState::UpdateInProgress { .. } => true,
-            TxnCommitExecutorState::NotUpdating => false,
-        }
+    pub fn commit_flash(&mut self, state_updates: StateUpdates) {
+        let nonce = self.store.read_current().max_state_version().number();
+        let flash_txn = LedgerTransaction::FlashV1(Box::new(FlashTransactionV1 {
+            nonce,
+            state_updates,
+        }));
+        self.commit_txn_batch(vec![flash_txn]);
     }
 
-    pub fn next_batch_idx(&self) -> u32 {
-        match self.read_state_from_latest_proof() {
-            TxnCommitExecutorState::UpdateInitiatedButNothingCommitted => 0,
-            TxnCommitExecutorState::UpdateInProgress { last_batch_idx } => last_batch_idx + 1,
-            TxnCommitExecutorState::NotUpdating => panic!("Protocol update isn't in progress"),
-        }
-    }
-
-    pub fn commit_batch(&mut self, transactions: Vec<LedgerTransaction>) {
-        let batch_idx = self.next_batch_idx();
+    fn commit_txn_batch(&mut self, transactions: Vec<LedgerTransaction>) {
+        let batch_idx = self
+            .next_committable_batch_idx()
+            .expect("Can't commit next protocol update batch");
 
         let read_store = self.store.read_current();
         let latest_proof: LedgerProof = read_store
@@ -428,135 +401,61 @@ impl TxnCommitStateUpdateExecutorHelper {
     }
 }
 
-impl StateUpdateExecutor for FlashStateUpdateExecutor {
+pub struct FixedFlashStateUpdateExecutor {
+    protocol_version_name: String,
+    store: Arc<StateLock<StateManagerDatabase>>,
+    flash_transactions_updates: Vec<StateUpdates>,
+    state_computer_configurator: StateComputerConfigurator,
+}
+
+impl FixedFlashStateUpdateExecutor {
+    pub fn new(
+        protocol_version_name: String,
+        store: Arc<StateLock<StateManagerDatabase>>,
+        flash_transactions_updates: Vec<StateUpdates>,
+        state_computer_configurator: StateComputerConfigurator,
+    ) -> Self {
+        Self {
+            protocol_version_name,
+            store,
+            flash_transactions_updates,
+            state_computer_configurator,
+        }
+    }
+}
+
+impl StateUpdateExecutor for FixedFlashStateUpdateExecutor {
     fn execute_remaining_state_updates(&self) {
-        let mut helper = TxnCommitStateUpdateExecutorHelper::new(
-            self.protocol_version_name.as_str(),
+        let mut txn_committer = ProtocolUpdateFlashTxnCommitter::new(
+            self.protocol_version_name.clone(),
             self.store.clone(),
             self.state_computer_configurator.clone(),
         );
 
-        if !helper.is_protocol_update_in_progress() {
-            // Nothing to do if we're not expecting any more commits
-            return;
-        }
-
-        let mut next_batch_idx = helper.next_batch_idx();
-        // Nonce is used to make sure that the transaction
-        // has a unique hash (to be able to maintain a 1:1 state_version<->hash mapping)
-        // even if the same state updates are flashed twice in two different transactions.
-        // We're simply using the state version here.
-        let mut nonce = self.store.read_current().max_state_version().number();
-        while (next_batch_idx as usize) < self.flash_transactions_updates.len() {
-            let next_flash_updates: &StateUpdates = self
-                .flash_transactions_updates
-                .get(next_batch_idx as usize)
-                .unwrap();
-            //
-            let next_txn = LedgerTransaction::FlashV1(Box::new(FlashTransactionV1 {
-                nonce,
-                state_updates: next_flash_updates.clone(),
-            }));
-            nonce = nonce
-                .checked_add(1)
-                .expect("Nonce (state version) overflow");
-            helper.commit_batch(vec![next_txn]);
-            next_batch_idx = helper.next_batch_idx();
-        }
-    }
-}
-
-pub struct MainnetProtocolUpdaterFactory {}
-
-impl MainnetProtocolUpdaterFactory {
-    pub fn new() -> MainnetProtocolUpdaterFactory {
-        MainnetProtocolUpdaterFactory {}
-    }
-
-    fn genesis_protocol_updater(&self, protocol_version_name: &str) -> Box<dyn ProtocolUpdater> {
-        Box::new(NoStateUpdatesProtocolUpdater::default(
-            protocol_version_name.to_owned(),
-            NetworkDefinition::mainnet(),
-        ))
-    }
-
-    fn v2_protocol_updater(
-        &self,
-        protocol_version_name: &str,
-        store: Arc<StateLock<StateManagerDatabase>>,
-    ) -> Box<dyn ProtocolUpdater> {
-        // TODO(protocol-updates): this is just a draft
-        let new_consensus_manager_config = ConsensusManagerConfig {
-            max_validators: 100,
-            epoch_change_condition: EpochChangeCondition {
-                min_round_count: 500,
-                max_round_count: 3000,
-                target_duration_millis: 300000,
-            },
-            num_unstake_epochs: 2016,
-            total_emission_xrd_per_epoch: dec!("2853.881278538812785388"),
-            min_validator_reliability: dec!("1"),
-            num_owner_stake_units_unlock_epochs: 8064,
-            num_fee_increase_delay_epochs: 4032,
-            validator_creation_usd_cost: dec!("100"),
-        };
-        let state_updates_to_flash = consensus_manager_config_flash(new_consensus_manager_config);
-        Box::new(FlashProtocolUpdater::new_with_default_configurator(
-            protocol_version_name.to_owned(),
-            store,
-            NetworkDefinition::mainnet(),
-            vec![state_updates_to_flash],
-        ))
-    }
-}
-
-pub fn consensus_manager_config_flash(new_config: ConsensusManagerConfig) -> StateUpdates {
-    let mut state_updates = StateUpdates::default();
-    state_updates
-        .of_node(CONSENSUS_MANAGER.into_node_id())
-        .of_partition(MAIN_BASE_PARTITION)
-        .update_substates(vec![(
-            ConsensusManagerField::Configuration.into(),
-            DatabaseUpdate::Set(
-                scrypto_encode(&FieldSubstate::V1(FieldSubstateV1 {
-                    payload: ConsensusManagerConfigurationFieldPayload {
-                        content: VersionedConsensusManagerConfiguration::V1(
-                            ConsensusManagerConfigSubstate { config: new_config },
-                        ),
-                    },
-                    lock_status: LockStatus::Locked,
-                }))
-                .unwrap(),
-            ),
-        )]);
-    state_updates
-}
-
-impl ProtocolUpdaterFactory for MainnetProtocolUpdaterFactory {
-    fn supports_protocol_version(&self, protocol_version_name: &str) -> bool {
-        [GENESIS_PROTOCOL_VERSION, BABYLON_V2_PROTOCOL_VERSION].contains(&protocol_version_name)
-    }
-
-    fn updater_for(
-        &self,
-        protocol_version_name: &str,
-        store: Arc<StateLock<StateManagerDatabase>>,
-    ) -> Box<dyn ProtocolUpdater> {
-        match protocol_version_name {
-            GENESIS_PROTOCOL_VERSION => self.genesis_protocol_updater(protocol_version_name),
-            BABYLON_V2_PROTOCOL_VERSION => self.v2_protocol_updater(protocol_version_name, store),
-            _ => panic!("Unknown protocol version {:?}", protocol_version_name),
+        while let Some(next_batch_idx) = txn_committer.next_committable_batch_idx() {
+            let maybe_next_state_updates =
+                self.flash_transactions_updates.get(next_batch_idx as usize);
+            if let Some(next_state_updates) = maybe_next_state_updates {
+                txn_committer.commit_flash(next_state_updates.clone());
+            } else {
+                // Nothing more to commit
+                break;
+            }
         }
     }
 }
 
 pub struct TestingDefaultProtocolUpdaterFactory {
     network: NetworkDefinition,
+    mainnet_protocol_updater_factory: MainnetProtocolUpdaterFactory,
 }
 
 impl TestingDefaultProtocolUpdaterFactory {
     pub fn new(network: NetworkDefinition) -> TestingDefaultProtocolUpdaterFactory {
-        TestingDefaultProtocolUpdaterFactory { network }
+        TestingDefaultProtocolUpdaterFactory {
+            network: network.clone(),
+            mainnet_protocol_updater_factory: MainnetProtocolUpdaterFactory::new(network),
+        }
     }
 }
 
@@ -570,12 +469,21 @@ impl ProtocolUpdaterFactory for TestingDefaultProtocolUpdaterFactory {
         protocol_version_name: &str,
         store: Arc<StateLock<StateManagerDatabase>>,
     ) -> Box<dyn ProtocolUpdater> {
-        // All default testing protocol updates are no-op
-        Box::new(FlashProtocolUpdater::new_with_default_configurator(
-            protocol_version_name.to_owned(),
-            store,
-            self.network.clone(),
-            vec![StateUpdates::default()],
-        ))
+        // Default testing updater delegates to mainnet updater if protocol update matches or,
+        // if not, returns a default updater with a single empty flash transaction.
+        if self
+            .mainnet_protocol_updater_factory
+            .supports_protocol_version(protocol_version_name)
+        {
+            self.mainnet_protocol_updater_factory
+                .updater_for(protocol_version_name, store)
+        } else {
+            Box::new(FixedFlashProtocolUpdater::new_with_default_configurator(
+                protocol_version_name.to_owned(),
+                store,
+                self.network.clone(),
+                vec![StateUpdates::default()],
+            ))
+        }
     }
 }

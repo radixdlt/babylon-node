@@ -66,10 +66,18 @@ package com.radixdlt.protocol;
 
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.environment.NodeRustEnvironment;
+import com.radixdlt.lang.Tuple;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.sbor.Natives;
 
+import static com.radixdlt.lang.Tuple.tuple;
+
 public final class RustProtocolUpdate {
+  static {
+    // This is idempotent with the other calls
+    System.loadLibrary("corerust");
+  }
+
   public RustProtocolUpdate(Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
     final var timer = metrics.stateManager().nativeCall();
     applyProtocolUpdateFunc =
@@ -87,4 +95,22 @@ public final class RustProtocolUpdate {
       NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
   private final Natives.Call1<String, ProtocolUpdateResult> applyProtocolUpdateFunc;
+
+  public static String readinessSignalName(ProtocolUpdate protocolUpdate) {
+    return readinessSignalNameFunc.call(protocolUpdate);
+  }
+
+  private static final Natives.Call1<ProtocolUpdate, String> readinessSignalNameFunc =
+    Natives.builder(RustProtocolUpdate::nativeReadinessSignalName).build(new TypeToken<>() {});
+
+  private static native byte[] nativeReadinessSignalName(byte[] requestPayload);
+
+  public static ProtocolConfig mainnetConfig() {
+    return mainnetConfigFunc.call(tuple());
+  }
+
+  private static final Natives.Call1<Tuple.Tuple0, ProtocolConfig> mainnetConfigFunc =
+    Natives.builder(RustProtocolUpdate::nativeMainnetConfig).build(new TypeToken<>() {});
+
+  private static native byte[] nativeMainnetConfig(byte[] requestPayload);
 }

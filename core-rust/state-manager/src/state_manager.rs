@@ -129,7 +129,7 @@ impl StateManagerConfig {
             state_hash_tree_gc_config: StateHashTreeGcConfig::default(),
             ledger_proofs_gc_config: LedgerProofsGcConfig::default(),
             ledger_sync_limits_config: LedgerSyncLimitsConfig::default(),
-            protocol_config: ProtocolConfig::testing_default(),
+            protocol_config: ProtocolConfig::no_updates("testing-genesis".to_string()),
             no_fees: false,
         }
     }

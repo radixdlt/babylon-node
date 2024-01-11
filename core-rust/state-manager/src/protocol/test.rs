@@ -86,12 +86,13 @@ use sbor::HasLatestVersion;
 use node_common::locks::{LockFactory, StateLock};
 use node_common::scheduler::Scheduler;
 
+use crate::flash_templates::consensus_manager_config_flash;
 use crate::ProtocolUpdateEnactmentCondition::EnactUnconditionallyAtEpoch;
 use crate::{
-    consensus_manager_config_flash, CommitRequest, CommitSummary, FlashProtocolUpdater,
-    LedgerHeader, LedgerProof, LedgerProofOrigin, NoStateUpdatesProtocolUpdater, PrepareRequest,
-    PrepareResult, ProtocolConfig, ProtocolUpdate, ProtocolUpdater, ProtocolUpdaterFactory,
-    RoundHistory, StateManager, StateManagerConfig, StateManagerDatabase,
+    CommitRequest, CommitSummary, FixedFlashProtocolUpdater, LedgerHeader, LedgerProof,
+    LedgerProofOrigin, NoStateUpdatesProtocolUpdater, PrepareRequest, PrepareResult,
+    ProtocolConfig, ProtocolUpdate, ProtocolUpdater, ProtocolUpdaterFactory, RoundHistory,
+    StateManager, StateManagerConfig, StateManagerDatabase,
 };
 
 use crate::query::TransactionIdentifierLoader;
@@ -131,7 +132,7 @@ impl ProtocolUpdaterFactory for TestProtocolUpdaterFactory {
                     num_fee_increase_delay_epochs: 1,
                     validator_creation_usd_cost: Decimal::one(),
                 };
-                Box::new(FlashProtocolUpdater::new_with_default_configurator(
+                Box::new(FixedFlashProtocolUpdater::new_with_default_configurator(
                     V2_PROTOCOL_VERSION.to_string(),
                     store,
                     NetworkDefinition::simulator(),

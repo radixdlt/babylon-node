@@ -378,7 +378,7 @@ public final class ProtocolUpdateWithEpochBoundsTest {
     }
 
     static TestEvent signalReadiness(ProtocolUpdate protocolUpdate, int validatorIdx) {
-      return signalReadiness(ProtocolUpdates.readinessSignalName(protocolUpdate), validatorIdx);
+      return signalReadiness(protocolUpdate.readinessSignalName(), validatorIdx);
     }
 
     static TestEvent signalReadiness(String protocolUpdateName, int validatorIdx) {
@@ -391,7 +391,7 @@ public final class ProtocolUpdateWithEpochBoundsTest {
           readiness ->
               readiness.size() == 1
                   && readiness
-                      .get(ProtocolUpdates.readinessSignalName(protocolUpdate))
+                      .get(protocolUpdate.readinessSignalName())
                       .equals(expectedReadiness));
     }
 
@@ -404,7 +404,7 @@ public final class ProtocolUpdateWithEpochBoundsTest {
     static TestEvent expectReadinessToInclude(
         ProtocolUpdate protocolUpdate, Decimal expectedReadiness) {
       return expectReadinessToInclude(
-          ProtocolUpdates.readinessSignalName(protocolUpdate), expectedReadiness);
+          protocolUpdate.readinessSignalName(), expectedReadiness);
     }
 
     static TestEvent expectEnactment(ProtocolUpdate protocolUpdate) {
