@@ -705,6 +705,7 @@ export * from './TypeInfoModuleFieldTypeInfoSubstate';
 export * from './TypeInfoModuleFieldTypeInfoSubstateAllOf';
 export * from './TypeInfoModuleFieldTypeInfoValue';
 export * from './TypeInfoType';
+export * from './UnversionedBlueprintReference';
 export * from './UpdatedSubstate';
 export * from './UserLedgerTransaction';
 export * from './UserLedgerTransactionAllOf';

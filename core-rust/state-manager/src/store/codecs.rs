@@ -342,6 +342,8 @@ impl DbCodec<(EntityType, CreationId)> for TypeAndCreationIndexKeyDbCodec {
     }
 }
 
+impl OrderPreservingDbCodec for TypeAndCreationIndexKeyDbCodec {}
+
 #[derive(Default)]
 pub struct BlueprintAndCreationIndexKeyDbCodec {}
 

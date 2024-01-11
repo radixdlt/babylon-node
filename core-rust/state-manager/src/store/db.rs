@@ -108,7 +108,8 @@ pub struct DatabaseBackendConfig {
     IterableProofStore,
     ExecutedGenesisScenarioStore,
     StateHashTreeGcStore,
-    LedgerProofsGcStore
+    LedgerProofsGcStore,
+    ReNodeListingIndex
 )]
 pub enum StateManagerDatabase {
     // TODO(clean-up): After InMemoryDb was deleted, we can get rid of this middle-man as well.

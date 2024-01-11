@@ -13,12 +13,6 @@ pub trait HasKey<K> {
     fn as_key(&self) -> K;
 }
 
-impl<S: Clone> HasKey<S> for S {
-    fn as_key(&self) -> S {
-        self.clone()
-    }
-}
-
 /// A sequence of deterministically-ordered elements, which knows how to efficiently start iteration
 /// from an arbitrarily requested item.
 pub trait RandomAccessIterable {

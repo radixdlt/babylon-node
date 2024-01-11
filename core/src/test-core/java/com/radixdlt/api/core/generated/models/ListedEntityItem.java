@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.EntityType;
 import com.radixdlt.api.core.generated.models.SystemType;
+import com.radixdlt.api.core.generated.models.UnversionedBlueprintReference;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -36,7 +37,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   ListedEntityItem.JSON_PROPERTY_ENTITY_ADDRESS,
   ListedEntityItem.JSON_PROPERTY_SYSTEM_TYPE,
   ListedEntityItem.JSON_PROPERTY_ENTITY_TYPE,
-  ListedEntityItem.JSON_PROPERTY_IS_GLOBAL
+  ListedEntityItem.JSON_PROPERTY_IS_GLOBAL,
+  ListedEntityItem.JSON_PROPERTY_CREATED_AT_STATE_VERSION,
+  ListedEntityItem.JSON_PROPERTY_BLUEPRINT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ListedEntityItem {
@@ -51,6 +54,12 @@ public class ListedEntityItem {
 
   public static final String JSON_PROPERTY_IS_GLOBAL = "is_global";
   private Boolean isGlobal;
+
+  public static final String JSON_PROPERTY_CREATED_AT_STATE_VERSION = "created_at_state_version";
+  private Long createdAtStateVersion;
+
+  public static final String JSON_PROPERTY_BLUEPRINT = "blueprint";
+  private UnversionedBlueprintReference blueprint;
 
   public ListedEntityItem() { 
   }
@@ -159,6 +168,60 @@ public class ListedEntityItem {
   }
 
 
+  public ListedEntityItem createdAtStateVersion(Long createdAtStateVersion) {
+    this.createdAtStateVersion = createdAtStateVersion;
+    return this;
+  }
+
+   /**
+   * Get createdAtStateVersion
+   * minimum: 1
+   * maximum: 100000000000000
+   * @return createdAtStateVersion
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_CREATED_AT_STATE_VERSION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Long getCreatedAtStateVersion() {
+    return createdAtStateVersion;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_CREATED_AT_STATE_VERSION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setCreatedAtStateVersion(Long createdAtStateVersion) {
+    this.createdAtStateVersion = createdAtStateVersion;
+  }
+
+
+  public ListedEntityItem blueprint(UnversionedBlueprintReference blueprint) {
+    this.blueprint = blueprint;
+    return this;
+  }
+
+   /**
+   * Get blueprint
+   * @return blueprint
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_BLUEPRINT)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public UnversionedBlueprintReference getBlueprint() {
+    return blueprint;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_BLUEPRINT)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setBlueprint(UnversionedBlueprintReference blueprint) {
+    this.blueprint = blueprint;
+  }
+
+
   /**
    * Return true if this ListedEntityItem object is equal to o.
    */
@@ -174,12 +237,14 @@ public class ListedEntityItem {
     return Objects.equals(this.entityAddress, listedEntityItem.entityAddress) &&
         Objects.equals(this.systemType, listedEntityItem.systemType) &&
         Objects.equals(this.entityType, listedEntityItem.entityType) &&
-        Objects.equals(this.isGlobal, listedEntityItem.isGlobal);
+        Objects.equals(this.isGlobal, listedEntityItem.isGlobal) &&
+        Objects.equals(this.createdAtStateVersion, listedEntityItem.createdAtStateVersion) &&
+        Objects.equals(this.blueprint, listedEntityItem.blueprint);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entityAddress, systemType, entityType, isGlobal);
+    return Objects.hash(entityAddress, systemType, entityType, isGlobal, createdAtStateVersion, blueprint);
   }
 
   @Override
@@ -190,6 +255,8 @@ public class ListedEntityItem {
     sb.append("    systemType: ").append(toIndentedString(systemType)).append("\n");
     sb.append("    entityType: ").append(toIndentedString(entityType)).append("\n");
     sb.append("    isGlobal: ").append(toIndentedString(isGlobal)).append("\n");
+    sb.append("    createdAtStateVersion: ").append(toIndentedString(createdAtStateVersion)).append("\n");
+    sb.append("    blueprint: ").append(toIndentedString(blueprint)).append("\n");
     sb.append("}");
     return sb.toString();
   }

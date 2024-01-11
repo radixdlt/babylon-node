@@ -96,7 +96,7 @@ use crate::store::traits::gc::{
     VersionedLedgerProofsGcProgress,
 };
 use crate::store::traits::indices::{
-    CreationId, EntityBlueprintId, ObjectBlueprintName, ObjectBlueprintNameV1,
+    CreationId, EntityBlueprintId, ObjectBlueprintName, ObjectBlueprintNameV1, ReNodeListingIndex,
     VersionedEntityBlueprintId, VersionedObjectBlueprintName,
 };
 use crate::store::traits::measurement::{CategoryDbVolumeStatistic, MeasurableDatabase};
@@ -751,6 +751,10 @@ impl ConfigurableDatabase for RocksDBStore {
 
     fn is_local_transaction_execution_index_enabled(&self) -> bool {
         self.config.enable_local_transaction_execution_index
+    }
+
+    fn are_re_node_listing_indices_enabled(&self) -> bool {
+        self.config.enable_re_node_listing_indices
     }
 }
 
@@ -1702,6 +1706,25 @@ impl IterableAccountChangeIndex for RocksDBStore {
                 .iterate_from(&(account, from_state_version), Direction::Forward)
                 .take_while(move |((next_account, _), _)| next_account == &account)
                 .map(|((_, state_version), _)| state_version),
+        )
+    }
+}
+
+impl ReNodeListingIndex for RocksDBStore {
+    fn get_created_entity_iter(
+        &self,
+        entity_type: EntityType,
+        from_creation_id: Option<&CreationId>,
+    ) -> Box<dyn Iterator<Item = (CreationId, EntityBlueprintId)> + '_> {
+        let from_creation_id = from_creation_id
+            .cloned()
+            .unwrap_or_else(|| CreationId::new(StateVersion::pre_genesis(), 0));
+        Box::new(
+            self.open_db_context()
+                .cf(TypeAndCreationIndexedEntitiesCf)
+                .iterate_from(&(entity_type, from_creation_id), Direction::Forward)
+                .take_while(move |((listed_entity_type, _), _)| *listed_entity_type == entity_type)
+                .map(|((_, creation_id), entity_blueprint_id)| (creation_id, entity_blueprint_id)),
         )
     }
 }

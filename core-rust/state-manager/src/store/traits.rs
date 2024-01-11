@@ -144,6 +144,8 @@ pub trait ConfigurableDatabase {
     fn is_account_change_index_enabled(&self) -> bool;
 
     fn is_local_transaction_execution_index_enabled(&self) -> bool;
+
+    fn are_re_node_listing_indices_enabled(&self) -> bool;
 }
 
 #[derive(Debug, Clone)]
@@ -577,11 +579,20 @@ pub mod extensions {
 
 pub mod indices {
     use super::*;
-    use radix_engine_common::types::NodeId;
+    use radix_engine_common::types::{EntityType, NodeId};
     use radix_engine_interface::types::BlueprintId;
 
+    #[enum_dispatch]
+    pub trait ReNodeListingIndex {
+        fn get_created_entity_iter(
+            &self,
+            entity_type: EntityType,
+            from_creation_id: Option<&CreationId>,
+        ) -> Box<dyn Iterator<Item = (CreationId, EntityBlueprintId)> + '_>;
+    }
+
     /// A unique ID of a ReNode, based on creation order.
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Categorize, Encode, Decode)]
     pub struct CreationId {
         /// State version of the transaction which created the ReNode (i.e. which created the first
         /// substate under this ReNode).
