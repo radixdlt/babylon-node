@@ -214,7 +214,7 @@ impl VersionedCf for LedgerProofsCf {
 
 /// Ledger proofs of epochs.
 /// Schema: `Epoch.to_bytes()` -> `scrypto_encode(VersionedLedgerProof)`
-/// Note: This duplicates a small subset of [`StateVersionToLedgerProof`]'s values.
+/// Note: This duplicates a small subset of [`LedgerProofsCf`]'s values.
 struct EpochLedgerProofsCf;
 impl VersionedCf for EpochLedgerProofsCf {
     type Key = Epoch;
@@ -227,8 +227,8 @@ impl VersionedCf for EpochLedgerProofsCf {
 
 /// Ledger proofs that initialize protocol updates, i.e. proofs of Consensus `origin`,
 /// with headers containing a non-empty `next_protocol_version`.
-/// Schema: `Epoch.to_bytes()` -> `scrypto_encode(VersionedLedgerProof)`
-/// Note: This duplicates a small subset of [`StateVersionToLedgerProof`]'s values.
+/// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedLedgerProof)`
+/// Note: This duplicates a small subset of [`LedgerProofsCf`]'s values.
 struct ProtocolUpdateInitLedgerProofsCf;
 impl VersionedCf for ProtocolUpdateInitLedgerProofsCf {
     type Key = StateVersion;
@@ -241,8 +241,8 @@ impl VersionedCf for ProtocolUpdateInitLedgerProofsCf {
 
 /// Ledger proofs of ProtocolUpdate `origin`, i.e. proofs created locally
 /// while protocol update state modifications were being applied.
-/// Schema: `Epoch.to_bytes()` -> `scrypto_encode(VersionedLedgerProof)`
-/// Note: This duplicates a small subset of [`StateVersionToLedgerProof`]'s values.
+/// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedLedgerProof)`
+/// Note: This duplicates a small subset of [`LedgerProofsCf`]'s values.
 struct ProtocolUpdateExecutionLedgerProofsCf;
 impl VersionedCf for ProtocolUpdateExecutionLedgerProofsCf {
     type Key = StateVersion;

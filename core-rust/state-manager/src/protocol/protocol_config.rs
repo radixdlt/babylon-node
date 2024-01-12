@@ -33,8 +33,8 @@ pub struct ProtocolUpdate {
 impl ProtocolUpdate {
     pub fn readiness_signal_name(&self) -> String {
         // Readiness signal name is 32 bytes long and consists of:
-        // - 16 leading bytes of `hash(enactment_condition + next_protocol_version)`
-        // - protocol version name: 16 bytes,
+        // - 16 hexadecimal chars of leading bytes of `hash(enactment_condition + next_protocol_version)`
+        // - next_protocol_version: 16 bytes,
         //      left padded with ASCII 0's if protocol version name is shorter than 16 characters
         let mut bytes_to_hash = scrypto_encode(&self.enactment_condition).unwrap();
         bytes_to_hash.extend_from_slice(self.next_protocol_version.as_bytes());
