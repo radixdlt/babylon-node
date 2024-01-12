@@ -13,6 +13,12 @@ CORE_API_RUST_PACKAGE = 'core_api::generated'
 CORE_API_JAVA_GENERATED_DESTINATION = '../../../core/src/test-core/java/'
 CORE_API_JAVA_PACKAGE = 'com.radixdlt.api.core.generated'
 
+BROWSE_API_SPEC_LOCATION = '../browse-api-schema.yaml'
+BROWSE_API_RUST_GENERATED_DESTINATION = '../src/browse_api/generated/'
+BROWSE_API_RUST_PACKAGE = 'browse_api::generated'
+BROWSE_API_JAVA_GENERATED_DESTINATION = '../../../core/src/test-core/java/'
+BROWSE_API_JAVA_PACKAGE = 'com.radixdlt.api.browse.generated'
+
 OPENAPI_GENERATION_FOLDER='.'
 OPENAPI_TEMP_GENERATION_FOLDER='./temp'
 OPENAPI_GENERATOR_FIXED_VERSION_JAR=os.path.join(OPENAPI_GENERATION_FOLDER, 'openapi-generator-cli-6.0.1.jar')
@@ -183,6 +189,7 @@ def generate_java_models(schema_file, tmp_client_folder, out_location, java_pack
 
 def fix_spec_and_generate_models(spec_location, rust_destination, rust_package, java_destination, java_package):
     # download & fix the spec files
+    os.makedirs(OPENAPI_TEMP_GENERATION_FOLDER)
     spec_temp_location = os.path.join(OPENAPI_TEMP_GENERATION_FOLDER, 'spec.yaml')
     copy_file(spec_location, spec_temp_location)
     replace_in_file(spec_temp_location, 'openapi: 3.1.0', 'openapi: 3.0.0')
@@ -215,7 +222,6 @@ if __name__ == "__main__":
         logger.info('All good.')
 
     safe_os_remove(OPENAPI_TEMP_GENERATION_FOLDER, silent=True)
-    os.makedirs(OPENAPI_TEMP_GENERATION_FOLDER)
 
     fix_spec_and_generate_models(
         CORE_API_SPEC_LOCATION,
@@ -225,3 +231,10 @@ if __name__ == "__main__":
         CORE_API_JAVA_PACKAGE
     )
 
+    fix_spec_and_generate_models(
+        BROWSE_API_SPEC_LOCATION,
+        BROWSE_API_RUST_GENERATED_DESTINATION,
+        BROWSE_API_RUST_PACKAGE,
+        BROWSE_API_JAVA_GENERATED_DESTINATION,
+        BROWSE_API_JAVA_PACKAGE
+    )
