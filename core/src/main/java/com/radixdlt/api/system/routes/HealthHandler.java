@@ -69,8 +69,6 @@ import com.radixdlt.api.system.SystemGetJsonHandler;
 import com.radixdlt.api.system.generated.models.*;
 import com.radixdlt.api.system.health.HealthInfoService;
 import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition;
-import com.radixdlt.protocol.ProtocolUpdates;
-import com.radixdlt.protocol.RustProtocolUpdate;
 import com.radixdlt.statecomputer.ProtocolState;
 import com.radixdlt.statecomputer.RustStateComputer;
 

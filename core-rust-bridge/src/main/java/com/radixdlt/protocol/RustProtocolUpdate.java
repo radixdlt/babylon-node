@@ -64,13 +64,13 @@
 
 package com.radixdlt.protocol;
 
+import static com.radixdlt.lang.Tuple.tuple;
+
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.environment.NodeRustEnvironment;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.sbor.Natives;
-
-import static com.radixdlt.lang.Tuple.tuple;
 
 public final class RustProtocolUpdate {
   static {
@@ -101,7 +101,7 @@ public final class RustProtocolUpdate {
   }
 
   private static final Natives.Call1<ProtocolUpdate, String> readinessSignalNameFunc =
-    Natives.builder(RustProtocolUpdate::nativeReadinessSignalName).build(new TypeToken<>() {});
+      Natives.builder(RustProtocolUpdate::nativeReadinessSignalName).build(new TypeToken<>() {});
 
   private static native byte[] nativeReadinessSignalName(byte[] requestPayload);
 
@@ -110,7 +110,7 @@ public final class RustProtocolUpdate {
   }
 
   private static final Natives.Call1<Tuple.Tuple0, ProtocolConfig> mainnetConfigFunc =
-    Natives.builder(RustProtocolUpdate::nativeMainnetConfig).build(new TypeToken<>() {});
+      Natives.builder(RustProtocolUpdate::nativeMainnetConfig).build(new TypeToken<>() {});
 
   private static native byte[] nativeMainnetConfig(byte[] requestPayload);
 }

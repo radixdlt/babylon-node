@@ -6,7 +6,9 @@ use crate::{
 };
 use node_common::locks::StateLock;
 use radix_engine::prelude::dec;
+use radix_engine::utils::generate_seconds_precision_state_updates;
 use radix_engine_common::prelude::NetworkDefinition;
+use std::ops::Deref;
 use std::sync::Arc;
 
 pub struct AnemoneProtocolUpdater {
@@ -47,11 +49,22 @@ impl StateUpdateExecutor for AnemoneStateUpdateExecutor {
             self.state_computer_configurator.clone(),
         );
 
-        // TODO(anemone): for now a single batch with a single flash txn
-        if let Some(0) = txn_committer.next_committable_batch_idx() {
-            let mut config = self.store.read_current().get_consensus_manager_config();
-            config.validator_creation_usd_cost = dec!("100");
-            txn_committer.commit_flash(consensus_manager_config_flash(config));
+        while let Some(next_batch_idx) = txn_committer.next_committable_batch_idx() {
+            match next_batch_idx {
+                0 => {
+                    // Batch 0: flash consensus manager config update
+                    let mut config = self.store.read_current().get_consensus_manager_config();
+                    config.validator_creation_usd_cost = dec!("100");
+                    txn_committer.commit_flash(consensus_manager_config_flash(config));
+                }
+                1 => {
+                    // Batch 1: flash seconds precision
+                    let state_updates =
+                        generate_seconds_precision_state_updates(self.store.read_current().deref());
+                    txn_committer.commit_flash(state_updates);
+                }
+                _ => break,
+            }
         }
     }
 }

@@ -180,6 +180,14 @@ public sealed interface StateComputerConfig {
 
   static StateComputerConfig rev2(
       int networkId, GenesisData genesis, REV2ProposerConfig proposerConfig) {
+    return rev2(networkId, genesis, proposerConfig, ProtocolConfig.testingDefault());
+  }
+
+  static StateComputerConfig rev2(
+      int networkId,
+      GenesisData genesis,
+      REV2ProposerConfig proposerConfig,
+      ProtocolConfig protocolConfig) {
     return new REv2StateComputerConfig(
         networkId,
         genesis,
@@ -189,7 +197,7 @@ public sealed interface StateComputerConfig {
         StateHashTreeGcConfig.forTesting(),
         LedgerProofsGcConfig.forTesting(),
         LedgerSyncLimitsConfig.defaults(),
-        ProtocolConfig.testingDefault(),
+        protocolConfig,
         false);
   }
 

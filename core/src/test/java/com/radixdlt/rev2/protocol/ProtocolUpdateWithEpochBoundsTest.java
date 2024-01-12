@@ -390,9 +390,7 @@ public final class ProtocolUpdateWithEpochBoundsTest {
       return new ExpectReadiness(
           readiness ->
               readiness.size() == 1
-                  && readiness
-                      .get(protocolUpdate.readinessSignalName())
-                      .equals(expectedReadiness));
+                  && readiness.get(protocolUpdate.readinessSignalName()).equals(expectedReadiness));
     }
 
     static TestEvent expectReadinessToInclude(
@@ -403,8 +401,7 @@ public final class ProtocolUpdateWithEpochBoundsTest {
 
     static TestEvent expectReadinessToInclude(
         ProtocolUpdate protocolUpdate, Decimal expectedReadiness) {
-      return expectReadinessToInclude(
-          protocolUpdate.readinessSignalName(), expectedReadiness);
+      return expectReadinessToInclude(protocolUpdate.readinessSignalName(), expectedReadiness);
     }
 
     static TestEvent expectEnactment(ProtocolUpdate protocolUpdate) {

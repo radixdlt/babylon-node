@@ -77,9 +77,7 @@ public record ProtocolConfig(
   }
 
   public static ProtocolConfig testingDefault() {
-    return new ProtocolConfig(
-      "testing-genesis",
-      ImmutableList.of());
+    return new ProtocolConfig("testing-genesis", ImmutableList.of());
   }
 
   public static ProtocolConfig mainnet() {
