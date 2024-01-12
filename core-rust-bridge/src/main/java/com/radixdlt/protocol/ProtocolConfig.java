@@ -64,6 +64,8 @@
 
 package com.radixdlt.protocol;
 
+import static com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch;
+
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
@@ -77,7 +79,9 @@ public record ProtocolConfig(
   }
 
   public static ProtocolConfig testingDefault() {
-    return new ProtocolConfig("testing-genesis", ImmutableList.of());
+    return new ProtocolConfig(
+        "testing-genesis",
+        ImmutableList.of(new ProtocolUpdate("anemone", unconditionallyAtEpoch(4L))));
   }
 
   public static ProtocolConfig mainnet() {
