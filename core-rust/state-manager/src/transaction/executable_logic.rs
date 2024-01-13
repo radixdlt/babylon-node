@@ -197,10 +197,14 @@ impl<'a, S: SubstateDatabase> TransactionLogic<S> for ConfiguredExecutable<'a> {
                 substate_schema_mapper.add_for_all_individually_updated(&state_updates);
                 let substate_system_structures = substate_schema_mapper.done();
 
-                // Sanity check that all updates are to existing nodes so that
+                // Sanity check that all updates are to existing entities or bootstrap so that
                 // we can assure there are no new entities in the receipt
                 let reader = SystemDatabaseReader::new(store);
                 for (node_id, ..) in &state_updates.by_node {
+                    if node_id.is_boot_loader() {
+                        continue;
+                    }
+                    
                     reader
                         .get_object_info(*node_id)
                         .expect("Substate flash is currently only supported for existing nodes.");

@@ -268,7 +268,7 @@ impl NodeAncestryResolver {
                 } else {
                     other_node_to_directly_owned_sets
                         .entry(child)
-                        .or_insert_with(Vec::new);
+                        .or_default();
                 }
             }
         }
