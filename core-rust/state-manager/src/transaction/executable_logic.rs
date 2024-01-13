@@ -204,7 +204,7 @@ impl<'a, S: SubstateDatabase> TransactionLogic<S> for ConfiguredExecutable<'a> {
                     if node_id.is_boot_loader() {
                         continue;
                     }
-                    
+
                     reader
                         .get_object_info(*node_id)
                         .expect("Substate flash is currently only supported for existing nodes.");

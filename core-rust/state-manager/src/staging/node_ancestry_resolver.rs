@@ -266,9 +266,7 @@ impl NodeAncestryResolver {
                 if let Some(demoted_sets) = topmost_node_to_directly_owned_sets.remove(&child) {
                     other_node_to_directly_owned_sets.insert(child, demoted_sets);
                 } else {
-                    other_node_to_directly_owned_sets
-                        .entry(child)
-                        .or_default();
+                    other_node_to_directly_owned_sets.entry(child).or_default();
                 }
             }
         }

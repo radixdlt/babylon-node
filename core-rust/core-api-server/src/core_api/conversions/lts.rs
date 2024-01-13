@@ -269,7 +269,7 @@ impl<'a> FeePaymentComputer<'a> {
         self.computation
             .fee_balance_changes
             .entry(address)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push((fee_type, balance_change));
     }
 
