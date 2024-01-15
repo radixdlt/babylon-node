@@ -138,7 +138,8 @@ public final class BrowseEntityIteratorTest extends DeterministicBrowseApiTestBa
     try (var test = buildRunningServerTest()) {
       test.suppressUnusedWarning();
 
-      final var allResponse = getEntitiesApi().entityIteratorPost(new BrowseEntityIteratorRequest());
+      final var allResponse =
+          getEntitiesApi().entityIteratorPost(new BrowseEntityIteratorRequest());
 
       final var creationVersions =
           allResponse.getPage().stream()

@@ -35,16 +35,6 @@ tags:
   - name: Types
     x-displayName: Blueprints / Schemas
     description: Endpoints dealing with Blueprints and Schemas.
-  - name: Attached
-    x-displayName: Attached Modules Data
-    description: |
-      Endpoints dealing with partially-interpreted data from the well-known Attached Modules of an
-      Object.
-      
-      Technically, the same information is available via the regular Object's Field / Collection
-      retrieval endpoints.
-      
-      // TODO(browse-api-slice-2): Populate this category.
 
 paths:
   "/entity/iterator":
@@ -237,8 +227,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse" # TODO(wip): differentiate type
-  "/kv_store/iterator": # TODO(wip): kebab-case
+                $ref: "#/components/schemas/ErrorResponse"
+  "/kv-store/iterator":
     post:
       summary: List Key-Value Store
       description: Lists keys of all entries from a particular Key-Value Store, in an iterator-like paged fashion
@@ -269,7 +259,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  "/kv_store/entry":
+  "/kv-store/entry":
     post:
       summary: Get Key-Value Store Entry
       description: |
@@ -618,9 +608,13 @@ components:
     RequestedItemType:
       type: string
       enum:
+        - Blueprint
+        - Schema
         - Entity
         - Module
         - Field
+        - Collection
+        - EntryKey
 
 #########################################################
 # REQUEST: /browse/entity/iterator                      #
@@ -1807,7 +1801,7 @@ components:
             programmatic_json:
               type: object
 #########################################################
-# REQUEST: /browse/kv_store/iterator                    #
+# REQUEST: /browse/kv-store/iterator                    #
 #########################################################
     BrowseKeyValueStoreIteratorRequest:
       type: object
@@ -1844,7 +1838,7 @@ components:
         programmatic_json:
           type: object
 #########################################################
-# REQUEST: /browse/kv_store/entry                       #
+# REQUEST: /browse/kv-store/entry                       #
 #########################################################
     BrowseKeyValueStoreEntryRequest:
       type: object

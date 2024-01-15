@@ -6,12 +6,12 @@ use axum::{
 use std::any::Any;
 
 use hyper::StatusCode;
-use radix_engine_interface::network::NetworkDefinition;
+
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 use tower_http::catch_panic::ResponseForPanic;
 
-use super::{models, BrowseApiState};
+use super::models;
 
 #[derive(Debug, Clone)]
 pub(crate) struct InternalServerErrorResponseForPanic;
@@ -43,7 +43,13 @@ pub struct LogTraceId(pub String);
 
 impl LogTraceId {
     pub fn unique() -> Self {
-        Self(rand::thread_rng().sample_iter(&Alphanumeric).take(32).map(char::from).collect())
+        Self(
+            rand::thread_rng()
+                .sample_iter(&Alphanumeric)
+                .take(32)
+                .map(char::from)
+                .collect(),
+        )
     }
 }
 
@@ -51,18 +57,20 @@ impl IntoResponse for ResponseError {
     fn into_response(self) -> Response {
         (
             self.status_code,
-            Json(
-                models::ErrorResponse {
-                    message: self.public_error_message,
-                    trace_id: self.trace.0,
-                    details: self.details.map(Box::new)
-                }
-            )
-        ).into_response()
+            Json(models::ErrorResponse {
+                message: self.public_error_message,
+                trace_id: self.trace.0,
+                details: self.details.map(Box::new),
+            }),
+        )
+            .into_response()
     }
 }
 
-pub(crate) fn client_error(message: impl Into<String>, details: models::ErrorDetails) -> ResponseError {
+pub(crate) fn client_error(
+    message: impl Into<String>,
+    details: models::ErrorDetails,
+) -> ResponseError {
     ResponseError {
         status_code: StatusCode::BAD_REQUEST,
         public_error_message: message.into(),
@@ -71,7 +79,7 @@ pub(crate) fn client_error(message: impl Into<String>, details: models::ErrorDet
     }
 }
 
-pub(crate) fn server_error(message: impl Into<String>) -> ResponseError{
+pub(crate) fn server_error(message: impl Into<String>) -> ResponseError {
     ResponseError {
         status_code: StatusCode::INTERNAL_SERVER_ERROR,
         public_error_message: message.into(),
@@ -80,7 +88,7 @@ pub(crate) fn server_error(message: impl Into<String>) -> ResponseError{
     }
 }
 
-pub(crate) fn not_found_error(message: impl Into<String>) -> ResponseError{
+pub(crate) fn not_found_error(message: impl Into<String>) -> ResponseError {
     ResponseError {
         status_code: StatusCode::NOT_FOUND,
         public_error_message: message.into(),

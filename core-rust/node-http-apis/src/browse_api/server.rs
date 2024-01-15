@@ -72,7 +72,6 @@ use axum::http::{StatusCode, Uri};
 use axum::middleware::map_response;
 use axum::response::Response;
 use axum::{
-    extract::DefaultBodyLimit,
     routing::{get, post},
     Router,
 };
@@ -105,10 +104,7 @@ pub async fn create_server<F>(
 {
     let router = Router::new()
         .route("/blueprint/info", post(handle_browse_blueprint_info))
-        .route(
-            "/entity/iterator",
-            post(handle_browse_entity_iterator),
-        )
+        .route("/entity/iterator", post(handle_browse_entity_iterator))
         .route("/entity/info", post(handle_browse_entity_info))
         .route("/object/field", post(handle_browse_object_field))
         .route(
@@ -119,11 +115,8 @@ pub async fn create_server<F>(
             "/object/collection/entry",
             post(handle_browse_object_collection_entry),
         )
-        .route(
-            "/kv_store/iterator",
-            post(handle_browse_kv_store_iterator),
-        )
-        .route("/kv_store/entry", post(handle_browse_kv_store_entry))
+        .route("/kv-store/iterator", post(handle_browse_kv_store_iterator))
+        .route("/kv-store/entry", post(handle_browse_kv_store_entry))
         .route(
             "/entity/schema/entry",
             post(handle_browse_entity_schema_entry),

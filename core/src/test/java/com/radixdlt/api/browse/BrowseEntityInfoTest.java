@@ -74,8 +74,6 @@ import com.radixdlt.identifiers.Address;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import com.radixdlt.testutil.TestStateReader;
 import org.junit.Test;
 
 public final class BrowseEntityInfoTest extends DeterministicBrowseApiTestBase {
@@ -175,10 +173,7 @@ public final class BrowseEntityInfoTest extends DeterministicBrowseApiTestBase {
 
       // list entities and pick a random KV store
       final var kvStoreAddress =
-          getEntitiesApi()
-              .entityIteratorPost(new BrowseEntityIteratorRequest())
-              .getPage()
-              .stream()
+          getEntitiesApi().entityIteratorPost(new BrowseEntityIteratorRequest()).getPage().stream()
               .filter(entity -> entity.getEntityType() == EntityType.INTERNALKEYVALUESTORE)
               .findFirst()
               .orElseThrow()
@@ -186,9 +181,7 @@ public final class BrowseEntityInfoTest extends DeterministicBrowseApiTestBase {
 
       final var entityInfo =
           getEntitiesApi()
-              .entityInfoPost(
-                  new BrowseEntityInfoRequest()
-                      .entityAddress(kvStoreAddress))
+              .entityInfoPost(new BrowseEntityInfoRequest().entityAddress(kvStoreAddress))
               .getInfo();
 
       assertThat(entityInfo.getSystemType()).isEqualTo(SystemType.KEYVALUESTORE);

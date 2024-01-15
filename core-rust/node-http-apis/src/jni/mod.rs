@@ -62,5 +62,5 @@
  * permissions under this License.
  */
 
-pub mod core_api;
 pub mod browse_api;
+pub mod core_api;

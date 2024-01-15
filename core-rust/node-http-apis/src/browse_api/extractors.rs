@@ -1,16 +1,13 @@
+use super::{client_error, ResponseError};
+use crate::browse_api::models;
 use axum::{
     async_trait,
     body::HttpBody,
-    extract::{
-        rejection::{BytesRejection, FailedToBufferBody, JsonRejection},
-        FromRequest,
-    },
+    extract::{rejection::JsonRejection, FromRequest},
     http::Request,
     response::IntoResponse,
 };
 use serde::Serialize;
-use crate::browse_api::models;
-use super::{client_error, ResponseError};
 
 pub use axum::extract::State;
 
@@ -29,7 +26,10 @@ where
     async fn from_request(req: Request<B>, state: &S) -> Result<Self, Self::Rejection> {
         match axum::Json::<T>::from_request(req, state).await {
             Ok(value) => Ok(Self(value.0)),
-            Err(rejection) => Err(client_error(format!("{rejection:?}"), models::ErrorDetails::InvalidRequestDetails {})),
+            Err(rejection) => Err(client_error(
+                format!("{rejection:?}"),
+                models::ErrorDetails::InvalidRequestDetails {},
+            )),
         }
     }
 }

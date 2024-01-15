@@ -4,23 +4,18 @@ use radix_engine_common::math::*;
 use radix_engine_interface::blueprints::package::BlueprintVersion;
 use radix_engine_interface::prelude::*;
 use regex::Regex;
-use sbor::WellKnownTypeId;
-use state_manager::store::traits::scenario::ScenarioSequenceNumber;
 use state_manager::StateVersion;
 
 use crate::browse_api::models;
 
 use super::*;
 
-// TODO(wip): visit
 const MAX_API_EPOCH: u64 = 10000000000;
 const MAX_API_ROUND: u64 = 10000000000;
 const MAX_API_STATE_VERSION: u64 = 100000000000000;
 const MIN_API_TIMESTAMP_MS: i64 = 0;
 const MAX_API_TIMESTAMP_MS: i64 = 100000000000000; // For comparison, current timestamp is 1673822843000 (about 1/100th the size)
-const MAX_API_GENESIS_SCENARIO_NUMBER: i32 = 1000000;
 const MAX_USER_SPECIFIED_PAGE_SIZE: u16 = 1000; // Must match the OpenAPI's `MaxPageSize.maximum`
-const TEN_TRILLION: u64 = 10000000000;
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_epoch(_mapping_context: &MappingContext, epoch: Epoch) -> Result<i64, MappingError> {
@@ -40,17 +35,6 @@ pub fn to_api_round(round: Round) -> Result<i64, MappingError> {
         });
     }
     Ok(round.number().try_into().expect("Round too large somehow"))
-}
-
-pub fn to_api_well_known_type_id(
-    well_known_type_id: &WellKnownTypeId,
-) -> Result<i64, MappingError> {
-    well_known_type_id
-        .as_index()
-        .try_into()
-        .map_err(|_| MappingError::IntegerError {
-            message: "Well-known type index too large".to_string(),
-        })
 }
 
 #[tracing::instrument(skip_all)]
@@ -89,32 +73,11 @@ pub fn extract_blueprint_version(string: &str) -> Result<BlueprintVersion, Extra
     })
 }
 
-#[tracing::instrument(skip_all)]
-pub fn to_api_ten_trillion_capped_u64(
-    num: u64,
-    descriptor: &'static str,
-) -> Result<i64, MappingError> {
-    if num > TEN_TRILLION {
-        return Err(MappingError::IntegerError {
-            message: format!("{descriptor} larger than {TEN_TRILLION}"),
-        });
-    }
-    Ok(num.try_into().expect("Too large somehow"))
-}
-
 pub fn to_api_decimal(value: &Decimal) -> String {
     value.to_string()
 }
 
 pub fn to_api_u8_as_i32(input: u8) -> i32 {
-    input.into()
-}
-
-pub fn to_api_u16_as_i32(input: u16) -> i32 {
-    input.into()
-}
-
-pub fn to_api_u32_as_i64(input: u32) -> i64 {
     input.into()
 }
 
@@ -124,39 +87,9 @@ pub fn to_api_index_as_i64(index: usize) -> Result<i64, MappingError> {
     })
 }
 
-pub fn to_api_scenario_number(number: ScenarioSequenceNumber) -> Result<i32, MappingError> {
-    if number > MAX_API_GENESIS_SCENARIO_NUMBER as u32 {
-        return Err(MappingError::IntegerError {
-            message: format!(
-                "Genesis scenario sequence number must be <= {MAX_API_GENESIS_SCENARIO_NUMBER}"
-            ),
-        });
-    }
-    Ok(number as i32)
-}
-
 #[allow(dead_code)]
 pub fn to_api_u64_as_string(input: u64) -> String {
     input.to_string()
-}
-
-pub fn to_unix_timestamp_ms(time: std::time::SystemTime) -> Result<i64, MappingError> {
-    let millis = time
-        .duration_since(std::time::UNIX_EPOCH)
-        .expect("system time should be after Unix epoch")
-        .as_millis();
-
-    millis.try_into().map_err(|_| MappingError::IntegerError {
-        message: format!("Timestamp ms must be <= {MAX_API_TIMESTAMP_MS}"),
-    })
-}
-
-pub fn to_api_instant(instant: &Instant) -> Result<models::Instant, MappingError> {
-    to_api_instant_from_safe_timestamp(instant.seconds_since_unix_epoch.checked_mul(1000).ok_or(
-        MappingError::IntegerError {
-            message: "Timestamp must be representable as millis in i64".to_owned(),
-        },
-    )?)
 }
 
 pub fn to_api_instant_from_safe_timestamp(
@@ -180,42 +113,6 @@ pub fn to_api_instant_from_safe_timestamp(
         unix_timestamp_ms: timestamp_millis,
         date_time,
     })
-}
-
-pub fn extract_api_state_version(
-    state_version_number: i64,
-) -> Result<StateVersion, ExtractionError> {
-    if state_version_number < 1 {
-        return Err(ExtractionError::InvalidInteger {
-            message: "State version must be >= 1".to_owned(),
-        });
-    }
-    if state_version_number > MAX_API_STATE_VERSION as i64 {
-        return Err(ExtractionError::InvalidInteger {
-            message: format!(
-                "State version is larger than the max allowed: {MAX_API_STATE_VERSION}"
-            ),
-        });
-    }
-    Ok(StateVersion::of(
-        state_version_number
-            .try_into()
-            .expect("State version invalid somehow"),
-    ))
-}
-
-pub fn extract_api_epoch(epoch: i64) -> Result<Epoch, ExtractionError> {
-    if epoch < 0 {
-        return Err(ExtractionError::InvalidInteger {
-            message: "Epoch too low".to_owned(),
-        });
-    }
-    if epoch > MAX_API_EPOCH as i64 {
-        return Err(ExtractionError::InvalidInteger {
-            message: "Epoch larger than max api epoch".to_owned(),
-        });
-    }
-    Ok(Epoch::of(epoch.try_into().expect("Epoch invalid somehow")))
 }
 
 pub fn extract_api_max_page_size(max_page_size: i32) -> Result<usize, ExtractionError> {
@@ -248,34 +145,6 @@ pub fn extract_api_u8_as_i32(input: i32) -> Result<u8, ExtractionError> {
         });
     }
     if input > (u8::MAX as i32) {
-        return Err(ExtractionError::InvalidInteger {
-            message: "Is larger than the max value allowed".to_owned(),
-        });
-    }
-    Ok(input.try_into().expect("Number invalid somehow"))
-}
-
-pub fn extract_api_u32_as_i64(input: i64) -> Result<u32, ExtractionError> {
-    if input < 0 {
-        return Err(ExtractionError::InvalidInteger {
-            message: "Is negative".to_owned(),
-        });
-    }
-    if input > (u32::MAX as i64) {
-        return Err(ExtractionError::InvalidInteger {
-            message: "Is larger than the max value allowed".to_owned(),
-        });
-    }
-    Ok(input.try_into().expect("Number invalid somehow"))
-}
-
-pub fn extract_api_u16_as_i32(input: i32) -> Result<u16, ExtractionError> {
-    if input < 0 {
-        return Err(ExtractionError::InvalidInteger {
-            message: "Is negative".to_owned(),
-        });
-    }
-    if input > (u16::MAX as i32) {
         return Err(ExtractionError::InvalidInteger {
             message: "Is larger than the max value allowed".to_owned(),
         });

@@ -64,9 +64,11 @@
 
 package com.radixdlt.api;
 
+import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableList;
-import com.google.common.reflect.ClassPath;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.addressing.Addressing;
@@ -74,7 +76,6 @@ import com.radixdlt.api.browse.generated.api.*;
 import com.radixdlt.api.browse.generated.client.ApiClient;
 import com.radixdlt.api.browse.generated.client.ApiException;
 import com.radixdlt.api.browse.generated.models.*;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.CoreApiServerFlags;
 import com.radixdlt.environment.DatabaseFlags;
 import com.radixdlt.environment.StartProcessorOnRunner;
@@ -83,28 +84,17 @@ import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
-import com.radixdlt.lang.Functions;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.*;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transactions.IntentHash;
 import com.radixdlt.utils.FreePortFinder;
+import java.net.http.HttpClient;
 import org.assertj.core.api.ThrowableAssert;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
-
-import javax.net.ssl.SSLContext;
-import java.net.http.HttpClient;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-
-import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowableOfType;
 
 public abstract class DeterministicBrowseApiTestBase {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
@@ -156,7 +146,8 @@ public abstract class DeterministicBrowseApiTestBase {
                     return new StartProcessorOnRunner("N/A", browseApiServer::start);
                   }
                 })
-            .addModule(new CoreApiServerModule("127.0.0.1", coreApiPort, new CoreApiServerFlags(true)))
+            .addModule(
+                new CoreApiServerModule("127.0.0.1", coreApiPort, new CoreApiServerFlags(true)))
             .addModule(
                 new AbstractModule() {
                   @ProvidesIntoSet
@@ -194,7 +185,8 @@ public abstract class DeterministicBrowseApiTestBase {
   protected ApiClient buildApiClient() {
     final var apiClient = new ApiClient();
     apiClient.updateBaseUri("http://127.0.0.1:" + browseApiPort + "/browse");
-    apiClient.setHttpClientBuilder(HttpClient.newBuilder().sslContext(DummySslContextFactory.create()));
+    apiClient.setHttpClientBuilder(
+        HttpClient.newBuilder().sslContext(DummySslContextFactory.create()));
     return apiClient;
   }
 

@@ -12,28 +12,40 @@
 /// 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
 pub enum RequestedItemType {
+    #[serde(rename = "Blueprint")]
+    Blueprint,
+    #[serde(rename = "Schema")]
+    Schema,
     #[serde(rename = "Entity")]
     Entity,
     #[serde(rename = "Module")]
     Module,
     #[serde(rename = "Field")]
     Field,
+    #[serde(rename = "Collection")]
+    Collection,
+    #[serde(rename = "EntryKey")]
+    EntryKey,
 
 }
 
 impl ToString for RequestedItemType {
     fn to_string(&self) -> String {
         match self {
+            Self::Blueprint => String::from("Blueprint"),
+            Self::Schema => String::from("Schema"),
             Self::Entity => String::from("Entity"),
             Self::Module => String::from("Module"),
             Self::Field => String::from("Field"),
+            Self::Collection => String::from("Collection"),
+            Self::EntryKey => String::from("EntryKey"),
         }
     }
 }
 
 impl Default for RequestedItemType {
     fn default() -> RequestedItemType {
-        Self::Entity
+        Self::Blueprint
     }
 }
 

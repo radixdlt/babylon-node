@@ -68,7 +68,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.api.DeterministicBrowseApiTestBase;
-import com.radixdlt.api.browse.generated.client.ApiException;
 import com.radixdlt.api.browse.generated.models.*;
 import com.radixdlt.rev2.Manifest;
 import com.radixdlt.testutil.TestStateReader;
@@ -86,7 +85,9 @@ public final class BrowseKeyValueStoreEntryTest extends DeterministicBrowseApiTe
 
       // execute a dummy transaction to create a known entry in the Faucet's KV-Store:
       final var intentHash =
-          getCoreApiHelper().submitAndWaitForSuccess(test, Manifest.newRandomAccount(), List.of()).intentHash();
+          getCoreApiHelper()
+              .submitAndWaitForSuccess(test, Manifest.newRandomAccount(), List.of())
+              .intentHash();
       final var epoch = test.getInstance(0, TestStateReader.class).getEpoch();
 
       // fetch the value by SBOR-encoded transaction hash in programmatic JSON format:

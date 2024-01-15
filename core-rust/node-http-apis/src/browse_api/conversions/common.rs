@@ -1,6 +1,5 @@
 use radix_engine::types::*;
 
-use sbor::representations::*;
 use state_manager::LedgerHeader;
 
 use crate::browse_api::*;

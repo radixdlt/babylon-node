@@ -64,49 +64,14 @@
 
 package com.radixdlt.api;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.google.common.collect.ImmutableList;
-import com.google.common.reflect.ClassPath;
-import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.addressing.Addressing;
-import com.radixdlt.api.browse.generated.api.EntitiesApi;
-import com.radixdlt.api.browse.generated.api.KvStoresApi;
-import com.radixdlt.api.browse.generated.api.ObjectsApi;
-import com.radixdlt.api.browse.generated.api.TypesApi;
-import com.radixdlt.api.browse.generated.client.ApiClient;
-import com.radixdlt.api.browse.generated.client.ApiException;
-import com.radixdlt.environment.DatabaseFlags;
-import com.radixdlt.environment.StartProcessorOnRunner;
-import com.radixdlt.genesis.GenesisBuilder;
-import com.radixdlt.genesis.GenesisConsensusManagerConfig;
-import com.radixdlt.genesis.GenesisData;
-import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
-import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.Decimal;
-import com.radixdlt.rev2.NetworkDefinition;
-import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.utils.FreePortFinder;
-import org.assertj.core.api.ThrowableAssert;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
-
 import javax.net.ssl.SSLContext;
-import java.net.http.HttpClient;
-
-import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
-import static org.assertj.core.api.Assertions.catchThrowableOfType;
 
 public abstract class DummySslContextFactory {
 
   /**
    * Creates a dummy {@link SSLContext} to avoid the {@link java.security.NoSuchAlgorithmException}
-   * when an HTTP clients fails to load a trust store.
-   * This is meant for tests, where SSL is not needed.
+   * when an HTTP clients fails to load a trust store. This is meant for tests, where SSL is not
+   * needed.
    */
   public static SSLContext create() {
     try {

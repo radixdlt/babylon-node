@@ -1,6 +1,5 @@
 /* tslint:disable */
 /* eslint-disable */
-export * from './BrowseApi';
 export * from './LTSApi';
 export * from './MempoolApi';
 export * from './StateApi';

@@ -73,8 +73,6 @@ import com.radixdlt.api.DeterministicBrowseApiTestBase;
 import com.radixdlt.api.browse.generated.models.*;
 import java.util.List;
 import java.util.Set;
-
-import com.radixdlt.testutil.TestStateReader;
 import org.junit.Test;
 
 public final class BrowseBlueprintInfoTest extends DeterministicBrowseApiTestBase {

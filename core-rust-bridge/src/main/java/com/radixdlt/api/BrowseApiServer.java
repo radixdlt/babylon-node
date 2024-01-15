@@ -75,9 +75,7 @@ public final class BrowseApiServer {
     System.loadLibrary("corerust");
   }
 
-  /**
-   * A pointer to the owned Rust structure.
-   */
+  /** A pointer to the owned Rust structure. */
   @SuppressWarnings("unused")
   private final long rustBrowseApiServerPointer = 0;
 

@@ -135,7 +135,7 @@ public class KvStoresApi {
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
 
-    String localVarPath = "/kv_store/entry";
+    String localVarPath = "/kv-store/entry";
 
     localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
 
@@ -213,7 +213,7 @@ public class KvStoresApi {
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
 
-    String localVarPath = "/kv_store/iterator";
+    String localVarPath = "/kv-store/iterator";
 
     localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
 

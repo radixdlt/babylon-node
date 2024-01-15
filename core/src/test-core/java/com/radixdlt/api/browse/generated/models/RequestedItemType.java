@@ -28,11 +28,19 @@ import com.fasterxml.jackson.annotation.JsonValue;
  */
 public enum RequestedItemType {
   
+  BLUEPRINT("Blueprint"),
+  
+  SCHEMA("Schema"),
+  
   ENTITY("Entity"),
   
   MODULE("Module"),
   
-  FIELD("Field");
+  FIELD("Field"),
+  
+  COLLECTION("Collection"),
+  
+  ENTRYKEY("EntryKey");
 
   private String value;
 

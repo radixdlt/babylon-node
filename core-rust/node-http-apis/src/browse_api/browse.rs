@@ -23,10 +23,10 @@ use radix_engine_interface::blueprints::package::{
 };
 
 use crate::browse_api::handlers::RawCollectionKey;
+use crate::browse_api::models::ErrorDetails;
 use state_manager::store::traits::indices::{CreationId, EntityBlueprintIdV1, ReNodeListingIndex};
 use state_manager::store::traits::SubstateNodeAncestryStore;
 use tracing::warn;
-use crate::browse_api::models::{ErrorDetails, RequestedItemType};
 
 use super::*;
 
@@ -1650,15 +1650,18 @@ pub enum ItemKind {
 impl From<EngineStateBrowsingError> for ResponseError {
     fn from(error: EngineStateBrowsingError) -> Self {
         match error {
-            // TODO(wip): item_kind mapping
-            EngineStateBrowsingError::RequestedItemNotFound(item_kind) => {
-                client_error(format!("{:?} not found", item_kind), ErrorDetails::RequestedItemNotFoundDetails { item_type: RequestedItemType::Field })
-            }
-            EngineStateBrowsingError::RequestedItemInvalid(item_kind, reason) => {
-                client_error(format!("Invalid {:?}: {}", item_kind, reason), ErrorDetails::RequestedItemInvalidDetails {
-                    item_type: RequestedItemType::Field,
-                })
-            }
+            EngineStateBrowsingError::RequestedItemNotFound(item_kind) => client_error(
+                format!("{:?} not found", item_kind),
+                ErrorDetails::RequestedItemNotFoundDetails {
+                    item_type: to_api_requested_item_type(item_kind),
+                },
+            ),
+            EngineStateBrowsingError::RequestedItemInvalid(item_kind, reason) => client_error(
+                format!("Invalid {:?}: {}", item_kind, reason),
+                ErrorDetails::RequestedItemInvalidDetails {
+                    item_type: to_api_requested_item_type(item_kind),
+                },
+            ),
             EngineStateBrowsingError::UnexpectedEngineError(system_reader_error, circumstances) => {
                 let public_message = format!("Unexpected error encountered {}", circumstances);
                 warn!(?system_reader_error, public_message);

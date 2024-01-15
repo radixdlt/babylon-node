@@ -61,7 +61,7 @@ fn to_api_blueprint_info(
         generic_type_parameters: generics
             .into_iter()
             .map(|generic| match generic {
-                GenericBound::Any => models::GenericTypeParameter::AnyGenericTypeParameter {}
+                GenericBound::Any => models::GenericTypeParameter::AnyGenericTypeParameter {},
             })
             .collect(),
         available_features,

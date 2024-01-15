@@ -66,11 +66,10 @@ package com.radixdlt.api.browse;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.List;
-import java.util.Map;
-
 import com.radixdlt.api.DeterministicBrowseApiTestBase;
 import com.radixdlt.api.browse.generated.models.BrowseObjectFieldRequest;
+import java.util.List;
+import java.util.Map;
 import org.junit.Test;
 
 public final class BrowseObjectFieldTest extends DeterministicBrowseApiTestBase {

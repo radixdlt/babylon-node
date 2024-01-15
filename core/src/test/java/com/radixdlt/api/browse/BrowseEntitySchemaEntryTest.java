@@ -69,8 +69,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.radixdlt.api.DeterministicBrowseApiTestBase;
 import com.radixdlt.api.browse.generated.models.*;
 import java.util.Map;
-
-import com.radixdlt.testutil.TestStateReader;
 import org.junit.Test;
 
 public final class BrowseEntitySchemaEntryTest extends DeterministicBrowseApiTestBase {
@@ -87,8 +85,7 @@ public final class BrowseEntitySchemaEntryTest extends DeterministicBrowseApiTes
           (ObjectEntityInfo)
               getEntitiesApi()
                   .entityInfoPost(
-                      new BrowseEntityInfoRequest()
-                          .entityAddress(wellKnownAddresses.getFaucet()))
+                      new BrowseEntityInfoRequest().entityAddress(wellKnownAddresses.getFaucet()))
                   .getInfo();
       final var faucetStateField = faucetObjectInfo.getMainModuleState().getFields().get(0);
       final var faucetStateType = (SchemaDefinedTypeReference) faucetStateField.getTypeReference();

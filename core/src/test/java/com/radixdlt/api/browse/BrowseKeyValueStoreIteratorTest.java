@@ -68,8 +68,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Iterables;
 import com.radixdlt.api.DeterministicBrowseApiTestBase;
-import com.radixdlt.api.DeterministicCoreApiTestBase;
-import com.radixdlt.api.browse.generated.client.ApiException;
 import com.radixdlt.api.browse.generated.models.*;
 import com.radixdlt.rev2.Manifest;
 import java.util.ArrayList;
@@ -134,7 +132,9 @@ public final class BrowseKeyValueStoreIteratorTest extends DeterministicBrowseAp
 
       // execute a dummy transaction to create a known entry in the Faucet's KV-Store:
       final var intentHash =
-          getCoreApiHelper().submitAndWaitForSuccess(test, Manifest.newRandomAccount(), List.of()).intentHash();
+          getCoreApiHelper()
+              .submitAndWaitForSuccess(test, Manifest.newRandomAccount(), List.of())
+              .intentHash();
 
       // iterate over the only key in that KV-Store
       final var allKeys =

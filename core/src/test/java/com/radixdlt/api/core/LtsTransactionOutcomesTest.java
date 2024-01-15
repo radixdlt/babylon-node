@@ -66,6 +66,7 @@ package com.radixdlt.api.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.radixdlt.api.CoreApiHelper;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.crypto.ECKeyPair;
@@ -93,11 +94,12 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
       // Single NF mint
       var tx1Result =
           getSingleCommittedTransactionOutcome(
-              submitAndWaitForSuccess(
-                  test,
-                  Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
-                      resourceAddress, accountAddress, List.of(1), List.of()),
-                  List.of(accountKeyPair)));
+              getApiHelper()
+                  .submitAndWaitForSuccess(
+                      test,
+                      Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
+                          resourceAddress, accountAddress, List.of(1), List.of()),
+                      List.of(accountKeyPair)));
       assertThat(tx1Result.getNonFungibleEntityBalanceChanges().size()).isEqualTo(1);
       var tx1Changes = tx1Result.getNonFungibleEntityBalanceChanges().get(0);
       assertThat(tx1Changes.getAdded()).containsExactlyInAnyOrderElementsOf(List.of("#1#"));
@@ -106,21 +108,23 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
       // Transient token is not reported
       var tx2Result =
           getSingleCommittedTransactionOutcome(
-              submitAndWaitForSuccess(
-                  test,
-                  Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
-                      resourceAddress, accountAddress, List.of(2), List.of(2)),
-                  List.of(accountKeyPair)));
+              getApiHelper()
+                  .submitAndWaitForSuccess(
+                      test,
+                      Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
+                          resourceAddress, accountAddress, List.of(2), List.of(2)),
+                      List.of(accountKeyPair)));
       assertThat(tx2Result.getNonFungibleEntityBalanceChanges()).isEmpty();
 
       // Multiple NF mint
       var tx3Result =
           getSingleCommittedTransactionOutcome(
-              submitAndWaitForSuccess(
-                  test,
-                  Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
-                      resourceAddress, accountAddress, List.of(3, 4, 5), List.of()),
-                  List.of(accountKeyPair)));
+              getApiHelper()
+                  .submitAndWaitForSuccess(
+                      test,
+                      Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
+                          resourceAddress, accountAddress, List.of(3, 4, 5), List.of()),
+                      List.of(accountKeyPair)));
       assertThat(tx3Result.getNonFungibleEntityBalanceChanges().size()).isEqualTo(1);
       var tx3Changes = tx3Result.getNonFungibleEntityBalanceChanges().get(0);
       assertThat(tx3Changes.getRemoved()).isEmpty();
@@ -130,11 +134,12 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
       // Multiple NF burn
       var tx4Result =
           getSingleCommittedTransactionOutcome(
-              submitAndWaitForSuccess(
-                  test,
-                  Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
-                      resourceAddress, accountAddress, List.of(), List.of(3, 4, 5, 1)),
-                  List.of(accountKeyPair)));
+              getApiHelper()
+                  .submitAndWaitForSuccess(
+                      test,
+                      Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
+                          resourceAddress, accountAddress, List.of(), List.of(3, 4, 5, 1)),
+                      List.of(accountKeyPair)));
       assertThat(tx4Result.getNonFungibleEntityBalanceChanges().size()).isEqualTo(1);
       var tx4Changes = tx4Result.getNonFungibleEntityBalanceChanges().get(0);
       assertThat(tx4Changes.getAdded()).isEmpty();
@@ -162,16 +167,18 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
 
       var tx1Result =
           getSingleCommittedTransactionOutcome(
-              submitAndWaitForSuccess(
-                  test, Manifest.depositFromFaucet(account1Address), List.of()));
+              getApiHelper()
+                  .submitAndWaitForSuccess(
+                      test, Manifest.depositFromFaucet(account1Address), List.of()));
       assertThat(tx1Result.getResultantAccountFungibleBalances())
           .isEqualTo(
               List.of(account(account1Address, List.of(balance(account1ExpectedAmount, XRD)))));
 
       var tx2Result =
           getSingleCommittedTransactionOutcome(
-              submitAndWaitForSuccess(
-                  test, Manifest.depositFromFaucet(account2Address), List.of()));
+              getApiHelper()
+                  .submitAndWaitForSuccess(
+                      test, Manifest.depositFromFaucet(account2Address), List.of()));
       assertThat(tx2Result.getResultantAccountFungibleBalances())
           .isEqualTo(
               List.of(account(account2Address, List.of(balance(account2ExpectedAmount, XRD)))));
@@ -181,11 +188,12 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
       account2ExpectedAmount += tx3Amount;
       var tx3Result =
           getSingleCommittedTransactionOutcome(
-              submitAndWaitForSuccess(
-                  test,
-                  Manifest.transferBetweenAccountsFeeFromFaucet(
-                      account1Address, XRD, Decimal.ofNonNegative(tx3Amount), account2Address),
-                  List.of(account1KeyPair)));
+              getApiHelper()
+                  .submitAndWaitForSuccess(
+                      test,
+                      Manifest.transferBetweenAccountsFeeFromFaucet(
+                          account1Address, XRD, Decimal.ofNonNegative(tx3Amount), account2Address),
+                      List.of(account1KeyPair)));
       assertThat(
               findAccount(tx3Result.getResultantAccountFungibleBalances(), account1Address)
                   .getResultantBalances())
@@ -197,11 +205,12 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
 
       var tx4Result =
           getSingleCommittedTransactionOutcome(
-              submitAndWaitForSuccess(
-                  test,
-                  Manifest.transferBetweenAccountsFeeFromFaucet(
-                      account2Address, XRD, Decimal.ofNonNegative(450), account2Address),
-                  List.of(account2KeyPair)));
+              getApiHelper()
+                  .submitAndWaitForSuccess(
+                      test,
+                      Manifest.transferBetweenAccountsFeeFromFaucet(
+                          account2Address, XRD, Decimal.ofNonNegative(450), account2Address),
+                      List.of(account2KeyPair)));
       assertThat(tx4Result.getResultantAccountFungibleBalances()).isEqualTo(List.of());
     }
   }
@@ -233,7 +242,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
   }
 
   private LtsCommittedTransactionOutcome getSingleCommittedTransactionOutcome(
-      CommittedResult committedResult) throws Exception {
+      CoreApiHelper.CommittedResult committedResult) throws Exception {
     var outcomes =
         getLtsApi()
             .ltsStreamTransactionOutcomesPost(
@@ -262,53 +271,61 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
       var account2AddressStr = account2Address.encode(networkDefinition);
 
       var account1FaucetClaim =
-          submitAndWaitForSuccess(test, Manifest.depositFromFaucet(account1Address), List.of());
+          getApiHelper()
+              .submitAndWaitForSuccess(
+                  test, Manifest.depositFromFaucet(account1Address), List.of());
       var account2FaucetClaim =
-          submitAndWaitForSuccess(test, Manifest.depositFromFaucet(account2Address), List.of());
+          getApiHelper()
+              .submitAndWaitForSuccess(
+                  test, Manifest.depositFromFaucet(account2Address), List.of());
 
       var account1SelfXrdTransferAmount = 1L;
       var account1SelfXrdTransfer =
-          submitAndWaitForSuccess(
-              test,
-              Manifest.transferBetweenAccountsFeeFromSender(
-                  account1Address,
-                  ScryptoConstants.XRD_RESOURCE_ADDRESS,
-                  Decimal.ofNonNegative(account1SelfXrdTransferAmount),
-                  account1Address),
-              List.of(account1KeyPair));
+          getApiHelper()
+              .submitAndWaitForSuccess(
+                  test,
+                  Manifest.transferBetweenAccountsFeeFromSender(
+                      account1Address,
+                      ScryptoConstants.XRD_RESOURCE_ADDRESS,
+                      Decimal.ofNonNegative(account1SelfXrdTransferAmount),
+                      account1Address),
+                  List.of(account1KeyPair));
 
       var account1ToAccount2XrdTransferWithFeeFromAccount1Amount = 5;
       var account1ToAccount2XrdTransferWithFeeFromAccount1 =
-          submitAndWaitForSuccess(
-              test,
-              Manifest.transferBetweenAccountsFeeFromSender(
-                  account1Address,
-                  ScryptoConstants.XRD_RESOURCE_ADDRESS,
-                  Decimal.ofNonNegative(account1ToAccount2XrdTransferWithFeeFromAccount1Amount),
-                  account2Address),
-              List.of(account1KeyPair));
+          getApiHelper()
+              .submitAndWaitForSuccess(
+                  test,
+                  Manifest.transferBetweenAccountsFeeFromSender(
+                      account1Address,
+                      ScryptoConstants.XRD_RESOURCE_ADDRESS,
+                      Decimal.ofNonNegative(account1ToAccount2XrdTransferWithFeeFromAccount1Amount),
+                      account2Address),
+                  List.of(account1KeyPair));
 
       var account1ToAccount2XrdTransferWithFeeFromAccount2Amount = 31;
       var account1ToAccount2XrdTransferWithFeeFromAccount2 =
-          submitAndWaitForSuccess(
-              test,
-              Manifest.transferBetweenAccountsFeeFromReceiver(
-                  account1Address,
-                  ScryptoConstants.XRD_RESOURCE_ADDRESS,
-                  Decimal.ofNonNegative(account1ToAccount2XrdTransferWithFeeFromAccount2Amount),
-                  account2Address),
-              List.of(account1KeyPair, account2KeyPair));
+          getApiHelper()
+              .submitAndWaitForSuccess(
+                  test,
+                  Manifest.transferBetweenAccountsFeeFromReceiver(
+                      account1Address,
+                      ScryptoConstants.XRD_RESOURCE_ADDRESS,
+                      Decimal.ofNonNegative(account1ToAccount2XrdTransferWithFeeFromAccount2Amount),
+                      account2Address),
+                  List.of(account1KeyPair, account2KeyPair));
 
       var account1ToAccount2XrdTransferWithFeeFromFaucetAmount = 6;
       var account1ToAccount2XrdTransferWithFeeFromFaucet =
-          submitAndWaitForSuccess(
-              test,
-              Manifest.transferBetweenAccountsFeeFromFaucet(
-                  account1Address,
-                  ScryptoConstants.XRD_RESOURCE_ADDRESS,
-                  Decimal.ofNonNegative(account1ToAccount2XrdTransferWithFeeFromFaucetAmount),
-                  account2Address),
-              List.of(account1KeyPair));
+          getApiHelper()
+              .submitAndWaitForSuccess(
+                  test,
+                  Manifest.transferBetweenAccountsFeeFromFaucet(
+                      account1Address,
+                      ScryptoConstants.XRD_RESOURCE_ADDRESS,
+                      Decimal.ofNonNegative(account1ToAccount2XrdTransferWithFeeFromFaucetAmount),
+                      account2Address),
+                  List.of(account1KeyPair));
 
       validateAccountTransactions(
           account1Address,

@@ -3,7 +3,6 @@ use std::any::type_name;
 use radix_engine_common::math::*;
 use radix_engine_interface::blueprints::package::BlueprintVersion;
 use radix_engine_interface::prelude::*;
-use regex::Regex;
 use sbor::WellKnownTypeId;
 use state_manager::store::traits::scenario::ScenarioSequenceNumber;
 use state_manager::StateVersion;
@@ -23,7 +22,6 @@ const MAX_API_STATE_VERSION: u64 = 100000000000000;
 const MIN_API_TIMESTAMP_MS: i64 = 0;
 const MAX_API_TIMESTAMP_MS: i64 = 100000000000000; // For comparison, current timestamp is 1673822843000 (about 1/100th the size)
 const MAX_API_GENESIS_SCENARIO_NUMBER: i32 = 1000000;
-const MAX_USER_SPECIFIED_PAGE_SIZE: u16 = 1000; // Must match the OpenAPI's `MaxPageSize.maximum`
 const TEN_TRILLION: u64 = 10000000000;
 
 #[tracing::instrument(skip_all)]
@@ -91,19 +89,6 @@ pub fn to_api_blueprint_version(
         "{}.{}.{}",
         version.major, version.minor, version.patch
     ))
-}
-
-pub fn extract_blueprint_version(string: &str) -> Result<BlueprintVersion, ExtractionError> {
-    let semver_parts = Regex::new(r"^(\d+)\.(\d+)\.(\d+)$")
-        .ok()
-        .and_then(|regex| regex.captures(string))
-        .map(|captures| captures.extract::<3>().1)
-        .ok_or(ExtractionError::InvalidSemverString)?;
-    Ok(BlueprintVersion {
-        major: u32::from_str(semver_parts[0]).map_err(|_| ExtractionError::InvalidSemverString)?,
-        minor: u32::from_str(semver_parts[1]).map_err(|_| ExtractionError::InvalidSemverString)?,
-        patch: u32::from_str(semver_parts[2]).map_err(|_| ExtractionError::InvalidSemverString)?,
-    })
 }
 
 #[tracing::instrument(skip_all)]
@@ -235,20 +220,6 @@ pub fn extract_api_epoch(epoch: i64) -> Result<Epoch, ExtractionError> {
     Ok(Epoch::of(epoch.try_into().expect("Epoch invalid somehow")))
 }
 
-pub fn extract_api_max_page_size(max_page_size: i32) -> Result<usize, ExtractionError> {
-    if max_page_size <= 0 {
-        return Err(ExtractionError::InvalidInteger {
-            message: "Max page size must be positive".to_owned(),
-        });
-    }
-    if max_page_size > MAX_USER_SPECIFIED_PAGE_SIZE as i32 {
-        return Err(ExtractionError::InvalidInteger {
-            message: "Max page size too large".to_owned(),
-        });
-    }
-    Ok(usize::try_from(max_page_size).expect("bounds checked already"))
-}
-
 #[allow(dead_code)]
 pub fn extract_api_u64_as_string(input: String) -> Result<u64, ExtractionError> {
     input
@@ -256,20 +227,6 @@ pub fn extract_api_u64_as_string(input: String) -> Result<u64, ExtractionError> 
         .map_err(|_| ExtractionError::InvalidInteger {
             message: "Is not valid u64 string".to_owned(),
         })
-}
-
-pub fn extract_api_u8_as_i32(input: i32) -> Result<u8, ExtractionError> {
-    if input < 0 {
-        return Err(ExtractionError::InvalidInteger {
-            message: "Is negative".to_owned(),
-        });
-    }
-    if input > (u8::MAX as i32) {
-        return Err(ExtractionError::InvalidInteger {
-            message: "Is larger than the max value allowed".to_owned(),
-        });
-    }
-    Ok(input.try_into().expect("Number invalid somehow"))
 }
 
 pub fn extract_api_u32_as_i64(input: i64) -> Result<u32, ExtractionError> {

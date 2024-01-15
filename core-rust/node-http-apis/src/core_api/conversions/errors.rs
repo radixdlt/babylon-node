@@ -105,18 +105,12 @@ pub enum ExtractionError {
     InvalidSignature,
     InvalidPublicKey,
     InvalidHash,
-    InvalidSbor(DecodeError),
     InvalidTransaction(TransactionValidationError),
     InvalidAddress,
     InvalidNonFungibleId(ParseNonFungibleLocalIdError),
     WrongNonFungibleIdType {
         expected: NonFungibleIdType,
         actual: NonFungibleIdType,
-    },
-    InvalidFieldAlternativesUsage,
-    InvalidSemverString,
-    InvalidProgrammaticJson {
-        message: String,
     },
 }
 

@@ -64,6 +64,8 @@
 
 package com.radixdlt.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.radixdlt.api.core.generated.api.*;
 import com.radixdlt.api.core.generated.client.ApiClient;
 import com.radixdlt.api.core.generated.client.ApiException;
@@ -73,13 +75,10 @@ import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.lang.Functions;
 import com.radixdlt.rev2.*;
 import com.radixdlt.transactions.IntentHash;
-
 import java.net.http.HttpClient;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class CoreApiHelper {
 
@@ -91,10 +90,12 @@ public class CoreApiHelper {
     this.networkDefinition = networkDefinition;
     this.apiClient = new ApiClient();
     apiClient.updateBaseUri("http://127.0.0.1:" + coreApiPort + "/core");
-    apiClient.setHttpClientBuilder(HttpClient.newBuilder().sslContext(DummySslContextFactory.create()));
+    apiClient.setHttpClientBuilder(
+        HttpClient.newBuilder().sslContext(DummySslContextFactory.create()));
   }
 
-  public NetworkConfigurationResponseWellKnownAddresses getWellKnownAddresses() throws ApiException {
+  public NetworkConfigurationResponseWellKnownAddresses getWellKnownAddresses()
+      throws ApiException {
     return new StatusApi(apiClient).statusNetworkConfigurationPost().getWellKnownAddresses();
   }
 

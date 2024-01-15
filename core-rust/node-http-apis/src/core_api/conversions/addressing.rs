@@ -695,12 +695,3 @@ pub fn to_api_module_id(object_module_id: &ModuleId) -> models::ModuleId {
         ModuleId::RoleAssignment => models::ModuleId::RoleAssignment,
     }
 }
-
-pub fn extract_api_module_id(module_id: &models::ModuleId) -> ModuleId {
-    match module_id {
-        models::ModuleId::Main => ModuleId::Main,
-        models::ModuleId::Metadata => ModuleId::Metadata,
-        models::ModuleId::Royalty => ModuleId::Royalty,
-        models::ModuleId::RoleAssignment => ModuleId::RoleAssignment,
-    }
-}
