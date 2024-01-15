@@ -64,9 +64,10 @@
 
 package com.radixdlt.protocol;
 
-import static com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch;
+import static com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.singleReadinessThresholdBetweenEpochs;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.rev2.Decimal;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 
@@ -81,7 +82,11 @@ public record ProtocolConfig(
   public static ProtocolConfig testingDefault() {
     return new ProtocolConfig(
         "testing-genesis",
-        ImmutableList.of(new ProtocolUpdate("anemone", unconditionallyAtEpoch(4L))));
+        ImmutableList.of(
+            new ProtocolUpdate(
+                "anemone",
+                singleReadinessThresholdBetweenEpochs(
+                    1L, 100_000L, Decimal.ofNonNegative(100), 0))));
   }
 
   public static ProtocolConfig mainnet() {
