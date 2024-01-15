@@ -85,8 +85,7 @@ public record ProtocolConfig(
         ImmutableList.of(
             new ProtocolUpdate(
                 "anemone",
-                singleReadinessThresholdBetweenEpochs(
-                    1L, 100_000L, Decimal.ofNonNegative(1), 0))));
+                singleReadinessThresholdBetweenEpochs(1L, 100_000L, Decimal.ofNonNegative(1), 0))));
   }
 
   public static ProtocolConfig mainnet() {
