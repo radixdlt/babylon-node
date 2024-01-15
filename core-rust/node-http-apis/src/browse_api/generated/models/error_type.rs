@@ -12,22 +12,25 @@
 /// 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
 pub enum ErrorType {
-    #[serde(rename = "EntityNotFound")]
-    EntityNotFound,
+    #[serde(rename = "RequestedItemNotFound")]
+    RequestedItemNotFound,
+    #[serde(rename = "RequestedItemInvalid")]
+    RequestedItemInvalid,
 
 }
 
 impl ToString for ErrorType {
     fn to_string(&self) -> String {
         match self {
-            Self::EntityNotFound => String::from("EntityNotFound"),
+            Self::RequestedItemNotFound => String::from("RequestedItemNotFound"),
+            Self::RequestedItemInvalid => String::from("RequestedItemInvalid"),
         }
     }
 }
 
 impl Default for ErrorType {
     fn default() -> ErrorType {
-        Self::EntityNotFound
+        Self::RequestedItemNotFound
     }
 }
 

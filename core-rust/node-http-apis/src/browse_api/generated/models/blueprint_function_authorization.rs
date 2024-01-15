@@ -16,7 +16,7 @@ pub enum BlueprintFunctionAuthorization {
     #[serde(rename="ByAccessRule")]
     ByAccessRuleBlueprintFunctionAuthorization {
         #[serde(rename = "rule")]
-        rule: crate::browse_api::generated::models::AccessRule,
+        rule: Box<crate::browse_api::generated::models::AccessRule>,
     },
     #[serde(rename="Public")]
     PublicBlueprintFunctionAuthorization {

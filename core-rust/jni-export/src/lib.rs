@@ -85,5 +85,6 @@ fn export_extern_functions() {
     state_manager::jni::test_state_reader::export_extern_functions();
 
     // node-http-apis
-    node_http_apis::jni::export_extern_functions();
+    node_http_apis::jni::core_api::export_extern_functions();
+    node_http_apis::jni::browse_api::export_extern_functions();
 }

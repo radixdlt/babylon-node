@@ -28,7 +28,9 @@ import com.fasterxml.jackson.annotation.JsonValue;
  */
 public enum ErrorType {
   
-  ENTITYNOTFOUND("EntityNotFound");
+  REQUESTEDITEMNOTFOUND("RequestedItemNotFound"),
+  
+  REQUESTEDITEMINVALID("RequestedItemInvalid");
 
   private String value;
 

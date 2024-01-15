@@ -489,6 +489,9 @@ components:
     GlobalAddress:
       type: string
       description: A Bech32m-encoded, human readable rendering of any global Entity's address.
+    ResourceAddress:
+      type: string
+      description: A Bech32m-encoded human readable version of a Resource address.
     SchemaHash:
       type: string
       minLength: 64
@@ -554,34 +557,70 @@ components:
 ###########################################################
 # ERROR SURFACING                                         #
 ###########################################################
-    ErrorType:
-      type: string
-      enum:
-        - EntityNotFound
     ErrorResponse:
       type: object
-      discriminator:
-        propertyName: error_type
-        mapping:
-          # NOTE: These need to match ErrorResponseType
-          EntityNotFound: "#/components/schemas/EntityNotFoundError"
       required:
-        - error_type
         - message
         - trace_id
       properties:
-        error_type:
-          $ref: "#/components/schemas/ErrorType"
         message:
           description: A human-readable error message.
           type: string
         trace_id:
           description: A GUID to be used when reporting errors, to allow correlation with the server's error logs.
           type: string
-    EntityNotFoundError:
+        details:
+          description: |
+            Application-level error details.
+            Will not be present for HTTP-level errors (e.g. HTTP 404).
+          $ref: "#/components/schemas/ErrorDetails"
+    ErrorType:
+      type: string
+      enum:
+        - RequestedItemNotFound
+        - RequestedItemInvalid
+    ErrorDetails:
+      type: object
+      discriminator:
+        propertyName: error_type
+        mapping:
+          # NOTE: These need to match ErrorResponseType
+          InvalidRequest: "#/components/schemas/InvalidRequestDetails"
+          RequestedItemNotFound: "#/components/schemas/RequestedItemNotFoundDetails"
+          RequestedItemInvalid: "#/components/schemas/RequestedItemInvalidDetails"
+      required:
+        - error_type
+      properties:
+        error_type:
+          $ref: "#/components/schemas/ErrorType"
+    InvalidRequestDetails:
       allOf:
-        - $ref: "#/components/schemas/ErrorResponse"
+        - $ref: "#/components/schemas/ErrorDetails"
         - type: object
+    RequestedItemNotFoundDetails:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - item_type
+          properties:
+            item_type:
+              $ref: "#/components/schemas/RequestedItemType"
+    RequestedItemInvalidDetails:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - item_type
+          properties:
+            item_type:
+              $ref: "#/components/schemas/RequestedItemType"
+    RequestedItemType:
+      type: string
+      enum:
+        - Entity
+        - Module
+        - Field
 
 #########################################################
 # REQUEST: /browse/entity/iterator                      #
@@ -1091,6 +1130,229 @@ components:
         - $ref: "#/components/schemas/BlueprintFunctionAuthorization"
         - type: object
           description: Only the root call frame has access.
+    AccessRuleType:
+      type: string
+      enum:
+        - Protected
+        - AllowAll
+        - DenyAll
+    AccessRule:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/AccessRuleType'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match AccessRuleType options above
+          Protected: '#/components/schemas/ProtectedAccessRule'
+          AllowAll: '#/components/schemas/AllowAllAccessRule'
+          DenyAll: '#/components/schemas/DenyAllAccessRule'
+    ProtectedAccessRule:
+      allOf:
+        - $ref: '#/components/schemas/AccessRule'
+        - type: object
+          required:
+            - access_rule
+          properties:
+            access_rule:
+              $ref: '#/components/schemas/AccessRuleNode'
+    AllowAllAccessRule:
+      allOf:
+        - $ref: '#/components/schemas/AccessRule'
+        - type: object
+    DenyAllAccessRule:
+      allOf:
+        - $ref: '#/components/schemas/AccessRule'
+        - type: object
+    AccessRuleNodeType:
+      type: string
+      enum:
+        - ProofRule
+        - AnyOf
+        - AllOf
+    AccessRuleNode:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/AccessRuleNodeType'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match AccessRuleNodeType options above
+          ProofRule: '#/components/schemas/ProofAccessRuleNode'
+          AnyOf: '#/components/schemas/AnyOfAccessRuleNode'
+          AllOf: '#/components/schemas/AllOfAccessRuleNode'
+    ProofAccessRuleNode:
+      allOf:
+        - $ref: '#/components/schemas/AccessRuleNode'
+        - type: object
+          required:
+            - proof_rule
+          properties:
+            proof_rule:
+              $ref: '#/components/schemas/ProofRule'
+    AnyOfAccessRuleNode:
+      allOf:
+        - $ref: '#/components/schemas/AccessRuleNode'
+        - type: object
+          required:
+            - access_rules
+          properties:
+            access_rules:
+              type: array
+              items:
+                $ref: '#/components/schemas/AccessRuleNode'
+    AllOfAccessRuleNode:
+      allOf:
+        - $ref: '#/components/schemas/AccessRuleNode'
+        - type: object
+          required:
+            - access_rules
+          properties:
+            access_rules:
+              type: array
+              items:
+                $ref: '#/components/schemas/AccessRuleNode'
+    ProofRuleType:
+      type: string
+      enum:
+        - Require
+        - AmountOf
+        - AllOf
+        - AnyOf
+        - CountOf
+    ProofRule:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/ProofRuleType'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match ProofRuleType options above
+          Require: '#/components/schemas/RequireProofRule'
+          AmountOf: '#/components/schemas/AmountOfProofRule'
+          AllOf: '#/components/schemas/AllOfProofRule'
+          AnyOf: '#/components/schemas/AnyOfProofRule'
+          CountOf: '#/components/schemas/CountOfProofRule'
+    RequireProofRule:
+      allOf:
+        - $ref: '#/components/schemas/ProofRule'
+        - type: object
+          required:
+            - requirement
+          properties:
+            requirement:
+              $ref: '#/components/schemas/Requirement'
+    AmountOfProofRule:
+      allOf:
+        - $ref: '#/components/schemas/ProofRule'
+        - type: object
+          required:
+            - amount
+            - resource
+          properties:
+            amount:
+              type: string
+            resource:
+              $ref: '#/components/schemas/ResourceAddress'
+    AllOfProofRule:
+      allOf:
+        - $ref: '#/components/schemas/ProofRule'
+        - type: object
+          required:
+            - list
+          properties:
+            list:
+              type: array
+              items:
+                $ref: '#/components/schemas/Requirement'
+    AnyOfProofRule:
+      allOf:
+        - $ref: '#/components/schemas/ProofRule'
+        - type: object
+          required:
+            - list
+          properties:
+            list:
+              type: array
+              items:
+                $ref: '#/components/schemas/Requirement'
+    CountOfProofRule:
+      allOf:
+        - $ref: '#/components/schemas/ProofRule'
+        - type: object
+          required:
+            - count
+            - list
+          properties:
+            count:
+              type: integer
+            list:
+              type: array
+              items:
+                $ref: '#/components/schemas/Requirement'
+    Requirement:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/RequirementType'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match RequirementType options below
+          Resource: '#/components/schemas/ResourceRequirement'
+          NonFungible: '#/components/schemas/NonFungibleRequirement'
+    RequirementType:
+      type: string
+      enum:
+        - Resource
+        - NonFungible
+    ResourceRequirement:
+      allOf:
+        - $ref: '#/components/schemas/Requirement'
+        - type: object
+          required:
+            - resource
+          properties:
+            resource:
+              $ref: '#/components/schemas/ResourceAddress'
+    NonFungibleRequirement:
+      allOf:
+        - $ref: '#/components/schemas/Requirement'
+        - type: object
+          required:
+            - non_fungible
+          properties:
+            non_fungible:
+              $ref: '#/components/schemas/NonFungibleGlobalId'
+    NonFungibleGlobalId:
+      type: object
+      required:
+        - resource_address
+        - local_id
+      properties:
+        resource_address:
+          $ref: "#/components/schemas/ResourceAddress"
+        local_id:
+          $ref: "#/components/schemas/NonFungibleLocalId"
+    NonFungibleLocalId:
+      type: string
+      description: |
+        A simple string representation of a non-fungible local ID, with a type-dependent formatting:
+        * For string ids, this is `<the-string-id>`
+        * For integer ids, this is `#the-integer-id#`
+        * For bytes ids, this is `[the-lower-case-hex-representation]`
+        * For RUID ids, this is `{...-...-...-...}` where `...` are each 16 hex characters.
     BlueprintMethodInfo:
       type: object
       required:

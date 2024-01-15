@@ -37,7 +37,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ByAccessRuleBlueprintFunctionAuthorizationAllOf {
   public static final String JSON_PROPERTY_RULE = "rule";
-  private AccessRule rule = null;
+  private AccessRule rule;
 
   public ByAccessRuleBlueprintFunctionAuthorizationAllOf() { 
   }

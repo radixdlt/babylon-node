@@ -187,31 +187,6 @@ pub async fn create_server<F>(
         .route("/state/package", post(handle_state_package))
         .route("/state/resource", post(handle_state_resource))
         .route("/state/non-fungible", post(handle_state_non_fungible))
-        // Browse Sub-API
-        .route("/browse/blueprint/info", post(handle_browse_blueprint_info))
-        .route(
-            "/browse/entity/iterator",
-            post(handle_browse_entity_iterator),
-        )
-        .route("/browse/entity/info", post(handle_browse_entity_info))
-        .route("/browse/object/field", post(handle_browse_object_field))
-        .route(
-            "/browse/object/collection/iterator",
-            post(handle_browse_object_collection_iterator),
-        )
-        .route(
-            "/browse/object/collection/entry",
-            post(handle_browse_object_collection_entry),
-        )
-        .route(
-            "/browse/kv_store/iterator",
-            post(handle_browse_kv_store_iterator),
-        )
-        .route("/browse/kv_store/entry", post(handle_browse_kv_store_entry))
-        .route(
-            "/browse/entity/schema/entry",
-            post(handle_browse_entity_schema_entry),
-        )
         .with_state(core_api_state);
 
     let metrics = Arc::new(CoreApiMetrics::new(metric_registry));

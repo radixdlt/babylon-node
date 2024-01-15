@@ -58,7 +58,7 @@ import com.radixdlt.api.browse.generated.client.JSON;
 
 public class ByAccessRuleBlueprintFunctionAuthorization extends BlueprintFunctionAuthorization {
   public static final String JSON_PROPERTY_RULE = "rule";
-  private AccessRule rule = null;
+  private AccessRule rule;
 
   public ByAccessRuleBlueprintFunctionAuthorization() { 
   }

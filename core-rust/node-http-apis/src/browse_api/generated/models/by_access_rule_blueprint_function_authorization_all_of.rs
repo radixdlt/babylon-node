@@ -14,13 +14,13 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct ByAccessRuleBlueprintFunctionAuthorizationAllOf {
     #[serde(rename = "rule")]
-    pub rule: crate::browse_api::generated::models::AccessRule,
+    pub rule: Option<crate::browse_api::generated::models::AccessRule>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
 impl ByAccessRuleBlueprintFunctionAuthorizationAllOf {
     pub fn new(rule: crate::browse_api::generated::models::AccessRule) -> ByAccessRuleBlueprintFunctionAuthorizationAllOf {
         ByAccessRuleBlueprintFunctionAuthorizationAllOf {
-            rule,
+            rule: Option::Some(rule),
         }
     }
 }

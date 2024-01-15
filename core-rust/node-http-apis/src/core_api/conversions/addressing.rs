@@ -641,20 +641,6 @@ pub fn to_api_object_module_partition_kind(
     })
 }
 
-pub fn extract_address_as_node_id(
-    extraction_context: &ExtractionContext,
-    address: &str,
-) -> Result<NodeId, ExtractionError> {
-    let (_entity_type, bytes) = extraction_context
-        .address_decoder
-        .validate_and_decode(address)
-        .map_err(|_error| ExtractionError::InvalidAddress)?;
-    if bytes.len() != NodeId::LENGTH {
-        return Err(ExtractionError::InvalidAddress);
-    }
-    Ok(NodeId::from(copy_u8_array(&bytes)))
-}
-
 pub fn extract_global_address(
     extraction_context: &ExtractionContext,
     package_address: &str,

@@ -16,14 +16,14 @@ pub struct ByAccessRuleBlueprintFunctionAuthorization {
     #[serde(rename = "type")]
     pub _type: crate::browse_api::generated::models::BlueprintFunctionAuthorizationType,
     #[serde(rename = "rule")]
-    pub rule: crate::browse_api::generated::models::AccessRule,
+    pub rule: Option<crate::browse_api::generated::models::AccessRule>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
 impl ByAccessRuleBlueprintFunctionAuthorization {
     pub fn new(_type: crate::browse_api::generated::models::BlueprintFunctionAuthorizationType, rule: crate::browse_api::generated::models::AccessRule) -> ByAccessRuleBlueprintFunctionAuthorization {
         ByAccessRuleBlueprintFunctionAuthorization {
             _type,
-            rule,
+            rule: Option::Some(rule),
         }
     }
 }

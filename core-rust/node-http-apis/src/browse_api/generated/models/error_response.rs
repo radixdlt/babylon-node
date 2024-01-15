@@ -10,20 +10,27 @@
 
 
 
-#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(tag = "error_type")]
-pub enum ErrorResponse {
-    #[serde(rename="EntityNotFound")]
-    EntityNotFoundError {
-        /// A human-readable error message.
-        #[serde(rename = "message")]
-        message: String,
-        /// A GUID to be used when reporting errors, to allow correlation with the server's error logs.
-        #[serde(rename = "trace_id")]
-        trace_id: String,
-    },
+
+#[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
+pub struct ErrorResponse {
+    /// A human-readable error message.
+    #[serde(rename = "message")]
+    pub message: String,
+    /// A GUID to be used when reporting errors, to allow correlation with the server's error logs.
+    #[serde(rename = "trace_id")]
+    pub trace_id: String,
+    #[serde(rename = "details", skip_serializing_if = "Option::is_none")]
+    pub details: Option<Box<crate::browse_api::generated::models::ErrorDetails>>,
 }
 
-
+impl ErrorResponse {
+    pub fn new(message: String, trace_id: String) -> ErrorResponse {
+        ErrorResponse {
+            message,
+            trace_id,
+            details: None,
+        }
+    }
+}
 
 

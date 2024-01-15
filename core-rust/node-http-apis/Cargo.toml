@@ -27,6 +27,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 serde_with = { workspace = true }
 itertools = { workspace = true }
+rand = { workspace = true }
 
 chrono = { version = "0.4.23", default-features = false, features = ["std"] }
 hex = { version = "0.4.3", default-features = false }

@@ -208,19 +208,8 @@ public abstract class DeterministicCoreApiTestBase {
   protected ApiClient buildApiClient() {
     final var apiClient = new ApiClient();
     apiClient.updateBaseUri("http://127.0.0.1:" + coreApiPort + "/core");
-    // Create a dummy SSLContext to avoid the "NoSuchAlgorithmException" when
-    // the default HttpClient fails to load a trust store. We don't need SSL anyway.
-    try {
-      // SNYK - this file is ignored in .snyk file
-      // Raised issue: Inadequate Encryption Strength
-      // Explanation: This is just a test, it doesn't matter.
-      final var dummySSLContext = SSLContext.getInstance("TLS");
-      dummySSLContext.init(null, null, null);
-      apiClient.setHttpClientBuilder(HttpClient.newBuilder().sslContext(dummySSLContext));
-      return apiClient;
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
+    apiClient.setHttpClientBuilder(HttpClient.newBuilder().sslContext(DummySslContextFactory.create()));
+    return apiClient;
   }
 
   public <Response> Response assertErrorResponseOfType(
@@ -248,10 +237,6 @@ public abstract class DeterministicCoreApiTestBase {
 
   protected StateApi getStateApi() {
     return new StateApi(apiClient);
-  }
-
-  protected BrowseApi getBrowseApi() {
-    return new BrowseApi(apiClient);
   }
 
   protected LtsApi getLtsApi() {
