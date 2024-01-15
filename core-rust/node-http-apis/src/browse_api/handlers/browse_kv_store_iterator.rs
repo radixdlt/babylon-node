@@ -31,7 +31,12 @@ pub(crate) async fn handle_browse_kv_store_iterator(
 
     let meta_loader = EngineStateMetaLoader::new(database.deref());
     let EntityMeta::KeyValueStore(kv_store_meta) = meta_loader.load_entity_meta(&node_id)? else {
-        return Err(client_error("given entity is not a Key-Value Store", models::ErrorDetails::RequestedItemInvalidDetails { item_type: models::RequestedItemType::Entity }));
+        return Err(ResponseError::new(
+            StatusCode::BAD_REQUEST,
+            "Given entity is not a Key-Value Store",
+        ).with_public_details(models::ErrorDetails::RequestedItemInvalidDetails {
+            item_type: models::RequestedItemType::Entity
+        }));
     };
 
     let data_loader = EngineStateDataLoader::new(database.deref());

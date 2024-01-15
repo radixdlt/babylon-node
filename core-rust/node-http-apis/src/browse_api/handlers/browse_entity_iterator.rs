@@ -27,8 +27,12 @@ pub(crate) async fn handle_browse_entity_iterator(
 
     let database = state.state_manager.database.read_current();
     if !database.are_re_node_listing_indices_enabled() {
-        return Err(server_error(
-            "This endpoint requires the `db.re_node_listing_indices.enable = true` Node configuration flag."
+        return Err(ResponseError::new(
+            StatusCode::CONFLICT,
+            "Required Node feature is not enabled",
+        )
+        .with_internal_message(
+            "Missing `db.re_node_listing_indices.enable = true` Node configuration flag",
         ));
     }
 

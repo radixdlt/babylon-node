@@ -32,6 +32,9 @@ api.core.port=$RADIXDLT_CORE_API_PORT
 api.core.bind_address=$RADIXDLT_CORE_API_BIND_ADDRESS
 api.core.flags.enable_unbounded_endpoints=${RADIXDLT_CORE_API_FLAGS_ENABLE_UNBOUNDED_ENDPOINTS}
 
+api.core.port=$RADIXDLT_BROWSE_API_PORT
+api.core.bind_address=$RADIXDLT_BROWSE_API_BIND_ADDRESS
+
 api.system.port=$RADIXDLT_SYSTEM_API_PORT
 api.system.bind_address=$RADIXDLT_SYSTEM_API_BIND_ADDRESS
 

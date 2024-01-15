@@ -26,7 +26,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.browse.generated.models.ErrorType;
-import com.radixdlt.api.browse.generated.models.InvalidRequestDetails;
 import com.radixdlt.api.browse.generated.models.RequestedItemInvalidDetails;
 import com.radixdlt.api.browse.generated.models.RequestedItemNotFoundDetails;
 import io.swagger.annotations.ApiModel;
@@ -48,8 +47,6 @@ import com.radixdlt.api.browse.generated.client.JSON;
 )
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "error_type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = InvalidRequestDetails.class, name = "InvalidRequest"),
-  @JsonSubTypes.Type(value = InvalidRequestDetails.class, name = "InvalidRequestDetails"),
   @JsonSubTypes.Type(value = RequestedItemInvalidDetails.class, name = "RequestedItemInvalid"),
   @JsonSubTypes.Type(value = RequestedItemInvalidDetails.class, name = "RequestedItemInvalidDetails"),
   @JsonSubTypes.Type(value = RequestedItemNotFoundDetails.class, name = "RequestedItemNotFound"),
@@ -132,8 +129,6 @@ public class ErrorDetails {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("InvalidRequest", InvalidRequestDetails.class);
-  mappings.put("InvalidRequestDetails", InvalidRequestDetails.class);
   mappings.put("RequestedItemInvalid", RequestedItemInvalidDetails.class);
   mappings.put("RequestedItemInvalidDetails", RequestedItemInvalidDetails.class);
   mappings.put("RequestedItemNotFound", RequestedItemNotFoundDetails.class);

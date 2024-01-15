@@ -26,7 +26,6 @@ use crate::browse_api::handlers::RawCollectionKey;
 use crate::browse_api::models::ErrorDetails;
 use state_manager::store::traits::indices::{CreationId, EntityBlueprintIdV1, ReNodeListingIndex};
 use state_manager::store::traits::SubstateNodeAncestryStore;
-use tracing::warn;
 
 use super::*;
 
@@ -1650,28 +1649,32 @@ pub enum ItemKind {
 impl From<EngineStateBrowsingError> for ResponseError {
     fn from(error: EngineStateBrowsingError) -> Self {
         match error {
-            EngineStateBrowsingError::RequestedItemNotFound(item_kind) => client_error(
-                format!("{:?} not found", item_kind),
-                ErrorDetails::RequestedItemNotFoundDetails {
+            EngineStateBrowsingError::RequestedItemNotFound(item_kind) => {
+                ResponseError::new(StatusCode::NOT_FOUND, format!("{:?} not found", item_kind))
+                    .with_public_details(ErrorDetails::RequestedItemNotFoundDetails {
+                        item_type: to_api_requested_item_type(item_kind),
+                    })
+            }
+            EngineStateBrowsingError::RequestedItemInvalid(item_kind, reason) => {
+                ResponseError::new(
+                    StatusCode::BAD_REQUEST,
+                    format!("Invalid {:?}: {}", item_kind, reason),
+                )
+                .with_public_details(ErrorDetails::RequestedItemInvalidDetails {
                     item_type: to_api_requested_item_type(item_kind),
-                },
-            ),
-            EngineStateBrowsingError::RequestedItemInvalid(item_kind, reason) => client_error(
-                format!("Invalid {:?}: {}", item_kind, reason),
-                ErrorDetails::RequestedItemInvalidDetails {
-                    item_type: to_api_requested_item_type(item_kind),
-                },
-            ),
+                })
+            }
             EngineStateBrowsingError::UnexpectedEngineError(system_reader_error, circumstances) => {
-                let public_message = format!("Unexpected error encountered {}", circumstances);
-                warn!(?system_reader_error, public_message);
-                server_error(public_message)
+                ResponseError::new(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Unexpected error encountered {}", circumstances),
+                )
+                .with_internal_message(format!("{:?}", system_reader_error))
             }
-            EngineStateBrowsingError::EngineInvariantBroken(message) => {
-                let public_message = format!("Invalid Engine state: {}", message);
-                warn!(public_message);
-                server_error(public_message)
-            }
+            EngineStateBrowsingError::EngineInvariantBroken(message) => ResponseError::new(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Invalid Engine state: {}", message),
+            ),
         }
     }
 }

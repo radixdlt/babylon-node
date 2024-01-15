@@ -68,9 +68,9 @@ use std::sync::Arc;
 use super::metrics::BrowseApiMetrics;
 use super::metrics_layer::MetricsLayer;
 use axum::extract::State;
-use axum::http::{StatusCode, Uri};
+use axum::http::StatusCode;
 use axum::middleware::map_response;
-use axum::response::Response;
+
 use axum::{
     routing::{get, post},
     Router,
@@ -81,12 +81,10 @@ use radix_engine_common::network::NetworkDefinition;
 use radix_engine_common::ScryptoSbor;
 use state_manager::StateManager;
 use tower_http::catch_panic::CatchPanicLayer;
-use tracing::{debug, error, info, trace, warn, Level};
 
-use super::{handlers::*, not_found_error, ResponseError};
+use super::{handlers::*, ResponseError};
 
-use crate::browse_api::models::ErrorResponse;
-use crate::browse_api::InternalServerErrorResponseForPanic;
+use crate::browse_api::{emit_error_response_event, InternalServerErrorResponseForPanic};
 
 #[derive(Clone)]
 pub struct BrowseApiState {
@@ -147,42 +145,15 @@ pub async fn create_server<F>(
 
 #[tracing::instrument]
 pub(crate) async fn handle_missing_browse_path() -> Result<(), ResponseError> {
-    Err(not_found_error("Try /browse"))
+    Err(ResponseError::new(StatusCode::NOT_FOUND, "Try /browse"))
 }
 
 async fn handle_not_found(metrics: State<Arc<BrowseApiMetrics>>) -> Result<(), ResponseError> {
     metrics.requests_not_found.inc();
-    Err(not_found_error("Not found!"))
-}
-
-/// A function (to be used within a `map_response` layer) in order to emit more customized events
-/// when top-level `ErrorResponse` is returned.
-/// In short, it is supposed to replace an `err(Debug)` within `#[tracing::instrument(...)]` of
-/// every handler function which returns `Result<_, ResponseError<_>>`. It emits almost the same
-/// information (except for emitting the path instead of the handler function name), but is
-/// capable of choosing the `Level` based on the HTTP status code (see `resolve_level()`).
-async fn emit_error_response_event(uri: Uri, response: Response) -> Response {
-    let error_response = response.extensions().get::<ErrorResponse>();
-    if let Some(error_response) = error_response {
-        let level = resolve_level(response.status());
-        // the `event!(level, ...)` macro does not accept non-constant levels, hence we unroll:
-        match level {
-            Level::TRACE => trace!(path = uri.path(), error = debug(error_response)),
-            Level::DEBUG => debug!(path = uri.path(), error = debug(error_response)),
-            Level::INFO => info!(path = uri.path(), error = debug(error_response)),
-            Level::WARN => warn!(path = uri.path(), error = debug(error_response)),
-            Level::ERROR => error!(path = uri.path(), error = debug(error_response)),
-        }
-    }
-    response
-}
-
-fn resolve_level(status_code: StatusCode) -> Level {
-    if status_code.is_server_error() {
-        Level::WARN
-    } else {
-        Level::DEBUG
-    }
+    Err(ResponseError::new(
+        StatusCode::NOT_FOUND,
+        "Please see API docs for available endpoints",
+    ))
 }
 
 #[derive(Debug, Clone, ScryptoSbor)]

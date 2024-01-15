@@ -168,8 +168,6 @@ pub mod index_entry_key;
 pub use self::index_entry_key::IndexEntryKey;
 pub mod instant;
 pub use self::instant::Instant;
-pub mod invalid_request_details;
-pub use self::invalid_request_details::InvalidRequestDetails;
 pub mod key_value_store_entity_info;
 pub use self::key_value_store_entity_info::KeyValueStoreEntityInfo;
 pub mod key_value_store_entity_info_all_of;

@@ -575,7 +575,6 @@ components:
         propertyName: error_type
         mapping:
           # NOTE: These need to match ErrorResponseType
-          InvalidRequest: "#/components/schemas/InvalidRequestDetails"
           RequestedItemNotFound: "#/components/schemas/RequestedItemNotFoundDetails"
           RequestedItemInvalid: "#/components/schemas/RequestedItemInvalidDetails"
       required:
@@ -583,10 +582,6 @@ components:
       properties:
         error_type:
           $ref: "#/components/schemas/ErrorType"
-    InvalidRequestDetails:
-      allOf:
-        - $ref: "#/components/schemas/ErrorDetails"
-        - type: object
     RequestedItemNotFoundDetails:
       allOf:
         - $ref: "#/components/schemas/ErrorDetails"

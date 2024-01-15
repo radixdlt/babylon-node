@@ -1,5 +1,5 @@
-use super::{client_error, ResponseError};
-use crate::browse_api::models;
+use super::ResponseError;
+
 use axum::{
     async_trait,
     body::HttpBody,
@@ -10,6 +10,7 @@ use axum::{
 use serde::Serialize;
 
 pub use axum::extract::State;
+use axum::http::StatusCode;
 
 #[derive(Debug)]
 pub(crate) struct Json<T>(pub T);
@@ -26,10 +27,11 @@ where
     async fn from_request(req: Request<B>, state: &S) -> Result<Self, Self::Rejection> {
         match axum::Json::<T>::from_request(req, state).await {
             Ok(value) => Ok(Self(value.0)),
-            Err(rejection) => Err(client_error(
-                format!("{rejection:?}"),
-                models::ErrorDetails::InvalidRequestDetails {},
-            )),
+            Err(rejection) => Err(ResponseError::new(
+                StatusCode::BAD_REQUEST,
+                "Could not parse request JSON".to_string(),
+            )
+            .with_internal_message(format!("{:?}", rejection))),
         }
     }
 }

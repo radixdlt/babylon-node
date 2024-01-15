@@ -1,7 +1,7 @@
 use radix_engine_common::address::AddressBech32EncodeError;
 use radix_engine_interface::data::scrypto::model::ParseNonFungibleLocalIdError;
 use sbor::{DecodeError, EncodeError};
-use tracing::warn;
+
 use transaction::errors::TransactionValidationError;
 
 use crate::browse_api::*;
@@ -28,8 +28,11 @@ pub enum MappingError {
 
 impl From<MappingError> for ResponseError {
     fn from(mapping_error: MappingError) -> Self {
-        warn!(?mapping_error, "Error mapping response on Browse API");
-        server_error("Server error mapping response")
+        ResponseError::new(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Could not render response".to_string(),
+        )
+        .with_internal_message(format!("{:?}", mapping_error))
     }
 }
 
@@ -51,10 +54,11 @@ pub enum ExtractionError {
 
 impl ExtractionError {
     pub(crate) fn into_response_error(self, field_name: &str) -> ResponseError {
-        client_error(
-            format!("Error extracting {field_name} from request: {self:?}"),
-            models::ErrorDetails::InvalidRequestDetails {},
+        ResponseError::new(
+            StatusCode::BAD_REQUEST,
+            format!("Could not extract {field_name} from request"),
         )
+        .with_internal_message(format!("{:?}", self))
     }
 }
 

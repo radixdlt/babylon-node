@@ -13,9 +13,6 @@
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "error_type")]
 pub enum ErrorDetails {
-    #[serde(rename="InvalidRequest")]
-    InvalidRequestDetails {
-    },
     #[serde(rename="RequestedItemInvalid")]
     RequestedItemInvalidDetails {
         #[serde(rename = "item_type")]
