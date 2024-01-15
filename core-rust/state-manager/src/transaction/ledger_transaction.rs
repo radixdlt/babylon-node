@@ -305,8 +305,8 @@ impl HasSystemTransactionHash for PreparedGenesisTransaction {
 }
 
 pub struct PreparedFlashTransactionV1 {
-    state_updates: StateUpdates,
-    summary: Summary,
+    pub state_updates: StateUpdates,
+    pub summary: Summary,
 }
 
 impl HasSummary for PreparedFlashTransactionV1 {
