@@ -67,8 +67,8 @@ package com.radixdlt;
 import com.google.inject.*;
 import com.google.inject.util.Modules;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.api.BrowseApiServer;
 import com.radixdlt.api.CoreApiServer;
+import com.radixdlt.api.EngineStateApiServer;
 import com.radixdlt.api.prometheus.PrometheusApi;
 import com.radixdlt.api.system.SystemApi;
 import com.radixdlt.consensus.bft.SelfValidatorInfo;
@@ -150,9 +150,9 @@ public final class RadixNode {
     final var coreApiServer = injector.getInstance(CoreApiServer.class);
     coreApiServer.start();
 
-    // Start the Browse API server
-    final var browseApiServer = injector.getInstance(BrowseApiServer.class);
-    browseApiServer.start();
+    // Start the Engine State API server
+    final var engineStateApiServer = injector.getInstance(EngineStateApiServer.class);
+    engineStateApiServer.start();
 
     return radixNode;
   }

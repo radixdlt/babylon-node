@@ -13,11 +13,11 @@ CORE_API_RUST_PACKAGE = 'core_api::generated'
 CORE_API_JAVA_GENERATED_DESTINATION = '../../../core/src/test-core/java/'
 CORE_API_JAVA_PACKAGE = 'com.radixdlt.api.core.generated'
 
-BROWSE_API_SPEC_LOCATION = '../browse-api-schema.yaml'
-BROWSE_API_RUST_GENERATED_DESTINATION = '../src/browse_api/generated/'
-BROWSE_API_RUST_PACKAGE = 'browse_api::generated'
-BROWSE_API_JAVA_GENERATED_DESTINATION = '../../../core/src/test-core/java/'
-BROWSE_API_JAVA_PACKAGE = 'com.radixdlt.api.browse.generated'
+ENGINE_STATE_API_SPEC_LOCATION = '../engine-state-api-schema.yaml'
+ENGINE_STATE_API_RUST_GENERATED_DESTINATION = '../src/engine_state_api/generated/'
+ENGINE_STATE_API_RUST_PACKAGE = 'engine_state_api::generated'
+ENGINE_STATE_API_JAVA_GENERATED_DESTINATION = '../../../core/src/test-core/java/'
+ENGINE_STATE_API_JAVA_PACKAGE = 'com.radixdlt.api.engine_state.generated'
 
 OPENAPI_GENERATION_FOLDER='.'
 OPENAPI_TEMP_GENERATION_FOLDER='./temp'
@@ -232,9 +232,9 @@ if __name__ == "__main__":
     )
 
     fix_spec_and_generate_models(
-        BROWSE_API_SPEC_LOCATION,
-        BROWSE_API_RUST_GENERATED_DESTINATION,
-        BROWSE_API_RUST_PACKAGE,
-        BROWSE_API_JAVA_GENERATED_DESTINATION,
-        BROWSE_API_JAVA_PACKAGE
+        ENGINE_STATE_API_SPEC_LOCATION,
+        ENGINE_STATE_API_RUST_GENERATED_DESTINATION,
+        ENGINE_STATE_API_RUST_PACKAGE,
+        ENGINE_STATE_API_JAVA_GENERATED_DESTINATION,
+        ENGINE_STATE_API_JAVA_PACKAGE
     )

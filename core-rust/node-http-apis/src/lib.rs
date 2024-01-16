@@ -65,6 +65,6 @@
 extern crate serde;
 extern crate serde_json;
 
-mod browse_api;
 mod core_api;
+mod engine_state_api;
 pub mod jni;
