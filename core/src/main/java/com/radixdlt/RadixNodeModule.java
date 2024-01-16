@@ -67,6 +67,7 @@ package com.radixdlt;
 import com.google.common.base.Preconditions;
 import com.google.inject.AbstractModule;
 import com.radixdlt.addressing.Addressing;
+import com.radixdlt.api.BrowseApiServerModule;
 import com.radixdlt.api.CoreApiServerModule;
 import com.radixdlt.api.prometheus.PrometheusApiModule;
 import com.radixdlt.api.system.SystemApiModule;
@@ -111,11 +112,13 @@ public final class RadixNodeModule extends AbstractModule {
   private static final Logger log = LogManager.getLogger();
 
   private static final int DEFAULT_CORE_API_PORT = 3333;
+  private static final int DEFAULT_BROWSE_API_PORT = 3337;
   private static final int DEFAULT_SYSTEM_API_PORT = 3334;
   private static final int DEFAULT_PROMETHEUS_API_PORT = 3335;
 
   // APIs are only exposed on localhost by default
   private static final String DEFAULT_CORE_API_BIND_ADDRESS = "127.0.0.1";
+  private static final String DEFAULT_BROWSE_API_BIND_ADDRESS = "127.0.0.1";
   private static final String DEFAULT_SYSTEM_API_BIND_ADDRESS = "127.0.0.1";
   private static final String DEFAULT_PROMETHEUS_API_BIND_ADDRESS = "127.0.0.1";
 
@@ -391,6 +394,11 @@ public final class RadixNodeModule extends AbstractModule {
             coreApiBindAddress,
             coreApiPort,
             new CoreApiServerFlags(coreApiFlagsEnableUnboundedEndpoints)));
+
+    final var browseApiBindAddress =
+        properties.get("api.browse.bind_address", DEFAULT_BROWSE_API_BIND_ADDRESS);
+    final var browseApiPort = properties.get("api.browse.port", DEFAULT_BROWSE_API_PORT);
+    install(new BrowseApiServerModule(browseApiBindAddress, browseApiPort));
 
     final var systemApiBindAddress =
         properties.get("api.system.bind_address", DEFAULT_SYSTEM_API_BIND_ADDRESS);

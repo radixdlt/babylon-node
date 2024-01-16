@@ -86,7 +86,8 @@ public final class LtsAccountResourceBalanceTest extends DeterministicCoreApiTes
       var accountAddress = Address.virtualAccountAddress(accountKeyPair.getPublicKey());
       var accountAddressStr = addressing.encode(accountAddress);
 
-      submitAndWaitForSuccess(test, Manifest.depositFromFaucet(accountAddress), List.of());
+      getApiHelper()
+          .submitAndWaitForSuccess(test, Manifest.depositFromFaucet(accountAddress), List.of());
 
       final var result =
           getLtsApi()

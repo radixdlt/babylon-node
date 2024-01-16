@@ -32,9 +32,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * The fee-related and non-fee-related balance changes of a transaction, aggregated by resource and global entity  within which the change occurred. 
+ * CommittedTransactionBalanceChanges
  */
-@ApiModel(description = "The fee-related and non-fee-related balance changes of a transaction, aggregated by resource and global entity  within which the change occurred. ")
 @JsonPropertyOrder({
   CommittedTransactionBalanceChanges.JSON_PROPERTY_FUNGIBLE_ENTITY_BALANCE_CHANGES,
   CommittedTransactionBalanceChanges.JSON_PROPERTY_NON_FUNGIBLE_ENTITY_BALANCE_CHANGES

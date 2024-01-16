@@ -64,7 +64,7 @@
 
 mod constants;
 
-/// A workaround for including the symbols defined in state_manager / core_api_server
+/// A workaround for including the symbols defined in state_manager / node_http_apis
 /// in the output library file. See: https://github.com/rust-lang/rfcs/issues/2771
 /// I truly have no idea why this works, but it does.
 #[no_mangle]
@@ -84,6 +84,7 @@ fn export_extern_functions() {
     state_manager::jni::vertex_store_recovery::export_extern_functions();
     state_manager::jni::test_state_reader::export_extern_functions();
 
-    // core-api-server
-    core_api_server::jni::export_extern_functions();
+    // node-http-apis
+    node_http_apis::jni::core_api::export_extern_functions();
+    node_http_apis::jni::browse_api::export_extern_functions();
 }
