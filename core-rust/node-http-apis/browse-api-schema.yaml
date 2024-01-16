@@ -8,7 +8,7 @@ info:
     name: The Radix License, Version 1.0
     url: https://www.radixfoundation.org/licenses/license-v1
   x-logo:
-    url: https://docs.radixdlt.com/main/_images/radix-logo-banner.png
+    url: https://docs-babylon.radixdlt.com/main/_images/radix-logo-banner.png
     href: https://docs.radixdlt.com
   description: |
     This API provides a complete view of the current ledger state, operating at a relatively low
@@ -21,7 +21,7 @@ info:
     like.
 
 servers:
-  - url: 'localhost:3333/browse'
+  - url: 'localhost:3337/browse'
 tags:
   - name: Entities
     x-displayName: Entities
