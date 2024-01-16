@@ -548,7 +548,7 @@ mod tests {
     use radix_engine_common::types::Epoch;
     use radix_engine_interface::crypto::Secp256k1PublicKey;
     use transaction::model::*;
-    use transaction::signing::secp256k1::Secp256k1Signature;
+    use transaction::prelude::Secp256k1Signature;
 
     use crate::mempool::priority_mempool::*;
 

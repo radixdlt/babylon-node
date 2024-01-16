@@ -89,8 +89,8 @@ use crate::{
         StateManagerDatabase,
     },
     transaction::{CachedCommittabilityValidator, CommittabilityValidator, TransactionPreviewer},
-    LoggingConfig, PendingTransactionResultCache, ProtocolConfig, ProtocolUpdateResult,
-    ProtocolUpdaterFactory, StateComputer,
+    PendingTransactionResultCache, ProtocolConfig, ProtocolUpdateResult, ProtocolUpdaterFactory,
+    StateComputer,
 };
 
 /// An interval between time-intensive measurement of raw DB metrics.
@@ -113,6 +113,11 @@ pub struct StateManagerConfig {
     pub ledger_sync_limits_config: LedgerSyncLimitsConfig,
     pub protocol_config: ProtocolConfig,
     pub no_fees: bool,
+}
+
+#[derive(Debug, Categorize, Encode, Decode, Clone, Default)]
+pub struct LoggingConfig {
+    pub engine_trace: bool,
 }
 
 impl StateManagerConfig {
@@ -174,7 +179,7 @@ impl StateManager {
             }
         };
         let network = config.network_definition.clone();
-        let logging_config = config.logging_config.clone();
+        let _logging_config = config.logging_config.clone();
 
         let raw_db = StateManagerDatabase::from_config(
             config.database_backend_config.clone(),
@@ -269,7 +274,6 @@ impl StateManager {
             mempool_manager.clone(),
             execution_configurator.clone(),
             pending_transaction_result_cache.clone(),
-            logging_config,
             metrics_registry,
             lock_factory.named("state_computer"),
             initial_protocol_updater,

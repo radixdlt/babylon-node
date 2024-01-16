@@ -6,7 +6,7 @@ use crate::{
 };
 use node_common::locks::StateLock;
 use radix_engine::prelude::dec;
-use radix_engine::utils::generate_seconds_precision_state_updates;
+use radix_engine::utils::{generate_seconds_precision_state_updates, generate_vm_boot_scrypto_minor_version_state_updates};
 use radix_engine_common::prelude::NetworkDefinition;
 use std::ops::Deref;
 use std::sync::Arc;
@@ -61,6 +61,12 @@ impl StateUpdateExecutor for AnemoneStateUpdateExecutor {
                     // Batch 1: flash seconds precision
                     let state_updates =
                         generate_seconds_precision_state_updates(self.store.read_current().deref());
+                    txn_committer.commit_flash(state_updates);
+                }
+                2 => {
+                    // Batch 2: flash VM boot
+                    let state_updates =
+                        generate_vm_boot_scrypto_minor_version_state_updates();
                     txn_committer.commit_flash(state_updates);
                 }
                 _ => break,

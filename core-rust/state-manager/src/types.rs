@@ -74,8 +74,6 @@ use std::num::TryFromIntError;
 use std::ops::Range;
 use transaction::prelude::*;
 
-use transaction::signing::secp256k1::Secp256k1Signature;
-
 /// A complete ID of a Substate.
 #[derive(Debug, Clone, Hash, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct SubstateReference(pub NodeId, pub PartitionNumber, pub SubstateKey);
