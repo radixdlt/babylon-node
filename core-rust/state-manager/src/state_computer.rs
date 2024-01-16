@@ -765,8 +765,10 @@ where
     S: for<'a> TransactionIndex<&'a IntentHash>,
     S: QueryableProofStore + TransactionIdentifierLoader + QueryableTransactionStore,
 {
-    /// Performs an [`execute_genesis()`] with a hardcoded genesis data meant for test purposes.
-    pub fn execute_genesis_for_unit_tests(&self) -> LedgerProof {
+    pub fn execute_genesis_for_unit_tests_with_config(
+        &self,
+        consensus_manager_config: ConsensusManagerConfig,
+    ) -> LedgerProof {
         // Roughly copied from bootstrap_test_default in scrypto
         let genesis_validator: GenesisValidator = Secp256k1PublicKey([0; 33]).into();
         let genesis_chunks = vec![
@@ -785,7 +787,21 @@ where
             },
         ];
         let initial_epoch = Epoch::of(1);
-        let initial_config = ConsensusManagerConfig {
+        let initial_timestamp_ms = 1;
+        self.execute_genesis(
+            genesis_chunks,
+            initial_epoch,
+            consensus_manager_config,
+            initial_timestamp_ms,
+            Hash([0; Hash::LENGTH]),
+            *DEFAULT_TESTING_FAUCET_SUPPLY,
+            vec![],
+        )
+    }
+
+    /// Performs an [`execute_genesis()`] with a hardcoded genesis data meant for test purposes.
+    pub fn execute_genesis_for_unit_tests_with_default_config(&self) -> LedgerProof {
+        let default_config = ConsensusManagerConfig {
             max_validators: 10,
             epoch_change_condition: EpochChangeCondition {
                 min_round_count: 3,
@@ -799,16 +815,7 @@ where
             num_fee_increase_delay_epochs: 1,
             validator_creation_usd_cost: Decimal::one(),
         };
-        let initial_timestamp_ms = 1;
-        self.execute_genesis(
-            genesis_chunks,
-            initial_epoch,
-            initial_config,
-            initial_timestamp_ms,
-            Hash([0; Hash::LENGTH]),
-            *DEFAULT_TESTING_FAUCET_SUPPLY,
-            vec![],
-        )
+        self.execute_genesis_for_unit_tests_with_config(default_config)
     }
 
     /// Creates and commits a series of genesis transactions (i.e. a boostrap, then potentially many
@@ -1583,7 +1590,7 @@ mod tests {
 
         let proof = state_manager
             .state_computer
-            .execute_genesis_for_unit_tests();
+            .execute_genesis_for_unit_tests_with_default_config();
 
         (proof, state_manager)
     }

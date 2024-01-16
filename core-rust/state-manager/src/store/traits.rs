@@ -325,12 +325,12 @@ pub mod proofs {
             self.get_latest_epoch_proof()
                 .map(|proof| proof.ledger_header.epoch)
         }
-        fn get_txns_and_proof(
+        fn get_syncable_txns_and_proof(
             &self,
             start_state_version_inclusive: StateVersion,
             max_number_of_txns_if_more_than_one_proof: u32,
             max_payload_size_in_bytes: u32,
-        ) -> Option<(Vec<RawLedgerTransaction>, LedgerProof)>;
+        ) -> Result<TxnsAndProof, GetSyncableTxnsAndProofError>;
         fn get_first_proof(&self) -> Option<LedgerProof>;
         fn get_post_genesis_epoch_proof(&self) -> Option<LedgerProof>;
         fn get_epoch_proof(&self, epoch: Epoch) -> Option<LedgerProof>;
@@ -342,6 +342,20 @@ pub mod proofs {
         ) -> Option<LedgerProof>;
         fn get_latest_protocol_update_init_proof(&self) -> Option<LedgerProof>;
         fn get_latest_protocol_update_execution_proof(&self) -> Option<LedgerProof>;
+    }
+
+    #[derive(Clone, Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub struct TxnsAndProof {
+        pub txns: Vec<RawLedgerTransaction>,
+        pub proof: LedgerProof,
+    }
+
+    #[derive(Clone, Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub enum GetSyncableTxnsAndProofError {
+        RefusedToServeGenesis { refused_proof: Box<LedgerProof> },
+        RefusedToServeProtocolUpdate { refused_proof: Box<LedgerProof> },
+        NothingToServeAtTheGivenStateVersion,
+        FailedToPrepareAResponseWithinLimits,
     }
 }
 

@@ -65,7 +65,6 @@
 use crate::jni::node_rust_environment::JNINodeRustEnvironment;
 use crate::jni::LedgerSyncLimitsConfig;
 use crate::store::traits::*;
-use crate::transaction::RawLedgerTransaction;
 use crate::{epoch_change_iter, LedgerProof, StateVersion};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
@@ -80,14 +79,8 @@ struct TxnsAndProofRequest {
     limits_config: LedgerSyncLimitsConfig,
 }
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-struct TxnsAndProof {
-    transactions: Vec<RawLedgerTransaction>,
-    proof: LedgerProof,
-}
-
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getTxnsAndProof(
+extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getSyncableTxnsAndProof(
     env: JNIEnv,
     _class: JClass,
     j_rust_global_context: JObject,
@@ -96,21 +89,18 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
     jni_sbor_coded_call(
         &env,
         request_payload,
-        |request: TxnsAndProofRequest| -> Option<TxnsAndProof> {
+        |request: TxnsAndProofRequest| -> Result<TxnsAndProof, GetSyncableTxnsAndProofError> {
             let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
             // Note: even though we read a strictly historical state here, we cannot use the
             // "historical, non-locked" DB access - please see the TODO note at `LedgerProofsGc`.
-            let txns_and_proof = database.read_current().get_txns_and_proof(
+            let res = database.read_current().get_syncable_txns_and_proof(
                 StateVersion::of(request.start_state_version_inclusive),
                 request
                     .limits_config
                     .max_txns_for_responses_spanning_more_than_one_proof,
                 request.limits_config.max_txn_bytes_for_single_response,
             );
-            txns_and_proof.map(|(transactions, proof)| TxnsAndProof {
-                transactions,
-                proof,
-            })
+            res
         },
     )
 }

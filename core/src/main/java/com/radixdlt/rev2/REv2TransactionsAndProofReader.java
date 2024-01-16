@@ -64,12 +64,18 @@
 
 package com.radixdlt.rev2;
 
+import static com.radixdlt.monitoring.Metrics.LedgerSync.UnfulfilledSyncRequestReason.*;
+
 import com.google.inject.Inject;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.LedgerExtension;
 import com.radixdlt.ledger.LedgerProofBundle;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.Metrics.LedgerSync.UnfulfilledSyncRequest;
+import com.radixdlt.monitoring.Metrics.LedgerSync.UnfulfilledSyncRequestReason.*;
 import com.radixdlt.statecomputer.commit.LedgerProof;
 import com.radixdlt.sync.TransactionsAndProofReader;
+import com.radixdlt.transaction.GetSyncableTxnsAndProofError.*;
 import com.radixdlt.transaction.LedgerSyncLimitsConfig;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawLedgerTransaction;
@@ -82,46 +88,65 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
 
   private final REv2TransactionAndProofStore transactionStore;
   private final LedgerSyncLimitsConfig limitsConfig;
+  private final Metrics metrics;
 
   @Inject
   public REv2TransactionsAndProofReader(
-      REv2TransactionAndProofStore transactionStore, LedgerSyncLimitsConfig limitsConfig) {
+      REv2TransactionAndProofStore transactionStore,
+      LedgerSyncLimitsConfig limitsConfig,
+      Metrics metrics) {
     this.transactionStore = transactionStore;
     this.limitsConfig = limitsConfig;
+    this.metrics = metrics;
   }
 
   @Override
   public LedgerExtension getTransactions(long startStateVersionExclusive) {
     final var startStateVersionInclusive = startStateVersionExclusive + 1;
 
-    final var latestStateVersion =
-        transactionStore.getLatestProof().map(proof -> proof.stateVersion()).orElse(0L);
+    final var syncableTxnsResult =
+        this.transactionStore.getSyncableTxnsAndProof(
+            startStateVersionInclusive, this.limitsConfig);
 
-    // Early return if we got a query for a higher
-    // state version than our latest.
-    if (startStateVersionInclusive > latestStateVersion) {
-      return null;
-    }
-
-    final var rawTxnsAndProofOpt =
-        this.transactionStore.getTxnsAndProof(startStateVersionInclusive, this.limitsConfig);
-
-    if (rawTxnsAndProofOpt.isEmpty()) {
-      log.error(
-          "Impossible to build a chain of txns from state version {} fitting within the limits {}",
-          startStateVersionInclusive,
-          this.limitsConfig);
-    }
-
-    return rawTxnsAndProofOpt
-        .map(
-            rawTxnsAndProof ->
-                LedgerExtension.create(
-                    rawTxnsAndProof.transactions().stream()
-                        .map(RawLedgerTransaction::create)
-                        .toList(),
-                    rawTxnsAndProof.proof()))
-        .or(() -> null);
+    return syncableTxnsResult.fold(
+        txnsAndProof ->
+            LedgerExtension.create(
+                txnsAndProof.transactions().stream().map(RawLedgerTransaction::create).toList(),
+                txnsAndProof.proof()),
+        err -> {
+          switch (err) {
+            case FailedToPrepareAResponseWithinLimits unused -> {
+              log.error(
+                  "Impossible to build a chain of txns from state version {} fitting within the"
+                      + " limits {}",
+                  startStateVersionInclusive,
+                  this.limitsConfig);
+              metrics
+                  .sync()
+                  .unfulfilledSyncRequests()
+                  .label(new UnfulfilledSyncRequest(FAILED_TO_PREPARE_A_RESPONSE_WITHIN_LIMITS));
+            }
+            case NothingToServeAtTheGivenStateVersion unused -> {
+              metrics
+                  .sync()
+                  .unfulfilledSyncRequests()
+                  .label(new UnfulfilledSyncRequest(NOTHING_TO_SERVE_AT_THE_GIVEN_STATE_VERSION));
+            }
+            case RefusedToServeGenesis unused -> {
+              metrics
+                  .sync()
+                  .unfulfilledSyncRequests()
+                  .label(new UnfulfilledSyncRequest(REFUSED_TO_SERVE_GENESIS));
+            }
+            case RefusedToServeProtocolUpdate unused -> {
+              metrics
+                  .sync()
+                  .unfulfilledSyncRequests()
+                  .label(new UnfulfilledSyncRequest(REFUSED_TO_SERVE_PROTOCOL_UPDATE));
+            }
+          }
+          return null;
+        });
   }
 
   @Override

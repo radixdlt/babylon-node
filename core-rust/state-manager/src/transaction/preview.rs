@@ -160,7 +160,7 @@ mod tests {
 
         state_manager
             .state_computer
-            .execute_genesis_for_unit_tests();
+            .execute_genesis_for_unit_tests_with_default_config();
 
         let preview_manifest = ManifestBuilder::new().lock_fee_from_faucet().build();
 

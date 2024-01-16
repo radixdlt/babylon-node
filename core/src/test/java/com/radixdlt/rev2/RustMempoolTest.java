@@ -112,7 +112,8 @@ public final class RustMempoolTest {
             new RustStateComputer(metrics, nodeRustEnvironment),
             new REv2TransactionsAndProofReader(
                 new REv2TransactionAndProofStore(metrics, nodeRustEnvironment),
-                LedgerSyncLimitsConfig.defaults()))
+                LedgerSyncLimitsConfig.defaults(),
+                metrics))
         .initialize(genesisProvider);
   }
 

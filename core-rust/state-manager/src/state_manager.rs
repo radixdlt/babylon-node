@@ -300,9 +300,12 @@ impl StateManager {
             config.ledger_proofs_gc_config.clone(),
             config.ledger_sync_limits_config.clone(),
         );
-        scheduler
-            .named("ledger_proofs_gc")
-            .start_periodic(ledger_proofs_gc.interval(), move || ledger_proofs_gc.run());
+        scheduler.named("ledger_proofs_gc").start_periodic(
+            ledger_proofs_gc.interval(),
+            move || {
+                ledger_proofs_gc.run();
+            },
+        );
 
         Self {
             config,

@@ -67,6 +67,7 @@ package com.radixdlt.transaction;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.environment.NodeRustEnvironment;
 import com.radixdlt.lang.Option;
+import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.monitoring.LabelledTimer;
 import com.radixdlt.monitoring.Metrics;
@@ -81,10 +82,11 @@ import java.util.Optional;
 public final class REv2TransactionAndProofStore {
   public REv2TransactionAndProofStore(Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
     LabelledTimer<MethodId> timer = metrics.stateManager().nativeCall();
-    this.getTxnsAndProof =
-        Natives.builder(nodeRustEnvironment, REv2TransactionAndProofStore::getTxnsAndProof)
+    this.getSyncableTxnsAndProof =
+        Natives.builder(nodeRustEnvironment, REv2TransactionAndProofStore::getSyncableTxnsAndProof)
             .measure(
-                timer.label(new MethodId(REv2TransactionAndProofStore.class, "getTxnsAndProof")))
+                timer.label(
+                    new MethodId(REv2TransactionAndProofStore.class, "getSyncableTxnsAndProof")))
             .build(new TypeToken<>() {});
     this.getLatestProofFunc =
         Natives.builder(nodeRustEnvironment, REv2TransactionAndProofStore::getLatestProof)
@@ -137,10 +139,10 @@ public final class REv2TransactionAndProofStore {
             .build(new TypeToken<>() {});
   }
 
-  public Option<TxnsAndProof> getTxnsAndProof(
+  public Result<TxnsAndProof, GetSyncableTxnsAndProofError> getSyncableTxnsAndProof(
       long startStateVersionInclusive, LedgerSyncLimitsConfig limitsConfig) {
-    return this.getTxnsAndProof.call(
-        new TxnsAndProofRequest(
+    return this.getSyncableTxnsAndProof.call(
+        new SyncableTxnsAndProofRequest(
             UInt64.fromNonNegativeLong(startStateVersionInclusive), limitsConfig));
   }
 
@@ -174,9 +176,11 @@ public final class REv2TransactionAndProofStore {
         .toOptional();
   }
 
-  private final Natives.Call1<TxnsAndProofRequest, Option<TxnsAndProof>> getTxnsAndProof;
+  private final Natives.Call1<
+          SyncableTxnsAndProofRequest, Result<TxnsAndProof, GetSyncableTxnsAndProofError>>
+      getSyncableTxnsAndProof;
 
-  private static native byte[] getTxnsAndProof(
+  private static native byte[] getSyncableTxnsAndProof(
       NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
   private final Natives.Call1<Tuple.Tuple0, Option<LedgerProof>> getLatestProofFunc;

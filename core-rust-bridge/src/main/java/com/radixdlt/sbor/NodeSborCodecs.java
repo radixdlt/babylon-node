@@ -153,8 +153,9 @@ public final class NodeSborCodecs {
     CommittedTransactionStatus.registerCodec(codecMap);
     ExecutedTransaction.registerCodec(codecMap);
     TransactionDetails.registerCodec(codecMap);
-    TxnsAndProofRequest.registerCodec(codecMap);
+    SyncableTxnsAndProofRequest.registerCodec(codecMap);
     TxnsAndProof.registerCodec(codecMap);
+    GetSyncableTxnsAndProofError.registerCodec(codecMap);
     PublicKey.registerCodec(codecMap);
     PublicKeyHash.registerCodec(codecMap);
     ECDSASecp256k1PublicKey.registerCodec(codecMap);

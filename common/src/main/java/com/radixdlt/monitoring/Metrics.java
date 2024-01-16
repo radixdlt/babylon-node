@@ -259,7 +259,8 @@ public record Metrics(
       Gauge targetStateVersion, // UNTRUSTED: comes from a single peer Node and is not verified
       Gauge targetProposerTimestampEpochSecond, // UNTRUSTED: same as `targetStateVersion`
       LabelledCounter<UnexpectedSyncResponse> unexpectedResponsesReceived,
-      LabelledCounter<InvalidSyncResponse> invalidResponsesReceived) {
+      LabelledCounter<InvalidSyncResponse> invalidResponsesReceived,
+      LabelledCounter<UnfulfilledSyncRequest> unfulfilledSyncRequests) {
 
     public record UnexpectedSyncResponse(UnexpectedSyncResponseReason reason) {}
 
@@ -278,6 +279,15 @@ public record Metrics(
       MISMATCHED_TRANSACTION_ROOT,
       INSUFFICIENT_VALIDATOR_SET,
       MISMATCHED_SIGNATURES
+    }
+
+    public record UnfulfilledSyncRequest(UnfulfilledSyncRequestReason reason) {}
+
+    public enum UnfulfilledSyncRequestReason {
+      FAILED_TO_PREPARE_A_RESPONSE_WITHIN_LIMITS,
+      NOTHING_TO_SERVE_AT_THE_GIVEN_STATE_VERSION,
+      REFUSED_TO_SERVE_GENESIS,
+      REFUSED_TO_SERVE_PROTOCOL_UPDATE
     }
   }
 

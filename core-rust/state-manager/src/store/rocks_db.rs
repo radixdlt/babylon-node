@@ -1144,12 +1144,12 @@ impl QueryableProofStore for RocksDBStore {
             .unwrap_or(StateVersion::pre_genesis())
     }
 
-    fn get_txns_and_proof(
+    fn get_syncable_txns_and_proof(
         &self,
         start_state_version_inclusive: StateVersion,
         max_number_of_txns_if_more_than_one_proof: u32,
         max_payload_size_in_bytes: u32,
-    ) -> Option<(Vec<RawLedgerTransaction>, LedgerProof)> {
+    ) -> Result<TxnsAndProof, GetSyncableTxnsAndProofError> {
         let mut payload_size_so_far = 0;
         let mut latest_usable_proof: Option<LedgerProof> = None;
         let mut txns = Vec::new();
@@ -1163,6 +1163,11 @@ impl QueryableProofStore for RocksDBStore {
             .cf(RawLedgerTransactionsCf)
             .iterate_from(&start_state_version_inclusive, Direction::Forward);
 
+        // A few flags used to be able to provide an accurate error response
+        let mut encountered_genesis_proof = None;
+        let mut encountered_protocol_update_proof = None;
+        let mut any_consensus_proof_iterated = false;
+
         'proof_loop: while payload_size_so_far <= max_payload_size_in_bytes
             && txns.len() <= (max_number_of_txns_if_more_than_one_proof as usize)
         {
@@ -1172,17 +1177,21 @@ impl QueryableProofStore for RocksDBStore {
             // If we're out of proofs (or some txns are missing): also break the loop
             match proofs_iter.next() {
                 Some((next_proof_state_version, next_proof)) => {
+                    // We're not serving any genesis or protocol update transactions.
+                    // All nodes should have them hardcoded/configured/generated locally.
+                    // Stop iterating the proofs and return whatever txns/proof we have
+                    // collected so far (or an empty response).
                     match next_proof.origin {
-                        LedgerProofOrigin::Genesis { .. }
-                        | LedgerProofOrigin::ProtocolUpdate { .. } => {
-                            // We're not serving any genesis or protocol update transactions.
-                            // All nodes should have them hardcoded/configured/generated locally.
-                            // Stop iterating the proofs and return whatever txns/proof we have
-                            // collected so far (or an empty response).
+                        LedgerProofOrigin::Genesis { .. } => {
+                            encountered_genesis_proof = Some(next_proof);
+                            break 'proof_loop;
+                        }
+                        LedgerProofOrigin::ProtocolUpdate { .. } => {
+                            encountered_protocol_update_proof = Some(next_proof);
                             break 'proof_loop;
                         }
                         LedgerProofOrigin::Consensus { .. } => {
-                            // All good, let's continue
+                            any_consensus_proof_iterated = true;
                         }
                     }
 
@@ -1253,7 +1262,32 @@ impl QueryableProofStore for RocksDBStore {
             }
         }
 
-        latest_usable_proof.map(|proof| (txns, proof))
+        latest_usable_proof
+            .map(|proof| TxnsAndProof { txns, proof })
+            .ok_or(if any_consensus_proof_iterated {
+                // We have iterated at least one valid consensus proof
+                // but still were unable to produce a response,
+                // so this must have been a limit issue.
+                GetSyncableTxnsAndProofError::FailedToPrepareAResponseWithinLimits
+            } else {
+                // We have not iterated any valid consensus proof.
+                // Check if we've broken due to encountering
+                // one of the non-Consensus originated proofs.
+                if let Some(genesis_proof) = encountered_genesis_proof {
+                    GetSyncableTxnsAndProofError::RefusedToServeGenesis {
+                        refused_proof: Box::new(genesis_proof),
+                    }
+                } else if let Some(protocol_update_proof) = encountered_protocol_update_proof {
+                    GetSyncableTxnsAndProofError::RefusedToServeProtocolUpdate {
+                        refused_proof: Box::new(protocol_update_proof),
+                    }
+                } else {
+                    // We have not iterated any Consensus proof
+                    // or any other proof.
+                    // So the request must have been ahead of our current ledger.
+                    GetSyncableTxnsAndProofError::NothingToServeAtTheGivenStateVersion
+                }
+            })
     }
 
     fn get_first_proof(&self) -> Option<LedgerProof> {

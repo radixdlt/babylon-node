@@ -71,10 +71,8 @@ use radix_engine::blueprints::consensus_manager::{
 };
 use radix_engine::system::system_substates::FieldSubstate;
 
-use radix_engine_common::crypto::Hash;
 use radix_engine_common::network::NetworkDefinition;
 use radix_engine_common::prelude::{Decimal, Epoch, CONSENSUS_MANAGER};
-use radix_engine_common::types::Round;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerConfig, EpochChangeCondition,
 };
@@ -89,13 +87,12 @@ use node_common::scheduler::Scheduler;
 use crate::flash_templates::consensus_manager_config_flash;
 use crate::ProtocolUpdateEnactmentCondition::EnactUnconditionallyAtEpoch;
 use crate::{
-    CommitRequest, CommitSummary, FixedFlashProtocolUpdater, LedgerHeader, LedgerProof,
-    LedgerProofOrigin, NoStateUpdatesProtocolUpdater, PrepareRequest, PrepareResult,
-    ProtocolConfig, ProtocolUpdate, ProtocolUpdater, ProtocolUpdaterFactory, RoundHistory,
-    StateManager, StateManagerConfig, StateManagerDatabase,
+    FixedFlashProtocolUpdater, NoStateUpdatesProtocolUpdater, ProtocolConfig, ProtocolUpdate,
+    ProtocolUpdater, ProtocolUpdaterFactory, StateManager, StateManagerConfig,
+    StateManagerDatabase,
 };
 
-use crate::query::TransactionIdentifierLoader;
+use crate::test::prepare_and_commit_round_update;
 
 const GENESIS_PROTOCOL_VERSION: &str = "testing-genesis";
 const V2_PROTOCOL_VERSION: &str = "testing-v2";
@@ -174,12 +171,12 @@ fn flash_protocol_update_test() {
     // Run the genesis
     state_manager
         .state_computer
-        .execute_genesis_for_unit_tests();
+        .execute_genesis_for_unit_tests_with_default_config();
 
     // Commit 3 round updates to get us to the next epoch (3).
-    let _ = prepare_and_commit_round_update(state_manager.clone());
-    let _ = prepare_and_commit_round_update(state_manager.clone());
-    let (prepare_result, _commit_summary) = prepare_and_commit_round_update(state_manager.clone());
+    let _ = prepare_and_commit_round_update(&state_manager);
+    let _ = prepare_and_commit_round_update(&state_manager);
+    let (prepare_result, _commit_summary) = prepare_and_commit_round_update(&state_manager);
 
     assert_eq!(
         prepare_result.next_epoch.unwrap().epoch,
@@ -219,81 +216,4 @@ fn flash_protocol_update_test() {
         read_db.max_state_version(),
         pre_protocol_update_state_version.next().unwrap()
     );
-}
-
-fn prepare_and_commit_round_update(state_manager: StateManager) -> (PrepareResult, CommitSummary) {
-    let read_db = state_manager.database.read_current();
-    let latest_proof: LedgerProof = read_db.get_latest_proof().unwrap();
-    let latest_epoch_proof: LedgerProof = read_db.get_latest_epoch_proof().unwrap();
-    let (top_state_version, top_identifiers) = read_db.get_top_transaction_identifiers().unwrap();
-    drop(read_db);
-
-    // Doesn't matter which one we use, we just need some validator from the current validator set
-    let proposer_address = latest_epoch_proof
-        .ledger_header
-        .next_epoch
-        .unwrap()
-        .validator_set
-        .get(0)
-        .unwrap()
-        .address;
-
-    let next_round = Round::of(
-        latest_proof
-            .ledger_header
-            .round
-            .number()
-            .checked_add(1)
-            .unwrap(),
-    );
-
-    let prepare_result = state_manager.state_computer.prepare(PrepareRequest {
-        committed_ledger_hashes: top_identifiers.resultant_ledger_hashes,
-        ancestor_transactions: vec![],
-        ancestor_ledger_hashes: top_identifiers.resultant_ledger_hashes,
-        proposed_transactions: vec![],
-        round_history: RoundHistory {
-            is_fallback: false,
-            epoch: latest_proof.ledger_header.epoch,
-            round: next_round,
-            gap_round_leader_addresses: vec![],
-            proposer_address,
-            proposer_timestamp_ms: latest_proof.ledger_header.proposer_timestamp_ms,
-        },
-    });
-
-    let txns_to_commit = prepare_result
-        .committed
-        .iter()
-        .map(|prep| prep.raw.clone())
-        .collect();
-
-    let commit_result = state_manager
-        .state_computer
-        .commit(CommitRequest {
-            transactions: txns_to_commit,
-            proof: LedgerProof {
-                ledger_header: LedgerHeader {
-                    epoch: latest_proof.ledger_header.epoch,
-                    round: next_round,
-                    state_version: top_state_version.next().unwrap(),
-                    hashes: prepare_result.ledger_hashes,
-                    consensus_parent_round_timestamp_ms: latest_proof
-                        .ledger_header
-                        .consensus_parent_round_timestamp_ms,
-                    proposer_timestamp_ms: latest_proof.ledger_header.proposer_timestamp_ms,
-                    next_epoch: prepare_result.next_epoch.clone(),
-                    next_protocol_version: prepare_result.next_protocol_version.clone(),
-                },
-                origin: LedgerProofOrigin::Consensus {
-                    opaque: Hash([0u8; 32]), /* Doesn't matter */
-                    timestamped_signatures: vec![],
-                },
-            },
-            vertex_store: None,
-            self_validator_id: None,
-        })
-        .unwrap();
-
-    (prepare_result, commit_result)
 }

@@ -68,12 +68,12 @@ import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.utils.UInt64;
 
-/** A request for listing a batch of transactions together with their proof. */
-public record TxnsAndProofRequest(
+/** A request for listing a batch of ledger-syncable transactions together with their proof. */
+public record SyncableTxnsAndProofRequest(
     UInt64 startStateVersionInclusive, LedgerSyncLimitsConfig limitsConfig) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        TxnsAndProofRequest.class,
-        codecs -> StructCodec.fromRecordComponents(TxnsAndProofRequest.class, codecs));
+        SyncableTxnsAndProofRequest.class,
+        codecs -> StructCodec.fromRecordComponents(SyncableTxnsAndProofRequest.class, codecs));
   }
 }

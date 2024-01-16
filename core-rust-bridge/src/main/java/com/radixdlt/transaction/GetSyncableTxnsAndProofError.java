@@ -62,33 +62,26 @@
  * permissions under this License.
  */
 
-extern crate core;
+package com.radixdlt.transaction;
 
-mod accumulator_tree;
-pub mod jni;
-mod limits;
-pub mod mempool;
-pub mod metrics;
-pub mod protocol;
-pub mod query;
-mod receipt;
-mod staging;
-mod state_computer;
-mod state_manager;
-pub mod store;
-pub mod transaction;
-mod types;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.EnumCodec;
+import com.radixdlt.statecomputer.commit.LedgerProof;
 
-#[cfg(test)]
-mod test;
+public sealed interface GetSyncableTxnsAndProofError {
+  static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        GetSyncableTxnsAndProofError.class,
+        codecs ->
+            EnumCodec.fromPermittedRecordSubclasses(GetSyncableTxnsAndProofError.class, codecs));
+  }
 
-pub use crate::mempool::*;
-pub use crate::metrics::*;
-pub use crate::pending_transaction_result_cache::*;
-pub use crate::protocol::*;
-pub use crate::receipt::*;
-pub use crate::staging::*;
-pub use crate::state_computer::*;
-pub use crate::state_manager::*;
-pub use crate::store::*;
-pub use crate::types::*;
+  record RefusedToServeGenesis(LedgerProof refusedProof) implements GetSyncableTxnsAndProofError {}
+
+  record RefusedToServeProtocolUpdate(LedgerProof refusedProof)
+      implements GetSyncableTxnsAndProofError {}
+
+  record NothingToServeAtTheGivenStateVersion() implements GetSyncableTxnsAndProofError {}
+
+  record FailedToPrepareAResponseWithinLimits() implements GetSyncableTxnsAndProofError {}
+}
