@@ -114,26 +114,25 @@ public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
                             .stateVersion(e.getKey().toLong())
                             .resultantProtocolVersion(e.getValue()))
                 .toList())
-        .unenactedProtocolUpdates(
-            protocolState.unenactedProtocolUpdates().stream()
-                .map(this::unenactedProtocolUpdate)
+        .pendingProtocolUpdates(
+            protocolState.pendingProtocolUpdates().stream()
+                .map(this::pendingProtocolUpdate)
                 .toList());
   }
 
-  private com.radixdlt.api.system.generated.models.UnenactedProtocolUpdate unenactedProtocolUpdate(
-      ProtocolState.UnenactedProtocolUpdate unenactedProtocolUpdate) {
+  private com.radixdlt.api.system.generated.models.PendingProtocolUpdate pendingProtocolUpdate(
+      ProtocolState.PendingProtocolUpdate pendingProtocolUpdate) {
     final var state =
-        switch (unenactedProtocolUpdate.state()) {
-          case ProtocolState.UnenactedProtocolUpdateState.Empty
-          empty -> new EmptyUnenactedProtocolUpdateState()
-              .type(UnenactedProtocolUpdateStateType.EMPTY);
-          case ProtocolState.UnenactedProtocolUpdateState.ForSignalledReadinessSupportCondition
-          forSignalledReadinessSupportCondition -> new SignalledReadinessUnenactedProtocolUpdateState()
+        switch (pendingProtocolUpdate.state()) {
+          case ProtocolState.PendingProtocolUpdateState.Empty
+          empty -> new EmptyPendingProtocolUpdateState().type(PendingProtocolUpdateStateType.EMPTY);
+          case ProtocolState.PendingProtocolUpdateState.ForSignalledReadinessSupportCondition
+          forSignalledReadinessSupportCondition -> new SignalledReadinessPendingProtocolUpdateState()
               .thresholdsState(
                   forSignalledReadinessSupportCondition.thresholdsState().stream()
                       .map(
                           thresholdState ->
-                              new SignalledReadinessUnenactedProtocolUpdateStateAllOfThresholdsState()
+                              new SignalledReadinessPendingProtocolUpdateStateAllOfThresholdsState()
                                   .threshold(
                                       new SignalledReadinessThreshold()
                                           .requiredRatioOfStakeSupported(
@@ -154,21 +153,20 @@ public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
                                                   .consecutiveStartedEpochsOfSupport()
                                                   .toLong())))
                       .toList())
-              .type(UnenactedProtocolUpdateStateType.FORSIGNALLEDREADINESSSUPPORTCONDITION);
+              .type(PendingProtocolUpdateStateType.FORSIGNALLEDREADINESSSUPPORTCONDITION);
         };
 
     final var res =
-        new UnenactedProtocolUpdate()
-            .protocolVersion(unenactedProtocolUpdate.protocolUpdate().nextProtocolVersion())
+        new PendingProtocolUpdate()
+            .protocolVersion(pendingProtocolUpdate.protocolUpdate().nextProtocolVersion())
             .state(state)
             .readinessSignalStatus(
-                UnenactedProtocolUpdate.ReadinessSignalStatusEnum
+                PendingProtocolUpdate.ReadinessSignalStatusEnum
                     .NO_ACTION_NEEDED /* TODO(protocol-update): implement me */);
 
-    if (unenactedProtocolUpdate.protocolUpdate().enactmentCondition()
+    if (pendingProtocolUpdate.protocolUpdate().enactmentCondition()
         instanceof ProtocolUpdateEnactmentCondition.EnactWhenSupportedAndWithinBounds) {
-      final var readinessSignalName =
-          unenactedProtocolUpdate.protocolUpdate().readinessSignalName();
+      final var readinessSignalName = pendingProtocolUpdate.protocolUpdate().readinessSignalName();
       res.setReadinessSignalName(readinessSignalName);
     }
 

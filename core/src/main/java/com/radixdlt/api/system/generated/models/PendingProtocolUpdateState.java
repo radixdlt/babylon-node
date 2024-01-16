@@ -24,9 +24,9 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.system.generated.models.EmptyUnenactedProtocolUpdateState;
-import com.radixdlt.api.system.generated.models.SignalledReadinessUnenactedProtocolUpdateState;
-import com.radixdlt.api.system.generated.models.UnenactedProtocolUpdateStateType;
+import com.radixdlt.api.system.generated.models.EmptyPendingProtocolUpdateState;
+import com.radixdlt.api.system.generated.models.PendingProtocolUpdateStateType;
+import com.radixdlt.api.system.generated.models.SignalledReadinessPendingProtocolUpdateState;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -34,26 +34,26 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.common.JSON;
 /**
- * UnenactedProtocolUpdateState
+ * PendingProtocolUpdateState
  */
 @JsonPropertyOrder({
-  UnenactedProtocolUpdateState.JSON_PROPERTY_TYPE
+  PendingProtocolUpdateState.JSON_PROPERTY_TYPE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = EmptyUnenactedProtocolUpdateState.class, name = "Empty"),
-  @JsonSubTypes.Type(value = EmptyUnenactedProtocolUpdateState.class, name = "EmptyUnenactedProtocolUpdateState"),
-  @JsonSubTypes.Type(value = SignalledReadinessUnenactedProtocolUpdateState.class, name = "ForSignalledReadinessSupportCondition"),
-  @JsonSubTypes.Type(value = SignalledReadinessUnenactedProtocolUpdateState.class, name = "SignalledReadinessUnenactedProtocolUpdateState"),
+  @JsonSubTypes.Type(value = EmptyPendingProtocolUpdateState.class, name = "Empty"),
+  @JsonSubTypes.Type(value = EmptyPendingProtocolUpdateState.class, name = "EmptyPendingProtocolUpdateState"),
+  @JsonSubTypes.Type(value = SignalledReadinessPendingProtocolUpdateState.class, name = "ForSignalledReadinessSupportCondition"),
+  @JsonSubTypes.Type(value = SignalledReadinessPendingProtocolUpdateState.class, name = "SignalledReadinessPendingProtocolUpdateState"),
 })
 
-public class UnenactedProtocolUpdateState {
+public class PendingProtocolUpdateState {
   public static final String JSON_PROPERTY_TYPE = "type";
-  private UnenactedProtocolUpdateStateType type;
+  private PendingProtocolUpdateStateType type;
 
 
-  public UnenactedProtocolUpdateState type(UnenactedProtocolUpdateStateType type) {
+  public PendingProtocolUpdateState type(PendingProtocolUpdateStateType type) {
     this.type = type;
     return this;
   }
@@ -67,20 +67,20 @@ public class UnenactedProtocolUpdateState {
   @JsonProperty(JSON_PROPERTY_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public UnenactedProtocolUpdateStateType getType() {
+  public PendingProtocolUpdateStateType getType() {
     return type;
   }
 
 
   @JsonProperty(JSON_PROPERTY_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setType(UnenactedProtocolUpdateStateType type) {
+  public void setType(PendingProtocolUpdateStateType type) {
     this.type = type;
   }
 
 
   /**
-   * Return true if this UnenactedProtocolUpdateState object is equal to o.
+   * Return true if this PendingProtocolUpdateState object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -90,8 +90,8 @@ public class UnenactedProtocolUpdateState {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    UnenactedProtocolUpdateState unenactedProtocolUpdateState = (UnenactedProtocolUpdateState) o;
-    return Objects.equals(this.type, unenactedProtocolUpdateState.type);
+    PendingProtocolUpdateState pendingProtocolUpdateState = (PendingProtocolUpdateState) o;
+    return Objects.equals(this.type, pendingProtocolUpdateState.type);
   }
 
   @Override
@@ -102,7 +102,7 @@ public class UnenactedProtocolUpdateState {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class UnenactedProtocolUpdateState {\n");
+    sb.append("class PendingProtocolUpdateState {\n");
     sb.append("    type: ").append(toIndentedString(type)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -122,12 +122,12 @@ public class UnenactedProtocolUpdateState {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("Empty", EmptyUnenactedProtocolUpdateState.class);
-  mappings.put("EmptyUnenactedProtocolUpdateState", EmptyUnenactedProtocolUpdateState.class);
-  mappings.put("ForSignalledReadinessSupportCondition", SignalledReadinessUnenactedProtocolUpdateState.class);
-  mappings.put("SignalledReadinessUnenactedProtocolUpdateState", SignalledReadinessUnenactedProtocolUpdateState.class);
-  mappings.put("UnenactedProtocolUpdateState", UnenactedProtocolUpdateState.class);
-  JSON.registerDiscriminator(UnenactedProtocolUpdateState.class, "type", mappings);
+  mappings.put("Empty", EmptyPendingProtocolUpdateState.class);
+  mappings.put("EmptyPendingProtocolUpdateState", EmptyPendingProtocolUpdateState.class);
+  mappings.put("ForSignalledReadinessSupportCondition", SignalledReadinessPendingProtocolUpdateState.class);
+  mappings.put("SignalledReadinessPendingProtocolUpdateState", SignalledReadinessPendingProtocolUpdateState.class);
+  mappings.put("PendingProtocolUpdateState", PendingProtocolUpdateState.class);
+  JSON.registerDiscriminator(PendingProtocolUpdateState.class, "type", mappings);
 }
 }
 

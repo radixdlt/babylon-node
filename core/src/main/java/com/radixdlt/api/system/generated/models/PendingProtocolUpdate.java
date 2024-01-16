@@ -22,28 +22,28 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.system.generated.models.UnenactedProtocolUpdateState;
+import com.radixdlt.api.system.generated.models.PendingProtocolUpdateState;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * UnenactedProtocolUpdate
+ * PendingProtocolUpdate
  */
 @JsonPropertyOrder({
-  UnenactedProtocolUpdate.JSON_PROPERTY_PROTOCOL_VERSION,
-  UnenactedProtocolUpdate.JSON_PROPERTY_STATE,
-  UnenactedProtocolUpdate.JSON_PROPERTY_READINESS_SIGNAL_NAME,
-  UnenactedProtocolUpdate.JSON_PROPERTY_READINESS_SIGNAL_STATUS
+  PendingProtocolUpdate.JSON_PROPERTY_PROTOCOL_VERSION,
+  PendingProtocolUpdate.JSON_PROPERTY_STATE,
+  PendingProtocolUpdate.JSON_PROPERTY_READINESS_SIGNAL_NAME,
+  PendingProtocolUpdate.JSON_PROPERTY_READINESS_SIGNAL_STATUS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class UnenactedProtocolUpdate {
+public class PendingProtocolUpdate {
   public static final String JSON_PROPERTY_PROTOCOL_VERSION = "protocol_version";
   private String protocolVersion;
 
   public static final String JSON_PROPERTY_STATE = "state";
-  private UnenactedProtocolUpdateState state;
+  private PendingProtocolUpdateState state;
 
   public static final String JSON_PROPERTY_READINESS_SIGNAL_NAME = "readiness_signal_name";
   private String readinessSignalName;
@@ -87,7 +87,7 @@ public class UnenactedProtocolUpdate {
   private ReadinessSignalStatusEnum readinessSignalStatus;
 
 
-  public UnenactedProtocolUpdate protocolVersion(String protocolVersion) {
+  public PendingProtocolUpdate protocolVersion(String protocolVersion) {
     this.protocolVersion = protocolVersion;
     return this;
   }
@@ -113,7 +113,7 @@ public class UnenactedProtocolUpdate {
   }
 
 
-  public UnenactedProtocolUpdate state(UnenactedProtocolUpdateState state) {
+  public PendingProtocolUpdate state(PendingProtocolUpdateState state) {
     this.state = state;
     return this;
   }
@@ -127,19 +127,19 @@ public class UnenactedProtocolUpdate {
   @JsonProperty(JSON_PROPERTY_STATE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public UnenactedProtocolUpdateState getState() {
+  public PendingProtocolUpdateState getState() {
     return state;
   }
 
 
   @JsonProperty(JSON_PROPERTY_STATE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setState(UnenactedProtocolUpdateState state) {
+  public void setState(PendingProtocolUpdateState state) {
     this.state = state;
   }
 
 
-  public UnenactedProtocolUpdate readinessSignalName(String readinessSignalName) {
+  public PendingProtocolUpdate readinessSignalName(String readinessSignalName) {
     this.readinessSignalName = readinessSignalName;
     return this;
   }
@@ -165,7 +165,7 @@ public class UnenactedProtocolUpdate {
   }
 
 
-  public UnenactedProtocolUpdate readinessSignalStatus(ReadinessSignalStatusEnum readinessSignalStatus) {
+  public PendingProtocolUpdate readinessSignalStatus(ReadinessSignalStatusEnum readinessSignalStatus) {
     this.readinessSignalStatus = readinessSignalStatus;
     return this;
   }
@@ -192,7 +192,7 @@ public class UnenactedProtocolUpdate {
 
 
   /**
-   * Return true if this UnenactedProtocolUpdate object is equal to o.
+   * Return true if this PendingProtocolUpdate object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -202,11 +202,11 @@ public class UnenactedProtocolUpdate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    UnenactedProtocolUpdate unenactedProtocolUpdate = (UnenactedProtocolUpdate) o;
-    return Objects.equals(this.protocolVersion, unenactedProtocolUpdate.protocolVersion) &&
-        Objects.equals(this.state, unenactedProtocolUpdate.state) &&
-        Objects.equals(this.readinessSignalName, unenactedProtocolUpdate.readinessSignalName) &&
-        Objects.equals(this.readinessSignalStatus, unenactedProtocolUpdate.readinessSignalStatus);
+    PendingProtocolUpdate pendingProtocolUpdate = (PendingProtocolUpdate) o;
+    return Objects.equals(this.protocolVersion, pendingProtocolUpdate.protocolVersion) &&
+        Objects.equals(this.state, pendingProtocolUpdate.state) &&
+        Objects.equals(this.readinessSignalName, pendingProtocolUpdate.readinessSignalName) &&
+        Objects.equals(this.readinessSignalStatus, pendingProtocolUpdate.readinessSignalStatus);
   }
 
   @Override
@@ -217,7 +217,7 @@ public class UnenactedProtocolUpdate {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class UnenactedProtocolUpdate {\n");
+    sb.append("class PendingProtocolUpdate {\n");
     sb.append("    protocolVersion: ").append(toIndentedString(protocolVersion)).append("\n");
     sb.append("    state: ").append(toIndentedString(state)).append("\n");
     sb.append("    readinessSignalName: ").append(toIndentedString(readinessSignalName)).append("\n");

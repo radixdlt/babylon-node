@@ -31,17 +31,17 @@ pub struct ProtocolState {
     pub current_epoch: Option<Epoch>,
     pub current_protocol_version: String,
     pub enacted_protocol_updates: BTreeMap<StateVersion, String>,
-    pub unenacted_protocol_updates: Vec<UnenactedProtocolUpdate>,
+    pub pending_protocol_updates: Vec<PendingProtocolUpdate>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct UnenactedProtocolUpdate {
+pub struct PendingProtocolUpdate {
     pub protocol_update: ProtocolUpdate,
-    pub state: UnenactedProtocolUpdateState,
+    pub state: PendingProtocolUpdateState,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum UnenactedProtocolUpdateState {
+pub enum PendingProtocolUpdateState {
     ForSignalledReadinessSupportCondition {
         thresholds_state: Vec<(
             // Thresholds here are kept just for convenience,
@@ -64,8 +64,8 @@ pub struct SignalledReadinessThresholdState {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum InitialProtocolUpdateStatus {
     ExpectedToHaveBeenEnactedAtStateVersion(StateVersion),
-    UnenactedButStillPossible(UnenactedProtocolUpdateState),
-    UnenactedExpired,
+    Pending(PendingProtocolUpdateState),
+    ExpiredUnenacted,
 }
 
 fn compute_initial_protocol_update_status<
@@ -168,8 +168,8 @@ fn compute_initial_signalled_readiness_protocol_update_status<
 
     // The protocol update wasn't enacted yet, so just return the latest computed state
     // as the initial state.
-    InitialProtocolUpdateStatus::UnenactedButStillPossible(
-        UnenactedProtocolUpdateState::ForSignalledReadinessSupportCondition { thresholds_state },
+    InitialProtocolUpdateStatus::Pending(
+        PendingProtocolUpdateState::ForSignalledReadinessSupportCondition { thresholds_state },
     )
 }
 
@@ -182,7 +182,7 @@ fn compute_initial_at_epoch_protocol_update_status<S: QueryableProofStore>(
             epoch_proof.ledger_header.state_version,
         )
     } else {
-        InitialProtocolUpdateStatus::UnenactedButStillPossible(UnenactedProtocolUpdateState::Empty)
+        InitialProtocolUpdateStatus::Pending(PendingProtocolUpdateState::Empty)
     }
 }
 
@@ -227,8 +227,8 @@ pub fn compute_initial_protocol_state<
                     *state_version,
                     protocol_update.next_protocol_version.clone(),
                 )),
-                InitialProtocolUpdateStatus::UnenactedButStillPossible(_)
-                | InitialProtocolUpdateStatus::UnenactedExpired => None,
+                InitialProtocolUpdateStatus::Pending(_)
+                | InitialProtocolUpdateStatus::ExpiredUnenacted => None,
             })
             .collect();
 
@@ -261,17 +261,15 @@ pub fn compute_initial_protocol_state<
         .unwrap_or(&protocol_config.genesis_protocol_version)
         .clone();
 
-    let unenacted_protocol_updates = initial_statuses
+    let pending_protocol_updates = initial_statuses
         .into_iter()
         .flat_map(|(protocol_update, status)| match status {
             InitialProtocolUpdateStatus::ExpectedToHaveBeenEnactedAtStateVersion(_) => None,
-            InitialProtocolUpdateStatus::UnenactedButStillPossible(state) => {
-                Some(UnenactedProtocolUpdate {
-                    protocol_update: protocol_update.clone(),
-                    state,
-                })
-            }
-            InitialProtocolUpdateStatus::UnenactedExpired => None,
+            InitialProtocolUpdateStatus::Pending(state) => Some(PendingProtocolUpdate {
+                protocol_update: protocol_update.clone(),
+                state,
+            }),
+            InitialProtocolUpdateStatus::ExpiredUnenacted => None,
         })
         .collect();
 
@@ -279,7 +277,7 @@ pub fn compute_initial_protocol_state<
         current_epoch: current_epoch_opt,
         current_protocol_version,
         enacted_protocol_updates: actually_enacted_protocol_updates,
-        unenacted_protocol_updates,
+        pending_protocol_updates,
     }
 }
 
@@ -304,16 +302,13 @@ pub fn compute_new_protocol_state(
     };
     new_protocol_state.current_epoch = Some(post_execute_epoch);
 
-    let mut non_expired_unenacted_protocol_updates = vec![];
+    let mut pending_protocol_updates = vec![];
     let mut expired_protocol_updates = vec![];
     // Only a single protocol update can be enacted at a time.
     // We collect the results into a list to verify this.
     let mut enactable_protocol_updates = vec![];
-    for mut unenacted_protocol_update in new_protocol_state.unenacted_protocol_updates {
-        match &unenacted_protocol_update
-            .protocol_update
-            .enactment_condition
-        {
+    for mut pending_protocol_update in new_protocol_state.pending_protocol_updates {
+        match &pending_protocol_update.protocol_update.enactment_condition {
             EnactWhenSupportedAndWithinBounds {
                 lower_bound,
                 upper_bound,
@@ -322,15 +317,15 @@ pub fn compute_new_protocol_state(
                 // Note: this is not a pure boolean calculation,
                 // it also updates the state.
                 let has_sufficient_support = {
-                    if let UnenactedProtocolUpdateState::ForSignalledReadinessSupportCondition {
+                    if let PendingProtocolUpdateState::ForSignalledReadinessSupportCondition {
                         ref mut thresholds_state,
-                    } = &mut unenacted_protocol_update.state
+                    } = &mut pending_protocol_update.state
                     {
                         // If this was an epoch change, update the thresholds state
                         if let Some(epoch_change_event) = &local_receipt.local_execution.next_epoch
                         {
                             update_thresholds_state_at_epoch_change(
-                                &unenacted_protocol_update.protocol_update,
+                                &pending_protocol_update.protocol_update,
                                 epoch_change_event,
                                 thresholds_state,
                             );
@@ -349,34 +344,30 @@ pub fn compute_new_protocol_state(
 
                 if has_sufficient_support && on_or_above_lower_bound && on_or_below_upper_bound {
                     enactable_protocol_updates.push(
-                        unenacted_protocol_update
+                        pending_protocol_update
                             .protocol_update
                             .next_protocol_version,
                     );
                 } else if on_or_below_upper_bound {
-                    non_expired_unenacted_protocol_updates.push(unenacted_protocol_update);
+                    pending_protocol_updates.push(pending_protocol_update);
                 } else {
-                    expired_protocol_updates.push(unenacted_protocol_update);
+                    expired_protocol_updates.push(pending_protocol_update);
                 }
             }
             EnactUnconditionallyAtEpoch(enactment_epoch) => {
                 if let Some(next_epoch) = &local_receipt.local_execution.next_epoch {
                     match next_epoch.epoch.cmp(enactment_epoch) {
-                        Ordering::Less => {
-                            non_expired_unenacted_protocol_updates.push(unenacted_protocol_update)
-                        }
+                        Ordering::Less => pending_protocol_updates.push(pending_protocol_update),
                         Ordering::Equal => enactable_protocol_updates.push(
-                            unenacted_protocol_update
+                            pending_protocol_update
                                 .protocol_update
                                 .next_protocol_version,
                         ),
-                        Ordering::Greater => {
-                            expired_protocol_updates.push(unenacted_protocol_update)
-                        }
+                        Ordering::Greater => expired_protocol_updates.push(pending_protocol_update),
                     }
                 } else {
                     // Not an epoch change
-                    non_expired_unenacted_protocol_updates.push(unenacted_protocol_update);
+                    pending_protocol_updates.push(pending_protocol_update);
                 }
             }
         }
@@ -401,7 +392,7 @@ pub fn compute_new_protocol_state(
     }
     let next_protocol_version = enactable_protocol_updates.into_iter().next();
 
-    new_protocol_state.unenacted_protocol_updates = non_expired_unenacted_protocol_updates;
+    new_protocol_state.pending_protocol_updates = pending_protocol_updates;
     if let Some(next_protocol_version) = next_protocol_version.as_ref() {
         new_protocol_state.enacted_protocol_updates.insert(
             post_execute_state_version,

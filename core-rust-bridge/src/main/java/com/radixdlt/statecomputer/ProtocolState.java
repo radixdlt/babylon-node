@@ -79,7 +79,7 @@ public record ProtocolState(
     Option<UInt64> currentEpoch,
     String currentProtocolVersion,
     ImmutableMap<UInt64, String> enactedProtocolUpdates,
-    ImmutableList<UnenactedProtocolUpdate> unenactedProtocolUpdates) {
+    ImmutableList<PendingProtocolUpdate> pendingProtocolUpdates) {
 
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
@@ -87,34 +87,34 @@ public record ProtocolState(
         codecs -> StructCodec.fromRecordComponents(ProtocolState.class, codecs));
 
     codecMap.register(
-        UnenactedProtocolUpdate.class,
-        codecs -> StructCodec.fromRecordComponents(UnenactedProtocolUpdate.class, codecs));
+        PendingProtocolUpdate.class,
+        codecs -> StructCodec.fromRecordComponents(PendingProtocolUpdate.class, codecs));
 
     codecMap.register(
-        UnenactedProtocolUpdateState.class,
+        PendingProtocolUpdateState.class,
         codecs ->
-            EnumCodec.fromPermittedRecordSubclasses(UnenactedProtocolUpdateState.class, codecs));
+            EnumCodec.fromPermittedRecordSubclasses(PendingProtocolUpdateState.class, codecs));
 
     codecMap.register(
-        UnenactedProtocolUpdateState.SignalledReadinessThresholdState.class,
+        PendingProtocolUpdateState.SignalledReadinessThresholdState.class,
         codecs ->
             StructCodec.fromRecordComponents(
-                UnenactedProtocolUpdateState.SignalledReadinessThresholdState.class, codecs));
+                PendingProtocolUpdateState.SignalledReadinessThresholdState.class, codecs));
   }
 
-  public record UnenactedProtocolUpdate(
-      ProtocolUpdate protocolUpdate, UnenactedProtocolUpdateState state) {}
+  public record PendingProtocolUpdate(
+      ProtocolUpdate protocolUpdate, PendingProtocolUpdateState state) {}
 
-  public sealed interface UnenactedProtocolUpdateState {
+  public sealed interface PendingProtocolUpdateState {
     record ForSignalledReadinessSupportCondition(
         ImmutableList<
                 Tuple.Tuple2<
                     ProtocolUpdateEnactmentCondition.SignalledReadinessThreshold,
                     SignalledReadinessThresholdState>>
             thresholdsState)
-        implements UnenactedProtocolUpdateState {}
+        implements PendingProtocolUpdateState {}
 
-    record Empty() implements UnenactedProtocolUpdateState {}
+    record Empty() implements PendingProtocolUpdateState {}
 
     record SignalledReadinessThresholdState(UInt64 consecutiveStartedEpochsOfSupport) {}
   }

@@ -197,7 +197,7 @@ components:
         - recent_self_proposal_miss_statistic
         - current_protocol_version
         - enacted_protocol_updates
-        - unenacted_protocol_updates
+        - pending_protocol_updates
         - unknown_reported_pending_protocol_updates
       properties:
         status:
@@ -218,10 +218,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/EnactedProtocolUpdate"
-        unenacted_protocol_updates:
+        pending_protocol_updates:
           type: array
           items:
-            $ref: "#/components/schemas/UnenactedProtocolUpdate"
+            $ref: "#/components/schemas/PendingProtocolUpdate"
         unknown_reported_pending_protocol_updates:
           type: array
           items:
@@ -538,7 +538,7 @@ components:
           format: int64
         resultant_protocol_version:
           $ref: "#/components/schemas/ProtocolVersion"
-    UnenactedProtocolUpdate:
+    PendingProtocolUpdate:
       type: object
       required:
         - protocol_version
@@ -548,7 +548,7 @@ components:
         protocol_version:
           $ref: "#/components/schemas/ProtocolVersion"
         state:
-          $ref: "#/components/schemas/UnenactedProtocolUpdateState"
+          $ref: "#/components/schemas/PendingProtocolUpdateState"
         readiness_signal_name:
           type: string
         readiness_signal_status:
@@ -556,27 +556,27 @@ components:
           enum:
             - READINESS_SIGNAL_REQUIRED
             - NO_ACTION_NEEDED
-    UnenactedProtocolUpdateStateType:
+    PendingProtocolUpdateStateType:
       type: string
       enum:
         - ForSignalledReadinessSupportCondition
         - Empty
-    UnenactedProtocolUpdateState:
+    PendingProtocolUpdateState:
       type: object
       required:
         - type
       properties:
         type:
-          $ref: "#/components/schemas/UnenactedProtocolUpdateStateType"
+          $ref: "#/components/schemas/PendingProtocolUpdateStateType"
       discriminator:
         propertyName: type
         mapping:
-          # NOTE: These need to match UnenactedProtocolUpdateStateType
-          ForSignalledReadinessSupportCondition: '#/components/schemas/SignalledReadinessUnenactedProtocolUpdateState'
-          Empty: '#/components/schemas/EmptyUnenactedProtocolUpdateState'
-    SignalledReadinessUnenactedProtocolUpdateState:
+          # NOTE: These need to match PendingProtocolUpdateStateType
+          ForSignalledReadinessSupportCondition: '#/components/schemas/SignalledReadinessPendingProtocolUpdateState'
+          Empty: '#/components/schemas/EmptyPendingProtocolUpdateState'
+    SignalledReadinessPendingProtocolUpdateState:
       allOf:
-        - $ref: "#/components/schemas/UnenactedProtocolUpdateState"
+        - $ref: "#/components/schemas/PendingProtocolUpdateState"
         - type: object
           required:
             - thresholds_state
@@ -601,9 +601,9 @@ components:
         consecutive_started_epochs_of_support:
           type: integer
           format: int64
-    EmptyUnenactedProtocolUpdateState:
+    EmptyPendingProtocolUpdateState:
       allOf:
-        - $ref: "#/components/schemas/UnenactedProtocolUpdateState"
+        - $ref: "#/components/schemas/PendingProtocolUpdateState"
         - type: object
     UnknownReportedPendingProtocolUpdate:
       type: object

@@ -30,14 +30,14 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * SignalledReadinessUnenactedProtocolUpdateStateAllOfThresholdsState
+ * SignalledReadinessPendingProtocolUpdateStateAllOfThresholdsState
  */
 @JsonPropertyOrder({
-  SignalledReadinessUnenactedProtocolUpdateStateAllOfThresholdsState.JSON_PROPERTY_THRESHOLD,
-  SignalledReadinessUnenactedProtocolUpdateStateAllOfThresholdsState.JSON_PROPERTY_THRESHOLD_STATE
+  SignalledReadinessPendingProtocolUpdateStateAllOfThresholdsState.JSON_PROPERTY_THRESHOLD,
+  SignalledReadinessPendingProtocolUpdateStateAllOfThresholdsState.JSON_PROPERTY_THRESHOLD_STATE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class SignalledReadinessUnenactedProtocolUpdateStateAllOfThresholdsState {
+public class SignalledReadinessPendingProtocolUpdateStateAllOfThresholdsState {
   public static final String JSON_PROPERTY_THRESHOLD = "threshold";
   private SignalledReadinessThreshold threshold;
 
@@ -45,7 +45,7 @@ public class SignalledReadinessUnenactedProtocolUpdateStateAllOfThresholdsState 
   private SignalledReadinessThresholdState thresholdState;
 
 
-  public SignalledReadinessUnenactedProtocolUpdateStateAllOfThresholdsState threshold(SignalledReadinessThreshold threshold) {
+  public SignalledReadinessPendingProtocolUpdateStateAllOfThresholdsState threshold(SignalledReadinessThreshold threshold) {
     this.threshold = threshold;
     return this;
   }
@@ -71,7 +71,7 @@ public class SignalledReadinessUnenactedProtocolUpdateStateAllOfThresholdsState 
   }
 
 
-  public SignalledReadinessUnenactedProtocolUpdateStateAllOfThresholdsState thresholdState(SignalledReadinessThresholdState thresholdState) {
+  public SignalledReadinessPendingProtocolUpdateStateAllOfThresholdsState thresholdState(SignalledReadinessThresholdState thresholdState) {
     this.thresholdState = thresholdState;
     return this;
   }
@@ -98,7 +98,7 @@ public class SignalledReadinessUnenactedProtocolUpdateStateAllOfThresholdsState 
 
 
   /**
-   * Return true if this SignalledReadinessUnenactedProtocolUpdateState_allOf_thresholds_state object is equal to o.
+   * Return true if this SignalledReadinessPendingProtocolUpdateState_allOf_thresholds_state object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -108,9 +108,9 @@ public class SignalledReadinessUnenactedProtocolUpdateStateAllOfThresholdsState 
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    SignalledReadinessUnenactedProtocolUpdateStateAllOfThresholdsState signalledReadinessUnenactedProtocolUpdateStateAllOfThresholdsState = (SignalledReadinessUnenactedProtocolUpdateStateAllOfThresholdsState) o;
-    return Objects.equals(this.threshold, signalledReadinessUnenactedProtocolUpdateStateAllOfThresholdsState.threshold) &&
-        Objects.equals(this.thresholdState, signalledReadinessUnenactedProtocolUpdateStateAllOfThresholdsState.thresholdState);
+    SignalledReadinessPendingProtocolUpdateStateAllOfThresholdsState signalledReadinessPendingProtocolUpdateStateAllOfThresholdsState = (SignalledReadinessPendingProtocolUpdateStateAllOfThresholdsState) o;
+    return Objects.equals(this.threshold, signalledReadinessPendingProtocolUpdateStateAllOfThresholdsState.threshold) &&
+        Objects.equals(this.thresholdState, signalledReadinessPendingProtocolUpdateStateAllOfThresholdsState.thresholdState);
   }
 
   @Override
@@ -121,7 +121,7 @@ public class SignalledReadinessUnenactedProtocolUpdateStateAllOfThresholdsState 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class SignalledReadinessUnenactedProtocolUpdateStateAllOfThresholdsState {\n");
+    sb.append("class SignalledReadinessPendingProtocolUpdateStateAllOfThresholdsState {\n");
     sb.append("    threshold: ").append(toIndentedString(threshold)).append("\n");
     sb.append("    thresholdState: ").append(toIndentedString(thresholdState)).append("\n");
     sb.append("}");

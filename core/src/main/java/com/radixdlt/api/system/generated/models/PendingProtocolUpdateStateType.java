@@ -24,9 +24,9 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
- * Gets or Sets UnenactedProtocolUpdateStateType
+ * Gets or Sets PendingProtocolUpdateStateType
  */
-public enum UnenactedProtocolUpdateStateType {
+public enum PendingProtocolUpdateStateType {
   
   FORSIGNALLEDREADINESSSUPPORTCONDITION("ForSignalledReadinessSupportCondition"),
   
@@ -34,7 +34,7 @@ public enum UnenactedProtocolUpdateStateType {
 
   private String value;
 
-  UnenactedProtocolUpdateStateType(String value) {
+  PendingProtocolUpdateStateType(String value) {
     this.value = value;
   }
 
@@ -49,8 +49,8 @@ public enum UnenactedProtocolUpdateStateType {
   }
 
   @JsonCreator
-  public static UnenactedProtocolUpdateStateType fromValue(String value) {
-    for (UnenactedProtocolUpdateStateType b : UnenactedProtocolUpdateStateType.values()) {
+  public static PendingProtocolUpdateStateType fromValue(String value) {
+    for (PendingProtocolUpdateStateType b : PendingProtocolUpdateStateType.values()) {
       if (b.value.equals(value)) {
         return b;
       }

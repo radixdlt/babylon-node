@@ -24,12 +24,12 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.system.generated.models.EmptyUnenactedProtocolUpdateState;
-import com.radixdlt.api.system.generated.models.SignalledReadinessUnenactedProtocolUpdateState;
-import com.radixdlt.api.system.generated.models.SignalledReadinessUnenactedProtocolUpdateStateAllOf;
-import com.radixdlt.api.system.generated.models.SignalledReadinessUnenactedProtocolUpdateStateAllOfThresholdsState;
-import com.radixdlt.api.system.generated.models.UnenactedProtocolUpdateState;
-import com.radixdlt.api.system.generated.models.UnenactedProtocolUpdateStateType;
+import com.radixdlt.api.system.generated.models.EmptyPendingProtocolUpdateState;
+import com.radixdlt.api.system.generated.models.PendingProtocolUpdateState;
+import com.radixdlt.api.system.generated.models.PendingProtocolUpdateStateType;
+import com.radixdlt.api.system.generated.models.SignalledReadinessPendingProtocolUpdateState;
+import com.radixdlt.api.system.generated.models.SignalledReadinessPendingProtocolUpdateStateAllOf;
+import com.radixdlt.api.system.generated.models.SignalledReadinessPendingProtocolUpdateStateAllOfThresholdsState;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -39,29 +39,29 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.common.JSON;
 /**
- * SignalledReadinessUnenactedProtocolUpdateState
+ * SignalledReadinessPendingProtocolUpdateState
  */
 @JsonPropertyOrder({
-  SignalledReadinessUnenactedProtocolUpdateState.JSON_PROPERTY_THRESHOLDS_STATE
+  SignalledReadinessPendingProtocolUpdateState.JSON_PROPERTY_THRESHOLDS_STATE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = EmptyUnenactedProtocolUpdateState.class, name = "Empty"),
-  @JsonSubTypes.Type(value = SignalledReadinessUnenactedProtocolUpdateState.class, name = "ForSignalledReadinessSupportCondition"),
+  @JsonSubTypes.Type(value = EmptyPendingProtocolUpdateState.class, name = "Empty"),
+  @JsonSubTypes.Type(value = SignalledReadinessPendingProtocolUpdateState.class, name = "ForSignalledReadinessSupportCondition"),
 })
 
-public class SignalledReadinessUnenactedProtocolUpdateState extends UnenactedProtocolUpdateState {
+public class SignalledReadinessPendingProtocolUpdateState extends PendingProtocolUpdateState {
   public static final String JSON_PROPERTY_THRESHOLDS_STATE = "thresholds_state";
-  private List<SignalledReadinessUnenactedProtocolUpdateStateAllOfThresholdsState> thresholdsState = new ArrayList<>();
+  private List<SignalledReadinessPendingProtocolUpdateStateAllOfThresholdsState> thresholdsState = new ArrayList<>();
 
 
-  public SignalledReadinessUnenactedProtocolUpdateState thresholdsState(List<SignalledReadinessUnenactedProtocolUpdateStateAllOfThresholdsState> thresholdsState) {
+  public SignalledReadinessPendingProtocolUpdateState thresholdsState(List<SignalledReadinessPendingProtocolUpdateStateAllOfThresholdsState> thresholdsState) {
     this.thresholdsState = thresholdsState;
     return this;
   }
 
-  public SignalledReadinessUnenactedProtocolUpdateState addThresholdsStateItem(SignalledReadinessUnenactedProtocolUpdateStateAllOfThresholdsState thresholdsStateItem) {
+  public SignalledReadinessPendingProtocolUpdateState addThresholdsStateItem(SignalledReadinessPendingProtocolUpdateStateAllOfThresholdsState thresholdsStateItem) {
     this.thresholdsState.add(thresholdsStateItem);
     return this;
   }
@@ -75,20 +75,20 @@ public class SignalledReadinessUnenactedProtocolUpdateState extends UnenactedPro
   @JsonProperty(JSON_PROPERTY_THRESHOLDS_STATE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<SignalledReadinessUnenactedProtocolUpdateStateAllOfThresholdsState> getThresholdsState() {
+  public List<SignalledReadinessPendingProtocolUpdateStateAllOfThresholdsState> getThresholdsState() {
     return thresholdsState;
   }
 
 
   @JsonProperty(JSON_PROPERTY_THRESHOLDS_STATE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setThresholdsState(List<SignalledReadinessUnenactedProtocolUpdateStateAllOfThresholdsState> thresholdsState) {
+  public void setThresholdsState(List<SignalledReadinessPendingProtocolUpdateStateAllOfThresholdsState> thresholdsState) {
     this.thresholdsState = thresholdsState;
   }
 
 
   /**
-   * Return true if this SignalledReadinessUnenactedProtocolUpdateState object is equal to o.
+   * Return true if this SignalledReadinessPendingProtocolUpdateState object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -98,8 +98,8 @@ public class SignalledReadinessUnenactedProtocolUpdateState extends UnenactedPro
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    SignalledReadinessUnenactedProtocolUpdateState signalledReadinessUnenactedProtocolUpdateState = (SignalledReadinessUnenactedProtocolUpdateState) o;
-    return Objects.equals(this.thresholdsState, signalledReadinessUnenactedProtocolUpdateState.thresholdsState) &&
+    SignalledReadinessPendingProtocolUpdateState signalledReadinessPendingProtocolUpdateState = (SignalledReadinessPendingProtocolUpdateState) o;
+    return Objects.equals(this.thresholdsState, signalledReadinessPendingProtocolUpdateState.thresholdsState) &&
         super.equals(o);
   }
 
@@ -111,7 +111,7 @@ public class SignalledReadinessUnenactedProtocolUpdateState extends UnenactedPro
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class SignalledReadinessUnenactedProtocolUpdateState {\n");
+    sb.append("class SignalledReadinessPendingProtocolUpdateState {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    thresholdsState: ").append(toIndentedString(thresholdsState)).append("\n");
     sb.append("}");
@@ -132,10 +132,10 @@ public class SignalledReadinessUnenactedProtocolUpdateState extends UnenactedPro
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("Empty", EmptyUnenactedProtocolUpdateState.class);
-  mappings.put("ForSignalledReadinessSupportCondition", SignalledReadinessUnenactedProtocolUpdateState.class);
-  mappings.put("SignalledReadinessUnenactedProtocolUpdateState", SignalledReadinessUnenactedProtocolUpdateState.class);
-  JSON.registerDiscriminator(SignalledReadinessUnenactedProtocolUpdateState.class, "type", mappings);
+  mappings.put("Empty", EmptyPendingProtocolUpdateState.class);
+  mappings.put("ForSignalledReadinessSupportCondition", SignalledReadinessPendingProtocolUpdateState.class);
+  mappings.put("SignalledReadinessPendingProtocolUpdateState", SignalledReadinessPendingProtocolUpdateState.class);
+  JSON.registerDiscriminator(SignalledReadinessPendingProtocolUpdateState.class, "type", mappings);
 }
 }
 

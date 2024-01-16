@@ -307,7 +307,7 @@ impl ProtocolUpdateFlashTxnCommitter {
             current_epoch: None,
             current_protocol_version: self.protocol_version_name.clone(),
             enacted_protocol_updates: btreemap!(),
-            unenacted_protocol_updates: vec![],
+            pending_protocol_updates: vec![],
         };
 
         let mut series_executor = TransactionSeriesExecutor::new(
