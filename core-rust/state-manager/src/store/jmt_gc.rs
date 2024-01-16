@@ -271,11 +271,11 @@ mod tests {
     #[test]
     fn iterates_substates_from_deleted_partition_in_dfs_order() {
         // Arrange: we need a valid tree store state - easiest to just use JMT's infra
-        let mut tree_store = TypedInMemoryTreeStore::new();
+        let tree_store = TypedInMemoryTreeStore::new();
 
         // - Create a single node with 2 partitions; one of them (07) has an elaborate substate-tier tree:
         put_at_next_version(
-            &mut tree_store,
+            &tree_store,
             None,
             &DatabaseUpdates {
                 node_updates: indexmap!(
@@ -302,7 +302,7 @@ mod tests {
 
         // - Add some more substates to the partition 07 (so that JMT contains nodes of different versions!)
         put_at_next_version(
-            &mut tree_store,
+            &tree_store,
             Some(1),
             &DatabaseUpdates {
                 node_updates: indexmap!(
@@ -323,7 +323,7 @@ mod tests {
 
         // - Delete the extremely large partition 07:
         put_at_next_version(
-            &mut tree_store,
+            &tree_store,
             Some(2),
             &DatabaseUpdates {
                 node_updates: indexmap!(
@@ -407,9 +407,9 @@ mod tests {
     #[test]
     fn supports_degenerate_single_element_subtree() {
         // Arrange: A degenerate case with a single substate
-        let mut tree_store = TypedInMemoryTreeStore::new();
+        let tree_store = TypedInMemoryTreeStore::new();
         put_at_next_version(
-            &mut tree_store,
+            &tree_store,
             None,
             &DatabaseUpdates {
                 node_updates: indexmap!(
