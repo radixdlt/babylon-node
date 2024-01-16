@@ -87,7 +87,7 @@ use transaction_scenarios::scenarios::*;
 
 use node_common::locks::{LockFactory, Mutex, RwLock, StateLock};
 use prometheus::Registry;
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 
 use crate::store::traits::scenario::{
     DescribedAddress, ExecutedGenesisScenario, ExecutedGenesisScenarioStore,
@@ -96,18 +96,6 @@ use crate::store::traits::scenario::{
 use std::ops::Deref;
 use std::sync::Arc;
 use std::time::{Instant, SystemTime};
-
-#[derive(Debug, Categorize, Encode, Decode, Clone, Default)]
-pub struct LoggingConfig {
-    pub engine_trace: bool,
-    pub state_manager_config: StateComputerLoggingConfig,
-}
-
-// TODO: Replace this with better loglevel integration
-#[derive(Debug, Categorize, Encode, Decode, Clone, Default)]
-pub struct StateComputerLoggingConfig {
-    pub log_on_transaction_rejection: bool,
-}
 
 pub struct StateComputer<S> {
     network: NetworkDefinition,
@@ -121,7 +109,6 @@ pub struct StateComputer<S> {
     committed_transactions_metrics: CommittedTransactionsMetrics,
     vertex_prepare_metrics: VertexPrepareMetrics,
     vertex_limits_config: VertexLimitsConfig,
-    logging_config: StateComputerLoggingConfig,
 }
 
 impl<S: QueryableProofStore> StateComputer<S> {
@@ -134,7 +121,6 @@ impl<S: QueryableProofStore> StateComputer<S> {
         mempool_manager: Arc<MempoolManager>,
         execution_configurator: Arc<ExecutionConfigurator>,
         pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
-        logging_config: LoggingConfig,
         metrics_registry: &Registry,
         lock_factory: LockFactory,
     ) -> StateComputer<S> {
@@ -158,7 +144,6 @@ impl<S: QueryableProofStore> StateComputer<S> {
                 .named("execution_cache")
                 .new_mutex(ExecutionCache::new(current_transaction_root)),
             ledger_transaction_validator: LedgerTransactionValidator::new(network),
-            logging_config: logging_config.state_manager_config,
             vertex_prepare_metrics: VertexPrepareMetrics::new(metrics_registry),
             vertex_limits_config,
             ledger_metrics: LedgerMetrics::new(
@@ -633,10 +618,8 @@ where
             }
         }
 
-        if self.logging_config.log_on_transaction_rejection {
-            for rejection in rejected_transactions.iter() {
-                info!("TXN INVALID: {}", &rejection.error);
-            }
+        for rejection in rejected_transactions.iter() {
+            debug!("TXN INVALID: {}", &rejection.error);
         }
 
         let pending_rejected_transactions = pending_transaction_results

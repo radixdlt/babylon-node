@@ -121,7 +121,6 @@ public final class NodeSborCodecs {
     ProposalTransactionsRequest.registerCodec(codecMap);
     NetworkDefinition.registerCodec(codecMap);
     LoggingConfig.registerCodec(codecMap);
-    StateManagerLoggingConfig.registerCodec(codecMap);
     StateManagerConfig.registerCodec(codecMap);
     RawLedgerTransaction.registerCodec(codecMap);
     RawNotarizedTransaction.registerCodec(codecMap);

@@ -67,8 +67,7 @@ package com.radixdlt.environment;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 
-public record LoggingConfig(
-    boolean engineTrace, StateManagerLoggingConfig stateManagerLoggingConfig) {
+public record LoggingConfig(boolean engineTrace) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         LoggingConfig.class,
@@ -76,10 +75,10 @@ public record LoggingConfig(
   }
 
   public static LoggingConfig getDefault() {
-    return new LoggingConfig(false, StateManagerLoggingConfig.getDefault());
+    return new LoggingConfig(false);
   }
 
   public static LoggingConfig getDebug() {
-    return new LoggingConfig(true, StateManagerLoggingConfig.getDebug());
+    return new LoggingConfig(true);
   }
 }
