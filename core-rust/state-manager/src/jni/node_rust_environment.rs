@@ -63,6 +63,7 @@
  */
 
 use std::ops::Deref;
+use std::str::FromStr;
 use std::sync::Arc;
 
 use jni::objects::{JClass, JObject};
@@ -76,6 +77,7 @@ use radix_engine_common::prelude::NetworkDefinition;
 
 use node_common::scheduler::{Scheduler, UntilDropTracker};
 use tokio::runtime::Runtime;
+use tracing::Level;
 
 use crate::mempool_manager::MempoolManager;
 use crate::mempool_relay_dispatcher::MempoolRelayDispatcher;
@@ -128,7 +130,14 @@ impl JNINodeRustEnvironment {
 
         let runtime = Arc::new(Runtime::new().unwrap());
 
-        setup_tracing(runtime.deref(), std::env::var("JAEGER_AGENT_ENDPOINT").ok());
+        setup_tracing(
+            runtime.deref(),
+            std::env::var("JAEGER_AGENT_ENDPOINT").ok(),
+            std::env::var("RADIXDLT_LOG_LEVEL")
+                .ok()
+                .and_then(|level| Level::from_str(level.as_str()).ok())
+                .unwrap_or(Level::INFO),
+        );
 
         let fatal_panic_handler = FatalPanicHandler::new(env, j_node_rust_env).unwrap();
         let metric_registry = Arc::new(Registry::new());

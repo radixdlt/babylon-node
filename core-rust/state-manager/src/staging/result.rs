@@ -387,9 +387,9 @@ impl ProcessedCommitResult {
         parent_state_version: StateVersion,
         database_updates: &DatabaseUpdates,
     ) -> StateHashTreeDiff {
-        let mut collector = CollectingTreeStore::new(store);
+        let collector = CollectingTreeStore::new(store);
         let root_hash = put_at_next_version(
-            &mut collector,
+            &collector,
             Some(parent_state_version.number()).filter(|v| *v > 0),
             database_updates,
         );
