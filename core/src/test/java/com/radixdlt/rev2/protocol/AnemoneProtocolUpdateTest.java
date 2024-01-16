@@ -93,7 +93,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public final class AnemoneProtocolUpdateTest {
-  private static final String PROTOCOL_VERSION_NAME = "anemone";
+  private static final String PROTOCOL_VERSION_NAME = ProtocolUpdate.ANEMONE;
   private static final long PROTOCOL_UPDATE_EPOCH = 4L;
 
   // Enact anemone at fixed epoch 4

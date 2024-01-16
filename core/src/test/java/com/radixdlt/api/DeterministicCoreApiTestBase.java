@@ -91,6 +91,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
+import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.rev2.*;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transactions.IntentHash;
@@ -121,24 +122,32 @@ public abstract class DeterministicCoreApiTestBase {
 
   protected DeterministicTest buildRunningServerTest() {
     return buildRunningServerTest(
-        1000000, new DatabaseFlags(true, false), GenesisData.NO_SCENARIOS);
+        1000000, new DatabaseFlags(true, false), GenesisData.NO_SCENARIOS, ProtocolConfig.testingDefault());
+  }
+
+  protected DeterministicTest buildRunningServerTestWithProtocolConfig(
+          int roundsPerEpoch,
+          ProtocolConfig protocolConfig) {
+    return buildRunningServerTest(
+        roundsPerEpoch, new DatabaseFlags(true, false), GenesisData.NO_SCENARIOS, protocolConfig);
   }
 
   protected DeterministicTest buildRunningServerTestWithScenarios(ImmutableList<String> scenarios) {
-    return buildRunningServerTest(1000000, new DatabaseFlags(true, false), scenarios);
+    return buildRunningServerTest(1000000, new DatabaseFlags(true, false), scenarios, ProtocolConfig.testingDefault());
   }
 
   protected DeterministicTest buildRunningServerTest(DatabaseFlags databaseFlags) {
-    return buildRunningServerTest(1000000, databaseFlags, GenesisData.NO_SCENARIOS);
+    return buildRunningServerTest(1000000, databaseFlags, GenesisData.NO_SCENARIOS, ProtocolConfig.testingDefault());
   }
 
   protected DeterministicTest buildRunningServerTest(int roundsPerEpoch) {
     return buildRunningServerTest(
-        roundsPerEpoch, new DatabaseFlags(true, false), GenesisData.NO_SCENARIOS);
+        roundsPerEpoch, new DatabaseFlags(true, false), GenesisData.NO_SCENARIOS, ProtocolConfig.testingDefault());
   }
 
   protected DeterministicTest buildRunningServerTest(
-      int roundsPerEpoch, DatabaseFlags databaseConfig, ImmutableList<String> scenariosToRun) {
+          int roundsPerEpoch, DatabaseFlags databaseConfig, ImmutableList<String> scenariosToRun,
+          ProtocolConfig protocolConfig) {
     var test =
         DeterministicTest.builder()
             .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
@@ -172,7 +181,10 @@ public abstract class DeterministicCoreApiTestBase {
                                     .epochExactRoundCount(roundsPerEpoch),
                                 scenariosToRun),
                             databaseConfig,
-                            StateComputerConfig.REV2ProposerConfig.Mempool.defaults()),
+                            StateComputerConfig.REV2ProposerConfig.Mempool.defaults(),
+                            false,
+                            false,
+                            protocolConfig),
                         SyncRelayConfig.of(200, 10, 2000))));
     try {
       test.startAllNodes();

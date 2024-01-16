@@ -64,9 +64,11 @@
 
 package com.radixdlt.api.core;
 
+import static com.radixdlt.harness.predicates.NodesPredicate.allAtOrOverEpoch;
 import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransactionSuccess;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.*;
@@ -78,6 +80,10 @@ import com.radixdlt.message.CurveDecryptorSet;
 import com.radixdlt.message.Decryptor;
 import com.radixdlt.message.MessageContent;
 import com.radixdlt.message.TransactionMessage;
+import com.radixdlt.protocol.ProtocolConfig;
+import com.radixdlt.protocol.ProtocolUpdate;
+import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition;
+import com.radixdlt.rev2.REv2TransactionsAndProofReader;
 import com.radixdlt.rev2.TransactionBuilder;
 import com.radixdlt.utils.Bytes;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -393,6 +399,37 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
 
       assertThat(secondPartCommittedTransactions.getPreviousStateIdentifiers())
           .isEqualTo(lastCommittedTransactionIdentifiers);
+    }
+  }
+
+  @Test
+  public void test_core_api_can_return_vm_boot_substate_in_protocol_update_receipt()
+      throws Exception {
+    final var protocolConfig = new ProtocolConfig(
+      "testing-genesis",
+      ImmutableList.of(
+        new ProtocolUpdate(
+          ProtocolUpdate.ANEMONE,
+          ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(4L))));
+    try (var test = buildRunningServerTestWithProtocolConfig(30, protocolConfig)) {
+      test.runUntilState(allAtOrOverEpoch(4L));
+
+      final var protocolUpdateStateVersion =
+          test.getInstance(0, REv2TransactionsAndProofReader.class)
+              .getLatestProofBundle()
+              .orElseThrow()
+              .closestProtocolUpdateInitProofOnOrBefore()
+              .unwrap()
+              .stateVersion();
+
+      final var protocolUpdateTxns = getStreamApi()
+        .streamTransactionsPost(
+            new StreamTransactionsRequest()
+                .network(networkLogicalName)
+                .limit(10)
+                .fromStateVersion(protocolUpdateStateVersion + 1));
+
+      System.out.println(protocolUpdateTxns);
     }
   }
 

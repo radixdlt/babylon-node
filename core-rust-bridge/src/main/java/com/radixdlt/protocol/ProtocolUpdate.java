@@ -69,6 +69,9 @@ import com.radixdlt.sbor.codec.StructCodec;
 
 public record ProtocolUpdate(
     String nextProtocolVersion, ProtocolUpdateEnactmentCondition enactmentCondition) {
+
+  public static final String ANEMONE = "anemone";
+
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         ProtocolUpdate.class,

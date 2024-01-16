@@ -44,6 +44,8 @@ pub struct UnenactedProtocolUpdate {
 pub enum UnenactedProtocolUpdateState {
     ForSignalledReadinessSupportCondition {
         thresholds_state: Vec<(
+            // Thresholds here are kept just for convenience,
+            // they duplicate the ones in `protocol_update.enactment_condition`.
             SignalledReadinessThreshold,
             SignalledReadinessThresholdState,
         )>,

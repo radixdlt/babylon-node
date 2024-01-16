@@ -74,7 +74,7 @@ pub(crate) async fn handle_status_network_status(
                 )?))
             })
             .transpose()?,
-        current_protocol_version: "babylon".to_string(),
+        current_protocol_version: "babylon".to_string(), // TODO(protocol-update): fixme
     })
     .map(Json)
 }

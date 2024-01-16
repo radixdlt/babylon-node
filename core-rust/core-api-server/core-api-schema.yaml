@@ -3146,6 +3146,7 @@ components:
       type: string
       enum:
         - TypeInfo
+        - BootLoader
     ObjectSubstateTypeReferenceType:
       type: string
       enum:

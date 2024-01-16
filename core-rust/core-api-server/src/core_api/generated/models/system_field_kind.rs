@@ -14,6 +14,8 @@
 pub enum SystemFieldKind {
     #[serde(rename = "TypeInfo")]
     TypeInfo,
+    #[serde(rename = "BootLoader")]
+    BootLoader,
 
 }
 
@@ -21,6 +23,7 @@ impl ToString for SystemFieldKind {
     fn to_string(&self) -> String {
         match self {
             Self::TypeInfo => String::from("TypeInfo"),
+            Self::BootLoader => String::from("BootLoader"),
         }
     }
 }
