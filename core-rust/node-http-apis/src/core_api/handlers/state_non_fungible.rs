@@ -63,7 +63,7 @@ pub(crate) async fn handle_state_non_fungible(
 
     let header = read_current_ledger_header(database.deref());
 
-    Ok(StateNonFungibleResponse {
+    Ok(Json(StateNonFungibleResponse {
         at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
         non_fungible: Some(to_api_non_fungible_resource_manager_data_substate(
             &mapping_context,
@@ -74,6 +74,5 @@ pub(crate) async fn handle_state_non_fungible(
             )),
             &substate,
         )?),
-    })
-    .map(Json)
+    }))
 }

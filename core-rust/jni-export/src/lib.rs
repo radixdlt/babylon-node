@@ -86,5 +86,5 @@ fn export_extern_functions() {
 
     // node-http-apis
     node_http_apis::jni::core_api::export_extern_functions();
-    node_http_apis::jni::browse_api::export_extern_functions();
+    node_http_apis::jni::engine_state_api::export_extern_functions();
 }
