@@ -56,7 +56,7 @@ pub(crate) async fn handle_state_account(
 
     let header = read_current_ledger_header(database.deref());
 
-    Ok(models::StateAccountResponse {
+    Ok(Json(models::StateAccountResponse {
         at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
         info: Some(to_api_type_info_substate(
             &mapping_context,
@@ -72,8 +72,7 @@ pub(crate) async fn handle_state_account(
             &state_substate,
         )?),
         vaults,
-    })
-    .map(Json)
+    }))
 }
 
 pub(crate) fn map_to_vault_balance(

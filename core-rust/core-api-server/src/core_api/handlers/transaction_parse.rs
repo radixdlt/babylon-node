@@ -72,10 +72,9 @@ pub(crate) async fn handle_transaction_parse(
         }
     };
 
-    Ok(TransactionParseResponse {
+    Ok(Json(TransactionParseResponse {
         parsed: Some(parsed),
-    })
-    .map(Json)
+    }))
 }
 
 fn attempt_parsing_as_any_payload_type_and_map_for_api(

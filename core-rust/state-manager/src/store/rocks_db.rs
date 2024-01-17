@@ -1469,7 +1469,9 @@ impl RestoreDecember2023LostSubstates for RocksDBStore {
             })
         } else {
             // For other networks, we can calculate the "problem" epoch from theoretical principles:
-            let (Some(first_proof), Some(last_epoch_proof)) = (self.get_first_proof(), self.get_last_epoch_proof()) else {
+            let (Some(first_proof), Some(last_epoch_proof)) =
+                (self.get_first_proof(), self.get_last_epoch_proof())
+            else {
                 return; // empty ledger; no fix needed
             };
             let first_epoch = first_proof.ledger_header.epoch.number();
