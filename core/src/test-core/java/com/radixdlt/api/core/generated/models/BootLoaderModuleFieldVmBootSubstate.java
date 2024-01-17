@@ -31,6 +31,7 @@ import com.radixdlt.api.core.generated.models.AccountFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.AccountResourcePreferenceEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccountVaultEntrySubstate;
 import com.radixdlt.api.core.generated.models.BootLoaderModuleFieldVmBootSubstate;
+import com.radixdlt.api.core.generated.models.BootLoaderModuleFieldVmBootSubstateAllOf;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldConfigSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentProposalStatisticSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstate;
@@ -45,10 +46,7 @@ import com.radixdlt.api.core.generated.models.FungibleVaultFieldBalanceSubstate;
 import com.radixdlt.api.core.generated.models.FungibleVaultFieldFrozenStatusSubstate;
 import com.radixdlt.api.core.generated.models.GenericKeyValueStoreEntrySubstate;
 import com.radixdlt.api.core.generated.models.GenericScryptoComponentFieldStateSubstate;
-import com.radixdlt.api.core.generated.models.MetadataKey;
 import com.radixdlt.api.core.generated.models.MetadataModuleEntrySubstate;
-import com.radixdlt.api.core.generated.models.MetadataModuleEntrySubstateAllOf;
-import com.radixdlt.api.core.generated.models.MetadataModuleEntryValue;
 import com.radixdlt.api.core.generated.models.MultiResourcePoolFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerDataEntrySubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldIdTypeSubstate;
@@ -79,6 +77,7 @@ import com.radixdlt.api.core.generated.models.TwoResourcePoolFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.TypeInfoModuleFieldTypeInfoSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorFieldProtocolUpdateReadinessSignalSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorFieldStateSubstate;
+import com.radixdlt.api.core.generated.models.VmBootSubstate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -86,11 +85,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * MetadataModuleEntrySubstate
+ * BootLoaderModuleFieldVmBootSubstate
  */
 @JsonPropertyOrder({
-  MetadataModuleEntrySubstate.JSON_PROPERTY_KEY,
-  MetadataModuleEntrySubstate.JSON_PROPERTY_VALUE
+  BootLoaderModuleFieldVmBootSubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -150,43 +148,14 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = ValidatorFieldStateSubstate.class, name = "ValidatorFieldState"),
 })
 
-public class MetadataModuleEntrySubstate extends Substate {
-  public static final String JSON_PROPERTY_KEY = "key";
-  private MetadataKey key;
-
+public class BootLoaderModuleFieldVmBootSubstate extends Substate {
   public static final String JSON_PROPERTY_VALUE = "value";
-  private MetadataModuleEntryValue value;
+  private VmBootSubstate value;
 
-  public MetadataModuleEntrySubstate() { 
+  public BootLoaderModuleFieldVmBootSubstate() { 
   }
 
-  public MetadataModuleEntrySubstate key(MetadataKey key) {
-    this.key = key;
-    return this;
-  }
-
-   /**
-   * Get key
-   * @return key
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_KEY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public MetadataKey getKey() {
-    return key;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_KEY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setKey(MetadataKey key) {
-    this.key = key;
-  }
-
-
-  public MetadataModuleEntrySubstate value(MetadataModuleEntryValue value) {
+  public BootLoaderModuleFieldVmBootSubstate value(VmBootSubstate value) {
     this.value = value;
     return this;
   }
@@ -195,25 +164,25 @@ public class MetadataModuleEntrySubstate extends Substate {
    * Get value
    * @return value
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
   @JsonProperty(JSON_PROPERTY_VALUE)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public MetadataModuleEntryValue getValue() {
+  public VmBootSubstate getValue() {
     return value;
   }
 
 
   @JsonProperty(JSON_PROPERTY_VALUE)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setValue(MetadataModuleEntryValue value) {
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setValue(VmBootSubstate value) {
     this.value = value;
   }
 
 
   /**
-   * Return true if this MetadataModuleEntrySubstate object is equal to o.
+   * Return true if this BootLoaderModuleFieldVmBootSubstate object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -223,23 +192,21 @@ public class MetadataModuleEntrySubstate extends Substate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    MetadataModuleEntrySubstate metadataModuleEntrySubstate = (MetadataModuleEntrySubstate) o;
-    return Objects.equals(this.key, metadataModuleEntrySubstate.key) &&
-        Objects.equals(this.value, metadataModuleEntrySubstate.value) &&
+    BootLoaderModuleFieldVmBootSubstate bootLoaderModuleFieldVmBootSubstate = (BootLoaderModuleFieldVmBootSubstate) o;
+    return Objects.equals(this.value, bootLoaderModuleFieldVmBootSubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, value, super.hashCode());
+    return Objects.hash(value, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class MetadataModuleEntrySubstate {\n");
+    sb.append("class BootLoaderModuleFieldVmBootSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    key: ").append(toIndentedString(key)).append("\n");
     sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -308,8 +275,8 @@ static {
   mappings.put("TypeInfoModuleFieldTypeInfo", TypeInfoModuleFieldTypeInfoSubstate.class);
   mappings.put("ValidatorFieldProtocolUpdateReadinessSignal", ValidatorFieldProtocolUpdateReadinessSignalSubstate.class);
   mappings.put("ValidatorFieldState", ValidatorFieldStateSubstate.class);
-  mappings.put("MetadataModuleEntrySubstate", MetadataModuleEntrySubstate.class);
-  JSON.registerDiscriminator(MetadataModuleEntrySubstate.class, "substate_type", mappings);
+  mappings.put("BootLoaderModuleFieldVmBootSubstate", BootLoaderModuleFieldVmBootSubstate.class);
+  JSON.registerDiscriminator(BootLoaderModuleFieldVmBootSubstate.class, "substate_type", mappings);
 }
 }
 

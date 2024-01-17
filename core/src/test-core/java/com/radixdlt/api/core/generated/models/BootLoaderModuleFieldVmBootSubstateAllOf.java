@@ -17,45 +17,96 @@ import java.util.Objects;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.HashMap;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.VmBootSubstate;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
-
 /**
- * Gets or Sets SystemFieldKind
+ * BootLoaderModuleFieldVmBootSubstateAllOf
  */
-public enum SystemFieldKind {
-  
-  BOOTLOADER("BootLoader"),
-  
-  TYPEINFO("TypeInfo");
+@JsonPropertyOrder({
+  BootLoaderModuleFieldVmBootSubstateAllOf.JSON_PROPERTY_VALUE
+})
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+public class BootLoaderModuleFieldVmBootSubstateAllOf {
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private VmBootSubstate value;
 
-  private String value;
+  public BootLoaderModuleFieldVmBootSubstateAllOf() { 
+  }
 
-  SystemFieldKind(String value) {
+  public BootLoaderModuleFieldVmBootSubstateAllOf value(VmBootSubstate value) {
+    this.value = value;
+    return this;
+  }
+
+   /**
+   * Get value
+   * @return value
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VALUE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public VmBootSubstate getValue() {
+    return value;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_VALUE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setValue(VmBootSubstate value) {
     this.value = value;
   }
 
-  @JsonValue
-  public String getValue() {
-    return value;
+
+  /**
+   * Return true if this BootLoaderModuleFieldVmBootSubstate_allOf object is equal to o.
+   */
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    BootLoaderModuleFieldVmBootSubstateAllOf bootLoaderModuleFieldVmBootSubstateAllOf = (BootLoaderModuleFieldVmBootSubstateAllOf) o;
+    return Objects.equals(this.value, bootLoaderModuleFieldVmBootSubstateAllOf.value);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(value);
   }
 
   @Override
   public String toString() {
-    return String.valueOf(value);
+    StringBuilder sb = new StringBuilder();
+    sb.append("class BootLoaderModuleFieldVmBootSubstateAllOf {\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
+    sb.append("}");
+    return sb.toString();
   }
 
-  @JsonCreator
-  public static SystemFieldKind fromValue(String value) {
-    for (SystemFieldKind b : SystemFieldKind.values()) {
-      if (b.value.equals(value)) {
-        return b;
-      }
+  /**
+   * Convert the given object to string with each line indented by 4 spaces
+   * (except the first line).
+   */
+  private String toIndentedString(Object o) {
+    if (o == null) {
+      return "null";
     }
-    throw new IllegalArgumentException("Unexpected value '" + value + "'");
+    return o.toString().replace("\n", "\n    ");
   }
+
 }
 

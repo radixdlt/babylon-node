@@ -12,6 +12,8 @@
 /// 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
 pub enum SubstateType {
+    #[serde(rename = "BootLoaderModuleFieldVmBoot")]
+    BootLoaderModuleFieldVmBoot,
     #[serde(rename = "TypeInfoModuleFieldTypeInfo")]
     TypeInfoModuleFieldTypeInfo,
     #[serde(rename = "RoleAssignmentModuleFieldOwnerRole")]
@@ -118,6 +120,7 @@ pub enum SubstateType {
 impl ToString for SubstateType {
     fn to_string(&self) -> String {
         match self {
+            Self::BootLoaderModuleFieldVmBoot => String::from("BootLoaderModuleFieldVmBoot"),
             Self::TypeInfoModuleFieldTypeInfo => String::from("TypeInfoModuleFieldTypeInfo"),
             Self::RoleAssignmentModuleFieldOwnerRole => String::from("RoleAssignmentModuleFieldOwnerRole"),
             Self::RoleAssignmentModuleRuleEntry => String::from("RoleAssignmentModuleRuleEntry"),
@@ -174,7 +177,7 @@ impl ToString for SubstateType {
 
 impl Default for SubstateType {
     fn default() -> SubstateType {
-        Self::TypeInfoModuleFieldTypeInfo
+        Self::BootLoaderModuleFieldVmBoot
     }
 }
 

@@ -134,6 +134,12 @@ pub fn to_api_substate_id(
     let api_substate_key = to_api_substate_key(substate_key);
 
     let (substate_type, partition_kind) = match typed_substate_key {
+        TypedSubstateKey::BootLoader(TypedBootLoaderSubstateKey::BootLoaderField(
+            BootLoaderField::Vm,
+        )) => (
+            SubstateType::BootLoaderModuleFieldVmBoot,
+            models::PartitionKind::Field,
+        ),
         TypedSubstateKey::TypeInfo(TypedTypeInfoSubstateKey::TypeInfoField(
             TypeInfoField::TypeInfo,
         )) => (
@@ -446,6 +452,7 @@ pub fn to_api_substate_id(
     };
 
     let entity_module = match typed_substate_key {
+        TypedSubstateKey::BootLoader(_) => models::EntityModule::BootLoader,
         TypedSubstateKey::TypeInfo(_) => models::EntityModule::TypeInfo,
         TypedSubstateKey::RoleAssignmentModule(_) => models::EntityModule::RoleAssignment,
         TypedSubstateKey::RoyaltyModule(_) => models::EntityModule::Royalty,
