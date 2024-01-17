@@ -11,15 +11,15 @@ pub fn to_api_vm_boot_substate(
     _state_mapping_lookups: &StateMappingLookups,
     substate: &VmBoot,
 ) -> Result<models::Substate, MappingError> {
-    let substate = match substate {
+    let value = match substate {
         VmBoot::V1 {
             scrypto_v1_minor_version,
-        } => models::VmBootSubstate::new(*scrypto_v1_minor_version as i64),
+        } => models::BootLoaderModuleFieldVmBootValue::new(*scrypto_v1_minor_version as i64),
     };
 
     Ok(models::Substate::BootLoaderModuleFieldVmBootSubstate {
         is_locked: true,
-        value: Box::new(substate),
+        value: Box::new(value),
     })
 }
 

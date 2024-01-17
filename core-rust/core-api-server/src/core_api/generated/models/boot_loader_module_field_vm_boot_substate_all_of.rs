@@ -14,11 +14,11 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct BootLoaderModuleFieldVmBootSubstateAllOf {
     #[serde(rename = "value")]
-    pub value: Box<crate::core_api::generated::models::VmBootSubstate>,
+    pub value: Box<crate::core_api::generated::models::BootLoaderModuleFieldVmBootValue>,
 }
 
 impl BootLoaderModuleFieldVmBootSubstateAllOf {
-    pub fn new(value: crate::core_api::generated::models::VmBootSubstate) -> BootLoaderModuleFieldVmBootSubstateAllOf {
+    pub fn new(value: crate::core_api::generated::models::BootLoaderModuleFieldVmBootValue) -> BootLoaderModuleFieldVmBootSubstateAllOf {
         BootLoaderModuleFieldVmBootSubstateAllOf {
             value: Box::new(value),
         }

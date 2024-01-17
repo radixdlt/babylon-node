@@ -28,49 +28,49 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * VmBootSubstate
+ * BootLoaderModuleFieldVmBootValue
  */
 @JsonPropertyOrder({
-  VmBootSubstate.JSON_PROPERTY_SCRYPTO_MINOR_VERSION
+  BootLoaderModuleFieldVmBootValue.JSON_PROPERTY_SCRYPTO_V1_MINOR_VERSION
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class VmBootSubstate {
-  public static final String JSON_PROPERTY_SCRYPTO_MINOR_VERSION = "scrypto_minor_version";
-  private Long scryptoMinorVersion;
+public class BootLoaderModuleFieldVmBootValue {
+  public static final String JSON_PROPERTY_SCRYPTO_V1_MINOR_VERSION = "scrypto_v1_minor_version";
+  private Long scryptoV1MinorVersion;
 
-  public VmBootSubstate() { 
+  public BootLoaderModuleFieldVmBootValue() { 
   }
 
-  public VmBootSubstate scryptoMinorVersion(Long scryptoMinorVersion) {
-    this.scryptoMinorVersion = scryptoMinorVersion;
+  public BootLoaderModuleFieldVmBootValue scryptoV1MinorVersion(Long scryptoV1MinorVersion) {
+    this.scryptoV1MinorVersion = scryptoV1MinorVersion;
     return this;
   }
 
    /**
-   * Get scryptoMinorVersion
+   * Get scryptoV1MinorVersion
    * minimum: 0
    * maximum: 10000000000
-   * @return scryptoMinorVersion
+   * @return scryptoV1MinorVersion
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_SCRYPTO_MINOR_VERSION)
+  @JsonProperty(JSON_PROPERTY_SCRYPTO_V1_MINOR_VERSION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Long getScryptoMinorVersion() {
-    return scryptoMinorVersion;
+  public Long getScryptoV1MinorVersion() {
+    return scryptoV1MinorVersion;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_SCRYPTO_MINOR_VERSION)
+  @JsonProperty(JSON_PROPERTY_SCRYPTO_V1_MINOR_VERSION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setScryptoMinorVersion(Long scryptoMinorVersion) {
-    this.scryptoMinorVersion = scryptoMinorVersion;
+  public void setScryptoV1MinorVersion(Long scryptoV1MinorVersion) {
+    this.scryptoV1MinorVersion = scryptoV1MinorVersion;
   }
 
 
   /**
-   * Return true if this VmBootSubstate object is equal to o.
+   * Return true if this BootLoaderModuleFieldVmBootValue object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -80,20 +80,20 @@ public class VmBootSubstate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    VmBootSubstate vmBootSubstate = (VmBootSubstate) o;
-    return Objects.equals(this.scryptoMinorVersion, vmBootSubstate.scryptoMinorVersion);
+    BootLoaderModuleFieldVmBootValue bootLoaderModuleFieldVmBootValue = (BootLoaderModuleFieldVmBootValue) o;
+    return Objects.equals(this.scryptoV1MinorVersion, bootLoaderModuleFieldVmBootValue.scryptoV1MinorVersion);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(scryptoMinorVersion);
+    return Objects.hash(scryptoV1MinorVersion);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class VmBootSubstate {\n");
-    sb.append("    scryptoMinorVersion: ").append(toIndentedString(scryptoMinorVersion)).append("\n");
+    sb.append("class BootLoaderModuleFieldVmBootValue {\n");
+    sb.append("    scryptoV1MinorVersion: ").append(toIndentedString(scryptoV1MinorVersion)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -12,15 +12,15 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct VmBootSubstate {
-    #[serde(rename = "scrypto_minor_version")]
-    pub scrypto_minor_version: i64,
+pub struct BootLoaderModuleFieldVmBootValue {
+    #[serde(rename = "scrypto_v1_minor_version")]
+    pub scrypto_v1_minor_version: i64,
 }
 
-impl VmBootSubstate {
-    pub fn new(scrypto_minor_version: i64) -> VmBootSubstate {
-        VmBootSubstate {
-            scrypto_minor_version,
+impl BootLoaderModuleFieldVmBootValue {
+    pub fn new(scrypto_v1_minor_version: i64) -> BootLoaderModuleFieldVmBootValue {
+        BootLoaderModuleFieldVmBootValue {
+            scrypto_v1_minor_version,
         }
     }
 }

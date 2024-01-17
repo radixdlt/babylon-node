@@ -28,8 +28,6 @@ import com.fasterxml.jackson.annotation.JsonValue;
  */
 public enum EntityModule {
   
-  BOOTLOADER("BootLoader"),
-  
   TYPEINFO("TypeInfo"),
   
   METADATA("Metadata"),
@@ -40,7 +38,9 @@ public enum EntityModule {
   
   MAIN("Main"),
   
-  SCHEMA("Schema");
+  SCHEMA("Schema"),
+  
+  BOOTLOADER("BootLoader");
 
   private String value;
 
