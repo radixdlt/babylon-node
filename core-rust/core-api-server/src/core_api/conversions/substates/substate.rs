@@ -27,6 +27,9 @@ pub fn to_api_substate(
     typed_substate_value: &TypedSubstateValue,
 ) -> Result<models::Substate, MappingError> {
     Ok(match typed_substate_value {
+        TypedSubstateValue::BootLoader(BootLoaderSubstateValue::Vm(vm_boot_substate)) => {
+            to_api_vm_boot_substate(context, state_mapping_lookups, vm_boot_substate)?
+        }
         TypedSubstateValue::TypeInfoModule(TypedTypeInfoModuleSubstateValue::TypeInfo(
             type_info_substate,
         )) => to_api_type_info_substate(context, state_mapping_lookups, type_info_substate)?,

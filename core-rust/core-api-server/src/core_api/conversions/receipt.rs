@@ -166,6 +166,7 @@ pub fn to_api_substate_system_structure(
         SubstateSystemStructure::SystemField(SystemFieldStructure { field_kind }) => {
             models::SubstateSystemStructure::SystemFieldStructure {
                 field_kind: match field_kind {
+                    SystemFieldKind::BootLoader => models::SystemFieldKind::BootLoader,
                     SystemFieldKind::TypeInfo => models::SystemFieldKind::TypeInfo,
                 },
             }
