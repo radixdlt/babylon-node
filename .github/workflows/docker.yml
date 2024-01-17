@@ -13,7 +13,7 @@ on:
 jobs:
   cancel_running_workflows:
     name: Cancel running workflows
-    runs-on: ubuntu-22.04
+    runs-on: selfhosted-ubuntu-22.04
     steps:
       - name: cancel running workflows
         uses: RDXWorks-actions/cancel-workflow-action@main
@@ -26,7 +26,7 @@ jobs:
       contents: read
       pull-requests: read
     name: Join Multiarch Image Dockerhub
-    runs-on: ubuntu-latest
+    runs-on: selfhosted-ubuntu-22.04
     needs:
       - build_push_container_dockerhub
       - build_push_container_dockerhub_arm
@@ -157,7 +157,7 @@ jobs:
 
   setup_tags:
     name: Setup Docker tags
-    runs-on: ubuntu-latest
+    runs-on: selfhosted-ubuntu-22.04
     outputs:
       tag: ${{ steps.setup_tags.outputs.tag }}
     steps:
@@ -233,7 +233,7 @@ jobs:
   tag_suffix_remover:
     if: contains( github.event.pull_request.labels.*.name, 'ARM-TEST')
     name: Calculate base tag
-    runs-on: ubuntu-latest
+    runs-on: selfhosted-ubuntu-22.04
     outputs:
       BASE_TAG: ${{ steps.tag_suffix_remover.outputs.BASE_TAG }}
     needs:
@@ -315,7 +315,7 @@ jobs:
 
   snyk_container_monitor:
     name: Snyk monitor container
-    runs-on: ubuntu-latest
+    runs-on: selfhosted-ubuntu-22.04
     needs:
       - build_push_container_dockerhub
       - build_push_container_dockerhub_arm
@@ -339,7 +339,7 @@ jobs:
 
   snyk_monitor:
     name: Snyk monitor
-    runs-on: ubuntu-latest
+    runs-on: selfhosted-ubuntu-22.04
     needs:
       - build_push_container_dockerhub
     permissions:
@@ -370,7 +370,7 @@ jobs:
 #   needs:
 #     - build_deb
 #     - build_push_container
-#   runs-on: ubuntu-22.04
+#   runs-on: selfhosted-ubuntu-22.04
 #   steps:
 #     - name: Get docker image tag
 #       run: |
