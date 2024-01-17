@@ -173,7 +173,7 @@ jobs:
       - setup_tags
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
-      runs_on: ubuntu-latest
+      runs_on: selfhosted-ubuntu-22.04
       image_registry: "docker.io"
       image_organization: "radixdlt"
       image_name: "private-babylon-node"
@@ -268,7 +268,7 @@ jobs:
     name: (DockerHub) Docker AMD
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
-      runs_on: ubuntu-latest
+      runs_on: selfhosted-ubuntu-22.04
       image_registry: "docker.io"
       image_organization: "radixdlt"
       image_name: "babylon-node"
