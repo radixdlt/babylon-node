@@ -115,6 +115,12 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
       - name: Unit tests
+        # Theoretically, the lack of `--info` in the Gradle command below should completely suppress
+        # any (application's) output from the tests. However, our current Rust logging infra writes
+        # to STDOUT directly (i.e. bypasses the Gradle's hijacked output) and spams the unit test
+        # results - luckily, it respects the ENV var, and we can set it high enough.
+        env:
+          RADIXDLT_LOG_LEVEL: error
         run: ./gradlew clean check jacocoTestReport --stacktrace --refresh-dependencies
       - name: DistZip
         run: ./gradlew distZip
@@ -187,8 +193,9 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
       - name: Run steady-state integration tests
-        # If you need better logging, you should add --info to the below command to output application logs.
-        run: ./gradlew clean runSteadyStateIntegrationTests --refresh-dependencies
+        env:
+          RADIXDLT_LOG_LEVEL: warn
+        run: ./gradlew clean runSteadyStateIntegrationTests --info --refresh-dependencies
   targeted-integration:
     name: Targeted integration tests
     runs-on: babylon-runner
@@ -214,8 +221,9 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
       - name: Run targeted integration tests
-        # If you need better logging, you should add --info to the below command to output application logs.
-        run: ./gradlew clean runTargetedIntegrationTests --refresh-dependencies --parallel
+        env:
+          RADIXDLT_LOG_LEVEL: warn
+        run: ./gradlew clean runTargetedIntegrationTests --info --refresh-dependencies --parallel
   cross-xwin:
     name: Cross compile to Windows
     runs-on: ubuntu-latest
