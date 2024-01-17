@@ -89,7 +89,6 @@ import com.radixdlt.rev2.TransactionBuilder;
 import com.radixdlt.utils.Bytes;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import java.util.List;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class TransactionStreamTest extends DeterministicCoreApiTestBase {
@@ -426,47 +425,48 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
               .stateVersion();
 
       final var protocolUpdateTxns =
-        getStreamApi()
-          .streamTransactionsPost(
-              new StreamTransactionsRequest()
-                .network(networkLogicalName)
-                .limit(3) // We're inspecting the 3 Anemone txns
-                .fromStateVersion(protocolUpdateStateVersion + 1));
+          getStreamApi()
+              .streamTransactionsPost(
+                  new StreamTransactionsRequest()
+                      .network(networkLogicalName)
+                      .limit(3) // We're inspecting the 3 Anemone txns
+                      .fromStateVersion(protocolUpdateStateVersion + 1));
 
-      // Just a quick sanity check that the expected number of created/updates substates was returned
+      // Just a quick sanity check that the expected number of created/updates substates was
+      // returned
 
       // Consensus manager config update (1 updated)
       assertEquals(
           1,
           protocolUpdateTxns
-            .getTransactions()
-            .get(0)
-            .getReceipt()
-            .getStateUpdates()
-            .getUpdatedSubstates()
-            .size());
+              .getTransactions()
+              .get(0)
+              .getReceipt()
+              .getStateUpdates()
+              .getUpdatedSubstates()
+              .size());
 
       // Seconds precision (1 updated)
       assertEquals(
           1,
           protocolUpdateTxns
-            .getTransactions()
-            .get(1)
-            .getReceipt()
-            .getStateUpdates()
-            .getUpdatedSubstates()
-            .size());
+              .getTransactions()
+              .get(1)
+              .getReceipt()
+              .getStateUpdates()
+              .getUpdatedSubstates()
+              .size());
 
       // VM Boot (1 created)
       assertEquals(
           1,
           protocolUpdateTxns
-            .getTransactions()
-            .get(2)
-            .getReceipt()
-            .getStateUpdates()
-            .getCreatedSubstates()
-            .size());
+              .getTransactions()
+              .get(2)
+              .getReceipt()
+              .getStateUpdates()
+              .getCreatedSubstates()
+              .size());
     }
   }
 
