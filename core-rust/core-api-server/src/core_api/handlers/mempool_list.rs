@@ -10,7 +10,7 @@ pub(crate) async fn handle_mempool_list(
     let mapping_context = MappingContext::new(&state.network);
 
     let mempool = state.state_manager.mempool.read();
-    Ok(models::MempoolListResponse {
+    Ok(Json(models::MempoolListResponse {
         contents: mempool
             .all_hashes_iter()
             .map(|(intent_hash, payload_hash)| {
@@ -22,6 +22,5 @@ pub(crate) async fn handle_mempool_list(
                 })
             })
             .collect::<Result<Vec<_>, MappingError>>()?,
-    })
-    .map(Json)
+    }))
 }

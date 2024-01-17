@@ -31,11 +31,10 @@ pub(crate) async fn handle_lts_transaction_construction(
         .into_payload()
         .into_latest();
 
-    Ok(models::LtsTransactionConstructionResponse {
+    Ok(Json(models::LtsTransactionConstructionResponse {
         current_epoch: to_api_epoch(&mapping_context, consensus_manager_substate.epoch)?,
         ledger_clock: Box::new(to_api_instant_from_safe_timestamp(
             timestamp_substate.epoch_milli,
         )?),
-    })
-    .map(Json)
+    }))
 }

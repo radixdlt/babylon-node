@@ -159,7 +159,7 @@ pub(crate) async fn handle_stream_transactions(
 
     response.count = count;
 
-    Ok(response).map(Json)
+    Ok(Json(response))
 }
 
 pub fn to_api_ledger_proof(
