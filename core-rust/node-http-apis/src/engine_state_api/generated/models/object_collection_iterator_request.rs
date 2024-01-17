@@ -16,9 +16,9 @@ pub struct ObjectCollectionIteratorRequest {
     /// A Bech32m-encoded, human readable rendering of an arbitrary Entity's address.
     #[serde(rename = "entity_address")]
     pub entity_address: String,
-    #[serde(rename = "module_id", skip_serializing_if = "Option::is_none")]
-    pub module_id: Option<crate::engine_state_api::generated::models::ModuleId>,
-    /// Name of the collection to read. Either this or `collection_index` is required.
+    #[serde(rename = "attached_module_id", skip_serializing_if = "Option::is_none")]
+    pub attached_module_id: Option<crate::engine_state_api::generated::models::AttachedModuleId>,
+    /// Name of the collection to read. Either this or `collection_index` is required. Note: getting a collection by name is only a convenience feature, meant for manual, ad-hoc requests (i.e. allowing a human to use the human-readable `DerivedName` when available). In general, a collection's primary identifier is its index, and any production-grade integration should use it. 
     #[serde(rename = "collection_name", skip_serializing_if = "Option::is_none")]
     pub collection_name: Option<String>,
     /// Index of the collection to read. Either this or `collection_name` is required.
@@ -36,7 +36,7 @@ impl ObjectCollectionIteratorRequest {
     pub fn new(entity_address: String) -> ObjectCollectionIteratorRequest {
         ObjectCollectionIteratorRequest {
             entity_address,
-            module_id: None,
+            attached_module_id: None,
             collection_name: None,
             collection_index: None,
             max_page_size: None,

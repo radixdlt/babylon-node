@@ -63,7 +63,7 @@ fn to_api_entity_info(
                 .iter()
                 .map(|(module_id, module_state)| {
                     Ok(models::ObjectEntityInfoAllOfAttachedModules {
-                        module_id: to_api_attached_module_id(module_id),
+                        attached_module_id: to_api_attached_module_id(module_id),
                         state: Box::new(to_api_object_module_state_info(context, module_state)?),
                     })
                 })

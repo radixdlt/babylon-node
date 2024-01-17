@@ -13,16 +13,16 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct ObjectEntityInfoAllOfAttachedModules {
-    #[serde(rename = "module_id")]
-    pub module_id: crate::engine_state_api::generated::models::AttachedModuleId,
+    #[serde(rename = "attached_module_id")]
+    pub attached_module_id: crate::engine_state_api::generated::models::AttachedModuleId,
     #[serde(rename = "state")]
     pub state: Box<crate::engine_state_api::generated::models::ObjectModuleStateInfo>,
 }
 
 impl ObjectEntityInfoAllOfAttachedModules {
-    pub fn new(module_id: crate::engine_state_api::generated::models::AttachedModuleId, state: crate::engine_state_api::generated::models::ObjectModuleStateInfo) -> ObjectEntityInfoAllOfAttachedModules {
+    pub fn new(attached_module_id: crate::engine_state_api::generated::models::AttachedModuleId, state: crate::engine_state_api::generated::models::ObjectModuleStateInfo) -> ObjectEntityInfoAllOfAttachedModules {
         ObjectEntityInfoAllOfAttachedModules {
-            module_id,
+            attached_module_id,
             state: Box::new(state),
         }
     }

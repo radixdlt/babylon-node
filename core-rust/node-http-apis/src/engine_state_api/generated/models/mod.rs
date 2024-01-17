@@ -178,8 +178,6 @@ pub mod method_receiver_reference_type;
 pub use self::method_receiver_reference_type::MethodReceiverReferenceType;
 pub mod method_receiver_type;
 pub use self::method_receiver_type::MethodReceiverType;
-pub mod module_id;
-pub use self::module_id::ModuleId;
 pub mod non_fungible_global_id;
 pub use self::non_fungible_global_id::NonFungibleGlobalId;
 pub mod non_fungible_requirement;

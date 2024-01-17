@@ -84,12 +84,11 @@ pub fn to_api_attached_module_id(module_id: &AttachedModuleId) -> models::Attach
     }
 }
 
-pub fn extract_api_module_id(module_id: &models::ModuleId) -> ModuleId {
+pub fn extract_api_attached_module_id(module_id: &models::AttachedModuleId) -> AttachedModuleId {
     match module_id {
-        models::ModuleId::Main => ModuleId::Main,
-        models::ModuleId::Metadata => ModuleId::Metadata,
-        models::ModuleId::Royalty => ModuleId::Royalty,
-        models::ModuleId::RoleAssignment => ModuleId::RoleAssignment,
+        models::AttachedModuleId::Metadata => AttachedModuleId::Metadata,
+        models::AttachedModuleId::Royalty => AttachedModuleId::Royalty,
+        models::AttachedModuleId::RoleAssignment => AttachedModuleId::RoleAssignment,
     }
 }
 

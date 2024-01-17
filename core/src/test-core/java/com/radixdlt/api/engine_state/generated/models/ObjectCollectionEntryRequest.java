@@ -22,8 +22,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.engine_state.generated.models.AttachedModuleId;
 import com.radixdlt.api.engine_state.generated.models.CollectionEntryKey;
-import com.radixdlt.api.engine_state.generated.models.ModuleId;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -34,7 +34,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   ObjectCollectionEntryRequest.JSON_PROPERTY_ENTITY_ADDRESS,
-  ObjectCollectionEntryRequest.JSON_PROPERTY_MODULE_ID,
+  ObjectCollectionEntryRequest.JSON_PROPERTY_ATTACHED_MODULE_ID,
   ObjectCollectionEntryRequest.JSON_PROPERTY_COLLECTION_NAME,
   ObjectCollectionEntryRequest.JSON_PROPERTY_COLLECTION_INDEX,
   ObjectCollectionEntryRequest.JSON_PROPERTY_KEY
@@ -44,8 +44,8 @@ public class ObjectCollectionEntryRequest {
   public static final String JSON_PROPERTY_ENTITY_ADDRESS = "entity_address";
   private String entityAddress;
 
-  public static final String JSON_PROPERTY_MODULE_ID = "module_id";
-  private ModuleId moduleId;
+  public static final String JSON_PROPERTY_ATTACHED_MODULE_ID = "attached_module_id";
+  private AttachedModuleId attachedModuleId;
 
   public static final String JSON_PROPERTY_COLLECTION_NAME = "collection_name";
   private String collectionName;
@@ -85,29 +85,29 @@ public class ObjectCollectionEntryRequest {
   }
 
 
-  public ObjectCollectionEntryRequest moduleId(ModuleId moduleId) {
-    this.moduleId = moduleId;
+  public ObjectCollectionEntryRequest attachedModuleId(AttachedModuleId attachedModuleId) {
+    this.attachedModuleId = attachedModuleId;
     return this;
   }
 
    /**
-   * Get moduleId
-   * @return moduleId
+   * Get attachedModuleId
+   * @return attachedModuleId
   **/
   @javax.annotation.Nullable
   @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_MODULE_ID)
+  @JsonProperty(JSON_PROPERTY_ATTACHED_MODULE_ID)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public ModuleId getModuleId() {
-    return moduleId;
+  public AttachedModuleId getAttachedModuleId() {
+    return attachedModuleId;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_MODULE_ID)
+  @JsonProperty(JSON_PROPERTY_ATTACHED_MODULE_ID)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setModuleId(ModuleId moduleId) {
-    this.moduleId = moduleId;
+  public void setAttachedModuleId(AttachedModuleId attachedModuleId) {
+    this.attachedModuleId = attachedModuleId;
   }
 
 
@@ -117,11 +117,11 @@ public class ObjectCollectionEntryRequest {
   }
 
    /**
-   * Name of the collection to read. Either this or &#x60;collection_index&#x60; is required.
+   * Name of the collection to read. Either this or &#x60;collection_index&#x60; is required. Note: getting a collection by name is only a convenience feature, meant for manual, ad-hoc requests (i.e. allowing a human to use the human-readable &#x60;DerivedName&#x60; when available). In general, a collection&#39;s primary identifier is its index, and any production-grade integration should use it. 
    * @return collectionName
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "Name of the collection to read. Either this or `collection_index` is required.")
+  @ApiModelProperty(value = "Name of the collection to read. Either this or `collection_index` is required. Note: getting a collection by name is only a convenience feature, meant for manual, ad-hoc requests (i.e. allowing a human to use the human-readable `DerivedName` when available). In general, a collection's primary identifier is its index, and any production-grade integration should use it. ")
   @JsonProperty(JSON_PROPERTY_COLLECTION_NAME)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
@@ -204,7 +204,7 @@ public class ObjectCollectionEntryRequest {
     }
     ObjectCollectionEntryRequest objectCollectionEntryRequest = (ObjectCollectionEntryRequest) o;
     return Objects.equals(this.entityAddress, objectCollectionEntryRequest.entityAddress) &&
-        Objects.equals(this.moduleId, objectCollectionEntryRequest.moduleId) &&
+        Objects.equals(this.attachedModuleId, objectCollectionEntryRequest.attachedModuleId) &&
         Objects.equals(this.collectionName, objectCollectionEntryRequest.collectionName) &&
         Objects.equals(this.collectionIndex, objectCollectionEntryRequest.collectionIndex) &&
         Objects.equals(this.key, objectCollectionEntryRequest.key);
@@ -212,7 +212,7 @@ public class ObjectCollectionEntryRequest {
 
   @Override
   public int hashCode() {
-    return Objects.hash(entityAddress, moduleId, collectionName, collectionIndex, key);
+    return Objects.hash(entityAddress, attachedModuleId, collectionName, collectionIndex, key);
   }
 
   @Override
@@ -220,7 +220,7 @@ public class ObjectCollectionEntryRequest {
     StringBuilder sb = new StringBuilder();
     sb.append("class ObjectCollectionEntryRequest {\n");
     sb.append("    entityAddress: ").append(toIndentedString(entityAddress)).append("\n");
-    sb.append("    moduleId: ").append(toIndentedString(moduleId)).append("\n");
+    sb.append("    attachedModuleId: ").append(toIndentedString(attachedModuleId)).append("\n");
     sb.append("    collectionName: ").append(toIndentedString(collectionName)).append("\n");
     sb.append("    collectionIndex: ").append(toIndentedString(collectionIndex)).append("\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
