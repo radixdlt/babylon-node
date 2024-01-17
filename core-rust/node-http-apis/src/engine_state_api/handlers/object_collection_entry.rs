@@ -44,11 +44,10 @@ pub(crate) async fn handle_object_collection_entry(
 
     let header = read_current_ledger_header(database.deref());
 
-    Ok(models::ObjectCollectionEntryResponse {
+    Ok(Json(models::ObjectCollectionEntryResponse {
         at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
         content: Box::new(models::ObjectCollectionEntryResponseContent { programmatic_json }),
-    })
-    .map(Json)
+    }))
 }
 
 fn extract_api_collection_key(

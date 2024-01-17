@@ -46,7 +46,7 @@ pub(crate) async fn handle_entity_iterator(
 
     let header = read_current_ledger_header(database.deref());
 
-    Ok(models::EntityIteratorResponse {
+    Ok(Json(models::EntityIteratorResponse {
         at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
         page: page
             .items
@@ -57,8 +57,7 @@ pub(crate) async fn handle_entity_iterator(
             .continuation_token
             .map(|continuation_token| to_api_sbor_hex_string(&continuation_token))
             .transpose()?,
-    })
-    .map(Json)
+    }))
 }
 
 impl HasKey<CreationId> for EntitySummary {

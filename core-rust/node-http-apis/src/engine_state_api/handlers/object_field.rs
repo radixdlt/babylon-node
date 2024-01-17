@@ -35,9 +35,8 @@ pub(crate) async fn handle_object_field(
 
     let header = read_current_ledger_header(database.deref());
 
-    Ok(models::ObjectFieldResponse {
+    Ok(Json(models::ObjectFieldResponse {
         at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
         content: Box::new(models::ObjectFieldResponseContent { programmatic_json }),
-    })
-    .map(Json)
+    }))
 }

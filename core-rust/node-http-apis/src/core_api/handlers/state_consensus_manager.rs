@@ -46,7 +46,7 @@ pub(crate) async fn handle_state_consensus_manager(
 
     let header = read_current_ledger_header(database.deref());
 
-    Ok(models::StateConsensusManagerResponse {
+    Ok(Json(models::StateConsensusManagerResponse {
         at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
         config: Some(to_api_consensus_manager_config_substate(&config_substate)?),
         state: Some(to_api_consensus_manager_state_substate(
@@ -65,6 +65,5 @@ pub(crate) async fn handle_state_consensus_manager(
         current_time_rounded_to_minutes: Some(to_api_current_time_rounded_to_minutes_substate(
             &current_time_round_to_minutes_substate,
         )?),
-    })
-    .map(Json)
+    }))
 }

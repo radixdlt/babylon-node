@@ -26,7 +26,7 @@ pub(crate) async fn handle_entity_info(
 
     let header = read_current_ledger_header(database.deref());
 
-    Ok(models::EntityInfoResponse {
+    Ok(Json(models::EntityInfoResponse {
         at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
         info: Some(to_api_entity_info(
             &mapping_context,
@@ -34,8 +34,7 @@ pub(crate) async fn handle_entity_info(
             &entity_meta,
             entity_ancestry.as_ref(),
         )?),
-    })
-    .map(Json)
+    }))
 }
 
 fn to_api_entity_info(

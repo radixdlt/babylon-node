@@ -24,8 +24,9 @@ pub(crate) async fn handle_kv_store_entry(
         return Err(ResponseError::new(
             StatusCode::BAD_REQUEST,
             "Given entity is not a Key-Value Store",
-        ).with_public_details(models::ErrorDetails::RequestedItemInvalidDetails {
-            item_type: models::RequestedItemType::Entity
+        )
+        .with_public_details(models::ErrorDetails::RequestedItemInvalidDetails {
+            item_type: models::RequestedItemType::Entity,
         }));
     };
 
@@ -35,9 +36,8 @@ pub(crate) async fn handle_kv_store_entry(
 
     let header = read_current_ledger_header(database.deref());
 
-    Ok(models::KeyValueStoreEntryResponse {
+    Ok(Json(models::KeyValueStoreEntryResponse {
         at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
         content: Box::new(models::KeyValueStoreEntryResponseContent { programmatic_json }),
-    })
-    .map(Json)
+    }))
 }

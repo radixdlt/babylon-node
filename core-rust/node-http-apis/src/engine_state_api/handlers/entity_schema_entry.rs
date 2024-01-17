@@ -27,9 +27,8 @@ pub(crate) async fn handle_entity_schema_entry(
 
     let header = read_current_ledger_header(database.deref());
 
-    Ok(models::EntitySchemaEntryResponse {
+    Ok(Json(models::EntitySchemaEntryResponse {
         at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
         content: Box::new(models::EntitySchemaEntryResponseContent { programmatic_json }),
-    })
-    .map(Json)
+    }))
 }

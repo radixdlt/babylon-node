@@ -31,11 +31,10 @@ pub(crate) async fn handle_blueprint_info(
 
     let header = read_current_ledger_header(database.deref());
 
-    Ok(models::BlueprintInfoResponse {
+    Ok(Json(models::BlueprintInfoResponse {
         at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
         info: Box::new(to_api_blueprint_info(&mapping_context, blueprint_meta)?),
-    })
-    .map(Json)
+    }))
 }
 
 fn to_api_blueprint_info(
