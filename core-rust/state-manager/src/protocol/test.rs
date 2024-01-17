@@ -69,22 +69,21 @@ use crate::traits::QueryableProofStore;
 use radix_engine::blueprints::consensus_manager::{
     ConsensusManagerConfigurationFieldPayload, ConsensusManagerField,
 };
+use radix_engine::prelude::dec;
 use radix_engine::system::system_substates::FieldSubstate;
+use radix_engine::utils::generate_validator_fee_fix_state_updates;
 
 use radix_engine_common::network::NetworkDefinition;
-use radix_engine_common::prelude::{Decimal, Epoch, CONSENSUS_MANAGER};
-use radix_engine_interface::blueprints::consensus_manager::{
-    ConsensusManagerConfig, EpochChangeCondition,
-};
+use radix_engine_common::prelude::{Epoch, CONSENSUS_MANAGER};
 use radix_engine_interface::prelude::MAIN_BASE_PARTITION;
 use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
+use std::ops::Deref;
 
 use sbor::HasLatestVersion;
 
 use node_common::locks::{LockFactory, StateLock};
 use node_common::scheduler::Scheduler;
 
-use crate::flash_templates::consensus_manager_config_flash;
 use crate::ProtocolUpdateEnactmentCondition::EnactUnconditionallyAtEpoch;
 use crate::{
     FixedFlashProtocolUpdater, NoStateUpdatesProtocolUpdater, ProtocolConfig, ProtocolUpdate,
@@ -111,29 +110,16 @@ impl ProtocolUpdaterFactory for TestProtocolUpdaterFactory {
     ) -> Box<dyn ProtocolUpdater> {
         match protocol_version_name {
             GENESIS_PROTOCOL_VERSION => Box::new(NoStateUpdatesProtocolUpdater::default(
-                protocol_version_name.to_string(),
                 NetworkDefinition::simulator(),
             )),
             V2_PROTOCOL_VERSION => {
-                let new_config = ConsensusManagerConfig {
-                    max_validators: 999,
-                    epoch_change_condition: EpochChangeCondition {
-                        min_round_count: 3,
-                        max_round_count: 3,
-                        target_duration_millis: 0,
-                    },
-                    num_unstake_epochs: 1,
-                    total_emission_xrd_per_epoch: Decimal::one(),
-                    min_validator_reliability: Decimal::one(),
-                    num_owner_stake_units_unlock_epochs: 2,
-                    num_fee_increase_delay_epochs: 1,
-                    validator_creation_usd_cost: Decimal::one(),
-                };
+                let consensus_manager_state_updates =
+                    generate_validator_fee_fix_state_updates(store.read_current().deref());
                 Box::new(FixedFlashProtocolUpdater::new_with_default_configurator(
                     V2_PROTOCOL_VERSION.to_string(),
                     store,
                     NetworkDefinition::simulator(),
-                    vec![consensus_manager_config_flash(new_config)],
+                    vec![consensus_manager_state_updates],
                 ))
             }
             _ => panic!("Unknown protocol version {:?}", protocol_version_name),
@@ -208,8 +194,8 @@ fn flash_protocol_update_test() {
             .into_payload()
             .into_latest()
             .config
-            .max_validators,
-        999
+            .validator_creation_usd_cost,
+        dec!("100")
     );
 
     assert_eq!(

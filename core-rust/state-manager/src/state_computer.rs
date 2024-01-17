@@ -1273,6 +1273,7 @@ where
 
     pub fn apply_protocol_update(
         &self,
+        protocol_version_name: &str,
         protocol_updater: &dyn ProtocolUpdater,
     ) -> ProtocolUpdateResult {
         let mut locked_ledger_transaction_validator = self.ledger_transaction_validator.write();
@@ -1286,7 +1287,7 @@ where
             .execute_remaining_state_updates();
 
         let mut locked_protocol_state = self.protocol_state.write();
-        locked_protocol_state.current_protocol_version = protocol_updater.protocol_version_name();
+        locked_protocol_state.current_protocol_version = protocol_version_name.to_string();
         drop(locked_protocol_state);
 
         let read_store = self.store.read_current();

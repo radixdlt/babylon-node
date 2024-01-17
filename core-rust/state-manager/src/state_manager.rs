@@ -80,7 +80,6 @@ use crate::store::jmt_gc::StateHashTreeGcConfig;
 use crate::store::proofs_gc::{LedgerProofsGc, LedgerProofsGcConfig};
 use crate::transaction::ExecutionConfigurator;
 use crate::{
-    compute_initial_protocol_state,
     mempool_manager::MempoolManager,
     mempool_relay_dispatcher::MempoolRelayDispatcher,
     priority_mempool::PriorityMempool,
@@ -89,8 +88,8 @@ use crate::{
         StateManagerDatabase,
     },
     transaction::{CachedCommittabilityValidator, CommittabilityValidator, TransactionPreviewer},
-    PendingTransactionResultCache, ProtocolConfig, ProtocolUpdateResult, ProtocolUpdaterFactory,
-    StateComputer,
+    PendingTransactionResultCache, ProtocolConfig, ProtocolState, ProtocolUpdateResult,
+    ProtocolUpdaterFactory, StateComputer,
 };
 
 /// An interval between time-intensive measurement of raw DB metrics.
@@ -198,7 +197,7 @@ impl StateManager {
 
         let read_db = database.read_current();
         let initial_protocol_state =
-            compute_initial_protocol_state(read_db.deref(), &config.protocol_config);
+            ProtocolState::compute_initial(read_db.deref(), &config.protocol_config);
         drop(read_db);
 
         let initial_protocol_updater = protocol_updater_factory.updater_for(
@@ -355,7 +354,7 @@ impl StateManager {
         drop(locked_transaction_previewer);
 
         self.state_computer
-            .apply_protocol_update(protocol_updater.deref())
+            .apply_protocol_update(protocol_version_name, protocol_updater.deref())
     }
 
     pub fn newest_protocol_version(&self) -> String {

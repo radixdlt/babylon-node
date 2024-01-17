@@ -68,10 +68,10 @@ use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, Writeab
 use crate::staging::epoch_handling::EpochAwareAccuTreeFactory;
 use crate::transaction::LedgerTransactionHash;
 use crate::{
-    compute_new_protocol_state, ActiveValidatorInfo, ByPartition, BySubstate,
-    DetailedTransactionOutcome, EpochTransactionIdentifiers, LedgerHashes, LedgerStateChanges,
-    LocalTransactionReceipt, NextEpoch, PartitionChangeAction, ProtocolState, ReceiptTreeHash,
-    StateHash, StateVersion, SubstateChangeAction, SubstateReference, TransactionTreeHash,
+    ActiveValidatorInfo, ByPartition, BySubstate, DetailedTransactionOutcome,
+    EpochTransactionIdentifiers, LedgerHashes, LedgerStateChanges, LocalTransactionReceipt,
+    NextEpoch, PartitionChangeAction, ProtocolState, ReceiptTreeHash, StateHash, StateVersion,
+    SubstateChangeAction, SubstateReference, TransactionTreeHash,
 };
 use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
 use radix_engine::blueprints::resource::{FungibleVaultBalanceFieldSubstate, FungibleVaultField};
@@ -250,8 +250,7 @@ impl ProcessedCommitResult {
             receipt_root: *receipt_tree_diff.slice.root(),
         };
 
-        let (new_protocol_state, next_protocol_version) = compute_new_protocol_state(
-            parent_protocol_state,
+        let (new_protocol_state, next_protocol_version) = parent_protocol_state.compute_next(
             &local_receipt,
             parent_state_version.next().expect("State version overflow"),
         );

@@ -44,7 +44,6 @@ pub trait ProtocolUpdaterFactory {
 ///    While the abstraction is quite flexible, the only concrete implementation at the moment
 ///    only modifies the state through committing system transactions (e.g. substate flash).
 pub trait ProtocolUpdater {
-    fn protocol_version_name(&self) -> String;
     fn state_computer_configurator(&self) -> StateComputerConfigurator;
     fn state_update_executor(&self) -> Box<dyn StateUpdateExecutor>;
 }
@@ -104,24 +103,18 @@ pub trait StateUpdateExecutor {
 /// A protocol updater implementation that only changes the configuration
 /// and does not commit any state updates.
 pub struct NoStateUpdatesProtocolUpdater {
-    protocol_version_name: String,
     state_computer_configurator: StateComputerConfigurator,
 }
 
 impl NoStateUpdatesProtocolUpdater {
-    pub fn default(protocol_version_name: String, network: NetworkDefinition) -> Self {
+    pub fn default(network: NetworkDefinition) -> Self {
         Self {
-            protocol_version_name,
             state_computer_configurator: StateComputerConfigurator::default(network),
         }
     }
 }
 
 impl ProtocolUpdater for NoStateUpdatesProtocolUpdater {
-    fn protocol_version_name(&self) -> String {
-        self.protocol_version_name.clone()
-    }
-
     fn state_computer_configurator(&self) -> StateComputerConfigurator {
         self.state_computer_configurator.clone()
     }
@@ -163,10 +156,6 @@ impl FixedFlashProtocolUpdater {
 }
 
 impl ProtocolUpdater for FixedFlashProtocolUpdater {
-    fn protocol_version_name(&self) -> String {
-        self.protocol_version_name.clone()
-    }
-
     fn state_computer_configurator(&self) -> StateComputerConfigurator {
         self.state_computer_configurator.clone()
     }

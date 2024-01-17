@@ -54,8 +54,13 @@ pub struct ProtocolConfig {
 #[derive(Clone, Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ProtocolUpdateEnactmentCondition {
     EnactWhenSupportedAndWithinBounds {
+        /// Minimum epoch at which the protocol update can be enacted (inclusive)
         lower_bound: Epoch,
+        /// Maximum epoch at which the protocol update can be enacted (inclusive)
         upper_bound: Epoch,
+        /// A list of readiness thresholds. At least one threshold
+        /// from the list must match for the protocol update to be enacted.
+        /// This is a logical OR with lower/upper bound conditions.
         readiness_thresholds: Vec<SignalledReadinessThreshold>,
     },
     EnactUnconditionallyAtEpoch(Epoch),

@@ -1,5 +1,3 @@
-use crate::flash_templates::consensus_manager_config_flash;
-use crate::query::StateManagerSubstateQueries;
 use crate::{
     ProtocolUpdateFlashTxnCommitter, ProtocolUpdater, StateComputerConfigurator,
     StateManagerDatabase, StateUpdateExecutor, ANEMONE_PROTOCOL_VERSION,
@@ -7,7 +5,8 @@ use crate::{
 use node_common::locks::StateLock;
 use radix_engine::prelude::dec;
 use radix_engine::utils::{
-    generate_seconds_precision_state_updates, generate_vm_boot_scrypto_minor_version_state_updates,
+    generate_seconds_precision_state_updates, generate_validator_fee_fix_state_updates,
+    generate_vm_boot_scrypto_minor_version_state_updates,
 };
 use radix_engine_common::prelude::NetworkDefinition;
 use std::ops::Deref;
@@ -19,10 +18,6 @@ pub struct AnemoneProtocolUpdater {
 }
 
 impl ProtocolUpdater for AnemoneProtocolUpdater {
-    fn protocol_version_name(&self) -> String {
-        ANEMONE_PROTOCOL_VERSION.to_string()
-    }
-
     fn state_computer_configurator(&self) -> StateComputerConfigurator {
         // TODO(anemone): just a stub for testing
         let mut configurator = StateComputerConfigurator::default(self.network.clone());
@@ -55,9 +50,9 @@ impl StateUpdateExecutor for AnemoneStateUpdateExecutor {
             match next_batch_idx {
                 0 => {
                     // Batch 0: flash consensus manager config update
-                    let mut config = self.store.read_current().get_consensus_manager_config();
-                    config.validator_creation_usd_cost = dec!("100");
-                    txn_committer.commit_flash(consensus_manager_config_flash(config));
+                    let state_updates =
+                        generate_validator_fee_fix_state_updates(self.store.read_current().deref());
+                    txn_committer.commit_flash(state_updates);
                 }
                 1 => {
                     // Batch 1: flash seconds precision

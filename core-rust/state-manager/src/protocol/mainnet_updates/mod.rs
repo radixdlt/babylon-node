@@ -30,10 +30,9 @@ impl ProtocolUpdaterFactory for MainnetProtocolUpdaterFactory {
         store: Arc<StateLock<StateManagerDatabase>>,
     ) -> Box<dyn ProtocolUpdater> {
         match protocol_version_name {
-            GENESIS_PROTOCOL_VERSION => Box::new(NoStateUpdatesProtocolUpdater::default(
-                GENESIS_PROTOCOL_VERSION.to_string(),
-                self.network.clone(),
-            )),
+            GENESIS_PROTOCOL_VERSION => {
+                Box::new(NoStateUpdatesProtocolUpdater::default(self.network.clone()))
+            }
             ANEMONE_PROTOCOL_VERSION => Box::new(AnemoneProtocolUpdater {
                 network: self.network.clone(),
                 store,

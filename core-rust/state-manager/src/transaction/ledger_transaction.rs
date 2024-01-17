@@ -136,15 +136,22 @@ pub struct FlashTransactionV1 {
 
 impl FlashTransactionV1 {
     pub fn prepare(&self) -> Result<PreparedFlashTransactionV1, PrepareError> {
-        let mut data_to_hash = scrypto_encode(&self.state_updates).unwrap();
-        data_to_hash.extend_from_slice(self.nonce.to_le_bytes().as_slice());
-        let state_updates_hash = hash(data_to_hash);
+        let state_updates_hash = hash(scrypto_encode(&self.state_updates).unwrap());
+        let flash_hash = HashAccumulator::new()
+            .update([
+                TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
+                TransactionDiscriminator::V1System as u8, // TODO(protocol-update): Add V1Flash to this enum
+            ])
+            .update(state_updates_hash)
+            .update(self.nonce.to_le_bytes().as_slice())
+            .finalize();
+
         Ok(PreparedFlashTransactionV1 {
             state_updates: self.state_updates.clone(),
             summary: Summary {
                 effective_length: 0,
                 total_bytes_hashed: 0,
-                hash: state_updates_hash,
+                hash: flash_hash,
             },
         })
     }
