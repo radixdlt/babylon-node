@@ -121,8 +121,9 @@ impl ProtocolConfig {
             return Err("Genesis protocol version name can't use non-ascii characters".to_string());
         }
 
-        if !protocol_updater_factory
-            .supports_protocol_version(self.genesis_protocol_version.as_str())
+        if protocol_updater_factory
+            .updater_for(self.genesis_protocol_version.as_str())
+            .is_none()
         {
             return Err(
                 "Protocol updater factory does not support genesis protocol version".to_string(),
@@ -138,8 +139,9 @@ impl ProtocolConfig {
                 return Err("Protocol version name can't use non-ascii characters".to_string());
             }
 
-            if !protocol_updater_factory
-                .supports_protocol_version(protocol_update.next_protocol_version.as_str())
+            if protocol_updater_factory
+                .updater_for(protocol_update.next_protocol_version.as_str())
+                .is_none()
             {
                 return Err("Protocol updater factory does not support a configured update protocol version".to_string());
             }

@@ -284,7 +284,6 @@ public record Metrics(
     public record UnfulfilledSyncRequest(UnfulfilledSyncRequestReason reason) {}
 
     public enum UnfulfilledSyncRequestReason {
-      FAILED_TO_PREPARE_A_RESPONSE_WITHIN_LIMITS,
       NOTHING_TO_SERVE_AT_THE_GIVEN_STATE_VERSION,
       REFUSED_TO_SERVE_GENESIS,
       REFUSED_TO_SERVE_PROTOCOL_UPDATE

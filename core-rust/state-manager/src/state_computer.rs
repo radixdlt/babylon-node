@@ -133,7 +133,7 @@ impl<
         pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
         metrics_registry: &Registry,
         lock_factory: LockFactory,
-        initial_protocol_updater: Box<dyn ProtocolUpdater>,
+        initial_updatable_config: &UpdatableStateComputerConfig,
         initial_protocol_state: ProtocolState,
     ) -> StateComputer<S> {
         let (current_transaction_root, current_ledger_proposer_timestamp_ms) = store
@@ -146,12 +146,6 @@ impl<
         let committed_transactions_metrics =
             CommittedTransactionsMetrics::new(metrics_registry, &execution_configurator.read());
 
-        // If we're booting mid-protocol update ensure all required
-        // transactions are committed.
-        initial_protocol_updater
-            .state_update_executor()
-            .execute_remaining_state_updates();
-
         StateComputer {
             network: network.clone(),
             store,
@@ -163,11 +157,7 @@ impl<
                 .new_mutex(ExecutionCache::new(current_transaction_root)),
             ledger_transaction_validator: lock_factory
                 .named("ledger_transaction_validator")
-                .new_rwlock(
-                    initial_protocol_updater
-                        .state_computer_configurator()
-                        .ledger_transaction_validator(),
-                ),
+                .new_rwlock(initial_updatable_config.ledger_transaction_validator()),
             vertex_prepare_metrics: VertexPrepareMetrics::new(metrics_registry),
             vertex_limits_config,
             ledger_metrics: LedgerMetrics::new(
@@ -1037,7 +1027,7 @@ where
         let commit_request_start_state_version =
             commit_state_version.relative(-(commit_transactions_len as i128)).expect("`commit_request_start_state_version` should be computable from `commit_state_version - commit_transactions_len` and valid.");
 
-        // Step 1.: Parse the transactions (and collect  specific metrics from them, as a drive-by)
+        // Step 1.: Parse the transactions (and collect specific metrics from them, as a drive-by)
         let mut prepared_transactions = Vec::new();
         let mut leader_round_counters_builder = LeaderRoundCountersBuilder::default();
         let mut proposer_timestamps = Vec::new();
@@ -1261,9 +1251,7 @@ where
         self.committed_transactions_metrics
             .update(transactions_metrics_data);
 
-        let mut locked_protocol_state = self.protocol_state.write();
-        *locked_protocol_state = new_protocol_state;
-        drop(locked_protocol_state);
+        *self.protocol_state.write() = new_protocol_state;
 
         Ok(CommitSummary {
             validator_round_counters: round_counters,
@@ -1271,44 +1259,24 @@ where
         })
     }
 
-    pub fn apply_protocol_update(
+    pub fn handle_protocol_update(
         &self,
         protocol_version_name: &str,
-        protocol_updater: &dyn ProtocolUpdater,
-    ) -> ProtocolUpdateResult {
-        let mut locked_ledger_transaction_validator = self.ledger_transaction_validator.write();
-        *locked_ledger_transaction_validator = protocol_updater
-            .state_computer_configurator()
-            .ledger_transaction_validator();
-        drop(locked_ledger_transaction_validator);
+        new_ledger_transaction_validator: LedgerTransactionValidator,
+    ) {
+        *self.ledger_transaction_validator.write() = new_ledger_transaction_validator;
 
-        protocol_updater
-            .state_update_executor()
-            .execute_remaining_state_updates();
+        self.protocol_state.write().current_protocol_version = protocol_version_name.to_string();
 
-        let mut locked_protocol_state = self.protocol_state.write();
-        locked_protocol_state.current_protocol_version = protocol_version_name.to_string();
-        drop(locked_protocol_state);
-
-        let read_store = self.store.read_current();
-        let current_header = read_store
+        let current_header = self
+            .store
+            .read_current()
             .get_latest_proof()
             .map(|proof| proof.ledger_header)
             .expect("Can't apply a protocol update pre-genesis");
-        drop(read_store);
 
         // Protocol update might change transaction execution rules, so we need to clean the cache
-        let mut locked_execution_cache = self.execution_cache.lock();
-        *locked_execution_cache = ExecutionCache::new(current_header.hashes.transaction_root);
-        drop(locked_execution_cache);
-
-        ProtocolUpdateResult {
-            post_update_proof: self
-                .store
-                .read_current()
-                .get_latest_proof()
-                .expect("Missing post protocol update proof"),
-        }
+        *self.execution_cache.lock() = ExecutionCache::new(current_header.hashes.transaction_root);
     }
 
     /// Performs a simplified [`commit()`] flow meant for (internal) genesis transactions.

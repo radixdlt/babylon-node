@@ -72,7 +72,6 @@ import com.radixdlt.ledger.LedgerExtension;
 import com.radixdlt.ledger.LedgerProofBundle;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.Metrics.LedgerSync.UnfulfilledSyncRequest;
-import com.radixdlt.monitoring.Metrics.LedgerSync.UnfulfilledSyncRequestReason.*;
 import com.radixdlt.statecomputer.commit.LedgerProof;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.GetSyncableTxnsAndProofError.*;
@@ -121,10 +120,6 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
                       + " limits {}",
                   startStateVersionInclusive,
                   this.limitsConfig);
-              metrics
-                  .sync()
-                  .unfulfilledSyncRequests()
-                  .label(new UnfulfilledSyncRequest(FAILED_TO_PREPARE_A_RESPONSE_WITHIN_LIMITS));
             }
             case NothingToServeAtTheGivenStateVersion unused -> {
               metrics

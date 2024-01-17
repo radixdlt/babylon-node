@@ -13,7 +13,7 @@ use transaction::validation::{NotarizedTransactionValidator, ValidationConfig};
 use utils::btreemap;
 
 use crate::epoch_handling::EpochAwareAccuTreeFactory;
-use crate::mainnet_updates::MainnetProtocolUpdaterFactory;
+use crate::mainnet_updates::ProductionProtocolUpdaterFactory;
 use crate::traits::{
     CommitBundle, CommitStore, CommittedTransactionBundle, HashTreeUpdate, QueryableProofStore,
     ReceiptAccuTreeSliceV1, SubstateStoreUpdate, TransactionAccuTreeSliceV1,
@@ -28,13 +28,7 @@ use crate::{
 };
 
 pub trait ProtocolUpdaterFactory {
-    fn supports_protocol_version(&self, protocol_version_name: &str) -> bool;
-
-    fn updater_for(
-        &self,
-        protocol_version_name: &str,
-        store: Arc<StateLock<StateManagerDatabase>>,
-    ) -> Box<dyn ProtocolUpdater>;
+    fn updater_for(&self, protocol_version_name: &str) -> Option<Box<dyn ProtocolUpdater>>;
 }
 
 /// Protocol update consists of two events:
@@ -44,22 +38,28 @@ pub trait ProtocolUpdaterFactory {
 ///    While the abstraction is quite flexible, the only concrete implementation at the moment
 ///    only modifies the state through committing system transactions (e.g. substate flash).
 pub trait ProtocolUpdater {
-    fn state_computer_configurator(&self) -> StateComputerConfigurator;
-    fn state_update_executor(&self) -> Box<dyn StateUpdateExecutor>;
+    /// Returns the new configuration that the state computer
+    /// should use after enacting the given protocol version.
+    fn updatable_config(&self) -> UpdatableStateComputerConfig;
+
+    /// Executes these state updates associated with the given protocol version
+    /// that haven't yet been applied
+    /// (hence "remaining", e.g. if node is restarted mid-protocol update).
+    fn execute_remaining_state_updates(&self, store: Arc<StateLock<StateManagerDatabase>>);
 }
 
 #[derive(Clone, Debug)]
-pub struct StateComputerConfigurator {
+pub struct UpdatableStateComputerConfig {
     pub network: NetworkDefinition,
     pub logging_config: LoggingConfig,
     pub validation_config: ValidationConfig,
     pub costing_parameters: CostingParameters,
 }
 
-impl StateComputerConfigurator {
-    pub fn default(network: NetworkDefinition) -> StateComputerConfigurator {
+impl UpdatableStateComputerConfig {
+    pub fn default(network: NetworkDefinition) -> UpdatableStateComputerConfig {
         let network_id = network.id;
-        StateComputerConfigurator {
+        UpdatableStateComputerConfig {
             network,
             logging_config: LoggingConfig::default(),
             validation_config: ValidationConfig::default(network_id),
@@ -68,7 +68,7 @@ impl StateComputerConfigurator {
     }
 }
 
-impl StateComputerConfigurator {
+impl UpdatableStateComputerConfig {
     pub fn ledger_transaction_validator(&self) -> LedgerTransactionValidator {
         LedgerTransactionValidator::default_from_validation_config(self.validation_config)
     }
@@ -93,80 +93,76 @@ impl StateComputerConfigurator {
     }
 }
 
-pub trait StateUpdateExecutor {
-    /// Executes these state updates associated with the given protocol version
-    /// that haven't yet been applied
-    /// (hence "remaining", e.g. if node is restarted mid-protocol update).
-    fn execute_remaining_state_updates(&self);
-}
-
 /// A protocol updater implementation that only changes the configuration
 /// and does not commit any state updates.
 pub struct NoStateUpdatesProtocolUpdater {
-    state_computer_configurator: StateComputerConfigurator,
+    updatable_config: UpdatableStateComputerConfig,
 }
 
 impl NoStateUpdatesProtocolUpdater {
     pub fn default(network: NetworkDefinition) -> Self {
         Self {
-            state_computer_configurator: StateComputerConfigurator::default(network),
+            updatable_config: UpdatableStateComputerConfig::default(network),
         }
     }
 }
 
 impl ProtocolUpdater for NoStateUpdatesProtocolUpdater {
-    fn state_computer_configurator(&self) -> StateComputerConfigurator {
-        self.state_computer_configurator.clone()
+    fn updatable_config(&self) -> UpdatableStateComputerConfig {
+        self.updatable_config.clone()
     }
 
-    fn state_update_executor(&self) -> Box<dyn StateUpdateExecutor> {
-        Box::new(NoOpStateUpdateExecutor {})
-    }
-}
-
-struct NoOpStateUpdateExecutor {}
-
-impl StateUpdateExecutor for NoOpStateUpdateExecutor {
-    fn execute_remaining_state_updates(&self) {
-        // No-op
+    fn execute_remaining_state_updates(&self, _store: Arc<StateLock<StateManagerDatabase>>) {
+        // no-op
     }
 }
 
 pub struct FixedFlashProtocolUpdater {
     protocol_version_name: String,
-    store: Arc<StateLock<StateManagerDatabase>>,
-    state_computer_configurator: StateComputerConfigurator,
+    updatable_config: UpdatableStateComputerConfig,
     flash_transactions_updates: Vec<StateUpdates>,
 }
 
 impl FixedFlashProtocolUpdater {
     pub fn new_with_default_configurator(
         protocol_version_name: String,
-        store: Arc<StateLock<StateManagerDatabase>>,
         network: NetworkDefinition,
         flash_transactions_updates: Vec<StateUpdates>,
     ) -> Self {
         Self {
             protocol_version_name,
-            store,
-            state_computer_configurator: StateComputerConfigurator::default(network),
+            updatable_config: UpdatableStateComputerConfig::default(network),
             flash_transactions_updates,
         }
     }
 }
 
 impl ProtocolUpdater for FixedFlashProtocolUpdater {
-    fn state_computer_configurator(&self) -> StateComputerConfigurator {
-        self.state_computer_configurator.clone()
+    fn updatable_config(&self) -> UpdatableStateComputerConfig {
+        self.updatable_config.clone()
     }
 
-    fn state_update_executor(&self) -> Box<dyn StateUpdateExecutor> {
-        Box::new(FixedFlashStateUpdateExecutor::new(
+    fn execute_remaining_state_updates(&self, store: Arc<StateLock<StateManagerDatabase>>) {
+        // We're using the new configuration to execute the protocol update
+        // transactions (although it's not a requirement).
+        let updatable_config = self.updatable_config();
+        let mut txn_committer = ProtocolUpdateFlashTxnCommitter::new(
             self.protocol_version_name.clone(),
-            self.store.clone(),
-            self.flash_transactions_updates.clone(),
-            self.state_computer_configurator(),
-        ))
+            store,
+            updatable_config.execution_configurator(true), /* No fees for protocol updates */
+            updatable_config.ledger_transaction_validator(),
+        );
+
+        while let Some(next_batch_idx) = txn_committer.next_committable_batch_idx() {
+            let maybe_next_state_updates =
+                self.flash_transactions_updates.get(next_batch_idx as usize);
+            if let Some(next_state_updates) = maybe_next_state_updates {
+                txn_committer.commit_flash(next_state_updates.clone());
+            } else {
+                // Nothing more to commit
+                break;
+            }
+        }
     }
 }
 
@@ -185,8 +181,7 @@ enum ProtocolUpdateProgress {
     NotUpdating,
 }
 
-/// A helper (to the) `StateUpdateExecutor` that manages
-/// flash transaction committing state updates.
+/// A helper that manages committing flash transactions state updates.
 /// It handles the logic to fulfill the resumability contract of "execute_remaining_state_updates"
 /// by storing the index of a previously committed transaction batch in the ledger proof.
 pub struct ProtocolUpdateFlashTxnCommitter {
@@ -200,15 +195,15 @@ impl ProtocolUpdateFlashTxnCommitter {
     pub fn new(
         protocol_version_name: String,
         store: Arc<StateLock<StateManagerDatabase>>,
-        state_computer_configurator: StateComputerConfigurator,
+        execution_configurator: ExecutionConfigurator,
+        ledger_transaction_validator: LedgerTransactionValidator,
     ) -> Self {
         Self {
             protocol_version_name,
             store,
             execution_configurator: LockFactory::new("protocol_update")
-                .new_rwlock(state_computer_configurator.execution_configurator(true)),
-            ledger_transaction_validator: state_computer_configurator
-                .ledger_transaction_validator(),
+                .new_rwlock(execution_configurator),
+            ledger_transaction_validator,
         }
     }
 
@@ -306,6 +301,7 @@ impl ProtocolUpdateFlashTxnCommitter {
             dummy_protocol_state,
         );
 
+        // TODO: extract common code from here and StateComputer::commit (also see the comment there)
         let mut committed_transaction_bundles = Vec::new();
         let mut substate_store_update = SubstateStoreUpdate::new();
         let mut state_tree_update = HashTreeUpdate::new();
@@ -390,89 +386,32 @@ impl ProtocolUpdateFlashTxnCommitter {
     }
 }
 
-pub struct FixedFlashStateUpdateExecutor {
-    protocol_version_name: String,
-    store: Arc<StateLock<StateManagerDatabase>>,
-    flash_transactions_updates: Vec<StateUpdates>,
-    state_computer_configurator: StateComputerConfigurator,
-}
-
-impl FixedFlashStateUpdateExecutor {
-    pub fn new(
-        protocol_version_name: String,
-        store: Arc<StateLock<StateManagerDatabase>>,
-        flash_transactions_updates: Vec<StateUpdates>,
-        state_computer_configurator: StateComputerConfigurator,
-    ) -> Self {
-        Self {
-            protocol_version_name,
-            store,
-            flash_transactions_updates,
-            state_computer_configurator,
-        }
-    }
-}
-
-impl StateUpdateExecutor for FixedFlashStateUpdateExecutor {
-    fn execute_remaining_state_updates(&self) {
-        let mut txn_committer = ProtocolUpdateFlashTxnCommitter::new(
-            self.protocol_version_name.clone(),
-            self.store.clone(),
-            self.state_computer_configurator.clone(),
-        );
-
-        while let Some(next_batch_idx) = txn_committer.next_committable_batch_idx() {
-            let maybe_next_state_updates =
-                self.flash_transactions_updates.get(next_batch_idx as usize);
-            if let Some(next_state_updates) = maybe_next_state_updates {
-                txn_committer.commit_flash(next_state_updates.clone());
-            } else {
-                // Nothing more to commit
-                break;
-            }
-        }
-    }
-}
-
 pub struct TestingDefaultProtocolUpdaterFactory {
     network: NetworkDefinition,
-    mainnet_protocol_updater_factory: MainnetProtocolUpdaterFactory,
+    mainnet_protocol_updater_factory: ProductionProtocolUpdaterFactory,
 }
 
 impl TestingDefaultProtocolUpdaterFactory {
     pub fn new(network: NetworkDefinition) -> TestingDefaultProtocolUpdaterFactory {
         TestingDefaultProtocolUpdaterFactory {
             network: network.clone(),
-            mainnet_protocol_updater_factory: MainnetProtocolUpdaterFactory::new(network),
+            mainnet_protocol_updater_factory: ProductionProtocolUpdaterFactory::new(network),
         }
     }
 }
 
 impl ProtocolUpdaterFactory for TestingDefaultProtocolUpdaterFactory {
-    fn supports_protocol_version(&self, _protocol_version_name: &str) -> bool {
-        true
-    }
-
-    fn updater_for(
-        &self,
-        protocol_version_name: &str,
-        store: Arc<StateLock<StateManagerDatabase>>,
-    ) -> Box<dyn ProtocolUpdater> {
+    fn updater_for(&self, protocol_version_name: &str) -> Option<Box<dyn ProtocolUpdater>> {
         // Default testing updater delegates to mainnet updater if protocol update matches or,
         // if not, returns a default updater with a single empty flash transaction.
-        if self
-            .mainnet_protocol_updater_factory
-            .supports_protocol_version(protocol_version_name)
-        {
-            self.mainnet_protocol_updater_factory
-                .updater_for(protocol_version_name, store)
-        } else {
-            Box::new(FixedFlashProtocolUpdater::new_with_default_configurator(
-                protocol_version_name.to_owned(),
-                store,
-                self.network.clone(),
-                vec![StateUpdates::default()],
-            ))
-        }
+        self.mainnet_protocol_updater_factory
+            .updater_for(protocol_version_name)
+            .or(Some(Box::new(
+                FixedFlashProtocolUpdater::new_with_default_configurator(
+                    protocol_version_name.to_owned(),
+                    self.network.clone(),
+                    vec![StateUpdates::default()],
+                ),
+            )))
     }
 }

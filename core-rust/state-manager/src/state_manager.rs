@@ -78,6 +78,7 @@ use radix_engine_common::prelude::*;
 use crate::jni::LedgerSyncLimitsConfig;
 use crate::store::jmt_gc::StateHashTreeGcConfig;
 use crate::store::proofs_gc::{LedgerProofsGc, LedgerProofsGcConfig};
+use crate::store::traits::proofs::QueryableProofStore;
 use crate::transaction::ExecutionConfigurator;
 use crate::{
     mempool_manager::MempoolManager,
@@ -195,21 +196,20 @@ impl StateManager {
             panic!("Protocol misconfiguration: {}", err);
         };
 
-        let read_db = database.read_current();
-        let initial_protocol_state =
-            ProtocolState::compute_initial(read_db.deref(), &config.protocol_config);
-        drop(read_db);
-
-        let initial_protocol_updater = protocol_updater_factory.updater_for(
-            &initial_protocol_state.current_protocol_version,
-            database.clone(),
+        let initial_protocol_state = ProtocolState::compute_initial(
+            database.read_current().deref(),
+            &config.protocol_config,
         );
-        let initial_protocol_configurator = initial_protocol_updater.state_computer_configurator();
+
+        let initial_protocol_updater = protocol_updater_factory
+            .updater_for(&initial_protocol_state.current_protocol_version)
+            .expect("Protocol updater is misconfigured");
+        let initial_updatable_config = initial_protocol_updater.updatable_config();
 
         let execution_configurator = Arc::new(
             lock_factory
                 .named("execution_configurator")
-                .new_rwlock(initial_protocol_configurator.execution_configurator(config.no_fees)),
+                .new_rwlock(initial_updatable_config.execution_configurator(config.no_fees)),
         );
 
         let pending_transaction_result_cache = Arc::new(
@@ -222,7 +222,7 @@ impl StateManager {
                 CommittabilityValidator::new(
                     database.clone(),
                     execution_configurator.clone(),
-                    initial_protocol_configurator.user_transaction_validator(),
+                    initial_updatable_config.user_transaction_validator(),
                 ),
             ));
         let cached_committability_validator = CachedCommittabilityValidator::new(
@@ -256,7 +256,7 @@ impl StateManager {
                 TransactionPreviewer::new(
                     database.clone(),
                     execution_configurator.clone(),
-                    initial_protocol_configurator.validation_config(),
+                    initial_updatable_config.validation_config(),
                 ),
             ));
 
@@ -264,6 +264,10 @@ impl StateManager {
             Some(java_vertex_limits_config) => java_vertex_limits_config,
             None => VertexLimitsConfig::default(),
         };
+
+        // If we're booting mid-protocol update ensure all required
+        // transactions are committed.
+        initial_protocol_updater.execute_remaining_state_updates(database.clone());
 
         // Build the state computer:
         let state_computer = Arc::new(StateComputer::new(
@@ -275,7 +279,7 @@ impl StateManager {
             pending_transaction_result_cache.clone(),
             metrics_registry,
             lock_factory.named("state_computer"),
-            initial_protocol_updater,
+            &initial_updatable_config,
             initial_protocol_state,
         ));
 
@@ -327,34 +331,41 @@ impl StateManager {
     pub fn apply_protocol_update(&self, protocol_version_name: &str) -> ProtocolUpdateResult {
         let protocol_updater = self
             .protocol_updater_factory
-            .updater_for(protocol_version_name, self.database.clone());
-        let state_computer_configurator = protocol_updater.state_computer_configurator();
+            .updater_for(protocol_version_name)
+            .expect("Protocol updater is misconfigured");
+        let new_updatable_config = protocol_updater.updatable_config();
 
         let new_execution_configurator =
-            state_computer_configurator.execution_configurator(self.config.no_fees);
+            new_updatable_config.execution_configurator(self.config.no_fees);
 
-        let mut locked_execution_configurator = self.execution_configurator.write();
-        *locked_execution_configurator = new_execution_configurator;
-        drop(locked_execution_configurator);
+        *self.execution_configurator.write() = new_execution_configurator;
 
-        let mut locked_committability_validator = self.committability_validator.write();
-        *locked_committability_validator = CommittabilityValidator::new(
+        *self.committability_validator.write() = CommittabilityValidator::new(
             self.database.clone(),
             self.execution_configurator.clone(),
-            state_computer_configurator.user_transaction_validator(),
+            new_updatable_config.user_transaction_validator(),
         );
-        drop(locked_committability_validator);
 
-        let mut locked_transaction_previewer = self.transaction_previewer.write();
-        *locked_transaction_previewer = TransactionPreviewer::new(
+        *self.transaction_previewer.write() = TransactionPreviewer::new(
             self.database.clone(),
             self.execution_configurator.clone(),
-            state_computer_configurator.validation_config(),
+            new_updatable_config.validation_config(),
         );
-        drop(locked_transaction_previewer);
 
-        self.state_computer
-            .apply_protocol_update(protocol_version_name, protocol_updater.deref())
+        protocol_updater.execute_remaining_state_updates(self.database.clone());
+
+        self.state_computer.handle_protocol_update(
+            protocol_version_name,
+            new_updatable_config.ledger_transaction_validator(),
+        );
+
+        ProtocolUpdateResult {
+            post_update_proof: self
+                .database
+                .read_current()
+                .get_latest_proof()
+                .expect("Missing post protocol update proof"),
+        }
     }
 
     pub fn newest_protocol_version(&self) -> String {

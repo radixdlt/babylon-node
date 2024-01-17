@@ -136,6 +136,7 @@ impl LedgerProofsGc {
     /// Performs a single GC run, which is supposed to permanently delete *all* non-critical ledger
     /// proofs of configured old-enough epochs.
     /// Returns proof ranges that have been pruned.
+    /// TODO: the return value is only used in tests, consider refactoring
     pub fn run(&self) -> Vec<ProofPruneRange> {
         // TODO(locks/snapshots): The GC's operation does not interact with the "current state", and
         // intuitively could use the "historical, non-locked" DB access. However, we have a (very
@@ -183,12 +184,7 @@ impl LedgerProofsGc {
 
         let mut pruned_proof_ranges = vec![];
         let mut retained_proofs = 0; // only for logging purposes
-        loop {
-            let Some(next_prune_range) = self.locate_next_prune_range(last_pruned_state_version)
-            else {
-                break;
-            };
-
+        while let Some(next_prune_range) = self.locate_next_prune_range(last_pruned_state_version) {
             let delete_database = self.database.write_current();
             delete_database.delete_ledger_proofs_range(
                 next_prune_range.from_state_version_inclusive,

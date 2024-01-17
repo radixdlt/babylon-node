@@ -63,7 +63,6 @@
  */
 
 use prometheus::Registry;
-use std::sync::Arc;
 
 use crate::traits::QueryableProofStore;
 use radix_engine::blueprints::consensus_manager::{
@@ -73,64 +72,53 @@ use radix_engine::prelude::dec;
 use radix_engine::system::system_substates::FieldSubstate;
 use radix_engine::utils::generate_validator_fee_fix_state_updates;
 
+use radix_engine::track::StateUpdates;
 use radix_engine_common::network::NetworkDefinition;
 use radix_engine_common::prelude::{Epoch, CONSENSUS_MANAGER};
 use radix_engine_interface::prelude::MAIN_BASE_PARTITION;
 use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
-use std::ops::Deref;
 
 use sbor::HasLatestVersion;
 
-use node_common::locks::{LockFactory, StateLock};
+use node_common::locks::LockFactory;
 use node_common::scheduler::Scheduler;
 
 use crate::ProtocolUpdateEnactmentCondition::EnactUnconditionallyAtEpoch;
 use crate::{
     FixedFlashProtocolUpdater, NoStateUpdatesProtocolUpdater, ProtocolConfig, ProtocolUpdate,
     ProtocolUpdater, ProtocolUpdaterFactory, StateManager, StateManagerConfig,
-    StateManagerDatabase,
 };
+use std::ops::Deref;
 
 use crate::test::prepare_and_commit_round_update;
 
 const GENESIS_PROTOCOL_VERSION: &str = "testing-genesis";
 const V2_PROTOCOL_VERSION: &str = "testing-v2";
 
-struct TestProtocolUpdaterFactory {}
+struct TestProtocolUpdaterFactory {
+    v2_state_updates: StateUpdates,
+}
 
 impl ProtocolUpdaterFactory for TestProtocolUpdaterFactory {
-    fn supports_protocol_version(&self, protocol_version_name: &str) -> bool {
-        [GENESIS_PROTOCOL_VERSION, V2_PROTOCOL_VERSION].contains(&protocol_version_name)
-    }
-
-    fn updater_for(
-        &self,
-        protocol_version_name: &str,
-        store: Arc<StateLock<StateManagerDatabase>>,
-    ) -> Box<dyn ProtocolUpdater> {
+    fn updater_for(&self, protocol_version_name: &str) -> Option<Box<dyn ProtocolUpdater>> {
         match protocol_version_name {
-            GENESIS_PROTOCOL_VERSION => Box::new(NoStateUpdatesProtocolUpdater::default(
+            GENESIS_PROTOCOL_VERSION => Some(Box::new(NoStateUpdatesProtocolUpdater::default(
                 NetworkDefinition::simulator(),
-            )),
-            V2_PROTOCOL_VERSION => {
-                let consensus_manager_state_updates =
-                    generate_validator_fee_fix_state_updates(store.read_current().deref());
-                Box::new(FixedFlashProtocolUpdater::new_with_default_configurator(
+            ))),
+            V2_PROTOCOL_VERSION => Some(Box::new(
+                FixedFlashProtocolUpdater::new_with_default_configurator(
                     V2_PROTOCOL_VERSION.to_string(),
-                    store,
                     NetworkDefinition::simulator(),
-                    vec![consensus_manager_state_updates],
-                ))
-            }
-            _ => panic!("Unknown protocol version {:?}", protocol_version_name),
+                    vec![self.v2_state_updates.clone()],
+                ),
+            )),
+            _ => None,
         }
     }
 }
 
 #[test]
 fn flash_protocol_update_test() {
-    let metrics_registry = Registry::new();
-
     let mut state_manager_config =
         StateManagerConfig::new_for_testing(tempfile::tempdir().unwrap().path().to_str().unwrap());
 
@@ -145,19 +133,33 @@ fn flash_protocol_update_test() {
             enactment_condition: EnactUnconditionallyAtEpoch(protocol_update_epoch),
         }],
     };
-    let state_manager = StateManager::new(
-        state_manager_config,
-        None,
-        &LockFactory::new("testing"),
-        Box::new(TestProtocolUpdaterFactory {}),
-        &metrics_registry,
-        &Scheduler::new("testing"),
-    );
 
-    // Run the genesis
-    state_manager
-        .state_computer
-        .execute_genesis_for_unit_tests_with_default_config();
+    // This is a bit of a hack to be able to use fixed flash protocol update
+    let consensus_manager_state_updates = {
+        // Run the genesis first
+        let tmp_state_manager = create_state_manager(
+            state_manager_config.clone(),
+            // Fake updater, unused
+            Box::new(TestProtocolUpdaterFactory {
+                v2_state_updates: StateUpdates::default(),
+            }),
+        );
+        tmp_state_manager
+            .state_computer
+            .execute_genesis_for_unit_tests_with_default_config();
+        // Now we can prepare the state updates based on the initialized database
+        let state_updates = generate_validator_fee_fix_state_updates(
+            tmp_state_manager.database.read_current().deref(),
+        );
+        state_updates
+    };
+
+    let state_manager = create_state_manager(
+        state_manager_config,
+        Box::new(TestProtocolUpdaterFactory {
+            v2_state_updates: consensus_manager_state_updates,
+        }),
+    );
 
     // Commit 3 round updates to get us to the next epoch (3).
     let _ = prepare_and_commit_round_update(&state_manager);
@@ -202,4 +204,18 @@ fn flash_protocol_update_test() {
         read_db.max_state_version(),
         pre_protocol_update_state_version.next().unwrap()
     );
+}
+
+fn create_state_manager(
+    config: StateManagerConfig,
+    protocol_updater_factory: Box<dyn ProtocolUpdaterFactory + Sync + Send>,
+) -> StateManager {
+    StateManager::new(
+        config,
+        None,
+        &LockFactory::new("testing"),
+        protocol_updater_factory,
+        &Registry::new(),
+        &Scheduler::new("testing"),
+    )
 }
