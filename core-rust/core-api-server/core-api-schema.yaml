@@ -2030,6 +2030,7 @@ components:
     EntityModule:
       type: string
       enum:
+        - BootLoader
         - TypeInfo
         - Metadata
         - RoleAssignment
@@ -3145,8 +3146,8 @@ components:
     SystemFieldKind:
       type: string
       enum:
-        - TypeInfo
         - BootLoader
+        - TypeInfo
     ObjectSubstateTypeReferenceType:
       type: string
       enum:
@@ -3664,6 +3665,7 @@ components:
           #   - value - which references the type [SubstateValue]
           #   - key (if it's in a collection partition) - which references a substate key type [X]Key for some X.
           #   - is_locked - this is added to all substates via inclusion on the `Substate` object
+          BootLoaderModuleFieldVmBoot: '#/components/schemas/BootLoaderModuleFieldVmBootSubstate'
           TypeInfoModuleFieldTypeInfo: '#/components/schemas/TypeInfoModuleFieldTypeInfoSubstate'
           RoleAssignmentModuleFieldOwnerRole: '#/components/schemas/RoleAssignmentModuleFieldOwnerRoleSubstate'
           RoleAssignmentModuleRuleEntry: '#/components/schemas/RoleAssignmentModuleRuleEntrySubstate'
@@ -3715,6 +3717,7 @@ components:
     SubstateType:
       type: string
       enum:
+        - BootLoaderModuleFieldVmBoot
         - TypeInfoModuleFieldTypeInfo
         - RoleAssignmentModuleFieldOwnerRole
         - RoleAssignmentModuleRuleEntry
@@ -3910,6 +3913,25 @@ components:
 ################################################
 # GENERAL / SHARED MODELS - specific substates #
 ################################################
+    BootLoaderModuleFieldVmBootSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - value
+          properties:
+            value:
+              $ref: '#/components/schemas/VmBootSubstate'
+    VmBootSubstate:
+      type: object
+      required:
+        - scrypto_v1_minor_version
+      properties:
+        scrypto_v1_minor_version:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
     TypeInfoModuleFieldTypeInfoSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'

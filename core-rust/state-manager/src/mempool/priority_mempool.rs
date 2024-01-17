@@ -545,10 +545,9 @@ mod tests {
     use std::time::Duration;
 
     use radix_engine::types::PublicKey;
+    use radix_engine_common::crypto::{Secp256k1PublicKey, Secp256k1Signature};
     use radix_engine_common::types::Epoch;
-    use radix_engine_interface::crypto::Secp256k1PublicKey;
     use transaction::model::*;
-    use transaction::prelude::Secp256k1Signature;
 
     use crate::mempool::priority_mempool::*;
 

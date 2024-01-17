@@ -34,7 +34,7 @@ pub(crate) async fn handle_state_package(
 
     let header = read_current_ledger_header(database.deref());
 
-    Ok(models::StatePackageResponse {
+    Ok(Json(models::StatePackageResponse {
         at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
         owner_role: Some(to_api_owner_role_substate(
             &mapping_context,
@@ -48,6 +48,5 @@ pub(crate) async fn handle_state_package(
                 )?))
             })
             .transpose()?,
-    })
-    .map(Json)
+    }))
 }

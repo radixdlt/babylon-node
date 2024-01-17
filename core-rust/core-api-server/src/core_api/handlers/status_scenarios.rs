@@ -18,13 +18,12 @@ pub(crate) async fn handle_status_scenarios(
     let database = state.state_manager.database.access_non_locked_historical();
     let scenarios = database.list_all_scenarios();
 
-    Ok(models::ScenariosResponse {
+    Ok(Json(models::ScenariosResponse {
         executed_scenarios: scenarios
             .iter()
             .map(|(number, scenario)| to_api_executed_scenario(&context, *number, scenario))
             .collect::<Result<Vec<_>, _>>()?,
-    })
-    .map(Json)
+    }))
 }
 
 pub fn to_api_executed_scenario(

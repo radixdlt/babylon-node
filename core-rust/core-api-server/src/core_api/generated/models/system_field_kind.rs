@@ -12,25 +12,25 @@
 /// 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
 pub enum SystemFieldKind {
-    #[serde(rename = "TypeInfo")]
-    TypeInfo,
     #[serde(rename = "BootLoader")]
     BootLoader,
+    #[serde(rename = "TypeInfo")]
+    TypeInfo,
 
 }
 
 impl ToString for SystemFieldKind {
     fn to_string(&self) -> String {
         match self {
-            Self::TypeInfo => String::from("TypeInfo"),
             Self::BootLoader => String::from("BootLoader"),
+            Self::TypeInfo => String::from("TypeInfo"),
         }
     }
 }
 
 impl Default for SystemFieldKind {
     fn default() -> SystemFieldKind {
-        Self::TypeInfo
+        Self::BootLoader
     }
 }
 

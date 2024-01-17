@@ -49,7 +49,7 @@ pub(crate) async fn handle_state_access_controller(
 
     let header = read_current_ledger_header(database.deref());
 
-    Ok(models::StateAccessControllerResponse {
+    Ok(Json(models::StateAccessControllerResponse {
         at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
         state: Some(to_api_access_controller_substate(
             &mapping_context,
@@ -61,6 +61,5 @@ pub(crate) async fn handle_state_access_controller(
         )?),
         vaults,
         descendent_nodes,
-    })
-    .map(Json)
+    }))
 }

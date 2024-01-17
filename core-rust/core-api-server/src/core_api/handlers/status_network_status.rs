@@ -16,7 +16,7 @@ pub(crate) async fn handle_status_network_status(
 
     let database = state.state_manager.database.read_current();
     let (current_state_version, current_ledger_hashes) = database.get_top_ledger_hashes();
-    Ok(models::NetworkStatusResponse {
+    Ok(Json(models::NetworkStatusResponse {
         pre_genesis_state_identifier: Box::new(to_api_committed_state_identifiers(
             StateVersion::pre_genesis(),
             &LedgerHashes::pre_genesis(),
@@ -74,9 +74,8 @@ pub(crate) async fn handle_status_network_status(
                 )?))
             })
             .transpose()?,
-        current_protocol_version: "babylon".to_string(), // TODO(protocol-update): fixme
-    })
-    .map(Json)
+        current_protocol_version: "babylon".to_string(),
+    }))
 }
 
 pub fn to_api_epoch_round(
