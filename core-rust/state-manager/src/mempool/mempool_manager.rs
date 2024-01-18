@@ -70,16 +70,13 @@ use node_common::metrics::TakesMetricLabels;
 use prometheus::Registry;
 use transaction::model::*;
 
-use std::cmp::max;
 use std::collections::HashSet;
 use std::sync::Arc;
 use std::time::Instant;
 
 use crate::mempool_relay_dispatcher::MempoolRelayDispatcher;
 use crate::store::StateManagerDatabase;
-use crate::transaction::{
-    CachedCommittabilityValidator, ForceRecalculation, PrevalidatedCheckMetadata,
-};
+use crate::transaction::{CachedCommittabilityValidator, ForceRecalculation};
 use node_common::locks::RwLock;
 use tracing::warn;
 
@@ -166,35 +163,27 @@ impl MempoolManager {
             .collect()
     }
 
-    /// Checks the committability of a random subset of transactions and removes the rejected ones
-    /// from the mempool.
+    /// Checks the committability of a subset of transactions executed against earliest state versions
+    /// and removes the newly rejected ones from the mempool.
     /// Obeys the given limit on the number of actually executed (i.e. not cached) transactions.
     pub fn reevaluate_transaction_committability(&self, max_reevaluated_count: u32) {
-        // TODO: better selection of transactions based on last time/state version against it was reevaluated.
-        const MIN_TRANSACTIONS_TO_CHECK_FOR_REEVALUATION: u32 = 100;
-        let candidate_transactions = self.mempool.read().get_k_random_transactions(max(
-            max_reevaluated_count,
-            MIN_TRANSACTIONS_TO_CHECK_FOR_REEVALUATION,
-        )
-            as usize);
+        let candidate_transactions: Vec<Arc<MempoolData>> = self
+            .mempool
+            .read()
+            .iter_by_state_version()
+            .take(max_reevaluated_count as usize)
+            .collect();
 
         let mut transactions_to_remove = Vec::new();
-        let mut reevaluated_count = 0;
         for candidate_transaction in candidate_transactions {
-            let (record, was_cached) = self
+            let (record, _was_cached) = self
                 .cached_committability_validator
                 .check_for_rejection_cached_prevalidated(
-                    &candidate_transaction.validated,
-                    ForceRecalculation::No,
+                    &candidate_transaction.transaction.validated,
+                    ForceRecalculation::Yes,
                 );
             if record.latest_attempt.rejection.is_some() {
                 transactions_to_remove.push(candidate_transaction);
-            }
-            if was_cached == PrevalidatedCheckMetadata::Fresh {
-                reevaluated_count += 1;
-                if reevaluated_count >= max_reevaluated_count {
-                    break;
-                }
             }
         }
 
@@ -205,6 +194,7 @@ impl MempoolManager {
                 .for_each(|transaction_to_remove| {
                     write_mempool.remove_by_payload_hash(
                         &transaction_to_remove
+                            .transaction
                             .validated
                             .prepared
                             .notarized_transaction_hash(),
@@ -310,15 +300,19 @@ impl MempoolManager {
             .map_err(MempoolAddError::Rejected);
 
         match result {
-            Ok(validated) => {
+            Ok(DynamicValidatedTransaction {
+                transaction,
+                state_version,
+            }) => {
                 let mempool_transaction = Arc::new(MempoolTransaction {
-                    validated,
+                    validated: transaction,
                     raw: raw_transaction,
                 });
                 match self.mempool.write().add_transaction(
                     mempool_transaction.clone(),
                     source,
                     Instant::now(),
+                    state_version,
                 ) {
                     Ok(_evicted) => Ok(mempool_transaction),
                     Err(error) => Err(error),

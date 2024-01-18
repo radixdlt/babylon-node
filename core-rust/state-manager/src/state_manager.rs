@@ -183,16 +183,21 @@ impl StateManager {
             costing_parameters.state_storage_price = Decimal::ZERO;
             costing_parameters.archive_storage_price = Decimal::ZERO;
         }
+
         let execution_configurator = Arc::new(ExecutionConfigurator::new(
             &network,
             &logging_config,
             costing_parameters,
         ));
-        let pending_transaction_result_cache = Arc::new(
+        let mempool = Arc::new(
             lock_factory
-                .named("pending_cache")
-                .new_rwlock(PendingTransactionResultCache::new(10000, 10000)),
+                .named("mempool")
+                .new_rwlock(PriorityMempool::new(mempool_config, metrics_registry)),
         );
+        let pending_transaction_result_cache =
+            Arc::new(lock_factory.named("pending_cache").new_rwlock(
+                PendingTransactionResultCache::new(mempool.clone(), 10000, 10000),
+            ));
         let committability_validator = Arc::new(CommittabilityValidator::new(
             &network,
             database.clone(),
@@ -203,13 +208,6 @@ impl StateManager {
             committability_validator.clone(),
             pending_transaction_result_cache.clone(),
         );
-
-        let mempool = Arc::new(
-            lock_factory
-                .named("mempool")
-                .new_rwlock(PriorityMempool::new(mempool_config, metrics_registry)),
-        );
-
         let mempool_manager = Arc::new(match mempool_relay_dispatcher {
             None => MempoolManager::new_for_testing(
                 mempool.clone(),
