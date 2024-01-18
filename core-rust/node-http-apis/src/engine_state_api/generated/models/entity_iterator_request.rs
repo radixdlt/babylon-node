@@ -13,7 +13,7 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct EntityIteratorRequest {
-    /// A maximum number of items to be included in the paged listing response. By default, each paged listing endpoint imposes its own limit on the number of returned items (which may even be driven dynamically by system load, etc). This client-provided maximum page size simply adds a further constraint (i.e. can only lower down the number of returned items). 
+    /// A maximum number of items to be included in the paged listing response.
     #[serde(rename = "max_page_size", skip_serializing_if = "Option::is_none")]
     pub max_page_size: Option<i32>,
     /// An opaque string conveying the information on where the next page of results starts. It is returned in every paged listing response (except for the last page), and it can be passed in every paged listing request (in order to begin listing from where the previous response ended). 

@@ -75,44 +75,13 @@ import org.junit.Test;
 public final class ObjectCollectionEntryTest extends DeterministicEngineStateApiTestBase {
 
   @Test
-  public void engine_state_api_returns_object_collection_entry() throws Exception {
+  public void engine_state_api_returns_object_kv_collection_entry() throws Exception {
     try (var test = buildRunningServerTest()) {
       test.suppressUnusedWarning();
 
       final var wellKnownAddresses = getCoreApiHelper().getWellKnownAddresses();
 
       // fetch the Blueprint of version 1.0.0 from some arbitrary package:
-      final var key =
-          new KeyValueStoreEntryKey()
-              .programmaticJson(
-                  Map.of(
-                      "type_name", "BlueprintVersionKey",
-                      "kind", "Tuple",
-                      "fields",
-                          List.of(
-                              Map.of(
-                                  "kind", "String",
-                                  "field_name", "blueprint",
-                                  "value", "Identity"),
-                              Map.of(
-                                  "type_name", "BlueprintVersion",
-                                  "kind", "Tuple",
-                                  "field_name", "version",
-                                  "fields",
-                                      List.of(
-                                          Map.of(
-                                              "kind", "U32",
-                                              "field_name", "major",
-                                              "value", "1"),
-                                          Map.of(
-                                              "kind", "U32",
-                                              "field_name", "minor",
-                                              "value", "0"),
-                                          Map.of(
-                                              "kind", "U32",
-                                              "field_name", "patch",
-                                              "value", "0"))))))
-              .kind(ObjectCollectionKind.KEYVALUESTORE);
       final var value =
           (Map<?, ?>)
               getObjectsApi()
@@ -120,7 +89,12 @@ public final class ObjectCollectionEntryTest extends DeterministicEngineStateApi
                       new ObjectCollectionEntryRequest()
                           .entityAddress(wellKnownAddresses.getIdentityPackage())
                           .collectionName("blueprint_version_definition")
-                          .key(key))
+                          .key(
+                              new KeyValueStoreEntryKey()
+                                  .key(
+                                      new SborData()
+                                          .programmaticJson(createBlueprintKeyJson("Identity")))
+                                  .kind(ObjectCollectionKind.KEYVALUESTORE)))
                   .getContent()
                   .getProgrammaticJson();
 
@@ -130,43 +104,139 @@ public final class ObjectCollectionEntryTest extends DeterministicEngineStateApi
   }
 
   @Test
+  public void engine_state_api_returns_object_sorted_collection_entry() throws Exception {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
+
+      final var wellKnownAddresses = getCoreApiHelper().getWellKnownAddresses();
+
+      // fetch a known entry from "validator by stake":
+      final var value =
+          (Map<?, ?>)
+              getObjectsApi()
+                  .objectCollectionEntryPost(
+                      new ObjectCollectionEntryRequest()
+                          .entityAddress(wellKnownAddresses.getConsensusManager())
+                          .collectionName("registered_validator_by_stake")
+                          .key(
+                              new SortedIndexEntryKey()
+                                  .sortPrefixHex("ffff")
+                                  .key(
+                                      new SborData()
+                                          .programmaticJson(
+                                              Map.of(
+                                                  "type_name", "ComponentAddress",
+                                                  "kind", "Reference",
+                                                  "value",
+                                                      "validator_test1s0a9c9kwjr3dmw79djvhalyz32sywumacv873yr7ms02v725kaygut")))
+                                  .kind(ObjectCollectionKind.SORTEDINDEX)))
+                  .getContent()
+                  .getProgrammaticJson();
+
+      // assert that it is an SBOR struct of the expected type:
+      assertThat(value.get("type_name"))
+          .isEqualTo("ConsensusManagerRegisteredValidatorByStakeEntryPayload");
+    }
+  }
+
+  @Test
   public void engine_state_api_returns_not_found_for_unknown_key() throws Exception {
     try (var test = buildRunningServerTest()) {
       test.suppressUnusedWarning();
 
       final var wellKnownAddresses = getCoreApiHelper().getWellKnownAddresses();
-      // make up a non-existent validator key:
-      final var key =
-          new SortedIndexEntryKey()
-              .sortPrefixHex("fffe")
-              .programmaticJson(
-                  Map.of(
-                      "type_name", "Hash",
-                      "kind", "Bytes",
-                      "element_kind", "U8",
-                      "hex", "abcd"))
-              .kind(ObjectCollectionKind.INDEX);
 
-      // try to fetch it from the sorted index collection:
+      // try to fetch a blueprint of some made-up name:
       final var errorResponse =
           assertErrorResponseOfType(
               () ->
                   getObjectsApi()
                       .objectCollectionEntryPost(
                           new ObjectCollectionEntryRequest()
-                              .entityAddress(wellKnownAddresses.getConsensusManager())
-                              .collectionName("registered_validators_by_stake")
-                              .key(key)),
+                              .entityAddress(wellKnownAddresses.getIdentityPackage())
+                              .collectionName("blueprint_version_definition")
+                              .key(
+                                  new KeyValueStoreEntryKey()
+                                      .key(
+                                          new SborData()
+                                              .programmaticJson(createBlueprintKeyJson("MadeUp")))
+                                      .kind(ObjectCollectionKind.KEYVALUESTORE))),
               ErrorResponse.class);
 
       // assert that it is "not found" type of error:
-      assertThat(errorResponse.getDetails().getErrorType())
-          .isEqualTo(ErrorType.REQUESTEDITEMNOTFOUND);
+      assertThat(errorResponse.getDetails())
+          .isEqualTo(
+              new RequestedItemNotFoundDetails()
+                  .itemType(RequestedItemType.ENTRYKEY)
+                  .errorType(ErrorType.REQUESTEDITEMNOTFOUND));
       assertThat(errorResponse.getMessage()).contains("not found");
     }
   }
 
-  // TODO(after fix in scrypto repo): add a positive test for the "fetch from sorted index" above
-  // (currently it would fail: cannot deserialize SBOR because of missing wrapper type in the
-  // system reader's impl)
+  @Test
+  public void engine_state_api_accepts_and_outputs_sbors_as_raw_hex() throws Exception {
+    // Note: this is NOT the only endpoint in the Engine State API which is supposed to support
+    // SBORs in different formats, but it is a convenient place to test it (both input and output).
+
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
+
+      final var wellKnownAddresses = getCoreApiHelper().getWellKnownAddresses();
+
+      final var sborData =
+          getObjectsApi()
+              .objectCollectionEntryPost(
+                  new ObjectCollectionEntryRequest()
+                      .entityAddress(wellKnownAddresses.getIdentityPackage())
+                      .collectionName("blueprint_version_definition")
+                      .key(
+                          new KeyValueStoreEntryKey()
+                              .key(
+                                  new SborData()
+                                      .rawHex(
+                                          "5c21020c084964656e746974792103090100000009000000000900000000"))
+                              .kind(ObjectCollectionKind.KEYVALUESTORE))
+                      .sborFormatOptions(
+                          new SborFormatOptions().rawHex(true).programmaticJson(false)))
+              .getContent();
+
+      assertThat(sborData.getRawHex()).isNotNull();
+      assertThat(sborData.getProgrammaticJson()).isNull();
+    }
+  }
+
+  private static Map<?, ?> createBlueprintKeyJson(String name) {
+    return Map.of(
+        "type_name",
+        "BlueprintVersionKey",
+        "kind",
+        "Tuple",
+        "fields",
+        List.of(
+            Map.of(
+                "kind", "String",
+                "field_name", "blueprint",
+                "value", name),
+            Map.of(
+                "type_name",
+                "BlueprintVersion",
+                "kind",
+                "Tuple",
+                "field_name",
+                "version",
+                "fields",
+                List.of(
+                    Map.of(
+                        "kind", "U32",
+                        "field_name", "major",
+                        "value", "1"),
+                    Map.of(
+                        "kind", "U32",
+                        "field_name", "minor",
+                        "value", "0"),
+                    Map.of(
+                        "kind", "U32",
+                        "field_name", "patch",
+                        "value", "0")))));
+  }
 }

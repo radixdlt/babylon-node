@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.engine_state.generated.models.LedgerStateSummary;
-import com.radixdlt.api.engine_state.generated.models.ObjectCollectionEntryResponseContent;
+import com.radixdlt.api.engine_state.generated.models.SborData;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -42,7 +42,7 @@ public class ObjectCollectionEntryResponse {
   private LedgerStateSummary atLedgerState;
 
   public static final String JSON_PROPERTY_CONTENT = "content";
-  private ObjectCollectionEntryResponseContent content;
+  private SborData content;
 
   public ObjectCollectionEntryResponse() { 
   }
@@ -73,7 +73,7 @@ public class ObjectCollectionEntryResponse {
   }
 
 
-  public ObjectCollectionEntryResponse content(ObjectCollectionEntryResponseContent content) {
+  public ObjectCollectionEntryResponse content(SborData content) {
     this.content = content;
     return this;
   }
@@ -87,14 +87,14 @@ public class ObjectCollectionEntryResponse {
   @JsonProperty(JSON_PROPERTY_CONTENT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ObjectCollectionEntryResponseContent getContent() {
+  public SborData getContent() {
     return content;
   }
 
 
   @JsonProperty(JSON_PROPERTY_CONTENT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setContent(ObjectCollectionEntryResponseContent content) {
+  public void setContent(SborData content) {
     this.content = content;
   }
 

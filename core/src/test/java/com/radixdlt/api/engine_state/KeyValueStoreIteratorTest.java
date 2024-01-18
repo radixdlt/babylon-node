@@ -142,10 +142,10 @@ public final class KeyValueStoreIteratorTest extends DeterministicEngineStateApi
                   new KeyValueStoreIteratorRequest()
                       .entityAddress(getTransactionsKeyValueStoreAddress()))
               .getPage();
-      final var theOnlyKey = Iterables.getOnlyElement(allKeys).getProgrammaticJson();
+      final var theOnlyKey = Iterables.getOnlyElement(allKeys).getKey();
 
       // assert it is the executed transaction's hash, as SBOR in programmatic JSON format:
-      assertThat(theOnlyKey)
+      assertThat(theOnlyKey.getProgrammaticJson())
           .isEqualTo(
               Map.of(
                   "type_name", "Hash",

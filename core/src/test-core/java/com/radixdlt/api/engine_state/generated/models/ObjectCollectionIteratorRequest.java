@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.engine_state.generated.models.AttachedModuleId;
+import com.radixdlt.api.engine_state.generated.models.SborFormatOptions;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -36,6 +37,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   ObjectCollectionIteratorRequest.JSON_PROPERTY_ATTACHED_MODULE_ID,
   ObjectCollectionIteratorRequest.JSON_PROPERTY_COLLECTION_NAME,
   ObjectCollectionIteratorRequest.JSON_PROPERTY_COLLECTION_INDEX,
+  ObjectCollectionIteratorRequest.JSON_PROPERTY_SBOR_FORMAT_OPTIONS,
   ObjectCollectionIteratorRequest.JSON_PROPERTY_MAX_PAGE_SIZE,
   ObjectCollectionIteratorRequest.JSON_PROPERTY_CONTINUATION_TOKEN
 })
@@ -52,6 +54,9 @@ public class ObjectCollectionIteratorRequest {
 
   public static final String JSON_PROPERTY_COLLECTION_INDEX = "collection_index";
   private Integer collectionIndex;
+
+  public static final String JSON_PROPERTY_SBOR_FORMAT_OPTIONS = "sbor_format_options";
+  private SborFormatOptions sborFormatOptions;
 
   public static final String JSON_PROPERTY_MAX_PAGE_SIZE = "max_page_size";
   private Integer maxPageSize;
@@ -168,19 +173,45 @@ public class ObjectCollectionIteratorRequest {
   }
 
 
+  public ObjectCollectionIteratorRequest sborFormatOptions(SborFormatOptions sborFormatOptions) {
+    this.sborFormatOptions = sborFormatOptions;
+    return this;
+  }
+
+   /**
+   * Get sborFormatOptions
+   * @return sborFormatOptions
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_SBOR_FORMAT_OPTIONS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public SborFormatOptions getSborFormatOptions() {
+    return sborFormatOptions;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_SBOR_FORMAT_OPTIONS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setSborFormatOptions(SborFormatOptions sborFormatOptions) {
+    this.sborFormatOptions = sborFormatOptions;
+  }
+
+
   public ObjectCollectionIteratorRequest maxPageSize(Integer maxPageSize) {
     this.maxPageSize = maxPageSize;
     return this;
   }
 
    /**
-   * A maximum number of items to be included in the paged listing response. By default, each paged listing endpoint imposes its own limit on the number of returned items (which may even be driven dynamically by system load, etc). This client-provided maximum page size simply adds a further constraint (i.e. can only lower down the number of returned items). 
+   * A maximum number of items to be included in the paged listing response.
    * minimum: 1
-   * maximum: 1000
+   * maximum: 100
    * @return maxPageSize
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "A maximum number of items to be included in the paged listing response. By default, each paged listing endpoint imposes its own limit on the number of returned items (which may even be driven dynamically by system load, etc). This client-provided maximum page size simply adds a further constraint (i.e. can only lower down the number of returned items). ")
+  @ApiModelProperty(value = "A maximum number of items to be included in the paged listing response.")
   @JsonProperty(JSON_PROPERTY_MAX_PAGE_SIZE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
@@ -238,13 +269,14 @@ public class ObjectCollectionIteratorRequest {
         Objects.equals(this.attachedModuleId, objectCollectionIteratorRequest.attachedModuleId) &&
         Objects.equals(this.collectionName, objectCollectionIteratorRequest.collectionName) &&
         Objects.equals(this.collectionIndex, objectCollectionIteratorRequest.collectionIndex) &&
+        Objects.equals(this.sborFormatOptions, objectCollectionIteratorRequest.sborFormatOptions) &&
         Objects.equals(this.maxPageSize, objectCollectionIteratorRequest.maxPageSize) &&
         Objects.equals(this.continuationToken, objectCollectionIteratorRequest.continuationToken);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entityAddress, attachedModuleId, collectionName, collectionIndex, maxPageSize, continuationToken);
+    return Objects.hash(entityAddress, attachedModuleId, collectionName, collectionIndex, sborFormatOptions, maxPageSize, continuationToken);
   }
 
   @Override
@@ -255,6 +287,7 @@ public class ObjectCollectionIteratorRequest {
     sb.append("    attachedModuleId: ").append(toIndentedString(attachedModuleId)).append("\n");
     sb.append("    collectionName: ").append(toIndentedString(collectionName)).append("\n");
     sb.append("    collectionIndex: ").append(toIndentedString(collectionIndex)).append("\n");
+    sb.append("    sborFormatOptions: ").append(toIndentedString(sborFormatOptions)).append("\n");
     sb.append("    maxPageSize: ").append(toIndentedString(maxPageSize)).append("\n");
     sb.append("    continuationToken: ").append(toIndentedString(continuationToken)).append("\n");
     sb.append("}");

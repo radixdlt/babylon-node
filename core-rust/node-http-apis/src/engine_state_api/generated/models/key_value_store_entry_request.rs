@@ -17,14 +17,17 @@ pub struct KeyValueStoreEntryRequest {
     #[serde(rename = "entity_address")]
     pub entity_address: String,
     #[serde(rename = "key")]
-    pub key: Box<crate::engine_state_api::generated::models::KeyValueStoreMapKey>,
+    pub key: Box<crate::engine_state_api::generated::models::SborData>,
+    #[serde(rename = "sbor_format_options", skip_serializing_if = "Option::is_none")]
+    pub sbor_format_options: Option<Box<crate::engine_state_api::generated::models::SborFormatOptions>>,
 }
 
 impl KeyValueStoreEntryRequest {
-    pub fn new(entity_address: String, key: crate::engine_state_api::generated::models::KeyValueStoreMapKey) -> KeyValueStoreEntryRequest {
+    pub fn new(entity_address: String, key: crate::engine_state_api::generated::models::SborData) -> KeyValueStoreEntryRequest {
         KeyValueStoreEntryRequest {
             entity_address,
             key: Box::new(key),
+            sbor_format_options: None,
         }
     }
 }

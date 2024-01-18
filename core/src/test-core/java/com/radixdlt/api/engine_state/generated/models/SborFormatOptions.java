@@ -28,17 +28,17 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * Requested SBOR formats to include in the response.
+ * Requested SBOR representation to use for every &#x60;SborData&#x60; within the response.
  */
-@ApiModel(description = "Requested SBOR formats to include in the response.")
+@ApiModel(description = "Requested SBOR representation to use for every `SborData` within the response.")
 @JsonPropertyOrder({
-  SborFormatOptions.JSON_PROPERTY_RAW,
+  SborFormatOptions.JSON_PROPERTY_RAW_HEX,
   SborFormatOptions.JSON_PROPERTY_PROGRAMMATIC_JSON
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class SborFormatOptions {
-  public static final String JSON_PROPERTY_RAW = "raw";
-  private Boolean raw;
+  public static final String JSON_PROPERTY_RAW_HEX = "raw_hex";
+  private Boolean rawHex;
 
   public static final String JSON_PROPERTY_PROGRAMMATIC_JSON = "programmatic_json";
   private Boolean programmaticJson;
@@ -46,29 +46,29 @@ public class SborFormatOptions {
   public SborFormatOptions() { 
   }
 
-  public SborFormatOptions raw(Boolean raw) {
-    this.raw = raw;
+  public SborFormatOptions rawHex(Boolean rawHex) {
+    this.rawHex = rawHex;
     return this;
   }
 
    /**
    * Whether to return the raw hex-encoded bytes (default false).
-   * @return raw
+   * @return rawHex
   **/
   @javax.annotation.Nullable
   @ApiModelProperty(value = "Whether to return the raw hex-encoded bytes (default false).")
-  @JsonProperty(JSON_PROPERTY_RAW)
+  @JsonProperty(JSON_PROPERTY_RAW_HEX)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public Boolean getRaw() {
-    return raw;
+  public Boolean getRawHex() {
+    return rawHex;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_RAW)
+  @JsonProperty(JSON_PROPERTY_RAW_HEX)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setRaw(Boolean raw) {
-    this.raw = raw;
+  public void setRawHex(Boolean rawHex) {
+    this.rawHex = rawHex;
   }
 
 
@@ -110,20 +110,20 @@ public class SborFormatOptions {
       return false;
     }
     SborFormatOptions sborFormatOptions = (SborFormatOptions) o;
-    return Objects.equals(this.raw, sborFormatOptions.raw) &&
+    return Objects.equals(this.rawHex, sborFormatOptions.rawHex) &&
         Objects.equals(this.programmaticJson, sborFormatOptions.programmaticJson);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(raw, programmaticJson);
+    return Objects.hash(rawHex, programmaticJson);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class SborFormatOptions {\n");
-    sb.append("    raw: ").append(toIndentedString(raw)).append("\n");
+    sb.append("    rawHex: ").append(toIndentedString(rawHex)).append("\n");
     sb.append("    programmaticJson: ").append(toIndentedString(programmaticJson)).append("\n");
     sb.append("}");
     return sb.toString();

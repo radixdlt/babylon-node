@@ -16,16 +16,16 @@
 pub struct KeyValueStoreEntryKey {
     #[serde(rename = "kind")]
     pub kind: crate::engine_state_api::generated::models::ObjectCollectionKind,
-    #[serde(rename = "programmatic_json")]
-    pub programmatic_json: serde_json::Value,
+    #[serde(rename = "key")]
+    pub key: Box<crate::engine_state_api::generated::models::SborData>,
 }
 
 impl KeyValueStoreEntryKey {
     /// Key within an Object's Key-Value Store collection.
-    pub fn new(kind: crate::engine_state_api::generated::models::ObjectCollectionKind, programmatic_json: serde_json::Value) -> KeyValueStoreEntryKey {
+    pub fn new(kind: crate::engine_state_api::generated::models::ObjectCollectionKind, key: crate::engine_state_api::generated::models::SborData) -> KeyValueStoreEntryKey {
         KeyValueStoreEntryKey {
             kind,
-            programmatic_json,
+            key: Box::new(key),
         }
     }
 }

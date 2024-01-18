@@ -29,6 +29,7 @@ import com.radixdlt.api.engine_state.generated.models.CollectionEntryKey;
 import com.radixdlt.api.engine_state.generated.models.IndexEntryKey;
 import com.radixdlt.api.engine_state.generated.models.KeyValueStoreEntryKey;
 import com.radixdlt.api.engine_state.generated.models.ObjectCollectionKind;
+import com.radixdlt.api.engine_state.generated.models.SborData;
 import com.radixdlt.api.engine_state.generated.models.SortedIndexEntryKey;
 import com.radixdlt.api.engine_state.generated.models.SortedIndexEntryKeyAllOf;
 import io.swagger.annotations.ApiModel;
@@ -43,7 +44,7 @@ import com.radixdlt.api.engine_state.generated.client.JSON;
 @ApiModel(description = "Key within an Object's Sorted Index collection.")
 @JsonPropertyOrder({
   SortedIndexEntryKey.JSON_PROPERTY_SORT_PREFIX_HEX,
-  SortedIndexEntryKey.JSON_PROPERTY_PROGRAMMATIC_JSON
+  SortedIndexEntryKey.JSON_PROPERTY_KEY
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -61,8 +62,8 @@ public class SortedIndexEntryKey extends CollectionEntryKey {
   public static final String JSON_PROPERTY_SORT_PREFIX_HEX = "sort_prefix_hex";
   private String sortPrefixHex;
 
-  public static final String JSON_PROPERTY_PROGRAMMATIC_JSON = "programmatic_json";
-  private Object programmaticJson;
+  public static final String JSON_PROPERTY_KEY = "key";
+  private SborData key;
 
   public SortedIndexEntryKey() { 
   }
@@ -93,29 +94,29 @@ public class SortedIndexEntryKey extends CollectionEntryKey {
   }
 
 
-  public SortedIndexEntryKey programmaticJson(Object programmaticJson) {
-    this.programmaticJson = programmaticJson;
+  public SortedIndexEntryKey key(SborData key) {
+    this.key = key;
     return this;
   }
 
    /**
-   * Get programmaticJson
-   * @return programmaticJson
+   * Get key
+   * @return key
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_PROGRAMMATIC_JSON)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Object getProgrammaticJson() {
-    return programmaticJson;
+  public SborData getKey() {
+    return key;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_PROGRAMMATIC_JSON)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setProgrammaticJson(Object programmaticJson) {
-    this.programmaticJson = programmaticJson;
+  public void setKey(SborData key) {
+    this.key = key;
   }
 
 
@@ -132,13 +133,13 @@ public class SortedIndexEntryKey extends CollectionEntryKey {
     }
     SortedIndexEntryKey sortedIndexEntryKey = (SortedIndexEntryKey) o;
     return Objects.equals(this.sortPrefixHex, sortedIndexEntryKey.sortPrefixHex) &&
-        Objects.equals(this.programmaticJson, sortedIndexEntryKey.programmaticJson) &&
+        Objects.equals(this.key, sortedIndexEntryKey.key) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(sortPrefixHex, programmaticJson, super.hashCode());
+    return Objects.hash(sortPrefixHex, key, super.hashCode());
   }
 
   @Override
@@ -147,7 +148,7 @@ public class SortedIndexEntryKey extends CollectionEntryKey {
     sb.append("class SortedIndexEntryKey {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    sortPrefixHex: ").append(toIndentedString(sortPrefixHex)).append("\n");
-    sb.append("    programmaticJson: ").append(toIndentedString(programmaticJson)).append("\n");
+    sb.append("    key: ").append(toIndentedString(key)).append("\n");
     sb.append("}");
     return sb.toString();
   }

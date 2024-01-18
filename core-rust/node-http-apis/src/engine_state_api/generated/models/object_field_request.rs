@@ -24,6 +24,8 @@ pub struct ObjectFieldRequest {
     /// Index of the field to read. Either this or `field_name` is required.
     #[serde(rename = "field_index", skip_serializing_if = "Option::is_none")]
     pub field_index: Option<i32>,
+    #[serde(rename = "sbor_format_options", skip_serializing_if = "Option::is_none")]
+    pub sbor_format_options: Option<Box<crate::engine_state_api::generated::models::SborFormatOptions>>,
 }
 
 impl ObjectFieldRequest {
@@ -33,6 +35,7 @@ impl ObjectFieldRequest {
             attached_module_id: None,
             field_name: None,
             field_index: None,
+            sbor_format_options: None,
         }
     }
 }

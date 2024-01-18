@@ -8,7 +8,8 @@ pub(crate) async fn handle_object_collection_iterator(
     state: State<EngineStateApiState>,
     Json(request): Json<models::ObjectCollectionIteratorRequest>,
 ) -> Result<Json<models::ObjectCollectionIteratorResponse>, ResponseError> {
-    let mapping_context = MappingContext::new(&state.network);
+    let mapping_context =
+        MappingContext::new(&state.network).with_sbor_formats(request.sbor_format_options);
     let extraction_context = ExtractionContext::new(&state.network);
 
     let node_id = extract_address_as_node_id(&extraction_context, &request.entity_address)
@@ -94,16 +95,16 @@ fn to_api_object_collection_entry_key(
     Ok(match key {
         ObjectCollectionKey::KeyValueStore(sbor_data) => {
             models::CollectionEntryKey::KeyValueStoreEntryKey {
-                programmatic_json: sbor_data.into_programmatic_json(context)?,
+                key: Box::new(to_api_sbor_data(context, sbor_data)?),
             }
         }
         ObjectCollectionKey::Index(sbor_data) => models::CollectionEntryKey::IndexEntryKey {
-            programmatic_json: sbor_data.into_programmatic_json(context)?,
+            key: Box::new(to_api_sbor_data(context, sbor_data)?),
         },
         ObjectCollectionKey::SortedIndex(sorted_part, sbor_data) => {
             models::CollectionEntryKey::SortedIndexEntryKey {
                 sort_prefix_hex: to_hex(sorted_part),
-                programmatic_json: sbor_data.into_programmatic_json(context)?,
+                key: Box::new(to_api_sbor_data(context, sbor_data)?),
             }
         }
     })

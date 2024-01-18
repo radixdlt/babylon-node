@@ -19,6 +19,8 @@ pub struct EntitySchemaEntryRequest {
     /// A hex-encoded Schema hash, capturing the identity of an SBOR schema.
     #[serde(rename = "schema_hash")]
     pub schema_hash: String,
+    #[serde(rename = "sbor_format_options", skip_serializing_if = "Option::is_none")]
+    pub sbor_format_options: Option<Box<crate::engine_state_api::generated::models::SborFormatOptions>>,
 }
 
 impl EntitySchemaEntryRequest {
@@ -26,6 +28,7 @@ impl EntitySchemaEntryRequest {
         EntitySchemaEntryRequest {
             entity_address,
             schema_hash,
+            sbor_format_options: None,
         }
     }
 }
