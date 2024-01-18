@@ -140,7 +140,7 @@ impl FlashTransactionV1 {
         let flash_hash = HashAccumulator::new()
             .update([
                 TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
-                TransactionDiscriminator::V1System as u8, // TODO(protocol-update): Add V1Flash to this enum
+                TransactionDiscriminator::V1Flash as u8,
             ])
             .update(state_updates_hash)
             .update(self.nonce.to_le_bytes().as_slice())
