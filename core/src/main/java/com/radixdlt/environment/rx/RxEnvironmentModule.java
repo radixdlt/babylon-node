@@ -154,10 +154,14 @@ public final class RxEnvironmentModule extends AbstractModule {
   @StringMapKey(Runners.SYSTEM_INFO)
   @Singleton
   public ModuleRunner systemInfoRunner(
-      @Self String name, Set<EventProcessorOnRunner<?>> processors, RxEnvironment rxEnvironment) {
+      @Self String name,
+      Set<EventProcessorOnRunner<?>> processors,
+      Set<ScheduledEventProducerOnRunner<?>> scheduledEventProducers,
+      RxEnvironment rxEnvironment) {
     final var runnerName = Runners.SYSTEM_INFO;
     final var builder = RxModuleRunnerImpl.builder();
     addProcessorsOnRunner(processors, rxEnvironment, runnerName, builder);
+    addScheduledEventProducersOnRunner(scheduledEventProducers, runnerName, builder);
     return builder.build("SystemInfo " + name);
   }
 

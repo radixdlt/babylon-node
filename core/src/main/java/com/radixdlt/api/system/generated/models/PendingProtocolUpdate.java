@@ -34,8 +34,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   PendingProtocolUpdate.JSON_PROPERTY_PROTOCOL_VERSION,
   PendingProtocolUpdate.JSON_PROPERTY_STATE,
-  PendingProtocolUpdate.JSON_PROPERTY_READINESS_SIGNAL_NAME,
-  PendingProtocolUpdate.JSON_PROPERTY_READINESS_SIGNAL_STATUS
+  PendingProtocolUpdate.JSON_PROPERTY_READINESS_SIGNAL_NAME
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class PendingProtocolUpdate {
@@ -47,44 +46,6 @@ public class PendingProtocolUpdate {
 
   public static final String JSON_PROPERTY_READINESS_SIGNAL_NAME = "readiness_signal_name";
   private String readinessSignalName;
-
-  /**
-   * Gets or Sets readinessSignalStatus
-   */
-  public enum ReadinessSignalStatusEnum {
-    READINESS_SIGNAL_REQUIRED("READINESS_SIGNAL_REQUIRED"),
-    
-    NO_ACTION_NEEDED("NO_ACTION_NEEDED");
-
-    private String value;
-
-    ReadinessSignalStatusEnum(String value) {
-      this.value = value;
-    }
-
-    @JsonValue
-    public String getValue() {
-      return value;
-    }
-
-    @Override
-    public String toString() {
-      return String.valueOf(value);
-    }
-
-    @JsonCreator
-    public static ReadinessSignalStatusEnum fromValue(String value) {
-      for (ReadinessSignalStatusEnum b : ReadinessSignalStatusEnum.values()) {
-        if (b.value.equals(value)) {
-          return b;
-        }
-      }
-      throw new IllegalArgumentException("Unexpected value '" + value + "'");
-    }
-  }
-
-  public static final String JSON_PROPERTY_READINESS_SIGNAL_STATUS = "readiness_signal_status";
-  private ReadinessSignalStatusEnum readinessSignalStatus;
 
 
   public PendingProtocolUpdate protocolVersion(String protocolVersion) {
@@ -165,32 +126,6 @@ public class PendingProtocolUpdate {
   }
 
 
-  public PendingProtocolUpdate readinessSignalStatus(ReadinessSignalStatusEnum readinessSignalStatus) {
-    this.readinessSignalStatus = readinessSignalStatus;
-    return this;
-  }
-
-   /**
-   * Get readinessSignalStatus
-   * @return readinessSignalStatus
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_READINESS_SIGNAL_STATUS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public ReadinessSignalStatusEnum getReadinessSignalStatus() {
-    return readinessSignalStatus;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_READINESS_SIGNAL_STATUS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setReadinessSignalStatus(ReadinessSignalStatusEnum readinessSignalStatus) {
-    this.readinessSignalStatus = readinessSignalStatus;
-  }
-
-
   /**
    * Return true if this PendingProtocolUpdate object is equal to o.
    */
@@ -205,13 +140,12 @@ public class PendingProtocolUpdate {
     PendingProtocolUpdate pendingProtocolUpdate = (PendingProtocolUpdate) o;
     return Objects.equals(this.protocolVersion, pendingProtocolUpdate.protocolVersion) &&
         Objects.equals(this.state, pendingProtocolUpdate.state) &&
-        Objects.equals(this.readinessSignalName, pendingProtocolUpdate.readinessSignalName) &&
-        Objects.equals(this.readinessSignalStatus, pendingProtocolUpdate.readinessSignalStatus);
+        Objects.equals(this.readinessSignalName, pendingProtocolUpdate.readinessSignalName);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(protocolVersion, state, readinessSignalName, readinessSignalStatus);
+    return Objects.hash(protocolVersion, state, readinessSignalName);
   }
 
   @Override
@@ -221,7 +155,6 @@ public class PendingProtocolUpdate {
     sb.append("    protocolVersion: ").append(toIndentedString(protocolVersion)).append("\n");
     sb.append("    state: ").append(toIndentedString(state)).append("\n");
     sb.append("    readinessSignalName: ").append(toIndentedString(readinessSignalName)).append("\n");
-    sb.append("    readinessSignalStatus: ").append(toIndentedString(readinessSignalStatus)).append("\n");
     sb.append("}");
     return sb.toString();
   }

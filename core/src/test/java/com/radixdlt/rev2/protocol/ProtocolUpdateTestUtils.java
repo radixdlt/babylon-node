@@ -66,6 +66,7 @@ package com.radixdlt.rev2.protocol;
 
 import static com.radixdlt.harness.predicates.NodesPredicate.allAtOrOverEpoch;
 import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransactionSuccess;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import com.google.inject.Key;
@@ -79,6 +80,7 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.Manifest;
 import com.radixdlt.rev2.TransactionBuilder;
+import com.radixdlt.state.RustStateReader;
 import com.radixdlt.statecomputer.commit.NextEpoch;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
@@ -121,6 +123,16 @@ public final class ProtocolUpdateTestUtils {
             .raw();
     mempoolDispatcher.dispatch(MempoolAdd.create(signalReadinessTransaction));
     test.runUntilState(allCommittedTransactionSuccess(signalReadinessTransaction));
+    // Check that the state reader returns a correct value
+    test.getNodeInjectors()
+        .forEach(
+            injector -> {
+              final var valueFromStateReader =
+                  injector
+                      .getInstance(RustStateReader.class)
+                      .getValidatorProtocolUpdateReadinessSignal(validatorAddress);
+              assertEquals(readinessSignalName, valueFromStateReader.orElse(""));
+            });
   }
 
   public static void verifyProtocolUpdateAtEpoch(

@@ -62,30 +62,49 @@
  * permissions under this License.
  */
 
-mod constants;
+use jni::objects::{JClass, JObject};
+use jni::sys::jbyteArray;
+use jni::JNIEnv;
+use radix_engine::system::system_substates::FieldSubstate;
+use radix_engine::types::*;
 
-/// A workaround for including the symbols defined in state_manager / core_api_server
-/// in the output library file. See: https://github.com/rust-lang/rfcs/issues/2771
-/// I truly have no idea why this works, but it does.
+use radix_engine_store_interface::db_key_mapper::*;
+
+use radix_engine::blueprints::consensus_manager::{
+    ValidatorField, ValidatorProtocolUpdateReadinessSignalFieldPayload,
+};
+
+use node_common::java::*;
+
+use super::node_rust_environment::JNINodeRustEnvironment;
+
+//
+// JNI Interface
+//
+
 #[no_mangle]
-fn export_extern_functions() {
-    constants::export_extern_functions();
-
-    // node-common
-    node_common::jni::addressing::export_extern_functions();
-    node_common::jni::scrypto_constants::export_extern_functions();
-
-    // state-manager
-    state_manager::jni::mempool::export_extern_functions();
-    state_manager::jni::node_rust_environment::export_extern_functions();
-    state_manager::jni::protocol_update::export_extern_functions();
-    state_manager::jni::state_computer::export_extern_functions();
-    state_manager::jni::state_reader::export_extern_functions();
-    state_manager::jni::transaction_preparer::export_extern_functions();
-    state_manager::jni::transaction_store::export_extern_functions();
-    state_manager::jni::vertex_store_recovery::export_extern_functions();
-    state_manager::jni::test_state_reader::export_extern_functions();
-
-    // core-api-server
-    core_api_server::jni::export_extern_functions();
+extern "system" fn Java_com_radixdlt_state_RustStateReader_getValidatorProtocolUpdateReadinessSignal(
+    env: JNIEnv,
+    _class: JClass,
+    j_node_rust_env: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_fallible_call(
+        &env,
+        request_payload,
+        |validator_address: ComponentAddress| -> JavaResult<Option<String>> {
+            let result = JNINodeRustEnvironment::get(&env, j_node_rust_env)
+                .state_manager
+                .database
+                .read_current()
+                .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ValidatorProtocolUpdateReadinessSignalFieldPayload>>(
+                    &validator_address.into_node_id(),
+                    MAIN_BASE_PARTITION,
+                    &ValidatorField::ProtocolUpdateReadinessSignal.into()
+                );
+            Ok(result.and_then(|f| f.into_payload().content.into_latest().protocol_version_name))
+        },
+    )
 }
+
+pub fn export_extern_functions() {}

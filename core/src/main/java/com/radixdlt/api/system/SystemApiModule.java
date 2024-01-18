@@ -66,11 +66,16 @@ package com.radixdlt.api.system;
 
 import com.google.inject.*;
 import com.google.inject.multibindings.MapBinder;
+import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.api.common.HandlerRoute;
 import com.radixdlt.api.system.health.HealthInfoService;
 import com.radixdlt.api.system.health.HealthInfoServiceImpl;
+import com.radixdlt.api.system.health.HealthReadinessSignalStatusUpdateTrigger;
 import com.radixdlt.api.system.routes.*;
+import com.radixdlt.environment.*;
 import io.undertow.server.HttpHandler;
+import java.time.Duration;
 import java.util.Map;
 
 public class SystemApiModule extends AbstractModule {
@@ -101,11 +106,37 @@ public class SystemApiModule extends AbstractModule {
     binder
         .addBinding(HandlerRoute.get("/system/network-sync-status"))
         .to(NetworkSyncStatusHandler.class);
+
+    final var localEventsBinder =
+        Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
+            .permitDuplicates();
+    localEventsBinder.addBinding().toInstance(HealthReadinessSignalStatusUpdateTrigger.class);
   }
 
   @Provides
   @Singleton
   public SystemApi systemApi(@SystemApiEndpoints Map<HandlerRoute, HttpHandler> handlers) {
     return new SystemApi(bindAddress, port, handlers, MAXIMUM_CONCURRENT_REQUESTS, QUEUE_SIZE);
+  }
+
+  @ProvidesIntoSet
+  public ScheduledEventProducerOnRunner<?> healthReadinessSignalStatusUpdateTriggerEventProducer(
+      EventDispatcher<HealthReadinessSignalStatusUpdateTrigger> dispatcher) {
+    return new ScheduledEventProducerOnRunner<>(
+        Runners.SYSTEM_INFO,
+        dispatcher,
+        HealthReadinessSignalStatusUpdateTrigger::new,
+        Duration.ofMillis(500L),
+        Duration.ofSeconds(10));
+  }
+
+  @ProvidesIntoSet
+  private EventProcessorOnRunner<?> healthReadinessSignalStatusUpdateTriggerEventProcessor(
+      HealthInfoService healthInfoService) {
+    return new EventProcessorOnRunner<>(
+        // Reusing the system info thread
+        Runners.SYSTEM_INFO,
+        HealthReadinessSignalStatusUpdateTrigger.class,
+        healthInfoService.readinessSignalStatusUpdateTriggerEventProcessor());
   }
 }

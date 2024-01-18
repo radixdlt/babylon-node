@@ -198,6 +198,7 @@ components:
         - current_protocol_version
         - enacted_protocol_updates
         - pending_protocol_updates
+        - readiness_signal_status
         - unknown_reported_pending_protocol_updates
       properties:
         status:
@@ -222,6 +223,11 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/PendingProtocolUpdate"
+        readiness_signal_status:
+          type: string
+          enum:
+            - READINESS_SIGNAL_REQUIRED
+            - NO_ACTION_NEEDED
         unknown_reported_pending_protocol_updates:
           type: array
           items:
@@ -543,7 +549,6 @@ components:
       required:
         - protocol_version
         - state
-        - readiness_signal_status
       properties:
         protocol_version:
           $ref: "#/components/schemas/ProtocolVersion"
@@ -551,11 +556,6 @@ components:
           $ref: "#/components/schemas/PendingProtocolUpdateState"
         readiness_signal_name:
           type: string
-        readiness_signal_status:
-          type: string
-          enum:
-            - READINESS_SIGNAL_REQUIRED
-            - NO_ACTION_NEEDED
     PendingProtocolUpdateStateType:
       type: string
       enum:

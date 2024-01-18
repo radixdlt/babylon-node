@@ -65,21 +65,37 @@
 package com.radixdlt.api.system.health;
 
 import com.google.inject.Inject;
+import com.radixdlt.api.system.generated.models.HealthResponse;
+import com.radixdlt.consensus.bft.SelfValidatorInfo;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.monitoring.InMemorySystemInfo;
 import com.radixdlt.prometheus.LedgerStatus;
 import com.radixdlt.prometheus.RecentSelfProposalMissStatistic;
 import com.radixdlt.prometheus.RustPrometheus;
+import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactWhenSupportedAndWithinBounds;
+import com.radixdlt.protocol.RustProtocolUpdate;
+import com.radixdlt.state.RustStateReader;
 import com.radixdlt.statecomputer.ProtocolState;
 
 public final class HealthInfoServiceImpl implements HealthInfoService {
   private final RustPrometheus rustPrometheus;
+  private final RustStateReader rustStateReader;
   private final InMemorySystemInfo inMemorySystemInfo;
+  private final SelfValidatorInfo selfValidatorInfo;
+
+  private HealthResponse.ReadinessSignalStatusEnum cachedReadinessSignalStatus =
+      HealthResponse.ReadinessSignalStatusEnum.NO_ACTION_NEEDED;
 
   @Inject
   public HealthInfoServiceImpl(
-      RustPrometheus rustPrometheus, InMemorySystemInfo inMemorySystemInfo) {
+      RustPrometheus rustPrometheus,
+      RustStateReader rustStateReader,
+      InMemorySystemInfo inMemorySystemInfo,
+      SelfValidatorInfo selfValidatorInfo) {
     this.rustPrometheus = rustPrometheus;
+    this.rustStateReader = rustStateReader;
     this.inMemorySystemInfo = inMemorySystemInfo;
+    this.selfValidatorInfo = selfValidatorInfo;
   }
 
   @Override
@@ -105,5 +121,47 @@ public final class HealthInfoServiceImpl implements HealthInfoService {
   @Override
   public ProtocolState protocolState() {
     return inMemorySystemInfo.getProtocolState();
+  }
+
+  @Override
+  public HealthResponse.ReadinessSignalStatusEnum readinessSignalStatus() {
+    return this.cachedReadinessSignalStatus;
+  }
+
+  @Override
+  public EventProcessor<HealthReadinessSignalStatusUpdateTrigger>
+      readinessSignalStatusUpdateTriggerEventProcessor() {
+    return unusedEvent ->
+        selfValidatorInfo
+            .bftValidatorId()
+            .ifPresent(
+                selfValidatorId -> {
+                  final var protocolState = inMemorySystemInfo.getProtocolState();
+                  final var signalRequired =
+                      protocolState.pendingProtocolUpdates().stream()
+                          .anyMatch(
+                              p -> {
+                                if (p.protocolUpdate().enactmentCondition()
+                                    instanceof EnactWhenSupportedAndWithinBounds) {
+                                  final var expectedSignal =
+                                      RustProtocolUpdate.readinessSignalName(p.protocolUpdate());
+                                  final var selfAddress = selfValidatorId.getValidatorAddress();
+                                  final var selfSignal =
+                                      this.rustStateReader
+                                          .getValidatorProtocolUpdateReadinessSignal(selfAddress);
+                                  return selfSignal.fold(
+                                      s -> !s.equals(expectedSignal), () -> true);
+                                } else {
+                                  return false;
+                                }
+                              });
+                  if (signalRequired) {
+                    this.cachedReadinessSignalStatus =
+                        HealthResponse.ReadinessSignalStatusEnum.READINESS_SIGNAL_REQUIRED;
+                  } else {
+                    this.cachedReadinessSignalStatus =
+                        HealthResponse.ReadinessSignalStatusEnum.NO_ACTION_NEEDED;
+                  }
+                });
   }
 }
