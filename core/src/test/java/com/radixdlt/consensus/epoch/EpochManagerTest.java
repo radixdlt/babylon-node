@@ -108,6 +108,7 @@ import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.rev2.REv2ToConsensus;
+import com.radixdlt.statecomputer.ProtocolState;
 import com.radixdlt.statecomputer.commit.CommitSummary;
 import com.radixdlt.statecomputer.commit.LedgerProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
@@ -357,6 +358,7 @@ public class EpochManagerTest {
             new CommitSummary(ImmutableList.of(), UInt32.fromNonNegativeInt(0)),
             proofBundle,
             Option.some(epochChange),
+            ProtocolState.testingEmpty(),
             ledgerUpdateExtension.transactions());
 
     // Act

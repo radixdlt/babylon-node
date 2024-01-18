@@ -64,6 +64,8 @@
 
 package com.radixdlt.statecomputer;
 
+import static com.radixdlt.lang.Option.none;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.lang.Option;
@@ -100,6 +102,10 @@ public record ProtocolState(
         codecs ->
             StructCodec.fromRecordComponents(
                 PendingProtocolUpdateState.SignalledReadinessThresholdState.class, codecs));
+  }
+
+  public static ProtocolState testingEmpty() {
+    return new ProtocolState(none(), "testing-genesis", ImmutableMap.of(), ImmutableList.of());
   }
 
   public record PendingProtocolUpdate(

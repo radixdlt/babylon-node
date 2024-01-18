@@ -162,6 +162,7 @@ public final class MockedStateComputer implements StateComputer {
             new CommitSummary(ImmutableList.of(), UInt32.fromNonNegativeInt(0)),
             latestProof,
             maybeEpochChange,
+            ProtocolState.testingEmpty(),
             ledgerExtension.transactions());
     ledgerUpdateDispatcher.dispatch(ledgerUpdate);
     return latestProof;

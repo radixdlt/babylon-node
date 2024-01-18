@@ -66,9 +66,11 @@ package com.radixdlt.ledger;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Singleton;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.lang.Option;
 import com.radixdlt.rev2.REv2ToConsensus;
+import com.radixdlt.statecomputer.ProtocolState;
 import com.radixdlt.statecomputer.commit.LedgerHashes;
 import com.radixdlt.statecomputer.commit.LedgerProof;
 
@@ -80,5 +82,11 @@ public class MockedLedgerRecoveryModule extends AbstractModule {
         LedgerProof.testingGenesis(
             0, LedgerHashes.zero(), REv2ToConsensus.validatorSet(validatorSet), 0, 0);
     return new LedgerProofBundle(genesisProof, genesisProof, Option.none(), Option.none());
+  }
+
+  @Provides
+  @Singleton
+  private ProtocolState initialProtocolState() {
+    return ProtocolState.testingEmpty();
   }
 }

@@ -354,9 +354,14 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
         epochChange ->
             this.currentProposerElection.set(epochChange.bftConfiguration().getProposerElection()));
 
+    final var protocolState = stateComputer.protocolState();
     final var ledgerUpdate =
         new LedgerUpdate(
-            commitSummary, latestProof, maybeEpochChange, ledgerExtension.transactions());
+            commitSummary,
+            latestProof,
+            maybeEpochChange,
+            protocolState,
+            ledgerExtension.transactions());
     ledgerUpdateEventDispatcher.dispatch(ledgerUpdate);
 
     return latestProof;

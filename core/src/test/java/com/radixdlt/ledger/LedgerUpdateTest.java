@@ -64,9 +64,12 @@
 
 package com.radixdlt.ledger;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.lang.Option;
+import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition;
+import com.radixdlt.statecomputer.ProtocolState;
 import com.radixdlt.statecomputer.commit.LedgerProofOrigin;
 import com.radixdlt.utils.UInt32;
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -81,6 +84,15 @@ public class LedgerUpdateTest {
             LedgerProofOrigin.class,
             new LedgerProofOrigin.Genesis(HashUtils.random256()),
             new LedgerProofOrigin.ProtocolUpdate("asd", UInt32.fromNonNegativeInt(0)))
+        .withPrefabValues(
+            ProtocolState.PendingProtocolUpdateState.class,
+            new ProtocolState.PendingProtocolUpdateState.ForSignalledReadinessSupportCondition(
+                ImmutableList.of()),
+            new ProtocolState.PendingProtocolUpdateState.Empty())
+        .withPrefabValues(
+            ProtocolUpdateEnactmentCondition.class,
+            ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(1L),
+            ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(2L))
         .withGenericPrefabValues(Option.class, Option::some)
         .verify();
   }

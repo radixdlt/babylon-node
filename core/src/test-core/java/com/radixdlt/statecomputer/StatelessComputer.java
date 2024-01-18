@@ -188,6 +188,7 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
         new CommitSummary(ImmutableList.of(), UInt32.fromNonNegativeInt(0)),
         latestProof,
         maybeEpochChange,
+        ProtocolState.testingEmpty(),
         ledgerExtension.transactions());
   }
 

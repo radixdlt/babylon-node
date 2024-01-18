@@ -84,6 +84,7 @@ import com.radixdlt.p2p.PeerControl;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.p2p.PeersView.PeerInfo;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
+import com.radixdlt.statecomputer.ProtocolState;
 import com.radixdlt.statecomputer.commit.*;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
@@ -701,6 +702,7 @@ public class LocalSyncServiceTest {
         new CommitSummary(ImmutableList.of(), UInt32.fromNonNegativeInt(0)),
         committedProof,
         Option.empty(),
+        ProtocolState.testingEmpty(),
         ImmutableList.of());
   }
 

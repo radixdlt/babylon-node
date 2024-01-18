@@ -70,17 +70,14 @@ import com.radixdlt.api.system.generated.models.*;
 import com.radixdlt.api.system.health.HealthInfoService;
 import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition;
 import com.radixdlt.statecomputer.ProtocolState;
-import com.radixdlt.statecomputer.RustStateComputer;
 
 public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
   private final HealthInfoService healthInfoService;
-  private final RustStateComputer rustStateComputer;
 
   @Inject
-  HealthHandler(HealthInfoService healthInfoService, RustStateComputer rustStateComputer) {
+  HealthHandler(HealthInfoService healthInfoService) {
     super();
     this.healthInfoService = healthInfoService;
-    this.rustStateComputer = rustStateComputer;
   }
 
   @Override
@@ -96,7 +93,7 @@ public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
 
     final var statistic = healthInfoService.recentSelfProposalMissStatistic();
 
-    final var protocolState = rustStateComputer.protocolState();
+    final var protocolState = healthInfoService.protocolState();
 
     return new HealthResponse()
         .status(statusEnum)

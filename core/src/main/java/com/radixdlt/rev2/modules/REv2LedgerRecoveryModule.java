@@ -74,6 +74,8 @@ import com.radixdlt.recovery.VertexStoreRecovery;
 import com.radixdlt.rev2.REv2ToConsensus;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.statecomputer.ProtocolState;
+import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -90,6 +92,14 @@ public final class REv2LedgerRecoveryModule extends AbstractModule {
     return transactionsAndProofReader
         .getLatestProofBundle()
         .orElseThrow(() -> new RuntimeException("The database wasn't initialized"));
+  }
+
+  @Provides
+  @Singleton
+  private ProtocolState initialProtocolState(
+      // Require the token to ensure ledger genesis init
+      REv2LedgerInitializerToken rev2LedgerInitializerToken, RustStateComputer rustStateComputer) {
+    return rustStateComputer.protocolState();
   }
 
   @Provides

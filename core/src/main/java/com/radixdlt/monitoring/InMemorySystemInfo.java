@@ -70,6 +70,7 @@ import com.radixdlt.consensus.epoch.EpochRound;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.LedgerProofBundle;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.statecomputer.ProtocolState;
 import com.radixdlt.statecomputer.commit.LedgerProof;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -79,9 +80,12 @@ public final class InMemorySystemInfo {
       new AtomicReference<>(EpochRound.of(0L, Round.epochInitial()));
   private final AtomicReference<LedgerProof> epochsLedgerProof;
 
+  private ProtocolState protocolState;
+
   @Inject
-  public InMemorySystemInfo(LedgerProofBundle latestProof) {
+  public InMemorySystemInfo(LedgerProofBundle latestProof, ProtocolState initialProtocolState) {
     this.epochsLedgerProof = new AtomicReference<>(latestProof.closestEpochProofOnOrBefore());
+    this.protocolState = initialProtocolState;
   }
 
   public void processEpochRound(EpochRound epochRound) {
@@ -89,7 +93,10 @@ public final class InMemorySystemInfo {
   }
 
   public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
-    return update -> epochsLedgerProof.set(update.committedProof().closestEpochProofOnOrBefore());
+    return update -> {
+      epochsLedgerProof.set(update.committedProof().closestEpochProofOnOrBefore());
+      this.protocolState = update.resultantProtocolState();
+    };
   }
 
   public LedgerProof getEpochProof() {
@@ -98,5 +105,9 @@ public final class InMemorySystemInfo {
 
   public EpochRound getCurrentRound() {
     return this.currentEpochRound.get();
+  }
+
+  public ProtocolState getProtocolState() {
+    return this.protocolState;
   }
 }
