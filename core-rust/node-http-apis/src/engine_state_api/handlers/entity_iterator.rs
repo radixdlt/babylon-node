@@ -2,7 +2,6 @@ use crate::engine_state_api::*;
 
 use radix_engine::types::*;
 
-use crate::engine_state_api::handlers::default_paging_policy;
 use state_manager::store::traits::indices::CreationId;
 use state_manager::store::traits::ConfigurableDatabase;
 use std::ops::Deref;
@@ -13,10 +12,7 @@ pub(crate) async fn handle_entity_iterator(
 ) -> Result<Json<models::EntityIteratorResponse>, ResponseError> {
     let mapping_context = MappingContext::new(&state.network);
 
-    let requested_max_page_size = request
-        .max_page_size
-        .map(extract_api_max_page_size)
-        .transpose()
+    let max_page_size = extract_api_max_page_size(request.max_page_size)
         .map_err(|error| error.into_response_error("max_page_size"))?;
     let continuation_token = request
         .continuation_token
@@ -38,11 +34,10 @@ pub(crate) async fn handle_entity_iterator(
 
     let entity_lister = EngineEntityLister::new(database.deref());
     let page = OrderAgnosticPager::get_page(
-        wrap_error_free(|from| entity_lister.iter_entities(from)),
-        default_paging_policy(requested_max_page_size),
+        wrap_ok::<_, _, _, _, ResponseError>(|from| entity_lister.iter_entities(from)),
+        MaxItemCountPolicy::new(max_page_size),
         continuation_token,
-    )
-    .expect("FnIterable is error-free");
+    )?;
 
     let header = read_current_ledger_header(database.deref());
 
