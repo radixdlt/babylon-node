@@ -261,12 +261,27 @@ impl ProtocolUpdateFlashTxnCommitter {
     }
 
     pub fn commit_flash(&mut self, state_updates: StateUpdates) {
-        let nonce = self.store.read_current().max_state_version().number();
-        let flash_txn = LedgerTransaction::FlashV1(Box::new(FlashTransactionV1 {
-            nonce,
-            state_updates,
-        }));
-        self.commit_txn_batch(vec![flash_txn]);
+        self.commit_flash_batch(vec![state_updates]);
+    }
+
+    /// Commits a batch of flash transactions, followed by a single
+    /// proof (of protocol update origin).
+    /// Each item in `state_updates` gets its own flash transaction.
+    pub fn commit_flash_batch(&mut self, state_updates: Vec<StateUpdates>) {
+        let base_nonce = self.store.read_current().max_state_version().number();
+        let flash_txns = state_updates
+            .into_iter()
+            .enumerate()
+            .map(|(idx, state_updates_item)| {
+                LedgerTransaction::FlashV1(Box::new(FlashTransactionV1 {
+                    nonce: base_nonce
+                        .checked_add(idx.try_into().unwrap())
+                        .expect("Flash nonce (based on state version) overflow"),
+                    state_updates: state_updates_item,
+                }))
+            })
+            .collect();
+        self.commit_txn_batch(flash_txns);
     }
 
     fn commit_txn_batch(&mut self, transactions: Vec<LedgerTransaction>) {

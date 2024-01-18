@@ -38,21 +38,17 @@ impl ProtocolUpdater for AnemoneProtocolUpdater {
         while let Some(next_batch_idx) = txn_committer.next_committable_batch_idx() {
             match next_batch_idx {
                 0 => {
-                    // Batch 0: flash consensus manager config update
-                    let state_updates =
-                        generate_validator_fee_fix_state_updates(store.read_current().deref());
-                    txn_committer.commit_flash(state_updates);
-                }
-                1 => {
-                    // Batch 1: flash seconds precision
-                    let state_updates =
-                        generate_seconds_precision_state_updates(store.read_current().deref());
-                    txn_committer.commit_flash(state_updates);
-                }
-                2 => {
-                    // Batch 2: flash VM boot
-                    let state_updates = generate_vm_boot_scrypto_minor_version_state_updates();
-                    txn_committer.commit_flash(state_updates);
+                    // Just a single batch for Anemone, which includes
+                    // the following transactions:
+                    let flash_txns_updates = {
+                        let read_db = store.read_current();
+                        vec![
+                            generate_validator_fee_fix_state_updates(read_db.deref()),
+                            generate_seconds_precision_state_updates(read_db.deref()),
+                            generate_vm_boot_scrypto_minor_version_state_updates(),
+                        ]
+                    };
+                    txn_committer.commit_flash_batch(flash_txns_updates);
                 }
                 _ => break,
             }

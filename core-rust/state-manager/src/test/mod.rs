@@ -39,7 +39,7 @@ pub fn prepare_and_commit_round_update(
         .as_ref()
         .unwrap()
         .validator_set
-        .get(0)
+        .first()
         .unwrap()
         .address;
 
