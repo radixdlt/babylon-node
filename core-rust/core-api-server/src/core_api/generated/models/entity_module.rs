@@ -12,8 +12,6 @@
 /// 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
 pub enum EntityModule {
-    #[serde(rename = "BootLoader")]
-    BootLoader,
     #[serde(rename = "TypeInfo")]
     TypeInfo,
     #[serde(rename = "Metadata")]
@@ -26,26 +24,28 @@ pub enum EntityModule {
     Main,
     #[serde(rename = "Schema")]
     Schema,
+    #[serde(rename = "BootLoader")]
+    BootLoader,
 
 }
 
 impl ToString for EntityModule {
     fn to_string(&self) -> String {
         match self {
-            Self::BootLoader => String::from("BootLoader"),
             Self::TypeInfo => String::from("TypeInfo"),
             Self::Metadata => String::from("Metadata"),
             Self::RoleAssignment => String::from("RoleAssignment"),
             Self::Royalty => String::from("Royalty"),
             Self::Main => String::from("Main"),
             Self::Schema => String::from("Schema"),
+            Self::BootLoader => String::from("BootLoader"),
         }
     }
 }
 
 impl Default for EntityModule {
     fn default() -> EntityModule {
-        Self::BootLoader
+        Self::TypeInfo
     }
 }
 

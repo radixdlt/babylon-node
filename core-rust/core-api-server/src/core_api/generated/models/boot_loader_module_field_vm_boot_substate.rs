@@ -18,11 +18,11 @@ pub struct BootLoaderModuleFieldVmBootSubstate {
     #[serde(rename = "is_locked")]
     pub is_locked: bool,
     #[serde(rename = "value")]
-    pub value: Box<crate::core_api::generated::models::VmBootSubstate>,
+    pub value: Box<crate::core_api::generated::models::BootLoaderModuleFieldVmBootValue>,
 }
 
 impl BootLoaderModuleFieldVmBootSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, value: crate::core_api::generated::models::VmBootSubstate) -> BootLoaderModuleFieldVmBootSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, value: crate::core_api::generated::models::BootLoaderModuleFieldVmBootValue) -> BootLoaderModuleFieldVmBootSubstate {
         BootLoaderModuleFieldVmBootSubstate {
             substate_type,
             is_locked,

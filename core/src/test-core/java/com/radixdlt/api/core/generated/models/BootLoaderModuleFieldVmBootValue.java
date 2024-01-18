@@ -28,20 +28,20 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * VmBootSubstate
+ * BootLoaderModuleFieldVmBootValue
  */
 @JsonPropertyOrder({
-  VmBootSubstate.JSON_PROPERTY_SCRYPTO_V1_MINOR_VERSION
+  BootLoaderModuleFieldVmBootValue.JSON_PROPERTY_SCRYPTO_V1_MINOR_VERSION
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class VmBootSubstate {
+public class BootLoaderModuleFieldVmBootValue {
   public static final String JSON_PROPERTY_SCRYPTO_V1_MINOR_VERSION = "scrypto_v1_minor_version";
   private Long scryptoV1MinorVersion;
 
-  public VmBootSubstate() { 
+  public BootLoaderModuleFieldVmBootValue() { 
   }
 
-  public VmBootSubstate scryptoV1MinorVersion(Long scryptoV1MinorVersion) {
+  public BootLoaderModuleFieldVmBootValue scryptoV1MinorVersion(Long scryptoV1MinorVersion) {
     this.scryptoV1MinorVersion = scryptoV1MinorVersion;
     return this;
   }
@@ -70,7 +70,7 @@ public class VmBootSubstate {
 
 
   /**
-   * Return true if this VmBootSubstate object is equal to o.
+   * Return true if this BootLoaderModuleFieldVmBootValue object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -80,8 +80,8 @@ public class VmBootSubstate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    VmBootSubstate vmBootSubstate = (VmBootSubstate) o;
-    return Objects.equals(this.scryptoV1MinorVersion, vmBootSubstate.scryptoV1MinorVersion);
+    BootLoaderModuleFieldVmBootValue bootLoaderModuleFieldVmBootValue = (BootLoaderModuleFieldVmBootValue) o;
+    return Objects.equals(this.scryptoV1MinorVersion, bootLoaderModuleFieldVmBootValue.scryptoV1MinorVersion);
   }
 
   @Override
@@ -92,7 +92,7 @@ public class VmBootSubstate {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class VmBootSubstate {\n");
+    sb.append("class BootLoaderModuleFieldVmBootValue {\n");
     sb.append("    scryptoV1MinorVersion: ").append(toIndentedString(scryptoV1MinorVersion)).append("\n");
     sb.append("}");
     return sb.toString();

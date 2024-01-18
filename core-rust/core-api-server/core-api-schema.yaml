@@ -2030,13 +2030,13 @@ components:
     EntityModule:
       type: string
       enum:
-        - BootLoader
         - TypeInfo
         - Metadata
         - RoleAssignment
         - Royalty
         - Main
         - Schema
+        - BootLoader
     PartitionKind:
       type: string
       description: |
@@ -3921,8 +3921,8 @@ components:
             - value
           properties:
             value:
-              $ref: '#/components/schemas/VmBootSubstate'
-    VmBootSubstate:
+              $ref: '#/components/schemas/BootLoaderModuleFieldVmBootValue'
+    BootLoaderModuleFieldVmBootValue:
       type: object
       required:
         - scrypto_v1_minor_version

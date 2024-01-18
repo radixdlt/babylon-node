@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.VmBootSubstate;
+import com.radixdlt.api.core.generated.models.BootLoaderModuleFieldVmBootValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -37,12 +37,12 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class BootLoaderModuleFieldVmBootSubstateAllOf {
   public static final String JSON_PROPERTY_VALUE = "value";
-  private VmBootSubstate value;
+  private BootLoaderModuleFieldVmBootValue value;
 
   public BootLoaderModuleFieldVmBootSubstateAllOf() { 
   }
 
-  public BootLoaderModuleFieldVmBootSubstateAllOf value(VmBootSubstate value) {
+  public BootLoaderModuleFieldVmBootSubstateAllOf value(BootLoaderModuleFieldVmBootValue value) {
     this.value = value;
     return this;
   }
@@ -56,14 +56,14 @@ public class BootLoaderModuleFieldVmBootSubstateAllOf {
   @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public VmBootSubstate getValue() {
+  public BootLoaderModuleFieldVmBootValue getValue() {
     return value;
   }
 
 
   @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValue(VmBootSubstate value) {
+  public void setValue(BootLoaderModuleFieldVmBootValue value) {
     this.value = value;
   }
 

@@ -32,6 +32,7 @@ import com.radixdlt.api.core.generated.models.AccountResourcePreferenceEntrySubs
 import com.radixdlt.api.core.generated.models.AccountVaultEntrySubstate;
 import com.radixdlt.api.core.generated.models.BootLoaderModuleFieldVmBootSubstate;
 import com.radixdlt.api.core.generated.models.BootLoaderModuleFieldVmBootSubstateAllOf;
+import com.radixdlt.api.core.generated.models.BootLoaderModuleFieldVmBootValue;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldConfigSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentProposalStatisticSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstate;
@@ -77,7 +78,6 @@ import com.radixdlt.api.core.generated.models.TwoResourcePoolFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.TypeInfoModuleFieldTypeInfoSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorFieldProtocolUpdateReadinessSignalSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorFieldStateSubstate;
-import com.radixdlt.api.core.generated.models.VmBootSubstate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -150,12 +150,12 @@ import com.radixdlt.api.core.generated.client.JSON;
 
 public class BootLoaderModuleFieldVmBootSubstate extends Substate {
   public static final String JSON_PROPERTY_VALUE = "value";
-  private VmBootSubstate value;
+  private BootLoaderModuleFieldVmBootValue value;
 
   public BootLoaderModuleFieldVmBootSubstate() { 
   }
 
-  public BootLoaderModuleFieldVmBootSubstate value(VmBootSubstate value) {
+  public BootLoaderModuleFieldVmBootSubstate value(BootLoaderModuleFieldVmBootValue value) {
     this.value = value;
     return this;
   }
@@ -169,14 +169,14 @@ public class BootLoaderModuleFieldVmBootSubstate extends Substate {
   @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public VmBootSubstate getValue() {
+  public BootLoaderModuleFieldVmBootValue getValue() {
     return value;
   }
 
 
   @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValue(VmBootSubstate value) {
+  public void setValue(BootLoaderModuleFieldVmBootValue value) {
     this.value = value;
   }
 
