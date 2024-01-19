@@ -15,7 +15,7 @@ on:
 jobs:
   snyk-scan-deps-licences:
     name: Snyk deps/licences scan
-    runs-on: ubuntu-latest
+    runs-on: selfhosted-ubuntu-22.04
     permissions:
       id-token: write
       pull-requests: read
@@ -37,7 +37,7 @@ jobs:
           args: --all-projects --org=${{ env.SNYK_NETWORK_ORG_ID }} --severity-threshold=critical
   snyk-scan-code:
     name: Snyk code scan
-    runs-on: ubuntu-latest
+    runs-on: selfhosted-ubuntu-22.04
     permissions:
       id-token: write
       pull-requests: read
@@ -60,7 +60,7 @@ jobs:
           command: code test
   snyk-sbom:
     name: Snyk SBOM
-    runs-on: ubuntu-latest
+    runs-on: selfhosted-ubuntu-22.04
     permissions:
       id-token: write
       pull-requests: read
@@ -83,7 +83,7 @@ jobs:
           command: sbom
   build:
     name: Unit tests and sonarqube
-    runs-on: babylon-runner
+    runs-on: selfhosted-ubuntu-22.04-16-cores
     permissions:
       id-token: write
       contents: read
@@ -146,7 +146,7 @@ jobs:
         run: ./gradlew sonarqube
   local-dev-sm-docker-build:
     name: Test core-rust docker build for local development
-    runs-on: ubuntu-latest
+    runs-on: selfhosted-ubuntu-22.04
     steps:
       - uses: RDXWorks-actions/checkout@main
         with:
@@ -170,7 +170,7 @@ jobs:
         run: ./gradlew :core-rust:buildRustForDocker
   steadystate-integration:
     name: Steady state integration tests
-    runs-on: babylon-runner
+    runs-on: selfhosted-ubuntu-22.04-16-cores
     steps:
       - uses: RDXWorks-actions/checkout@main
         with:
@@ -198,7 +198,7 @@ jobs:
         run: ./gradlew clean runSteadyStateIntegrationTests --info --refresh-dependencies
   targeted-integration:
     name: Targeted integration tests
-    runs-on: babylon-runner
+    runs-on: selfhosted-ubuntu-22.04-16-cores
     steps:
       - uses: RDXWorks-actions/checkout@main
         with:
@@ -226,7 +226,7 @@ jobs:
         run: ./gradlew clean runTargetedIntegrationTests --info --refresh-dependencies --parallel
   cross-xwin:
     name: Cross compile to Windows
-    runs-on: ubuntu-latest
+    runs-on: selfhosted-ubuntu-22.04
     steps:
       - uses: RDXWorks-actions/checkout@main
         with:
