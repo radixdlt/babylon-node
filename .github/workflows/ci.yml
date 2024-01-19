@@ -146,7 +146,7 @@ jobs:
         run: ./gradlew sonarqube
   local-dev-sm-docker-build:
     name: Test core-rust docker build for local development
-    runs-on: selfhosted-ubuntu-22.04
+    runs-on: selfhosted-ubuntu-22.04-16-cores
     steps:
       - uses: RDXWorks-actions/checkout@main
         with:
