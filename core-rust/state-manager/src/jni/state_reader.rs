@@ -96,7 +96,7 @@ extern "system" fn Java_com_radixdlt_state_RustStateReader_getValidatorProtocolU
             let result = JNINodeRustEnvironment::get(&env, j_node_rust_env)
                 .state_manager
                 .database
-                .read_current()
+                .access_non_locked_historical()
                 .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ValidatorProtocolUpdateReadinessSignalFieldPayload>>(
                     &validator_address.into_node_id(),
                     MAIN_BASE_PARTITION,

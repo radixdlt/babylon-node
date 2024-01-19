@@ -65,7 +65,6 @@
 package com.radixdlt.api.system.health;
 
 import com.radixdlt.api.system.generated.models.HealthResponse;
-import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.prometheus.RecentSelfProposalMissStatistic;
 import com.radixdlt.statecomputer.ProtocolState;
 
@@ -77,7 +76,4 @@ public interface HealthInfoService {
   ProtocolState protocolState();
 
   HealthResponse.ReadinessSignalStatusEnum readinessSignalStatus();
-
-  EventProcessor<HealthReadinessSignalStatusUpdateTrigger>
-      readinessSignalStatusUpdateTriggerEventProcessor();
 }

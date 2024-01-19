@@ -66,7 +66,6 @@ package com.radixdlt.modules;
 
 import com.google.inject.*;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.api.system.health.HealthReadinessSignalStatusUpdateTrigger;
 import com.radixdlt.consensus.ConsensusByzantineEvent;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
@@ -248,10 +247,6 @@ public class DispatcherModule extends AbstractModule {
 
     configureP2p();
     configureSync();
-
-    bind(new TypeLiteral<EventDispatcher<HealthReadinessSignalStatusUpdateTrigger>>() {})
-        .toProvider(Dispatchers.dispatcherProvider(HealthReadinessSignalStatusUpdateTrigger.class))
-        .in(Scopes.SINGLETON);
   }
 
   private void configureMempoolEvents() {
