@@ -31,83 +31,83 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * EnactWhenSupportedAndWithinBoundsConditionAllOf
+ * EnactAtStartOfAnEpochIfSupportedAndWithinBoundsConditionAllOf
  */
 @JsonPropertyOrder({
-  EnactWhenSupportedAndWithinBoundsConditionAllOf.JSON_PROPERTY_LOWER_BOUND_EPOCH,
-  EnactWhenSupportedAndWithinBoundsConditionAllOf.JSON_PROPERTY_UPPER_BOUND_EPOCH,
-  EnactWhenSupportedAndWithinBoundsConditionAllOf.JSON_PROPERTY_READINESS_THRESHOLDS
+  EnactAtStartOfAnEpochIfSupportedAndWithinBoundsConditionAllOf.JSON_PROPERTY_LOWER_BOUND_EPOCH_INCLUSIVE,
+  EnactAtStartOfAnEpochIfSupportedAndWithinBoundsConditionAllOf.JSON_PROPERTY_UPPER_BOUND_EPOCH_EXCLUSIVE,
+  EnactAtStartOfAnEpochIfSupportedAndWithinBoundsConditionAllOf.JSON_PROPERTY_READINESS_THRESHOLDS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class EnactWhenSupportedAndWithinBoundsConditionAllOf {
-  public static final String JSON_PROPERTY_LOWER_BOUND_EPOCH = "lower_bound_epoch";
-  private Long lowerBoundEpoch;
+public class EnactAtStartOfAnEpochIfSupportedAndWithinBoundsConditionAllOf {
+  public static final String JSON_PROPERTY_LOWER_BOUND_EPOCH_INCLUSIVE = "lower_bound_epoch_inclusive";
+  private Long lowerBoundEpochInclusive;
 
-  public static final String JSON_PROPERTY_UPPER_BOUND_EPOCH = "upper_bound_epoch";
-  private Long upperBoundEpoch;
+  public static final String JSON_PROPERTY_UPPER_BOUND_EPOCH_EXCLUSIVE = "upper_bound_epoch_exclusive";
+  private Long upperBoundEpochExclusive;
 
   public static final String JSON_PROPERTY_READINESS_THRESHOLDS = "readiness_thresholds";
   private List<SignalledReadinessThreshold> readinessThresholds = null;
 
 
-  public EnactWhenSupportedAndWithinBoundsConditionAllOf lowerBoundEpoch(Long lowerBoundEpoch) {
-    this.lowerBoundEpoch = lowerBoundEpoch;
+  public EnactAtStartOfAnEpochIfSupportedAndWithinBoundsConditionAllOf lowerBoundEpochInclusive(Long lowerBoundEpochInclusive) {
+    this.lowerBoundEpochInclusive = lowerBoundEpochInclusive;
     return this;
   }
 
    /**
-   * Get lowerBoundEpoch
-   * @return lowerBoundEpoch
+   * Get lowerBoundEpochInclusive
+   * @return lowerBoundEpochInclusive
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_LOWER_BOUND_EPOCH)
+  @JsonProperty(JSON_PROPERTY_LOWER_BOUND_EPOCH_INCLUSIVE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Long getLowerBoundEpoch() {
-    return lowerBoundEpoch;
+  public Long getLowerBoundEpochInclusive() {
+    return lowerBoundEpochInclusive;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_LOWER_BOUND_EPOCH)
+  @JsonProperty(JSON_PROPERTY_LOWER_BOUND_EPOCH_INCLUSIVE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setLowerBoundEpoch(Long lowerBoundEpoch) {
-    this.lowerBoundEpoch = lowerBoundEpoch;
+  public void setLowerBoundEpochInclusive(Long lowerBoundEpochInclusive) {
+    this.lowerBoundEpochInclusive = lowerBoundEpochInclusive;
   }
 
 
-  public EnactWhenSupportedAndWithinBoundsConditionAllOf upperBoundEpoch(Long upperBoundEpoch) {
-    this.upperBoundEpoch = upperBoundEpoch;
+  public EnactAtStartOfAnEpochIfSupportedAndWithinBoundsConditionAllOf upperBoundEpochExclusive(Long upperBoundEpochExclusive) {
+    this.upperBoundEpochExclusive = upperBoundEpochExclusive;
     return this;
   }
 
    /**
-   * Get upperBoundEpoch
-   * @return upperBoundEpoch
+   * Get upperBoundEpochExclusive
+   * @return upperBoundEpochExclusive
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_UPPER_BOUND_EPOCH)
+  @JsonProperty(JSON_PROPERTY_UPPER_BOUND_EPOCH_EXCLUSIVE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Long getUpperBoundEpoch() {
-    return upperBoundEpoch;
+  public Long getUpperBoundEpochExclusive() {
+    return upperBoundEpochExclusive;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_UPPER_BOUND_EPOCH)
+  @JsonProperty(JSON_PROPERTY_UPPER_BOUND_EPOCH_EXCLUSIVE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setUpperBoundEpoch(Long upperBoundEpoch) {
-    this.upperBoundEpoch = upperBoundEpoch;
+  public void setUpperBoundEpochExclusive(Long upperBoundEpochExclusive) {
+    this.upperBoundEpochExclusive = upperBoundEpochExclusive;
   }
 
 
-  public EnactWhenSupportedAndWithinBoundsConditionAllOf readinessThresholds(List<SignalledReadinessThreshold> readinessThresholds) {
+  public EnactAtStartOfAnEpochIfSupportedAndWithinBoundsConditionAllOf readinessThresholds(List<SignalledReadinessThreshold> readinessThresholds) {
     this.readinessThresholds = readinessThresholds;
     return this;
   }
 
-  public EnactWhenSupportedAndWithinBoundsConditionAllOf addReadinessThresholdsItem(SignalledReadinessThreshold readinessThresholdsItem) {
+  public EnactAtStartOfAnEpochIfSupportedAndWithinBoundsConditionAllOf addReadinessThresholdsItem(SignalledReadinessThreshold readinessThresholdsItem) {
     if (this.readinessThresholds == null) {
       this.readinessThresholds = new ArrayList<>();
     }
@@ -137,7 +137,7 @@ public class EnactWhenSupportedAndWithinBoundsConditionAllOf {
 
 
   /**
-   * Return true if this EnactWhenSupportedAndWithinBoundsCondition_allOf object is equal to o.
+   * Return true if this EnactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -147,23 +147,23 @@ public class EnactWhenSupportedAndWithinBoundsConditionAllOf {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    EnactWhenSupportedAndWithinBoundsConditionAllOf enactWhenSupportedAndWithinBoundsConditionAllOf = (EnactWhenSupportedAndWithinBoundsConditionAllOf) o;
-    return Objects.equals(this.lowerBoundEpoch, enactWhenSupportedAndWithinBoundsConditionAllOf.lowerBoundEpoch) &&
-        Objects.equals(this.upperBoundEpoch, enactWhenSupportedAndWithinBoundsConditionAllOf.upperBoundEpoch) &&
-        Objects.equals(this.readinessThresholds, enactWhenSupportedAndWithinBoundsConditionAllOf.readinessThresholds);
+    EnactAtStartOfAnEpochIfSupportedAndWithinBoundsConditionAllOf enactAtStartOfAnEpochIfSupportedAndWithinBoundsConditionAllOf = (EnactAtStartOfAnEpochIfSupportedAndWithinBoundsConditionAllOf) o;
+    return Objects.equals(this.lowerBoundEpochInclusive, enactAtStartOfAnEpochIfSupportedAndWithinBoundsConditionAllOf.lowerBoundEpochInclusive) &&
+        Objects.equals(this.upperBoundEpochExclusive, enactAtStartOfAnEpochIfSupportedAndWithinBoundsConditionAllOf.upperBoundEpochExclusive) &&
+        Objects.equals(this.readinessThresholds, enactAtStartOfAnEpochIfSupportedAndWithinBoundsConditionAllOf.readinessThresholds);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(lowerBoundEpoch, upperBoundEpoch, readinessThresholds);
+    return Objects.hash(lowerBoundEpochInclusive, upperBoundEpochExclusive, readinessThresholds);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class EnactWhenSupportedAndWithinBoundsConditionAllOf {\n");
-    sb.append("    lowerBoundEpoch: ").append(toIndentedString(lowerBoundEpoch)).append("\n");
-    sb.append("    upperBoundEpoch: ").append(toIndentedString(upperBoundEpoch)).append("\n");
+    sb.append("class EnactAtStartOfAnEpochIfSupportedAndWithinBoundsConditionAllOf {\n");
+    sb.append("    lowerBoundEpochInclusive: ").append(toIndentedString(lowerBoundEpochInclusive)).append("\n");
+    sb.append("    upperBoundEpochExclusive: ").append(toIndentedString(upperBoundEpochExclusive)).append("\n");
     sb.append("    readinessThresholds: ").append(toIndentedString(readinessThresholds)).append("\n");
     sb.append("}");
     return sb.toString();

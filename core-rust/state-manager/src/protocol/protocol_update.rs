@@ -292,7 +292,6 @@ impl ProtocolUpdateFlashTxnCommitter {
         // protocol update as the current version (although that could really be any string,
         // it doesn't matter here).
         let dummy_protocol_state = ProtocolState {
-            current_epoch: None,
             current_protocol_version: self.protocol_version_name.clone(),
             enacted_protocol_updates: btreemap!(),
             pending_protocol_updates: vec![],

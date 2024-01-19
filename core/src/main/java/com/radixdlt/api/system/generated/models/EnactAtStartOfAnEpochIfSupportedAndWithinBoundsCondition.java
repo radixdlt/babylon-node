@@ -24,9 +24,9 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.system.generated.models.EnactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition;
+import com.radixdlt.api.system.generated.models.EnactAtStartOfAnEpochIfSupportedAndWithinBoundsConditionAllOf;
 import com.radixdlt.api.system.generated.models.EnactUnconditionallyAtEpochCondition;
-import com.radixdlt.api.system.generated.models.EnactWhenSupportedAndWithinBoundsCondition;
-import com.radixdlt.api.system.generated.models.EnactWhenSupportedAndWithinBoundsConditionAllOf;
 import com.radixdlt.api.system.generated.models.ProtocolUpdateEnactmentCondition;
 import com.radixdlt.api.system.generated.models.ProtocolUpdateEnactmentConditionType;
 import com.radixdlt.api.system.generated.models.SignalledReadinessThreshold;
@@ -39,89 +39,89 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.common.JSON;
 /**
- * EnactWhenSupportedAndWithinBoundsCondition
+ * EnactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition
  */
 @JsonPropertyOrder({
-  EnactWhenSupportedAndWithinBoundsCondition.JSON_PROPERTY_LOWER_BOUND_EPOCH,
-  EnactWhenSupportedAndWithinBoundsCondition.JSON_PROPERTY_UPPER_BOUND_EPOCH,
-  EnactWhenSupportedAndWithinBoundsCondition.JSON_PROPERTY_READINESS_THRESHOLDS
+  EnactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition.JSON_PROPERTY_LOWER_BOUND_EPOCH_INCLUSIVE,
+  EnactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition.JSON_PROPERTY_UPPER_BOUND_EPOCH_EXCLUSIVE,
+  EnactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition.JSON_PROPERTY_READINESS_THRESHOLDS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
+  @JsonSubTypes.Type(value = EnactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition.class, name = "EnactAtStartOfAnEpochIfSupportedAndWithinBounds"),
   @JsonSubTypes.Type(value = EnactUnconditionallyAtEpochCondition.class, name = "EnactUnconditionallyAtEpoch"),
-  @JsonSubTypes.Type(value = EnactWhenSupportedAndWithinBoundsCondition.class, name = "EnactWhenSupportedAndWithinBounds"),
 })
 
-public class EnactWhenSupportedAndWithinBoundsCondition extends ProtocolUpdateEnactmentCondition {
-  public static final String JSON_PROPERTY_LOWER_BOUND_EPOCH = "lower_bound_epoch";
-  private Long lowerBoundEpoch;
+public class EnactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition extends ProtocolUpdateEnactmentCondition {
+  public static final String JSON_PROPERTY_LOWER_BOUND_EPOCH_INCLUSIVE = "lower_bound_epoch_inclusive";
+  private Long lowerBoundEpochInclusive;
 
-  public static final String JSON_PROPERTY_UPPER_BOUND_EPOCH = "upper_bound_epoch";
-  private Long upperBoundEpoch;
+  public static final String JSON_PROPERTY_UPPER_BOUND_EPOCH_EXCLUSIVE = "upper_bound_epoch_exclusive";
+  private Long upperBoundEpochExclusive;
 
   public static final String JSON_PROPERTY_READINESS_THRESHOLDS = "readiness_thresholds";
   private List<SignalledReadinessThreshold> readinessThresholds = null;
 
 
-  public EnactWhenSupportedAndWithinBoundsCondition lowerBoundEpoch(Long lowerBoundEpoch) {
-    this.lowerBoundEpoch = lowerBoundEpoch;
+  public EnactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition lowerBoundEpochInclusive(Long lowerBoundEpochInclusive) {
+    this.lowerBoundEpochInclusive = lowerBoundEpochInclusive;
     return this;
   }
 
    /**
-   * Get lowerBoundEpoch
-   * @return lowerBoundEpoch
+   * Get lowerBoundEpochInclusive
+   * @return lowerBoundEpochInclusive
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_LOWER_BOUND_EPOCH)
+  @JsonProperty(JSON_PROPERTY_LOWER_BOUND_EPOCH_INCLUSIVE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Long getLowerBoundEpoch() {
-    return lowerBoundEpoch;
+  public Long getLowerBoundEpochInclusive() {
+    return lowerBoundEpochInclusive;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_LOWER_BOUND_EPOCH)
+  @JsonProperty(JSON_PROPERTY_LOWER_BOUND_EPOCH_INCLUSIVE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setLowerBoundEpoch(Long lowerBoundEpoch) {
-    this.lowerBoundEpoch = lowerBoundEpoch;
+  public void setLowerBoundEpochInclusive(Long lowerBoundEpochInclusive) {
+    this.lowerBoundEpochInclusive = lowerBoundEpochInclusive;
   }
 
 
-  public EnactWhenSupportedAndWithinBoundsCondition upperBoundEpoch(Long upperBoundEpoch) {
-    this.upperBoundEpoch = upperBoundEpoch;
+  public EnactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition upperBoundEpochExclusive(Long upperBoundEpochExclusive) {
+    this.upperBoundEpochExclusive = upperBoundEpochExclusive;
     return this;
   }
 
    /**
-   * Get upperBoundEpoch
-   * @return upperBoundEpoch
+   * Get upperBoundEpochExclusive
+   * @return upperBoundEpochExclusive
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_UPPER_BOUND_EPOCH)
+  @JsonProperty(JSON_PROPERTY_UPPER_BOUND_EPOCH_EXCLUSIVE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Long getUpperBoundEpoch() {
-    return upperBoundEpoch;
+  public Long getUpperBoundEpochExclusive() {
+    return upperBoundEpochExclusive;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_UPPER_BOUND_EPOCH)
+  @JsonProperty(JSON_PROPERTY_UPPER_BOUND_EPOCH_EXCLUSIVE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setUpperBoundEpoch(Long upperBoundEpoch) {
-    this.upperBoundEpoch = upperBoundEpoch;
+  public void setUpperBoundEpochExclusive(Long upperBoundEpochExclusive) {
+    this.upperBoundEpochExclusive = upperBoundEpochExclusive;
   }
 
 
-  public EnactWhenSupportedAndWithinBoundsCondition readinessThresholds(List<SignalledReadinessThreshold> readinessThresholds) {
+  public EnactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition readinessThresholds(List<SignalledReadinessThreshold> readinessThresholds) {
     this.readinessThresholds = readinessThresholds;
     return this;
   }
 
-  public EnactWhenSupportedAndWithinBoundsCondition addReadinessThresholdsItem(SignalledReadinessThreshold readinessThresholdsItem) {
+  public EnactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition addReadinessThresholdsItem(SignalledReadinessThreshold readinessThresholdsItem) {
     if (this.readinessThresholds == null) {
       this.readinessThresholds = new ArrayList<>();
     }
@@ -151,7 +151,7 @@ public class EnactWhenSupportedAndWithinBoundsCondition extends ProtocolUpdateEn
 
 
   /**
-   * Return true if this EnactWhenSupportedAndWithinBoundsCondition object is equal to o.
+   * Return true if this EnactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -161,25 +161,25 @@ public class EnactWhenSupportedAndWithinBoundsCondition extends ProtocolUpdateEn
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    EnactWhenSupportedAndWithinBoundsCondition enactWhenSupportedAndWithinBoundsCondition = (EnactWhenSupportedAndWithinBoundsCondition) o;
-    return Objects.equals(this.lowerBoundEpoch, enactWhenSupportedAndWithinBoundsCondition.lowerBoundEpoch) &&
-        Objects.equals(this.upperBoundEpoch, enactWhenSupportedAndWithinBoundsCondition.upperBoundEpoch) &&
-        Objects.equals(this.readinessThresholds, enactWhenSupportedAndWithinBoundsCondition.readinessThresholds) &&
+    EnactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition enactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition = (EnactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition) o;
+    return Objects.equals(this.lowerBoundEpochInclusive, enactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition.lowerBoundEpochInclusive) &&
+        Objects.equals(this.upperBoundEpochExclusive, enactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition.upperBoundEpochExclusive) &&
+        Objects.equals(this.readinessThresholds, enactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition.readinessThresholds) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(lowerBoundEpoch, upperBoundEpoch, readinessThresholds, super.hashCode());
+    return Objects.hash(lowerBoundEpochInclusive, upperBoundEpochExclusive, readinessThresholds, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class EnactWhenSupportedAndWithinBoundsCondition {\n");
+    sb.append("class EnactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    lowerBoundEpoch: ").append(toIndentedString(lowerBoundEpoch)).append("\n");
-    sb.append("    upperBoundEpoch: ").append(toIndentedString(upperBoundEpoch)).append("\n");
+    sb.append("    lowerBoundEpochInclusive: ").append(toIndentedString(lowerBoundEpochInclusive)).append("\n");
+    sb.append("    upperBoundEpochExclusive: ").append(toIndentedString(upperBoundEpochExclusive)).append("\n");
     sb.append("    readinessThresholds: ").append(toIndentedString(readinessThresholds)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -199,10 +199,10 @@ public class EnactWhenSupportedAndWithinBoundsCondition extends ProtocolUpdateEn
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
+  mappings.put("EnactAtStartOfAnEpochIfSupportedAndWithinBounds", EnactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition.class);
   mappings.put("EnactUnconditionallyAtEpoch", EnactUnconditionallyAtEpochCondition.class);
-  mappings.put("EnactWhenSupportedAndWithinBounds", EnactWhenSupportedAndWithinBoundsCondition.class);
-  mappings.put("EnactWhenSupportedAndWithinBoundsCondition", EnactWhenSupportedAndWithinBoundsCondition.class);
-  JSON.registerDiscriminator(EnactWhenSupportedAndWithinBoundsCondition.class, "type", mappings);
+  mappings.put("EnactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition", EnactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition.class);
+  JSON.registerDiscriminator(EnactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition.class, "type", mappings);
 }
 }
 
