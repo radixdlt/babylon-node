@@ -5,6 +5,7 @@ use crate::{
 };
 use node_common::locks::StateLock;
 use radix_engine::prelude::dec;
+use radix_engine::utils::pools_package_v1_1;
 use radix_engine::utils::{
     generate_seconds_precision_state_updates, generate_validator_fee_fix_state_updates,
     generate_vm_boot_scrypto_minor_version_state_updates,
@@ -59,6 +60,12 @@ impl ProtocolUpdater for AnemoneProtocolUpdater {
                             FlashTransactionV1 {
                                 name: "anemone-vm-boot".to_string(),
                                 state_updates: generate_vm_boot_scrypto_minor_version_state_updates(
+                                ),
+                            },
+                            FlashTransactionV1 {
+                                name: "anemone-pools".to_string(),
+                                state_updates: pools_package_v1_1::generate_state_updates(
+                                    read_db.deref(),
                                 ),
                             },
                         ]
