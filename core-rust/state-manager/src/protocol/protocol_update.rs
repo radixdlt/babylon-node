@@ -120,19 +120,19 @@ impl ProtocolUpdater for NoStateUpdatesProtocolUpdater {
 pub struct FixedFlashProtocolUpdater {
     protocol_version_name: String,
     updatable_config: UpdatableStateComputerConfig,
-    flash_transactions_updates: Vec<StateUpdates>,
+    flash_txns: Vec<FlashTransactionV1>,
 }
 
 impl FixedFlashProtocolUpdater {
     pub fn new_with_default_configurator(
         protocol_version_name: String,
         network: NetworkDefinition,
-        flash_transactions_updates: Vec<StateUpdates>,
+        flash_txns: Vec<FlashTransactionV1>,
     ) -> Self {
         Self {
             protocol_version_name,
             updatable_config: UpdatableStateComputerConfig::default(network),
-            flash_transactions_updates,
+            flash_txns,
         }
     }
 }
@@ -154,10 +154,9 @@ impl ProtocolUpdater for FixedFlashProtocolUpdater {
         );
 
         while let Some(next_batch_idx) = txn_committer.next_committable_batch_idx() {
-            let maybe_next_state_updates =
-                self.flash_transactions_updates.get(next_batch_idx as usize);
-            if let Some(next_state_updates) = maybe_next_state_updates {
-                txn_committer.commit_flash(next_state_updates.clone());
+            let maybe_next_flash_txn = self.flash_txns.get(next_batch_idx as usize);
+            if let Some(next_flash_txn) = maybe_next_flash_txn {
+                txn_committer.commit_flash(next_flash_txn.clone());
             } else {
                 // Nothing more to commit
                 break;
@@ -260,13 +259,18 @@ impl ProtocolUpdateFlashTxnCommitter {
         }
     }
 
-    pub fn commit_flash(&mut self, state_updates: StateUpdates) {
-        let nonce = self.store.read_current().max_state_version().number();
-        let flash_txn = LedgerTransaction::FlashV1(Box::new(FlashTransactionV1 {
-            nonce,
-            state_updates,
-        }));
-        self.commit_txn_batch(vec![flash_txn]);
+    pub fn commit_flash(&mut self, flash_txn: FlashTransactionV1) {
+        self.commit_flash_batch(vec![flash_txn]);
+    }
+
+    /// Commits a batch of flash transactions, followed by a single
+    /// proof (of protocol update origin).
+    pub fn commit_flash_batch(&mut self, flash_txns: Vec<FlashTransactionV1>) {
+        let flash_ledger_txns = flash_txns
+            .into_iter()
+            .map(|flash_txn| LedgerTransaction::FlashV1(Box::new(flash_txn)))
+            .collect();
+        self.commit_txn_batch(flash_ledger_txns);
     }
 
     fn commit_txn_batch(&mut self, transactions: Vec<LedgerTransaction>) {
@@ -410,7 +414,10 @@ impl ProtocolUpdaterFactory for TestingDefaultProtocolUpdaterFactory {
                 FixedFlashProtocolUpdater::new_with_default_configurator(
                     protocol_version_name.to_owned(),
                     self.network.clone(),
-                    vec![StateUpdates::default()],
+                    vec![FlashTransactionV1 {
+                        name: format!("{}-txn", protocol_version_name),
+                        state_updates: StateUpdates::default(),
+                    }],
                 ),
             )))
     }

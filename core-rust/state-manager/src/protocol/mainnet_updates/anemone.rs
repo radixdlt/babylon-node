@@ -1,9 +1,11 @@
+use crate::transaction::FlashTransactionV1;
 use crate::{
     ProtocolUpdateFlashTxnCommitter, ProtocolUpdater, StateManagerDatabase,
     UpdatableStateComputerConfig, ANEMONE_PROTOCOL_VERSION,
 };
 use node_common::locks::StateLock;
 use radix_engine::prelude::dec;
+use radix_engine::utils::pools_package_v1_1;
 use radix_engine::utils::{
     generate_seconds_precision_state_updates, generate_validator_fee_fix_state_updates,
     generate_vm_boot_scrypto_minor_version_state_updates,
@@ -18,10 +20,7 @@ pub struct AnemoneProtocolUpdater {
 
 impl ProtocolUpdater for AnemoneProtocolUpdater {
     fn updatable_config(&self) -> UpdatableStateComputerConfig {
-        // TODO(anemone): just a stub for testing
-        let mut configurator = UpdatableStateComputerConfig::default(self.network.clone());
-        configurator.costing_parameters.usd_price = dec!("25");
-        configurator
+        UpdatableStateComputerConfig::default(self.network.clone())
     }
 
     fn execute_remaining_state_updates(&self, store: Arc<StateLock<StateManagerDatabase>>) {
@@ -38,21 +37,37 @@ impl ProtocolUpdater for AnemoneProtocolUpdater {
         while let Some(next_batch_idx) = txn_committer.next_committable_batch_idx() {
             match next_batch_idx {
                 0 => {
-                    // Batch 0: flash consensus manager config update
-                    let state_updates =
-                        generate_validator_fee_fix_state_updates(store.read_current().deref());
-                    txn_committer.commit_flash(state_updates);
-                }
-                1 => {
-                    // Batch 1: flash seconds precision
-                    let state_updates =
-                        generate_seconds_precision_state_updates(store.read_current().deref());
-                    txn_committer.commit_flash(state_updates);
-                }
-                2 => {
-                    // Batch 2: flash VM boot
-                    let state_updates = generate_vm_boot_scrypto_minor_version_state_updates();
-                    txn_committer.commit_flash(state_updates);
+                    // Just a single batch for Anemone, which includes
+                    // the following transactions:
+                    let flash_txns = {
+                        let read_db = store.read_current();
+                        vec![
+                            FlashTransactionV1 {
+                                name: "anemone-validator-fee-fix".to_string(),
+                                state_updates: generate_validator_fee_fix_state_updates(
+                                    read_db.deref(),
+                                ),
+                            },
+                            FlashTransactionV1 {
+                                name: "anemone-seconds-precision".to_string(),
+                                state_updates: generate_seconds_precision_state_updates(
+                                    read_db.deref(),
+                                ),
+                            },
+                            FlashTransactionV1 {
+                                name: "anemone-vm-boot".to_string(),
+                                state_updates: generate_vm_boot_scrypto_minor_version_state_updates(
+                                ),
+                            },
+                            FlashTransactionV1 {
+                                name: "anemone-pools".to_string(),
+                                state_updates: pools_package_v1_1::generate_state_updates(
+                                    read_db.deref(),
+                                ),
+                            },
+                        ]
+                    };
+                    txn_committer.commit_flash_batch(flash_txns);
                 }
                 _ => break,
             }
