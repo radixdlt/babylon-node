@@ -1,3 +1,4 @@
+use crate::transaction::FlashTransactionV1;
 use crate::{
     ProtocolUpdateFlashTxnCommitter, ProtocolUpdater, StateManagerDatabase,
     UpdatableStateComputerConfig, ANEMONE_PROTOCOL_VERSION,
@@ -40,15 +41,29 @@ impl ProtocolUpdater for AnemoneProtocolUpdater {
                 0 => {
                     // Just a single batch for Anemone, which includes
                     // the following transactions:
-                    let flash_txns_updates = {
+                    let flash_txns = {
                         let read_db = store.read_current();
                         vec![
-                            generate_validator_fee_fix_state_updates(read_db.deref()),
-                            generate_seconds_precision_state_updates(read_db.deref()),
-                            generate_vm_boot_scrypto_minor_version_state_updates(),
+                            FlashTransactionV1 {
+                                name: "anemone-validator-fee-fix".to_string(),
+                                state_updates: generate_validator_fee_fix_state_updates(
+                                    read_db.deref(),
+                                ),
+                            },
+                            FlashTransactionV1 {
+                                name: "anemone-seconds-precision".to_string(),
+                                state_updates: generate_seconds_precision_state_updates(
+                                    read_db.deref(),
+                                ),
+                            },
+                            FlashTransactionV1 {
+                                name: "anemone-vm-boot".to_string(),
+                                state_updates: generate_vm_boot_scrypto_minor_version_state_updates(
+                                ),
+                            },
                         ]
                     };
-                    txn_committer.commit_flash_batch(flash_txns_updates);
+                    txn_committer.commit_flash_batch(flash_txns);
                 }
                 _ => break,
             }
