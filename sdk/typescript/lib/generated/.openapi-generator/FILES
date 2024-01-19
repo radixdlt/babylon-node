@@ -77,12 +77,18 @@ models/BlueprintTypeReference.ts
 models/BlueprintTypeReferenceBase.ts
 models/BlueprintTypeReferenceKind.ts
 models/BlueprintVersionKey.ts
+models/BootLoaderModuleFieldVmBootSubstate.ts
+models/BootLoaderModuleFieldVmBootSubstateAllOf.ts
+models/BootLoaderModuleFieldVmBootValue.ts
 models/CommittedIntentMetadata.ts
 models/CommittedStateIdentifier.ts
 models/CommittedStateIdentifierAllOf.ts
 models/CommittedTransaction.ts
+models/CommittedTransactionBalanceChanges.ts
 models/ComponentMethodTargetIdentifier.ts
 models/ComponentMethodTargetIdentifierAllOf.ts
+models/ConsensusLedgerProofOrigin.ts
+models/ConsensusLedgerProofOriginAllOf.ts
 models/ConsensusManagerFieldConfigSubstate.ts
 models/ConsensusManagerFieldConfigSubstateAllOf.ts
 models/ConsensusManagerFieldConfigValue.ts
@@ -200,6 +206,8 @@ models/GenericSubstitutionBase.ts
 models/GenericSubstitutionType.ts
 models/GenericTypeParameter.ts
 models/GenericTypeParameterConstraints.ts
+models/GenesisLedgerProofOrigin.ts
+models/GenesisLedgerProofOriginAllOf.ts
 models/GenesisLedgerTransaction.ts
 models/GenesisLedgerTransactionAllOf.ts
 models/HookExport.ts
@@ -223,6 +231,9 @@ models/LedgerHashes.ts
 models/LedgerHeader.ts
 models/LedgerHeaderSummary.ts
 models/LedgerProof.ts
+models/LedgerProofOrigin.ts
+models/LedgerProofOriginBase.ts
+models/LedgerProofOriginType.ts
 models/LedgerStateSummary.ts
 models/LedgerTransaction.ts
 models/LedgerTransactionBase.ts
@@ -431,6 +442,8 @@ models/ProofRuleType.ts
 models/ProposerReward.ts
 models/ProtectedAccessRule.ts
 models/ProtectedAccessRuleAllOf.ts
+models/ProtocolUpdateLedgerProofOrigin.ts
+models/ProtocolUpdateLedgerProofOriginAllOf.ts
 models/PublicKey.ts
 models/PublicKeyBase.ts
 models/PublicKeyType.ts
@@ -497,6 +510,7 @@ models/SignatureBase.ts
 models/SignatureWithPublicKey.ts
 models/SignatureWithPublicKeyBase.ts
 models/SignedTransactionIntent.ts
+models/SignificantProtocolUpdateReadinessEntry.ts
 models/SortedIndexBlueprintCollectionSchema.ts
 models/SortedIndexBlueprintCollectionSchemaAllOf.ts
 models/SortedSubstateKey.ts

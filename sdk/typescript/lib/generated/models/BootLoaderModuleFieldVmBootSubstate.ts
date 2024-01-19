@@ -13,66 +13,78 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { LedgerHeader } from './LedgerHeader';
+import type { BootLoaderModuleFieldVmBootValue } from './BootLoaderModuleFieldVmBootValue';
 import {
-    LedgerHeaderFromJSON,
-    LedgerHeaderFromJSONTyped,
-    LedgerHeaderToJSON,
-} from './LedgerHeader';
-import type { LedgerProofOrigin } from './LedgerProofOrigin';
-import {
-    LedgerProofOriginFromJSON,
-    LedgerProofOriginFromJSONTyped,
-    LedgerProofOriginToJSON,
-} from './LedgerProofOrigin';
+    BootLoaderModuleFieldVmBootValueFromJSON,
+    BootLoaderModuleFieldVmBootValueFromJSONTyped,
+    BootLoaderModuleFieldVmBootValueToJSON,
+} from './BootLoaderModuleFieldVmBootValue';
 
 /**
  * 
  * @export
- * @interface LedgerProof
+ * @interface BootLoaderModuleFieldVmBootSubstate
  */
-export interface LedgerProof {
+export interface BootLoaderModuleFieldVmBootSubstate {
     /**
      * 
-     * @type {LedgerHeader}
-     * @memberof LedgerProof
+     * @type {string}
+     * @memberof BootLoaderModuleFieldVmBootSubstate
      */
-    ledger_header: LedgerHeader;
+    substate_type: BootLoaderModuleFieldVmBootSubstateSubstateTypeEnum;
     /**
      * 
-     * @type {LedgerProofOrigin}
-     * @memberof LedgerProof
+     * @type {boolean}
+     * @memberof BootLoaderModuleFieldVmBootSubstate
      */
-    origin: LedgerProofOrigin;
+    is_locked: boolean;
+    /**
+     * 
+     * @type {BootLoaderModuleFieldVmBootValue}
+     * @memberof BootLoaderModuleFieldVmBootSubstate
+     */
+    value: BootLoaderModuleFieldVmBootValue;
 }
 
+
 /**
- * Check if a given object implements the LedgerProof interface.
+ * @export
  */
-export function instanceOfLedgerProof(value: object): boolean {
+export const BootLoaderModuleFieldVmBootSubstateSubstateTypeEnum = {
+    BootLoaderModuleFieldVmBoot: 'BootLoaderModuleFieldVmBoot'
+} as const;
+export type BootLoaderModuleFieldVmBootSubstateSubstateTypeEnum = typeof BootLoaderModuleFieldVmBootSubstateSubstateTypeEnum[keyof typeof BootLoaderModuleFieldVmBootSubstateSubstateTypeEnum];
+
+
+/**
+ * Check if a given object implements the BootLoaderModuleFieldVmBootSubstate interface.
+ */
+export function instanceOfBootLoaderModuleFieldVmBootSubstate(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "ledger_header" in value;
-    isInstance = isInstance && "origin" in value;
+    isInstance = isInstance && "substate_type" in value;
+    isInstance = isInstance && "is_locked" in value;
+    isInstance = isInstance && "value" in value;
 
     return isInstance;
 }
 
-export function LedgerProofFromJSON(json: any): LedgerProof {
-    return LedgerProofFromJSONTyped(json, false);
+export function BootLoaderModuleFieldVmBootSubstateFromJSON(json: any): BootLoaderModuleFieldVmBootSubstate {
+    return BootLoaderModuleFieldVmBootSubstateFromJSONTyped(json, false);
 }
 
-export function LedgerProofFromJSONTyped(json: any, ignoreDiscriminator: boolean): LedgerProof {
+export function BootLoaderModuleFieldVmBootSubstateFromJSONTyped(json: any, ignoreDiscriminator: boolean): BootLoaderModuleFieldVmBootSubstate {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'ledger_header': LedgerHeaderFromJSON(json['ledger_header']),
-        'origin': LedgerProofOriginFromJSON(json['origin']),
+        'substate_type': json['substate_type'],
+        'is_locked': json['is_locked'],
+        'value': BootLoaderModuleFieldVmBootValueFromJSON(json['value']),
     };
 }
 
-export function LedgerProofToJSON(value?: LedgerProof | null): any {
+export function BootLoaderModuleFieldVmBootSubstateToJSON(value?: BootLoaderModuleFieldVmBootSubstate | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -81,8 +93,9 @@ export function LedgerProofToJSON(value?: LedgerProof | null): any {
     }
     return {
         
-        'ledger_header': LedgerHeaderToJSON(value.ledger_header),
-        'origin': LedgerProofOriginToJSON(value.origin),
+        'substate_type': value.substate_type,
+        'is_locked': value.is_locked,
+        'value': BootLoaderModuleFieldVmBootValueToJSON(value.value),
     };
 }
 

@@ -19,6 +19,12 @@ import {
     CommittedStateIdentifierFromJSONTyped,
     CommittedStateIdentifierToJSON,
 } from './CommittedStateIdentifier';
+import type { CommittedTransactionBalanceChanges } from './CommittedTransactionBalanceChanges';
+import {
+    CommittedTransactionBalanceChangesFromJSON,
+    CommittedTransactionBalanceChangesFromJSONTyped,
+    CommittedTransactionBalanceChangesToJSON,
+} from './CommittedTransactionBalanceChanges';
 import type { LedgerTransaction } from './LedgerTransaction';
 import {
     LedgerTransactionFromJSON,
@@ -57,6 +63,12 @@ export interface CommittedTransaction {
      */
     receipt: TransactionReceipt;
     /**
+     * 
+     * @type {CommittedTransactionBalanceChanges}
+     * @memberof CommittedTransaction
+     */
+    balance_changes?: CommittedTransactionBalanceChanges;
+    /**
      * An integer between `0` and `10^14`, marking the proposer timestamp in ms.
      * @type {number}
      * @memberof CommittedTransaction
@@ -90,6 +102,7 @@ export function CommittedTransactionFromJSONTyped(json: any, ignoreDiscriminator
         'resultant_state_identifiers': CommittedStateIdentifierFromJSON(json['resultant_state_identifiers']),
         'ledger_transaction': LedgerTransactionFromJSON(json['ledger_transaction']),
         'receipt': TransactionReceiptFromJSON(json['receipt']),
+        'balance_changes': !exists(json, 'balance_changes') ? undefined : CommittedTransactionBalanceChangesFromJSON(json['balance_changes']),
         'proposer_timestamp_ms': json['proposer_timestamp_ms'],
     };
 }
@@ -106,6 +119,7 @@ export function CommittedTransactionToJSON(value?: CommittedTransaction | null):
         'resultant_state_identifiers': CommittedStateIdentifierToJSON(value.resultant_state_identifiers),
         'ledger_transaction': LedgerTransactionToJSON(value.ledger_transaction),
         'receipt': TransactionReceiptToJSON(value.receipt),
+        'balance_changes': CommittedTransactionBalanceChangesToJSON(value.balance_changes),
         'proposer_timestamp_ms': value.proposer_timestamp_ms,
     };
 }

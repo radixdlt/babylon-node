@@ -23,7 +23,8 @@ export const EntityModule = {
     RoleAssignment: 'RoleAssignment',
     Royalty: 'Royalty',
     Main: 'Main',
-    Schema: 'Schema'
+    Schema: 'Schema',
+    BootLoader: 'BootLoader'
 } as const;
 export type EntityModule = typeof EntityModule[keyof typeof EntityModule];
 

@@ -17,22 +17,23 @@
  * 
  * @export
  */
-export const SystemFieldKind = {
-    BootLoader: 'BootLoader',
-    TypeInfo: 'TypeInfo'
+export const LedgerProofOriginType = {
+    Genesis: 'Genesis',
+    Consensus: 'Consensus',
+    ProtocolUpdate: 'ProtocolUpdate'
 } as const;
-export type SystemFieldKind = typeof SystemFieldKind[keyof typeof SystemFieldKind];
+export type LedgerProofOriginType = typeof LedgerProofOriginType[keyof typeof LedgerProofOriginType];
 
 
-export function SystemFieldKindFromJSON(json: any): SystemFieldKind {
-    return SystemFieldKindFromJSONTyped(json, false);
+export function LedgerProofOriginTypeFromJSON(json: any): LedgerProofOriginType {
+    return LedgerProofOriginTypeFromJSONTyped(json, false);
 }
 
-export function SystemFieldKindFromJSONTyped(json: any, ignoreDiscriminator: boolean): SystemFieldKind {
-    return json as SystemFieldKind;
+export function LedgerProofOriginTypeFromJSONTyped(json: any, ignoreDiscriminator: boolean): LedgerProofOriginType {
+    return json as LedgerProofOriginType;
 }
 
-export function SystemFieldKindToJSON(value?: SystemFieldKind | null): any {
+export function LedgerProofOriginTypeToJSON(value?: LedgerProofOriginType | null): any {
     return value as any;
 }
 

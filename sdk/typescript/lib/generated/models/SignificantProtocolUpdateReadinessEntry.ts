@@ -12,27 +12,64 @@
  * Do not edit the class manually.
  */
 
-
+import { exists, mapValues } from '../runtime';
 /**
  * 
  * @export
+ * @interface SignificantProtocolUpdateReadinessEntry
  */
-export const SystemFieldKind = {
-    BootLoader: 'BootLoader',
-    TypeInfo: 'TypeInfo'
-} as const;
-export type SystemFieldKind = typeof SystemFieldKind[keyof typeof SystemFieldKind];
-
-
-export function SystemFieldKindFromJSON(json: any): SystemFieldKind {
-    return SystemFieldKindFromJSONTyped(json, false);
+export interface SignificantProtocolUpdateReadinessEntry {
+    /**
+     * 
+     * @type {string}
+     * @memberof SignificantProtocolUpdateReadinessEntry
+     */
+    readiness_signal_name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SignificantProtocolUpdateReadinessEntry
+     */
+    signalled_stake: string;
 }
 
-export function SystemFieldKindFromJSONTyped(json: any, ignoreDiscriminator: boolean): SystemFieldKind {
-    return json as SystemFieldKind;
+/**
+ * Check if a given object implements the SignificantProtocolUpdateReadinessEntry interface.
+ */
+export function instanceOfSignificantProtocolUpdateReadinessEntry(value: object): boolean {
+    let isInstance = true;
+    isInstance = isInstance && "readiness_signal_name" in value;
+    isInstance = isInstance && "signalled_stake" in value;
+
+    return isInstance;
 }
 
-export function SystemFieldKindToJSON(value?: SystemFieldKind | null): any {
-    return value as any;
+export function SignificantProtocolUpdateReadinessEntryFromJSON(json: any): SignificantProtocolUpdateReadinessEntry {
+    return SignificantProtocolUpdateReadinessEntryFromJSONTyped(json, false);
+}
+
+export function SignificantProtocolUpdateReadinessEntryFromJSONTyped(json: any, ignoreDiscriminator: boolean): SignificantProtocolUpdateReadinessEntry {
+    if ((json === undefined) || (json === null)) {
+        return json;
+    }
+    return {
+        
+        'readiness_signal_name': json['readiness_signal_name'],
+        'signalled_stake': json['signalled_stake'],
+    };
+}
+
+export function SignificantProtocolUpdateReadinessEntryToJSON(value?: SignificantProtocolUpdateReadinessEntry | null): any {
+    if (value === undefined) {
+        return undefined;
+    }
+    if (value === null) {
+        return null;
+    }
+    return {
+        
+        'readiness_signal_name': value.readiness_signal_name,
+        'signalled_stake': value.signalled_stake,
+    };
 }
 
