@@ -83,7 +83,7 @@ jobs:
           command: sbom
   build:
     name: Unit tests and sonarqube
-    runs-on: selfhosted-ubuntu-22.04-16-cores
+    runs-on: selfhosted-ubuntu-22.04
     permissions:
       id-token: write
       contents: read
@@ -146,7 +146,7 @@ jobs:
         run: ./gradlew sonarqube
   local-dev-sm-docker-build:
     name: Test core-rust docker build for local development
-    runs-on: selfhosted-ubuntu-22.04-16-cores
+    runs-on: selfhosted-ubuntu-22.04
     steps:
       - uses: RDXWorks-actions/checkout@main
         with:
@@ -198,7 +198,7 @@ jobs:
         run: ./gradlew clean runSteadyStateIntegrationTests --info --refresh-dependencies
   targeted-integration:
     name: Targeted integration tests
-    runs-on: selfhosted-ubuntu-22.04-16-cores
+    runs-on: selfhosted-ubuntu-22.04
     steps:
       - uses: RDXWorks-actions/checkout@main
         with:
