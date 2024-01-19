@@ -67,7 +67,7 @@ jobs:
 
   build_deb:
     name: Build debian package
-    runs-on: selfhosted-ubuntu-22.04
+    runs-on: selfhosted-ubuntu-22.04-16-cores
     outputs:
       tags: ${{ steps.meta.outputs.tags }}
       labels: ${{ steps.meta.outputs.labels }}
