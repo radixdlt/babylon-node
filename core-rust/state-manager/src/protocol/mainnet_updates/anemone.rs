@@ -20,10 +20,7 @@ pub struct AnemoneProtocolUpdater {
 
 impl ProtocolUpdater for AnemoneProtocolUpdater {
     fn updatable_config(&self) -> UpdatableStateComputerConfig {
-        // TODO(anemone): just a stub for testing
-        let mut configurator = UpdatableStateComputerConfig::default(self.network.clone());
-        configurator.costing_parameters.usd_price = dec!("25");
-        configurator
+        UpdatableStateComputerConfig::default(self.network.clone())
     }
 
     fn execute_remaining_state_updates(&self, store: Arc<StateLock<StateManagerDatabase>>) {
