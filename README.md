@@ -8,6 +8,7 @@ The Babylon node code is released under the [Radix License](LICENSE). Executable
 
 ## Integrators
 
+
 To run a node against our latest test environment, install docker and run `./testnet-node/run.sh`. See further [details on running a testnet node for development here](testnet-node/README.md).
 
 Also check out the [Babylon documentation for exchanges and integrators](https://docs.google.com/document/d/1cjc7_alyzIb2QQIGGn1PEpJyjrMRZYHq3VwkOXRP8J0).
