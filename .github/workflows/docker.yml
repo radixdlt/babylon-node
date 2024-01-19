@@ -59,16 +59,6 @@ jobs:
         with:
           version: latest
           endpoint: builders
-      # - name: Install and Configure Buildx
-      #   run: |
-      #     wget https://github.com/docker/buildx/releases/download/v0.10.4/buildx-v0.10.4.linux-amd64
-      #     echo "---- Configure Docker plugins ----"
-      #     mkdir -p /home/ubuntu/.docker/cli-plugins/
-      #     mv buildx-v0.10.4.linux-amd64 /home/ubuntu/.docker/cli-plugins/docker-buildx
-      #     chmod +x /home/ubuntu/.docker/cli-plugins/docker-buildx
-      #     echo "---- Create build context ----"
-      #     docker context create babylon-node
-      #     docker buildx create babylon-node --use
       - name: Join multiarch images
         run: |
           docker buildx imagetools create -t docker.io/radixdlt/babylon-node:${{ github.event.release.tag_name }} \
@@ -151,16 +141,6 @@ jobs:
         with:
           version: latest
           endpoint: builders
-      # - name: Install and Configure Buildx
-      #   run: |
-      #     wget https://github.com/docker/buildx/releases/download/v0.10.4/buildx-v0.10.4.linux-amd64
-      #     echo "---- Configure Docker plugins ----"
-      #     mkdir -p /home/ubuntu/.docker/cli-plugins/
-      #     mv buildx-v0.10.4.linux-amd64 /home/ubuntu/.docker/cli-plugins/docker-buildx
-      #     chmod +x /home/ubuntu/.docker/cli-plugins/docker-buildx
-      #     echo "---- Create build context ----"
-      #     docker context create babylon-node
-      #     docker buildx create babylon-node --use
       - name: Create deb package
         run: |
           sudo apt-get update && sudo apt-get install -y make
