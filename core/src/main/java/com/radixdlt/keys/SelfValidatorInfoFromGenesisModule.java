@@ -67,7 +67,7 @@ package com.radixdlt.keys;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.SelfValidatorInfo;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
@@ -79,11 +79,16 @@ public final class SelfValidatorInfoFromGenesisModule extends AbstractModule {
   private SelfValidatorInfo self(
       // Require the token to ensure ledger genesis init
       REv2LedgerInitializerToken rev2LedgerInitializerToken, @Self ECDSASecp256k1PublicKey key) {
-    var genesisValidatorSet =
-        rev2LedgerInitializerToken.postGenesisEpochProof().getNextValidatorSet().orElseThrow();
+    var genesisValidators =
+        rev2LedgerInitializerToken
+            .postGenesisEpochProof()
+            .ledgerHeader()
+            .nextEpoch()
+            .orElseThrow()
+            .validators();
     var potentialBFTValidators =
-        genesisValidatorSet.getValidators().stream()
-            .map(BFTValidator::getValidatorId)
+        genesisValidators.stream()
+            .map(v -> BFTValidatorId.create(v.address(), v.key()))
             .filter(node -> node.getKey().equals(key))
             .toList();
 

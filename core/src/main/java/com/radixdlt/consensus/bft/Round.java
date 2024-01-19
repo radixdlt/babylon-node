@@ -66,7 +66,7 @@ package com.radixdlt.consensus.bft;
 
 /** Represents a BFT round/round used by the Pacemaker of a BFT instance */
 public final class Round implements Comparable<Round> {
-  private static final Round GENESIS_ROUND = Round.of(0L);
+  private static final Round EPOCH_INITIAL_ROUND = Round.of(0L);
   private final long roundNumber;
 
   private Round(long roundNumber) {
@@ -138,12 +138,12 @@ public final class Round implements Comparable<Round> {
     return Long.toString(this.roundNumber);
   }
 
-  public boolean isGenesis() {
-    return GENESIS_ROUND.equals(this);
+  public boolean isEpochInitial() {
+    return EPOCH_INITIAL_ROUND.equals(this);
   }
 
-  public static Round genesis() {
-    return GENESIS_ROUND;
+  public static Round epochInitial() {
+    return EPOCH_INITIAL_ROUND;
   }
 
   public static Round of(long roundNumber) {

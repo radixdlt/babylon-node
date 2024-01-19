@@ -65,6 +65,7 @@
 package com.radixdlt.statecomputer.commit;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 
@@ -72,5 +73,9 @@ public record LedgerHashes(HashCode stateRoot, HashCode transactionRoot, HashCod
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         LedgerHashes.class, codecs -> StructCodec.fromRecordComponents(LedgerHashes.class, codecs));
+  }
+
+  public static LedgerHashes zero() {
+    return new LedgerHashes(HashUtils.zero256(), HashUtils.zero256(), HashUtils.zero256());
   }
 }

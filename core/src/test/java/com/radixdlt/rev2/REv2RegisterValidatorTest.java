@@ -72,7 +72,6 @@ import static com.radixdlt.harness.predicates.NodesPredicate.anyCommittedProof;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.inject.*;
-import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.exception.PublicKeyException;
@@ -213,16 +212,15 @@ public final class REv2RegisterValidatorTest {
       test.runUntilState(
           anyCommittedProof(
               p ->
-                  p.getNextEpoch()
+                  p.ledgerHeader()
+                      .nextEpoch()
                       .map(
                           e ->
-                              e.getValidators().stream()
+                              e.validators().stream()
                                   .anyMatch(
                                       v ->
-                                          v.getValidatorId()
-                                              .equals(
-                                                  BFTValidatorId.create(
-                                                      validatorAddress, validatorPublicKey))))
+                                          v.address().equals(validatorAddress)
+                                              && v.key().equals(validatorPublicKey)))
                       .orElse(false)),
           onlyConsensusEventsAndSelfLedgerUpdates().or(onlyLocalMempoolAddEvents()));
     }

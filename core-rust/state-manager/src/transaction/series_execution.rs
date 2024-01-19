@@ -71,14 +71,14 @@ use crate::transaction::*;
 use crate::*;
 
 use ::transaction::prelude::*;
-use node_common::locks::Mutex;
+use node_common::locks::{Mutex, RwLock};
 
 /// An internal delegate for executing a series of consecutive transactions while tracking their
 /// progress.
 pub struct TransactionSeriesExecutor<'s, S> {
     store: &'s S,
     execution_cache: &'s Mutex<ExecutionCache>,
-    execution_configurator: &'s ExecutionConfigurator,
+    execution_configurator: &'s RwLock<ExecutionConfigurator>,
     epoch_identifiers: EpochTransactionIdentifiers,
     epoch_header: Option<LedgerHeader>,
     state_tracker: StateTracker,
@@ -96,10 +96,11 @@ where
     pub fn new(
         store: &'s S,
         execution_cache: &'s Mutex<ExecutionCache>,
-        execution_configurator: &'s ExecutionConfigurator,
+        execution_configurator: &'s RwLock<ExecutionConfigurator>,
+        protocol_state: ProtocolState,
     ) -> Self {
         let epoch_header = store
-            .get_last_epoch_proof()
+            .get_latest_epoch_proof()
             .map(|epoch_proof| epoch_proof.ledger_header);
         Self {
             store,
@@ -110,7 +111,7 @@ where
                 .map(EpochTransactionIdentifiers::from)
                 .unwrap_or_else(EpochTransactionIdentifiers::pre_genesis),
             epoch_header,
-            state_tracker: StateTracker::new(store.get_top_ledger_hashes()),
+            state_tracker: StateTracker::new(store.get_top_ledger_hashes(), protocol_state),
         }
     }
 
@@ -153,6 +154,7 @@ where
         self.execute_wrapped_no_state_update(
             &description,
             self.execution_configurator
+                .read()
                 .wrap_ledger_transaction(transaction, &description),
         )
     }
@@ -168,6 +170,7 @@ where
             self.epoch_identifiers(),
             self.state_tracker.state_version,
             &self.state_tracker.ledger_hashes.transaction_root,
+            &self.state_tracker.protocol_state,
             &description.ledger_hash,
             wrapped_executable,
         );
@@ -207,6 +210,15 @@ where
     pub fn next_epoch(&self) -> Option<&NextEpoch> {
         self.state_tracker.next_epoch.as_ref()
     }
+
+    /// Returns the protocol state resulting from the most recent `execute()` call.
+    pub fn protocol_state(&self) -> ProtocolState {
+        self.state_tracker.protocol_state.clone()
+    }
+
+    pub fn next_protocol_version(&self) -> Option<String> {
+        self.state_tracker.next_protocol_version()
+    }
 }
 
 /// A simple `Display` augmenting the human-readable transaction description with its ledger hash.
@@ -225,25 +237,37 @@ impl Display for DescribedTransactionHash {
     }
 }
 
-/// A low-level tracker of consecutive state version / ledger hashes / epoch changes.
+/// A low-level tracker of consecutive state version / ledger hashes /
+/// epoch changes / protocol state changes.
 struct StateTracker {
     state_version: StateVersion,
     ledger_hashes: LedgerHashes,
     next_epoch: Option<NextEpoch>,
+    protocol_state: ProtocolState,
+    next_protocol_version: Option<String>,
 }
 
 impl StateTracker {
     /// Initializes the tracker to a known state (assuming it is not an end-state of an epoch).
-    pub fn new(ledger_hashes_entry: (StateVersion, LedgerHashes)) -> Self {
+    pub fn new(
+        ledger_hashes_entry: (StateVersion, LedgerHashes),
+        protocol_state: ProtocolState,
+    ) -> Self {
         Self {
             state_version: ledger_hashes_entry.0,
             ledger_hashes: ledger_hashes_entry.1,
             next_epoch: None,
+            protocol_state,
+            next_protocol_version: None,
         }
     }
 
-    /// Bumps the state version and records the next ledger hashes (from the given transaction
-    /// results).
+    /// Updates the internal state of this state tracker according to commit result.
+    /// This includes:
+    /// * bumping the state version
+    /// * recording the next ledger hashes (from the given transaction results)
+    /// * updating the protocol state
+    ///
     /// This method validates that no further transaction should happen after an epoch change.
     pub fn update(&mut self, result: &ProcessedCommitResult) {
         if let Some(next_epoch) = &self.next_epoch {
@@ -255,11 +279,28 @@ impl StateTracker {
                 result.hash_structures_diff.ledger_hashes
             );
         }
+
+        if let Some(next_protocol_version) = &self.next_protocol_version() {
+            panic!(
+                "the protocol update {:?} has happened at {:?} (version {}) and must not be followed by {:?}",
+                next_protocol_version,
+                self.ledger_hashes,
+                self.state_version,
+                result.hash_structures_diff.ledger_hashes
+            );
+        }
+
         self.state_version = self
             .state_version
             .next()
             .expect("Invalid next state version!");
         self.ledger_hashes = result.hash_structures_diff.ledger_hashes;
         self.next_epoch = result.next_epoch();
+        self.protocol_state = result.new_protocol_state.clone();
+        self.next_protocol_version = result.next_protocol_version.clone();
+    }
+
+    pub fn next_protocol_version(&self) -> Option<String> {
+        self.next_protocol_version.clone()
     }
 }

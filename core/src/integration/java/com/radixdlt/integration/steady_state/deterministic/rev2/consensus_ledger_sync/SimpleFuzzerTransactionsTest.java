@@ -125,7 +125,7 @@ public final class SimpleFuzzerTransactionsTest {
       test.runForCount(10000);
 
       // Post-run assertions
-      Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), 100);
+      Checkers.assertNodesSyncedToVersionAtLeast(test.getNodeInjectors(), 100);
       Checkers.assertNoInvalidSyncResponses(test.getNodeInjectors());
     }
   }

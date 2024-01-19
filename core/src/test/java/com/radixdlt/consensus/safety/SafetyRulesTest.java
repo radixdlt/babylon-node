@@ -186,7 +186,7 @@ public class SafetyRulesTest {
     final var vertexWithHash = mock(VertexWithHash.class);
     final var vertex = mock(Vertex.class);
     when(vertex.hasDirectParent()).thenReturn(true);
-    when(vertex.touchesGenesis()).thenReturn(true);
+    when(vertex.touchesEpochInitialRound()).thenReturn(true);
     when(vertex.parentHasDirectParent()).thenReturn(true);
     when(vertex.getRound()).thenReturn(Round.of(1));
     BFTHeader parent = mock(BFTHeader.class);
@@ -213,7 +213,7 @@ public class SafetyRulesTest {
     when(safetyState.toBuilder()).thenReturn(mock(Builder.class));
     final var vertexWithHash = mock(VertexWithHash.class);
     final var vertex = mock(Vertex.class);
-    when(vertex.touchesGenesis()).thenReturn(true);
+    when(vertex.touchesEpochInitialRound()).thenReturn(true);
     when(vertex.hasDirectParent()).thenReturn(true);
     when(vertex.parentHasDirectParent()).thenReturn(true);
     BFTHeader parent = mock(BFTHeader.class);
@@ -239,7 +239,7 @@ public class SafetyRulesTest {
 
     final var vertexWithHash = mock(VertexWithHash.class);
     final var vertex = mock(Vertex.class);
-    when(vertex.touchesGenesis()).thenReturn(false);
+    when(vertex.touchesEpochInitialRound()).thenReturn(false);
     when(vertex.hasDirectParent()).thenReturn(true);
     when(vertex.parentHasDirectParent()).thenReturn(true);
     BFTHeader grandparentHeader = mock(BFTHeader.class);
@@ -267,7 +267,7 @@ public class SafetyRulesTest {
 
     final var vertexWithHash = mock(VertexWithHash.class);
     final var vertex = mock(Vertex.class);
-    when(vertex.touchesGenesis()).thenReturn(false);
+    when(vertex.touchesEpochInitialRound()).thenReturn(false);
     when(vertex.hasDirectParent()).thenReturn(false);
     when(vertex.parentHasDirectParent()).thenReturn(true);
     BFTHeader parent = mock(BFTHeader.class);

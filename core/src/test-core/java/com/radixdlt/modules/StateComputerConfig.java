@@ -81,6 +81,7 @@ import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.mempool.MempoolReceiverConfig;
 import com.radixdlt.mempool.MempoolRelayerConfig;
 import com.radixdlt.mempool.RustMempoolConfig;
+import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.transaction.LedgerSyncLimitsConfig;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
@@ -144,7 +145,8 @@ public sealed interface StateComputerConfig {
       DatabaseFlags databaseFlags,
       REV2ProposerConfig proposerConfig,
       boolean debugLogging,
-      boolean noFees) {
+      boolean noFees,
+      ProtocolConfig protocolConfig) {
     return new REv2StateComputerConfig(
         networkId,
         genesis,
@@ -154,6 +156,7 @@ public sealed interface StateComputerConfig {
         StateHashTreeGcConfig.forTesting(),
         LedgerProofsGcConfig.forTesting(),
         LedgerSyncLimitsConfig.defaults(),
+        protocolConfig,
         noFees);
   }
 
@@ -171,11 +174,20 @@ public sealed interface StateComputerConfig {
         StateHashTreeGcConfig.forTesting(),
         LedgerProofsGcConfig.forTesting(),
         LedgerSyncLimitsConfig.defaults(),
+        ProtocolConfig.testingDefault(),
         false);
   }
 
   static StateComputerConfig rev2(
       int networkId, GenesisData genesis, REV2ProposerConfig proposerConfig) {
+    return rev2(networkId, genesis, proposerConfig, ProtocolConfig.testingDefault());
+  }
+
+  static StateComputerConfig rev2(
+      int networkId,
+      GenesisData genesis,
+      REV2ProposerConfig proposerConfig,
+      ProtocolConfig protocolConfig) {
     return new REv2StateComputerConfig(
         networkId,
         genesis,
@@ -185,6 +197,7 @@ public sealed interface StateComputerConfig {
         StateHashTreeGcConfig.forTesting(),
         LedgerProofsGcConfig.forTesting(),
         LedgerSyncLimitsConfig.defaults(),
+        protocolConfig,
         false);
   }
 
@@ -256,6 +269,7 @@ public sealed interface StateComputerConfig {
       StateHashTreeGcConfig stateHashTreeGcConfig,
       LedgerProofsGcConfig ledgerProofsGcConfig,
       LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
+      ProtocolConfig protocolConfig,
       boolean noFees)
       implements StateComputerConfig {}
 

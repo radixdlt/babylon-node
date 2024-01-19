@@ -82,6 +82,7 @@ pub(crate) async fn handle_transaction_callpreview(
     let result = state
         .state_manager
         .transaction_previewer
+        .read()
         .preview(PreviewRequest {
             manifest: TransactionManifestV1 {
                 instructions: vec![

@@ -85,6 +85,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
+import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.testutil.TestStateReader;
 import com.radixdlt.transaction.LedgerSyncLimitsConfig;
@@ -125,6 +126,7 @@ public final class StateHashTreeGcTest {
                             UInt64.fromNonNegativeLong(stateVersionHistoryLength)),
                         LedgerProofsGcConfig.forTesting(),
                         LedgerSyncLimitsConfig.defaults(),
+                        ProtocolConfig.testingDefault(),
                         false))));
   }
 
@@ -148,9 +150,9 @@ public final class StateHashTreeGcTest {
       var currentStateVersion =
           injector
               .getInstance(TransactionsAndProofReader.class)
-              .getLastProof()
-              .get()
-              .getStateVersion();
+              .getLatestProofBundle()
+              .orElseThrow()
+              .resultantStateVersion();
       var leastStaleStateHashTreeVersion =
           injector.getInstance(TestStateReader.class).getLeastStaleStateHashTreeVersion();
       return currentStateVersion - leastStaleStateHashTreeVersion == difference;

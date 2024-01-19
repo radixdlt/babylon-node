@@ -65,9 +65,12 @@
 package com.radixdlt.api.system.health;
 
 import com.radixdlt.prometheus.RecentSelfProposalMissStatistic;
+import com.radixdlt.statecomputer.ProtocolState;
 
 public interface HealthInfoService {
   NodeStatus nodeStatus();
 
   RecentSelfProposalMissStatistic recentSelfProposalMissStatistic();
+
+  ProtocolState protocolState();
 }

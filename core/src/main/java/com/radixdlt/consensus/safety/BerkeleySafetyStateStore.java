@@ -260,7 +260,7 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
   private byte[] keyFor(SafetyState safetyState) {
     long epoch = safetyState.getLastVote().map(Vote::getEpoch).orElse(0L);
     long roundNumber =
-        safetyState.getLastVote().map(Vote::getRound).orElse(Round.genesis()).number();
+        safetyState.getLastVote().map(Vote::getRound).orElse(Round.epochInitial()).number();
 
     byte[] keyBytes = new byte[Long.BYTES * 2];
     Longs.copyTo(epoch, keyBytes, 0);

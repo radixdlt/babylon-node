@@ -88,8 +88,8 @@ public final class ConsensusTimestampChecker implements TestInvariant {
 
   private Maybe<TestInvariantError> checkCloseTimestamp(LedgerUpdate update) {
     final var now = System.currentTimeMillis();
-    final var proof = update.proof();
-    final var timestamp = proof.consensusParentRoundTimestamp();
+    final var proof = update.committedProof().primaryProof();
+    final var timestamp = proof.ledgerHeader().consensusParentRoundTimestampMs();
     // Initial rounds of Consensus can have a timestamp of 0
     if (timestamp == 0) {
       return Maybe.empty();
@@ -102,13 +102,18 @@ public final class ConsensusTimestampChecker implements TestInvariant {
           new TestInvariantError(
               String.format(
                   "Expecting timestamp to be close to %s but was %s%+d at %s:%s with %s",
-                  now, now, diff, proof.getEpoch(), proof.getRound(), update)));
+                  now,
+                  now,
+                  diff,
+                  proof.ledgerHeader().epoch(),
+                  proof.ledgerHeader().round(),
+                  update)));
     }
   }
 
   private static boolean isFirstRoundOfFirstEpoch(LedgerUpdate ledgerUpdate) {
-    return ledgerUpdate.proof().getEpoch() == 1
-        && ledgerUpdate.proof().getRound().equals(Round.of(1));
+    final var proof = ledgerUpdate.committedProof().primaryProof();
+    return proof.ledgerHeader().epoch().toLong() == 1 && proof.ledgerHeader().round().toLong() == 1;
   }
 
   @Override
@@ -117,7 +122,13 @@ public final class ConsensusTimestampChecker implements TestInvariant {
         .ledgerUpdates()
         .map(Pair::getSecond)
         // Test on only the first ledger update in the network
-        .distinct(update -> EpochRound.of(update.proof().getEpoch(), update.proof().getRound()))
+        .distinct(
+            update -> {
+              final var proof = update.committedProof().primaryProof();
+              return EpochRound.of(
+                  proof.ledgerHeader().epoch().toLong(),
+                  Round.of(proof.ledgerHeader().round().toLong()));
+            })
         .filter(l -> !isFirstRoundOfFirstEpoch(l))
         .flatMapMaybe(this::checkCloseTimestamp);
   }

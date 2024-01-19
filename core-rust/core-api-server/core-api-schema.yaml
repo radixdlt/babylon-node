@@ -1907,6 +1907,20 @@ components:
           items:
             $ref: '#/components/schemas/ActiveValidator'
           description: Active validator set for the new epoch, ordered by stake descending.
+        significant_protocol_update_readiness:
+          type: array
+          items:
+            $ref: '#/components/schemas/SignificantProtocolUpdateReadinessEntry'
+    SignificantProtocolUpdateReadinessEntry:
+      type: object
+      required:
+        - readiness_signal_name
+        - signalled_stake
+      properties:
+        readiness_signal_name:
+          type: string
+        signalled_stake:
+          type: string
     CreatedSubstate:
       type: object
       required:
@@ -7205,21 +7219,72 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/LtsEntityNonFungibleBalanceChanges"
+    LedgerProofOriginType:
+      type: string
+      enum:
+        - Genesis
+        - Consensus
+        - ProtocolUpdate
+    LedgerProofOrigin:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/LedgerProofOriginType"
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match LedgerProofOriginType
+          Genesis: '#/components/schemas/GenesisLedgerProofOrigin'
+          Consensus: '#/components/schemas/ConsensusLedgerProofOrigin'
+          ProtocolUpdate: '#/components/schemas/ProtocolUpdateLedgerProofOrigin'
+    GenesisLedgerProofOrigin:
+      allOf:
+        - $ref: "#/components/schemas/LedgerProofOrigin"
+        - type: object
+          required:
+            - genesis_opaque_hash
+          properties:
+            genesis_opaque_hash:
+              type: string
+    ConsensusLedgerProofOrigin:
+      allOf:
+        - $ref: "#/components/schemas/LedgerProofOrigin"
+        - type: object
+          required:
+            - opaque_hash
+            - timestamped_signatures
+          properties:
+            opaque_hash:
+              $ref: "#/components/schemas/OpaqueHash"
+            timestamped_signatures:
+              type: array
+              items:
+                $ref: "#/components/schemas/TimestampedValidatorSignature"
+    ProtocolUpdateLedgerProofOrigin:
+      allOf:
+        - $ref: "#/components/schemas/LedgerProofOrigin"
+        - type: object
+          required:
+            - protocol_version_name
+            - batch_idx
+          properties:
+            protocol_version_name:
+              type: string
+            batch_idx:
+              type: integer
+              format: int64
     LedgerProof:
       type: object
       required:
-        - opaque_hash
         - ledger_header
-        - timestamped_signatures
+        - origin
       properties:
-        opaque_hash: 
-          $ref: "#/components/schemas/OpaqueHash"
         ledger_header:
           $ref: "#/components/schemas/LedgerHeader"
-        timestamped_signatures:
-          type: array
-          items:
-            $ref: "#/components/schemas/TimestampedValidatorSignature"
+        origin:
+          $ref: "#/components/schemas/LedgerProofOrigin"
     LedgerHeader:
       type: object
       required:

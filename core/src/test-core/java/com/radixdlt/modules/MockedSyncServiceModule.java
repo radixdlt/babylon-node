@@ -70,8 +70,6 @@ import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.NextEpoch;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.EventProcessorOnDispatch;
@@ -81,9 +79,11 @@ import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.ledger.LedgerExtension;
+import com.radixdlt.ledger.LedgerProofBundle;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.p2p.NodeId;
-import com.radixdlt.rev2.LastEpochProof;
+import com.radixdlt.statecomputer.commit.LedgerProof;
+import com.radixdlt.sync.LedgerSyncDtoConversions;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
@@ -98,12 +98,8 @@ import com.radixdlt.transactions.RawLedgerTransaction;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.LongStream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class MockedSyncServiceModule extends AbstractModule {
-  private static final Logger logger = LogManager.getLogger();
-
   private final ConcurrentMap<Long, RawLedgerTransaction> sharedCommittedTransactions;
   private final ConcurrentMap<Long, LedgerProof> sharedEpochProofs;
 
@@ -130,20 +126,20 @@ public class MockedSyncServiceModule extends AbstractModule {
     return new EventProcessorOnDispatch<>(
         LedgerUpdate.class,
         update -> {
-          final LedgerProof headerAndProof = update.proof();
-          long stateVersion = headerAndProof.getStateVersion();
-          long firstVersion = stateVersion - update.transactions().size() + 1;
-          for (int i = 0; i < update.transactions().size(); i++) {
-            sharedCommittedTransactions.put(firstVersion + i, update.transactions().get(i));
+          // We must skip protocol update proofs here (`trimProtocolUpdate`)
+          final var proof = update.committedProof().trimProtocolUpdate();
+          long stateVersion = proof.stateVersion();
+          long firstVersion =
+              stateVersion - update.committedNonProtocolUpdateTransactions().size() + 1;
+          for (int i = 0; i < update.committedNonProtocolUpdateTransactions().size(); i++) {
+            sharedCommittedTransactions.put(
+                firstVersion + i, update.committedNonProtocolUpdateTransactions().get(i));
           }
 
-          update
-              .proof()
-              .getNextEpoch()
-              .ifPresent(
-                  nextEpoch -> {
-                    sharedEpochProofs.put(nextEpoch.getEpoch(), update.proof());
-                  });
+          proof
+              .ledgerHeader()
+              .nextEpoch()
+              .ifPresent(nextEpoch -> sharedEpochProofs.put(nextEpoch.epoch().toLong(), proof));
         });
   }
 
@@ -151,25 +147,30 @@ public class MockedSyncServiceModule extends AbstractModule {
   @Singleton
   @ProcessOnDispatch
   EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor(
-      @LastEpochProof LedgerProof genesis,
+      LedgerProofBundle latestProof,
       EventDispatcher<LedgerExtension> syncedTransactionRunDispatcher) {
     return new EventProcessor<>() {
-      long currentVersion = genesis.getStateVersion();
-      long currentEpoch = genesis.getNextEpoch().orElseThrow().getEpoch();
+      long currentVersion = latestProof.resultantStateVersion();
+      long currentEpoch = latestProof.resultantEpoch();
 
       private void syncTo(LedgerProof proof) {
         var transactions =
-            LongStream.range(currentVersion + 1, proof.getStateVersion() + 1)
+            LongStream.range(currentVersion + 1, proof.stateVersion() + 1)
                 .mapToObj(sharedCommittedTransactions::get)
                 .collect(ImmutableList.toImmutableList());
         syncedTransactionRunDispatcher.dispatch(LedgerExtension.create(transactions, proof));
-        currentVersion = proof.getStateVersion();
-        currentEpoch = proof.getNextEpoch().map(NextEpoch::getEpoch).orElse(proof.getEpoch());
+        currentVersion = proof.stateVersion();
+        currentEpoch =
+            proof
+                .ledgerHeader()
+                .nextEpoch()
+                .map(ne -> ne.epoch().toLong())
+                .orElse(proof.ledgerHeader().epoch().toLong());
       }
 
       @Override
       public void process(LocalSyncRequest request) {
-        while (currentEpoch < request.getTarget().getEpoch()) {
+        while (currentEpoch < request.target().ledgerHeader().epoch().toLong()) {
           if (!sharedEpochProofs.containsKey(currentEpoch + 1)) {
             throw new IllegalStateException("Epoch proof does not exist: " + currentEpoch + 1);
           }
@@ -177,17 +178,18 @@ public class MockedSyncServiceModule extends AbstractModule {
           syncTo(sharedEpochProofs.get(currentEpoch + 1));
         }
 
-        syncTo(request.getTarget());
+        final var target = request.target();
+        syncTo(target);
 
-        final long targetVersion = request.getTarget().getStateVersion();
+        final long targetVersion = request.target().stateVersion();
         var txns =
             LongStream.range(currentVersion + 1, targetVersion + 1)
                 .mapToObj(sharedCommittedTransactions::get)
                 .collect(ImmutableList.toImmutableList());
 
-        syncedTransactionRunDispatcher.dispatch(LedgerExtension.create(txns, request.getTarget()));
+        syncedTransactionRunDispatcher.dispatch(LedgerExtension.create(txns, target));
         currentVersion = targetVersion;
-        currentEpoch = request.getTarget().getEpoch();
+        currentEpoch = request.target().ledgerHeader().epoch().toLong();
       }
     };
   }
@@ -201,7 +203,9 @@ public class MockedSyncServiceModule extends AbstractModule {
         LedgerStatusUpdate.class,
         (sender, ev) ->
             localSyncRequestEventDispatcher.dispatch(
-                new LocalSyncRequest(ev.getHeader(), ImmutableList.of(sender))));
+                new LocalSyncRequest(
+                    LedgerSyncDtoConversions.syncStatusDtoToLedgerProof(ev.getProof()),
+                    ImmutableList.of(sender))));
   }
 
   @ProvidesIntoSet

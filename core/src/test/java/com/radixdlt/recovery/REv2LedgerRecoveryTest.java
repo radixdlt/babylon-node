@@ -141,15 +141,15 @@ public final class REv2LedgerRecoveryTest {
       // Arrange
       test.runForCount(processForCount);
       var reader = test.getInstance(0, TransactionsAndProofReader.class);
-      var proof = reader.getLastProof();
+      var latestProofs = reader.getLatestProofBundle().orElseThrow();
 
       // Act
       test.restartNode(0);
 
       // Assert
       var restartedReader = test.getInstance(0, TransactionsAndProofReader.class);
-      var restartedProof = restartedReader.getLastProof();
-      assertThat(restartedProof).isEqualTo(proof);
+      var restartedLatestProofs = restartedReader.getLatestProofBundle().orElseThrow();
+      assertThat(restartedLatestProofs).isEqualTo(latestProofs);
     }
   }
 

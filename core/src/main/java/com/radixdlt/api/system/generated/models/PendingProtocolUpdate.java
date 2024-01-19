@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.system.generated.models.PendingProtocolUpdateState;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,12 +33,20 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   PendingProtocolUpdate.JSON_PROPERTY_PROTOCOL_VERSION,
+  PendingProtocolUpdate.JSON_PROPERTY_STATE,
+  PendingProtocolUpdate.JSON_PROPERTY_READINESS_SIGNAL_NAME,
   PendingProtocolUpdate.JSON_PROPERTY_READINESS_SIGNAL_STATUS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class PendingProtocolUpdate {
   public static final String JSON_PROPERTY_PROTOCOL_VERSION = "protocol_version";
   private String protocolVersion;
+
+  public static final String JSON_PROPERTY_STATE = "state";
+  private PendingProtocolUpdateState state;
+
+  public static final String JSON_PROPERTY_READINESS_SIGNAL_NAME = "readiness_signal_name";
+  private String readinessSignalName;
 
   /**
    * Gets or Sets readinessSignalStatus
@@ -104,6 +113,58 @@ public class PendingProtocolUpdate {
   }
 
 
+  public PendingProtocolUpdate state(PendingProtocolUpdateState state) {
+    this.state = state;
+    return this;
+  }
+
+   /**
+   * Get state
+   * @return state
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_STATE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public PendingProtocolUpdateState getState() {
+    return state;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_STATE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setState(PendingProtocolUpdateState state) {
+    this.state = state;
+  }
+
+
+  public PendingProtocolUpdate readinessSignalName(String readinessSignalName) {
+    this.readinessSignalName = readinessSignalName;
+    return this;
+  }
+
+   /**
+   * Get readinessSignalName
+   * @return readinessSignalName
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_READINESS_SIGNAL_NAME)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public String getReadinessSignalName() {
+    return readinessSignalName;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_READINESS_SIGNAL_NAME)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setReadinessSignalName(String readinessSignalName) {
+    this.readinessSignalName = readinessSignalName;
+  }
+
+
   public PendingProtocolUpdate readinessSignalStatus(ReadinessSignalStatusEnum readinessSignalStatus) {
     this.readinessSignalStatus = readinessSignalStatus;
     return this;
@@ -143,12 +204,14 @@ public class PendingProtocolUpdate {
     }
     PendingProtocolUpdate pendingProtocolUpdate = (PendingProtocolUpdate) o;
     return Objects.equals(this.protocolVersion, pendingProtocolUpdate.protocolVersion) &&
+        Objects.equals(this.state, pendingProtocolUpdate.state) &&
+        Objects.equals(this.readinessSignalName, pendingProtocolUpdate.readinessSignalName) &&
         Objects.equals(this.readinessSignalStatus, pendingProtocolUpdate.readinessSignalStatus);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(protocolVersion, readinessSignalStatus);
+    return Objects.hash(protocolVersion, state, readinessSignalName, readinessSignalStatus);
   }
 
   @Override
@@ -156,6 +219,8 @@ public class PendingProtocolUpdate {
     StringBuilder sb = new StringBuilder();
     sb.append("class PendingProtocolUpdate {\n");
     sb.append("    protocolVersion: ").append(toIndentedString(protocolVersion)).append("\n");
+    sb.append("    state: ").append(toIndentedString(state)).append("\n");
+    sb.append("    readinessSignalName: ").append(toIndentedString(readinessSignalName)).append("\n");
     sb.append("    readinessSignalStatus: ").append(toIndentedString(readinessSignalStatus)).append("\n");
     sb.append("}");
     return sb.toString();

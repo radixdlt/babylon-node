@@ -110,8 +110,8 @@ public class PendingVotesTest {
   @Test
   public void when_inserting_valid_but_unaccepted_votes__then_no_qc_is_returned() {
     HashCode vertexId = HashUtils.random256();
-    Vote vote1 = makeSignedVoteFor(mock(BFTValidatorId.class), Round.genesis(), vertexId);
-    Vote vote2 = makeSignedVoteFor(mock(BFTValidatorId.class), Round.genesis(), vertexId);
+    Vote vote1 = makeSignedVoteFor(mock(BFTValidatorId.class), Round.epochInitial(), vertexId);
+    Vote vote2 = makeSignedVoteFor(mock(BFTValidatorId.class), Round.epochInitial(), vertexId);
 
     BFTValidatorSet validatorSet =
         BFTValidatorSet.from(
@@ -130,7 +130,7 @@ public class PendingVotesTest {
   @Test
   public void when_inserting_valid_and_accepted_votes__then_qc_is_formed() {
     BFTValidatorId author = mock(BFTValidatorId.class);
-    Vote vote = makeSignedVoteFor(author, Round.genesis(), HashUtils.random256());
+    Vote vote = makeSignedVoteFor(author, Round.epochInitial(), HashUtils.random256());
 
     BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
     ValidationState validationState = mock(ValidationState.class);
@@ -154,10 +154,10 @@ public class PendingVotesTest {
   public void when_inserting_valid_timeout_votes__then_tc_is_formed() {
     HashCode vertexId1 = HashUtils.random256();
     HashCode vertexId2 = HashUtils.random256();
-    Vote vote1 = makeSignedVoteFor(mock(BFTValidatorId.class), Round.genesis(), vertexId1);
+    Vote vote1 = makeSignedVoteFor(mock(BFTValidatorId.class), Round.epochInitial(), vertexId1);
     when(vote1.getTimeoutSignature()).thenReturn(Optional.of(mock(ECDSASecp256k1Signature.class)));
     when(vote1.isTimeout()).thenReturn(true);
-    Vote vote2 = makeSignedVoteFor(mock(BFTValidatorId.class), Round.genesis(), vertexId2);
+    Vote vote2 = makeSignedVoteFor(mock(BFTValidatorId.class), Round.epochInitial(), vertexId2);
     when(vote2.getTimeoutSignature()).thenReturn(Optional.of(mock(ECDSASecp256k1Signature.class)));
     when(vote2.isTimeout()).thenReturn(true);
 
@@ -183,7 +183,7 @@ public class PendingVotesTest {
   @Test
   public void when_voting_again__previous_vote_is_removed() {
     BFTValidatorId author = mock(BFTValidatorId.class);
-    Vote vote = makeSignedVoteFor(author, Round.genesis(), HashUtils.random256());
+    Vote vote = makeSignedVoteFor(author, Round.epochInitial(), HashUtils.random256());
 
     BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
     ValidationState validationState = mock(ValidationState.class);
@@ -214,7 +214,7 @@ public class PendingVotesTest {
   @Test
   public void when_voting_again__previous_timeoutvote_is_removed() {
     BFTValidatorId author = mock(BFTValidatorId.class);
-    Vote vote = makeSignedVoteFor(author, Round.genesis(), HashUtils.random256());
+    Vote vote = makeSignedVoteFor(author, Round.epochInitial(), HashUtils.random256());
     when(vote.getTimeoutSignature()).thenReturn(Optional.of(mock(ECDSASecp256k1Signature.class)));
     when(vote.isTimeout()).thenReturn(true);
 
@@ -250,10 +250,12 @@ public class PendingVotesTest {
   public void when_submitting_a_duplicate_vote__then_can_be_replaced_if_has_timeout() {
     final var vertexId1 = HashUtils.random256();
     final var vertexId2 = HashUtils.random256();
-    final var vote1 = makeSignedVoteFor(mock(BFTValidatorId.class), Round.genesis(), vertexId1);
+    final var vote1 =
+        makeSignedVoteFor(mock(BFTValidatorId.class), Round.epochInitial(), vertexId1);
     when(vote1.getTimeoutSignature()).thenReturn(Optional.empty());
     when(vote1.isTimeout()).thenReturn(false);
-    final var vote2 = makeSignedVoteFor(mock(BFTValidatorId.class), Round.genesis(), vertexId2);
+    final var vote2 =
+        makeSignedVoteFor(mock(BFTValidatorId.class), Round.epochInitial(), vertexId2);
     when(vote2.getTimeoutSignature()).thenReturn(Optional.of(mock(ECDSASecp256k1Signature.class)));
     when(vote2.isTimeout()).thenReturn(true);
 
@@ -304,7 +306,7 @@ public class PendingVotesTest {
     final var voteData1 = mock(VoteData.class);
     when(voteData1.getProposed()).thenReturn(bftHeader1);
     final var vote1 =
-        makeVoteWithoutSignatureFor(mock(BFTValidatorId.class), Round.genesis(), vertexId);
+        makeVoteWithoutSignatureFor(mock(BFTValidatorId.class), Round.epochInitial(), vertexId);
     when(vote1.getSignature()).thenReturn(ECDSASecp256k1Signature.zeroSignature());
     when(vote1.getVoteData()).thenReturn(voteData1);
 
@@ -316,7 +318,7 @@ public class PendingVotesTest {
     final var voteData2 = mock(VoteData.class);
     when(voteData2.getProposed()).thenReturn(bftHeader2);
     final var vote2 =
-        makeVoteWithoutSignatureFor(mock(BFTValidatorId.class), Round.genesis(), vertexId);
+        makeVoteWithoutSignatureFor(mock(BFTValidatorId.class), Round.epochInitial(), vertexId);
     when(vote2.getSignature()).thenReturn(ECDSASecp256k1Signature.zeroSignature());
     when(vote2.getVoteData()).thenReturn(voteData2);
 

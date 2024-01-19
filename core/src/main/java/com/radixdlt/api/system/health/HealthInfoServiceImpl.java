@@ -65,16 +65,21 @@
 package com.radixdlt.api.system.health;
 
 import com.google.inject.Inject;
+import com.radixdlt.monitoring.InMemorySystemInfo;
 import com.radixdlt.prometheus.LedgerStatus;
 import com.radixdlt.prometheus.RecentSelfProposalMissStatistic;
 import com.radixdlt.prometheus.RustPrometheus;
+import com.radixdlt.statecomputer.ProtocolState;
 
 public final class HealthInfoServiceImpl implements HealthInfoService {
   private final RustPrometheus rustPrometheus;
+  private final InMemorySystemInfo inMemorySystemInfo;
 
   @Inject
-  public HealthInfoServiceImpl(RustPrometheus rustPrometheus) {
+  public HealthInfoServiceImpl(
+      RustPrometheus rustPrometheus, InMemorySystemInfo inMemorySystemInfo) {
     this.rustPrometheus = rustPrometheus;
+    this.inMemorySystemInfo = inMemorySystemInfo;
   }
 
   @Override
@@ -95,5 +100,10 @@ public final class HealthInfoServiceImpl implements HealthInfoService {
   @Override
   public RecentSelfProposalMissStatistic recentSelfProposalMissStatistic() {
     return this.rustPrometheus.recentSelfProposalMissStatistic();
+  }
+
+  @Override
+  public ProtocolState protocolState() {
+    return inMemorySystemInfo.getProtocolState();
   }
 }

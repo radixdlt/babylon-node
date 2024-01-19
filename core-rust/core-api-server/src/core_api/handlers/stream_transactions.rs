@@ -9,8 +9,8 @@ use radix_engine_store_interface::interface::DatabaseUpdate;
 use state_manager::store::{traits::*, StateManagerDatabase};
 use state_manager::transaction::*;
 use state_manager::{
-    CommittedTransactionIdentifiers, LedgerHeader, LedgerProof, LocalTransactionReceipt,
-    StateVersion,
+    CommittedTransactionIdentifiers, LedgerHeader, LedgerProof, LedgerProofOrigin,
+    LocalTransactionReceipt, StateVersion,
 };
 
 use transaction::manifest;
@@ -166,30 +166,54 @@ pub fn to_api_ledger_proof(
     mapping_context: &MappingContext,
     proof: LedgerProof,
 ) -> Result<models::LedgerProof, MappingError> {
-    let timestamped_signatures = proof
-        .timestamped_signatures
-        .into_iter()
-        .map(|timestamped_validator_signature| {
-            Ok(models::TimestampedValidatorSignature {
-                validator_key: Box::new(to_api_ecdsa_secp256k1_public_key(
-                    &timestamped_validator_signature.key,
-                )),
-                validator_address: to_api_component_address(
-                    mapping_context,
-                    &timestamped_validator_signature.validator_address,
-                )?,
-                timestamp_ms: timestamped_validator_signature.timestamp_ms,
-                signature: Box::new(models::EcdsaSecp256k1Signature {
-                    key_type: models::PublicKeyType::EcdsaSecp256k1,
-                    signature_hex: to_hex(timestamped_validator_signature.signature.to_vec()),
-                }),
-            })
-        })
-        .collect::<Result<_, _>>()?;
+    let api_origin = match &proof.origin {
+        LedgerProofOrigin::Genesis {
+            genesis_opaque_hash,
+        } => models::LedgerProofOrigin::GenesisLedgerProofOrigin {
+            genesis_opaque_hash: to_api_hash(genesis_opaque_hash),
+        },
+        LedgerProofOrigin::Consensus {
+            opaque,
+            timestamped_signatures,
+        } => {
+            let api_timestamped_signatures = timestamped_signatures
+                .iter()
+                .map(|timestamped_validator_signature| {
+                    Ok(models::TimestampedValidatorSignature {
+                        validator_key: Box::new(to_api_ecdsa_secp256k1_public_key(
+                            &timestamped_validator_signature.key,
+                        )),
+                        validator_address: to_api_component_address(
+                            mapping_context,
+                            &timestamped_validator_signature.validator_address,
+                        )?,
+                        timestamp_ms: timestamped_validator_signature.timestamp_ms,
+                        signature: Box::new(models::EcdsaSecp256k1Signature {
+                            key_type: models::PublicKeyType::EcdsaSecp256k1,
+                            signature_hex: to_hex(
+                                timestamped_validator_signature.signature.to_vec(),
+                            ),
+                        }),
+                    })
+                })
+                .collect::<Result<_, _>>()?;
+
+            models::LedgerProofOrigin::ConsensusLedgerProofOrigin {
+                opaque_hash: to_api_hash(opaque),
+                timestamped_signatures: api_timestamped_signatures,
+            }
+        }
+        LedgerProofOrigin::ProtocolUpdate {
+            protocol_version_name,
+            batch_idx,
+        } => models::LedgerProofOrigin::ProtocolUpdateLedgerProofOrigin {
+            protocol_version_name: protocol_version_name.to_string(),
+            batch_idx: to_api_u32_as_i64(*batch_idx),
+        },
+    };
     Ok(models::LedgerProof {
-        opaque_hash: to_api_hash(&proof.opaque),
         ledger_header: Box::new(to_api_ledger_header(mapping_context, proof.ledger_header)?),
-        timestamped_signatures,
+        origin: Some(api_origin),
     })
 }
 
@@ -222,6 +246,7 @@ pub fn to_api_ledger_header(
             Some(Box::new(models::NextEpoch {
                 epoch: to_api_epoch(mapping_context, next_epoch.epoch)?,
                 validators,
+                significant_protocol_update_readiness: None,
             }))
         }
         None => None,

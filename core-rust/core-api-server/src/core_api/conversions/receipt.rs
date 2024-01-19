@@ -166,8 +166,8 @@ pub fn to_api_substate_system_structure(
         SubstateSystemStructure::SystemField(SystemFieldStructure { field_kind }) => {
             models::SubstateSystemStructure::SystemFieldStructure {
                 field_kind: match field_kind {
-                    SystemFieldKind::BootLoader => models::SystemFieldKind::BootLoader,
                     SystemFieldKind::TypeInfo => models::SystemFieldKind::TypeInfo,
+                    SystemFieldKind::BootLoader => models::SystemFieldKind::BootLoader,
                 },
             }
         }
@@ -285,7 +285,7 @@ pub fn to_api_next_epoch(
     let EpochChangeEvent {
         epoch,
         validator_set,
-        .. // TODO: expose `significant_protocol_update_readiness` when it becomes more important
+        significant_protocol_update_readiness,
     } = epoch_change_event;
     let next_epoch = models::NextEpoch {
         epoch: to_api_epoch(context, epoch)?,
@@ -294,6 +294,17 @@ pub fn to_api_next_epoch(
             .into_iter()
             .map(|(address, validator)| to_api_active_validator(context, &address, &validator))
             .collect::<Result<_, _>>()?,
+        significant_protocol_update_readiness: Some(
+            significant_protocol_update_readiness
+                .into_iter()
+                .map(|(readiness_signal_name, signalled_stake)| {
+                    models::SignificantProtocolUpdateReadinessEntry {
+                        readiness_signal_name,
+                        signalled_stake: signalled_stake.to_string(),
+                    }
+                })
+                .collect(),
+        ),
     };
     Ok(next_epoch)
 }

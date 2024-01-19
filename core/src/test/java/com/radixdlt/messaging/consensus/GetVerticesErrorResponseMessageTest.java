@@ -87,7 +87,7 @@ public class GetVerticesErrorResponseMessageTest {
     final var vertexWithHash = mock(VertexWithHash.class);
     final var vertex = mock(Vertex.class);
     when(vertexWithHash.vertex()).thenReturn(vertex);
-    when(vertex.getRound()).thenReturn(Round.genesis());
+    when(vertex.getRound()).thenReturn(Round.epochInitial());
     when(vertexWithHash.hash()).thenReturn(HashCode.fromInt(1));
     QuorumCertificate qc =
         QuorumCertificate.createInitialEpochQC(vertexWithHash, mock(LedgerHeader.class));

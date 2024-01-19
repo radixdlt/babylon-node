@@ -64,8 +64,10 @@
 
 package com.radixdlt.sync.validation;
 
-import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.statecomputer.commit.LedgerProof;
+import com.radixdlt.statecomputer.commit.LedgerProofOrigin;
 import java.util.Objects;
 
 /**
@@ -81,15 +83,22 @@ public class RemoteSyncResponseValidatorSetVerifier {
   }
 
   public boolean verifyValidatorSet(LedgerProof ledgerProof) {
-    final var validationState = validatorSet.newValidationState();
-
-    ledgerProof
-        .getSignatures()
-        .getSignatures()
-        .forEach(
-            (node, signature) ->
-                validationState.addSignature(node, signature.timestamp(), signature.signature()));
-
-    return validationState.complete();
+    return switch (ledgerProof.origin()) {
+      case LedgerProofOrigin.Consensus consensusOrigin -> {
+        final var validationState = validatorSet.newValidationState();
+        consensusOrigin
+            .signatures()
+            .forEach(
+                signature -> {
+                  final var validatorId =
+                      BFTValidatorId.create(signature.validatorAddress(), signature.key());
+                  validationState.addSignature(
+                      validatorId, signature.timestampMs(), signature.signature());
+                });
+        yield validationState.complete();
+      }
+      case LedgerProofOrigin.Genesis genesis -> false;
+      case LedgerProofOrigin.ProtocolUpdate protocolUpdate -> false;
+    };
   }
 }

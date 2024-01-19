@@ -176,4 +176,44 @@ public final class SystemModelMapper {
 
     return addressBookEntry;
   }
+
+  public ProtocolConfiguration protocolConfiguration(
+      com.radixdlt.protocol.ProtocolConfig protocolConfig) {
+    return new ProtocolConfiguration()
+        .genesisProtocolVersion(protocolConfig.genesisProtocolVersion())
+        .protocolUpdates(
+            protocolConfig.protocolUpdates().stream()
+                .map(
+                    protocolUpdate ->
+                        new ProtocolUpdate()
+                            .nextProtocolVersion(protocolUpdate.nextProtocolVersion())
+                            .enactmentCondition(
+                                enactmentCondition(protocolUpdate.enactmentCondition())))
+                .toList());
+  }
+
+  private ProtocolUpdateEnactmentCondition enactmentCondition(
+      com.radixdlt.protocol.ProtocolUpdateEnactmentCondition enactmentCondition) {
+    return switch (enactmentCondition) {
+      case com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactWhenSupportedAndWithinBounds
+      enactWhenSupportedAndWithinBounds -> new EnactWhenSupportedAndWithinBoundsCondition()
+          .lowerBoundEpoch(enactWhenSupportedAndWithinBounds.lowerBound().toLong())
+          .upperBoundEpoch(enactWhenSupportedAndWithinBounds.upperBound().toLong())
+          .readinessThresholds(
+              enactWhenSupportedAndWithinBounds.readinessThresholds().stream()
+                  .map(
+                      threshold ->
+                          new SignalledReadinessThreshold()
+                              .requiredRatioOfStakeSupported(
+                                  threshold.requiredRatioOfStakeSupported().toString())
+                              .requiredConsecutiveCompletedEpochsOfSupport(
+                                  threshold.requiredConsecutiveCompletedEpochsOfSupport().toLong()))
+                  .toList())
+          .type(ProtocolUpdateEnactmentConditionType.ENACTWHENSUPPORTEDANDWITHINBOUNDS);
+      case com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactUnconditionallyAtEpoch
+      enactUnconditionallyAtEpoch -> new EnactUnconditionallyAtEpochCondition()
+          .epoch(enactUnconditionallyAtEpoch.epoch().toLong())
+          .type(ProtocolUpdateEnactmentConditionType.ENACTUNCONDITIONALLYATEPOCH);
+    };
+  }
 }
