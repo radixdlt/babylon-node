@@ -69,9 +69,9 @@ import static com.radixdlt.harness.predicates.NodePredicate.committedFailedUserT
 import static com.radixdlt.harness.predicates.NodesPredicate.*;
 import static com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Streams;
 import com.google.inject.AbstractModule;
 import com.google.inject.Key;
 import com.google.inject.Module;
@@ -81,10 +81,7 @@ import com.radixdlt.api.CoreApiServer;
 import com.radixdlt.api.CoreApiServerModule;
 import com.radixdlt.api.core.generated.api.StreamApi;
 import com.radixdlt.api.core.generated.client.ApiClient;
-import com.radixdlt.api.core.generated.models.CommittedTransaction;
-import com.radixdlt.api.core.generated.models.FlashLedgerTransaction;
-import com.radixdlt.api.core.generated.models.LedgerTransactionType;
-import com.radixdlt.api.core.generated.models.StreamTransactionsRequest;
+import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.environment.CoreApiServerFlags;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.StartProcessorOnRunner;
@@ -103,7 +100,9 @@ import com.radixdlt.rev2.*;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.utils.FreePortFinder;
-import java.util.List;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -216,7 +215,7 @@ public final class AnemoneProtocolUpdateTest {
       // Fetch all flash transactions:
       final var apiClient = new ApiClient();
       apiClient.updateBaseUri("http://127.0.0.1:" + coreApiPort + "/core");
-      final var flashTransactions =
+      final var committedFlashTransactions =
           new StreamApi(apiClient)
                   .streamTransactionsPost(
                       new StreamTransactionsRequest()
@@ -225,39 +224,61 @@ public final class AnemoneProtocolUpdateTest {
                           .fromStateVersion(1L))
                   .getTransactions()
                   .stream()
-                  .map(CommittedTransaction::getLedgerTransaction)
-                  .filter(txn -> txn.getType() == LedgerTransactionType.FLASH)
-                  .map(txn -> (FlashLedgerTransaction) txn)
+                  .filter(
+                      txn -> txn.getLedgerTransaction().getType() == LedgerTransactionType.FLASH)
                   .toList();
 
-      // Assert some known facts about Anemone's flashes:
+      final var flashTransactions =
+          committedFlashTransactions.stream()
+              .map(txn -> (FlashLedgerTransaction) txn.getLedgerTransaction())
+              .toList();
       final var transactionNames =
           flashTransactions.stream().map(FlashLedgerTransaction::getName).toList();
+      final var flashStateUpdates =
+          flashTransactions.stream().map(FlashLedgerTransaction::getFlashedStateUpdates).toList();
+      final var receiptStateUpdates =
+          committedFlashTransactions.stream()
+              .map(txn -> txn.getReceipt().getStateUpdates())
+              .toList();
+
+      // Assert some known facts about Anemone's flashes:
       assertEquals(
-          List.of(
+          transactionNames,
+          Arrays.asList(
               "anemone-validator-fee-fix",
               "anemone-seconds-precision",
               "anemone-vm-boot",
-              "anemone-pools"),
-          transactionNames);
+              "anemone-pools"));
 
-      final var deletedPartitions =
-          flashTransactions.stream()
-              .mapToInt(txn -> txn.getFlashedStateUpdates().getDeletedPartitions().size())
-              .sum();
-      assertEquals(8, deletedPartitions);
+      Streams.forEachPair(
+          flashStateUpdates.stream(),
+          receiptStateUpdates.stream(),
+          (fromFlash, fromReceipt) -> {
+            // all deleted partitions specified by flash were really deleted:
+            assertEquals(fromFlash.getDeletedPartitions(), fromReceipt.getDeletedPartitions());
 
-      final var deletedSubstates =
-          flashTransactions.stream()
-              .mapToInt(txn -> txn.getFlashedStateUpdates().getDeletedSubstates().size())
-              .sum();
-      assertEquals(0, deletedSubstates);
+            // substate values set by flash transactions end up as the receipt's created + updated:
+            final var setFromFlash =
+                fromFlash.getSetSubstates().stream()
+                    .collect(
+                        Collectors.toMap(
+                            FlashSetSubstate::getSubstateId, FlashSetSubstate::getValue));
+            final var setFromReceipt =
+                Streams.concat(
+                        fromReceipt.getCreatedSubstates().stream()
+                            .map(create -> Map.entry(create.getSubstateId(), create.getValue())),
+                        fromReceipt.getUpdatedSubstates().stream()
+                            .map(update -> Map.entry(update.getSubstateId(), update.getNewValue())))
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            assertEquals(setFromFlash, setFromReceipt);
 
-      final var setSubstates =
-          flashTransactions.stream()
-              .mapToInt(txn -> txn.getFlashedStateUpdates().getSetSubstates().size())
-              .sum();
-      assertTrue(setSubstates > 0);
+            // and the same for deletes:
+            final var deletedFromReceipt =
+                fromReceipt.getDeletedSubstates().stream()
+                    .map(DeletedSubstate::getSubstateId)
+                    .toList();
+            assertEquals(fromFlash.getDeletedSubstates(), deletedFromReceipt);
+          });
     }
   }
 

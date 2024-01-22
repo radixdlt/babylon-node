@@ -4,10 +4,9 @@ use crate::{
     UpdatableStateComputerConfig, ANEMONE_PROTOCOL_VERSION,
 };
 use node_common::locks::StateLock;
-use radix_engine::utils::pools_package_v1_1;
 use radix_engine::utils::{
-    generate_seconds_precision_state_updates, generate_validator_fee_fix_state_updates,
-    generate_vm_boot_scrypto_minor_version_state_updates,
+    generate_pools_v1_1_state_updates, generate_seconds_precision_state_updates,
+    generate_validator_fee_fix_state_updates, generate_vm_boot_scrypto_minor_version_state_updates,
 };
 use radix_engine_common::prelude::NetworkDefinition;
 use std::ops::Deref;
@@ -60,9 +59,7 @@ impl ProtocolUpdater for AnemoneProtocolUpdater {
                             },
                             FlashTransactionV1 {
                                 name: "anemone-pools".to_string(),
-                                state_updates: pools_package_v1_1::generate_state_updates(
-                                    read_db.deref(),
-                                ),
+                                state_updates: generate_pools_v1_1_state_updates(read_db.deref()),
                             },
                         ]
                     };
