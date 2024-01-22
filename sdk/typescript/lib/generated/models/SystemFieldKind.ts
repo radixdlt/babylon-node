@@ -18,6 +18,7 @@
  * @export
  */
 export const SystemFieldKind = {
+    BootLoader: 'BootLoader',
     TypeInfo: 'TypeInfo'
 } as const;
 export type SystemFieldKind = typeof SystemFieldKind[keyof typeof SystemFieldKind];

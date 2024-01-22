@@ -13,77 +13,71 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { FlashedStateUpdates } from './FlashedStateUpdates';
-import {
-    FlashedStateUpdatesFromJSON,
-    FlashedStateUpdatesFromJSONTyped,
-    FlashedStateUpdatesToJSON,
-} from './FlashedStateUpdates';
-
 /**
  * 
  * @export
- * @interface FlashLedgerTransaction
+ * @interface ProtocolUpdateLedgerProofOrigin
  */
-export interface FlashLedgerTransaction {
+export interface ProtocolUpdateLedgerProofOrigin {
     /**
      * 
      * @type {string}
-     * @memberof FlashLedgerTransaction
+     * @memberof ProtocolUpdateLedgerProofOrigin
      */
-    type: FlashLedgerTransactionTypeEnum;
-    /**
-     * The hex-encoded full ledger transaction payload. Only returned if enabled in TransactionFormatOptions on your request.
-     * @type {string}
-     * @memberof FlashLedgerTransaction
-     */
-    payload_hex?: string;
+    type: ProtocolUpdateLedgerProofOriginTypeEnum;
     /**
      * 
-     * @type {FlashedStateUpdates}
-     * @memberof FlashLedgerTransaction
+     * @type {string}
+     * @memberof ProtocolUpdateLedgerProofOrigin
      */
-    flashed_state_updates: FlashedStateUpdates;
+    protocol_version_name: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof ProtocolUpdateLedgerProofOrigin
+     */
+    batch_idx: number;
 }
 
 
 /**
  * @export
  */
-export const FlashLedgerTransactionTypeEnum = {
-    Flash: 'Flash'
+export const ProtocolUpdateLedgerProofOriginTypeEnum = {
+    ProtocolUpdate: 'ProtocolUpdate'
 } as const;
-export type FlashLedgerTransactionTypeEnum = typeof FlashLedgerTransactionTypeEnum[keyof typeof FlashLedgerTransactionTypeEnum];
+export type ProtocolUpdateLedgerProofOriginTypeEnum = typeof ProtocolUpdateLedgerProofOriginTypeEnum[keyof typeof ProtocolUpdateLedgerProofOriginTypeEnum];
 
 
 /**
- * Check if a given object implements the FlashLedgerTransaction interface.
+ * Check if a given object implements the ProtocolUpdateLedgerProofOrigin interface.
  */
-export function instanceOfFlashLedgerTransaction(value: object): boolean {
+export function instanceOfProtocolUpdateLedgerProofOrigin(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "type" in value;
-    isInstance = isInstance && "flashed_state_updates" in value;
+    isInstance = isInstance && "protocol_version_name" in value;
+    isInstance = isInstance && "batch_idx" in value;
 
     return isInstance;
 }
 
-export function FlashLedgerTransactionFromJSON(json: any): FlashLedgerTransaction {
-    return FlashLedgerTransactionFromJSONTyped(json, false);
+export function ProtocolUpdateLedgerProofOriginFromJSON(json: any): ProtocolUpdateLedgerProofOrigin {
+    return ProtocolUpdateLedgerProofOriginFromJSONTyped(json, false);
 }
 
-export function FlashLedgerTransactionFromJSONTyped(json: any, ignoreDiscriminator: boolean): FlashLedgerTransaction {
+export function ProtocolUpdateLedgerProofOriginFromJSONTyped(json: any, ignoreDiscriminator: boolean): ProtocolUpdateLedgerProofOrigin {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
         'type': json['type'],
-        'payload_hex': !exists(json, 'payload_hex') ? undefined : json['payload_hex'],
-        'flashed_state_updates': FlashedStateUpdatesFromJSON(json['flashed_state_updates']),
+        'protocol_version_name': json['protocol_version_name'],
+        'batch_idx': json['batch_idx'],
     };
 }
 
-export function FlashLedgerTransactionToJSON(value?: FlashLedgerTransaction | null): any {
+export function ProtocolUpdateLedgerProofOriginToJSON(value?: ProtocolUpdateLedgerProofOrigin | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -93,8 +87,8 @@ export function FlashLedgerTransactionToJSON(value?: FlashLedgerTransaction | nu
     return {
         
         'type': value.type,
-        'payload_hex': value.payload_hex,
-        'flashed_state_updates': FlashedStateUpdatesToJSON(value.flashed_state_updates),
+        'protocol_version_name': value.protocol_version_name,
+        'batch_idx': value.batch_idx,
     };
 }
 

@@ -12,15 +12,18 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct FlashTransaction {
-    #[serde(rename = "flashed_substates")]
-    pub flashed_substates: Vec<crate::core_api::generated::models::FlashedSubstate>,
+pub struct FlashSetSubstate {
+    #[serde(rename = "substate_id")]
+    pub substate_id: Box<crate::core_api::generated::models::SubstateId>,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::SubstateValue>,
 }
 
-impl FlashTransaction {
-    pub fn new(flashed_substates: Vec<crate::core_api::generated::models::FlashedSubstate>) -> FlashTransaction {
-        FlashTransaction {
-            flashed_substates,
+impl FlashSetSubstate {
+    pub fn new(substate_id: crate::core_api::generated::models::SubstateId, value: crate::core_api::generated::models::SubstateValue) -> FlashSetSubstate {
+        FlashSetSubstate {
+            substate_id: Box::new(substate_id),
+            value: Box::new(value),
         }
     }
 }

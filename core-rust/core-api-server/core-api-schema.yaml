@@ -7413,10 +7413,10 @@ components:
         - $ref: "#/components/schemas/LedgerTransaction"
         - type: object
           required:
-            - flash_transaction
+            - flashed_state_updates
           properties:
-            flash_transaction:
-              $ref: "#/components/schemas/FlashTransaction"
+            flashed_state_updates:
+              $ref: "#/components/schemas/FlashedStateUpdates"
     RoundUpdateTransaction:
       type: object
       required:
@@ -7444,35 +7444,37 @@ components:
         leader_proposal_history:
           $ref: '#/components/schemas/LeaderProposalHistory'
           description: A recent history (i.e. since the previous `RoundUpdateValidatorTransaction`) of consensus round leaders' reliability. Used for validator emissions calculation.
-    FlashTransaction:
+    FlashedStateUpdates:
       type: object
+      description: Direct state updates performed by a Flash Transaction.
       required:
-        - flashed_substates
+        - deleted_partitions
+        - set_substates
+        - deleted_substates
       properties:
-        flashed_substates:
+        deleted_partitions:
           type: array
           items:
-            $ref: "#/components/schemas/FlashedSubstate"
-    FlashedSubstate:
+            $ref: "#/components/schemas/PartitionId"
+        set_substates:
+          type: array
+          items:
+            $ref: "#/components/schemas/FlashSetSubstate"
+        deleted_substates:
+          type: array
+          items:
+            $ref: "#/components/schemas/SubstateId"
+    FlashSetSubstate:
       type: object
       required:
-        - entity_address
-        - partition_number
-        - substate_key
+        - substate_id
         - value
       properties:
-        entity_address:
-          $ref: "#/components/schemas/EntityAddress"
-        partition_number:
-          type: integer
-          format: int32
-          minimum: 0
-          maximum: 255
-        substate_key:
-          $ref: "#/components/schemas/SubstateKey"
+        substate_id:
+          $ref: "#/components/schemas/SubstateId"
         value:
-          type: string
-          description: The hex-encoded, SBOR-encoded substate data bytes.
+          $ref: "#/components/schemas/SubstateValue"
+          description: The new value set on the substate.
     LeaderProposalHistory:
       type: object
       required:

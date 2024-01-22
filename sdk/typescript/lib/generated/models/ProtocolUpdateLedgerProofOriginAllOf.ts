@@ -13,52 +13,70 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { FlashedSubstate } from './FlashedSubstate';
-import {
-    FlashedSubstateFromJSON,
-    FlashedSubstateFromJSONTyped,
-    FlashedSubstateToJSON,
-} from './FlashedSubstate';
-
 /**
  * 
  * @export
- * @interface FlashTransaction
+ * @interface ProtocolUpdateLedgerProofOriginAllOf
  */
-export interface FlashTransaction {
+export interface ProtocolUpdateLedgerProofOriginAllOf {
     /**
      * 
-     * @type {Array<FlashedSubstate>}
-     * @memberof FlashTransaction
+     * @type {string}
+     * @memberof ProtocolUpdateLedgerProofOriginAllOf
      */
-    flashed_substates: Array<FlashedSubstate>;
+    protocol_version_name: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof ProtocolUpdateLedgerProofOriginAllOf
+     */
+    batch_idx: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProtocolUpdateLedgerProofOriginAllOf
+     */
+    type?: ProtocolUpdateLedgerProofOriginAllOfTypeEnum;
 }
 
+
 /**
- * Check if a given object implements the FlashTransaction interface.
+ * @export
  */
-export function instanceOfFlashTransaction(value: object): boolean {
+export const ProtocolUpdateLedgerProofOriginAllOfTypeEnum = {
+    ProtocolUpdate: 'ProtocolUpdate'
+} as const;
+export type ProtocolUpdateLedgerProofOriginAllOfTypeEnum = typeof ProtocolUpdateLedgerProofOriginAllOfTypeEnum[keyof typeof ProtocolUpdateLedgerProofOriginAllOfTypeEnum];
+
+
+/**
+ * Check if a given object implements the ProtocolUpdateLedgerProofOriginAllOf interface.
+ */
+export function instanceOfProtocolUpdateLedgerProofOriginAllOf(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "flashed_substates" in value;
+    isInstance = isInstance && "protocol_version_name" in value;
+    isInstance = isInstance && "batch_idx" in value;
 
     return isInstance;
 }
 
-export function FlashTransactionFromJSON(json: any): FlashTransaction {
-    return FlashTransactionFromJSONTyped(json, false);
+export function ProtocolUpdateLedgerProofOriginAllOfFromJSON(json: any): ProtocolUpdateLedgerProofOriginAllOf {
+    return ProtocolUpdateLedgerProofOriginAllOfFromJSONTyped(json, false);
 }
 
-export function FlashTransactionFromJSONTyped(json: any, ignoreDiscriminator: boolean): FlashTransaction {
+export function ProtocolUpdateLedgerProofOriginAllOfFromJSONTyped(json: any, ignoreDiscriminator: boolean): ProtocolUpdateLedgerProofOriginAllOf {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'flashed_substates': ((json['flashed_substates'] as Array<any>).map(FlashedSubstateFromJSON)),
+        'protocol_version_name': json['protocol_version_name'],
+        'batch_idx': json['batch_idx'],
+        'type': !exists(json, 'type') ? undefined : json['type'],
     };
 }
 
-export function FlashTransactionToJSON(value?: FlashTransaction | null): any {
+export function ProtocolUpdateLedgerProofOriginAllOfToJSON(value?: ProtocolUpdateLedgerProofOriginAllOf | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -67,7 +85,9 @@ export function FlashTransactionToJSON(value?: FlashTransaction | null): any {
     }
     return {
         
-        'flashed_substates': ((value.flashed_substates as Array<any>).map(FlashedSubstateToJSON)),
+        'protocol_version_name': value.protocol_version_name,
+        'batch_idx': value.batch_idx,
+        'type': value.type,
     };
 }
 

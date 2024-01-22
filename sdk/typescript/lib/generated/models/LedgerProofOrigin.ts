@@ -12,89 +12,72 @@
  * Do not edit the class manually.
  */
 
-import { exists, mapValues } from '../runtime';
-import type { FlashedStateUpdates } from './FlashedStateUpdates';
 import {
-    FlashedStateUpdatesFromJSON,
-    FlashedStateUpdatesFromJSONTyped,
-    FlashedStateUpdatesToJSON,
-} from './FlashedStateUpdates';
+    ConsensusLedgerProofOrigin,
+    instanceOfConsensusLedgerProofOrigin,
+    ConsensusLedgerProofOriginFromJSON,
+    ConsensusLedgerProofOriginFromJSONTyped,
+    ConsensusLedgerProofOriginToJSON,
+} from './ConsensusLedgerProofOrigin';
+import {
+    GenesisLedgerProofOrigin,
+    instanceOfGenesisLedgerProofOrigin,
+    GenesisLedgerProofOriginFromJSON,
+    GenesisLedgerProofOriginFromJSONTyped,
+    GenesisLedgerProofOriginToJSON,
+} from './GenesisLedgerProofOrigin';
+import {
+    ProtocolUpdateLedgerProofOrigin,
+    instanceOfProtocolUpdateLedgerProofOrigin,
+    ProtocolUpdateLedgerProofOriginFromJSON,
+    ProtocolUpdateLedgerProofOriginFromJSONTyped,
+    ProtocolUpdateLedgerProofOriginToJSON,
+} from './ProtocolUpdateLedgerProofOrigin';
 
 /**
+ * @type LedgerProofOrigin
  * 
  * @export
- * @interface FlashLedgerTransaction
  */
-export interface FlashLedgerTransaction {
-    /**
-     * 
-     * @type {string}
-     * @memberof FlashLedgerTransaction
-     */
-    type: FlashLedgerTransactionTypeEnum;
-    /**
-     * The hex-encoded full ledger transaction payload. Only returned if enabled in TransactionFormatOptions on your request.
-     * @type {string}
-     * @memberof FlashLedgerTransaction
-     */
-    payload_hex?: string;
-    /**
-     * 
-     * @type {FlashedStateUpdates}
-     * @memberof FlashLedgerTransaction
-     */
-    flashed_state_updates: FlashedStateUpdates;
+export type LedgerProofOrigin = { type: 'Consensus' } & ConsensusLedgerProofOrigin | { type: 'Genesis' } & GenesisLedgerProofOrigin | { type: 'ProtocolUpdate' } & ProtocolUpdateLedgerProofOrigin;
+
+export function LedgerProofOriginFromJSON(json: any): LedgerProofOrigin {
+    return LedgerProofOriginFromJSONTyped(json, false);
 }
 
-
-/**
- * @export
- */
-export const FlashLedgerTransactionTypeEnum = {
-    Flash: 'Flash'
-} as const;
-export type FlashLedgerTransactionTypeEnum = typeof FlashLedgerTransactionTypeEnum[keyof typeof FlashLedgerTransactionTypeEnum];
-
-
-/**
- * Check if a given object implements the FlashLedgerTransaction interface.
- */
-export function instanceOfFlashLedgerTransaction(value: object): boolean {
-    let isInstance = true;
-    isInstance = isInstance && "type" in value;
-    isInstance = isInstance && "flashed_state_updates" in value;
-
-    return isInstance;
-}
-
-export function FlashLedgerTransactionFromJSON(json: any): FlashLedgerTransaction {
-    return FlashLedgerTransactionFromJSONTyped(json, false);
-}
-
-export function FlashLedgerTransactionFromJSONTyped(json: any, ignoreDiscriminator: boolean): FlashLedgerTransaction {
+export function LedgerProofOriginFromJSONTyped(json: any, ignoreDiscriminator: boolean): LedgerProofOrigin {
     if ((json === undefined) || (json === null)) {
         return json;
     }
-    return {
-        
-        'type': json['type'],
-        'payload_hex': !exists(json, 'payload_hex') ? undefined : json['payload_hex'],
-        'flashed_state_updates': FlashedStateUpdatesFromJSON(json['flashed_state_updates']),
-    };
+    switch (json['type']) {
+        case 'Consensus':
+            return {...ConsensusLedgerProofOriginFromJSONTyped(json, true), type: 'Consensus'};
+        case 'Genesis':
+            return {...GenesisLedgerProofOriginFromJSONTyped(json, true), type: 'Genesis'};
+        case 'ProtocolUpdate':
+            return {...ProtocolUpdateLedgerProofOriginFromJSONTyped(json, true), type: 'ProtocolUpdate'};
+        default:
+            throw new Error(`No variant of LedgerProofOrigin exists with 'type=${json['type']}'`);
+    }
 }
 
-export function FlashLedgerTransactionToJSON(value?: FlashLedgerTransaction | null): any {
+export function LedgerProofOriginToJSON(value?: LedgerProofOrigin | null): any {
     if (value === undefined) {
         return undefined;
     }
     if (value === null) {
         return null;
     }
-    return {
-        
-        'type': value.type,
-        'payload_hex': value.payload_hex,
-        'flashed_state_updates': FlashedStateUpdatesToJSON(value.flashed_state_updates),
-    };
+    switch (value['type']) {
+        case 'Consensus':
+            return ConsensusLedgerProofOriginToJSON(value);
+        case 'Genesis':
+            return GenesisLedgerProofOriginToJSON(value);
+        case 'ProtocolUpdate':
+            return ProtocolUpdateLedgerProofOriginToJSON(value);
+        default:
+            throw new Error(`No variant of LedgerProofOrigin exists with 'type=${value['type']}'`);
+    }
+
 }
 

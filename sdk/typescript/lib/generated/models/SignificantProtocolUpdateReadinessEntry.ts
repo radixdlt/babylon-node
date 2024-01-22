@@ -13,77 +13,53 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { FlashedStateUpdates } from './FlashedStateUpdates';
-import {
-    FlashedStateUpdatesFromJSON,
-    FlashedStateUpdatesFromJSONTyped,
-    FlashedStateUpdatesToJSON,
-} from './FlashedStateUpdates';
-
 /**
  * 
  * @export
- * @interface FlashLedgerTransaction
+ * @interface SignificantProtocolUpdateReadinessEntry
  */
-export interface FlashLedgerTransaction {
+export interface SignificantProtocolUpdateReadinessEntry {
     /**
      * 
      * @type {string}
-     * @memberof FlashLedgerTransaction
+     * @memberof SignificantProtocolUpdateReadinessEntry
      */
-    type: FlashLedgerTransactionTypeEnum;
-    /**
-     * The hex-encoded full ledger transaction payload. Only returned if enabled in TransactionFormatOptions on your request.
-     * @type {string}
-     * @memberof FlashLedgerTransaction
-     */
-    payload_hex?: string;
+    readiness_signal_name: string;
     /**
      * 
-     * @type {FlashedStateUpdates}
-     * @memberof FlashLedgerTransaction
+     * @type {string}
+     * @memberof SignificantProtocolUpdateReadinessEntry
      */
-    flashed_state_updates: FlashedStateUpdates;
+    signalled_stake: string;
 }
 
-
 /**
- * @export
+ * Check if a given object implements the SignificantProtocolUpdateReadinessEntry interface.
  */
-export const FlashLedgerTransactionTypeEnum = {
-    Flash: 'Flash'
-} as const;
-export type FlashLedgerTransactionTypeEnum = typeof FlashLedgerTransactionTypeEnum[keyof typeof FlashLedgerTransactionTypeEnum];
-
-
-/**
- * Check if a given object implements the FlashLedgerTransaction interface.
- */
-export function instanceOfFlashLedgerTransaction(value: object): boolean {
+export function instanceOfSignificantProtocolUpdateReadinessEntry(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "type" in value;
-    isInstance = isInstance && "flashed_state_updates" in value;
+    isInstance = isInstance && "readiness_signal_name" in value;
+    isInstance = isInstance && "signalled_stake" in value;
 
     return isInstance;
 }
 
-export function FlashLedgerTransactionFromJSON(json: any): FlashLedgerTransaction {
-    return FlashLedgerTransactionFromJSONTyped(json, false);
+export function SignificantProtocolUpdateReadinessEntryFromJSON(json: any): SignificantProtocolUpdateReadinessEntry {
+    return SignificantProtocolUpdateReadinessEntryFromJSONTyped(json, false);
 }
 
-export function FlashLedgerTransactionFromJSONTyped(json: any, ignoreDiscriminator: boolean): FlashLedgerTransaction {
+export function SignificantProtocolUpdateReadinessEntryFromJSONTyped(json: any, ignoreDiscriminator: boolean): SignificantProtocolUpdateReadinessEntry {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'type': json['type'],
-        'payload_hex': !exists(json, 'payload_hex') ? undefined : json['payload_hex'],
-        'flashed_state_updates': FlashedStateUpdatesFromJSON(json['flashed_state_updates']),
+        'readiness_signal_name': json['readiness_signal_name'],
+        'signalled_stake': json['signalled_stake'],
     };
 }
 
-export function FlashLedgerTransactionToJSON(value?: FlashLedgerTransaction | null): any {
+export function SignificantProtocolUpdateReadinessEntryToJSON(value?: SignificantProtocolUpdateReadinessEntry | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -92,9 +68,8 @@ export function FlashLedgerTransactionToJSON(value?: FlashLedgerTransaction | nu
     }
     return {
         
-        'type': value.type,
-        'payload_hex': value.payload_hex,
-        'flashed_state_updates': FlashedStateUpdatesToJSON(value.flashed_state_updates),
+        'readiness_signal_name': value.readiness_signal_name,
+        'signalled_stake': value.signalled_stake,
     };
 }
 

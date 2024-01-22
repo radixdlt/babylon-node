@@ -19,12 +19,12 @@ import {
     LedgerHeaderFromJSONTyped,
     LedgerHeaderToJSON,
 } from './LedgerHeader';
-import type { TimestampedValidatorSignature } from './TimestampedValidatorSignature';
+import type { LedgerProofOrigin } from './LedgerProofOrigin';
 import {
-    TimestampedValidatorSignatureFromJSON,
-    TimestampedValidatorSignatureFromJSONTyped,
-    TimestampedValidatorSignatureToJSON,
-} from './TimestampedValidatorSignature';
+    LedgerProofOriginFromJSON,
+    LedgerProofOriginFromJSONTyped,
+    LedgerProofOriginToJSON,
+} from './LedgerProofOrigin';
 
 /**
  * 
@@ -33,12 +33,6 @@ import {
  */
 export interface LedgerProof {
     /**
-     * A hex-encoded 32-byte vertex VoteData hash on the consensus side, opaque to ledger.
-     * @type {string}
-     * @memberof LedgerProof
-     */
-    opaque_hash: string;
-    /**
      * 
      * @type {LedgerHeader}
      * @memberof LedgerProof
@@ -46,10 +40,10 @@ export interface LedgerProof {
     ledger_header: LedgerHeader;
     /**
      * 
-     * @type {Array<TimestampedValidatorSignature>}
+     * @type {LedgerProofOrigin}
      * @memberof LedgerProof
      */
-    timestamped_signatures: Array<TimestampedValidatorSignature>;
+    origin: LedgerProofOrigin;
 }
 
 /**
@@ -57,9 +51,8 @@ export interface LedgerProof {
  */
 export function instanceOfLedgerProof(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "opaque_hash" in value;
     isInstance = isInstance && "ledger_header" in value;
-    isInstance = isInstance && "timestamped_signatures" in value;
+    isInstance = isInstance && "origin" in value;
 
     return isInstance;
 }
@@ -74,9 +67,8 @@ export function LedgerProofFromJSONTyped(json: any, ignoreDiscriminator: boolean
     }
     return {
         
-        'opaque_hash': json['opaque_hash'],
         'ledger_header': LedgerHeaderFromJSON(json['ledger_header']),
-        'timestamped_signatures': ((json['timestamped_signatures'] as Array<any>).map(TimestampedValidatorSignatureFromJSON)),
+        'origin': LedgerProofOriginFromJSON(json['origin']),
     };
 }
 
@@ -89,9 +81,8 @@ export function LedgerProofToJSON(value?: LedgerProof | null): any {
     }
     return {
         
-        'opaque_hash': value.opaque_hash,
         'ledger_header': LedgerHeaderToJSON(value.ledger_header),
-        'timestamped_signatures': ((value.timestamped_signatures as Array<any>).map(TimestampedValidatorSignatureToJSON)),
+        'origin': LedgerProofOriginToJSON(value.origin),
     };
 }
 

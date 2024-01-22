@@ -13,77 +13,52 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { FlashedStateUpdates } from './FlashedStateUpdates';
+import type { LedgerProofOriginType } from './LedgerProofOriginType';
 import {
-    FlashedStateUpdatesFromJSON,
-    FlashedStateUpdatesFromJSONTyped,
-    FlashedStateUpdatesToJSON,
-} from './FlashedStateUpdates';
+    LedgerProofOriginTypeFromJSON,
+    LedgerProofOriginTypeFromJSONTyped,
+    LedgerProofOriginTypeToJSON,
+} from './LedgerProofOriginType';
 
 /**
  * 
  * @export
- * @interface FlashLedgerTransaction
+ * @interface LedgerProofOriginBase
  */
-export interface FlashLedgerTransaction {
+export interface LedgerProofOriginBase {
     /**
      * 
-     * @type {string}
-     * @memberof FlashLedgerTransaction
+     * @type {LedgerProofOriginType}
+     * @memberof LedgerProofOriginBase
      */
-    type: FlashLedgerTransactionTypeEnum;
-    /**
-     * The hex-encoded full ledger transaction payload. Only returned if enabled in TransactionFormatOptions on your request.
-     * @type {string}
-     * @memberof FlashLedgerTransaction
-     */
-    payload_hex?: string;
-    /**
-     * 
-     * @type {FlashedStateUpdates}
-     * @memberof FlashLedgerTransaction
-     */
-    flashed_state_updates: FlashedStateUpdates;
+    type: LedgerProofOriginType;
 }
 
-
 /**
- * @export
+ * Check if a given object implements the LedgerProofOriginBase interface.
  */
-export const FlashLedgerTransactionTypeEnum = {
-    Flash: 'Flash'
-} as const;
-export type FlashLedgerTransactionTypeEnum = typeof FlashLedgerTransactionTypeEnum[keyof typeof FlashLedgerTransactionTypeEnum];
-
-
-/**
- * Check if a given object implements the FlashLedgerTransaction interface.
- */
-export function instanceOfFlashLedgerTransaction(value: object): boolean {
+export function instanceOfLedgerProofOriginBase(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "type" in value;
-    isInstance = isInstance && "flashed_state_updates" in value;
 
     return isInstance;
 }
 
-export function FlashLedgerTransactionFromJSON(json: any): FlashLedgerTransaction {
-    return FlashLedgerTransactionFromJSONTyped(json, false);
+export function LedgerProofOriginBaseFromJSON(json: any): LedgerProofOriginBase {
+    return LedgerProofOriginBaseFromJSONTyped(json, false);
 }
 
-export function FlashLedgerTransactionFromJSONTyped(json: any, ignoreDiscriminator: boolean): FlashLedgerTransaction {
+export function LedgerProofOriginBaseFromJSONTyped(json: any, ignoreDiscriminator: boolean): LedgerProofOriginBase {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'type': json['type'],
-        'payload_hex': !exists(json, 'payload_hex') ? undefined : json['payload_hex'],
-        'flashed_state_updates': FlashedStateUpdatesFromJSON(json['flashed_state_updates']),
+        'type': LedgerProofOriginTypeFromJSON(json['type']),
     };
 }
 
-export function FlashLedgerTransactionToJSON(value?: FlashLedgerTransaction | null): any {
+export function LedgerProofOriginBaseToJSON(value?: LedgerProofOriginBase | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -92,9 +67,7 @@ export function FlashLedgerTransactionToJSON(value?: FlashLedgerTransaction | nu
     }
     return {
         
-        'type': value.type,
-        'payload_hex': value.payload_hex,
-        'flashed_state_updates': FlashedStateUpdatesToJSON(value.flashed_state_updates),
+        'type': LedgerProofOriginTypeToJSON(value.type),
     };
 }
 

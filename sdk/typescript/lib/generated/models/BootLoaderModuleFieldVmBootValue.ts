@@ -13,77 +13,45 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { FlashedStateUpdates } from './FlashedStateUpdates';
-import {
-    FlashedStateUpdatesFromJSON,
-    FlashedStateUpdatesFromJSONTyped,
-    FlashedStateUpdatesToJSON,
-} from './FlashedStateUpdates';
-
 /**
  * 
  * @export
- * @interface FlashLedgerTransaction
+ * @interface BootLoaderModuleFieldVmBootValue
  */
-export interface FlashLedgerTransaction {
+export interface BootLoaderModuleFieldVmBootValue {
     /**
      * 
-     * @type {string}
-     * @memberof FlashLedgerTransaction
+     * @type {number}
+     * @memberof BootLoaderModuleFieldVmBootValue
      */
-    type: FlashLedgerTransactionTypeEnum;
-    /**
-     * The hex-encoded full ledger transaction payload. Only returned if enabled in TransactionFormatOptions on your request.
-     * @type {string}
-     * @memberof FlashLedgerTransaction
-     */
-    payload_hex?: string;
-    /**
-     * 
-     * @type {FlashedStateUpdates}
-     * @memberof FlashLedgerTransaction
-     */
-    flashed_state_updates: FlashedStateUpdates;
+    scrypto_v1_minor_version: number;
 }
 
-
 /**
- * @export
+ * Check if a given object implements the BootLoaderModuleFieldVmBootValue interface.
  */
-export const FlashLedgerTransactionTypeEnum = {
-    Flash: 'Flash'
-} as const;
-export type FlashLedgerTransactionTypeEnum = typeof FlashLedgerTransactionTypeEnum[keyof typeof FlashLedgerTransactionTypeEnum];
-
-
-/**
- * Check if a given object implements the FlashLedgerTransaction interface.
- */
-export function instanceOfFlashLedgerTransaction(value: object): boolean {
+export function instanceOfBootLoaderModuleFieldVmBootValue(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "type" in value;
-    isInstance = isInstance && "flashed_state_updates" in value;
+    isInstance = isInstance && "scrypto_v1_minor_version" in value;
 
     return isInstance;
 }
 
-export function FlashLedgerTransactionFromJSON(json: any): FlashLedgerTransaction {
-    return FlashLedgerTransactionFromJSONTyped(json, false);
+export function BootLoaderModuleFieldVmBootValueFromJSON(json: any): BootLoaderModuleFieldVmBootValue {
+    return BootLoaderModuleFieldVmBootValueFromJSONTyped(json, false);
 }
 
-export function FlashLedgerTransactionFromJSONTyped(json: any, ignoreDiscriminator: boolean): FlashLedgerTransaction {
+export function BootLoaderModuleFieldVmBootValueFromJSONTyped(json: any, ignoreDiscriminator: boolean): BootLoaderModuleFieldVmBootValue {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'type': json['type'],
-        'payload_hex': !exists(json, 'payload_hex') ? undefined : json['payload_hex'],
-        'flashed_state_updates': FlashedStateUpdatesFromJSON(json['flashed_state_updates']),
+        'scrypto_v1_minor_version': json['scrypto_v1_minor_version'],
     };
 }
 
-export function FlashLedgerTransactionToJSON(value?: FlashLedgerTransaction | null): any {
+export function BootLoaderModuleFieldVmBootValueToJSON(value?: BootLoaderModuleFieldVmBootValue | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -92,9 +60,7 @@ export function FlashLedgerTransactionToJSON(value?: FlashLedgerTransaction | nu
     }
     return {
         
-        'type': value.type,
-        'payload_hex': value.payload_hex,
-        'flashed_state_updates': FlashedStateUpdatesToJSON(value.flashed_state_updates),
+        'scrypto_v1_minor_version': value.scrypto_v1_minor_version,
     };
 }
 

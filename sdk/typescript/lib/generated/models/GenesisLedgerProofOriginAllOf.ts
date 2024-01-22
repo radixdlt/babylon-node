@@ -13,77 +13,62 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { FlashedStateUpdates } from './FlashedStateUpdates';
-import {
-    FlashedStateUpdatesFromJSON,
-    FlashedStateUpdatesFromJSONTyped,
-    FlashedStateUpdatesToJSON,
-} from './FlashedStateUpdates';
-
 /**
  * 
  * @export
- * @interface FlashLedgerTransaction
+ * @interface GenesisLedgerProofOriginAllOf
  */
-export interface FlashLedgerTransaction {
+export interface GenesisLedgerProofOriginAllOf {
     /**
      * 
      * @type {string}
-     * @memberof FlashLedgerTransaction
+     * @memberof GenesisLedgerProofOriginAllOf
      */
-    type: FlashLedgerTransactionTypeEnum;
-    /**
-     * The hex-encoded full ledger transaction payload. Only returned if enabled in TransactionFormatOptions on your request.
-     * @type {string}
-     * @memberof FlashLedgerTransaction
-     */
-    payload_hex?: string;
+    genesis_opaque_hash: string;
     /**
      * 
-     * @type {FlashedStateUpdates}
-     * @memberof FlashLedgerTransaction
+     * @type {string}
+     * @memberof GenesisLedgerProofOriginAllOf
      */
-    flashed_state_updates: FlashedStateUpdates;
+    type?: GenesisLedgerProofOriginAllOfTypeEnum;
 }
 
 
 /**
  * @export
  */
-export const FlashLedgerTransactionTypeEnum = {
-    Flash: 'Flash'
+export const GenesisLedgerProofOriginAllOfTypeEnum = {
+    Genesis: 'Genesis'
 } as const;
-export type FlashLedgerTransactionTypeEnum = typeof FlashLedgerTransactionTypeEnum[keyof typeof FlashLedgerTransactionTypeEnum];
+export type GenesisLedgerProofOriginAllOfTypeEnum = typeof GenesisLedgerProofOriginAllOfTypeEnum[keyof typeof GenesisLedgerProofOriginAllOfTypeEnum];
 
 
 /**
- * Check if a given object implements the FlashLedgerTransaction interface.
+ * Check if a given object implements the GenesisLedgerProofOriginAllOf interface.
  */
-export function instanceOfFlashLedgerTransaction(value: object): boolean {
+export function instanceOfGenesisLedgerProofOriginAllOf(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "type" in value;
-    isInstance = isInstance && "flashed_state_updates" in value;
+    isInstance = isInstance && "genesis_opaque_hash" in value;
 
     return isInstance;
 }
 
-export function FlashLedgerTransactionFromJSON(json: any): FlashLedgerTransaction {
-    return FlashLedgerTransactionFromJSONTyped(json, false);
+export function GenesisLedgerProofOriginAllOfFromJSON(json: any): GenesisLedgerProofOriginAllOf {
+    return GenesisLedgerProofOriginAllOfFromJSONTyped(json, false);
 }
 
-export function FlashLedgerTransactionFromJSONTyped(json: any, ignoreDiscriminator: boolean): FlashLedgerTransaction {
+export function GenesisLedgerProofOriginAllOfFromJSONTyped(json: any, ignoreDiscriminator: boolean): GenesisLedgerProofOriginAllOf {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'type': json['type'],
-        'payload_hex': !exists(json, 'payload_hex') ? undefined : json['payload_hex'],
-        'flashed_state_updates': FlashedStateUpdatesFromJSON(json['flashed_state_updates']),
+        'genesis_opaque_hash': json['genesis_opaque_hash'],
+        'type': !exists(json, 'type') ? undefined : json['type'],
     };
 }
 
-export function FlashLedgerTransactionToJSON(value?: FlashLedgerTransaction | null): any {
+export function GenesisLedgerProofOriginAllOfToJSON(value?: GenesisLedgerProofOriginAllOf | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -92,9 +77,8 @@ export function FlashLedgerTransactionToJSON(value?: FlashLedgerTransaction | nu
     }
     return {
         
+        'genesis_opaque_hash': value.genesis_opaque_hash,
         'type': value.type,
-        'payload_hex': value.payload_hex,
-        'flashed_state_updates': FlashedStateUpdatesToJSON(value.flashed_state_updates),
     };
 }
 

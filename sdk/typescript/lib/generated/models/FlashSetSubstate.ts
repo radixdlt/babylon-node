@@ -13,77 +13,66 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { FlashedStateUpdates } from './FlashedStateUpdates';
+import type { SubstateId } from './SubstateId';
 import {
-    FlashedStateUpdatesFromJSON,
-    FlashedStateUpdatesFromJSONTyped,
-    FlashedStateUpdatesToJSON,
-} from './FlashedStateUpdates';
+    SubstateIdFromJSON,
+    SubstateIdFromJSONTyped,
+    SubstateIdToJSON,
+} from './SubstateId';
+import type { SubstateValue } from './SubstateValue';
+import {
+    SubstateValueFromJSON,
+    SubstateValueFromJSONTyped,
+    SubstateValueToJSON,
+} from './SubstateValue';
 
 /**
  * 
  * @export
- * @interface FlashLedgerTransaction
+ * @interface FlashSetSubstate
  */
-export interface FlashLedgerTransaction {
+export interface FlashSetSubstate {
     /**
      * 
-     * @type {string}
-     * @memberof FlashLedgerTransaction
+     * @type {SubstateId}
+     * @memberof FlashSetSubstate
      */
-    type: FlashLedgerTransactionTypeEnum;
-    /**
-     * The hex-encoded full ledger transaction payload. Only returned if enabled in TransactionFormatOptions on your request.
-     * @type {string}
-     * @memberof FlashLedgerTransaction
-     */
-    payload_hex?: string;
+    substate_id: SubstateId;
     /**
      * 
-     * @type {FlashedStateUpdates}
-     * @memberof FlashLedgerTransaction
+     * @type {SubstateValue}
+     * @memberof FlashSetSubstate
      */
-    flashed_state_updates: FlashedStateUpdates;
+    value: SubstateValue;
 }
 
-
 /**
- * @export
+ * Check if a given object implements the FlashSetSubstate interface.
  */
-export const FlashLedgerTransactionTypeEnum = {
-    Flash: 'Flash'
-} as const;
-export type FlashLedgerTransactionTypeEnum = typeof FlashLedgerTransactionTypeEnum[keyof typeof FlashLedgerTransactionTypeEnum];
-
-
-/**
- * Check if a given object implements the FlashLedgerTransaction interface.
- */
-export function instanceOfFlashLedgerTransaction(value: object): boolean {
+export function instanceOfFlashSetSubstate(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "type" in value;
-    isInstance = isInstance && "flashed_state_updates" in value;
+    isInstance = isInstance && "substate_id" in value;
+    isInstance = isInstance && "value" in value;
 
     return isInstance;
 }
 
-export function FlashLedgerTransactionFromJSON(json: any): FlashLedgerTransaction {
-    return FlashLedgerTransactionFromJSONTyped(json, false);
+export function FlashSetSubstateFromJSON(json: any): FlashSetSubstate {
+    return FlashSetSubstateFromJSONTyped(json, false);
 }
 
-export function FlashLedgerTransactionFromJSONTyped(json: any, ignoreDiscriminator: boolean): FlashLedgerTransaction {
+export function FlashSetSubstateFromJSONTyped(json: any, ignoreDiscriminator: boolean): FlashSetSubstate {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'type': json['type'],
-        'payload_hex': !exists(json, 'payload_hex') ? undefined : json['payload_hex'],
-        'flashed_state_updates': FlashedStateUpdatesFromJSON(json['flashed_state_updates']),
+        'substate_id': SubstateIdFromJSON(json['substate_id']),
+        'value': SubstateValueFromJSON(json['value']),
     };
 }
 
-export function FlashLedgerTransactionToJSON(value?: FlashLedgerTransaction | null): any {
+export function FlashSetSubstateToJSON(value?: FlashSetSubstate | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -92,9 +81,8 @@ export function FlashLedgerTransactionToJSON(value?: FlashLedgerTransaction | nu
     }
     return {
         
-        'type': value.type,
-        'payload_hex': value.payload_hex,
-        'flashed_state_updates': FlashedStateUpdatesToJSON(value.flashed_state_updates),
+        'substate_id': SubstateIdToJSON(value.substate_id),
+        'value': SubstateValueToJSON(value.value),
     };
 }
 

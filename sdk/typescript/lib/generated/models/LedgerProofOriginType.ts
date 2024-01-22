@@ -12,80 +12,28 @@
  * Do not edit the class manually.
  */
 
-import { exists, mapValues } from '../runtime';
-import type { FlashedStateUpdates } from './FlashedStateUpdates';
-import {
-    FlashedStateUpdatesFromJSON,
-    FlashedStateUpdatesFromJSONTyped,
-    FlashedStateUpdatesToJSON,
-} from './FlashedStateUpdates';
 
 /**
  * 
  * @export
- * @interface FlashLedgerTransactionAllOf
  */
-export interface FlashLedgerTransactionAllOf {
-    /**
-     * 
-     * @type {FlashedStateUpdates}
-     * @memberof FlashLedgerTransactionAllOf
-     */
-    flashed_state_updates: FlashedStateUpdates;
-    /**
-     * 
-     * @type {string}
-     * @memberof FlashLedgerTransactionAllOf
-     */
-    type?: FlashLedgerTransactionAllOfTypeEnum;
-}
-
-
-/**
- * @export
- */
-export const FlashLedgerTransactionAllOfTypeEnum = {
-    Flash: 'Flash'
+export const LedgerProofOriginType = {
+    Genesis: 'Genesis',
+    Consensus: 'Consensus',
+    ProtocolUpdate: 'ProtocolUpdate'
 } as const;
-export type FlashLedgerTransactionAllOfTypeEnum = typeof FlashLedgerTransactionAllOfTypeEnum[keyof typeof FlashLedgerTransactionAllOfTypeEnum];
+export type LedgerProofOriginType = typeof LedgerProofOriginType[keyof typeof LedgerProofOriginType];
 
 
-/**
- * Check if a given object implements the FlashLedgerTransactionAllOf interface.
- */
-export function instanceOfFlashLedgerTransactionAllOf(value: object): boolean {
-    let isInstance = true;
-    isInstance = isInstance && "flashed_state_updates" in value;
-
-    return isInstance;
+export function LedgerProofOriginTypeFromJSON(json: any): LedgerProofOriginType {
+    return LedgerProofOriginTypeFromJSONTyped(json, false);
 }
 
-export function FlashLedgerTransactionAllOfFromJSON(json: any): FlashLedgerTransactionAllOf {
-    return FlashLedgerTransactionAllOfFromJSONTyped(json, false);
+export function LedgerProofOriginTypeFromJSONTyped(json: any, ignoreDiscriminator: boolean): LedgerProofOriginType {
+    return json as LedgerProofOriginType;
 }
 
-export function FlashLedgerTransactionAllOfFromJSONTyped(json: any, ignoreDiscriminator: boolean): FlashLedgerTransactionAllOf {
-    if ((json === undefined) || (json === null)) {
-        return json;
-    }
-    return {
-        
-        'flashed_state_updates': FlashedStateUpdatesFromJSON(json['flashed_state_updates']),
-        'type': !exists(json, 'type') ? undefined : json['type'],
-    };
-}
-
-export function FlashLedgerTransactionAllOfToJSON(value?: FlashLedgerTransactionAllOf | null): any {
-    if (value === undefined) {
-        return undefined;
-    }
-    if (value === null) {
-        return null;
-    }
-    return {
-        
-        'flashed_state_updates': FlashedStateUpdatesToJSON(value.flashed_state_updates),
-        'type': value.type,
-    };
+export function LedgerProofOriginTypeToJSON(value?: LedgerProofOriginType | null): any {
+    return value as any;
 }
 

@@ -22,61 +22,85 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.FlashedSubstate;
+import com.radixdlt.api.core.generated.models.SubstateId;
+import com.radixdlt.api.core.generated.models.SubstateValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * FlashTransaction
+ * FlashSetSubstate
  */
 @JsonPropertyOrder({
-  FlashTransaction.JSON_PROPERTY_FLASHED_SUBSTATES
+  FlashSetSubstate.JSON_PROPERTY_SUBSTATE_ID,
+  FlashSetSubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class FlashTransaction {
-  public static final String JSON_PROPERTY_FLASHED_SUBSTATES = "flashed_substates";
-  private List<FlashedSubstate> flashedSubstates = new ArrayList<>();
+public class FlashSetSubstate {
+  public static final String JSON_PROPERTY_SUBSTATE_ID = "substate_id";
+  private SubstateId substateId;
 
-  public FlashTransaction() { 
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private SubstateValue value;
+
+  public FlashSetSubstate() { 
   }
 
-  public FlashTransaction flashedSubstates(List<FlashedSubstate> flashedSubstates) {
-    this.flashedSubstates = flashedSubstates;
-    return this;
-  }
-
-  public FlashTransaction addFlashedSubstatesItem(FlashedSubstate flashedSubstatesItem) {
-    this.flashedSubstates.add(flashedSubstatesItem);
+  public FlashSetSubstate substateId(SubstateId substateId) {
+    this.substateId = substateId;
     return this;
   }
 
    /**
-   * Get flashedSubstates
-   * @return flashedSubstates
+   * Get substateId
+   * @return substateId
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_FLASHED_SUBSTATES)
+  @JsonProperty(JSON_PROPERTY_SUBSTATE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<FlashedSubstate> getFlashedSubstates() {
-    return flashedSubstates;
+  public SubstateId getSubstateId() {
+    return substateId;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_FLASHED_SUBSTATES)
+  @JsonProperty(JSON_PROPERTY_SUBSTATE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setFlashedSubstates(List<FlashedSubstate> flashedSubstates) {
-    this.flashedSubstates = flashedSubstates;
+  public void setSubstateId(SubstateId substateId) {
+    this.substateId = substateId;
+  }
+
+
+  public FlashSetSubstate value(SubstateValue value) {
+    this.value = value;
+    return this;
+  }
+
+   /**
+   * Get value
+   * @return value
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VALUE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public SubstateValue getValue() {
+    return value;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_VALUE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setValue(SubstateValue value) {
+    this.value = value;
   }
 
 
   /**
-   * Return true if this FlashTransaction object is equal to o.
+   * Return true if this FlashSetSubstate object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -86,20 +110,22 @@ public class FlashTransaction {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    FlashTransaction flashTransaction = (FlashTransaction) o;
-    return Objects.equals(this.flashedSubstates, flashTransaction.flashedSubstates);
+    FlashSetSubstate flashSetSubstate = (FlashSetSubstate) o;
+    return Objects.equals(this.substateId, flashSetSubstate.substateId) &&
+        Objects.equals(this.value, flashSetSubstate.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(flashedSubstates);
+    return Objects.hash(substateId, value);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class FlashTransaction {\n");
-    sb.append("    flashedSubstates: ").append(toIndentedString(flashedSubstates)).append("\n");
+    sb.append("class FlashSetSubstate {\n");
+    sb.append("    substateId: ").append(toIndentedString(substateId)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

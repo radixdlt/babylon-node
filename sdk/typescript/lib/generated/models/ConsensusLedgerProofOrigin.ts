@@ -13,77 +13,78 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { FlashedStateUpdates } from './FlashedStateUpdates';
+import type { TimestampedValidatorSignature } from './TimestampedValidatorSignature';
 import {
-    FlashedStateUpdatesFromJSON,
-    FlashedStateUpdatesFromJSONTyped,
-    FlashedStateUpdatesToJSON,
-} from './FlashedStateUpdates';
+    TimestampedValidatorSignatureFromJSON,
+    TimestampedValidatorSignatureFromJSONTyped,
+    TimestampedValidatorSignatureToJSON,
+} from './TimestampedValidatorSignature';
 
 /**
  * 
  * @export
- * @interface FlashLedgerTransaction
+ * @interface ConsensusLedgerProofOrigin
  */
-export interface FlashLedgerTransaction {
+export interface ConsensusLedgerProofOrigin {
     /**
      * 
      * @type {string}
-     * @memberof FlashLedgerTransaction
+     * @memberof ConsensusLedgerProofOrigin
      */
-    type: FlashLedgerTransactionTypeEnum;
+    type: ConsensusLedgerProofOriginTypeEnum;
     /**
-     * The hex-encoded full ledger transaction payload. Only returned if enabled in TransactionFormatOptions on your request.
+     * A hex-encoded 32-byte vertex VoteData hash on the consensus side, opaque to ledger.
      * @type {string}
-     * @memberof FlashLedgerTransaction
+     * @memberof ConsensusLedgerProofOrigin
      */
-    payload_hex?: string;
+    opaque_hash: string;
     /**
      * 
-     * @type {FlashedStateUpdates}
-     * @memberof FlashLedgerTransaction
+     * @type {Array<TimestampedValidatorSignature>}
+     * @memberof ConsensusLedgerProofOrigin
      */
-    flashed_state_updates: FlashedStateUpdates;
+    timestamped_signatures: Array<TimestampedValidatorSignature>;
 }
 
 
 /**
  * @export
  */
-export const FlashLedgerTransactionTypeEnum = {
-    Flash: 'Flash'
+export const ConsensusLedgerProofOriginTypeEnum = {
+    Consensus: 'Consensus'
 } as const;
-export type FlashLedgerTransactionTypeEnum = typeof FlashLedgerTransactionTypeEnum[keyof typeof FlashLedgerTransactionTypeEnum];
+export type ConsensusLedgerProofOriginTypeEnum = typeof ConsensusLedgerProofOriginTypeEnum[keyof typeof ConsensusLedgerProofOriginTypeEnum];
 
 
 /**
- * Check if a given object implements the FlashLedgerTransaction interface.
+ * Check if a given object implements the ConsensusLedgerProofOrigin interface.
  */
-export function instanceOfFlashLedgerTransaction(value: object): boolean {
+export function instanceOfConsensusLedgerProofOrigin(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "type" in value;
-    isInstance = isInstance && "flashed_state_updates" in value;
+    isInstance = isInstance && "opaque_hash" in value;
+    isInstance = isInstance && "timestamped_signatures" in value;
 
     return isInstance;
 }
 
-export function FlashLedgerTransactionFromJSON(json: any): FlashLedgerTransaction {
-    return FlashLedgerTransactionFromJSONTyped(json, false);
+export function ConsensusLedgerProofOriginFromJSON(json: any): ConsensusLedgerProofOrigin {
+    return ConsensusLedgerProofOriginFromJSONTyped(json, false);
 }
 
-export function FlashLedgerTransactionFromJSONTyped(json: any, ignoreDiscriminator: boolean): FlashLedgerTransaction {
+export function ConsensusLedgerProofOriginFromJSONTyped(json: any, ignoreDiscriminator: boolean): ConsensusLedgerProofOrigin {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
         'type': json['type'],
-        'payload_hex': !exists(json, 'payload_hex') ? undefined : json['payload_hex'],
-        'flashed_state_updates': FlashedStateUpdatesFromJSON(json['flashed_state_updates']),
+        'opaque_hash': json['opaque_hash'],
+        'timestamped_signatures': ((json['timestamped_signatures'] as Array<any>).map(TimestampedValidatorSignatureFromJSON)),
     };
 }
 
-export function FlashLedgerTransactionToJSON(value?: FlashLedgerTransaction | null): any {
+export function ConsensusLedgerProofOriginToJSON(value?: ConsensusLedgerProofOrigin | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -93,8 +94,8 @@ export function FlashLedgerTransactionToJSON(value?: FlashLedgerTransaction | nu
     return {
         
         'type': value.type,
-        'payload_hex': value.payload_hex,
-        'flashed_state_updates': FlashedStateUpdatesToJSON(value.flashed_state_updates),
+        'opaque_hash': value.opaque_hash,
+        'timestamped_signatures': ((value.timestamped_signatures as Array<any>).map(TimestampedValidatorSignatureToJSON)),
     };
 }
 

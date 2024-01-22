@@ -13,77 +13,78 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { FlashedStateUpdates } from './FlashedStateUpdates';
+import type { BootLoaderModuleFieldVmBootValue } from './BootLoaderModuleFieldVmBootValue';
 import {
-    FlashedStateUpdatesFromJSON,
-    FlashedStateUpdatesFromJSONTyped,
-    FlashedStateUpdatesToJSON,
-} from './FlashedStateUpdates';
+    BootLoaderModuleFieldVmBootValueFromJSON,
+    BootLoaderModuleFieldVmBootValueFromJSONTyped,
+    BootLoaderModuleFieldVmBootValueToJSON,
+} from './BootLoaderModuleFieldVmBootValue';
 
 /**
  * 
  * @export
- * @interface FlashLedgerTransaction
+ * @interface BootLoaderModuleFieldVmBootSubstate
  */
-export interface FlashLedgerTransaction {
+export interface BootLoaderModuleFieldVmBootSubstate {
     /**
      * 
      * @type {string}
-     * @memberof FlashLedgerTransaction
+     * @memberof BootLoaderModuleFieldVmBootSubstate
      */
-    type: FlashLedgerTransactionTypeEnum;
-    /**
-     * The hex-encoded full ledger transaction payload. Only returned if enabled in TransactionFormatOptions on your request.
-     * @type {string}
-     * @memberof FlashLedgerTransaction
-     */
-    payload_hex?: string;
+    substate_type: BootLoaderModuleFieldVmBootSubstateSubstateTypeEnum;
     /**
      * 
-     * @type {FlashedStateUpdates}
-     * @memberof FlashLedgerTransaction
+     * @type {boolean}
+     * @memberof BootLoaderModuleFieldVmBootSubstate
      */
-    flashed_state_updates: FlashedStateUpdates;
+    is_locked: boolean;
+    /**
+     * 
+     * @type {BootLoaderModuleFieldVmBootValue}
+     * @memberof BootLoaderModuleFieldVmBootSubstate
+     */
+    value: BootLoaderModuleFieldVmBootValue;
 }
 
 
 /**
  * @export
  */
-export const FlashLedgerTransactionTypeEnum = {
-    Flash: 'Flash'
+export const BootLoaderModuleFieldVmBootSubstateSubstateTypeEnum = {
+    BootLoaderModuleFieldVmBoot: 'BootLoaderModuleFieldVmBoot'
 } as const;
-export type FlashLedgerTransactionTypeEnum = typeof FlashLedgerTransactionTypeEnum[keyof typeof FlashLedgerTransactionTypeEnum];
+export type BootLoaderModuleFieldVmBootSubstateSubstateTypeEnum = typeof BootLoaderModuleFieldVmBootSubstateSubstateTypeEnum[keyof typeof BootLoaderModuleFieldVmBootSubstateSubstateTypeEnum];
 
 
 /**
- * Check if a given object implements the FlashLedgerTransaction interface.
+ * Check if a given object implements the BootLoaderModuleFieldVmBootSubstate interface.
  */
-export function instanceOfFlashLedgerTransaction(value: object): boolean {
+export function instanceOfBootLoaderModuleFieldVmBootSubstate(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "type" in value;
-    isInstance = isInstance && "flashed_state_updates" in value;
+    isInstance = isInstance && "substate_type" in value;
+    isInstance = isInstance && "is_locked" in value;
+    isInstance = isInstance && "value" in value;
 
     return isInstance;
 }
 
-export function FlashLedgerTransactionFromJSON(json: any): FlashLedgerTransaction {
-    return FlashLedgerTransactionFromJSONTyped(json, false);
+export function BootLoaderModuleFieldVmBootSubstateFromJSON(json: any): BootLoaderModuleFieldVmBootSubstate {
+    return BootLoaderModuleFieldVmBootSubstateFromJSONTyped(json, false);
 }
 
-export function FlashLedgerTransactionFromJSONTyped(json: any, ignoreDiscriminator: boolean): FlashLedgerTransaction {
+export function BootLoaderModuleFieldVmBootSubstateFromJSONTyped(json: any, ignoreDiscriminator: boolean): BootLoaderModuleFieldVmBootSubstate {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'type': json['type'],
-        'payload_hex': !exists(json, 'payload_hex') ? undefined : json['payload_hex'],
-        'flashed_state_updates': FlashedStateUpdatesFromJSON(json['flashed_state_updates']),
+        'substate_type': json['substate_type'],
+        'is_locked': json['is_locked'],
+        'value': BootLoaderModuleFieldVmBootValueFromJSON(json['value']),
     };
 }
 
-export function FlashLedgerTransactionToJSON(value?: FlashLedgerTransaction | null): any {
+export function BootLoaderModuleFieldVmBootSubstateToJSON(value?: BootLoaderModuleFieldVmBootSubstate | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -92,9 +93,9 @@ export function FlashLedgerTransactionToJSON(value?: FlashLedgerTransaction | nu
     }
     return {
         
-        'type': value.type,
-        'payload_hex': value.payload_hex,
-        'flashed_state_updates': FlashedStateUpdatesToJSON(value.flashed_state_updates),
+        'substate_type': value.substate_type,
+        'is_locked': value.is_locked,
+        'value': BootLoaderModuleFieldVmBootValueToJSON(value.value),
     };
 }
 

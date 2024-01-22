@@ -38,6 +38,12 @@ export interface TransactionFormatOptions {
      */
     message?: boolean;
     /**
+     * Whether to return the transaction balance changes (default false)
+     * @type {boolean}
+     * @memberof TransactionFormatOptions
+     */
+    balance_changes?: boolean;
+    /**
      * Whether to return the raw hex-encoded system transaction bytes (default false)
      * @type {boolean}
      * @memberof TransactionFormatOptions
@@ -79,6 +85,7 @@ export function TransactionFormatOptionsFromJSONTyped(json: any, ignoreDiscrimin
         'manifest': !exists(json, 'manifest') ? undefined : json['manifest'],
         'blobs': !exists(json, 'blobs') ? undefined : json['blobs'],
         'message': !exists(json, 'message') ? undefined : json['message'],
+        'balance_changes': !exists(json, 'balance_changes') ? undefined : json['balance_changes'],
         'raw_system_transaction': !exists(json, 'raw_system_transaction') ? undefined : json['raw_system_transaction'],
         'raw_notarized_transaction': !exists(json, 'raw_notarized_transaction') ? undefined : json['raw_notarized_transaction'],
         'raw_ledger_transaction': !exists(json, 'raw_ledger_transaction') ? undefined : json['raw_ledger_transaction'],
@@ -97,6 +104,7 @@ export function TransactionFormatOptionsToJSON(value?: TransactionFormatOptions 
         'manifest': value.manifest,
         'blobs': value.blobs,
         'message': value.message,
+        'balance_changes': value.balance_changes,
         'raw_system_transaction': value.raw_system_transaction,
         'raw_notarized_transaction': value.raw_notarized_transaction,
         'raw_ledger_transaction': value.raw_ledger_transaction,

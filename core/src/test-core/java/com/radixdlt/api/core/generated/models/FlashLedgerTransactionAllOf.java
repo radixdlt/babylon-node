@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.FlashTransaction;
+import com.radixdlt.api.core.generated.models.FlashedStateUpdates;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,39 +32,39 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * FlashLedgerTransactionAllOf
  */
 @JsonPropertyOrder({
-  FlashLedgerTransactionAllOf.JSON_PROPERTY_FLASH_TRANSACTION
+  FlashLedgerTransactionAllOf.JSON_PROPERTY_FLASHED_STATE_UPDATES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class FlashLedgerTransactionAllOf {
-  public static final String JSON_PROPERTY_FLASH_TRANSACTION = "flash_transaction";
-  private FlashTransaction flashTransaction;
+  public static final String JSON_PROPERTY_FLASHED_STATE_UPDATES = "flashed_state_updates";
+  private FlashedStateUpdates flashedStateUpdates;
 
   public FlashLedgerTransactionAllOf() { 
   }
 
-  public FlashLedgerTransactionAllOf flashTransaction(FlashTransaction flashTransaction) {
-    this.flashTransaction = flashTransaction;
+  public FlashLedgerTransactionAllOf flashedStateUpdates(FlashedStateUpdates flashedStateUpdates) {
+    this.flashedStateUpdates = flashedStateUpdates;
     return this;
   }
 
    /**
-   * Get flashTransaction
-   * @return flashTransaction
+   * Get flashedStateUpdates
+   * @return flashedStateUpdates
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_FLASH_TRANSACTION)
+  @JsonProperty(JSON_PROPERTY_FLASHED_STATE_UPDATES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public FlashTransaction getFlashTransaction() {
-    return flashTransaction;
+  public FlashedStateUpdates getFlashedStateUpdates() {
+    return flashedStateUpdates;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_FLASH_TRANSACTION)
+  @JsonProperty(JSON_PROPERTY_FLASHED_STATE_UPDATES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setFlashTransaction(FlashTransaction flashTransaction) {
-    this.flashTransaction = flashTransaction;
+  public void setFlashedStateUpdates(FlashedStateUpdates flashedStateUpdates) {
+    this.flashedStateUpdates = flashedStateUpdates;
   }
 
 
@@ -80,19 +80,19 @@ public class FlashLedgerTransactionAllOf {
       return false;
     }
     FlashLedgerTransactionAllOf flashLedgerTransactionAllOf = (FlashLedgerTransactionAllOf) o;
-    return Objects.equals(this.flashTransaction, flashLedgerTransactionAllOf.flashTransaction);
+    return Objects.equals(this.flashedStateUpdates, flashLedgerTransactionAllOf.flashedStateUpdates);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(flashTransaction);
+    return Objects.hash(flashedStateUpdates);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class FlashLedgerTransactionAllOf {\n");
-    sb.append("    flashTransaction: ").append(toIndentedString(flashTransaction)).append("\n");
+    sb.append("    flashedStateUpdates: ").append(toIndentedString(flashedStateUpdates)).append("\n");
     sb.append("}");
     return sb.toString();
   }

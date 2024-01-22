@@ -1,10 +1,10 @@
-use radix_engine::track::{NodeStateUpdates, PartitionStateUpdates};
+use radix_engine::track::{BatchPartitionStateUpdate, NodeStateUpdates, PartitionStateUpdates};
 use std::iter;
 
 use crate::core_api::*;
 
 use radix_engine::types::hash;
-use radix_engine_store_interface::interface::DatabaseUpdate;
+use radix_engine_store_interface::interface::{DatabaseUpdate, DbSubstateValue};
 
 use state_manager::store::{traits::*, StateManagerDatabase};
 use state_manager::transaction::*;
@@ -356,7 +356,7 @@ pub fn to_api_ledger_transaction(
         },
         LedgerTransaction::FlashV1(tx) => models::LedgerTransaction::FlashLedgerTransaction {
             payload_hex,
-            flash_transaction: Box::new(to_api_flash_transaction(context, tx)?),
+            flashed_state_updates: Box::new(to_api_flashed_state_updates(context, tx.as_ref())?),
         },
     })
 }
@@ -638,11 +638,13 @@ fn to_api_balance_changes(
     })
 }
 
-pub fn to_api_flash_transaction(
+pub fn to_api_flashed_state_updates(
     context: &MappingContext,
     flash_transaction: &FlashTransactionV1,
-) -> Result<models::FlashTransaction, MappingError> {
-    let mut flashed_substates = vec![];
+) -> Result<models::FlashedStateUpdates, MappingError> {
+    let mut deleted_partitions = Vec::new();
+    let mut set_substates = Vec::new();
+    let mut deleted_substates = Vec::new();
     for (node_id, updates) in &flash_transaction.state_updates.by_node {
         match updates {
             NodeStateUpdates::Delta { by_partition } => {
@@ -650,28 +652,44 @@ pub fn to_api_flash_transaction(
                     match partition_updates {
                         PartitionStateUpdates::Delta { by_substate } => {
                             for (key, update) in by_substate {
-                                let address = to_api_entity_address(context, node_id)?;
-                                let partition_num = to_api_u8_as_i32(partition_number.0);
-                                let substate_key = to_api_substate_key(key);
                                 match update {
                                     DatabaseUpdate::Set(value) => {
-                                        let substate_value = to_hex(value);
-                                        let flashed_substate = models::FlashedSubstate::new(
-                                            address,
-                                            partition_num,
-                                            substate_key,
-                                            substate_value,
-                                        );
-                                        flashed_substates.push(flashed_substate);
+                                        set_substates.push(to_api_flash_set_substate(
+                                            context,
+                                            node_id,
+                                            *partition_number,
+                                            key,
+                                            value,
+                                        )?);
                                     }
                                     DatabaseUpdate::Delete => {
-                                        unimplemented!("Flash transactions with deleted substates not yet supported.");
+                                        deleted_substates.push(to_api_direct_substate_id(
+                                            context,
+                                            node_id,
+                                            *partition_number,
+                                            key,
+                                        )?);
                                     }
                                 }
                             }
                         }
-                        PartitionStateUpdates::Batch(..) => {
-                            unimplemented!("Flash transactions with partition state updates not yet supported.");
+                        PartitionStateUpdates::Batch(BatchPartitionStateUpdate::Reset {
+                            new_substate_values,
+                        }) => {
+                            deleted_partitions.push(to_api_partition_id(
+                                context,
+                                node_id,
+                                *partition_number,
+                            )?);
+                            for (key, value) in new_substate_values {
+                                set_substates.push(to_api_flash_set_substate(
+                                    context,
+                                    node_id,
+                                    *partition_number,
+                                    key,
+                                    value,
+                                )?);
+                            }
                         }
                     }
                 }
@@ -679,5 +697,52 @@ pub fn to_api_flash_transaction(
         }
     }
 
-    Ok(models::FlashTransaction::new(flashed_substates))
+    Ok(models::FlashedStateUpdates {
+        deleted_partitions,
+        set_substates,
+        deleted_substates,
+    })
+}
+
+fn to_api_flash_set_substate(
+    context: &MappingContext,
+    node_id: &NodeId,
+    partition_number: PartitionNumber,
+    substate_key: &SubstateKey,
+    value: &DbSubstateValue,
+) -> Result<models::FlashSetSubstate, MappingError> {
+    let typed_substate_key =
+        create_typed_substate_key(context, node_id, partition_number, substate_key)?;
+    Ok(models::FlashSetSubstate {
+        substate_id: Box::new(to_api_substate_id(
+            context,
+            node_id,
+            partition_number,
+            substate_key,
+            &typed_substate_key,
+        )?),
+        value: Box::new(to_api_substate_value(
+            context,
+            &StateMappingLookups::default(),
+            &typed_substate_key,
+            value,
+        )?),
+    })
+}
+
+fn to_api_direct_substate_id(
+    context: &MappingContext,
+    node_id: &NodeId,
+    partition_number: PartitionNumber,
+    substate_key: &SubstateKey,
+) -> Result<models::SubstateId, MappingError> {
+    let typed_substate_key =
+        create_typed_substate_key(context, node_id, partition_number, substate_key)?;
+    to_api_substate_id(
+        context,
+        node_id,
+        partition_number,
+        substate_key,
+        &typed_substate_key,
+    )
 }
