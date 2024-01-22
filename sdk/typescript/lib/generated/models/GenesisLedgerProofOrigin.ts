@@ -12,27 +12,74 @@
  * Do not edit the class manually.
  */
 
-
+import { exists, mapValues } from '../runtime';
 /**
  * 
  * @export
+ * @interface GenesisLedgerProofOrigin
  */
-export const SystemFieldKind = {
-    BootLoader: 'BootLoader',
-    TypeInfo: 'TypeInfo'
+export interface GenesisLedgerProofOrigin {
+    /**
+     * 
+     * @type {string}
+     * @memberof GenesisLedgerProofOrigin
+     */
+    type: GenesisLedgerProofOriginTypeEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof GenesisLedgerProofOrigin
+     */
+    genesis_opaque_hash: string;
+}
+
+
+/**
+ * @export
+ */
+export const GenesisLedgerProofOriginTypeEnum = {
+    Genesis: 'Genesis'
 } as const;
-export type SystemFieldKind = typeof SystemFieldKind[keyof typeof SystemFieldKind];
+export type GenesisLedgerProofOriginTypeEnum = typeof GenesisLedgerProofOriginTypeEnum[keyof typeof GenesisLedgerProofOriginTypeEnum];
 
 
-export function SystemFieldKindFromJSON(json: any): SystemFieldKind {
-    return SystemFieldKindFromJSONTyped(json, false);
+/**
+ * Check if a given object implements the GenesisLedgerProofOrigin interface.
+ */
+export function instanceOfGenesisLedgerProofOrigin(value: object): boolean {
+    let isInstance = true;
+    isInstance = isInstance && "type" in value;
+    isInstance = isInstance && "genesis_opaque_hash" in value;
+
+    return isInstance;
 }
 
-export function SystemFieldKindFromJSONTyped(json: any, ignoreDiscriminator: boolean): SystemFieldKind {
-    return json as SystemFieldKind;
+export function GenesisLedgerProofOriginFromJSON(json: any): GenesisLedgerProofOrigin {
+    return GenesisLedgerProofOriginFromJSONTyped(json, false);
 }
 
-export function SystemFieldKindToJSON(value?: SystemFieldKind | null): any {
-    return value as any;
+export function GenesisLedgerProofOriginFromJSONTyped(json: any, ignoreDiscriminator: boolean): GenesisLedgerProofOrigin {
+    if ((json === undefined) || (json === null)) {
+        return json;
+    }
+    return {
+        
+        'type': json['type'],
+        'genesis_opaque_hash': json['genesis_opaque_hash'],
+    };
+}
+
+export function GenesisLedgerProofOriginToJSON(value?: GenesisLedgerProofOrigin | null): any {
+    if (value === undefined) {
+        return undefined;
+    }
+    if (value === null) {
+        return null;
+    }
+    return {
+        
+        'type': value.type,
+        'genesis_opaque_hash': value.genesis_opaque_hash,
+    };
 }
 

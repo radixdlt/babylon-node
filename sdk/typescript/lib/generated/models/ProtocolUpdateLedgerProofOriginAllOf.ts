@@ -13,66 +13,70 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { LedgerHeader } from './LedgerHeader';
-import {
-    LedgerHeaderFromJSON,
-    LedgerHeaderFromJSONTyped,
-    LedgerHeaderToJSON,
-} from './LedgerHeader';
-import type { LedgerProofOrigin } from './LedgerProofOrigin';
-import {
-    LedgerProofOriginFromJSON,
-    LedgerProofOriginFromJSONTyped,
-    LedgerProofOriginToJSON,
-} from './LedgerProofOrigin';
-
 /**
  * 
  * @export
- * @interface LedgerProof
+ * @interface ProtocolUpdateLedgerProofOriginAllOf
  */
-export interface LedgerProof {
+export interface ProtocolUpdateLedgerProofOriginAllOf {
     /**
      * 
-     * @type {LedgerHeader}
-     * @memberof LedgerProof
+     * @type {string}
+     * @memberof ProtocolUpdateLedgerProofOriginAllOf
      */
-    ledger_header: LedgerHeader;
+    protocol_version_name: string;
     /**
      * 
-     * @type {LedgerProofOrigin}
-     * @memberof LedgerProof
+     * @type {number}
+     * @memberof ProtocolUpdateLedgerProofOriginAllOf
      */
-    origin: LedgerProofOrigin;
+    batch_idx: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProtocolUpdateLedgerProofOriginAllOf
+     */
+    type?: ProtocolUpdateLedgerProofOriginAllOfTypeEnum;
 }
 
+
 /**
- * Check if a given object implements the LedgerProof interface.
+ * @export
  */
-export function instanceOfLedgerProof(value: object): boolean {
+export const ProtocolUpdateLedgerProofOriginAllOfTypeEnum = {
+    ProtocolUpdate: 'ProtocolUpdate'
+} as const;
+export type ProtocolUpdateLedgerProofOriginAllOfTypeEnum = typeof ProtocolUpdateLedgerProofOriginAllOfTypeEnum[keyof typeof ProtocolUpdateLedgerProofOriginAllOfTypeEnum];
+
+
+/**
+ * Check if a given object implements the ProtocolUpdateLedgerProofOriginAllOf interface.
+ */
+export function instanceOfProtocolUpdateLedgerProofOriginAllOf(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "ledger_header" in value;
-    isInstance = isInstance && "origin" in value;
+    isInstance = isInstance && "protocol_version_name" in value;
+    isInstance = isInstance && "batch_idx" in value;
 
     return isInstance;
 }
 
-export function LedgerProofFromJSON(json: any): LedgerProof {
-    return LedgerProofFromJSONTyped(json, false);
+export function ProtocolUpdateLedgerProofOriginAllOfFromJSON(json: any): ProtocolUpdateLedgerProofOriginAllOf {
+    return ProtocolUpdateLedgerProofOriginAllOfFromJSONTyped(json, false);
 }
 
-export function LedgerProofFromJSONTyped(json: any, ignoreDiscriminator: boolean): LedgerProof {
+export function ProtocolUpdateLedgerProofOriginAllOfFromJSONTyped(json: any, ignoreDiscriminator: boolean): ProtocolUpdateLedgerProofOriginAllOf {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'ledger_header': LedgerHeaderFromJSON(json['ledger_header']),
-        'origin': LedgerProofOriginFromJSON(json['origin']),
+        'protocol_version_name': json['protocol_version_name'],
+        'batch_idx': json['batch_idx'],
+        'type': !exists(json, 'type') ? undefined : json['type'],
     };
 }
 
-export function LedgerProofToJSON(value?: LedgerProof | null): any {
+export function ProtocolUpdateLedgerProofOriginAllOfToJSON(value?: ProtocolUpdateLedgerProofOriginAllOf | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -81,8 +85,9 @@ export function LedgerProofToJSON(value?: LedgerProof | null): any {
     }
     return {
         
-        'ledger_header': LedgerHeaderToJSON(value.ledger_header),
-        'origin': LedgerProofOriginToJSON(value.origin),
+        'protocol_version_name': value.protocol_version_name,
+        'batch_idx': value.batch_idx,
+        'type': value.type,
     };
 }
 

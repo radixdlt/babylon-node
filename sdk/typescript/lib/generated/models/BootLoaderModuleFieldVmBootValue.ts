@@ -12,27 +12,55 @@
  * Do not edit the class manually.
  */
 
-
+import { exists, mapValues } from '../runtime';
 /**
  * 
  * @export
+ * @interface BootLoaderModuleFieldVmBootValue
  */
-export const SystemFieldKind = {
-    BootLoader: 'BootLoader',
-    TypeInfo: 'TypeInfo'
-} as const;
-export type SystemFieldKind = typeof SystemFieldKind[keyof typeof SystemFieldKind];
-
-
-export function SystemFieldKindFromJSON(json: any): SystemFieldKind {
-    return SystemFieldKindFromJSONTyped(json, false);
+export interface BootLoaderModuleFieldVmBootValue {
+    /**
+     * 
+     * @type {number}
+     * @memberof BootLoaderModuleFieldVmBootValue
+     */
+    scrypto_v1_minor_version: number;
 }
 
-export function SystemFieldKindFromJSONTyped(json: any, ignoreDiscriminator: boolean): SystemFieldKind {
-    return json as SystemFieldKind;
+/**
+ * Check if a given object implements the BootLoaderModuleFieldVmBootValue interface.
+ */
+export function instanceOfBootLoaderModuleFieldVmBootValue(value: object): boolean {
+    let isInstance = true;
+    isInstance = isInstance && "scrypto_v1_minor_version" in value;
+
+    return isInstance;
 }
 
-export function SystemFieldKindToJSON(value?: SystemFieldKind | null): any {
-    return value as any;
+export function BootLoaderModuleFieldVmBootValueFromJSON(json: any): BootLoaderModuleFieldVmBootValue {
+    return BootLoaderModuleFieldVmBootValueFromJSONTyped(json, false);
+}
+
+export function BootLoaderModuleFieldVmBootValueFromJSONTyped(json: any, ignoreDiscriminator: boolean): BootLoaderModuleFieldVmBootValue {
+    if ((json === undefined) || (json === null)) {
+        return json;
+    }
+    return {
+        
+        'scrypto_v1_minor_version': json['scrypto_v1_minor_version'],
+    };
+}
+
+export function BootLoaderModuleFieldVmBootValueToJSON(value?: BootLoaderModuleFieldVmBootValue | null): any {
+    if (value === undefined) {
+        return undefined;
+    }
+    if (value === null) {
+        return null;
+    }
+    return {
+        
+        'scrypto_v1_minor_version': value.scrypto_v1_minor_version,
+    };
 }
 

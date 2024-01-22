@@ -19,6 +19,12 @@ import {
     ActiveValidatorFromJSONTyped,
     ActiveValidatorToJSON,
 } from './ActiveValidator';
+import type { SignificantProtocolUpdateReadinessEntry } from './SignificantProtocolUpdateReadinessEntry';
+import {
+    SignificantProtocolUpdateReadinessEntryFromJSON,
+    SignificantProtocolUpdateReadinessEntryFromJSONTyped,
+    SignificantProtocolUpdateReadinessEntryToJSON,
+} from './SignificantProtocolUpdateReadinessEntry';
 
 /**
  * 
@@ -38,6 +44,12 @@ export interface NextEpoch {
      * @memberof NextEpoch
      */
     validators: Array<ActiveValidator>;
+    /**
+     * 
+     * @type {Array<SignificantProtocolUpdateReadinessEntry>}
+     * @memberof NextEpoch
+     */
+    significant_protocol_update_readiness?: Array<SignificantProtocolUpdateReadinessEntry>;
 }
 
 /**
@@ -63,6 +75,7 @@ export function NextEpochFromJSONTyped(json: any, ignoreDiscriminator: boolean):
         
         'epoch': json['epoch'],
         'validators': ((json['validators'] as Array<any>).map(ActiveValidatorFromJSON)),
+        'significant_protocol_update_readiness': !exists(json, 'significant_protocol_update_readiness') ? undefined : ((json['significant_protocol_update_readiness'] as Array<any>).map(SignificantProtocolUpdateReadinessEntryFromJSON)),
     };
 }
 
@@ -77,6 +90,7 @@ export function NextEpochToJSON(value?: NextEpoch | null): any {
         
         'epoch': value.epoch,
         'validators': ((value.validators as Array<any>).map(ActiveValidatorToJSON)),
+        'significant_protocol_update_readiness': value.significant_protocol_update_readiness === undefined ? undefined : ((value.significant_protocol_update_readiness as Array<any>).map(SignificantProtocolUpdateReadinessEntryToJSON)),
     };
 }
 

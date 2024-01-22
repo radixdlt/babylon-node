@@ -13,66 +13,78 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { LedgerHeader } from './LedgerHeader';
+import type { TimestampedValidatorSignature } from './TimestampedValidatorSignature';
 import {
-    LedgerHeaderFromJSON,
-    LedgerHeaderFromJSONTyped,
-    LedgerHeaderToJSON,
-} from './LedgerHeader';
-import type { LedgerProofOrigin } from './LedgerProofOrigin';
-import {
-    LedgerProofOriginFromJSON,
-    LedgerProofOriginFromJSONTyped,
-    LedgerProofOriginToJSON,
-} from './LedgerProofOrigin';
+    TimestampedValidatorSignatureFromJSON,
+    TimestampedValidatorSignatureFromJSONTyped,
+    TimestampedValidatorSignatureToJSON,
+} from './TimestampedValidatorSignature';
 
 /**
  * 
  * @export
- * @interface LedgerProof
+ * @interface ConsensusLedgerProofOrigin
  */
-export interface LedgerProof {
+export interface ConsensusLedgerProofOrigin {
     /**
      * 
-     * @type {LedgerHeader}
-     * @memberof LedgerProof
+     * @type {string}
+     * @memberof ConsensusLedgerProofOrigin
      */
-    ledger_header: LedgerHeader;
+    type: ConsensusLedgerProofOriginTypeEnum;
+    /**
+     * A hex-encoded 32-byte vertex VoteData hash on the consensus side, opaque to ledger.
+     * @type {string}
+     * @memberof ConsensusLedgerProofOrigin
+     */
+    opaque_hash: string;
     /**
      * 
-     * @type {LedgerProofOrigin}
-     * @memberof LedgerProof
+     * @type {Array<TimestampedValidatorSignature>}
+     * @memberof ConsensusLedgerProofOrigin
      */
-    origin: LedgerProofOrigin;
+    timestamped_signatures: Array<TimestampedValidatorSignature>;
 }
 
+
 /**
- * Check if a given object implements the LedgerProof interface.
+ * @export
  */
-export function instanceOfLedgerProof(value: object): boolean {
+export const ConsensusLedgerProofOriginTypeEnum = {
+    Consensus: 'Consensus'
+} as const;
+export type ConsensusLedgerProofOriginTypeEnum = typeof ConsensusLedgerProofOriginTypeEnum[keyof typeof ConsensusLedgerProofOriginTypeEnum];
+
+
+/**
+ * Check if a given object implements the ConsensusLedgerProofOrigin interface.
+ */
+export function instanceOfConsensusLedgerProofOrigin(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "ledger_header" in value;
-    isInstance = isInstance && "origin" in value;
+    isInstance = isInstance && "type" in value;
+    isInstance = isInstance && "opaque_hash" in value;
+    isInstance = isInstance && "timestamped_signatures" in value;
 
     return isInstance;
 }
 
-export function LedgerProofFromJSON(json: any): LedgerProof {
-    return LedgerProofFromJSONTyped(json, false);
+export function ConsensusLedgerProofOriginFromJSON(json: any): ConsensusLedgerProofOrigin {
+    return ConsensusLedgerProofOriginFromJSONTyped(json, false);
 }
 
-export function LedgerProofFromJSONTyped(json: any, ignoreDiscriminator: boolean): LedgerProof {
+export function ConsensusLedgerProofOriginFromJSONTyped(json: any, ignoreDiscriminator: boolean): ConsensusLedgerProofOrigin {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'ledger_header': LedgerHeaderFromJSON(json['ledger_header']),
-        'origin': LedgerProofOriginFromJSON(json['origin']),
+        'type': json['type'],
+        'opaque_hash': json['opaque_hash'],
+        'timestamped_signatures': ((json['timestamped_signatures'] as Array<any>).map(TimestampedValidatorSignatureFromJSON)),
     };
 }
 
-export function LedgerProofToJSON(value?: LedgerProof | null): any {
+export function ConsensusLedgerProofOriginToJSON(value?: ConsensusLedgerProofOrigin | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -81,8 +93,9 @@ export function LedgerProofToJSON(value?: LedgerProof | null): any {
     }
     return {
         
-        'ledger_header': LedgerHeaderToJSON(value.ledger_header),
-        'origin': LedgerProofOriginToJSON(value.origin),
+        'type': value.type,
+        'opaque_hash': value.opaque_hash,
+        'timestamped_signatures': ((value.timestamped_signatures as Array<any>).map(TimestampedValidatorSignatureToJSON)),
     };
 }
 

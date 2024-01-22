@@ -47,9 +47,6 @@ import {
 /**
  * For the given transaction, contains the status, total fee summary and individual entity resource balance changes.
  * The balance changes accounts for the fee payments as well.
- * Current implementation does not take into account recalls, but this will change in a future update.
- * For failed transactions, current implementation does not return any balance changes (not even the fee payments).
- * This will also change in a future update.
  * @export
  * @interface LtsCommittedTransactionOutcome
  */
