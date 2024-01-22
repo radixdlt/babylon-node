@@ -162,7 +162,8 @@ public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
                     .NO_ACTION_NEEDED /* TODO(protocol-update): implement me */);
 
     if (pendingProtocolUpdate.protocolUpdate().enactmentCondition()
-        instanceof ProtocolUpdateEnactmentCondition.EnactWhenSupportedAndWithinBounds) {
+        instanceof
+        ProtocolUpdateEnactmentCondition.EnactAtStartOfAnEpochIfSupportedAndWithinBounds) {
       final var readinessSignalName = pendingProtocolUpdate.protocolUpdate().readinessSignalName();
       res.setReadinessSignalName(readinessSignalName);
     }

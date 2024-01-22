@@ -469,7 +469,7 @@ components:
     ProtocolUpdateEnactmentConditionType:
       type: string
       enum:
-        - EnactWhenSupportedAndWithinBounds
+        - EnactAtStartOfAnEpochIfSupportedAndWithinBounds
         - EnactUnconditionallyAtEpoch
     ProtocolUpdateEnactmentCondition:
       type: object
@@ -482,21 +482,21 @@ components:
         propertyName: type
         mapping:
           # NOTE: These need to match ProtocolUpdateEnactmentConditionType
-          EnactWhenSupportedAndWithinBounds: '#/components/schemas/EnactWhenSupportedAndWithinBoundsCondition'
+          EnactAtStartOfAnEpochIfSupportedAndWithinBounds: '#/components/schemas/EnactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition'
           EnactUnconditionallyAtEpoch: '#/components/schemas/EnactUnconditionallyAtEpochCondition'
-    EnactWhenSupportedAndWithinBoundsCondition:
+    EnactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition:
       allOf:
         - $ref: "#/components/schemas/ProtocolUpdateEnactmentCondition"
         - type: object
           required:
-            - lower_bound_epoch
-            - upper_bound_epoch
+            - lower_bound_epoch_inclusive
+            - upper_bound_epoch_exclusive
             - support_type
           properties:
-            lower_bound_epoch:
+            lower_bound_epoch_inclusive:
               type: integer
               format: int64
-            upper_bound_epoch:
+            upper_bound_epoch_exclusive:
               type: integer
               format: int64
             readiness_thresholds:
