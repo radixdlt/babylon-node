@@ -126,13 +126,13 @@ public final class ProtocolUpdateWithEpochBoundsTest {
   static List<TestScenario> scenariosA() {
     final var numValidators = 4;
     // A list of scenarios using the following protocol update:
-    // Enactment bounds: from epoch 5 to epoch 20 (both inclusive)
+    // Enactment bounds: from epoch 5 (inclusive) to epoch 21 (exclusive)
     // Readiness threshold: required one full epoch at 70%
     final var protocolUpdate =
         new ProtocolUpdate(
             "v2",
             ProtocolUpdateEnactmentCondition.singleReadinessThresholdBetweenEpochs(
-                5, 20, Decimal.ofNonNegativeFraction(7, 10), 1));
+                5, 21, Decimal.ofNonNegativeFraction(7, 10), 1));
     final var protocolUpdates = ImmutableList.of(protocolUpdate);
 
     // Enact at lower bound
@@ -177,7 +177,7 @@ public final class ProtocolUpdateWithEpochBoundsTest {
             .atEpoch(15, expectEnactment(protocolUpdate))
             .runUntilEpoch(17);
 
-    // Enact at upper bound
+    // Enact at (upper bound - 1)
     final var scenario4 =
         new ScenarioBuilder(numValidators, protocolUpdates)
             .atEpoch(6, signalReadiness(protocolUpdate, 0))

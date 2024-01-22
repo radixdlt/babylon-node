@@ -195,12 +195,13 @@ public final class SystemModelMapper {
   private ProtocolUpdateEnactmentCondition enactmentCondition(
       com.radixdlt.protocol.ProtocolUpdateEnactmentCondition enactmentCondition) {
     return switch (enactmentCondition) {
-      case com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactWhenSupportedAndWithinBounds
-      enactWhenSupportedAndWithinBounds -> new EnactWhenSupportedAndWithinBoundsCondition()
-          .lowerBoundEpoch(enactWhenSupportedAndWithinBounds.lowerBound().toLong())
-          .upperBoundEpoch(enactWhenSupportedAndWithinBounds.upperBound().toLong())
+      case com.radixdlt.protocol.ProtocolUpdateEnactmentCondition
+          .EnactAtStartOfAnEpochIfSupportedAndWithinBounds
+      condition -> new EnactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition()
+          .lowerBoundEpochInclusive(condition.lowerBoundInclusive().toLong())
+          .upperBoundEpochExclusive(condition.upperBoundExclusive().toLong())
           .readinessThresholds(
-              enactWhenSupportedAndWithinBounds.readinessThresholds().stream()
+              condition.readinessThresholds().stream()
                   .map(
                       threshold ->
                           new SignalledReadinessThreshold()
@@ -209,7 +210,8 @@ public final class SystemModelMapper {
                               .requiredConsecutiveCompletedEpochsOfSupport(
                                   threshold.requiredConsecutiveCompletedEpochsOfSupport().toLong()))
                   .toList())
-          .type(ProtocolUpdateEnactmentConditionType.ENACTWHENSUPPORTEDANDWITHINBOUNDS);
+          .type(
+              ProtocolUpdateEnactmentConditionType.ENACTATSTARTOFANEPOCHIFSUPPORTEDANDWITHINBOUNDS);
       case com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactUnconditionallyAtEpoch
       enactUnconditionallyAtEpoch -> new EnactUnconditionallyAtEpochCondition()
           .epoch(enactUnconditionallyAtEpoch.epoch().toLong())

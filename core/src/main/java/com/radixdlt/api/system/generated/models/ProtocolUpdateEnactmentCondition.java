@@ -24,8 +24,8 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.system.generated.models.EnactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition;
 import com.radixdlt.api.system.generated.models.EnactUnconditionallyAtEpochCondition;
-import com.radixdlt.api.system.generated.models.EnactWhenSupportedAndWithinBoundsCondition;
 import com.radixdlt.api.system.generated.models.ProtocolUpdateEnactmentConditionType;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -42,10 +42,10 @@ import com.radixdlt.api.common.JSON;
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
+  @JsonSubTypes.Type(value = EnactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition.class, name = "EnactAtStartOfAnEpochIfSupportedAndWithinBounds"),
+  @JsonSubTypes.Type(value = EnactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition.class, name = "EnactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition"),
   @JsonSubTypes.Type(value = EnactUnconditionallyAtEpochCondition.class, name = "EnactUnconditionallyAtEpoch"),
   @JsonSubTypes.Type(value = EnactUnconditionallyAtEpochCondition.class, name = "EnactUnconditionallyAtEpochCondition"),
-  @JsonSubTypes.Type(value = EnactWhenSupportedAndWithinBoundsCondition.class, name = "EnactWhenSupportedAndWithinBounds"),
-  @JsonSubTypes.Type(value = EnactWhenSupportedAndWithinBoundsCondition.class, name = "EnactWhenSupportedAndWithinBoundsCondition"),
 })
 
 public class ProtocolUpdateEnactmentCondition {
@@ -122,10 +122,10 @@ public class ProtocolUpdateEnactmentCondition {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
+  mappings.put("EnactAtStartOfAnEpochIfSupportedAndWithinBounds", EnactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition.class);
+  mappings.put("EnactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition", EnactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition.class);
   mappings.put("EnactUnconditionallyAtEpoch", EnactUnconditionallyAtEpochCondition.class);
   mappings.put("EnactUnconditionallyAtEpochCondition", EnactUnconditionallyAtEpochCondition.class);
-  mappings.put("EnactWhenSupportedAndWithinBounds", EnactWhenSupportedAndWithinBoundsCondition.class);
-  mappings.put("EnactWhenSupportedAndWithinBoundsCondition", EnactWhenSupportedAndWithinBoundsCondition.class);
   mappings.put("ProtocolUpdateEnactmentCondition", ProtocolUpdateEnactmentCondition.class);
   JSON.registerDiscriminator(ProtocolUpdateEnactmentCondition.class, "type", mappings);
 }
