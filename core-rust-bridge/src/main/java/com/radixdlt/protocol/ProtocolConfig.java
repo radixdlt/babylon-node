@@ -65,6 +65,7 @@
 package com.radixdlt.protocol;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.rev2.Decimal;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 
@@ -77,7 +78,13 @@ public record ProtocolConfig(
   }
 
   public static ProtocolConfig testingDefault() {
-    return new ProtocolConfig("testing-genesis", ImmutableList.of());
+    return new ProtocolConfig(
+        "testing-genesis",
+        ImmutableList.of(
+            new ProtocolUpdate(
+                "anemone",
+                ProtocolUpdateEnactmentCondition.singleReadinessThresholdBetweenEpochs(
+                    1, 100_000, Decimal.ofNonNegative(1), 0))));
   }
 
   public static ProtocolConfig mainnet() {
