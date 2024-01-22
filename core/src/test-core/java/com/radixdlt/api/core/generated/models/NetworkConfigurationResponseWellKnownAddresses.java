@@ -57,7 +57,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_POOL_PACKAGE,
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_CONSENSUS_MANAGER,
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_GENESIS_HELPER,
-  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_FAUCET
+  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_FAUCET,
+  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_TRANSACTION_TRACKER
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class NetworkConfigurationResponseWellKnownAddresses {
@@ -138,6 +139,9 @@ public class NetworkConfigurationResponseWellKnownAddresses {
 
   public static final String JSON_PROPERTY_FAUCET = "faucet";
   private String faucet;
+
+  public static final String JSON_PROPERTY_TRANSACTION_TRACKER = "transaction_tracker";
+  private String transactionTracker;
 
   public NetworkConfigurationResponseWellKnownAddresses() { 
   }
@@ -818,6 +822,32 @@ public class NetworkConfigurationResponseWellKnownAddresses {
   }
 
 
+  public NetworkConfigurationResponseWellKnownAddresses transactionTracker(String transactionTracker) {
+    this.transactionTracker = transactionTracker;
+    return this;
+  }
+
+   /**
+   * Get transactionTracker
+   * @return transactionTracker
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_TRANSACTION_TRACKER)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getTransactionTracker() {
+    return transactionTracker;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_TRANSACTION_TRACKER)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setTransactionTracker(String transactionTracker) {
+    this.transactionTracker = transactionTracker;
+  }
+
+
   /**
    * Return true if this NetworkConfigurationResponse_well_known_addresses object is equal to o.
    */
@@ -855,12 +885,13 @@ public class NetworkConfigurationResponseWellKnownAddresses {
         Objects.equals(this.poolPackage, networkConfigurationResponseWellKnownAddresses.poolPackage) &&
         Objects.equals(this.consensusManager, networkConfigurationResponseWellKnownAddresses.consensusManager) &&
         Objects.equals(this.genesisHelper, networkConfigurationResponseWellKnownAddresses.genesisHelper) &&
-        Objects.equals(this.faucet, networkConfigurationResponseWellKnownAddresses.faucet);
+        Objects.equals(this.faucet, networkConfigurationResponseWellKnownAddresses.faucet) &&
+        Objects.equals(this.transactionTracker, networkConfigurationResponseWellKnownAddresses.transactionTracker);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(xrd, secp256k1SignatureVirtualBadge, ed25519SignatureVirtualBadge, packageOfDirectCallerVirtualBadge, globalCallerVirtualBadge, systemTransactionBadge, packageOwnerBadge, validatorOwnerBadge, accountOwnerBadge, identityOwnerBadge, packagePackage, resourcePackage, accountPackage, identityPackage, consensusManagerPackage, accessControllerPackage, transactionProcessorPackage, metadataModulePackage, royaltyModulePackage, roleAssignmentModulePackage, genesisHelperPackage, faucetPackage, poolPackage, consensusManager, genesisHelper, faucet);
+    return Objects.hash(xrd, secp256k1SignatureVirtualBadge, ed25519SignatureVirtualBadge, packageOfDirectCallerVirtualBadge, globalCallerVirtualBadge, systemTransactionBadge, packageOwnerBadge, validatorOwnerBadge, accountOwnerBadge, identityOwnerBadge, packagePackage, resourcePackage, accountPackage, identityPackage, consensusManagerPackage, accessControllerPackage, transactionProcessorPackage, metadataModulePackage, royaltyModulePackage, roleAssignmentModulePackage, genesisHelperPackage, faucetPackage, poolPackage, consensusManager, genesisHelper, faucet, transactionTracker);
   }
 
   @Override
@@ -893,6 +924,7 @@ public class NetworkConfigurationResponseWellKnownAddresses {
     sb.append("    consensusManager: ").append(toIndentedString(consensusManager)).append("\n");
     sb.append("    genesisHelper: ").append(toIndentedString(genesisHelper)).append("\n");
     sb.append("    faucet: ").append(toIndentedString(faucet)).append("\n");
+    sb.append("    transactionTracker: ").append(toIndentedString(transactionTracker)).append("\n");
     sb.append("}");
     return sb.toString();
   }

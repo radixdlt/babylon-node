@@ -6110,6 +6110,7 @@ components:
             - consensus_manager
             - genesis_helper
             - faucet
+            - transaction_tracker
           properties:
             xrd:
               type: string
@@ -6162,6 +6163,8 @@ components:
             genesis_helper:
               type: string
             faucet:
+              type: string
+            transaction_tracker:
               type: string
     AddressType:
       type: object
