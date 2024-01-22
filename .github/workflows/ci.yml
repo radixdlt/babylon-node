@@ -15,7 +15,7 @@ on:
 jobs:
   snyk-scan-deps-licences:
     name: Snyk deps/licences scan
-    runs-on: selfhosted-ubuntu-22.04
+    runs-on: ubuntu-22.04
     permissions:
       id-token: write
       pull-requests: read
@@ -37,7 +37,7 @@ jobs:
           args: --all-projects --org=${{ env.SNYK_NETWORK_ORG_ID }} --severity-threshold=critical
   snyk-scan-code:
     name: Snyk code scan
-    runs-on: selfhosted-ubuntu-22.04
+    runs-on: ubuntu-latest
     permissions:
       id-token: write
       pull-requests: read
@@ -60,7 +60,7 @@ jobs:
           command: code test
   snyk-sbom:
     name: Snyk SBOM
-    runs-on: selfhosted-ubuntu-22.04
+    runs-on: ubuntu-latest
     permissions:
       id-token: write
       pull-requests: read
@@ -146,7 +146,7 @@ jobs:
         run: ./gradlew sonarqube
   local-dev-sm-docker-build:
     name: Test core-rust docker build for local development
-    runs-on: selfhosted-ubuntu-22.04-16-cores
+    runs-on: ubuntu-latest
     steps:
       - uses: RDXWorks-actions/checkout@main
         with:
