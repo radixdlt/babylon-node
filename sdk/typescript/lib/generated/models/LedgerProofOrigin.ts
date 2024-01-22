@@ -12,77 +12,72 @@
  * Do not edit the class manually.
  */
 
-import { exists, mapValues } from '../runtime';
-import type { LedgerHeader } from './LedgerHeader';
 import {
-    LedgerHeaderFromJSON,
-    LedgerHeaderFromJSONTyped,
-    LedgerHeaderToJSON,
-} from './LedgerHeader';
-import type { LedgerProofOrigin } from './LedgerProofOrigin';
+    ConsensusLedgerProofOrigin,
+    instanceOfConsensusLedgerProofOrigin,
+    ConsensusLedgerProofOriginFromJSON,
+    ConsensusLedgerProofOriginFromJSONTyped,
+    ConsensusLedgerProofOriginToJSON,
+} from './ConsensusLedgerProofOrigin';
 import {
-    LedgerProofOriginFromJSON,
-    LedgerProofOriginFromJSONTyped,
-    LedgerProofOriginToJSON,
-} from './LedgerProofOrigin';
+    GenesisLedgerProofOrigin,
+    instanceOfGenesisLedgerProofOrigin,
+    GenesisLedgerProofOriginFromJSON,
+    GenesisLedgerProofOriginFromJSONTyped,
+    GenesisLedgerProofOriginToJSON,
+} from './GenesisLedgerProofOrigin';
+import {
+    ProtocolUpdateLedgerProofOrigin,
+    instanceOfProtocolUpdateLedgerProofOrigin,
+    ProtocolUpdateLedgerProofOriginFromJSON,
+    ProtocolUpdateLedgerProofOriginFromJSONTyped,
+    ProtocolUpdateLedgerProofOriginToJSON,
+} from './ProtocolUpdateLedgerProofOrigin';
 
 /**
+ * @type LedgerProofOrigin
  * 
  * @export
- * @interface LedgerProof
  */
-export interface LedgerProof {
-    /**
-     * 
-     * @type {LedgerHeader}
-     * @memberof LedgerProof
-     */
-    ledger_header: LedgerHeader;
-    /**
-     * 
-     * @type {LedgerProofOrigin}
-     * @memberof LedgerProof
-     */
-    origin: LedgerProofOrigin;
+export type LedgerProofOrigin = { type: 'Consensus' } & ConsensusLedgerProofOrigin | { type: 'Genesis' } & GenesisLedgerProofOrigin | { type: 'ProtocolUpdate' } & ProtocolUpdateLedgerProofOrigin;
+
+export function LedgerProofOriginFromJSON(json: any): LedgerProofOrigin {
+    return LedgerProofOriginFromJSONTyped(json, false);
 }
 
-/**
- * Check if a given object implements the LedgerProof interface.
- */
-export function instanceOfLedgerProof(value: object): boolean {
-    let isInstance = true;
-    isInstance = isInstance && "ledger_header" in value;
-    isInstance = isInstance && "origin" in value;
-
-    return isInstance;
-}
-
-export function LedgerProofFromJSON(json: any): LedgerProof {
-    return LedgerProofFromJSONTyped(json, false);
-}
-
-export function LedgerProofFromJSONTyped(json: any, ignoreDiscriminator: boolean): LedgerProof {
+export function LedgerProofOriginFromJSONTyped(json: any, ignoreDiscriminator: boolean): LedgerProofOrigin {
     if ((json === undefined) || (json === null)) {
         return json;
     }
-    return {
-        
-        'ledger_header': LedgerHeaderFromJSON(json['ledger_header']),
-        'origin': LedgerProofOriginFromJSON(json['origin']),
-    };
+    switch (json['type']) {
+        case 'Consensus':
+            return {...ConsensusLedgerProofOriginFromJSONTyped(json, true), type: 'Consensus'};
+        case 'Genesis':
+            return {...GenesisLedgerProofOriginFromJSONTyped(json, true), type: 'Genesis'};
+        case 'ProtocolUpdate':
+            return {...ProtocolUpdateLedgerProofOriginFromJSONTyped(json, true), type: 'ProtocolUpdate'};
+        default:
+            throw new Error(`No variant of LedgerProofOrigin exists with 'type=${json['type']}'`);
+    }
 }
 
-export function LedgerProofToJSON(value?: LedgerProof | null): any {
+export function LedgerProofOriginToJSON(value?: LedgerProofOrigin | null): any {
     if (value === undefined) {
         return undefined;
     }
     if (value === null) {
         return null;
     }
-    return {
-        
-        'ledger_header': LedgerHeaderToJSON(value.ledger_header),
-        'origin': LedgerProofOriginToJSON(value.origin),
-    };
+    switch (value['type']) {
+        case 'Consensus':
+            return ConsensusLedgerProofOriginToJSON(value);
+        case 'Genesis':
+            return GenesisLedgerProofOriginToJSON(value);
+        case 'ProtocolUpdate':
+            return ProtocolUpdateLedgerProofOriginToJSON(value);
+        default:
+            throw new Error(`No variant of LedgerProofOrigin exists with 'type=${value['type']}'`);
+    }
+
 }
 

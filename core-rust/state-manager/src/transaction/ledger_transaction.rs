@@ -130,31 +130,8 @@ const GENESIS_TRANSACTION_SYSTEM_TRANSACTION_DISCRIMINATOR: u8 = 1;
 
 #[derive(Debug, Clone, PartialEq, Eq, ManifestCategorize, ManifestEncode, ManifestDecode)]
 pub struct FlashTransactionV1 {
-    pub nonce: u64,
+    pub name: String,
     pub state_updates: StateUpdates,
-}
-
-impl FlashTransactionV1 {
-    pub fn prepare(&self) -> Result<PreparedFlashTransactionV1, PrepareError> {
-        let state_updates_hash = hash(scrypto_encode(&self.state_updates).unwrap());
-        let flash_hash = HashAccumulator::new()
-            .update([
-                TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
-                TransactionDiscriminator::V1Flash as u8,
-            ])
-            .update(state_updates_hash)
-            .update(self.nonce.to_le_bytes().as_slice())
-            .finalize();
-
-        Ok(PreparedFlashTransactionV1 {
-            state_updates: self.state_updates.clone(),
-            summary: Summary {
-                effective_length: 0,
-                total_bytes_hashed: 0,
-                hash: flash_hash,
-            },
-        })
-    }
 }
 
 pub struct PreparedLedgerTransaction {
@@ -334,6 +311,7 @@ impl HasSystemTransactionHash for PreparedGenesisTransaction {
 }
 
 pub struct PreparedFlashTransactionV1 {
+    pub name: String,
     pub state_updates: StateUpdates,
     pub summary: Summary,
 }
@@ -352,8 +330,16 @@ impl HasFlashTransactionHash for PreparedFlashTransactionV1 {
 
 impl TransactionFullChildPreparable for PreparedFlashTransactionV1 {
     fn prepare_as_full_body_child(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
-        let decoded = decoder.decode::<FlashTransactionV1>()?;
-        decoded.prepare()
+        let ((name, state_updates), summary) =
+            ConcatenatedDigest::prepare_from_transaction_child_struct::<(
+                SummarizedRawFullBody<String>,
+                SummarizedRawFullBody<StateUpdates>,
+            )>(decoder, TransactionDiscriminator::V1Flash)?;
+        Ok(Self {
+            name: name.inner,
+            state_updates: state_updates.inner,
+            summary,
+        })
     }
 }
 

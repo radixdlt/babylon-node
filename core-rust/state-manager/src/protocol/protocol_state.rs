@@ -16,7 +16,7 @@ use tracing::info;
 
 use crate::traits::{IterableProofStore, QueryableProofStore, QueryableTransactionStore};
 use crate::ProtocolUpdateEnactmentCondition::{
-    EnactUnconditionallyAtEpoch, EnactWhenSupportedAndWithinBounds,
+    EnactAtStartOfAnEpochIfSupportedAndWithinBounds, EnactUnconditionallyAtEpoch,
 };
 use crate::{
     LocalTransactionReceipt, ProtocolConfig, ProtocolUpdate, SignalledReadinessThreshold,
@@ -28,7 +28,6 @@ use crate::{
 
 #[derive(Clone, Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ProtocolState {
-    pub current_epoch: Option<Epoch>,
     pub current_protocol_version: String,
     pub enacted_protocol_updates: BTreeMap<StateVersion, String>,
     pub pending_protocol_updates: Vec<PendingProtocolUpdate>,
@@ -75,15 +74,15 @@ fn compute_initial_protocol_update_status<
     protocol_update: &ProtocolUpdate,
 ) -> InitialProtocolUpdateStatus {
     match &protocol_update.enactment_condition {
-        EnactWhenSupportedAndWithinBounds {
-            lower_bound,
-            upper_bound,
+        EnactAtStartOfAnEpochIfSupportedAndWithinBounds {
+            lower_bound_inclusive,
+            upper_bound_exclusive,
             readiness_thresholds,
         } => compute_initial_signalled_readiness_protocol_update_status(
             store,
             protocol_update,
-            lower_bound,
-            upper_bound,
+            lower_bound_inclusive,
+            upper_bound_exclusive,
             readiness_thresholds,
         ),
         EnactUnconditionallyAtEpoch(epoch) => {
@@ -97,8 +96,8 @@ fn compute_initial_signalled_readiness_protocol_update_status<
 >(
     store: &S,
     protocol_update: &ProtocolUpdate,
-    lower_bound: &Epoch,
-    upper_bound: &Epoch,
+    lower_bound_inclusive: &Epoch,
+    upper_bound_exclusive: &Epoch,
     thresholds: &[SignalledReadinessThreshold],
 ) -> InitialProtocolUpdateStatus {
     // Mutable var for the initial state that we'll compute in this fn
@@ -126,7 +125,7 @@ fn compute_initial_signalled_readiness_protocol_update_status<
 
     // The earliest epoch where we need to consider the readiness signals
     let earliest_relevant_epoch = Epoch::of(
-        lower_bound
+        lower_bound_inclusive
             .number()
             .saturating_sub(max_required_consecutive_epochs_of_support),
     );
@@ -150,14 +149,15 @@ fn compute_initial_signalled_readiness_protocol_update_status<
         }
 
         // Check if we're on or above the lower bound
-        let on_or_above_lower_bound = epoch_change_event.epoch.number() >= lower_bound.number();
+        let on_or_above_lower_bound =
+            epoch_change_event.epoch.number() >= lower_bound_inclusive.number();
         if !on_or_above_lower_bound {
             continue;
         }
 
-        // Check if we're on or below the upper bound
-        let on_or_below_upper_bound = epoch_change_event.epoch.number() <= upper_bound.number();
-        if !on_or_below_upper_bound {
+        // Check if we're below the upper bound
+        let below_upper_bound = epoch_change_event.epoch.number() < upper_bound_exclusive.number();
+        if !below_upper_bound {
             continue;
         }
 
@@ -193,10 +193,6 @@ impl ProtocolState {
         store: &S,
         protocol_config: &ProtocolConfig,
     ) -> ProtocolState {
-        let current_epoch_opt = store
-            .get_latest_epoch_proof()
-            .map(|proof| proof.ledger_header.next_epoch.unwrap().epoch);
-
         // For each configured protocol update we calculate it's expected status against
         // the current state of the ledger, regardless of any information stored
         // about the protocol updates that were actually enacted.
@@ -275,7 +271,6 @@ impl ProtocolState {
             .collect();
 
         ProtocolState {
-            current_epoch: current_epoch_opt,
             current_protocol_version,
             enacted_protocol_updates: actually_enacted_protocol_updates,
             pending_protocol_updates,
@@ -289,19 +284,18 @@ impl ProtocolState {
         local_receipt: &LocalTransactionReceipt,
         post_execute_state_version: StateVersion,
     ) -> (ProtocolState, Option<String>) {
-        let mut new_protocol_state = self.clone();
-
         let Some(post_execute_epoch) = local_receipt
             .local_execution
             .next_epoch
             .as_ref()
             .map(|next_epoch| next_epoch.epoch)
-            .or(self.current_epoch)
         else {
-            // We're pre-genesis, so just return the current state
-            return (new_protocol_state, None);
+            // No processing needed (and enactment currently forbidden!)
+            // if this wasn't an epoch change
+            return (self.clone(), None);
         };
-        new_protocol_state.current_epoch = Some(post_execute_epoch);
+
+        let mut new_protocol_state = self.clone();
 
         let mut pending_protocol_updates = vec![];
         let mut expired_protocol_updates = vec![];
@@ -310,9 +304,9 @@ impl ProtocolState {
         let mut enactable_protocol_updates = vec![];
         for mut pending_protocol_update in new_protocol_state.pending_protocol_updates {
             match &pending_protocol_update.protocol_update.enactment_condition {
-                EnactWhenSupportedAndWithinBounds {
-                    lower_bound,
-                    upper_bound,
+                EnactAtStartOfAnEpochIfSupportedAndWithinBounds {
+                    lower_bound_inclusive,
+                    upper_bound_exclusive,
                     ..
                 } => {
                     // Note: this is not a pure boolean calculation,
@@ -340,18 +334,17 @@ impl ProtocolState {
                         }
                     };
 
-                    let on_or_above_lower_bound = post_execute_epoch >= *lower_bound;
+                    let on_or_above_lower_bound = post_execute_epoch >= *lower_bound_inclusive;
 
-                    let on_or_below_upper_bound = post_execute_epoch <= *upper_bound;
+                    let below_upper_bound = post_execute_epoch < *upper_bound_exclusive;
 
-                    if has_sufficient_support && on_or_above_lower_bound && on_or_below_upper_bound
-                    {
+                    if has_sufficient_support && on_or_above_lower_bound && below_upper_bound {
                         enactable_protocol_updates.push(
                             pending_protocol_update
                                 .protocol_update
                                 .next_protocol_version,
                         );
-                    } else if on_or_below_upper_bound {
+                    } else if below_upper_bound {
                         pending_protocol_updates.push(pending_protocol_update);
                     } else {
                         expired_protocol_updates.push(pending_protocol_update);

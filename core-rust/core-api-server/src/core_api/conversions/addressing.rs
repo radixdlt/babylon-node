@@ -2,13 +2,13 @@ use crate::core_api::models;
 use crate::core_api::*;
 use models::SubstateType;
 use radix_engine::blueprints::account::{AccountField, AccountTypedSubstateKey};
-use radix_engine::blueprints::pool::multi_resource_pool::{
+use radix_engine::blueprints::pool::v1::substates::multi_resource_pool::{
     MultiResourcePoolField, MultiResourcePoolTypedSubstateKey,
 };
-use radix_engine::blueprints::pool::one_resource_pool::{
+use radix_engine::blueprints::pool::v1::substates::one_resource_pool::{
     OneResourcePoolField, OneResourcePoolTypedSubstateKey,
 };
-use radix_engine::blueprints::pool::two_resource_pool::{
+use radix_engine::blueprints::pool::v1::substates::two_resource_pool::{
     TwoResourcePoolField, TwoResourcePoolTypedSubstateKey,
 };
 use radix_engine::types::*;

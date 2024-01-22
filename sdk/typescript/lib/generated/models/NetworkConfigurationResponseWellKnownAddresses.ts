@@ -175,6 +175,12 @@ export interface NetworkConfigurationResponseWellKnownAddresses {
      * @memberof NetworkConfigurationResponseWellKnownAddresses
      */
     faucet: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof NetworkConfigurationResponseWellKnownAddresses
+     */
+    transaction_tracker: string;
 }
 
 /**
@@ -208,6 +214,7 @@ export function instanceOfNetworkConfigurationResponseWellKnownAddresses(value: 
     isInstance = isInstance && "consensus_manager" in value;
     isInstance = isInstance && "genesis_helper" in value;
     isInstance = isInstance && "faucet" in value;
+    isInstance = isInstance && "transaction_tracker" in value;
 
     return isInstance;
 }
@@ -248,6 +255,7 @@ export function NetworkConfigurationResponseWellKnownAddressesFromJSONTyped(json
         'consensus_manager': json['consensus_manager'],
         'genesis_helper': json['genesis_helper'],
         'faucet': json['faucet'],
+        'transaction_tracker': json['transaction_tracker'],
     };
 }
 
@@ -286,6 +294,7 @@ export function NetworkConfigurationResponseWellKnownAddressesToJSON(value?: Net
         'consensus_manager': value.consensus_manager,
         'genesis_helper': value.genesis_helper,
         'faucet': value.faucet,
+        'transaction_tracker': value.transaction_tracker,
     };
 }
 

@@ -72,7 +72,6 @@ use radix_engine::prelude::dec;
 use radix_engine::system::system_substates::FieldSubstate;
 use radix_engine::utils::generate_validator_fee_fix_state_updates;
 
-use radix_engine::track::StateUpdates;
 use radix_engine_common::network::NetworkDefinition;
 use radix_engine_common::prelude::{Epoch, CONSENSUS_MANAGER};
 use radix_engine_interface::prelude::MAIN_BASE_PARTITION;
@@ -88,15 +87,17 @@ use crate::{
     FixedFlashProtocolUpdater, NoStateUpdatesProtocolUpdater, ProtocolConfig, ProtocolUpdate,
     ProtocolUpdater, ProtocolUpdaterFactory, StateManager, StateManagerConfig,
 };
+use radix_engine::track::StateUpdates;
 use std::ops::Deref;
 
 use crate::test::prepare_and_commit_round_update;
+use crate::transaction::FlashTransactionV1;
 
 const GENESIS_PROTOCOL_VERSION: &str = "testing-genesis";
 const V2_PROTOCOL_VERSION: &str = "testing-v2";
 
 struct TestProtocolUpdaterFactory {
-    v2_state_updates: StateUpdates,
+    v2_flash: FlashTransactionV1,
 }
 
 impl ProtocolUpdaterFactory for TestProtocolUpdaterFactory {
@@ -109,7 +110,7 @@ impl ProtocolUpdaterFactory for TestProtocolUpdaterFactory {
                 FixedFlashProtocolUpdater::new_with_default_configurator(
                     V2_PROTOCOL_VERSION.to_string(),
                     NetworkDefinition::simulator(),
-                    vec![self.v2_state_updates.clone()],
+                    vec![self.v2_flash.clone()],
                 ),
             )),
             _ => None,
@@ -141,7 +142,10 @@ fn flash_protocol_update_test() {
             state_manager_config.clone(),
             // Fake updater, unused
             Box::new(TestProtocolUpdaterFactory {
-                v2_state_updates: StateUpdates::default(),
+                v2_flash: FlashTransactionV1 {
+                    name: "unused".to_string(),
+                    state_updates: StateUpdates::default(),
+                },
             }),
         );
         tmp_state_manager
@@ -157,7 +161,10 @@ fn flash_protocol_update_test() {
     let state_manager = create_state_manager(
         state_manager_config,
         Box::new(TestProtocolUpdaterFactory {
-            v2_state_updates: consensus_manager_state_updates,
+            v2_flash: FlashTransactionV1 {
+                name: "testing-v2-flash".to_string(),
+                state_updates: consensus_manager_state_updates,
+            },
         }),
     );
 

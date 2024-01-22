@@ -13,66 +13,69 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { LedgerHeader } from './LedgerHeader';
+import type { BootLoaderModuleFieldVmBootValue } from './BootLoaderModuleFieldVmBootValue';
 import {
-    LedgerHeaderFromJSON,
-    LedgerHeaderFromJSONTyped,
-    LedgerHeaderToJSON,
-} from './LedgerHeader';
-import type { LedgerProofOrigin } from './LedgerProofOrigin';
-import {
-    LedgerProofOriginFromJSON,
-    LedgerProofOriginFromJSONTyped,
-    LedgerProofOriginToJSON,
-} from './LedgerProofOrigin';
+    BootLoaderModuleFieldVmBootValueFromJSON,
+    BootLoaderModuleFieldVmBootValueFromJSONTyped,
+    BootLoaderModuleFieldVmBootValueToJSON,
+} from './BootLoaderModuleFieldVmBootValue';
 
 /**
  * 
  * @export
- * @interface LedgerProof
+ * @interface BootLoaderModuleFieldVmBootSubstateAllOf
  */
-export interface LedgerProof {
+export interface BootLoaderModuleFieldVmBootSubstateAllOf {
     /**
      * 
-     * @type {LedgerHeader}
-     * @memberof LedgerProof
+     * @type {BootLoaderModuleFieldVmBootValue}
+     * @memberof BootLoaderModuleFieldVmBootSubstateAllOf
      */
-    ledger_header: LedgerHeader;
+    value: BootLoaderModuleFieldVmBootValue;
     /**
      * 
-     * @type {LedgerProofOrigin}
-     * @memberof LedgerProof
+     * @type {string}
+     * @memberof BootLoaderModuleFieldVmBootSubstateAllOf
      */
-    origin: LedgerProofOrigin;
+    substate_type?: BootLoaderModuleFieldVmBootSubstateAllOfSubstateTypeEnum;
 }
 
+
 /**
- * Check if a given object implements the LedgerProof interface.
+ * @export
  */
-export function instanceOfLedgerProof(value: object): boolean {
+export const BootLoaderModuleFieldVmBootSubstateAllOfSubstateTypeEnum = {
+    BootLoaderModuleFieldVmBoot: 'BootLoaderModuleFieldVmBoot'
+} as const;
+export type BootLoaderModuleFieldVmBootSubstateAllOfSubstateTypeEnum = typeof BootLoaderModuleFieldVmBootSubstateAllOfSubstateTypeEnum[keyof typeof BootLoaderModuleFieldVmBootSubstateAllOfSubstateTypeEnum];
+
+
+/**
+ * Check if a given object implements the BootLoaderModuleFieldVmBootSubstateAllOf interface.
+ */
+export function instanceOfBootLoaderModuleFieldVmBootSubstateAllOf(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "ledger_header" in value;
-    isInstance = isInstance && "origin" in value;
+    isInstance = isInstance && "value" in value;
 
     return isInstance;
 }
 
-export function LedgerProofFromJSON(json: any): LedgerProof {
-    return LedgerProofFromJSONTyped(json, false);
+export function BootLoaderModuleFieldVmBootSubstateAllOfFromJSON(json: any): BootLoaderModuleFieldVmBootSubstateAllOf {
+    return BootLoaderModuleFieldVmBootSubstateAllOfFromJSONTyped(json, false);
 }
 
-export function LedgerProofFromJSONTyped(json: any, ignoreDiscriminator: boolean): LedgerProof {
+export function BootLoaderModuleFieldVmBootSubstateAllOfFromJSONTyped(json: any, ignoreDiscriminator: boolean): BootLoaderModuleFieldVmBootSubstateAllOf {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'ledger_header': LedgerHeaderFromJSON(json['ledger_header']),
-        'origin': LedgerProofOriginFromJSON(json['origin']),
+        'value': BootLoaderModuleFieldVmBootValueFromJSON(json['value']),
+        'substate_type': !exists(json, 'substate_type') ? undefined : json['substate_type'],
     };
 }
 
-export function LedgerProofToJSON(value?: LedgerProof | null): any {
+export function BootLoaderModuleFieldVmBootSubstateAllOfToJSON(value?: BootLoaderModuleFieldVmBootSubstateAllOf | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -81,8 +84,8 @@ export function LedgerProofToJSON(value?: LedgerProof | null): any {
     }
     return {
         
-        'ledger_header': LedgerHeaderToJSON(value.ledger_header),
-        'origin': LedgerProofOriginToJSON(value.origin),
+        'value': BootLoaderModuleFieldVmBootValueToJSON(value.value),
+        'substate_type': value.substate_type,
     };
 }
 

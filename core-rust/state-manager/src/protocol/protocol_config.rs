@@ -53,16 +53,20 @@ pub struct ProtocolConfig {
 
 #[derive(Clone, Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ProtocolUpdateEnactmentCondition {
-    EnactWhenSupportedAndWithinBounds {
+    /// The enactment only proceeds if it's the start of epoch X,
+    /// at least one readiness threshold is met, and X satisfies
+    /// `lower_bound_inclusive <= X < upper_bound_exclusive`.
+    EnactAtStartOfAnEpochIfSupportedAndWithinBounds {
         /// Minimum epoch at which the protocol update can be enacted (inclusive)
-        lower_bound: Epoch,
-        /// Maximum epoch at which the protocol update can be enacted (inclusive)
-        upper_bound: Epoch,
+        lower_bound_inclusive: Epoch,
+        /// Maximum epoch at which the protocol update can be enacted (exclusive)
+        upper_bound_exclusive: Epoch,
         /// A list of readiness thresholds. At least one threshold
         /// from the list must match for the protocol update to be enacted.
-        /// This is a logical OR with lower/upper bound conditions.
         readiness_thresholds: Vec<SignalledReadinessThreshold>,
     },
+    /// The enactment proceeds unconditionally
+    /// at the start of specified epoch.
     EnactUnconditionallyAtEpoch(Epoch),
 }
 
@@ -83,14 +87,15 @@ pub struct SignalledReadinessThreshold {
 
 impl ProtocolConfig {
     pub fn mainnet() -> ProtocolConfig {
+        // TODO(anemone): update the epoch bounds and thresholds
         Self {
             genesis_protocol_version: GENESIS_PROTOCOL_VERSION.to_string(),
             protocol_updates: vec![ProtocolUpdate {
                 next_protocol_version: ANEMONE_PROTOCOL_VERSION.to_string(),
                 enactment_condition:
-                    ProtocolUpdateEnactmentCondition::EnactWhenSupportedAndWithinBounds {
-                        lower_bound: Epoch::of(10000),
-                        upper_bound: Epoch::of(20000),
+                    ProtocolUpdateEnactmentCondition::EnactAtStartOfAnEpochIfSupportedAndWithinBounds {
+                        lower_bound_inclusive: Epoch::of(10000),
+                        upper_bound_exclusive: Epoch::of(20000),
                         readiness_thresholds: vec![SignalledReadinessThreshold {
                             required_ratio_of_stake_supported: dec!("0.80"),
                             required_consecutive_completed_epochs_of_support: 10,
@@ -149,12 +154,12 @@ impl ProtocolConfig {
             protocol_versions.insert(&protocol_update.next_protocol_version);
 
             match &protocol_update.enactment_condition {
-                ProtocolUpdateEnactmentCondition::EnactWhenSupportedAndWithinBounds {
-                    lower_bound,
-                    upper_bound,
+                ProtocolUpdateEnactmentCondition::EnactAtStartOfAnEpochIfSupportedAndWithinBounds {
+                    lower_bound_inclusive,
+                    upper_bound_exclusive,
                     readiness_thresholds,
                 } => {
-                    if lower_bound >= upper_bound {
+                    if lower_bound_inclusive >= upper_bound_exclusive {
                         return Err("Upper bound must be greater than lower bound".to_string());
                     }
                     if readiness_thresholds.is_empty() {

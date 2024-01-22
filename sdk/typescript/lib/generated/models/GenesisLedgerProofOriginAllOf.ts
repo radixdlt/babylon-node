@@ -12,27 +12,73 @@
  * Do not edit the class manually.
  */
 
-
+import { exists, mapValues } from '../runtime';
 /**
  * 
  * @export
+ * @interface GenesisLedgerProofOriginAllOf
  */
-export const SystemFieldKind = {
-    BootLoader: 'BootLoader',
-    TypeInfo: 'TypeInfo'
+export interface GenesisLedgerProofOriginAllOf {
+    /**
+     * 
+     * @type {string}
+     * @memberof GenesisLedgerProofOriginAllOf
+     */
+    genesis_opaque_hash: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof GenesisLedgerProofOriginAllOf
+     */
+    type?: GenesisLedgerProofOriginAllOfTypeEnum;
+}
+
+
+/**
+ * @export
+ */
+export const GenesisLedgerProofOriginAllOfTypeEnum = {
+    Genesis: 'Genesis'
 } as const;
-export type SystemFieldKind = typeof SystemFieldKind[keyof typeof SystemFieldKind];
+export type GenesisLedgerProofOriginAllOfTypeEnum = typeof GenesisLedgerProofOriginAllOfTypeEnum[keyof typeof GenesisLedgerProofOriginAllOfTypeEnum];
 
 
-export function SystemFieldKindFromJSON(json: any): SystemFieldKind {
-    return SystemFieldKindFromJSONTyped(json, false);
+/**
+ * Check if a given object implements the GenesisLedgerProofOriginAllOf interface.
+ */
+export function instanceOfGenesisLedgerProofOriginAllOf(value: object): boolean {
+    let isInstance = true;
+    isInstance = isInstance && "genesis_opaque_hash" in value;
+
+    return isInstance;
 }
 
-export function SystemFieldKindFromJSONTyped(json: any, ignoreDiscriminator: boolean): SystemFieldKind {
-    return json as SystemFieldKind;
+export function GenesisLedgerProofOriginAllOfFromJSON(json: any): GenesisLedgerProofOriginAllOf {
+    return GenesisLedgerProofOriginAllOfFromJSONTyped(json, false);
 }
 
-export function SystemFieldKindToJSON(value?: SystemFieldKind | null): any {
-    return value as any;
+export function GenesisLedgerProofOriginAllOfFromJSONTyped(json: any, ignoreDiscriminator: boolean): GenesisLedgerProofOriginAllOf {
+    if ((json === undefined) || (json === null)) {
+        return json;
+    }
+    return {
+        
+        'genesis_opaque_hash': json['genesis_opaque_hash'],
+        'type': !exists(json, 'type') ? undefined : json['type'],
+    };
+}
+
+export function GenesisLedgerProofOriginAllOfToJSON(value?: GenesisLedgerProofOriginAllOf | null): any {
+    if (value === undefined) {
+        return undefined;
+    }
+    if (value === null) {
+        return null;
+    }
+    return {
+        
+        'genesis_opaque_hash': value.genesis_opaque_hash,
+        'type': value.type,
+    };
 }
 

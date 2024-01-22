@@ -12,27 +12,62 @@
  * Do not edit the class manually.
  */
 
+import { exists, mapValues } from '../runtime';
+import type { LedgerProofOriginType } from './LedgerProofOriginType';
+import {
+    LedgerProofOriginTypeFromJSON,
+    LedgerProofOriginTypeFromJSONTyped,
+    LedgerProofOriginTypeToJSON,
+} from './LedgerProofOriginType';
 
 /**
  * 
  * @export
+ * @interface LedgerProofOriginBase
  */
-export const SystemFieldKind = {
-    BootLoader: 'BootLoader',
-    TypeInfo: 'TypeInfo'
-} as const;
-export type SystemFieldKind = typeof SystemFieldKind[keyof typeof SystemFieldKind];
-
-
-export function SystemFieldKindFromJSON(json: any): SystemFieldKind {
-    return SystemFieldKindFromJSONTyped(json, false);
+export interface LedgerProofOriginBase {
+    /**
+     * 
+     * @type {LedgerProofOriginType}
+     * @memberof LedgerProofOriginBase
+     */
+    type: LedgerProofOriginType;
 }
 
-export function SystemFieldKindFromJSONTyped(json: any, ignoreDiscriminator: boolean): SystemFieldKind {
-    return json as SystemFieldKind;
+/**
+ * Check if a given object implements the LedgerProofOriginBase interface.
+ */
+export function instanceOfLedgerProofOriginBase(value: object): boolean {
+    let isInstance = true;
+    isInstance = isInstance && "type" in value;
+
+    return isInstance;
 }
 
-export function SystemFieldKindToJSON(value?: SystemFieldKind | null): any {
-    return value as any;
+export function LedgerProofOriginBaseFromJSON(json: any): LedgerProofOriginBase {
+    return LedgerProofOriginBaseFromJSONTyped(json, false);
+}
+
+export function LedgerProofOriginBaseFromJSONTyped(json: any, ignoreDiscriminator: boolean): LedgerProofOriginBase {
+    if ((json === undefined) || (json === null)) {
+        return json;
+    }
+    return {
+        
+        'type': LedgerProofOriginTypeFromJSON(json['type']),
+    };
+}
+
+export function LedgerProofOriginBaseToJSON(value?: LedgerProofOriginBase | null): any {
+    if (value === undefined) {
+        return undefined;
+    }
+    if (value === null) {
+        return null;
+    }
+    return {
+        
+        'type': LedgerProofOriginTypeToJSON(value.type),
+    };
 }
 

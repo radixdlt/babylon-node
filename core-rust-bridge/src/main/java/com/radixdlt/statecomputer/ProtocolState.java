@@ -64,11 +64,8 @@
 
 package com.radixdlt.statecomputer;
 
-import static com.radixdlt.lang.Option.none;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.protocol.ProtocolUpdate;
 import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition;
@@ -78,7 +75,6 @@ import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.utils.UInt64;
 
 public record ProtocolState(
-    Option<UInt64> currentEpoch,
     String currentProtocolVersion,
     ImmutableMap<UInt64, String> enactedProtocolUpdates,
     ImmutableList<PendingProtocolUpdate> pendingProtocolUpdates) {
@@ -105,7 +101,7 @@ public record ProtocolState(
   }
 
   public static ProtocolState testingEmpty() {
-    return new ProtocolState(none(), "testing-genesis", ImmutableMap.of(), ImmutableList.of());
+    return new ProtocolState("testing-genesis", ImmutableMap.of(), ImmutableList.of());
   }
 
   public record PendingProtocolUpdate(

@@ -83,7 +83,7 @@ jobs:
           command: sbom
   build:
     name: Unit tests and sonarqube
-    runs-on: babylon-runner
+    runs-on: selfhosted-ubuntu-22.04-16-cores
     permissions:
       id-token: write
       contents: read
@@ -170,7 +170,7 @@ jobs:
         run: ./gradlew :core-rust:buildRustForDocker
   steadystate-integration:
     name: Steady state integration tests
-    runs-on: babylon-runner
+    runs-on: selfhosted-ubuntu-22.04-16-cores
     steps:
       - uses: RDXWorks-actions/checkout@main
         with:
@@ -198,7 +198,7 @@ jobs:
         run: ./gradlew clean runSteadyStateIntegrationTests --info --refresh-dependencies
   targeted-integration:
     name: Targeted integration tests
-    runs-on: babylon-runner
+    runs-on: selfhosted-ubuntu-22.04-16-cores
     steps:
       - uses: RDXWorks-actions/checkout@main
         with:

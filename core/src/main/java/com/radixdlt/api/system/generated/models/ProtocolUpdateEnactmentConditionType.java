@@ -28,7 +28,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
  */
 public enum ProtocolUpdateEnactmentConditionType {
   
-  ENACTWHENSUPPORTEDANDWITHINBOUNDS("EnactWhenSupportedAndWithinBounds"),
+  ENACTATSTARTOFANEPOCHIFSUPPORTEDANDWITHINBOUNDS("EnactAtStartOfAnEpochIfSupportedAndWithinBounds"),
   
   ENACTUNCONDITIONALLYATEPOCH("EnactUnconditionallyAtEpoch");
 

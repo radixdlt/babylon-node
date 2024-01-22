@@ -18,6 +18,7 @@
  * @export
  */
 export const SubstateType = {
+    BootLoaderModuleFieldVmBoot: 'BootLoaderModuleFieldVmBoot',
     TypeInfoModuleFieldTypeInfo: 'TypeInfoModuleFieldTypeInfo',
     RoleAssignmentModuleFieldOwnerRole: 'RoleAssignmentModuleFieldOwnerRole',
     RoleAssignmentModuleRuleEntry: 'RoleAssignmentModuleRuleEntry',
