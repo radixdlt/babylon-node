@@ -202,7 +202,7 @@ fn response(
         IndexMap<String, models::ResourceSpecificDepositBehaviour>,
     >,
 ) -> Result<Json<models::LtsStateAccountDepositBehaviourResponse>, ResponseError<()>> {
-    Ok(models::LtsStateAccountDepositBehaviourResponse {
+    Ok(Json(models::LtsStateAccountDepositBehaviourResponse {
         state_version: to_api_state_version(header.state_version)?,
         ledger_header_summary: Box::new(to_api_ledger_header_summary(context, header)?),
         default_deposit_rule: match default_deposit_rule {
@@ -212,8 +212,7 @@ fn response(
         },
         is_badge_authorized_depositor,
         resource_specific_behaviours,
-    })
-    .map(Json)
+    }))
 }
 
 /// Resolves whether the deposit is allowed, based on raw inputs.

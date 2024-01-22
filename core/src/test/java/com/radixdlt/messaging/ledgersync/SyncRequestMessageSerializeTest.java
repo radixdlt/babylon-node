@@ -65,8 +65,8 @@
 package com.radixdlt.messaging.ledgersync;
 
 import com.radixdlt.consensus.LedgerHashes;
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.serialization.SerializeMessageObject;
+import com.radixdlt.sync.LedgerProofSyncDto;
 
 public class SyncRequestMessageSerializeTest extends SerializeMessageObject<SyncRequestMessage> {
   public SyncRequestMessageSerializeTest() {
@@ -74,6 +74,7 @@ public class SyncRequestMessageSerializeTest extends SerializeMessageObject<Sync
   }
 
   private static SyncRequestMessage get() {
-    return new SyncRequestMessage(LedgerProof.genesis(0, LedgerHashes.zero(), null, 0, 0).toDto());
+    return new SyncRequestMessage(
+        LedgerProofSyncDto.testingGenesis(0, LedgerHashes.zero(), null, 0, 0));
   }
 }

@@ -24,6 +24,8 @@ pub enum EntityModule {
     Main,
     #[serde(rename = "Schema")]
     Schema,
+    #[serde(rename = "BootLoader")]
+    BootLoader,
 
 }
 
@@ -36,6 +38,7 @@ impl ToString for EntityModule {
             Self::Royalty => String::from("Royalty"),
             Self::Main => String::from("Main"),
             Self::Schema => String::from("Schema"),
+            Self::BootLoader => String::from("BootLoader"),
         }
     }
 }

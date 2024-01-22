@@ -69,7 +69,6 @@ import com.radixdlt.consensus.LedgerHashes;
 import com.radixdlt.consensus.NextEpoch;
 import com.radixdlt.consensus.ProposalLimitsConfig;
 import com.radixdlt.consensus.bft.BFTValidatorId;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.SelfValidatorInfo;
 import com.radixdlt.consensus.epoch.EpochChange;
@@ -84,13 +83,11 @@ import com.radixdlt.ledger.*;
 import com.radixdlt.mempool.*;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
+import com.radixdlt.protocol.RustProtocolUpdate;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
-import com.radixdlt.statecomputer.commit.CommitRequest;
-import com.radixdlt.statecomputer.commit.PrepareRequest;
-import com.radixdlt.statecomputer.commit.RoundHistory;
-import com.radixdlt.statecomputer.commit.ValidatorId;
+import com.radixdlt.statecomputer.commit.*;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
@@ -107,8 +104,8 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   private static final Logger log = LogManager.getLogger();
 
   private final RustStateComputer stateComputer;
-
   private final RustMempool mempool;
+  private final RustProtocolUpdate rustProtocolUpdate;
 
   private final ProposalLimitsConfig proposalLimitsConfig;
   private final EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher;
@@ -119,10 +116,12 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   private final Metrics metrics;
   private final Optional<ValidatorId> selfValidatorId;
   private final AtomicReference<ProposerElection> currentProposerElection;
+  private LedgerProofBundle latestProof;
 
   public REv2StateComputer(
       RustStateComputer stateComputer,
       RustMempool mempool,
+      RustProtocolUpdate rustProtocolUpdate,
       ProposalLimitsConfig proposalLimitsConfig,
       Hasher hasher,
       EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher,
@@ -130,9 +129,11 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
       Serialization serialization,
       ProposerElection initialProposerElection,
       Metrics metrics,
-      SelfValidatorInfo selfValidatorInfo) {
+      SelfValidatorInfo selfValidatorInfo,
+      LedgerProofBundle initialLatestProof) {
     this.stateComputer = stateComputer;
     this.mempool = mempool;
+    this.rustProtocolUpdate = rustProtocolUpdate;
     this.proposalLimitsConfig = proposalLimitsConfig;
     this.hasher = hasher;
     this.ledgerUpdateEventDispatcher = ledgerUpdateEventDispatcher;
@@ -141,6 +142,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
     this.currentProposerElection = new AtomicReference<>(initialProposerElection);
     this.metrics = metrics;
     this.selfValidatorId = selfValidatorInfo.bftValidatorId().map(REv2ToConsensus::validatorId);
+    this.latestProof = initialLatestProof;
   }
 
   @Override
@@ -224,7 +226,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   }
 
   @Override
-  public StateComputerLedger.StateComputerResult prepare(
+  public StateComputerLedger.StateComputerPrepareResult prepare(
       LedgerHashes committedLedgerHashes,
       List<ExecutedVertex> preparedUncommittedVertices,
       LedgerHashes preparedUncommittedLedgerHashes,
@@ -269,15 +271,22 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
     // TODO - Some time post Babylon mainnet launch we can consider adding a metric to monitor
     // number of rejected transactions by proposer
 
-    var nextEpoch = result.nextEpoch().map(REv2ToConsensus::nextEpoch).or((NextEpoch) null);
-    var ledgerHashes = REv2ToConsensus.ledgerHashes(result.ledgerHashes());
-    return new StateComputerLedger.StateComputerResult(
-        committableTransactions, rejectedTransactionsCount, nextEpoch, ledgerHashes);
+    final var nextEpoch = result.nextEpoch().map(REv2ToConsensus::nextEpoch).or((NextEpoch) null);
+    final var nextProtocolVersion = result.nextProtocolVersion().or((String) null);
+    final var ledgerHashes = REv2ToConsensus.ledgerHashes(result.ledgerHashes());
+    return new StateComputerLedger.StateComputerPrepareResult(
+        committableTransactions,
+        rejectedTransactionsCount,
+        nextEpoch,
+        nextProtocolVersion,
+        ledgerHashes);
   }
 
   @Override
-  public void commit(LedgerExtension ledgerExtension, VertexStoreState vertexStore) {
-    var proof = ledgerExtension.getProof();
+  public LedgerProofBundle commit(LedgerExtension ledgerExtension, VertexStoreState vertexStore) {
+    final var proof = ledgerExtension.proof();
+    final var header = proof.ledgerHeader();
+
     final Option<byte[]> vertexStoreBytes;
     if (vertexStore != null) {
       vertexStoreBytes =
@@ -288,10 +297,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
 
     var commitRequest =
         new CommitRequest(
-            ledgerExtension.getTransactions(),
-            REv2ToConsensus.ledgerProof(proof),
-            vertexStoreBytes,
-            Option.from(selfValidatorId));
+            ledgerExtension.transactions(), proof, vertexStoreBytes, Option.from(selfValidatorId));
 
     final var result = stateComputer.commit(commitRequest);
     final var commitSummary =
@@ -302,28 +308,62 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                 })
             .unwrap();
 
-    var epochChangeOptional =
-        ledgerExtension
-            .getProof()
-            .getNextEpoch()
-            .map(
-                nextEpoch -> {
-                  var header = ledgerExtension.getProof();
-                  final var initialState = VertexStoreState.createNewForNextEpoch(header, hasher);
-                  var validatorSet = BFTValidatorSet.from(nextEpoch.getValidators());
-                  var proposerElection =
-                      ProposerElections.defaultRotation(nextEpoch.getEpoch(), validatorSet);
-                  var bftConfiguration =
-                      new BFTConfiguration(proposerElection, validatorSet, initialState);
-                  return new EpochChange(header, bftConfiguration);
-                });
+    final var maybeNextEpoch = header.nextEpoch();
+    final var maybeNextProtocolVersion = header.nextProtocolVersion();
 
-    epochChangeOptional.ifPresent(
+    if (maybeNextProtocolVersion.isPresent() && maybeNextEpoch.isEmpty()) {
+      throw new IllegalStateException("Protocol updates must happen at epoch boundary");
+    }
+
+    // Synchronously apply a protocol update while we still hold a StateComputerResult lock
+    final var maybePostProtocolUpdateProof =
+        maybeNextProtocolVersion.map(
+            nextProtocolVersion ->
+                this.rustProtocolUpdate.applyProtocolUpdate(nextProtocolVersion).postUpdateProof());
+
+    final var newLatestProof = maybePostProtocolUpdateProof.orElse(proof);
+
+    this.latestProof =
+        new LedgerProofBundle(
+            newLatestProof,
+            maybeNextEpoch.isPresent() ? proof : this.latestProof.closestEpochProofOnOrBefore(),
+            maybeNextProtocolVersion.isPresent()
+                ? Option.some(proof)
+                : this.latestProof.closestProtocolUpdateInitProofOnOrBefore(),
+            maybePostProtocolUpdateProof.isPresent()
+                ? Option.some(maybePostProtocolUpdateProof.unwrap())
+                : this.latestProof.closestProtocolUpdateExecutionProofOnOrBefore());
+
+    final var maybeEpochChange =
+        maybeNextEpoch.map(
+            nextEpoch -> {
+              final var initialState =
+                  VertexStoreState.createNewForNextEpoch(
+                      REv2ToConsensus.ledgerHeader(latestProof.epochInitialHeader()),
+                      nextEpoch.epoch().toLong(),
+                      hasher);
+              final var validatorSet = REv2ToConsensus.validatorSet(nextEpoch.validators());
+              final var proposerElection =
+                  ProposerElections.defaultRotation(nextEpoch.epoch().toLong(), validatorSet);
+              final var bftConfiguration =
+                  new BFTConfiguration(proposerElection, validatorSet, initialState);
+              return new EpochChange(latestProof, bftConfiguration);
+            });
+
+    maybeEpochChange.ifPresent(
         epochChange ->
-            this.currentProposerElection.set(
-                epochChange.getBFTConfiguration().getProposerElection()));
+            this.currentProposerElection.set(epochChange.bftConfiguration().getProposerElection()));
 
-    var ledgerUpdate = new LedgerUpdate(commitSummary, ledgerExtension, epochChangeOptional);
+    final var protocolState = stateComputer.protocolState();
+    final var ledgerUpdate =
+        new LedgerUpdate(
+            commitSummary,
+            latestProof,
+            maybeEpochChange,
+            protocolState,
+            ledgerExtension.transactions());
     ledgerUpdateEventDispatcher.dispatch(ledgerUpdate);
+
+    return latestProof;
   }
 }

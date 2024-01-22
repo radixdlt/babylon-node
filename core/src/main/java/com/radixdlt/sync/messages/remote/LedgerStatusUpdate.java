@@ -64,7 +64,7 @@
 
 package com.radixdlt.sync.messages.remote;
 
-import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.sync.LedgerProofSyncStatusDto;
 import java.util.Objects;
 
 /**
@@ -73,23 +73,23 @@ import java.util.Objects;
  */
 public final class LedgerStatusUpdate {
 
-  private final LedgerProof header;
+  private final LedgerProofSyncStatusDto proof;
 
-  public static LedgerStatusUpdate create(LedgerProof header) {
-    return new LedgerStatusUpdate(header);
+  public static LedgerStatusUpdate create(LedgerProofSyncStatusDto proof) {
+    return new LedgerStatusUpdate(proof);
   }
 
-  private LedgerStatusUpdate(LedgerProof header) {
-    this.header = header;
+  private LedgerStatusUpdate(LedgerProofSyncStatusDto proof) {
+    this.proof = proof;
   }
 
-  public LedgerProof getHeader() {
-    return header;
+  public LedgerProofSyncStatusDto getProof() {
+    return proof;
   }
 
   @Override
   public String toString() {
-    return String.format("%s{header=%s}", this.getClass().getSimpleName(), this.header);
+    return String.format("%s{proof=%s}", this.getClass().getSimpleName(), this.proof);
   }
 
   @Override
@@ -101,11 +101,11 @@ public final class LedgerStatusUpdate {
       return false;
     }
     LedgerStatusUpdate that = (LedgerStatusUpdate) o;
-    return Objects.equals(header, that.header);
+    return Objects.equals(proof, that.proof);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(header);
+    return Objects.hash(proof);
   }
 }

@@ -100,7 +100,7 @@ public final class ConsensusHasher {
         outputStream.writeLong(committedHeader.proposerTimestamp()); // 8 bytes
         var optNextEpoch = committedHeader.getNextEpoch();
         if (optNextEpoch.isPresent()) {
-          var nextEpoch = optNextEpoch.get();
+          var nextEpoch = optNextEpoch.orElseThrow();
           outputStream.writeByte(1); // 1 byte
           outputStream.writeInt(nextEpoch.getValidators().size()); // 4 bytes
           outputStream.writeLong(nextEpoch.getEpoch()); // 8 bytes
@@ -112,6 +112,10 @@ public final class ConsensusHasher {
           }
         } else {
           outputStream.writeByte(0); // 1 byte
+        }
+        if (committedHeader.nextProtocolVersion().isPresent()) {
+          final var nextProtocolVersion = committedHeader.nextProtocolVersion().orElseThrow();
+          outputStream.write(nextProtocolVersion.getBytes());
         }
       }
       outputStream.writeLong(localExecutionTimestamp); // 8 bytes

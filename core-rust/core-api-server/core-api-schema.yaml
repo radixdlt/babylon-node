@@ -1156,6 +1156,9 @@ components:
         message:
           description: Whether to return the transaction message (default true)
           type: boolean
+        balance_changes:
+          description: Whether to return the transaction balance changes (default false)
+          type: boolean
         raw_system_transaction:
           description: Whether to return the raw hex-encoded system transaction bytes (default false)
           type: boolean
@@ -1469,8 +1472,8 @@ components:
           type: integer
           format: int32
           minimum: 0
-          maximum: 255
-          description: An integer between `0` and `255`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
+          maximum: 65535
+          description: An integer between `0` and `65535`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
     NetworkIdentifierByte:
       description: The logical id of the network
       type: integer
@@ -1727,6 +1730,7 @@ components:
         - finalization_cost_unit_limit
         - xrd_usd_price
         - xrd_storage_price
+        - xrd_archive_storage_price
         - tip_percentage
       properties:
         execution_cost_unit_price:
@@ -1765,14 +1769,19 @@ components:
         xrd_storage_price:
           type: string
           description: |
-            The string-encoded decimal representing the price of 1 byte of storage, expressed in XRD.
+            The string-encoded decimal representing the price of 1 byte of state storage, expressed in XRD.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
+        xrd_archive_storage_price:
+          type: string
+          description: |
+            The string-encoded decimal representing the price of 1 byte of archive storage, expressed in XRD.
             A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
         tip_percentage:
           type: integer
           format: int32
           minimum: 0
-          maximum: 255
-          description: An integer between `0` and `255`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
+          maximum: 65535
+          description: An integer between `0` and `65535`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
     FeeSource:
       type: object
       required:
@@ -1898,6 +1907,20 @@ components:
           items:
             $ref: '#/components/schemas/ActiveValidator'
           description: Active validator set for the new epoch, ordered by stake descending.
+        significant_protocol_update_readiness:
+          type: array
+          items:
+            $ref: '#/components/schemas/SignificantProtocolUpdateReadinessEntry'
+    SignificantProtocolUpdateReadinessEntry:
+      type: object
+      required:
+        - readiness_signal_name
+        - signalled_stake
+      properties:
+        readiness_signal_name:
+          type: string
+        signalled_stake:
+          type: string
     CreatedSubstate:
       type: object
       required:
@@ -2013,6 +2036,7 @@ components:
         - Royalty
         - Main
         - Schema
+        - BootLoader
     PartitionKind:
       type: string
       description: |
@@ -3122,6 +3146,7 @@ components:
     SystemFieldKind:
       type: string
       enum:
+        - BootLoader
         - TypeInfo
     ObjectSubstateTypeReferenceType:
       type: string
@@ -3640,6 +3665,7 @@ components:
           #   - value - which references the type [SubstateValue]
           #   - key (if it's in a collection partition) - which references a substate key type [X]Key for some X.
           #   - is_locked - this is added to all substates via inclusion on the `Substate` object
+          BootLoaderModuleFieldVmBoot: '#/components/schemas/BootLoaderModuleFieldVmBootSubstate'
           TypeInfoModuleFieldTypeInfo: '#/components/schemas/TypeInfoModuleFieldTypeInfoSubstate'
           RoleAssignmentModuleFieldOwnerRole: '#/components/schemas/RoleAssignmentModuleFieldOwnerRoleSubstate'
           RoleAssignmentModuleRuleEntry: '#/components/schemas/RoleAssignmentModuleRuleEntrySubstate'
@@ -3691,6 +3717,7 @@ components:
     SubstateType:
       type: string
       enum:
+        - BootLoaderModuleFieldVmBoot
         - TypeInfoModuleFieldTypeInfo
         - RoleAssignmentModuleFieldOwnerRole
         - RoleAssignmentModuleRuleEntry
@@ -3886,6 +3913,25 @@ components:
 ################################################
 # GENERAL / SHARED MODELS - specific substates #
 ################################################
+    BootLoaderModuleFieldVmBootSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - value
+          properties:
+            value:
+              $ref: '#/components/schemas/BootLoaderModuleFieldVmBootValue'
+    BootLoaderModuleFieldVmBootValue:
+      type: object
+      required:
+        - scrypto_v1_minor_version
+      properties:
+        scrypto_v1_minor_version:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
     TypeInfoModuleFieldTypeInfoSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -5749,9 +5795,6 @@ components:
       description: |
         For the given transaction, contains the status, total fee summary and individual entity resource balance changes.
         The balance changes accounts for the fee payments as well.
-        Current implementation does not take into account recalls, but this will change in a future update.
-        For failed transactions, current implementation does not return any balance changes (not even the fee payments).
-        This will also change in a future update.
       type: object
       required:
         - state_version
@@ -6963,8 +7006,8 @@ components:
           type: integer
           format: int32
           minimum: 0
-          maximum: 255
-          description: An integer between `0` and `255`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
+          maximum: 65535
+          description: An integer between `0` and `65535`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
         nonce:
           type: integer
           format: int64
@@ -7146,27 +7189,102 @@ components:
           $ref: "#/components/schemas/LedgerTransaction"
         receipt:
           $ref: "#/components/schemas/TransactionReceipt"
+        balance_changes:
+          description: |
+            All balance changes of a transaction (including those fee-related), aggregated by resource and global entity
+            within which the change occurred. Only returned if available and enabled in `TransactionFormatOptions` on your request.
+          $ref: "#/components/schemas/CommittedTransactionBalanceChanges"
         proposer_timestamp_ms:
           type: integer
           format: int64
           minimum: 0
           maximum: 100000000000000
           description: An integer between `0` and `10^14`, marking the proposer timestamp in ms.
+    CommittedTransactionBalanceChanges:
+      type: object
+      required:
+        - fungible_entity_balance_changes
+        - non_fungible_entity_balance_changes
+      properties:
+        fungible_entity_balance_changes:
+          description: |
+            A list of all fungible balance updates which occurred in this transaction, aggregated by the global entity (such as account)
+            which owns the vaults which were updated.
+          type: array
+          items:
+            $ref: "#/components/schemas/LtsEntityFungibleBalanceChanges"
+        non_fungible_entity_balance_changes:
+          description: |
+            Non fungible changes per entity and resource
+          type: array
+          items:
+            $ref: "#/components/schemas/LtsEntityNonFungibleBalanceChanges"
+    LedgerProofOriginType:
+      type: string
+      enum:
+        - Genesis
+        - Consensus
+        - ProtocolUpdate
+    LedgerProofOrigin:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/LedgerProofOriginType"
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match LedgerProofOriginType
+          Genesis: '#/components/schemas/GenesisLedgerProofOrigin'
+          Consensus: '#/components/schemas/ConsensusLedgerProofOrigin'
+          ProtocolUpdate: '#/components/schemas/ProtocolUpdateLedgerProofOrigin'
+    GenesisLedgerProofOrigin:
+      allOf:
+        - $ref: "#/components/schemas/LedgerProofOrigin"
+        - type: object
+          required:
+            - genesis_opaque_hash
+          properties:
+            genesis_opaque_hash:
+              type: string
+    ConsensusLedgerProofOrigin:
+      allOf:
+        - $ref: "#/components/schemas/LedgerProofOrigin"
+        - type: object
+          required:
+            - opaque_hash
+            - timestamped_signatures
+          properties:
+            opaque_hash:
+              $ref: "#/components/schemas/OpaqueHash"
+            timestamped_signatures:
+              type: array
+              items:
+                $ref: "#/components/schemas/TimestampedValidatorSignature"
+    ProtocolUpdateLedgerProofOrigin:
+      allOf:
+        - $ref: "#/components/schemas/LedgerProofOrigin"
+        - type: object
+          required:
+            - protocol_version_name
+            - batch_idx
+          properties:
+            protocol_version_name:
+              type: string
+            batch_idx:
+              type: integer
+              format: int64
     LedgerProof:
       type: object
       required:
-        - opaque_hash
         - ledger_header
-        - timestamped_signatures
+        - origin
       properties:
-        opaque_hash: 
-          $ref: "#/components/schemas/OpaqueHash"
         ledger_header:
           $ref: "#/components/schemas/LedgerHeader"
-        timestamped_signatures:
-          type: array
-          items:
-            $ref: "#/components/schemas/TimestampedValidatorSignature"
+        origin:
+          $ref: "#/components/schemas/LedgerProofOrigin"
     LedgerHeader:
       type: object
       required:
@@ -7239,6 +7357,7 @@ components:
         - Genesis
         - User
         - RoundUpdate
+        - Flash
     LedgerTransaction:
       type: object
       required:
@@ -7256,6 +7375,7 @@ components:
           Genesis: '#/components/schemas/GenesisLedgerTransaction'
           User: '#/components/schemas/UserLedgerTransaction'
           RoundUpdate: '#/components/schemas/RoundUpdateLedgerTransaction'
+          Flash: '#/components/schemas/FlashLedgerTransaction'
     GenesisLedgerTransaction:
       allOf:
         - $ref: "#/components/schemas/LedgerTransaction"
@@ -7288,6 +7408,15 @@ components:
           properties:
             round_update_transaction:
               $ref: "#/components/schemas/RoundUpdateTransaction"
+    FlashLedgerTransaction:
+      allOf:
+        - $ref: "#/components/schemas/LedgerTransaction"
+        - type: object
+          required:
+            - flash_transaction
+          properties:
+            flash_transaction:
+              $ref: "#/components/schemas/FlashTransaction"
     RoundUpdateTransaction:
       type: object
       required:
@@ -7315,6 +7444,35 @@ components:
         leader_proposal_history:
           $ref: '#/components/schemas/LeaderProposalHistory'
           description: A recent history (i.e. since the previous `RoundUpdateValidatorTransaction`) of consensus round leaders' reliability. Used for validator emissions calculation.
+    FlashTransaction:
+      type: object
+      required:
+        - flashed_substates
+      properties:
+        flashed_substates:
+          type: array
+          items:
+            $ref: "#/components/schemas/FlashedSubstate"
+    FlashedSubstate:
+      type: object
+      required:
+        - entity_address
+        - partition_number
+        - substate_key
+        - value
+      properties:
+        entity_address:
+          $ref: "#/components/schemas/EntityAddress"
+        partition_number:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 255
+        substate_key:
+          $ref: "#/components/schemas/SubstateKey"
+        value:
+          type: string
+          description: The hex-encoded, SBOR-encoded substate data bytes.
     LeaderProposalHistory:
       type: object
       required:

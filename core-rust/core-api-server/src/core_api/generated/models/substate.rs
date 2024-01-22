@@ -54,6 +54,13 @@ pub enum Substate {
         #[serde(rename = "value")]
         value: Box<crate::core_api::generated::models::AccountVaultEntryValue>,
     },
+    #[serde(rename="BootLoaderModuleFieldVmBoot")]
+    BootLoaderModuleFieldVmBootSubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
+        #[serde(rename = "value")]
+        value: Box<crate::core_api::generated::models::BootLoaderModuleFieldVmBootValue>,
+    },
     #[serde(rename="ConsensusManagerFieldConfig")]
     ConsensusManagerFieldConfigSubstate {
         #[serde(rename = "is_locked")]

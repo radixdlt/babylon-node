@@ -38,7 +38,9 @@ public enum EntityModule {
   
   MAIN("Main"),
   
-  SCHEMA("Schema");
+  SCHEMA("Schema"),
+  
+  BOOTLOADER("BootLoader");
 
   private String value;
 

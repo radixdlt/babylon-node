@@ -59,14 +59,21 @@ export interface CostingParameters {
      */
     xrd_usd_price: string;
     /**
-     * The string-encoded decimal representing the price of 1 byte of storage, expressed in XRD.
+     * The string-encoded decimal representing the price of 1 byte of state storage, expressed in XRD.
      * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
      * @type {string}
      * @memberof CostingParameters
      */
     xrd_storage_price: string;
     /**
-     * An integer between `0` and `255`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
+     * The string-encoded decimal representing the price of 1 byte of archive storage, expressed in XRD.
+     * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
+     * @type {string}
+     * @memberof CostingParameters
+     */
+    xrd_archive_storage_price: string;
+    /**
+     * An integer between `0` and `65535`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
      * @type {number}
      * @memberof CostingParameters
      */
@@ -85,6 +92,7 @@ export function instanceOfCostingParameters(value: object): boolean {
     isInstance = isInstance && "finalization_cost_unit_limit" in value;
     isInstance = isInstance && "xrd_usd_price" in value;
     isInstance = isInstance && "xrd_storage_price" in value;
+    isInstance = isInstance && "xrd_archive_storage_price" in value;
     isInstance = isInstance && "tip_percentage" in value;
 
     return isInstance;
@@ -107,6 +115,7 @@ export function CostingParametersFromJSONTyped(json: any, ignoreDiscriminator: b
         'finalization_cost_unit_limit': json['finalization_cost_unit_limit'],
         'xrd_usd_price': json['xrd_usd_price'],
         'xrd_storage_price': json['xrd_storage_price'],
+        'xrd_archive_storage_price': json['xrd_archive_storage_price'],
         'tip_percentage': json['tip_percentage'],
     };
 }
@@ -127,6 +136,7 @@ export function CostingParametersToJSON(value?: CostingParameters | null): any {
         'finalization_cost_unit_limit': value.finalization_cost_unit_limit,
         'xrd_usd_price': value.xrd_usd_price,
         'xrd_storage_price': value.xrd_storage_price,
+        'xrd_archive_storage_price': value.xrd_archive_storage_price,
         'tip_percentage': value.tip_percentage,
     };
 }

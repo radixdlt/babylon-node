@@ -84,11 +84,11 @@ import com.radixdlt.consensus.vertexstore.VertexStore;
 import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
 import com.radixdlt.consensus.vertexstore.VertexStoreJavaImpl;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.ledger.LedgerProofBundle;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.messaging.core.GetVerticesRequestRateLimit;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
-import com.radixdlt.rev2.LastProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.Comparator;
@@ -275,7 +275,7 @@ public class NoEpochsConsensusModule extends AbstractModule {
       EventDispatcher<LocalSyncRequest> syncLedgerRequestSender,
       ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher,
       EventDispatcher<ConsensusByzantineEvent> unexpectedEventEventDispatcher,
-      @LastProof LedgerProof ledgerLastProof,
+      LedgerProofBundle latestProof,
       Random random,
       @BFTSyncPatienceMillis int bftSyncPatienceMillis,
       Hasher hasher,
@@ -293,7 +293,7 @@ public class NoEpochsConsensusModule extends AbstractModule {
         syncLedgerRequestSender,
         timeoutDispatcher,
         unexpectedEventEventDispatcher,
-        ledgerLastProof.getHeader(),
+        latestProof,
         random,
         bftSyncPatienceMillis,
         metrics);

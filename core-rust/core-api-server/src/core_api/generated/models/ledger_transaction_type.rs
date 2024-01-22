@@ -19,6 +19,8 @@ pub enum LedgerTransactionType {
     User,
     #[serde(rename = "RoundUpdate")]
     RoundUpdate,
+    #[serde(rename = "Flash")]
+    Flash,
 
 }
 
@@ -28,6 +30,7 @@ impl ToString for LedgerTransactionType {
             Self::Genesis => String::from("Genesis"),
             Self::User => String::from("User"),
             Self::RoundUpdate => String::from("RoundUpdate"),
+            Self::Flash => String::from("Flash"),
         }
     }
 }

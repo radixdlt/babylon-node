@@ -63,30 +63,24 @@
  */
 
 use crate::jni::node_rust_environment::JNINodeRustEnvironment;
+use crate::jni::LedgerSyncLimitsConfig;
 use crate::store::traits::*;
-use crate::transaction::RawLedgerTransaction;
-use crate::{LedgerProof, StateVersion};
+use crate::{epoch_change_iter, LedgerProof, StateVersion};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use node_common::java::*;
 use radix_engine::types::*;
+use std::ops::Deref;
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 struct TxnsAndProofRequest {
     start_state_version_inclusive: u64,
-    max_number_of_txns_if_more_than_one_proof: u32,
-    max_payload_size_in_bytes: u32,
-}
-
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-struct TxnsAndProof {
-    transactions: Vec<RawLedgerTransaction>,
-    proof: LedgerProof,
+    limits_config: LedgerSyncLimitsConfig,
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getTxnsAndProof(
+extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getSyncableTxnsAndProof(
     env: JNIEnv,
     _class: JClass,
     j_rust_global_context: JObject,
@@ -95,17 +89,94 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
     jni_sbor_coded_call(
         &env,
         request_payload,
-        |request: TxnsAndProofRequest| -> Option<TxnsAndProof> {
+        |request: TxnsAndProofRequest| -> Result<TxnsAndProof, GetSyncableTxnsAndProofError> {
             let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
-            let txns_and_proof = database.read_current().get_txns_and_proof(
+            // Note: even though we read a strictly historical state here, we cannot use the
+            // "historical, non-locked" DB access - please see the TODO note at `LedgerProofsGc`.
+            let res = database.read_current().get_syncable_txns_and_proof(
                 StateVersion::of(request.start_state_version_inclusive),
-                request.max_number_of_txns_if_more_than_one_proof,
-                request.max_payload_size_in_bytes,
+                request
+                    .limits_config
+                    .max_txns_for_responses_spanning_more_than_one_proof,
+                request.limits_config.max_txn_bytes_for_single_response,
             );
-            txns_and_proof.map(|(transactions, proof)| TxnsAndProof {
-                transactions,
-                proof,
-            })
+            res
+        },
+    )
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getLatestProof(
+    env: JNIEnv,
+    _class: JClass,
+    j_rust_global_context: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(
+        &env,
+        request_payload,
+        |_no_args: ()| -> Option<LedgerProof> {
+            let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
+            let proof = database.read_current().get_latest_proof();
+            proof
+        },
+    )
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getLatestEpochProof(
+    env: JNIEnv,
+    _class: JClass,
+    j_rust_global_context: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(
+        &env,
+        request_payload,
+        |_no_args: ()| -> Option<LedgerProof> {
+            let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
+            let proof = database.read_current().get_latest_epoch_proof();
+            proof
+        },
+    )
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getLatestProtocolUpdateInitProof(
+    env: JNIEnv,
+    _class: JClass,
+    j_rust_global_context: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(
+        &env,
+        request_payload,
+        |_no_args: ()| -> Option<LedgerProof> {
+            let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
+            let proof = database
+                .read_current()
+                .get_latest_protocol_update_init_proof();
+            proof
+        },
+    )
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getLatestProtocolUpdateExecutionProof(
+    env: JNIEnv,
+    _class: JClass,
+    j_rust_global_context: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(
+        &env,
+        request_payload,
+        |_no_args: ()| -> Option<LedgerProof> {
+            let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
+            let proof = database
+                .read_current()
+                .get_latest_protocol_update_execution_proof();
+            proof
         },
     )
 }
@@ -147,7 +218,7 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getLastProof(
+extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getSignificantProtocolUpdateReadinessForEpoch(
     env: JNIEnv,
     _class: JClass,
     j_rust_global_context: JObject,
@@ -156,10 +227,16 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
     jni_sbor_coded_call(
         &env,
         request_payload,
-        |_no_args: ()| -> Option<LedgerProof> {
+        |epoch: Epoch| -> Option<IndexMap<String, Decimal>> {
             let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
-            let proof = database.read_current().get_last_proof();
-            proof
+            let non_locked_db = database.access_non_locked_historical();
+            let mut epoch_change_event_iter = epoch_change_iter(non_locked_db.deref(), epoch);
+            let maybe_epoch_change = epoch_change_event_iter.next();
+            maybe_epoch_change
+                .filter(|(_, epoch_change_event)| epoch_change_event.epoch == epoch)
+                .map(|(_, epoch_change_event)| {
+                    epoch_change_event.significant_protocol_update_readiness
+                })
         },
     )
 }

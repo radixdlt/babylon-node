@@ -51,5 +51,5 @@ pub(crate) async fn handle_mempool_transaction(
 
     response.count = response.payloads.len() as i32;
 
-    Ok(response).map(Json)
+    Ok(Json(response))
 }

@@ -115,7 +115,7 @@ pub struct RawDbMetrics {
 impl LedgerMetrics {
     pub fn new(
         network: &NetworkDefinition,
-        lock_factory: &LockFactory,
+        lock_factory: LockFactory,
         registry: &Registry,
         current_ledger_proposer_timestamp_ms: i64,
     ) -> Self {
@@ -162,7 +162,7 @@ impl LedgerMetrics {
                     "ledger_recent_self_proposal_miss_count",
                     &format!("A number of proposals missed by this validator during its {} most recent rounds.", PROPOSAL_HISTORY_LEN),
                 ),
-                &lock_factory.named("self_proposal_miss_tracker"),
+                lock_factory.named("self_proposal_miss_tracker"),
                 registry,
             ),
             recent_proposer_timestamp_progress_rate: ProposerTimestampProgressRateTracker::new(
@@ -171,7 +171,7 @@ impl LedgerMetrics {
                     "ledger_recent_proposer_timestamp_progress_rate",
                     &format!("A rate of the proposer timestamp progress (against wall-clock) averaged over {} most recent ledger updates.", PROGRESS_RATE_HISTORY_LEN),
                 ),
-                &lock_factory.named("progress_rate_tracker"),
+                lock_factory.named("progress_rate_tracker"),
                 registry,
             ),
         };
@@ -442,7 +442,7 @@ impl RawDbMetrics {
                 .set(i64::try_from(statistic.sst_count).unwrap_or_default());
             self.max_level
                 .with_label(&statistic.category_name)
-                .set(i64::try_from(statistic.max_level).unwrap_or_default());
+                .set(i64::from(statistic.max_level));
         }
     }
 }
@@ -471,6 +471,7 @@ impl MetricLabel for ConsensusRoundResolution {
 pub enum VertexPrepareStopReason {
     ProposalComplete,
     EpochChange,
+    ProtocolUpdate,
     LimitExceeded(VertexLimitsExceeded),
 }
 
@@ -481,6 +482,7 @@ impl MetricLabel for VertexPrepareStopReason {
         match self {
             VertexPrepareStopReason::ProposalComplete => "ProposalComplete",
             VertexPrepareStopReason::EpochChange => "EpochChange",
+            VertexPrepareStopReason::ProtocolUpdate => "ProtocolUpdate",
             VertexPrepareStopReason::LimitExceeded(limit_exceeded) => match limit_exceeded {
                 VertexLimitsExceeded::TransactionsCount => "TransactionsCountLimitReached",
                 VertexLimitsExceeded::TransactionsSize => "TransactionsSizeLimitReached",
@@ -517,7 +519,7 @@ impl ValidatorProposalMissTracker {
     /// the given registry.
     /// Note: the [`LockFactory`] is required to ensure a thread-safe access to a ring-buffer used
     /// for history tracking.
-    pub fn new(opts: Opts, lock_factory: &LockFactory, registry: &Registry) -> Self {
+    pub fn new(opts: Opts, lock_factory: LockFactory, registry: &Registry) -> Self {
         Self {
             buffer: lock_factory.new_mutex(RingBuffer::new(RoundSlot::Success)),
             gauge: IntGauge::with_opts(opts).registered_at(registry),
@@ -601,7 +603,7 @@ impl ProposerTimestampProgressRateTracker {
     pub fn new(
         initial_proposer_timestamp_ms: i64,
         opts: Opts,
-        lock_factory: &LockFactory,
+        lock_factory: LockFactory,
         registry: &Registry,
     ) -> Self {
         Self {

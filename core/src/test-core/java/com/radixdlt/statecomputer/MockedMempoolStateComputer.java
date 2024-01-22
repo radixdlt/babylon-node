@@ -72,7 +72,7 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.*;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
-import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
+import com.radixdlt.ledger.StateComputerLedger.StateComputerPrepareResult;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.p2p.NodeId;
@@ -93,9 +93,12 @@ public final class MockedMempoolStateComputer implements StateComputer {
 
   @Inject
   public MockedMempoolStateComputer(
-      SimpleMempool mempool, EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher, Hasher hasher) {
+      SimpleMempool mempool,
+      EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
+      Hasher hasher,
+      LedgerProofBundle latestProofs) {
     this.mempool = mempool;
-    this.stateComputer = new MockedStateComputer(ledgerUpdateDispatcher, hasher);
+    this.stateComputer = new MockedStateComputer(ledgerUpdateDispatcher, hasher, latestProofs);
   }
 
   public void addToMempool(MempoolAdd mempoolAdd, @Nullable NodeId origin) {
@@ -118,7 +121,7 @@ public final class MockedMempoolStateComputer implements StateComputer {
   }
 
   @Override
-  public StateComputerResult prepare(
+  public StateComputerPrepareResult prepare(
       LedgerHashes committedLedgerHashes,
       List<ExecutedVertex> preparedUncommittedVertices,
       LedgerHashes preparedUncommittedLedgerHashes,
@@ -133,13 +136,14 @@ public final class MockedMempoolStateComputer implements StateComputer {
   }
 
   @Override
-  public void commit(LedgerExtension ledgerExtension, VertexStoreState vertexStore) {
-    this.stateComputer.commit(ledgerExtension, vertexStore);
+  public LedgerProofBundle commit(LedgerExtension ledgerExtension, VertexStoreState vertexStore) {
+    final var proof = this.stateComputer.commit(ledgerExtension, vertexStore);
     this.mempool.handleTransactionsCommitted(
-        ledgerExtension.getTransactions().stream()
+        ledgerExtension.transactions().stream()
             // This undoes the (hacky) re-mapping done by a fake `prepare()` using `MockExecuted`
             // (see e.g. `MockedStateComputer` implementation).
             .map(t -> RawNotarizedTransaction.create(t.getPayload()))
             .toList());
+    return proof;
   }
 }

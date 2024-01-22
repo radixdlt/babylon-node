@@ -108,8 +108,8 @@ public final class ProposerTimestampInaccurateClockAndLeaderDownTest {
   private static final int NUM_VALIDATORS = 7;
 
   // Two consecutive leaders (verified below with an assertion)
-  private static final int NODE_WITH_INACCURATE_CLOCK_INDEX = 5;
-  private static final int DOWN_NODE_INDEX = 0;
+  private static final int NODE_WITH_INACCURATE_CLOCK_INDEX = 1;
+  private static final int DOWN_NODE_INDEX = 4;
 
   @Test
   public void test_liveness_when_one_node_has_inaccurate_clock_and_next_leader_is_down() {

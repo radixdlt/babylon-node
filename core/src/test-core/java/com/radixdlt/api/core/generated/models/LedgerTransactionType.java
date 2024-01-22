@@ -33,7 +33,9 @@ public enum LedgerTransactionType {
   
   USER("User"),
   
-  ROUNDUPDATE("RoundUpdate");
+  ROUNDUPDATE("RoundUpdate"),
+  
+  FLASH("Flash");
 
   private String value;
 

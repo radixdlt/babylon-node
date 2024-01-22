@@ -82,6 +82,7 @@ pub(crate) async fn handle_transaction_callpreview(
     let result = state
         .state_manager
         .transaction_previewer
+        .read()
         .preview(PreviewRequest {
             manifest: TransactionManifestV1 {
                 instructions: vec![
@@ -151,7 +152,7 @@ pub(crate) async fn handle_transaction_callpreview(
         }
     };
 
-    Ok(TransactionCallPreviewResponse {
+    Ok(Json(TransactionCallPreviewResponse {
         at_ledger_state: Box::new(to_api_ledger_state_summary(
             &mapping_context,
             &result.base_ledger_header,
@@ -159,6 +160,5 @@ pub(crate) async fn handle_transaction_callpreview(
         error_message: error,
         output: output.map(Box::new),
         status,
-    })
-    .map(Json)
+    }))
 }

@@ -77,10 +77,12 @@ import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.message.*;
 import com.radixdlt.prometheus.LedgerStatus;
 import com.radixdlt.prometheus.RecentSelfProposalMissStatistic;
+import com.radixdlt.protocol.*;
 import com.radixdlt.rev2.*;
 import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.statecomputer.ProtocolState;
 import com.radixdlt.statecomputer.commit.*;
 import com.radixdlt.testutil.InternalAddress;
 import com.radixdlt.testutil.TransactionDetails;
@@ -121,8 +123,13 @@ public final class NodeSborCodecs {
     ProposalTransactionsRequest.registerCodec(codecMap);
     NetworkDefinition.registerCodec(codecMap);
     LoggingConfig.registerCodec(codecMap);
-    StateManagerLoggingConfig.registerCodec(codecMap);
     StateManagerConfig.registerCodec(codecMap);
+    ProtocolConfig.registerCodec(codecMap);
+    ProtocolUpdate.registerCodec(codecMap);
+    ProtocolUpdateEnactmentCondition.registerCodec(codecMap);
+    ProtocolUpdateEnactmentCondition.SignalledReadinessThreshold.registerCodec(codecMap);
+    ProtocolState.registerCodec(codecMap);
+    ProtocolUpdateResult.registerCodec(codecMap);
     RawLedgerTransaction.registerCodec(codecMap);
     RawNotarizedTransaction.registerCodec(codecMap);
     PreparedIntent.registerCodec(codecMap);
@@ -145,8 +152,9 @@ public final class NodeSborCodecs {
     CommittedTransactionStatus.registerCodec(codecMap);
     ExecutedTransaction.registerCodec(codecMap);
     TransactionDetails.registerCodec(codecMap);
-    TxnsAndProofRequest.registerCodec(codecMap);
+    SyncableTxnsAndProofRequest.registerCodec(codecMap);
     TxnsAndProof.registerCodec(codecMap);
+    GetSyncableTxnsAndProofError.registerCodec(codecMap);
     PublicKey.registerCodec(codecMap);
     PublicKeyHash.registerCodec(codecMap);
     ECDSASecp256k1PublicKey.registerCodec(codecMap);
@@ -157,6 +165,7 @@ public final class NodeSborCodecs {
     SignatureWithPublicKey.registerCodec(codecMap);
     LedgerHashes.registerCodec(codecMap);
     LedgerProof.registerCodec(codecMap);
+    LedgerProofOrigin.registerCodec(codecMap);
     LedgerHeader.registerCodec(codecMap);
     TimestampedValidatorSignature.registerCodec(codecMap);
     PrepareRequest.registerCodec(codecMap);
@@ -199,6 +208,8 @@ public final class NodeSborCodecs {
     LedgerStatus.registerCodec(codecMap);
     RecentSelfProposalMissStatistic.registerCodec(codecMap);
     StateHashTreeGcConfig.registerCodec(codecMap);
+    LedgerProofsGcConfig.registerCodec(codecMap);
+    LedgerSyncLimitsConfig.registerCodec(codecMap);
   }
 
   public static void registerCodecsForExistingTypes(CodecMap codecMap) {

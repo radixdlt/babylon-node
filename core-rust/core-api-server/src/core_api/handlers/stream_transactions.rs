@@ -1,14 +1,16 @@
+use radix_engine::track::{NodeStateUpdates, PartitionStateUpdates};
 use std::iter;
 
 use crate::core_api::*;
 
 use radix_engine::types::hash;
+use radix_engine_store_interface::interface::DatabaseUpdate;
 
 use state_manager::store::{traits::*, StateManagerDatabase};
 use state_manager::transaction::*;
 use state_manager::{
-    CommittedTransactionIdentifiers, LedgerHeader, LedgerProof, LocalTransactionReceipt,
-    StateVersion,
+    CommittedTransactionIdentifiers, LedgerHeader, LedgerProof, LedgerProofOrigin,
+    LocalTransactionReceipt, StateVersion,
 };
 
 use transaction::manifest;
@@ -119,7 +121,7 @@ pub(crate) async fn handle_stream_transactions(
             }
         })?;
         let committed_transaction = to_api_committed_transaction(
-            Some(&database),
+            &database,
             &mapping_context,
             state_version,
             raw,
@@ -157,37 +159,61 @@ pub(crate) async fn handle_stream_transactions(
 
     response.count = count;
 
-    Ok(response).map(Json)
+    Ok(Json(response))
 }
 
 pub fn to_api_ledger_proof(
     mapping_context: &MappingContext,
     proof: LedgerProof,
 ) -> Result<models::LedgerProof, MappingError> {
-    let timestamped_signatures = proof
-        .timestamped_signatures
-        .into_iter()
-        .map(|timestamped_validator_signature| {
-            Ok(models::TimestampedValidatorSignature {
-                validator_key: Box::new(to_api_ecdsa_secp256k1_public_key(
-                    &timestamped_validator_signature.key,
-                )),
-                validator_address: to_api_component_address(
-                    mapping_context,
-                    &timestamped_validator_signature.validator_address,
-                )?,
-                timestamp_ms: timestamped_validator_signature.timestamp_ms,
-                signature: Box::new(models::EcdsaSecp256k1Signature {
-                    key_type: models::PublicKeyType::EcdsaSecp256k1,
-                    signature_hex: to_hex(timestamped_validator_signature.signature.to_vec()),
-                }),
-            })
-        })
-        .collect::<Result<_, _>>()?;
+    let api_origin = match &proof.origin {
+        LedgerProofOrigin::Genesis {
+            genesis_opaque_hash,
+        } => models::LedgerProofOrigin::GenesisLedgerProofOrigin {
+            genesis_opaque_hash: to_api_hash(genesis_opaque_hash),
+        },
+        LedgerProofOrigin::Consensus {
+            opaque,
+            timestamped_signatures,
+        } => {
+            let api_timestamped_signatures = timestamped_signatures
+                .iter()
+                .map(|timestamped_validator_signature| {
+                    Ok(models::TimestampedValidatorSignature {
+                        validator_key: Box::new(to_api_ecdsa_secp256k1_public_key(
+                            &timestamped_validator_signature.key,
+                        )),
+                        validator_address: to_api_component_address(
+                            mapping_context,
+                            &timestamped_validator_signature.validator_address,
+                        )?,
+                        timestamp_ms: timestamped_validator_signature.timestamp_ms,
+                        signature: Box::new(models::EcdsaSecp256k1Signature {
+                            key_type: models::PublicKeyType::EcdsaSecp256k1,
+                            signature_hex: to_hex(
+                                timestamped_validator_signature.signature.to_vec(),
+                            ),
+                        }),
+                    })
+                })
+                .collect::<Result<_, _>>()?;
+
+            models::LedgerProofOrigin::ConsensusLedgerProofOrigin {
+                opaque_hash: to_api_hash(opaque),
+                timestamped_signatures: api_timestamped_signatures,
+            }
+        }
+        LedgerProofOrigin::ProtocolUpdate {
+            protocol_version_name,
+            batch_idx,
+        } => models::LedgerProofOrigin::ProtocolUpdateLedgerProofOrigin {
+            protocol_version_name: protocol_version_name.to_string(),
+            batch_idx: to_api_u32_as_i64(*batch_idx),
+        },
+    };
     Ok(models::LedgerProof {
-        opaque_hash: to_api_hash(&proof.opaque),
         ledger_header: Box::new(to_api_ledger_header(mapping_context, proof.ledger_header)?),
-        timestamped_signatures,
+        origin: Some(api_origin),
     })
 }
 
@@ -220,6 +246,7 @@ pub fn to_api_ledger_header(
             Some(Box::new(models::NextEpoch {
                 epoch: to_api_epoch(mapping_context, next_epoch.epoch)?,
                 validators,
+                significant_protocol_update_readiness: None,
             }))
         }
         None => None,
@@ -243,7 +270,7 @@ pub fn to_api_ledger_header(
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_committed_transaction(
-    database: Option<&StateManagerDatabase>,
+    database: &StateManagerDatabase,
     context: &MappingContext,
     state_version: StateVersion,
     raw_ledger_transaction: RawLedgerTransaction,
@@ -251,7 +278,13 @@ pub fn to_api_committed_transaction(
     receipt: LocalTransactionReceipt,
     identifiers: CommittedTransactionIdentifiers,
 ) -> Result<models::CommittedTransaction, MappingError> {
-    let receipt = to_api_receipt(database, context, receipt)?;
+    let balance_changes = if context.transaction_options.include_balance_changes {
+        Some(Box::new(to_api_balance_changes(
+            database, context, &receipt,
+        )?))
+    } else {
+        None
+    };
 
     Ok(models::CommittedTransaction {
         resultant_state_identifiers: Box::new(to_api_committed_state_identifiers(
@@ -264,8 +297,9 @@ pub fn to_api_committed_transaction(
             &ledger_transaction,
             &identifiers.payload,
         )?),
+        receipt: Box::new(to_api_receipt(Some(database), context, receipt)?),
+        balance_changes,
         proposer_timestamp_ms: identifiers.proposer_timestamp_ms,
-        receipt: Box::new(receipt),
     })
 }
 
@@ -319,6 +353,10 @@ pub fn to_api_ledger_transaction(
                     system_transaction: Some(Box::new(to_api_system_transaction(context, tx)?)),
                 }
             }
+        },
+        LedgerTransaction::FlashV1(tx) => models::LedgerTransaction::FlashLedgerTransaction {
+            payload_hex,
+            flash_transaction: Box::new(to_api_flash_transaction(context, tx)?),
         },
     })
 }
@@ -571,4 +609,75 @@ pub fn to_api_system_transaction(
         None
     };
     Ok(models::SystemTransaction { payload_hex })
+}
+
+fn to_api_balance_changes(
+    database: &StateManagerDatabase,
+    context: &MappingContext,
+    receipt: &LocalTransactionReceipt,
+) -> Result<models::CommittedTransactionBalanceChanges, MappingError> {
+    let local_execution = &receipt.local_execution;
+
+    Ok(models::CommittedTransactionBalanceChanges {
+        fungible_entity_balance_changes: to_api_lts_fungible_balance_changes(
+            database,
+            context,
+            &local_execution.fee_summary,
+            &local_execution.fee_source,
+            &local_execution.fee_destination,
+            &local_execution
+                .global_balance_summary
+                .global_balance_changes,
+        )?,
+        non_fungible_entity_balance_changes: to_api_lts_entity_non_fungible_balance_changes(
+            context,
+            &local_execution
+                .global_balance_summary
+                .global_balance_changes,
+        )?,
+    })
+}
+
+pub fn to_api_flash_transaction(
+    context: &MappingContext,
+    flash_transaction: &FlashTransactionV1,
+) -> Result<models::FlashTransaction, MappingError> {
+    let mut flashed_substates = vec![];
+    for (node_id, updates) in &flash_transaction.state_updates.by_node {
+        match updates {
+            NodeStateUpdates::Delta { by_partition } => {
+                for (partition_number, partition_updates) in by_partition {
+                    match partition_updates {
+                        PartitionStateUpdates::Delta { by_substate } => {
+                            for (key, update) in by_substate {
+                                let address = to_api_entity_address(context, node_id)?;
+                                let partition_num = to_api_u8_as_i32(partition_number.0);
+                                let substate_key = to_api_substate_key(key);
+                                match update {
+                                    DatabaseUpdate::Set(value) => {
+                                        let substate_value = to_hex(value);
+                                        let flashed_substate = models::FlashedSubstate::new(
+                                            address,
+                                            partition_num,
+                                            substate_key,
+                                            substate_value,
+                                        );
+                                        flashed_substates.push(flashed_substate);
+                                    }
+                                    DatabaseUpdate::Delete => {
+                                        unimplemented!("Flash transactions with deleted substates not yet supported.");
+                                    }
+                                }
+                            }
+                        }
+                        PartitionStateUpdates::Batch(..) => {
+                            unimplemented!("Flash transactions with partition state updates not yet supported.");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(models::FlashTransaction::new(flashed_substates))
 }

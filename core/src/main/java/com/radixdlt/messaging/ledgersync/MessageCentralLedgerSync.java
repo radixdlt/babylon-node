@@ -101,7 +101,7 @@ public final class MessageCentralLedgerSync {
         .map(
             m -> {
               final var msg = m.message();
-              return RemoteEvent.create(m.source(), StatusResponse.create(msg.getHeader()));
+              return RemoteEvent.create(m.source(), StatusResponse.create(msg.getProof()));
             });
   }
 
@@ -112,7 +112,8 @@ public final class MessageCentralLedgerSync {
         .map(
             m -> {
               final var msg = m.message();
-              return RemoteEvent.create(m.source(), SyncRequest.create(msg.getCurrentHeader()));
+              return RemoteEvent.create(
+                  m.source(), SyncRequest.create(msg.getStartProofExclusive()));
             });
   }
 
@@ -133,7 +134,7 @@ public final class MessageCentralLedgerSync {
         .toFlowable(BackpressureStrategy.BUFFER)
         .map(
             m -> {
-              final var header = m.message().getHeader();
+              final var header = m.message().getProof();
               return RemoteEvent.create(m.source(), LedgerStatusUpdate.create(header));
             });
   }
@@ -143,7 +144,7 @@ public final class MessageCentralLedgerSync {
   }
 
   private void sendSyncRequest(NodeId nodeId, SyncRequest syncRequest) {
-    final var msg = new SyncRequestMessage(syncRequest.getHeader());
+    final var msg = new SyncRequestMessage(syncRequest.getStartProofExclusive());
     this.messageCentral.send(nodeId, msg);
   }
 
@@ -170,7 +171,7 @@ public final class MessageCentralLedgerSync {
   }
 
   private void sendStatusResponse(NodeId nodeId, StatusResponse statusResponse) {
-    final var msg = new StatusResponseMessage(statusResponse.getHeader());
+    final var msg = new StatusResponseMessage(statusResponse.getProof());
     this.messageCentral.send(nodeId, msg);
   }
 
@@ -179,7 +180,7 @@ public final class MessageCentralLedgerSync {
   }
 
   private void sendLedgerStatusUpdate(NodeId nodeId, LedgerStatusUpdate ledgerStatusUpdate) {
-    final var msg = new LedgerStatusUpdateMessage(ledgerStatusUpdate.getHeader());
+    final var msg = new LedgerStatusUpdateMessage(ledgerStatusUpdate.getProof());
     this.messageCentral.send(nodeId, msg);
   }
 }

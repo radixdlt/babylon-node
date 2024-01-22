@@ -111,7 +111,7 @@ public class LivenessInvariant implements TestInvariant {
         .serialize()
         .map(QuorumCertificate::getProposedHeader)
         .map(header -> EpochRound.of(header.getLedgerHeader().getEpoch(), header.getRound()))
-        .scan(EpochRound.of(0, Round.genesis()), Ordering.natural()::max)
+        .scan(EpochRound.of(0, Round.epochInitial()), Ordering.natural()::max)
         .distinctUntilChanged()
         .debounce(duration, timeUnit)
         .map(

@@ -25,14 +25,13 @@ tokio = { workspace = true }
 prometheus = { workspace = true }
 blake2 = { workspace = true }
 
-rocksdb = { version = "0.19.0" }
+rocksdb = { version = "0.21.0" }
 hex = { version = "0.4.3", default-features = false }
 lru = { version = "0.8.0", default-features = false }
 slotmap = { version = "1.0.6" }
 im = { version = "15.1.0" }
 rand = { version = "0.8.5" }
 enum_dispatch = { version = "0.3.11" }
-clokwerk = {version = "0.4.0" }
 
 [dev-dependencies]
 tempfile = {version = "3.4.0" }

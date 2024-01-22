@@ -62,8 +62,10 @@
  * permissions under this License.
  */
 
+use itertools::Itertools;
 use radix_engine::types::*;
 use rocksdb::{ColumnFamily, Direction, IteratorMode, WriteBatch, DB};
+use std::ops::Range;
 
 /// A higher-level database read/write context.
 ///
@@ -87,10 +89,7 @@ impl<'db> TypedDbContext<'db> {
     }
 
     /// Returns a typed helper scoped at the given column family.
-    pub fn cf<K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, V, KC, VC>>(
-        &self,
-        cf: CF,
-    ) -> TypedCfApi<'db, '_, K, V, KC, VC, CF> {
+    pub fn cf<CF: TypedCf>(&self, cf: CF) -> TypedCfApi<'db, '_, CF> {
         TypedCfApi::new(self.db, cf, &self.write_buffer)
     }
 
@@ -98,7 +97,9 @@ impl<'db> TypedDbContext<'db> {
     /// subsequent reads).
     pub fn flush(&self) {
         let write_batch = self.write_buffer.flip();
-        self.db.write(write_batch).expect("DB write batch");
+        if !write_batch.is_empty() {
+            self.db.write(write_batch).expect("DB write batch");
+        }
     }
 }
 
@@ -110,19 +111,16 @@ impl<'db> Drop for TypedDbContext<'db> {
 
 /// A higher-level DB access API bound to its [`TypedDbContext`] and scoped at a specific column
 /// family.
-pub struct TypedCfApi<'db, 'wb, K, V, KC, VC, CF> {
+pub struct TypedCfApi<'db, 'wb, CF: TypedCf> {
     db: &'db DB,
     typed_cf: CF,
     write_buffer: &'wb WriteBuffer,
     cf_handle: &'db ColumnFamily, // only a cache - computable from `typed_cf`
-    key_codec: KC,                // only a cache - computable from `typed_cf`
-    value_codec: VC,              // only a cache - computable from `typed_cf`
-    type_parameters_phantom: PhantomData<(K, V)>,
+    key_codec: CF::KeyCodec,      // only a cache - computable from `typed_cf`
+    value_codec: CF::ValueCodec,  // only a cache - computable from `typed_cf`
 }
 
-impl<'db, 'wb, K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, V, KC, VC>>
-    TypedCfApi<'db, 'wb, K, V, KC, VC, CF>
-{
+impl<'db, 'wb, CF: TypedCf> TypedCfApi<'db, 'wb, CF> {
     /// Creates an instance for the given column family.
     fn new(db: &'db DB, typed_cf: CF, write_buffer: &'wb WriteBuffer) -> Self {
         // cache a few values:
@@ -136,12 +134,11 @@ impl<'db, 'wb, K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, 
             cf_handle,
             key_codec,
             value_codec,
-            type_parameters_phantom: PhantomData,
         }
     }
 
     /// Gets value by key.
-    pub fn get(&self, key: &K) -> Option<V> {
+    pub fn get(&self, key: &CF::Key) -> Option<CF::Value> {
         self.db
             .get_pinned_cf(self.cf_handle, self.key_codec.encode(key).as_slice())
             .expect("database get by key")
@@ -150,7 +147,7 @@ impl<'db, 'wb, K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, 
 
     /// Gets multiple values by keys.
     /// The order of returned values (or [`None`]s) matches the order of requested keys.
-    pub fn get_many(&self, keys: Vec<&K>) -> Vec<Option<V>> {
+    pub fn get_many(&self, keys: Vec<&CF::Key>) -> Vec<Option<CF::Value>> {
         self.db
             .multi_get_cf(
                 keys.into_iter()
@@ -165,34 +162,69 @@ impl<'db, 'wb, K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, 
             .collect()
     }
 
-    /// Gets the entry of the least key _(according to the database's ordering)_.
-    pub fn get_first(&self) -> Option<(K, V)> {
+    /// Upserts the new value at the given key.
+    pub fn put(&self, key: &CF::Key, value: &CF::Value) {
+        self.write_buffer.put(
+            self.cf_handle,
+            self.key_codec.encode(key),
+            self.value_codec.encode(value),
+        );
+    }
+
+    /// Deletes the entry of the given key.
+    pub fn delete(&self, key: &CF::Key) {
+        self.write_buffer
+            .delete(self.cf_handle, self.key_codec.encode(key));
+    }
+}
+
+impl<'db, 'wb, KC: GroupPreservingDbCodec, CF: TypedCf<KeyCodec = KC>> TypedCfApi<'db, 'wb, CF> {
+    /// Deletes all the entries from the given group.
+    pub fn delete_group(&self, group: &KC::Group) {
+        let prefix_range = self.key_codec.encode_group_range(group);
+        self.write_buffer
+            .delete_range(self.cf_handle, prefix_range.start, prefix_range.end);
+    }
+}
+
+impl<'db, 'wb, K, KC: OrderPreservingDbCodec + DbCodec<K>, CF: TypedCf<Key = K, KeyCodec = KC>>
+    TypedCfApi<'db, 'wb, CF>
+{
+    /// Gets the entry of the least key.
+    pub fn get_first(&self) -> Option<(CF::Key, CF::Value)> {
         self.iterate(Direction::Forward).next()
     }
 
-    /// Gets the value associated with the least key _(according to the database's ordering)_.
-    pub fn get_first_value(&self) -> Option<V> {
+    /// Gets the value associated with the least key.
+    pub fn get_first_value(&self) -> Option<CF::Value> {
         self.get_first().map(|(_, value)| value)
     }
 
-    /// Gets the entry of the greatest key _(according to the database's ordering)_.
-    pub fn get_last(&self) -> Option<(K, V)> {
+    /// Gets the entry of the greatest key.
+    pub fn get_last(&self) -> Option<(CF::Key, CF::Value)> {
         self.iterate(Direction::Reverse).next()
     }
 
-    /// Gets the greatest key _(according to the database's ordering)_.
-    pub fn get_last_key(&self) -> Option<K> {
+    /// Gets the greatest key.
+    pub fn get_last_key(&self) -> Option<CF::Key> {
         self.get_last().map(|(key, _)| key)
     }
 
-    /// Gets the value associated with the greatest key _(according to the database's ordering)_.
-    pub fn get_last_value(&self) -> Option<V> {
+    /// Gets the value associated with the greatest key.
+    pub fn get_last_value(&self) -> Option<CF::Value> {
         self.get_last().map(|(_, value)| value)
     }
 
     /// Returns an iterator traversing over (potentially) all the entries, in the requested
     /// direction.
-    pub fn iterate(&self, direction: Direction) -> Box<dyn Iterator<Item = (K, V)> + 'db> {
+    pub fn iterate(
+        &self,
+        direction: Direction,
+    ) -> Box<dyn Iterator<Item = (CF::Key, CF::Value)> + 'db>
+    where
+        CF::KeyCodec: 'db,
+        CF::ValueCodec: 'db,
+    {
         self.iterate_with_mode(match direction {
             Direction::Forward => IteratorMode::Start,
             Direction::Reverse => IteratorMode::End,
@@ -203,33 +235,22 @@ impl<'db, 'wb, K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, 
     /// all the entries remaining in the requested direction.
     pub fn iterate_from(
         &self,
-        from: &K,
+        from: &CF::Key,
         direction: Direction,
-    ) -> Box<dyn Iterator<Item = (K, V)> + 'db> {
+    ) -> Box<dyn Iterator<Item = (CF::Key, CF::Value)> + 'db>
+    where
+        CF::KeyCodec: 'db,
+        CF::ValueCodec: 'db,
+    {
         self.iterate_with_mode(IteratorMode::From(
             self.key_codec.encode(from).as_slice(),
             direction,
         ))
     }
 
-    /// Upserts the new value at the given key.
-    pub fn put(&self, key: &K, value: &V) {
-        self.write_buffer.put(
-            self.cf_handle,
-            self.key_codec.encode(key),
-            self.value_codec.encode(value),
-        );
-    }
-
-    /// Deletes the entry of the given key.
-    pub fn delete(&self, key: &K) {
-        self.write_buffer
-            .delete(self.cf_handle, self.key_codec.encode(key));
-    }
-
-    /// Deletes the entries from the given key range.
+    /// Deletes all the entries from the given key range.
     /// Follows the classic convention of "from inclusive, to exclusive".
-    pub fn delete_range(&self, from_key: &K, to_key: &K) {
+    pub fn delete_range(&self, from_key: &CF::Key, to_key: &CF::Key) {
         self.write_buffer.delete_range(
             self.cf_handle,
             self.key_codec.encode(from_key),
@@ -240,7 +261,14 @@ impl<'db, 'wb, K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, 
     /// Returns an iterator based on the [`IteratorMode`] (which already contains encoded key).
     ///
     /// This is an internal shared implementation detail for different iteration flavors.
-    fn iterate_with_mode(&self, mode: IteratorMode) -> Box<dyn Iterator<Item = (K, V)> + 'db> {
+    fn iterate_with_mode(
+        &self,
+        mode: IteratorMode,
+    ) -> Box<dyn Iterator<Item = (CF::Key, CF::Value)> + 'db>
+    where
+        CF::KeyCodec: 'db,
+        CF::ValueCodec: 'db,
+    {
         // create dedicated instances; do not reference those cached by `&self` from returned value:
         let key_codec = self.typed_cf.key_codec();
         let value_codec = self.typed_cf.value_codec();
@@ -258,22 +286,112 @@ impl<'db, 'wb, K, V, KC: DbCodec<K> + 'db, VC: DbCodec<V> + 'db, CF: TypedCf<K, 
     }
 }
 
+impl<
+        'db,
+        'wb,
+        K,
+        KC: IntraGroupOrderPreservingDbCodec<K> + DbCodec<K>,
+        CF: TypedCf<Key = K, KeyCodec = KC>,
+    > TypedCfApi<'db, 'wb, CF>
+{
+    /// Returns an iterator starting at the given key (inclusive) and traversing over (potentially)
+    /// all the entries remaining *in this element's group*, in the requested direction.
+    pub fn iterate_group_from(
+        &self,
+        from: &CF::Key,
+        direction: Direction,
+    ) -> Box<dyn Iterator<Item = (CF::Key, CF::Value)> + 'db>
+    where
+        CF::KeyCodec: 'db,
+        CF::ValueCodec: 'db,
+    {
+        let key_codec = self.typed_cf.key_codec();
+        let value_codec = self.typed_cf.value_codec();
+        let group = self.key_codec.resolve_group_of(from);
+        let group_range = self.key_codec.encode_group_range(&group);
+        Box::new(
+            self.db
+                .iterator_cf(
+                    self.cf_handle,
+                    IteratorMode::From(&self.key_codec.encode(from), direction),
+                )
+                .map(|result| result.expect("while iterating"))
+                .take_while(move |(key, _value)| match direction {
+                    Direction::Forward => key.as_ref() < group_range.end.as_slice(),
+                    Direction::Reverse => key.as_ref() >= group_range.start.as_slice(),
+                })
+                .map(move |(key, value)| {
+                    (
+                        key_codec.decode(key.as_ref()),
+                        value_codec.decode(value.as_ref()),
+                    )
+                }),
+        )
+    }
+
+    /// Returns an iterator over all groups (as defined by [`GroupPreservingDbCodec`]) of keys, in
+    /// a deterministic but arbitrary order.
+    ///
+    /// *Performance note:*
+    /// This method iterates over *all* entries, extracts keys' groups and deduplicates them. This
+    /// involves a lot of "wasted" DB reads and thus makes it not suitable for production purposes
+    /// (i.e. an index of groups should be used instead).
+    /// Hence, this method is meant only for test / investigation / DB verification purposes.
+    pub fn iterate_key_groups(&self) -> Box<dyn Iterator<Item = KC::Group> + 'db>
+    where
+        CF::KeyCodec: 'db,
+        KC::Group: PartialEq,
+    {
+        let key_codec = self.typed_cf.key_codec();
+        Box::new(
+            self.db
+                .iterator_cf(self.cf_handle, IteratorMode::Start)
+                .map(move |result| {
+                    let key_bytes = result.expect("while iterating").0;
+                    let key = key_codec.decode(key_bytes.as_ref());
+                    key_codec.resolve_group_of(&key)
+                })
+                // We have the group-preserving guarantee from our key codec, which means that all
+                // elements of the same group will be next to each other when iterated
+                // lexicographically from the DB. Hence, it is sufficient to remove *consecutive*
+                // duplicates (i.e. as `dedup()` does).
+                .dedup(),
+        )
+    }
+}
+
 /// A definition of a typed column family.
 ///
 /// This is the most verbose and customizable trait. Usual cases can use one of the more convenient
 /// traits defined below.
-pub trait TypedCf<K, V, KC = Box<dyn DbCodec<K>>, VC = Box<dyn DbCodec<V>>> {
+pub trait TypedCf {
+    /// Type of the key.
+    type Key;
+    /// Type of the value.
+    type Value;
+
+    /// Type of the [`DbCodec`] for the keys.
+    type KeyCodec: DbCodec<Self::Key>;
+
+    /// Type of the [`DbCodec`] for the values.
+    type ValueCodec: DbCodec<Self::Value>;
+
     /// Column family name (as known to the DB).
     const NAME: &'static str;
     /// Creates a new [`DbCodec`] for keys within this column family.
-    fn key_codec(&self) -> KC;
+    fn key_codec(&self) -> Self::KeyCodec;
     /// Creates a new [`DbCodec`] for values within this column family.
-    fn value_codec(&self) -> VC;
+    fn value_codec(&self) -> Self::ValueCodec;
 }
 
 /// A convenience trait implementing [`TypedCf`] for a simple case where both [`DbCodec`]s have
 /// cheap [`Default`] implementations.
-pub trait DefaultCf<K, V> {
+pub trait DefaultCf {
+    /// Type of the key.
+    type Key;
+    /// Type of the value.
+    type Value;
+
     /// Column family name (as known to the DB).
     ///
     /// Note: this deliberately uses a different identifier than [`TypedCf::NAME`] to avoid awkward
@@ -285,9 +403,20 @@ pub trait DefaultCf<K, V> {
     type ValueCodec: Default;
 }
 
-impl<K, V, KC: Default, VC: Default, D: DefaultCf<K, V, KeyCodec = KC, ValueCodec = VC>>
-    TypedCf<K, V, KC, VC> for D
+impl<
+        K,
+        V,
+        KC: Default + DbCodec<K>,
+        VC: Default + DbCodec<V>,
+        D: DefaultCf<Key = K, Value = V, KeyCodec = KC, ValueCodec = VC>,
+    > TypedCf for D
 {
+    type Key = K;
+    type Value = V;
+
+    type KeyCodec = KC;
+    type ValueCodec = VC;
+
     const NAME: &'static str = Self::DEFAULT_NAME;
 
     fn key_codec(&self) -> KC {
@@ -301,7 +430,10 @@ impl<K, V, KC: Default, VC: Default, D: DefaultCf<K, V, KeyCodec = KC, ValueCode
 
 /// A convenience trait implementing [`TypedCf`] for a popular case where a "versioned SBOR"
 /// encoding is used for values.
-pub trait VersionedCf<K, V> {
+pub trait VersionedCf {
+    type Key;
+    type Value;
+
     /// Column family name (as known to the DB).
     ///
     /// Note: this deliberately uses a different identifier than [`TypedCf::NAME`] to avoid awkward
@@ -313,13 +445,16 @@ pub trait VersionedCf<K, V> {
     type VersionedValue;
 }
 
-impl<K, V, VV, KC, D> DefaultCf<K, V> for D
+impl<K, V, VV, KC, D> DefaultCf for D
 where
     V: Into<VV> + Clone,
     VV: ScryptoEncode + ScryptoDecode + HasLatestVersion<Latest = V>,
     KC: Default,
-    D: VersionedCf<K, V, KeyCodec = KC, VersionedValue = VV>,
+    D: VersionedCf<Key = K, Value = V, KeyCodec = KC, VersionedValue = VV>,
 {
+    type Key = K;
+    type Value = V;
+
     const DEFAULT_NAME: &'static str = Self::VERSIONED_NAME;
     type KeyCodec = KC;
     type ValueCodec = VersionedDbCodec<SborDbCodec<VV>, V, VV>;
@@ -337,6 +472,85 @@ pub trait DbCodec<T> {
     fn encode(&self, value: &T) -> Vec<u8>;
     /// Decodes the bytes into value.
     fn decode(&self, bytes: &[u8]) -> T;
+}
+
+/// A marker trait which must only be implemented on [`DbCodec`]s which preserve the business-level
+/// ordering of values when encoding/decoding.
+///
+/// More formally: Such codec must translate the natural ordering (i.e. [`Ord`]) of its `<T>` values
+/// into a *lexicographical* ordering of their byte representations.
+///
+/// Examples:
+/// - a `DbCodec<u32>` which turns an integer into 4 *big-endian* bytes *does* preserve ordering:
+///   - `1u32` <-> `[0, 0, 0, 1]`,
+///   - `7u32` <-> `[0, 0, 0, 7]`,
+///   - `259u32` <-> `[0, 0, 1, 3]`,
+///   - and so on: the left side increases naturally and the right side increases lexicographically.
+/// - a `DbCodec<u32>` which turns an integer into ASCII string bytes *does not* preserve ordering:
+///   - `1u32` <-> `[49]`,
+///   - `7u32` <-> `[55]`,
+///   - `259u32` <-> `[50, 53, 59]`,
+///   - order broken: the right side *does not* consistently increase lexicographically (the bytes
+///     starting with `[50, ...]` are lexicographically before `[55]`).
+///
+/// The order preservation is important for database *key* codecs of column families which need to
+/// support e.g. iteration of elements starting from a particular element, or any batch operations
+/// defined by `[from, to]` ranges.
+pub trait OrderPreservingDbCodec {}
+
+/// An extra trait to be implemented on [`DbCodec`]s which preserve the business-level grouping of
+/// values when encoding/decoding.
+///
+/// More formally: if a set of values `<T>` all share the same [`Self::Group`], then their byte
+/// representations must all share the same prefix (and vice versa).
+///
+/// Examples:
+/// - a `DbCodec<SocketAddress>` which turns an `(ip: u32, port: u16)` tuple into `ip[4B]|port[2B]`
+///   bytes *does* preserve grouping by host:
+///   - [3, 14, 0, 1, 0, 80] and [3, 14, 0, 1, 0, 22] bytes start with the same 4-byte prefix, and
+///    indeed they represent port 80 and port 22 on the same host `3.14.0.1`.
+///   - the lexicographically-ordered range of *all* socket addresses on host `3.14.0.1` can be
+///     expressed as "from `[3, 14, 0, 1]` inclusive to `[3, 14, 0, 1, 255, 255, 0]` exclusive"
+///     (please note that it requires some knowledge on the maximum length of the part following the
+///     prefix).
+/// - a `DbCodec<Person>` which turns a `(first_name: String, last_name: String)` tuple into
+///   `<first_name> <last_name>` ASCII strings *does not* preserve grouping by families:
+///   - `("John", "Doe")` <-> `[J, o, h, n,  , D, o, e]`,
+///   - `("Ann", "Doe")` <-> `[A, n, n,  , D, o, e]`,
+///   - grouping broken: even though John and Ann belong to the same family, they *do not* share
+///     any well-specified prefix in their byte representations.
+///   - a lexicographically-ordered range covering all members of a family *cannot* be constructed
+///     under this encoding.
+///   - the grouping in this case *could* be preserved e.g. by encoding `<last_name> <first_name>`
+///     (with a variable-length prefix, defined as "everything before the first space character").
+///
+/// The grouping preservation is important for database *key* codecs of column families which need
+/// to support e.g. a batch delete operation of an entire group.
+pub trait GroupPreservingDbCodec {
+    type Group;
+
+    /// Encodes the group into a [`Range`] of byte representations that covers all values belonging
+    /// to that group.
+    ///
+    /// Please note that:
+    /// - the returned range *must* cover at least *all valid* group members,
+    /// - it *may* cover some inexistent/invalid/not-occurring-in-practice group members,
+    /// - but it *must not* cover any member of any other group.
+    fn encode_group_range(&self, group: &Self::Group) -> Range<Vec<u8>>;
+}
+
+/// An extra trait to be implemented on [`DbCodec`]s which preserve the business-level ordering of
+/// values *within groups* (as defined by [`GroupPreservingDbCodec`]).
+///
+/// Intuitively: Such codec gives the [`OrderPreservingDbCodec`]'s guarantees *only* within each
+/// range of keys belonging to the same group. And a group's keys are already consecutive, thanks to
+/// the [`GroupPreservingDbCodec`] supertrait.
+///
+/// The group's order preservation is important for database *key* codecs of column families which
+/// follow a classic "partition key + sort key" pattern.
+pub trait IntraGroupOrderPreservingDbCodec<T>: GroupPreservingDbCodec {
+    /// Determines the group which the given value belongs to.
+    fn resolve_group_of(&self, value: &T) -> <Self as GroupPreservingDbCodec>::Group;
 }
 
 /// A reusable versioning decorator for [`DbCodec`]s.

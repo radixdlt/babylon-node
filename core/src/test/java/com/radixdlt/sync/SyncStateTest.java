@@ -70,10 +70,12 @@ import static org.mockito.Mockito.mock;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.lang.Option;
 import com.radixdlt.p2p.NodeId;
+import com.radixdlt.statecomputer.commit.LedgerHeader;
+import com.radixdlt.statecomputer.commit.LedgerProof;
+import com.radixdlt.statecomputer.commit.LedgerProofOrigin;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
@@ -84,31 +86,49 @@ public class SyncStateTest {
   public void equalsContract() {
     EqualsVerifier.forClass(SyncState.IdleState.class)
         .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .withGenericPrefabValues(Option.class, Option::some)
+        .withPrefabValues(
+            LedgerProofOrigin.class,
+            new LedgerProofOrigin.Genesis(HashUtils.random256()),
+            new LedgerProofOrigin.Genesis(HashUtils.random256()))
         .verify();
 
     EqualsVerifier.forClass(SyncState.SyncCheckState.class)
         .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .withGenericPrefabValues(Option.class, Option::some)
+        .withPrefabValues(
+            LedgerProofOrigin.class,
+            new LedgerProofOrigin.Genesis(HashUtils.random256()),
+            new LedgerProofOrigin.Genesis(HashUtils.random256()))
         .verify();
 
     EqualsVerifier.forClass(SyncState.SyncingState.class)
         .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .withGenericPrefabValues(Option.class, Option::some)
+        .withPrefabValues(
+            LedgerProofOrigin.class,
+            new LedgerProofOrigin.Genesis(HashUtils.random256()),
+            new LedgerProofOrigin.Genesis(HashUtils.random256()))
         .verify();
 
     EqualsVerifier.forClass(SyncState.PendingRequest.class)
         .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .withGenericPrefabValues(Option.class, Option::some)
+        .withPrefabValues(
+            LedgerProofOrigin.class,
+            new LedgerProofOrigin.Genesis(HashUtils.random256()),
+            new LedgerProofOrigin.Genesis(HashUtils.random256()))
         .verify();
   }
 
   @Test
   public void idle_state_should_update_current_header() {
-    final var peer = mock(BFTValidatorId.class);
-
     final var initialState = SyncState.IdleState.init(mock(LedgerProof.class));
 
-    final var header2 = mock(LedgerProof.class);
-    final var newState = initialState.withCurrentHeader(header2);
+    final var proof2 = mock(LedgerProof.class);
+    final var newState = initialState.withLatestProof(proof2);
 
-    assertEquals(header2, newState.getCurrentHeader());
+    assertEquals(proof2, newState.getLatestProof());
   }
 
   @Test
@@ -118,10 +138,10 @@ public class SyncStateTest {
     final var initialState =
         SyncState.SyncCheckState.init(mock(LedgerProof.class), ImmutableSet.of(peer));
 
-    final var header2 = mock(LedgerProof.class);
-    final var newState = initialState.withCurrentHeader(header2);
+    final var proof2 = mock(LedgerProof.class);
+    final var newState = initialState.withLatestProof(proof2);
 
-    assertEquals(header2, newState.getCurrentHeader());
+    assertEquals(proof2, newState.getLatestProof());
   }
 
   @Test
@@ -144,19 +164,19 @@ public class SyncStateTest {
 
   @Test
   public void syncing_state_should_update_current_header() {
-    final var targetHeader = mock(LedgerProof.class);
+    final var targetHeader = mock(LedgerHeader.class);
     final var initialState =
         SyncState.SyncingState.init(mock(LedgerProof.class), ImmutableList.of(), targetHeader);
 
-    final var header2 = mock(LedgerProof.class);
-    final var newState = initialState.withCurrentHeader(header2);
+    final var proof2 = mock(LedgerProof.class);
+    final var newState = initialState.withLatestProof(proof2);
 
-    assertEquals(header2, newState.getCurrentHeader());
+    assertEquals(proof2, newState.getLatestProof());
   }
 
   @Test
   public void syncing_state_should_update_waiting_for_peer() {
-    final var targetHeader = mock(LedgerProof.class);
+    final var targetHeader = mock(LedgerHeader.class);
     final var initialState =
         SyncState.SyncingState.init(mock(LedgerProof.class), ImmutableList.of(), targetHeader);
 
@@ -173,7 +193,7 @@ public class SyncStateTest {
 
   @Test
   public void syncing_state_should_update_candidate_peers() {
-    final var targetHeader = mock(LedgerProof.class);
+    final var targetHeader = mock(LedgerHeader.class);
     final var initialState =
         SyncState.SyncingState.init(mock(LedgerProof.class), ImmutableList.of(), targetHeader);
 
@@ -195,8 +215,8 @@ public class SyncStateTest {
 
   @Test
   public void syncing_state_should_update_target_header() {
-    final var targetHeader1 = mock(LedgerProof.class);
-    final var targetHeader2 = mock(LedgerProof.class);
+    final var targetHeader1 = mock(LedgerHeader.class);
+    final var targetHeader2 = mock(LedgerHeader.class);
     final var initialState =
         SyncState.SyncingState.init(mock(LedgerProof.class), ImmutableList.of(), targetHeader1);
 

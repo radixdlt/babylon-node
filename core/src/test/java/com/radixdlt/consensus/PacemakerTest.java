@@ -163,7 +163,7 @@ public final class PacemakerTest {
               .map(msg -> (RoundUpdate) msg.message())
               .findAny()
               .orElseThrow();
-      assertThat(nextRoundUpdate.getCurrentRound()).isEqualTo(Round.genesis().next().next());
+      assertThat(nextRoundUpdate.getCurrentRound()).isEqualTo(Round.epochInitial().next().next());
     }
   }
 }

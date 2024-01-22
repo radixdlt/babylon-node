@@ -79,7 +79,8 @@ use radix_engine::blueprints::consensus_manager::{ValidatorField, ValidatorState
 use radix_engine::system::type_info::TypeInfoSubstate;
 
 use crate::store::traits::{
-    gc::StateHashTreeGcStore, QueryableTransactionStore, SubstateNodeAncestryStore,
+    gc::StateHashTreeGcStore, IterableProofStore, QueryableProofStore, QueryableTransactionStore,
+    SubstateNodeAncestryStore,
 };
 use crate::transaction::LedgerTransactionHash;
 use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
@@ -282,6 +283,25 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_leastStaleStateHas
             .map(|(state_version, _)| state_version)
             .unwrap_or(StateVersion::pre_genesis());
         least_stale_state_version.number()
+    })
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_testutil_TestStateReader_countProofsWithinEpoch(
+    env: JNIEnv,
+    _class: JClass,
+    j_rust_global_context: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |epoch_number: u64| -> usize {
+        let epoch = Epoch::of(epoch_number);
+        let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
+        let read_store = database.access_non_locked_historical();
+        let epoch_proof = read_store.get_epoch_proof(epoch).unwrap();
+        read_store
+            .get_proof_iter(epoch_proof.ledger_header.state_version.next().unwrap())
+            .take_while(|proof| proof.ledger_header.epoch == epoch)
+            .count()
     })
 }
 

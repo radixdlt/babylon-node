@@ -19,6 +19,8 @@ pub struct NextEpoch {
     /// Active validator set for the new epoch, ordered by stake descending.
     #[serde(rename = "validators")]
     pub validators: Vec<crate::core_api::generated::models::ActiveValidator>,
+    #[serde(rename = "significant_protocol_update_readiness", skip_serializing_if = "Option::is_none")]
+    pub significant_protocol_update_readiness: Option<Vec<crate::core_api::generated::models::SignificantProtocolUpdateReadinessEntry>>,
 }
 
 impl NextEpoch {
@@ -26,6 +28,7 @@ impl NextEpoch {
         NextEpoch {
             epoch,
             validators,
+            significant_protocol_update_readiness: None,
         }
     }
 }

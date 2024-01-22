@@ -343,13 +343,13 @@ public class DispatcherModule extends AbstractModule {
         logger.trace("LOCAL_SYNC_REQUEST dispatched by {}", callingClass);
       }
 
-      if (req.getTargetNodes().contains(self)) {
+      if (req.targetNodes().contains(self)) {
         throw new IllegalStateException("Should not be targeting self.");
       }
 
       Gauge syncTargetStateVersion = metrics.sync().targetStateVersion();
       syncTargetStateVersion.set(
-          Math.max(syncTargetStateVersion.labels().get(), req.getTarget().getStateVersion()));
+          Math.max(syncTargetStateVersion.labels().get(), req.target().stateVersion()));
 
       syncProcessors.forEach(e -> e.process(req));
       envDispatcher.dispatch(req);

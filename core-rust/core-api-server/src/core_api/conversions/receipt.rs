@@ -167,6 +167,7 @@ pub fn to_api_substate_system_structure(
             models::SubstateSystemStructure::SystemFieldStructure {
                 field_kind: match field_kind {
                     SystemFieldKind::TypeInfo => models::SystemFieldKind::TypeInfo,
+                    SystemFieldKind::BootLoader => models::SystemFieldKind::BootLoader,
                 },
             }
         }
@@ -284,7 +285,7 @@ pub fn to_api_next_epoch(
     let EpochChangeEvent {
         epoch,
         validator_set,
-        .. // TODO: expose `significant_protocol_update_readiness` when it becomes more important
+        significant_protocol_update_readiness,
     } = epoch_change_event;
     let next_epoch = models::NextEpoch {
         epoch: to_api_epoch(context, epoch)?,
@@ -293,6 +294,17 @@ pub fn to_api_next_epoch(
             .into_iter()
             .map(|(address, validator)| to_api_active_validator(context, &address, &validator))
             .collect::<Result<_, _>>()?,
+        significant_protocol_update_readiness: Some(
+            significant_protocol_update_readiness
+                .into_iter()
+                .map(|(readiness_signal_name, signalled_stake)| {
+                    models::SignificantProtocolUpdateReadinessEntry {
+                        readiness_signal_name,
+                        signalled_stake: signalled_stake.to_string(),
+                    }
+                })
+                .collect(),
+        ),
     };
     Ok(next_epoch)
 }
@@ -703,8 +715,9 @@ pub fn to_api_costing_parameters(
         finalization_cost_unit_limit: to_api_u32_as_i64(
             engine_costing_parameters.finalization_cost_unit_limit,
         ),
-        xrd_usd_price: to_api_decimal(&engine_costing_parameters.finalization_cost_unit_price),
-        xrd_storage_price: to_api_decimal(&engine_costing_parameters.finalization_cost_unit_price),
+        xrd_usd_price: to_api_decimal(&engine_costing_parameters.usd_price),
+        xrd_storage_price: to_api_decimal(&engine_costing_parameters.state_storage_price),
+        xrd_archive_storage_price: to_api_decimal(&engine_costing_parameters.archive_storage_price),
         tip_percentage: to_api_u16_as_i32(transaction_costing_parameters.tip_percentage),
     })
 }

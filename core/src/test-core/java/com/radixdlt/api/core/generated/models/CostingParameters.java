@@ -38,6 +38,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   CostingParameters.JSON_PROPERTY_FINALIZATION_COST_UNIT_LIMIT,
   CostingParameters.JSON_PROPERTY_XRD_USD_PRICE,
   CostingParameters.JSON_PROPERTY_XRD_STORAGE_PRICE,
+  CostingParameters.JSON_PROPERTY_XRD_ARCHIVE_STORAGE_PRICE,
   CostingParameters.JSON_PROPERTY_TIP_PERCENTAGE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -62,6 +63,9 @@ public class CostingParameters {
 
   public static final String JSON_PROPERTY_XRD_STORAGE_PRICE = "xrd_storage_price";
   private String xrdStoragePrice;
+
+  public static final String JSON_PROPERTY_XRD_ARCHIVE_STORAGE_PRICE = "xrd_archive_storage_price";
+  private String xrdArchiveStoragePrice;
 
   public static final String JSON_PROPERTY_TIP_PERCENTAGE = "tip_percentage";
   private Integer tipPercentage;
@@ -237,11 +241,11 @@ public class CostingParameters {
   }
 
    /**
-   * The string-encoded decimal representing the price of 1 byte of storage, expressed in XRD. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(192 - 1) &lt;&#x3D; m &lt; 2^(192 - 1)&#x60;. 
+   * The string-encoded decimal representing the price of 1 byte of state storage, expressed in XRD. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(192 - 1) &lt;&#x3D; m &lt; 2^(192 - 1)&#x60;. 
    * @return xrdStoragePrice
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The string-encoded decimal representing the price of 1 byte of storage, expressed in XRD. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. ")
+  @ApiModelProperty(required = true, value = "The string-encoded decimal representing the price of 1 byte of state storage, expressed in XRD. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. ")
   @JsonProperty(JSON_PROPERTY_XRD_STORAGE_PRICE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -257,19 +261,45 @@ public class CostingParameters {
   }
 
 
+  public CostingParameters xrdArchiveStoragePrice(String xrdArchiveStoragePrice) {
+    this.xrdArchiveStoragePrice = xrdArchiveStoragePrice;
+    return this;
+  }
+
+   /**
+   * The string-encoded decimal representing the price of 1 byte of archive storage, expressed in XRD. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(192 - 1) &lt;&#x3D; m &lt; 2^(192 - 1)&#x60;. 
+   * @return xrdArchiveStoragePrice
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The string-encoded decimal representing the price of 1 byte of archive storage, expressed in XRD. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. ")
+  @JsonProperty(JSON_PROPERTY_XRD_ARCHIVE_STORAGE_PRICE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getXrdArchiveStoragePrice() {
+    return xrdArchiveStoragePrice;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_XRD_ARCHIVE_STORAGE_PRICE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setXrdArchiveStoragePrice(String xrdArchiveStoragePrice) {
+    this.xrdArchiveStoragePrice = xrdArchiveStoragePrice;
+  }
+
+
   public CostingParameters tipPercentage(Integer tipPercentage) {
     this.tipPercentage = tipPercentage;
     return this;
   }
 
    /**
-   * An integer between &#x60;0&#x60; and &#x60;255&#x60;, giving the validator tip as a percentage amount. A value of &#x60;1&#x60; corresponds to 1% of the fee.
+   * An integer between &#x60;0&#x60; and &#x60;65535&#x60;, giving the validator tip as a percentage amount. A value of &#x60;1&#x60; corresponds to 1% of the fee.
    * minimum: 0
-   * maximum: 255
+   * maximum: 65535
    * @return tipPercentage
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `255`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.")
+  @ApiModelProperty(required = true, value = "An integer between `0` and `65535`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.")
   @JsonProperty(JSON_PROPERTY_TIP_PERCENTAGE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -304,12 +334,13 @@ public class CostingParameters {
         Objects.equals(this.finalizationCostUnitLimit, costingParameters.finalizationCostUnitLimit) &&
         Objects.equals(this.xrdUsdPrice, costingParameters.xrdUsdPrice) &&
         Objects.equals(this.xrdStoragePrice, costingParameters.xrdStoragePrice) &&
+        Objects.equals(this.xrdArchiveStoragePrice, costingParameters.xrdArchiveStoragePrice) &&
         Objects.equals(this.tipPercentage, costingParameters.tipPercentage);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(executionCostUnitPrice, executionCostUnitLimit, executionCostUnitLoan, finalizationCostUnitPrice, finalizationCostUnitLimit, xrdUsdPrice, xrdStoragePrice, tipPercentage);
+    return Objects.hash(executionCostUnitPrice, executionCostUnitLimit, executionCostUnitLoan, finalizationCostUnitPrice, finalizationCostUnitLimit, xrdUsdPrice, xrdStoragePrice, xrdArchiveStoragePrice, tipPercentage);
   }
 
   @Override
@@ -323,6 +354,7 @@ public class CostingParameters {
     sb.append("    finalizationCostUnitLimit: ").append(toIndentedString(finalizationCostUnitLimit)).append("\n");
     sb.append("    xrdUsdPrice: ").append(toIndentedString(xrdUsdPrice)).append("\n");
     sb.append("    xrdStoragePrice: ").append(toIndentedString(xrdStoragePrice)).append("\n");
+    sb.append("    xrdArchiveStoragePrice: ").append(toIndentedString(xrdArchiveStoragePrice)).append("\n");
     sb.append("    tipPercentage: ").append(toIndentedString(tipPercentage)).append("\n");
     sb.append("}");
     return sb.toString();

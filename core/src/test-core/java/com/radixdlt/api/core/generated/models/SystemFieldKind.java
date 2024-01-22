@@ -28,6 +28,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
  */
 public enum SystemFieldKind {
   
+  BOOTLOADER("BootLoader"),
+  
   TYPEINFO("TypeInfo");
 
   private String value;

@@ -49,9 +49,9 @@ pub(crate) async fn handle_transaction_receipt(
             }
         })?;
 
-        Ok(models::TransactionReceiptResponse {
+        Ok(Json(models::TransactionReceiptResponse {
             committed: Box::new(to_api_committed_transaction(
-                Some(&database),
+                &database,
                 &mapping_context,
                 txn_state_version,
                 raw,
@@ -59,8 +59,7 @@ pub(crate) async fn handle_transaction_receipt(
                 receipt,
                 identifiers,
             )?),
-        })
-        .map(Json)
+        }))
     } else {
         Err(not_found_error(format!(
             "Committed transaction not found with intent hash: {intent_hash:?}"

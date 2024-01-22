@@ -74,12 +74,15 @@ import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.ProposerElections;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.environment.DatabaseFlags;
+import com.radixdlt.environment.LedgerProofsGcConfig;
 import com.radixdlt.environment.StateHashTreeGcConfig;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.mempool.MempoolReceiverConfig;
 import com.radixdlt.mempool.MempoolRelayerConfig;
 import com.radixdlt.mempool.RustMempoolConfig;
+import com.radixdlt.protocol.ProtocolConfig;
+import com.radixdlt.transaction.LedgerSyncLimitsConfig;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -142,7 +145,8 @@ public sealed interface StateComputerConfig {
       DatabaseFlags databaseFlags,
       REV2ProposerConfig proposerConfig,
       boolean debugLogging,
-      boolean noFees) {
+      boolean noFees,
+      ProtocolConfig protocolConfig) {
     return new REv2StateComputerConfig(
         networkId,
         genesis,
@@ -150,6 +154,9 @@ public sealed interface StateComputerConfig {
         proposerConfig,
         debugLogging,
         StateHashTreeGcConfig.forTesting(),
+        LedgerProofsGcConfig.forTesting(),
+        LedgerSyncLimitsConfig.defaults(),
+        protocolConfig,
         noFees);
   }
 
@@ -165,11 +172,22 @@ public sealed interface StateComputerConfig {
         proposerConfig,
         false,
         StateHashTreeGcConfig.forTesting(),
+        LedgerProofsGcConfig.forTesting(),
+        LedgerSyncLimitsConfig.defaults(),
+        ProtocolConfig.testingDefault(),
         false);
   }
 
   static StateComputerConfig rev2(
       int networkId, GenesisData genesis, REV2ProposerConfig proposerConfig) {
+    return rev2(networkId, genesis, proposerConfig, ProtocolConfig.testingDefault());
+  }
+
+  static StateComputerConfig rev2(
+      int networkId,
+      GenesisData genesis,
+      REV2ProposerConfig proposerConfig,
+      ProtocolConfig protocolConfig) {
     return new REv2StateComputerConfig(
         networkId,
         genesis,
@@ -177,6 +195,9 @@ public sealed interface StateComputerConfig {
         proposerConfig,
         false,
         StateHashTreeGcConfig.forTesting(),
+        LedgerProofsGcConfig.forTesting(),
+        LedgerSyncLimitsConfig.defaults(),
+        protocolConfig,
         false);
   }
 
@@ -246,6 +267,9 @@ public sealed interface StateComputerConfig {
       REV2ProposerConfig proposerConfig,
       boolean debugLogging,
       StateHashTreeGcConfig stateHashTreeGcConfig,
+      LedgerProofsGcConfig ledgerProofsGcConfig,
+      LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
+      ProtocolConfig protocolConfig,
       boolean noFees)
       implements StateComputerConfig {}
 

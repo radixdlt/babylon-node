@@ -20,7 +20,8 @@
 export const LedgerTransactionType = {
     Genesis: 'Genesis',
     User: 'User',
-    RoundUpdate: 'RoundUpdate'
+    RoundUpdate: 'RoundUpdate',
+    Flash: 'Flash'
 } as const;
 export type LedgerTransactionType = typeof LedgerTransactionType[keyof typeof LedgerTransactionType];
 

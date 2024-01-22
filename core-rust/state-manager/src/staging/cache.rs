@@ -62,6 +62,8 @@
  * permissions under this License.
  */
 
+#![allow(clippy::too_many_arguments)]
+
 use super::stage_tree::{Accumulator, Delta, DerivedStageKey, StageKey, StageTree};
 use super::ReadableStore;
 
@@ -70,7 +72,9 @@ use crate::staging::{
     AccuTreeDiff, HashStructuresDiff, HashUpdateContext, ProcessedTransactionReceipt,
     StateHashTreeDiff,
 };
-use crate::{EpochTransactionIdentifiers, ReceiptTreeHash, StateVersion, TransactionTreeHash};
+use crate::{
+    EpochTransactionIdentifiers, ProtocolState, ReceiptTreeHash, StateVersion, TransactionTreeHash,
+};
 use im::hashmap::HashMap as ImmutableHashMap;
 use itertools::Itertools;
 
@@ -164,6 +168,7 @@ impl ExecutionCache {
         epoch_transaction_identifiers: &EpochTransactionIdentifiers,
         parent_state_version: StateVersion,
         parent_transaction_root: &TransactionTreeHash,
+        parent_protocol_state: &ProtocolState,
         ledger_transaction_hash: &LedgerTransactionHash,
         executable: T,
     ) -> &ProcessedTransactionReceipt {
@@ -188,6 +193,7 @@ impl ExecutionCache {
                         ledger_transaction_hash,
                     },
                     transaction_receipt,
+                    parent_protocol_state,
                 );
 
                 let internal_transaction_ids = InternalTransactionIds {
@@ -312,22 +318,33 @@ impl<'s, S: SubstateDatabase> SubstateDatabase for StagedStore<'s, S> {
         }
     }
 
-    fn list_entries(
+    fn list_entries_from(
         &self,
         partition_key: &DbPartitionKey,
+        from_sort_key: Option<&DbSortKey>,
     ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
         let partition_updates = self.overlay.partition_updates.get(partition_key);
         let Some(partition_updates) = partition_updates else {
-            return self.root.list_entries(partition_key);
+            return self.root.list_entries_from(partition_key, from_sort_key);
         };
+        let cloned_from_sort_key = from_sort_key.cloned();
+
         match partition_updates {
             ImmutablePartitionUpdates::Delta { substate_updates } => {
                 let overlaid_iter = substate_updates
                     .iter()
                     .map(|(sort_key, update)| (sort_key.clone(), update.clone()))
-                    .sorted_by(|(left_key, _), (right_key, _)| left_key.cmp(right_key));
+                    .sorted_by(|(left_key, _), (right_key, _)| left_key.cmp(right_key))
+                    .skip_while(move |(key, _)| {
+                        if let Some(from_sort_key) = &cloned_from_sort_key {
+                            key.lt(from_sort_key)
+                        } else {
+                            false
+                        }
+                    });
+
                 Box::new(SubstateOverlayIterator::new(
-                    self.root.list_entries(partition_key),
+                    self.root.list_entries_from(partition_key, from_sort_key),
                     Box::new(overlaid_iter),
                 ))
             }
@@ -338,7 +355,14 @@ impl<'s, S: SubstateDatabase> SubstateDatabase for StagedStore<'s, S> {
                     new_substate_values
                         .iter()
                         .map(|(sort_key, update)| (sort_key.clone(), update.clone()))
-                        .sorted_by(|(left_key, _), (right_key, _)| left_key.cmp(right_key)),
+                        .sorted_by(|(left_key, _), (right_key, _)| left_key.cmp(right_key))
+                        .skip_while(move |(key, _)| {
+                            if let Some(from_sort_key) = &cloned_from_sort_key {
+                                key.lt(from_sort_key)
+                            } else {
+                                false
+                            }
+                        }),
                 ),
             },
         }

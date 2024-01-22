@@ -70,7 +70,7 @@ use crate::transaction::LedgerTransactionHash;
 use crate::{
     ActiveValidatorInfo, ByPartition, BySubstate, DetailedTransactionOutcome,
     EpochTransactionIdentifiers, LedgerHashes, LedgerStateChanges, LocalTransactionReceipt,
-    NextEpoch, PartitionChangeAction, ReceiptTreeHash, StateHash, StateVersion,
+    NextEpoch, PartitionChangeAction, ProtocolState, ReceiptTreeHash, StateHash, StateVersion,
     SubstateChangeAction, SubstateReference, TransactionTreeHash,
 };
 use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
@@ -115,6 +115,8 @@ pub struct ProcessedCommitResult {
     pub hash_structures_diff: HashStructuresDiff,
     pub database_updates: DatabaseUpdates,
     pub new_substate_node_ancestry_records: Vec<KeyedSubstateNodeAncestryRecord>,
+    pub new_protocol_state: ProtocolState,
+    pub next_protocol_version: Option<String>,
 }
 
 pub struct HashUpdateContext<'s, S> {
@@ -134,6 +136,7 @@ impl ProcessedTransactionReceipt {
     pub fn process<S: ReadableStore, D: DatabaseKeyMapper>(
         hash_update_context: HashUpdateContext<S>,
         receipt: TransactionReceipt,
+        parent_protocol_state: &ProtocolState,
     ) -> Self {
         match receipt.result {
             TransactionResult::Commit(commit) => {
@@ -145,6 +148,7 @@ impl ProcessedTransactionReceipt {
                         engine_costing_parameters: receipt.costing_parameters,
                         transaction_costing_parameters: receipt.transaction_costing_parameters,
                     },
+                    parent_protocol_state,
                 ))
             }
             TransactionResult::Reject(reject) => {
@@ -196,6 +200,7 @@ impl ProcessedCommitResult {
         hash_update_context: HashUpdateContext<S>,
         commit_result: CommitResult,
         execution_fee_data: ExecutionFeeData,
+        parent_protocol_state: &ProtocolState,
     ) -> Self {
         let epoch_identifiers = hash_update_context.epoch_transaction_identifiers;
         let parent_state_version = hash_update_context.parent_state_version;
@@ -245,6 +250,11 @@ impl ProcessedCommitResult {
             receipt_root: *receipt_tree_diff.slice.root(),
         };
 
+        let (new_protocol_state, next_protocol_version) = parent_protocol_state.compute_next(
+            &local_receipt,
+            parent_state_version.next().expect("State version overflow"),
+        );
+
         Self {
             local_receipt,
             hash_structures_diff: HashStructuresDiff {
@@ -256,6 +266,8 @@ impl ProcessedCommitResult {
             database_updates,
             new_substate_node_ancestry_records: global_balance_update
                 .new_substate_node_ancestry_records,
+            new_protocol_state,
+            next_protocol_version,
         }
     }
 
@@ -387,9 +399,9 @@ impl ProcessedCommitResult {
         parent_state_version: StateVersion,
         database_updates: &DatabaseUpdates,
     ) -> StateHashTreeDiff {
-        let mut collector = CollectingTreeStore::new(store);
+        let collector = CollectingTreeStore::new(store);
         let root_hash = put_at_next_version(
-            &mut collector,
+            &collector,
             Some(parent_state_version.number()).filter(|v| *v > 0),
             database_updates,
         );
@@ -526,7 +538,6 @@ impl From<EpochChangeEvent> for NextEpoch {
         }
     }
 }
-
 #[derive(Clone, Debug)]
 pub struct HashStructuresDiff {
     pub ledger_hashes: LedgerHashes,
@@ -607,19 +618,19 @@ impl<'s, S, K, N> WriteableAccuTreeStore<K, N> for CollectingAccuTreeStore<'s, S
 
 struct CollectingTreeStore<'s, S> {
     readable_delegate: &'s S,
-    diff: StateHashTreeDiff,
+    diff: RefCell<StateHashTreeDiff>,
 }
 
 impl<'s, S: ReadableStateTreeStore> CollectingTreeStore<'s, S> {
     pub fn new(readable_delegate: &'s S) -> Self {
         Self {
             readable_delegate,
-            diff: StateHashTreeDiff::new(),
+            diff: RefCell::new(StateHashTreeDiff::new()),
         }
     }
 
     pub fn into_diff_with(self, new_root: Hash) -> StateHashTreeDiff {
-        let mut diff = self.diff;
+        let mut diff = self.diff.take();
         diff.new_root = StateHash::from(new_root);
         diff
     }
@@ -632,11 +643,11 @@ impl<'s, S: ReadableTreeStore> ReadableTreeStore for CollectingTreeStore<'s, S> 
 }
 
 impl<'s, S> WriteableTreeStore for CollectingTreeStore<'s, S> {
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode) {
-        self.diff.new_nodes.push((key, node));
+    fn insert_node(&self, key: NodeKey, node: TreeNode) {
+        self.diff.borrow_mut().new_nodes.push((key, node));
     }
 
-    fn record_stale_tree_part(&mut self, part: StaleTreePart) {
-        self.diff.stale_tree_parts.push(part);
+    fn record_stale_tree_part(&self, part: StaleTreePart) {
+        self.diff.borrow_mut().stale_tree_parts.push(part);
     }
 }

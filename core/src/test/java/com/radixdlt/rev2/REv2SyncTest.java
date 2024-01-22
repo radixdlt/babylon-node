@@ -153,7 +153,7 @@ public class REv2SyncTest {
 
       // Assert
       Checkers.assertLedgerTransactionsSafety(test.getNodeInjectors());
-      Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), n);
+      Checkers.assertNodesSyncedToVersionAtLeast(test.getNodeInjectors(), n);
     }
   }
 }

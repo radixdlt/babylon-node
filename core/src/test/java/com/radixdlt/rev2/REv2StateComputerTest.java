@@ -75,10 +75,7 @@ import com.radixdlt.consensus.ProposalLimitsConfig;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
-import com.radixdlt.environment.DatabaseFlags;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.FatalPanicHandler;
-import com.radixdlt.environment.StateHashTreeGcConfig;
+import com.radixdlt.environment.*;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.genesis.GenesisData;
@@ -93,6 +90,7 @@ import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.NodeId;
+import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.rev2.modules.REv2LedgerInitializerModule;
 import com.radixdlt.rev2.modules.REv2LedgerInitializerToken;
 import com.radixdlt.rev2.modules.REv2LedgerRecoveryModule;
@@ -100,6 +98,7 @@ import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statecomputer.commit.ActiveValidatorInfo;
 import com.radixdlt.statecomputer.commit.LedgerHeader;
 import com.radixdlt.store.NodeStorageLocation;
+import com.radixdlt.transaction.LedgerSyncLimitsConfig;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt192;
@@ -127,6 +126,9 @@ public class REv2StateComputerTest {
             Option.none(),
             false,
             StateHashTreeGcConfig.forTesting(),
+            LedgerProofsGcConfig.forTesting(),
+            LedgerSyncLimitsConfig.defaults(),
+            ProtocolConfig.testingDefault(),
             false),
         new REv2LedgerInitializerModule(
             RawGenesisDataWithHash.fromGenesisData(

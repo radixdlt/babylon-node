@@ -3,13 +3,13 @@ use crate::core_api::models;
 use radix_engine::blueprints::account::{
     AccountTypedFieldSubstateValue, AccountTypedSubstateValue,
 };
-use radix_engine::blueprints::pool::multi_resource_pool::{
+use radix_engine::blueprints::pool::v1::substates::multi_resource_pool::{
     MultiResourcePoolTypedFieldSubstateValue, MultiResourcePoolTypedSubstateValue,
 };
-use radix_engine::blueprints::pool::one_resource_pool::{
+use radix_engine::blueprints::pool::v1::substates::one_resource_pool::{
     OneResourcePoolTypedFieldSubstateValue, OneResourcePoolTypedSubstateValue,
 };
-use radix_engine::blueprints::pool::two_resource_pool::{
+use radix_engine::blueprints::pool::v1::substates::two_resource_pool::{
     TwoResourcePoolTypedFieldSubstateValue, TwoResourcePoolTypedSubstateValue,
 };
 
@@ -27,6 +27,9 @@ pub fn to_api_substate(
     typed_substate_value: &TypedSubstateValue,
 ) -> Result<models::Substate, MappingError> {
     Ok(match typed_substate_value {
+        TypedSubstateValue::BootLoader(BootLoaderSubstateValue::Vm(vm_boot_substate)) => {
+            to_api_vm_boot_substate(context, state_mapping_lookups, vm_boot_substate)?
+        }
         TypedSubstateValue::TypeInfoModule(TypedTypeInfoModuleSubstateValue::TypeInfo(
             type_info_substate,
         )) => to_api_type_info_substate(context, state_mapping_lookups, type_info_substate)?,

@@ -95,5 +95,5 @@ pub(crate) async fn handle_lts_stream_transaction_outcomes(
 
     response.count = count;
 
-    Ok(response).map(Json)
+    Ok(Json(response))
 }

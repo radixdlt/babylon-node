@@ -66,22 +66,18 @@ package com.radixdlt.api.system.routes;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.system.SystemGetJsonHandler;
-import com.radixdlt.api.system.generated.models.HealthResponse;
-import com.radixdlt.api.system.generated.models.RecentSelfProposalMissStatistic;
+import com.radixdlt.api.system.generated.models.*;
 import com.radixdlt.api.system.health.HealthInfoService;
-import com.radixdlt.protocol.Current;
-import com.radixdlt.protocol.ProtocolVersion;
+import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition;
+import com.radixdlt.statecomputer.ProtocolState;
 
 public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
   private final HealthInfoService healthInfoService;
-  private final ProtocolVersion currentProtocolVersion;
 
   @Inject
-  HealthHandler(
-      HealthInfoService healthInfoService, @Current ProtocolVersion currentProtocolVersion) {
+  HealthHandler(HealthInfoService healthInfoService) {
     super();
     this.healthInfoService = healthInfoService;
-    this.currentProtocolVersion = currentProtocolVersion;
   }
 
   @Override
@@ -96,6 +92,9 @@ public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
         };
 
     final var statistic = healthInfoService.recentSelfProposalMissStatistic();
+
+    final var protocolState = healthInfoService.protocolState();
+
     return new HealthResponse()
         .status(statusEnum)
         .detail(nodeStatus.detail())
@@ -103,6 +102,71 @@ public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
             new RecentSelfProposalMissStatistic()
                 .missedCount(statistic.missedCount().toLong())
                 .recentProposalsTrackedCount(statistic.recentProposalsTrackedCount().toLong()))
-        .currentProtocolVersion(currentProtocolVersion.name());
+        .currentProtocolVersion(protocolState.currentProtocolVersion())
+        .enactedProtocolUpdates(
+            protocolState.enactedProtocolUpdates().entrySet().stream()
+                .map(
+                    e ->
+                        new EnactedProtocolUpdate()
+                            .stateVersion(e.getKey().toLong())
+                            .resultantProtocolVersion(e.getValue()))
+                .toList())
+        .pendingProtocolUpdates(
+            protocolState.pendingProtocolUpdates().stream()
+                .map(this::pendingProtocolUpdate)
+                .toList());
+  }
+
+  private com.radixdlt.api.system.generated.models.PendingProtocolUpdate pendingProtocolUpdate(
+      ProtocolState.PendingProtocolUpdate pendingProtocolUpdate) {
+    final var state =
+        switch (pendingProtocolUpdate.state()) {
+          case ProtocolState.PendingProtocolUpdateState.Empty
+          empty -> new EmptyPendingProtocolUpdateState().type(PendingProtocolUpdateStateType.EMPTY);
+          case ProtocolState.PendingProtocolUpdateState.ForSignalledReadinessSupportCondition
+          forSignalledReadinessSupportCondition -> new SignalledReadinessPendingProtocolUpdateState()
+              .thresholdsState(
+                  forSignalledReadinessSupportCondition.thresholdsState().stream()
+                      .map(
+                          thresholdState ->
+                              new SignalledReadinessPendingProtocolUpdateStateAllOfThresholdsState()
+                                  .threshold(
+                                      new SignalledReadinessThreshold()
+                                          .requiredRatioOfStakeSupported(
+                                              thresholdState
+                                                  .first()
+                                                  .requiredRatioOfStakeSupported()
+                                                  .toString())
+                                          .requiredConsecutiveCompletedEpochsOfSupport(
+                                              thresholdState
+                                                  .first()
+                                                  .requiredConsecutiveCompletedEpochsOfSupport()
+                                                  .toLong()))
+                                  .thresholdState(
+                                      new SignalledReadinessThresholdState()
+                                          .consecutiveStartedEpochsOfSupport(
+                                              thresholdState
+                                                  .last()
+                                                  .consecutiveStartedEpochsOfSupport()
+                                                  .toLong())))
+                      .toList())
+              .type(PendingProtocolUpdateStateType.FORSIGNALLEDREADINESSSUPPORTCONDITION);
+        };
+
+    final var res =
+        new PendingProtocolUpdate()
+            .protocolVersion(pendingProtocolUpdate.protocolUpdate().nextProtocolVersion())
+            .state(state)
+            .readinessSignalStatus(
+                PendingProtocolUpdate.ReadinessSignalStatusEnum
+                    .NO_ACTION_NEEDED /* TODO(protocol-update): implement me */);
+
+    if (pendingProtocolUpdate.protocolUpdate().enactmentCondition()
+        instanceof ProtocolUpdateEnactmentCondition.EnactWhenSupportedAndWithinBounds) {
+      final var readinessSignalName = pendingProtocolUpdate.protocolUpdate().readinessSignalName();
+      res.setReadinessSignalName(readinessSignalName);
+    }
+
+    return res;
   }
 }

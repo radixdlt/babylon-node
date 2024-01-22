@@ -65,9 +65,9 @@
 package com.radixdlt.messaging.p2p;
 
 import com.radixdlt.consensus.LedgerHashes;
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.messaging.ledgersync.LedgerStatusUpdateMessage;
 import com.radixdlt.serialization.SerializeMessageObject;
+import com.radixdlt.sync.LedgerProofSyncStatusDto;
 
 public class LedgerStatusUpdateMessageSerializeTest
     extends SerializeMessageObject<LedgerStatusUpdateMessage> {
@@ -76,6 +76,7 @@ public class LedgerStatusUpdateMessageSerializeTest
   }
 
   private static LedgerStatusUpdateMessage get() {
-    return new LedgerStatusUpdateMessage(LedgerProof.genesis(0, LedgerHashes.zero(), null, 0, 0));
+    return new LedgerStatusUpdateMessage(
+        LedgerProofSyncStatusDto.testingGenesis(0, LedgerHashes.zero(), null, 0, 0));
   }
 }

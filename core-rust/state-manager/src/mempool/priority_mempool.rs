@@ -302,7 +302,6 @@ impl PriorityMempool {
         if !to_be_removed.is_empty() {
             let best_to_be_removed = to_be_removed.last().unwrap();
             if new_order_data < MempoolDataProposalPriorityOrdering(best_to_be_removed.clone()) {
-                // Note: update when DEFAULT_MAX_TIP_PERCENTAGE is changed/overwriten
                 let min_tip_percentage_required = best_to_be_removed
                     .transaction
                     .tip_percentage()
@@ -546,10 +545,9 @@ mod tests {
     use std::time::Duration;
 
     use radix_engine::types::PublicKey;
+    use radix_engine_common::crypto::{Secp256k1PublicKey, Secp256k1Signature};
     use radix_engine_common::types::Epoch;
-    use radix_engine_interface::crypto::Secp256k1PublicKey;
     use transaction::model::*;
-    use transaction::signing::secp256k1::Secp256k1Signature;
 
     use crate::mempool::priority_mempool::*;
 
