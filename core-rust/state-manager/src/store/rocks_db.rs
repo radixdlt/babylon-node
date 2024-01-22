@@ -1360,7 +1360,6 @@ impl SubstateDatabase for RocksDBStore {
             self.open_db_context()
                 .cf(SubstatesCf)
                 .iterate_group_from(&(partition_key.clone(), from_sort_key), Direction::Forward)
-                .take_while(move |((next_key, _), _)| next_key == &partition_key)
                 .map(|((_, sort_key), value)| (sort_key, value)),
         )
     }

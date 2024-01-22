@@ -13,12 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { FlashTransaction } from './FlashTransaction';
+import type { FlashedStateUpdates } from './FlashedStateUpdates';
 import {
-    FlashTransactionFromJSON,
-    FlashTransactionFromJSONTyped,
-    FlashTransactionToJSON,
-} from './FlashTransaction';
+    FlashedStateUpdatesFromJSON,
+    FlashedStateUpdatesFromJSONTyped,
+    FlashedStateUpdatesToJSON,
+} from './FlashedStateUpdates';
 
 /**
  * 
@@ -27,11 +27,17 @@ import {
  */
 export interface FlashLedgerTransactionAllOf {
     /**
-     * 
-     * @type {FlashTransaction}
+     * Human-readable identifier of the flash transaction.
+     * @type {string}
      * @memberof FlashLedgerTransactionAllOf
      */
-    flash_transaction: FlashTransaction;
+    name: string;
+    /**
+     * 
+     * @type {FlashedStateUpdates}
+     * @memberof FlashLedgerTransactionAllOf
+     */
+    flashed_state_updates: FlashedStateUpdates;
     /**
      * 
      * @type {string}
@@ -55,7 +61,8 @@ export type FlashLedgerTransactionAllOfTypeEnum = typeof FlashLedgerTransactionA
  */
 export function instanceOfFlashLedgerTransactionAllOf(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "flash_transaction" in value;
+    isInstance = isInstance && "name" in value;
+    isInstance = isInstance && "flashed_state_updates" in value;
 
     return isInstance;
 }
@@ -70,7 +77,8 @@ export function FlashLedgerTransactionAllOfFromJSONTyped(json: any, ignoreDiscri
     }
     return {
         
-        'flash_transaction': FlashTransactionFromJSON(json['flash_transaction']),
+        'name': json['name'],
+        'flashed_state_updates': FlashedStateUpdatesFromJSON(json['flashed_state_updates']),
         'type': !exists(json, 'type') ? undefined : json['type'],
     };
 }
@@ -84,7 +92,8 @@ export function FlashLedgerTransactionAllOfToJSON(value?: FlashLedgerTransaction
     }
     return {
         
-        'flash_transaction': FlashTransactionToJSON(value.flash_transaction),
+        'name': value.name,
+        'flashed_state_updates': FlashedStateUpdatesToJSON(value.flashed_state_updates),
         'type': value.type,
     };
 }

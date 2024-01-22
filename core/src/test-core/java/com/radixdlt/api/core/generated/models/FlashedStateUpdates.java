@@ -22,146 +22,134 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.SubstateKey;
+import com.radixdlt.api.core.generated.models.FlashSetSubstate;
+import com.radixdlt.api.core.generated.models.PartitionId;
+import com.radixdlt.api.core.generated.models.SubstateId;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import java.util.ArrayList;
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * FlashedSubstate
+ * Direct state updates performed by a Flash Transaction.
  */
+@ApiModel(description = "Direct state updates performed by a Flash Transaction.")
 @JsonPropertyOrder({
-  FlashedSubstate.JSON_PROPERTY_ENTITY_ADDRESS,
-  FlashedSubstate.JSON_PROPERTY_PARTITION_NUMBER,
-  FlashedSubstate.JSON_PROPERTY_SUBSTATE_KEY,
-  FlashedSubstate.JSON_PROPERTY_VALUE
+  FlashedStateUpdates.JSON_PROPERTY_DELETED_PARTITIONS,
+  FlashedStateUpdates.JSON_PROPERTY_SET_SUBSTATES,
+  FlashedStateUpdates.JSON_PROPERTY_DELETED_SUBSTATES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class FlashedSubstate {
-  public static final String JSON_PROPERTY_ENTITY_ADDRESS = "entity_address";
-  private String entityAddress;
+public class FlashedStateUpdates {
+  public static final String JSON_PROPERTY_DELETED_PARTITIONS = "deleted_partitions";
+  private List<PartitionId> deletedPartitions = new ArrayList<>();
 
-  public static final String JSON_PROPERTY_PARTITION_NUMBER = "partition_number";
-  private Integer partitionNumber;
+  public static final String JSON_PROPERTY_SET_SUBSTATES = "set_substates";
+  private List<FlashSetSubstate> setSubstates = new ArrayList<>();
 
-  public static final String JSON_PROPERTY_SUBSTATE_KEY = "substate_key";
-  private SubstateKey substateKey;
+  public static final String JSON_PROPERTY_DELETED_SUBSTATES = "deleted_substates";
+  private List<SubstateId> deletedSubstates = new ArrayList<>();
 
-  public static final String JSON_PROPERTY_VALUE = "value";
-  private String value;
-
-  public FlashedSubstate() { 
+  public FlashedStateUpdates() { 
   }
 
-  public FlashedSubstate entityAddress(String entityAddress) {
-    this.entityAddress = entityAddress;
+  public FlashedStateUpdates deletedPartitions(List<PartitionId> deletedPartitions) {
+    this.deletedPartitions = deletedPartitions;
+    return this;
+  }
+
+  public FlashedStateUpdates addDeletedPartitionsItem(PartitionId deletedPartitionsItem) {
+    this.deletedPartitions.add(deletedPartitionsItem);
     return this;
   }
 
    /**
-   * Bech32m-encoded human readable version of the entity&#39;s address (ie the entity&#39;s node id)
-   * @return entityAddress
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "Bech32m-encoded human readable version of the entity's address (ie the entity's node id)")
-  @JsonProperty(JSON_PROPERTY_ENTITY_ADDRESS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getEntityAddress() {
-    return entityAddress;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_ENTITY_ADDRESS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEntityAddress(String entityAddress) {
-    this.entityAddress = entityAddress;
-  }
-
-
-  public FlashedSubstate partitionNumber(Integer partitionNumber) {
-    this.partitionNumber = partitionNumber;
-    return this;
-  }
-
-   /**
-   * Get partitionNumber
-   * minimum: 0
-   * maximum: 255
-   * @return partitionNumber
+   * Get deletedPartitions
+   * @return deletedPartitions
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_PARTITION_NUMBER)
+  @JsonProperty(JSON_PROPERTY_DELETED_PARTITIONS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Integer getPartitionNumber() {
-    return partitionNumber;
+  public List<PartitionId> getDeletedPartitions() {
+    return deletedPartitions;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_PARTITION_NUMBER)
+  @JsonProperty(JSON_PROPERTY_DELETED_PARTITIONS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setPartitionNumber(Integer partitionNumber) {
-    this.partitionNumber = partitionNumber;
+  public void setDeletedPartitions(List<PartitionId> deletedPartitions) {
+    this.deletedPartitions = deletedPartitions;
   }
 
 
-  public FlashedSubstate substateKey(SubstateKey substateKey) {
-    this.substateKey = substateKey;
+  public FlashedStateUpdates setSubstates(List<FlashSetSubstate> setSubstates) {
+    this.setSubstates = setSubstates;
+    return this;
+  }
+
+  public FlashedStateUpdates addSetSubstatesItem(FlashSetSubstate setSubstatesItem) {
+    this.setSubstates.add(setSubstatesItem);
     return this;
   }
 
    /**
-   * Get substateKey
-   * @return substateKey
+   * Get setSubstates
+   * @return setSubstates
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_SUBSTATE_KEY)
+  @JsonProperty(JSON_PROPERTY_SET_SUBSTATES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public SubstateKey getSubstateKey() {
-    return substateKey;
+  public List<FlashSetSubstate> getSetSubstates() {
+    return setSubstates;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_SUBSTATE_KEY)
+  @JsonProperty(JSON_PROPERTY_SET_SUBSTATES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSubstateKey(SubstateKey substateKey) {
-    this.substateKey = substateKey;
+  public void setSetSubstates(List<FlashSetSubstate> setSubstates) {
+    this.setSubstates = setSubstates;
   }
 
 
-  public FlashedSubstate value(String value) {
-    this.value = value;
+  public FlashedStateUpdates deletedSubstates(List<SubstateId> deletedSubstates) {
+    this.deletedSubstates = deletedSubstates;
+    return this;
+  }
+
+  public FlashedStateUpdates addDeletedSubstatesItem(SubstateId deletedSubstatesItem) {
+    this.deletedSubstates.add(deletedSubstatesItem);
     return this;
   }
 
    /**
-   * The hex-encoded, SBOR-encoded substate data bytes.
-   * @return value
+   * Get deletedSubstates
+   * @return deletedSubstates
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded, SBOR-encoded substate data bytes.")
-  @JsonProperty(JSON_PROPERTY_VALUE)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_DELETED_SUBSTATES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getValue() {
-    return value;
+  public List<SubstateId> getDeletedSubstates() {
+    return deletedSubstates;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_VALUE)
+  @JsonProperty(JSON_PROPERTY_DELETED_SUBSTATES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValue(String value) {
-    this.value = value;
+  public void setDeletedSubstates(List<SubstateId> deletedSubstates) {
+    this.deletedSubstates = deletedSubstates;
   }
 
 
   /**
-   * Return true if this FlashedSubstate object is equal to o.
+   * Return true if this FlashedStateUpdates object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -171,26 +159,24 @@ public class FlashedSubstate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    FlashedSubstate flashedSubstate = (FlashedSubstate) o;
-    return Objects.equals(this.entityAddress, flashedSubstate.entityAddress) &&
-        Objects.equals(this.partitionNumber, flashedSubstate.partitionNumber) &&
-        Objects.equals(this.substateKey, flashedSubstate.substateKey) &&
-        Objects.equals(this.value, flashedSubstate.value);
+    FlashedStateUpdates flashedStateUpdates = (FlashedStateUpdates) o;
+    return Objects.equals(this.deletedPartitions, flashedStateUpdates.deletedPartitions) &&
+        Objects.equals(this.setSubstates, flashedStateUpdates.setSubstates) &&
+        Objects.equals(this.deletedSubstates, flashedStateUpdates.deletedSubstates);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entityAddress, partitionNumber, substateKey, value);
+    return Objects.hash(deletedPartitions, setSubstates, deletedSubstates);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class FlashedSubstate {\n");
-    sb.append("    entityAddress: ").append(toIndentedString(entityAddress)).append("\n");
-    sb.append("    partitionNumber: ").append(toIndentedString(partitionNumber)).append("\n");
-    sb.append("    substateKey: ").append(toIndentedString(substateKey)).append("\n");
-    sb.append("    value: ").append(toIndentedString(value)).append("\n");
+    sb.append("class FlashedStateUpdates {\n");
+    sb.append("    deletedPartitions: ").append(toIndentedString(deletedPartitions)).append("\n");
+    sb.append("    setSubstates: ").append(toIndentedString(setSubstates)).append("\n");
+    sb.append("    deletedSubstates: ").append(toIndentedString(deletedSubstates)).append("\n");
     sb.append("}");
     return sb.toString();
   }

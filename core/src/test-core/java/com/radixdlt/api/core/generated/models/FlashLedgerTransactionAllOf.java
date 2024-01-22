@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.FlashTransaction;
+import com.radixdlt.api.core.generated.models.FlashedStateUpdates;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,39 +32,69 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * FlashLedgerTransactionAllOf
  */
 @JsonPropertyOrder({
-  FlashLedgerTransactionAllOf.JSON_PROPERTY_FLASH_TRANSACTION
+  FlashLedgerTransactionAllOf.JSON_PROPERTY_NAME,
+  FlashLedgerTransactionAllOf.JSON_PROPERTY_FLASHED_STATE_UPDATES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class FlashLedgerTransactionAllOf {
-  public static final String JSON_PROPERTY_FLASH_TRANSACTION = "flash_transaction";
-  private FlashTransaction flashTransaction;
+  public static final String JSON_PROPERTY_NAME = "name";
+  private String name;
+
+  public static final String JSON_PROPERTY_FLASHED_STATE_UPDATES = "flashed_state_updates";
+  private FlashedStateUpdates flashedStateUpdates;
 
   public FlashLedgerTransactionAllOf() { 
   }
 
-  public FlashLedgerTransactionAllOf flashTransaction(FlashTransaction flashTransaction) {
-    this.flashTransaction = flashTransaction;
+  public FlashLedgerTransactionAllOf name(String name) {
+    this.name = name;
     return this;
   }
 
    /**
-   * Get flashTransaction
-   * @return flashTransaction
+   * Human-readable identifier of the flash transaction.
+   * @return name
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_FLASH_TRANSACTION)
+  @ApiModelProperty(required = true, value = "Human-readable identifier of the flash transaction.")
+  @JsonProperty(JSON_PROPERTY_NAME)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public FlashTransaction getFlashTransaction() {
-    return flashTransaction;
+  public String getName() {
+    return name;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_FLASH_TRANSACTION)
+  @JsonProperty(JSON_PROPERTY_NAME)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setFlashTransaction(FlashTransaction flashTransaction) {
-    this.flashTransaction = flashTransaction;
+  public void setName(String name) {
+    this.name = name;
+  }
+
+
+  public FlashLedgerTransactionAllOf flashedStateUpdates(FlashedStateUpdates flashedStateUpdates) {
+    this.flashedStateUpdates = flashedStateUpdates;
+    return this;
+  }
+
+   /**
+   * Get flashedStateUpdates
+   * @return flashedStateUpdates
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_FLASHED_STATE_UPDATES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public FlashedStateUpdates getFlashedStateUpdates() {
+    return flashedStateUpdates;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_FLASHED_STATE_UPDATES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setFlashedStateUpdates(FlashedStateUpdates flashedStateUpdates) {
+    this.flashedStateUpdates = flashedStateUpdates;
   }
 
 
@@ -80,19 +110,21 @@ public class FlashLedgerTransactionAllOf {
       return false;
     }
     FlashLedgerTransactionAllOf flashLedgerTransactionAllOf = (FlashLedgerTransactionAllOf) o;
-    return Objects.equals(this.flashTransaction, flashLedgerTransactionAllOf.flashTransaction);
+    return Objects.equals(this.name, flashLedgerTransactionAllOf.name) &&
+        Objects.equals(this.flashedStateUpdates, flashLedgerTransactionAllOf.flashedStateUpdates);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(flashTransaction);
+    return Objects.hash(name, flashedStateUpdates);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class FlashLedgerTransactionAllOf {\n");
-    sb.append("    flashTransaction: ").append(toIndentedString(flashTransaction)).append("\n");
+    sb.append("    name: ").append(toIndentedString(name)).append("\n");
+    sb.append("    flashedStateUpdates: ").append(toIndentedString(flashedStateUpdates)).append("\n");
     sb.append("}");
     return sb.toString();
   }

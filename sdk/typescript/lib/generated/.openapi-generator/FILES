@@ -170,8 +170,8 @@ models/FieldSubstateKey.ts
 models/FieldSubstateKeyAllOf.ts
 models/FlashLedgerTransaction.ts
 models/FlashLedgerTransactionAllOf.ts
-models/FlashTransaction.ts
-models/FlashedSubstate.ts
+models/FlashSetSubstate.ts
+models/FlashedStateUpdates.ts
 models/FrozenStatus.ts
 models/FullyScopedTypeId.ts
 models/FunctionAuthType.ts

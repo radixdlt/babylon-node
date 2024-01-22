@@ -13,76 +13,80 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { SubstateKey } from './SubstateKey';
+import type { FlashSetSubstate } from './FlashSetSubstate';
 import {
-    SubstateKeyFromJSON,
-    SubstateKeyFromJSONTyped,
-    SubstateKeyToJSON,
-} from './SubstateKey';
+    FlashSetSubstateFromJSON,
+    FlashSetSubstateFromJSONTyped,
+    FlashSetSubstateToJSON,
+} from './FlashSetSubstate';
+import type { PartitionId } from './PartitionId';
+import {
+    PartitionIdFromJSON,
+    PartitionIdFromJSONTyped,
+    PartitionIdToJSON,
+} from './PartitionId';
+import type { SubstateId } from './SubstateId';
+import {
+    SubstateIdFromJSON,
+    SubstateIdFromJSONTyped,
+    SubstateIdToJSON,
+} from './SubstateId';
 
 /**
- * 
+ * Direct state updates performed by a Flash Transaction.
  * @export
- * @interface FlashedSubstate
+ * @interface FlashedStateUpdates
  */
-export interface FlashedSubstate {
-    /**
-     * Bech32m-encoded human readable version of the entity's address (ie the entity's node id)
-     * @type {string}
-     * @memberof FlashedSubstate
-     */
-    entity_address: string;
+export interface FlashedStateUpdates {
     /**
      * 
-     * @type {number}
-     * @memberof FlashedSubstate
+     * @type {Array<PartitionId>}
+     * @memberof FlashedStateUpdates
      */
-    partition_number: number;
+    deleted_partitions: Array<PartitionId>;
     /**
      * 
-     * @type {SubstateKey}
-     * @memberof FlashedSubstate
+     * @type {Array<FlashSetSubstate>}
+     * @memberof FlashedStateUpdates
      */
-    substate_key: SubstateKey;
+    set_substates: Array<FlashSetSubstate>;
     /**
-     * The hex-encoded, SBOR-encoded substate data bytes.
-     * @type {string}
-     * @memberof FlashedSubstate
+     * 
+     * @type {Array<SubstateId>}
+     * @memberof FlashedStateUpdates
      */
-    value: string;
+    deleted_substates: Array<SubstateId>;
 }
 
 /**
- * Check if a given object implements the FlashedSubstate interface.
+ * Check if a given object implements the FlashedStateUpdates interface.
  */
-export function instanceOfFlashedSubstate(value: object): boolean {
+export function instanceOfFlashedStateUpdates(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "entity_address" in value;
-    isInstance = isInstance && "partition_number" in value;
-    isInstance = isInstance && "substate_key" in value;
-    isInstance = isInstance && "value" in value;
+    isInstance = isInstance && "deleted_partitions" in value;
+    isInstance = isInstance && "set_substates" in value;
+    isInstance = isInstance && "deleted_substates" in value;
 
     return isInstance;
 }
 
-export function FlashedSubstateFromJSON(json: any): FlashedSubstate {
-    return FlashedSubstateFromJSONTyped(json, false);
+export function FlashedStateUpdatesFromJSON(json: any): FlashedStateUpdates {
+    return FlashedStateUpdatesFromJSONTyped(json, false);
 }
 
-export function FlashedSubstateFromJSONTyped(json: any, ignoreDiscriminator: boolean): FlashedSubstate {
+export function FlashedStateUpdatesFromJSONTyped(json: any, ignoreDiscriminator: boolean): FlashedStateUpdates {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'entity_address': json['entity_address'],
-        'partition_number': json['partition_number'],
-        'substate_key': SubstateKeyFromJSON(json['substate_key']),
-        'value': json['value'],
+        'deleted_partitions': ((json['deleted_partitions'] as Array<any>).map(PartitionIdFromJSON)),
+        'set_substates': ((json['set_substates'] as Array<any>).map(FlashSetSubstateFromJSON)),
+        'deleted_substates': ((json['deleted_substates'] as Array<any>).map(SubstateIdFromJSON)),
     };
 }
 
-export function FlashedSubstateToJSON(value?: FlashedSubstate | null): any {
+export function FlashedStateUpdatesToJSON(value?: FlashedStateUpdates | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -91,10 +95,9 @@ export function FlashedSubstateToJSON(value?: FlashedSubstate | null): any {
     }
     return {
         
-        'entity_address': value.entity_address,
-        'partition_number': value.partition_number,
-        'substate_key': SubstateKeyToJSON(value.substate_key),
-        'value': value.value,
+        'deleted_partitions': ((value.deleted_partitions as Array<any>).map(PartitionIdToJSON)),
+        'set_substates': ((value.set_substates as Array<any>).map(FlashSetSubstateToJSON)),
+        'deleted_substates': ((value.deleted_substates as Array<any>).map(SubstateIdToJSON)),
     };
 }
 

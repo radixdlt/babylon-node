@@ -13,14 +13,18 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct FlashLedgerTransactionAllOf {
-    #[serde(rename = "flash_transaction")]
-    pub flash_transaction: Box<crate::core_api::generated::models::FlashTransaction>,
+    /// Human-readable identifier of the flash transaction.
+    #[serde(rename = "name")]
+    pub name: String,
+    #[serde(rename = "flashed_state_updates")]
+    pub flashed_state_updates: Box<crate::core_api::generated::models::FlashedStateUpdates>,
 }
 
 impl FlashLedgerTransactionAllOf {
-    pub fn new(flash_transaction: crate::core_api::generated::models::FlashTransaction) -> FlashLedgerTransactionAllOf {
+    pub fn new(name: String, flashed_state_updates: crate::core_api::generated::models::FlashedStateUpdates) -> FlashLedgerTransactionAllOf {
         FlashLedgerTransactionAllOf {
-            flash_transaction: Box::new(flash_transaction),
+            name,
+            flashed_state_updates: Box::new(flashed_state_updates),
         }
     }
 }

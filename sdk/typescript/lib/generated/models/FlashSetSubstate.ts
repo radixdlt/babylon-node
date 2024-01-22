@@ -13,52 +13,66 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { FlashedSubstate } from './FlashedSubstate';
+import type { SubstateId } from './SubstateId';
 import {
-    FlashedSubstateFromJSON,
-    FlashedSubstateFromJSONTyped,
-    FlashedSubstateToJSON,
-} from './FlashedSubstate';
+    SubstateIdFromJSON,
+    SubstateIdFromJSONTyped,
+    SubstateIdToJSON,
+} from './SubstateId';
+import type { SubstateValue } from './SubstateValue';
+import {
+    SubstateValueFromJSON,
+    SubstateValueFromJSONTyped,
+    SubstateValueToJSON,
+} from './SubstateValue';
 
 /**
  * 
  * @export
- * @interface FlashTransaction
+ * @interface FlashSetSubstate
  */
-export interface FlashTransaction {
+export interface FlashSetSubstate {
     /**
      * 
-     * @type {Array<FlashedSubstate>}
-     * @memberof FlashTransaction
+     * @type {SubstateId}
+     * @memberof FlashSetSubstate
      */
-    flashed_substates: Array<FlashedSubstate>;
+    substate_id: SubstateId;
+    /**
+     * 
+     * @type {SubstateValue}
+     * @memberof FlashSetSubstate
+     */
+    value: SubstateValue;
 }
 
 /**
- * Check if a given object implements the FlashTransaction interface.
+ * Check if a given object implements the FlashSetSubstate interface.
  */
-export function instanceOfFlashTransaction(value: object): boolean {
+export function instanceOfFlashSetSubstate(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "flashed_substates" in value;
+    isInstance = isInstance && "substate_id" in value;
+    isInstance = isInstance && "value" in value;
 
     return isInstance;
 }
 
-export function FlashTransactionFromJSON(json: any): FlashTransaction {
-    return FlashTransactionFromJSONTyped(json, false);
+export function FlashSetSubstateFromJSON(json: any): FlashSetSubstate {
+    return FlashSetSubstateFromJSONTyped(json, false);
 }
 
-export function FlashTransactionFromJSONTyped(json: any, ignoreDiscriminator: boolean): FlashTransaction {
+export function FlashSetSubstateFromJSONTyped(json: any, ignoreDiscriminator: boolean): FlashSetSubstate {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'flashed_substates': ((json['flashed_substates'] as Array<any>).map(FlashedSubstateFromJSON)),
+        'substate_id': SubstateIdFromJSON(json['substate_id']),
+        'value': SubstateValueFromJSON(json['value']),
     };
 }
 
-export function FlashTransactionToJSON(value?: FlashTransaction | null): any {
+export function FlashSetSubstateToJSON(value?: FlashSetSubstate | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -67,7 +81,8 @@ export function FlashTransactionToJSON(value?: FlashTransaction | null): any {
     }
     return {
         
-        'flashed_substates': ((value.flashed_substates as Array<any>).map(FlashedSubstateToJSON)),
+        'substate_id': SubstateIdToJSON(value.substate_id),
+        'value': SubstateValueToJSON(value.value),
     };
 }
 

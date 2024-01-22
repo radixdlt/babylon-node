@@ -27,7 +27,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.FlashLedgerTransaction;
 import com.radixdlt.api.core.generated.models.FlashLedgerTransactionAllOf;
-import com.radixdlt.api.core.generated.models.FlashTransaction;
+import com.radixdlt.api.core.generated.models.FlashedStateUpdates;
 import com.radixdlt.api.core.generated.models.GenesisLedgerTransaction;
 import com.radixdlt.api.core.generated.models.LedgerTransaction;
 import com.radixdlt.api.core.generated.models.LedgerTransactionType;
@@ -43,7 +43,8 @@ import com.radixdlt.api.core.generated.client.JSON;
  * FlashLedgerTransaction
  */
 @JsonPropertyOrder({
-  FlashLedgerTransaction.JSON_PROPERTY_FLASH_TRANSACTION
+  FlashLedgerTransaction.JSON_PROPERTY_NAME,
+  FlashLedgerTransaction.JSON_PROPERTY_FLASHED_STATE_UPDATES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -59,35 +60,64 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class FlashLedgerTransaction extends LedgerTransaction {
-  public static final String JSON_PROPERTY_FLASH_TRANSACTION = "flash_transaction";
-  private FlashTransaction flashTransaction;
+  public static final String JSON_PROPERTY_NAME = "name";
+  private String name;
+
+  public static final String JSON_PROPERTY_FLASHED_STATE_UPDATES = "flashed_state_updates";
+  private FlashedStateUpdates flashedStateUpdates;
 
   public FlashLedgerTransaction() { 
   }
 
-  public FlashLedgerTransaction flashTransaction(FlashTransaction flashTransaction) {
-    this.flashTransaction = flashTransaction;
+  public FlashLedgerTransaction name(String name) {
+    this.name = name;
     return this;
   }
 
    /**
-   * Get flashTransaction
-   * @return flashTransaction
+   * Human-readable identifier of the flash transaction.
+   * @return name
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_FLASH_TRANSACTION)
+  @ApiModelProperty(required = true, value = "Human-readable identifier of the flash transaction.")
+  @JsonProperty(JSON_PROPERTY_NAME)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public FlashTransaction getFlashTransaction() {
-    return flashTransaction;
+  public String getName() {
+    return name;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_FLASH_TRANSACTION)
+  @JsonProperty(JSON_PROPERTY_NAME)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setFlashTransaction(FlashTransaction flashTransaction) {
-    this.flashTransaction = flashTransaction;
+  public void setName(String name) {
+    this.name = name;
+  }
+
+
+  public FlashLedgerTransaction flashedStateUpdates(FlashedStateUpdates flashedStateUpdates) {
+    this.flashedStateUpdates = flashedStateUpdates;
+    return this;
+  }
+
+   /**
+   * Get flashedStateUpdates
+   * @return flashedStateUpdates
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_FLASHED_STATE_UPDATES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public FlashedStateUpdates getFlashedStateUpdates() {
+    return flashedStateUpdates;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_FLASHED_STATE_UPDATES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setFlashedStateUpdates(FlashedStateUpdates flashedStateUpdates) {
+    this.flashedStateUpdates = flashedStateUpdates;
   }
 
 
@@ -103,13 +133,14 @@ public class FlashLedgerTransaction extends LedgerTransaction {
       return false;
     }
     FlashLedgerTransaction flashLedgerTransaction = (FlashLedgerTransaction) o;
-    return Objects.equals(this.flashTransaction, flashLedgerTransaction.flashTransaction) &&
+    return Objects.equals(this.name, flashLedgerTransaction.name) &&
+        Objects.equals(this.flashedStateUpdates, flashLedgerTransaction.flashedStateUpdates) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(flashTransaction, super.hashCode());
+    return Objects.hash(name, flashedStateUpdates, super.hashCode());
   }
 
   @Override
@@ -117,7 +148,8 @@ public class FlashLedgerTransaction extends LedgerTransaction {
     StringBuilder sb = new StringBuilder();
     sb.append("class FlashLedgerTransaction {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    flashTransaction: ").append(toIndentedString(flashTransaction)).append("\n");
+    sb.append("    name: ").append(toIndentedString(name)).append("\n");
+    sb.append("    flashedStateUpdates: ").append(toIndentedString(flashedStateUpdates)).append("\n");
     sb.append("}");
     return sb.toString();
   }
