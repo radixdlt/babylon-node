@@ -65,7 +65,7 @@
 package com.radixdlt.api.system.health;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.system.generated.models.HealthResponse;
+import com.radixdlt.api.system.generated.models.PendingProtocolUpdate;
 import com.radixdlt.consensus.bft.SelfValidatorInfo;
 import com.radixdlt.monitoring.InMemorySystemInfo;
 import com.radixdlt.prometheus.LedgerStatus;
@@ -75,6 +75,8 @@ import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactWhenSupported
 import com.radixdlt.protocol.RustProtocolUpdate;
 import com.radixdlt.state.RustStateReader;
 import com.radixdlt.statecomputer.ProtocolState;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public final class HealthInfoServiceImpl implements HealthInfoService {
   private final RustPrometheus rustPrometheus;
@@ -120,35 +122,45 @@ public final class HealthInfoServiceImpl implements HealthInfoService {
   }
 
   @Override
-  public HealthResponse.ReadinessSignalStatusEnum readinessSignalStatus() {
+  public Map<String, PendingProtocolUpdate.ReadinessSignalStatusEnum> readinessSignalStatuses() {
+    final var protocolState = inMemorySystemInfo.getProtocolState();
     return selfValidatorInfo
         .bftValidatorId()
         .map(
             selfValidatorId -> {
-              final var protocolState = inMemorySystemInfo.getProtocolState();
-              final var signalRequired =
-                  protocolState.pendingProtocolUpdates().stream()
-                      .anyMatch(
+              final var selfAddress = selfValidatorId.getValidatorAddress();
+              final var selfSignal =
+                  this.rustStateReader.getValidatorProtocolUpdateReadinessSignal(selfAddress);
+              return protocolState.pendingProtocolUpdates().stream()
+                  .collect(
+                      Collectors.toMap(
+                          p -> p.protocolUpdate().nextProtocolVersion(),
                           p -> {
                             if (p.protocolUpdate().enactmentCondition()
                                 instanceof EnactWhenSupportedAndWithinBounds) {
                               final var expectedSignal =
                                   RustProtocolUpdate.readinessSignalName(p.protocolUpdate());
-                              final var selfAddress = selfValidatorId.getValidatorAddress();
-                              final var selfSignal =
-                                  this.rustStateReader.getValidatorProtocolUpdateReadinessSignal(
-                                      selfAddress);
-                              return selfSignal.fold(s -> !s.equals(expectedSignal), () -> true);
+                              if (selfSignal.fold(s -> s.equals(expectedSignal), () -> false)) {
+                                return PendingProtocolUpdate.ReadinessSignalStatusEnum
+                                    .READINESS_SIGNALLED;
+                              } else {
+                                return PendingProtocolUpdate.ReadinessSignalStatusEnum
+                                    .READINESS_NOT_SIGNALLED;
+                              }
                             } else {
-                              return false;
+                              return PendingProtocolUpdate.ReadinessSignalStatusEnum
+                                  .NO_SIGNAL_REQUIRED;
                             }
-                          });
-              if (signalRequired) {
-                return HealthResponse.ReadinessSignalStatusEnum.READINESS_SIGNAL_REQUIRED;
-              } else {
-                return HealthResponse.ReadinessSignalStatusEnum.NO_ACTION_NEEDED;
-              }
+                          }));
             })
-        .orElse(HealthResponse.ReadinessSignalStatusEnum.NO_ACTION_NEEDED);
+        .orElseGet(
+            () ->
+                protocolState.pendingProtocolUpdates().stream()
+                    .collect(
+                        Collectors.toMap(
+                            p -> p.protocolUpdate().nextProtocolVersion(),
+                            p ->
+                                PendingProtocolUpdate.ReadinessSignalStatusEnum
+                                    .NO_SIGNAL_REQUIRED)));
   }
 }
