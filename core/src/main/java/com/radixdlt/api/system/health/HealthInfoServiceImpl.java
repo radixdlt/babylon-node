@@ -71,7 +71,7 @@ import com.radixdlt.monitoring.InMemorySystemInfo;
 import com.radixdlt.prometheus.LedgerStatus;
 import com.radixdlt.prometheus.RecentSelfProposalMissStatistic;
 import com.radixdlt.prometheus.RustPrometheus;
-import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactWhenSupportedAndWithinBounds;
+import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactAtStartOfAnEpochIfSupportedAndWithinBounds;
 import com.radixdlt.protocol.RustProtocolUpdate;
 import com.radixdlt.state.RustStateReader;
 import com.radixdlt.statecomputer.ProtocolState;
@@ -137,7 +137,7 @@ public final class HealthInfoServiceImpl implements HealthInfoService {
                           p -> p.protocolUpdate().nextProtocolVersion(),
                           p -> {
                             if (p.protocolUpdate().enactmentCondition()
-                                instanceof EnactWhenSupportedAndWithinBounds) {
+                                instanceof EnactAtStartOfAnEpochIfSupportedAndWithinBounds) {
                               final var expectedSignal =
                                   RustProtocolUpdate.readinessSignalName(p.protocolUpdate());
                               if (selfSignal.fold(s -> s.equals(expectedSignal), () -> false)) {
