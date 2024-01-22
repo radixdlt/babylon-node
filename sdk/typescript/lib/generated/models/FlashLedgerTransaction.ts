@@ -39,6 +39,12 @@ export interface FlashLedgerTransaction {
      */
     payload_hex?: string;
     /**
+     * Human-readable identifier of the flash transaction.
+     * @type {string}
+     * @memberof FlashLedgerTransaction
+     */
+    name: string;
+    /**
      * 
      * @type {FlashedStateUpdates}
      * @memberof FlashLedgerTransaction
@@ -62,6 +68,7 @@ export type FlashLedgerTransactionTypeEnum = typeof FlashLedgerTransactionTypeEn
 export function instanceOfFlashLedgerTransaction(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "type" in value;
+    isInstance = isInstance && "name" in value;
     isInstance = isInstance && "flashed_state_updates" in value;
 
     return isInstance;
@@ -79,6 +86,7 @@ export function FlashLedgerTransactionFromJSONTyped(json: any, ignoreDiscriminat
         
         'type': json['type'],
         'payload_hex': !exists(json, 'payload_hex') ? undefined : json['payload_hex'],
+        'name': json['name'],
         'flashed_state_updates': FlashedStateUpdatesFromJSON(json['flashed_state_updates']),
     };
 }
@@ -94,6 +102,7 @@ export function FlashLedgerTransactionToJSON(value?: FlashLedgerTransaction | nu
         
         'type': value.type,
         'payload_hex': value.payload_hex,
+        'name': value.name,
         'flashed_state_updates': FlashedStateUpdatesToJSON(value.flashed_state_updates),
     };
 }

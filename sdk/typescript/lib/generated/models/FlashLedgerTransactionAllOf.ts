@@ -27,6 +27,12 @@ import {
  */
 export interface FlashLedgerTransactionAllOf {
     /**
+     * Human-readable identifier of the flash transaction.
+     * @type {string}
+     * @memberof FlashLedgerTransactionAllOf
+     */
+    name: string;
+    /**
      * 
      * @type {FlashedStateUpdates}
      * @memberof FlashLedgerTransactionAllOf
@@ -55,6 +61,7 @@ export type FlashLedgerTransactionAllOfTypeEnum = typeof FlashLedgerTransactionA
  */
 export function instanceOfFlashLedgerTransactionAllOf(value: object): boolean {
     let isInstance = true;
+    isInstance = isInstance && "name" in value;
     isInstance = isInstance && "flashed_state_updates" in value;
 
     return isInstance;
@@ -70,6 +77,7 @@ export function FlashLedgerTransactionAllOfFromJSONTyped(json: any, ignoreDiscri
     }
     return {
         
+        'name': json['name'],
         'flashed_state_updates': FlashedStateUpdatesFromJSON(json['flashed_state_updates']),
         'type': !exists(json, 'type') ? undefined : json['type'],
     };
@@ -84,6 +92,7 @@ export function FlashLedgerTransactionAllOfToJSON(value?: FlashLedgerTransaction
     }
     return {
         
+        'name': value.name,
         'flashed_state_updates': FlashedStateUpdatesToJSON(value.flashed_state_updates),
         'type': value.type,
     };

@@ -18,15 +18,19 @@ pub struct FlashLedgerTransaction {
     /// The hex-encoded full ledger transaction payload. Only returned if enabled in TransactionFormatOptions on your request.
     #[serde(rename = "payload_hex", skip_serializing_if = "Option::is_none")]
     pub payload_hex: Option<String>,
+    /// Human-readable identifier of the flash transaction.
+    #[serde(rename = "name")]
+    pub name: String,
     #[serde(rename = "flashed_state_updates")]
     pub flashed_state_updates: Box<crate::core_api::generated::models::FlashedStateUpdates>,
 }
 
 impl FlashLedgerTransaction {
-    pub fn new(_type: crate::core_api::generated::models::LedgerTransactionType, flashed_state_updates: crate::core_api::generated::models::FlashedStateUpdates) -> FlashLedgerTransaction {
+    pub fn new(_type: crate::core_api::generated::models::LedgerTransactionType, name: String, flashed_state_updates: crate::core_api::generated::models::FlashedStateUpdates) -> FlashLedgerTransaction {
         FlashLedgerTransaction {
             _type,
             payload_hex: None,
+            name,
             flashed_state_updates: Box::new(flashed_state_updates),
         }
     }

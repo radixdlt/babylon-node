@@ -1,4 +1,6 @@
-use radix_engine::track::{BatchPartitionStateUpdate, NodeStateUpdates, PartitionStateUpdates};
+use radix_engine::track::{
+    BatchPartitionStateUpdate, NodeStateUpdates, PartitionStateUpdates, StateUpdates,
+};
 use std::iter;
 
 use crate::core_api::*;
@@ -356,7 +358,11 @@ pub fn to_api_ledger_transaction(
         },
         LedgerTransaction::FlashV1(tx) => models::LedgerTransaction::FlashLedgerTransaction {
             payload_hex,
-            flashed_state_updates: Box::new(to_api_flashed_state_updates(context, tx.as_ref())?),
+            name: tx.name.clone(),
+            flashed_state_updates: Box::new(to_api_flashed_state_updates(
+                context,
+                &tx.state_updates,
+            )?),
         },
     })
 }
@@ -640,12 +646,12 @@ fn to_api_balance_changes(
 
 pub fn to_api_flashed_state_updates(
     context: &MappingContext,
-    flash_transaction: &FlashTransactionV1,
+    state_updates: &StateUpdates,
 ) -> Result<models::FlashedStateUpdates, MappingError> {
     let mut deleted_partitions = Vec::new();
     let mut set_substates = Vec::new();
     let mut deleted_substates = Vec::new();
-    for (node_id, updates) in &flash_transaction.state_updates.by_node {
+    for (node_id, updates) in &state_updates.by_node {
         match updates {
             NodeStateUpdates::Delta { by_partition } => {
                 for (partition_number, partition_updates) in by_partition {

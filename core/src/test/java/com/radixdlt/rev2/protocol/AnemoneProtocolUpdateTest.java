@@ -103,6 +103,7 @@ import com.radixdlt.rev2.*;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.utils.FreePortFinder;
+import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -230,7 +231,15 @@ public final class AnemoneProtocolUpdateTest {
                   .toList();
 
       // Assert some known facts about Anemone's flashes:
-      assertEquals(4, flashTransactions.size());
+      final var transactionNames =
+          flashTransactions.stream().map(FlashLedgerTransaction::getName).toList();
+      assertEquals(
+          List.of(
+              "anemone-validator-fee-fix",
+              "anemone-seconds-precision",
+              "anemone-vm-boot",
+              "anemone-pools"),
+          transactionNames);
 
       final var deletedPartitions =
           flashTransactions.stream()

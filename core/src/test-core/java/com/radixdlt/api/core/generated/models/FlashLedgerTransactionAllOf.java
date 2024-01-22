@@ -32,15 +32,45 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * FlashLedgerTransactionAllOf
  */
 @JsonPropertyOrder({
+  FlashLedgerTransactionAllOf.JSON_PROPERTY_NAME,
   FlashLedgerTransactionAllOf.JSON_PROPERTY_FLASHED_STATE_UPDATES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class FlashLedgerTransactionAllOf {
+  public static final String JSON_PROPERTY_NAME = "name";
+  private String name;
+
   public static final String JSON_PROPERTY_FLASHED_STATE_UPDATES = "flashed_state_updates";
   private FlashedStateUpdates flashedStateUpdates;
 
   public FlashLedgerTransactionAllOf() { 
   }
+
+  public FlashLedgerTransactionAllOf name(String name) {
+    this.name = name;
+    return this;
+  }
+
+   /**
+   * Human-readable identifier of the flash transaction.
+   * @return name
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "Human-readable identifier of the flash transaction.")
+  @JsonProperty(JSON_PROPERTY_NAME)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getName() {
+    return name;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_NAME)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setName(String name) {
+    this.name = name;
+  }
+
 
   public FlashLedgerTransactionAllOf flashedStateUpdates(FlashedStateUpdates flashedStateUpdates) {
     this.flashedStateUpdates = flashedStateUpdates;
@@ -80,18 +110,20 @@ public class FlashLedgerTransactionAllOf {
       return false;
     }
     FlashLedgerTransactionAllOf flashLedgerTransactionAllOf = (FlashLedgerTransactionAllOf) o;
-    return Objects.equals(this.flashedStateUpdates, flashLedgerTransactionAllOf.flashedStateUpdates);
+    return Objects.equals(this.name, flashLedgerTransactionAllOf.name) &&
+        Objects.equals(this.flashedStateUpdates, flashLedgerTransactionAllOf.flashedStateUpdates);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(flashedStateUpdates);
+    return Objects.hash(name, flashedStateUpdates);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class FlashLedgerTransactionAllOf {\n");
+    sb.append("    name: ").append(toIndentedString(name)).append("\n");
     sb.append("    flashedStateUpdates: ").append(toIndentedString(flashedStateUpdates)).append("\n");
     sb.append("}");
     return sb.toString();

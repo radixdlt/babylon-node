@@ -7413,8 +7413,12 @@ components:
         - $ref: "#/components/schemas/LedgerTransaction"
         - type: object
           required:
+            - name
             - flashed_state_updates
           properties:
+            name:
+              type: string
+              description: Human-readable identifier of the flash transaction.
             flashed_state_updates:
               $ref: "#/components/schemas/FlashedStateUpdates"
     RoundUpdateTransaction:
