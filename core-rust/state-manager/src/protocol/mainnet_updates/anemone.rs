@@ -4,7 +4,6 @@ use crate::{
     UpdatableStateComputerConfig, ANEMONE_PROTOCOL_VERSION,
 };
 use node_common::locks::StateLock;
-
 use radix_engine::utils::pools_package_v1_1;
 use radix_engine::utils::{
     generate_seconds_precision_state_updates, generate_validator_fee_fix_state_updates,

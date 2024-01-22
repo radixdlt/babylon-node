@@ -69,7 +69,7 @@ jobs:
 
   build_deb:
     name: Build debian package
-    runs-on: babylon-runner
+    runs-on: selfhosted-ubuntu-22.04-16-cores
     outputs:
       tags: ${{ steps.meta.outputs.tags }}
       labels: ${{ steps.meta.outputs.labels }}
@@ -135,16 +135,14 @@ jobs:
         with:
           path: /tmp/outputs/cache/docker
           key: babylon-node-default-${{ hashFiles('./Dockerfile') }}
-      - name: Install and Configure Buildx
+      - name: Set up Docker Context for Buildx
         run: |
-          wget https://github.com/docker/buildx/releases/download/v0.10.4/buildx-v0.10.4.linux-amd64
-          echo "---- Configure Docker plugins ----"
-          mkdir -p /home/runner/.docker/cli-plugins/
-          mv buildx-v0.10.4.linux-amd64 /home/runner/.docker/cli-plugins/docker-buildx
-          chmod +x /home/runner/.docker/cli-plugins/docker-buildx
-          echo "---- Create build context ----"
-          docker context create babylon-node
-          docker buildx create babylon-node --use
+          docker context create builders | true
+      - name: Set up Docker Buildx
+        uses: RDXWorks-actions/setup-buildx-action@master
+        with:
+          version: latest
+          endpoint: builders
       - name: Create deb package
         run: |
           sudo apt-get update && sudo apt-get install -y make
