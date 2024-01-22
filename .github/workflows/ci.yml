@@ -15,7 +15,7 @@ on:
 jobs:
   snyk-scan-deps-licences:
     name: Snyk deps/licences scan
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     permissions:
       id-token: write
       pull-requests: read
@@ -226,7 +226,7 @@ jobs:
         run: ./gradlew clean runTargetedIntegrationTests --info --refresh-dependencies --parallel
   cross-xwin:
     name: Cross compile to Windows
-    runs-on: selfhosted-ubuntu-22.04-16-cores
+    runs-on: ubuntu-latest
     steps:
       - uses: RDXWorks-actions/checkout@main
         with:
