@@ -78,10 +78,13 @@ public record ProtocolConfig(
   }
 
   public static ProtocolConfig testingDefault() {
-    return new ProtocolConfig("testing-genesis", ImmutableList.of(
+    return new ProtocolConfig(
+        "testing-genesis",
+        ImmutableList.of(
             new ProtocolUpdate(
-                    "anemone",
-                    ProtocolUpdateEnactmentCondition.singleReadinessThresholdBetweenEpochs(1, 100_000, Decimal.ofNonNegative(1),0))));
+                "anemone",
+                ProtocolUpdateEnactmentCondition.singleReadinessThresholdBetweenEpochs(
+                    1, 100_000, Decimal.ofNonNegative(1), 0))));
   }
 
   public static ProtocolConfig mainnet() {

@@ -71,22 +71,20 @@ import com.radixdlt.protocol.ProtocolUpdate;
 import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition;
 import com.radixdlt.sbor.NodeSborCodecs;
 import org.bouncycastle.util.encoders.Hex;
-import org.junit.Ignore;
-import org.junit.Test;
-
 
 public final class ProtocolConfigGeneratorTest {
-  public static void main(String[]args){
+  public static void main(String[] args) {
     final var protocolConfig =
-            new ProtocolConfig(
-                    "testing-genesis",
-                    ImmutableList.of(
-                            new ProtocolUpdate(
-                                    "anemone",
-                                    ProtocolUpdateEnactmentCondition.singleReadinessThresholdBetweenEpochs(1, 100_000, Decimal.ofNonNegative(1),0))));
+        new ProtocolConfig(
+            "testing-genesis",
+            ImmutableList.of(
+                new ProtocolUpdate(
+                    "anemone",
+                    ProtocolUpdateEnactmentCondition.singleReadinessThresholdBetweenEpochs(
+                        1, 100_000, Decimal.ofNonNegative(1), 0))));
 
     final var protocolConfigBytes =
-            NodeSborCodecs.encode(protocolConfig, NodeSborCodecs.resolveCodec(new TypeToken<>() {}));
+        NodeSborCodecs.encode(protocolConfig, NodeSborCodecs.resolveCodec(new TypeToken<>() {}));
 
     System.out.println("protocol.custom_config=" + Hex.toHexString(protocolConfigBytes));
     System.out.println("RADIXDLT_PROTOCOL_CUSTOM_CONFIG=" + Hex.toHexString(protocolConfigBytes));
