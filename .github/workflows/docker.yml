@@ -9,7 +9,6 @@ on:
       - develop
       - main
       - release\/*
-      - DO-2168
 
 jobs:
   cancel_running_workflows:
