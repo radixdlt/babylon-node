@@ -62,16 +62,13 @@ impl<T: ProtocolUpdateDefinition> ConfigurableProtocolUpdateDefinition for T {
         network_definition: &NetworkDefinition,
         raw_overrides: Option<&[u8]>,
     ) -> Box<dyn ProtocolUpdater> {
-        let overrides = raw_overrides
-            .map(|overrides| scrypto_decode::<<Self as ProtocolUpdateDefinition>::Overrides>(overrides)
-                .expect("Raw overrides should have been validated before being passed to this method")
-            );
+        let overrides = raw_overrides.map(|overrides| {
+            scrypto_decode::<<Self as ProtocolUpdateDefinition>::Overrides>(overrides).expect(
+                "Raw overrides should have been validated before being passed to this method",
+            )
+        });
 
-        Self::create_updater(
-            new_protocol_version,
-            network_definition,
-            overrides,
-        )
+        Self::create_updater(new_protocol_version, network_definition, overrides)
     }
 
     fn validate_raw_overrides(&self, raw_overrides: &[u8]) -> Result<(), DecodeError> {

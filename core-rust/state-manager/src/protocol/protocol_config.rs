@@ -134,9 +134,11 @@ impl ProtocolConfig {
 
             definition
                 .validate_raw_overrides(raw_overrides)
-                .map_err(|err| format!(
+                .map_err(|err| {
+                    format!(
                     "Protocol version ({protocol_version_name}) has invalid raw overrides: {err:?}"
-                ))?;
+                )
+                })?;
         }
 
         Ok(())
@@ -151,13 +153,12 @@ impl ProtocolConfig {
 
         let config = definition.resolve_state_computer_config(network);
 
-        let updater = definition
-            .create_updater_with_raw_overrides(
-                protocol_version_name,
-                network,
-                self.protocol_update_content_overrides
-                    .get(protocol_version_name),
-            );
+        let updater = definition.create_updater_with_raw_overrides(
+            protocol_version_name,
+            network,
+            self.protocol_update_content_overrides
+                .get(protocol_version_name),
+        );
 
         Some((config, updater))
     }
