@@ -96,13 +96,11 @@ public record ProtocolConfig(
         codecs -> StructCodec.fromRecordComponents(ProtocolConfig.class, codecs));
   }
 
-  public static ProtocolConfig sborDecodeWithFallbackForOldVersions(byte[] encoded) {
+  public static ProtocolConfig sborDecode(byte[] encoded, String errorMessage) {
     try {
       return NodeSborCodecs.decode(encoded, NodeSborCodecs.resolveCodec(new TypeToken<>() {}));
     } catch (SborDecodeException ex) {
-      return NodeSborCodecs.decode(
-              encoded, NodeSborCodecs.resolveCodec(new TypeToken<ProtocolConfigV0>() {}))
-          .update();
+      throw new RuntimeException(errorMessage, ex);
     }
   }
 

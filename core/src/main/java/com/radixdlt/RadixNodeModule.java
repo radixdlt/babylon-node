@@ -360,7 +360,9 @@ public final class RadixNodeModule extends AbstractModule {
     final ProtocolConfig protocolConfig;
     if (!customProtocolConfig.isEmpty()) {
       protocolConfig =
-          ProtocolConfig.sborDecodeWithFallbackForOldVersions(Hex.decode(customProtocolConfig));
+          ProtocolConfig.sborDecode(
+              Hex.decode(customProtocolConfig),
+              "Could not decode protocol custom_config. It may need regenerating.");
     } else {
       protocolConfig = ProtocolConfig.resolveForNetwork(NetworkDefinition.from(network));
     }
