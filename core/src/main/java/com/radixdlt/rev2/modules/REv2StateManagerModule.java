@@ -90,6 +90,7 @@ import com.radixdlt.recovery.VertexStoreRecovery;
 import com.radixdlt.rev2.*;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.state.RustStateReader;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.store.NodeStorageLocation;
 import com.radixdlt.sync.TransactionsAndProofReader;
@@ -327,6 +328,13 @@ public final class REv2StateManagerModule extends AbstractModule {
   private RustProtocolUpdate rustProtocolUpdate(
       Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
     return new RustProtocolUpdate(metrics, nodeRustEnvironment);
+  }
+
+  @Provides
+  @Singleton
+  private RustStateReader rustStateReader(
+      Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
+    return new RustStateReader(metrics, nodeRustEnvironment);
   }
 
   @Provides

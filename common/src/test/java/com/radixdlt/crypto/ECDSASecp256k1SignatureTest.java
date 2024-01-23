@@ -107,7 +107,7 @@ public class ECDSASecp256k1SignatureTest {
   }
 
   @Test
-  public void test_rfc6979_determinstic_signatures() throws Exception {
+  public void test_rfc6979_deterministic_signatures() throws Exception {
 
     /// Sanity checks of Signing implementation of RFC6979 - Deterministic usage of ECDSA:
     // https://tools.ietf.org/html/rfc6979

@@ -62,46 +62,49 @@
  * permissions under this License.
  */
 
-use tokio::runtime::Runtime;
-use tracing::{Level, Subscriber};
-use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::registry::LookupSpan;
-use tracing_subscriber::util::SubscriberInitExt;
-use tracing_subscriber::Layer;
+use jni::objects::{JClass, JObject};
+use jni::sys::jbyteArray;
+use jni::JNIEnv;
+use radix_engine::system::system_substates::FieldSubstate;
+use radix_engine::types::*;
 
-pub fn setup_tracing(runtime: &Runtime, jaeger_agent_endpoint: Option<String>, log_level: Level) {
-    runtime.spawn(async move {
-        let opentelemetry = jaeger_agent_endpoint.map(create_opentelemetry_layer);
+use radix_engine_store_interface::db_key_mapper::*;
 
-        // Try to initialize a global logger here, and carry on if this fails.
-        // Note: a common "failure" occurs during tests, where multiple "environments" are set up
-        // (consecutively) in a single process.
-        let _ = tracing_subscriber::registry()
-            .with(tracing_subscriber::filter::LevelFilter::from_level(
-                log_level,
-            ))
-            .with(opentelemetry)
-            .with(tracing_subscriber::fmt::layer())
-            .try_init();
-    });
+use radix_engine::blueprints::consensus_manager::{
+    ValidatorField, ValidatorProtocolUpdateReadinessSignalFieldPayload,
+};
+
+use node_common::java::*;
+
+use super::node_rust_environment::JNINodeRustEnvironment;
+
+//
+// JNI Interface
+//
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_state_RustStateReader_getValidatorProtocolUpdateReadinessSignal(
+    env: JNIEnv,
+    _class: JClass,
+    j_node_rust_env: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_fallible_call(
+        &env,
+        request_payload,
+        |validator_address: ComponentAddress| -> JavaResult<Option<String>> {
+            let result = JNINodeRustEnvironment::get(&env, j_node_rust_env)
+                .state_manager
+                .database
+                .access_non_locked_historical()
+                .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ValidatorProtocolUpdateReadinessSignalFieldPayload>>(
+                    &validator_address.into_node_id(),
+                    MAIN_BASE_PARTITION,
+                    &ValidatorField::ProtocolUpdateReadinessSignal.into()
+                );
+            Ok(result.and_then(|f| f.into_payload().content.into_latest().protocol_version_name))
+        },
+    )
 }
 
-fn create_opentelemetry_layer<S: Subscriber + for<'a> LookupSpan<'a>>(
-    jaeger_agent_endpoint: impl Into<String>,
-) -> impl Layer<S> {
-    // TODO: increasing this or leaving [`opentelemetry_jaeger`] with the default value will not
-    // work for MacOS (by default, max UDP datagram size is 9216). Since this is not (yet) used
-    // in production, minimum value that works on most systems is used (for local testing out of
-    // the box). This needs a way of figuring this value at runtime (cross-platform and
-    // preferably nicer than binary searching it) and/or pass through a configuration parameter.
-    let max_udp_packet_size = 9216;
-    let tracer = opentelemetry_jaeger::new_agent_pipeline()
-        .with_endpoint(jaeger_agent_endpoint.into())
-        // default value can be bigger than the supported one (i.e. MacOS)
-        .with_max_packet_size(max_udp_packet_size)
-        .with_auto_split_batch(true)
-        .with_service_name("babylon-node")
-        .install_batch(opentelemetry::runtime::Tokio)
-        .unwrap();
-    tracing_opentelemetry::layer().with_tracer(tracer)
-}
+pub fn export_extern_functions() {}

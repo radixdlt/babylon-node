@@ -507,7 +507,7 @@ public final class LocalSyncService {
         }
         case InvalidSyncResponseException.UnparseableTransaction exc -> {
           log.warn(
-              "LocalSync: Received unparseable transaction in sync response {} from {}",
+              "LocalSync: Received unparsable transaction in sync response {} from {}",
               syncResponse,
               sender);
           metrics
@@ -515,7 +515,7 @@ public final class LocalSyncService {
               .invalidResponsesReceived()
               .label(new InvalidSyncResponse(InvalidSyncResponseReason.UNPARSEABLE_TRANSACTION))
               .inc();
-          peerControl.banPeer(sender, PEER_BAN_DURATION, "unparseable transaction received");
+          peerControl.banPeer(sender, PEER_BAN_DURATION, "unparsable transaction received");
           yield this.processSync(currentState.clearPendingRequest().removeCandidate(sender));
         }
         case InvalidSyncResponseException.ComputedTransactionRootMismatch exc -> {

@@ -64,6 +64,8 @@
 
 package com.radixdlt.api.system.routes;
 
+import static com.radixdlt.api.system.generated.models.PendingProtocolUpdate.ReadinessSignalStatusEnum.NO_SIGNAL_REQUIRED;
+
 import com.google.inject.Inject;
 import com.radixdlt.api.system.SystemGetJsonHandler;
 import com.radixdlt.api.system.generated.models.*;
@@ -94,6 +96,7 @@ public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
     final var statistic = healthInfoService.recentSelfProposalMissStatistic();
 
     final var protocolState = healthInfoService.protocolState();
+    final var readinessSignalStatuses = healthInfoService.readinessSignalStatuses();
 
     return new HealthResponse()
         .status(statusEnum)
@@ -113,12 +116,19 @@ public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
                 .toList())
         .pendingProtocolUpdates(
             protocolState.pendingProtocolUpdates().stream()
-                .map(this::pendingProtocolUpdate)
+                .map(
+                    p ->
+                        pendingProtocolUpdate(
+                            p,
+                            readinessSignalStatuses.getOrDefault(
+                                p.protocolUpdateTrigger().nextProtocolVersion(),
+                                NO_SIGNAL_REQUIRED)))
                 .toList());
   }
 
   private com.radixdlt.api.system.generated.models.PendingProtocolUpdate pendingProtocolUpdate(
-      ProtocolState.PendingProtocolUpdate pendingProtocolUpdate) {
+      ProtocolState.PendingProtocolUpdate pendingProtocolUpdate,
+      PendingProtocolUpdate.ReadinessSignalStatusEnum readinessSignalStatus) {
     final var state =
         switch (pendingProtocolUpdate.state()) {
           case ProtocolState.PendingProtocolUpdateState.Empty
@@ -157,9 +167,7 @@ public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
         new PendingProtocolUpdate()
             .protocolVersion(pendingProtocolUpdate.protocolUpdateTrigger().nextProtocolVersion())
             .state(state)
-            .readinessSignalStatus(
-                PendingProtocolUpdate.ReadinessSignalStatusEnum
-                    .NO_ACTION_NEEDED /* TODO(protocol-update): implement me */);
+            .readinessSignalStatus(readinessSignalStatus);
 
     if (pendingProtocolUpdate.protocolUpdateTrigger().enactmentCondition()
         instanceof ProtocolUpdateEnactmentCondition.EnactAtStartOfEpochIfValidatorsReady) {

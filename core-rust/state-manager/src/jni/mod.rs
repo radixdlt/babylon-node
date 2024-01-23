@@ -68,6 +68,7 @@ pub mod node_rust_environment;
 pub mod prometheus;
 pub mod protocol_update;
 pub mod state_computer;
+pub mod state_reader;
 pub mod test_state_reader;
 pub mod transaction_preparer;
 pub mod transaction_store;

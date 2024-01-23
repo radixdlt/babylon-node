@@ -554,8 +554,9 @@ components:
         readiness_signal_status:
           type: string
           enum:
-            - READINESS_SIGNAL_REQUIRED
-            - NO_ACTION_NEEDED
+            - READINESS_SIGNALLED
+            - READINESS_NOT_SIGNALLED
+            - NO_SIGNAL_REQUIRED
     PendingProtocolUpdateStateType:
       type: string
       enum:

@@ -123,7 +123,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
   public final class ProcessExittingStake implements ReducerState {
     private final UpdatingEpoch updatingEpoch;
-    private final TreeSet<ExitingStake> exitting =
+    private final TreeSet<ExitingStake> exiting =
         new TreeSet<>(
             Comparator.comparing(ExitingStake::dataKey, UnsignedBytes.lexicographicalComparator()));
 
@@ -144,19 +144,19 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
                 // Sanity check
                 if (e.epochUnlocked() != expectedEpoch) {
                   throw new IllegalStateException(
-                      "Invalid shutdown of exitting stake update epoch expected "
+                      "Invalid shutdown of exiting stake update epoch expected "
                           + expectedEpoch
                           + " but was "
                           + e.epochUnlocked());
                 }
-                exitting.add(e);
+                exiting.add(e);
               });
       return next();
     }
 
     public ReducerState unlock(TokensInAccount u) throws ProcedureException {
-      var exit = exitting.first();
-      exitting.remove(exit);
+      var exit = exiting.first();
+      exiting.remove(exit);
       if (exit.epochUnlocked() != updatingEpoch.prevEpoch.epoch() + 1) {
         throw new ProcedureException("Stake must still be locked.");
       }
@@ -169,7 +169,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
     }
 
     public ReducerState next() {
-      return exitting.isEmpty() ? new RewardingValidators(updatingEpoch) : this;
+      return exiting.isEmpty() ? new RewardingValidators(updatingEpoch) : this;
     }
   }
 
