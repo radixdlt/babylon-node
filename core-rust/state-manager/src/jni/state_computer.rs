@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::{CommitSummary, LedgerProof, ProtocolState};
+use crate::{protocol::ProtocolState, CommitSummary, LedgerProof};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;

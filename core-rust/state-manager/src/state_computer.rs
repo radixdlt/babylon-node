@@ -89,6 +89,7 @@ use node_common::locks::{LockFactory, Mutex, RwLock, StateLock};
 use prometheus::Registry;
 use tracing::{debug, info, warn};
 
+use crate::protocol::*;
 use crate::store::traits::scenario::{
     DescribedAddress, ExecutedGenesisScenario, ExecutedGenesisScenarioStore,
     ExecutedScenarioTransaction, ScenarioSequenceNumber,
@@ -133,7 +134,7 @@ impl<
         pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
         metrics_registry: &Registry,
         lock_factory: LockFactory,
-        initial_updatable_config: &UpdatableStateComputerConfig,
+        initial_updatable_config: &ProtocolStateComputerConfig,
         initial_protocol_state: ProtocolState,
     ) -> StateComputer<S> {
         let (current_transaction_root, current_ledger_proposer_timestamp_ms) = store
@@ -1418,7 +1419,6 @@ mod tests {
     use std::ops::Deref;
 
     use crate::transaction::{LedgerTransaction, RoundUpdateTransactionV1};
-    use crate::TestingDefaultProtocolUpdaterFactory;
     use crate::{
         LedgerProof, PrepareRequest, PrepareResult, RoundHistory, StateManager, StateManagerConfig,
     };
@@ -1533,9 +1533,6 @@ mod tests {
             config,
             None,
             &lock_factory,
-            Box::new(TestingDefaultProtocolUpdaterFactory::new(
-                NetworkDefinition::simulator(),
-            )),
             &metrics_registry,
             &Scheduler::new("testing"),
         );

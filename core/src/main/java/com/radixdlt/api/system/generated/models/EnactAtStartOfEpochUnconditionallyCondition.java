@@ -24,9 +24,9 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.system.generated.models.EnactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition;
-import com.radixdlt.api.system.generated.models.EnactUnconditionallyAtEpochCondition;
-import com.radixdlt.api.system.generated.models.EnactUnconditionallyAtEpochConditionAllOf;
+import com.radixdlt.api.system.generated.models.EnactAtStartOfEpochIfValidatorsReadyCondition;
+import com.radixdlt.api.system.generated.models.EnactAtStartOfEpochUnconditionallyCondition;
+import com.radixdlt.api.system.generated.models.EnactAtStartOfEpochUnconditionallyConditionAllOf;
 import com.radixdlt.api.system.generated.models.ProtocolUpdateEnactmentCondition;
 import com.radixdlt.api.system.generated.models.ProtocolUpdateEnactmentConditionType;
 import io.swagger.annotations.ApiModel;
@@ -36,24 +36,24 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.common.JSON;
 /**
- * EnactUnconditionallyAtEpochCondition
+ * EnactAtStartOfEpochUnconditionallyCondition
  */
 @JsonPropertyOrder({
-  EnactUnconditionallyAtEpochCondition.JSON_PROPERTY_EPOCH
+  EnactAtStartOfEpochUnconditionallyCondition.JSON_PROPERTY_EPOCH
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = EnactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition.class, name = "EnactAtStartOfAnEpochIfSupportedAndWithinBounds"),
-  @JsonSubTypes.Type(value = EnactUnconditionallyAtEpochCondition.class, name = "EnactUnconditionallyAtEpoch"),
+  @JsonSubTypes.Type(value = EnactAtStartOfEpochIfValidatorsReadyCondition.class, name = "EnactAtStartOfEpochIfValidatorsReady"),
+  @JsonSubTypes.Type(value = EnactAtStartOfEpochUnconditionallyCondition.class, name = "EnactAtStartOfEpochUnconditionally"),
 })
 
-public class EnactUnconditionallyAtEpochCondition extends ProtocolUpdateEnactmentCondition {
+public class EnactAtStartOfEpochUnconditionallyCondition extends ProtocolUpdateEnactmentCondition {
   public static final String JSON_PROPERTY_EPOCH = "epoch";
   private Long epoch;
 
 
-  public EnactUnconditionallyAtEpochCondition epoch(Long epoch) {
+  public EnactAtStartOfEpochUnconditionallyCondition epoch(Long epoch) {
     this.epoch = epoch;
     return this;
   }
@@ -80,7 +80,7 @@ public class EnactUnconditionallyAtEpochCondition extends ProtocolUpdateEnactmen
 
 
   /**
-   * Return true if this EnactUnconditionallyAtEpochCondition object is equal to o.
+   * Return true if this EnactAtStartOfEpochUnconditionallyCondition object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -90,8 +90,8 @@ public class EnactUnconditionallyAtEpochCondition extends ProtocolUpdateEnactmen
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    EnactUnconditionallyAtEpochCondition enactUnconditionallyAtEpochCondition = (EnactUnconditionallyAtEpochCondition) o;
-    return Objects.equals(this.epoch, enactUnconditionallyAtEpochCondition.epoch) &&
+    EnactAtStartOfEpochUnconditionallyCondition enactAtStartOfEpochUnconditionallyCondition = (EnactAtStartOfEpochUnconditionallyCondition) o;
+    return Objects.equals(this.epoch, enactAtStartOfEpochUnconditionallyCondition.epoch) &&
         super.equals(o);
   }
 
@@ -103,7 +103,7 @@ public class EnactUnconditionallyAtEpochCondition extends ProtocolUpdateEnactmen
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class EnactUnconditionallyAtEpochCondition {\n");
+    sb.append("class EnactAtStartOfEpochUnconditionallyCondition {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    epoch: ").append(toIndentedString(epoch)).append("\n");
     sb.append("}");
@@ -124,10 +124,10 @@ public class EnactUnconditionallyAtEpochCondition extends ProtocolUpdateEnactmen
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("EnactAtStartOfAnEpochIfSupportedAndWithinBounds", EnactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition.class);
-  mappings.put("EnactUnconditionallyAtEpoch", EnactUnconditionallyAtEpochCondition.class);
-  mappings.put("EnactUnconditionallyAtEpochCondition", EnactUnconditionallyAtEpochCondition.class);
-  JSON.registerDiscriminator(EnactUnconditionallyAtEpochCondition.class, "type", mappings);
+  mappings.put("EnactAtStartOfEpochIfValidatorsReady", EnactAtStartOfEpochIfValidatorsReadyCondition.class);
+  mappings.put("EnactAtStartOfEpochUnconditionally", EnactAtStartOfEpochUnconditionallyCondition.class);
+  mappings.put("EnactAtStartOfEpochUnconditionallyCondition", EnactAtStartOfEpochUnconditionallyCondition.class);
+  JSON.registerDiscriminator(EnactAtStartOfEpochUnconditionallyCondition.class, "type", mappings);
 }
 }
 

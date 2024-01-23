@@ -76,6 +76,7 @@ use prometheus::Registry;
 use radix_engine_common::prelude::*;
 
 use crate::jni::LedgerSyncLimitsConfig;
+use crate::protocol::{ProtocolConfig, ProtocolDefinitionResolver, ProtocolState};
 use crate::store::jmt_gc::StateHashTreeGcConfig;
 use crate::store::proofs_gc::{LedgerProofsGc, LedgerProofsGcConfig};
 use crate::store::traits::proofs::QueryableProofStore;
@@ -89,8 +90,7 @@ use crate::{
         StateManagerDatabase,
     },
     transaction::{CachedCommittabilityValidator, CommittabilityValidator, TransactionPreviewer},
-    PendingTransactionResultCache, ProtocolConfig, ProtocolState, ProtocolUpdateResult,
-    ProtocolUpdaterFactory, StateComputer,
+    PendingTransactionResultCache, ProtocolUpdateResult, StateComputer,
 };
 
 /// An interval between time-intensive measurement of raw DB metrics.
@@ -115,7 +115,7 @@ pub struct StateManagerConfig {
     pub no_fees: bool,
 }
 
-#[derive(Debug, Categorize, Encode, Decode, Clone, Default)]
+#[derive(Debug, Clone, Default, Sbor)]
 pub struct LoggingConfig {
     pub engine_trace: bool,
 }
@@ -134,7 +134,7 @@ impl StateManagerConfig {
             state_hash_tree_gc_config: StateHashTreeGcConfig::default(),
             ledger_proofs_gc_config: LedgerProofsGcConfig::default(),
             ledger_sync_limits_config: LedgerSyncLimitsConfig::default(),
-            protocol_config: ProtocolConfig::no_updates("testing-genesis".to_string()),
+            protocol_config: ProtocolConfig::new_with_no_updates(),
             no_fees: false,
         }
     }
@@ -151,7 +151,7 @@ pub struct StateManager {
     pub execution_configurator: Arc<RwLock<ExecutionConfigurator>>,
     pub committability_validator: Arc<RwLock<CommittabilityValidator<StateManagerDatabase>>>,
     pub transaction_previewer: Arc<RwLock<TransactionPreviewer<StateManagerDatabase>>>,
-    pub protocol_updater_factory: Arc<dyn ProtocolUpdaterFactory + Sync + Send>,
+    pub protocol_definition_resolver: Arc<ProtocolDefinitionResolver>,
 }
 
 impl StateManager {
@@ -165,19 +165,12 @@ impl StateManager {
         config: StateManagerConfig,
         mempool_relay_dispatcher: Option<MempoolRelayDispatcher>,
         lock_factory: &LockFactory,
-        protocol_updater_factory: Box<dyn ProtocolUpdaterFactory + Sync + Send>,
         metrics_registry: &Registry,
         scheduler: &Scheduler<impl Spawner, impl Tracker, impl Metrics>,
     ) -> Self {
-        let mempool_config = match config.mempool_config.clone() {
-            Some(mempool_config) => mempool_config,
-            None =>
-            // in general, missing mempool config should mean that mempool isn't needed
-            // but for now just using a default
-            {
-                MempoolConfig::default()
-            }
-        };
+        // in general, missing mempool config should mean that mempool isn't needed
+        // but for now just using a default
+        let mempool_config = config.mempool_config.clone().unwrap_or_default();
         let network = config.network_definition.clone();
         let _logging_config = config.logging_config.clone();
 
@@ -188,10 +181,18 @@ impl StateManager {
         );
 
         let database = Arc::new(lock_factory.named("database").new_state_lock(raw_db));
+        let protocol_definition_resolver = ProtocolDefinitionResolver::new_with_raw_overrides(
+            &network,
+            config
+                .protocol_config
+                .protocol_update_content_overrides
+                .clone(),
+        )
+        .unwrap_or_else(|err| panic!("Invalid protocol update content overrides: {:?}", err));
 
         if let Err(err) = config
             .protocol_config
-            .sanity_check(protocol_updater_factory.deref())
+            .validate(&protocol_definition_resolver)
         {
             panic!("Protocol misconfiguration: {}", err);
         };
@@ -201,15 +202,21 @@ impl StateManager {
             &config.protocol_config,
         );
 
-        let initial_protocol_updater = protocol_updater_factory
-            .updater_for(&initial_protocol_state.current_protocol_version)
-            .expect("Protocol updater is misconfigured");
-        let initial_updatable_config = initial_protocol_updater.updatable_config();
+        let initial_protocol_version = &initial_protocol_state.current_protocol_version;
+        let (initial_state_computer_config, initial_protocol_updater) =
+            protocol_definition_resolver
+                .resolve(initial_protocol_version)
+                .unwrap_or_else(|| {
+                    panic!(
+                        "Initial protocol version on boot ({}) was not known in the resolver",
+                        initial_protocol_version
+                    )
+                });
 
         let execution_configurator = Arc::new(
             lock_factory
                 .named("execution_configurator")
-                .new_rwlock(initial_updatable_config.execution_configurator(config.no_fees)),
+                .new_rwlock(initial_state_computer_config.execution_configurator(config.no_fees)),
         );
 
         let pending_transaction_result_cache = Arc::new(
@@ -222,7 +229,7 @@ impl StateManager {
                 CommittabilityValidator::new(
                     database.clone(),
                     execution_configurator.clone(),
-                    initial_updatable_config.user_transaction_validator(),
+                    initial_state_computer_config.user_transaction_validator(),
                 ),
             ));
         let cached_committability_validator = CachedCommittabilityValidator::new(
@@ -256,7 +263,7 @@ impl StateManager {
                 TransactionPreviewer::new(
                     database.clone(),
                     execution_configurator.clone(),
-                    initial_updatable_config.validation_config(),
+                    initial_state_computer_config.validation_config(),
                 ),
             ));
 
@@ -279,7 +286,7 @@ impl StateManager {
             pending_transaction_result_cache.clone(),
             metrics_registry,
             lock_factory.named("state_computer"),
-            &initial_updatable_config,
+            &initial_state_computer_config,
             initial_protocol_state,
         ));
 
@@ -324,39 +331,42 @@ impl StateManager {
             execution_configurator,
             committability_validator,
             transaction_previewer,
-            protocol_updater_factory: protocol_updater_factory.into(),
+            protocol_definition_resolver: Arc::new(protocol_definition_resolver),
         }
     }
 
     pub fn apply_protocol_update(&self, protocol_version_name: &str) -> ProtocolUpdateResult {
-        let protocol_updater = self
-            .protocol_updater_factory
-            .updater_for(protocol_version_name)
-            .expect("Protocol updater is misconfigured");
-        let new_updatable_config = protocol_updater.updatable_config();
+        let (new_state_computer_config, protocol_updater) = self
+            .protocol_definition_resolver
+            .resolve(protocol_version_name)
+            .unwrap_or_else(|| {
+                panic!(
+                    "Protocol update to version {} was triggered, but isn't known in the resolver",
+                    protocol_version_name
+                )
+            });
 
         let new_execution_configurator =
-            new_updatable_config.execution_configurator(self.config.no_fees);
+            new_state_computer_config.execution_configurator(self.config.no_fees);
 
         *self.execution_configurator.write() = new_execution_configurator;
 
         *self.committability_validator.write() = CommittabilityValidator::new(
             self.database.clone(),
             self.execution_configurator.clone(),
-            new_updatable_config.user_transaction_validator(),
+            new_state_computer_config.user_transaction_validator(),
         );
 
         *self.transaction_previewer.write() = TransactionPreviewer::new(
             self.database.clone(),
             self.execution_configurator.clone(),
-            new_updatable_config.validation_config(),
+            new_state_computer_config.validation_config(),
         );
-
         protocol_updater.execute_remaining_state_updates(self.database.clone());
 
         self.state_computer.handle_protocol_update(
             protocol_version_name,
-            new_updatable_config.ledger_transaction_validator(),
+            new_state_computer_config.ledger_transaction_validator(),
         );
 
         ProtocolUpdateResult {
@@ -371,7 +381,7 @@ impl StateManager {
     pub fn newest_protocol_version(&self) -> String {
         let protocol_config = &self.config.protocol_config;
         protocol_config
-            .protocol_updates
+            .protocol_update_triggers
             .last()
             .map(|protocol_update| protocol_update.next_protocol_version.clone())
             .unwrap_or(protocol_config.genesis_protocol_version.clone())

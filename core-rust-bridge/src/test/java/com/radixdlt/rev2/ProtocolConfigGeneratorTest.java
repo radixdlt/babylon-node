@@ -67,8 +67,8 @@ package com.radixdlt.rev2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.protocol.ProtocolConfig;
-import com.radixdlt.protocol.ProtocolUpdate;
 import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition;
+import com.radixdlt.protocol.ProtocolUpdateTrigger;
 import com.radixdlt.sbor.NodeSborCodecs;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.Ignore;
@@ -84,7 +84,7 @@ public final class ProtocolConfigGeneratorTest {
         new ProtocolConfig(
             "babylon-genesis",
             ImmutableList.of(
-                new ProtocolUpdate(
+                new ProtocolUpdateTrigger(
                     "v2",
                     ProtocolUpdateEnactmentCondition.singleReadinessThresholdBetweenEpochs(
                         5, 20, Decimal.ofNonNegativeFraction(7, 10), 1))));

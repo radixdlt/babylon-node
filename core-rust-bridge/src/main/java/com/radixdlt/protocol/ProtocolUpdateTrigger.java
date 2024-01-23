@@ -67,15 +67,15 @@ package com.radixdlt.protocol;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 
-public record ProtocolUpdate(
+public record ProtocolUpdateTrigger(
     String nextProtocolVersion, ProtocolUpdateEnactmentCondition enactmentCondition) {
 
   public static final String ANEMONE = "anemone";
 
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        ProtocolUpdate.class,
-        codecs -> StructCodec.fromRecordComponents(ProtocolUpdate.class, codecs));
+        ProtocolUpdateTrigger.class,
+        codecs -> StructCodec.fromRecordComponents(ProtocolUpdateTrigger.class, codecs));
   }
 
   public String readinessSignalName() {

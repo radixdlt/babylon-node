@@ -64,6 +64,7 @@
 
 use std::fmt::Formatter;
 
+use crate::protocol::*;
 use crate::query::*;
 use crate::staging::{ExecutionCache, ReadableStore};
 use crate::store::traits::*;

@@ -87,11 +87,7 @@ use crate::store::StateManagerDatabase;
 
 use super::fatal_panic_handler::FatalPanicHandler;
 
-use crate::mainnet_updates::ProductionProtocolUpdaterFactory;
-use crate::{
-    ProtocolUpdaterFactory, StateComputer, StateManager, StateManagerConfig,
-    TestingDefaultProtocolUpdaterFactory,
-};
+use crate::{StateComputer, StateManager, StateManagerConfig};
 
 const POINTER_JNI_FIELD_NAME: &str = "rustNodeRustEnvironmentPointer";
 
@@ -155,18 +151,10 @@ impl JNINodeRustEnvironment {
             .track_running_tasks()
             .measured(metric_registry.deref());
 
-        let protocol_updater_factory: Box<dyn ProtocolUpdaterFactory + Send + Sync> =
-            if network.id == NetworkDefinition::mainnet().id {
-                Box::new(ProductionProtocolUpdaterFactory::new(network.clone()))
-            } else {
-                Box::new(TestingDefaultProtocolUpdaterFactory::new(network.clone()))
-            };
-
         let state_manager = StateManager::new(
             config,
             Some(MempoolRelayDispatcher::new(env, j_node_rust_env).unwrap()),
             &lock_factory,
-            protocol_updater_factory,
             &metric_registry,
             &scheduler,
         );

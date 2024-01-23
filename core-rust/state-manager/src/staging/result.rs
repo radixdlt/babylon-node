@@ -65,12 +65,13 @@
 use super::ReadableStateTreeStore;
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, WriteableAccuTreeStore};
 
+use crate::protocol::ProtocolState;
 use crate::staging::epoch_handling::EpochAwareAccuTreeFactory;
 use crate::transaction::LedgerTransactionHash;
 use crate::{
     ActiveValidatorInfo, ByPartition, BySubstate, DetailedTransactionOutcome,
     EpochTransactionIdentifiers, LedgerHashes, LedgerStateChanges, LocalTransactionReceipt,
-    NextEpoch, PartitionChangeAction, ProtocolState, ReceiptTreeHash, StateHash, StateVersion,
+    NextEpoch, PartitionChangeAction, ReceiptTreeHash, StateHash, StateVersion,
     SubstateChangeAction, SubstateReference, TransactionTreeHash,
 };
 use radix_engine::blueprints::consensus_manager::EpochChangeEvent;

@@ -314,19 +314,15 @@ impl ProofPruneRange {
 mod tests {
     use crate::jni::LedgerSyncLimitsConfig;
     use crate::proofs_gc::{LedgerProofsGc, LedgerProofsGcConfig};
+    use crate::protocol::*;
     use crate::store::traits::proofs::QueryableProofStore;
     use crate::test::commit_round_updates_until_epoch;
     use crate::traits::GetSyncableTxnsAndProofError;
-    use crate::ProtocolUpdateEnactmentCondition::EnactUnconditionallyAtEpoch;
-    use crate::{
-        ProtocolConfig, ProtocolUpdate, StateManager, StateManagerConfig, StateVersion,
-        TestingDefaultProtocolUpdaterFactory,
-    };
+    use crate::{StateManager, StateManagerConfig, StateVersion};
     use node_common::locks::LockFactory;
     use node_common::scheduler::Scheduler;
     use prometheus::Registry;
-    use radix_engine_common::prelude::{Decimal, NetworkDefinition};
-    use radix_engine_common::types::Epoch;
+    use radix_engine_common::prelude::*;
     use radix_engine_interface::blueprints::consensus_manager::{
         ConsensusManagerConfig, EpochChangeCondition,
     };
@@ -345,19 +341,20 @@ mod tests {
         };
         // An unconditional protocol update at epoch 5
         config.protocol_config = ProtocolConfig {
-            genesis_protocol_version: "testing-genesis".to_string(),
-            protocol_updates: vec![ProtocolUpdate {
-                next_protocol_version: "testing-v2".to_string(),
-                enactment_condition: EnactUnconditionallyAtEpoch(Epoch::of(5)),
+            genesis_protocol_version: GENESIS_PROTOCOL_VERSION.to_string(),
+            protocol_update_triggers: vec![ProtocolUpdateTrigger {
+                next_protocol_version: TestProtocolUpdateDefinition::subnamed("v2"),
+                enactment_condition:
+                    ProtocolUpdateEnactmentCondition::EnactAtStartOfEpochUnconditionally(Epoch::of(
+                        5,
+                    )),
             }],
+            protocol_update_content_overrides: ProtocolUpdateContentOverrides::empty().into(),
         };
         let state_manager = StateManager::new(
             config,
             None,
             &lock_factory,
-            Box::new(TestingDefaultProtocolUpdaterFactory::new(
-                NetworkDefinition::simulator(),
-            )),
             &metrics_registry,
             &Scheduler::new("testing"),
         );

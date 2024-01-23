@@ -82,8 +82,8 @@ import com.radixdlt.message.Decryptor;
 import com.radixdlt.message.MessageContent;
 import com.radixdlt.message.TransactionMessage;
 import com.radixdlt.protocol.ProtocolConfig;
-import com.radixdlt.protocol.ProtocolUpdate;
 import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition;
+import com.radixdlt.protocol.ProtocolUpdateTrigger;
 import com.radixdlt.rev2.REv2TransactionsAndProofReader;
 import com.radixdlt.rev2.TransactionBuilder;
 import com.radixdlt.utils.Bytes;
@@ -408,10 +408,9 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
       throws Exception {
     final var protocolConfig =
         new ProtocolConfig(
-            "testing-genesis",
             ImmutableList.of(
-                new ProtocolUpdate(
-                    ProtocolUpdate.ANEMONE,
+                new ProtocolUpdateTrigger(
+                    ProtocolUpdateTrigger.ANEMONE,
                     ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(4L))));
     try (var test = buildRunningServerTestWithProtocolConfig(30, protocolConfig)) {
       test.runUntilState(allAtOrOverEpoch(4L));

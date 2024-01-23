@@ -68,13 +68,12 @@ use super::stage_tree::{Accumulator, Delta, DerivedStageKey, StageKey, StageTree
 use super::ReadableStore;
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
+use crate::protocol::ProtocolState;
 use crate::staging::{
     AccuTreeDiff, HashStructuresDiff, HashUpdateContext, ProcessedTransactionReceipt,
     StateHashTreeDiff,
 };
-use crate::{
-    EpochTransactionIdentifiers, ProtocolState, ReceiptTreeHash, StateVersion, TransactionTreeHash,
-};
+use crate::{EpochTransactionIdentifiers, ReceiptTreeHash, StateVersion, TransactionTreeHash};
 use im::hashmap::HashMap as ImmutableHashMap;
 use itertools::Itertools;
 

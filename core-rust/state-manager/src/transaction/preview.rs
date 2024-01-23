@@ -132,13 +132,10 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
 #[cfg(test)]
 mod tests {
 
-    use crate::{
-        PreviewRequest, StateManager, StateManagerConfig, TestingDefaultProtocolUpdaterFactory,
-    };
+    use crate::{PreviewRequest, StateManager, StateManagerConfig};
     use node_common::locks::LockFactory;
     use node_common::scheduler::Scheduler;
     use prometheus::Registry;
-    use radix_engine_common::prelude::NetworkDefinition;
     use transaction::builder::ManifestBuilder;
     use transaction::model::{MessageV1, PreviewFlags};
 
@@ -151,9 +148,6 @@ mod tests {
             StateManagerConfig::new_for_testing(tmp.path().to_str().unwrap()),
             None,
             &lock_factory,
-            Box::new(TestingDefaultProtocolUpdaterFactory::new(
-                NetworkDefinition::simulator(),
-            )),
             &metrics_registry,
             &Scheduler::new("testing"),
         );

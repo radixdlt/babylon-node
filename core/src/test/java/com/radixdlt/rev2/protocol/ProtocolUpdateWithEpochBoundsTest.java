@@ -112,11 +112,13 @@ public final class ProtocolUpdateWithEpochBoundsTest {
   static List<TestScenario> fixedEpochScenarios() {
     final var numValidators = 1;
     final var protocolUpdate =
-        new ProtocolUpdate("v2", ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(5));
-    final ImmutableList<ProtocolUpdate> protocolUpdates = ImmutableList.of(protocolUpdate);
+        new ProtocolUpdateTrigger(
+            "test-v2", ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(5));
+    final ImmutableList<ProtocolUpdateTrigger> protocolUpdateTriggers =
+        ImmutableList.of(protocolUpdate);
 
     final var scenario1 =
-        new ScenarioBuilder(numValidators, protocolUpdates)
+        new ScenarioBuilder(numValidators, protocolUpdateTriggers)
             .atEpoch(5, expectEnactment(protocolUpdate))
             .runUntilEpoch(7);
 
@@ -129,8 +131,8 @@ public final class ProtocolUpdateWithEpochBoundsTest {
     // Enactment bounds: from epoch 5 (inclusive) to epoch 21 (exclusive)
     // Readiness threshold: required one full epoch at 70%
     final var protocolUpdate =
-        new ProtocolUpdate(
-            "v2",
+        new ProtocolUpdateTrigger(
+            "test-v2",
             ProtocolUpdateEnactmentCondition.singleReadinessThresholdBetweenEpochs(
                 5, 21, Decimal.ofNonNegativeFraction(7, 10), 1));
     final var protocolUpdates = ImmutableList.of(protocolUpdate);
@@ -197,12 +199,14 @@ public final class ProtocolUpdateWithEpochBoundsTest {
     // - two unconditional (formerly known as "fixed-epoch") protocol updates at epochs 5 and 7
     // - followed by a readiness-based protocol update with two thresholds
     final var unconditionalProtocolUpdateAtEpoch5 =
-        new ProtocolUpdate("v2", ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(5));
+        new ProtocolUpdateTrigger(
+            "test-v2", ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(5));
     final var unconditionalProtocolUpdateAtEpoch7 =
-        new ProtocolUpdate("v3", ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(7));
+        new ProtocolUpdateTrigger(
+            "test-v3", ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(7));
     final var readinessThresholdsProtocolUpdate =
-        new ProtocolUpdate(
-            "v4",
+        new ProtocolUpdateTrigger(
+            "test-v4",
             ProtocolUpdateEnactmentCondition.readinessThresholdsBetweenEpochs(
                 5,
                 20,
@@ -308,9 +312,7 @@ public final class ProtocolUpdateWithEpochBoundsTest {
 
   @Test
   public void test_protocol_update_scenario() {
-    final var protocolConfig =
-        new ProtocolConfig(
-            ProtocolConfig.testingDefault().genesisProtocolVersion(), scenario.protocolUpdates);
+    final var protocolConfig = new ProtocolConfig(scenario.protocolUpdateTriggers);
     try (var test = createTest(protocolConfig)) {
       test.startAllNodes();
 
@@ -333,7 +335,7 @@ public final class ProtocolUpdateWithEpochBoundsTest {
             case ExpectEnactment expectEnactment -> {
               expectedEnactment = true;
               verifyProtocolUpdateAtEpoch(
-                  test, currEpoch, expectEnactment.protocolUpdate.nextProtocolVersion());
+                  test, currEpoch, expectEnactment.protocolUpdateTrigger.nextProtocolVersion());
             }
             case ExpectReadiness expectReadiness -> {
               verifyCurrentEpochReadiness(test, expectReadiness.verifyFn);
@@ -361,7 +363,7 @@ public final class ProtocolUpdateWithEpochBoundsTest {
 
   record TestScenario(
       int numValidators,
-      ImmutableList<ProtocolUpdate> protocolUpdates,
+      ImmutableList<ProtocolUpdateTrigger> protocolUpdateTriggers,
       ImmutableMap<Long, ImmutableList<TestEvent>> eventsByEpoch,
       long runUntilEpoch) {}
 
@@ -371,14 +373,15 @@ public final class ProtocolUpdateWithEpochBoundsTest {
 
     record ExpectReadiness(Function<Map<String, Decimal>, Boolean> verifyFn) implements TestEvent {}
 
-    record ExpectEnactment(ProtocolUpdate protocolUpdate) implements TestEvent {}
+    record ExpectEnactment(ProtocolUpdateTrigger protocolUpdateTrigger) implements TestEvent {}
 
     static TestEvent expectNoReportedReadiness() {
       return new ExpectReadiness(Map::isEmpty);
     }
 
-    static TestEvent signalReadiness(ProtocolUpdate protocolUpdate, int validatorIdx) {
-      return signalReadiness(protocolUpdate.readinessSignalName(), validatorIdx);
+    static TestEvent signalReadiness(
+        ProtocolUpdateTrigger protocolUpdateTrigger, int validatorIdx) {
+      return signalReadiness(protocolUpdateTrigger.readinessSignalName(), validatorIdx);
     }
 
     static TestEvent signalReadiness(String protocolUpdateName, int validatorIdx) {
@@ -386,11 +389,13 @@ public final class ProtocolUpdateWithEpochBoundsTest {
     }
 
     static TestEvent expectOneProtocolReadiness(
-        ProtocolUpdate protocolUpdate, Decimal expectedReadiness) {
+        ProtocolUpdateTrigger protocolUpdateTrigger, Decimal expectedReadiness) {
       return new ExpectReadiness(
           readiness ->
               readiness.size() == 1
-                  && readiness.get(protocolUpdate.readinessSignalName()).equals(expectedReadiness));
+                  && readiness
+                      .get(protocolUpdateTrigger.readinessSignalName())
+                      .equals(expectedReadiness));
     }
 
     static TestEvent expectReadinessToInclude(
@@ -400,24 +405,26 @@ public final class ProtocolUpdateWithEpochBoundsTest {
     }
 
     static TestEvent expectReadinessToInclude(
-        ProtocolUpdate protocolUpdate, Decimal expectedReadiness) {
-      return expectReadinessToInclude(protocolUpdate.readinessSignalName(), expectedReadiness);
+        ProtocolUpdateTrigger protocolUpdateTrigger, Decimal expectedReadiness) {
+      return expectReadinessToInclude(
+          protocolUpdateTrigger.readinessSignalName(), expectedReadiness);
     }
 
-    static TestEvent expectEnactment(ProtocolUpdate protocolUpdate) {
-      return new ExpectEnactment(protocolUpdate);
+    static TestEvent expectEnactment(ProtocolUpdateTrigger protocolUpdateTrigger) {
+      return new ExpectEnactment(protocolUpdateTrigger);
     }
   }
 
   static class ScenarioBuilder {
     int numValidators;
-    ImmutableList<ProtocolUpdate> protocolUpdates;
+    ImmutableList<ProtocolUpdateTrigger> protocolUpdateTriggers;
     Map<Long, List<TestEvent>> eventsByEpochBuilder = new HashMap<>();
     long nextEpochMinValue = 3; // No need to handle pre-genesis epochs
 
-    ScenarioBuilder(int numValidators, ImmutableList<ProtocolUpdate> protocolUpdates) {
+    ScenarioBuilder(
+        int numValidators, ImmutableList<ProtocolUpdateTrigger> protocolUpdateTriggers) {
       this.numValidators = numValidators;
-      this.protocolUpdates = protocolUpdates;
+      this.protocolUpdateTriggers = protocolUpdateTriggers;
     }
 
     ScenarioBuilder atEpoch(long epoch, TestEvent event) {
@@ -442,7 +449,7 @@ public final class ProtocolUpdateWithEpochBoundsTest {
       }
       return new TestScenario(
           numValidators,
-          protocolUpdates,
+          protocolUpdateTriggers,
           eventsByEpochBuilder.entrySet().stream()
               .collect(
                   ImmutableMap.toImmutableMap(

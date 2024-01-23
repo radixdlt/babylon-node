@@ -85,7 +85,6 @@ mod test;
 pub use crate::mempool::*;
 pub use crate::metrics::*;
 pub use crate::pending_transaction_result_cache::*;
-pub use crate::protocol::*;
 pub use crate::receipt::*;
 pub use crate::staging::*;
 pub use crate::state_computer::*;

@@ -65,22 +65,52 @@
 package com.radixdlt.protocol;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.rev2.NetworkDefinition;
+import com.radixdlt.sbor.NodeSborCodecs;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.sbor.exceptions.SborDecodeException;
+import java.util.Map;
 
 public record ProtocolConfig(
-    String genesisProtocolVersion, ImmutableList<ProtocolUpdate> protocolUpdates) {
+    String genesisProtocolVersion,
+    ImmutableList<ProtocolUpdateTrigger> protocolUpdateTriggers,
+    Map<String, byte[]> rawProtocolUpdateContentOverrides) {
+
+  public static final String GENESIS_PROTOCOL_VERSION_NAME = "babylon-genesis";
+
+  public ProtocolConfig(ImmutableList<ProtocolUpdateTrigger> protocolUpdateTriggers) {
+    this(protocolUpdateTriggers, Map.of());
+  }
+
+  public ProtocolConfig(
+      ImmutableList<ProtocolUpdateTrigger> protocolUpdateTriggers,
+      Map<String, byte[]> rawProtocolUpdateContentOverrides) {
+    this(GENESIS_PROTOCOL_VERSION_NAME, protocolUpdateTriggers, rawProtocolUpdateContentOverrides);
+  }
+
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         ProtocolConfig.class,
         codecs -> StructCodec.fromRecordComponents(ProtocolConfig.class, codecs));
   }
 
-  public static ProtocolConfig testingDefault() {
-    return new ProtocolConfig("testing-genesis", ImmutableList.of());
+  public static ProtocolConfig sborDecodeWithFallbackForOldVersions(byte[] encoded) {
+    try {
+      return NodeSborCodecs.decode(encoded, NodeSborCodecs.resolveCodec(new TypeToken<>() {}));
+    } catch (SborDecodeException ex) {
+      return NodeSborCodecs.decode(
+              encoded, NodeSborCodecs.resolveCodec(new TypeToken<ProtocolConfigV0>() {}))
+          .update();
+    }
   }
 
-  public static ProtocolConfig mainnet() {
-    return RustProtocolUpdate.mainnetConfig();
+  public static ProtocolConfig testingDefault() {
+    return new ProtocolConfig(ImmutableList.of());
+  }
+
+  public static ProtocolConfig resolveForNetwork(NetworkDefinition networkDefinition) {
+    return RustProtocolUpdate.resolveForNetwork(networkDefinition);
   }
 }

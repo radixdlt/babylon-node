@@ -323,6 +323,11 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
 
     final var newLatestProof = maybePostProtocolUpdateProof.orElse(proof);
 
+    // This presence of the protocol update in the proof is validated in rust - to ensure that if
+    // any protocol update
+    // is present, our node agrees it should be committed.
+    // We then can trust that we should trigger the application of the protocol update here.
+    // NOTE: In the future, we may be able to move this down into Rust.
     this.latestProof =
         new LedgerProofBundle(
             newLatestProof,

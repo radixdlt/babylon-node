@@ -72,7 +72,6 @@ use radix_engine::prelude::dec;
 use radix_engine::system::system_substates::FieldSubstate;
 use radix_engine::utils::generate_validator_fee_fix_state_updates;
 
-use radix_engine_common::network::NetworkDefinition;
 use radix_engine_common::prelude::{Epoch, CONSENSUS_MANAGER};
 use radix_engine_interface::prelude::MAIN_BASE_PARTITION;
 use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
@@ -82,41 +81,14 @@ use sbor::HasLatestVersion;
 use node_common::locks::LockFactory;
 use node_common::scheduler::Scheduler;
 
-use crate::ProtocolUpdateEnactmentCondition::EnactUnconditionallyAtEpoch;
-use crate::{
-    FixedFlashProtocolUpdater, NoStateUpdatesProtocolUpdater, ProtocolConfig, ProtocolUpdate,
-    ProtocolUpdater, ProtocolUpdaterFactory, StateManager, StateManagerConfig,
-};
-use radix_engine::track::StateUpdates;
+use crate::protocol::*;
+use crate::{StateManager, StateManagerConfig};
 use std::ops::Deref;
 
 use crate::test::prepare_and_commit_round_update;
 use crate::transaction::FlashTransactionV1;
 
-const GENESIS_PROTOCOL_VERSION: &str = "testing-genesis";
-const V2_PROTOCOL_VERSION: &str = "testing-v2";
-
-struct TestProtocolUpdaterFactory {
-    v2_flash: FlashTransactionV1,
-}
-
-impl ProtocolUpdaterFactory for TestProtocolUpdaterFactory {
-    fn updater_for(&self, protocol_version_name: &str) -> Option<Box<dyn ProtocolUpdater>> {
-        match protocol_version_name {
-            GENESIS_PROTOCOL_VERSION => Some(Box::new(NoStateUpdatesProtocolUpdater::default(
-                NetworkDefinition::simulator(),
-            ))),
-            V2_PROTOCOL_VERSION => Some(Box::new(
-                FixedFlashProtocolUpdater::new_with_default_configurator(
-                    V2_PROTOCOL_VERSION.to_string(),
-                    NetworkDefinition::simulator(),
-                    vec![self.v2_flash.clone()],
-                ),
-            )),
-            _ => None,
-        }
-    }
-}
+const CUSTOM_V2_PROTOCOL_VERSION: &str = "custom-v2";
 
 #[test]
 fn flash_protocol_update_test() {
@@ -126,28 +98,23 @@ fn flash_protocol_update_test() {
     // We're enacting an update after another transaction commit
     let protocol_update_epoch = Epoch::of(3);
 
-    // Updating to "testing-v2" at post_genesis_state_version + 1
     state_manager_config.protocol_config = ProtocolConfig {
         genesis_protocol_version: GENESIS_PROTOCOL_VERSION.to_string(),
-        protocol_updates: vec![ProtocolUpdate {
-            next_protocol_version: V2_PROTOCOL_VERSION.to_string(),
-            enactment_condition: EnactUnconditionallyAtEpoch(protocol_update_epoch),
+        protocol_update_triggers: vec![ProtocolUpdateTrigger {
+            next_protocol_version: CUSTOM_V2_PROTOCOL_VERSION.to_string(),
+            enactment_condition:
+                ProtocolUpdateEnactmentCondition::EnactAtStartOfEpochUnconditionally(
+                    protocol_update_epoch,
+                ),
         }],
+        // This is temporary - we will generate the custom state updates below
+        protocol_update_content_overrides: RawProtocolUpdateContentOverrides::none(),
     };
 
     // This is a bit of a hack to be able to use fixed flash protocol update
     let consensus_manager_state_updates = {
         // Run the genesis first
-        let tmp_state_manager = create_state_manager(
-            state_manager_config.clone(),
-            // Fake updater, unused
-            Box::new(TestProtocolUpdaterFactory {
-                v2_flash: FlashTransactionV1 {
-                    name: "unused".to_string(),
-                    state_updates: StateUpdates::default(),
-                },
-            }),
-        );
+        let tmp_state_manager = create_state_manager(state_manager_config.clone());
         tmp_state_manager
             .state_computer
             .execute_genesis_for_unit_tests_with_default_config();
@@ -158,15 +125,20 @@ fn flash_protocol_update_test() {
         state_updates
     };
 
-    let state_manager = create_state_manager(
-        state_manager_config,
-        Box::new(TestProtocolUpdaterFactory {
-            v2_flash: FlashTransactionV1 {
-                name: "testing-v2-flash".to_string(),
+    state_manager_config
+        .protocol_config
+        .protocol_update_content_overrides = ProtocolUpdateContentOverrides::empty()
+        .with_custom(
+            CUSTOM_V2_PROTOCOL_VERSION,
+            vec![vec![FlashTransactionV1 {
+                name: format!("{CUSTOM_V2_PROTOCOL_VERSION}-flash"),
                 state_updates: consensus_manager_state_updates,
-            },
-        }),
-    );
+            }
+            .into()]],
+        )
+        .into();
+
+    let state_manager = create_state_manager(state_manager_config);
 
     // Commit 3 round updates to get us to the next epoch (3).
     let _ = prepare_and_commit_round_update(&state_manager);
@@ -180,18 +152,24 @@ fn flash_protocol_update_test() {
 
     assert_eq!(
         prepare_result.next_protocol_version,
-        Some(V2_PROTOCOL_VERSION.to_string())
+        Some(CUSTOM_V2_PROTOCOL_VERSION.to_string())
     );
 
-    let read_db = state_manager.database.read_current();
-    let pre_protocol_update_state_version = read_db.max_state_version();
-    drop(read_db);
+    let pre_protocol_update_state_version =
+        state_manager.database.read_current().max_state_version();
 
     // Now let's apply the protocol update (this would normally be called by Java)
-    state_manager.apply_protocol_update(V2_PROTOCOL_VERSION);
+    state_manager.apply_protocol_update(CUSTOM_V2_PROTOCOL_VERSION);
+
+    let read_db = state_manager.database.read_current();
+
+    // Verify a transaction has been committed
+    assert_eq!(
+        read_db.max_state_version(),
+        pre_protocol_update_state_version.next().unwrap()
+    );
 
     // Verify that a new consensus manager config has been flashed
-    let read_db = state_manager.database.read_current();
     let config_substate = read_db.get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ConsensusManagerConfigurationFieldPayload>>(
         CONSENSUS_MANAGER.as_node_id(),
         MAIN_BASE_PARTITION,
@@ -206,22 +184,13 @@ fn flash_protocol_update_test() {
             .validator_creation_usd_cost,
         dec!("100")
     );
-
-    assert_eq!(
-        read_db.max_state_version(),
-        pre_protocol_update_state_version.next().unwrap()
-    );
 }
 
-fn create_state_manager(
-    config: StateManagerConfig,
-    protocol_updater_factory: Box<dyn ProtocolUpdaterFactory + Sync + Send>,
-) -> StateManager {
+fn create_state_manager(config: StateManagerConfig) -> StateManager {
     StateManager::new(
         config,
         None,
         &LockFactory::new("testing"),
-        protocol_updater_factory,
         &Registry::new(),
         &Scheduler::new("testing"),
     )
