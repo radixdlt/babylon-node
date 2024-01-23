@@ -30,10 +30,10 @@ impl From<FlashTransactionV1> for UpdateTransaction {
 
 enum ProtocolUpdateProgress {
     UpdateInitiatedButNothingCommitted {
-        protocol_version_name: String,
+        protocol_version_name: ProtocolVersionName,
     },
     UpdateInProgress {
-        protocol_version_name: String,
+        protocol_version_name: ProtocolVersionName,
         last_batch_idx: u32,
     },
     /// This means that the last proof contains no notion of a protocol update,
@@ -47,7 +47,7 @@ enum ProtocolUpdateProgress {
 /// It handles the logic to fulfill the resumability contract of "execute_remaining_state_updates"
 /// by storing the index of a previously committed transaction batch in the ledger proof.
 pub struct ProtocolUpdateTransactionCommitter {
-    protocol_version_name: String,
+    protocol_version_name: ProtocolVersionName,
     store: Arc<StateLock<StateManagerDatabase>>,
     execution_configurator: RwLock<ExecutionConfigurator>,
     ledger_transaction_validator: LedgerTransactionValidator,
@@ -55,7 +55,7 @@ pub struct ProtocolUpdateTransactionCommitter {
 
 impl ProtocolUpdateTransactionCommitter {
     pub fn new(
-        protocol_version_name: String,
+        protocol_version_name: ProtocolVersionName,
         store: Arc<StateLock<StateManagerDatabase>>,
         execution_configurator: ExecutionConfigurator,
         ledger_transaction_validator: LedgerTransactionValidator,
@@ -81,7 +81,9 @@ impl ProtocolUpdateTransactionCommitter {
                     latest_proof.ledger_header.next_protocol_version
                 {
                     ProtocolUpdateProgress::UpdateInitiatedButNothingCommitted {
-                        protocol_version_name: latest_proof_protocol_version,
+                        protocol_version_name: ProtocolVersionName::of_unchecked(
+                            latest_proof_protocol_version,
+                        ),
                     }
                 } else {
                     ProtocolUpdateProgress::NotUpdating
@@ -91,7 +93,7 @@ impl ProtocolUpdateTransactionCommitter {
                 protocol_version_name,
                 batch_idx,
             } => ProtocolUpdateProgress::UpdateInProgress {
-                protocol_version_name: protocol_version_name.to_string(),
+                protocol_version_name: protocol_version_name.clone(),
                 last_batch_idx: *batch_idx,
             },
         }

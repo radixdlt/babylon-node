@@ -76,7 +76,9 @@ use prometheus::Registry;
 use radix_engine_common::prelude::*;
 
 use crate::jni::LedgerSyncLimitsConfig;
-use crate::protocol::{ProtocolConfig, ProtocolDefinitionResolver, ProtocolState};
+use crate::protocol::{
+    ProtocolConfig, ProtocolDefinitionResolver, ProtocolState, ProtocolVersionName,
+};
 use crate::store::jmt_gc::StateHashTreeGcConfig;
 use crate::store::proofs_gc::{LedgerProofsGc, LedgerProofsGcConfig};
 use crate::store::traits::proofs::QueryableProofStore;
@@ -335,7 +337,10 @@ impl StateManager {
         }
     }
 
-    pub fn apply_protocol_update(&self, protocol_version_name: &str) -> ProtocolUpdateResult {
+    pub fn apply_protocol_update(
+        &self,
+        protocol_version_name: &ProtocolVersionName,
+    ) -> ProtocolUpdateResult {
         let (new_state_computer_config, protocol_updater) = self
             .protocol_definition_resolver
             .resolve(protocol_version_name)
@@ -378,7 +383,7 @@ impl StateManager {
         }
     }
 
-    pub fn newest_protocol_version(&self) -> String {
+    pub fn newest_protocol_version(&self) -> ProtocolVersionName {
         let protocol_config = &self.config.protocol_config;
         protocol_config
             .protocol_update_triggers

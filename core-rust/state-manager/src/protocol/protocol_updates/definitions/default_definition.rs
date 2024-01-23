@@ -7,7 +7,7 @@ impl ProtocolUpdateDefinition for DefaultConfigOnlyProtocolDefinition {
     type Overrides = ();
 
     fn create_updater(
-        _new_protocol_version: &str,
+        _new_protocol_version: &ProtocolVersionName,
         _network_definition: &NetworkDefinition,
         _overrides: Option<Self::Overrides>,
     ) -> Box<dyn ProtocolUpdater> {

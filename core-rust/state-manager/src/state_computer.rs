@@ -1262,12 +1262,12 @@ where
 
     pub fn handle_protocol_update(
         &self,
-        protocol_version_name: &str,
+        protocol_version_name: &ProtocolVersionName,
         new_ledger_transaction_validator: LedgerTransactionValidator,
     ) {
         *self.ledger_transaction_validator.write() = new_ledger_transaction_validator;
 
-        self.protocol_state.write().current_protocol_version = protocol_version_name.to_string();
+        self.protocol_state.write().current_protocol_version = protocol_version_name.clone();
 
         let current_header = self
             .store
@@ -1392,7 +1392,7 @@ where
         *transaction_tree_diff.slice.root()
     }
 
-    pub fn current_protocol_version(&self) -> String {
+    pub fn current_protocol_version(&self) -> ProtocolVersionName {
         self.protocol_state.read().current_protocol_version.clone()
     }
 

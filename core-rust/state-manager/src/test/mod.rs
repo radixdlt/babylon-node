@@ -13,7 +13,7 @@ pub fn commit_round_updates_until_epoch(state_manager: &StateManager, epoch: Epo
     loop {
         let (prepare_result, _) = prepare_and_commit_round_update(state_manager);
         if let Some(next_protocol_version) = prepare_result.next_protocol_version {
-            state_manager.apply_protocol_update(next_protocol_version.as_str());
+            state_manager.apply_protocol_update(&next_protocol_version);
         }
         if let Some(next_epoch) = prepare_result.next_epoch {
             if next_epoch.epoch == epoch {

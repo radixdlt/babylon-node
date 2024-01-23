@@ -78,7 +78,7 @@ pub(crate) async fn handle_status_network_status(
                 )?))
             })
             .transpose()?,
-        current_protocol_version,
+        current_protocol_version: current_protocol_version.to_string(),
     }))
 }
 

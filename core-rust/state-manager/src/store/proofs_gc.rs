@@ -340,17 +340,12 @@ mod tests {
             most_recent_full_resolution_epoch_count: 0,
         };
         // An unconditional protocol update at epoch 5
-        config.protocol_config = ProtocolConfig {
-            genesis_protocol_version: GENESIS_PROTOCOL_VERSION.to_string(),
-            protocol_update_triggers: vec![ProtocolUpdateTrigger {
-                next_protocol_version: TestProtocolUpdateDefinition::subnamed("v2"),
-                enactment_condition:
-                    ProtocolUpdateEnactmentCondition::EnactAtStartOfEpochUnconditionally(Epoch::of(
-                        5,
-                    )),
-            }],
-            protocol_update_content_overrides: ProtocolUpdateContentOverrides::empty().into(),
-        };
+        config.protocol_config = ProtocolConfig::new_with_triggers(hashmap! {
+            TestProtocolUpdateDefinition::subnamed("v2") =>
+                ProtocolUpdateEnactmentCondition::EnactAtStartOfEpochUnconditionally(Epoch::of(
+                    5,
+                ))
+        });
         let state_manager = StateManager::new(
             config,
             None,

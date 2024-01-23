@@ -217,7 +217,7 @@ where
         self.state_tracker.protocol_state.clone()
     }
 
-    pub fn next_protocol_version(&self) -> Option<String> {
+    pub fn next_protocol_version(&self) -> Option<ProtocolVersionName> {
         self.state_tracker.next_protocol_version()
     }
 }
@@ -245,7 +245,7 @@ struct StateTracker {
     ledger_hashes: LedgerHashes,
     next_epoch: Option<NextEpoch>,
     protocol_state: ProtocolState,
-    next_protocol_version: Option<String>,
+    next_protocol_version: Option<ProtocolVersionName>,
 }
 
 impl StateTracker {
@@ -301,7 +301,7 @@ impl StateTracker {
         self.next_protocol_version = result.next_protocol_version.clone();
     }
 
-    pub fn next_protocol_version(&self) -> Option<String> {
+    pub fn next_protocol_version(&self) -> Option<ProtocolVersionName> {
         self.next_protocol_version.clone()
     }
 }

@@ -86,7 +86,7 @@ extern "system" fn Java_com_radixdlt_protocol_RustProtocolUpdate_applyProtocolUp
     jni_sbor_coded_fallible_call(
         &env,
         request_payload,
-        |protocol_version_name: String| -> JavaResult<ProtocolUpdateResult> {
+        |protocol_version_name: ProtocolVersionName| -> JavaResult<ProtocolUpdateResult> {
             let result = JNINodeRustEnvironment::get(&env, j_node_rust_env)
                 .state_manager
                 .apply_protocol_update(&protocol_version_name);

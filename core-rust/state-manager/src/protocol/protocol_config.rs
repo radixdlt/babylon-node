@@ -3,12 +3,14 @@ use radix_engine_common::math::Decimal;
 use radix_engine_common::prelude::{hash, scrypto_encode};
 
 use radix_engine_common::types::Epoch;
+use sbor::Sbor;
 
 use crate::protocol::*;
-use utils::btreeset;
+use utils::prelude::*;
 
 // This file contains types for node's local static protocol configuration
 
+const MIN_PROTOCOL_VERSION_NAME_LEN: usize = 2;
 const MAX_PROTOCOL_VERSION_NAME_LEN: usize = 16;
 
 /// The `ProtocolConfig` is a static configuration provided per-network, or overriden for testing.
@@ -20,7 +22,7 @@ const MAX_PROTOCOL_VERSION_NAME_LEN: usize = 16;
 /// work out what it should do for the update.
 #[derive(Clone, Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct ProtocolConfig {
-    pub genesis_protocol_version: String,
+    pub genesis_protocol_version: ProtocolVersionName,
     pub protocol_update_triggers: Vec<ProtocolUpdateTrigger>,
     /// This allows overriding the configuration of a protocol update.
     ///
@@ -36,23 +38,19 @@ pub struct ProtocolConfig {
 }
 
 impl ProtocolConfig {
-    pub fn new_with_no_updates() -> ProtocolConfig {
-        Self {
-            genesis_protocol_version: GENESIS_PROTOCOL_VERSION.to_string(),
-            protocol_update_triggers: vec![],
-            protocol_update_content_overrides: RawProtocolUpdateContentOverrides::default(),
-        }
+    pub fn new_with_no_updates() -> Self {
+        Self::new_with_triggers::<&str>([])
     }
 
-    pub fn new_with_triggers<'a>(
-        triggers: impl IntoIterator<Item = (&'a str, ProtocolUpdateEnactmentCondition)>,
-    ) -> ProtocolConfig {
+    pub fn new_with_triggers<T: Into<String>>(
+        triggers: impl IntoIterator<Item = (T, ProtocolUpdateEnactmentCondition)>,
+    ) -> Self {
         Self {
-            genesis_protocol_version: GENESIS_PROTOCOL_VERSION.to_string(),
+            genesis_protocol_version: ProtocolVersionName::of(GENESIS_PROTOCOL_VERSION).unwrap(),
             protocol_update_triggers: triggers
                 .into_iter()
                 .map(|(version, enactment_condition)| {
-                    ProtocolUpdateTrigger::of(version, enactment_condition)
+                    ProtocolUpdateTrigger::of(version.into(), enactment_condition)
                 })
                 .collect(),
             protocol_update_content_overrides: RawProtocolUpdateContentOverrides::default(),
@@ -63,21 +61,22 @@ impl ProtocolConfig {
         &self,
         protocol_definition_resolver: &ProtocolDefinitionResolver,
     ) -> Result<(), String> {
-        let mut protocol_versions = btreeset!();
+        let mut protocol_versions = hashset!();
 
         Self::validate_protocol_version_name(
-            self.genesis_protocol_version.as_str(),
+            &self.genesis_protocol_version,
             protocol_definition_resolver,
         )?;
 
         for protocol_update in self.protocol_update_triggers.iter() {
-            let protocol_version_name = protocol_update.next_protocol_version.as_str();
+            let protocol_version_name = &protocol_update.next_protocol_version;
+
             Self::validate_protocol_version_name(
                 protocol_version_name,
                 protocol_definition_resolver,
             )?;
 
-            if !protocol_versions.insert(protocol_version_name) {
+            if !protocol_versions.insert(&protocol_update.next_protocol_version) {
                 return Err(format!(
                     "Duplicate specification of protocol version {protocol_version_name}"
                 ));
@@ -113,26 +112,24 @@ impl ProtocolConfig {
             }
         }
 
-        // Note - The protocol_update_content_overrides are validated in the ProtocolDefinitionResolver::new_with_raw_overrides
+        // Note - The protocol_update_content_overrides contents are validated in the ProtocolDefinitionResolver::new_with_raw_overrides
+        // But let's check the length here too, which isn't checked there.
+        for (protocol_version_name, _) in self.protocol_update_content_overrides.iter() {
+            Self::validate_protocol_version_name(
+                protocol_version_name,
+                protocol_definition_resolver,
+            )?;
+        }
 
         Ok(())
     }
 
     fn validate_protocol_version_name(
-        name: &str,
+        name: &ProtocolVersionName,
         protocol_definition_resolver: &ProtocolDefinitionResolver,
     ) -> Result<(), String> {
-        if name.len() > MAX_PROTOCOL_VERSION_NAME_LEN {
-            return Err(format!(
-                "Protocol version ({name}) is longer than {MAX_PROTOCOL_VERSION_NAME_LEN} chars"
-            ));
-        }
-
-        if !name.is_ascii() {
-            return Err(format!(
-                "Protocol version ({name}) can't use non-ascii characters"
-            ));
-        }
+        name.validate()
+            .map_err(|err| format!("Protocol version ({name}) is invalid: {err:?}"))?;
 
         if !protocol_definition_resolver.recognizes(name) {
             return Err(format!(
@@ -144,19 +141,108 @@ impl ProtocolConfig {
     }
 }
 
+// Note - at present we don't validate this on SBOR decode, but we do validate it when
+// it's first used for
+#[derive(Clone, Debug, Eq, PartialEq, Hash, PartialOrd, Ord, Sbor)]
+#[sbor(transparent)]
+pub struct ProtocolVersionName(String);
+
+#[derive(Clone, Debug, Eq, PartialEq, Sbor)]
+pub enum ProtocolVersionNameValidationError {
+    LengthInvalid {
+        invalid_name: String,
+        min_inclusive: usize,
+        max_inclusive: usize,
+        actual: usize,
+    },
+    CharsInvalid {
+        invalid_name: String,
+        allowed_chars: String,
+    },
+}
+
+impl ProtocolVersionName {
+    pub fn of(name: impl Into<String>) -> Result<Self, ProtocolVersionNameValidationError> {
+        let name = Self(name.into());
+        name.validate()?;
+        Ok(name)
+    }
+
+    /// Usable by persisted names. We panic if not valid in padded_len_16_version_name_for_readiness_signal.
+    pub fn of_unchecked(name: impl Into<String>) -> Self {
+        Self(name.into())
+    }
+
+    pub fn validate(&self) -> Result<(), ProtocolVersionNameValidationError> {
+        let length = self.0.len();
+        if !(MIN_PROTOCOL_VERSION_NAME_LEN..=MAX_PROTOCOL_VERSION_NAME_LEN).contains(&length) {
+            return Err(ProtocolVersionNameValidationError::LengthInvalid {
+                invalid_name: self.0.clone(),
+                min_inclusive: MIN_PROTOCOL_VERSION_NAME_LEN,
+                max_inclusive: MAX_PROTOCOL_VERSION_NAME_LEN,
+                actual: length,
+            });
+        }
+        let passes_char_check = self.0.chars().all(|c| match c {
+            _ if c.is_ascii_alphanumeric() => true,
+            '_' | '-' => true,
+            _ => false,
+        });
+        if !passes_char_check {
+            return Err(ProtocolVersionNameValidationError::CharsInvalid {
+                invalid_name: self.0.clone(),
+                allowed_chars: "[A-Za-z0-9] and -".to_string(),
+            });
+        }
+        Ok(())
+    }
+
+    pub fn as_ascii_bytes(&self) -> &[u8] {
+        self.0.as_bytes()
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    /// The caller is assumed to have validated the version name before this is called.
+    pub fn padded_len_16_version_name_for_readiness_signal(&self) -> String {
+        self.validate()
+            .expect("Must be valid before extracting readiness signal name");
+        std::iter::repeat('0')
+            .take(16 - self.0.len())
+            .chain(self.0.chars())
+            .collect()
+    }
+}
+
+impl From<ProtocolVersionName> for String {
+    fn from(value: ProtocolVersionName) -> Self {
+        value.0
+    }
+}
+
+impl fmt::Display for ProtocolVersionName {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+/// The `next_protocol_version` must be valid
 #[derive(Clone, Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct ProtocolUpdateTrigger {
-    pub next_protocol_version: String,
+    pub next_protocol_version: ProtocolVersionName,
     pub enactment_condition: ProtocolUpdateEnactmentCondition,
 }
 
 impl ProtocolUpdateTrigger {
+    /// Note: panics if next_protocol_version is invalid
     pub fn of(
         next_protocol_version: impl Into<String>,
         enactment_condition: ProtocolUpdateEnactmentCondition,
     ) -> Self {
         Self {
-            next_protocol_version: next_protocol_version.into(),
+            next_protocol_version: ProtocolVersionName::of(next_protocol_version.into()).unwrap(),
             enactment_condition,
         }
     }
@@ -167,33 +253,16 @@ impl ProtocolUpdateTrigger {
         // - next_protocol_version: 16 bytes,
         //      left padded with ASCII 0's if protocol version name is shorter than 16 characters
         let mut bytes_to_hash = scrypto_encode(&self.enactment_condition).unwrap();
-        bytes_to_hash.extend_from_slice(self.next_protocol_version.as_bytes());
+        bytes_to_hash.extend_from_slice(self.next_protocol_version.as_ascii_bytes());
         let protocol_update_hash = hash(&bytes_to_hash);
         let mut res = hex::encode(protocol_update_hash)[0..16].to_string();
-        res.push_str(&ascii_protocol_version_name_len_16(
-            &self.next_protocol_version,
-        ));
+        res.push_str(
+            &self
+                .next_protocol_version
+                .padded_len_16_version_name_for_readiness_signal(),
+        );
         res
     }
-}
-
-/// Returns an ASCII protocol version name truncated/left padded to canonical length (16 bytes)
-pub fn ascii_protocol_version_name_len_16(protocol_version_name: &str) -> String {
-    let filtered_version_name: String = protocol_version_name
-        .chars()
-        .filter_map(|c| match c {
-            _ if c.is_ascii_alphanumeric() => Some(c),
-            '_' | '-' => Some(c),
-            ' ' => Some('_'),
-            _ => None,
-        })
-        .take(16)
-        .collect();
-
-    std::iter::repeat('0')
-        .take(16 - filtered_version_name.len())
-        .chain(filtered_version_name.chars())
-        .collect()
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, ScryptoSbor)]

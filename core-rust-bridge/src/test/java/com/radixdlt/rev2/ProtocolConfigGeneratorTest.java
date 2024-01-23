@@ -70,6 +70,7 @@ import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition;
 import com.radixdlt.protocol.ProtocolUpdateTrigger;
 import com.radixdlt.sbor.NodeSborCodecs;
+import java.util.Map;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -82,18 +83,14 @@ public final class ProtocolConfigGeneratorTest {
     // Change this, then run the test to generate the config
     // NOTE:
     // - See `resolve_update_definition_for_version` in `protocol_definition_resolver.rs` for the
-    // supported
-    //   protocol versions
+    // supported protocol versions
     // - Any protocol version starting "test-" will add a single transaction to ledger at enactment
     // - Any protocol version starting "custom-" can be configured with overrides to commit
-    // arbitrary flash
-    //   transactions. To do this, add an overrides map of protocol version => SBOR encoded bytes of
-    //   Vec<Vec<UpdateTransaction>>. Where UpdateTransaction is an enum with one option at present
-    //   (FlashTransactionV1). These SBOR encoded bytes should be created in Rust.
-    //   See e.g. protocol/test.rs - although we should add an easier-to-use generator if we choose
-    // to
-    //   use this in tests.
-    //   Please ask if you need help with this.
+    // arbitrary flash transactions. To do this, add an overrides map of protocol version => SBOR
+    // encoded bytes of Vec<Vec<UpdateTransaction>>. Where UpdateTransaction is an enum with one
+    // option at present (FlashTransactionV1). These SBOR encoded bytes should be created in Rust.
+    // See e.g. protocol/test.rs - although we should add an easier-to-use generator if we choose
+    // to use this in tests. Please ask if you need help with this.
     final var protocolConfig =
         new ProtocolConfig(
             // List of triggers

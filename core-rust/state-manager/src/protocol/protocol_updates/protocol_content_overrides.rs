@@ -12,7 +12,7 @@ type Overrides<X> = <X as ProtocolUpdateDefinition>::Overrides;
 #[derive(Default, ScryptoSbor)]
 pub struct ProtocolUpdateContentOverrides {
     anemone: Option<Overrides<AnemoneProtocolUpdateDefinition>>,
-    custom: HashMap<String, Overrides<CustomProtocolUpdateDefinition>>,
+    custom: HashMap<ProtocolVersionName, Overrides<CustomProtocolUpdateDefinition>>,
 }
 
 impl ProtocolUpdateContentOverrides {
@@ -27,16 +27,16 @@ impl ProtocolUpdateContentOverrides {
 
     pub fn with_custom(
         mut self,
-        custom_name: &str,
+        custom_name: ProtocolVersionName,
         config: Overrides<CustomProtocolUpdateDefinition>,
     ) -> Self {
-        if !CustomProtocolUpdateDefinition::matches(custom_name) {
+        if !CustomProtocolUpdateDefinition::matches(&custom_name) {
             panic!(
                 "Not an allowed custom protocol update name: {}",
                 custom_name
             );
         }
-        self.custom.insert(custom_name.to_string(), config);
+        self.custom.insert(custom_name, config);
         self
     }
 }
@@ -47,7 +47,7 @@ impl From<ProtocolUpdateContentOverrides> for RawProtocolUpdateContentOverrides 
 
         if let Some(config) = value.anemone {
             map.insert(
-                ANEMONE_PROTOCOL_VERSION.to_string(),
+                ProtocolVersionName::of(ANEMONE_PROTOCOL_VERSION).unwrap(),
                 scrypto_encode(&config).unwrap(),
             );
         }
@@ -64,18 +64,18 @@ impl From<ProtocolUpdateContentOverrides> for RawProtocolUpdateContentOverrides 
 
 #[derive(Default, Clone, Debug, Eq, PartialEq, Sbor)]
 #[sbor(transparent)]
-pub struct RawProtocolUpdateContentOverrides(HashMap<String, Vec<u8>>);
+pub struct RawProtocolUpdateContentOverrides(HashMap<ProtocolVersionName, Vec<u8>>);
 
 impl RawProtocolUpdateContentOverrides {
     pub fn none() -> Self {
         Default::default()
     }
 
-    pub fn iter(&self) -> hash_map::Iter<String, Vec<u8>> {
+    pub fn iter(&self) -> hash_map::Iter<ProtocolVersionName, Vec<u8>> {
         self.0.iter()
     }
 
-    pub fn get(&self, protocol_version_name: &str) -> Option<&[u8]> {
+    pub fn get(&self, protocol_version_name: &ProtocolVersionName) -> Option<&[u8]> {
         self.0.get(protocol_version_name).map(|x| x.as_ref())
     }
 }

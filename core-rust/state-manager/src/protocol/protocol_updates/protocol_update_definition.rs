@@ -24,7 +24,7 @@ pub trait ProtocolUpdateDefinition {
         -> ProtocolStateComputerConfig;
 
     fn create_updater(
-        new_protocol_version: &str,
+        new_protocol_version: &ProtocolVersionName,
         network_definition: &NetworkDefinition,
         overrides: Option<Self::Overrides>,
     ) -> Box<dyn ProtocolUpdater>;
@@ -39,12 +39,12 @@ pub trait ConfigurableProtocolUpdateDefinition {
     /// Must return `Ok` if the `raw_config` is None or passed validate.
     fn create_updater_with_raw_overrides(
         &self,
-        new_protocol_version: &str,
+        new_protocol_version: &ProtocolVersionName,
         network_definition: &NetworkDefinition,
-        raw_config: Option<&[u8]>,
+        raw_overrides: Option<&[u8]>,
     ) -> Result<Box<dyn ProtocolUpdater>, DecodeError>;
 
-    fn validate_raw_overrides(&self, raw_config: &[u8]) -> Result<(), DecodeError>;
+    fn validate_raw_overrides(&self, raw_overrides: &[u8]) -> Result<(), DecodeError>;
 }
 
 impl<T: ProtocolUpdateDefinition> ConfigurableProtocolUpdateDefinition for T {
@@ -58,7 +58,7 @@ impl<T: ProtocolUpdateDefinition> ConfigurableProtocolUpdateDefinition for T {
     /// If no raw config is provided, the default config is used
     fn create_updater_with_raw_overrides(
         &self,
-        new_protocol_version: &str,
+        new_protocol_version: &ProtocolVersionName,
         network_definition: &NetworkDefinition,
         raw_overrides: Option<&[u8]>,
     ) -> Result<Box<dyn ProtocolUpdater>, DecodeError> {
@@ -73,8 +73,8 @@ impl<T: ProtocolUpdateDefinition> ConfigurableProtocolUpdateDefinition for T {
         ))
     }
 
-    fn validate_raw_overrides(&self, raw_config: &[u8]) -> Result<(), DecodeError> {
-        scrypto_decode::<<Self as ProtocolUpdateDefinition>::Overrides>(raw_config).map(|_| ())
+    fn validate_raw_overrides(&self, raw_overrides: &[u8]) -> Result<(), DecodeError> {
+        scrypto_decode::<<Self as ProtocolUpdateDefinition>::Overrides>(raw_overrides).map(|_| ())
     }
 }
 

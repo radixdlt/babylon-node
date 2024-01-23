@@ -13,12 +13,12 @@ impl ProtocolUpdateDefinition for AnemoneProtocolUpdateDefinition {
     type Overrides = ();
 
     fn create_updater(
-        new_protocol_version: &str,
+        new_protocol_version: &ProtocolVersionName,
         network_definition: &NetworkDefinition,
         _config: Option<Self::Overrides>,
     ) -> Box<dyn ProtocolUpdater> {
         Box::new(BatchedUpdater::new(
-            new_protocol_version.to_string(),
+            new_protocol_version.clone(),
             Self::state_computer_config(network_definition),
             AnemoneBatchGenerator,
         ))

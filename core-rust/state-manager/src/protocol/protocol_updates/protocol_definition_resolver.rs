@@ -14,9 +14,9 @@ pub struct ProtocolDefinitionResolver {
 }
 
 fn resolve_update_definition_for_version(
-    protocol_version_name: &str,
+    protocol_version_name: &ProtocolVersionName,
 ) -> Option<Box<dyn ConfigurableProtocolUpdateDefinition>> {
-    match protocol_version_name {
+    match protocol_version_name.as_str() {
         // Genesis execution is done manually.
         // Genesis only needs to be supported here to identify which configuration to use.
         GENESIS_PROTOCOL_VERSION => Some(Box::new(DefaultConfigOnlyProtocolDefinition)),
@@ -46,16 +46,16 @@ impl ProtocolDefinitionResolver {
 
     pub fn new_with_raw_overrides(
         network: &NetworkDefinition,
-        update_config: RawProtocolUpdateContentOverrides,
+        update_content_overrides: RawProtocolUpdateContentOverrides,
     ) -> Result<Self, ConfigValidationError> {
         // Validate
-        for (configured_version, raw_config) in update_config.iter() {
+        for (configured_version, raw_overrides) in update_content_overrides.iter() {
             let updater_factory = resolve_update_definition_for_version(configured_version).ok_or(
                 ConfigValidationError::UnknownProtocolVersion(configured_version.to_string()),
             )?;
 
             updater_factory
-                .validate_raw_overrides(raw_config)
+                .validate_raw_overrides(raw_overrides)
                 .map_err(|err| {
                     ConfigValidationError::InvalidConfigForProtocolVersion(
                         configured_version.to_string(),
@@ -67,17 +67,17 @@ impl ProtocolDefinitionResolver {
         // Return
         Ok(ProtocolDefinitionResolver {
             network: network.clone(),
-            raw_update_config: update_config,
+            raw_update_config: update_content_overrides,
         })
     }
 
-    pub fn recognizes(&self, protocol_version_name: &str) -> bool {
+    pub fn recognizes(&self, protocol_version_name: &ProtocolVersionName) -> bool {
         resolve_update_definition_for_version(protocol_version_name).is_some()
     }
 
     pub fn resolve(
         &self,
-        protocol_version_name: &str,
+        protocol_version_name: &ProtocolVersionName,
     ) -> Option<(ProtocolStateComputerConfig, Box<dyn ProtocolUpdater>)> {
         let definition = resolve_update_definition_for_version(protocol_version_name)?;
 

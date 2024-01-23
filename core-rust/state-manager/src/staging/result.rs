@@ -65,7 +65,7 @@
 use super::ReadableStateTreeStore;
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, WriteableAccuTreeStore};
 
-use crate::protocol::ProtocolState;
+use crate::protocol::{ProtocolState, ProtocolVersionName};
 use crate::staging::epoch_handling::EpochAwareAccuTreeFactory;
 use crate::transaction::LedgerTransactionHash;
 use crate::{
@@ -117,7 +117,7 @@ pub struct ProcessedCommitResult {
     pub database_updates: DatabaseUpdates,
     pub new_substate_node_ancestry_records: Vec<KeyedSubstateNodeAncestryRecord>,
     pub new_protocol_state: ProtocolState,
-    pub next_protocol_version: Option<String>,
+    pub next_protocol_version: Option<ProtocolVersionName>,
 }
 
 pub struct HashUpdateContext<'s, S> {

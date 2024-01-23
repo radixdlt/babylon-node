@@ -63,6 +63,7 @@
  */
 
 use prometheus::Registry;
+use utils::prelude::*;
 
 use crate::traits::QueryableProofStore;
 use radix_engine::blueprints::consensus_manager::{
@@ -92,24 +93,19 @@ const CUSTOM_V2_PROTOCOL_VERSION: &str = "custom-v2";
 
 #[test]
 fn flash_protocol_update_test() {
+    let custom_v2_protocol_version = ProtocolVersionName::of(CUSTOM_V2_PROTOCOL_VERSION).unwrap();
+
     let mut state_manager_config =
         StateManagerConfig::new_for_testing(tempfile::tempdir().unwrap().path().to_str().unwrap());
 
     // We're enacting an update after another transaction commit
     let protocol_update_epoch = Epoch::of(3);
 
-    state_manager_config.protocol_config = ProtocolConfig {
-        genesis_protocol_version: GENESIS_PROTOCOL_VERSION.to_string(),
-        protocol_update_triggers: vec![ProtocolUpdateTrigger {
-            next_protocol_version: CUSTOM_V2_PROTOCOL_VERSION.to_string(),
-            enactment_condition:
-                ProtocolUpdateEnactmentCondition::EnactAtStartOfEpochUnconditionally(
-                    protocol_update_epoch,
-                ),
-        }],
-        // This is temporary - we will generate the custom state updates below
-        protocol_update_content_overrides: RawProtocolUpdateContentOverrides::none(),
-    };
+    state_manager_config.protocol_config = ProtocolConfig::new_with_triggers(hashmap! {
+        CUSTOM_V2_PROTOCOL_VERSION => ProtocolUpdateEnactmentCondition::EnactAtStartOfEpochUnconditionally(
+            protocol_update_epoch,
+        )
+    });
 
     // This is a bit of a hack to be able to use fixed flash protocol update
     let consensus_manager_state_updates = {
@@ -129,7 +125,7 @@ fn flash_protocol_update_test() {
         .protocol_config
         .protocol_update_content_overrides = ProtocolUpdateContentOverrides::empty()
         .with_custom(
-            CUSTOM_V2_PROTOCOL_VERSION,
+            custom_v2_protocol_version.clone(),
             vec![vec![FlashTransactionV1 {
                 name: format!("{CUSTOM_V2_PROTOCOL_VERSION}-flash"),
                 state_updates: consensus_manager_state_updates,
@@ -152,14 +148,14 @@ fn flash_protocol_update_test() {
 
     assert_eq!(
         prepare_result.next_protocol_version,
-        Some(CUSTOM_V2_PROTOCOL_VERSION.to_string())
+        Some(custom_v2_protocol_version.clone())
     );
 
     let pre_protocol_update_state_version =
         state_manager.database.read_current().max_state_version();
 
     // Now let's apply the protocol update (this would normally be called by Java)
-    state_manager.apply_protocol_update(CUSTOM_V2_PROTOCOL_VERSION);
+    state_manager.apply_protocol_update(&custom_v2_protocol_version);
 
     let read_db = state_manager.database.read_current();
 

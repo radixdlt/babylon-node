@@ -22,14 +22,14 @@ impl ProtocolUpdater for NoOpProtocolUpdater {
 }
 
 pub(crate) struct BatchedUpdater<R: UpdateBatchGenerator> {
-    new_protocol_version: String,
+    new_protocol_version: ProtocolVersionName,
     new_state_computer_config: ProtocolStateComputerConfig,
     resolver: R,
 }
 
 impl<G: UpdateBatchGenerator> BatchedUpdater<G> {
     pub fn new(
-        new_protocol_version: String,
+        new_protocol_version: ProtocolVersionName,
         new_state_computer_config: ProtocolStateComputerConfig,
         batch_generator: G,
     ) -> Self {

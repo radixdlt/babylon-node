@@ -24,8 +24,8 @@ use ProtocolUpdateEnactmentCondition::*;
 
 #[derive(Clone, Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ProtocolState {
-    pub current_protocol_version: String,
-    pub enacted_protocol_updates: BTreeMap<StateVersion, String>,
+    pub current_protocol_version: ProtocolVersionName,
+    pub enacted_protocol_updates: BTreeMap<StateVersion, ProtocolVersionName>,
     pub pending_protocol_updates: Vec<PendingProtocolUpdate>,
 }
 
@@ -67,16 +67,16 @@ fn compute_initial_protocol_update_status<
     S: QueryableProofStore + IterableProofStore + QueryableTransactionStore,
 >(
     store: &S,
-    protocol_change: &ProtocolUpdateTrigger,
+    protocol_update_trigger: &ProtocolUpdateTrigger,
 ) -> InitialProtocolUpdateStatus {
-    match &protocol_change.enactment_condition {
+    match &protocol_update_trigger.enactment_condition {
         EnactAtStartOfEpochIfValidatorsReady {
             lower_bound_inclusive,
             upper_bound_exclusive,
             readiness_thresholds,
         } => compute_initial_signalled_readiness_protocol_update_status(
             store,
-            protocol_change,
+            protocol_update_trigger,
             lower_bound_inclusive,
             upper_bound_exclusive,
             readiness_thresholds,
@@ -91,7 +91,7 @@ fn compute_initial_signalled_readiness_protocol_update_status<
     S: QueryableProofStore + IterableProofStore + QueryableTransactionStore,
 >(
     store: &S,
-    protocol_update: &ProtocolUpdateTrigger,
+    protocol_update_trigger: &ProtocolUpdateTrigger,
     lower_bound_inclusive: &Epoch,
     upper_bound_exclusive: &Epoch,
     thresholds: &[SignalledReadinessThreshold],
@@ -133,7 +133,7 @@ fn compute_initial_signalled_readiness_protocol_update_status<
     for (state_version, epoch_change_event) in epoch_change_event_iter {
         // Update the thresholds
         update_thresholds_state_at_epoch_change(
-            protocol_update,
+            protocol_update_trigger,
             &epoch_change_event,
             &mut thresholds_state,
         );
@@ -210,7 +210,7 @@ impl ProtocolState {
             })
             .collect();
 
-        let expected_already_enacted_protocol_updates: BTreeMap<StateVersion, String> =
+        let expected_already_enacted_protocol_updates: BTreeMap<StateVersion, ProtocolVersionName> =
             initial_statuses
                 .iter()
                 .flat_map(|(protocol_update, status)| match status {
@@ -225,15 +225,17 @@ impl ProtocolState {
                 })
                 .collect();
 
-        let actually_enacted_protocol_updates: BTreeMap<StateVersion, String> = store
+        let actually_enacted_protocol_updates: BTreeMap<StateVersion, ProtocolVersionName> = store
             .get_protocol_update_init_proof_iter(StateVersion::pre_genesis())
             .map(|proof| {
                 (
                     proof.ledger_header.state_version,
-                    proof
-                        .ledger_header
-                        .next_protocol_version
-                        .expect("next_protocol_version is missing in protocol update proof"),
+                    ProtocolVersionName::of_unchecked(
+                        proof
+                            .ledger_header
+                            .next_protocol_version
+                            .expect("next_protocol_version is missing in protocol update proof"),
+                    ),
                 )
             })
             .collect();
@@ -279,7 +281,7 @@ impl ProtocolState {
         self: &ProtocolState,
         local_receipt: &LocalTransactionReceipt,
         post_execute_state_version: StateVersion,
-    ) -> (ProtocolState, Option<String>) {
+    ) -> (ProtocolState, Option<ProtocolVersionName>) {
         let Some(post_execute_epoch) = local_receipt
             .local_execution
             .next_epoch
@@ -390,10 +392,9 @@ impl ProtocolState {
 
         new_protocol_state.pending_protocol_updates = pending_protocol_updates;
         if let Some(next_protocol_version) = next_protocol_version.as_ref() {
-            new_protocol_state.enacted_protocol_updates.insert(
-                post_execute_state_version,
-                next_protocol_version.to_string(),
-            );
+            new_protocol_state
+                .enacted_protocol_updates
+                .insert(post_execute_state_version, next_protocol_version.clone());
         }
 
         (new_protocol_state, next_protocol_version)
