@@ -46,7 +46,7 @@ pub(crate) async fn handle_lts_stream_transaction_outcomes(
 
     let mut response = models::LtsStreamTransactionOutcomesResponse {
         from_state_version: to_api_state_version(from_state_version)?,
-        count: MAX_BATCH_COUNT_PER_REQUEST as i32, // placeholder to get a better size aproximation for the header
+        count: MAX_BATCH_COUNT_PER_REQUEST as i32, // placeholder to get a better size approximation for the header
         max_ledger_state_version: to_api_state_version(max_state_version)?,
         committed_transaction_outcomes: Vec::new(),
     };

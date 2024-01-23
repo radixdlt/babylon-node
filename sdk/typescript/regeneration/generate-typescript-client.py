@@ -74,7 +74,7 @@ def split_out_inherited_discriminated_types(schema):
     for typeName in originalTypeNames:
         typeData = types[typeName]
         if "discriminator" in typeData and "type" in typeData and typeData["type"] == "object" and not ("allOf" in typeData or "anyOf" in typeData or "oneOf" in typeData):
-            # Assume it's one of the types we're targetting!
+            # Assume it's one of the types we're targeting!
 
             baseTypeData = {
                 typeDataKey: typeData[typeDataKey] for typeDataKey in typeData if typeDataKey != "discriminator"

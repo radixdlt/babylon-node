@@ -791,7 +791,7 @@ where
         self.execute_genesis_for_unit_tests_with_config(default_config)
     }
 
-    /// Creates and commits a series of genesis transactions (i.e. a boostrap, then potentially many
+    /// Creates and commits a series of genesis transactions (i.e. a bootstrap, then potentially many
     /// data ingestion chunks, and then a wrap-up).
     #[allow(clippy::too_many_arguments)]
     pub fn execute_genesis(
