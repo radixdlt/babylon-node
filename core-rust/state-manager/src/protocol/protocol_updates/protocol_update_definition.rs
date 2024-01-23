@@ -36,13 +36,14 @@ pub trait ConfigurableProtocolUpdateDefinition {
         network_definition: &NetworkDefinition,
     ) -> ProtocolStateComputerConfig;
 
-    /// Must return `Ok` if the `raw_config` is None or passed validate.
+    /// This method panics if the `raw_overrides` is present and invalid.
+    /// A caller should have first validated with validate_raw_overrides.
     fn create_updater_with_raw_overrides(
         &self,
         new_protocol_version: &ProtocolVersionName,
         network_definition: &NetworkDefinition,
         raw_overrides: Option<&[u8]>,
-    ) -> Result<Box<dyn ProtocolUpdater>, DecodeError>;
+    ) -> Box<dyn ProtocolUpdater>;
 
     fn validate_raw_overrides(&self, raw_overrides: &[u8]) -> Result<(), DecodeError>;
 }
@@ -55,22 +56,22 @@ impl<T: ProtocolUpdateDefinition> ConfigurableProtocolUpdateDefinition for T {
         Self::state_computer_config(network_definition)
     }
 
-    /// If no raw config is provided, the default config is used
     fn create_updater_with_raw_overrides(
         &self,
         new_protocol_version: &ProtocolVersionName,
         network_definition: &NetworkDefinition,
         raw_overrides: Option<&[u8]>,
-    ) -> Result<Box<dyn ProtocolUpdater>, DecodeError> {
+    ) -> Box<dyn ProtocolUpdater> {
         let overrides = raw_overrides
-            .map(scrypto_decode::<<Self as ProtocolUpdateDefinition>::Overrides>)
-            .transpose()?;
+            .map(|overrides| scrypto_decode::<<Self as ProtocolUpdateDefinition>::Overrides>(overrides)
+                .expect("Raw overrides should have been validated before being passed to this method")
+            );
 
-        Ok(Self::create_updater(
+        Self::create_updater(
             new_protocol_version,
             network_definition,
             overrides,
-        ))
+        )
     }
 
     fn validate_raw_overrides(&self, raw_overrides: &[u8]) -> Result<(), DecodeError> {
