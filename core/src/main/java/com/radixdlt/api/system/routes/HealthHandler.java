@@ -121,7 +121,8 @@ public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
                         pendingProtocolUpdate(
                             p,
                             readinessSignalStatuses.getOrDefault(
-                                p.protocolUpdate().nextProtocolVersion(), NO_SIGNAL_REQUIRED)))
+                                p.protocolUpdateTrigger().nextProtocolVersion(),
+                                NO_SIGNAL_REQUIRED)))
                 .toList());
   }
 
@@ -164,14 +165,14 @@ public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
 
     final var res =
         new PendingProtocolUpdate()
-            .protocolVersion(pendingProtocolUpdate.protocolUpdate().nextProtocolVersion())
+            .protocolVersion(pendingProtocolUpdate.protocolUpdateTrigger().nextProtocolVersion())
             .state(state)
             .readinessSignalStatus(readinessSignalStatus);
 
-    if (pendingProtocolUpdate.protocolUpdate().enactmentCondition()
-        instanceof
-        ProtocolUpdateEnactmentCondition.EnactAtStartOfAnEpochIfSupportedAndWithinBounds) {
-      final var readinessSignalName = pendingProtocolUpdate.protocolUpdate().readinessSignalName();
+    if (pendingProtocolUpdate.protocolUpdateTrigger().enactmentCondition()
+        instanceof ProtocolUpdateEnactmentCondition.EnactAtStartOfEpochIfValidatorsReady) {
+      final var readinessSignalName =
+          pendingProtocolUpdate.protocolUpdateTrigger().readinessSignalName();
       res.setReadinessSignalName(readinessSignalName);
     }
 

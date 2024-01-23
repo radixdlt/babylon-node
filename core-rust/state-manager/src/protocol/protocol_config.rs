@@ -1,62 +1,310 @@
-use radix_engine::prelude::{dec, ScryptoCategorize, ScryptoDecode, ScryptoEncode};
+use radix_engine::prelude::ScryptoSbor;
 use radix_engine_common::math::Decimal;
+use radix_engine_common::network::NetworkDefinition;
 use radix_engine_common::prelude::{hash, scrypto_encode};
 
 use radix_engine_common::types::Epoch;
+use sbor::Sbor;
 
-use crate::ProtocolUpdaterFactory;
-use utils::btreeset;
+use crate::protocol::*;
+use utils::prelude::*;
 
 // This file contains types for node's local static protocol configuration
+
+const MIN_PROTOCOL_VERSION_NAME_LEN: usize = 2;
+const MAX_PROTOCOL_VERSION_NAME_LEN: usize = 16;
 
 pub const GENESIS_PROTOCOL_VERSION: &str = "babylon-genesis";
 pub const ANEMONE_PROTOCOL_VERSION: &str = "anemone";
 
-const MAX_PROTOCOL_VERSION_NAME_LEN: usize = 16;
-
-/// Returns a protocol version name left padded to canonical length (16 bytes)
-pub fn padded_protocol_version_name(unpadded_protocol_version_name: &str) -> String {
-    let mut res = "".to_owned();
-    for _ in 0..16 - unpadded_protocol_version_name.len() {
-        res.push('0');
+pub fn resolve_update_definition_for_version(
+    protocol_version_name: &ProtocolVersionName,
+) -> Option<Box<dyn ConfigurableProtocolUpdateDefinition>> {
+    match protocol_version_name.as_str() {
+        // Genesis execution is done manually.
+        // Genesis only needs to be supported here to identify which configuration to use.
+        GENESIS_PROTOCOL_VERSION => Some(Box::new(DefaultConfigOnlyProtocolDefinition)),
+        ANEMONE_PROTOCOL_VERSION => Some(Box::new(AnemoneProtocolUpdateDefinition)),
+        // Updates starting "custom-" are intended for use with tests, where the thresholds and config are injected on all nodes
+        _ if CustomProtocolUpdateDefinition::matches(protocol_version_name) => {
+            Some(Box::new(CustomProtocolUpdateDefinition))
+        }
+        _ if TestProtocolUpdateDefinition::matches(protocol_version_name) => {
+            Some(Box::new(TestProtocolUpdateDefinition))
+        }
+        _ => None,
     }
-    res.push_str(unpadded_protocol_version_name);
-    res
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ProtocolUpdate {
-    pub next_protocol_version: String,
+/// The `ProtocolConfig` is a static configuration provided per-network, or overriden for testing.
+///
+/// When a node commits (or creates a proof), it checks `protocol_update_triggers` to see if a protocol update
+/// should be triggered next.
+///
+/// If the update is triggered, any relevant overrides are combined with the `protocol_definition_resolver` to
+/// work out what it should do for the update.
+#[derive(Clone, Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct ProtocolConfig {
+    pub genesis_protocol_version: ProtocolVersionName,
+    pub protocol_update_triggers: Vec<ProtocolUpdateTrigger>,
+    /// This allows overriding the configuration of a protocol update.
+    ///
+    /// You can create this with `ProtocolUpdateContentOverrides::empty().into()` or `Default::default()`.
+    ///
+    /// This essentially wraps an optional `Map<String, Vec<u8>>` where the `Vec<u8>` is the encoded config
+    /// for the protocol updater matching the given protocol update.
+    ///
+    /// All nodes must agree on the content overrides used. The content overrides form a part of
+    /// the definition of the protocol update, and if nodes use different overrides, they will execute
+    /// different updates and need manual recovery.
+    pub protocol_update_content_overrides: RawProtocolUpdateContentOverrides,
+}
+
+impl ProtocolConfig {
+    pub fn new_with_no_updates() -> Self {
+        Self::new_with_triggers::<&str>([])
+    }
+
+    pub fn new_with_triggers<T: Into<String>>(
+        triggers: impl IntoIterator<Item = (T, ProtocolUpdateEnactmentCondition)>,
+    ) -> Self {
+        Self {
+            genesis_protocol_version: ProtocolVersionName::of(GENESIS_PROTOCOL_VERSION).unwrap(),
+            protocol_update_triggers: triggers
+                .into_iter()
+                .map(|(version, enactment_condition)| {
+                    ProtocolUpdateTrigger::of(version.into(), enactment_condition)
+                })
+                .collect(),
+            protocol_update_content_overrides: ProtocolUpdateContentOverrides::empty().into(),
+        }
+    }
+
+    pub fn validate(&self) -> Result<(), String> {
+        let mut protocol_versions = hashset!();
+
+        Self::validate_and_resolve_protocol_definition(&self.genesis_protocol_version)?;
+
+        for protocol_update in self.protocol_update_triggers.iter() {
+            let protocol_version_name = &protocol_update.next_protocol_version;
+
+            Self::validate_and_resolve_protocol_definition(protocol_version_name)?;
+
+            if !protocol_versions.insert(&protocol_update.next_protocol_version) {
+                return Err(format!(
+                    "Duplicate specification of protocol version {protocol_version_name}"
+                ));
+            }
+
+            match &protocol_update.enactment_condition {
+                ProtocolUpdateEnactmentCondition::EnactAtStartOfEpochIfValidatorsReady {
+                    lower_bound_inclusive,
+                    upper_bound_exclusive,
+                    readiness_thresholds,
+                } => {
+                    if lower_bound_inclusive >= upper_bound_exclusive {
+                        return Err(format!("Protocol update {protocol_version_name} has an empty [inclusive lower bound, exclusive upper bound) range"));
+                    }
+                    if readiness_thresholds.is_empty() {
+                        return Err(format!(
+                            "Protocol update {protocol_version_name} does not specify at least one readiness threshold"
+                        ));
+                    }
+                    for threshold in readiness_thresholds {
+                        if threshold.required_ratio_of_stake_supported <= Decimal::zero()
+                            || threshold.required_ratio_of_stake_supported > Decimal::one()
+                        {
+                            return Err(format!(
+                                "Protocol update {protocol_version_name} does not have a ratio of stake supported must be between 0 (exclusive) and 1 (inclusive)"
+                            ));
+                        }
+                    }
+                }
+                ProtocolUpdateEnactmentCondition::EnactAtStartOfEpochUnconditionally(_) => {
+                    // Nothing to check here
+                }
+            }
+        }
+
+        // Note - The protocol_update_content_overrides contents are validated in the ProtocolDefinitionResolver::new_with_raw_overrides
+        // But let's check the length here too, which isn't checked there.
+        for (protocol_version_name, raw_overrides) in self.protocol_update_content_overrides.iter()
+        {
+            let definition = Self::validate_and_resolve_protocol_definition(protocol_version_name)?;
+
+            definition
+                .validate_raw_overrides(raw_overrides)
+                .map_err(|err| {
+                    format!(
+                    "Protocol version ({protocol_version_name}) has invalid raw overrides: {err:?}"
+                )
+                })?;
+        }
+
+        Ok(())
+    }
+
+    pub fn resolve_config_and_updater(
+        &self,
+        network: &NetworkDefinition,
+        protocol_version_name: &ProtocolVersionName,
+    ) -> Option<(ProtocolStateComputerConfig, Box<dyn ProtocolUpdater>)> {
+        let definition = resolve_update_definition_for_version(protocol_version_name)?;
+
+        let config = definition.resolve_state_computer_config(network);
+
+        let updater = definition.create_updater_with_raw_overrides(
+            protocol_version_name,
+            network,
+            self.protocol_update_content_overrides
+                .get(protocol_version_name),
+        );
+
+        Some((config, updater))
+    }
+
+    fn validate_and_resolve_protocol_definition(
+        name: &ProtocolVersionName,
+    ) -> Result<Box<dyn ConfigurableProtocolUpdateDefinition>, String> {
+        name.validate()
+            .map_err(|err| format!("Protocol version ({name}) is invalid: {err:?}"))?;
+
+        resolve_update_definition_for_version(name).ok_or_else(|| {
+            format!("Protocol version ({name}) does not have a recognized definition")
+        })
+    }
+}
+
+// Note - at present we don't validate this on SBOR decode, but we do validate it when
+// it's first used for
+#[derive(Clone, Debug, Eq, PartialEq, Hash, PartialOrd, Ord, Sbor)]
+#[sbor(transparent)]
+pub struct ProtocolVersionName(String);
+
+#[derive(Clone, Debug, Eq, PartialEq, Sbor)]
+pub enum ProtocolVersionNameValidationError {
+    LengthInvalid {
+        invalid_name: String,
+        min_inclusive: usize,
+        max_inclusive: usize,
+        actual: usize,
+    },
+    CharsInvalid {
+        invalid_name: String,
+        allowed_chars: String,
+    },
+}
+
+impl ProtocolVersionName {
+    pub fn of(name: impl Into<String>) -> Result<Self, ProtocolVersionNameValidationError> {
+        let name = Self(name.into());
+        name.validate()?;
+        Ok(name)
+    }
+
+    /// Usable by persisted names. We panic if not valid in padded_len_16_version_name_for_readiness_signal.
+    pub fn of_unchecked(name: impl Into<String>) -> Self {
+        Self(name.into())
+    }
+
+    pub fn validate(&self) -> Result<(), ProtocolVersionNameValidationError> {
+        let length = self.0.len();
+        if !(MIN_PROTOCOL_VERSION_NAME_LEN..=MAX_PROTOCOL_VERSION_NAME_LEN).contains(&length) {
+            return Err(ProtocolVersionNameValidationError::LengthInvalid {
+                invalid_name: self.0.clone(),
+                min_inclusive: MIN_PROTOCOL_VERSION_NAME_LEN,
+                max_inclusive: MAX_PROTOCOL_VERSION_NAME_LEN,
+                actual: length,
+            });
+        }
+        let passes_char_check = self.0.chars().all(|c| match c {
+            _ if c.is_ascii_alphanumeric() => true,
+            '_' | '-' => true,
+            _ => false,
+        });
+        if !passes_char_check {
+            return Err(ProtocolVersionNameValidationError::CharsInvalid {
+                invalid_name: self.0.clone(),
+                allowed_chars: "[A-Za-z0-9] and -".to_string(),
+            });
+        }
+        Ok(())
+    }
+
+    pub fn as_ascii_bytes(&self) -> &[u8] {
+        self.0.as_bytes()
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    /// The caller is assumed to have validated the version name before this is called.
+    pub fn padded_len_16_version_name_for_readiness_signal(&self) -> String {
+        self.validate()
+            .expect("Must be valid before extracting readiness signal name");
+        std::iter::repeat('0')
+            .take(16 - self.0.len())
+            .chain(self.0.chars())
+            .collect()
+    }
+}
+
+impl From<ProtocolVersionName> for String {
+    fn from(value: ProtocolVersionName) -> Self {
+        value.0
+    }
+}
+
+impl fmt::Display for ProtocolVersionName {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+/// The `next_protocol_version` must be valid
+#[derive(Clone, Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct ProtocolUpdateTrigger {
+    pub next_protocol_version: ProtocolVersionName,
     pub enactment_condition: ProtocolUpdateEnactmentCondition,
 }
 
-impl ProtocolUpdate {
+impl ProtocolUpdateTrigger {
+    /// Note: panics if next_protocol_version is invalid
+    pub fn of(
+        next_protocol_version: impl Into<String>,
+        enactment_condition: ProtocolUpdateEnactmentCondition,
+    ) -> Self {
+        Self {
+            next_protocol_version: ProtocolVersionName::of(next_protocol_version.into()).unwrap(),
+            enactment_condition,
+        }
+    }
+
     pub fn readiness_signal_name(&self) -> String {
-        // Readiness signal name is 32 bytes long and consists of:
+        // Readiness signal name is 32 ASCII characters long and consists of:
         // - 16 hexadecimal chars of leading bytes of `hash(enactment_condition + next_protocol_version)`
         // - next_protocol_version: 16 bytes,
         //      left padded with ASCII 0's if protocol version name is shorter than 16 characters
         let mut bytes_to_hash = scrypto_encode(&self.enactment_condition).unwrap();
-        bytes_to_hash.extend_from_slice(self.next_protocol_version.as_bytes());
+        bytes_to_hash.extend_from_slice(self.next_protocol_version.as_ascii_bytes());
         let protocol_update_hash = hash(&bytes_to_hash);
         let mut res = hex::encode(protocol_update_hash)[0..16].to_string();
-        res.push_str(&padded_protocol_version_name(&self.next_protocol_version));
+        res.push_str(
+            &self
+                .next_protocol_version
+                .padded_len_16_version_name_for_readiness_signal(),
+        );
         res
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ProtocolConfig {
-    pub genesis_protocol_version: String,
-    pub protocol_updates: Vec<ProtocolUpdate>,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Clone, Debug, Eq, PartialEq, ScryptoSbor)]
 pub enum ProtocolUpdateEnactmentCondition {
     /// The enactment only proceeds if it's the start of epoch X,
     /// at least one readiness threshold is met, and X satisfies
     /// `lower_bound_inclusive <= X < upper_bound_exclusive`.
-    EnactAtStartOfAnEpochIfSupportedAndWithinBounds {
+    EnactAtStartOfEpochIfValidatorsReady {
         /// Minimum epoch at which the protocol update can be enacted (inclusive)
         lower_bound_inclusive: Epoch,
         /// Maximum epoch at which the protocol update can be enacted (exclusive)
@@ -67,10 +315,10 @@ pub enum ProtocolUpdateEnactmentCondition {
     },
     /// The enactment proceeds unconditionally
     /// at the start of specified epoch.
-    EnactUnconditionallyAtEpoch(Epoch),
+    EnactAtStartOfEpochUnconditionally(Epoch),
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Clone, Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct SignalledReadinessThreshold {
     /// Required stake threshold (inclusive). Evaluated at an epoch change using validators
     /// from the _next_ epoch validator set.
@@ -83,108 +331,4 @@ pub struct SignalledReadinessThreshold {
     /// - a value of 1 means:
     ///     "enact at the beginning of the _next_ epoch (if it still has enough support)"
     pub required_consecutive_completed_epochs_of_support: u64,
-}
-
-impl ProtocolConfig {
-    pub fn mainnet() -> ProtocolConfig {
-        // TODO(anemone): update the epoch bounds and thresholds
-        Self {
-            genesis_protocol_version: GENESIS_PROTOCOL_VERSION.to_string(),
-            protocol_updates: vec![ProtocolUpdate {
-                next_protocol_version: ANEMONE_PROTOCOL_VERSION.to_string(),
-                enactment_condition:
-                    ProtocolUpdateEnactmentCondition::EnactAtStartOfAnEpochIfSupportedAndWithinBounds {
-                        lower_bound_inclusive: Epoch::of(10000),
-                        upper_bound_exclusive: Epoch::of(20000),
-                        readiness_thresholds: vec![SignalledReadinessThreshold {
-                            required_ratio_of_stake_supported: dec!("0.80"),
-                            required_consecutive_completed_epochs_of_support: 10,
-                        }],
-                    },
-            }],
-        }
-    }
-
-    pub fn no_updates(genesis_protocol_version: String) -> ProtocolConfig {
-        Self {
-            genesis_protocol_version,
-            protocol_updates: vec![],
-        }
-    }
-
-    pub fn sanity_check(
-        &self,
-        protocol_updater_factory: &(dyn ProtocolUpdaterFactory + Send + Sync),
-    ) -> Result<(), String> {
-        let mut protocol_versions = btreeset!();
-
-        if self.genesis_protocol_version.len() > MAX_PROTOCOL_VERSION_NAME_LEN {
-            return Err("Genesis protocol version name is too long".to_string());
-        }
-
-        if !self.genesis_protocol_version.is_ascii() {
-            return Err("Genesis protocol version name can't use non-ascii characters".to_string());
-        }
-
-        if protocol_updater_factory
-            .updater_for(self.genesis_protocol_version.as_str())
-            .is_none()
-        {
-            return Err(
-                "Protocol updater factory does not support genesis protocol version".to_string(),
-            );
-        }
-
-        for protocol_update in self.protocol_updates.iter() {
-            if protocol_update.next_protocol_version.len() > MAX_PROTOCOL_VERSION_NAME_LEN {
-                return Err("Protocol version name is too long".to_string());
-            }
-
-            if !protocol_update.next_protocol_version.is_ascii() {
-                return Err("Protocol version name can't use non-ascii characters".to_string());
-            }
-
-            if protocol_updater_factory
-                .updater_for(protocol_update.next_protocol_version.as_str())
-                .is_none()
-            {
-                return Err("Protocol updater factory does not support a configured update protocol version".to_string());
-            }
-
-            protocol_versions.insert(&protocol_update.next_protocol_version);
-
-            match &protocol_update.enactment_condition {
-                ProtocolUpdateEnactmentCondition::EnactAtStartOfAnEpochIfSupportedAndWithinBounds {
-                    lower_bound_inclusive,
-                    upper_bound_exclusive,
-                    readiness_thresholds,
-                } => {
-                    if lower_bound_inclusive >= upper_bound_exclusive {
-                        return Err("Upper bound must be greater than lower bound".to_string());
-                    }
-                    if readiness_thresholds.is_empty() {
-                        return Err(
-                            "Protocol update must specify at least one threshold".to_string()
-                        );
-                    }
-                    for threshold in readiness_thresholds {
-                        if threshold.required_ratio_of_stake_supported <= Decimal::zero()
-                            || threshold.required_ratio_of_stake_supported > Decimal::one()
-                        {
-                            return Err("Required ratio of stake supported must be between 0 (exclusive) and 1 (inclusive)".to_string());
-                        }
-                    }
-                }
-                ProtocolUpdateEnactmentCondition::EnactUnconditionallyAtEpoch(_) => {
-                    // Nothing to check here
-                }
-            }
-        }
-
-        if protocol_versions.len() != self.protocol_updates.len() {
-            return Err("Protocol versions must have unique names".to_string());
-        }
-
-        Ok(())
-    }
 }

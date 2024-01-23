@@ -64,8 +64,9 @@
 
 use crate::jni::node_rust_environment::JNINodeRustEnvironment;
 use crate::jni::LedgerSyncLimitsConfig;
+use crate::protocol::epoch_change_iter;
 use crate::store::traits::*;
-use crate::{epoch_change_iter, LedgerProof, StateVersion};
+use crate::{LedgerProof, StateVersion};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;

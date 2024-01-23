@@ -97,7 +97,7 @@ public sealed interface ProtocolUpdateEnactmentCondition {
 
   static ProtocolUpdateEnactmentCondition readinessThresholdsBetweenEpochs(
       long minEpoch, long maxEpoch, ImmutableList<Tuple.Tuple2<Decimal, Long>> thresholds) {
-    return new EnactAtStartOfAnEpochIfSupportedAndWithinBounds(
+    return new EnactAtStartOfEpochIfValidatorsReady(
         UInt64.fromNonNegativeLong(minEpoch),
         UInt64.fromNonNegativeLong(maxEpoch),
         thresholds.stream()
@@ -109,10 +109,10 @@ public sealed interface ProtocolUpdateEnactmentCondition {
   }
 
   static ProtocolUpdateEnactmentCondition unconditionallyAtEpoch(long epoch) {
-    return new EnactUnconditionallyAtEpoch(UInt64.fromNonNegativeLong(epoch));
+    return new EnactAtStartOfEpochUnconditionally(UInt64.fromNonNegativeLong(epoch));
   }
 
-  record EnactAtStartOfAnEpochIfSupportedAndWithinBounds(
+  record EnactAtStartOfEpochIfValidatorsReady(
       UInt64 lowerBoundInclusive,
       UInt64 upperBoundExclusive,
       ImmutableList<SignalledReadinessThreshold> readinessThresholds)
@@ -127,5 +127,6 @@ public sealed interface ProtocolUpdateEnactmentCondition {
     }
   }
 
-  record EnactUnconditionallyAtEpoch(UInt64 epoch) implements ProtocolUpdateEnactmentCondition {}
+  record EnactAtStartOfEpochUnconditionally(UInt64 epoch)
+      implements ProtocolUpdateEnactmentCondition {}
 }

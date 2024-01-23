@@ -182,7 +182,7 @@ public final class SystemModelMapper {
     return new ProtocolConfiguration()
         .genesisProtocolVersion(protocolConfig.genesisProtocolVersion())
         .protocolUpdates(
-            protocolConfig.protocolUpdates().stream()
+            protocolConfig.protocolUpdateTriggers().stream()
                 .map(
                     protocolUpdate ->
                         new ProtocolUpdate()
@@ -196,8 +196,8 @@ public final class SystemModelMapper {
       com.radixdlt.protocol.ProtocolUpdateEnactmentCondition enactmentCondition) {
     return switch (enactmentCondition) {
       case com.radixdlt.protocol.ProtocolUpdateEnactmentCondition
-          .EnactAtStartOfAnEpochIfSupportedAndWithinBounds
-      condition -> new EnactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition()
+          .EnactAtStartOfEpochIfValidatorsReady
+      condition -> new EnactAtStartOfEpochIfValidatorsReadyCondition()
           .lowerBoundEpochInclusive(condition.lowerBoundInclusive().toLong())
           .upperBoundEpochExclusive(condition.upperBoundExclusive().toLong())
           .readinessThresholds(
@@ -210,12 +210,11 @@ public final class SystemModelMapper {
                               .requiredConsecutiveCompletedEpochsOfSupport(
                                   threshold.requiredConsecutiveCompletedEpochsOfSupport().toLong()))
                   .toList())
-          .type(
-              ProtocolUpdateEnactmentConditionType.ENACTATSTARTOFANEPOCHIFSUPPORTEDANDWITHINBOUNDS);
-      case com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactUnconditionallyAtEpoch
-      enactUnconditionallyAtEpoch -> new EnactUnconditionallyAtEpochCondition()
+          .type(ProtocolUpdateEnactmentConditionType.ENACTATSTARTOFEPOCHIFVALIDATORSREADY);
+      case com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactAtStartOfEpochUnconditionally
+      enactUnconditionallyAtEpoch -> new EnactAtStartOfEpochUnconditionallyCondition()
           .epoch(enactUnconditionallyAtEpoch.epoch().toLong())
-          .type(ProtocolUpdateEnactmentConditionType.ENACTUNCONDITIONALLYATEPOCH);
+          .type(ProtocolUpdateEnactmentConditionType.ENACTATSTARTOFEPOCHUNCONDITIONALLY);
     };
   }
 }

@@ -469,8 +469,8 @@ components:
     ProtocolUpdateEnactmentConditionType:
       type: string
       enum:
-        - EnactAtStartOfAnEpochIfSupportedAndWithinBounds
-        - EnactUnconditionallyAtEpoch
+        - EnactAtStartOfEpochIfValidatorsReady
+        - EnactAtStartOfEpochUnconditionally
     ProtocolUpdateEnactmentCondition:
       type: object
       required:
@@ -482,9 +482,9 @@ components:
         propertyName: type
         mapping:
           # NOTE: These need to match ProtocolUpdateEnactmentConditionType
-          EnactAtStartOfAnEpochIfSupportedAndWithinBounds: '#/components/schemas/EnactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition'
-          EnactUnconditionallyAtEpoch: '#/components/schemas/EnactUnconditionallyAtEpochCondition'
-    EnactAtStartOfAnEpochIfSupportedAndWithinBoundsCondition:
+          EnactAtStartOfEpochIfValidatorsReady: '#/components/schemas/EnactAtStartOfEpochIfValidatorsReadyCondition'
+          EnactAtStartOfEpochUnconditionally: '#/components/schemas/EnactAtStartOfEpochUnconditionallyCondition'
+    EnactAtStartOfEpochIfValidatorsReadyCondition:
       allOf:
         - $ref: "#/components/schemas/ProtocolUpdateEnactmentCondition"
         - type: object
@@ -503,7 +503,7 @@ components:
               type: array
               items:
                 $ref: "#/components/schemas/SignalledReadinessThreshold"
-    EnactUnconditionallyAtEpochCondition:
+    EnactAtStartOfEpochUnconditionallyCondition:
       allOf:
         - $ref: "#/components/schemas/ProtocolUpdateEnactmentCondition"
         - type: object

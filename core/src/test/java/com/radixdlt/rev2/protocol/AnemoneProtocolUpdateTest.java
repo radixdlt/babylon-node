@@ -95,7 +95,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.protocol.ProtocolConfig;
-import com.radixdlt.protocol.ProtocolUpdate;
+import com.radixdlt.protocol.ProtocolUpdateTrigger;
 import com.radixdlt.rev2.*;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
@@ -108,15 +108,14 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public final class AnemoneProtocolUpdateTest {
-  private static final String PROTOCOL_VERSION_NAME = ProtocolUpdate.ANEMONE;
+  private static final String PROTOCOL_VERSION_NAME = ProtocolUpdateTrigger.ANEMONE;
   private static final long PROTOCOL_UPDATE_EPOCH = 4L;
 
   // Enact anemone at fixed epoch 4
   private static final ProtocolConfig PROTOCOL_CONFIG =
       new ProtocolConfig(
-          "testing-genesis",
           ImmutableList.of(
-              new ProtocolUpdate(
+              new ProtocolUpdateTrigger(
                   PROTOCOL_VERSION_NAME, unconditionallyAtEpoch(PROTOCOL_UPDATE_EPOCH))));
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();

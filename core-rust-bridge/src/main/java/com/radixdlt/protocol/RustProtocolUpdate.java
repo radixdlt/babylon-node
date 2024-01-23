@@ -64,12 +64,10 @@
 
 package com.radixdlt.protocol;
 
-import static com.radixdlt.lang.Tuple.tuple;
-
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.environment.NodeRustEnvironment;
-import com.radixdlt.lang.Tuple;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.sbor.Natives;
 
 public final class RustProtocolUpdate {
@@ -96,21 +94,21 @@ public final class RustProtocolUpdate {
 
   private final Natives.Call1<String, ProtocolUpdateResult> applyProtocolUpdateFunc;
 
-  public static String readinessSignalName(ProtocolUpdate protocolUpdate) {
-    return readinessSignalNameFunc.call(protocolUpdate);
+  public static String readinessSignalName(ProtocolUpdateTrigger protocolUpdateTrigger) {
+    return readinessSignalNameFunc.call(protocolUpdateTrigger);
   }
 
-  private static final Natives.Call1<ProtocolUpdate, String> readinessSignalNameFunc =
+  private static final Natives.Call1<ProtocolUpdateTrigger, String> readinessSignalNameFunc =
       Natives.builder(RustProtocolUpdate::nativeReadinessSignalName).build(new TypeToken<>() {});
 
   private static native byte[] nativeReadinessSignalName(byte[] requestPayload);
 
-  public static ProtocolConfig mainnetConfig() {
-    return mainnetConfigFunc.call(tuple());
+  public static ProtocolConfig resolveForNetwork(NetworkDefinition networkDefinition) {
+    return resolveForNetworkFunc.call(networkDefinition);
   }
 
-  private static final Natives.Call1<Tuple.Tuple0, ProtocolConfig> mainnetConfigFunc =
-      Natives.builder(RustProtocolUpdate::nativeMainnetConfig).build(new TypeToken<>() {});
+  private static final Natives.Call1<NetworkDefinition, ProtocolConfig> resolveForNetworkFunc =
+      Natives.builder(RustProtocolUpdate::nativeResolveForNetwork).build(new TypeToken<>() {});
 
-  private static native byte[] nativeMainnetConfig(byte[] requestPayload);
+  private static native byte[] nativeResolveForNetwork(byte[] requestPayload);
 }

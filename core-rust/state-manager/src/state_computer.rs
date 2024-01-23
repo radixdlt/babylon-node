@@ -89,6 +89,7 @@ use node_common::locks::{LockFactory, Mutex, RwLock, StateLock};
 use prometheus::Registry;
 use tracing::{debug, info, warn};
 
+use crate::protocol::*;
 use crate::store::traits::scenario::{
     DescribedAddress, ExecutedGenesisScenario, ExecutedGenesisScenarioStore,
     ExecutedScenarioTransaction, ScenarioSequenceNumber,
@@ -133,7 +134,7 @@ impl<
         pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
         metrics_registry: &Registry,
         lock_factory: LockFactory,
-        initial_updatable_config: &UpdatableStateComputerConfig,
+        initial_updatable_config: &ProtocolStateComputerConfig,
         initial_protocol_state: ProtocolState,
     ) -> StateComputer<S> {
         let (current_transaction_root, current_ledger_proposer_timestamp_ms) = store
@@ -1261,12 +1262,12 @@ where
 
     pub fn handle_protocol_update(
         &self,
-        protocol_version_name: &str,
+        protocol_version_name: &ProtocolVersionName,
         new_ledger_transaction_validator: LedgerTransactionValidator,
     ) {
         *self.ledger_transaction_validator.write() = new_ledger_transaction_validator;
 
-        self.protocol_state.write().current_protocol_version = protocol_version_name.to_string();
+        self.protocol_state.write().current_protocol_version = protocol_version_name.clone();
 
         let current_header = self
             .store
@@ -1391,7 +1392,7 @@ where
         *transaction_tree_diff.slice.root()
     }
 
-    pub fn current_protocol_version(&self) -> String {
+    pub fn current_protocol_version(&self) -> ProtocolVersionName {
         self.protocol_state.read().current_protocol_version.clone()
     }
 
@@ -1418,7 +1419,6 @@ mod tests {
     use std::ops::Deref;
 
     use crate::transaction::{LedgerTransaction, RoundUpdateTransactionV1};
-    use crate::TestingDefaultProtocolUpdaterFactory;
     use crate::{
         LedgerProof, PrepareRequest, PrepareResult, RoundHistory, StateManager, StateManagerConfig,
     };
@@ -1533,9 +1533,6 @@ mod tests {
             config,
             None,
             &lock_factory,
-            Box::new(TestingDefaultProtocolUpdaterFactory::new(
-                NetworkDefinition::simulator(),
-            )),
             &metrics_registry,
             &Scheduler::new("testing"),
         );

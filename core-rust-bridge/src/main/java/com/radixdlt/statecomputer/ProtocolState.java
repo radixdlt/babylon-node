@@ -67,8 +67,8 @@ package com.radixdlt.statecomputer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.lang.Tuple;
-import com.radixdlt.protocol.ProtocolUpdate;
 import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition;
+import com.radixdlt.protocol.ProtocolUpdateTrigger;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.EnumCodec;
 import com.radixdlt.sbor.codec.StructCodec;
@@ -101,11 +101,11 @@ public record ProtocolState(
   }
 
   public static ProtocolState testingEmpty() {
-    return new ProtocolState("testing-genesis", ImmutableMap.of(), ImmutableList.of());
+    return new ProtocolState("babylon-genesis", ImmutableMap.of(), ImmutableList.of());
   }
 
   public record PendingProtocolUpdate(
-      ProtocolUpdate protocolUpdate, PendingProtocolUpdateState state) {}
+      ProtocolUpdateTrigger protocolUpdateTrigger, PendingProtocolUpdateState state) {}
 
   public sealed interface PendingProtocolUpdateState {
     record ForSignalledReadinessSupportCondition(

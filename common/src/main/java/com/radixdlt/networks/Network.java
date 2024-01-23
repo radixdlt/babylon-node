@@ -73,6 +73,8 @@ import org.bouncycastle.util.encoders.Hex;
 
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public enum Network {
+  // NOTE: For protocol configs, see e.g. `[..]/protocol_configs/mainnet_protocol_config.rs`
+  //       These are resolved by environment from RadixNodeModule.java.
 
   /// Public Facing Permanent Networks (0x00 - 0x09)
   // - mainnet

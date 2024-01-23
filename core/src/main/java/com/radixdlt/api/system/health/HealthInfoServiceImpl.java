@@ -71,7 +71,7 @@ import com.radixdlt.monitoring.InMemorySystemInfo;
 import com.radixdlt.prometheus.LedgerStatus;
 import com.radixdlt.prometheus.RecentSelfProposalMissStatistic;
 import com.radixdlt.prometheus.RustPrometheus;
-import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactAtStartOfAnEpochIfSupportedAndWithinBounds;
+import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition;
 import com.radixdlt.protocol.RustProtocolUpdate;
 import com.radixdlt.state.RustStateReader;
 import com.radixdlt.statecomputer.ProtocolState;
@@ -134,12 +134,14 @@ public final class HealthInfoServiceImpl implements HealthInfoService {
               return protocolState.pendingProtocolUpdates().stream()
                   .collect(
                       Collectors.toMap(
-                          p -> p.protocolUpdate().nextProtocolVersion(),
+                          p -> p.protocolUpdateTrigger().nextProtocolVersion(),
                           p -> {
-                            if (p.protocolUpdate().enactmentCondition()
-                                instanceof EnactAtStartOfAnEpochIfSupportedAndWithinBounds) {
+                            if (p.protocolUpdateTrigger().enactmentCondition()
+                                instanceof
+                                ProtocolUpdateEnactmentCondition
+                                    .EnactAtStartOfEpochIfValidatorsReady) {
                               final var expectedSignal =
-                                  RustProtocolUpdate.readinessSignalName(p.protocolUpdate());
+                                  RustProtocolUpdate.readinessSignalName(p.protocolUpdateTrigger());
                               if (selfSignal.fold(s -> s.equals(expectedSignal), () -> false)) {
                                 return PendingProtocolUpdate.ReadinessSignalStatusEnum
                                     .READINESS_SIGNALLED;
@@ -158,7 +160,7 @@ public final class HealthInfoServiceImpl implements HealthInfoService {
                 protocolState.pendingProtocolUpdates().stream()
                     .collect(
                         Collectors.toMap(
-                            p -> p.protocolUpdate().nextProtocolVersion(),
+                            p -> p.protocolUpdateTrigger().nextProtocolVersion(),
                             p ->
                                 PendingProtocolUpdate.ReadinessSignalStatusEnum
                                     .NO_SIGNAL_REQUIRED)));

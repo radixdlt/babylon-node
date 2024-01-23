@@ -65,12 +65,13 @@
 use super::ReadableStateTreeStore;
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, WriteableAccuTreeStore};
 
+use crate::protocol::{ProtocolState, ProtocolVersionName};
 use crate::staging::epoch_handling::EpochAwareAccuTreeFactory;
 use crate::transaction::LedgerTransactionHash;
 use crate::{
     ActiveValidatorInfo, ByPartition, BySubstate, DetailedTransactionOutcome,
     EpochTransactionIdentifiers, LedgerHashes, LedgerStateChanges, LocalTransactionReceipt,
-    NextEpoch, PartitionChangeAction, ProtocolState, ReceiptTreeHash, StateHash, StateVersion,
+    NextEpoch, PartitionChangeAction, ReceiptTreeHash, StateHash, StateVersion,
     SubstateChangeAction, SubstateReference, TransactionTreeHash,
 };
 use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
@@ -116,7 +117,7 @@ pub struct ProcessedCommitResult {
     pub database_updates: DatabaseUpdates,
     pub new_substate_node_ancestry_records: Vec<KeyedSubstateNodeAncestryRecord>,
     pub new_protocol_state: ProtocolState,
-    pub next_protocol_version: Option<String>,
+    pub next_protocol_version: Option<ProtocolVersionName>,
 }
 
 pub struct HashUpdateContext<'s, S> {

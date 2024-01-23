@@ -28,18 +28,18 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * EnactUnconditionallyAtEpochConditionAllOf
+ * EnactAtStartOfEpochUnconditionallyConditionAllOf
  */
 @JsonPropertyOrder({
-  EnactUnconditionallyAtEpochConditionAllOf.JSON_PROPERTY_EPOCH
+  EnactAtStartOfEpochUnconditionallyConditionAllOf.JSON_PROPERTY_EPOCH
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class EnactUnconditionallyAtEpochConditionAllOf {
+public class EnactAtStartOfEpochUnconditionallyConditionAllOf {
   public static final String JSON_PROPERTY_EPOCH = "epoch";
   private Long epoch;
 
 
-  public EnactUnconditionallyAtEpochConditionAllOf epoch(Long epoch) {
+  public EnactAtStartOfEpochUnconditionallyConditionAllOf epoch(Long epoch) {
     this.epoch = epoch;
     return this;
   }
@@ -66,7 +66,7 @@ public class EnactUnconditionallyAtEpochConditionAllOf {
 
 
   /**
-   * Return true if this EnactUnconditionallyAtEpochCondition_allOf object is equal to o.
+   * Return true if this EnactAtStartOfEpochUnconditionallyCondition_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -76,8 +76,8 @@ public class EnactUnconditionallyAtEpochConditionAllOf {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    EnactUnconditionallyAtEpochConditionAllOf enactUnconditionallyAtEpochConditionAllOf = (EnactUnconditionallyAtEpochConditionAllOf) o;
-    return Objects.equals(this.epoch, enactUnconditionallyAtEpochConditionAllOf.epoch);
+    EnactAtStartOfEpochUnconditionallyConditionAllOf enactAtStartOfEpochUnconditionallyConditionAllOf = (EnactAtStartOfEpochUnconditionallyConditionAllOf) o;
+    return Objects.equals(this.epoch, enactAtStartOfEpochUnconditionallyConditionAllOf.epoch);
   }
 
   @Override
@@ -88,7 +88,7 @@ public class EnactUnconditionallyAtEpochConditionAllOf {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class EnactUnconditionallyAtEpochConditionAllOf {\n");
+    sb.append("class EnactAtStartOfEpochUnconditionallyConditionAllOf {\n");
     sb.append("    epoch: ").append(toIndentedString(epoch)).append("\n");
     sb.append("}");
     return sb.toString();

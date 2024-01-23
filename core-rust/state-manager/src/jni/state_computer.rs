@@ -62,7 +62,8 @@
  * permissions under this License.
  */
 
-use crate::{CommitSummary, LedgerProof, ProtocolState};
+use crate::protocol::ProtocolVersionName;
+use crate::{protocol::ProtocolState, CommitSummary, LedgerProof};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -191,7 +192,7 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_newestProto
     j_node_rust_env: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |_: ()| -> String {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| -> ProtocolVersionName {
         let env = JNINodeRustEnvironment::get(&env, j_node_rust_env);
         env.state_manager.newest_protocol_version()
     })

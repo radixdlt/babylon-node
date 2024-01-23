@@ -63,6 +63,7 @@
  */
 
 use crate::accumulator_tree::IsMerklizableHash;
+use crate::protocol::ProtocolVersionName;
 use crate::transaction::*;
 use crate::{LedgerTransactionOutcome, PartitionChange, SubstateChange};
 use radix_engine::types::*;
@@ -361,7 +362,7 @@ pub struct PrepareResult {
     /// Note: this is only used for testing
     pub rejected: Vec<RejectedTransaction>,
     pub next_epoch: Option<NextEpoch>,
-    pub next_protocol_version: Option<String>,
+    pub next_protocol_version: Option<ProtocolVersionName>,
     pub ledger_hashes: LedgerHashes,
 }
 
@@ -441,7 +442,7 @@ pub enum LedgerProofOrigin {
         timestamped_signatures: Vec<TimestampedValidatorSignature>,
     },
     ProtocolUpdate {
-        protocol_version_name: String,
+        protocol_version_name: ProtocolVersionName,
         batch_idx: u32,
     },
 }
@@ -486,7 +487,7 @@ pub struct LedgerHeader {
     pub consensus_parent_round_timestamp_ms: i64,
     pub proposer_timestamp_ms: i64,
     pub next_epoch: Option<NextEpoch>,
-    pub next_protocol_version: Option<String>,
+    pub next_protocol_version: Option<ProtocolVersionName>,
 }
 
 impl From<LedgerHeaderV1> for LedgerHeader {

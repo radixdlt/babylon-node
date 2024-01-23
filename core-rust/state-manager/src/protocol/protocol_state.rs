@@ -14,28 +14,24 @@ use radix_engine_interface::prelude::CheckedMul;
 use radix_engine_interface::prelude::Emitter;
 use tracing::info;
 
+use crate::protocol::*;
 use crate::traits::{IterableProofStore, QueryableProofStore, QueryableTransactionStore};
-use crate::ProtocolUpdateEnactmentCondition::{
-    EnactAtStartOfAnEpochIfSupportedAndWithinBounds, EnactUnconditionallyAtEpoch,
-};
-use crate::{
-    LocalTransactionReceipt, ProtocolConfig, ProtocolUpdate, SignalledReadinessThreshold,
-    StateVersion,
-};
+use crate::{LocalTransactionReceipt, StateVersion};
+use ProtocolUpdateEnactmentCondition::*;
 
 // This file contains types and utilities for
 // managing the (dynamic) protocol state of a running node.
 
 #[derive(Clone, Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ProtocolState {
-    pub current_protocol_version: String,
-    pub enacted_protocol_updates: BTreeMap<StateVersion, String>,
+    pub current_protocol_version: ProtocolVersionName,
+    pub enacted_protocol_updates: BTreeMap<StateVersion, ProtocolVersionName>,
     pub pending_protocol_updates: Vec<PendingProtocolUpdate>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PendingProtocolUpdate {
-    pub protocol_update: ProtocolUpdate,
+    pub protocol_update: ProtocolUpdateTrigger,
     pub state: PendingProtocolUpdateState,
 }
 
@@ -71,21 +67,21 @@ fn compute_initial_protocol_update_status<
     S: QueryableProofStore + IterableProofStore + QueryableTransactionStore,
 >(
     store: &S,
-    protocol_update: &ProtocolUpdate,
+    protocol_update_trigger: &ProtocolUpdateTrigger,
 ) -> InitialProtocolUpdateStatus {
-    match &protocol_update.enactment_condition {
-        EnactAtStartOfAnEpochIfSupportedAndWithinBounds {
+    match &protocol_update_trigger.enactment_condition {
+        EnactAtStartOfEpochIfValidatorsReady {
             lower_bound_inclusive,
             upper_bound_exclusive,
             readiness_thresholds,
         } => compute_initial_signalled_readiness_protocol_update_status(
             store,
-            protocol_update,
+            protocol_update_trigger,
             lower_bound_inclusive,
             upper_bound_exclusive,
             readiness_thresholds,
         ),
-        EnactUnconditionallyAtEpoch(epoch) => {
+        EnactAtStartOfEpochUnconditionally(epoch) => {
             compute_initial_at_epoch_protocol_update_status(store, *epoch)
         }
     }
@@ -95,7 +91,7 @@ fn compute_initial_signalled_readiness_protocol_update_status<
     S: QueryableProofStore + IterableProofStore + QueryableTransactionStore,
 >(
     store: &S,
-    protocol_update: &ProtocolUpdate,
+    protocol_update_trigger: &ProtocolUpdateTrigger,
     lower_bound_inclusive: &Epoch,
     upper_bound_exclusive: &Epoch,
     thresholds: &[SignalledReadinessThreshold],
@@ -137,7 +133,7 @@ fn compute_initial_signalled_readiness_protocol_update_status<
     for (state_version, epoch_change_event) in epoch_change_event_iter {
         // Update the thresholds
         update_thresholds_state_at_epoch_change(
-            protocol_update,
+            protocol_update_trigger,
             &epoch_change_event,
             &mut thresholds_state,
         );
@@ -193,7 +189,7 @@ impl ProtocolState {
         store: &S,
         protocol_config: &ProtocolConfig,
     ) -> ProtocolState {
-        // For each configured protocol update we calculate it's expected status against
+        // For each configured allowed protocol update we calculate its expected status against
         // the current state of the ledger, regardless of any information stored
         // about the protocol updates that were actually enacted.
         // This is then juxtaposed with the protocol updates that have actually been enacted,
@@ -204,7 +200,7 @@ impl ProtocolState {
         // This also provides the initial state for stateful (readiness-based)
         // protocol update conditions.
         let initial_statuses: Vec<_> = protocol_config
-            .protocol_updates
+            .protocol_update_triggers
             .iter()
             .map(|protocol_update| {
                 (
@@ -214,7 +210,7 @@ impl ProtocolState {
             })
             .collect();
 
-        let expected_already_enacted_protocol_updates: BTreeMap<StateVersion, String> =
+        let expected_already_enacted_protocol_updates: BTreeMap<StateVersion, ProtocolVersionName> =
             initial_statuses
                 .iter()
                 .flat_map(|(protocol_update, status)| match status {
@@ -229,15 +225,17 @@ impl ProtocolState {
                 })
                 .collect();
 
-        let actually_enacted_protocol_updates: BTreeMap<StateVersion, String> = store
+        let actually_enacted_protocol_updates: BTreeMap<StateVersion, ProtocolVersionName> = store
             .get_protocol_update_init_proof_iter(StateVersion::pre_genesis())
             .map(|proof| {
                 (
                     proof.ledger_header.state_version,
-                    proof
-                        .ledger_header
-                        .next_protocol_version
-                        .expect("next_protocol_version is missing in protocol update proof"),
+                    ProtocolVersionName::of_unchecked(
+                        proof
+                            .ledger_header
+                            .next_protocol_version
+                            .expect("next_protocol_version is missing in protocol update proof"),
+                    ),
                 )
             })
             .collect();
@@ -283,7 +281,7 @@ impl ProtocolState {
         self: &ProtocolState,
         local_receipt: &LocalTransactionReceipt,
         post_execute_state_version: StateVersion,
-    ) -> (ProtocolState, Option<String>) {
+    ) -> (ProtocolState, Option<ProtocolVersionName>) {
         let Some(post_execute_epoch) = local_receipt
             .local_execution
             .next_epoch
@@ -304,7 +302,7 @@ impl ProtocolState {
         let mut enactable_protocol_updates = vec![];
         for mut pending_protocol_update in new_protocol_state.pending_protocol_updates {
             match &pending_protocol_update.protocol_update.enactment_condition {
-                EnactAtStartOfAnEpochIfSupportedAndWithinBounds {
+                EnactAtStartOfEpochIfValidatorsReady {
                     lower_bound_inclusive,
                     upper_bound_exclusive,
                     ..
@@ -350,7 +348,7 @@ impl ProtocolState {
                         expired_protocol_updates.push(pending_protocol_update);
                     }
                 }
-                EnactUnconditionallyAtEpoch(enactment_epoch) => {
+                EnactAtStartOfEpochUnconditionally(enactment_epoch) => {
                     if let Some(next_epoch) = &local_receipt.local_execution.next_epoch {
                         match next_epoch.epoch.cmp(enactment_epoch) {
                             Ordering::Less => {
@@ -394,10 +392,9 @@ impl ProtocolState {
 
         new_protocol_state.pending_protocol_updates = pending_protocol_updates;
         if let Some(next_protocol_version) = next_protocol_version.as_ref() {
-            new_protocol_state.enacted_protocol_updates.insert(
-                post_execute_state_version,
-                next_protocol_version.to_string(),
-            );
+            new_protocol_state
+                .enacted_protocol_updates
+                .insert(post_execute_state_version, next_protocol_version.clone());
         }
 
         (new_protocol_state, next_protocol_version)
@@ -420,7 +417,7 @@ fn any_threshold_passes(
 }
 
 fn update_thresholds_state_at_epoch_change(
-    protocol_update: &ProtocolUpdate,
+    protocol_update: &ProtocolUpdateTrigger,
     epoch_change_event: &EpochChangeEvent,
     thresholds_state: &mut Vec<(
         SignalledReadinessThreshold,

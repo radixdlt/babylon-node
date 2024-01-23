@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::{ProtocolConfig, ProtocolUpdate, ProtocolUpdateResult};
+use crate::{protocol::*, ProtocolUpdateResult};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -86,7 +86,7 @@ extern "system" fn Java_com_radixdlt_protocol_RustProtocolUpdate_applyProtocolUp
     jni_sbor_coded_fallible_call(
         &env,
         request_payload,
-        |protocol_version_name: String| -> JavaResult<ProtocolUpdateResult> {
+        |protocol_version_name: ProtocolVersionName| -> JavaResult<ProtocolUpdateResult> {
             let result = JNINodeRustEnvironment::get(&env, j_node_rust_env)
                 .state_manager
                 .apply_protocol_update(&protocol_version_name);
@@ -101,18 +101,24 @@ extern "system" fn Java_com_radixdlt_protocol_RustProtocolUpdate_nativeReadiness
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |protocol_update: ProtocolUpdate| {
-        protocol_update.readiness_signal_name()
-    })
+    jni_sbor_coded_call(
+        &env,
+        request_payload,
+        |protocol_update_trigger: ProtocolUpdateTrigger| {
+            protocol_update_trigger.readiness_signal_name()
+        },
+    )
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_protocol_RustProtocolUpdate_nativeMainnetConfig(
+extern "system" fn Java_com_radixdlt_protocol_RustProtocolUpdate_nativeResolveForNetwork(
     env: JNIEnv,
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |_: ()| ProtocolConfig::mainnet())
+    jni_sbor_coded_call(&env, request_payload, |network: NetworkDefinition| {
+        resolve_protocol_config(&network)
+    })
 }
 
 pub fn export_extern_functions() {}

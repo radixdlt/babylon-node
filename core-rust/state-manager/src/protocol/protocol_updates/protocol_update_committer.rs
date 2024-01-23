@@ -1,176 +1,39 @@
 // This file contains the protocol update logic for specific protocol versions
 
-use node_common::locks::{LockFactory, RwLock, StateLock};
-use radix_engine::track::StateUpdates;
-use radix_engine::transaction::CostingParameters;
-use radix_engine_common::network::NetworkDefinition;
-use radix_engine_common::prelude::Decimal;
 use std::ops::Deref;
 use std::sync::Arc;
 
-use transaction::prelude::TransactionPayloadPreparable;
-use transaction::validation::{NotarizedTransactionValidator, ValidationConfig};
-use utils::btreemap;
+use node_common::locks::{LockFactory, RwLock, StateLock};
+use radix_engine::prelude::*;
+
+use transaction::prelude::*;
 
 use crate::epoch_handling::EpochAwareAccuTreeFactory;
-use crate::mainnet_updates::ProductionProtocolUpdaterFactory;
-use crate::traits::{
-    CommitBundle, CommitStore, CommittedTransactionBundle, HashTreeUpdate, QueryableProofStore,
-    ReceiptAccuTreeSliceV1, SubstateStoreUpdate, TransactionAccuTreeSliceV1,
-};
-use crate::transaction::{
-    ExecutionConfigurator, FlashTransactionV1, LedgerTransaction, LedgerTransactionValidator,
-    PreparedLedgerTransaction, TransactionSeriesExecutor,
-};
+use crate::protocol::*;
+use crate::traits::*;
+use crate::transaction::*;
 use crate::{
     CommittedTransactionIdentifiers, ExecutionCache, LedgerHeader, LedgerProof, LedgerProofOrigin,
-    LoggingConfig, ProtocolState, StateManagerDatabase,
+    StateManagerDatabase,
 };
 
-pub trait ProtocolUpdaterFactory {
-    fn updater_for(&self, protocol_version_name: &str) -> Option<Box<dyn ProtocolUpdater>>;
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+pub enum UpdateTransaction {
+    FlashTransactionV1(FlashTransactionV1),
 }
 
-/// Protocol update consists of two events:
-/// 1) Updating the current (state computer) configuration ("transaction processing rules").
-///    This includes: transaction validation, execution configuration, etc
-/// 2) Executing arbitrary state updates against the current database state.
-///    While the abstraction is quite flexible, the only concrete implementation at the moment
-///    only modifies the state through committing system transactions (e.g. substate flash).
-pub trait ProtocolUpdater {
-    /// Returns the new configuration that the state computer
-    /// should use after enacting the given protocol version.
-    fn updatable_config(&self) -> UpdatableStateComputerConfig;
-
-    /// Executes these state updates associated with the given protocol version
-    /// that haven't yet been applied
-    /// (hence "remaining", e.g. if node is restarted mid-protocol update).
-    fn execute_remaining_state_updates(&self, store: Arc<StateLock<StateManagerDatabase>>);
-}
-
-#[derive(Clone, Debug)]
-pub struct UpdatableStateComputerConfig {
-    pub network: NetworkDefinition,
-    pub logging_config: LoggingConfig,
-    pub validation_config: ValidationConfig,
-    pub costing_parameters: CostingParameters,
-}
-
-impl UpdatableStateComputerConfig {
-    pub fn default(network: NetworkDefinition) -> UpdatableStateComputerConfig {
-        let network_id = network.id;
-        UpdatableStateComputerConfig {
-            network,
-            logging_config: LoggingConfig::default(),
-            validation_config: ValidationConfig::default(network_id),
-            costing_parameters: CostingParameters::default(),
-        }
-    }
-}
-
-impl UpdatableStateComputerConfig {
-    pub fn ledger_transaction_validator(&self) -> LedgerTransactionValidator {
-        LedgerTransactionValidator::default_from_validation_config(self.validation_config)
-    }
-
-    pub fn user_transaction_validator(&self) -> NotarizedTransactionValidator {
-        NotarizedTransactionValidator::new(self.validation_config)
-    }
-
-    pub fn validation_config(&self) -> ValidationConfig {
-        self.validation_config
-    }
-
-    pub fn execution_configurator(&self, no_fees: bool) -> ExecutionConfigurator {
-        let mut costing_parameters = self.costing_parameters;
-        if no_fees {
-            costing_parameters.execution_cost_unit_price = Decimal::ZERO;
-            costing_parameters.finalization_cost_unit_price = Decimal::ZERO;
-            costing_parameters.state_storage_price = Decimal::ZERO;
-            costing_parameters.archive_storage_price = Decimal::ZERO;
-        }
-        ExecutionConfigurator::new(&self.network, &self.logging_config, costing_parameters)
-    }
-}
-
-/// A protocol updater implementation that only changes the configuration
-/// and does not commit any state updates.
-pub struct NoStateUpdatesProtocolUpdater {
-    updatable_config: UpdatableStateComputerConfig,
-}
-
-impl NoStateUpdatesProtocolUpdater {
-    pub fn default(network: NetworkDefinition) -> Self {
-        Self {
-            updatable_config: UpdatableStateComputerConfig::default(network),
-        }
-    }
-}
-
-impl ProtocolUpdater for NoStateUpdatesProtocolUpdater {
-    fn updatable_config(&self) -> UpdatableStateComputerConfig {
-        self.updatable_config.clone()
-    }
-
-    fn execute_remaining_state_updates(&self, _store: Arc<StateLock<StateManagerDatabase>>) {
-        // no-op
-    }
-}
-
-pub struct FixedFlashProtocolUpdater {
-    protocol_version_name: String,
-    updatable_config: UpdatableStateComputerConfig,
-    flash_txns: Vec<FlashTransactionV1>,
-}
-
-impl FixedFlashProtocolUpdater {
-    pub fn new_with_default_configurator(
-        protocol_version_name: String,
-        network: NetworkDefinition,
-        flash_txns: Vec<FlashTransactionV1>,
-    ) -> Self {
-        Self {
-            protocol_version_name,
-            updatable_config: UpdatableStateComputerConfig::default(network),
-            flash_txns,
-        }
-    }
-}
-
-impl ProtocolUpdater for FixedFlashProtocolUpdater {
-    fn updatable_config(&self) -> UpdatableStateComputerConfig {
-        self.updatable_config.clone()
-    }
-
-    fn execute_remaining_state_updates(&self, store: Arc<StateLock<StateManagerDatabase>>) {
-        // We're using the new configuration to execute the protocol update
-        // transactions (although it's not a requirement).
-        let updatable_config = self.updatable_config();
-        let mut txn_committer = ProtocolUpdateFlashTxnCommitter::new(
-            self.protocol_version_name.clone(),
-            store,
-            updatable_config.execution_configurator(true), /* No fees for protocol updates */
-            updatable_config.ledger_transaction_validator(),
-        );
-
-        while let Some(next_batch_idx) = txn_committer.next_committable_batch_idx() {
-            let maybe_next_flash_txn = self.flash_txns.get(next_batch_idx as usize);
-            if let Some(next_flash_txn) = maybe_next_flash_txn {
-                txn_committer.commit_flash(next_flash_txn.clone());
-            } else {
-                // Nothing more to commit
-                break;
-            }
-        }
+impl From<FlashTransactionV1> for UpdateTransaction {
+    fn from(value: FlashTransactionV1) -> Self {
+        Self::FlashTransactionV1(value)
     }
 }
 
 enum ProtocolUpdateProgress {
     UpdateInitiatedButNothingCommitted {
-        protocol_version_name: String,
+        protocol_version_name: ProtocolVersionName,
     },
     UpdateInProgress {
-        protocol_version_name: String,
+        protocol_version_name: ProtocolVersionName,
         last_batch_idx: u32,
     },
     /// This means that the last proof contains no notion of a protocol update,
@@ -183,16 +46,16 @@ enum ProtocolUpdateProgress {
 /// A helper that manages committing flash transactions state updates.
 /// It handles the logic to fulfill the resumability contract of "execute_remaining_state_updates"
 /// by storing the index of a previously committed transaction batch in the ledger proof.
-pub struct ProtocolUpdateFlashTxnCommitter {
-    protocol_version_name: String,
+pub struct ProtocolUpdateTransactionCommitter {
+    protocol_version_name: ProtocolVersionName,
     store: Arc<StateLock<StateManagerDatabase>>,
     execution_configurator: RwLock<ExecutionConfigurator>,
     ledger_transaction_validator: LedgerTransactionValidator,
 }
 
-impl ProtocolUpdateFlashTxnCommitter {
+impl ProtocolUpdateTransactionCommitter {
     pub fn new(
-        protocol_version_name: String,
+        protocol_version_name: ProtocolVersionName,
         store: Arc<StateLock<StateManagerDatabase>>,
         execution_configurator: ExecutionConfigurator,
         ledger_transaction_validator: LedgerTransactionValidator,
@@ -218,7 +81,9 @@ impl ProtocolUpdateFlashTxnCommitter {
                     latest_proof.ledger_header.next_protocol_version
                 {
                     ProtocolUpdateProgress::UpdateInitiatedButNothingCommitted {
-                        protocol_version_name: latest_proof_protocol_version,
+                        protocol_version_name: ProtocolVersionName::of_unchecked(
+                            latest_proof_protocol_version,
+                        ),
                     }
                 } else {
                     ProtocolUpdateProgress::NotUpdating
@@ -228,7 +93,7 @@ impl ProtocolUpdateFlashTxnCommitter {
                 protocol_version_name,
                 batch_idx,
             } => ProtocolUpdateProgress::UpdateInProgress {
-                protocol_version_name: protocol_version_name.to_string(),
+                protocol_version_name: protocol_version_name.clone(),
                 last_batch_idx: *batch_idx,
             },
         }
@@ -259,18 +124,22 @@ impl ProtocolUpdateFlashTxnCommitter {
         }
     }
 
-    pub fn commit_flash(&mut self, flash_txn: FlashTransactionV1) {
-        self.commit_flash_batch(vec![flash_txn]);
+    pub fn commit_single(&mut self, transaction: UpdateTransaction) {
+        self.commit_batch(vec![transaction]);
     }
 
     /// Commits a batch of flash transactions, followed by a single
     /// proof (of protocol update origin).
-    pub fn commit_flash_batch(&mut self, flash_txns: Vec<FlashTransactionV1>) {
-        let flash_ledger_txns = flash_txns
+    pub fn commit_batch(&mut self, update_transactions: Vec<UpdateTransaction>) {
+        let ledger_transactions = update_transactions
             .into_iter()
-            .map(|flash_txn| LedgerTransaction::FlashV1(Box::new(flash_txn)))
+            .map(|update_txn| match update_txn {
+                UpdateTransaction::FlashTransactionV1(flash_txn) => {
+                    LedgerTransaction::FlashV1(Box::new(flash_txn))
+                }
+            })
             .collect();
-        self.commit_txn_batch(flash_ledger_txns);
+        self.commit_txn_batch(ledger_transactions);
     }
 
     fn commit_txn_batch(&mut self, transactions: Vec<LedgerTransaction>) {
@@ -386,38 +255,5 @@ impl ProtocolUpdateFlashTxnCommitter {
         drop(read_store);
 
         self.store.write_current().commit(commit_bundle);
-    }
-}
-
-pub struct TestingDefaultProtocolUpdaterFactory {
-    network: NetworkDefinition,
-    mainnet_protocol_updater_factory: ProductionProtocolUpdaterFactory,
-}
-
-impl TestingDefaultProtocolUpdaterFactory {
-    pub fn new(network: NetworkDefinition) -> TestingDefaultProtocolUpdaterFactory {
-        TestingDefaultProtocolUpdaterFactory {
-            network: network.clone(),
-            mainnet_protocol_updater_factory: ProductionProtocolUpdaterFactory::new(network),
-        }
-    }
-}
-
-impl ProtocolUpdaterFactory for TestingDefaultProtocolUpdaterFactory {
-    fn updater_for(&self, protocol_version_name: &str) -> Option<Box<dyn ProtocolUpdater>> {
-        // Default testing updater delegates to mainnet updater if protocol update matches or,
-        // if not, returns a default updater with a single empty flash transaction.
-        self.mainnet_protocol_updater_factory
-            .updater_for(protocol_version_name)
-            .or(Some(Box::new(
-                FixedFlashProtocolUpdater::new_with_default_configurator(
-                    protocol_version_name.to_owned(),
-                    self.network.clone(),
-                    vec![FlashTransactionV1 {
-                        name: format!("{}-txn", protocol_version_name),
-                        state_updates: StateUpdates::default(),
-                    }],
-                ),
-            )))
     }
 }
