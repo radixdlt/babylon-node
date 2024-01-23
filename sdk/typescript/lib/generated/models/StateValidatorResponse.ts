@@ -67,6 +67,12 @@ export interface StateValidatorResponse {
      * @type {Substate}
      * @memberof StateValidatorResponse
      */
+    protocol_update_readiness_signal: Substate;
+    /**
+     * 
+     * @type {Substate}
+     * @memberof StateValidatorResponse
+     */
     owner_role: Substate;
     /**
      * Any vaults owned directly or indirectly by the component
@@ -90,6 +96,7 @@ export function instanceOfStateValidatorResponse(value: object): boolean {
     isInstance = isInstance && "at_ledger_state" in value;
     isInstance = isInstance && "address" in value;
     isInstance = isInstance && "state" in value;
+    isInstance = isInstance && "protocol_update_readiness_signal" in value;
     isInstance = isInstance && "owner_role" in value;
     isInstance = isInstance && "vaults" in value;
     isInstance = isInstance && "descendent_nodes" in value;
@@ -110,6 +117,7 @@ export function StateValidatorResponseFromJSONTyped(json: any, ignoreDiscriminat
         'at_ledger_state': LedgerStateSummaryFromJSON(json['at_ledger_state']),
         'address': json['address'],
         'state': SubstateFromJSON(json['state']),
+        'protocol_update_readiness_signal': SubstateFromJSON(json['protocol_update_readiness_signal']),
         'owner_role': SubstateFromJSON(json['owner_role']),
         'vaults': ((json['vaults'] as Array<any>).map(VaultBalanceFromJSON)),
         'descendent_nodes': ((json['descendent_nodes'] as Array<any>).map(StateComponentDescendentNodeFromJSON)),
@@ -128,6 +136,7 @@ export function StateValidatorResponseToJSON(value?: StateValidatorResponse | nu
         'at_ledger_state': LedgerStateSummaryToJSON(value.at_ledger_state),
         'address': value.address,
         'state': SubstateToJSON(value.state),
+        'protocol_update_readiness_signal': SubstateToJSON(value.protocol_update_readiness_signal),
         'owner_role': SubstateToJSON(value.owner_role),
         'vaults': ((value.vaults as Array<any>).map(VaultBalanceToJSON)),
         'descendent_nodes': ((value.descendent_nodes as Array<any>).map(StateComponentDescendentNodeToJSON)),

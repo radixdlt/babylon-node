@@ -12,20 +12,20 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct StateConsensusManagerRequest {
-    /// The logical name of the network
-    #[serde(rename = "network")]
-    pub network: String,
-    /// Whether to include protocol update readiness signals of active validator set (default false).
-    #[serde(rename = "include_readiness_signals", skip_serializing_if = "Option::is_none")]
-    pub include_readiness_signals: Option<bool>,
+pub struct ProtocolVersionReadiness {
+    /// A name identifying a protocol version.
+    #[serde(rename = "signalled_protocol_version")]
+    pub signalled_protocol_version: String,
+    /// Addresses of current validators (i.e. a subset of `current_validator_set`) which have signalled readiness for the `signalled_protocol_version`. 
+    #[serde(rename = "signalling_validator_addresses")]
+    pub signalling_validator_addresses: Vec<String>,
 }
 
-impl StateConsensusManagerRequest {
-    pub fn new(network: String) -> StateConsensusManagerRequest {
-        StateConsensusManagerRequest {
-            network,
-            include_readiness_signals: None,
+impl ProtocolVersionReadiness {
+    pub fn new(signalled_protocol_version: String, signalling_validator_addresses: Vec<String>) -> ProtocolVersionReadiness {
+        ProtocolVersionReadiness {
+            signalled_protocol_version,
+            signalling_validator_addresses,
         }
     }
 }

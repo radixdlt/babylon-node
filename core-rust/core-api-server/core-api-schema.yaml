@@ -7527,6 +7527,9 @@ components:
       properties:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
+        include_readiness_signals:
+          description: Whether to include protocol update readiness signals of active validator set (default false).
+          type: boolean
     StateConsensusManagerResponse:
       type: object
       required:
@@ -7553,6 +7556,32 @@ components:
           $ref: "#/components/schemas/Substate"
         current_time_rounded_to_minutes:
           $ref: "#/components/schemas/Substate"
+        current_validator_readiness_signals:
+          description: |
+            Protocol versions signalled by current Validator set.
+            Only returned if enabled by `include_readiness_signals` on your request.
+          type: array
+          items:
+            $ref: "#/components/schemas/ProtocolVersionReadiness"
+    ProtocolVersionReadiness:
+      type: object
+      required:
+        - signalled_protocol_version
+        - signalling_validator_addresses
+      properties:
+        signalled_protocol_version:
+          # Note: Re-using "#/components/schemas/ProtocolVersion" hits a quirk of the TypeScript's
+          # generator ("attribute components.schemas.ProtocolVersionReadiness.ProtocolVersion is not
+          # of type `schema`").
+          type: string
+          description: A name identifying a protocol version.
+        signalling_validator_addresses:
+          description: |
+            Addresses of current validators (i.e. a subset of `current_validator_set`) which have
+            signalled readiness for the `signalled_protocol_version`.
+          type: array
+          items:
+            $ref: '#/components/schemas/ComponentAddress'
 ###########################
 # REQUEST: /state/account #
 ###########################
@@ -7695,6 +7724,7 @@ components:
         - at_ledger_state
         - address
         - state
+        - protocol_update_readiness_signal
         - owner_role
         - vaults
         - descendent_nodes
@@ -7705,6 +7735,8 @@ components:
         address:
           $ref: '#/components/schemas/ComponentAddress'
         state:
+          $ref: "#/components/schemas/Substate"
+        protocol_update_readiness_signal:
           $ref: "#/components/schemas/Substate"
         owner_role:
           $ref: "#/components/schemas/Substate"

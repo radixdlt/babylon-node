@@ -16,49 +16,51 @@ import { exists, mapValues } from '../runtime';
 /**
  * 
  * @export
- * @interface StateConsensusManagerRequest
+ * @interface ProtocolVersionReadiness
  */
-export interface StateConsensusManagerRequest {
+export interface ProtocolVersionReadiness {
     /**
-     * The logical name of the network
+     * A name identifying a protocol version.
      * @type {string}
-     * @memberof StateConsensusManagerRequest
+     * @memberof ProtocolVersionReadiness
      */
-    network: string;
+    signalled_protocol_version: string;
     /**
-     * Whether to include protocol update readiness signals of active validator set (default false).
-     * @type {boolean}
-     * @memberof StateConsensusManagerRequest
+     * Addresses of current validators (i.e. a subset of `current_validator_set`) which have
+     * signalled readiness for the `signalled_protocol_version`.
+     * @type {Array<string>}
+     * @memberof ProtocolVersionReadiness
      */
-    include_readiness_signals?: boolean;
+    signalling_validator_addresses: Array<string>;
 }
 
 /**
- * Check if a given object implements the StateConsensusManagerRequest interface.
+ * Check if a given object implements the ProtocolVersionReadiness interface.
  */
-export function instanceOfStateConsensusManagerRequest(value: object): boolean {
+export function instanceOfProtocolVersionReadiness(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "network" in value;
+    isInstance = isInstance && "signalled_protocol_version" in value;
+    isInstance = isInstance && "signalling_validator_addresses" in value;
 
     return isInstance;
 }
 
-export function StateConsensusManagerRequestFromJSON(json: any): StateConsensusManagerRequest {
-    return StateConsensusManagerRequestFromJSONTyped(json, false);
+export function ProtocolVersionReadinessFromJSON(json: any): ProtocolVersionReadiness {
+    return ProtocolVersionReadinessFromJSONTyped(json, false);
 }
 
-export function StateConsensusManagerRequestFromJSONTyped(json: any, ignoreDiscriminator: boolean): StateConsensusManagerRequest {
+export function ProtocolVersionReadinessFromJSONTyped(json: any, ignoreDiscriminator: boolean): ProtocolVersionReadiness {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'network': json['network'],
-        'include_readiness_signals': !exists(json, 'include_readiness_signals') ? undefined : json['include_readiness_signals'],
+        'signalled_protocol_version': json['signalled_protocol_version'],
+        'signalling_validator_addresses': json['signalling_validator_addresses'],
     };
 }
 
-export function StateConsensusManagerRequestToJSON(value?: StateConsensusManagerRequest | null): any {
+export function ProtocolVersionReadinessToJSON(value?: ProtocolVersionReadiness | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -67,8 +69,8 @@ export function StateConsensusManagerRequestToJSON(value?: StateConsensusManager
     }
     return {
         
-        'network': value.network,
-        'include_readiness_signals': value.include_readiness_signals,
+        'signalled_protocol_version': value.signalled_protocol_version,
+        'signalling_validator_addresses': value.signalling_validator_addresses,
     };
 }
 

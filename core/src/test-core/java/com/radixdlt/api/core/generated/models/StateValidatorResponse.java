@@ -40,6 +40,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   StateValidatorResponse.JSON_PROPERTY_AT_LEDGER_STATE,
   StateValidatorResponse.JSON_PROPERTY_ADDRESS,
   StateValidatorResponse.JSON_PROPERTY_STATE,
+  StateValidatorResponse.JSON_PROPERTY_PROTOCOL_UPDATE_READINESS_SIGNAL,
   StateValidatorResponse.JSON_PROPERTY_OWNER_ROLE,
   StateValidatorResponse.JSON_PROPERTY_VAULTS,
   StateValidatorResponse.JSON_PROPERTY_DESCENDENT_NODES
@@ -54,6 +55,9 @@ public class StateValidatorResponse {
 
   public static final String JSON_PROPERTY_STATE = "state";
   private Substate state;
+
+  public static final String JSON_PROPERTY_PROTOCOL_UPDATE_READINESS_SIGNAL = "protocol_update_readiness_signal";
+  private Substate protocolUpdateReadinessSignal;
 
   public static final String JSON_PROPERTY_OWNER_ROLE = "owner_role";
   private Substate ownerRole;
@@ -142,6 +146,32 @@ public class StateValidatorResponse {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setState(Substate state) {
     this.state = state;
+  }
+
+
+  public StateValidatorResponse protocolUpdateReadinessSignal(Substate protocolUpdateReadinessSignal) {
+    this.protocolUpdateReadinessSignal = protocolUpdateReadinessSignal;
+    return this;
+  }
+
+   /**
+   * Get protocolUpdateReadinessSignal
+   * @return protocolUpdateReadinessSignal
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_PROTOCOL_UPDATE_READINESS_SIGNAL)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Substate getProtocolUpdateReadinessSignal() {
+    return protocolUpdateReadinessSignal;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_PROTOCOL_UPDATE_READINESS_SIGNAL)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setProtocolUpdateReadinessSignal(Substate protocolUpdateReadinessSignal) {
+    this.protocolUpdateReadinessSignal = protocolUpdateReadinessSignal;
   }
 
 
@@ -248,6 +278,7 @@ public class StateValidatorResponse {
     return Objects.equals(this.atLedgerState, stateValidatorResponse.atLedgerState) &&
         Objects.equals(this.address, stateValidatorResponse.address) &&
         Objects.equals(this.state, stateValidatorResponse.state) &&
+        Objects.equals(this.protocolUpdateReadinessSignal, stateValidatorResponse.protocolUpdateReadinessSignal) &&
         Objects.equals(this.ownerRole, stateValidatorResponse.ownerRole) &&
         Objects.equals(this.vaults, stateValidatorResponse.vaults) &&
         Objects.equals(this.descendentNodes, stateValidatorResponse.descendentNodes);
@@ -255,7 +286,7 @@ public class StateValidatorResponse {
 
   @Override
   public int hashCode() {
-    return Objects.hash(atLedgerState, address, state, ownerRole, vaults, descendentNodes);
+    return Objects.hash(atLedgerState, address, state, protocolUpdateReadinessSignal, ownerRole, vaults, descendentNodes);
   }
 
   @Override
@@ -265,6 +296,7 @@ public class StateValidatorResponse {
     sb.append("    atLedgerState: ").append(toIndentedString(atLedgerState)).append("\n");
     sb.append("    address: ").append(toIndentedString(address)).append("\n");
     sb.append("    state: ").append(toIndentedString(state)).append("\n");
+    sb.append("    protocolUpdateReadinessSignal: ").append(toIndentedString(protocolUpdateReadinessSignal)).append("\n");
     sb.append("    ownerRole: ").append(toIndentedString(ownerRole)).append("\n");
     sb.append("    vaults: ").append(toIndentedString(vaults)).append("\n");
     sb.append("    descendentNodes: ").append(toIndentedString(descendentNodes)).append("\n");

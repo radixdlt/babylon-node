@@ -24,81 +24,88 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import java.util.ArrayList;
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * StateConsensusManagerRequest
+ * ProtocolVersionReadiness
  */
 @JsonPropertyOrder({
-  StateConsensusManagerRequest.JSON_PROPERTY_NETWORK,
-  StateConsensusManagerRequest.JSON_PROPERTY_INCLUDE_READINESS_SIGNALS
+  ProtocolVersionReadiness.JSON_PROPERTY_SIGNALLED_PROTOCOL_VERSION,
+  ProtocolVersionReadiness.JSON_PROPERTY_SIGNALLING_VALIDATOR_ADDRESSES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class StateConsensusManagerRequest {
-  public static final String JSON_PROPERTY_NETWORK = "network";
-  private String network;
+public class ProtocolVersionReadiness {
+  public static final String JSON_PROPERTY_SIGNALLED_PROTOCOL_VERSION = "signalled_protocol_version";
+  private String signalledProtocolVersion;
 
-  public static final String JSON_PROPERTY_INCLUDE_READINESS_SIGNALS = "include_readiness_signals";
-  private Boolean includeReadinessSignals;
+  public static final String JSON_PROPERTY_SIGNALLING_VALIDATOR_ADDRESSES = "signalling_validator_addresses";
+  private List<String> signallingValidatorAddresses = new ArrayList<>();
 
-  public StateConsensusManagerRequest() { 
+  public ProtocolVersionReadiness() { 
   }
 
-  public StateConsensusManagerRequest network(String network) {
-    this.network = network;
+  public ProtocolVersionReadiness signalledProtocolVersion(String signalledProtocolVersion) {
+    this.signalledProtocolVersion = signalledProtocolVersion;
     return this;
   }
 
    /**
-   * The logical name of the network
-   * @return network
+   * A name identifying a protocol version.
+   * @return signalledProtocolVersion
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(example = "{{network}}", required = true, value = "The logical name of the network")
-  @JsonProperty(JSON_PROPERTY_NETWORK)
+  @ApiModelProperty(required = true, value = "A name identifying a protocol version.")
+  @JsonProperty(JSON_PROPERTY_SIGNALLED_PROTOCOL_VERSION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getNetwork() {
-    return network;
+  public String getSignalledProtocolVersion() {
+    return signalledProtocolVersion;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_NETWORK)
+  @JsonProperty(JSON_PROPERTY_SIGNALLED_PROTOCOL_VERSION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNetwork(String network) {
-    this.network = network;
+  public void setSignalledProtocolVersion(String signalledProtocolVersion) {
+    this.signalledProtocolVersion = signalledProtocolVersion;
   }
 
 
-  public StateConsensusManagerRequest includeReadinessSignals(Boolean includeReadinessSignals) {
-    this.includeReadinessSignals = includeReadinessSignals;
+  public ProtocolVersionReadiness signallingValidatorAddresses(List<String> signallingValidatorAddresses) {
+    this.signallingValidatorAddresses = signallingValidatorAddresses;
+    return this;
+  }
+
+  public ProtocolVersionReadiness addSignallingValidatorAddressesItem(String signallingValidatorAddressesItem) {
+    this.signallingValidatorAddresses.add(signallingValidatorAddressesItem);
     return this;
   }
 
    /**
-   * Whether to include protocol update readiness signals of active validator set (default false).
-   * @return includeReadinessSignals
+   * Addresses of current validators (i.e. a subset of &#x60;current_validator_set&#x60;) which have signalled readiness for the &#x60;signalled_protocol_version&#x60;. 
+   * @return signallingValidatorAddresses
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "Whether to include protocol update readiness signals of active validator set (default false).")
-  @JsonProperty(JSON_PROPERTY_INCLUDE_READINESS_SIGNALS)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "Addresses of current validators (i.e. a subset of `current_validator_set`) which have signalled readiness for the `signalled_protocol_version`. ")
+  @JsonProperty(JSON_PROPERTY_SIGNALLING_VALIDATOR_ADDRESSES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Boolean getIncludeReadinessSignals() {
-    return includeReadinessSignals;
+  public List<String> getSignallingValidatorAddresses() {
+    return signallingValidatorAddresses;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_INCLUDE_READINESS_SIGNALS)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setIncludeReadinessSignals(Boolean includeReadinessSignals) {
-    this.includeReadinessSignals = includeReadinessSignals;
+  @JsonProperty(JSON_PROPERTY_SIGNALLING_VALIDATOR_ADDRESSES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setSignallingValidatorAddresses(List<String> signallingValidatorAddresses) {
+    this.signallingValidatorAddresses = signallingValidatorAddresses;
   }
 
 
   /**
-   * Return true if this StateConsensusManagerRequest object is equal to o.
+   * Return true if this ProtocolVersionReadiness object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -108,22 +115,22 @@ public class StateConsensusManagerRequest {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    StateConsensusManagerRequest stateConsensusManagerRequest = (StateConsensusManagerRequest) o;
-    return Objects.equals(this.network, stateConsensusManagerRequest.network) &&
-        Objects.equals(this.includeReadinessSignals, stateConsensusManagerRequest.includeReadinessSignals);
+    ProtocolVersionReadiness protocolVersionReadiness = (ProtocolVersionReadiness) o;
+    return Objects.equals(this.signalledProtocolVersion, protocolVersionReadiness.signalledProtocolVersion) &&
+        Objects.equals(this.signallingValidatorAddresses, protocolVersionReadiness.signallingValidatorAddresses);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(network, includeReadinessSignals);
+    return Objects.hash(signalledProtocolVersion, signallingValidatorAddresses);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class StateConsensusManagerRequest {\n");
-    sb.append("    network: ").append(toIndentedString(network)).append("\n");
-    sb.append("    includeReadinessSignals: ").append(toIndentedString(includeReadinessSignals)).append("\n");
+    sb.append("class ProtocolVersionReadiness {\n");
+    sb.append("    signalledProtocolVersion: ").append(toIndentedString(signalledProtocolVersion)).append("\n");
+    sb.append("    signallingValidatorAddresses: ").append(toIndentedString(signallingValidatorAddresses)).append("\n");
     sb.append("}");
     return sb.toString();
   }

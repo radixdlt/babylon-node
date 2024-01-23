@@ -437,6 +437,7 @@ export * from './ProtectedAccessRule';
 export * from './ProtectedAccessRuleAllOf';
 export * from './ProtocolUpdateLedgerProofOrigin';
 export * from './ProtocolUpdateLedgerProofOriginAllOf';
+export * from './ProtocolVersionReadiness';
 export * from './PublicKey';
 export * from './PublicKeyBase';
 export * from './PublicKeyType';

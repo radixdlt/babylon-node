@@ -808,6 +808,8 @@ pub mod protocol_update_ledger_proof_origin;
 pub use self::protocol_update_ledger_proof_origin::ProtocolUpdateLedgerProofOrigin;
 pub mod protocol_update_ledger_proof_origin_all_of;
 pub use self::protocol_update_ledger_proof_origin_all_of::ProtocolUpdateLedgerProofOriginAllOf;
+pub mod protocol_version_readiness;
+pub use self::protocol_version_readiness::ProtocolVersionReadiness;
 pub mod public_key;
 pub use self::public_key::PublicKey;
 pub mod public_key_type;

@@ -92,7 +92,9 @@ public final class EpochManagerValidatorNonFungibleResourceAndDataStateTest
       final var stateConsensusManagerResponse =
           getStateApi()
               .stateConsensusManagerPost(
-                  new StateConsensusManagerRequest().network(networkLogicalName));
+                  new StateConsensusManagerRequest()
+                      .network(networkLogicalName)
+                      .includeReadinessSignals(true));
 
       final var stateSubstate =
           (ConsensusManagerFieldStateSubstate) stateConsensusManagerResponse.getState();
@@ -105,6 +107,9 @@ public final class EpochManagerValidatorNonFungibleResourceAndDataStateTest
               .getValidatorSet()
               .get(0)
               .getAddress();
+
+      // the information was requested, but no protocol update readiness was signalled
+      assertThat(stateConsensusManagerResponse.getCurrentValidatorReadinessSignals()).isEmpty();
 
       final var validatorResponse =
           getStateApi()
@@ -124,6 +129,12 @@ public final class EpochManagerValidatorNonFungibleResourceAndDataStateTest
       final var nonFungibleLocalId = requirement.getNonFungible().getLocalId();
       assertThat(nonFungibleLocalId.getSimpleRep())
           .isEqualTo("[" + addressing.decodeValidatorAddress(validatorAddress).toHexString() + "]");
+
+      final var readinessSignalSubstate =
+          (ValidatorFieldProtocolUpdateReadinessSignalSubstate)
+              validatorResponse.getProtocolUpdateReadinessSignal();
+      // no readiness signalled
+      assertThat(readinessSignalSubstate.getValue().getProtocolVersionName()).isNull();
 
       final var nonFungibleResourceResponse =
           getStateApi()

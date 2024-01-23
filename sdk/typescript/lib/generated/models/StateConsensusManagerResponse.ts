@@ -19,6 +19,12 @@ import {
     LedgerStateSummaryFromJSONTyped,
     LedgerStateSummaryToJSON,
 } from './LedgerStateSummary';
+import type { ProtocolVersionReadiness } from './ProtocolVersionReadiness';
+import {
+    ProtocolVersionReadinessFromJSON,
+    ProtocolVersionReadinessFromJSONTyped,
+    ProtocolVersionReadinessToJSON,
+} from './ProtocolVersionReadiness';
 import type { Substate } from './Substate';
 import {
     SubstateFromJSON,
@@ -74,6 +80,13 @@ export interface StateConsensusManagerResponse {
      * @memberof StateConsensusManagerResponse
      */
     current_time_rounded_to_minutes: Substate;
+    /**
+     * Protocol versions signalled by current Validator set.
+     * Only returned if enabled by `include_readiness_signals` on your request.
+     * @type {Array<ProtocolVersionReadiness>}
+     * @memberof StateConsensusManagerResponse
+     */
+    current_validator_readiness_signals?: Array<ProtocolVersionReadiness>;
 }
 
 /**
@@ -109,6 +122,7 @@ export function StateConsensusManagerResponseFromJSONTyped(json: any, ignoreDisc
         'current_validator_set': SubstateFromJSON(json['current_validator_set']),
         'current_time': SubstateFromJSON(json['current_time']),
         'current_time_rounded_to_minutes': SubstateFromJSON(json['current_time_rounded_to_minutes']),
+        'current_validator_readiness_signals': !exists(json, 'current_validator_readiness_signals') ? undefined : ((json['current_validator_readiness_signals'] as Array<any>).map(ProtocolVersionReadinessFromJSON)),
     };
 }
 
@@ -128,6 +142,7 @@ export function StateConsensusManagerResponseToJSON(value?: StateConsensusManage
         'current_validator_set': SubstateToJSON(value.current_validator_set),
         'current_time': SubstateToJSON(value.current_time),
         'current_time_rounded_to_minutes': SubstateToJSON(value.current_time_rounded_to_minutes),
+        'current_validator_readiness_signals': value.current_validator_readiness_signals === undefined ? undefined : ((value.current_validator_readiness_signals as Array<any>).map(ProtocolVersionReadinessToJSON)),
     };
 }
 

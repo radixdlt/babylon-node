@@ -444,6 +444,7 @@ models/ProtectedAccessRule.ts
 models/ProtectedAccessRuleAllOf.ts
 models/ProtocolUpdateLedgerProofOrigin.ts
 models/ProtocolUpdateLedgerProofOriginAllOf.ts
+models/ProtocolVersionReadiness.ts
 models/PublicKey.ts
 models/PublicKeyBase.ts
 models/PublicKeyType.ts

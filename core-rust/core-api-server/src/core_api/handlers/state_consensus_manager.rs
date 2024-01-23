@@ -1,7 +1,9 @@
 use crate::core_api::*;
-use radix_engine::blueprints::consensus_manager::ConsensusManagerField;
+use radix_engine::blueprints::consensus_manager::*;
 use radix_engine::types::*;
 
+use state_manager::protocol::ProtocolVersionName;
+use state_manager::StateManagerDatabase;
 use std::ops::Deref;
 
 #[tracing::instrument(skip(state))]
@@ -65,5 +67,78 @@ pub(crate) async fn handle_state_consensus_manager(
         current_time_rounded_to_minutes: Some(to_api_current_time_rounded_to_minutes_substate(
             &current_time_round_to_minutes_substate,
         )?),
+        current_validator_readiness_signals: request
+            .include_readiness_signals
+            .filter(|requested| *requested)
+            .map(|_| {
+                collect_current_validators_by_signalled_protocol_version(
+                    database.deref(),
+                    current_validator_set_substate,
+                )
+            })
+            .transpose()?
+            .map(|current_validators| {
+                to_api_current_validator_readiness_signals(&mapping_context, &current_validators)
+            })
+            .transpose()?,
     }))
+}
+
+fn collect_current_validators_by_signalled_protocol_version(
+    database: &StateManagerDatabase,
+    substate: ConsensusManagerCurrentValidatorSetFieldSubstate,
+) -> Result<ValidatorsBySignalledProtocolVersion, ResponseError<()>> {
+    let mut validators = ValidatorsBySignalledProtocolVersion::default();
+    let payload = substate.into_payload().into_latest();
+    for validator_address in payload.validator_set.validators_by_stake_desc.into_keys() {
+        let readiness_signal_substate = read_mandatory_main_field_substate::<
+            ValidatorProtocolUpdateReadinessSignalFieldPayload,
+        >(
+            database,
+            validator_address.as_node_id(),
+            &ValidatorField::ProtocolUpdateReadinessSignal.into(),
+        )?
+        .into_payload()
+        .into_latest();
+        validators.insert(
+            validator_address,
+            readiness_signal_substate.protocol_version_name,
+        );
+    }
+    Ok(validators)
+}
+
+#[derive(Default)]
+struct ValidatorsBySignalledProtocolVersion {
+    map: IndexMap<ProtocolVersionName, Vec<ComponentAddress>>,
+}
+
+impl ValidatorsBySignalledProtocolVersion {
+    pub fn insert(&mut self, validator_address: ComponentAddress, version_string: Option<String>) {
+        if let Some(version_string) = version_string {
+            self.map
+                .entry(ProtocolVersionName::of_unchecked(version_string))
+                .or_default()
+                .push(validator_address);
+        }
+    }
+}
+
+fn to_api_current_validator_readiness_signals(
+    context: &MappingContext,
+    current_validators: &ValidatorsBySignalledProtocolVersion,
+) -> Result<Vec<models::ProtocolVersionReadiness>, MappingError> {
+    current_validators
+        .map
+        .iter()
+        .map(|(protocol_version, validator_addresses)| {
+            Ok(models::ProtocolVersionReadiness {
+                signalled_protocol_version: protocol_version.as_str().to_string(),
+                signalling_validator_addresses: validator_addresses
+                    .iter()
+                    .map(|validator_address| to_api_component_address(context, validator_address))
+                    .collect::<Result<Vec<_>, _>>()?,
+            })
+        })
+        .collect::<Result<Vec<_>, _>>()
 }
