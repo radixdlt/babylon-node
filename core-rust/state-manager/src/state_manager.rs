@@ -76,9 +76,7 @@ use prometheus::Registry;
 use radix_engine_common::prelude::*;
 
 use crate::jni::LedgerSyncLimitsConfig;
-use crate::protocol::{
-    ProtocolConfig, ProtocolDefinitionResolver, ProtocolState, ProtocolVersionName,
-};
+use crate::protocol::{ProtocolConfig, ProtocolState, ProtocolVersionName};
 use crate::store::jmt_gc::StateHashTreeGcConfig;
 use crate::store::proofs_gc::{LedgerProofsGc, LedgerProofsGcConfig};
 use crate::store::traits::proofs::QueryableProofStore;
@@ -153,7 +151,6 @@ pub struct StateManager {
     pub execution_configurator: Arc<RwLock<ExecutionConfigurator>>,
     pub committability_validator: Arc<RwLock<CommittabilityValidator<StateManagerDatabase>>>,
     pub transaction_previewer: Arc<RwLock<TransactionPreviewer<StateManagerDatabase>>>,
-    pub protocol_definition_resolver: Arc<ProtocolDefinitionResolver>,
 }
 
 impl StateManager {
@@ -183,19 +180,8 @@ impl StateManager {
         );
 
         let database = Arc::new(lock_factory.named("database").new_state_lock(raw_db));
-        let protocol_definition_resolver = ProtocolDefinitionResolver::new_with_raw_overrides(
-            &network,
-            config
-                .protocol_config
-                .protocol_update_content_overrides
-                .clone(),
-        )
-        .unwrap_or_else(|err| panic!("Invalid protocol update content overrides: {:?}", err));
 
-        if let Err(err) = config
-            .protocol_config
-            .validate(&protocol_definition_resolver)
-        {
+        if let Err(err) = config.protocol_config.validate() {
             panic!("Protocol misconfiguration: {}", err);
         };
 
@@ -205,15 +191,15 @@ impl StateManager {
         );
 
         let initial_protocol_version = &initial_protocol_state.current_protocol_version;
-        let (initial_state_computer_config, initial_protocol_updater) =
-            protocol_definition_resolver
-                .resolve(initial_protocol_version)
-                .unwrap_or_else(|| {
-                    panic!(
-                        "Initial protocol version on boot ({}) was not known in the resolver",
-                        initial_protocol_version
-                    )
-                });
+        let (initial_state_computer_config, initial_protocol_updater) = config
+            .protocol_config
+            .resolve_config_and_updater(&config.network_definition, initial_protocol_version)
+            .unwrap_or_else(|| {
+                panic!(
+                    "Initial protocol version on boot ({}) was not known in the resolver",
+                    initial_protocol_version
+                )
+            });
 
         let execution_configurator = Arc::new(
             lock_factory
@@ -333,7 +319,6 @@ impl StateManager {
             execution_configurator,
             committability_validator,
             transaction_previewer,
-            protocol_definition_resolver: Arc::new(protocol_definition_resolver),
         }
     }
 
@@ -342,8 +327,9 @@ impl StateManager {
         protocol_version_name: &ProtocolVersionName,
     ) -> ProtocolUpdateResult {
         let (new_state_computer_config, protocol_updater) = self
-            .protocol_definition_resolver
-            .resolve(protocol_version_name)
+            .config
+            .protocol_config
+            .resolve_config_and_updater(&self.config.network_definition, protocol_version_name)
             .unwrap_or_else(|| {
                 panic!(
                     "Protocol update to version {} was triggered, but isn't known in the resolver",

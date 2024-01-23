@@ -5,6 +5,7 @@ members = [
     "core-api-server",
     "state-manager",
 ]
+resolver = "2"
 
 [workspace.dependencies]
 # DEPENDENCIES ON RADIXDLT-SCRYPTO

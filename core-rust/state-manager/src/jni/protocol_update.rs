@@ -117,7 +117,7 @@ extern "system" fn Java_com_radixdlt_protocol_RustProtocolUpdate_nativeResolveFo
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |network: NetworkDefinition| {
-        ProtocolConfigResolver::resolve_config(&network)
+        resolve_protocol_config(&network)
     })
 }
 

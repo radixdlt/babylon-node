@@ -1,5 +1,6 @@
 use radix_engine::prelude::ScryptoSbor;
 use radix_engine_common::math::Decimal;
+use radix_engine_common::network::NetworkDefinition;
 use radix_engine_common::prelude::{hash, scrypto_encode};
 
 use radix_engine_common::types::Epoch;
@@ -12,6 +13,28 @@ use utils::prelude::*;
 
 const MIN_PROTOCOL_VERSION_NAME_LEN: usize = 2;
 const MAX_PROTOCOL_VERSION_NAME_LEN: usize = 16;
+
+pub const GENESIS_PROTOCOL_VERSION: &str = "babylon-genesis";
+pub const ANEMONE_PROTOCOL_VERSION: &str = "anemone";
+
+pub fn resolve_update_definition_for_version(
+    protocol_version_name: &ProtocolVersionName,
+) -> Option<Box<dyn ConfigurableProtocolUpdateDefinition>> {
+    match protocol_version_name.as_str() {
+        // Genesis execution is done manually.
+        // Genesis only needs to be supported here to identify which configuration to use.
+        GENESIS_PROTOCOL_VERSION => Some(Box::new(DefaultConfigOnlyProtocolDefinition)),
+        ANEMONE_PROTOCOL_VERSION => Some(Box::new(AnemoneProtocolUpdateDefinition)),
+        // Updates starting "custom-" are intended for use with tests, where the thresholds and config are injected on all nodes
+        _ if CustomProtocolUpdateDefinition::matches(protocol_version_name) => {
+            Some(Box::new(CustomProtocolUpdateDefinition))
+        }
+        _ if TestProtocolUpdateDefinition::matches(protocol_version_name) => {
+            Some(Box::new(TestProtocolUpdateDefinition))
+        }
+        _ => None,
+    }
+}
 
 /// The `ProtocolConfig` is a static configuration provided per-network, or overriden for testing.
 ///
@@ -28,7 +51,7 @@ pub struct ProtocolConfig {
     ///
     /// You can create this with `ProtocolUpdateContentOverrides::empty().into()` or `Default::default()`.
     ///
-    /// This wraps an optional `Map<String, Vec<u8>>` where the `Vec<u8>` is the encoded config
+    /// This essentially wraps an optional `Map<String, Vec<u8>>` where the `Vec<u8>` is the encoded config
     /// for the protocol updater matching the given protocol update.
     ///
     /// All nodes must agree on the content overrides used. The content overrides form a part of
@@ -53,28 +76,19 @@ impl ProtocolConfig {
                     ProtocolUpdateTrigger::of(version.into(), enactment_condition)
                 })
                 .collect(),
-            protocol_update_content_overrides: RawProtocolUpdateContentOverrides::default(),
+            protocol_update_content_overrides: ProtocolUpdateContentOverrides::empty().into(),
         }
     }
 
-    pub fn validate(
-        &self,
-        protocol_definition_resolver: &ProtocolDefinitionResolver,
-    ) -> Result<(), String> {
+    pub fn validate(&self) -> Result<(), String> {
         let mut protocol_versions = hashset!();
 
-        Self::validate_protocol_version_name(
-            &self.genesis_protocol_version,
-            protocol_definition_resolver,
-        )?;
+        Self::validate_and_resolve_protocol_definition(&self.genesis_protocol_version)?;
 
         for protocol_update in self.protocol_update_triggers.iter() {
             let protocol_version_name = &protocol_update.next_protocol_version;
 
-            Self::validate_protocol_version_name(
-                protocol_version_name,
-                protocol_definition_resolver,
-            )?;
+            Self::validate_and_resolve_protocol_definition(protocol_version_name)?;
 
             if !protocol_versions.insert(&protocol_update.next_protocol_version) {
                 return Err(format!(
@@ -114,30 +128,53 @@ impl ProtocolConfig {
 
         // Note - The protocol_update_content_overrides contents are validated in the ProtocolDefinitionResolver::new_with_raw_overrides
         // But let's check the length here too, which isn't checked there.
-        for (protocol_version_name, _) in self.protocol_update_content_overrides.iter() {
-            Self::validate_protocol_version_name(
-                protocol_version_name,
-                protocol_definition_resolver,
-            )?;
+        for (protocol_version_name, raw_overrides) in self.protocol_update_content_overrides.iter()
+        {
+            let definition = Self::validate_and_resolve_protocol_definition(protocol_version_name)?;
+
+            definition
+                .validate_raw_overrides(raw_overrides)
+                .map_err(|err| {
+                    format!(
+                    "Protocol version ({protocol_version_name}) has invalid raw overrides: {err:?}"
+                )
+                })?;
         }
 
         Ok(())
     }
 
-    fn validate_protocol_version_name(
+    pub fn resolve_config_and_updater(
+        &self,
+        network: &NetworkDefinition,
+        protocol_version_name: &ProtocolVersionName,
+    ) -> Option<(ProtocolStateComputerConfig, Box<dyn ProtocolUpdater>)> {
+        let definition = resolve_update_definition_for_version(protocol_version_name)?;
+
+        let config = definition.resolve_state_computer_config(network);
+
+        // Unwrap is allowed because we have already validated the raw config
+        let updater = definition
+            .create_updater_with_raw_overrides(
+                protocol_version_name,
+                network,
+                self.protocol_update_content_overrides
+                    .get(protocol_version_name),
+            )
+            .unwrap();
+
+        Some((config, updater))
+    }
+
+    fn validate_and_resolve_protocol_definition(
         name: &ProtocolVersionName,
-        protocol_definition_resolver: &ProtocolDefinitionResolver,
-    ) -> Result<(), String> {
+    ) -> Result<Box<dyn ConfigurableProtocolUpdateDefinition>, String> {
         name.validate()
             .map_err(|err| format!("Protocol version ({name}) is invalid: {err:?}"))?;
 
-        if !protocol_definition_resolver.recognizes(name) {
-            return Err(format!(
-                "Protocol version ({name}) does not have a recognized definition"
-            ));
-        }
-
-        Ok(())
+        resolve_update_definition_for_version(name).ok_or_else(|| {
+            format!("Protocol version ({name}) does not have a recognized definition")
+        })
     }
 }
 
