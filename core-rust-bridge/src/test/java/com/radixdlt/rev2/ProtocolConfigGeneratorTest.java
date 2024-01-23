@@ -80,14 +80,30 @@ public final class ProtocolConfigGeneratorTest {
   @Test
   public void generateProtocolConfig() {
     // Change this, then run the test to generate the config
+    // NOTE:
+    // - See `resolve_update_definition_for_version` in `protocol_definition_resolver.rs` for the
+    // supported
+    //   protocol versions
+    // - Any protocol version starting "test-" will add a single transaction to ledger at enactment
+    // - Any protocol version starting "custom-" can be configured with overrides to commit
+    // arbitrary flash
+    //   transactions. To do this, add an overrides map of protocol version => SBOR encoded bytes of
+    //   Vec<Vec<UpdateTransaction>>. Where UpdateTransaction is an enum with one option at present
+    //   (FlashTransactionV1). These SBOR encoded bytes should be created in Rust.
+    //   See e.g. protocol/test.rs - although we should add an easier-to-use generator if we choose
+    // to
+    //   use this in tests.
+    //   Please ask if you need help with this.
     final var protocolConfig =
         new ProtocolConfig(
-            "babylon-genesis",
+            // List of triggers
             ImmutableList.of(
                 new ProtocolUpdateTrigger(
-                    "v2",
+                    "test-v2",
                     ProtocolUpdateEnactmentCondition.singleReadinessThresholdBetweenEpochs(
-                        5, 20, Decimal.ofNonNegativeFraction(7, 10), 1))));
+                        5, 20, Decimal.ofNonNegativeFraction(7, 10), 1))),
+            // Overrides map
+            Map.of());
 
     final var protocolConfigBytes =
         NodeSborCodecs.encode(protocolConfig, NodeSborCodecs.resolveCodec(new TypeToken<>() {}));
