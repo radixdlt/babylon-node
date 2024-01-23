@@ -52,9 +52,11 @@ public class PendingProtocolUpdate {
    * Gets or Sets readinessSignalStatus
    */
   public enum ReadinessSignalStatusEnum {
-    READINESS_SIGNAL_REQUIRED("READINESS_SIGNAL_REQUIRED"),
+    READINESS_SIGNALLED("READINESS_SIGNALLED"),
     
-    NO_ACTION_NEEDED("NO_ACTION_NEEDED");
+    READINESS_NOT_SIGNALLED("READINESS_NOT_SIGNALLED"),
+    
+    NO_SIGNAL_REQUIRED("NO_SIGNAL_REQUIRED");
 
     private String value;
 
