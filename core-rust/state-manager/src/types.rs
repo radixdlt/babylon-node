@@ -399,7 +399,7 @@ pub struct NextEpoch {
     pub validator_set: Vec<ActiveValidatorInfo>,
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct TimestampedValidatorSignature {
     pub key: Secp256k1PublicKey,
     pub validator_address: ComponentAddress,
@@ -426,13 +426,13 @@ pub struct LedgerProofV1 {
     pub timestamped_signatures: Vec<TimestampedValidatorSignature>,
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct LedgerProofV2 {
     pub ledger_header: LedgerHeader,
     pub origin: LedgerProofOrigin,
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum LedgerProofOrigin {
     Genesis {
         genesis_opaque_hash: Hash,
@@ -478,7 +478,7 @@ pub struct LedgerHeaderV1 {
     pub next_epoch: Option<NextEpoch>,
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct LedgerHeader {
     pub epoch: Epoch,
     pub round: Round,
