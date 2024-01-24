@@ -17,7 +17,7 @@ pub struct StreamTransactionsResponse {
     pub previous_state_identifiers: Option<Box<crate::core_api::generated::models::CommittedStateIdentifier>>,
     #[serde(rename = "from_state_version")]
     pub from_state_version: i64,
-    /// An integer between `0` and `10000`, giving the total count of transactions in the returned response
+    /// An integer between `0` and `10000`, giving the total count of proofs in the returned response
     #[serde(rename = "count")]
     pub count: i32,
     #[serde(rename = "max_ledger_state_version")]

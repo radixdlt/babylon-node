@@ -20,6 +20,8 @@ pub enum ErrorResponseType {
     LtsTransactionSubmit,
     #[serde(rename = "StreamTransactions")]
     StreamTransactions,
+    #[serde(rename = "StreamProofs")]
+    StreamProofs,
 
 }
 
@@ -30,6 +32,7 @@ impl ToString for ErrorResponseType {
             Self::TransactionSubmit => String::from("TransactionSubmit"),
             Self::LtsTransactionSubmit => String::from("LtsTransactionSubmit"),
             Self::StreamTransactions => String::from("StreamTransactions"),
+            Self::StreamProofs => String::from("StreamProofs"),
         }
     }
 }

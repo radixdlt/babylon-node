@@ -21,7 +21,8 @@ export const ErrorResponseType = {
     Basic: 'Basic',
     TransactionSubmit: 'TransactionSubmit',
     LtsTransactionSubmit: 'LtsTransactionSubmit',
-    StreamTransactions: 'StreamTransactions'
+    StreamTransactions: 'StreamTransactions',
+    StreamProofs: 'StreamProofs'
 } as const;
 export type ErrorResponseType = typeof ErrorResponseType[keyof typeof ErrorResponseType];
 

@@ -458,7 +458,7 @@ pub fn epoch_change_iter<'s, S: IterableProofStore + QueryableTransactionStore>(
     store: &'s S,
     from_epoch: Epoch,
 ) -> Box<dyn Iterator<Item = (StateVersion, EpochChangeEvent)> + 's> {
-    let epoch_iter = store.get_epoch_proof_iter(from_epoch);
+    let epoch_iter = store.get_next_epoch_proof_iter(from_epoch);
     Box::new(epoch_iter.map(|epoch_proof| {
         let next_epoch = epoch_proof
             .ledger_header

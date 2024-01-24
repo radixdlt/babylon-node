@@ -126,13 +126,13 @@ public class StreamTransactionsResponse {
   }
 
    /**
-   * An integer between &#x60;0&#x60; and &#x60;10000&#x60;, giving the total count of transactions in the returned response
+   * An integer between &#x60;0&#x60; and &#x60;10000&#x60;, giving the total count of proofs in the returned response
    * minimum: 0
    * maximum: 10000
    * @return count
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `10000`, giving the total count of transactions in the returned response")
+  @ApiModelProperty(required = true, value = "An integer between `0` and `10000`, giving the total count of proofs in the returned response")
   @JsonProperty(JSON_PROPERTY_COUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 

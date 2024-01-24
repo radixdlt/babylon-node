@@ -146,6 +146,8 @@ def generate_rust_models(schema_file, tmp_client_folder, out_location):
         fix_for_enum_not_implementing_default(file_path, "ObjectSubstateTypeReference")
         fix_for_enum_not_implementing_default(file_path, "GenericSubstitution")
         fix_for_enum_not_implementing_default(file_path, "LedgerProofOrigin")
+        fix_for_enum_not_implementing_default(file_path, "StreamProofsErrorDetails")
+        fix_for_enum_not_implementing_default(file_path, "StreamProofsFilter")
 
     logging.info("Successfully fixed up rust models.")
 

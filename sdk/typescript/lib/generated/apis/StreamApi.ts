@@ -15,18 +15,31 @@
 
 import * as runtime from '../runtime';
 import type {
-  BasicErrorResponse,
+  StreamProofsErrorResponse,
+  StreamProofsRequest,
+  StreamProofsResponse,
+  StreamTransactionsErrorResponse,
   StreamTransactionsRequest,
   StreamTransactionsResponse,
 } from '../models';
 import {
-    BasicErrorResponseFromJSON,
-    BasicErrorResponseToJSON,
+    StreamProofsErrorResponseFromJSON,
+    StreamProofsErrorResponseToJSON,
+    StreamProofsRequestFromJSON,
+    StreamProofsRequestToJSON,
+    StreamProofsResponseFromJSON,
+    StreamProofsResponseToJSON,
+    StreamTransactionsErrorResponseFromJSON,
+    StreamTransactionsErrorResponseToJSON,
     StreamTransactionsRequestFromJSON,
     StreamTransactionsRequestToJSON,
     StreamTransactionsResponseFromJSON,
     StreamTransactionsResponseToJSON,
 } from '../models';
+
+export interface StreamProofsPostRequest {
+    streamProofsRequest: StreamProofsRequest;
+}
 
 export interface StreamTransactionsPostRequest {
     streamTransactionsRequest: StreamTransactionsRequest;
@@ -36,6 +49,41 @@ export interface StreamTransactionsPostRequest {
  * 
  */
 export class StreamApi extends runtime.BaseAPI {
+
+    /**
+     * Returns a stream of proofs committed to the node\'s ledger.  NOTE: This endpoint may return different results on different nodes: * Each node may persist different subset of signatures on a given proofs, as long as enough of the validator set has signed. * Inside an epoch, different nodes may receive and persist / keep different proofs, subject to constraints on gaps between proofs.  Proofs during an epoch can also be garbage collected by the node after the fact. Therefore proofs may disappear from this stream.  Some proofs (such as during genesis and protocol update enactment) are created on a node and don\'t include signatures.  This stream accepts four different options in the request: * All proofs forward (from state version) * All end-of-epoch proofs (from epoch number) * All end-of-epoch proofs triggering a protocol update * All node-injected proofs enacting genesis or a protocol update (for protocol update name, from state version)  The end-of-epoch proofs can be used to \"trustlessly\" verify the validator set for a given epoch. By tracking the fact that validators for epoch N sign the next validator set for epoch N + 1, this chain of proofs can be used to provide proof of the current validator set from a hardcoded start.  When a validator set is known for a given epoch, this can be used to verify the various transaction hash trees in the epoch, and to prove other data.  NOTE: This endpoint was built after agreeing the new Radix convention for paged APIs. Its models therefore follow the new convention, rather than attempting to align with existing loose Core API conventions. 
+     * Stream Proofs
+     */
+    async streamProofsPostRaw(requestParameters: StreamProofsPostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<StreamProofsResponse>> {
+        if (requestParameters.streamProofsRequest === null || requestParameters.streamProofsRequest === undefined) {
+            throw new runtime.RequiredError('streamProofsRequest','Required parameter requestParameters.streamProofsRequest was null or undefined when calling streamProofsPost.');
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        const response = await this.request({
+            path: `/stream/proofs`,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: StreamProofsRequestToJSON(requestParameters.streamProofsRequest),
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => StreamProofsResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Returns a stream of proofs committed to the node\'s ledger.  NOTE: This endpoint may return different results on different nodes: * Each node may persist different subset of signatures on a given proofs, as long as enough of the validator set has signed. * Inside an epoch, different nodes may receive and persist / keep different proofs, subject to constraints on gaps between proofs.  Proofs during an epoch can also be garbage collected by the node after the fact. Therefore proofs may disappear from this stream.  Some proofs (such as during genesis and protocol update enactment) are created on a node and don\'t include signatures.  This stream accepts four different options in the request: * All proofs forward (from state version) * All end-of-epoch proofs (from epoch number) * All end-of-epoch proofs triggering a protocol update * All node-injected proofs enacting genesis or a protocol update (for protocol update name, from state version)  The end-of-epoch proofs can be used to \"trustlessly\" verify the validator set for a given epoch. By tracking the fact that validators for epoch N sign the next validator set for epoch N + 1, this chain of proofs can be used to provide proof of the current validator set from a hardcoded start.  When a validator set is known for a given epoch, this can be used to verify the various transaction hash trees in the epoch, and to prove other data.  NOTE: This endpoint was built after agreeing the new Radix convention for paged APIs. Its models therefore follow the new convention, rather than attempting to align with existing loose Core API conventions. 
+     * Stream Proofs
+     */
+    async streamProofsPost(requestParameters: StreamProofsPostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<StreamProofsResponse> {
+        const response = await this.streamProofsPostRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
 
     /**
      * Returns the list of committed transactions. 

@@ -17,7 +17,10 @@ import com.radixdlt.api.core.generated.client.ApiException;
 import com.radixdlt.api.core.generated.client.ApiResponse;
 import com.radixdlt.api.core.generated.client.Pair;
 
-import com.radixdlt.api.core.generated.models.BasicErrorResponse;
+import com.radixdlt.api.core.generated.models.StreamProofsErrorResponse;
+import com.radixdlt.api.core.generated.models.StreamProofsRequest;
+import com.radixdlt.api.core.generated.models.StreamProofsResponse;
+import com.radixdlt.api.core.generated.models.StreamTransactionsErrorResponse;
 import com.radixdlt.api.core.generated.models.StreamTransactionsRequest;
 import com.radixdlt.api.core.generated.models.StreamTransactionsResponse;
 
@@ -76,6 +79,84 @@ public class StreamApi {
     return operationId + " call failed with: " + statusCode + " - " + body;
   }
 
+  /**
+   * Stream Proofs
+   * Returns a stream of proofs committed to the node&#39;s ledger.  NOTE: This endpoint may return different results on different nodes: * Each node may persist different subset of signatures on a given proofs, as long as enough of the validator set has signed. * Inside an epoch, different nodes may receive and persist / keep different proofs, subject to constraints on gaps between proofs.  Proofs during an epoch can also be garbage collected by the node after the fact. Therefore proofs may disappear from this stream.  Some proofs (such as during genesis and protocol update enactment) are created on a node and don&#39;t include signatures.  This stream accepts four different options in the request: * All proofs forward (from state version) * All end-of-epoch proofs (from epoch number) * All end-of-epoch proofs triggering a protocol update * All node-injected proofs enacting genesis or a protocol update (for protocol update name, from state version)  The end-of-epoch proofs can be used to \&quot;trustlessly\&quot; verify the validator set for a given epoch. By tracking the fact that validators for epoch N sign the next validator set for epoch N + 1, this chain of proofs can be used to provide proof of the current validator set from a hardcoded start.  When a validator set is known for a given epoch, this can be used to verify the various transaction hash trees in the epoch, and to prove other data.  NOTE: This endpoint was built after agreeing the new Radix convention for paged APIs. Its models therefore follow the new convention, rather than attempting to align with existing loose Core API conventions. 
+   * @param streamProofsRequest  (required)
+   * @return StreamProofsResponse
+   * @throws ApiException if fails to make API call
+   */
+  public StreamProofsResponse streamProofsPost(StreamProofsRequest streamProofsRequest) throws ApiException {
+    ApiResponse<StreamProofsResponse> localVarResponse = streamProofsPostWithHttpInfo(streamProofsRequest);
+    return localVarResponse.getData();
+  }
+
+  /**
+   * Stream Proofs
+   * Returns a stream of proofs committed to the node&#39;s ledger.  NOTE: This endpoint may return different results on different nodes: * Each node may persist different subset of signatures on a given proofs, as long as enough of the validator set has signed. * Inside an epoch, different nodes may receive and persist / keep different proofs, subject to constraints on gaps between proofs.  Proofs during an epoch can also be garbage collected by the node after the fact. Therefore proofs may disappear from this stream.  Some proofs (such as during genesis and protocol update enactment) are created on a node and don&#39;t include signatures.  This stream accepts four different options in the request: * All proofs forward (from state version) * All end-of-epoch proofs (from epoch number) * All end-of-epoch proofs triggering a protocol update * All node-injected proofs enacting genesis or a protocol update (for protocol update name, from state version)  The end-of-epoch proofs can be used to \&quot;trustlessly\&quot; verify the validator set for a given epoch. By tracking the fact that validators for epoch N sign the next validator set for epoch N + 1, this chain of proofs can be used to provide proof of the current validator set from a hardcoded start.  When a validator set is known for a given epoch, this can be used to verify the various transaction hash trees in the epoch, and to prove other data.  NOTE: This endpoint was built after agreeing the new Radix convention for paged APIs. Its models therefore follow the new convention, rather than attempting to align with existing loose Core API conventions. 
+   * @param streamProofsRequest  (required)
+   * @return ApiResponse&lt;StreamProofsResponse&gt;
+   * @throws ApiException if fails to make API call
+   */
+  public ApiResponse<StreamProofsResponse> streamProofsPostWithHttpInfo(StreamProofsRequest streamProofsRequest) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = streamProofsPostRequestBuilder(streamProofsRequest);
+    try {
+      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
+          localVarRequestBuilder.build(),
+          HttpResponse.BodyHandlers.ofInputStream());
+      if (memberVarResponseInterceptor != null) {
+        memberVarResponseInterceptor.accept(localVarResponse);
+      }
+      try {
+        if (localVarResponse.statusCode()/ 100 != 2) {
+          throw getApiException("streamProofsPost", localVarResponse);
+        }
+        return new ApiResponse<StreamProofsResponse>(
+          localVarResponse.statusCode(),
+          localVarResponse.headers().map(),
+          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<StreamProofsResponse>() {}) // closes the InputStream
+          
+        );
+      } finally {
+      }
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new ApiException(e);
+    }
+  }
+
+  private HttpRequest.Builder streamProofsPostRequestBuilder(StreamProofsRequest streamProofsRequest) throws ApiException {
+    // verify the required parameter 'streamProofsRequest' is set
+    if (streamProofsRequest == null) {
+      throw new ApiException(400, "Missing the required parameter 'streamProofsRequest' when calling streamProofsPost");
+    }
+
+    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
+
+    String localVarPath = "/stream/proofs";
+
+    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+
+    localVarRequestBuilder.header("Content-Type", "application/json");
+    localVarRequestBuilder.header("Accept", "application/json");
+
+    try {
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(streamProofsRequest);
+      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    if (memberVarReadTimeout != null) {
+      localVarRequestBuilder.timeout(memberVarReadTimeout);
+    }
+    if (memberVarInterceptor != null) {
+      memberVarInterceptor.accept(localVarRequestBuilder);
+    }
+    return localVarRequestBuilder;
+  }
   /**
    * Get Committed Transactions
    * Returns the list of committed transactions. 

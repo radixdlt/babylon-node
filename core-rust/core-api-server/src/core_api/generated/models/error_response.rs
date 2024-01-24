@@ -39,6 +39,20 @@ pub enum ErrorResponse {
         #[serde(rename = "details", skip_serializing_if = "Option::is_none")]
         details: Option<Box<crate::core_api::generated::models::LtsTransactionSubmitErrorDetails>>,
     },
+    #[serde(rename="StreamProofs")]
+    StreamProofsErrorResponse {
+        /// A numeric code corresponding to the given HTTP error code.
+        #[serde(rename = "code")]
+        code: i32,
+        /// A human-readable error message.
+        #[serde(rename = "message")]
+        message: String,
+        /// A GUID to be used when reporting errors, to allow correlation with the Core API's error logs, in the case where the Core API details are hidden.
+        #[serde(rename = "trace_id", skip_serializing_if = "Option::is_none")]
+        trace_id: Option<String>,
+        #[serde(rename = "details", skip_serializing_if = "Option::is_none")]
+        details: Option<Box<crate::core_api::generated::models::StreamProofsErrorDetails>>,
+    },
     #[serde(rename="StreamTransactions")]
     StreamTransactionsErrorResponse {
         /// A numeric code corresponding to the given HTTP error code.

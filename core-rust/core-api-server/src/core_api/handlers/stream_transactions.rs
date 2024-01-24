@@ -253,6 +253,10 @@ pub fn to_api_ledger_header(
         }
         None => None,
     };
+    let next_protocol_version = ledger_header
+        .next_protocol_version
+        .map(|version| version.to_string());
+
     Ok(models::LedgerHeader {
         epoch: to_api_epoch(mapping_context, ledger_header.epoch)?,
         round: to_api_round(ledger_header.round)?,
@@ -267,6 +271,7 @@ pub fn to_api_ledger_header(
         consensus_parent_round_timestamp_ms: ledger_header.consensus_parent_round_timestamp_ms,
         proposer_timestamp_ms: ledger_header.proposer_timestamp_ms,
         next_epoch,
+        next_protocol_version,
     })
 }
 

@@ -34,7 +34,9 @@ public enum ErrorResponseType {
   
   LTSTRANSACTIONSUBMIT("LtsTransactionSubmit"),
   
-  STREAMTRANSACTIONS("StreamTransactions");
+  STREAMTRANSACTIONS("StreamTransactions"),
+  
+  STREAMPROOFS("StreamProofs");
 
   private String value;
 

@@ -262,13 +262,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TransactionSubmitErrorResponse"
+                $ref: "#/components/schemas/LtsTransactionSubmitErrorResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TransactionSubmitErrorResponse"
+                $ref: "#/components/schemas/LtsTransactionSubmitErrorResponse"
   "/lts/transaction/status":
     post:
       summary: Get Transaction Status
@@ -788,6 +788,67 @@ paths:
 ##################
 # Stream Sub-API #
 ##################
+  "/stream/proofs":
+    post:
+      summary: Stream Proofs
+      description: |
+        Returns a stream of proofs committed to the node's ledger.
+        
+        NOTE: This endpoint may return different results on different nodes:
+        * Each node may persist different subset of signatures on a given proofs, as long as enough
+        of the validator set has signed.
+        * Inside an epoch, different nodes may receive and persist / keep different proofs, subject to
+        constraints on gaps between proofs.
+        
+        Proofs during an epoch can also be garbage collected by the node after the fact. Therefore
+        proofs may disappear from this stream.
+
+        Some proofs (such as during genesis and protocol update enactment) are created on a node and don't
+        include signatures.
+
+        This stream accepts four different options in the request:
+        * All proofs forward (from state version)
+        * All end-of-epoch proofs (from epoch number)
+        * All end-of-epoch proofs triggering a protocol update
+        * All node-injected proofs enacting genesis or a protocol update (for protocol update name, from state version)
+        
+        The end-of-epoch proofs can be used to "trustlessly" verify the validator set for a given epoch.
+        By tracking the fact that validators for epoch N sign the next validator set for epoch N + 1,
+        this chain of proofs can be used to provide proof of the current validator set from a hardcoded
+        start.
+
+        When a validator set is known for a given epoch, this can be used to verify the various transaction
+        hash trees in the epoch, and to prove other data.
+
+        NOTE: This endpoint was built after agreeing the new Radix convention for paged APIs. Its models
+        therefore follow the new convention, rather than attempting to align with existing loose Core API conventions.
+      tags:
+        - Stream
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StreamProofsRequest"
+      responses:
+        '200':
+          description: Stream proofs response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StreamProofsResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StreamProofsErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StreamProofsErrorResponse"
   "/stream/transactions":
     post:
       summary: Get Committed Transactions
@@ -813,13 +874,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/BasicErrorResponse"
+                $ref: "#/components/schemas/StreamTransactionsErrorResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/BasicErrorResponse"
+                $ref: "#/components/schemas/StreamTransactionsErrorResponse"
 #################
 # State Sub-API #
 #################
@@ -1184,6 +1245,54 @@ components:
         previous:
           description: Whether to return the previous substate value for updates and deletes (default false)
           type: boolean
+############################################
+# GENERAL / SHARED MODELS - General Models #
+############################################
+    ErrorResponseType:
+      type: string
+      enum:
+        - Basic
+        - TransactionSubmit
+        - LtsTransactionSubmit
+        - StreamTransactions
+        - StreamProofs
+    ErrorResponse:
+      type: object
+      discriminator:
+        propertyName: error_type
+        mapping:
+          # NOTE: These need to match ErrorResponseType
+          Basic: "#/components/schemas/BasicErrorResponse"
+          TransactionSubmit: "#/components/schemas/TransactionSubmitErrorResponse"
+          LtsTransactionSubmit: "#/components/schemas/LtsTransactionSubmitErrorResponse"
+          StreamTransactions: "#/components/schemas/StreamTransactionsErrorResponse"
+          StreamProofs: "#/components/schemas/StreamProofsErrorResponse"
+      required:
+        - error_type
+        - code
+        - message
+      properties:
+        error_type:
+          $ref: "#/components/schemas/ErrorResponseType"
+        code:
+          type: integer
+          description: A numeric code corresponding to the given HTTP error code.
+        message:
+          description: A human-readable error message.
+          type: string
+        trace_id:
+          description: A GUID to be used when reporting errors, to allow correlation with the Core API's error logs, in the case where the Core API details are hidden.
+          type: string
+    BasicErrorResponse:
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+        - type: object
+    ContinuationToken:
+      type: string
+      description: |
+        A continuation token is returned if and only if there are further non-empty pages of items currently available.
+        The token can be provided in a following request to fetch the next page of results.
+        The filter and sort should not be changed when re-using the continuation token.
 ###########################################################
 # GENERAL / SHARED MODELS - General / Numeric / Utilities #
 ###########################################################
@@ -1632,43 +1741,6 @@ components:
             Whether the intent was committed in a transaction with the same payload.
             This is a convenience field, which can also be computed using `payload_hash` by a client
             knowing the payload of the submitted transaction.
-    ErrorResponseType:
-      type: string
-      enum:
-        - Basic
-        - TransactionSubmit
-        - LtsTransactionSubmit
-        - StreamTransactions
-    ErrorResponse:
-      type: object
-      discriminator:
-        propertyName: error_type
-        mapping:
-          # NOTE: These need to match ErrorResponseType
-          Basic: "#/components/schemas/BasicErrorResponse"
-          TransactionSubmit: "#/components/schemas/TransactionSubmitErrorResponse"
-          LtsTransactionSubmit: "#/components/schemas/LtsTransactionSubmitErrorResponse"
-          StreamTransactions: "#/components/schemas/StreamTransactionsErrorResponse"
-      required:
-        - error_type
-        - code
-        - message
-      properties:
-        error_type:
-          $ref: "#/components/schemas/ErrorResponseType"
-        code:
-          type: integer
-          description: A numeric code corresponding to the given HTTP error code.
-        message:
-          description: A human-readable error message.
-          type: string
-        trace_id:
-          description: A GUID to be used when reporting errors, to allow correlation with the Core API's error logs, in the case where the Core API details are hidden.
-          type: string
-    BasicErrorResponse:
-      allOf:
-        - $ref: "#/components/schemas/ErrorResponse"
-        - type: object
 ######################################
 # GENERAL / SHARED MODELS - Receipts #
 ######################################
@@ -7072,6 +7144,184 @@ components:
                 type: string
               message:
                 type: string
+############################
+# REQUEST: /stream/proofs #
+###########################
+    StreamProofsRequest:
+      description: |
+        A request to retrieve a sublist of proofs.
+      type: object
+      required:
+        - network
+        - filter
+      properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
+        filter:
+          $ref: "#/components/schemas/StreamProofsFilter"
+        max_page_size:
+          description: If specified, the maximum number of proofs that will be returned.
+          type: integer
+        continuation_token:
+          $ref: "#/components/schemas/ContinuationToken"
+    StreamProofsFilterType:
+      type: string
+      enum:
+        - All
+        - NewEpochs
+        - ProtocolUpdateTriggers
+        - ProtocolUpdateExecution
+    StreamProofsFilter:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/StreamProofsFilterType"
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match StreamProofsFilterType
+          All: '#/components/schemas/StreamProofsFilterAll'
+          NewEpochs: '#/components/schemas/StreamProofsFilterNewEpochs'
+          ProtocolUpdateInitializations: '#/components/schemas/StreamProofsFilterProtocolUpdateInitializations'
+          ProtocolUpdateExecution: '#/components/schemas/StreamProofsFilterProtocolUpdateExecution'
+    StreamProofsFilterAll:
+      allOf:
+        - $ref: "#/components/schemas/StreamProofsFilter"
+        - type: object
+          properties:
+            from_state_version:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 10000000000
+              description:
+                An integer between `0` and `10^10`, marking that the first proof to be returned should be at this state version or above.
+                If empty, it starts from 0.
+    StreamProofsFilterNewEpochs:
+      allOf:
+        - $ref: "#/components/schemas/StreamProofsFilter"
+        - type: object
+          properties:
+            from_epoch:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 10000000000
+              description:
+                An integer between `0` and `10^10`, marking that the first proof to be returned should be the proof starting this epoch.
+                If empty, it starts from the first epoch proof after genesis.
+                The network status endpoint can be used to find the current epoch.
+    StreamProofsFilterProtocolUpdateInitializations:
+      allOf:
+        - $ref: "#/components/schemas/StreamProofsFilter"
+        - type: object
+          properties:
+            from_state_version:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 10000000000
+              description:
+                An integer between `0` and `10^10`, marking that the first proof to be returned should be at this state version or above.
+                If empty, it starts from 0.
+    StreamProofsFilterProtocolUpdateExecution:
+      allOf:
+        - $ref: "#/components/schemas/StreamProofsFilter"
+        - type: object
+          properties:
+            protocol_version:
+              type: string
+              description: |
+                The protocol version name to filter to. This can be returned from looking at the protocol updates.
+            from_state_version:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 10000000000
+              description:
+                An integer between `0` and `10^10`, marking that the first proof to be returned should be at this state version or above.
+                If empty, it starts from 0.
+    StreamProofsResponse:
+      type: object
+      required:
+        - page
+      properties:
+        page:
+          description: A page of ledger proofs stored by this node.
+          type: array
+          items:
+            $ref: "#/components/schemas/LedgerProof"
+        continuation_token:
+          $ref: "#/components/schemas/ContinuationToken"
+    StreamProofsErrorResponse:
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+        - type: object
+          properties:
+            details:
+              $ref: "#/components/schemas/StreamProofsErrorDetails"
+    StreamProofsErrorDetailsType:
+      type: string
+      enum:
+        - RequestedStateVersionOutOfBounds
+        - RequestedEpochOutOfBounds
+    StreamProofsErrorDetails:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/StreamProofsErrorDetailsType"
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match StreamProofsErrorDetailsType
+          RequestedStateVersionOutOfBounds: '#/components/schemas/StreamProofsErrorDetailsRequestedStateVersionOutOfBounds'
+          RequestedEpochOutOfBounds: '#/components/schemas/StreamProofsErrorDetailsRequestedEpochOutOfBounds'
+    StreamProofsErrorDetailsRequestedStateVersionOutOfBounds:
+      allOf:
+        - $ref: "#/components/schemas/StreamProofsErrorDetails"
+        - type: object
+          required:
+            - max_ledger_state_version
+          properties:
+            max_ledger_state_version:
+              $ref: "#/components/schemas/StateVersion"
+              description: |
+                The maximum state version currently committed on this node's ledger.
+                *Note on the bounds:* the requested `from_state_version` cannot be greater than
+                `max_ledger_state_version + 1`. Any greater requested value triggers this error.
+    StreamProofsErrorDetailsRequestedEpochOutOfBounds:
+      allOf:
+        - $ref: "#/components/schemas/StreamProofsErrorDetails"
+        - type: object
+          required:
+            - max_ledger_epoch
+          properties:
+            max_ledger_epoch:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 10000000000
+              description: |
+                The maximum completed epoch committed to this node's ledger.
+                *Note on the bounds:* the requested `from_epoch` cannot be greater than
+                `max_ledger_epoch + 1`. Any greater requested value triggers this error.
+    EpochEndLedgerProof:
+      type: object
+      required:
+        - end_of_epoch
+        - ledger_proof
+      properties:
+        end_of_epoch:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+        ledger_proof:
+          $ref: "#/components/schemas/LedgerProof"
 #################################
 # REQUEST: /stream/transactions #
 #################################
@@ -7125,7 +7375,7 @@ components:
           format: int32
           minimum: 0
           maximum: 10000
-          description: An integer between `0` and `10000`, giving the total count of transactions in the returned response
+          description: An integer between `0` and `10000`, giving the total count of proofs in the returned response
         max_ledger_state_version:
           $ref: "#/components/schemas/StateVersion"
           description: The maximum state version currently committed on this node's ledger.
@@ -7328,6 +7578,9 @@ components:
           description: An integer between `0` and `10^14`, marking the proposer timestamp in ms.
         next_epoch:
           $ref: "#/components/schemas/NextEpoch"
+        next_protocol_version:
+          type: string
+          description: If present, indicates that this proof triggers the enactment of the given protocol version.
     TimestampedValidatorSignature:
       type: object
       required:

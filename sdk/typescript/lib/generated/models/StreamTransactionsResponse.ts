@@ -51,7 +51,7 @@ export interface StreamTransactionsResponse {
      */
     from_state_version: number;
     /**
-     * An integer between `0` and `10000`, giving the total count of transactions in the returned response
+     * An integer between `0` and `10000`, giving the total count of proofs in the returned response
      * @type {number}
      * @memberof StreamTransactionsResponse
      */

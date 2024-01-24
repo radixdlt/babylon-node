@@ -31,6 +31,9 @@ pub struct LedgerHeader {
     pub proposer_timestamp_ms: i64,
     #[serde(rename = "next_epoch", skip_serializing_if = "Option::is_none")]
     pub next_epoch: Option<Box<crate::core_api::generated::models::NextEpoch>>,
+    /// If present, indicates that this proof triggers the enactment of the given protocol version.
+    #[serde(rename = "next_protocol_version", skip_serializing_if = "Option::is_none")]
+    pub next_protocol_version: Option<String>,
 }
 
 impl LedgerHeader {
@@ -43,6 +46,7 @@ impl LedgerHeader {
             consensus_parent_round_timestamp_ms,
             proposer_timestamp_ms,
             next_epoch: None,
+            next_protocol_version: None,
         }
     }
 }

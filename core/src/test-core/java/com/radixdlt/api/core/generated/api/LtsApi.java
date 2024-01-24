@@ -32,9 +32,9 @@ import com.radixdlt.api.core.generated.models.LtsTransactionConstructionRequest;
 import com.radixdlt.api.core.generated.models.LtsTransactionConstructionResponse;
 import com.radixdlt.api.core.generated.models.LtsTransactionStatusRequest;
 import com.radixdlt.api.core.generated.models.LtsTransactionStatusResponse;
+import com.radixdlt.api.core.generated.models.LtsTransactionSubmitErrorResponse;
 import com.radixdlt.api.core.generated.models.LtsTransactionSubmitRequest;
 import com.radixdlt.api.core.generated.models.LtsTransactionSubmitResponse;
-import com.radixdlt.api.core.generated.models.TransactionSubmitErrorResponse;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;

@@ -212,7 +212,7 @@ impl VersionedCf for LedgerProofsCf {
     type VersionedValue = VersionedLedgerProof;
 }
 
-/// Ledger proofs of epochs.
+/// Ledger proofs of new epochs - i.e. the proofs which trigger the given `next_epoch`.
 /// Schema: `Epoch.to_bytes()` -> `scrypto_encode(VersionedLedgerProof)`
 /// Note: This duplicates a small subset of [`LedgerProofsCf`]'s values.
 struct EpochLedgerProofsCf;
@@ -1111,7 +1111,7 @@ impl IterableProofStore for RocksDBStore {
         )
     }
 
-    fn get_epoch_proof_iter(
+    fn get_next_epoch_proof_iter(
         &self,
         from_epoch: Epoch,
     ) -> Box<dyn Iterator<Item = LedgerProof> + '_> {
@@ -1130,6 +1130,18 @@ impl IterableProofStore for RocksDBStore {
         Box::new(
             self.open_db_context()
                 .cf(ProtocolUpdateInitLedgerProofsCf)
+                .iterate_from(&from_state_version, Direction::Forward)
+                .map(|(_, proof)| proof),
+        )
+    }
+
+    fn get_protocol_update_execution_proof_iter(
+        &self,
+        from_state_version: StateVersion,
+    ) -> Box<dyn Iterator<Item = LedgerProof> + '_> {
+        Box::new(
+            self.open_db_context()
+                .cf(ProtocolUpdateExecutionLedgerProofsCf)
                 .iterate_from(&from_state_version, Direction::Forward)
                 .map(|(_, proof)| proof),
         )

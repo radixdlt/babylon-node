@@ -30,9 +30,9 @@ import type {
   LtsTransactionConstructionResponse,
   LtsTransactionStatusRequest,
   LtsTransactionStatusResponse,
+  LtsTransactionSubmitErrorResponse,
   LtsTransactionSubmitRequest,
   LtsTransactionSubmitResponse,
-  TransactionSubmitErrorResponse,
 } from '../models';
 import {
     BasicErrorResponseFromJSON,
@@ -65,12 +65,12 @@ import {
     LtsTransactionStatusRequestToJSON,
     LtsTransactionStatusResponseFromJSON,
     LtsTransactionStatusResponseToJSON,
+    LtsTransactionSubmitErrorResponseFromJSON,
+    LtsTransactionSubmitErrorResponseToJSON,
     LtsTransactionSubmitRequestFromJSON,
     LtsTransactionSubmitRequestToJSON,
     LtsTransactionSubmitResponseFromJSON,
     LtsTransactionSubmitResponseToJSON,
-    TransactionSubmitErrorResponseFromJSON,
-    TransactionSubmitErrorResponseToJSON,
 } from '../models';
 
 export interface LtsStateAccountAllFungibleResourceBalancesPostRequest {
