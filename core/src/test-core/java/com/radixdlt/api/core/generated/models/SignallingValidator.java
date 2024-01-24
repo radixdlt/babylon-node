@@ -22,83 +22,84 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.ActiveValidatorIndex;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * StateConsensusManagerRequest
+ * SignallingValidator
  */
 @JsonPropertyOrder({
-  StateConsensusManagerRequest.JSON_PROPERTY_NETWORK,
-  StateConsensusManagerRequest.JSON_PROPERTY_INCLUDE_READINESS_SIGNALS
+  SignallingValidator.JSON_PROPERTY_INDEX,
+  SignallingValidator.JSON_PROPERTY_ACTIVE_STAKE_PROPORTION
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class StateConsensusManagerRequest {
-  public static final String JSON_PROPERTY_NETWORK = "network";
-  private String network;
+public class SignallingValidator {
+  public static final String JSON_PROPERTY_INDEX = "index";
+  private ActiveValidatorIndex index;
 
-  public static final String JSON_PROPERTY_INCLUDE_READINESS_SIGNALS = "include_readiness_signals";
-  private Boolean includeReadinessSignals;
+  public static final String JSON_PROPERTY_ACTIVE_STAKE_PROPORTION = "active_stake_proportion";
+  private String activeStakeProportion;
 
-  public StateConsensusManagerRequest() { 
+  public SignallingValidator() { 
   }
 
-  public StateConsensusManagerRequest network(String network) {
-    this.network = network;
+  public SignallingValidator index(ActiveValidatorIndex index) {
+    this.index = index;
     return this;
   }
 
    /**
-   * The logical name of the network
-   * @return network
+   * Get index
+   * @return index
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(example = "{{network}}", required = true, value = "The logical name of the network")
-  @JsonProperty(JSON_PROPERTY_NETWORK)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_INDEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getNetwork() {
-    return network;
+  public ActiveValidatorIndex getIndex() {
+    return index;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_NETWORK)
+  @JsonProperty(JSON_PROPERTY_INDEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNetwork(String network) {
-    this.network = network;
+  public void setIndex(ActiveValidatorIndex index) {
+    this.index = index;
   }
 
 
-  public StateConsensusManagerRequest includeReadinessSignals(Boolean includeReadinessSignals) {
-    this.includeReadinessSignals = includeReadinessSignals;
+  public SignallingValidator activeStakeProportion(String activeStakeProportion) {
+    this.activeStakeProportion = activeStakeProportion;
     return this;
   }
 
    /**
-   * Whether to include protocol update readiness signals of active validator set (default false).
-   * @return includeReadinessSignals
+   * A proportion (between 0 and 1) of the total active stake of an entire &#x60;current_validator_set&#x60; (i.e. an easily-computable convenience field). This is a string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(192 - 1) &lt;&#x3D; m &lt; 2^(192 - 1)&#x60;. 
+   * @return activeStakeProportion
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "Whether to include protocol update readiness signals of active validator set (default false).")
-  @JsonProperty(JSON_PROPERTY_INCLUDE_READINESS_SIGNALS)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "A proportion (between 0 and 1) of the total active stake of an entire `current_validator_set` (i.e. an easily-computable convenience field). This is a string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. ")
+  @JsonProperty(JSON_PROPERTY_ACTIVE_STAKE_PROPORTION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Boolean getIncludeReadinessSignals() {
-    return includeReadinessSignals;
+  public String getActiveStakeProportion() {
+    return activeStakeProportion;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_INCLUDE_READINESS_SIGNALS)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setIncludeReadinessSignals(Boolean includeReadinessSignals) {
-    this.includeReadinessSignals = includeReadinessSignals;
+  @JsonProperty(JSON_PROPERTY_ACTIVE_STAKE_PROPORTION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setActiveStakeProportion(String activeStakeProportion) {
+    this.activeStakeProportion = activeStakeProportion;
   }
 
 
   /**
-   * Return true if this StateConsensusManagerRequest object is equal to o.
+   * Return true if this SignallingValidator object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -108,22 +109,22 @@ public class StateConsensusManagerRequest {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    StateConsensusManagerRequest stateConsensusManagerRequest = (StateConsensusManagerRequest) o;
-    return Objects.equals(this.network, stateConsensusManagerRequest.network) &&
-        Objects.equals(this.includeReadinessSignals, stateConsensusManagerRequest.includeReadinessSignals);
+    SignallingValidator signallingValidator = (SignallingValidator) o;
+    return Objects.equals(this.index, signallingValidator.index) &&
+        Objects.equals(this.activeStakeProportion, signallingValidator.activeStakeProportion);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(network, includeReadinessSignals);
+    return Objects.hash(index, activeStakeProportion);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class StateConsensusManagerRequest {\n");
-    sb.append("    network: ").append(toIndentedString(network)).append("\n");
-    sb.append("    includeReadinessSignals: ").append(toIndentedString(includeReadinessSignals)).append("\n");
+    sb.append("class SignallingValidator {\n");
+    sb.append("    index: ").append(toIndentedString(index)).append("\n");
+    sb.append("    activeStakeProportion: ").append(toIndentedString(activeStakeProportion)).append("\n");
     sb.append("}");
     return sb.toString();
   }
