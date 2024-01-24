@@ -108,8 +108,15 @@ public final class EpochManagerValidatorNonFungibleResourceAndDataStateTest
               .get(0)
               .getAddress();
 
-      // the information was requested, but no protocol update readiness was signalled
-      assertThat(stateConsensusManagerResponse.getCurrentValidatorReadinessSignals()).isEmpty();
+      assertThat(stateConsensusManagerResponse.getCurrentValidatorReadinessSignals())
+          .containsExactly(
+              new ProtocolVersionReadiness()
+                  .signalledProtocolVersion(null) // our validator does not signal anything
+                  .totalActiveStakeProportion("1") // it is the only validator
+                  .addSignallingValidatorsItem(
+                      new SignallingValidator()
+                          .index(new ActiveValidatorIndex().index(0))
+                          .activeStakeProportion("1")));
 
       final var validatorResponse =
           getStateApi()

@@ -81,7 +81,8 @@ export interface StateConsensusManagerResponse {
      */
     current_time_rounded_to_minutes: Substate;
     /**
-     * Protocol versions signalled by current Validator set.
+     * Protocol versions signalled by the current validator set.
+     * Every validator from `current_validator_set` will be referenced by exactly one of the items here.
      * Only returned if enabled by `include_readiness_signals` on your request.
      * @type {Array<ProtocolVersionReadiness>}
      * @memberof StateConsensusManagerResponse

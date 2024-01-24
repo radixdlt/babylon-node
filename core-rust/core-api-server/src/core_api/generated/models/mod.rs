@@ -922,6 +922,8 @@ pub mod scoped_type_id;
 pub use self::scoped_type_id::ScopedTypeId;
 pub mod scrypto_schema;
 pub use self::scrypto_schema::ScryptoSchema;
+pub mod signalling_validator;
+pub use self::signalling_validator::SignallingValidator;
 pub mod signature;
 pub use self::signature::Signature;
 pub mod signature_with_public_key;

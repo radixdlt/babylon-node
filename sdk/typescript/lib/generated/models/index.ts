@@ -499,6 +499,7 @@ export * from './SchemaEntryValue';
 export * from './SchemaKey';
 export * from './ScopedTypeId';
 export * from './ScryptoSchema';
+export * from './SignallingValidator';
 export * from './Signature';
 export * from './SignatureBase';
 export * from './SignatureWithPublicKey';

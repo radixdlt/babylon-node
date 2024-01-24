@@ -12,24 +12,19 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct ProtocolVersionReadiness {
-    /// A name identifying a protocol version. May be absent to denote no readiness signalled by the `signalling_validators`. 
-    #[serde(rename = "signalled_protocol_version", skip_serializing_if = "Option::is_none")]
-    pub signalled_protocol_version: Option<String>,
-    /// A sum of `active_stake_proportion` across `signalling_validators` (i.e. an easily-computable convenience field). This is a string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. 
-    #[serde(rename = "total_active_stake_proportion")]
-    pub total_active_stake_proportion: String,
-    /// References to some of the current validators (i.e. a subset of `current_validator_set`) which have signalled readiness for the `signalled_protocol_version`. 
-    #[serde(rename = "signalling_validators")]
-    pub signalling_validators: Vec<crate::core_api::generated::models::SignallingValidator>,
+pub struct SignallingValidator {
+    #[serde(rename = "index")]
+    pub index: Box<crate::core_api::generated::models::ActiveValidatorIndex>,
+    /// A proportion (between 0 and 1) of the total active stake of an entire `current_validator_set` (i.e. an easily-computable convenience field). This is a string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. 
+    #[serde(rename = "active_stake_proportion")]
+    pub active_stake_proportion: String,
 }
 
-impl ProtocolVersionReadiness {
-    pub fn new(total_active_stake_proportion: String, signalling_validators: Vec<crate::core_api::generated::models::SignallingValidator>) -> ProtocolVersionReadiness {
-        ProtocolVersionReadiness {
-            signalled_protocol_version: None,
-            total_active_stake_proportion,
-            signalling_validators,
+impl SignallingValidator {
+    pub fn new(index: crate::core_api::generated::models::ActiveValidatorIndex, active_stake_proportion: String) -> SignallingValidator {
+        SignallingValidator {
+            index: Box::new(index),
+            active_stake_proportion,
         }
     }
 }

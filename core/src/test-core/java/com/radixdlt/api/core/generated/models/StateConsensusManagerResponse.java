@@ -270,11 +270,11 @@ public class StateConsensusManagerResponse {
   }
 
    /**
-   * Protocol versions signalled by current Validator set. Only returned if enabled by &#x60;include_readiness_signals&#x60; on your request. 
+   * Protocol versions signalled by the current validator set. Every validator from &#x60;current_validator_set&#x60; will be referenced by exactly one of the items here. Only returned if enabled by &#x60;include_readiness_signals&#x60; on your request. 
    * @return currentValidatorReadinessSignals
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "Protocol versions signalled by current Validator set. Only returned if enabled by `include_readiness_signals` on your request. ")
+  @ApiModelProperty(value = "Protocol versions signalled by the current validator set. Every validator from `current_validator_set` will be referenced by exactly one of the items here. Only returned if enabled by `include_readiness_signals` on your request. ")
   @JsonProperty(JSON_PROPERTY_CURRENT_VALIDATOR_READINESS_SIGNALS)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 

@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.SignallingValidator;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -34,15 +35,19 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   ProtocolVersionReadiness.JSON_PROPERTY_SIGNALLED_PROTOCOL_VERSION,
-  ProtocolVersionReadiness.JSON_PROPERTY_SIGNALLING_VALIDATOR_ADDRESSES
+  ProtocolVersionReadiness.JSON_PROPERTY_TOTAL_ACTIVE_STAKE_PROPORTION,
+  ProtocolVersionReadiness.JSON_PROPERTY_SIGNALLING_VALIDATORS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ProtocolVersionReadiness {
   public static final String JSON_PROPERTY_SIGNALLED_PROTOCOL_VERSION = "signalled_protocol_version";
   private String signalledProtocolVersion;
 
-  public static final String JSON_PROPERTY_SIGNALLING_VALIDATOR_ADDRESSES = "signalling_validator_addresses";
-  private List<String> signallingValidatorAddresses = new ArrayList<>();
+  public static final String JSON_PROPERTY_TOTAL_ACTIVE_STAKE_PROPORTION = "total_active_stake_proportion";
+  private String totalActiveStakeProportion;
+
+  public static final String JSON_PROPERTY_SIGNALLING_VALIDATORS = "signalling_validators";
+  private List<SignallingValidator> signallingValidators = new ArrayList<>();
 
   public ProtocolVersionReadiness() { 
   }
@@ -53,13 +58,13 @@ public class ProtocolVersionReadiness {
   }
 
    /**
-   * A name identifying a protocol version.
+   * A name identifying a protocol version. May be absent to denote no readiness signalled by the &#x60;signalling_validators&#x60;. 
    * @return signalledProtocolVersion
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "A name identifying a protocol version.")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "A name identifying a protocol version. May be absent to denote no readiness signalled by the `signalling_validators`. ")
   @JsonProperty(JSON_PROPERTY_SIGNALLED_PROTOCOL_VERSION)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
   public String getSignalledProtocolVersion() {
     return signalledProtocolVersion;
@@ -67,40 +72,66 @@ public class ProtocolVersionReadiness {
 
 
   @JsonProperty(JSON_PROPERTY_SIGNALLED_PROTOCOL_VERSION)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setSignalledProtocolVersion(String signalledProtocolVersion) {
     this.signalledProtocolVersion = signalledProtocolVersion;
   }
 
 
-  public ProtocolVersionReadiness signallingValidatorAddresses(List<String> signallingValidatorAddresses) {
-    this.signallingValidatorAddresses = signallingValidatorAddresses;
-    return this;
-  }
-
-  public ProtocolVersionReadiness addSignallingValidatorAddressesItem(String signallingValidatorAddressesItem) {
-    this.signallingValidatorAddresses.add(signallingValidatorAddressesItem);
+  public ProtocolVersionReadiness totalActiveStakeProportion(String totalActiveStakeProportion) {
+    this.totalActiveStakeProportion = totalActiveStakeProportion;
     return this;
   }
 
    /**
-   * Addresses of current validators (i.e. a subset of &#x60;current_validator_set&#x60;) which have signalled readiness for the &#x60;signalled_protocol_version&#x60;. 
-   * @return signallingValidatorAddresses
+   * A sum of &#x60;active_stake_proportion&#x60; across &#x60;signalling_validators&#x60; (i.e. an easily-computable convenience field). This is a string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(192 - 1) &lt;&#x3D; m &lt; 2^(192 - 1)&#x60;. 
+   * @return totalActiveStakeProportion
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "Addresses of current validators (i.e. a subset of `current_validator_set`) which have signalled readiness for the `signalled_protocol_version`. ")
-  @JsonProperty(JSON_PROPERTY_SIGNALLING_VALIDATOR_ADDRESSES)
+  @ApiModelProperty(required = true, value = "A sum of `active_stake_proportion` across `signalling_validators` (i.e. an easily-computable convenience field). This is a string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. ")
+  @JsonProperty(JSON_PROPERTY_TOTAL_ACTIVE_STAKE_PROPORTION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<String> getSignallingValidatorAddresses() {
-    return signallingValidatorAddresses;
+  public String getTotalActiveStakeProportion() {
+    return totalActiveStakeProportion;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_SIGNALLING_VALIDATOR_ADDRESSES)
+  @JsonProperty(JSON_PROPERTY_TOTAL_ACTIVE_STAKE_PROPORTION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSignallingValidatorAddresses(List<String> signallingValidatorAddresses) {
-    this.signallingValidatorAddresses = signallingValidatorAddresses;
+  public void setTotalActiveStakeProportion(String totalActiveStakeProportion) {
+    this.totalActiveStakeProportion = totalActiveStakeProportion;
+  }
+
+
+  public ProtocolVersionReadiness signallingValidators(List<SignallingValidator> signallingValidators) {
+    this.signallingValidators = signallingValidators;
+    return this;
+  }
+
+  public ProtocolVersionReadiness addSignallingValidatorsItem(SignallingValidator signallingValidatorsItem) {
+    this.signallingValidators.add(signallingValidatorsItem);
+    return this;
+  }
+
+   /**
+   * References to some of the current validators (i.e. a subset of &#x60;current_validator_set&#x60;) which have signalled readiness for the &#x60;signalled_protocol_version&#x60;. 
+   * @return signallingValidators
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "References to some of the current validators (i.e. a subset of `current_validator_set`) which have signalled readiness for the `signalled_protocol_version`. ")
+  @JsonProperty(JSON_PROPERTY_SIGNALLING_VALIDATORS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public List<SignallingValidator> getSignallingValidators() {
+    return signallingValidators;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_SIGNALLING_VALIDATORS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setSignallingValidators(List<SignallingValidator> signallingValidators) {
+    this.signallingValidators = signallingValidators;
   }
 
 
@@ -117,12 +148,13 @@ public class ProtocolVersionReadiness {
     }
     ProtocolVersionReadiness protocolVersionReadiness = (ProtocolVersionReadiness) o;
     return Objects.equals(this.signalledProtocolVersion, protocolVersionReadiness.signalledProtocolVersion) &&
-        Objects.equals(this.signallingValidatorAddresses, protocolVersionReadiness.signallingValidatorAddresses);
+        Objects.equals(this.totalActiveStakeProportion, protocolVersionReadiness.totalActiveStakeProportion) &&
+        Objects.equals(this.signallingValidators, protocolVersionReadiness.signallingValidators);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(signalledProtocolVersion, signallingValidatorAddresses);
+    return Objects.hash(signalledProtocolVersion, totalActiveStakeProportion, signallingValidators);
   }
 
   @Override
@@ -130,7 +162,8 @@ public class ProtocolVersionReadiness {
     StringBuilder sb = new StringBuilder();
     sb.append("class ProtocolVersionReadiness {\n");
     sb.append("    signalledProtocolVersion: ").append(toIndentedString(signalledProtocolVersion)).append("\n");
-    sb.append("    signallingValidatorAddresses: ").append(toIndentedString(signallingValidatorAddresses)).append("\n");
+    sb.append("    totalActiveStakeProportion: ").append(toIndentedString(totalActiveStakeProportion)).append("\n");
+    sb.append("    signallingValidators: ").append(toIndentedString(signallingValidators)).append("\n");
     sb.append("}");
     return sb.toString();
   }

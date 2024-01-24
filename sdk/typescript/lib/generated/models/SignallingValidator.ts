@@ -13,71 +13,62 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { SignallingValidator } from './SignallingValidator';
+import type { ActiveValidatorIndex } from './ActiveValidatorIndex';
 import {
-    SignallingValidatorFromJSON,
-    SignallingValidatorFromJSONTyped,
-    SignallingValidatorToJSON,
-} from './SignallingValidator';
+    ActiveValidatorIndexFromJSON,
+    ActiveValidatorIndexFromJSONTyped,
+    ActiveValidatorIndexToJSON,
+} from './ActiveValidatorIndex';
 
 /**
  * 
  * @export
- * @interface ProtocolVersionReadiness
+ * @interface SignallingValidator
  */
-export interface ProtocolVersionReadiness {
+export interface SignallingValidator {
     /**
-     * A name identifying a protocol version. May be absent to denote no readiness signalled by
-     * the `signalling_validators`.
-     * @type {string}
-     * @memberof ProtocolVersionReadiness
+     * 
+     * @type {ActiveValidatorIndex}
+     * @memberof SignallingValidator
      */
-    signalled_protocol_version?: string;
+    index: ActiveValidatorIndex;
     /**
-     * A sum of `active_stake_proportion` across `signalling_validators` (i.e. an easily-computable convenience field).
+     * A proportion (between 0 and 1) of the total active stake of an entire `current_validator_set` (i.e. an easily-computable convenience field).
      * This is a string-encoded fixed-precision decimal to 18 decimal places.
      * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
      * @type {string}
-     * @memberof ProtocolVersionReadiness
+     * @memberof SignallingValidator
      */
-    total_active_stake_proportion: string;
-    /**
-     * References to some of the current validators (i.e. a subset of `current_validator_set`)
-     * which have signalled readiness for the `signalled_protocol_version`.
-     * @type {Array<SignallingValidator>}
-     * @memberof ProtocolVersionReadiness
-     */
-    signalling_validators: Array<SignallingValidator>;
+    active_stake_proportion: string;
 }
 
 /**
- * Check if a given object implements the ProtocolVersionReadiness interface.
+ * Check if a given object implements the SignallingValidator interface.
  */
-export function instanceOfProtocolVersionReadiness(value: object): boolean {
+export function instanceOfSignallingValidator(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "total_active_stake_proportion" in value;
-    isInstance = isInstance && "signalling_validators" in value;
+    isInstance = isInstance && "index" in value;
+    isInstance = isInstance && "active_stake_proportion" in value;
 
     return isInstance;
 }
 
-export function ProtocolVersionReadinessFromJSON(json: any): ProtocolVersionReadiness {
-    return ProtocolVersionReadinessFromJSONTyped(json, false);
+export function SignallingValidatorFromJSON(json: any): SignallingValidator {
+    return SignallingValidatorFromJSONTyped(json, false);
 }
 
-export function ProtocolVersionReadinessFromJSONTyped(json: any, ignoreDiscriminator: boolean): ProtocolVersionReadiness {
+export function SignallingValidatorFromJSONTyped(json: any, ignoreDiscriminator: boolean): SignallingValidator {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'signalled_protocol_version': !exists(json, 'signalled_protocol_version') ? undefined : json['signalled_protocol_version'],
-        'total_active_stake_proportion': json['total_active_stake_proportion'],
-        'signalling_validators': ((json['signalling_validators'] as Array<any>).map(SignallingValidatorFromJSON)),
+        'index': ActiveValidatorIndexFromJSON(json['index']),
+        'active_stake_proportion': json['active_stake_proportion'],
     };
 }
 
-export function ProtocolVersionReadinessToJSON(value?: ProtocolVersionReadiness | null): any {
+export function SignallingValidatorToJSON(value?: SignallingValidator | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -86,9 +77,8 @@ export function ProtocolVersionReadinessToJSON(value?: ProtocolVersionReadiness 
     }
     return {
         
-        'signalled_protocol_version': value.signalled_protocol_version,
-        'total_active_stake_proportion': value.total_active_stake_proportion,
-        'signalling_validators': ((value.signalling_validators as Array<any>).map(SignallingValidatorToJSON)),
+        'index': ActiveValidatorIndexToJSON(value.index),
+        'active_stake_proportion': value.active_stake_proportion,
     };
 }
 

@@ -27,7 +27,7 @@ pub struct StateConsensusManagerResponse {
     pub current_time: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
     #[serde(rename = "current_time_rounded_to_minutes")]
     pub current_time_rounded_to_minutes: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
-    /// Protocol versions signalled by current Validator set. Only returned if enabled by `include_readiness_signals` on your request. 
+    /// Protocol versions signalled by the current validator set. Every validator from `current_validator_set` will be referenced by exactly one of the items here. Only returned if enabled by `include_readiness_signals` on your request. 
     #[serde(rename = "current_validator_readiness_signals", skip_serializing_if = "Option::is_none")]
     pub current_validator_readiness_signals: Option<Vec<crate::core_api::generated::models::ProtocolVersionReadiness>>,
 }

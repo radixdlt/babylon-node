@@ -506,6 +506,7 @@ models/SchemaEntryValue.ts
 models/SchemaKey.ts
 models/ScopedTypeId.ts
 models/ScryptoSchema.ts
+models/SignallingValidator.ts
 models/Signature.ts
 models/SignatureBase.ts
 models/SignatureWithPublicKey.ts

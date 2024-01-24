@@ -90,8 +90,14 @@ fn collect_current_validators_by_signalled_protocol_version(
 ) -> Result<ValidatorsBySignalledProtocolVersion, ResponseError<()>> {
     let mut validators = ValidatorsBySignalledProtocolVersion::default();
     let payload = substate.into_payload().into_latest();
-    for validator_address in payload.validator_set.validators_by_stake_desc.into_keys() {
-        let readiness_signal_substate = read_mandatory_main_field_substate::<
+    for (index, entry) in payload
+        .validator_set
+        .validators_by_stake_desc
+        .into_iter()
+        .enumerate()
+    {
+        let (validator_address, Validator { stake, .. }) = entry;
+        let protocol_version_name = read_mandatory_main_field_substate::<
             ValidatorProtocolUpdateReadinessSignalFieldPayload,
         >(
             database,
@@ -99,10 +105,12 @@ fn collect_current_validators_by_signalled_protocol_version(
             &ValidatorField::ProtocolUpdateReadinessSignal.into(),
         )?
         .into_payload()
-        .into_latest();
+        .into_latest()
+        .protocol_version_name;
         validators.insert(
-            validator_address,
-            readiness_signal_substate.protocol_version_name,
+            ValidatorIndex::try_from(index).expect("validator set size guarantees this"),
+            stake,
+            protocol_version_name.map(ProtocolVersionName::of_unchecked),
         );
     }
     Ok(validators)
@@ -110,17 +118,35 @@ fn collect_current_validators_by_signalled_protocol_version(
 
 #[derive(Default)]
 struct ValidatorsBySignalledProtocolVersion {
-    map: IndexMap<ProtocolVersionName, Vec<ComponentAddress>>,
+    total_stake: Decimal,
+    versions_to_signalling_validators: IndexMap<Option<ProtocolVersionName>, SignallingValidators>,
 }
 
 impl ValidatorsBySignalledProtocolVersion {
-    pub fn insert(&mut self, validator_address: ComponentAddress, version_string: Option<String>) {
-        if let Some(version_string) = version_string {
-            self.map
-                .entry(ProtocolVersionName::of_unchecked(version_string))
-                .or_default()
-                .push(validator_address);
-        }
+    pub fn insert(
+        &mut self,
+        index: ValidatorIndex,
+        stake: Decimal,
+        version: Option<ProtocolVersionName>,
+    ) {
+        self.total_stake = self.total_stake.add_or_panic(stake);
+        self.versions_to_signalling_validators
+            .entry(version)
+            .or_default()
+            .insert(index, stake);
+    }
+}
+
+#[derive(Default)]
+struct SignallingValidators {
+    total_stake: Decimal,
+    indices_and_stakes: Vec<(ValidatorIndex, Decimal)>,
+}
+
+impl SignallingValidators {
+    pub fn insert(&mut self, index: ValidatorIndex, stake: Decimal) {
+        self.total_stake = self.total_stake.add_or_panic(stake);
+        self.indices_and_stakes.push((index, stake));
     }
 }
 
@@ -129,16 +155,39 @@ fn to_api_current_validator_readiness_signals(
     current_validators: &ValidatorsBySignalledProtocolVersion,
 ) -> Result<Vec<models::ProtocolVersionReadiness>, MappingError> {
     current_validators
-        .map
+        .versions_to_signalling_validators
         .iter()
-        .map(|(protocol_version, validator_addresses)| {
+        .map(|(protocol_version, signalling_validators)| {
             Ok(models::ProtocolVersionReadiness {
-                signalled_protocol_version: protocol_version.as_str().to_string(),
-                signalling_validator_addresses: validator_addresses
+                signalled_protocol_version: protocol_version.as_ref().map(|name| name.to_string()),
+                total_active_stake_proportion: to_api_decimal(
+                    &signalling_validators
+                        .total_stake
+                        .div_or_panic(current_validators.total_stake),
+                ),
+                signalling_validators: signalling_validators
+                    .indices_and_stakes
                     .iter()
-                    .map(|validator_address| to_api_component_address(context, validator_address))
+                    .map(|(index, stake)| {
+                        to_api_signalling_validator(
+                            context,
+                            index,
+                            &stake.div_or_panic(current_validators.total_stake),
+                        )
+                    })
                     .collect::<Result<Vec<_>, _>>()?,
             })
         })
         .collect::<Result<Vec<_>, _>>()
+}
+
+fn to_api_signalling_validator(
+    _context: &MappingContext,
+    index: &ValidatorIndex,
+    stake_proportion: &Decimal,
+) -> Result<models::SignallingValidator, MappingError> {
+    Ok(models::SignallingValidator {
+        index: Box::new(to_api_active_validator_index(*index)),
+        active_stake_proportion: to_api_decimal(stake_proportion),
+    })
 }
