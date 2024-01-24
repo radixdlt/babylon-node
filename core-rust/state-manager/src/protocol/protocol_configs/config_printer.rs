@@ -31,7 +31,7 @@ fn print_protocol_config_code() {
     let version_const = stringify!(ANEMONE_PROTOCOL_VERSION);
     let target_start = DateTime::<Utc>::from_str("2024-02-05T18:00:00.000Z").unwrap();
     let enactment_window = Duration::days(14);
-    let proposed_thresholds = [(dec!(0.8), Duration::days(4))];
+    let proposed_thresholds = [(dec!(0.75), Duration::days(4))];
 
     // OUTPUT
     let start_epoch = calculator
