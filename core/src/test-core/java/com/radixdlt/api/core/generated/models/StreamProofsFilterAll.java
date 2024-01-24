@@ -70,13 +70,13 @@ public class StreamProofsFilterAll extends StreamProofsFilter {
   }
 
    /**
-   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking that the first proof to be returned should be at this state version or above. If empty, it starts from 0.
-   * minimum: 0
-   * maximum: 10000000000
+   * Get fromStateVersion
+   * minimum: 1
+   * maximum: 100000000000000
    * @return fromStateVersion
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "An integer between `0` and `10^10`, marking that the first proof to be returned should be at this state version or above. If empty, it starts from 0.")
+  @ApiModelProperty(value = "")
   @JsonProperty(JSON_PROPERTY_FROM_STATE_VERSION)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 

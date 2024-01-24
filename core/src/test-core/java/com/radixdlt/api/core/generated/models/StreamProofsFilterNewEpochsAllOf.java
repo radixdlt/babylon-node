@@ -47,13 +47,13 @@ public class StreamProofsFilterNewEpochsAllOf {
   }
 
    /**
-   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking that the first proof to be returned should be the proof starting this epoch. If empty, it starts from the first epoch proof after genesis. The network status endpoint can be used to find the current epoch.
+   * The first proof to be returned should be the proof starting this epoch. If empty, it starts from the first epoch proof after genesis. The network status endpoint can be used to find the current epoch.
    * minimum: 0
    * maximum: 10000000000
    * @return fromEpoch
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "An integer between `0` and `10^10`, marking that the first proof to be returned should be the proof starting this epoch. If empty, it starts from the first epoch proof after genesis. The network status endpoint can be used to find the current epoch.")
+  @ApiModelProperty(value = "The first proof to be returned should be the proof starting this epoch. If empty, it starts from the first epoch proof after genesis. The network status endpoint can be used to find the current epoch.")
   @JsonProperty(JSON_PROPERTY_FROM_EPOCH)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 

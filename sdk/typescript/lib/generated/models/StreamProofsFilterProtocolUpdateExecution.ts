@@ -32,7 +32,7 @@ export interface StreamProofsFilterProtocolUpdateExecution {
      */
     protocol_version?: string;
     /**
-     * An integer between `0` and `10^10`, marking that the first proof to be returned should be at this state version or above. If empty, it starts from 0.
+     * 
      * @type {number}
      * @memberof StreamProofsFilterProtocolUpdateExecution
      */

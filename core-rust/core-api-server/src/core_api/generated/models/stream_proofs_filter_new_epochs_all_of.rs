@@ -13,7 +13,7 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct StreamProofsFilterNewEpochsAllOf {
-    /// An integer between `0` and `10^10`, marking that the first proof to be returned should be the proof starting this epoch. If empty, it starts from the first epoch proof after genesis. The network status endpoint can be used to find the current epoch.
+    /// The first proof to be returned should be the proof starting this epoch. If empty, it starts from the first epoch proof after genesis. The network status endpoint can be used to find the current epoch.
     #[serde(rename = "from_epoch", skip_serializing_if = "Option::is_none")]
     pub from_epoch: Option<i64>,
 }

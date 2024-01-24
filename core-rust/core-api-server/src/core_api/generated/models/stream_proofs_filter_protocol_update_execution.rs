@@ -18,7 +18,6 @@ pub struct StreamProofsFilterProtocolUpdateExecution {
     /// The protocol version name to filter to. This can be returned from looking at the protocol updates. 
     #[serde(rename = "protocol_version", skip_serializing_if = "Option::is_none")]
     pub protocol_version: Option<String>,
-    /// An integer between `0` and `10^10`, marking that the first proof to be returned should be at this state version or above. If empty, it starts from 0.
     #[serde(rename = "from_state_version", skip_serializing_if = "Option::is_none")]
     pub from_state_version: Option<i64>,
 }

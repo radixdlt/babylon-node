@@ -15,13 +15,12 @@
 pub enum StreamProofsFilter {
     #[serde(rename="All")]
     StreamProofsFilterAll {
-        /// An integer between `0` and `10^10`, marking that the first proof to be returned should be at this state version or above. If empty, it starts from 0.
         #[serde(rename = "from_state_version", skip_serializing_if = "Option::is_none")]
         from_state_version: Option<i64>,
     },
     #[serde(rename="NewEpochs")]
     StreamProofsFilterNewEpochs {
-        /// An integer between `0` and `10^10`, marking that the first proof to be returned should be the proof starting this epoch. If empty, it starts from the first epoch proof after genesis. The network status endpoint can be used to find the current epoch.
+        /// The first proof to be returned should be the proof starting this epoch. If empty, it starts from the first epoch proof after genesis. The network status endpoint can be used to find the current epoch.
         #[serde(rename = "from_epoch", skip_serializing_if = "Option::is_none")]
         from_epoch: Option<i64>,
     },
@@ -30,13 +29,11 @@ pub enum StreamProofsFilter {
         /// The protocol version name to filter to. This can be returned from looking at the protocol updates. 
         #[serde(rename = "protocol_version", skip_serializing_if = "Option::is_none")]
         protocol_version: Option<String>,
-        /// An integer between `0` and `10^10`, marking that the first proof to be returned should be at this state version or above. If empty, it starts from 0.
         #[serde(rename = "from_state_version", skip_serializing_if = "Option::is_none")]
         from_state_version: Option<i64>,
     },
     #[serde(rename="ProtocolUpdateInitializations")]
     StreamProofsFilterProtocolUpdateInitializations {
-        /// An integer between `0` and `10^10`, marking that the first proof to be returned should be at this state version or above. If empty, it starts from 0.
         #[serde(rename = "from_state_version", skip_serializing_if = "Option::is_none")]
         from_state_version: Option<i64>,
     },

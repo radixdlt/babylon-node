@@ -20,7 +20,7 @@ import { exists, mapValues } from '../runtime';
  */
 export interface StreamProofsFilterNewEpochsAllOf {
     /**
-     * An integer between `0` and `10^10`, marking that the first proof to be returned should be the proof starting this epoch. If empty, it starts from the first epoch proof after genesis. The network status endpoint can be used to find the current epoch.
+     * The first proof to be returned should be the proof starting this epoch. If empty, it starts from the first epoch proof after genesis. The network status endpoint can be used to find the current epoch.
      * @type {number}
      * @memberof StreamProofsFilterNewEpochsAllOf
      */

@@ -7192,12 +7192,9 @@ components:
         - type: object
           properties:
             from_state_version:
-              type: integer
-              format: int64
-              minimum: 0
-              maximum: 10000000000
+              $ref: "#/components/schemas/StateVersion"
               description:
-                An integer between `0` and `10^10`, marking that the first proof to be returned should be at this state version or above.
+                The first proof to be returned should be at this state version or above.
                 If empty, it starts from 0.
     StreamProofsFilterNewEpochs:
       allOf:
@@ -7210,7 +7207,7 @@ components:
               minimum: 0
               maximum: 10000000000
               description:
-                An integer between `0` and `10^10`, marking that the first proof to be returned should be the proof starting this epoch.
+                The first proof to be returned should be the proof starting this epoch.
                 If empty, it starts from the first epoch proof after genesis.
                 The network status endpoint can be used to find the current epoch.
     StreamProofsFilterProtocolUpdateInitializations:
@@ -7219,12 +7216,9 @@ components:
         - type: object
           properties:
             from_state_version:
-              type: integer
-              format: int64
-              minimum: 0
-              maximum: 10000000000
+              $ref: "#/components/schemas/StateVersion"
               description:
-                An integer between `0` and `10^10`, marking that the first proof to be returned should be at this state version or above.
+                The first proof to be returned should be at this state version or above.
                 If empty, it starts from 0.
     StreamProofsFilterProtocolUpdateExecution:
       allOf:
@@ -7236,12 +7230,9 @@ components:
               description: |
                 The protocol version name to filter to. This can be returned from looking at the protocol updates.
             from_state_version:
-              type: integer
-              format: int64
-              minimum: 0
-              maximum: 10000000000
+              $ref: "#/components/schemas/StateVersion"
               description:
-                An integer between `0` and `10^10`, marking that the first proof to be returned should be at this state version or above.
+                The first proof to be returned should be at this state version or above.
                 If empty, it starts from 0.
     StreamProofsResponse:
       type: object
