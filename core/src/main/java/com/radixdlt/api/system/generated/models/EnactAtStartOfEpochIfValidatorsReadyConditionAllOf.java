@@ -34,12 +34,16 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * EnactAtStartOfEpochIfValidatorsReadyConditionAllOf
  */
 @JsonPropertyOrder({
+  EnactAtStartOfEpochIfValidatorsReadyConditionAllOf.JSON_PROPERTY_READINESS_SIGNAL,
   EnactAtStartOfEpochIfValidatorsReadyConditionAllOf.JSON_PROPERTY_LOWER_BOUND_EPOCH_INCLUSIVE,
   EnactAtStartOfEpochIfValidatorsReadyConditionAllOf.JSON_PROPERTY_UPPER_BOUND_EPOCH_EXCLUSIVE,
   EnactAtStartOfEpochIfValidatorsReadyConditionAllOf.JSON_PROPERTY_READINESS_THRESHOLDS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class EnactAtStartOfEpochIfValidatorsReadyConditionAllOf {
+  public static final String JSON_PROPERTY_READINESS_SIGNAL = "readiness_signal";
+  private String readinessSignal;
+
   public static final String JSON_PROPERTY_LOWER_BOUND_EPOCH_INCLUSIVE = "lower_bound_epoch_inclusive";
   private Long lowerBoundEpochInclusive;
 
@@ -47,7 +51,33 @@ public class EnactAtStartOfEpochIfValidatorsReadyConditionAllOf {
   private Long upperBoundEpochExclusive;
 
   public static final String JSON_PROPERTY_READINESS_THRESHOLDS = "readiness_thresholds";
-  private List<SignalledReadinessThreshold> readinessThresholds = null;
+  private List<SignalledReadinessThreshold> readinessThresholds = new ArrayList<>();
+
+
+  public EnactAtStartOfEpochIfValidatorsReadyConditionAllOf readinessSignal(String readinessSignal) {
+    this.readinessSignal = readinessSignal;
+    return this;
+  }
+
+   /**
+   * Get readinessSignal
+   * @return readinessSignal
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_READINESS_SIGNAL)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getReadinessSignal() {
+    return readinessSignal;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_READINESS_SIGNAL)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setReadinessSignal(String readinessSignal) {
+    this.readinessSignal = readinessSignal;
+  }
 
 
   public EnactAtStartOfEpochIfValidatorsReadyConditionAllOf lowerBoundEpochInclusive(Long lowerBoundEpochInclusive) {
@@ -108,9 +138,6 @@ public class EnactAtStartOfEpochIfValidatorsReadyConditionAllOf {
   }
 
   public EnactAtStartOfEpochIfValidatorsReadyConditionAllOf addReadinessThresholdsItem(SignalledReadinessThreshold readinessThresholdsItem) {
-    if (this.readinessThresholds == null) {
-      this.readinessThresholds = new ArrayList<>();
-    }
     this.readinessThresholds.add(readinessThresholdsItem);
     return this;
   }
@@ -119,10 +146,10 @@ public class EnactAtStartOfEpochIfValidatorsReadyConditionAllOf {
    * Get readinessThresholds
    * @return readinessThresholds
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
   @JsonProperty(JSON_PROPERTY_READINESS_THRESHOLDS)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
   public List<SignalledReadinessThreshold> getReadinessThresholds() {
     return readinessThresholds;
@@ -130,7 +157,7 @@ public class EnactAtStartOfEpochIfValidatorsReadyConditionAllOf {
 
 
   @JsonProperty(JSON_PROPERTY_READINESS_THRESHOLDS)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setReadinessThresholds(List<SignalledReadinessThreshold> readinessThresholds) {
     this.readinessThresholds = readinessThresholds;
   }
@@ -148,20 +175,22 @@ public class EnactAtStartOfEpochIfValidatorsReadyConditionAllOf {
       return false;
     }
     EnactAtStartOfEpochIfValidatorsReadyConditionAllOf enactAtStartOfEpochIfValidatorsReadyConditionAllOf = (EnactAtStartOfEpochIfValidatorsReadyConditionAllOf) o;
-    return Objects.equals(this.lowerBoundEpochInclusive, enactAtStartOfEpochIfValidatorsReadyConditionAllOf.lowerBoundEpochInclusive) &&
+    return Objects.equals(this.readinessSignal, enactAtStartOfEpochIfValidatorsReadyConditionAllOf.readinessSignal) &&
+        Objects.equals(this.lowerBoundEpochInclusive, enactAtStartOfEpochIfValidatorsReadyConditionAllOf.lowerBoundEpochInclusive) &&
         Objects.equals(this.upperBoundEpochExclusive, enactAtStartOfEpochIfValidatorsReadyConditionAllOf.upperBoundEpochExclusive) &&
         Objects.equals(this.readinessThresholds, enactAtStartOfEpochIfValidatorsReadyConditionAllOf.readinessThresholds);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(lowerBoundEpochInclusive, upperBoundEpochExclusive, readinessThresholds);
+    return Objects.hash(readinessSignal, lowerBoundEpochInclusive, upperBoundEpochExclusive, readinessThresholds);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class EnactAtStartOfEpochIfValidatorsReadyConditionAllOf {\n");
+    sb.append("    readinessSignal: ").append(toIndentedString(readinessSignal)).append("\n");
     sb.append("    lowerBoundEpochInclusive: ").append(toIndentedString(lowerBoundEpochInclusive)).append("\n");
     sb.append("    upperBoundEpochExclusive: ").append(toIndentedString(upperBoundEpochExclusive)).append("\n");
     sb.append("    readinessThresholds: ").append(toIndentedString(readinessThresholds)).append("\n");
