@@ -106,7 +106,7 @@ pub struct ProtocolMetrics {
     pub protocol_update_readiness_ratio: GaugeVec,
     pub pending_update_threshold_required_ratio: GaugeVec,
     pub pending_update_threshold_required_consecutive_epochs: IntGaugeVec,
-    pub pending_update_threshold_matching_consecutive_epochs: IntGaugeVec,
+    pub pending_update_threshold_current_consecutive_epochs: IntGaugeVec,
     pub pending_update_lower_bound_epoch: IntGaugeVec,
     pub pending_update_upper_bound_epoch: IntGaugeVec,
     pub enacted_protocol_update_state_version: IntGaugeVec,
@@ -371,9 +371,9 @@ impl ProtocolMetrics {
                 &["protocol_version_name", "readiness_signal_name", "threshold_index"],
             )
                 .registered_at(registry),
-            pending_update_threshold_matching_consecutive_epochs: IntGaugeVec::new(
+            pending_update_threshold_current_consecutive_epochs: IntGaugeVec::new(
                 opts(
-                    "protocol_update_pending_threshold_matching_consecutive_epochs",
+                    "protocol_update_pending_threshold_current_consecutive_epochs",
                     "Current number of consecutive epochs of support for the given protocol update threshold.",
                 ),
                 &["protocol_version_name", "readiness_signal_name", "threshold_index"],
@@ -398,7 +398,7 @@ impl ProtocolMetrics {
             enacted_protocol_update_state_version: IntGaugeVec::new(
                 opts(
                     "protocol_update_enacted_state_version",
-                    "State version of enacted protocol update",
+                    "State version at which the protocol update was enacted (init proof)",
                 ),
                 &["protocol_version_name"],
             )
@@ -421,7 +421,7 @@ impl ProtocolMetrics {
         self.pending_update_threshold_required_ratio.reset();
         self.pending_update_threshold_required_consecutive_epochs
             .reset();
-        self.pending_update_threshold_matching_consecutive_epochs
+        self.pending_update_threshold_current_consecutive_epochs
             .reset();
         self.pending_update_lower_bound_epoch.reset();
         self.pending_update_upper_bound_epoch.reset();
@@ -474,7 +474,7 @@ impl ProtocolMetrics {
                                         threshold.required_consecutive_completed_epochs_of_support
                                             as i64,
                                     );
-                                self.pending_update_threshold_matching_consecutive_epochs
+                                self.pending_update_threshold_current_consecutive_epochs
                                     .with_three_labels(
                                         protocol_update.next_protocol_version.to_string(),
                                         readiness_signal_name.to_string(),
