@@ -284,12 +284,8 @@ impl ProcessedCommitResult {
         self
     }
 
-    pub fn next_epoch(&self) -> Option<NextEpoch> {
-        self.local_receipt
-            .local_execution
-            .next_epoch
-            .as_ref()
-            .map(|next_epoch_result| NextEpoch::from(next_epoch_result.clone()))
+    pub fn epoch_change(&self) -> Option<EpochChangeEvent> {
+        self.local_receipt.local_execution.next_epoch.clone()
     }
 
     // TODO(after RCnet-v3): Extract the `pub fn`s below (re-used by preview) to an isolated helper.
