@@ -29,14 +29,14 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * ProtocolUpdate
+ * ProtocolUpdateTrigger
  */
 @JsonPropertyOrder({
-  ProtocolUpdate.JSON_PROPERTY_NEXT_PROTOCOL_VERSION,
-  ProtocolUpdate.JSON_PROPERTY_ENACTMENT_CONDITION
+  ProtocolUpdateTrigger.JSON_PROPERTY_NEXT_PROTOCOL_VERSION,
+  ProtocolUpdateTrigger.JSON_PROPERTY_ENACTMENT_CONDITION
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class ProtocolUpdate {
+public class ProtocolUpdateTrigger {
   public static final String JSON_PROPERTY_NEXT_PROTOCOL_VERSION = "next_protocol_version";
   private String nextProtocolVersion;
 
@@ -44,7 +44,7 @@ public class ProtocolUpdate {
   private ProtocolUpdateEnactmentCondition enactmentCondition;
 
 
-  public ProtocolUpdate nextProtocolVersion(String nextProtocolVersion) {
+  public ProtocolUpdateTrigger nextProtocolVersion(String nextProtocolVersion) {
     this.nextProtocolVersion = nextProtocolVersion;
     return this;
   }
@@ -70,7 +70,7 @@ public class ProtocolUpdate {
   }
 
 
-  public ProtocolUpdate enactmentCondition(ProtocolUpdateEnactmentCondition enactmentCondition) {
+  public ProtocolUpdateTrigger enactmentCondition(ProtocolUpdateEnactmentCondition enactmentCondition) {
     this.enactmentCondition = enactmentCondition;
     return this;
   }
@@ -97,7 +97,7 @@ public class ProtocolUpdate {
 
 
   /**
-   * Return true if this ProtocolUpdate object is equal to o.
+   * Return true if this ProtocolUpdateTrigger object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -107,9 +107,9 @@ public class ProtocolUpdate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ProtocolUpdate protocolUpdate = (ProtocolUpdate) o;
-    return Objects.equals(this.nextProtocolVersion, protocolUpdate.nextProtocolVersion) &&
-        Objects.equals(this.enactmentCondition, protocolUpdate.enactmentCondition);
+    ProtocolUpdateTrigger protocolUpdateTrigger = (ProtocolUpdateTrigger) o;
+    return Objects.equals(this.nextProtocolVersion, protocolUpdateTrigger.nextProtocolVersion) &&
+        Objects.equals(this.enactmentCondition, protocolUpdateTrigger.enactmentCondition);
   }
 
   @Override
@@ -120,7 +120,7 @@ public class ProtocolUpdate {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ProtocolUpdate {\n");
+    sb.append("class ProtocolUpdateTrigger {\n");
     sb.append("    nextProtocolVersion: ").append(toIndentedString(nextProtocolVersion)).append("\n");
     sb.append("    enactmentCondition: ").append(toIndentedString(enactmentCondition)).append("\n");
     sb.append("}");
