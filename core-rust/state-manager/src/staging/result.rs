@@ -65,6 +65,7 @@
 use super::ReadableStateTreeStore;
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, WriteableAccuTreeStore};
 
+use crate::protocol::{ProtocolState, ProtocolVersionName};
 use crate::staging::epoch_handling::EpochAwareAccuTreeFactory;
 use crate::transaction::LedgerTransactionHash;
 use crate::{
@@ -115,6 +116,8 @@ pub struct ProcessedCommitResult {
     pub hash_structures_diff: HashStructuresDiff,
     pub database_updates: DatabaseUpdates,
     pub new_substate_node_ancestry_records: Vec<KeyedSubstateNodeAncestryRecord>,
+    pub new_protocol_state: ProtocolState,
+    pub next_protocol_version: Option<ProtocolVersionName>,
 }
 
 pub struct HashUpdateContext<'s, S> {
@@ -134,6 +137,7 @@ impl ProcessedTransactionReceipt {
     pub fn process<S: ReadableStore, D: DatabaseKeyMapper>(
         hash_update_context: HashUpdateContext<S>,
         receipt: TransactionReceipt,
+        parent_protocol_state: &ProtocolState,
     ) -> Self {
         match receipt.result {
             TransactionResult::Commit(commit) => {
@@ -145,6 +149,7 @@ impl ProcessedTransactionReceipt {
                         engine_costing_parameters: receipt.costing_parameters,
                         transaction_costing_parameters: receipt.transaction_costing_parameters,
                     },
+                    parent_protocol_state,
                 ))
             }
             TransactionResult::Reject(reject) => {
@@ -196,6 +201,7 @@ impl ProcessedCommitResult {
         hash_update_context: HashUpdateContext<S>,
         commit_result: CommitResult,
         execution_fee_data: ExecutionFeeData,
+        parent_protocol_state: &ProtocolState,
     ) -> Self {
         let epoch_identifiers = hash_update_context.epoch_transaction_identifiers;
         let parent_state_version = hash_update_context.parent_state_version;
@@ -245,6 +251,11 @@ impl ProcessedCommitResult {
             receipt_root: *receipt_tree_diff.slice.root(),
         };
 
+        let (new_protocol_state, next_protocol_version) = parent_protocol_state.compute_next(
+            &local_receipt,
+            parent_state_version.next().expect("State version overflow"),
+        );
+
         Self {
             local_receipt,
             hash_structures_diff: HashStructuresDiff {
@@ -256,6 +267,8 @@ impl ProcessedCommitResult {
             database_updates,
             new_substate_node_ancestry_records: global_balance_update
                 .new_substate_node_ancestry_records,
+            new_protocol_state,
+            next_protocol_version,
         }
     }
 
@@ -271,12 +284,8 @@ impl ProcessedCommitResult {
         self
     }
 
-    pub fn next_epoch(&self) -> Option<NextEpoch> {
-        self.local_receipt
-            .local_execution
-            .next_epoch
-            .as_ref()
-            .map(|next_epoch_result| NextEpoch::from(next_epoch_result.clone()))
+    pub fn epoch_change(&self) -> Option<EpochChangeEvent> {
+        self.local_receipt.local_execution.next_epoch.clone()
     }
 
     // TODO(after RCnet-v3): Extract the `pub fn`s below (re-used by preview) to an isolated helper.
@@ -526,7 +535,6 @@ impl From<EpochChangeEvent> for NextEpoch {
         }
     }
 }
-
 #[derive(Clone, Debug)]
 pub struct HashStructuresDiff {
     pub ledger_hashes: LedgerHashes,

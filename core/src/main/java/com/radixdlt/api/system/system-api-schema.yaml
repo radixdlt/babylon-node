@@ -1,8 +1,8 @@
 openapi: 3.0.0
 info:
   # Should be the release version, and the release display name
-  version: 'v1.0.0'
-  title: 'Radix System API - Babylon'
+  version: 'v1.1.0'
+  title: 'Radix System API - Babylon (Anemone)'
   license:
     name: The Radix License, Version 1.0
     url: https://www.radixfoundation.org/licenses/license-v1
@@ -196,7 +196,8 @@ components:
         - detail
         - recent_self_proposal_miss_statistic
         - current_protocol_version
-        - executed_protocol_updates
+        - enacted_protocol_updates
+        - pending_protocol_updates
         - unknown_reported_pending_protocol_updates
       properties:
         status:
@@ -213,12 +214,14 @@ components:
           $ref: "#/components/schemas/RecentSelfProposalMissStatistic"
         current_protocol_version:
           $ref: "#/components/schemas/ProtocolVersion"
-        executed_protocol_updates:
+        enacted_protocol_updates:
           type: array
           items:
-            $ref: "#/components/schemas/ExecutedProtocolUpdate"
-        pending_protocol_update:
-          $ref: "#/components/schemas/PendingProtocolUpdate"
+            $ref: "#/components/schemas/EnactedProtocolUpdate"
+        pending_protocol_updates:
+          type: array
+          items:
+            $ref: "#/components/schemas/PendingProtocolUpdate"
         unknown_reported_pending_protocol_updates:
           type: array
           items:
@@ -228,6 +231,7 @@ components:
       required:
         - networking
         - bft
+        - protocol
       properties:
         mempool:
           $ref: "#/components/schemas/MempoolConfiguration"
@@ -237,6 +241,8 @@ components:
           $ref: "#/components/schemas/SyncConfiguration"
         networking:
           $ref: "#/components/schemas/NetworkingConfiguration"
+        protocol:
+          $ref: "#/components/schemas/ProtocolConfiguration"
     SystemAddressBookResponse:
       type: object
       required:
@@ -427,6 +433,93 @@ components:
             type: string
         node_address:
           type: string
+    ProtocolConfiguration:
+      type: object
+      required:
+        - genesis_protocol_version
+        - protocol_update_triggers
+      properties:
+        genesis_protocol_version:
+          type: string
+        protocol_update_triggers:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProtocolUpdateTrigger"
+    ProtocolUpdateTrigger:
+      type: object
+      required:
+        - next_protocol_version
+        - enactment_condition
+      properties:
+        next_protocol_version:
+          type: string
+        enactment_condition:
+          $ref: "#/components/schemas/ProtocolUpdateEnactmentCondition"
+    SignalledReadinessThreshold:
+      type: object
+      required:
+        - required_ratio_of_stake_supported
+        - required_consecutive_completed_epochs_of_support
+      properties:
+        required_ratio_of_stake_supported:
+          type: string
+        required_consecutive_completed_epochs_of_support:
+          type: integer
+          format: int64
+    ProtocolUpdateEnactmentConditionType:
+      type: string
+      enum:
+        - EnactAtStartOfEpochIfValidatorsReady
+        - EnactAtStartOfEpochUnconditionally
+    ProtocolUpdateEnactmentCondition:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/ProtocolUpdateEnactmentConditionType"
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match ProtocolUpdateEnactmentConditionType
+          EnactAtStartOfEpochIfValidatorsReady: '#/components/schemas/EnactAtStartOfEpochIfValidatorsReadyCondition'
+          EnactAtStartOfEpochUnconditionally: '#/components/schemas/EnactAtStartOfEpochUnconditionallyCondition'
+    EnactAtStartOfEpochIfValidatorsReadyCondition:
+      allOf:
+        - $ref: "#/components/schemas/ProtocolUpdateEnactmentCondition"
+        - type: object
+          required:
+            - readiness_signal
+            - lower_bound_epoch_inclusive
+            - upper_bound_epoch_exclusive
+            - readiness_thresholds
+          properties:
+            readiness_signal:
+              type: string
+              minLength: 32
+              maxLength: 32
+              format: |
+                The string used by validators to signal readiness for the enactment.
+            lower_bound_epoch_inclusive:
+              type: integer
+              format: int64
+            upper_bound_epoch_exclusive:
+              type: integer
+              format: int64
+            readiness_thresholds:
+              type: array
+              items:
+                $ref: "#/components/schemas/SignalledReadinessThreshold"
+    EnactAtStartOfEpochUnconditionallyCondition:
+      allOf:
+        - $ref: "#/components/schemas/ProtocolUpdateEnactmentCondition"
+        - type: object
+          required:
+            - epoch
+          properties:
+            epoch:
+              type: integer
+              format: int64
     Error:
       type: object
       required:
@@ -441,13 +534,13 @@ components:
     ProtocolVersion:
       type: string
       description: A name identifying a protocol version.
-    ExecutedProtocolUpdate:
+    EnactedProtocolUpdate:
       type: object
       required:
-        - epoch
+        - state_version
         - resultant_protocol_version
       properties:
-        epoch:
+        state_version:
           type: integer
           format: int64
         resultant_protocol_version:
@@ -456,15 +549,70 @@ components:
       type: object
       required:
         - protocol_version
+        - state
         - readiness_signal_status
       properties:
         protocol_version:
           $ref: "#/components/schemas/ProtocolVersion"
+        state:
+          $ref: "#/components/schemas/PendingProtocolUpdateState"
+        readiness_signal_name:
+          type: string
         readiness_signal_status:
           type: string
           enum:
-            - READINESS_SIGNAL_REQUIRED
-            - NO_ACTION_NEEDED
+            - READINESS_SIGNALLED
+            - READINESS_NOT_SIGNALLED
+            - NO_SIGNAL_REQUIRED
+    PendingProtocolUpdateStateType:
+      type: string
+      enum:
+        - ForSignalledReadinessSupportCondition
+        - Empty
+    PendingProtocolUpdateState:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/PendingProtocolUpdateStateType"
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match PendingProtocolUpdateStateType
+          ForSignalledReadinessSupportCondition: '#/components/schemas/SignalledReadinessPendingProtocolUpdateState'
+          Empty: '#/components/schemas/EmptyPendingProtocolUpdateState'
+    SignalledReadinessPendingProtocolUpdateState:
+      allOf:
+        - $ref: "#/components/schemas/PendingProtocolUpdateState"
+        - type: object
+          required:
+            - thresholds_state
+          properties:
+            thresholds_state:
+              type: array
+              items:
+                type: object
+                required:
+                  - threshold
+                  - threshold_state
+                properties:
+                  threshold:
+                    $ref: "#/components/schemas/SignalledReadinessThreshold"
+                  threshold_state:
+                    $ref: "#/components/schemas/SignalledReadinessThresholdState"
+    SignalledReadinessThresholdState:
+      type: object
+      required:
+        - consecutive_started_epochs_of_support
+      properties:
+        consecutive_started_epochs_of_support:
+          type: integer
+          format: int64
+    EmptyPendingProtocolUpdateState:
+      allOf:
+        - $ref: "#/components/schemas/PendingProtocolUpdateState"
+        - type: object
     UnknownReportedPendingProtocolUpdate:
       type: object
       required:

@@ -67,10 +67,11 @@ use std::fmt;
 
 use crate::store::traits::*;
 use crate::{
-    BySubstate, CommittedTransactionIdentifiers, LedgerProof, LedgerTransactionReceipt,
-    LocalTransactionExecution, LocalTransactionReceipt, ReceiptTreeHash, StateVersion,
-    SubstateChangeAction, TransactionTreeHash, VersionedCommittedTransactionIdentifiers,
-    VersionedLedgerProof, VersionedLedgerTransactionReceipt, VersionedLocalTransactionExecution,
+    BySubstate, CommittedTransactionIdentifiers, LedgerProof, LedgerProofOrigin,
+    LedgerTransactionReceipt, LocalTransactionExecution, LocalTransactionReceipt, ReceiptTreeHash,
+    StateVersion, SubstateChangeAction, TransactionTreeHash,
+    VersionedCommittedTransactionIdentifiers, VersionedLedgerProof,
+    VersionedLedgerTransactionReceipt, VersionedLocalTransactionExecution,
 };
 use node_common::utils::IsAccountExt;
 use radix_engine::types::*;
@@ -129,7 +130,7 @@ use super::traits::extensions::*;
 /// The `NAME` constants defined by `*Cf` structs (and referenced below) are used as database column
 /// family names. Any change would effectively mean a ledger wipe. For this reason, we choose to
 /// define them manually (rather than using the `Into<String>`, which is refactor-sensitive).
-const ALL_COLUMN_FAMILIES: [&str; 22] = [
+const ALL_COLUMN_FAMILIES: [&str; 24] = [
     RawLedgerTransactionsCf::DEFAULT_NAME,
     CommittedTransactionIdentifiersCf::VERSIONED_NAME,
     TransactionReceiptsCf::VERSIONED_NAME,
@@ -139,6 +140,8 @@ const ALL_COLUMN_FAMILIES: [&str; 22] = [
     LedgerTransactionHashesCf::DEFAULT_NAME,
     LedgerProofsCf::VERSIONED_NAME,
     EpochLedgerProofsCf::VERSIONED_NAME,
+    ProtocolUpdateInitLedgerProofsCf::VERSIONED_NAME,
+    ProtocolUpdateExecutionLedgerProofsCf::VERSIONED_NAME,
     SubstatesCf::DEFAULT_NAME,
     SubstateNodeAncestryRecordsCf::VERSIONED_NAME,
     VertexStoreCf::VERSIONED_NAME,
@@ -217,9 +220,9 @@ impl VersionedCf for LedgerProofsCf {
     type VersionedValue = VersionedLedgerProof;
 }
 
-/// Ledger proofs of epochs.
+/// Ledger proofs of new epochs - i.e. the proofs which trigger the given `next_epoch`.
 /// Schema: `Epoch.to_bytes()` -> `scrypto_encode(VersionedLedgerProof)`
-/// Note: This duplicates a small subset of [`StateVersionToLedgerProof`]'s values.
+/// Note: This duplicates a small subset of [`LedgerProofsCf`]'s values.
 struct EpochLedgerProofsCf;
 impl VersionedCf for EpochLedgerProofsCf {
     type Key = Epoch;
@@ -227,6 +230,34 @@ impl VersionedCf for EpochLedgerProofsCf {
 
     const VERSIONED_NAME: &'static str = "epoch_ledger_proofs";
     type KeyCodec = EpochDbCodec;
+    type VersionedValue = VersionedLedgerProof;
+}
+
+/// Ledger proofs that initialize protocol updates, i.e. proofs of Consensus `origin`,
+/// with headers containing a non-empty `next_protocol_version`.
+/// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedLedgerProof)`
+/// Note: This duplicates a small subset of [`LedgerProofsCf`]'s values.
+struct ProtocolUpdateInitLedgerProofsCf;
+impl VersionedCf for ProtocolUpdateInitLedgerProofsCf {
+    type Key = StateVersion;
+    type Value = LedgerProof;
+
+    const VERSIONED_NAME: &'static str = "protocol_update_init_ledger_proofs";
+    type KeyCodec = StateVersionDbCodec;
+    type VersionedValue = VersionedLedgerProof;
+}
+
+/// Ledger proofs of ProtocolUpdate `origin`, i.e. proofs created locally
+/// while protocol update state modifications were being applied.
+/// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedLedgerProof)`
+/// Note: This duplicates a small subset of [`LedgerProofsCf`]'s values.
+struct ProtocolUpdateExecutionLedgerProofsCf;
+impl VersionedCf for ProtocolUpdateExecutionLedgerProofsCf {
+    type Key = StateVersion;
+    type Value = LedgerProof;
+
+    const VERSIONED_NAME: &'static str = "protocol_update_execution_ledger_proofs";
+    type KeyCodec = StateVersionDbCodec;
     type VersionedValue = VersionedLedgerProof;
 }
 
@@ -828,10 +859,23 @@ impl CommitStore for RocksDBStore {
         db_context
             .cf(LedgerProofsCf)
             .put(&commit_state_version, &commit_bundle.proof);
+
         if let Some(next_epoch) = &commit_ledger_header.next_epoch {
             db_context
                 .cf(EpochLedgerProofsCf)
                 .put(&next_epoch.epoch, &commit_bundle.proof);
+        }
+
+        if commit_ledger_header.next_protocol_version.is_some() {
+            db_context
+                .cf(ProtocolUpdateInitLedgerProofsCf)
+                .put(&commit_state_version, &commit_bundle.proof);
+        }
+
+        if let LedgerProofOrigin::ProtocolUpdate { .. } = &commit_bundle.proof.origin {
+            db_context
+                .cf(ProtocolUpdateExecutionLedgerProofsCf)
+                .put(&commit_state_version, &commit_bundle.proof);
         }
 
         let substates_cf = db_context.cf(SubstatesCf);
@@ -1124,6 +1168,42 @@ impl IterableProofStore for RocksDBStore {
                 .map(|(_, proof)| proof),
         )
     }
+
+    fn get_next_epoch_proof_iter(
+        &self,
+        from_epoch: Epoch,
+    ) -> Box<dyn Iterator<Item = LedgerProof> + '_> {
+        Box::new(
+            self.open_db_context()
+                .cf(EpochLedgerProofsCf)
+                .iterate_from(&from_epoch, Direction::Forward)
+                .map(|(_, proof)| proof),
+        )
+    }
+
+    fn get_protocol_update_init_proof_iter(
+        &self,
+        from_state_version: StateVersion,
+    ) -> Box<dyn Iterator<Item = LedgerProof> + '_> {
+        Box::new(
+            self.open_db_context()
+                .cf(ProtocolUpdateInitLedgerProofsCf)
+                .iterate_from(&from_state_version, Direction::Forward)
+                .map(|(_, proof)| proof),
+        )
+    }
+
+    fn get_protocol_update_execution_proof_iter(
+        &self,
+        from_state_version: StateVersion,
+    ) -> Box<dyn Iterator<Item = LedgerProof> + '_> {
+        Box::new(
+            self.open_db_context()
+                .cf(ProtocolUpdateExecutionLedgerProofsCf)
+                .iterate_from(&from_state_version, Direction::Forward)
+                .map(|(_, proof)| proof),
+        )
+    }
 }
 
 impl QueryableProofStore for RocksDBStore {
@@ -1134,12 +1214,12 @@ impl QueryableProofStore for RocksDBStore {
             .unwrap_or(StateVersion::pre_genesis())
     }
 
-    fn get_txns_and_proof(
+    fn get_syncable_txns_and_proof(
         &self,
         start_state_version_inclusive: StateVersion,
         max_number_of_txns_if_more_than_one_proof: u32,
         max_payload_size_in_bytes: u32,
-    ) -> Option<(Vec<RawLedgerTransaction>, LedgerProof)> {
+    ) -> Result<TxnsAndProof, GetSyncableTxnsAndProofError> {
         let mut payload_size_so_far = 0;
         let mut latest_usable_proof: Option<LedgerProof> = None;
         let mut txns = Vec::new();
@@ -1153,6 +1233,11 @@ impl QueryableProofStore for RocksDBStore {
             .cf(RawLedgerTransactionsCf)
             .iterate_from(&start_state_version_inclusive, Direction::Forward);
 
+        // A few flags used to be able to provide an accurate error response
+        let mut encountered_genesis_proof = None;
+        let mut encountered_protocol_update_proof = None;
+        let mut any_consensus_proof_iterated = false;
+
         'proof_loop: while payload_size_so_far <= max_payload_size_in_bytes
             && txns.len() <= (max_number_of_txns_if_more_than_one_proof as usize)
         {
@@ -1162,6 +1247,24 @@ impl QueryableProofStore for RocksDBStore {
             // If we're out of proofs (or some txns are missing): also break the loop
             match proofs_iter.next() {
                 Some((next_proof_state_version, next_proof)) => {
+                    // We're not serving any genesis or protocol update transactions.
+                    // All nodes should have them hardcoded/configured/generated locally.
+                    // Stop iterating the proofs and return whatever txns/proof we have
+                    // collected so far (or an empty response).
+                    match next_proof.origin {
+                        LedgerProofOrigin::Genesis { .. } => {
+                            encountered_genesis_proof = Some(next_proof);
+                            break 'proof_loop;
+                        }
+                        LedgerProofOrigin::ProtocolUpdate { .. } => {
+                            encountered_protocol_update_proof = Some(next_proof);
+                            break 'proof_loop;
+                        }
+                        LedgerProofOrigin::Consensus { .. } => {
+                            any_consensus_proof_iterated = true;
+                        }
+                    }
+
                     let mut payload_size_including_next_proof_txns = payload_size_so_far;
                     let mut next_proof_txns = Vec::new();
 
@@ -1205,13 +1308,16 @@ impl QueryableProofStore for RocksDBStore {
                                 <= (max_number_of_txns_if_more_than_one_proof as usize))
                     {
                         // Yup, all good, use next_proof as the result and add its txns
-                        let next_proof_at_epoch = next_proof.ledger_header.next_epoch.is_some();
+                        let next_proof_is_a_protocol_update =
+                            next_proof.ledger_header.next_protocol_version.is_some();
+                        let next_proof_is_an_epoch_change =
+                            next_proof.ledger_header.next_epoch.is_some();
                         latest_usable_proof = Some(next_proof);
                         txns.append(&mut next_proof_txns);
                         payload_size_so_far = payload_size_including_next_proof_txns;
 
-                        if next_proof_at_epoch {
-                            // Stop if we've reached an epoch proof
+                        if next_proof_is_a_protocol_update || next_proof_is_an_epoch_change {
+                            // Stop if we've reached a protocol update or end of epoch
                             break 'proof_loop;
                         }
                     } else {
@@ -1226,7 +1332,32 @@ impl QueryableProofStore for RocksDBStore {
             }
         }
 
-        latest_usable_proof.map(|proof| (txns, proof))
+        latest_usable_proof
+            .map(|proof| TxnsAndProof { txns, proof })
+            .ok_or(if any_consensus_proof_iterated {
+                // We have iterated at least one valid consensus proof
+                // but still were unable to produce a response,
+                // so this must have been a limit issue.
+                GetSyncableTxnsAndProofError::FailedToPrepareAResponseWithinLimits
+            } else {
+                // We have not iterated any valid consensus proof.
+                // Check if we've broken due to encountering
+                // one of the non-Consensus originated proofs.
+                if let Some(genesis_proof) = encountered_genesis_proof {
+                    GetSyncableTxnsAndProofError::RefusedToServeGenesis {
+                        refused_proof: Box::new(genesis_proof),
+                    }
+                } else if let Some(protocol_update_proof) = encountered_protocol_update_proof {
+                    GetSyncableTxnsAndProofError::RefusedToServeProtocolUpdate {
+                        refused_proof: Box::new(protocol_update_proof),
+                    }
+                } else {
+                    // We have not iterated any Consensus proof
+                    // or any other proof.
+                    // So the request must have been ahead of our current ledger.
+                    GetSyncableTxnsAndProofError::NothingToServeAtTheGivenStateVersion
+                }
+            })
     }
 
     fn get_first_proof(&self) -> Option<LedgerProof> {
@@ -1243,13 +1374,36 @@ impl QueryableProofStore for RocksDBStore {
         self.open_db_context().cf(EpochLedgerProofsCf).get(&epoch)
     }
 
-    fn get_last_proof(&self) -> Option<LedgerProof> {
+    fn get_latest_proof(&self) -> Option<LedgerProof> {
         self.open_db_context().cf(LedgerProofsCf).get_last_value()
     }
 
-    fn get_last_epoch_proof(&self) -> Option<LedgerProof> {
+    fn get_latest_epoch_proof(&self) -> Option<LedgerProof> {
         self.open_db_context()
             .cf(EpochLedgerProofsCf)
+            .get_last_value()
+    }
+
+    fn get_closest_epoch_proof_on_or_before(
+        &self,
+        state_version: StateVersion,
+    ) -> Option<LedgerProof> {
+        self.open_db_context()
+            .cf(LedgerProofsCf)
+            .iterate_from(&state_version, Direction::Reverse)
+            .map(|(_, proof)| proof)
+            .find(|proof| proof.ledger_header.next_epoch.is_some())
+    }
+
+    fn get_latest_protocol_update_init_proof(&self) -> Option<LedgerProof> {
+        self.open_db_context()
+            .cf(ProtocolUpdateInitLedgerProofsCf)
+            .get_last_value()
+    }
+
+    fn get_latest_protocol_update_execution_proof(&self) -> Option<LedgerProof> {
+        self.open_db_context()
+            .cf(ProtocolUpdateExecutionLedgerProofsCf)
             .get_last_value()
     }
 }
@@ -1276,7 +1430,6 @@ impl SubstateDatabase for RocksDBStore {
             self.open_db_context()
                 .cf(SubstatesCf)
                 .iterate_group_from(&(partition_key.clone(), from_sort_key), Direction::Forward)
-                .take_while(move |((next_key, _), _)| next_key == &partition_key)
                 .map(|((_, sort_key), value)| (sort_key, value)),
         )
     }
@@ -1619,18 +1772,18 @@ impl RestoreDecember2023LostSubstates for RocksDBStore {
 
             // Substates were deleted on the transition to epoch 51817 so no need to restore
             // substates if the current epoch has not reached this epoch yet.
-            self.get_last_epoch_proof().map_or(false, |p| {
+            self.get_latest_epoch_proof().map_or(false, |p| {
                 p.ledger_header.next_epoch.unwrap().epoch.number() >= 51817
             })
         } else {
             // For other networks, we can calculate the "problem" epoch from theoretical principles:
-            let (Some(first_proof), Some(last_epoch_proof)) =
-                (self.get_first_proof(), self.get_last_epoch_proof())
+            let (Some(first_proof), Some(latest_epoch_proof)) =
+                (self.get_first_proof(), self.get_latest_epoch_proof())
             else {
                 return; // empty ledger; no fix needed
             };
             let first_epoch = first_proof.ledger_header.epoch.number();
-            let last_epoch = last_epoch_proof.ledger_header.epoch.number();
+            let last_epoch = latest_epoch_proof.ledger_header.epoch.number();
             let problem_at_end_of_epoch = first_epoch + 19099; // (256 * 3 / 4 - 1) * 100 - 1
                                                                // Due to another bug, stokenet nodes may mistakenly believe that they already applied
                                                                // the fix. Thus, we have to ignore the `december_2023_lost_substates_restored` flag and
@@ -1642,7 +1795,7 @@ impl RestoreDecember2023LostSubstates for RocksDBStore {
         if should_restore_substates {
             info!("Restoring lost substates...");
             let last_state_version = self
-                .get_last_proof()
+                .get_latest_proof()
                 .map_or(StateVersion::of(1u64), |s| s.ledger_header.state_version);
 
             let txn_tracker_db_node_key =

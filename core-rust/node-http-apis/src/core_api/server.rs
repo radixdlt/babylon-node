@@ -171,6 +171,7 @@ pub async fn create_server<F>(
             post(handle_transaction_callpreview),
         )
         // Stream Sub-API
+        .route("/stream/proofs", post(handle_stream_proofs))
         .route("/stream/transactions", post(handle_stream_transactions))
         // State Sub-API
         .route(

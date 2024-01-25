@@ -92,6 +92,8 @@ import com.radixdlt.p2p.addressbook.AddressBook;
 import com.radixdlt.p2p.addressbook.AddressBookPersistence;
 import com.radixdlt.p2p.capability.Capabilities;
 import com.radixdlt.p2p.transport.PeerOutboundBootstrap;
+import com.radixdlt.protocol.NewestProtocolVersion;
+import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.properties.RuntimeProperties;
@@ -233,6 +235,9 @@ public final class P2PTestNetworkRunner {
                         network,
                         NodeId.fromPublicKey(nodeKey.getPublicKey()),
                         selfNodeIndex));
+            bind(String.class)
+                .annotatedWith(NewestProtocolVersion.class)
+                .toInstance(ProtocolConfig.GENESIS_PROTOCOL_VERSION_NAME);
             bind(RuntimeProperties.class).toInstance(properties);
             bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
             bind(DeterministicProcessor.class);

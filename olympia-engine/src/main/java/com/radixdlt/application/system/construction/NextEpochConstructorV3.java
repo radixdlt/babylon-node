@@ -156,7 +156,7 @@ public record NextEpochConstructorV3(
     unlockedStateIndexBuf.putLong(closingEpoch.epoch() + 1);
     var unlockedStakeIndex =
         SubstateIndex.create(unlockedStateIndexBuf.array(), ExitingStake.class);
-    var exitting =
+    var exiting =
         txBuilder.shutdownAll(
             unlockedStakeIndex,
             (Iterator<ExitingStake> i) -> {
@@ -167,7 +167,7 @@ public record NextEpochConstructorV3(
               i.forEachRemaining(exit::add);
               return exit;
             });
-    for (var e : exitting) {
+    for (var e : exiting) {
       txBuilder.up(e.unlock());
     }
 
@@ -251,8 +251,8 @@ public record NextEpochConstructorV3(
         var addr = entry.getKey();
         var amt = entry.getValue();
         var epochUnlocked = closingEpoch.epoch() + 1 + unstakingEpochDelay;
-        var exittingStake = curValidator.unstakeOwnership(addr, amt, epochUnlocked);
-        txBuilder.up(exittingStake);
+        var exitingStake = curValidator.unstakeOwnership(addr, amt, epochUnlocked);
+        txBuilder.up(exitingStake);
       }
       validatorsToUpdate.put(k, curValidator);
     }

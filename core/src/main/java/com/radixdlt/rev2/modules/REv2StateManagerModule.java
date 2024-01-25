@@ -77,15 +77,20 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.NodeAutoCloseable;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.lang.Option;
+import com.radixdlt.ledger.LedgerProofBundle;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.*;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.networks.Network;
+import com.radixdlt.protocol.NewestProtocolVersion;
+import com.radixdlt.protocol.ProtocolConfig;
+import com.radixdlt.protocol.RustProtocolUpdate;
 import com.radixdlt.recovery.VertexStoreRecovery;
 import com.radixdlt.rev2.*;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.state.RustStateReader;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.store.NodeStorageLocation;
 import com.radixdlt.sync.TransactionsAndProofReader;
@@ -107,6 +112,7 @@ public final class REv2StateManagerModule extends AbstractModule {
   private final StateHashTreeGcConfig stateHashTreeGcConfig;
   private final LedgerProofsGcConfig ledgerProofsGcConfig;
   private final LedgerSyncLimitsConfig ledgerSyncLimitsConfig;
+  private final ProtocolConfig protocolConfig;
   private final boolean noFees;
 
   private REv2StateManagerModule(
@@ -118,6 +124,7 @@ public final class REv2StateManagerModule extends AbstractModule {
       StateHashTreeGcConfig stateHashTreeGcConfig,
       LedgerProofsGcConfig ledgerProofsGcConfig,
       LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
+      ProtocolConfig protocolConfig,
       boolean noFees) {
     this.proposalLimitsConfig = proposalLimitsConfig;
     this.vertexLimitsConfigOpt = vertexLimitsConfigOpt;
@@ -127,6 +134,7 @@ public final class REv2StateManagerModule extends AbstractModule {
     this.stateHashTreeGcConfig = stateHashTreeGcConfig;
     this.ledgerProofsGcConfig = ledgerProofsGcConfig;
     this.ledgerSyncLimitsConfig = ledgerSyncLimitsConfig;
+    this.protocolConfig = protocolConfig;
     this.noFees = noFees;
   }
 
@@ -137,7 +145,8 @@ public final class REv2StateManagerModule extends AbstractModule {
       Option<RustMempoolConfig> mempoolConfig,
       StateHashTreeGcConfig stateHashTreeGcConfig,
       LedgerProofsGcConfig ledgerProofsGcConfig,
-      LedgerSyncLimitsConfig ledgerSyncLimitsConfig) {
+      LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
+      ProtocolConfig protocolConfig) {
     return new REv2StateManagerModule(
         proposalLimitsConfig,
         Option.some(vertexLimitsConfig),
@@ -147,6 +156,7 @@ public final class REv2StateManagerModule extends AbstractModule {
         stateHashTreeGcConfig,
         ledgerProofsGcConfig,
         ledgerSyncLimitsConfig,
+        protocolConfig,
         false);
   }
 
@@ -158,6 +168,7 @@ public final class REv2StateManagerModule extends AbstractModule {
       StateHashTreeGcConfig stateHashTreeGcConfig,
       LedgerProofsGcConfig ledgerProofsGcConfig,
       LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
+      ProtocolConfig protocolConfig,
       boolean noFees) {
     return new REv2StateManagerModule(
         proposalLimitsConfig,
@@ -168,6 +179,7 @@ public final class REv2StateManagerModule extends AbstractModule {
         stateHashTreeGcConfig,
         ledgerProofsGcConfig,
         ledgerSyncLimitsConfig,
+        protocolConfig,
         noFees);
   }
 
@@ -178,6 +190,7 @@ public final class REv2StateManagerModule extends AbstractModule {
     bind(TransactionsAndProofReader.class).to(REv2TransactionsAndProofReader.class);
     bind(DatabaseFlags.class).toInstance(databaseFlags);
     bind(LedgerSyncLimitsConfig.class).toInstance(ledgerSyncLimitsConfig);
+    bind(ProtocolConfig.class).toInstance(protocolConfig);
     install(proposalLimitsConfig.asModule());
 
     install(
@@ -211,6 +224,7 @@ public final class REv2StateManagerModule extends AbstractModule {
                     stateHashTreeGcConfig,
                     ledgerProofsGcConfig,
                     ledgerSyncLimitsConfig,
+                    protocolConfig,
                     noFees));
           }
 
@@ -219,16 +233,19 @@ public final class REv2StateManagerModule extends AbstractModule {
           REv2StateComputer rEv2StateComputer(
               RustStateComputer stateComputer,
               RustMempool mempool,
+              RustProtocolUpdate rustProtocolUpdate,
               EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher,
               Hasher hasher,
               EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher,
               Serialization serialization,
               BFTConfiguration initialBftConfiguration,
               Metrics metrics,
-              SelfValidatorInfo selfValidatorInfo) {
+              SelfValidatorInfo selfValidatorInfo,
+              LedgerProofBundle initialLatestProof) {
             return new REv2StateComputer(
                 stateComputer,
                 mempool,
+                rustProtocolUpdate,
                 proposalLimitsConfig,
                 hasher,
                 ledgerUpdateEventDispatcher,
@@ -236,7 +253,8 @@ public final class REv2StateManagerModule extends AbstractModule {
                 serialization,
                 initialBftConfiguration.getProposerElection(),
                 metrics,
-                selfValidatorInfo);
+                selfValidatorInfo,
+                initialLatestProof);
           }
 
           @Provides
@@ -307,7 +325,27 @@ public final class REv2StateManagerModule extends AbstractModule {
 
   @Provides
   @Singleton
+  private RustProtocolUpdate rustProtocolUpdate(
+      Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
+    return new RustProtocolUpdate(metrics, nodeRustEnvironment);
+  }
+
+  @Provides
+  @Singleton
+  private RustStateReader rustStateReader(
+      Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
+    return new RustStateReader(metrics, nodeRustEnvironment);
+  }
+
+  @Provides
+  @Singleton
   private RustMempool rustMempool(Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
     return new RustMempool(metrics, nodeRustEnvironment);
+  }
+
+  @Provides
+  @NewestProtocolVersion
+  private String newestProtocolVersion(RustStateComputer rustStateComputer) {
+    return rustStateComputer.newestProtocolVersion();
   }
 }

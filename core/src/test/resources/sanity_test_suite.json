@@ -120,7 +120,7 @@
 			},
 			{
 				"description": {
-					"implementationInfo": "Message is not hashed, it should be UTF-8 encoded and then hashed before signing. Signatures are on R|S format, not DER format. Signatures MUST be determinsitic otherwise this test wont succceed and must also be on canonical form ('low S', according to BIP62).",
+					"implementationInfo": "Message is not hashed, it should be UTF-8 encoded and then hashed before signing. Signatures are on R|S format, not DER format. Signatures MUST be deterministic otherwise this test wont succceed and must also be on canonical form ('low S', according to BIP62).",
 					"purpose": "Verify that ECDSA signatures works as expected together with the ECC curve 'secp256k1'. We want to verify that input is determinsitically signed according to RFC6979 and that signatures are in canonical form.",
 					"troubleshooting": "Assert you are signing only hashed content, and that the content might have the correct UTF-8 encoding first. Ensure that you are not double hashing. Assert that you have the correct private key, maybe by asserting that when calculating the public key from it it matches the expected public key."
 				},

@@ -122,7 +122,7 @@ public record GenesisFromPropertiesLoader(RuntimeProperties properties) {
 
   private static WrappedByteArray readGenesisBytesFromFile(String genesisFile) {
     // Note - for simplicity, we use the same file format as GenesisFileStore's genesis_data.bin
-    // This makes the two files interchangable, to avoid confusion
+    // This makes the two files interchangeable, to avoid confusion
     try {
       final var compressedBytes = Files.readAllBytes(Path.of(genesisFile));
       return fromCompressedBytes(compressedBytes);

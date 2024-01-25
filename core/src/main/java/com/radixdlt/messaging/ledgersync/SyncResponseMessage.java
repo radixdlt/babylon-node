@@ -66,11 +66,11 @@ package com.radixdlt.messaging.ledgersync;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.ledger.DtoLedgerExtension;
 import com.radixdlt.messaging.core.Message;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
+import com.radixdlt.sync.LedgerExtensionSyncDto;
 import java.util.Objects;
 
 /** Message with sync transactions as a response to sync request */
@@ -78,15 +78,15 @@ import java.util.Objects;
 public final class SyncResponseMessage extends Message {
   @JsonProperty("run")
   @DsonOutput(Output.ALL)
-  private final DtoLedgerExtension ledgerExtension;
+  private final LedgerExtensionSyncDto ledgerExtension;
 
   @JsonCreator
   public SyncResponseMessage(
-      @JsonProperty(value = "run", required = true) DtoLedgerExtension ledgerExtension) {
+      @JsonProperty(value = "run", required = true) LedgerExtensionSyncDto ledgerExtension) {
     this.ledgerExtension = Objects.requireNonNull(ledgerExtension);
   }
 
-  public DtoLedgerExtension getLedgerExtension() {
+  public LedgerExtensionSyncDto getLedgerExtension() {
     return ledgerExtension;
   }
 

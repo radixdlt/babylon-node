@@ -89,10 +89,12 @@ use node_common::locks::{LockFactory, Mutex, RwLock, StateLock};
 use prometheus::Registry;
 use tracing::{debug, info, warn};
 
+use crate::protocol::*;
 use crate::store::traits::scenario::{
     DescribedAddress, ExecutedGenesisScenario, ExecutedGenesisScenarioStore,
     ExecutedScenarioTransaction, ScenarioSequenceNumber,
 };
+
 use std::ops::Deref;
 use std::sync::Arc;
 use std::time::{Instant, SystemTime};
@@ -101,17 +103,27 @@ pub struct StateComputer<S> {
     network: NetworkDefinition,
     store: Arc<StateLock<S>>,
     mempool_manager: Arc<MempoolManager>,
-    execution_configurator: Arc<ExecutionConfigurator>,
+    execution_configurator: Arc<RwLock<ExecutionConfigurator>>,
     pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
     execution_cache: Mutex<ExecutionCache>,
-    ledger_transaction_validator: LedgerTransactionValidator,
+    ledger_transaction_validator: RwLock<LedgerTransactionValidator>,
     ledger_metrics: LedgerMetrics,
     committed_transactions_metrics: CommittedTransactionsMetrics,
+    protocol_metrics: ProtocolMetrics,
     vertex_prepare_metrics: VertexPrepareMetrics,
     vertex_limits_config: VertexLimitsConfig,
+    protocol_state: RwLock<ProtocolState>,
 }
 
-impl<S: QueryableProofStore> StateComputer<S> {
+impl<
+        S: QueryableProofStore
+            + IterableProofStore
+            + QueryableTransactionStore
+            + TransactionIdentifierLoader
+            + CommitStore
+            + ReadableStore,
+    > StateComputer<S>
+{
     // TODO: refactor and maybe make clippy happy too
     #[allow(clippy::too_many_arguments)]
     pub fn new(
@@ -119,20 +131,24 @@ impl<S: QueryableProofStore> StateComputer<S> {
         vertex_limits_config: VertexLimitsConfig,
         store: Arc<StateLock<S>>,
         mempool_manager: Arc<MempoolManager>,
-        execution_configurator: Arc<ExecutionConfigurator>,
+        execution_configurator: Arc<RwLock<ExecutionConfigurator>>,
         pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
         metrics_registry: &Registry,
         lock_factory: LockFactory,
+        initial_updatable_config: &ProtocolStateComputerConfig,
+        initial_protocol_state: ProtocolState,
     ) -> StateComputer<S> {
         let (current_transaction_root, current_ledger_proposer_timestamp_ms) = store
             .read_current()
-            .get_last_proof()
+            .get_latest_proof()
             .map(|proof| proof.ledger_header)
             .map(|header| (header.hashes.transaction_root, header.proposer_timestamp_ms))
             .unwrap_or_else(|| (LedgerHashes::pre_genesis().transaction_root, 0));
 
         let committed_transactions_metrics =
-            CommittedTransactionsMetrics::new(metrics_registry, &execution_configurator);
+            CommittedTransactionsMetrics::new(metrics_registry, &execution_configurator.read());
+
+        let protocol_metrics = ProtocolMetrics::new(metrics_registry, &initial_protocol_state);
 
         StateComputer {
             network: network.clone(),
@@ -143,7 +159,9 @@ impl<S: QueryableProofStore> StateComputer<S> {
             execution_cache: lock_factory
                 .named("execution_cache")
                 .new_mutex(ExecutionCache::new(current_transaction_root)),
-            ledger_transaction_validator: LedgerTransactionValidator::new(network),
+            ledger_transaction_validator: lock_factory
+                .named("ledger_transaction_validator")
+                .new_rwlock(initial_updatable_config.ledger_transaction_validator()),
             vertex_prepare_metrics: VertexPrepareMetrics::new(metrics_registry),
             vertex_limits_config,
             ledger_metrics: LedgerMetrics::new(
@@ -154,6 +172,10 @@ impl<S: QueryableProofStore> StateComputer<S> {
                 current_ledger_proposer_timestamp_ms,
             ),
             committed_transactions_metrics,
+            protocol_metrics,
+            protocol_state: lock_factory
+                .named("protocol_state")
+                .new_rwlock(initial_protocol_state),
         }
     }
 
@@ -220,7 +242,6 @@ impl GenesisCommitRequestFactory {
 
     fn create_proof(&self, hashes: LedgerHashes, next_epoch: Option<NextEpoch>) -> LedgerProof {
         LedgerProof {
-            opaque: self.genesis_opaque_hash,
             ledger_header: LedgerHeader {
                 epoch: self.epoch,
                 round: Round::zero(),
@@ -229,8 +250,11 @@ impl GenesisCommitRequestFactory {
                 consensus_parent_round_timestamp_ms: self.timestamp,
                 proposer_timestamp_ms: self.timestamp,
                 next_epoch,
+                next_protocol_version: None,
             },
-            timestamped_signatures: vec![],
+            origin: LedgerProofOrigin::Genesis {
+                genesis_opaque_hash: self.genesis_opaque_hash,
+            },
         }
     }
 }
@@ -267,7 +291,10 @@ where
             .expect("Could not encode genesis transaction");
         let prepared = PreparedLedgerTransaction::prepare_from_raw(&raw)
             .expect("Could not prepare genesis transaction");
-        let validated = self.ledger_transaction_validator.validate_genesis(prepared);
+        let validated = self
+            .ledger_transaction_validator
+            .read()
+            .validate_genesis(prepared);
 
         let read_store = self.store.read_current();
         let mut series_executor = self.start_series_execution(read_store.deref());
@@ -281,7 +308,7 @@ where
             raw,
             validated,
             ledger_hashes: commit.hash_structures_diff.ledger_hashes,
-            next_epoch: commit.next_epoch(),
+            next_epoch: commit.epoch_change().map(|ev| ev.into()),
         }
     }
 
@@ -301,6 +328,7 @@ where
 
         let validated = self
             .ledger_transaction_validator
+            .read()
             .validate_user_or_round_update(prepared_ledger_transaction)
             .unwrap_or_else(|_| panic!("Expected that {} was valid", qualified_name));
 
@@ -309,6 +337,7 @@ where
         // Note - we first create a basic receipt - because we need it for later
         let basic_receipt = self
             .execution_configurator
+            .read()
             .wrap_ledger_transaction(&validated, "scenario transaction")
             .execute_on(read_store.deref());
         let mut series_executor = self.start_series_execution(read_store.deref());
@@ -360,6 +389,7 @@ where
             // and executable creation) by accessing the execution cache in a more clever way.
             let validated = self
                 .ledger_transaction_validator
+                .read()
                 .validate_user_or_round_update_from_raw(&raw_ancestor)
                 .expect("Ancestor transactions should be valid");
 
@@ -392,6 +422,7 @@ where
         let ledger_round_update = LedgerTransaction::RoundUpdateV1(Box::new(round_update));
         let validated_round_update = self
             .ledger_transaction_validator
+            .read()
             .validate_user_or_round_update_from_model(&ledger_round_update)
             .expect("expected to be able to prepare the round update transaction");
 
@@ -449,8 +480,16 @@ where
             .into_iter()
             .enumerate()
         {
-            // Don't process any additional transactions if next epoch has occurred
-            if series_executor.next_epoch().is_some() {
+            // Don't process any additional transactions if protocol update has been enacted.
+            // Note that if a protocol update happens at the end of epoch
+            // then a ProtocolUpdate stop reason is returned.
+            if series_executor.next_protocol_version().is_some() {
+                stop_reason = VertexPrepareStopReason::ProtocolUpdate;
+                break;
+            }
+
+            // Don't process any additional transactions if epoch change has occurred
+            if series_executor.epoch_change().is_some() {
                 stop_reason = VertexPrepareStopReason::EpochChange;
                 break;
             }
@@ -500,6 +539,7 @@ where
             // validated transaction from the mempool.
             let validate_result = self
                 .ledger_transaction_validator
+                .read()
                 .validate_user_or_round_update(prepared_transaction);
 
             let validated = match validate_result {
@@ -661,7 +701,8 @@ where
         PrepareResult {
             committed: committable_transactions,
             rejected: rejected_transactions,
-            next_epoch: series_executor.next_epoch().cloned(),
+            next_epoch: series_executor.epoch_change().map(|ev| ev.into()),
+            next_protocol_version: series_executor.next_protocol_version(),
             ledger_hashes: *series_executor.latest_ledger_hashes(),
         }
     }
@@ -679,6 +720,7 @@ where
             })
             .and_then(|raw_ledger_transaction| {
                 self.ledger_transaction_validator
+                    .read()
                     .prepare_from_raw(&raw_ledger_transaction)
                     .map(|prepared_transaction| (raw_ledger_transaction, prepared_transaction))
             })
@@ -689,6 +731,7 @@ where
             store,
             &self.execution_cache,
             self.execution_configurator.deref(),
+            self.protocol_state.read().deref().clone(),
         )
     }
 }
@@ -698,10 +741,12 @@ where
     S: CommitStore + ExecutedGenesisScenarioStore,
     S: ReadableStore,
     S: for<'a> TransactionIndex<&'a IntentHash>,
-    S: QueryableProofStore + TransactionIdentifierLoader,
+    S: QueryableProofStore + TransactionIdentifierLoader + QueryableTransactionStore,
 {
-    /// Performs an [`execute_genesis()`] with a hardcoded genesis data meant for test purposes.
-    pub fn execute_genesis_for_unit_tests(&self) -> LedgerProof {
+    pub fn execute_genesis_for_unit_tests_with_config(
+        &self,
+        consensus_manager_config: ConsensusManagerConfig,
+    ) -> LedgerProof {
         // Roughly copied from bootstrap_test_default in scrypto
         let genesis_validator: GenesisValidator = Secp256k1PublicKey([0; 33]).into();
         let genesis_chunks = vec![
@@ -720,7 +765,21 @@ where
             },
         ];
         let initial_epoch = Epoch::of(1);
-        let initial_config = ConsensusManagerConfig {
+        let initial_timestamp_ms = 1;
+        self.execute_genesis(
+            genesis_chunks,
+            initial_epoch,
+            consensus_manager_config,
+            initial_timestamp_ms,
+            Hash([0; Hash::LENGTH]),
+            *DEFAULT_TESTING_FAUCET_SUPPLY,
+            vec![],
+        )
+    }
+
+    /// Performs an [`execute_genesis()`] with a hardcoded genesis data meant for test purposes.
+    pub fn execute_genesis_for_unit_tests_with_default_config(&self) -> LedgerProof {
+        let default_config = ConsensusManagerConfig {
             max_validators: 10,
             epoch_change_condition: EpochChangeCondition {
                 min_round_count: 3,
@@ -734,19 +793,10 @@ where
             num_fee_increase_delay_epochs: 1,
             validator_creation_usd_cost: Decimal::one(),
         };
-        let initial_timestamp_ms = 1;
-        self.execute_genesis(
-            genesis_chunks,
-            initial_epoch,
-            initial_config,
-            initial_timestamp_ms,
-            Hash([0; Hash::LENGTH]),
-            *DEFAULT_TESTING_FAUCET_SUPPLY,
-            vec![],
-        )
+        self.execute_genesis_for_unit_tests_with_config(default_config)
     }
 
-    /// Creates and commits a series of genesis transactions (i.e. a boostrap, then potentially many
+    /// Creates and commits a series of genesis transactions (i.e. a bootstrap, then potentially many
     /// data ingestion chunks, and then a wrap-up).
     #[allow(clippy::too_many_arguments)]
     pub fn execute_genesis(
@@ -989,13 +1039,14 @@ where
         let mut proposer_timestamp_ms = self
             .store
             .read_current()
-            .get_last_proof()
+            .get_latest_proof()
             .unwrap()
             .ledger_header
             .proposer_timestamp_ms;
         for (index, raw_transaction) in commit_request.transactions.iter().enumerate() {
             let result = self
                 .ledger_transaction_validator
+                .read()
                 .prepare_from_raw(raw_transaction);
             let prepared_transaction = match result {
                 Ok(prepared_transaction) => prepared_transaction,
@@ -1082,6 +1133,7 @@ where
         {
             let validated = self
                 .ledger_transaction_validator
+                .read()
                 .validate_user_or_round_update(prepared)
                 .unwrap_or_else(|error| {
                     panic!("cannot validate transaction to be committed: {error:?}");
@@ -1125,13 +1177,30 @@ where
             });
         }
 
+        let new_protocol_state = series_executor.protocol_state();
+
+        // Update the protocol metrics
+        let epoch_change = series_executor.epoch_change();
+        if let Some(epoch_change) = &epoch_change {
+            self.protocol_metrics
+                .update(&new_protocol_state, epoch_change)
+        }
+
         // Step 4.: Check final invariants, perform the DB commit
-        if series_executor.next_epoch() != commit_ledger_header.next_epoch.as_ref() {
+        let next_epoch: Option<NextEpoch> = epoch_change.map(|ev| ev.into());
+        if next_epoch != commit_ledger_header.next_epoch {
             panic!(
                 "resultant next epoch at version {} differs from the proof ({:?} != {:?})",
+                commit_state_version, next_epoch, commit_ledger_header.next_epoch
+            );
+        }
+
+        if series_executor.next_protocol_version() != commit_ledger_header.next_protocol_version {
+            panic!(
+                "resultant protocol update at version {} differs from the proof ({:?} != {:?})",
                 commit_state_version,
-                series_executor.next_epoch(),
-                commit_ledger_header.next_epoch
+                series_executor.next_protocol_version(),
+                commit_ledger_header.next_protocol_version
             );
         }
 
@@ -1193,10 +1262,32 @@ where
         self.committed_transactions_metrics
             .update(transactions_metrics_data);
 
+        *self.protocol_state.write() = new_protocol_state;
+
         Ok(CommitSummary {
             validator_round_counters: round_counters,
             num_user_transactions,
         })
+    }
+
+    pub fn handle_protocol_update(
+        &self,
+        protocol_version_name: &ProtocolVersionName,
+        new_ledger_transaction_validator: LedgerTransactionValidator,
+    ) {
+        *self.ledger_transaction_validator.write() = new_ledger_transaction_validator;
+
+        self.protocol_state.write().current_protocol_version = protocol_version_name.clone();
+
+        let current_header = self
+            .store
+            .read_current()
+            .get_latest_proof()
+            .map(|proof| proof.ledger_header)
+            .expect("Can't apply a protocol update pre-genesis");
+
+        // Protocol update might change transaction execution rules, so we need to clean the cache
+        *self.execution_cache.lock() = ExecutionCache::new(current_header.hashes.transaction_root);
     }
 
     /// Performs a simplified [`commit()`] flow meant for (internal) genesis transactions.
@@ -1253,6 +1344,14 @@ where
             ),
             new_substate_node_ancestry_records: commit.new_substate_node_ancestry_records,
         });
+
+        // Protocol updates aren't allowed during genesis,
+        // so no need to handle an update here
+        // just assign the latest protocol state.
+        let mut locked_protocol_state = self.protocol_state.write();
+        *locked_protocol_state = series_executor.protocol_state();
+        drop(locked_protocol_state);
+
         drop(write_store);
 
         self.ledger_metrics.update(
@@ -1301,6 +1400,14 @@ where
                 .collect(),
         );
         *transaction_tree_diff.slice.root()
+    }
+
+    pub fn current_protocol_version(&self) -> ProtocolVersionName {
+        self.protocol_state.read().current_protocol_version.clone()
+    }
+
+    pub fn protocol_state(&self) -> ProtocolState {
+        self.protocol_state.read().deref().clone()
     }
 }
 
@@ -1442,7 +1549,7 @@ mod tests {
 
         let proof = state_manager
             .state_computer
-            .execute_genesis_for_unit_tests();
+            .execute_genesis_for_unit_tests_with_default_config();
 
         (proof, state_manager)
     }
@@ -1478,6 +1585,7 @@ mod tests {
         let validated_round_update = state_manager
             .state_computer
             .ledger_transaction_validator
+            .read()
             .validate_user_or_round_update_from_model(&ledger_round_update)
             .expect("expected to be able to prepare the round update transaction");
 
@@ -1497,6 +1605,7 @@ mod tests {
                 let validated = state_manager
                     .state_computer
                     .ledger_transaction_validator
+                    .read()
                     .validate_user_or_round_update(prepared_transaction)
                     .unwrap();
 
@@ -1550,6 +1659,7 @@ mod tests {
                 &proof,
                 proposed_transactions.clone(),
             ));
+
         assert_eq!(prepare_result.committed.len(), 10); // 9 committable transactions + 1 round update transaction
         assert_eq!(prepare_result.rejected.len(), 5); // 5 rejected transactions
 

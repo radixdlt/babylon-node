@@ -66,33 +66,37 @@ package com.radixdlt.messaging.ledgersync;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.messaging.core.Message;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
+import com.radixdlt.sync.LedgerProofSyncDto;
 import java.util.Objects;
 
 /** Message to request for sync transactions */
 @SerializerId2("message.sync.sync_request")
 public final class SyncRequestMessage extends Message {
+  /* Watch out: this property name is wrong, but it can't easily be changed. */
   @JsonProperty("currentHeader")
   @DsonOutput(Output.ALL)
-  private final DtoLedgerProof currentHeader;
+  private final LedgerProofSyncDto startProofExclusive;
 
   @JsonCreator
   public SyncRequestMessage(
-      @JsonProperty(value = "currentHeader", required = true) DtoLedgerProof currentHeader) {
-    this.currentHeader = Objects.requireNonNull(currentHeader);
+      /* Watch out: this property name is wrong, but it can't easily be changed. */
+      @JsonProperty(value = "currentHeader", required = true)
+          LedgerProofSyncDto startProofExclusive) {
+    this.startProofExclusive = Objects.requireNonNull(startProofExclusive);
   }
 
-  public DtoLedgerProof getCurrentHeader() {
-    return currentHeader;
+  public LedgerProofSyncDto getStartProofExclusive() {
+    return startProofExclusive;
   }
 
   @Override
   public String toString() {
-    return String.format("%s{current=%s}", getClass().getSimpleName(), currentHeader);
+    return String.format(
+        "%s{startProofExclusive=%s}", getClass().getSimpleName(), startProofExclusive);
   }
 
   @Override
@@ -102,12 +106,12 @@ public final class SyncRequestMessage extends Message {
     }
 
     return (o instanceof SyncRequestMessage that)
-        && Objects.equals(currentHeader, that.currentHeader)
+        && Objects.equals(startProofExclusive, that.startProofExclusive)
         && Objects.equals(getTimestamp(), that.getTimestamp());
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(currentHeader, getTimestamp());
+    return Objects.hash(startProofExclusive, getTimestamp());
   }
 }

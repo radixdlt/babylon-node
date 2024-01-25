@@ -77,14 +77,13 @@ public class ModelEqualsVerifierTest {
 	@Test
 	public void verify_all_subtypes_correctly_override_equals_and_hash_code() {
 		final Set<Class<?>> subTypes = getGeneratedClasses();
-		subTypes.forEach(clazz -> {
+		subTypes.forEach(clazz ->
 			EqualsVerifier.forClass(clazz)
 				.usingGetClass()
 				.withRedefinedSuperclass()
 				.suppress(Warning.NONFINAL_FIELDS)
 				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-				.verify();
-		});
+				.verify());
 	}
 
 	private Set<Class<?>> getGeneratedClasses() {

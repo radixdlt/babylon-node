@@ -65,10 +65,9 @@
 package com.radixdlt.ledger;
 
 import com.google.common.primitives.Ints;
-import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.statecomputer.commit.LedgerProof;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * A run of committed transactions, with a known-valid LedgerProof pointing at the last transaction.
@@ -89,29 +88,14 @@ import java.util.Objects;
  *       "TransactionRun" and "CommittedTransactionWithProof".
  * </ul>
  */
-public final class LedgerExtension {
-  private final List<RawLedgerTransaction> transactions;
-  private final LedgerProof proof;
-
-  private LedgerExtension(List<RawLedgerTransaction> transactions, LedgerProof proof) {
-    this.transactions = Objects.requireNonNull(transactions);
-    this.proof = Objects.requireNonNull(proof);
-  }
+public record LedgerExtension(List<RawLedgerTransaction> transactions, LedgerProof proof) {
 
   public static LedgerExtension create(List<RawLedgerTransaction> transactions, LedgerProof proof) {
     return new LedgerExtension(transactions, proof);
   }
 
-  public List<RawLedgerTransaction> getTransactions() {
-    return transactions;
-  }
-
   public boolean contains(RawLedgerTransaction transaction) {
     return transactions.contains(transaction);
-  }
-
-  public LedgerProof getProof() {
-    return proof;
   }
 
   /**
@@ -121,7 +105,7 @@ public final class LedgerExtension {
    * transactions that we actually still need to commit.
    */
   public LedgerExtension getExtensionFrom(long startStateVersion) {
-    final var proofStateVersion = this.proof.getStateVersion();
+    final var proofStateVersion = this.proof.stateVersion();
     final var startIndex = this.transactions.size() - proofStateVersion + startStateVersion;
     if (startIndex < 0 || startIndex > this.transactions.size()) {
       throw new IllegalArgumentException(
@@ -131,27 +115,5 @@ public final class LedgerExtension {
     final var extension =
         this.transactions.subList(Ints.checkedCast(startIndex), this.transactions.size());
     return LedgerExtension.create(extension, this.proof);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(transactions, proof);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof LedgerExtension)) {
-      return false;
-    }
-
-    LedgerExtension other = (LedgerExtension) o;
-    return Objects.equals(this.transactions, other.transactions)
-        && Objects.equals(this.proof, other.proof);
-  }
-
-  @Override
-  public String toString() {
-    return String.format(
-        "%s{transactions=%s proof=%s}", this.getClass().getSimpleName(), transactions, proof);
   }
 }

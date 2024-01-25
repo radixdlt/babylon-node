@@ -78,7 +78,9 @@ fn export_extern_functions() {
     // state-manager
     state_manager::jni::mempool::export_extern_functions();
     state_manager::jni::node_rust_environment::export_extern_functions();
+    state_manager::jni::protocol_update::export_extern_functions();
     state_manager::jni::state_computer::export_extern_functions();
+    state_manager::jni::state_reader::export_extern_functions();
     state_manager::jni::transaction_preparer::export_extern_functions();
     state_manager::jni::transaction_store::export_extern_functions();
     state_manager::jni::vertex_store_recovery::export_extern_functions();

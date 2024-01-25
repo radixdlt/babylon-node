@@ -27,6 +27,7 @@ protocol.vertex.max_transaction_count=${RADIXDLT_PROTOCOL_VERTEX_MAX_TRANSACTION
 protocol.vertex.max_total_transactions_size=${RADIXDLT_PROTOCOL_VERTEX_MAX_TOTAL_TRANSACTIONS_SIZE}
 protocol.vertex.max_total_execution_cost_units_consumed=${RADIXDLT_PROTOCOL_VERTEX_MAX_TOTAL_EXECUTION_COST_UNITS_CONSUMED}
 protocol.vertex.max_total_finalization_cost_units_consumed=${RADIXDLT_PROTOCOL_VERTEX_MAX_TOTAL_FINALIZATION_COST_UNITS_CONSUMED}
+protocol.custom_config=${RADIXDLT_PROTOCOL_CUSTOM_CONFIG}
 
 api.core.port=$RADIXDLT_CORE_API_PORT
 api.core.bind_address=$RADIXDLT_CORE_API_BIND_ADDRESS

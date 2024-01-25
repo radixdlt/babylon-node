@@ -64,8 +64,6 @@
 
 package com.radixdlt.p2p;
 
-import static com.radixdlt.protocol.ProtocolVersion.ONLY_PROTOCOL_VERSION;
-
 import com.google.inject.*;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
@@ -87,9 +85,6 @@ import com.radixdlt.p2p.hostip.HostIpModule;
 import com.radixdlt.p2p.transport.PeerOutboundBootstrap;
 import com.radixdlt.p2p.transport.PeerOutboundBootstrapImpl;
 import com.radixdlt.p2p.transport.PeerServerBootstrap;
-import com.radixdlt.protocol.Current;
-import com.radixdlt.protocol.Newest;
-import com.radixdlt.protocol.ProtocolVersion;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.BerkeleyDbDefaults;
 import com.radixdlt.store.NodeStorageLocation;
@@ -110,10 +105,6 @@ public final class P2PModule extends AbstractModule {
             .permitDuplicates();
     eventBinder.addBinding().toInstance(PeerEvent.class);
     eventBinder.addBinding().toInstance(PeerOutboundConnectionTimeout.class);
-
-    // TODO(when introducing actual protocol updates): design how to manage this
-    bind(ProtocolVersion.class).annotatedWith(Current.class).toInstance(ONLY_PROTOCOL_VERSION);
-    bind(ProtocolVersion.class).annotatedWith(Newest.class).toInstance(ONLY_PROTOCOL_VERSION);
 
     bind(AddressBook.class).in(Scopes.SINGLETON);
     bind(PeersView.class).to(PeerManagerPeersView.class).in(Scopes.SINGLETON);

@@ -128,8 +128,9 @@ pub enum GenesisTransaction {
 const GENESIS_TRANSACTION_FLASH_DISCRIMINATOR: u8 = 0;
 const GENESIS_TRANSACTION_SYSTEM_TRANSACTION_DISCRIMINATOR: u8 = 1;
 
-#[derive(Debug, Clone, PartialEq, Eq, ManifestCategorize, ManifestEncode, ManifestDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub struct FlashTransactionV1 {
+    pub name: String,
     pub state_updates: StateUpdates,
 }
 
@@ -255,6 +256,11 @@ impl TransactionFullChildPreparable for PreparedLedgerTransactionInner {
                     PreparedRoundUpdateTransactionV1::prepare_as_full_body_child(decoder)?;
                 PreparedLedgerTransactionInner::RoundUpdateV1(Box::new(prepared))
             }
+            FLASH_V1_LEDGER_TRANSACTION_DISCRIMINATOR => {
+                check_length(length, 1)?;
+                let prepared = PreparedFlashTransactionV1::prepare_as_full_body_child(decoder)?;
+                PreparedLedgerTransactionInner::FlashV1(Box::new(prepared))
+            }
             _ => return Err(unknown_discriminator(discriminator)),
         };
         decoder.track_stack_depth_decrease()?;
@@ -305,8 +311,9 @@ impl HasSystemTransactionHash for PreparedGenesisTransaction {
 }
 
 pub struct PreparedFlashTransactionV1 {
-    state_updates: StateUpdates,
-    summary: Summary,
+    pub name: String,
+    pub state_updates: StateUpdates,
+    pub summary: Summary,
 }
 
 impl HasSummary for PreparedFlashTransactionV1 {
@@ -318,6 +325,21 @@ impl HasSummary for PreparedFlashTransactionV1 {
 impl HasFlashTransactionHash for PreparedFlashTransactionV1 {
     fn flash_transaction_hash(&self) -> FlashTransactionHash {
         FlashTransactionHash(self.summary.hash)
+    }
+}
+
+impl TransactionFullChildPreparable for PreparedFlashTransactionV1 {
+    fn prepare_as_full_body_child(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
+        let ((name, state_updates), summary) =
+            ConcatenatedDigest::prepare_from_transaction_child_struct::<(
+                SummarizedRawFullBody<String>,
+                SummarizedRawFullBody<StateUpdates>,
+            )>(decoder, TransactionDiscriminator::V1Flash)?;
+        Ok(Self {
+            name: name.inner,
+            state_updates: state_updates.inner,
+            summary,
+        })
     }
 }
 

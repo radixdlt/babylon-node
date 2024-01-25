@@ -86,6 +86,7 @@ use crate::priority_mempool::PriorityMempool;
 use crate::store::StateManagerDatabase;
 
 use super::fatal_panic_handler::FatalPanicHandler;
+
 use crate::{StateComputer, StateManager, StateManagerConfig};
 
 const POINTER_JNI_FIELD_NAME: &str = "rustNodeRustEnvironmentPointer";

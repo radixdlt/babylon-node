@@ -82,6 +82,7 @@ pub(crate) async fn handle_status_network_configuration(
             consensus_manager: bech32_encoder.encode(CONSENSUS_MANAGER.as_ref()).unwrap(),
             genesis_helper: bech32_encoder.encode(GENESIS_HELPER.as_ref()).unwrap(),
             faucet: bech32_encoder.encode(FAUCET.as_ref()).unwrap(),
+            transaction_tracker: bech32_encoder.encode(TRANSACTION_TRACKER.as_ref()).unwrap(),
         }),
     }))
 }

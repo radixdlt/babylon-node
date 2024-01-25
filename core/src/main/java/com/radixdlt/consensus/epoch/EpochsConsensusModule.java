@@ -79,11 +79,11 @@ import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
 import com.radixdlt.consensus.vertexstore.VertexStoreJavaImpl;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.*;
+import com.radixdlt.ledger.LedgerProofBundle;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.messaging.core.GetVerticesRequestRateLimit;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
-import com.radixdlt.rev2.LastEpochProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.Comparator;
@@ -242,8 +242,8 @@ public class EpochsConsensusModule extends AbstractModule {
 
   @Provides
   private EpochChange initialEpoch(
-      @LastEpochProof LedgerProof proof, BFTConfiguration initialBFTConfig) {
-    return new EpochChange(proof, initialBFTConfig);
+      LedgerProofBundle latestProof, BFTConfiguration initialBFTConfig) {
+    return new EpochChange(latestProof, initialBFTConfig);
   }
 
   @ProvidesIntoSet
@@ -253,7 +253,7 @@ public class EpochsConsensusModule extends AbstractModule {
       EpochChange initialEpoch) {
     return localTimeout -> {
       Epoched<ScheduledLocalTimeout> epochTimeout =
-          Epoched.from(initialEpoch.getNextEpoch(), localTimeout);
+          Epoched.from(initialEpoch.nextEpoch(), localTimeout);
       localTimeoutSender.dispatch(epochTimeout, localTimeout.millisecondsWaitTime());
     };
   }
@@ -267,7 +267,7 @@ public class EpochsConsensusModule extends AbstractModule {
           EpochChange initialEpoch) {
     return timeoutQuorumDelayedResolution -> {
       final var epochedTimeoutQuorumDelayedResolution =
-          Epoched.from(initialEpoch.getNextEpoch(), timeoutQuorumDelayedResolution);
+          Epoched.from(initialEpoch.nextEpoch(), timeoutQuorumDelayedResolution);
       epochedtimeoutQuorumDelayedResolutionDispatcher.dispatch(
           epochedTimeoutQuorumDelayedResolution,
           timeoutQuorumDelayedResolution.millisecondsWaitTime());
@@ -280,7 +280,7 @@ public class EpochsConsensusModule extends AbstractModule {
       EventDispatcher<EpochRoundUpdate> epochRoundUpdateEventDispatcher, EpochChange initialEpoch) {
     return roundUpdate -> {
       EpochRoundUpdate epochRoundUpdate =
-          new EpochRoundUpdate(initialEpoch.getNextEpoch(), roundUpdate);
+          new EpochRoundUpdate(initialEpoch.nextEpoch(), roundUpdate);
       epochRoundUpdateEventDispatcher.dispatch(epochRoundUpdate);
     };
   }
@@ -308,7 +308,7 @@ public class EpochsConsensusModule extends AbstractModule {
       EpochChange initialEpoch, EventDispatcher<EpochLocalTimeoutOccurrence> timeoutDispatcher) {
     return timeoutOccurrence ->
         timeoutDispatcher.dispatch(
-            new EpochLocalTimeoutOccurrence(initialEpoch.getNextEpoch(), timeoutOccurrence));
+            new EpochLocalTimeoutOccurrence(initialEpoch.nextEpoch(), timeoutOccurrence));
   }
 
   @Provides
@@ -434,7 +434,7 @@ public class EpochsConsensusModule extends AbstractModule {
       @BFTSyncPatienceMillis int bftSyncPatienceMillis,
       Metrics metrics,
       Hasher hasher) {
-    return (selfValidatorId, safetyRules, vertexStore, pacemakerState, currentLedgerHeader) ->
+    return (selfValidatorId, safetyRules, vertexStore, pacemakerState, latestProof) ->
         new BFTSync(
             selfValidatorId,
             syncRequestRateLimiter,
@@ -447,7 +447,7 @@ public class EpochsConsensusModule extends AbstractModule {
             syncLedgerRequestSender,
             timeoutDispatcher,
             unexpectedEventEventDispatcher,
-            currentLedgerHeader,
+            latestProof,
             random,
             bftSyncPatienceMillis,
             metrics);

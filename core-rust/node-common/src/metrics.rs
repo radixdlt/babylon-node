@@ -166,6 +166,13 @@ pub trait TakesMetricLabels {
         label2: impl MetricLabel,
         label3: impl MetricLabel,
     ) -> Self::Metric;
+    fn with_four_labels(
+        &self,
+        label1: impl MetricLabel,
+        label2: impl MetricLabel,
+        label3: impl MetricLabel,
+        label4: impl MetricLabel,
+    ) -> Self::Metric;
 }
 
 impl<T: MetricVecBuilder> TakesMetricLabels for MetricVec<T> {
@@ -192,6 +199,21 @@ impl<T: MetricVecBuilder> TakesMetricLabels for MetricVec<T> {
             label1.prometheus_label_name().as_ref(),
             label2.prometheus_label_name().as_ref(),
             label3.prometheus_label_name().as_ref(),
+        ])
+    }
+
+    fn with_four_labels(
+        &self,
+        label1: impl MetricLabel,
+        label2: impl MetricLabel,
+        label3: impl MetricLabel,
+        label4: impl MetricLabel,
+    ) -> Self::Metric {
+        self.with_label_values(&[
+            label1.prometheus_label_name().as_ref(),
+            label2.prometheus_label_name().as_ref(),
+            label3.prometheus_label_name().as_ref(),
+            label4.prometheus_label_name().as_ref(),
         ])
     }
 }

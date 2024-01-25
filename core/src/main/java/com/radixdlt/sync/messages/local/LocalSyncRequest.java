@@ -65,48 +65,8 @@
 package com.radixdlt.sync.messages.local;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.p2p.NodeId;
-import java.util.Objects;
+import com.radixdlt.statecomputer.commit.LedgerProof;
 
-/** A request to sync ledger to a given version. */
-public final class LocalSyncRequest {
-
-  private final LedgerProof target;
-  private final ImmutableList<NodeId> targetNodes;
-
-  public LocalSyncRequest(LedgerProof target, ImmutableList<NodeId> targetNodes) {
-    this.target = Objects.requireNonNull(target);
-    this.targetNodes = Objects.requireNonNull(targetNodes);
-  }
-
-  public LedgerProof getTarget() {
-    return target;
-  }
-
-  public ImmutableList<NodeId> getTargetNodes() {
-    return targetNodes;
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s {%s target=%s}", this.getClass().getSimpleName(), target, targetNodes);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    LocalSyncRequest that = (LocalSyncRequest) o;
-    return Objects.equals(target, that.target) && Objects.equals(targetNodes, that.targetNodes);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(target, targetNodes);
-  }
-}
+/** A request to sync ledger to a given target. */
+public record LocalSyncRequest(LedgerProof target, ImmutableList<NodeId> targetNodes) {}

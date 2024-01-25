@@ -80,6 +80,7 @@ pub use vertex::*;
 use radix_engine::types::{ScryptoCategorize, ScryptoDecode, ScryptoEncode};
 use sbor::define_single_versioned;
 
+#[derive(Debug, Clone)]
 pub enum DatabaseConfigValidationError {
     AccountChangeIndexRequiresLocalTransactionExecutionIndex,
     LocalTransactionExecutionIndexChanged,
@@ -309,26 +310,61 @@ pub mod proofs {
             &self,
             from_state_version: StateVersion,
         ) -> Box<dyn Iterator<Item = LedgerProof> + '_>;
+
+        fn get_next_epoch_proof_iter(
+            &self,
+            from_epoch: Epoch,
+        ) -> Box<dyn Iterator<Item = LedgerProof> + '_>;
+
+        fn get_protocol_update_init_proof_iter(
+            &self,
+            from_state_version: StateVersion,
+        ) -> Box<dyn Iterator<Item = LedgerProof> + '_>;
+
+        fn get_protocol_update_execution_proof_iter(
+            &self,
+            from_state_version: StateVersion,
+        ) -> Box<dyn Iterator<Item = LedgerProof> + '_>;
     }
 
     #[enum_dispatch]
     pub trait QueryableProofStore {
         fn max_state_version(&self) -> StateVersion;
         fn max_completed_epoch(&self) -> Option<Epoch> {
-            self.get_last_epoch_proof()
+            self.get_latest_epoch_proof()
                 .map(|proof| proof.ledger_header.epoch)
         }
-        fn get_txns_and_proof(
+        fn get_syncable_txns_and_proof(
             &self,
             start_state_version_inclusive: StateVersion,
             max_number_of_txns_if_more_than_one_proof: u32,
             max_payload_size_in_bytes: u32,
-        ) -> Option<(Vec<RawLedgerTransaction>, LedgerProof)>;
+        ) -> Result<TxnsAndProof, GetSyncableTxnsAndProofError>;
         fn get_first_proof(&self) -> Option<LedgerProof>;
         fn get_post_genesis_epoch_proof(&self) -> Option<LedgerProof>;
         fn get_epoch_proof(&self, epoch: Epoch) -> Option<LedgerProof>;
-        fn get_last_proof(&self) -> Option<LedgerProof>;
-        fn get_last_epoch_proof(&self) -> Option<LedgerProof>;
+        fn get_latest_proof(&self) -> Option<LedgerProof>;
+        fn get_latest_epoch_proof(&self) -> Option<LedgerProof>;
+        fn get_closest_epoch_proof_on_or_before(
+            &self,
+            state_version: StateVersion,
+        ) -> Option<LedgerProof>;
+        fn get_latest_protocol_update_init_proof(&self) -> Option<LedgerProof>;
+        fn get_latest_protocol_update_execution_proof(&self) -> Option<LedgerProof>;
+    }
+
+    #[derive(Clone, Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub struct TxnsAndProof {
+        pub txns: Vec<RawLedgerTransaction>,
+        pub proof: LedgerProof,
+    }
+
+    #[derive(Clone, Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub enum GetSyncableTxnsAndProofError {
+        RefusedToServeGenesis { refused_proof: Box<LedgerProof> },
+        RefusedToServeProtocolUpdate { refused_proof: Box<LedgerProof> },
+        NothingToServeAtTheGivenStateVersion,
+        FailedToPrepareAResponseWithinLimits,
     }
 }
 

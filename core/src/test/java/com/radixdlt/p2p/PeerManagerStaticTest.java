@@ -125,19 +125,19 @@ public class PeerManagerStaticTest {
         .ifPresentOrElse(
             entry -> assertEquals(2L, entry.getKnownAddresses().stream().count()), Assert::fail);
 
-    var peerChanel = mock(PeerChannel.class);
+    var peerChannel = mock(PeerChannel.class);
     var inboundMessages = cmock(new TypeLiteral<Flowable<InboundMessage>>() {});
     // new key, but same host/port as peer2
     var peer = makeNodeUri("10.0.0.2", 30000);
 
-    when(peerChanel.getUri()).thenReturn(Optional.of(peer));
-    when(peerChanel.inboundMessages()).thenReturn(inboundMessages);
+    when(peerChannel.getUri()).thenReturn(Optional.of(peer));
+    when(peerChannel.inboundMessages()).thenReturn(inboundMessages);
     when(inboundMessages.toObservable())
         .thenReturn(cmock(new TypeLiteral<Observable<InboundMessage>>() {}));
-    when(peerChanel.isOutbound()).thenReturn(true);
-    when(peerChanel.getRemoteNodeId()).thenReturn(peer.getNodeId());
+    when(peerChannel.isOutbound()).thenReturn(true);
+    when(peerChannel.getRemoteNodeId()).thenReturn(peer.getNodeId());
 
-    peerManager.peerEventProcessor().process(new PeerConnected(peerChanel));
+    peerManager.peerEventProcessor().process(new PeerConnected(peerChannel));
 
     // One address is removed
     addressBook

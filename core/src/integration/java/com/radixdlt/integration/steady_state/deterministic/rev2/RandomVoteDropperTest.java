@@ -124,7 +124,7 @@ public final class RandomVoteDropperTest {
       test.runUntilState(NodesPredicate.nodeAt(0, NodePredicate.atOrOverStateVersion(100)), 100000);
 
       // Post-run assertions
-      Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), 20);
+      Checkers.assertNodesSyncedToVersionAtLeast(test.getNodeInjectors(), 20);
       Checkers.assertNoInvalidSyncResponses(test.getNodeInjectors());
     }
   }

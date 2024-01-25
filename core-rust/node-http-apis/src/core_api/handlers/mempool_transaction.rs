@@ -13,7 +13,7 @@ pub(crate) async fn handle_mempool_transaction(
     }
 
     let mut response = models::MempoolTransactionResponse {
-        count: MAX_BATCH_COUNT_PER_REQUEST as i32, // placeholder to get a better size aproximation for the header
+        count: MAX_BATCH_COUNT_PER_REQUEST as i32, // placeholder to get a better size approximation for the header
         payloads: vec![],
     };
 

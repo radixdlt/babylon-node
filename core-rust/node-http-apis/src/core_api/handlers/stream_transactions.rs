@@ -1,16 +1,18 @@
-use radix_engine::track::{NodeStateUpdates, PartitionStateUpdates};
+use radix_engine::track::{
+    BatchPartitionStateUpdate, NodeStateUpdates, PartitionStateUpdates, StateUpdates,
+};
 use std::iter;
 
 use crate::core_api::*;
 
 use radix_engine::types::hash;
-use radix_engine_store_interface::interface::DatabaseUpdate;
+use radix_engine_store_interface::interface::{DatabaseUpdate, DbSubstateValue};
 
 use state_manager::store::{traits::*, StateManagerDatabase};
 use state_manager::transaction::*;
 use state_manager::{
-    CommittedTransactionIdentifiers, LedgerHeader, LedgerProof, LocalTransactionReceipt,
-    StateVersion,
+    CommittedTransactionIdentifiers, LedgerHeader, LedgerProof, LedgerProofOrigin,
+    LocalTransactionReceipt, StateVersion,
 };
 
 use transaction::manifest;
@@ -166,30 +168,54 @@ pub fn to_api_ledger_proof(
     mapping_context: &MappingContext,
     proof: LedgerProof,
 ) -> Result<models::LedgerProof, MappingError> {
-    let timestamped_signatures = proof
-        .timestamped_signatures
-        .into_iter()
-        .map(|timestamped_validator_signature| {
-            Ok(models::TimestampedValidatorSignature {
-                validator_key: Box::new(to_api_ecdsa_secp256k1_public_key(
-                    &timestamped_validator_signature.key,
-                )),
-                validator_address: to_api_component_address(
-                    mapping_context,
-                    &timestamped_validator_signature.validator_address,
-                )?,
-                timestamp_ms: timestamped_validator_signature.timestamp_ms,
-                signature: Box::new(models::EcdsaSecp256k1Signature {
-                    key_type: models::PublicKeyType::EcdsaSecp256k1,
-                    signature_hex: to_hex(timestamped_validator_signature.signature.to_vec()),
-                }),
-            })
-        })
-        .collect::<Result<_, _>>()?;
+    let api_origin = match &proof.origin {
+        LedgerProofOrigin::Genesis {
+            genesis_opaque_hash,
+        } => models::LedgerProofOrigin::GenesisLedgerProofOrigin {
+            genesis_opaque_hash: to_api_hash(genesis_opaque_hash),
+        },
+        LedgerProofOrigin::Consensus {
+            opaque,
+            timestamped_signatures,
+        } => {
+            let api_timestamped_signatures = timestamped_signatures
+                .iter()
+                .map(|timestamped_validator_signature| {
+                    Ok(models::TimestampedValidatorSignature {
+                        validator_key: Box::new(to_api_ecdsa_secp256k1_public_key(
+                            &timestamped_validator_signature.key,
+                        )),
+                        validator_address: to_api_component_address(
+                            mapping_context,
+                            &timestamped_validator_signature.validator_address,
+                        )?,
+                        timestamp_ms: timestamped_validator_signature.timestamp_ms,
+                        signature: Box::new(models::EcdsaSecp256k1Signature {
+                            key_type: models::PublicKeyType::EcdsaSecp256k1,
+                            signature_hex: to_hex(
+                                timestamped_validator_signature.signature.to_vec(),
+                            ),
+                        }),
+                    })
+                })
+                .collect::<Result<_, _>>()?;
+
+            models::LedgerProofOrigin::ConsensusLedgerProofOrigin {
+                opaque_hash: to_api_hash(opaque),
+                timestamped_signatures: api_timestamped_signatures,
+            }
+        }
+        LedgerProofOrigin::ProtocolUpdate {
+            protocol_version_name,
+            batch_idx,
+        } => models::LedgerProofOrigin::ProtocolUpdateLedgerProofOrigin {
+            protocol_version_name: protocol_version_name.to_string(),
+            batch_idx: to_api_u32_as_i64(*batch_idx),
+        },
+    };
     Ok(models::LedgerProof {
-        opaque_hash: to_api_hash(&proof.opaque),
         ledger_header: Box::new(to_api_ledger_header(mapping_context, proof.ledger_header)?),
-        timestamped_signatures,
+        origin: Some(api_origin),
     })
 }
 
@@ -222,10 +248,15 @@ pub fn to_api_ledger_header(
             Some(Box::new(models::NextEpoch {
                 epoch: to_api_epoch(mapping_context, next_epoch.epoch)?,
                 validators,
+                significant_protocol_update_readiness: None,
             }))
         }
         None => None,
     };
+    let next_protocol_version = ledger_header
+        .next_protocol_version
+        .map(|version| version.to_string());
+
     Ok(models::LedgerHeader {
         epoch: to_api_epoch(mapping_context, ledger_header.epoch)?,
         round: to_api_round(ledger_header.round)?,
@@ -240,6 +271,7 @@ pub fn to_api_ledger_header(
         consensus_parent_round_timestamp_ms: ledger_header.consensus_parent_round_timestamp_ms,
         proposer_timestamp_ms: ledger_header.proposer_timestamp_ms,
         next_epoch,
+        next_protocol_version,
     })
 }
 
@@ -331,7 +363,11 @@ pub fn to_api_ledger_transaction(
         },
         LedgerTransaction::FlashV1(tx) => models::LedgerTransaction::FlashLedgerTransaction {
             payload_hex,
-            flash_transaction: Box::new(to_api_flash_transaction(context, tx)?),
+            name: tx.name.clone(),
+            flashed_state_updates: Box::new(to_api_flashed_state_updates(
+                context,
+                &tx.state_updates,
+            )?),
         },
     })
 }
@@ -613,40 +649,58 @@ fn to_api_balance_changes(
     })
 }
 
-pub fn to_api_flash_transaction(
+pub fn to_api_flashed_state_updates(
     context: &MappingContext,
-    flash_transaction: &FlashTransactionV1,
-) -> Result<models::FlashTransaction, MappingError> {
-    let mut flashed_substates = vec![];
-    for (node_id, updates) in &flash_transaction.state_updates.by_node {
+    state_updates: &StateUpdates,
+) -> Result<models::FlashedStateUpdates, MappingError> {
+    let mut deleted_partitions = Vec::new();
+    let mut set_substates = Vec::new();
+    let mut deleted_substates = Vec::new();
+    for (node_id, updates) in &state_updates.by_node {
         match updates {
             NodeStateUpdates::Delta { by_partition } => {
                 for (partition_number, partition_updates) in by_partition {
                     match partition_updates {
                         PartitionStateUpdates::Delta { by_substate } => {
                             for (key, update) in by_substate {
-                                let address = to_api_entity_address(context, node_id)?;
-                                let partition_num = to_api_u8_as_i32(partition_number.0);
-                                let substate_key = to_api_substate_key(key);
                                 match update {
                                     DatabaseUpdate::Set(value) => {
-                                        let substate_value = to_hex(value);
-                                        let flashed_substate = models::FlashedSubstate::new(
-                                            address,
-                                            partition_num,
-                                            substate_key,
-                                            substate_value,
-                                        );
-                                        flashed_substates.push(flashed_substate);
+                                        set_substates.push(to_api_flash_set_substate(
+                                            context,
+                                            node_id,
+                                            *partition_number,
+                                            key,
+                                            value,
+                                        )?);
                                     }
                                     DatabaseUpdate::Delete => {
-                                        unimplemented!("Flash transactions with deleted substates not yet supported.");
+                                        deleted_substates.push(to_api_direct_substate_id(
+                                            context,
+                                            node_id,
+                                            *partition_number,
+                                            key,
+                                        )?);
                                     }
                                 }
                             }
                         }
-                        PartitionStateUpdates::Batch(..) => {
-                            unimplemented!("Flash transactions with partition state updates not yet supported.");
+                        PartitionStateUpdates::Batch(BatchPartitionStateUpdate::Reset {
+                            new_substate_values,
+                        }) => {
+                            deleted_partitions.push(to_api_partition_id(
+                                context,
+                                node_id,
+                                *partition_number,
+                            )?);
+                            for (key, value) in new_substate_values {
+                                set_substates.push(to_api_flash_set_substate(
+                                    context,
+                                    node_id,
+                                    *partition_number,
+                                    key,
+                                    value,
+                                )?);
+                            }
                         }
                     }
                 }
@@ -654,5 +708,52 @@ pub fn to_api_flash_transaction(
         }
     }
 
-    Ok(models::FlashTransaction::new(flashed_substates))
+    Ok(models::FlashedStateUpdates {
+        deleted_partitions,
+        set_substates,
+        deleted_substates,
+    })
+}
+
+fn to_api_flash_set_substate(
+    context: &MappingContext,
+    node_id: &NodeId,
+    partition_number: PartitionNumber,
+    substate_key: &SubstateKey,
+    value: &DbSubstateValue,
+) -> Result<models::FlashSetSubstate, MappingError> {
+    let typed_substate_key =
+        create_typed_substate_key(context, node_id, partition_number, substate_key)?;
+    Ok(models::FlashSetSubstate {
+        substate_id: Box::new(to_api_substate_id(
+            context,
+            node_id,
+            partition_number,
+            substate_key,
+            &typed_substate_key,
+        )?),
+        value: Box::new(to_api_substate_value(
+            context,
+            &StateMappingLookups::default(),
+            &typed_substate_key,
+            value,
+        )?),
+    })
+}
+
+fn to_api_direct_substate_id(
+    context: &MappingContext,
+    node_id: &NodeId,
+    partition_number: PartitionNumber,
+    substate_key: &SubstateKey,
+) -> Result<models::SubstateId, MappingError> {
+    let typed_substate_key =
+        create_typed_substate_key(context, node_id, partition_number, substate_key)?;
+    to_api_substate_id(
+        context,
+        node_id,
+        partition_number,
+        substate_key,
+        &typed_substate_key,
+    )
 }

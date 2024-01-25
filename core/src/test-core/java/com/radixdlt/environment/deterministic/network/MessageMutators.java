@@ -83,7 +83,7 @@ public final class MessageMutators {
   }
 
   private MessageMutators() {
-    throw new IllegalStateException("Cannot instatiate.");
+    throw new IllegalStateException("Cannot instantiate.");
   }
 
   public static MessageMutator voteDropper(double dropRate) {

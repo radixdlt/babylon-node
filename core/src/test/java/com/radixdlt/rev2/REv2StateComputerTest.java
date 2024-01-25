@@ -90,6 +90,7 @@ import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.NodeId;
+import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.rev2.modules.REv2LedgerInitializerModule;
 import com.radixdlt.rev2.modules.REv2LedgerInitializerToken;
 import com.radixdlt.rev2.modules.REv2LedgerRecoveryModule;
@@ -127,6 +128,7 @@ public class REv2StateComputerTest {
             StateHashTreeGcConfig.forTesting(),
             LedgerProofsGcConfig.forTesting(),
             LedgerSyncLimitsConfig.defaults(),
+            ProtocolConfig.testingDefault(),
             false),
         new REv2LedgerInitializerModule(
             RawGenesisDataWithHash.fromGenesisData(
