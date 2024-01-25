@@ -360,7 +360,7 @@ impl ProtocolMetrics {
                     "protocol_update_pending_threshold_required_ratio",
                     "Required readiness ratio for the given protocol update threshold.",
                 ),
-                &["protocol_version_name", "readiness_signal_name", "threshold_index"],
+                &["protocol_version_name", "readiness_signal_name", "threshold_index", "threshold_consecutive_epochs"],
             )
                 .registered_at(registry),
             pending_update_threshold_required_consecutive_epochs: IntGaugeVec::new(
@@ -368,7 +368,7 @@ impl ProtocolMetrics {
                     "protocol_update_pending_threshold_required_consecutive_epochs",
                     "Required number of consecutive epochs of support for the given protocol update threshold.",
                 ),
-                &["protocol_version_name", "readiness_signal_name", "threshold_index"],
+                &["protocol_version_name", "readiness_signal_name", "threshold_index", "threshold_consecutive_epochs"],
             )
                 .registered_at(registry),
             pending_update_threshold_current_consecutive_epochs: IntGaugeVec::new(
@@ -376,7 +376,7 @@ impl ProtocolMetrics {
                     "protocol_update_pending_threshold_current_consecutive_epochs",
                     "Current number of consecutive epochs of support for the given protocol update threshold.",
                 ),
-                &["protocol_version_name", "readiness_signal_name", "threshold_index"],
+                &["protocol_version_name", "readiness_signal_name", "threshold_index", "threshold_consecutive_epochs"],
             )
                 .registered_at(registry),
             pending_update_lower_bound_epoch: IntGaugeVec::new(
@@ -456,29 +456,38 @@ impl ProtocolMetrics {
                                 thresholds_state.iter().enumerate()
                             {
                                 self.pending_update_threshold_required_ratio
-                                    .with_three_labels(
+                                    .with_four_labels(
                                         protocol_update.next_protocol_version.to_string(),
                                         readiness_signal_name.to_string(),
                                         index.to_string(),
+                                        threshold
+                                            .required_consecutive_completed_epochs_of_support
+                                            .to_string(),
                                     )
                                     .set(dec_to_f64_for_metrics(
                                         &threshold.required_ratio_of_stake_supported,
                                     ));
                                 self.pending_update_threshold_required_consecutive_epochs
-                                    .with_three_labels(
+                                    .with_four_labels(
                                         protocol_update.next_protocol_version.to_string(),
                                         readiness_signal_name.to_string(),
                                         index.to_string(),
+                                        threshold
+                                            .required_consecutive_completed_epochs_of_support
+                                            .to_string(),
                                     )
                                     .set(
                                         threshold.required_consecutive_completed_epochs_of_support
                                             as i64,
                                     );
                                 self.pending_update_threshold_current_consecutive_epochs
-                                    .with_three_labels(
+                                    .with_four_labels(
                                         protocol_update.next_protocol_version.to_string(),
                                         readiness_signal_name.to_string(),
                                         index.to_string(),
+                                        threshold
+                                            .required_consecutive_completed_epochs_of_support
+                                            .to_string(),
                                     )
                                     .set(
                                         threshold_state.consecutive_started_epochs_of_support
