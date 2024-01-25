@@ -53,8 +53,8 @@ openapi: 3.1.0
 # => Hex-encoded bytes/payload should end _hex and not include _bytes
 info:
   # Should be the release version, and the release display name
-  version: 'v1.0.4'
-  title: 'Radix Core API - Babylon'
+  version: 'v1.1.0'
+  title: 'Radix Core API - Babylon (Anemone)'
   license:
     name: The Radix License, Version 1.0
     url: https://www.radixfoundation.org/licenses/license-v1
@@ -207,7 +207,7 @@ tags:
       For reading the state of entities. At present, we only support reading details from the top of the currently committed ledger.
   - name: Stream
     x-displayName: Stream Endpoints
-    description: To query the transaction stream of the ledger.
+    description: To query the transaction or proof stream of the ledger.
 paths:
 ##################################################
 # Long Term Support backwards compatible Sub-API #
