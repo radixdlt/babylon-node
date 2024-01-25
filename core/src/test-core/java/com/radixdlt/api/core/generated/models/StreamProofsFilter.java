@@ -25,7 +25,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.StreamProofsFilterAll;
+import com.radixdlt.api.core.generated.models.StreamProofsFilterAny;
 import com.radixdlt.api.core.generated.models.StreamProofsFilterNewEpochs;
 import com.radixdlt.api.core.generated.models.StreamProofsFilterProtocolUpdateExecution;
 import com.radixdlt.api.core.generated.models.StreamProofsFilterProtocolUpdateInitializations;
@@ -37,8 +37,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * StreamProofsFilter
+ * If not provided, defaults to \&quot;Any\&quot;.
  */
+@ApiModel(description = "If not provided, defaults to \"Any\".")
 @JsonPropertyOrder({
   StreamProofsFilter.JSON_PROPERTY_TYPE
 })
@@ -49,11 +50,11 @@ import com.radixdlt.api.core.generated.client.JSON;
 )
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = StreamProofsFilterAll.class, name = "All"),
+  @JsonSubTypes.Type(value = StreamProofsFilterAny.class, name = "Any"),
   @JsonSubTypes.Type(value = StreamProofsFilterNewEpochs.class, name = "NewEpochs"),
   @JsonSubTypes.Type(value = StreamProofsFilterProtocolUpdateExecution.class, name = "ProtocolUpdateExecution"),
   @JsonSubTypes.Type(value = StreamProofsFilterProtocolUpdateInitializations.class, name = "ProtocolUpdateInitializations"),
-  @JsonSubTypes.Type(value = StreamProofsFilterAll.class, name = "StreamProofsFilterAll"),
+  @JsonSubTypes.Type(value = StreamProofsFilterAny.class, name = "StreamProofsFilterAny"),
   @JsonSubTypes.Type(value = StreamProofsFilterNewEpochs.class, name = "StreamProofsFilterNewEpochs"),
   @JsonSubTypes.Type(value = StreamProofsFilterProtocolUpdateExecution.class, name = "StreamProofsFilterProtocolUpdateExecution"),
   @JsonSubTypes.Type(value = StreamProofsFilterProtocolUpdateInitializations.class, name = "StreamProofsFilterProtocolUpdateInitializations"),
@@ -135,11 +136,11 @@ public class StreamProofsFilter {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("All", StreamProofsFilterAll.class);
+  mappings.put("Any", StreamProofsFilterAny.class);
   mappings.put("NewEpochs", StreamProofsFilterNewEpochs.class);
   mappings.put("ProtocolUpdateExecution", StreamProofsFilterProtocolUpdateExecution.class);
   mappings.put("ProtocolUpdateInitializations", StreamProofsFilterProtocolUpdateInitializations.class);
-  mappings.put("StreamProofsFilterAll", StreamProofsFilterAll.class);
+  mappings.put("StreamProofsFilterAny", StreamProofsFilterAny.class);
   mappings.put("StreamProofsFilterNewEpochs", StreamProofsFilterNewEpochs.class);
   mappings.put("StreamProofsFilterProtocolUpdateExecution", StreamProofsFilterProtocolUpdateExecution.class);
   mappings.put("StreamProofsFilterProtocolUpdateInitializations", StreamProofsFilterProtocolUpdateInitializations.class);

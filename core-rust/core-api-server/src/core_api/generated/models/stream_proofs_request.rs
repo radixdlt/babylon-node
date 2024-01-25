@@ -17,8 +17,8 @@ pub struct StreamProofsRequest {
     /// The logical name of the network
     #[serde(rename = "network")]
     pub network: String,
-    #[serde(rename = "filter")]
-    pub filter: Option<crate::core_api::generated::models::StreamProofsFilter>, // Using Option permits Default trait; Will always be Some in normal use
+    #[serde(rename = "filter", skip_serializing_if = "Option::is_none")]
+    pub filter: Option<Box<crate::core_api::generated::models::StreamProofsFilter>>,
     /// If specified, the maximum number of proofs that will be returned.
     #[serde(rename = "max_page_size", skip_serializing_if = "Option::is_none")]
     pub max_page_size: Option<i32>,
@@ -29,10 +29,10 @@ pub struct StreamProofsRequest {
 
 impl StreamProofsRequest {
     /// A request to retrieve a sublist of proofs. 
-    pub fn new(network: String, filter: crate::core_api::generated::models::StreamProofsFilter) -> StreamProofsRequest {
+    pub fn new(network: String) -> StreamProofsRequest {
         StreamProofsRequest {
             network,
-            filter: Option::Some(filter),
+            filter: None,
             max_page_size: None,
             continuation_token: None,
         }

@@ -552,8 +552,8 @@ models/StreamProofsErrorDetailsType.ts
 models/StreamProofsErrorResponse.ts
 models/StreamProofsErrorResponseAllOf.ts
 models/StreamProofsFilter.ts
-models/StreamProofsFilterAll.ts
-models/StreamProofsFilterAllAllOf.ts
+models/StreamProofsFilterAny.ts
+models/StreamProofsFilterAnyAllOf.ts
 models/StreamProofsFilterBase.ts
 models/StreamProofsFilterNewEpochs.ts
 models/StreamProofsFilterNewEpochsAllOf.ts

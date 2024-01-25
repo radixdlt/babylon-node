@@ -21,7 +21,7 @@ import {
 } from './StreamProofsFilterType';
 
 /**
- * 
+ * If not provided, defaults to "Any".
  * @export
  * @interface StreamProofsFilterBase
  */

@@ -28,11 +28,11 @@ import com.fasterxml.jackson.annotation.JsonValue;
  */
 public enum StreamProofsFilterType {
   
-  ALL("All"),
+  ANY("Any"),
   
   NEWEPOCHS("NewEpochs"),
   
-  PROTOCOLUPDATETRIGGERS("ProtocolUpdateTriggers"),
+  PROTOCOLUPDATEINITIALIZATIONS("ProtocolUpdateInitializations"),
   
   PROTOCOLUPDATEEXECUTION("ProtocolUpdateExecution");
 

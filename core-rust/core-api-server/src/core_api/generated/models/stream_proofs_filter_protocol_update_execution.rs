@@ -15,7 +15,7 @@
 pub struct StreamProofsFilterProtocolUpdateExecution {
     #[serde(rename = "type")]
     pub _type: crate::core_api::generated::models::StreamProofsFilterType,
-    /// The protocol version name to filter to. This can be returned from looking at the protocol updates. 
+    /// The protocol version name to filter to. 
     #[serde(rename = "protocol_version", skip_serializing_if = "Option::is_none")]
     pub protocol_version: Option<String>,
     #[serde(rename = "from_state_version", skip_serializing_if = "Option::is_none")]

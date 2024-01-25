@@ -37,7 +37,7 @@ export interface StreamProofsRequest {
      * @type {StreamProofsFilter}
      * @memberof StreamProofsRequest
      */
-    filter: StreamProofsFilter;
+    filter?: StreamProofsFilter;
     /**
      * If specified, the maximum number of proofs that will be returned.
      * @type {number}
@@ -60,7 +60,6 @@ export interface StreamProofsRequest {
 export function instanceOfStreamProofsRequest(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "network" in value;
-    isInstance = isInstance && "filter" in value;
 
     return isInstance;
 }
@@ -76,7 +75,7 @@ export function StreamProofsRequestFromJSONTyped(json: any, ignoreDiscriminator:
     return {
         
         'network': json['network'],
-        'filter': StreamProofsFilterFromJSON(json['filter']),
+        'filter': !exists(json, 'filter') ? undefined : StreamProofsFilterFromJSON(json['filter']),
         'max_page_size': !exists(json, 'max_page_size') ? undefined : json['max_page_size'],
         'continuation_token': !exists(json, 'continuation_token') ? undefined : json['continuation_token'],
     };

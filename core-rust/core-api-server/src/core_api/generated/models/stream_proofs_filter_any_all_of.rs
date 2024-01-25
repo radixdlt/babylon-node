@@ -12,14 +12,14 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct StreamProofsFilterAllAllOf {
+pub struct StreamProofsFilterAnyAllOf {
     #[serde(rename = "from_state_version", skip_serializing_if = "Option::is_none")]
     pub from_state_version: Option<i64>,
 }
 
-impl StreamProofsFilterAllAllOf {
-    pub fn new() -> StreamProofsFilterAllAllOf {
-        StreamProofsFilterAllAllOf {
+impl StreamProofsFilterAnyAllOf {
+    pub fn new() -> StreamProofsFilterAnyAllOf {
+        StreamProofsFilterAnyAllOf {
             from_state_version: None,
         }
     }

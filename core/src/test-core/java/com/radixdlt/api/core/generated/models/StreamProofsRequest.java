@@ -90,10 +90,10 @@ public class StreamProofsRequest {
    * Get filter
    * @return filter
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
   @JsonProperty(JSON_PROPERTY_FILTER)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
   public StreamProofsFilter getFilter() {
     return filter;
@@ -101,7 +101,7 @@ public class StreamProofsRequest {
 
 
   @JsonProperty(JSON_PROPERTY_FILTER)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setFilter(StreamProofsFilter filter) {
     this.filter = filter;
   }

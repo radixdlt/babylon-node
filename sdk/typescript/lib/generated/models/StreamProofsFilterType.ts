@@ -18,9 +18,9 @@
  * @export
  */
 export const StreamProofsFilterType = {
-    All: 'All',
+    Any: 'Any',
     NewEpochs: 'NewEpochs',
-    ProtocolUpdateTriggers: 'ProtocolUpdateTriggers',
+    ProtocolUpdateInitializations: 'ProtocolUpdateInitializations',
     ProtocolUpdateExecution: 'ProtocolUpdateExecution'
 } as const;
 export type StreamProofsFilterType = typeof StreamProofsFilterType[keyof typeof StreamProofsFilterType];

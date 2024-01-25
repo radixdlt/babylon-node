@@ -13,12 +13,12 @@
  */
 
 import {
-    StreamProofsFilterAll,
-    instanceOfStreamProofsFilterAll,
-    StreamProofsFilterAllFromJSON,
-    StreamProofsFilterAllFromJSONTyped,
-    StreamProofsFilterAllToJSON,
-} from './StreamProofsFilterAll';
+    StreamProofsFilterAny,
+    instanceOfStreamProofsFilterAny,
+    StreamProofsFilterAnyFromJSON,
+    StreamProofsFilterAnyFromJSONTyped,
+    StreamProofsFilterAnyToJSON,
+} from './StreamProofsFilterAny';
 import {
     StreamProofsFilterNewEpochs,
     instanceOfStreamProofsFilterNewEpochs,
@@ -46,7 +46,7 @@ import {
  * 
  * @export
  */
-export type StreamProofsFilter = { type: 'All' } & StreamProofsFilterAll | { type: 'NewEpochs' } & StreamProofsFilterNewEpochs | { type: 'ProtocolUpdateExecution' } & StreamProofsFilterProtocolUpdateExecution | { type: 'ProtocolUpdateInitializations' } & StreamProofsFilterProtocolUpdateInitializations;
+export type StreamProofsFilter = { type: 'Any' } & StreamProofsFilterAny | { type: 'NewEpochs' } & StreamProofsFilterNewEpochs | { type: 'ProtocolUpdateExecution' } & StreamProofsFilterProtocolUpdateExecution | { type: 'ProtocolUpdateInitializations' } & StreamProofsFilterProtocolUpdateInitializations;
 
 export function StreamProofsFilterFromJSON(json: any): StreamProofsFilter {
     return StreamProofsFilterFromJSONTyped(json, false);
@@ -57,8 +57,8 @@ export function StreamProofsFilterFromJSONTyped(json: any, ignoreDiscriminator: 
         return json;
     }
     switch (json['type']) {
-        case 'All':
-            return {...StreamProofsFilterAllFromJSONTyped(json, true), type: 'All'};
+        case 'Any':
+            return {...StreamProofsFilterAnyFromJSONTyped(json, true), type: 'Any'};
         case 'NewEpochs':
             return {...StreamProofsFilterNewEpochsFromJSONTyped(json, true), type: 'NewEpochs'};
         case 'ProtocolUpdateExecution':
@@ -78,8 +78,8 @@ export function StreamProofsFilterToJSON(value?: StreamProofsFilter | null): any
         return null;
     }
     switch (value['type']) {
-        case 'All':
-            return StreamProofsFilterAllToJSON(value);
+        case 'Any':
+            return StreamProofsFilterAnyToJSON(value);
         case 'NewEpochs':
             return StreamProofsFilterNewEpochsToJSON(value);
         case 'ProtocolUpdateExecution':

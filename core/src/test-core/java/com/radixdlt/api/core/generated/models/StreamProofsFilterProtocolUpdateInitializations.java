@@ -26,8 +26,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.StreamProofsFilter;
-import com.radixdlt.api.core.generated.models.StreamProofsFilterAll;
-import com.radixdlt.api.core.generated.models.StreamProofsFilterAllAllOf;
+import com.radixdlt.api.core.generated.models.StreamProofsFilterAny;
+import com.radixdlt.api.core.generated.models.StreamProofsFilterAnyAllOf;
 import com.radixdlt.api.core.generated.models.StreamProofsFilterNewEpochs;
 import com.radixdlt.api.core.generated.models.StreamProofsFilterProtocolUpdateExecution;
 import com.radixdlt.api.core.generated.models.StreamProofsFilterProtocolUpdateInitializations;
@@ -51,7 +51,7 @@ import com.radixdlt.api.core.generated.client.JSON;
 )
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = StreamProofsFilterAll.class, name = "All"),
+  @JsonSubTypes.Type(value = StreamProofsFilterAny.class, name = "Any"),
   @JsonSubTypes.Type(value = StreamProofsFilterNewEpochs.class, name = "NewEpochs"),
   @JsonSubTypes.Type(value = StreamProofsFilterProtocolUpdateExecution.class, name = "ProtocolUpdateExecution"),
   @JsonSubTypes.Type(value = StreamProofsFilterProtocolUpdateInitializations.class, name = "ProtocolUpdateInitializations"),
@@ -137,7 +137,7 @@ public class StreamProofsFilterProtocolUpdateInitializations extends StreamProof
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("All", StreamProofsFilterAll.class);
+  mappings.put("Any", StreamProofsFilterAny.class);
   mappings.put("NewEpochs", StreamProofsFilterNewEpochs.class);
   mappings.put("ProtocolUpdateExecution", StreamProofsFilterProtocolUpdateExecution.class);
   mappings.put("ProtocolUpdateInitializations", StreamProofsFilterProtocolUpdateInitializations.class);

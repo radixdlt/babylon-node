@@ -8,29 +8,34 @@ pub struct SizeRange {
     pub max: usize,
 }
 
+// Extracts a valid page size as per the API consistency guidelines.
 pub fn extract_valid_size(
     provided: Option<i32>,
     size_range: SizeRange,
 ) -> Result<usize, ExtractionError> {
     let SizeRange { min, default, max } = size_range;
-    match provided {
+    let valid_size = match provided {
         Some(provided) => {
             if provided < 0 {
-                None
+                return Err(ExtractionError::InvalidSize { min, max });
+            }
+            let provided = provided as usize;
+            if provided < min || provided > max {
+                return Err(ExtractionError::InvalidSize { min, max });
             } else {
-                let provided = provided as usize;
-                if provided < min || provided > max {
-                    None
-                } else {
-                    Some(provided)
-                }
+                provided
             }
         }
-        None => Some(default),
-    }
-    .ok_or(ExtractionError::InvalidSize { min, max })
+        None => default,
+    };
+    Ok(valid_size)
 }
 
+/// Extracts a valid optional continuation token as per the API consistency guidelines.
+///
+/// Whilst normally such methods would not take/return an option, this is an active choice
+/// to encourage/simplify following of the API guidelines, where a `continuation_token` is always
+/// optional.
 pub fn extract_continuation_token<T: ScryptoDecode>(
     continuation_token: Option<String>,
 ) -> Result<Option<T>, ExtractionError> {
@@ -42,6 +47,7 @@ pub fn extract_continuation_token<T: ScryptoDecode>(
     Ok(Some(id))
 }
 
+/// Maps a valid optional continuation token as per the API consistency guidelines.
 pub fn to_api_continuation_token<T: ScryptoEncode>(
     id_of_start_of_next_page: Option<&T>,
 ) -> Option<String> {
@@ -55,7 +61,10 @@ pub fn optional_max<T: Ord>(value: T, option: Option<T>) -> T {
     }
 }
 
-/// Returns a page and a continuation token, representing the id of the item at the start of the next page
+/// Returns a page and a continuation token from an iterator.
+///
+/// This follows the API consistency guidelines, although NOTE that it encodes the continuation token
+/// as the id of the item at the *start of the next page*.
 pub fn to_api_page<Item, ItemModel, ContinuationToken: ScryptoEncode>(
     iter: &mut dyn Iterator<Item = Item>,
     page_size: usize,

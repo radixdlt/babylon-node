@@ -26,7 +26,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.StreamProofsFilter;
-import com.radixdlt.api.core.generated.models.StreamProofsFilterAll;
+import com.radixdlt.api.core.generated.models.StreamProofsFilterAny;
 import com.radixdlt.api.core.generated.models.StreamProofsFilterNewEpochs;
 import com.radixdlt.api.core.generated.models.StreamProofsFilterProtocolUpdateExecution;
 import com.radixdlt.api.core.generated.models.StreamProofsFilterProtocolUpdateExecutionAllOf;
@@ -52,7 +52,7 @@ import com.radixdlt.api.core.generated.client.JSON;
 )
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = StreamProofsFilterAll.class, name = "All"),
+  @JsonSubTypes.Type(value = StreamProofsFilterAny.class, name = "Any"),
   @JsonSubTypes.Type(value = StreamProofsFilterNewEpochs.class, name = "NewEpochs"),
   @JsonSubTypes.Type(value = StreamProofsFilterProtocolUpdateExecution.class, name = "ProtocolUpdateExecution"),
   @JsonSubTypes.Type(value = StreamProofsFilterProtocolUpdateInitializations.class, name = "ProtocolUpdateInitializations"),
@@ -74,11 +74,11 @@ public class StreamProofsFilterProtocolUpdateExecution extends StreamProofsFilte
   }
 
    /**
-   * The protocol version name to filter to. This can be returned from looking at the protocol updates. 
+   * The protocol version name to filter to. 
    * @return protocolVersion
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "The protocol version name to filter to. This can be returned from looking at the protocol updates. ")
+  @ApiModelProperty(value = "The protocol version name to filter to. ")
   @JsonProperty(JSON_PROPERTY_PROTOCOL_VERSION)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
@@ -169,7 +169,7 @@ public class StreamProofsFilterProtocolUpdateExecution extends StreamProofsFilte
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("All", StreamProofsFilterAll.class);
+  mappings.put("Any", StreamProofsFilterAny.class);
   mappings.put("NewEpochs", StreamProofsFilterNewEpochs.class);
   mappings.put("ProtocolUpdateExecution", StreamProofsFilterProtocolUpdateExecution.class);
   mappings.put("ProtocolUpdateInitializations", StreamProofsFilterProtocolUpdateInitializations.class);

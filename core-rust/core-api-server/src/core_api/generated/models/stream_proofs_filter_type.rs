@@ -12,12 +12,12 @@
 /// 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
 pub enum StreamProofsFilterType {
-    #[serde(rename = "All")]
-    All,
+    #[serde(rename = "Any")]
+    Any,
     #[serde(rename = "NewEpochs")]
     NewEpochs,
-    #[serde(rename = "ProtocolUpdateTriggers")]
-    ProtocolUpdateTriggers,
+    #[serde(rename = "ProtocolUpdateInitializations")]
+    ProtocolUpdateInitializations,
     #[serde(rename = "ProtocolUpdateExecution")]
     ProtocolUpdateExecution,
 
@@ -26,9 +26,9 @@ pub enum StreamProofsFilterType {
 impl ToString for StreamProofsFilterType {
     fn to_string(&self) -> String {
         match self {
-            Self::All => String::from("All"),
+            Self::Any => String::from("Any"),
             Self::NewEpochs => String::from("NewEpochs"),
-            Self::ProtocolUpdateTriggers => String::from("ProtocolUpdateTriggers"),
+            Self::ProtocolUpdateInitializations => String::from("ProtocolUpdateInitializations"),
             Self::ProtocolUpdateExecution => String::from("ProtocolUpdateExecution"),
         }
     }
@@ -36,7 +36,7 @@ impl ToString for StreamProofsFilterType {
 
 impl Default for StreamProofsFilterType {
     fn default() -> StreamProofsFilterType {
-        Self::All
+        Self::Any
     }
 }
 

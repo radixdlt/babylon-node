@@ -13,9 +13,9 @@ pub(crate) async fn handle_stream_proofs(
     assert_matching_network(&request.network, &state.network)?;
     let mapping_context = MappingContext::new(&state.network);
 
-    let filter = request
-        .filter
-        .ok_or_else(|| client_error("filter must be present"))?;
+    let filter = request.filter.unwrap_or(Box::new(StreamProofsFilterAny {
+        from_state_version: None,
+    }));
 
     let page_size = extract_valid_size(
         request.max_page_size,
@@ -34,8 +34,8 @@ pub(crate) async fn handle_stream_proofs(
     let database = state.state_manager.database.read_current();
 
     use models::StreamProofsFilter::*;
-    let mut proofs_iter = match filter {
-        StreamProofsFilterAll { from_state_version } => iterate_all_proofs(
+    let mut proofs_iter = match *filter {
+        StreamProofsFilterAny { from_state_version } => iterate_all_proofs(
             &database,
             continue_from_state_version,
             extract_from_state_version(&database, from_state_version)?,

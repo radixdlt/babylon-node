@@ -16,59 +16,58 @@ import { exists, mapValues } from '../runtime';
 /**
  * 
  * @export
- * @interface StreamProofsFilterAll
+ * @interface StreamProofsFilterAnyAllOf
  */
-export interface StreamProofsFilterAll {
-    /**
-     * 
-     * @type {string}
-     * @memberof StreamProofsFilterAll
-     */
-    type: StreamProofsFilterAllTypeEnum;
+export interface StreamProofsFilterAnyAllOf {
     /**
      * 
      * @type {number}
-     * @memberof StreamProofsFilterAll
+     * @memberof StreamProofsFilterAnyAllOf
      */
     from_state_version?: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof StreamProofsFilterAnyAllOf
+     */
+    type?: StreamProofsFilterAnyAllOfTypeEnum;
 }
 
 
 /**
  * @export
  */
-export const StreamProofsFilterAllTypeEnum = {
-    All: 'All'
+export const StreamProofsFilterAnyAllOfTypeEnum = {
+    Any: 'Any'
 } as const;
-export type StreamProofsFilterAllTypeEnum = typeof StreamProofsFilterAllTypeEnum[keyof typeof StreamProofsFilterAllTypeEnum];
+export type StreamProofsFilterAnyAllOfTypeEnum = typeof StreamProofsFilterAnyAllOfTypeEnum[keyof typeof StreamProofsFilterAnyAllOfTypeEnum];
 
 
 /**
- * Check if a given object implements the StreamProofsFilterAll interface.
+ * Check if a given object implements the StreamProofsFilterAnyAllOf interface.
  */
-export function instanceOfStreamProofsFilterAll(value: object): boolean {
+export function instanceOfStreamProofsFilterAnyAllOf(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "type" in value;
 
     return isInstance;
 }
 
-export function StreamProofsFilterAllFromJSON(json: any): StreamProofsFilterAll {
-    return StreamProofsFilterAllFromJSONTyped(json, false);
+export function StreamProofsFilterAnyAllOfFromJSON(json: any): StreamProofsFilterAnyAllOf {
+    return StreamProofsFilterAnyAllOfFromJSONTyped(json, false);
 }
 
-export function StreamProofsFilterAllFromJSONTyped(json: any, ignoreDiscriminator: boolean): StreamProofsFilterAll {
+export function StreamProofsFilterAnyAllOfFromJSONTyped(json: any, ignoreDiscriminator: boolean): StreamProofsFilterAnyAllOf {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'type': json['type'],
         'from_state_version': !exists(json, 'from_state_version') ? undefined : json['from_state_version'],
+        'type': !exists(json, 'type') ? undefined : json['type'],
     };
 }
 
-export function StreamProofsFilterAllToJSON(value?: StreamProofsFilterAll | null): any {
+export function StreamProofsFilterAnyAllOfToJSON(value?: StreamProofsFilterAnyAllOf | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -77,8 +76,8 @@ export function StreamProofsFilterAllToJSON(value?: StreamProofsFilterAll | null
     }
     return {
         
-        'type': value.type,
         'from_state_version': value.from_state_version,
+        'type': value.type,
     };
 }
 

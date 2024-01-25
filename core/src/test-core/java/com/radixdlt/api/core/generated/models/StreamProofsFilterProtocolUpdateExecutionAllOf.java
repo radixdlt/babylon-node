@@ -51,11 +51,11 @@ public class StreamProofsFilterProtocolUpdateExecutionAllOf {
   }
 
    /**
-   * The protocol version name to filter to. This can be returned from looking at the protocol updates. 
+   * The protocol version name to filter to. 
    * @return protocolVersion
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "The protocol version name to filter to. This can be returned from looking at the protocol updates. ")
+  @ApiModelProperty(value = "The protocol version name to filter to. ")
   @JsonProperty(JSON_PROPERTY_PROTOCOL_VERSION)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 

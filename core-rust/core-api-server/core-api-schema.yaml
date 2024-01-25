@@ -7153,7 +7153,6 @@ components:
       type: object
       required:
         - network
-        - filter
       properties:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
@@ -7167,12 +7166,13 @@ components:
     StreamProofsFilterType:
       type: string
       enum:
-        - All
+        - Any
         - NewEpochs
-        - ProtocolUpdateTriggers
+        - ProtocolUpdateInitializations
         - ProtocolUpdateExecution
     StreamProofsFilter:
       type: object
+      description: If not provided, defaults to "Any".
       required:
         - type
       properties:
@@ -7182,11 +7182,11 @@ components:
         propertyName: type
         mapping:
           # NOTE: These need to match StreamProofsFilterType
-          All: '#/components/schemas/StreamProofsFilterAll'
+          Any: '#/components/schemas/StreamProofsFilterAny'
           NewEpochs: '#/components/schemas/StreamProofsFilterNewEpochs'
           ProtocolUpdateInitializations: '#/components/schemas/StreamProofsFilterProtocolUpdateInitializations'
           ProtocolUpdateExecution: '#/components/schemas/StreamProofsFilterProtocolUpdateExecution'
-    StreamProofsFilterAll:
+    StreamProofsFilterAny:
       allOf:
         - $ref: "#/components/schemas/StreamProofsFilter"
         - type: object
@@ -7228,7 +7228,7 @@ components:
             protocol_version:
               type: string
               description: |
-                The protocol version name to filter to. This can be returned from looking at the protocol updates.
+                The protocol version name to filter to.
             from_state_version:
               $ref: "#/components/schemas/StateVersion"
               description:
@@ -7366,7 +7366,7 @@ components:
           format: int32
           minimum: 0
           maximum: 10000
-          description: An integer between `0` and `10000`, giving the total count of proofs in the returned response
+          description: An integer between `0` and `10000`, giving the total count of transactions in the returned response
         max_ledger_state_version:
           $ref: "#/components/schemas/StateVersion"
           description: The maximum state version currently committed on this node's ledger.

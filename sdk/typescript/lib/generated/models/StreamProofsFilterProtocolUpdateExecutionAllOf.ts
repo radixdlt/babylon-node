@@ -20,7 +20,7 @@ import { exists, mapValues } from '../runtime';
  */
 export interface StreamProofsFilterProtocolUpdateExecutionAllOf {
     /**
-     * The protocol version name to filter to. This can be returned from looking at the protocol updates.
+     * The protocol version name to filter to.
      * @type {string}
      * @memberof StreamProofsFilterProtocolUpdateExecutionAllOf
      */

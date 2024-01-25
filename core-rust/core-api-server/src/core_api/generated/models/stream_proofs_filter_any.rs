@@ -12,16 +12,16 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct StreamProofsFilterAll {
+pub struct StreamProofsFilterAny {
     #[serde(rename = "type")]
     pub _type: crate::core_api::generated::models::StreamProofsFilterType,
     #[serde(rename = "from_state_version", skip_serializing_if = "Option::is_none")]
     pub from_state_version: Option<i64>,
 }
 
-impl StreamProofsFilterAll {
-    pub fn new(_type: crate::core_api::generated::models::StreamProofsFilterType) -> StreamProofsFilterAll {
-        StreamProofsFilterAll {
+impl StreamProofsFilterAny {
+    pub fn new(_type: crate::core_api::generated::models::StreamProofsFilterType) -> StreamProofsFilterAny {
+        StreamProofsFilterAny {
             _type,
             from_state_version: None,
         }
