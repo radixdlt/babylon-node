@@ -132,8 +132,7 @@ public final class PendingVotes {
               Received BFT votes for conflicting protocol update headers.
               Validator {} enacts {}, while validator {} enacts {}.
               This indicates that one or more validators run an outdated node version.
-              This node is unaffected, unless other error messages follow.
-              """,
+              This node is unaffected, unless other error messages follow.""",
               vote.getAuthor(),
               voteLedgerHeader.nextProtocolVersion(),
               otherVote.getKey(),
