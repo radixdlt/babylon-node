@@ -493,13 +493,6 @@ components:
         - Metadata
         - Royalty
         - RoleAssignment
-    ModuleId:
-      type: string
-      enum:
-        - Main
-        - Metadata
-        - Royalty
-        - RoleAssignment
     EntityType:
       type: string
       enum:
@@ -754,10 +747,10 @@ components:
               items:
                 type: object
                 required:
-                  - module_id
+                  - attached_module_id
                   - state
                 properties:
-                  module_id:
+                  attached_module_id:
                     $ref: "#/components/schemas/AttachedModuleId"
                   state:
                     $ref: "#/components/schemas/ObjectModuleStateInfo"
@@ -1631,12 +1624,19 @@ components:
       properties:
         entity_address:
           $ref: "#/components/schemas/EntityAddress"
-        module_id:
-          description: Module ID; may be skipped to indicate `Main`.
-          $ref: "#/components/schemas/ModuleId"
+        attached_module_id:
+          description: |
+            Attached Module ID; should only be specified when reading a field of some attached module.
+            Should be skipped to read the Object's own field.
+          $ref: "#/components/schemas/AttachedModuleId"
         field_name:
           type: string
-          description: Name of the field to read. Either this or `field_index` is required.
+          description: |
+            Name of the field to read. Either this or `field_index` is required.
+            Note: getting a field by name is only a convenience feature, meant for manual, ad-hoc
+            requests (i.e. allowing a human to use the human-readable `DerivedName` when available).
+            In general, a field's primary identifier is its index, and any production-grade
+            integration should use it.
         field_index:
           type: integer
           format: int32
@@ -1671,12 +1671,20 @@ components:
       properties:
         entity_address:
           $ref: "#/components/schemas/EntityAddress"
-        module_id:
-          description: Module ID; may be skipped to indicate `Main`.
-          $ref: "#/components/schemas/ModuleId"
+        attached_module_id:
+          description: |
+            Attached Module ID; should only be specified when reading a collection of some attached module.
+            Should be skipped to read the Object's own collection.
+          $ref: "#/components/schemas/AttachedModuleId"
         collection_name:
           type: string
-          description: Name of the collection to read. Either this or `collection_index` is required.
+          description: |
+            Name of the collection to read. Either this or `collection_index` is required.
+            Note: getting a collection by name is only a convenience feature, meant for manual,
+            ad-hoc requests (i.e. allowing a human to use the human-readable `DerivedName` when
+            available).
+            In general, a collection's primary identifier is its index, and any production-grade
+            integration should use it.
         collection_index:
           type: integer
           format: int32
@@ -1763,12 +1771,20 @@ components:
       properties:
         entity_address:
           $ref: "#/components/schemas/EntityAddress"
-        module_id:
-          description: Module ID; may be skipped to indicate `Main`.
-          $ref: "#/components/schemas/ModuleId"
+        attached_module_id:
+          description: |
+            Attached Module ID; should only be specified when reading a collection of some attached module.
+            Should be skipped to read the Object's own collection.
+          $ref: "#/components/schemas/AttachedModuleId"
         collection_name:
           type: string
-          description: Name of the collection to read. Either this or `collection_index` is required.
+          description: |
+            Name of the collection to read. Either this or `collection_index` is required.
+            Note: getting a collection by name is only a convenience feature, meant for manual,
+            ad-hoc requests (i.e. allowing a human to use the human-readable `DerivedName` when
+            available).
+            In general, a collection's primary identifier is its index, and any production-grade
+            integration should use it.
         collection_index:
           type: integer
           format: int32

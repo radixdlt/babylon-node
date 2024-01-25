@@ -15,8 +15,8 @@ pub(crate) async fn handle_object_collection_entry(
     let node_id = extract_address_as_node_id(&extraction_context, &request.entity_address)
         .map_err(|err| err.into_response_error("entity_address"))?;
     let module_id = request
-        .module_id
-        .map(|module_id| extract_api_module_id(&module_id))
+        .attached_module_id
+        .map(|module_id| extract_api_attached_module_id(&module_id).into())
         .unwrap_or(ModuleId::Main);
     let collection_input =
         extract_api_rich_index_input(request.collection_name, request.collection_index)

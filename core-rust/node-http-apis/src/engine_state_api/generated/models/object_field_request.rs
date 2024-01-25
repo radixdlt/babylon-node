@@ -16,9 +16,9 @@ pub struct ObjectFieldRequest {
     /// A Bech32m-encoded, human readable rendering of an arbitrary Entity's address.
     #[serde(rename = "entity_address")]
     pub entity_address: String,
-    #[serde(rename = "module_id", skip_serializing_if = "Option::is_none")]
-    pub module_id: Option<crate::engine_state_api::generated::models::ModuleId>,
-    /// Name of the field to read. Either this or `field_index` is required.
+    #[serde(rename = "attached_module_id", skip_serializing_if = "Option::is_none")]
+    pub attached_module_id: Option<crate::engine_state_api::generated::models::AttachedModuleId>,
+    /// Name of the field to read. Either this or `field_index` is required. Note: getting a field by name is only a convenience feature, meant for manual, ad-hoc requests (i.e. allowing a human to use the human-readable `DerivedName` when available). In general, a field's primary identifier is its index, and any production-grade integration should use it. 
     #[serde(rename = "field_name", skip_serializing_if = "Option::is_none")]
     pub field_name: Option<String>,
     /// Index of the field to read. Either this or `field_name` is required.
@@ -30,7 +30,7 @@ impl ObjectFieldRequest {
     pub fn new(entity_address: String) -> ObjectFieldRequest {
         ObjectFieldRequest {
             entity_address,
-            module_id: None,
+            attached_module_id: None,
             field_name: None,
             field_index: None,
         }

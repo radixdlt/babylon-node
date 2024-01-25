@@ -33,13 +33,13 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * ObjectEntityInfoAllOfAttachedModules
  */
 @JsonPropertyOrder({
-  ObjectEntityInfoAllOfAttachedModules.JSON_PROPERTY_MODULE_ID,
+  ObjectEntityInfoAllOfAttachedModules.JSON_PROPERTY_ATTACHED_MODULE_ID,
   ObjectEntityInfoAllOfAttachedModules.JSON_PROPERTY_STATE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ObjectEntityInfoAllOfAttachedModules {
-  public static final String JSON_PROPERTY_MODULE_ID = "module_id";
-  private AttachedModuleId moduleId;
+  public static final String JSON_PROPERTY_ATTACHED_MODULE_ID = "attached_module_id";
+  private AttachedModuleId attachedModuleId;
 
   public static final String JSON_PROPERTY_STATE = "state";
   private ObjectModuleStateInfo state;
@@ -47,29 +47,29 @@ public class ObjectEntityInfoAllOfAttachedModules {
   public ObjectEntityInfoAllOfAttachedModules() { 
   }
 
-  public ObjectEntityInfoAllOfAttachedModules moduleId(AttachedModuleId moduleId) {
-    this.moduleId = moduleId;
+  public ObjectEntityInfoAllOfAttachedModules attachedModuleId(AttachedModuleId attachedModuleId) {
+    this.attachedModuleId = attachedModuleId;
     return this;
   }
 
    /**
-   * Get moduleId
-   * @return moduleId
+   * Get attachedModuleId
+   * @return attachedModuleId
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_MODULE_ID)
+  @JsonProperty(JSON_PROPERTY_ATTACHED_MODULE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public AttachedModuleId getModuleId() {
-    return moduleId;
+  public AttachedModuleId getAttachedModuleId() {
+    return attachedModuleId;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_MODULE_ID)
+  @JsonProperty(JSON_PROPERTY_ATTACHED_MODULE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setModuleId(AttachedModuleId moduleId) {
-    this.moduleId = moduleId;
+  public void setAttachedModuleId(AttachedModuleId attachedModuleId) {
+    this.attachedModuleId = attachedModuleId;
   }
 
 
@@ -111,20 +111,20 @@ public class ObjectEntityInfoAllOfAttachedModules {
       return false;
     }
     ObjectEntityInfoAllOfAttachedModules objectEntityInfoAllOfAttachedModules = (ObjectEntityInfoAllOfAttachedModules) o;
-    return Objects.equals(this.moduleId, objectEntityInfoAllOfAttachedModules.moduleId) &&
+    return Objects.equals(this.attachedModuleId, objectEntityInfoAllOfAttachedModules.attachedModuleId) &&
         Objects.equals(this.state, objectEntityInfoAllOfAttachedModules.state);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(moduleId, state);
+    return Objects.hash(attachedModuleId, state);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class ObjectEntityInfoAllOfAttachedModules {\n");
-    sb.append("    moduleId: ").append(toIndentedString(moduleId)).append("\n");
+    sb.append("    attachedModuleId: ").append(toIndentedString(attachedModuleId)).append("\n");
     sb.append("    state: ").append(toIndentedString(state)).append("\n");
     sb.append("}");
     return sb.toString();
