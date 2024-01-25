@@ -177,6 +177,10 @@ public final class AddressBookEntry {
     return new AddressBookEntry(nodeId, Optional.of(banUntil), knownAddresses);
   }
 
+  public AddressBookEntry clearBan() {
+    return new AddressBookEntry(nodeId, Optional.empty(), knownAddresses);
+  }
+
   public AddressBookEntry removeAddressEntry(PeerAddressEntry addressEntry) {
     final var newAddresses =
         knownAddresses.stream()

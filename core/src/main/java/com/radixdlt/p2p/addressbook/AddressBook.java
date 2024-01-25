@@ -449,6 +449,16 @@ public final class AddressBook {
     }
   }
 
+  public void clearAllBans() {
+    synchronized (lock) {
+      this.knownPeers.forEach(
+          (nodeId, entry) -> {
+            final var updatedEntry = entry.clearBan();
+            upsertOrRemoveIfEmpty(updatedEntry);
+          });
+    }
+  }
+
   public ImmutableMap<NodeId, AddressBookEntry> knownPeers() {
     return ImmutableMap.copyOf(knownPeers);
   }
