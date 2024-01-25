@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.engine_state.generated.models.AttachedModuleId;
+import com.radixdlt.api.engine_state.generated.models.SborFormatOptions;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -35,7 +36,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   ObjectFieldRequest.JSON_PROPERTY_ENTITY_ADDRESS,
   ObjectFieldRequest.JSON_PROPERTY_ATTACHED_MODULE_ID,
   ObjectFieldRequest.JSON_PROPERTY_FIELD_NAME,
-  ObjectFieldRequest.JSON_PROPERTY_FIELD_INDEX
+  ObjectFieldRequest.JSON_PROPERTY_FIELD_INDEX,
+  ObjectFieldRequest.JSON_PROPERTY_SBOR_FORMAT_OPTIONS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ObjectFieldRequest {
@@ -50,6 +52,9 @@ public class ObjectFieldRequest {
 
   public static final String JSON_PROPERTY_FIELD_INDEX = "field_index";
   private Integer fieldIndex;
+
+  public static final String JSON_PROPERTY_SBOR_FORMAT_OPTIONS = "sbor_format_options";
+  private SborFormatOptions sborFormatOptions;
 
   public ObjectFieldRequest() { 
   }
@@ -160,6 +165,32 @@ public class ObjectFieldRequest {
   }
 
 
+  public ObjectFieldRequest sborFormatOptions(SborFormatOptions sborFormatOptions) {
+    this.sborFormatOptions = sborFormatOptions;
+    return this;
+  }
+
+   /**
+   * Get sborFormatOptions
+   * @return sborFormatOptions
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_SBOR_FORMAT_OPTIONS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public SborFormatOptions getSborFormatOptions() {
+    return sborFormatOptions;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_SBOR_FORMAT_OPTIONS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setSborFormatOptions(SborFormatOptions sborFormatOptions) {
+    this.sborFormatOptions = sborFormatOptions;
+  }
+
+
   /**
    * Return true if this ObjectFieldRequest object is equal to o.
    */
@@ -175,12 +206,13 @@ public class ObjectFieldRequest {
     return Objects.equals(this.entityAddress, objectFieldRequest.entityAddress) &&
         Objects.equals(this.attachedModuleId, objectFieldRequest.attachedModuleId) &&
         Objects.equals(this.fieldName, objectFieldRequest.fieldName) &&
-        Objects.equals(this.fieldIndex, objectFieldRequest.fieldIndex);
+        Objects.equals(this.fieldIndex, objectFieldRequest.fieldIndex) &&
+        Objects.equals(this.sborFormatOptions, objectFieldRequest.sborFormatOptions);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entityAddress, attachedModuleId, fieldName, fieldIndex);
+    return Objects.hash(entityAddress, attachedModuleId, fieldName, fieldIndex, sborFormatOptions);
   }
 
   @Override
@@ -191,6 +223,7 @@ public class ObjectFieldRequest {
     sb.append("    attachedModuleId: ").append(toIndentedString(attachedModuleId)).append("\n");
     sb.append("    fieldName: ").append(toIndentedString(fieldName)).append("\n");
     sb.append("    fieldIndex: ").append(toIndentedString(fieldIndex)).append("\n");
+    sb.append("    sborFormatOptions: ").append(toIndentedString(sborFormatOptions)).append("\n");
     sb.append("}");
     return sb.toString();
   }

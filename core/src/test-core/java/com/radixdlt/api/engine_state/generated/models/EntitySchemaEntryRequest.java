@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.engine_state.generated.models.SborFormatOptions;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,7 +33,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   EntitySchemaEntryRequest.JSON_PROPERTY_ENTITY_ADDRESS,
-  EntitySchemaEntryRequest.JSON_PROPERTY_SCHEMA_HASH
+  EntitySchemaEntryRequest.JSON_PROPERTY_SCHEMA_HASH,
+  EntitySchemaEntryRequest.JSON_PROPERTY_SBOR_FORMAT_OPTIONS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class EntitySchemaEntryRequest {
@@ -41,6 +43,9 @@ public class EntitySchemaEntryRequest {
 
   public static final String JSON_PROPERTY_SCHEMA_HASH = "schema_hash";
   private String schemaHash;
+
+  public static final String JSON_PROPERTY_SBOR_FORMAT_OPTIONS = "sbor_format_options";
+  private SborFormatOptions sborFormatOptions;
 
   public EntitySchemaEntryRequest() { 
   }
@@ -97,6 +102,32 @@ public class EntitySchemaEntryRequest {
   }
 
 
+  public EntitySchemaEntryRequest sborFormatOptions(SborFormatOptions sborFormatOptions) {
+    this.sborFormatOptions = sborFormatOptions;
+    return this;
+  }
+
+   /**
+   * Get sborFormatOptions
+   * @return sborFormatOptions
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_SBOR_FORMAT_OPTIONS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public SborFormatOptions getSborFormatOptions() {
+    return sborFormatOptions;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_SBOR_FORMAT_OPTIONS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setSborFormatOptions(SborFormatOptions sborFormatOptions) {
+    this.sborFormatOptions = sborFormatOptions;
+  }
+
+
   /**
    * Return true if this EntitySchemaEntryRequest object is equal to o.
    */
@@ -110,12 +141,13 @@ public class EntitySchemaEntryRequest {
     }
     EntitySchemaEntryRequest entitySchemaEntryRequest = (EntitySchemaEntryRequest) o;
     return Objects.equals(this.entityAddress, entitySchemaEntryRequest.entityAddress) &&
-        Objects.equals(this.schemaHash, entitySchemaEntryRequest.schemaHash);
+        Objects.equals(this.schemaHash, entitySchemaEntryRequest.schemaHash) &&
+        Objects.equals(this.sborFormatOptions, entitySchemaEntryRequest.sborFormatOptions);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entityAddress, schemaHash);
+    return Objects.hash(entityAddress, schemaHash, sborFormatOptions);
   }
 
   @Override
@@ -124,6 +156,7 @@ public class EntitySchemaEntryRequest {
     sb.append("class EntitySchemaEntryRequest {\n");
     sb.append("    entityAddress: ").append(toIndentedString(entityAddress)).append("\n");
     sb.append("    schemaHash: ").append(toIndentedString(schemaHash)).append("\n");
+    sb.append("    sborFormatOptions: ").append(toIndentedString(sborFormatOptions)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -21,6 +21,8 @@ pub struct BlueprintInfoRequest {
     /// A string of format `Major.Minor.Patch` (all parts being `u32`). Defaults to `1.0.0`. 
     #[serde(rename = "blueprint_version", skip_serializing_if = "Option::is_none")]
     pub blueprint_version: Option<String>,
+    #[serde(rename = "sbor_format_options", skip_serializing_if = "Option::is_none")]
+    pub sbor_format_options: Option<Box<crate::engine_state_api::generated::models::SborFormatOptions>>,
 }
 
 impl BlueprintInfoRequest {
@@ -29,6 +31,7 @@ impl BlueprintInfoRequest {
             package_address,
             blueprint_name,
             blueprint_version: None,
+            sbor_format_options: None,
         }
     }
 }

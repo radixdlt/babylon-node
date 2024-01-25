@@ -40,16 +40,23 @@ impl From<MappingError> for ResponseError {
 #[derive(Debug, Clone)]
 #[allow(clippy::enum_variant_names)]
 pub enum ExtractionError {
-    InvalidInteger { message: String },
+    InvalidInteger {
+        message: String,
+    },
     InvalidHex,
     InvalidHash,
     InvalidSbor(DecodeError),
     InvalidTransaction(TransactionValidationError),
     InvalidAddress,
     InvalidNonFungibleId(ParseNonFungibleLocalIdError),
-    InvalidFieldAlternativesUsage,
+    InvalidFieldAlternativesUsage {
+        alternatives: Vec<String>,
+        present_count: usize,
+    },
     InvalidSemverString,
-    InvalidProgrammaticJson { message: String },
+    InvalidProgrammaticJson {
+        message: String,
+    },
 }
 
 impl ExtractionError {

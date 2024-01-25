@@ -101,9 +101,7 @@ fn to_api_blueprint_field_info(
         .transience()
         .map(|transience| {
             Ok(Box::new(models::BlueprintFieldTransience {
-                default_value: Box::new(models::BlueprintFieldTransienceDefaultValue {
-                    programmatic_json: transience.default_value.into_programmatic_json(context)?,
-                }),
+                default_value: Box::new(to_api_sbor_data(context, transience.default_value)?),
             }))
         })
         .transpose()?;

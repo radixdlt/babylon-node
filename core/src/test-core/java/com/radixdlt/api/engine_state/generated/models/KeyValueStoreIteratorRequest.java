@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.engine_state.generated.models.SborFormatOptions;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,6 +33,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   KeyValueStoreIteratorRequest.JSON_PROPERTY_ENTITY_ADDRESS,
+  KeyValueStoreIteratorRequest.JSON_PROPERTY_SBOR_FORMAT_OPTIONS,
   KeyValueStoreIteratorRequest.JSON_PROPERTY_MAX_PAGE_SIZE,
   KeyValueStoreIteratorRequest.JSON_PROPERTY_CONTINUATION_TOKEN
 })
@@ -39,6 +41,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 public class KeyValueStoreIteratorRequest {
   public static final String JSON_PROPERTY_ENTITY_ADDRESS = "entity_address";
   private String entityAddress;
+
+  public static final String JSON_PROPERTY_SBOR_FORMAT_OPTIONS = "sbor_format_options";
+  private SborFormatOptions sborFormatOptions;
 
   public static final String JSON_PROPERTY_MAX_PAGE_SIZE = "max_page_size";
   private Integer maxPageSize;
@@ -75,19 +80,45 @@ public class KeyValueStoreIteratorRequest {
   }
 
 
+  public KeyValueStoreIteratorRequest sborFormatOptions(SborFormatOptions sborFormatOptions) {
+    this.sborFormatOptions = sborFormatOptions;
+    return this;
+  }
+
+   /**
+   * Get sborFormatOptions
+   * @return sborFormatOptions
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_SBOR_FORMAT_OPTIONS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public SborFormatOptions getSborFormatOptions() {
+    return sborFormatOptions;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_SBOR_FORMAT_OPTIONS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setSborFormatOptions(SborFormatOptions sborFormatOptions) {
+    this.sborFormatOptions = sborFormatOptions;
+  }
+
+
   public KeyValueStoreIteratorRequest maxPageSize(Integer maxPageSize) {
     this.maxPageSize = maxPageSize;
     return this;
   }
 
    /**
-   * A maximum number of items to be included in the paged listing response. By default, each paged listing endpoint imposes its own limit on the number of returned items (which may even be driven dynamically by system load, etc). This client-provided maximum page size simply adds a further constraint (i.e. can only lower down the number of returned items). 
+   * A maximum number of items to be included in the paged listing response.
    * minimum: 1
-   * maximum: 1000
+   * maximum: 100
    * @return maxPageSize
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "A maximum number of items to be included in the paged listing response. By default, each paged listing endpoint imposes its own limit on the number of returned items (which may even be driven dynamically by system load, etc). This client-provided maximum page size simply adds a further constraint (i.e. can only lower down the number of returned items). ")
+  @ApiModelProperty(value = "A maximum number of items to be included in the paged listing response.")
   @JsonProperty(JSON_PROPERTY_MAX_PAGE_SIZE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
@@ -142,13 +173,14 @@ public class KeyValueStoreIteratorRequest {
     }
     KeyValueStoreIteratorRequest keyValueStoreIteratorRequest = (KeyValueStoreIteratorRequest) o;
     return Objects.equals(this.entityAddress, keyValueStoreIteratorRequest.entityAddress) &&
+        Objects.equals(this.sborFormatOptions, keyValueStoreIteratorRequest.sborFormatOptions) &&
         Objects.equals(this.maxPageSize, keyValueStoreIteratorRequest.maxPageSize) &&
         Objects.equals(this.continuationToken, keyValueStoreIteratorRequest.continuationToken);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entityAddress, maxPageSize, continuationToken);
+    return Objects.hash(entityAddress, sborFormatOptions, maxPageSize, continuationToken);
   }
 
   @Override
@@ -156,6 +188,7 @@ public class KeyValueStoreIteratorRequest {
     StringBuilder sb = new StringBuilder();
     sb.append("class KeyValueStoreIteratorRequest {\n");
     sb.append("    entityAddress: ").append(toIndentedString(entityAddress)).append("\n");
+    sb.append("    sborFormatOptions: ").append(toIndentedString(sborFormatOptions)).append("\n");
     sb.append("    maxPageSize: ").append(toIndentedString(maxPageSize)).append("\n");
     sb.append("    continuationToken: ").append(toIndentedString(continuationToken)).append("\n");
     sb.append("}");

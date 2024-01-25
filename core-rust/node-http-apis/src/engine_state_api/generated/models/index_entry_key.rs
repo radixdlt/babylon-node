@@ -16,16 +16,16 @@
 pub struct IndexEntryKey {
     #[serde(rename = "kind")]
     pub kind: crate::engine_state_api::generated::models::ObjectCollectionKind,
-    #[serde(rename = "programmatic_json")]
-    pub programmatic_json: serde_json::Value,
+    #[serde(rename = "key")]
+    pub key: Box<crate::engine_state_api::generated::models::SborData>,
 }
 
 impl IndexEntryKey {
     /// Key within an Object's Index collection.
-    pub fn new(kind: crate::engine_state_api::generated::models::ObjectCollectionKind, programmatic_json: serde_json::Value) -> IndexEntryKey {
+    pub fn new(kind: crate::engine_state_api::generated::models::ObjectCollectionKind, key: crate::engine_state_api::generated::models::SborData) -> IndexEntryKey {
         IndexEntryKey {
             kind,
-            programmatic_json,
+            key: Box::new(key),
         }
     }
 }

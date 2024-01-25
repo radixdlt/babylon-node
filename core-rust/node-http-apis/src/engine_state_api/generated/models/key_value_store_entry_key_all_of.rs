@@ -13,14 +13,14 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct KeyValueStoreEntryKeyAllOf {
-    #[serde(rename = "programmatic_json")]
-    pub programmatic_json: serde_json::Value,
+    #[serde(rename = "key")]
+    pub key: Box<crate::engine_state_api::generated::models::SborData>,
 }
 
 impl KeyValueStoreEntryKeyAllOf {
-    pub fn new(programmatic_json: serde_json::Value) -> KeyValueStoreEntryKeyAllOf {
+    pub fn new(key: crate::engine_state_api::generated::models::SborData) -> KeyValueStoreEntryKeyAllOf {
         KeyValueStoreEntryKeyAllOf {
-            programmatic_json,
+            key: Box::new(key),
         }
     }
 }

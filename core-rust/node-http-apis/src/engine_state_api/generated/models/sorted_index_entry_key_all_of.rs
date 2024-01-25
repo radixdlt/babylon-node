@@ -16,15 +16,15 @@ pub struct SortedIndexEntryKeyAllOf {
     /// The hex-encoded bytes of the sorted part of the key.
     #[serde(rename = "sort_prefix_hex")]
     pub sort_prefix_hex: String,
-    #[serde(rename = "programmatic_json")]
-    pub programmatic_json: serde_json::Value,
+    #[serde(rename = "key")]
+    pub key: Box<crate::engine_state_api::generated::models::SborData>,
 }
 
 impl SortedIndexEntryKeyAllOf {
-    pub fn new(sort_prefix_hex: String, programmatic_json: serde_json::Value) -> SortedIndexEntryKeyAllOf {
+    pub fn new(sort_prefix_hex: String, key: crate::engine_state_api::generated::models::SborData) -> SortedIndexEntryKeyAllOf {
         SortedIndexEntryKeyAllOf {
             sort_prefix_hex,
-            programmatic_json,
+            key: Box::new(key),
         }
     }
 }

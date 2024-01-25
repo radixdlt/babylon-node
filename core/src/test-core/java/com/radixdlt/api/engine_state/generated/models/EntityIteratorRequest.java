@@ -51,13 +51,13 @@ public class EntityIteratorRequest {
   }
 
    /**
-   * A maximum number of items to be included in the paged listing response. By default, each paged listing endpoint imposes its own limit on the number of returned items (which may even be driven dynamically by system load, etc). This client-provided maximum page size simply adds a further constraint (i.e. can only lower down the number of returned items). 
+   * A maximum number of items to be included in the paged listing response.
    * minimum: 1
-   * maximum: 1000
+   * maximum: 100
    * @return maxPageSize
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "A maximum number of items to be included in the paged listing response. By default, each paged listing endpoint imposes its own limit on the number of returned items (which may even be driven dynamically by system load, etc). This client-provided maximum page size simply adds a further constraint (i.e. can only lower down the number of returned items). ")
+  @ApiModelProperty(value = "A maximum number of items to be included in the paged listing response.")
   @JsonProperty(JSON_PROPERTY_MAX_PAGE_SIZE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 

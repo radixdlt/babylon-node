@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.engine_state.generated.models.SborData;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,15 +33,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   SortedIndexEntryKeyAllOf.JSON_PROPERTY_SORT_PREFIX_HEX,
-  SortedIndexEntryKeyAllOf.JSON_PROPERTY_PROGRAMMATIC_JSON
+  SortedIndexEntryKeyAllOf.JSON_PROPERTY_KEY
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class SortedIndexEntryKeyAllOf {
   public static final String JSON_PROPERTY_SORT_PREFIX_HEX = "sort_prefix_hex";
   private String sortPrefixHex;
 
-  public static final String JSON_PROPERTY_PROGRAMMATIC_JSON = "programmatic_json";
-  private Object programmaticJson;
+  public static final String JSON_PROPERTY_KEY = "key";
+  private SborData key;
 
   public SortedIndexEntryKeyAllOf() { 
   }
@@ -71,29 +72,29 @@ public class SortedIndexEntryKeyAllOf {
   }
 
 
-  public SortedIndexEntryKeyAllOf programmaticJson(Object programmaticJson) {
-    this.programmaticJson = programmaticJson;
+  public SortedIndexEntryKeyAllOf key(SborData key) {
+    this.key = key;
     return this;
   }
 
    /**
-   * Get programmaticJson
-   * @return programmaticJson
+   * Get key
+   * @return key
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_PROGRAMMATIC_JSON)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Object getProgrammaticJson() {
-    return programmaticJson;
+  public SborData getKey() {
+    return key;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_PROGRAMMATIC_JSON)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setProgrammaticJson(Object programmaticJson) {
-    this.programmaticJson = programmaticJson;
+  public void setKey(SborData key) {
+    this.key = key;
   }
 
 
@@ -110,12 +111,12 @@ public class SortedIndexEntryKeyAllOf {
     }
     SortedIndexEntryKeyAllOf sortedIndexEntryKeyAllOf = (SortedIndexEntryKeyAllOf) o;
     return Objects.equals(this.sortPrefixHex, sortedIndexEntryKeyAllOf.sortPrefixHex) &&
-        Objects.equals(this.programmaticJson, sortedIndexEntryKeyAllOf.programmaticJson);
+        Objects.equals(this.key, sortedIndexEntryKeyAllOf.key);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(sortPrefixHex, programmaticJson);
+    return Objects.hash(sortPrefixHex, key);
   }
 
   @Override
@@ -123,7 +124,7 @@ public class SortedIndexEntryKeyAllOf {
     StringBuilder sb = new StringBuilder();
     sb.append("class SortedIndexEntryKeyAllOf {\n");
     sb.append("    sortPrefixHex: ").append(toIndentedString(sortPrefixHex)).append("\n");
-    sb.append("    programmaticJson: ").append(toIndentedString(programmaticJson)).append("\n");
+    sb.append("    key: ").append(toIndentedString(key)).append("\n");
     sb.append("}");
     return sb.toString();
   }

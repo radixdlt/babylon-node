@@ -30,6 +30,7 @@ import com.radixdlt.api.engine_state.generated.models.IndexEntryKey;
 import com.radixdlt.api.engine_state.generated.models.KeyValueStoreEntryKey;
 import com.radixdlt.api.engine_state.generated.models.KeyValueStoreEntryKeyAllOf;
 import com.radixdlt.api.engine_state.generated.models.ObjectCollectionKind;
+import com.radixdlt.api.engine_state.generated.models.SborData;
 import com.radixdlt.api.engine_state.generated.models.SortedIndexEntryKey;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -42,7 +43,7 @@ import com.radixdlt.api.engine_state.generated.client.JSON;
  */
 @ApiModel(description = "Key within an Object's Index collection.")
 @JsonPropertyOrder({
-  IndexEntryKey.JSON_PROPERTY_PROGRAMMATIC_JSON
+  IndexEntryKey.JSON_PROPERTY_KEY
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -57,35 +58,35 @@ import com.radixdlt.api.engine_state.generated.client.JSON;
 })
 
 public class IndexEntryKey extends CollectionEntryKey {
-  public static final String JSON_PROPERTY_PROGRAMMATIC_JSON = "programmatic_json";
-  private Object programmaticJson;
+  public static final String JSON_PROPERTY_KEY = "key";
+  private SborData key;
 
   public IndexEntryKey() { 
   }
 
-  public IndexEntryKey programmaticJson(Object programmaticJson) {
-    this.programmaticJson = programmaticJson;
+  public IndexEntryKey key(SborData key) {
+    this.key = key;
     return this;
   }
 
    /**
-   * Get programmaticJson
-   * @return programmaticJson
+   * Get key
+   * @return key
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_PROGRAMMATIC_JSON)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Object getProgrammaticJson() {
-    return programmaticJson;
+  public SborData getKey() {
+    return key;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_PROGRAMMATIC_JSON)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setProgrammaticJson(Object programmaticJson) {
-    this.programmaticJson = programmaticJson;
+  public void setKey(SborData key) {
+    this.key = key;
   }
 
 
@@ -101,13 +102,13 @@ public class IndexEntryKey extends CollectionEntryKey {
       return false;
     }
     IndexEntryKey indexEntryKey = (IndexEntryKey) o;
-    return Objects.equals(this.programmaticJson, indexEntryKey.programmaticJson) &&
+    return Objects.equals(this.key, indexEntryKey.key) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(programmaticJson, super.hashCode());
+    return Objects.hash(key, super.hashCode());
   }
 
   @Override
@@ -115,7 +116,7 @@ public class IndexEntryKey extends CollectionEntryKey {
     StringBuilder sb = new StringBuilder();
     sb.append("class IndexEntryKey {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    programmaticJson: ").append(toIndentedString(programmaticJson)).append("\n");
+    sb.append("    key: ").append(toIndentedString(key)).append("\n");
     sb.append("}");
     return sb.toString();
   }

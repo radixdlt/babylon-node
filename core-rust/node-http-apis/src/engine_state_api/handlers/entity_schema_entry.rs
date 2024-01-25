@@ -8,7 +8,8 @@ pub(crate) async fn handle_entity_schema_entry(
     state: State<EngineStateApiState>,
     Json(request): Json<models::EntitySchemaEntryRequest>,
 ) -> Result<Json<models::EntitySchemaEntryResponse>, ResponseError> {
-    let mapping_context = MappingContext::new(&state.network);
+    let mapping_context =
+        MappingContext::new(&state.network).with_sbor_formats(request.sbor_format_options);
     let extraction_context = ExtractionContext::new(&state.network);
 
     let node_id = extract_address_as_node_id(&extraction_context, &request.entity_address)
@@ -23,12 +24,11 @@ pub(crate) async fn handle_entity_schema_entry(
         node_id,
         schema_hash,
     })?;
-    let programmatic_json = versioned_schema_data.into_programmatic_json(&mapping_context)?;
 
     let header = read_current_ledger_header(database.deref());
 
     Ok(Json(models::EntitySchemaEntryResponse {
         at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
-        content: Box::new(models::EntitySchemaEntryResponseContent { programmatic_json }),
+        content: Box::new(to_api_sbor_data(&mapping_context, versioned_schema_data)?),
     }))
 }

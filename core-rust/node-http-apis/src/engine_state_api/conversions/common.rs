@@ -1,3 +1,4 @@
+use itertools::Either;
 use radix_engine::types::*;
 
 use state_manager::LedgerHeader;
@@ -73,17 +74,44 @@ pub fn extract_api_rich_index_input(
     name: Option<String>,
     index: Option<i32>,
 ) -> Result<RichIndexInput, ExtractionError> {
-    if let Some(name) = name {
-        if index.is_some() {
-            Err(ExtractionError::InvalidFieldAlternativesUsage)
-        } else {
-            Ok(RichIndexInput::Name(name))
+    Ok(match exactly_one_of("name", name, "index", index)? {
+        Either::Left(name) => RichIndexInput::Name(name),
+        Either::Right(index) => RichIndexInput::Index(extract_api_u8_as_i32(index)?),
+    })
+}
+
+pub fn extract_api_sbor_data(
+    context: &ExtractionContext,
+    sbor_data: models::SborData,
+) -> Result<ScryptoValue, ExtractionError> {
+    let models::SborData {
+        raw_hex,
+        programmatic_json,
+    } = sbor_data;
+    match exactly_one_of("raw_hex", raw_hex, "programmatic_json", programmatic_json)? {
+        Either::Left(raw_hex) => {
+            scrypto_decode(&from_hex(raw_hex)?).map_err(ExtractionError::InvalidSbor)
         }
-    } else if let Some(index) = index {
-        Ok(RichIndexInput::Index(extract_api_u8_as_i32(index)?))
-    } else {
-        Err(ExtractionError::InvalidFieldAlternativesUsage)
+        Either::Right(value) => ProgrammaticJsonDecoder::new(context).decode(value),
     }
+}
+
+pub fn to_api_sbor_data(
+    context: &MappingContext,
+    sbor_data: SborData,
+) -> Result<models::SborData, MappingError> {
+    Ok(models::SborData {
+        raw_hex: if context.sbor_options.include_raw_hex {
+            Some(to_hex(sbor_data.as_bytes()))
+        } else {
+            None
+        },
+        programmatic_json: if context.sbor_options.include_programmatic_json {
+            Some(sbor_data.into_programmatic_json(context)?)
+        } else {
+            None
+        },
+    })
 }
 
 /// An input specification of a [`RichIndex`] (a number outputted together with an optional name).
@@ -92,4 +120,29 @@ pub fn extract_api_rich_index_input(
 pub enum RichIndexInput {
     Name(String),
     Index(u8),
+}
+
+fn exactly_one_of<L, R>(
+    left_name: impl Into<String>,
+    left_value: Option<L>,
+    right_name: impl Into<String>,
+    right_value: Option<R>,
+) -> Result<Either<L, R>, ExtractionError> {
+    if let Some(left_value) = left_value {
+        if right_value.is_some() {
+            Err(ExtractionError::InvalidFieldAlternativesUsage {
+                alternatives: vec![left_name.into(), right_name.into()],
+                present_count: 2,
+            })
+        } else {
+            Ok(Either::Left(left_value))
+        }
+    } else if let Some(right_value) = right_value {
+        Ok(Either::Right(right_value))
+    } else {
+        Err(ExtractionError::InvalidFieldAlternativesUsage {
+            alternatives: vec![left_name.into(), right_name.into()],
+            present_count: 0,
+        })
+    }
 }

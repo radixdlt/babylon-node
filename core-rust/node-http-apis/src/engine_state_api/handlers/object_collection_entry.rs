@@ -9,7 +9,8 @@ pub(crate) async fn handle_object_collection_entry(
     state: State<EngineStateApiState>,
     Json(request): Json<models::ObjectCollectionEntryRequest>,
 ) -> Result<Json<models::ObjectCollectionEntryResponse>, ResponseError> {
-    let mapping_context = MappingContext::new(&state.network);
+    let mapping_context =
+        MappingContext::new(&state.network).with_sbor_formats(request.sbor_format_options);
     let extraction_context = ExtractionContext::new(&state.network);
 
     let node_id = extract_address_as_node_id(&extraction_context, &request.entity_address)
@@ -40,13 +41,12 @@ pub(crate) async fn handle_object_collection_entry(
 
     let entry_data =
         data_loader.load_collection_entry(&node_id, module_id, collection_meta, &key)?;
-    let programmatic_json = entry_data.into_programmatic_json(&mapping_context)?;
 
     let header = read_current_ledger_header(database.deref());
 
     Ok(Json(models::ObjectCollectionEntryResponse {
         at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
-        content: Box::new(models::ObjectCollectionEntryResponseContent { programmatic_json }),
+        content: Box::new(to_api_sbor_data(&mapping_context, entry_data)?),
     }))
 }
 
@@ -54,18 +54,17 @@ fn extract_api_collection_key(
     context: &ExtractionContext,
     key: models::CollectionEntryKey,
 ) -> Result<RawCollectionKey, ExtractionError> {
-    let decoder = ProgrammaticJsonDecoder::new(context);
     Ok(match key {
-        models::CollectionEntryKey::IndexEntryKey { programmatic_json }
-        | models::CollectionEntryKey::KeyValueStoreEntryKey { programmatic_json } => {
-            RawCollectionKey::Unsorted(decoder.decode(programmatic_json)?)
+        models::CollectionEntryKey::IndexEntryKey { key }
+        | models::CollectionEntryKey::KeyValueStoreEntryKey { key } => {
+            RawCollectionKey::Unsorted(extract_api_sbor_data(context, *key)?)
         }
         models::CollectionEntryKey::SortedIndexEntryKey {
             sort_prefix_hex,
-            programmatic_json,
+            key,
         } => RawCollectionKey::Sorted(
             copy_u8_array(&from_hex(sort_prefix_hex)?),
-            decoder.decode(programmatic_json)?,
+            extract_api_sbor_data(context, *key)?,
         ),
     })
 }

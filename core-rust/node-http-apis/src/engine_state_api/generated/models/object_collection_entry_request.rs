@@ -26,6 +26,8 @@ pub struct ObjectCollectionEntryRequest {
     pub collection_index: Option<i32>,
     #[serde(rename = "key")]
     pub key: Option<crate::engine_state_api::generated::models::CollectionEntryKey>, // Using Option permits Default trait; Will always be Some in normal use
+    #[serde(rename = "sbor_format_options", skip_serializing_if = "Option::is_none")]
+    pub sbor_format_options: Option<Box<crate::engine_state_api::generated::models::SborFormatOptions>>,
 }
 
 impl ObjectCollectionEntryRequest {
@@ -36,6 +38,7 @@ impl ObjectCollectionEntryRequest {
             collection_name: None,
             collection_index: None,
             key: Option::Some(key),
+            sbor_format_options: None,
         }
     }
 }

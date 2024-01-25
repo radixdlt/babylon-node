@@ -16,11 +16,11 @@ pub struct KeyValueStoreEntryResponse {
     #[serde(rename = "at_ledger_state")]
     pub at_ledger_state: Box<crate::engine_state_api::generated::models::LedgerStateSummary>,
     #[serde(rename = "content")]
-    pub content: Box<crate::engine_state_api::generated::models::KeyValueStoreEntryResponseContent>,
+    pub content: Box<crate::engine_state_api::generated::models::SborData>,
 }
 
 impl KeyValueStoreEntryResponse {
-    pub fn new(at_ledger_state: crate::engine_state_api::generated::models::LedgerStateSummary, content: crate::engine_state_api::generated::models::KeyValueStoreEntryResponseContent) -> KeyValueStoreEntryResponse {
+    pub fn new(at_ledger_state: crate::engine_state_api::generated::models::LedgerStateSummary, content: crate::engine_state_api::generated::models::SborData) -> KeyValueStoreEntryResponse {
         KeyValueStoreEntryResponse {
             at_ledger_state: Box::new(at_ledger_state),
             content: Box::new(content),
