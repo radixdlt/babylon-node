@@ -1,6 +1,4 @@
 use radix_engine::types::*;
-use std::ops::Add;
-use std::time::{Duration, Instant};
 
 /// A type holding its key internally.
 /// In the paging use-cases, we list items (e.g. `{id: 7, name: John}`), but we identify a point in
@@ -75,9 +73,9 @@ pub fn wrap<K, T: HasKey<K>, I: Iterator<Item = T>, F: FnOnce(Option<&K>) -> Res
 
 /// Turns the given "error-free" function (i.e. returning an [`Iterator`] directly rather than a
 /// [`Result`]) into a [`RandomAccessIterable`].
-pub fn wrap_error_free<K, T: HasKey<K>, I: Iterator<Item = T>, SF: FnOnce(Option<&K>) -> I>(
+pub fn wrap_ok<K, T: HasKey<K>, I: Iterator<Item = T>, SF: FnOnce(Option<&K>) -> I, E>(
     simple_function: SF,
-) -> FnIterable<K, T, I, impl FnOnce(Option<&K>) -> Result<I, ()>, ()> {
+) -> FnIterable<K, T, I, impl FnOnce(Option<&K>) -> Result<I, E>, E> {
     wrap(|from| Ok(simple_function(from)))
 }
 
@@ -245,62 +243,21 @@ impl<T> ContinuationToken<T> {
     }
 }
 
-/// A convenience API for specifying a [`PagingPolicy`].
-pub struct PagingPolicies;
-
-impl PagingPolicies {
-    /// Creates a policy allowing at most the given number of items.
-    pub fn max_page_size<I>(page_size: usize) -> impl PagingPolicy<I> {
-        MaxItemCountPolicy {
-            remaining_item_count: page_size,
-        }
-    }
-
-    /// Creates a policy allowing the iteration to last for at most the given duration, but waiting
-    /// for at least the given minimum number of elements (preventing empty or unreasonably-small
-    /// pages even for very slow iterations).
-    pub fn max_duration_but_min_page_size<I>(
-        duration: Duration,
-        page_size: usize,
-    ) -> impl PagingPolicy<I> {
-        Self::until_last_allowed(
-            MaxWallclockDurationPolicy {
-                end_instant: Instant::now().add(duration),
-            },
-            Self::max_page_size(page_size),
-        )
-    }
-
-    /// Combines the two given policies using a logical `AND`.
-    pub fn until_first_disallowed<I, P1: PagingPolicy<I>, P2: PagingPolicy<I>>(
-        left: P1,
-        right: P2,
-    ) -> impl PagingPolicy<I> {
-        CompositePolicy {
-            left,
-            operator: |left_can_append, right_can_append| left_can_append && right_can_append,
-            right,
-            type_parameter_phantom: PhantomData,
-        }
-    }
-
-    /// Combines the two given policies using a logical `OR`.
-    pub fn until_last_allowed<I, P1: PagingPolicy<I>, P2: PagingPolicy<I>>(
-        left: P1,
-        right: P2,
-    ) -> impl PagingPolicy<I> {
-        CompositePolicy {
-            left,
-            operator: |left_can_append, right_can_append| left_can_append || right_can_append,
-            right,
-            type_parameter_phantom: PhantomData,
-        }
-    }
+/// A [`PagingPolicy`] allowing some maximum item count.
+pub struct MaxItemCountPolicy {
+    remaining_item_count: usize,
 }
 
-/// A [`PagingPolicy`] allowing some maximum item count.
-struct MaxItemCountPolicy {
-    remaining_item_count: usize,
+impl MaxItemCountPolicy {
+    /// Creates a policy allowing at most the given number of items.
+    /// Note: the less-specific return type here is deliberate - referencing `<I>` allows for more
+    /// convenient type inference.
+    #[allow(clippy::new_ret_no_self)]
+    pub fn new<I>(max_item_count: usize) -> impl PagingPolicy<I> {
+        Self {
+            remaining_item_count: max_item_count,
+        }
+    }
 }
 
 impl<I> PagingPolicy<I> for MaxItemCountPolicy {
@@ -310,34 +267,5 @@ impl<I> PagingPolicy<I> for MaxItemCountPolicy {
         }
         self.remaining_item_count -= 1;
         true
-    }
-}
-
-/// A [`PagingPolicy`] allowing some maximum iteration duration.
-struct MaxWallclockDurationPolicy {
-    end_instant: Instant,
-}
-
-impl<I> PagingPolicy<I> for MaxWallclockDurationPolicy {
-    fn still_allows(&mut self, _item: &I) -> bool {
-        Instant::now() < self.end_instant
-    }
-}
-
-/// A composite [`PagingPolicy`] with a customizable operator.
-struct CompositePolicy<I, P1, P2, O> {
-    left: P1,
-    operator: O,
-    right: P2,
-    type_parameter_phantom: PhantomData<I>,
-}
-
-impl<I, P1: PagingPolicy<I>, P2: PagingPolicy<I>, O: Fn(bool, bool) -> bool> PagingPolicy<I>
-    for CompositePolicy<I, P1, P2, O>
-{
-    fn still_allows(&mut self, item: &I) -> bool {
-        let left_can_append = self.left.still_allows(item);
-        let right_can_append = self.right.still_allows(item);
-        (self.operator)(left_can_append, right_can_append)
     }
 }

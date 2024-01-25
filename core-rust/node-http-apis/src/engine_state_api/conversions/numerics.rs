@@ -15,7 +15,7 @@ const MAX_API_ROUND: u64 = 10000000000;
 const MAX_API_STATE_VERSION: u64 = 100000000000000;
 const MIN_API_TIMESTAMP_MS: i64 = 0;
 const MAX_API_TIMESTAMP_MS: i64 = 100000000000000; // For comparison, current timestamp is 1673822843000 (about 1/100th the size)
-const MAX_USER_SPECIFIED_PAGE_SIZE: u16 = 1000; // Must match the OpenAPI's `MaxPageSize.maximum`
+const DEFAULT_MAX_PAGE_SIZE: usize = 100; // Must match the OpenAPI's `MaxPageSize.maximum`
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_epoch(_mapping_context: &MappingContext, epoch: Epoch) -> Result<i64, MappingError> {
@@ -115,13 +115,16 @@ pub fn to_api_instant_from_safe_timestamp(
     })
 }
 
-pub fn extract_api_max_page_size(max_page_size: i32) -> Result<usize, ExtractionError> {
+pub fn extract_api_max_page_size(max_page_size: Option<i32>) -> Result<usize, ExtractionError> {
+    let Some(max_page_size) = max_page_size else {
+        return Ok(DEFAULT_MAX_PAGE_SIZE);
+    };
     if max_page_size <= 0 {
         return Err(ExtractionError::InvalidInteger {
             message: "Max page size must be positive".to_owned(),
         });
     }
-    if max_page_size > MAX_USER_SPECIFIED_PAGE_SIZE as i32 {
+    if max_page_size > DEFAULT_MAX_PAGE_SIZE as i32 {
         return Err(ExtractionError::InvalidInteger {
             message: "Max page size too large".to_owned(),
         });

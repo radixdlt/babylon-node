@@ -352,13 +352,8 @@ components:
       type: integer
       format: int32
       minimum: 1
-      maximum: 1000
-      description: |
-        A maximum number of items to be included in the paged listing response.
-        By default, each paged listing endpoint imposes its own limit on the number of returned
-        items (which may even be driven dynamically by system load, etc). This client-provided
-        maximum page size simply adds a further constraint (i.e. can only lower down the number
-        of returned items).
+      maximum: 100
+      description: A maximum number of items to be included in the paged listing response.
 
 ###########################################################
 # SHARED MODELS                                           #

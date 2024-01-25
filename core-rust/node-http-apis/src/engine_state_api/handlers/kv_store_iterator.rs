@@ -2,7 +2,6 @@ use crate::engine_state_api::*;
 
 use radix_engine::types::*;
 
-use crate::engine_state_api::handlers::default_paging_policy;
 use std::ops::Deref;
 
 pub(crate) async fn handle_kv_store_iterator(
@@ -15,10 +14,7 @@ pub(crate) async fn handle_kv_store_iterator(
     let node_id = extract_address_as_node_id(&extraction_context, &request.entity_address)
         .map_err(|err| err.into_response_error("entity_address"))?;
 
-    let requested_max_page_size = request
-        .max_page_size
-        .map(extract_api_max_page_size)
-        .transpose()
+    let max_page_size = extract_api_max_page_size(request.max_page_size)
         .map_err(|error| error.into_response_error("max_page_size"))?;
     let continuation_token = request
         .continuation_token
@@ -44,7 +40,7 @@ pub(crate) async fn handle_kv_store_iterator(
 
     let page = OrderAgnosticPager::get_page(
         wrap(|from| data_loader.iter_kv_store_keys(&node_id, &kv_store_meta, from)),
-        default_paging_policy(requested_max_page_size),
+        MaxItemCountPolicy::new(max_page_size),
         continuation_token,
     )?;
 
