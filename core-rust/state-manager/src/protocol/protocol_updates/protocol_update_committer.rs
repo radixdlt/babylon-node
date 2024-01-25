@@ -239,7 +239,7 @@ impl ProtocolUpdateTransactionCommitter {
                 consensus_parent_round_timestamp_ms: latest_header
                     .consensus_parent_round_timestamp_ms,
                 proposer_timestamp_ms: latest_header.proposer_timestamp_ms,
-                next_epoch: series_executor.next_epoch().cloned(),
+                next_epoch: series_executor.epoch_change().map(|ev| ev.into()),
                 next_protocol_version: None,
             },
             origin: LedgerProofOrigin::ProtocolUpdate {

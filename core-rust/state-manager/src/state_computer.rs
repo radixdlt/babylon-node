@@ -109,6 +109,7 @@ pub struct StateComputer<S> {
     ledger_transaction_validator: RwLock<LedgerTransactionValidator>,
     ledger_metrics: LedgerMetrics,
     committed_transactions_metrics: CommittedTransactionsMetrics,
+    protocol_metrics: ProtocolMetrics,
     vertex_prepare_metrics: VertexPrepareMetrics,
     vertex_limits_config: VertexLimitsConfig,
     protocol_state: RwLock<ProtocolState>,
@@ -147,6 +148,8 @@ impl<
         let committed_transactions_metrics =
             CommittedTransactionsMetrics::new(metrics_registry, &execution_configurator.read());
 
+        let protocol_metrics = ProtocolMetrics::new(metrics_registry, &initial_protocol_state);
+
         StateComputer {
             network: network.clone(),
             store,
@@ -169,6 +172,7 @@ impl<
                 current_ledger_proposer_timestamp_ms,
             ),
             committed_transactions_metrics,
+            protocol_metrics,
             protocol_state: lock_factory
                 .named("protocol_state")
                 .new_rwlock(initial_protocol_state),
@@ -304,7 +308,7 @@ where
             raw,
             validated,
             ledger_hashes: commit.hash_structures_diff.ledger_hashes,
-            next_epoch: commit.next_epoch(),
+            next_epoch: commit.epoch_change().map(|ev| ev.into()),
         }
     }
 
@@ -484,8 +488,8 @@ where
                 break;
             }
 
-            // Don't process any additional transactions if next epoch has occurred
-            if series_executor.next_epoch().is_some() {
+            // Don't process any additional transactions if epoch change has occurred
+            if series_executor.epoch_change().is_some() {
                 stop_reason = VertexPrepareStopReason::EpochChange;
                 break;
             }
@@ -697,7 +701,7 @@ where
         PrepareResult {
             committed: committable_transactions,
             rejected: rejected_transactions,
-            next_epoch: series_executor.next_epoch().cloned(),
+            next_epoch: series_executor.epoch_change().map(|ev| ev.into()),
             next_protocol_version: series_executor.next_protocol_version(),
             ledger_hashes: *series_executor.latest_ledger_hashes(),
         }
@@ -1173,13 +1177,21 @@ where
             });
         }
 
+        let new_protocol_state = series_executor.protocol_state();
+
+        // Update the protocol metrics
+        let epoch_change = series_executor.epoch_change();
+        if let Some(epoch_change) = &epoch_change {
+            self.protocol_metrics
+                .update(&new_protocol_state, epoch_change)
+        }
+
         // Step 4.: Check final invariants, perform the DB commit
-        if series_executor.next_epoch() != commit_ledger_header.next_epoch.as_ref() {
+        let next_epoch: Option<NextEpoch> = epoch_change.map(|ev| ev.into());
+        if next_epoch != commit_ledger_header.next_epoch {
             panic!(
                 "resultant next epoch at version {} differs from the proof ({:?} != {:?})",
-                commit_state_version,
-                series_executor.next_epoch(),
-                commit_ledger_header.next_epoch
+                commit_state_version, next_epoch, commit_ledger_header.next_epoch
             );
         }
 
@@ -1210,8 +1222,6 @@ where
             .next_epoch
             .as_ref()
             .map(|next_epoch| next_epoch.epoch);
-
-        let new_protocol_state = series_executor.protocol_state();
 
         write_store.commit(CommitBundle {
             transactions: committed_transaction_bundles,

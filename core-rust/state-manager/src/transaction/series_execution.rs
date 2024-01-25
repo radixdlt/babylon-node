@@ -73,6 +73,7 @@ use crate::*;
 
 use ::transaction::prelude::*;
 use node_common::locks::{Mutex, RwLock};
+use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
 
 /// An internal delegate for executing a series of consecutive transactions while tracking their
 /// progress.
@@ -208,8 +209,8 @@ where
     /// [`None`] if that call did not change the epoch.
     /// Please note that it is illegal (and enforced by this executor) to execute transactions after
     /// the epoch change.
-    pub fn next_epoch(&self) -> Option<&NextEpoch> {
-        self.state_tracker.next_epoch.as_ref()
+    pub fn epoch_change(&self) -> Option<EpochChangeEvent> {
+        self.state_tracker.epoch_change.clone()
     }
 
     /// Returns the protocol state resulting from the most recent `execute()` call.
@@ -243,7 +244,7 @@ impl Display for DescribedTransactionHash {
 struct StateTracker {
     state_version: StateVersion,
     ledger_hashes: LedgerHashes,
-    next_epoch: Option<NextEpoch>,
+    epoch_change: Option<EpochChangeEvent>,
     protocol_state: ProtocolState,
     next_protocol_version: Option<ProtocolVersionName>,
 }
@@ -257,7 +258,7 @@ impl StateTracker {
         Self {
             state_version: ledger_hashes_entry.0,
             ledger_hashes: ledger_hashes_entry.1,
-            next_epoch: None,
+            epoch_change: None,
             protocol_state,
             next_protocol_version: None,
         }
@@ -271,10 +272,10 @@ impl StateTracker {
     ///
     /// This method validates that no further transaction should happen after an epoch change.
     pub fn update(&mut self, result: &ProcessedCommitResult) {
-        if let Some(next_epoch) = &self.next_epoch {
+        if let Some(epoch_change) = &self.epoch_change {
             panic!(
                 "the {:?} has happened at {:?} (version {}) and must not be followed by {:?}",
-                next_epoch,
+                epoch_change,
                 self.ledger_hashes,
                 self.state_version,
                 result.hash_structures_diff.ledger_hashes
@@ -296,7 +297,7 @@ impl StateTracker {
             .next()
             .expect("Invalid next state version!");
         self.ledger_hashes = result.hash_structures_diff.ledger_hashes;
-        self.next_epoch = result.next_epoch();
+        self.epoch_change = result.epoch_change();
         self.protocol_state = result.new_protocol_state.clone();
         self.next_protocol_version = result.next_protocol_version.clone();
     }
