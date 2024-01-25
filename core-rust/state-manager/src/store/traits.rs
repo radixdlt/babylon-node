@@ -615,8 +615,8 @@ pub mod extensions {
 
 pub mod indices {
     use super::*;
-    use radix_engine_common::types::{EntityType, NodeId};
-    use radix_engine_interface::types::BlueprintId;
+    use radix_engine::prelude::{BlueprintId, EntityType, NodeId, Sbor};
+    use std::ops::Range;
 
     #[enum_dispatch]
     pub trait ReNodeListingIndex {
@@ -625,10 +625,16 @@ pub mod indices {
             entity_type: EntityType,
             from_creation_id: Option<&CreationId>,
         ) -> Box<dyn Iterator<Item = (CreationId, EntityBlueprintId)> + '_>;
+
+        fn get_blueprint_entity_iter(
+            &self,
+            blueprint_id: &BlueprintId,
+            from_creation_id: Option<&CreationId>,
+        ) -> Box<dyn Iterator<Item = (CreationId, EntityBlueprintId)> + '_>;
     }
 
     /// A unique ID of a ReNode, based on creation order.
-    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Categorize, Encode, Decode)]
+    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Sbor)]
     pub struct CreationId {
         /// State version of the transaction which created the ReNode (i.e. which created the first
         /// substate under this ReNode).
@@ -639,12 +645,30 @@ pub mod indices {
     }
 
     impl CreationId {
+        /// Creates the least possible instance.
+        pub fn zero() -> Self {
+            Self {
+                state_version: StateVersion::pre_genesis(),
+                index_within_txn: 0,
+            }
+        }
+
         /// Creates an ID, ensuring that the given index fits within `u32`.
         pub fn new(state_version: StateVersion, index_within_txn: usize) -> Self {
             Self {
                 state_version,
                 index_within_txn: index_within_txn.try_into().expect("unexpected index"),
             }
+        }
+
+        /// Returns a [`Range`] guaranteed to cover all practically-occurring [`CreationId`]s.
+        pub fn full_range() -> Range<Self> {
+            // we need an exclusive upper bound, so:
+            let above_max = CreationId {
+                state_version: StateVersion::of(u64::MAX), // even if version that large is possible...
+                index_within_txn: u32::MAX, // ... then there is a limit on maximum entities created by a transaction
+            };
+            Self::zero()..above_max
         }
     }
 

@@ -13,6 +13,8 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct EntityIteratorRequest {
+    #[serde(rename = "filter", skip_serializing_if = "Option::is_none")]
+    pub filter: Option<Box<crate::engine_state_api::generated::models::EntityIteratorFilter>>,
     /// A maximum number of items to be included in the paged listing response.
     #[serde(rename = "max_page_size", skip_serializing_if = "Option::is_none")]
     pub max_page_size: Option<i32>,
@@ -24,6 +26,7 @@ pub struct EntityIteratorRequest {
 impl EntityIteratorRequest {
     pub fn new() -> EntityIteratorRequest {
         EntityIteratorRequest {
+            filter: None,
             max_page_size: None,
             continuation_token: None,
         }

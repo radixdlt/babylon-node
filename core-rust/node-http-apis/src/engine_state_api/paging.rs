@@ -61,22 +61,16 @@ pub struct FnIterable<
     type_parameter_phantom: PhantomData<(K, T, I, E)>,
 }
 
-/// Turns the given function into a [`RandomAccessIterable`].
-pub fn wrap<K, T: HasKey<K>, I: Iterator<Item = T>, F: FnOnce(Option<&K>) -> Result<I, E>, E>(
-    function: F,
-) -> FnIterable<K, T, I, F, E> {
-    FnIterable {
-        function,
-        type_parameter_phantom: PhantomData,
+impl<K, T: HasKey<K>, I: Iterator<Item = T>, F: FnOnce(Option<&K>) -> Result<I, E>, E>
+    FnIterable<K, T, I, F, E>
+{
+    /// Wraps the given function into a [`RandomAccessIterable`].
+    pub fn wrap(function: F) -> Self {
+        Self {
+            function,
+            type_parameter_phantom: PhantomData,
+        }
     }
-}
-
-/// Turns the given "error-free" function (i.e. returning an [`Iterator`] directly rather than a
-/// [`Result`]) into a [`RandomAccessIterable`].
-pub fn wrap_ok<K, T: HasKey<K>, I: Iterator<Item = T>, SF: FnOnce(Option<&K>) -> I, E>(
-    simple_function: SF,
-) -> FnIterable<K, T, I, impl FnOnce(Option<&K>) -> Result<I, E>, E> {
-    wrap(|from| Ok(simple_function(from)))
 }
 
 impl<K, T: HasKey<K>, I: Iterator<Item = T>, F: FnOnce(Option<&K>) -> Result<I, E>, E>

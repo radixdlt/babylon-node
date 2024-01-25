@@ -1874,15 +1874,47 @@ impl ReNodeListingIndex for RocksDBStore {
         entity_type: EntityType,
         from_creation_id: Option<&CreationId>,
     ) -> Box<dyn Iterator<Item = (CreationId, EntityBlueprintId)> + '_> {
-        let from_creation_id = from_creation_id
-            .cloned()
-            .unwrap_or_else(|| CreationId::new(StateVersion::pre_genesis(), 0));
+        let from_creation_id = from_creation_id.cloned().unwrap_or_else(CreationId::zero);
         Box::new(
             self.open_db_context()
                 .cf(TypeAndCreationIndexedEntitiesCf)
-                .iterate_from(&(entity_type, from_creation_id), Direction::Forward)
-                .take_while(move |((listed_entity_type, _), _)| *listed_entity_type == entity_type)
+                .iterate_group_from(&(entity_type, from_creation_id), Direction::Forward)
                 .map(|((_, creation_id), entity_blueprint_id)| (creation_id, entity_blueprint_id)),
+        )
+    }
+
+    fn get_blueprint_entity_iter(
+        &self,
+        blueprint_id: &BlueprintId,
+        from_creation_id: Option<&CreationId>,
+    ) -> Box<dyn Iterator<Item = (CreationId, EntityBlueprintId)> + '_> {
+        let BlueprintId {
+            package_address,
+            blueprint_name,
+        } = blueprint_id;
+        let blueprint_name_hash = hash(blueprint_name);
+        let from_creation_id = from_creation_id.cloned().unwrap_or_else(CreationId::zero);
+        Box::new(
+            self.open_db_context()
+                .cf(BlueprintAndCreationIndexedObjectsCf)
+                .iterate_group_from(
+                    &(*package_address, blueprint_name_hash, from_creation_id),
+                    Direction::Forward,
+                )
+                .map(
+                    |((package_address, _, creation_id), object_blueprint_name)| {
+                        (
+                            creation_id,
+                            EntityBlueprintId::of_object(
+                                object_blueprint_name.node_id,
+                                BlueprintId::new(
+                                    &package_address,
+                                    object_blueprint_name.blueprint_name,
+                                ),
+                            ),
+                        )
+                    },
+                ),
         )
     }
 }
