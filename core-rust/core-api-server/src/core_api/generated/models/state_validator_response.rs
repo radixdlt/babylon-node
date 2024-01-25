@@ -20,6 +20,8 @@ pub struct StateValidatorResponse {
     pub address: String,
     #[serde(rename = "state")]
     pub state: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
+    #[serde(rename = "protocol_update_readiness_signal")]
+    pub protocol_update_readiness_signal: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
     #[serde(rename = "owner_role")]
     pub owner_role: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
     /// Any vaults owned directly or indirectly by the component
@@ -31,11 +33,12 @@ pub struct StateValidatorResponse {
 }
 
 impl StateValidatorResponse {
-    pub fn new(at_ledger_state: crate::core_api::generated::models::LedgerStateSummary, address: String, state: crate::core_api::generated::models::Substate, owner_role: crate::core_api::generated::models::Substate, vaults: Vec<crate::core_api::generated::models::VaultBalance>, descendent_nodes: Vec<crate::core_api::generated::models::StateComponentDescendentNode>) -> StateValidatorResponse {
+    pub fn new(at_ledger_state: crate::core_api::generated::models::LedgerStateSummary, address: String, state: crate::core_api::generated::models::Substate, protocol_update_readiness_signal: crate::core_api::generated::models::Substate, owner_role: crate::core_api::generated::models::Substate, vaults: Vec<crate::core_api::generated::models::VaultBalance>, descendent_nodes: Vec<crate::core_api::generated::models::StateComponentDescendentNode>) -> StateValidatorResponse {
         StateValidatorResponse {
             at_ledger_state: Box::new(at_ledger_state),
             address,
             state: Option::Some(state),
+            protocol_update_readiness_signal: Option::Some(protocol_update_readiness_signal),
             owner_role: Option::Some(owner_role),
             vaults,
             descendent_nodes,

@@ -437,15 +437,15 @@ components:
       type: object
       required:
         - genesis_protocol_version
-        - protocol_updates
+        - protocol_update_triggers
       properties:
         genesis_protocol_version:
           type: string
-        protocol_updates:
+        protocol_update_triggers:
           type: array
           items:
-            $ref: "#/components/schemas/ProtocolUpdate"
-    ProtocolUpdate:
+            $ref: "#/components/schemas/ProtocolUpdateTrigger"
+    ProtocolUpdateTrigger:
       type: object
       required:
         - next_protocol_version
@@ -489,10 +489,17 @@ components:
         - $ref: "#/components/schemas/ProtocolUpdateEnactmentCondition"
         - type: object
           required:
+            - readiness_signal
             - lower_bound_epoch_inclusive
             - upper_bound_epoch_exclusive
-            - support_type
+            - readiness_thresholds
           properties:
+            readiness_signal:
+              type: string
+              minLength: 32
+              maxLength: 32
+              format: |
+                The string used by validators to signal readiness for the enactment.
             lower_bound_epoch_inclusive:
               type: integer
               format: int64

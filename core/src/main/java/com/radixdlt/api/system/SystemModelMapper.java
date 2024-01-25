@@ -75,6 +75,7 @@ import com.radixdlt.p2p.addressbook.AddressBookEntry.PeerAddressEntry;
 import com.radixdlt.p2p.addressbook.AddressBookEntry.PeerAddressEntry.LatestConnectionStatus;
 import com.radixdlt.p2p.capability.AppVersionCapability;
 import com.radixdlt.p2p.capability.RemotePeerCapability;
+import com.radixdlt.protocol.RustProtocolUpdate;
 import com.radixdlt.sync.SyncRelayConfig;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -181,40 +182,44 @@ public final class SystemModelMapper {
       com.radixdlt.protocol.ProtocolConfig protocolConfig) {
     return new ProtocolConfiguration()
         .genesisProtocolVersion(protocolConfig.genesisProtocolVersion())
-        .protocolUpdates(
+        .protocolUpdateTriggers(
             protocolConfig.protocolUpdateTriggers().stream()
-                .map(
-                    protocolUpdate ->
-                        new ProtocolUpdate()
-                            .nextProtocolVersion(protocolUpdate.nextProtocolVersion())
-                            .enactmentCondition(
-                                enactmentCondition(protocolUpdate.enactmentCondition())))
+                .map(this::protocolUpdateTrigger)
                 .toList());
   }
 
-  private ProtocolUpdateEnactmentCondition enactmentCondition(
-      com.radixdlt.protocol.ProtocolUpdateEnactmentCondition enactmentCondition) {
-    return switch (enactmentCondition) {
-      case com.radixdlt.protocol.ProtocolUpdateEnactmentCondition
-          .EnactAtStartOfEpochIfValidatorsReady
-      condition -> new EnactAtStartOfEpochIfValidatorsReadyCondition()
-          .lowerBoundEpochInclusive(condition.lowerBoundInclusive().toLong())
-          .upperBoundEpochExclusive(condition.upperBoundExclusive().toLong())
-          .readinessThresholds(
-              condition.readinessThresholds().stream()
-                  .map(
-                      threshold ->
-                          new SignalledReadinessThreshold()
-                              .requiredRatioOfStakeSupported(
-                                  threshold.requiredRatioOfStakeSupported().toString())
-                              .requiredConsecutiveCompletedEpochsOfSupport(
-                                  threshold.requiredConsecutiveCompletedEpochsOfSupport().toLong()))
-                  .toList())
-          .type(ProtocolUpdateEnactmentConditionType.ENACTATSTARTOFEPOCHIFVALIDATORSREADY);
-      case com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactAtStartOfEpochUnconditionally
-      enactUnconditionallyAtEpoch -> new EnactAtStartOfEpochUnconditionallyCondition()
-          .epoch(enactUnconditionallyAtEpoch.epoch().toLong())
-          .type(ProtocolUpdateEnactmentConditionType.ENACTATSTARTOFEPOCHUNCONDITIONALLY);
-    };
+  private ProtocolUpdateTrigger protocolUpdateTrigger(
+      com.radixdlt.protocol.ProtocolUpdateTrigger protocolUpdateTrigger) {
+    var enactmentCondition =
+        switch (protocolUpdateTrigger.enactmentCondition()) {
+          case com.radixdlt.protocol.ProtocolUpdateEnactmentCondition
+              .EnactAtStartOfEpochIfValidatorsReady
+          condition -> new EnactAtStartOfEpochIfValidatorsReadyCondition()
+              .lowerBoundEpochInclusive(condition.lowerBoundInclusive().toLong())
+              .upperBoundEpochExclusive(condition.upperBoundExclusive().toLong())
+              .readinessThresholds(
+                  condition.readinessThresholds().stream()
+                      .map(
+                          threshold ->
+                              new SignalledReadinessThreshold()
+                                  .requiredRatioOfStakeSupported(
+                                      threshold.requiredRatioOfStakeSupported().toString())
+                                  .requiredConsecutiveCompletedEpochsOfSupport(
+                                      threshold
+                                          .requiredConsecutiveCompletedEpochsOfSupport()
+                                          .toLong()))
+                      .toList())
+              .readinessSignal(RustProtocolUpdate.readinessSignalName(protocolUpdateTrigger))
+              .type(ProtocolUpdateEnactmentConditionType.ENACTATSTARTOFEPOCHIFVALIDATORSREADY);
+          case com.radixdlt.protocol.ProtocolUpdateEnactmentCondition
+              .EnactAtStartOfEpochUnconditionally
+          enactUnconditionallyAtEpoch -> new EnactAtStartOfEpochUnconditionallyCondition()
+              .epoch(enactUnconditionallyAtEpoch.epoch().toLong())
+              .type(ProtocolUpdateEnactmentConditionType.ENACTATSTARTOFEPOCHUNCONDITIONALLY);
+        };
+
+    return new ProtocolUpdateTrigger()
+        .nextProtocolVersion(protocolUpdateTrigger.nextProtocolVersion())
+        .enactmentCondition(enactmentCondition);
   }
 }

@@ -151,11 +151,21 @@ impl ProtocolUpdateTransactionCommitter {
         let latest_proof: LedgerProof = read_store
             .get_latest_proof()
             .expect("Pre-genesis protocol updates are currently not supported");
+        let latest_header = latest_proof.ledger_header;
+
+        // Currently protocol updates are always executed at epoch boundary,
+        // so the first batch's proof will use (next_epoch, 0) - based on the latest
+        // consensus proof, and subsequent batches will use the same values based on
+        // the proof for the previous batch.
+        let (epoch, round) = if let Some(next_epoch) = latest_header.next_epoch {
+            (next_epoch.epoch, Round::zero())
+        } else {
+            (latest_header.epoch, latest_header.round)
+        };
 
         let lock_factory = LockFactory::new("protocol_update");
-        let execution_cache = lock_factory.new_mutex(ExecutionCache::new(
-            latest_proof.ledger_header.hashes.transaction_root,
-        ));
+        let execution_cache =
+            lock_factory.new_mutex(ExecutionCache::new(latest_header.hashes.transaction_root));
         // For the purpose of executing protocol update transactions we're just going to use
         // a dummy protocol state with no configured updates and the name of this (in progress)
         // protocol update as the current version (although that could really be any string,
@@ -205,7 +215,7 @@ impl ProtocolUpdateTransactionCommitter {
             transaction_tree_slice_merger.append(hash_structures_diff.transaction_tree_diff.slice);
             receipt_tree_slice_merger.append(hash_structures_diff.receipt_tree_diff.slice);
 
-            let proposer_timestamp_ms = latest_proof.ledger_header.proposer_timestamp_ms;
+            let proposer_timestamp_ms = latest_header.proposer_timestamp_ms;
             committed_transaction_bundles.push(CommittedTransactionBundle {
                 state_version: series_executor.latest_state_version(),
                 raw,
@@ -222,14 +232,13 @@ impl ProtocolUpdateTransactionCommitter {
         let resultant_ledger_hashes = *series_executor.latest_ledger_hashes();
         let proof = LedgerProof {
             ledger_header: LedgerHeader {
-                epoch: latest_proof.ledger_header.epoch,
-                round: latest_proof.ledger_header.round,
+                epoch,
+                round,
                 state_version: resultant_state_version,
                 hashes: resultant_ledger_hashes,
-                consensus_parent_round_timestamp_ms: latest_proof
-                    .ledger_header
+                consensus_parent_round_timestamp_ms: latest_header
                     .consensus_parent_round_timestamp_ms,
-                proposer_timestamp_ms: latest_proof.ledger_header.proposer_timestamp_ms,
+                proposer_timestamp_ms: latest_header.proposer_timestamp_ms,
                 next_epoch: series_executor.next_epoch().cloned(),
                 next_protocol_version: None,
             },

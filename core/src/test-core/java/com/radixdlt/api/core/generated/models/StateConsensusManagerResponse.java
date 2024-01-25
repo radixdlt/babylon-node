@@ -23,9 +23,12 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.LedgerStateSummary;
+import com.radixdlt.api.core.generated.models.ProtocolVersionReadiness;
 import com.radixdlt.api.core.generated.models.Substate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import java.util.ArrayList;
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -39,7 +42,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   StateConsensusManagerResponse.JSON_PROPERTY_CURRENT_PROPOSAL_STATISTIC,
   StateConsensusManagerResponse.JSON_PROPERTY_CURRENT_VALIDATOR_SET,
   StateConsensusManagerResponse.JSON_PROPERTY_CURRENT_TIME,
-  StateConsensusManagerResponse.JSON_PROPERTY_CURRENT_TIME_ROUNDED_TO_MINUTES
+  StateConsensusManagerResponse.JSON_PROPERTY_CURRENT_TIME_ROUNDED_TO_MINUTES,
+  StateConsensusManagerResponse.JSON_PROPERTY_CURRENT_VALIDATOR_READINESS_SIGNALS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class StateConsensusManagerResponse {
@@ -63,6 +67,9 @@ public class StateConsensusManagerResponse {
 
   public static final String JSON_PROPERTY_CURRENT_TIME_ROUNDED_TO_MINUTES = "current_time_rounded_to_minutes";
   private Substate currentTimeRoundedToMinutes;
+
+  public static final String JSON_PROPERTY_CURRENT_VALIDATOR_READINESS_SIGNALS = "current_validator_readiness_signals";
+  private List<ProtocolVersionReadiness> currentValidatorReadinessSignals = null;
 
   public StateConsensusManagerResponse() { 
   }
@@ -249,6 +256,40 @@ public class StateConsensusManagerResponse {
   }
 
 
+  public StateConsensusManagerResponse currentValidatorReadinessSignals(List<ProtocolVersionReadiness> currentValidatorReadinessSignals) {
+    this.currentValidatorReadinessSignals = currentValidatorReadinessSignals;
+    return this;
+  }
+
+  public StateConsensusManagerResponse addCurrentValidatorReadinessSignalsItem(ProtocolVersionReadiness currentValidatorReadinessSignalsItem) {
+    if (this.currentValidatorReadinessSignals == null) {
+      this.currentValidatorReadinessSignals = new ArrayList<>();
+    }
+    this.currentValidatorReadinessSignals.add(currentValidatorReadinessSignalsItem);
+    return this;
+  }
+
+   /**
+   * Protocol versions signalled by the current validator set. Every validator from &#x60;current_validator_set&#x60; will be referenced by exactly one of the items here. Only returned if enabled by &#x60;include_readiness_signals&#x60; on your request. 
+   * @return currentValidatorReadinessSignals
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "Protocol versions signalled by the current validator set. Every validator from `current_validator_set` will be referenced by exactly one of the items here. Only returned if enabled by `include_readiness_signals` on your request. ")
+  @JsonProperty(JSON_PROPERTY_CURRENT_VALIDATOR_READINESS_SIGNALS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public List<ProtocolVersionReadiness> getCurrentValidatorReadinessSignals() {
+    return currentValidatorReadinessSignals;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_CURRENT_VALIDATOR_READINESS_SIGNALS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setCurrentValidatorReadinessSignals(List<ProtocolVersionReadiness> currentValidatorReadinessSignals) {
+    this.currentValidatorReadinessSignals = currentValidatorReadinessSignals;
+  }
+
+
   /**
    * Return true if this StateConsensusManagerResponse object is equal to o.
    */
@@ -267,12 +308,13 @@ public class StateConsensusManagerResponse {
         Objects.equals(this.currentProposalStatistic, stateConsensusManagerResponse.currentProposalStatistic) &&
         Objects.equals(this.currentValidatorSet, stateConsensusManagerResponse.currentValidatorSet) &&
         Objects.equals(this.currentTime, stateConsensusManagerResponse.currentTime) &&
-        Objects.equals(this.currentTimeRoundedToMinutes, stateConsensusManagerResponse.currentTimeRoundedToMinutes);
+        Objects.equals(this.currentTimeRoundedToMinutes, stateConsensusManagerResponse.currentTimeRoundedToMinutes) &&
+        Objects.equals(this.currentValidatorReadinessSignals, stateConsensusManagerResponse.currentValidatorReadinessSignals);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(atLedgerState, config, state, currentProposalStatistic, currentValidatorSet, currentTime, currentTimeRoundedToMinutes);
+    return Objects.hash(atLedgerState, config, state, currentProposalStatistic, currentValidatorSet, currentTime, currentTimeRoundedToMinutes, currentValidatorReadinessSignals);
   }
 
   @Override
@@ -286,6 +328,7 @@ public class StateConsensusManagerResponse {
     sb.append("    currentValidatorSet: ").append(toIndentedString(currentValidatorSet)).append("\n");
     sb.append("    currentTime: ").append(toIndentedString(currentTime)).append("\n");
     sb.append("    currentTimeRoundedToMinutes: ").append(toIndentedString(currentTimeRoundedToMinutes)).append("\n");
+    sb.append("    currentValidatorReadinessSignals: ").append(toIndentedString(currentValidatorReadinessSignals)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.system.generated.models.ProtocolUpdate;
+import com.radixdlt.api.system.generated.models.ProtocolUpdateTrigger;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -35,15 +35,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   ProtocolConfiguration.JSON_PROPERTY_GENESIS_PROTOCOL_VERSION,
-  ProtocolConfiguration.JSON_PROPERTY_PROTOCOL_UPDATES
+  ProtocolConfiguration.JSON_PROPERTY_PROTOCOL_UPDATE_TRIGGERS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ProtocolConfiguration {
   public static final String JSON_PROPERTY_GENESIS_PROTOCOL_VERSION = "genesis_protocol_version";
   private String genesisProtocolVersion;
 
-  public static final String JSON_PROPERTY_PROTOCOL_UPDATES = "protocol_updates";
-  private List<ProtocolUpdate> protocolUpdates = new ArrayList<>();
+  public static final String JSON_PROPERTY_PROTOCOL_UPDATE_TRIGGERS = "protocol_update_triggers";
+  private List<ProtocolUpdateTrigger> protocolUpdateTriggers = new ArrayList<>();
 
 
   public ProtocolConfiguration genesisProtocolVersion(String genesisProtocolVersion) {
@@ -72,34 +72,34 @@ public class ProtocolConfiguration {
   }
 
 
-  public ProtocolConfiguration protocolUpdates(List<ProtocolUpdate> protocolUpdates) {
-    this.protocolUpdates = protocolUpdates;
+  public ProtocolConfiguration protocolUpdateTriggers(List<ProtocolUpdateTrigger> protocolUpdateTriggers) {
+    this.protocolUpdateTriggers = protocolUpdateTriggers;
     return this;
   }
 
-  public ProtocolConfiguration addProtocolUpdatesItem(ProtocolUpdate protocolUpdatesItem) {
-    this.protocolUpdates.add(protocolUpdatesItem);
+  public ProtocolConfiguration addProtocolUpdateTriggersItem(ProtocolUpdateTrigger protocolUpdateTriggersItem) {
+    this.protocolUpdateTriggers.add(protocolUpdateTriggersItem);
     return this;
   }
 
    /**
-   * Get protocolUpdates
-   * @return protocolUpdates
+   * Get protocolUpdateTriggers
+   * @return protocolUpdateTriggers
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_PROTOCOL_UPDATES)
+  @JsonProperty(JSON_PROPERTY_PROTOCOL_UPDATE_TRIGGERS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<ProtocolUpdate> getProtocolUpdates() {
-    return protocolUpdates;
+  public List<ProtocolUpdateTrigger> getProtocolUpdateTriggers() {
+    return protocolUpdateTriggers;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_PROTOCOL_UPDATES)
+  @JsonProperty(JSON_PROPERTY_PROTOCOL_UPDATE_TRIGGERS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setProtocolUpdates(List<ProtocolUpdate> protocolUpdates) {
-    this.protocolUpdates = protocolUpdates;
+  public void setProtocolUpdateTriggers(List<ProtocolUpdateTrigger> protocolUpdateTriggers) {
+    this.protocolUpdateTriggers = protocolUpdateTriggers;
   }
 
 
@@ -116,12 +116,12 @@ public class ProtocolConfiguration {
     }
     ProtocolConfiguration protocolConfiguration = (ProtocolConfiguration) o;
     return Objects.equals(this.genesisProtocolVersion, protocolConfiguration.genesisProtocolVersion) &&
-        Objects.equals(this.protocolUpdates, protocolConfiguration.protocolUpdates);
+        Objects.equals(this.protocolUpdateTriggers, protocolConfiguration.protocolUpdateTriggers);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(genesisProtocolVersion, protocolUpdates);
+    return Objects.hash(genesisProtocolVersion, protocolUpdateTriggers);
   }
 
   @Override
@@ -129,7 +129,7 @@ public class ProtocolConfiguration {
     StringBuilder sb = new StringBuilder();
     sb.append("class ProtocolConfiguration {\n");
     sb.append("    genesisProtocolVersion: ").append(toIndentedString(genesisProtocolVersion)).append("\n");
-    sb.append("    protocolUpdates: ").append(toIndentedString(protocolUpdates)).append("\n");
+    sb.append("    protocolUpdateTriggers: ").append(toIndentedString(protocolUpdateTriggers)).append("\n");
     sb.append("}");
     return sb.toString();
   }

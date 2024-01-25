@@ -7771,6 +7771,9 @@ components:
       properties:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
+        include_readiness_signals:
+          description: Whether to include protocol update readiness signals of active validator set (default false).
+          type: boolean
     StateConsensusManagerResponse:
       type: object
       required:
@@ -7797,6 +7800,56 @@ components:
           $ref: "#/components/schemas/Substate"
         current_time_rounded_to_minutes:
           $ref: "#/components/schemas/Substate"
+        current_validator_readiness_signals:
+          description: |
+            Protocol versions signalled by the current validator set.
+            Every validator from `current_validator_set` will be referenced by exactly one of the items here.
+            Only returned if enabled by `include_readiness_signals` on your request.
+          type: array
+          items:
+            $ref: "#/components/schemas/ProtocolVersionReadiness"
+    ProtocolVersionReadiness:
+      type: object
+      required:
+        - total_active_stake_proportion
+        - signalling_validators
+      properties:
+        signalled_protocol_version:
+          # Note: Re-using "#/components/schemas/ProtocolVersion" hits a quirk of the TypeScript's
+          # generator ("attribute components.schemas.ProtocolVersionReadiness.ProtocolVersion is not
+          # of type `schema`").
+          type: string
+          description: |
+            A name identifying a protocol version. May be absent to denote no readiness signalled by
+            the `signalling_validators`.
+        total_active_stake_proportion:
+          type: string
+          description: |
+            A sum of `active_stake_proportion` across `signalling_validators` (i.e. an easily-computable convenience field).
+            This is a string-encoded fixed-precision decimal to 18 decimal places.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
+        signalling_validators:
+          description: |
+            References to some of the current validators (i.e. a subset of `current_validator_set`)
+            which have signalled readiness for the `signalled_protocol_version`.
+          type: array
+          items:
+            $ref: '#/components/schemas/SignallingValidator'
+    SignallingValidator:
+      type: object
+      required:
+        - index
+        - active_stake_proportion
+      properties:
+        index:
+          $ref: '#/components/schemas/ActiveValidatorIndex'
+          description: Validator index within the `current_validator_set`.
+        active_stake_proportion:
+          type: string
+          description: |
+            A proportion (between 0 and 1) of the total active stake of an entire `current_validator_set` (i.e. an easily-computable convenience field).
+            This is a string-encoded fixed-precision decimal to 18 decimal places.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
 ###########################
 # REQUEST: /state/account #
 ###########################
@@ -7939,6 +7992,7 @@ components:
         - at_ledger_state
         - address
         - state
+        - protocol_update_readiness_signal
         - owner_role
         - vaults
         - descendent_nodes
@@ -7949,6 +8003,8 @@ components:
         address:
           $ref: '#/components/schemas/ComponentAddress'
         state:
+          $ref: "#/components/schemas/Substate"
+        protocol_update_readiness_signal:
           $ref: "#/components/schemas/Substate"
         owner_role:
           $ref: "#/components/schemas/Substate"

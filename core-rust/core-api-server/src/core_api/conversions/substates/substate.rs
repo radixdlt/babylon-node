@@ -180,7 +180,7 @@ pub fn to_api_substate(
             ValidatorTypedSubstateValue::Field(ValidatorTypedFieldSubstateValue::State(
                 validator_substate,
             )),
-        )) => to_api_validator_substate(context, validator_substate)?,
+        )) => to_api_validator_state_substate(context, validator_substate)?,
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Validator(
             ValidatorTypedSubstateValue::Field(
                 ValidatorTypedFieldSubstateValue::ProtocolUpdateReadinessSignal(substate),

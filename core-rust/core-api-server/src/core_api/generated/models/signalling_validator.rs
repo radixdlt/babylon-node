@@ -12,20 +12,19 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct StateConsensusManagerRequest {
-    /// The logical name of the network
-    #[serde(rename = "network")]
-    pub network: String,
-    /// Whether to include protocol update readiness signals of active validator set (default false).
-    #[serde(rename = "include_readiness_signals", skip_serializing_if = "Option::is_none")]
-    pub include_readiness_signals: Option<bool>,
+pub struct SignallingValidator {
+    #[serde(rename = "index")]
+    pub index: Box<crate::core_api::generated::models::ActiveValidatorIndex>,
+    /// A proportion (between 0 and 1) of the total active stake of an entire `current_validator_set` (i.e. an easily-computable convenience field). This is a string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. 
+    #[serde(rename = "active_stake_proportion")]
+    pub active_stake_proportion: String,
 }
 
-impl StateConsensusManagerRequest {
-    pub fn new(network: String) -> StateConsensusManagerRequest {
-        StateConsensusManagerRequest {
-            network,
-            include_readiness_signals: None,
+impl SignallingValidator {
+    pub fn new(index: crate::core_api::generated::models::ActiveValidatorIndex, active_stake_proportion: String) -> SignallingValidator {
+        SignallingValidator {
+            index: Box::new(index),
+            active_stake_proportion,
         }
     }
 }

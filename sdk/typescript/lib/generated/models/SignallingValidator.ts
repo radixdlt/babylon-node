@@ -13,52 +13,62 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { ActiveValidatorIndex } from './ActiveValidatorIndex';
+import {
+    ActiveValidatorIndexFromJSON,
+    ActiveValidatorIndexFromJSONTyped,
+    ActiveValidatorIndexToJSON,
+} from './ActiveValidatorIndex';
+
 /**
  * 
  * @export
- * @interface StateConsensusManagerRequest
+ * @interface SignallingValidator
  */
-export interface StateConsensusManagerRequest {
+export interface SignallingValidator {
     /**
-     * The logical name of the network
+     * 
+     * @type {ActiveValidatorIndex}
+     * @memberof SignallingValidator
+     */
+    index: ActiveValidatorIndex;
+    /**
+     * A proportion (between 0 and 1) of the total active stake of an entire `current_validator_set` (i.e. an easily-computable convenience field).
+     * This is a string-encoded fixed-precision decimal to 18 decimal places.
+     * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
      * @type {string}
-     * @memberof StateConsensusManagerRequest
+     * @memberof SignallingValidator
      */
-    network: string;
-    /**
-     * Whether to include protocol update readiness signals of active validator set (default false).
-     * @type {boolean}
-     * @memberof StateConsensusManagerRequest
-     */
-    include_readiness_signals?: boolean;
+    active_stake_proportion: string;
 }
 
 /**
- * Check if a given object implements the StateConsensusManagerRequest interface.
+ * Check if a given object implements the SignallingValidator interface.
  */
-export function instanceOfStateConsensusManagerRequest(value: object): boolean {
+export function instanceOfSignallingValidator(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "network" in value;
+    isInstance = isInstance && "index" in value;
+    isInstance = isInstance && "active_stake_proportion" in value;
 
     return isInstance;
 }
 
-export function StateConsensusManagerRequestFromJSON(json: any): StateConsensusManagerRequest {
-    return StateConsensusManagerRequestFromJSONTyped(json, false);
+export function SignallingValidatorFromJSON(json: any): SignallingValidator {
+    return SignallingValidatorFromJSONTyped(json, false);
 }
 
-export function StateConsensusManagerRequestFromJSONTyped(json: any, ignoreDiscriminator: boolean): StateConsensusManagerRequest {
+export function SignallingValidatorFromJSONTyped(json: any, ignoreDiscriminator: boolean): SignallingValidator {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'network': json['network'],
-        'include_readiness_signals': !exists(json, 'include_readiness_signals') ? undefined : json['include_readiness_signals'],
+        'index': ActiveValidatorIndexFromJSON(json['index']),
+        'active_stake_proportion': json['active_stake_proportion'],
     };
 }
 
-export function StateConsensusManagerRequestToJSON(value?: StateConsensusManagerRequest | null): any {
+export function SignallingValidatorToJSON(value?: SignallingValidator | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -67,8 +77,8 @@ export function StateConsensusManagerRequestToJSON(value?: StateConsensusManager
     }
     return {
         
-        'network': value.network,
-        'include_readiness_signals': value.include_readiness_signals,
+        'index': ActiveValidatorIndexToJSON(value.index),
+        'active_stake_proportion': value.active_stake_proportion,
     };
 }
 

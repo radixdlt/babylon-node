@@ -130,7 +130,7 @@ pub fn to_api_proposer_reward(
     })
 }
 
-pub fn to_api_validator_substate(
+pub fn to_api_validator_state_substate(
     context: &MappingContext,
     substate: &ValidatorStateFieldSubstate,
 ) -> Result<models::Substate, MappingError> {

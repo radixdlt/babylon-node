@@ -83,7 +83,8 @@ use node_common::locks::LockFactory;
 use node_common::scheduler::Scheduler;
 
 use crate::protocol::*;
-use crate::{StateManager, StateManagerConfig};
+use crate::{LedgerProof, LedgerProofOrigin, StateManager, StateManagerConfig};
+use radix_engine_common::types::Round;
 use std::ops::Deref;
 
 use crate::test::prepare_and_commit_round_update;
@@ -180,6 +181,32 @@ fn flash_protocol_update_test() {
             .validator_creation_usd_cost,
         dec!("100")
     );
+
+    // Verify the resultant protocol update execution proof
+    let latest_execution_proof: LedgerProof = read_db
+        .get_latest_protocol_update_execution_proof()
+        .unwrap();
+    let latest_proof_post_update: LedgerProof = read_db.get_latest_proof().unwrap();
+
+    // Make sure that the latest protocol update execution proof
+    // is the latest proof overall, as we expect.
+    assert_eq!(latest_execution_proof, latest_proof_post_update);
+
+    // Verify the origin
+    assert_eq!(
+        latest_execution_proof.origin,
+        LedgerProofOrigin::ProtocolUpdate {
+            protocol_version_name: ProtocolVersionName::of_unchecked(CUSTOM_V2_PROTOCOL_VERSION),
+            batch_idx: 0
+        }
+    );
+
+    // Verify epoch/round
+    assert_eq!(
+        latest_execution_proof.ledger_header.epoch,
+        protocol_update_epoch
+    );
+    assert_eq!(latest_execution_proof.ledger_header.round, Round::zero());
 }
 
 fn create_state_manager(config: StateManagerConfig) -> StateManager {
