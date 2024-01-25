@@ -83,46 +83,17 @@ impl ProtocolConfig {
     pub fn validate(&self) -> Result<(), String> {
         let mut protocol_versions = hashset!();
 
-        Self::validate_and_resolve_protocol_definition(&self.genesis_protocol_version)?;
+        self.genesis_protocol_version
+            .validate_as_configured_protocol_definition()?;
 
-        for protocol_update in self.protocol_update_triggers.iter() {
-            let protocol_version_name = &protocol_update.next_protocol_version;
+        for protocol_update_trigger in self.protocol_update_triggers.iter() {
+            protocol_update_trigger.validate()?;
 
-            Self::validate_and_resolve_protocol_definition(protocol_version_name)?;
-
-            if !protocol_versions.insert(&protocol_update.next_protocol_version) {
+            if !protocol_versions.insert(&protocol_update_trigger.next_protocol_version) {
                 return Err(format!(
-                    "Duplicate specification of protocol version {protocol_version_name}"
+                    "Duplicate specification of protocol version {}",
+                    protocol_update_trigger.next_protocol_version
                 ));
-            }
-
-            match &protocol_update.enactment_condition {
-                ProtocolUpdateEnactmentCondition::EnactAtStartOfEpochIfValidatorsReady {
-                    lower_bound_inclusive,
-                    upper_bound_exclusive,
-                    readiness_thresholds,
-                } => {
-                    if lower_bound_inclusive >= upper_bound_exclusive {
-                        return Err(format!("Protocol update {protocol_version_name} has an empty [inclusive lower bound, exclusive upper bound) range"));
-                    }
-                    if readiness_thresholds.is_empty() {
-                        return Err(format!(
-                            "Protocol update {protocol_version_name} does not specify at least one readiness threshold"
-                        ));
-                    }
-                    for threshold in readiness_thresholds {
-                        if threshold.required_ratio_of_stake_supported <= Decimal::zero()
-                            || threshold.required_ratio_of_stake_supported > Decimal::one()
-                        {
-                            return Err(format!(
-                                "Protocol update {protocol_version_name} does not have a ratio of stake supported must be between 0 (exclusive) and 1 (inclusive)"
-                            ));
-                        }
-                    }
-                }
-                ProtocolUpdateEnactmentCondition::EnactAtStartOfEpochUnconditionally(_) => {
-                    // Nothing to check here
-                }
             }
         }
 
@@ -130,7 +101,7 @@ impl ProtocolConfig {
         // But let's check the length here too, which isn't checked there.
         for (protocol_version_name, raw_overrides) in self.protocol_update_content_overrides.iter()
         {
-            let definition = Self::validate_and_resolve_protocol_definition(protocol_version_name)?;
+            let definition = protocol_version_name.validate_as_configured_protocol_definition()?;
 
             definition
                 .validate_raw_overrides(raw_overrides)
@@ -161,17 +132,6 @@ impl ProtocolConfig {
         );
 
         Some((config, updater))
-    }
-
-    fn validate_and_resolve_protocol_definition(
-        name: &ProtocolVersionName,
-    ) -> Result<Box<dyn ConfigurableProtocolUpdateDefinition>, String> {
-        name.validate()
-            .map_err(|err| format!("Protocol version ({name}) is invalid: {err:?}"))?;
-
-        resolve_update_definition_for_version(name).ok_or_else(|| {
-            format!("Protocol version ({name}) does not have a recognized definition")
-        })
     }
 }
 
@@ -231,6 +191,17 @@ impl ProtocolVersionName {
         Ok(())
     }
 
+    pub fn validate_as_configured_protocol_definition(
+        &self,
+    ) -> Result<Box<dyn ConfigurableProtocolUpdateDefinition>, String> {
+        self.validate()
+            .map_err(|err| format!("Protocol version ({self}) is invalid: {err:?}"))?;
+
+        resolve_update_definition_for_version(self).ok_or_else(|| {
+            format!("Protocol version ({self}) does not have a recognized definition")
+        })
+    }
+
     pub fn as_ascii_bytes(&self) -> &[u8] {
         self.0.as_bytes()
     }
@@ -279,6 +250,42 @@ impl ProtocolUpdateTrigger {
             next_protocol_version: ProtocolVersionName::of(next_protocol_version.into()).unwrap(),
             enactment_condition,
         }
+    }
+
+    pub fn validate(&self) -> Result<(), String> {
+        let protocol_version_name = &self.next_protocol_version;
+
+        protocol_version_name.validate_as_configured_protocol_definition()?;
+
+        match &self.enactment_condition {
+            ProtocolUpdateEnactmentCondition::EnactAtStartOfEpochIfValidatorsReady {
+                lower_bound_inclusive,
+                upper_bound_exclusive,
+                readiness_thresholds,
+            } => {
+                if lower_bound_inclusive >= upper_bound_exclusive {
+                    return Err(format!("Protocol update {protocol_version_name} has an empty [inclusive lower bound, exclusive upper bound) range"));
+                }
+                if readiness_thresholds.is_empty() {
+                    return Err(format!(
+                        "Protocol update {protocol_version_name} does not specify at least one readiness threshold"
+                    ));
+                }
+                for threshold in readiness_thresholds {
+                    if threshold.required_ratio_of_stake_supported <= Decimal::zero()
+                        || threshold.required_ratio_of_stake_supported > Decimal::one()
+                    {
+                        return Err(format!(
+                            "Protocol update {protocol_version_name} does not have a ratio of stake supported must be between 0 (exclusive) and 1 (inclusive)"
+                        ));
+                    }
+                }
+            }
+            ProtocolUpdateEnactmentCondition::EnactAtStartOfEpochUnconditionally(_) => {
+                // Nothing to check here
+            }
+        }
+        Ok(())
     }
 
     pub fn readiness_signal_name(&self) -> String {
