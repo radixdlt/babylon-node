@@ -16,11 +16,11 @@ pub struct ObjectCollectionEntryResponse {
     #[serde(rename = "at_ledger_state")]
     pub at_ledger_state: Box<crate::engine_state_api::generated::models::LedgerStateSummary>,
     #[serde(rename = "content")]
-    pub content: Box<crate::engine_state_api::generated::models::ObjectCollectionEntryResponseContent>,
+    pub content: Box<crate::engine_state_api::generated::models::SborData>,
 }
 
 impl ObjectCollectionEntryResponse {
-    pub fn new(at_ledger_state: crate::engine_state_api::generated::models::LedgerStateSummary, content: crate::engine_state_api::generated::models::ObjectCollectionEntryResponseContent) -> ObjectCollectionEntryResponse {
+    pub fn new(at_ledger_state: crate::engine_state_api::generated::models::LedgerStateSummary, content: crate::engine_state_api::generated::models::SborData) -> ObjectCollectionEntryResponse {
         ObjectCollectionEntryResponse {
             at_ledger_state: Box::new(at_ledger_state),
             content: Box::new(content),

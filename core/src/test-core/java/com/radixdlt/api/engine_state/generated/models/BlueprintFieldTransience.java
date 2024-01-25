@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.engine_state.generated.models.BlueprintFieldTransienceDefaultValue;
+import com.radixdlt.api.engine_state.generated.models.SborData;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -38,12 +38,12 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class BlueprintFieldTransience {
   public static final String JSON_PROPERTY_DEFAULT_VALUE = "default_value";
-  private BlueprintFieldTransienceDefaultValue defaultValue;
+  private SborData defaultValue;
 
   public BlueprintFieldTransience() { 
   }
 
-  public BlueprintFieldTransience defaultValue(BlueprintFieldTransienceDefaultValue defaultValue) {
+  public BlueprintFieldTransience defaultValue(SborData defaultValue) {
     this.defaultValue = defaultValue;
     return this;
   }
@@ -57,14 +57,14 @@ public class BlueprintFieldTransience {
   @JsonProperty(JSON_PROPERTY_DEFAULT_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public BlueprintFieldTransienceDefaultValue getDefaultValue() {
+  public SborData getDefaultValue() {
     return defaultValue;
   }
 
 
   @JsonProperty(JSON_PROPERTY_DEFAULT_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setDefaultValue(BlueprintFieldTransienceDefaultValue defaultValue) {
+  public void setDefaultValue(SborData defaultValue) {
     this.defaultValue = defaultValue;
   }
 

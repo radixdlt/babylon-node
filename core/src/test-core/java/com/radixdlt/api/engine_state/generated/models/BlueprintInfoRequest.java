@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.engine_state.generated.models.SborFormatOptions;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -33,7 +34,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   BlueprintInfoRequest.JSON_PROPERTY_PACKAGE_ADDRESS,
   BlueprintInfoRequest.JSON_PROPERTY_BLUEPRINT_NAME,
-  BlueprintInfoRequest.JSON_PROPERTY_BLUEPRINT_VERSION
+  BlueprintInfoRequest.JSON_PROPERTY_BLUEPRINT_VERSION,
+  BlueprintInfoRequest.JSON_PROPERTY_SBOR_FORMAT_OPTIONS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class BlueprintInfoRequest {
@@ -45,6 +47,9 @@ public class BlueprintInfoRequest {
 
   public static final String JSON_PROPERTY_BLUEPRINT_VERSION = "blueprint_version";
   private String blueprintVersion;
+
+  public static final String JSON_PROPERTY_SBOR_FORMAT_OPTIONS = "sbor_format_options";
+  private SborFormatOptions sborFormatOptions;
 
   public BlueprintInfoRequest() { 
   }
@@ -127,6 +132,32 @@ public class BlueprintInfoRequest {
   }
 
 
+  public BlueprintInfoRequest sborFormatOptions(SborFormatOptions sborFormatOptions) {
+    this.sborFormatOptions = sborFormatOptions;
+    return this;
+  }
+
+   /**
+   * Get sborFormatOptions
+   * @return sborFormatOptions
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_SBOR_FORMAT_OPTIONS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public SborFormatOptions getSborFormatOptions() {
+    return sborFormatOptions;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_SBOR_FORMAT_OPTIONS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setSborFormatOptions(SborFormatOptions sborFormatOptions) {
+    this.sborFormatOptions = sborFormatOptions;
+  }
+
+
   /**
    * Return true if this BlueprintInfoRequest object is equal to o.
    */
@@ -141,12 +172,13 @@ public class BlueprintInfoRequest {
     BlueprintInfoRequest blueprintInfoRequest = (BlueprintInfoRequest) o;
     return Objects.equals(this.packageAddress, blueprintInfoRequest.packageAddress) &&
         Objects.equals(this.blueprintName, blueprintInfoRequest.blueprintName) &&
-        Objects.equals(this.blueprintVersion, blueprintInfoRequest.blueprintVersion);
+        Objects.equals(this.blueprintVersion, blueprintInfoRequest.blueprintVersion) &&
+        Objects.equals(this.sborFormatOptions, blueprintInfoRequest.sborFormatOptions);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(packageAddress, blueprintName, blueprintVersion);
+    return Objects.hash(packageAddress, blueprintName, blueprintVersion, sborFormatOptions);
   }
 
   @Override
@@ -156,6 +188,7 @@ public class BlueprintInfoRequest {
     sb.append("    packageAddress: ").append(toIndentedString(packageAddress)).append("\n");
     sb.append("    blueprintName: ").append(toIndentedString(blueprintName)).append("\n");
     sb.append("    blueprintVersion: ").append(toIndentedString(blueprintVersion)).append("\n");
+    sb.append("    sborFormatOptions: ").append(toIndentedString(sborFormatOptions)).append("\n");
     sb.append("}");
     return sb.toString();
   }

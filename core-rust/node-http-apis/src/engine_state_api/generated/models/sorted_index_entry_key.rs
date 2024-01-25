@@ -19,17 +19,17 @@ pub struct SortedIndexEntryKey {
     /// The hex-encoded bytes of the sorted part of the key.
     #[serde(rename = "sort_prefix_hex")]
     pub sort_prefix_hex: String,
-    #[serde(rename = "programmatic_json")]
-    pub programmatic_json: serde_json::Value,
+    #[serde(rename = "key")]
+    pub key: Box<crate::engine_state_api::generated::models::SborData>,
 }
 
 impl SortedIndexEntryKey {
     /// Key within an Object's Sorted Index collection.
-    pub fn new(kind: crate::engine_state_api::generated::models::ObjectCollectionKind, sort_prefix_hex: String, programmatic_json: serde_json::Value) -> SortedIndexEntryKey {
+    pub fn new(kind: crate::engine_state_api::generated::models::ObjectCollectionKind, sort_prefix_hex: String, key: crate::engine_state_api::generated::models::SborData) -> SortedIndexEntryKey {
         SortedIndexEntryKey {
             kind,
             sort_prefix_hex,
-            programmatic_json,
+            key: Box::new(key),
         }
     }
 }

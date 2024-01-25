@@ -2,23 +2,20 @@ use crate::engine_state_api::*;
 
 use radix_engine::types::*;
 
-use crate::engine_state_api::handlers::default_paging_policy;
 use std::ops::Deref;
 
 pub(crate) async fn handle_kv_store_iterator(
     state: State<EngineStateApiState>,
     Json(request): Json<models::KeyValueStoreIteratorRequest>,
 ) -> Result<Json<models::KeyValueStoreIteratorResponse>, ResponseError> {
-    let mapping_context = MappingContext::new(&state.network);
+    let mapping_context =
+        MappingContext::new(&state.network).with_sbor_formats(request.sbor_format_options);
     let extraction_context = ExtractionContext::new(&state.network);
 
     let node_id = extract_address_as_node_id(&extraction_context, &request.entity_address)
         .map_err(|err| err.into_response_error("entity_address"))?;
 
-    let requested_max_page_size = request
-        .max_page_size
-        .map(extract_api_max_page_size)
-        .transpose()
+    let max_page_size = extract_api_max_page_size(request.max_page_size)
         .map_err(|error| error.into_response_error("max_page_size"))?;
     let continuation_token = request
         .continuation_token
@@ -44,7 +41,7 @@ pub(crate) async fn handle_kv_store_iterator(
 
     let page = OrderAgnosticPager::get_page(
         wrap(|from| data_loader.iter_kv_store_keys(&node_id, &kv_store_meta, from)),
-        default_paging_policy(requested_max_page_size),
+        MaxItemCountPolicy::new(max_page_size),
         continuation_token,
     )?;
 
@@ -75,6 +72,6 @@ fn to_api_key_value_store_map_key(
     key: SborData,
 ) -> Result<models::KeyValueStoreMapKey, MappingError> {
     Ok(models::KeyValueStoreMapKey {
-        programmatic_json: key.into_programmatic_json(context)?,
+        key: Box::new(to_api_sbor_data(context, key)?),
     })
 }

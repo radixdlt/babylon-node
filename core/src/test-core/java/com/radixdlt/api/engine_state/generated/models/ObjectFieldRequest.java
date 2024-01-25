@@ -22,7 +22,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.engine_state.generated.models.ModuleId;
+import com.radixdlt.api.engine_state.generated.models.AttachedModuleId;
+import com.radixdlt.api.engine_state.generated.models.SborFormatOptions;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -33,23 +34,27 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   ObjectFieldRequest.JSON_PROPERTY_ENTITY_ADDRESS,
-  ObjectFieldRequest.JSON_PROPERTY_MODULE_ID,
+  ObjectFieldRequest.JSON_PROPERTY_ATTACHED_MODULE_ID,
   ObjectFieldRequest.JSON_PROPERTY_FIELD_NAME,
-  ObjectFieldRequest.JSON_PROPERTY_FIELD_INDEX
+  ObjectFieldRequest.JSON_PROPERTY_FIELD_INDEX,
+  ObjectFieldRequest.JSON_PROPERTY_SBOR_FORMAT_OPTIONS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ObjectFieldRequest {
   public static final String JSON_PROPERTY_ENTITY_ADDRESS = "entity_address";
   private String entityAddress;
 
-  public static final String JSON_PROPERTY_MODULE_ID = "module_id";
-  private ModuleId moduleId;
+  public static final String JSON_PROPERTY_ATTACHED_MODULE_ID = "attached_module_id";
+  private AttachedModuleId attachedModuleId;
 
   public static final String JSON_PROPERTY_FIELD_NAME = "field_name";
   private String fieldName;
 
   public static final String JSON_PROPERTY_FIELD_INDEX = "field_index";
   private Integer fieldIndex;
+
+  public static final String JSON_PROPERTY_SBOR_FORMAT_OPTIONS = "sbor_format_options";
+  private SborFormatOptions sborFormatOptions;
 
   public ObjectFieldRequest() { 
   }
@@ -80,29 +85,29 @@ public class ObjectFieldRequest {
   }
 
 
-  public ObjectFieldRequest moduleId(ModuleId moduleId) {
-    this.moduleId = moduleId;
+  public ObjectFieldRequest attachedModuleId(AttachedModuleId attachedModuleId) {
+    this.attachedModuleId = attachedModuleId;
     return this;
   }
 
    /**
-   * Get moduleId
-   * @return moduleId
+   * Get attachedModuleId
+   * @return attachedModuleId
   **/
   @javax.annotation.Nullable
   @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_MODULE_ID)
+  @JsonProperty(JSON_PROPERTY_ATTACHED_MODULE_ID)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public ModuleId getModuleId() {
-    return moduleId;
+  public AttachedModuleId getAttachedModuleId() {
+    return attachedModuleId;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_MODULE_ID)
+  @JsonProperty(JSON_PROPERTY_ATTACHED_MODULE_ID)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setModuleId(ModuleId moduleId) {
-    this.moduleId = moduleId;
+  public void setAttachedModuleId(AttachedModuleId attachedModuleId) {
+    this.attachedModuleId = attachedModuleId;
   }
 
 
@@ -112,11 +117,11 @@ public class ObjectFieldRequest {
   }
 
    /**
-   * Name of the field to read. Either this or &#x60;field_index&#x60; is required.
+   * Name of the field to read. Either this or &#x60;field_index&#x60; is required. Note: getting a field by name is only a convenience feature, meant for manual, ad-hoc requests (i.e. allowing a human to use the human-readable &#x60;DerivedName&#x60; when available). In general, a field&#39;s primary identifier is its index, and any production-grade integration should use it. 
    * @return fieldName
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "Name of the field to read. Either this or `field_index` is required.")
+  @ApiModelProperty(value = "Name of the field to read. Either this or `field_index` is required. Note: getting a field by name is only a convenience feature, meant for manual, ad-hoc requests (i.e. allowing a human to use the human-readable `DerivedName` when available). In general, a field's primary identifier is its index, and any production-grade integration should use it. ")
   @JsonProperty(JSON_PROPERTY_FIELD_NAME)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
@@ -160,6 +165,32 @@ public class ObjectFieldRequest {
   }
 
 
+  public ObjectFieldRequest sborFormatOptions(SborFormatOptions sborFormatOptions) {
+    this.sborFormatOptions = sborFormatOptions;
+    return this;
+  }
+
+   /**
+   * Get sborFormatOptions
+   * @return sborFormatOptions
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_SBOR_FORMAT_OPTIONS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public SborFormatOptions getSborFormatOptions() {
+    return sborFormatOptions;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_SBOR_FORMAT_OPTIONS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setSborFormatOptions(SborFormatOptions sborFormatOptions) {
+    this.sborFormatOptions = sborFormatOptions;
+  }
+
+
   /**
    * Return true if this ObjectFieldRequest object is equal to o.
    */
@@ -173,14 +204,15 @@ public class ObjectFieldRequest {
     }
     ObjectFieldRequest objectFieldRequest = (ObjectFieldRequest) o;
     return Objects.equals(this.entityAddress, objectFieldRequest.entityAddress) &&
-        Objects.equals(this.moduleId, objectFieldRequest.moduleId) &&
+        Objects.equals(this.attachedModuleId, objectFieldRequest.attachedModuleId) &&
         Objects.equals(this.fieldName, objectFieldRequest.fieldName) &&
-        Objects.equals(this.fieldIndex, objectFieldRequest.fieldIndex);
+        Objects.equals(this.fieldIndex, objectFieldRequest.fieldIndex) &&
+        Objects.equals(this.sborFormatOptions, objectFieldRequest.sborFormatOptions);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entityAddress, moduleId, fieldName, fieldIndex);
+    return Objects.hash(entityAddress, attachedModuleId, fieldName, fieldIndex, sborFormatOptions);
   }
 
   @Override
@@ -188,9 +220,10 @@ public class ObjectFieldRequest {
     StringBuilder sb = new StringBuilder();
     sb.append("class ObjectFieldRequest {\n");
     sb.append("    entityAddress: ").append(toIndentedString(entityAddress)).append("\n");
-    sb.append("    moduleId: ").append(toIndentedString(moduleId)).append("\n");
+    sb.append("    attachedModuleId: ").append(toIndentedString(attachedModuleId)).append("\n");
     sb.append("    fieldName: ").append(toIndentedString(fieldName)).append("\n");
     sb.append("    fieldIndex: ").append(toIndentedString(fieldIndex)).append("\n");
+    sb.append("    sborFormatOptions: ").append(toIndentedString(sborFormatOptions)).append("\n");
     sb.append("}");
     return sb.toString();
   }

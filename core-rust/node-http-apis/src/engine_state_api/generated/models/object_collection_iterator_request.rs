@@ -16,15 +16,17 @@ pub struct ObjectCollectionIteratorRequest {
     /// A Bech32m-encoded, human readable rendering of an arbitrary Entity's address.
     #[serde(rename = "entity_address")]
     pub entity_address: String,
-    #[serde(rename = "module_id", skip_serializing_if = "Option::is_none")]
-    pub module_id: Option<crate::engine_state_api::generated::models::ModuleId>,
-    /// Name of the collection to read. Either this or `collection_index` is required.
+    #[serde(rename = "attached_module_id", skip_serializing_if = "Option::is_none")]
+    pub attached_module_id: Option<crate::engine_state_api::generated::models::AttachedModuleId>,
+    /// Name of the collection to read. Either this or `collection_index` is required. Note: getting a collection by name is only a convenience feature, meant for manual, ad-hoc requests (i.e. allowing a human to use the human-readable `DerivedName` when available). In general, a collection's primary identifier is its index, and any production-grade integration should use it. 
     #[serde(rename = "collection_name", skip_serializing_if = "Option::is_none")]
     pub collection_name: Option<String>,
     /// Index of the collection to read. Either this or `collection_name` is required.
     #[serde(rename = "collection_index", skip_serializing_if = "Option::is_none")]
     pub collection_index: Option<i32>,
-    /// A maximum number of items to be included in the paged listing response. By default, each paged listing endpoint imposes its own limit on the number of returned items (which may even be driven dynamically by system load, etc). This client-provided maximum page size simply adds a further constraint (i.e. can only lower down the number of returned items). 
+    #[serde(rename = "sbor_format_options", skip_serializing_if = "Option::is_none")]
+    pub sbor_format_options: Option<Box<crate::engine_state_api::generated::models::SborFormatOptions>>,
+    /// A maximum number of items to be included in the paged listing response.
     #[serde(rename = "max_page_size", skip_serializing_if = "Option::is_none")]
     pub max_page_size: Option<i32>,
     /// An opaque string conveying the information on where the next page of results starts. It is returned in every paged listing response (except for the last page), and it can be passed in every paged listing request (in order to begin listing from where the previous response ended). 
@@ -36,9 +38,10 @@ impl ObjectCollectionIteratorRequest {
     pub fn new(entity_address: String) -> ObjectCollectionIteratorRequest {
         ObjectCollectionIteratorRequest {
             entity_address,
-            module_id: None,
+            attached_module_id: None,
             collection_name: None,
             collection_index: None,
+            sbor_format_options: None,
             max_page_size: None,
             continuation_token: None,
         }

@@ -22,7 +22,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.engine_state.generated.models.KeyValueStoreMapKey;
+import com.radixdlt.api.engine_state.generated.models.SborData;
+import com.radixdlt.api.engine_state.generated.models.SborFormatOptions;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -33,7 +34,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   KeyValueStoreEntryRequest.JSON_PROPERTY_ENTITY_ADDRESS,
-  KeyValueStoreEntryRequest.JSON_PROPERTY_KEY
+  KeyValueStoreEntryRequest.JSON_PROPERTY_KEY,
+  KeyValueStoreEntryRequest.JSON_PROPERTY_SBOR_FORMAT_OPTIONS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class KeyValueStoreEntryRequest {
@@ -41,7 +43,10 @@ public class KeyValueStoreEntryRequest {
   private String entityAddress;
 
   public static final String JSON_PROPERTY_KEY = "key";
-  private KeyValueStoreMapKey key;
+  private SborData key;
+
+  public static final String JSON_PROPERTY_SBOR_FORMAT_OPTIONS = "sbor_format_options";
+  private SborFormatOptions sborFormatOptions;
 
   public KeyValueStoreEntryRequest() { 
   }
@@ -72,7 +77,7 @@ public class KeyValueStoreEntryRequest {
   }
 
 
-  public KeyValueStoreEntryRequest key(KeyValueStoreMapKey key) {
+  public KeyValueStoreEntryRequest key(SborData key) {
     this.key = key;
     return this;
   }
@@ -86,15 +91,41 @@ public class KeyValueStoreEntryRequest {
   @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public KeyValueStoreMapKey getKey() {
+  public SborData getKey() {
     return key;
   }
 
 
   @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setKey(KeyValueStoreMapKey key) {
+  public void setKey(SborData key) {
     this.key = key;
+  }
+
+
+  public KeyValueStoreEntryRequest sborFormatOptions(SborFormatOptions sborFormatOptions) {
+    this.sborFormatOptions = sborFormatOptions;
+    return this;
+  }
+
+   /**
+   * Get sborFormatOptions
+   * @return sborFormatOptions
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_SBOR_FORMAT_OPTIONS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public SborFormatOptions getSborFormatOptions() {
+    return sborFormatOptions;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_SBOR_FORMAT_OPTIONS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setSborFormatOptions(SborFormatOptions sborFormatOptions) {
+    this.sborFormatOptions = sborFormatOptions;
   }
 
 
@@ -111,12 +142,13 @@ public class KeyValueStoreEntryRequest {
     }
     KeyValueStoreEntryRequest keyValueStoreEntryRequest = (KeyValueStoreEntryRequest) o;
     return Objects.equals(this.entityAddress, keyValueStoreEntryRequest.entityAddress) &&
-        Objects.equals(this.key, keyValueStoreEntryRequest.key);
+        Objects.equals(this.key, keyValueStoreEntryRequest.key) &&
+        Objects.equals(this.sborFormatOptions, keyValueStoreEntryRequest.sborFormatOptions);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entityAddress, key);
+    return Objects.hash(entityAddress, key, sborFormatOptions);
   }
 
   @Override
@@ -125,6 +157,7 @@ public class KeyValueStoreEntryRequest {
     sb.append("class KeyValueStoreEntryRequest {\n");
     sb.append("    entityAddress: ").append(toIndentedString(entityAddress)).append("\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
+    sb.append("    sborFormatOptions: ").append(toIndentedString(sborFormatOptions)).append("\n");
     sb.append("}");
     return sb.toString();
   }

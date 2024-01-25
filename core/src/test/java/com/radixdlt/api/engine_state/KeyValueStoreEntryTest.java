@@ -92,7 +92,7 @@ public final class KeyValueStoreEntryTest extends DeterministicEngineStateApiTes
 
       // fetch the value by SBOR-encoded transaction hash in programmatic JSON format:
       final var key =
-          new KeyValueStoreMapKey()
+          new SborData()
               .programmaticJson(
                   Map.of(
                       "type_name", "Hash",
@@ -130,7 +130,7 @@ public final class KeyValueStoreEntryTest extends DeterministicEngineStateApiTes
 
       // try to fetch something by a made-up key:
       final var key =
-          new KeyValueStoreMapKey()
+          new SborData()
               .programmaticJson(
                   Map.of(
                       "type_name", "Hash",

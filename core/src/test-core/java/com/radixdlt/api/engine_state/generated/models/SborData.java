@@ -28,33 +28,62 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * The requested field&#39;s value.
+ * SborData
  */
-@ApiModel(description = "The requested field's value.")
 @JsonPropertyOrder({
-  ObjectFieldResponseContent.JSON_PROPERTY_PROGRAMMATIC_JSON
+  SborData.JSON_PROPERTY_RAW_HEX,
+  SborData.JSON_PROPERTY_PROGRAMMATIC_JSON
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class ObjectFieldResponseContent {
+public class SborData {
+  public static final String JSON_PROPERTY_RAW_HEX = "raw_hex";
+  private String rawHex;
+
   public static final String JSON_PROPERTY_PROGRAMMATIC_JSON = "programmatic_json";
   private Object programmaticJson;
 
-  public ObjectFieldResponseContent() { 
+  public SborData() { 
   }
 
-  public ObjectFieldResponseContent programmaticJson(Object programmaticJson) {
+  public SborData rawHex(String rawHex) {
+    this.rawHex = rawHex;
+    return this;
+  }
+
+   /**
+   * Hex-encoded raw bytes (of the SBOR encoding).
+   * @return rawHex
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "Hex-encoded raw bytes (of the SBOR encoding).")
+  @JsonProperty(JSON_PROPERTY_RAW_HEX)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public String getRawHex() {
+    return rawHex;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_RAW_HEX)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setRawHex(String rawHex) {
+    this.rawHex = rawHex;
+  }
+
+
+  public SborData programmaticJson(Object programmaticJson) {
     this.programmaticJson = programmaticJson;
     return this;
   }
 
    /**
-   * Get programmaticJson
+   * JSON representation of the SBOR structure, annotated with as much metadata (type and field names) as was available.  
    * @return programmaticJson
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "JSON representation of the SBOR structure, annotated with as much metadata (type and field names) as was available.  ")
   @JsonProperty(JSON_PROPERTY_PROGRAMMATIC_JSON)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
   public Object getProgrammaticJson() {
     return programmaticJson;
@@ -62,14 +91,14 @@ public class ObjectFieldResponseContent {
 
 
   @JsonProperty(JSON_PROPERTY_PROGRAMMATIC_JSON)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setProgrammaticJson(Object programmaticJson) {
     this.programmaticJson = programmaticJson;
   }
 
 
   /**
-   * Return true if this ObjectFieldResponse_content object is equal to o.
+   * Return true if this SborData object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -79,19 +108,21 @@ public class ObjectFieldResponseContent {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ObjectFieldResponseContent objectFieldResponseContent = (ObjectFieldResponseContent) o;
-    return Objects.equals(this.programmaticJson, objectFieldResponseContent.programmaticJson);
+    SborData sborData = (SborData) o;
+    return Objects.equals(this.rawHex, sborData.rawHex) &&
+        Objects.equals(this.programmaticJson, sborData.programmaticJson);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(programmaticJson);
+    return Objects.hash(rawHex, programmaticJson);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ObjectFieldResponseContent {\n");
+    sb.append("class SborData {\n");
+    sb.append("    rawHex: ").append(toIndentedString(rawHex)).append("\n");
     sb.append("    programmaticJson: ").append(toIndentedString(programmaticJson)).append("\n");
     sb.append("}");
     return sb.toString();

@@ -120,7 +120,8 @@ public final class EntityInfoTest extends DeterministicEngineStateApiTestBase {
 
       final var attachedModuleIds =
           Lists.transform(
-              objectInfo.getAttachedModules(), ObjectEntityInfoAllOfAttachedModules::getModuleId);
+              objectInfo.getAttachedModules(),
+              ObjectEntityInfoAllOfAttachedModules::getAttachedModuleId);
       assertThat(attachedModuleIds)
           .isEqualTo(List.of(AttachedModuleId.ROLEASSIGNMENT, AttachedModuleId.METADATA));
 

@@ -333,9 +333,9 @@ components:
 ###########################################################
     SborFormatOptions:
       type: object
-      description: Requested SBOR formats to include in the response.
+      description: Requested SBOR representation to use for every `SborData` within the response.
       properties:
-        raw:
+        raw_hex:
           description: Whether to return the raw hex-encoded bytes (default false).
           type: boolean
         programmatic_json:
@@ -352,13 +352,8 @@ components:
       type: integer
       format: int32
       minimum: 1
-      maximum: 1000
-      description: |
-        A maximum number of items to be included in the paged listing response.
-        By default, each paged listing endpoint imposes its own limit on the number of returned
-        items (which may even be driven dynamically by system load, etc). This client-provided
-        maximum page size simply adds a further constraint (i.e. can only lower down the number
-        of returned items).
+      maximum: 100
+      description: A maximum number of items to be included in the paged listing response.
 
 ###########################################################
 # SHARED MODELS                                           #
@@ -493,13 +488,6 @@ components:
         - Metadata
         - Royalty
         - RoleAssignment
-    ModuleId:
-      type: string
-      enum:
-        - Main
-        - Metadata
-        - Royalty
-        - RoleAssignment
     EntityType:
       type: string
       enum:
@@ -544,6 +532,18 @@ components:
       allOf:
         - $ref: "#/components/schemas/GenericTypeParameter"
         - type: object
+    SborData:
+      type: object
+      properties:
+        raw_hex:
+          type: string
+          description: Hex-encoded raw bytes (of the SBOR encoding).
+        programmatic_json:
+          type: object
+          description: |
+            JSON representation of the SBOR structure, annotated with as much metadata (type and
+            field names) as was available. 
+
 ###########################################################
 # ERROR SURFACING                                         #
 ###########################################################
@@ -754,10 +754,10 @@ components:
               items:
                 type: object
                 required:
-                  - module_id
+                  - attached_module_id
                   - state
                 properties:
-                  module_id:
+                  attached_module_id:
                     $ref: "#/components/schemas/AttachedModuleId"
                   state:
                     $ref: "#/components/schemas/ObjectModuleStateInfo"
@@ -965,6 +965,8 @@ components:
           type: string
           description: |
             A string of format `Major.Minor.Patch` (all parts being `u32`). Defaults to `1.0.0`.
+        sbor_format_options:
+          $ref: "#/components/schemas/SborFormatOptions"
     BlueprintInfoResponse:
       type: object
       required:
@@ -1530,14 +1532,8 @@ components:
         - default_value
       properties:
         default_value:
-          $ref: '#/components/schemas/BlueprintFieldTransienceDefaultValue'
-    BlueprintFieldTransienceDefaultValue:
-      type: object
-      required:
-        - programmatic_json
-      properties:
-        programmatic_json:
-          type: object
+          $ref: '#/components/schemas/SborData'
+          description: The value to which the transient field is reset after every transaction.
     BlueprintFieldConditionType:
       type: string
       enum:
@@ -1631,18 +1627,27 @@ components:
       properties:
         entity_address:
           $ref: "#/components/schemas/EntityAddress"
-        module_id:
-          description: Module ID; may be skipped to indicate `Main`.
-          $ref: "#/components/schemas/ModuleId"
+        attached_module_id:
+          description: |
+            Attached Module ID; should only be specified when reading a field of some attached module.
+            Should be skipped to read the Object's own field.
+          $ref: "#/components/schemas/AttachedModuleId"
         field_name:
           type: string
-          description: Name of the field to read. Either this or `field_index` is required.
+          description: |
+            Name of the field to read. Either this or `field_index` is required.
+            Note: getting a field by name is only a convenience feature, meant for manual, ad-hoc
+            requests (i.e. allowing a human to use the human-readable `DerivedName` when available).
+            In general, a field's primary identifier is its index, and any production-grade
+            integration should use it.
         field_index:
           type: integer
           format: int32
           minimum: 0
           maximum: 255
           description: Index of the field to read. Either this or `field_name` is required.
+        sbor_format_options:
+          $ref: "#/components/schemas/SborFormatOptions"
     ObjectFieldResponse:
       type: object
       required:
@@ -1653,13 +1658,8 @@ components:
           $ref: "#/components/schemas/LedgerStateSummary"
           description: A summarized state of the ledger at which the query was performed.
         content:
-          type: object
+          $ref: "#/components/schemas/SborData"
           description: The requested field's value.
-          required:
-            - programmatic_json
-          properties:
-            programmatic_json:
-              type: object
 #########################################################
 # REQUEST: /object/collection/iterator                  #
 #########################################################
@@ -1671,18 +1671,28 @@ components:
       properties:
         entity_address:
           $ref: "#/components/schemas/EntityAddress"
-        module_id:
-          description: Module ID; may be skipped to indicate `Main`.
-          $ref: "#/components/schemas/ModuleId"
+        attached_module_id:
+          description: |
+            Attached Module ID; should only be specified when reading a collection of some attached module.
+            Should be skipped to read the Object's own collection.
+          $ref: "#/components/schemas/AttachedModuleId"
         collection_name:
           type: string
-          description: Name of the collection to read. Either this or `collection_index` is required.
+          description: |
+            Name of the collection to read. Either this or `collection_index` is required.
+            Note: getting a collection by name is only a convenience feature, meant for manual,
+            ad-hoc requests (i.e. allowing a human to use the human-readable `DerivedName` when
+            available).
+            In general, a collection's primary identifier is its index, and any production-grade
+            integration should use it.
         collection_index:
           type: integer
           format: int32
           minimum: 0
           maximum: 255
           description: Index of the collection to read. Either this or `collection_name` is required.
+        sbor_format_options:
+          $ref: "#/components/schemas/SborFormatOptions"
         max_page_size:
           $ref: "#/components/schemas/MaxPageSize"
         continuation_token:
@@ -1723,20 +1733,20 @@ components:
         - $ref: "#/components/schemas/CollectionEntryKey"
         - type: object
           required:
-            - programmatic_json
+            - key
           properties:
-            programmatic_json:
-              type: object
+            key:
+              $ref: '#/components/schemas/SborData'
     IndexEntryKey:
       description: Key within an Object's Index collection.
       allOf:
         - $ref: "#/components/schemas/CollectionEntryKey"
         - type: object
           required:
-            - programmatic_json
+            - key
           properties:
-            programmatic_json:
-              type: object
+            key:
+              $ref: '#/components/schemas/SborData'
     SortedIndexEntryKey:
       description: Key within an Object's Sorted Index collection.
       allOf:
@@ -1744,13 +1754,14 @@ components:
         - type: object
           required:
             - sort_prefix_hex
-            - programmatic_json
+            - key
           properties:
             sort_prefix_hex:
               type: string
               description: The hex-encoded bytes of the sorted part of the key.
-            programmatic_json:
-              type: object
+            key:
+              $ref: '#/components/schemas/SborData'
+              description: The remaining part of the key.
 #########################################################
 # REQUEST: /object/collection/entry                     #
 #########################################################
@@ -1763,12 +1774,20 @@ components:
       properties:
         entity_address:
           $ref: "#/components/schemas/EntityAddress"
-        module_id:
-          description: Module ID; may be skipped to indicate `Main`.
-          $ref: "#/components/schemas/ModuleId"
+        attached_module_id:
+          description: |
+            Attached Module ID; should only be specified when reading a collection of some attached module.
+            Should be skipped to read the Object's own collection.
+          $ref: "#/components/schemas/AttachedModuleId"
         collection_name:
           type: string
-          description: Name of the collection to read. Either this or `collection_index` is required.
+          description: |
+            Name of the collection to read. Either this or `collection_index` is required.
+            Note: getting a collection by name is only a convenience feature, meant for manual,
+            ad-hoc requests (i.e. allowing a human to use the human-readable `DerivedName` when
+            available).
+            In general, a collection's primary identifier is its index, and any production-grade
+            integration should use it.
         collection_index:
           type: integer
           format: int32
@@ -1777,7 +1796,12 @@ components:
           description: Index of the collection to read. Either this or `collection_name` is required.
         key:
           $ref: "#/components/schemas/CollectionEntryKey"
-          description: The key to look up the entry by.
+          description: |
+            The key to look up the entry by.
+            Exactly one of the available SBOR formats must be present on the `SborData` within the
+            requested key.
+        sbor_format_options:
+          $ref: "#/components/schemas/SborFormatOptions"
     ObjectCollectionEntryResponse:
       type: object
       required:
@@ -1788,13 +1812,8 @@ components:
           $ref: "#/components/schemas/LedgerStateSummary"
           description: A summarized state of the ledger at which the query was performed.
         content:
-          type: object
+          $ref: '#/components/schemas/SborData'
           description: The requested Object Collection entry's value.
-          required:
-            - programmatic_json
-          properties:
-            programmatic_json:
-              type: object
 #########################################################
 # REQUEST: /kv-store/iterator                           #
 #########################################################
@@ -1805,6 +1824,8 @@ components:
       properties:
         entity_address:
           $ref: "#/components/schemas/EntityAddress"
+        sbor_format_options:
+          $ref: "#/components/schemas/SborFormatOptions"
         max_page_size:
           $ref: "#/components/schemas/MaxPageSize"
         continuation_token:
@@ -1828,10 +1849,11 @@ components:
     KeyValueStoreMapKey:
       type: object
       required:
-        - programmatic_json
+        - key
       properties:
-        programmatic_json:
-          type: object
+        key:
+          $ref: '#/components/schemas/SborData'
+          description: SBOR-encoded map key.
 #########################################################
 # REQUEST: /kv-store/entry                              #
 #########################################################
@@ -1844,8 +1866,12 @@ components:
         entity_address:
           $ref: "#/components/schemas/EntityAddress"
         key:
-          $ref: "#/components/schemas/KeyValueStoreMapKey"
-          description: The key to look up the entry by.
+          $ref: "#/components/schemas/SborData"
+          description: |
+            The key to look up the entry by.
+            Exactly one of the available SBOR formats must be used.
+        sbor_format_options:
+          $ref: "#/components/schemas/SborFormatOptions"
     KeyValueStoreEntryResponse:
       type: object
       required:
@@ -1856,13 +1882,8 @@ components:
           $ref: "#/components/schemas/LedgerStateSummary"
           description: A summarized state of the ledger at which the query was performed.
         content:
-          type: object
+          $ref: '#/components/schemas/SborData'
           description: The requested Key-Value Store entry's value.
-          required:
-            - programmatic_json
-          properties:
-            programmatic_json:
-              type: object
 #########################################################
 # REQUEST: /entity/schema/entry                         #
 #########################################################
@@ -1876,6 +1897,8 @@ components:
           $ref: "#/components/schemas/EntityAddress"
         schema_hash:
           $ref: '#/components/schemas/SchemaHash'
+        sbor_format_options:
+          $ref: "#/components/schemas/SborFormatOptions"
     EntitySchemaEntryResponse:
       type: object
       required:
@@ -1886,10 +1909,5 @@ components:
           $ref: "#/components/schemas/LedgerStateSummary"
           description: A summarized state of the ledger at which the query was performed.
         content:
-          type: object
+          $ref: '#/components/schemas/SborData'
           description: The requested schema's value.
-          required:
-            - programmatic_json
-          properties:
-            programmatic_json:
-              type: object

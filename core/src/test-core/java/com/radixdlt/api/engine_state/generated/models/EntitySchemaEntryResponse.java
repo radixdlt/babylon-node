@@ -22,8 +22,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.engine_state.generated.models.EntitySchemaEntryResponseContent;
 import com.radixdlt.api.engine_state.generated.models.LedgerStateSummary;
+import com.radixdlt.api.engine_state.generated.models.SborData;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -42,7 +42,7 @@ public class EntitySchemaEntryResponse {
   private LedgerStateSummary atLedgerState;
 
   public static final String JSON_PROPERTY_CONTENT = "content";
-  private EntitySchemaEntryResponseContent content;
+  private SborData content;
 
   public EntitySchemaEntryResponse() { 
   }
@@ -73,7 +73,7 @@ public class EntitySchemaEntryResponse {
   }
 
 
-  public EntitySchemaEntryResponse content(EntitySchemaEntryResponseContent content) {
+  public EntitySchemaEntryResponse content(SborData content) {
     this.content = content;
     return this;
   }
@@ -87,14 +87,14 @@ public class EntitySchemaEntryResponse {
   @JsonProperty(JSON_PROPERTY_CONTENT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EntitySchemaEntryResponseContent getContent() {
+  public SborData getContent() {
     return content;
   }
 
 
   @JsonProperty(JSON_PROPERTY_CONTENT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setContent(EntitySchemaEntryResponseContent content) {
+  public void setContent(SborData content) {
     this.content = content;
   }
 

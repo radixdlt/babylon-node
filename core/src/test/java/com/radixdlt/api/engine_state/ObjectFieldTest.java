@@ -67,7 +67,7 @@ package com.radixdlt.api.engine_state;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.api.DeterministicEngineStateApiTestBase;
-import com.radixdlt.api.engine_state.generated.models.ObjectFieldRequest;
+import com.radixdlt.api.engine_state.generated.models.*;
 import java.util.List;
 import java.util.Map;
 import org.junit.Test;
@@ -102,6 +102,49 @@ public final class ObjectFieldTest extends DeterministicEngineStateApiTestBase {
                               "kind", "I32",
                               "type_name", "ProposerMinuteTimestampSubstate",
                               "value", "0"))));
+    }
+  }
+
+  @Test
+  public void engine_state_api_returns_transient_object_field_default_value() throws Exception {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
+
+      // Locate literally any fungible vault:
+      final var vault =
+          getEntitiesApi().entityIteratorPost(new EntityIteratorRequest()).getPage().stream()
+              .filter(entity -> entity.getEntityType() == EntityType.INTERNALFUNGIBLEVAULT)
+              .findFirst()
+              .orElseThrow();
+
+      // Fetch the expected transient `locked_balance` value from the vault's blueprint:
+      final var vaultBlueprint = vault.getBlueprint();
+      final var transientDefaultValue =
+          getTypesApi()
+              .blueprintInfoPost(
+                  new BlueprintInfoRequest()
+                      .packageAddress(vaultBlueprint.getPackageAddress())
+                      .blueprintName(vaultBlueprint.getBlueprintName()))
+              .getInfo()
+              .getFields()
+              .stream()
+              .filter(field -> field.getName().equals("locked_balance"))
+              .findAny()
+              .orElseThrow()
+              .getTransience()
+              .getDefaultValue()
+              .getProgrammaticJson();
+
+      // And fetch the same from the vault instance:
+      final var value =
+          getObjectsApi()
+              .objectFieldPost(
+                  new ObjectFieldRequest()
+                      .entityAddress(vault.getEntityAddress())
+                      .fieldName("locked_balance"))
+              .getContent()
+              .getProgrammaticJson();
+      assertThat(value).isEqualTo(transientDefaultValue);
     }
   }
 }

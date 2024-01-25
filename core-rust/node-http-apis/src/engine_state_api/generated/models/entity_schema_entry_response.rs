@@ -16,11 +16,11 @@ pub struct EntitySchemaEntryResponse {
     #[serde(rename = "at_ledger_state")]
     pub at_ledger_state: Box<crate::engine_state_api::generated::models::LedgerStateSummary>,
     #[serde(rename = "content")]
-    pub content: Box<crate::engine_state_api::generated::models::EntitySchemaEntryResponseContent>,
+    pub content: Box<crate::engine_state_api::generated::models::SborData>,
 }
 
 impl EntitySchemaEntryResponse {
-    pub fn new(at_ledger_state: crate::engine_state_api::generated::models::LedgerStateSummary, content: crate::engine_state_api::generated::models::EntitySchemaEntryResponseContent) -> EntitySchemaEntryResponse {
+    pub fn new(at_ledger_state: crate::engine_state_api::generated::models::LedgerStateSummary, content: crate::engine_state_api::generated::models::SborData) -> EntitySchemaEntryResponse {
         EntitySchemaEntryResponse {
             at_ledger_state: Box::new(at_ledger_state),
             content: Box::new(content),

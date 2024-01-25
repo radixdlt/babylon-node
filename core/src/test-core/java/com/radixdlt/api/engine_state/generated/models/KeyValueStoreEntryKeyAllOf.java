@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.engine_state.generated.models.SborData;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -31,39 +32,39 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * KeyValueStoreEntryKeyAllOf
  */
 @JsonPropertyOrder({
-  KeyValueStoreEntryKeyAllOf.JSON_PROPERTY_PROGRAMMATIC_JSON
+  KeyValueStoreEntryKeyAllOf.JSON_PROPERTY_KEY
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class KeyValueStoreEntryKeyAllOf {
-  public static final String JSON_PROPERTY_PROGRAMMATIC_JSON = "programmatic_json";
-  private Object programmaticJson;
+  public static final String JSON_PROPERTY_KEY = "key";
+  private SborData key;
 
   public KeyValueStoreEntryKeyAllOf() { 
   }
 
-  public KeyValueStoreEntryKeyAllOf programmaticJson(Object programmaticJson) {
-    this.programmaticJson = programmaticJson;
+  public KeyValueStoreEntryKeyAllOf key(SborData key) {
+    this.key = key;
     return this;
   }
 
    /**
-   * Get programmaticJson
-   * @return programmaticJson
+   * Get key
+   * @return key
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_PROGRAMMATIC_JSON)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Object getProgrammaticJson() {
-    return programmaticJson;
+  public SborData getKey() {
+    return key;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_PROGRAMMATIC_JSON)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setProgrammaticJson(Object programmaticJson) {
-    this.programmaticJson = programmaticJson;
+  public void setKey(SborData key) {
+    this.key = key;
   }
 
 
@@ -79,19 +80,19 @@ public class KeyValueStoreEntryKeyAllOf {
       return false;
     }
     KeyValueStoreEntryKeyAllOf keyValueStoreEntryKeyAllOf = (KeyValueStoreEntryKeyAllOf) o;
-    return Objects.equals(this.programmaticJson, keyValueStoreEntryKeyAllOf.programmaticJson);
+    return Objects.equals(this.key, keyValueStoreEntryKeyAllOf.key);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(programmaticJson);
+    return Objects.hash(key);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class KeyValueStoreEntryKeyAllOf {\n");
-    sb.append("    programmaticJson: ").append(toIndentedString(programmaticJson)).append("\n");
+    sb.append("    key: ").append(toIndentedString(key)).append("\n");
     sb.append("}");
     return sb.toString();
   }

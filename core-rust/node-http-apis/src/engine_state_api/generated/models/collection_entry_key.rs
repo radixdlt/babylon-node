@@ -15,21 +15,21 @@
 pub enum CollectionEntryKey {
     #[serde(rename="Index")]
     IndexEntryKey {
-        #[serde(rename = "programmatic_json")]
-        programmatic_json: serde_json::Value,
+        #[serde(rename = "key")]
+        key: Box<crate::engine_state_api::generated::models::SborData>,
     },
     #[serde(rename="KeyValueStore")]
     KeyValueStoreEntryKey {
-        #[serde(rename = "programmatic_json")]
-        programmatic_json: serde_json::Value,
+        #[serde(rename = "key")]
+        key: Box<crate::engine_state_api::generated::models::SborData>,
     },
     #[serde(rename="SortedIndex")]
     SortedIndexEntryKey {
         /// The hex-encoded bytes of the sorted part of the key.
         #[serde(rename = "sort_prefix_hex")]
         sort_prefix_hex: String,
-        #[serde(rename = "programmatic_json")]
-        programmatic_json: serde_json::Value,
+        #[serde(rename = "key")]
+        key: Box<crate::engine_state_api::generated::models::SborData>,
     },
 }
 

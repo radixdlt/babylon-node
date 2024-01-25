@@ -15,12 +15,12 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct BlueprintFieldTransience {
     #[serde(rename = "default_value")]
-    pub default_value: Box<crate::engine_state_api::generated::models::BlueprintFieldTransienceDefaultValue>,
+    pub default_value: Box<crate::engine_state_api::generated::models::SborData>,
 }
 
 impl BlueprintFieldTransience {
     /// Properties related to the field's transience. Only present if the field is transient.
-    pub fn new(default_value: crate::engine_state_api::generated::models::BlueprintFieldTransienceDefaultValue) -> BlueprintFieldTransience {
+    pub fn new(default_value: crate::engine_state_api::generated::models::SborData) -> BlueprintFieldTransience {
         BlueprintFieldTransience {
             default_value: Box::new(default_value),
         }
