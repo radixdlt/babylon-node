@@ -442,7 +442,7 @@ impl RawDbMetrics {
                 .set(i64::try_from(statistic.sst_count).unwrap_or_default());
             self.max_level
                 .with_label(&statistic.category_name)
-                .set(i64::try_from(statistic.max_level).unwrap_or_default());
+                .set(i64::from(statistic.max_level));
         }
     }
 }

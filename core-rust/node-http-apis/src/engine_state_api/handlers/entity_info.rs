@@ -158,6 +158,7 @@ fn to_api_object_field_info(
     let ObjectFieldMeta {
         index,
         resolved_type,
+        ..
     } = object_field_meta;
     Ok(models::ObjectFieldInfo {
         index: to_api_u8_as_i32(index.number),

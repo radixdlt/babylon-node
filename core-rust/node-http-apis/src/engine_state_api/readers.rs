@@ -592,6 +592,7 @@ impl<'s, S: SubstateDatabase + SubstateNodeAncestryStore> EngineStateMetaLoader<
                     type_resolver
                         .resolve_type_from_blueprint_data(type_target, schema.field)
                         .and_then(|resolved_type| self.augment_with_schema(resolved_type))?,
+                    schema.transience,
                 ))
             })
             .collect::<Result<Vec<_>, _>>()?;
@@ -1098,18 +1099,28 @@ impl RichIndex {
 pub struct ObjectFieldMeta {
     pub index: RichIndex,
     pub resolved_type: ResolvedTypeMeta,
+    pub transience_default_value_bytes: Option<Vec<u8>>,
 }
 
 impl ObjectFieldMeta {
     /// Creates a self-contained field metadata: captures its index, name (if applicable) and a
     /// fully-resolved type information.
     /// The [`blueprint_name`] is only used for deriving the human-readable field name.
-    fn new(field_index: usize, blueprint_name: &str, resolved_type: ResolvedTypeMeta) -> Self {
+    fn new(
+        field_index: usize,
+        blueprint_name: &str,
+        resolved_type: ResolvedTypeMeta,
+        transience: FieldTransience,
+    ) -> Self {
         let index = RichIndex::of(field_index)
             .with_derived_field_name(blueprint_name, resolved_type.name());
         Self {
             index,
             resolved_type,
+            transience_default_value_bytes: match transience {
+                FieldTransience::NotTransient => None,
+                FieldTransience::TransientStatic { default_value } => Some(default_value),
+            },
         }
     }
 }
@@ -1237,20 +1248,26 @@ impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
         module_id: ModuleId,
         field_meta: &'m ObjectFieldMeta,
     ) -> Result<SborData<'m>, EngineStateBrowsingError> {
-        let indexed_value = self
-            .reader
-            .read_object_field(node_id, module_id, field_meta.index.number)
-            // if `ObjectFieldMeta` exists, then the object, module and field must exist - no errors expected:
-            .map_err(|error| {
-                EngineStateBrowsingError::UnexpectedEngineError(
-                    error,
-                    "when reading object field".to_string(),
-                )
-            })?;
-        Ok(SborData::new(
-            indexed_value.into(),
-            &field_meta.resolved_type,
-        ))
+        let ObjectFieldMeta {
+            index,
+            resolved_type,
+            transience_default_value_bytes,
+        } = field_meta;
+        let value_bytes = match transience_default_value_bytes {
+            Some(value_bytes) => value_bytes.clone(),
+            None => self
+                .reader
+                .read_object_field(node_id, module_id, index.number)
+                // if `ObjectFieldMeta` exists, then the object, module and field must exist - no errors expected:
+                .map_err(|error| {
+                    EngineStateBrowsingError::UnexpectedEngineError(
+                        error,
+                        "when reading object field".to_string(),
+                    )
+                })?
+                .into(),
+        };
+        Ok(SborData::new(value_bytes, resolved_type))
     }
 
     /// Loads an SBOR-encoded value of the given field.
