@@ -83,14 +83,16 @@ impl ProtocolConfig {
     pub fn validate(&self) -> Result<(), String> {
         let mut protocol_versions = hashset!();
 
-        self.genesis_protocol_version.validate_as_configured_protocol_definition()?;
+        self.genesis_protocol_version
+            .validate_as_configured_protocol_definition()?;
 
         for protocol_update_trigger in self.protocol_update_triggers.iter() {
             protocol_update_trigger.validate()?;
 
             if !protocol_versions.insert(&protocol_update_trigger.next_protocol_version) {
                 return Err(format!(
-                    "Duplicate specification of protocol version {}", protocol_update_trigger.next_protocol_version
+                    "Duplicate specification of protocol version {}",
+                    protocol_update_trigger.next_protocol_version
                 ));
             }
         }
@@ -189,10 +191,12 @@ impl ProtocolVersionName {
         Ok(())
     }
 
-    pub fn validate_as_configured_protocol_definition(&self) -> Result<Box<dyn ConfigurableProtocolUpdateDefinition>, String> {
+    pub fn validate_as_configured_protocol_definition(
+        &self,
+    ) -> Result<Box<dyn ConfigurableProtocolUpdateDefinition>, String> {
         self.validate()
             .map_err(|err| format!("Protocol version ({self}) is invalid: {err:?}"))?;
-    
+
         resolve_update_definition_for_version(self).ok_or_else(|| {
             format!("Protocol version ({self}) does not have a recognized definition")
         })

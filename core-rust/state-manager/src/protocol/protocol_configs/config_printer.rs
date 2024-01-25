@@ -60,7 +60,9 @@ fn print_protocol_config_code() {
             readiness_thresholds: thresholds.clone(),
         },
     );
-    trigger.validate().expect("Generated protocol update trigger was valid");
+    trigger
+        .validate()
+        .expect("Generated protocol update trigger should be valid");
 
     let base_indent = "        ";
     println!("{base_indent}{version_const} => EnactAtStartOfEpochIfValidatorsReady {{");
