@@ -6,6 +6,7 @@ mod hashes;
 mod keys_and_sigs;
 mod lts;
 mod numerics;
+mod pagination;
 mod receipt;
 mod substates;
 
@@ -17,5 +18,6 @@ pub use hashes::*;
 pub use keys_and_sigs::*;
 pub use lts::*;
 pub use numerics::*;
+pub use pagination::*;
 pub use receipt::*;
 pub use substates::*;

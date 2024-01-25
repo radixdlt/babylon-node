@@ -26,7 +26,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.RequestedStateVersionOutOfBoundsErrorDetails;
-import com.radixdlt.api.core.generated.models.RequestedStateVersionOutOfBoundsErrorDetailsAllOf;
+import com.radixdlt.api.core.generated.models.StreamProofsErrorDetailsRequestedStateVersionOutOfBoundsAllOf;
 import com.radixdlt.api.core.generated.models.StreamTransactionsErrorDetails;
 import com.radixdlt.api.core.generated.models.StreamTransactionsErrorDetailsType;
 import io.swagger.annotations.ApiModel;

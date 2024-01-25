@@ -27,6 +27,13 @@ import {
     LtsTransactionSubmitErrorResponseToJSON,
 } from './LtsTransactionSubmitErrorResponse';
 import {
+    StreamProofsErrorResponse,
+    instanceOfStreamProofsErrorResponse,
+    StreamProofsErrorResponseFromJSON,
+    StreamProofsErrorResponseFromJSONTyped,
+    StreamProofsErrorResponseToJSON,
+} from './StreamProofsErrorResponse';
+import {
     StreamTransactionsErrorResponse,
     instanceOfStreamTransactionsErrorResponse,
     StreamTransactionsErrorResponseFromJSON,
@@ -46,7 +53,7 @@ import {
  * 
  * @export
  */
-export type ErrorResponse = { error_type: 'Basic' } & BasicErrorResponse | { error_type: 'LtsTransactionSubmit' } & LtsTransactionSubmitErrorResponse | { error_type: 'StreamTransactions' } & StreamTransactionsErrorResponse | { error_type: 'TransactionSubmit' } & TransactionSubmitErrorResponse;
+export type ErrorResponse = { error_type: 'Basic' } & BasicErrorResponse | { error_type: 'LtsTransactionSubmit' } & LtsTransactionSubmitErrorResponse | { error_type: 'StreamProofs' } & StreamProofsErrorResponse | { error_type: 'StreamTransactions' } & StreamTransactionsErrorResponse | { error_type: 'TransactionSubmit' } & TransactionSubmitErrorResponse;
 
 export function ErrorResponseFromJSON(json: any): ErrorResponse {
     return ErrorResponseFromJSONTyped(json, false);
@@ -61,6 +68,8 @@ export function ErrorResponseFromJSONTyped(json: any, ignoreDiscriminator: boole
             return {...BasicErrorResponseFromJSONTyped(json, true), error_type: 'Basic'};
         case 'LtsTransactionSubmit':
             return {...LtsTransactionSubmitErrorResponseFromJSONTyped(json, true), error_type: 'LtsTransactionSubmit'};
+        case 'StreamProofs':
+            return {...StreamProofsErrorResponseFromJSONTyped(json, true), error_type: 'StreamProofs'};
         case 'StreamTransactions':
             return {...StreamTransactionsErrorResponseFromJSONTyped(json, true), error_type: 'StreamTransactions'};
         case 'TransactionSubmit':
@@ -82,6 +91,8 @@ export function ErrorResponseToJSON(value?: ErrorResponse | null): any {
             return BasicErrorResponseToJSON(value);
         case 'LtsTransactionSubmit':
             return LtsTransactionSubmitErrorResponseToJSON(value);
+        case 'StreamProofs':
+            return StreamProofsErrorResponseToJSON(value);
         case 'StreamTransactions':
             return StreamTransactionsErrorResponseToJSON(value);
         case 'TransactionSubmit':

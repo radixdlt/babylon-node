@@ -12,15 +12,16 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct RequestedStateVersionOutOfBoundsErrorDetailsAllOf {
-    #[serde(rename = "max_ledger_state_version")]
-    pub max_ledger_state_version: i64,
+pub struct StreamProofsErrorDetailsRequestedEpochOutOfBoundsAllOf {
+    /// The maximum completed epoch committed to this node's ledger. *Note on the bounds:* the requested `from_epoch` cannot be greater than `max_ledger_epoch + 1`. Any greater requested value triggers this error. 
+    #[serde(rename = "max_ledger_epoch")]
+    pub max_ledger_epoch: i64,
 }
 
-impl RequestedStateVersionOutOfBoundsErrorDetailsAllOf {
-    pub fn new(max_ledger_state_version: i64) -> RequestedStateVersionOutOfBoundsErrorDetailsAllOf {
-        RequestedStateVersionOutOfBoundsErrorDetailsAllOf {
-            max_ledger_state_version,
+impl StreamProofsErrorDetailsRequestedEpochOutOfBoundsAllOf {
+    pub fn new(max_ledger_epoch: i64) -> StreamProofsErrorDetailsRequestedEpochOutOfBoundsAllOf {
+        StreamProofsErrorDetailsRequestedEpochOutOfBoundsAllOf {
+            max_ledger_epoch,
         }
     }
 }

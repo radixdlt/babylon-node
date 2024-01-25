@@ -74,6 +74,12 @@ export interface LedgerHeader {
      * @memberof LedgerHeader
      */
     next_epoch?: NextEpoch;
+    /**
+     * If present, indicates that this proof triggers the enactment of the given protocol version.
+     * @type {string}
+     * @memberof LedgerHeader
+     */
+    next_protocol_version?: string;
 }
 
 /**
@@ -108,6 +114,7 @@ export function LedgerHeaderFromJSONTyped(json: any, ignoreDiscriminator: boolea
         'consensus_parent_round_timestamp_ms': json['consensus_parent_round_timestamp_ms'],
         'proposer_timestamp_ms': json['proposer_timestamp_ms'],
         'next_epoch': !exists(json, 'next_epoch') ? undefined : NextEpochFromJSON(json['next_epoch']),
+        'next_protocol_version': !exists(json, 'next_protocol_version') ? undefined : json['next_protocol_version'],
     };
 }
 
@@ -127,6 +134,7 @@ export function LedgerHeaderToJSON(value?: LedgerHeader | null): any {
         'consensus_parent_round_timestamp_ms': value.consensus_parent_round_timestamp_ms,
         'proposer_timestamp_ms': value.proposer_timestamp_ms,
         'next_epoch': NextEpochToJSON(value.next_epoch),
+        'next_protocol_version': value.next_protocol_version,
     };
 }
 

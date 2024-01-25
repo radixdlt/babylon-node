@@ -39,7 +39,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   LedgerHeader.JSON_PROPERTY_HASHES,
   LedgerHeader.JSON_PROPERTY_CONSENSUS_PARENT_ROUND_TIMESTAMP_MS,
   LedgerHeader.JSON_PROPERTY_PROPOSER_TIMESTAMP_MS,
-  LedgerHeader.JSON_PROPERTY_NEXT_EPOCH
+  LedgerHeader.JSON_PROPERTY_NEXT_EPOCH,
+  LedgerHeader.JSON_PROPERTY_NEXT_PROTOCOL_VERSION
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class LedgerHeader {
@@ -63,6 +64,9 @@ public class LedgerHeader {
 
   public static final String JSON_PROPERTY_NEXT_EPOCH = "next_epoch";
   private NextEpoch nextEpoch;
+
+  public static final String JSON_PROPERTY_NEXT_PROTOCOL_VERSION = "next_protocol_version";
+  private String nextProtocolVersion;
 
   public LedgerHeader() { 
   }
@@ -259,6 +263,32 @@ public class LedgerHeader {
   }
 
 
+  public LedgerHeader nextProtocolVersion(String nextProtocolVersion) {
+    this.nextProtocolVersion = nextProtocolVersion;
+    return this;
+  }
+
+   /**
+   * If present, indicates that this proof triggers the enactment of the given protocol version.
+   * @return nextProtocolVersion
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "If present, indicates that this proof triggers the enactment of the given protocol version.")
+  @JsonProperty(JSON_PROPERTY_NEXT_PROTOCOL_VERSION)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public String getNextProtocolVersion() {
+    return nextProtocolVersion;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_NEXT_PROTOCOL_VERSION)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setNextProtocolVersion(String nextProtocolVersion) {
+    this.nextProtocolVersion = nextProtocolVersion;
+  }
+
+
   /**
    * Return true if this LedgerHeader object is equal to o.
    */
@@ -277,12 +307,13 @@ public class LedgerHeader {
         Objects.equals(this.hashes, ledgerHeader.hashes) &&
         Objects.equals(this.consensusParentRoundTimestampMs, ledgerHeader.consensusParentRoundTimestampMs) &&
         Objects.equals(this.proposerTimestampMs, ledgerHeader.proposerTimestampMs) &&
-        Objects.equals(this.nextEpoch, ledgerHeader.nextEpoch);
+        Objects.equals(this.nextEpoch, ledgerHeader.nextEpoch) &&
+        Objects.equals(this.nextProtocolVersion, ledgerHeader.nextProtocolVersion);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(epoch, round, stateVersion, hashes, consensusParentRoundTimestampMs, proposerTimestampMs, nextEpoch);
+    return Objects.hash(epoch, round, stateVersion, hashes, consensusParentRoundTimestampMs, proposerTimestampMs, nextEpoch, nextProtocolVersion);
   }
 
   @Override
@@ -296,6 +327,7 @@ public class LedgerHeader {
     sb.append("    consensusParentRoundTimestampMs: ").append(toIndentedString(consensusParentRoundTimestampMs)).append("\n");
     sb.append("    proposerTimestampMs: ").append(toIndentedString(proposerTimestampMs)).append("\n");
     sb.append("    nextEpoch: ").append(toIndentedString(nextEpoch)).append("\n");
+    sb.append("    nextProtocolVersion: ").append(toIndentedString(nextProtocolVersion)).append("\n");
     sb.append("}");
     return sb.toString();
   }

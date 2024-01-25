@@ -28,6 +28,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.BasicErrorResponse;
 import com.radixdlt.api.core.generated.models.ErrorResponseType;
 import com.radixdlt.api.core.generated.models.LtsTransactionSubmitErrorResponse;
+import com.radixdlt.api.core.generated.models.StreamProofsErrorResponse;
 import com.radixdlt.api.core.generated.models.StreamTransactionsErrorResponse;
 import com.radixdlt.api.core.generated.models.TransactionSubmitErrorResponse;
 import io.swagger.annotations.ApiModel;
@@ -56,6 +57,8 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = BasicErrorResponse.class, name = "BasicErrorResponse"),
   @JsonSubTypes.Type(value = LtsTransactionSubmitErrorResponse.class, name = "LtsTransactionSubmit"),
   @JsonSubTypes.Type(value = LtsTransactionSubmitErrorResponse.class, name = "LtsTransactionSubmitErrorResponse"),
+  @JsonSubTypes.Type(value = StreamProofsErrorResponse.class, name = "StreamProofs"),
+  @JsonSubTypes.Type(value = StreamProofsErrorResponse.class, name = "StreamProofsErrorResponse"),
   @JsonSubTypes.Type(value = StreamTransactionsErrorResponse.class, name = "StreamTransactions"),
   @JsonSubTypes.Type(value = StreamTransactionsErrorResponse.class, name = "StreamTransactionsErrorResponse"),
   @JsonSubTypes.Type(value = TransactionSubmitErrorResponse.class, name = "TransactionSubmit"),
@@ -235,6 +238,8 @@ static {
   mappings.put("BasicErrorResponse", BasicErrorResponse.class);
   mappings.put("LtsTransactionSubmit", LtsTransactionSubmitErrorResponse.class);
   mappings.put("LtsTransactionSubmitErrorResponse", LtsTransactionSubmitErrorResponse.class);
+  mappings.put("StreamProofs", StreamProofsErrorResponse.class);
+  mappings.put("StreamProofsErrorResponse", StreamProofsErrorResponse.class);
   mappings.put("StreamTransactions", StreamTransactionsErrorResponse.class);
   mappings.put("StreamTransactionsErrorResponse", StreamTransactionsErrorResponse.class);
   mappings.put("TransactionSubmit", TransactionSubmitErrorResponse.class);

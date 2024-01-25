@@ -307,12 +307,17 @@ pub mod proofs {
             from_state_version: StateVersion,
         ) -> Box<dyn Iterator<Item = LedgerProof> + '_>;
 
-        fn get_epoch_proof_iter(
+        fn get_next_epoch_proof_iter(
             &self,
             from_epoch: Epoch,
         ) -> Box<dyn Iterator<Item = LedgerProof> + '_>;
 
         fn get_protocol_update_init_proof_iter(
+            &self,
+            from_state_version: StateVersion,
+        ) -> Box<dyn Iterator<Item = LedgerProof> + '_>;
+
+        fn get_protocol_update_execution_proof_iter(
             &self,
             from_state_version: StateVersion,
         ) -> Box<dyn Iterator<Item = LedgerProof> + '_>;

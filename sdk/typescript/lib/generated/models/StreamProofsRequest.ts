@@ -13,62 +13,75 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { StreamProofsFilter } from './StreamProofsFilter';
+import {
+    StreamProofsFilterFromJSON,
+    StreamProofsFilterFromJSONTyped,
+    StreamProofsFilterToJSON,
+} from './StreamProofsFilter';
+
 /**
- * 
+ * A request to retrieve a sublist of proofs.
  * @export
- * @interface RequestedStateVersionOutOfBoundsErrorDetailsAllOf
+ * @interface StreamProofsRequest
  */
-export interface RequestedStateVersionOutOfBoundsErrorDetailsAllOf {
+export interface StreamProofsRequest {
     /**
-     * 
-     * @type {number}
-     * @memberof RequestedStateVersionOutOfBoundsErrorDetailsAllOf
-     */
-    max_ledger_state_version: number;
-    /**
-     * 
+     * The logical name of the network
      * @type {string}
-     * @memberof RequestedStateVersionOutOfBoundsErrorDetailsAllOf
+     * @memberof StreamProofsRequest
      */
-    type?: RequestedStateVersionOutOfBoundsErrorDetailsAllOfTypeEnum;
+    network: string;
+    /**
+     * 
+     * @type {StreamProofsFilter}
+     * @memberof StreamProofsRequest
+     */
+    filter?: StreamProofsFilter;
+    /**
+     * If specified, the maximum number of proofs that will be returned.
+     * @type {number}
+     * @memberof StreamProofsRequest
+     */
+    max_page_size?: number;
+    /**
+     * A continuation token is returned if and only if there are further non-empty pages of items currently available.
+     * The token can be provided in a following request to fetch the next page of results.
+     * The filter and sort should not be changed when re-using the continuation token.
+     * @type {string}
+     * @memberof StreamProofsRequest
+     */
+    continuation_token?: string;
 }
 
-
 /**
- * @export
+ * Check if a given object implements the StreamProofsRequest interface.
  */
-export const RequestedStateVersionOutOfBoundsErrorDetailsAllOfTypeEnum = {
-    RequestedStateVersionOutOfBounds: 'RequestedStateVersionOutOfBounds'
-} as const;
-export type RequestedStateVersionOutOfBoundsErrorDetailsAllOfTypeEnum = typeof RequestedStateVersionOutOfBoundsErrorDetailsAllOfTypeEnum[keyof typeof RequestedStateVersionOutOfBoundsErrorDetailsAllOfTypeEnum];
-
-
-/**
- * Check if a given object implements the RequestedStateVersionOutOfBoundsErrorDetailsAllOf interface.
- */
-export function instanceOfRequestedStateVersionOutOfBoundsErrorDetailsAllOf(value: object): boolean {
+export function instanceOfStreamProofsRequest(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "max_ledger_state_version" in value;
+    isInstance = isInstance && "network" in value;
 
     return isInstance;
 }
 
-export function RequestedStateVersionOutOfBoundsErrorDetailsAllOfFromJSON(json: any): RequestedStateVersionOutOfBoundsErrorDetailsAllOf {
-    return RequestedStateVersionOutOfBoundsErrorDetailsAllOfFromJSONTyped(json, false);
+export function StreamProofsRequestFromJSON(json: any): StreamProofsRequest {
+    return StreamProofsRequestFromJSONTyped(json, false);
 }
 
-export function RequestedStateVersionOutOfBoundsErrorDetailsAllOfFromJSONTyped(json: any, ignoreDiscriminator: boolean): RequestedStateVersionOutOfBoundsErrorDetailsAllOf {
+export function StreamProofsRequestFromJSONTyped(json: any, ignoreDiscriminator: boolean): StreamProofsRequest {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'max_ledger_state_version': json['max_ledger_state_version'],
-        'type': !exists(json, 'type') ? undefined : json['type'],
+        'network': json['network'],
+        'filter': !exists(json, 'filter') ? undefined : StreamProofsFilterFromJSON(json['filter']),
+        'max_page_size': !exists(json, 'max_page_size') ? undefined : json['max_page_size'],
+        'continuation_token': !exists(json, 'continuation_token') ? undefined : json['continuation_token'],
     };
 }
 
-export function RequestedStateVersionOutOfBoundsErrorDetailsAllOfToJSON(value?: RequestedStateVersionOutOfBoundsErrorDetailsAllOf | null): any {
+export function StreamProofsRequestToJSON(value?: StreamProofsRequest | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -77,8 +90,10 @@ export function RequestedStateVersionOutOfBoundsErrorDetailsAllOfToJSON(value?: 
     }
     return {
         
-        'max_ledger_state_version': value.max_ledger_state_version,
-        'type': value.type,
+        'network': value.network,
+        'filter': StreamProofsFilterToJSON(value.filter),
+        'max_page_size': value.max_page_size,
+        'continuation_token': value.continuation_token,
     };
 }
 
