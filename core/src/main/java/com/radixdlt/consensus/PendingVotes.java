@@ -124,17 +124,33 @@ public final class PendingVotes {
       final var otherVertexId = otherVote.getValue().proposedHeader().getVertexId();
       final var otherLedgerHeader = otherVote.getValue().proposedHeader().getLedgerHeader();
       if (voteVertexId.equals(otherVertexId) && !voteLedgerHeader.equals(otherLedgerHeader)) {
-        log.warn(
-            "Divergent vertex execution detected! An incoming vote (from {}) for vertex {} claims"
-                + " the following resultant ledger header: {}, while validator {} thinks that the"
-                + " resultant ledger header is {}. [this_vote={}, other_vote={}]",
-            vote.getAuthor(),
-            voteVertexId,
-            voteLedgerHeader,
-            otherVote.getKey(),
-            otherLedgerHeader,
-            vote,
-            otherVote);
+        if (!voteLedgerHeader
+            .nextProtocolVersion()
+            .equals(otherLedgerHeader.nextProtocolVersion())) {
+          log.info(
+              """
+              Received BFT votes for conflicting protocol update headers.
+              Validator {} enacts {}, while validator {} enacts {}.
+              This indicates that one or more validators run an outdated node version.
+              This node is unaffected, unless other error messages follow.
+              """,
+              vote.getAuthor(),
+              voteLedgerHeader.nextProtocolVersion(),
+              otherVote.getKey(),
+              otherLedgerHeader.nextProtocolVersion());
+        } else {
+          log.warn(
+              "Divergent vertex execution detected! An incoming vote (from {}) for vertex {} claims"
+                  + " the following resultant ledger header: {}, while validator {} thinks that the"
+                  + " resultant ledger header is {}. [this_vote={}, other_vote={}]",
+              vote.getAuthor(),
+              voteVertexId,
+              voteLedgerHeader,
+              otherVote.getKey(),
+              otherLedgerHeader,
+              vote,
+              otherVote);
+        }
         this.metrics.bft().divergentVertexExecutions().inc();
       }
     }
