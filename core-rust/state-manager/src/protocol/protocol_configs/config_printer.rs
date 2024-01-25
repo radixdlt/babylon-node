@@ -60,6 +60,7 @@ fn print_protocol_config_code() {
             readiness_thresholds: thresholds.clone(),
         },
     );
+    trigger.validate().expect("Generated protocol update trigger was valid");
 
     let base_indent = "        ";
     println!("{base_indent}{version_const} => EnactAtStartOfEpochIfValidatorsReady {{");
@@ -155,6 +156,9 @@ fn print_readiness_signals() {
     }
 }
 
+// Chrono's duration display isn't very human readable.
+// This is straightforward code, so didn't want to pull in another arbitrary dependency for it.
+// Having custom code also allows us to tailor it for the kinds of durations and precision we want.
 fn display_duration(duration: Duration) -> String {
     if duration < Duration::zero() {
         panic!("Displayed duration has to be >= 0")
@@ -175,41 +179,41 @@ fn display_duration(duration: Duration) -> String {
     let mut parts = vec![];
     if weeks > 0 {
         if weeks == 1 {
-            parts.push(format!("1 week"));
+            parts.push("1 week".to_string());
         } else {
             parts.push(format!("{weeks} weeks"));
         }
     }
     if days > 0 {
         if days == 1 {
-            parts.push(format!("1 day"));
+            parts.push("1 day".to_string());
         } else {
             parts.push(format!("{days} days"));
         }
     }
     if hours > 0 {
         if hours == 1 {
-            parts.push(format!("1 hour"));
+            parts.push("1 hour".to_string());
         } else {
             parts.push(format!("{hours} hours"));
         }
     }
     if mins > 0 {
         if mins == 1 {
-            parts.push(format!("1 min"));
+            parts.push("1 min".to_string());
         } else {
             parts.push(format!("{mins} mins"));
         }
     }
     if secs > 0 {
         if secs == 1 {
-            parts.push(format!("1 sec"));
+            parts.push("1 sec".to_string());
         } else {
             parts.push(format!("{secs} secs"));
         }
     }
-    
-    if parts.len() > 0 {
+
+    if !parts.is_empty() {
         parts.join(", ")
     } else {
         "Immediate".to_string()
