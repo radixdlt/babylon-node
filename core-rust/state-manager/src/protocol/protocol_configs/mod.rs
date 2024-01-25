@@ -1,3 +1,5 @@
+#[cfg(test)]
+mod config_printer;
 mod dumunet_protocol_config;
 mod mainnet_protocol_config;
 mod stokenet_protocol_config;

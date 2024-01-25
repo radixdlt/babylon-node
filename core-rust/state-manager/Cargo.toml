@@ -34,4 +34,5 @@ rand = { version = "0.8.5" }
 enum_dispatch = { version = "0.3.11" }
 
 [dev-dependencies]
-tempfile = {version = "3.4.0" }
+tempfile = { version = "3.4.0" }
+chrono = { workspace = true }
