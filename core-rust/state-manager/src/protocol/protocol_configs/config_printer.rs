@@ -157,20 +157,60 @@ fn print_readiness_signals() {
 
 fn display_duration(duration: Duration) -> String {
     if duration < Duration::zero() {
-        panic!("Duration has to be >= 0")
+        panic!("Displayed duration has to be >= 0")
     }
-    let days = duration.num_days();
-    let hours = duration.num_hours() - 24 * duration.num_days();
-    let mins = duration.num_minutes() - 60 * duration.num_hours();
-    let secs = duration.num_seconds() - 60 * duration.num_minutes();
+
+    let total_weeks = duration.num_weeks();
+    let total_days = duration.num_days();
+    let total_hours = duration.num_hours();
+    let total_mins = duration.num_minutes();
+    let total_secs = duration.num_seconds();
+
+    let weeks = total_weeks;
+    let days = total_days - 7 * total_weeks;
+    let hours = total_hours - 24 * total_days;
+    let mins = total_mins - 60 * total_hours;
+    let secs = total_secs - 60 * total_mins;
+
+    let mut parts = vec![];
+    if weeks > 0 {
+        if weeks == 1 {
+            parts.push(format!("1 week"));
+        } else {
+            parts.push(format!("{weeks} weeks"));
+        }
+    }
     if days > 0 {
-        format!("{days} days, {hours} hours, {mins} mins, {secs} secs")
-    } else if hours > 0 {
-        format!("{hours} hours, {mins} mins, {secs} secs")
-    } else if mins > 0 {
-        format!("{mins} mins, {secs} secs")
-    } else if secs > 0 {
-        format!("{secs} secs")
+        if days == 1 {
+            parts.push(format!("1 day"));
+        } else {
+            parts.push(format!("{days} days"));
+        }
+    }
+    if hours > 0 {
+        if hours == 1 {
+            parts.push(format!("1 hour"));
+        } else {
+            parts.push(format!("{hours} hours"));
+        }
+    }
+    if mins > 0 {
+        if mins == 1 {
+            parts.push(format!("1 min"));
+        } else {
+            parts.push(format!("{mins} mins"));
+        }
+    }
+    if secs > 0 {
+        if secs == 1 {
+            parts.push(format!("1 sec"));
+        } else {
+            parts.push(format!("{secs} secs"));
+        }
+    }
+    
+    if parts.len() > 0 {
+        parts.join(", ")
     } else {
         "Immediate".to_string()
     }
