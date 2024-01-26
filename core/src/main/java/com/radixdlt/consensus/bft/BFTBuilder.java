@@ -208,7 +208,7 @@ public final class BFTBuilder {
       return EmptyBFTEventProcessor.INSTANCE;
     }
     final PendingVotes pendingVotes =
-        new PendingVotes(hasher, doubleVoteDispatcher, validatorSet, metrics);
+        new PendingVotes(self, hasher, doubleVoteDispatcher, validatorSet, metrics);
 
     /* Setting up the following BFT event processing pipeline:
     ObsoleteEventsFilter (filters out obsolete events for past rounds)
