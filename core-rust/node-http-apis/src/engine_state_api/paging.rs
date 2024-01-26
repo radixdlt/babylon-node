@@ -92,11 +92,11 @@ pub trait PagingPolicy<I> {
     /// Returns `true` if the scoped page allows to add yet another (given) item.
     ///
     /// After returning `false`, further calls to the same policy (even with different items) are
-    /// allowed, but pointless - the policy should just keep returning `false`.
+    /// allowed, but pointless - the policy must keep returning `false`.
     ///
-    /// A well-behaved policy should also always allow the first offered element, since a page with
-    /// 0 items does not progress paging (and may only confuse the end-user, who sees an empty page
-    /// followed by a continuation token).
+    /// A policy also must always allow the first offered element, since a page with 0 items does
+    /// not progress paging (and may only confuse the end-user, who sees an empty page followed by
+    /// a continuation token).
     fn still_allows(&mut self, item: &I) -> bool;
 }
 
@@ -158,14 +158,12 @@ where
         token: Option<ContinuationToken<I::Key>>,
     ) -> Result<Page<I::Key, I::Item>, I::Error> {
         // prepare the inputs and outputs:
-        let last_previously_listed_key = token
-            .as_ref()
-            .and_then(|token| token.last_listed_item.as_ref());
+        let last_previously_listed_key = token.map(|token| token.last_listed_item);
         let mut policy = policy;
         let mut items = Vec::new();
 
         // start the actual iteration from the previous page's last listed item (inclusive!):
-        let mut item_iter = iterable.into_iter_from(last_previously_listed_key)?;
+        let mut item_iter = iterable.into_iter_from(last_previously_listed_key.as_ref())?;
         let mut opt_next_item = item_iter.next();
 
         if let Some(last_previously_listed_key) = last_previously_listed_key {
@@ -173,7 +171,7 @@ where
                 // all items of the last page were deleted; we must return an empty page and no continuation:
                 return Ok(Page::of(Vec::new()));
             };
-            if &first_item.as_key() == last_previously_listed_key {
+            if first_item.as_key() == last_previously_listed_key {
                 // very much expected (but not guaranteed, since the last previously listed item may have been deleted)
                 opt_next_item = item_iter.next();
             }
@@ -187,22 +185,13 @@ where
             };
             if !policy.still_allows(&next_item) {
                 // the policy stopped us...
-                return Ok(if let Some(last_currently_listed_item) = items.last() {
-                    // ... and we managed to list something, so we advance the continuation token:
-                    let last_currently_listed_key = last_currently_listed_item.as_key().clone();
-                    Page::of(items).continued(ContinuationToken::after(last_currently_listed_key))
-                } else {
-                    // ... but the current page is empty, which forces the pager to return a
-                    // confusing "empty page, but please continue iteration" response - see the
-                    // `PagingPolicy` documentation describing the well-behaved policies.
-                    if let Some(token) = token {
-                        // It is not the first page, so we can make the caller replay the same call:
-                        Page::of(items).continued(token)
-                    } else {
-                        // It is the first page, wo we have to use a special "continue from start" token:
-                        Page::of(items).continued(ContinuationToken::from_start())
-                    }
-                });
+                let Some(last_currently_listed_item) = items.last() else {
+                    // ... but it did *not* accept any item!
+                    panic!("broken contract: paging policy produced a 0-length page")
+                };
+                // ... so we advance the continuation token:
+                let last_currently_listed_key = last_currently_listed_item.as_key().clone();
+                return Ok(Page::of(items).continued(ContinuationToken::after(last_currently_listed_key)))
             }
             // the policy allowed this next element, so let's collect it and advance the iteration:
             items.push(next_item);
@@ -216,23 +205,14 @@ where
 /// using the SBOR encoding, which it supports).
 #[derive(Sbor)]
 pub struct ContinuationToken<T> {
-    last_listed_item: Option<T>,
+    last_listed_item: T,
 }
 
 impl<T> ContinuationToken<T> {
     /// Creates a token which is supposed to continue with elements immediately after the given one.
     fn after(last_listed_item: T) -> Self {
         Self {
-            last_listed_item: Some(last_listed_item),
-        }
-    }
-
-    /// Creates a special token indicating that there are some elements in the sequence.
-    /// It is only needed for a rare edge-case of a non-well-behaved [`PagingPolicy`] producing an
-    /// empty first page despite non-empty sequence.
-    fn from_start() -> ContinuationToken<T> {
-        Self {
-            last_listed_item: None,
+            last_listed_item,
         }
     }
 }
