@@ -24,8 +24,11 @@ use ProtocolUpdateEnactmentCondition::*;
 
 #[derive(Clone, Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ProtocolState {
+    /// A protocol version currently in use. The latest enacted version or the genesis version.
     pub current_protocol_version: ProtocolVersionName,
+    /// A list of all protocol updates that have been enacted.
     pub enacted_protocol_updates: BTreeMap<StateVersion, ProtocolVersionName>,
+    /// A list of protocol updates that haven't yet been enacted, but still can be in the future.
     pub pending_protocol_updates: Vec<PendingProtocolUpdate>,
 }
 
