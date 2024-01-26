@@ -1202,15 +1202,6 @@ where
             &commit_ledger_header.next_protocol_version,
         );
 
-        if series_executor.next_protocol_version() != commit_ledger_header.next_protocol_version {
-            panic!(
-                "resultant protocol update at version {} differs from the proof ({:?} != {:?})",
-                commit_state_version,
-                series_executor.next_protocol_version(),
-                commit_ledger_header.next_protocol_version
-            );
-        }
-
         let final_ledger_hashes = series_executor.latest_ledger_hashes();
         if final_ledger_hashes != &commit_ledger_header.hashes {
             panic!(
