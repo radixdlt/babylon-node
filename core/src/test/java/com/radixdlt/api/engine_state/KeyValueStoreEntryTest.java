@@ -138,14 +138,13 @@ public final class KeyValueStoreEntryTest extends DeterministicEngineStateApiTes
                       "element_kind", "U8",
                       "hex", new IntentHash(HashCode.fromBytes(new byte[32])).hex()));
       final var errorResponse =
-          assertErrorResponseOfType(
+          assertErrorResponse(
               () ->
                   getKvStoresApi()
                       .kvStoreEntryPost(
                           new KeyValueStoreEntryRequest()
                               .entityAddress(getTransactionsKeyValueStoreAddress())
-                              .key(key)),
-              ErrorResponse.class);
+                              .key(key)));
 
       // assert that it is "not found" type of error
       assertThat(errorResponse.getDetails().getErrorType())

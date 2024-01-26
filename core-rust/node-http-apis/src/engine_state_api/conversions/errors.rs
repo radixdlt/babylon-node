@@ -57,6 +57,7 @@ pub enum ExtractionError {
     InvalidProgrammaticJson {
         message: String,
     },
+    DifferentFilterAcrossPages,
 }
 
 impl ExtractionError {

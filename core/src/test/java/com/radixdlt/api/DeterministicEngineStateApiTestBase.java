@@ -191,11 +191,12 @@ public abstract class DeterministicEngineStateApiTestBase {
     return apiClient;
   }
 
-  public <Response> Response assertErrorResponseOfType(
-      ThrowableAssert.ThrowingCallable apiCall, Class<Response> responseClass)
+  public ErrorResponse assertErrorResponse(ThrowableAssert.ThrowingCallable apiCall)
       throws JsonProcessingException {
     var apiException = catchThrowableOfType(apiCall, ApiException.class);
-    return apiClient.getObjectMapper().readValue(apiException.getResponseBody(), responseClass);
+    return apiClient
+        .getObjectMapper()
+        .readValue(apiException.getResponseBody(), ErrorResponse.class);
   }
 
   protected EntitiesApi getEntitiesApi() {

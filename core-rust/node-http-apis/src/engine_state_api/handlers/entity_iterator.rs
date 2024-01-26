@@ -15,8 +15,11 @@ pub(crate) async fn handle_entity_iterator(
 ) -> Result<Json<models::EntityIteratorResponse>, ResponseError> {
     let mapping_context = MappingContext::new(&state.network);
     let extraction_context = ExtractionContext::new(&state.network);
-    let paging_support =
-        HandlerPagingSupport::new(request.max_page_size, request.continuation_token);
+    let paging_support = HandlerPagingSupport::new(
+        request.max_page_size,
+        request.continuation_token,
+        &request.filter,
+    );
 
     let database = state.state_manager.database.read_current();
     if !database.are_re_node_listing_indices_enabled() {
@@ -58,7 +61,7 @@ pub(crate) async fn handle_entity_iterator(
             .into_iter()
             .map(|entity_summary| to_api_listed_entity_item(&mapping_context, &entity_summary))
             .collect::<Result<Vec<_>, _>>()?,
-        continuation_token: page.continuation_token_string,
+        continuation_token: page.continuation_token,
     }))
 }
 
