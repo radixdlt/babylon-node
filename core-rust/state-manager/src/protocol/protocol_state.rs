@@ -399,6 +399,12 @@ impl ProtocolState {
 
         (new_protocol_state, next_protocol_version)
     }
+
+    pub fn has_pending_update(&self, protocol_version_name: &ProtocolVersionName) -> bool {
+        self.pending_protocol_updates.iter().any(|pending_update| {
+            pending_update.protocol_update.next_protocol_version == *protocol_version_name
+        })
+    }
 }
 
 fn any_threshold_passes(

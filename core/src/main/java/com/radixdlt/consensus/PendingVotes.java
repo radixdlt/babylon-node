@@ -168,13 +168,13 @@ public final class PendingVotes {
     final VoteData voteData = vote.getVoteData();
     final HashCode voteDataHash = this.hasher.hashDsonEncoded(voteData);
 
-    // This doesn't do anything, other than logging and bumping the metrics,
-    // when divergent execution is detected (which should hopefully never happen).
-    checkForDivergentVertexExecution(vote);
-
     if (!validatorSet.containsValidator(author)) {
       return VoteProcessingResult.rejected(VoteRejectedReason.INVALID_AUTHOR);
     }
+
+    // This doesn't do anything, other than logging and bumping the metrics,
+    // when divergent execution is detected (which should hopefully never happen).
+    checkForDivergentVertexExecution(vote);
 
     if (!replacePreviousVote(author, vote, voteDataHash)) {
       return VoteProcessingResult.rejected(VoteRejectedReason.DUPLICATE_VOTE);
