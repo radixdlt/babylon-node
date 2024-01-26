@@ -1197,7 +1197,6 @@ where
 
         self.verify_post_commit_protocol_version(
             commit_state_version,
-            &new_protocol_state,
             &series_executor.next_protocol_version(),
             &commit_ledger_header.next_protocol_version,
         );
@@ -1271,7 +1270,6 @@ where
     fn verify_post_commit_protocol_version(
         &self,
         commit_state_version: StateVersion,
-        new_protocol_state: &ProtocolState,
         next_version_from_local_execution: &Option<ProtocolVersionName>,
         next_version_from_proof: &Option<ProtocolVersionName>,
     ) {
@@ -1282,7 +1280,7 @@ where
             (Some(local_version), Some(proof_version)) => {
                 // We're enacting a different version than the proof
                 panic!(
-                    "FATAL: At state version {} this node enacts {}, but this doesn't match the proof, which enacts {} (i.e. the validator set have enacted a different version). Make sure your node is running the latest software version.",
+                    "FATAL: At state version {} this node wants to enact {}, but this doesn't match the proof, which enacts {} (i.e. the validator set have enacted a different version). Make sure your node is running the latest software version.",
                     commit_state_version,
                     local_version,
                     proof_version,
@@ -1291,28 +1289,18 @@ where
             (Some(local_version), None) => {
                 // We're enacting locally, but the proof doesn't enact anything
                 panic!(
-                    "FATAL: At state version {} this node enacts {}, but this doesn't match the proof, which doesn't enact anything (i.e. the validator set haven't enacted it). Make sure your node is running the latest software version.",
+                    "FATAL: At state version {} this node wants to enact {}, but this doesn't match the proof, which doesn't enact anything (i.e. the validator set haven't enacted it). Make sure your node is running the latest software version.",
                     commit_state_version,
                     local_version,
                 );
             }
             (None, Some(proof_version)) => {
                 // The proof enacts, but we locally don't
-                if new_protocol_state.has_pending_update(proof_version) {
-                    panic!(
-                        "FATAL: At state version {} the validator set have enacted {}, this node has {} in its pending updates, but didn't expect it to happen at this state version. Make sure your node is running the latest software version.",
-                        commit_state_version,
-                        proof_version,
-                        proof_version,
-                    );
-                } else {
-                    panic!(
-                        "FATAL: At state version {} the validator set have enacted {}, but this node doesn't have {} in its pending updates. Make sure your node is running the latest software version.",
-                        commit_state_version,
-                        proof_version,
-                        proof_version,
-                    );
-                }
+                panic!(
+                    "FATAL: At state version {} the validator set have enacted {}, but this node didn't expect it to happen (expected enactment at a different time, or protocol version unknown). Make sure your node is running the latest software version.",
+                    commit_state_version,
+                    proof_version,
+                );
             }
             (None, None) => {
                 // All good, nothing gets enacted. No-op.

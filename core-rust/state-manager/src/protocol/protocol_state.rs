@@ -24,8 +24,11 @@ use ProtocolUpdateEnactmentCondition::*;
 
 #[derive(Clone, Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ProtocolState {
+    /// A protocol version currently in use. The latest enacted version or the genesis version.
     pub current_protocol_version: ProtocolVersionName,
+    /// A list of all protocol updates that have been enacted.
     pub enacted_protocol_updates: BTreeMap<StateVersion, ProtocolVersionName>,
+    /// A list of protocol updates that haven't yet been enacted, but still can be in the future.
     pub pending_protocol_updates: Vec<PendingProtocolUpdate>,
 }
 
@@ -398,12 +401,6 @@ impl ProtocolState {
         }
 
         (new_protocol_state, next_protocol_version)
-    }
-
-    pub fn has_pending_update(&self, protocol_version_name: &ProtocolVersionName) -> bool {
-        self.pending_protocol_updates.iter().any(|pending_update| {
-            pending_update.protocol_update.next_protocol_version == *protocol_version_name
-        })
     }
 }
 
