@@ -147,8 +147,11 @@ impl ProtocolUpdateTransactionCommitter {
             .next_committable_batch_idx()
             .expect("Can't commit next protocol update batch");
 
-        let read_store = self.store.read_current();
-        let latest_proof: LedgerProof = read_store
+        // We are performing a pretty classic "transaction", so (for pure correctness) we obtain the
+        // write lock. In practice, however, we execute this logic only during boot-up or within an
+        // explicit (Java-side) "advance ledger lock" anyway.
+        let write_store = self.store.write_current();
+        let latest_proof: LedgerProof = write_store
             .get_latest_proof()
             .expect("Pre-genesis protocol updates are currently not supported");
         let latest_header = latest_proof.ledger_header;
@@ -177,7 +180,7 @@ impl ProtocolUpdateTransactionCommitter {
         };
 
         let mut series_executor = TransactionSeriesExecutor::new(
-            read_store.deref(),
+            write_store.deref(),
             &execution_cache,
             &self.execution_configurator,
             dummy_protocol_state,
@@ -261,8 +264,6 @@ impl ProtocolUpdateTransactionCommitter {
             new_substate_node_ancestry_records: new_node_ancestry_records,
         };
 
-        drop(read_store);
-
-        self.store.write_current().commit(commit_bundle);
+        write_store.commit(commit_bundle);
     }
 }
