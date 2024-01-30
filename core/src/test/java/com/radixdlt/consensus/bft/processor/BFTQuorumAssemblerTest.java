@@ -118,6 +118,11 @@ public final class BFTQuorumAssemblerTest {
     QuorumCertificate highestCommittedQc = mock(QuorumCertificate.class);
     when(highQc.highestCommittedQC()).thenReturn(highestCommittedQc);
     when(vote.getRound()).thenReturn(Round.of(1));
+    final var bftHeader = mock(BFTHeader.class);
+    when(bftHeader.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
+    final var voteData = mock(VoteData.class);
+    when(voteData.getProposed()).thenReturn(bftHeader);
+    when(vote.getVoteData()).thenReturn(voteData);
 
     when(this.pendingVotes.insertVote(any())).thenReturn(VoteProcessingResult.regularQuorum(qc));
     when(this.vertexStore.highQC()).thenReturn(highQc);
