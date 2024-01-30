@@ -192,7 +192,7 @@ public record Metrics(
       Summary leaderTransactionBytesIncludedInProposal,
       Summary leaderTransactionBytesIncludedInProposalAndPreviousVertices,
       Summary numSignaturesInCertificate,
-      Counter divergentVertexExecutions) {
+      LabelledCounter<DivergentVertexExecution> divergentVertexExecutions) {
 
     public record SuccessfullyProcessedVote(boolean isTimeout, VoteProcessingResult result) {}
 
@@ -234,6 +234,8 @@ public record Metrics(
 
     public record VertexStore(
         Gauge size, Counter forks, Counter rebuilds, Counter indirectParents) {}
+
+    public record DivergentVertexExecution(int numDistinctExecutionResults) {}
   }
 
   public record BerkeleyDb(AddressBook addressBook, SafetyState safetyState) {
