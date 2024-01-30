@@ -66,7 +66,7 @@ use std::cmp::Ordering;
 use std::iter::Peekable;
 
 use crate::staging::StateHashTreeDiff;
-use crate::store::StateManagerDatabase;
+
 use crate::transaction::*;
 use crate::{CommittedTransactionIdentifiers, LedgerProof, LocalTransactionReceipt, StateVersion};
 pub use commit::*;

@@ -5,7 +5,7 @@ use radix_engine::transaction::CostingParameters;
 use radix_engine::types::*;
 
 use crate::transaction::*;
-use crate::LoggingConfig;
+
 use transaction::validation::{NotarizedTransactionValidator, ValidationConfig};
 
 /// A protocol update definition consists of two parts:
@@ -79,7 +79,6 @@ impl<T: ProtocolUpdateDefinition> ConfigurableProtocolUpdateDefinition for T {
 #[derive(Clone, Debug)]
 pub struct ProtocolStateComputerConfig {
     pub network: NetworkDefinition,
-    pub logging_config: LoggingConfig,
     pub validation_config: ValidationConfig,
     pub costing_parameters: CostingParameters,
 }
@@ -89,7 +88,6 @@ impl ProtocolStateComputerConfig {
         let network_id = network.id;
         ProtocolStateComputerConfig {
             network,
-            logging_config: LoggingConfig::default(),
             validation_config: ValidationConfig::default(network_id),
             costing_parameters: CostingParameters::default(),
         }
@@ -109,7 +107,11 @@ impl ProtocolStateComputerConfig {
         self.validation_config
     }
 
-    pub fn execution_configurator(&self, no_fees: bool) -> ExecutionConfigurator {
+    pub fn execution_configurator(
+        &self,
+        no_fees: bool,
+        engine_trace: bool,
+    ) -> ExecutionConfigurator {
         let mut costing_parameters = self.costing_parameters;
         if no_fees {
             costing_parameters.execution_cost_unit_price = Decimal::ZERO;
@@ -117,6 +119,6 @@ impl ProtocolStateComputerConfig {
             costing_parameters.state_storage_price = Decimal::ZERO;
             costing_parameters.archive_storage_price = Decimal::ZERO;
         }
-        ExecutionConfigurator::new(&self.network, &self.logging_config, costing_parameters)
+        ExecutionConfigurator::new(&self.network, engine_trace, costing_parameters)
     }
 }

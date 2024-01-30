@@ -16,7 +16,6 @@ use radix_engine_store_interface::interface::SubstateDatabase;
 
 use tracing::warn;
 
-use crate::LoggingConfig;
 use transaction::model::*;
 use utils::prelude::index_map_new;
 
@@ -70,10 +69,9 @@ pub struct ExecutionConfigurator {
 impl ExecutionConfigurator {
     pub fn new(
         network: &NetworkDefinition,
-        logging_config: &LoggingConfig,
+        engine_trace: bool,
         costing_parameters: CostingParameters,
     ) -> Self {
-        let trace = logging_config.engine_trace;
         Self {
             scrypto_vm: ScryptoVm::<DefaultWasmEngine>::default(),
             costing_parameters,
@@ -81,26 +79,26 @@ impl ExecutionConfigurator {
                 (
                     ConfigType::Genesis,
                     ExecutionConfig::for_genesis_transaction(network.clone())
-                        .with_kernel_trace(trace),
+                        .with_kernel_trace(engine_trace),
                 ),
                 (
                     ConfigType::OtherSystem,
                     ExecutionConfig {
                         max_number_of_events: 1_000_000,
                         ..ExecutionConfig::for_system_transaction(network.clone())
-                            .with_kernel_trace(trace)
+                            .with_kernel_trace(engine_trace)
                     },
                 ),
                 (
                     ConfigType::Regular,
                     ExecutionConfig::for_notarized_transaction(network.clone())
-                        .with_kernel_trace(trace),
+                        .with_kernel_trace(engine_trace),
                 ),
                 (
                     ConfigType::Pending,
                     ExecutionConfig::for_notarized_transaction(network.clone())
                         .up_to_loan_repayment(true)
-                        .with_kernel_trace(trace),
+                        .with_kernel_trace(engine_trace),
                 ),
                 (
                     ConfigType::Preview,

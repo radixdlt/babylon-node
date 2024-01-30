@@ -63,6 +63,7 @@
  */
 
 use std::ops::Deref;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -80,6 +81,7 @@ use crate::protocol::{ProtocolConfig, ProtocolState, ProtocolVersionName};
 use crate::store::jmt_gc::StateHashTreeGcConfig;
 use crate::store::proofs_gc::{LedgerProofsGc, LedgerProofsGcConfig};
 use crate::store::traits::proofs::QueryableProofStore;
+use crate::traits::DatabaseConfigValidationError;
 use crate::transaction::ExecutionConfigurator;
 use crate::{
     mempool_manager::MempoolManager,
@@ -90,7 +92,7 @@ use crate::{
         StateManagerDatabase,
     },
     transaction::{CachedCommittabilityValidator, CommittabilityValidator, TransactionPreviewer},
-    PendingTransactionResultCache, ProtocolUpdateResult, StateComputer,
+    PendingTransactionResultCache, ProtocolUpdateResult, StateComputer, StateManagerRocksDb,
 };
 
 /// An interval between time-intensive measurement of raw DB metrics.
@@ -171,13 +173,21 @@ impl StateManager {
         // but for now just using a default
         let mempool_config = config.mempool_config.clone().unwrap_or_default();
         let network = config.network_definition.clone();
-        let _logging_config = config.logging_config.clone();
 
-        let raw_db = StateManagerDatabase::from_config(
-            config.database_backend_config.clone(),
-            config.database_flags.clone(),
-            &network,
-        );
+        let db_path = PathBuf::from(config.database_backend_config.rocks_db_path.clone());
+        let raw_db = match StateManagerRocksDb::new(db_path, config.database_flags.clone(), &network) {
+            Ok(db) => db,
+            Err(error) => {
+                match error {
+                    DatabaseConfigValidationError::AccountChangeIndexRequiresLocalTransactionExecutionIndex => {
+                        panic!("Local transaction execution index needs to be enabled in order for account change index to work.");
+                    },
+                    DatabaseConfigValidationError::LocalTransactionExecutionIndexChanged => {
+                        panic!("Local transaction execution index can not be changed once configured.\nIf you need to change it, please wipe ledger data and resync.");
+                    }
+                }
+            }
+        };
 
         let database = Arc::new(lock_factory.named("database").new_state_lock(raw_db));
 
@@ -202,9 +212,10 @@ impl StateManager {
             });
 
         let execution_configurator = Arc::new(
-            lock_factory
-                .named("execution_configurator")
-                .new_rwlock(initial_state_computer_config.execution_configurator(config.no_fees)),
+            lock_factory.named("execution_configurator").new_rwlock(
+                initial_state_computer_config
+                    .execution_configurator(config.no_fees, config.logging_config.engine_trace),
+            ),
         );
 
         let pending_transaction_result_cache = Arc::new(
@@ -337,8 +348,8 @@ impl StateManager {
                 )
             });
 
-        let new_execution_configurator =
-            new_state_computer_config.execution_configurator(self.config.no_fees);
+        let new_execution_configurator = new_state_computer_config
+            .execution_configurator(self.config.no_fees, self.config.logging_config.engine_trace);
 
         *self.execution_configurator.write() = new_execution_configurator;
 

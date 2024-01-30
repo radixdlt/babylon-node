@@ -46,7 +46,10 @@ impl<R: UpdateBatchGenerator> ProtocolUpdater for BatchedUpdater<R> {
         let mut txn_committer = ProtocolUpdateTransactionCommitter::new(
             self.new_protocol_version.clone(),
             store.clone(),
-            self.new_state_computer_config.execution_configurator(true), /* No fees for protocol updates */
+            // The costing and logging parameters (of the Engine) are not really used for flash
+            // transactions; let's still pass sane values.
+            self.new_state_computer_config
+                .execution_configurator(true, false),
             self.new_state_computer_config
                 .ledger_transaction_validator(),
         );

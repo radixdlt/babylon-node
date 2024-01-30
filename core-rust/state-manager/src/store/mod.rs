@@ -63,7 +63,6 @@
  */
 
 mod codecs;
-mod db;
 pub mod jmt_gc;
 pub mod proofs_gc;
 mod rocks_db;
@@ -72,12 +71,18 @@ mod typed_cf_api;
 
 use crate::store::traits::measurement::MeasurableDatabase;
 use crate::RawDbMetrics;
-pub use db::{DatabaseBackendConfig, StateManagerDatabase};
 use node_common::locks::StateLock;
 use prometheus::Registry;
-pub use rocks_db::RocksDBStore;
+pub use rocks_db::StateManagerDatabase;
+pub use rocks_db::StateManagerRocksDb;
+use sbor::{Categorize, Decode, Encode};
 use std::sync::Arc;
 pub use traits::DatabaseFlags;
+
+#[derive(Debug, Categorize, Encode, Decode, Clone)]
+pub struct DatabaseBackendConfig {
+    pub rocks_db_path: String,
+}
 
 /// A synchronous collector of costly (I/O-intensive) raw DB metrics.
 pub struct RawDbMetricsCollector {
