@@ -83,10 +83,11 @@ import org.apache.logging.log4j.Logger;
 public final class DivergentVertexExecutionDetector {
   private static final Logger log = LogManager.getLogger();
 
-  private final RateLimiter logRatelimiter = RateLimiter.create(0.05); // at most one log every 20s
+  private final RateLimiter logRatelimiter = RateLimiter.create(0.05); // At most one log every 20s
 
   // vertexId -> ledgerHeader -> validators who voted for (vertexId, ledgerHeader)
-  private final Map<HashCode, Map<LedgerHeader, Set<BFTValidatorId>>> map = new HashMap<>();
+  private final Map<HashCode, Map<LedgerHeader, Set<BFTValidatorId>>> votesByVertexId =
+      new HashMap<>();
 
   /**
    * Processes a received vote. No additional filtering is applied, the caller should ensure that
@@ -94,7 +95,7 @@ public final class DivergentVertexExecutionDetector {
    */
   public void process(Vote vote) {
     final var ledgerHeadersByVertexId =
-        map.computeIfAbsent(
+        votesByVertexId.computeIfAbsent(
             vote.getVoteData().getProposed().getVertexId(), unused -> new HashMap<>());
     final var authorsByLedgerHeader =
         ledgerHeadersByVertexId.computeIfAbsent(
@@ -104,9 +105,9 @@ public final class DivergentVertexExecutionDetector {
 
   public void logAndUpdateMetrics(Metrics metrics, Round round) {
     // Divergent executions are the ones that have more than one resultant header
-    // for the same vertex ID.
+    // for the same vertexId.
     final StringBuilder logBuilder = new StringBuilder();
-    map.entrySet().stream()
+    votesByVertexId.entrySet().stream()
         .filter(e -> e.getValue().size() > 1)
         .forEach(
             e -> {
@@ -147,5 +148,10 @@ public final class DivergentVertexExecutionDetector {
               + " follow.\n");
       log.info(logBuilder.toString());
     }
+  }
+
+  /** Resets this detector to its initial state (empty). */
+  public void clear() {
+    this.votesByVertexId.clear();
   }
 }

@@ -88,7 +88,6 @@ import org.apache.logging.log4j.Logger;
  * Processes BFT Vote events and assembles a quorum (either a regular or timeout quorum). Warning:
  * operates under the assumption that all received events are for the current round.
  */
-@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public final class BFTQuorumAssembler implements BFTEventProcessorAtCurrentRound {
   private static final Logger log = LogManager.getLogger();
 
@@ -110,7 +109,9 @@ public final class BFTQuorumAssembler implements BFTEventProcessorAtCurrentRound
   private RoundUpdate latestRoundUpdate;
   private boolean hasCurrentRoundBeenResolved = false;
   private boolean hasTimeoutQuorumResolutionBeenDelayedInCurrentRound = false;
-  private DivergentVertexExecutionDetector divergentVertexExecutionDetector;
+
+  private final DivergentVertexExecutionDetector divergentVertexExecutionDetector =
+      new DivergentVertexExecutionDetector();
 
   public BFTQuorumAssembler(
       BFTEventProcessorAtCurrentRound forwardTo,
@@ -131,7 +132,6 @@ public final class BFTQuorumAssembler implements BFTEventProcessorAtCurrentRound
     this.pendingVotes = Objects.requireNonNull(pendingVotes);
     this.latestRoundUpdate = Objects.requireNonNull(initialRoundUpdate);
     this.timeoutQuorumResolutionDelayMs = timeoutQuorumResolutionDelayMs;
-    this.divergentVertexExecutionDetector = new DivergentVertexExecutionDetector();
   }
 
   @Override
@@ -142,9 +142,9 @@ public final class BFTQuorumAssembler implements BFTEventProcessorAtCurrentRound
     this.hasTimeoutQuorumResolutionBeenDelayedInCurrentRound = false;
 
     // Process the divergent vertex executions we've collected in the previous round
-    // and set up a fresh detector.
+    // and set it up for the next round.
     this.divergentVertexExecutionDetector.logAndUpdateMetrics(metrics, previousRound);
-    this.divergentVertexExecutionDetector = new DivergentVertexExecutionDetector();
+    this.divergentVertexExecutionDetector.clear();
 
     forwardTo.processRoundUpdate(roundUpdate);
   }
