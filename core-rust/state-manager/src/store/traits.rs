@@ -136,10 +136,6 @@ impl DatabaseFlags {
 
 #[enum_dispatch]
 pub trait ConfigurableDatabase {
-    fn read_flags_state(&self) -> DatabaseFlagsState;
-
-    fn write_flags(&self, flags: &DatabaseFlags);
-
     fn is_account_change_index_enabled(&self) -> bool;
 
     fn is_local_transaction_execution_index_enabled(&self) -> bool;

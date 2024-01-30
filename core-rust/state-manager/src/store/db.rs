@@ -80,6 +80,7 @@ use radix_engine_store_interface::interface::{
 };
 use transaction::model::*;
 
+use crate::store::rocks_db::DirectRocks;
 use radix_engine_stores::hash_tree::tree_store::{NodeKey, ReadableTreeStore, TreeNode};
 use sbor::{Categorize, Decode, Encode};
 
@@ -112,7 +113,7 @@ pub struct DatabaseBackendConfig {
 )]
 pub enum StateManagerDatabase {
     // TODO(clean-up): After InMemoryDb was deleted, we can get rid of this middle-man as well.
-    RocksDB(RocksDBStore),
+    RocksDB(RocksDBStore<DirectRocks>),
 }
 
 impl StateManagerDatabase {

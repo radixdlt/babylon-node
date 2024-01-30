@@ -251,10 +251,8 @@ impl<T> RwLock<T> {
 /// The assumption is that the current state needs a classic [`RwLock`] access, while the historical
 /// state can be accessed freely, without obtaining any lock.
 /// The lock caller is responsible for distinguishing proper current vs historical access.
-// TODO(future refactoring): It seems like the "weird lock" should not be needed if we had a DB
-// interface which is more aware of its "current vs historical" nature. Maybe we will naturally go
-// in that direction when introducing DB snapshotting.
 pub struct StateLock<T> {
+    // TODO(wip): Re-purpose to `SnapshotLock`
     underlying: RwLock<()>, // we use our own primitive to lock a marker for current state
     value: T,
     access_non_locked_historical_listener: ActualLockListener, // only for metrics
