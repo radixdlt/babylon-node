@@ -80,6 +80,7 @@ pub use vertex::*;
 use radix_engine::types::{ScryptoCategorize, ScryptoDecode, ScryptoEncode};
 use sbor::define_single_versioned;
 
+#[derive(Debug, Clone)]
 pub enum DatabaseConfigValidationError {
     AccountChangeIndexRequiresLocalTransactionExecutionIndex,
     LocalTransactionExecutionIndexChanged,
@@ -305,22 +306,61 @@ pub mod proofs {
             &self,
             from_state_version: StateVersion,
         ) -> Box<dyn Iterator<Item = LedgerProof> + '_>;
+
+        fn get_next_epoch_proof_iter(
+            &self,
+            from_epoch: Epoch,
+        ) -> Box<dyn Iterator<Item = LedgerProof> + '_>;
+
+        fn get_protocol_update_init_proof_iter(
+            &self,
+            from_state_version: StateVersion,
+        ) -> Box<dyn Iterator<Item = LedgerProof> + '_>;
+
+        fn get_protocol_update_execution_proof_iter(
+            &self,
+            from_state_version: StateVersion,
+        ) -> Box<dyn Iterator<Item = LedgerProof> + '_>;
     }
 
     #[enum_dispatch]
     pub trait QueryableProofStore {
         fn max_state_version(&self) -> StateVersion;
-        fn get_txns_and_proof(
+        fn max_completed_epoch(&self) -> Option<Epoch> {
+            self.get_latest_epoch_proof()
+                .map(|proof| proof.ledger_header.epoch)
+        }
+        fn get_syncable_txns_and_proof(
             &self,
             start_state_version_inclusive: StateVersion,
             max_number_of_txns_if_more_than_one_proof: u32,
             max_payload_size_in_bytes: u32,
-        ) -> Option<(Vec<RawLedgerTransaction>, LedgerProof)>;
+        ) -> Result<TxnsAndProof, GetSyncableTxnsAndProofError>;
         fn get_first_proof(&self) -> Option<LedgerProof>;
         fn get_post_genesis_epoch_proof(&self) -> Option<LedgerProof>;
         fn get_epoch_proof(&self, epoch: Epoch) -> Option<LedgerProof>;
-        fn get_last_proof(&self) -> Option<LedgerProof>;
-        fn get_last_epoch_proof(&self) -> Option<LedgerProof>;
+        fn get_latest_proof(&self) -> Option<LedgerProof>;
+        fn get_latest_epoch_proof(&self) -> Option<LedgerProof>;
+        fn get_closest_epoch_proof_on_or_before(
+            &self,
+            state_version: StateVersion,
+        ) -> Option<LedgerProof>;
+        fn get_latest_protocol_update_init_proof(&self) -> Option<LedgerProof>;
+        fn get_latest_protocol_update_execution_proof(&self) -> Option<LedgerProof>;
+    }
+
+    #[derive(Clone, Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub struct TxnsAndProof {
+        pub txns: Vec<RawLedgerTransaction>,
+        pub proof: LedgerProof,
+    }
+
+    #[derive(Clone, Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub enum GetSyncableTxnsAndProofError {
+        RefusedToServeGenesis { refused_proof: Box<LedgerProof> },
+        RefusedToServeProtocolUpdate { refused_proof: Box<LedgerProof> },
+        NothingToServeAtTheGivenStateVersion,
+        FailedToPrepareAResponseWithinLimits,
     }
 }
 
@@ -545,12 +585,18 @@ pub mod scenario {
 pub mod extensions {
     use super::*;
     use radix_engine::types::GlobalAddress;
+    use radix_engine_common::network::NetworkDefinition;
 
     #[enum_dispatch]
     pub trait AccountChangeIndexExtension {
         fn account_change_index_last_processed_state_version(&self) -> StateVersion;
 
         fn catchup_account_change_index(&self);
+    }
+
+    #[enum_dispatch]
+    pub trait RestoreDecember2023LostSubstates {
+        fn restore_december_2023_lost_substates(&self, network: &NetworkDefinition);
     }
 
     #[enum_dispatch]
@@ -626,6 +672,8 @@ pub mod measurement {
 
 pub mod gc {
     use super::*;
+    use crate::LedgerHeader;
+    use radix_engine_common::types::Epoch;
     use radix_engine_stores::hash_tree::tree_store::NodeKey;
 
     /// A storage API tailored for the [`StateHashTreeGc`].
@@ -645,6 +693,47 @@ pub mod gc {
             &self,
             state_versions: impl IntoIterator<Item = &'a StateVersion>,
         );
+    }
+
+    /// A storage API tailored for the [`LedgerProofsGc`].
+    #[enum_dispatch]
+    pub trait LedgerProofsGcStore {
+        /// Returns the current state of the GC's progress.
+        fn get_progress(&self) -> Option<LedgerProofsGcProgress>;
+
+        /// Updates the progress.
+        fn set_progress(&self, progress: LedgerProofsGcProgress);
+
+        /// Deletes the given range (from inclusive, to exclusive) of ledger proofs.
+        fn delete_ledger_proofs_range(&self, from: StateVersion, to: StateVersion);
+    }
+
+    define_single_versioned! {
+        #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+        pub enum VersionedLedgerProofsGcProgress => LedgerProofsGcProgress = LedgerProofsGcProgressV1
+    }
+
+    /// A state of the GC's progress.
+    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub struct LedgerProofsGcProgressV1 {
+        /// The last epoch pruned by the GC. The next run should start from the beginning of the
+        /// next epoch.
+        pub last_pruned_epoch: Epoch,
+
+        /// The state version at which the epoch proof of the [`last_pruned_epoch`] was persisted.
+        /// This field simply holds a cached value (which could be read from the DB based on the
+        /// epoch).
+        pub epoch_proof_state_version: StateVersion,
+    }
+
+    impl LedgerProofsGcProgressV1 {
+        /// Initializes the very first progress, which skips over the genesis.
+        pub fn new(post_genesis_ledger_header: LedgerHeader) -> Self {
+            Self {
+                last_pruned_epoch: post_genesis_ledger_header.epoch,
+                epoch_proof_state_version: post_genesis_ledger_header.state_version,
+            }
+        }
     }
 }
 

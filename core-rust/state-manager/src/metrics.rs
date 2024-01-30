@@ -73,9 +73,13 @@ use node_common::config::limits::*;
 use node_common::locks::{LockFactory, Mutex};
 use node_common::metrics::*;
 use prometheus::{
-    Gauge, Histogram, IntCounter, IntCounterVec, IntGauge, IntGaugeVec, Opts, Registry,
+    Gauge, GaugeVec, Histogram, IntCounter, IntCounterVec, IntGauge, IntGaugeVec, Opts, Registry,
 };
+use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
 
+use crate::protocol::{
+    PendingProtocolUpdateState, ProtocolState, ProtocolUpdateEnactmentCondition,
+};
 use crate::store::traits::measurement::CategoryDbVolumeStatistic;
 use radix_engine::transaction::TransactionFeeSummary;
 use radix_engine_common::prelude::*;
@@ -96,6 +100,16 @@ pub struct CommittedTransactionsMetrics {
     pub size: Histogram,
     pub execution_cost_units_consumed: Histogram,
     pub finalization_cost_units_consumed: Histogram,
+}
+
+pub struct ProtocolMetrics {
+    pub protocol_update_readiness_ratio: GaugeVec,
+    pub pending_update_threshold_required_ratio: GaugeVec,
+    pub pending_update_threshold_required_consecutive_epochs: IntGaugeVec,
+    pub pending_update_threshold_current_consecutive_epochs: IntGaugeVec,
+    pub pending_update_lower_bound_epoch: IntGaugeVec,
+    pub pending_update_upper_bound_epoch: IntGaugeVec,
+    pub enacted_protocol_update_state_version: IntGaugeVec,
 }
 
 pub struct VertexPrepareMetrics {
@@ -330,6 +344,211 @@ impl CommittedTransactionsMetrics {
     }
 }
 
+impl ProtocolMetrics {
+    pub fn new(registry: &Registry, initial_protocol_state: &ProtocolState) -> Self {
+        let instance = Self {
+            protocol_update_readiness_ratio: GaugeVec::new(
+                opts(
+                    "protocol_update_readiness_ratio",
+                    "A ratio of supporting stake to total stake in the current validator set.",
+                ),
+                &["readiness_signal_name"],
+            )
+            .registered_at(registry),
+            pending_update_threshold_required_ratio: GaugeVec::new(
+                opts(
+                    "protocol_update_pending_threshold_required_ratio",
+                    "Required readiness ratio for the given protocol update threshold.",
+                ),
+                &["protocol_version_name", "readiness_signal_name", "threshold_index", "threshold_consecutive_epochs"],
+            )
+                .registered_at(registry),
+            pending_update_threshold_required_consecutive_epochs: IntGaugeVec::new(
+                opts(
+                    "protocol_update_pending_threshold_required_consecutive_epochs",
+                    "Required number of consecutive epochs of support for the given protocol update threshold.",
+                ),
+                &["protocol_version_name", "readiness_signal_name", "threshold_index", "threshold_consecutive_epochs"],
+            )
+                .registered_at(registry),
+            pending_update_threshold_current_consecutive_epochs: IntGaugeVec::new(
+                opts(
+                    "protocol_update_pending_threshold_current_consecutive_epochs",
+                    "Current number of consecutive epochs of support for the given protocol update threshold.",
+                ),
+                &["protocol_version_name", "readiness_signal_name", "threshold_index", "threshold_consecutive_epochs"],
+            )
+                .registered_at(registry),
+            pending_update_lower_bound_epoch: IntGaugeVec::new(
+                opts(
+                    "protocol_update_pending_lower_bound_epoch",
+                    "Earliest epoch when the given protocol update can be enacted (inclusive)",
+                ),
+                &["protocol_version_name", "readiness_signal_name"],
+            )
+                .registered_at(registry),
+            pending_update_upper_bound_epoch: IntGaugeVec::new(
+                opts(
+                    "protocol_update_pending_upper_bound_epoch",
+                    "Upper bound epoch for the given protocol update (exclusive)",
+                ),
+                &["protocol_version_name", "readiness_signal_name"],
+            )
+                .registered_at(registry),
+            enacted_protocol_update_state_version: IntGaugeVec::new(
+                opts(
+                    "protocol_update_enacted_state_version",
+                    "State version at which the protocol update was enacted (init proof)",
+                ),
+                &["protocol_version_name"],
+            )
+                .registered_at(registry),
+        };
+
+        instance.update_state_based_metrics(initial_protocol_state);
+
+        instance
+    }
+
+    pub fn update(&self, protocol_state: &ProtocolState, epoch_change: &EpochChangeEvent) {
+        self.update_state_based_metrics(protocol_state);
+        self.update_epoch_change_based_metrics(epoch_change);
+    }
+
+    /// Updates the metrics that are based on ProtocolState (pending, enacted updates)
+    fn update_state_based_metrics(&self, protocol_state: &ProtocolState) {
+        // Reset the metrics (to clear leftover pending updates as they transition to enacted)
+        self.pending_update_threshold_required_ratio.reset();
+        self.pending_update_threshold_required_consecutive_epochs
+            .reset();
+        self.pending_update_threshold_current_consecutive_epochs
+            .reset();
+        self.pending_update_lower_bound_epoch.reset();
+        self.pending_update_upper_bound_epoch.reset();
+        self.enacted_protocol_update_state_version.reset();
+
+        for pending_protocol_update in protocol_state.pending_protocol_updates.iter() {
+            let protocol_update = &pending_protocol_update.protocol_update;
+            match &pending_protocol_update.protocol_update.enactment_condition {
+                ProtocolUpdateEnactmentCondition::EnactAtStartOfEpochIfValidatorsReady {
+                    lower_bound_inclusive,
+                    upper_bound_exclusive,
+                    ..
+                } => {
+                    let readiness_signal_name = protocol_update.readiness_signal_name();
+                    self.pending_update_lower_bound_epoch
+                        .with_two_labels(
+                            protocol_update.next_protocol_version.to_string(),
+                            readiness_signal_name.to_string(),
+                        )
+                        .set(lower_bound_inclusive.number() as i64);
+                    self.pending_update_upper_bound_epoch
+                        .with_two_labels(
+                            protocol_update.next_protocol_version.to_string(),
+                            readiness_signal_name.to_string(),
+                        )
+                        .set(upper_bound_exclusive.number() as i64);
+                    match &pending_protocol_update.state {
+                        PendingProtocolUpdateState::ForSignalledReadinessSupportCondition {
+                            thresholds_state,
+                        } => {
+                            for (index, (threshold, threshold_state)) in
+                                thresholds_state.iter().enumerate()
+                            {
+                                self.pending_update_threshold_required_ratio
+                                    .with_four_labels(
+                                        protocol_update.next_protocol_version.to_string(),
+                                        readiness_signal_name.to_string(),
+                                        index.to_string(),
+                                        threshold
+                                            .required_consecutive_completed_epochs_of_support
+                                            .to_string(),
+                                    )
+                                    .set(dec_to_f64_for_metrics(
+                                        &threshold.required_ratio_of_stake_supported,
+                                    ));
+                                self.pending_update_threshold_required_consecutive_epochs
+                                    .with_four_labels(
+                                        protocol_update.next_protocol_version.to_string(),
+                                        readiness_signal_name.to_string(),
+                                        index.to_string(),
+                                        threshold
+                                            .required_consecutive_completed_epochs_of_support
+                                            .to_string(),
+                                    )
+                                    .set(
+                                        threshold.required_consecutive_completed_epochs_of_support
+                                            as i64,
+                                    );
+                                self.pending_update_threshold_current_consecutive_epochs
+                                    .with_four_labels(
+                                        protocol_update.next_protocol_version.to_string(),
+                                        readiness_signal_name.to_string(),
+                                        index.to_string(),
+                                        threshold
+                                            .required_consecutive_completed_epochs_of_support
+                                            .to_string(),
+                                    )
+                                    .set(
+                                        threshold_state.consecutive_started_epochs_of_support
+                                            as i64,
+                                    );
+                            }
+                        }
+                        PendingProtocolUpdateState::Empty => { /* no-op, shouldn't happen */ }
+                    }
+                }
+                ProtocolUpdateEnactmentCondition::EnactAtStartOfEpochUnconditionally(epoch) => {
+                    self.pending_update_lower_bound_epoch
+                        .with_two_labels(
+                            protocol_update.next_protocol_version.to_string(),
+                            "".to_string(),
+                        )
+                        .set(epoch.number() as i64);
+                    self.pending_update_upper_bound_epoch
+                        .with_two_labels(
+                            protocol_update.next_protocol_version.to_string(),
+                            "".to_string(),
+                        )
+                        .set(epoch.number() as i64 + 1);
+                }
+            }
+        }
+
+        for (state_version, protocol_version_name) in protocol_state.enacted_protocol_updates.iter()
+        {
+            self.enacted_protocol_update_state_version
+                .with_label(protocol_version_name.to_string())
+                .set(state_version.number() as i64);
+        }
+    }
+
+    /// Updates the metrics that are based on epoch change event
+    fn update_epoch_change_based_metrics(&self, epoch_change: &EpochChangeEvent) {
+        self.protocol_update_readiness_ratio.reset();
+
+        let total_stake = epoch_change
+            .validator_set
+            .total_active_stake_xrd()
+            .expect("Failed to calculate the total stake");
+        for (readiness_signal_name, stake_readiness) in
+            epoch_change.significant_protocol_update_readiness.iter()
+        {
+            let readiness_ratio = stake_readiness
+                .checked_div(total_stake)
+                .unwrap_or(Decimal::ZERO);
+            self.protocol_update_readiness_ratio
+                .with_label(readiness_signal_name)
+                .set(dec_to_f64_for_metrics(&readiness_ratio))
+        }
+    }
+}
+
+/// Unsafe, metrics-only conversion
+fn dec_to_f64_for_metrics(input: &Decimal) -> f64 {
+    f64::from_str(&input.to_string()).unwrap_or(0f64)
+}
+
 impl VertexPrepareMetrics {
     pub fn new(registry: &Registry) -> Self {
         Self {
@@ -442,7 +661,7 @@ impl RawDbMetrics {
                 .set(i64::try_from(statistic.sst_count).unwrap_or_default());
             self.max_level
                 .with_label(&statistic.category_name)
-                .set(i64::try_from(statistic.max_level).unwrap_or_default());
+                .set(i64::from(statistic.max_level));
         }
     }
 }
@@ -471,6 +690,7 @@ impl MetricLabel for ConsensusRoundResolution {
 pub enum VertexPrepareStopReason {
     ProposalComplete,
     EpochChange,
+    ProtocolUpdate,
     LimitExceeded(VertexLimitsExceeded),
 }
 
@@ -481,6 +701,7 @@ impl MetricLabel for VertexPrepareStopReason {
         match self {
             VertexPrepareStopReason::ProposalComplete => "ProposalComplete",
             VertexPrepareStopReason::EpochChange => "EpochChange",
+            VertexPrepareStopReason::ProtocolUpdate => "ProtocolUpdate",
             VertexPrepareStopReason::LimitExceeded(limit_exceeded) => match limit_exceeded {
                 VertexLimitsExceeded::TransactionsCount => "TransactionsCountLimitReached",
                 VertexLimitsExceeded::TransactionsSize => "TransactionsSizeLimitReached",

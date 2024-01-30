@@ -3,6 +3,7 @@ use axum::{
     response::{IntoResponse, Response},
     Json,
 };
+use models::stream_proofs_error_details::StreamProofsErrorDetails;
 use std::any::Any;
 
 use hyper::StatusCode;
@@ -81,6 +82,22 @@ impl ErrorDetails for StreamTransactionsErrorDetails {
         trace_id: Option<String>,
     ) -> models::ErrorResponse {
         models::ErrorResponse::StreamTransactionsErrorResponse {
+            code,
+            message,
+            trace_id,
+            details: details.map(Box::new),
+        }
+    }
+}
+
+impl ErrorDetails for StreamProofsErrorDetails {
+    fn to_error_response(
+        details: Option<Self>,
+        code: i32,
+        message: String,
+        trace_id: Option<String>,
+    ) -> models::ErrorResponse {
+        models::ErrorResponse::StreamProofsErrorResponse {
             code,
             message,
             trace_id,

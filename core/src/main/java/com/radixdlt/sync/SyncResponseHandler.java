@@ -65,13 +65,12 @@
 package com.radixdlt.sync;
 
 import com.google.inject.Inject;
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.*;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.statecomputer.commit.InvalidCommitRequestError;
+import com.radixdlt.statecomputer.commit.LedgerProof;
 import com.radixdlt.sync.SyncState.SyncingState;
-import com.radixdlt.sync.messages.local.*;
 import com.radixdlt.sync.messages.remote.*;
 import com.radixdlt.sync.validation.RemoteSyncResponseSignaturesVerifier;
 import com.radixdlt.sync.validation.RemoteSyncResponseValidatorSetVerifier;
@@ -101,8 +100,9 @@ public final class SyncResponseHandler {
    */
   public void handle(SyncingState currentState, NodeId sender, SyncResponse syncResponse) {
     final var dto = syncResponse.getLedgerExtension();
-    final var start = LedgerProof.fromDto(dto.getStart());
-    final var end = LedgerProof.fromDto(dto.getEnd());
+    final var start =
+        LedgerSyncDtoConversions.syncDtoToConsensusOriginatedLedgerProof(dto.getStart());
+    final var end = LedgerSyncDtoConversions.syncDtoToConsensusOriginatedLedgerProof(dto.getEnd());
     final var ledgerExtension = LedgerExtension.create(dto.getTransactions(), end);
     this.checkMatchesPendingRequest(currentState, sender, start);
     this.checkValidTransactionCount(start, ledgerExtension);
@@ -112,7 +112,6 @@ public final class SyncResponseHandler {
 
   private void checkMatchesPendingRequest(
       SyncingState currentState, NodeId sender, LedgerProof ledgerExtensionStart) {
-
     final var optPendingRequestPeer =
         currentState.getPendingRequest().map(SyncState.PendingRequest::getPeer);
     if (optPendingRequestPeer.isEmpty()) {
@@ -124,21 +123,20 @@ public final class SyncResponseHandler {
       throw new InvalidSyncResponseException.SyncRequestSenderMismatch();
     }
 
-    final var currentHeader = currentState.getCurrentHeader();
-    if (!ledgerExtensionStart.equals(currentHeader)) {
+    final var currentHeader = currentState.getLatestProof();
+    if (ledgerExtensionStart.stateVersion() != currentHeader.stateVersion()) {
       throw new InvalidSyncResponseException.LedgerExtensionStartMismatch();
     }
   }
 
   private void checkValidTransactionCount(LedgerProof start, LedgerExtension ledgerExtension) {
-
-    final var transactionCount = ledgerExtension.getTransactions().size();
+    final var transactionCount = ledgerExtension.transactions().size();
     if (transactionCount == 0) {
       throw new InvalidSyncResponseException.EmptySyncResponse();
     }
 
-    final var expectedEndStateVersion = start.getStateVersion() + transactionCount;
-    if (expectedEndStateVersion != ledgerExtension.getProof().getStateVersion()) {
+    final var expectedEndStateVersion = start.stateVersion() + transactionCount;
+    if (expectedEndStateVersion != ledgerExtension.proof().stateVersion()) {
       throw new InvalidSyncResponseException.InconsistentTransactionCount();
     }
   }

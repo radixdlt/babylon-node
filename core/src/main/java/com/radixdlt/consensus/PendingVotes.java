@@ -67,6 +67,7 @@ package com.radixdlt.consensus;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import com.google.common.hash.HashCode;
+import com.google.common.util.concurrent.RateLimiter;
 import com.radixdlt.SecurityCritical;
 import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.consensus.bft.BFTValidatorId;
@@ -98,6 +99,7 @@ import org.apache.logging.log4j.Logger;
 public final class PendingVotes {
   private static final Logger log = LogManager.getLogger();
 
+  private final BFTValidatorId self;
   private final Map<HashCode, ValidationState> voteState = Maps.newHashMap();
   private final Map<HashCode, ValidationState> timeoutVoteState = Maps.newHashMap();
   private final Map<BFTValidatorId, PreviousVote> previousVotes = Maps.newHashMap();
@@ -105,39 +107,110 @@ public final class PendingVotes {
   private final EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher;
   private final BFTValidatorSet validatorSet;
   private final Metrics metrics;
+  private final RateLimiter divergentVertexExecutionLogRateLimiter = RateLimiter.create(0.1);
 
   public PendingVotes(
+      BFTValidatorId self,
       Hasher hasher,
       EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher,
       BFTValidatorSet validatorSet,
       Metrics metrics) {
+    this.self = self;
     this.hasher = Objects.requireNonNull(hasher);
     this.doubleVoteEventDispatcher = Objects.requireNonNull(doubleVoteEventDispatcher);
     this.validatorSet = Objects.requireNonNull(validatorSet);
     this.metrics = metrics;
   }
 
-  private void checkForDivergentVertexExecution(Vote vote) {
-    final var voteVertexId = vote.getVoteData().getProposed().getVertexId();
-    final var voteLedgerHeader = vote.getVoteData().getProposed().getLedgerHeader();
+  private void checkForDivergentVertexExecution(Vote incomingVote) {
+    final var voteVertexId = incomingVote.getVoteData().getProposed().getVertexId();
+    final var voteLedgerHeader = incomingVote.getVoteData().getProposed().getLedgerHeader();
     for (var otherVote : this.previousVotes.entrySet()) {
       final var otherVertexId = otherVote.getValue().proposedHeader().getVertexId();
       final var otherLedgerHeader = otherVote.getValue().proposedHeader().getLedgerHeader();
       if (voteVertexId.equals(otherVertexId) && !voteLedgerHeader.equals(otherLedgerHeader)) {
-        log.warn(
-            "Divergent vertex execution detected! An incoming vote (from {}) for vertex {} claims"
-                + " the following resultant ledger header: {}, while validator {} thinks that the"
-                + " resultant ledger header is {}. [this_vote={}, other_vote={}]",
-            vote.getAuthor(),
-            voteVertexId,
-            voteLedgerHeader,
-            otherVote.getKey(),
-            otherLedgerHeader,
-            vote,
-            otherVote);
+        if (!voteLedgerHeader
+            .nextProtocolVersion()
+            .equals(otherLedgerHeader.nextProtocolVersion())) {
+          logDivergentProtocolUpdateVote(incomingVote, otherVote.getKey(), otherVote.getValue());
+        } else {
+          if (divergentVertexExecutionLogRateLimiter.tryAcquire()) {
+            log.warn(
+                "Divergent vertex execution detected! An incoming vote (from {}) for vertex {}"
+                    + " claims the following resultant ledger header: {}, while validator {} thinks"
+                    + " that the resultant ledger header is {}. [this_vote={}, other_vote={}]",
+                incomingVote.getAuthor(),
+                voteVertexId,
+                voteLedgerHeader,
+                otherVote.getKey(),
+                otherLedgerHeader,
+                incomingVote,
+                otherVote);
+          }
+        }
+
+        // Regardless of the reason and whether the divergence applies to this node,
+        // we're bumping the metrics.
         this.metrics.bft().divergentVertexExecutions().inc();
       }
     }
+  }
+
+  private void logDivergentProtocolUpdateVote(
+      Vote incomingVote, BFTValidatorId otherVoteAuthor, PreviousVote otherVote) {
+    // Protocol update-related divergence is most likely caused by some nodes running an
+    // outdated version. This is somewhat expected, so we're not going to log these occurrences
+    // unless they apply to this node.
+    final var isIncomingVoteFromSelf = self.equals(incomingVote.getAuthor());
+    final var isExistingVoteFromSelf = self.equals(otherVoteAuthor);
+    if (isIncomingVoteFromSelf || isExistingVoteFromSelf) {
+      final var selfProposedHeader =
+          isIncomingVoteFromSelf
+              ? incomingVote.getVoteData().getProposed()
+              : otherVote.proposedHeader();
+      final var otherProposedHeader =
+          isIncomingVoteFromSelf
+              ? otherVote.proposedHeader()
+              : incomingVote.getVoteData().getProposed();
+      final var selfNextVersion = selfProposedHeader.getLedgerHeader().nextProtocolVersion();
+      final var otherNextVersion = otherProposedHeader.getLedgerHeader().nextProtocolVersion();
+      final var otherAuthor = isIncomingVoteFromSelf ? otherVoteAuthor : incomingVote.getAuthor();
+      if (selfNextVersion.isPresent() && otherNextVersion.isEmpty()) {
+        // We're enacting, they don't: just a debug log.
+        if (divergentVertexExecutionLogRateLimiter.tryAcquire()) {
+          log.debug(
+              """
+                  Received a BFT vote from {} that doesn't enact a protocol update,
+                  while we're enacting {}.
+                  This indicates that they're likely running an outdated node version.
+                  This node is unaffected, unless other error messages follow.""",
+              otherAuthor,
+              selfNextVersion);
+        } else if (selfNextVersion.isEmpty() && otherNextVersion.isPresent()) {
+          // We're not enacting, but they are: we're potentially outdated, log an early warning
+          if (divergentVertexExecutionLogRateLimiter.tryAcquire()) {
+            log.warn(
+                """
+                    Received a BFT vote from {} that enacts a protocol update {}, but this node doesn't enact it.
+                    This node might be running an outdated version (but it's not certain).""",
+                otherAuthor,
+                otherNextVersion);
+          }
+        } else if (selfNextVersion.isPresent() && otherNextVersion.isPresent()) {
+          // We're enacting a different version, one of us is likely outdated.
+          if (divergentVertexExecutionLogRateLimiter.tryAcquire()) {
+            log.warn(
+                "Received a BFT vote from {} that enacts a protocol update {}, but this node enacts"
+                    + " {}. It is likely that one of the nodes (this node or {}) is running an"
+                    + " outdated version.",
+                otherAuthor,
+                otherNextVersion,
+                selfNextVersion,
+                otherAuthor);
+          }
+        }
+      } /* else: no-op; we don't care about other cases */
+    } /* else: no-op; we don't care if the vote doesn't affect this node */
   }
 
   /**
@@ -153,13 +226,13 @@ public final class PendingVotes {
     final VoteData voteData = vote.getVoteData();
     final HashCode voteDataHash = this.hasher.hashDsonEncoded(voteData);
 
-    // This doesn't do anything, other than logging and bumping the metrics,
-    // when divergent execution is detected (which should hopefully never happen).
-    checkForDivergentVertexExecution(vote);
-
     if (!validatorSet.containsValidator(author)) {
       return VoteProcessingResult.rejected(VoteRejectedReason.INVALID_AUTHOR);
     }
+
+    // This doesn't do anything, other than logging and bumping the metrics,
+    // when divergent execution is detected (which should hopefully never happen).
+    checkForDivergentVertexExecution(vote);
 
     if (!replacePreviousVote(author, vote, voteDataHash)) {
       return VoteProcessingResult.rejected(VoteRejectedReason.DUPLICATE_VOTE);

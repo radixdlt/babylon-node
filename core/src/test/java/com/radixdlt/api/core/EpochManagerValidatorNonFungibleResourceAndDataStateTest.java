@@ -92,7 +92,9 @@ public final class EpochManagerValidatorNonFungibleResourceAndDataStateTest
       final var stateConsensusManagerResponse =
           getStateApi()
               .stateConsensusManagerPost(
-                  new StateConsensusManagerRequest().network(networkLogicalName));
+                  new StateConsensusManagerRequest()
+                      .network(networkLogicalName)
+                      .includeReadinessSignals(true));
 
       final var stateSubstate =
           (ConsensusManagerFieldStateSubstate) stateConsensusManagerResponse.getState();
@@ -105,6 +107,16 @@ public final class EpochManagerValidatorNonFungibleResourceAndDataStateTest
               .getValidatorSet()
               .get(0)
               .getAddress();
+
+      assertThat(stateConsensusManagerResponse.getCurrentValidatorReadinessSignals())
+          .containsExactly(
+              new ProtocolVersionReadiness()
+                  .signalledProtocolVersion(null) // our validator does not signal anything
+                  .totalActiveStakeProportion("1") // it is the only validator
+                  .addSignallingValidatorsItem(
+                      new SignallingValidator()
+                          .index(new ActiveValidatorIndex().index(0))
+                          .activeStakeProportion("1")));
 
       final var validatorResponse =
           getStateApi()
@@ -124,6 +136,12 @@ public final class EpochManagerValidatorNonFungibleResourceAndDataStateTest
       final var nonFungibleLocalId = requirement.getNonFungible().getLocalId();
       assertThat(nonFungibleLocalId.getSimpleRep())
           .isEqualTo("[" + addressing.decodeValidatorAddress(validatorAddress).toHexString() + "]");
+
+      final var readinessSignalSubstate =
+          (ValidatorFieldProtocolUpdateReadinessSignalSubstate)
+              validatorResponse.getProtocolUpdateReadinessSignal();
+      // no readiness signalled
+      assertThat(readinessSignalSubstate.getValue().getProtocolVersionName()).isNull();
 
       final var nonFungibleResourceResponse =
           getStateApi()

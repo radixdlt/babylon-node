@@ -64,23 +64,17 @@
 
 package com.radixdlt.ledger;
 
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.lang.Option;
+import com.radixdlt.statecomputer.ProtocolState;
 import com.radixdlt.statecomputer.commit.CommitSummary;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import java.util.List;
-import java.util.Optional;
 
 public record LedgerUpdate(
     CommitSummary commitSummary,
-    LedgerExtension ledgerExtension,
-    Optional<EpochChange> epochChange) {
-
-  public LedgerProof proof() {
-    return ledgerExtension.getProof();
-  }
-
-  public List<RawLedgerTransaction> transactions() {
-    return ledgerExtension.getTransactions();
-  }
-}
+    LedgerProofBundle committedProof,
+    Option<EpochChange> epochChange,
+    ProtocolState resultantProtocolState,
+    // Only used in tests
+    List<RawLedgerTransaction> committedNonProtocolUpdateTransactions) {}

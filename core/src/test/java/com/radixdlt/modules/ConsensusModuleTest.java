@@ -92,14 +92,16 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.NoEpochsConsensusModule;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.ledger.LedgerProofBundle;
 import com.radixdlt.messaging.core.GetVerticesRequestRateLimit;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.Metrics.RoundChange.HighQcSource;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.NodeId;
-import com.radixdlt.rev2.LastProof;
+import com.radixdlt.rev2.REv2ToConsensus;
 import com.radixdlt.serialization.DefaultSerialization;
+import com.radixdlt.sync.LedgerProofSyncStatusDto;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.*;
@@ -119,6 +121,7 @@ public class ConsensusModuleTest {
 
   private ECKeyPair validatorKeyPair;
 
+  private LedgerProofBundle latestProof;
   private BFTValidatorId validatorId;
   private BFTConfiguration bftConfiguration;
 
@@ -130,12 +133,16 @@ public class ConsensusModuleTest {
 
   @Before
   public void setup() {
+    this.latestProof =
+        LedgerProofBundle.mockedOfHeader(
+            LedgerHeader.genesis(0, LedgerHashes.zero(), BFTValidatorSet.from(List.of()), 0, 0));
     var genesisVertex =
-        Vertex.createInitialEpochVertex(LedgerHeader.genesis(0, LedgerHashes.zero(), null, 0, 0))
+        Vertex.createInitialEpochVertex(
+                REv2ToConsensus.ledgerHeader(latestProof.epochInitialHeader()))
             .withId(ZeroHasher.INSTANCE);
     var qc =
         QuorumCertificate.createInitialEpochQC(
-            genesisVertex, LedgerHeader.genesis(0, LedgerHashes.zero(), null, 0, 0));
+            genesisVertex, REv2ToConsensus.ledgerHeader(latestProof.epochInitialHeader()));
     this.validatorKeyPair = ECKeyPair.generateNew();
     this.validatorId =
         BFTValidatorId.withKeyAndFakeDeterministicAddress(this.validatorKeyPair.getPublicKey());
@@ -218,12 +225,12 @@ public class ConsensusModuleTest {
         bind(TimeSupplier.class).toInstance(mock(TimeSupplier.class));
         bind(BFTConfiguration.class).toInstance(bftConfiguration);
         bind(BFTValidatorSet.class).toInstance(bftConfiguration.getValidatorSet());
-        LedgerProof proof = mock(LedgerProof.class);
-        when(proof.getRound()).thenReturn(Round.genesis());
+        LedgerProofSyncStatusDto proof = mock(LedgerProofSyncStatusDto.class);
+        when(proof.getRound()).thenReturn(Round.epochInitial());
         final var header = mock(LedgerHeader.class);
-        when(header.getRound()).thenReturn(Round.genesis());
+        when(header.getRound()).thenReturn(Round.epochInitial());
         when(proof.getHeader()).thenReturn(header);
-        bind(LedgerProof.class).annotatedWith(LastProof.class).toInstance(proof);
+        bind(LedgerProofBundle.class).toInstance(latestProof);
         bind(RateLimiter.class)
             .annotatedWith(GetVerticesRequestRateLimit.class)
             .toInstance(RateLimiter.create(Double.MAX_VALUE));

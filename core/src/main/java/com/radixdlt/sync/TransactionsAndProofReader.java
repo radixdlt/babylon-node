@@ -64,18 +64,16 @@
 
 package com.radixdlt.sync;
 
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerExtension;
+import com.radixdlt.ledger.LedgerProofBundle;
+import com.radixdlt.statecomputer.commit.LedgerProof;
 import java.util.Optional;
 
 /** Reader of committed transactions */
 public interface TransactionsAndProofReader {
-  LedgerExtension getTransactions(DtoLedgerProof start);
+  LedgerExtension getTransactions(long startStateVersionExclusive);
 
   Optional<LedgerProof> getPostGenesisEpochProof();
 
-  Optional<LedgerProof> getEpochProof(long epoch);
-
-  Optional<LedgerProof> getLastProof();
+  Optional<LedgerProofBundle> getLatestProofBundle();
 }

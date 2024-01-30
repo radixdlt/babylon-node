@@ -65,11 +65,11 @@
 package com.radixdlt.store;
 
 import com.google.inject.Inject;
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerExtension;
+import com.radixdlt.ledger.LedgerProofBundle;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.statecomputer.commit.LedgerProof;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -80,6 +80,9 @@ public final class InMemoryTransactionsAndProofReader implements TransactionsAnd
   public static final class Store {
     final TreeMap<Long, LedgerExtension> committedLedgerExtensions = new TreeMap<>();
     final TreeMap<Long, LedgerProof> epochProofs = new TreeMap<>();
+
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    Optional<LedgerProofBundle> latestProof = Optional.empty();
   }
 
   private final Object lock = new Object();
@@ -94,34 +97,34 @@ public final class InMemoryTransactionsAndProofReader implements TransactionsAnd
   public EventProcessor<LedgerUpdate> updateProcessor() {
     return update -> {
       synchronized (lock) {
-        var transactions = update.transactions();
-        long firstVersion = update.proof().getStateVersion() - transactions.size() + 1;
-        for (long version = firstVersion; version <= update.proof().getStateVersion(); version++) {
+        // We must skip protocol update proofs here (`trimProtocolUpdate`)
+        final var proof = update.committedProof().trimProtocolUpdate();
+        final var transactions = update.committedNonProtocolUpdateTransactions();
+        final var latestStateVersion = proof.stateVersion();
+        long firstVersion = latestStateVersion - transactions.size() + 1;
+        for (long version = firstVersion; version <= latestStateVersion; version++) {
           int index = (int) (version - firstVersion);
           store.committedLedgerExtensions.put(
               version,
-              LedgerExtension.create(
-                  transactions.subList(index, transactions.size()), update.proof()));
+              LedgerExtension.create(transactions.subList(index, transactions.size()), proof));
         }
 
-        update
-            .proof()
-            .getNextEpoch()
-            .ifPresent(
-                nextEpoch -> this.store.epochProofs.put(nextEpoch.getEpoch(), update.proof()));
+        proof
+            .ledgerHeader()
+            .nextEpoch()
+            .ifPresent(nextEpoch -> this.store.epochProofs.put(nextEpoch.epoch().toLong(), proof));
+
+        this.store.latestProof = Optional.of(update.committedProof());
       }
     };
   }
 
   @Override
-  public LedgerExtension getTransactions(DtoLedgerProof start) {
+  public LedgerExtension getTransactions(long startStateVersionExclusive) {
     synchronized (lock) {
-      final long startStateVersion = start.getLedgerHeader().getStateVersion();
-      Entry<Long, LedgerExtension> entry =
-          store.committedLedgerExtensions.higherEntry(startStateVersion);
-
+      final var entry = store.committedLedgerExtensions.higherEntry(startStateVersionExclusive);
       if (entry != null) {
-        return entry.getValue().getExtensionFrom(startStateVersion);
+        return entry.getValue().getExtensionFrom(startStateVersionExclusive);
       }
 
       return null;
@@ -136,16 +139,8 @@ public final class InMemoryTransactionsAndProofReader implements TransactionsAnd
   }
 
   @Override
-  public Optional<LedgerProof> getEpochProof(long epoch) {
-    synchronized (lock) {
-      return Optional.ofNullable(store.epochProofs.get(epoch));
-    }
-  }
-
-  @Override
-  public Optional<LedgerProof> getLastProof() {
-    return Optional.ofNullable(store.committedLedgerExtensions.lastEntry())
-        .map(p -> p.getValue().getProof());
+  public Optional<LedgerProofBundle> getLatestProofBundle() {
+    return this.store.latestProof;
   }
 
   public Store getStore() {

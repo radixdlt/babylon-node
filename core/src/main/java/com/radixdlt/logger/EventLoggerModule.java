@@ -82,11 +82,13 @@ import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.environment.EventProcessorOnDispatch;
+import com.radixdlt.lang.Option;
+import com.radixdlt.ledger.LedgerProofBundle;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.rev2.REv2ToConsensus;
 import com.radixdlt.statecomputer.commit.CommitSummary;
+import com.radixdlt.statecomputer.commit.LedgerProofOrigin;
 import com.radixdlt.utils.Bytes;
-import java.util.Optional;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -190,6 +192,7 @@ public final class EventLoggerModule extends AbstractModule {
         calculateLoggingLevel(ledgerUpdateLogLimiter, ledgerUpdate.epochChange()));
 
     ledgerUpdate.epochChange().ifPresent(epochChange -> logEpochChange(self, epochChange));
+    logProtocolUpdate(ledgerUpdate.committedProof());
 
     self.bftValidatorId()
         .ifPresent(
@@ -200,14 +203,44 @@ public final class EventLoggerModule extends AbstractModule {
   }
 
   private static void logEpochChange(SelfValidatorInfo self, EpochChange epochChange) {
-    var validatorSet = epochChange.getBFTConfiguration().getValidatorSet();
+    var validatorSet = epochChange.bftConfiguration().getValidatorSet();
     final var included = self.bftValidatorId().stream().anyMatch(validatorSet::containsValidator);
     logger.info(
         "lgr_nepoch{epoch={} included={} num_validators={} total_stake={}}",
-        epochChange.getNextEpoch(),
+        epochChange.nextEpoch(),
         included,
         validatorSet.getValidators().size(),
         validatorSet.getTotalPower());
+  }
+
+  private static void logProtocolUpdate(LedgerProofBundle proof) {
+    if (proof.primaryProof().ledgerHeader().nextProtocolVersion().isPresent()) {
+      // Primary (latest) proof is a protocol update (and there's no later ProtocolUpdate-originated
+      // proof)
+      // this means that there were no transactions committed during this protocol update.
+      final var stateVersion = proof.primaryProof().stateVersion();
+      logger.info(
+          "protocol_update{next_protocol_version={} init_state_version={} post_state_version={} (0"
+              + " txns committed)}",
+          proof.primaryProof().ledgerHeader().nextProtocolVersion().or(""),
+          stateVersion,
+          stateVersion);
+    } else if (proof.primaryProof().origin()
+        instanceof LedgerProofOrigin.ProtocolUpdate protocolUpdateOrigin) {
+      // Protocol update init proof must be present if latest proof is of ProtocolUpdate origin.
+      final var protocolUpdateInitHeader =
+          proof.closestProtocolUpdateInitProofOnOrBefore().unwrap().ledgerHeader();
+      final var postProtocolUpdateHeader = proof.primaryProof().ledgerHeader();
+      final var initStateVersion = protocolUpdateInitHeader.stateVersion().toLong();
+      final var postStateVersion = postProtocolUpdateHeader.stateVersion().toLong();
+      logger.info(
+          "protocol_update{next_protocol_version={} init_state_version={} post_state_version={} ({}"
+              + " txns committed)}",
+          protocolUpdateInitHeader.nextProtocolVersion().or(""),
+          initStateVersion,
+          postStateVersion,
+          (postStateVersion - initStateVersion));
+    }
   }
 
   private static void logLedgerUpdate(LedgerUpdate ledgerUpdate, long txnCount, Level logLevel) {
@@ -215,17 +248,18 @@ public final class EventLoggerModule extends AbstractModule {
       return;
     }
 
-    final var proof = ledgerUpdate.proof();
-    final var ledgerHashes = proof.getLedgerHashes();
+    final var header =
+        REv2ToConsensus.ledgerHeader(ledgerUpdate.committedProof().primaryProof().ledgerHeader());
+    final var ledgerHashes = header.getHashes();
     logger.log(
         logLevel,
         "lgr_commit{epoch={} round={} version={} num_txns={}, ts={}, state_root={}, txn_root={},"
             + " receipt_root={}}",
-        proof.getEpoch(),
-        proof.getRound().number(),
-        proof.getStateVersion(),
+        header.getEpoch(),
+        header.getRound().number(),
+        header.getStateVersion(),
         txnCount,
-        proof.getProposerTimestamp(),
+        header.proposerTimestamp(),
         shortFormatLedgerHash(ledgerHashes.getStateRoot()),
         shortFormatLedgerHash(ledgerHashes.getTransactionRoot()),
         shortFormatLedgerHash(ledgerHashes.getReceiptRoot()));
@@ -237,7 +271,7 @@ public final class EventLoggerModule extends AbstractModule {
 
   @SuppressWarnings("UnstableApiUsage")
   private static Level calculateLoggingLevel(
-      RateLimiter logLimiter, Optional<EpochChange> epochChange) {
+      RateLimiter logLimiter, Option<EpochChange> epochChange) {
     return (epochChange.isPresent() || logLimiter.tryAcquire()) ? INFO : TRACE;
   }
 

@@ -91,7 +91,7 @@ public final class SafetyState {
   private final Optional<Vote> lastVote;
 
   public static SafetyState initialState(BFTValidatorId validatorId) {
-    return new SafetyState(validatorId, Round.genesis(), Optional.empty());
+    return new SafetyState(validatorId, Round.epochInitial(), Optional.empty());
   }
 
   @JsonCreator
@@ -180,7 +180,7 @@ public final class SafetyState {
   }
 
   public Round getLastVotedRound() {
-    return getLastVote().map(Vote::getRound).orElse(Round.genesis());
+    return getLastVote().map(Vote::getRound).orElse(Round.epochInitial());
   }
 
   public Round getLockedRound() {

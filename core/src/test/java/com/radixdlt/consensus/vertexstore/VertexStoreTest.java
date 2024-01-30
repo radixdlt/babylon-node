@@ -116,7 +116,7 @@ public class VertexStoreTest {
   private Metrics metrics;
 
   private static final LedgerHeader MOCKED_HEADER =
-      LedgerHeader.create(0, Round.genesis(), 0, LedgerHashes.zero(), 0, 0);
+      LedgerHeader.create(0, Round.epochInitial(), 0, LedgerHashes.zero(), 0, 0);
 
   @Before
   public void setUp() {
@@ -162,11 +162,11 @@ public class VertexStoreTest {
             committedSender);
 
     AtomicReference<BFTHeader> lastParentHeader =
-        new AtomicReference<>(new BFTHeader(Round.genesis(), genesisHash, MOCKED_HEADER));
+        new AtomicReference<>(new BFTHeader(Round.epochInitial(), genesisHash, MOCKED_HEADER));
     AtomicReference<BFTHeader> lastGrandParentHeader =
-        new AtomicReference<>(new BFTHeader(Round.genesis(), genesisHash, MOCKED_HEADER));
+        new AtomicReference<>(new BFTHeader(Round.epochInitial(), genesisHash, MOCKED_HEADER));
     AtomicReference<BFTHeader> lastGreatGrandParentHeader =
-        new AtomicReference<>(new BFTHeader(Round.genesis(), genesisHash, MOCKED_HEADER));
+        new AtomicReference<>(new BFTHeader(Round.epochInitial(), genesisHash, MOCKED_HEADER));
 
     this.nextSkippableVertex =
         (skipOne) -> {
@@ -174,7 +174,7 @@ public class VertexStoreTest {
           BFTHeader grandParentHeader = lastGrandParentHeader.get();
           BFTHeader greatGrandParentHeader = lastGreatGrandParentHeader.get();
           final QuorumCertificate qc;
-          if (!parentHeader.getRound().equals(Round.genesis())) {
+          if (!parentHeader.getRound().equals(Round.epochInitial())) {
             VoteData data =
                 new VoteData(
                     parentHeader, grandParentHeader, skipOne ? null : greatGrandParentHeader);
@@ -243,9 +243,9 @@ public class VertexStoreTest {
 
     // Arrange
     // Three mock vertices for A's ancestors
-    final var v1 = new BFTHeader(Round.genesis(), genesisHash, MOCKED_HEADER);
-    final var v2 = new BFTHeader(Round.genesis(), genesisHash, MOCKED_HEADER);
-    final var v3 = new BFTHeader(Round.genesis(), genesisHash, MOCKED_HEADER);
+    final var v1 = new BFTHeader(Round.epochInitial(), genesisHash, MOCKED_HEADER);
+    final var v2 = new BFTHeader(Round.epochInitial(), genesisHash, MOCKED_HEADER);
+    final var v3 = new BFTHeader(Round.epochInitial(), genesisHash, MOCKED_HEADER);
 
     final var vertexA = createVertex(v3, v2, v1, new byte[] {0});
     final var vertexB = createVertex(v2, v1, mockedHeaderOf(vertexA), new byte[] {0});
@@ -408,9 +408,9 @@ public class VertexStoreTest {
 
     // Arrange
     // Three mock vertices for A's ancestors
-    final var v1 = new BFTHeader(Round.genesis(), genesisHash, MOCKED_HEADER);
-    final var v2 = new BFTHeader(Round.genesis(), genesisHash, MOCKED_HEADER);
-    final var v3 = new BFTHeader(Round.genesis(), genesisHash, MOCKED_HEADER);
+    final var v1 = new BFTHeader(Round.epochInitial(), genesisHash, MOCKED_HEADER);
+    final var v2 = new BFTHeader(Round.epochInitial(), genesisHash, MOCKED_HEADER);
+    final var v3 = new BFTHeader(Round.epochInitial(), genesisHash, MOCKED_HEADER);
 
     final var vertexA = createVertex(v3, v2, v1, new byte[] {0});
     final var vertexB = createVertex(Round.of(2), v2, v1, mockedHeaderOf(vertexA), new byte[] {0});
@@ -470,9 +470,9 @@ public class VertexStoreTest {
     setUp(new VertexStoreConfig(5));
 
     // Three mock vertices for A's ancestors
-    final var v1 = new BFTHeader(Round.genesis(), genesisHash, MOCKED_HEADER);
-    final var v2 = new BFTHeader(Round.genesis(), genesisHash, MOCKED_HEADER);
-    final var v3 = new BFTHeader(Round.genesis(), genesisHash, MOCKED_HEADER);
+    final var v1 = new BFTHeader(Round.epochInitial(), genesisHash, MOCKED_HEADER);
+    final var v2 = new BFTHeader(Round.epochInitial(), genesisHash, MOCKED_HEADER);
+    final var v3 = new BFTHeader(Round.epochInitial(), genesisHash, MOCKED_HEADER);
     final var vertexA = createVertex(v3, v2, v1, new byte[] {0});
     underlyingVertexStore.insertVertex(vertexA);
 
@@ -507,7 +507,7 @@ public class VertexStoreTest {
   private VertexWithHash createVertex(
       Round round, BFTHeader greatGrandParent, BFTHeader grandParent, BFTHeader parent, byte[] tx) {
     final QuorumCertificate qc;
-    if (!parent.getRound().equals(Round.genesis())) {
+    if (!parent.getRound().equals(Round.epochInitial())) {
       final var data = new VoteData(parent, grandParent, greatGrandParent);
       qc = new QuorumCertificate(data, new TimestampedECDSASignatures());
     } else {

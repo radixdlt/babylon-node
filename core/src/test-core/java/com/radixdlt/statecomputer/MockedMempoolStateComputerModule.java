@@ -68,13 +68,9 @@ import com.google.inject.*;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.targeted.mempool.SimpleMempool;
 import java.util.Random;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /** Simple Mempool state computer */
 public class MockedMempoolStateComputerModule extends AbstractModule {
-  private static final Logger log = LogManager.getLogger();
-
   private final int mempoolMaxSize;
 
   public MockedMempoolStateComputerModule(int mempoolMaxSize) {

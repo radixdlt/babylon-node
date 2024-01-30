@@ -62,8 +62,10 @@
  * permissions under this License.
  */
 
+mod codecs;
 mod db;
-pub mod gc;
+pub mod jmt_gc;
+pub mod proofs_gc;
 mod rocks_db;
 pub mod traits;
 mod typed_cf_api;

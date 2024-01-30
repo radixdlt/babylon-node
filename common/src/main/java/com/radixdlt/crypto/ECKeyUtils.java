@@ -187,7 +187,7 @@ public class ECKeyUtils {
   private static Optional<Integer> tryV(
       int v, BigInteger r, BigInteger s, byte[] publicKey, byte[] hash) {
     // SNYK - this file is ignored in .snyk file
-    // Raised issue: Observable Timing Discrapency (Timing Attack)
+    // Raised issue: Observable Timing Discrepancy (Timing Attack)
     // Explanation: This is just the V byte recovery, timing attack isn't an issue.
     return ECKeyUtils.recoverFromSignature(v, r, s, hash)
         .filter(q -> Arrays.equals(q.getEncoded(true), publicKey))

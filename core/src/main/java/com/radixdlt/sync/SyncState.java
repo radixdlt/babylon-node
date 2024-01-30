@@ -71,8 +71,9 @@ import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.p2p.NodeId;
+import com.radixdlt.statecomputer.commit.LedgerHeader;
+import com.radixdlt.statecomputer.commit.LedgerProof;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.utils.Pair;
 import java.util.Objects;
@@ -85,38 +86,35 @@ import java.util.Optional;
  * - syncing: the service is waiting for SyncResponse; it also processes local messages and timeouts
  */
 public sealed interface SyncState {
+  LedgerProof getLatestProof();
 
-  /** Gets the current header. */
-  LedgerProof getCurrentHeader();
-
-  /** Returns a SyncState with a new current header. */
-  SyncState withCurrentHeader(LedgerProof newCurrentHeader);
+  SyncState withLatestProof(LedgerProof latestProof);
 
   final class IdleState implements SyncState {
-    private final LedgerProof currentHeader;
+    private final LedgerProof latestProof;
 
-    public static IdleState init(LedgerProof currentHeader) {
-      return new IdleState(currentHeader);
+    public static IdleState init(LedgerProof latestProof) {
+      return new IdleState(latestProof);
     }
 
-    private IdleState(LedgerProof currentHeader) {
-      this.currentHeader = currentHeader;
-    }
-
-    @Override
-    public LedgerProof getCurrentHeader() {
-      return this.currentHeader;
+    private IdleState(LedgerProof latestProof) {
+      this.latestProof = latestProof;
     }
 
     @Override
-    public IdleState withCurrentHeader(LedgerProof newCurrentHeader) {
-      return new IdleState(newCurrentHeader);
+    public LedgerProof getLatestProof() {
+      return this.latestProof;
+    }
+
+    @Override
+    public IdleState withLatestProof(LedgerProof latestProof) {
+      return new IdleState(latestProof);
     }
 
     @Override
     public String toString() {
       return String.format(
-          "%s{currentHeader=%s}", this.getClass().getSimpleName(), this.currentHeader);
+          "%s{primaryProof=%s}", this.getClass().getSimpleName(), this.latestProof);
     }
 
     @Override
@@ -128,30 +126,30 @@ public sealed interface SyncState {
         return false;
       }
       IdleState idleState = (IdleState) o;
-      return Objects.equals(currentHeader, idleState.currentHeader);
+      return Objects.equals(latestProof, idleState.latestProof);
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(currentHeader);
+      return Objects.hash(latestProof);
     }
   }
 
   final class SyncCheckState implements SyncState {
-    private final LedgerProof currentHeader;
+    private final LedgerProof latestProof;
     private final ImmutableSet<NodeId> peersAskedForStatus;
     private final ImmutableMap<NodeId, StatusResponse> receivedStatusResponses;
 
     public static SyncCheckState init(
-        LedgerProof currentHeader, ImmutableSet<NodeId> peersAskedForStatus) {
-      return new SyncCheckState(currentHeader, peersAskedForStatus, ImmutableMap.of());
+        LedgerProof latestProof, ImmutableSet<NodeId> peersAskedForStatus) {
+      return new SyncCheckState(latestProof, peersAskedForStatus, ImmutableMap.of());
     }
 
     private SyncCheckState(
-        LedgerProof currentHeader,
+        LedgerProof latestProof,
         ImmutableSet<NodeId> peersAskedForStatus,
         ImmutableMap<NodeId, StatusResponse> receivedStatusResponses) {
-      this.currentHeader = currentHeader;
+      this.latestProof = latestProof;
       this.peersAskedForStatus = peersAskedForStatus;
       this.receivedStatusResponses = receivedStatusResponses;
     }
@@ -174,7 +172,7 @@ public sealed interface SyncState {
 
     public SyncCheckState withStatusResponse(NodeId peer, StatusResponse statusResponse) {
       return new SyncCheckState(
-          currentHeader,
+          latestProof,
           peersAskedForStatus,
           new ImmutableMap.Builder<NodeId, StatusResponse>()
               .putAll(receivedStatusResponses)
@@ -183,21 +181,21 @@ public sealed interface SyncState {
     }
 
     @Override
-    public LedgerProof getCurrentHeader() {
-      return this.currentHeader;
+    public LedgerProof getLatestProof() {
+      return this.latestProof;
     }
 
     @Override
-    public SyncCheckState withCurrentHeader(LedgerProof newCurrentHeader) {
-      return new SyncCheckState(newCurrentHeader, peersAskedForStatus, receivedStatusResponses);
+    public SyncCheckState withLatestProof(LedgerProof latestProof) {
+      return new SyncCheckState(latestProof, peersAskedForStatus, receivedStatusResponses);
     }
 
     @Override
     public String toString() {
       return String.format(
-          "%s{currentHeader=%s peersAskedForStatus=%s receivedStatusResponses=%s}",
+          "%s{primaryProof=%s peersAskedForStatus=%s receivedStatusResponses=%s}",
           this.getClass().getSimpleName(),
-          this.currentHeader,
+          this.latestProof,
           this.peersAskedForStatus,
           this.receivedStatusResponses);
     }
@@ -211,14 +209,14 @@ public sealed interface SyncState {
         return false;
       }
       SyncCheckState that = (SyncCheckState) o;
-      return Objects.equals(currentHeader, that.currentHeader)
+      return Objects.equals(latestProof, that.latestProof)
           && Objects.equals(peersAskedForStatus, that.peersAskedForStatus)
           && Objects.equals(receivedStatusResponses, that.receivedStatusResponses);
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(currentHeader, peersAskedForStatus, receivedStatusResponses);
+      return Objects.hash(latestProof, peersAskedForStatus, receivedStatusResponses);
     }
   }
 
@@ -262,24 +260,24 @@ public sealed interface SyncState {
   }
 
   final class SyncingState implements SyncState {
-    private final LedgerProof currentHeader;
+    private final LedgerProof latestProof;
     private final ImmutableList<NodeId> candidatePeersQueue;
-    private final LedgerProof targetHeader;
+    private final LedgerHeader targetHeader;
     private final Optional<PendingRequest> pendingRequest;
 
     public static SyncingState init(
-        LedgerProof currentHeader,
+        LedgerProof latestProof,
         ImmutableList<NodeId> candidatePeersQueue,
-        LedgerProof targetHeader) {
-      return new SyncingState(currentHeader, candidatePeersQueue, targetHeader, Optional.empty());
+        LedgerHeader targetHeader) {
+      return new SyncingState(latestProof, candidatePeersQueue, targetHeader, Optional.empty());
     }
 
     private SyncingState(
-        LedgerProof currentHeader,
+        LedgerProof latestProof,
         ImmutableList<NodeId> candidatePeersQueue,
-        LedgerProof targetHeader,
+        LedgerHeader targetHeader,
         Optional<PendingRequest> pendingRequest) {
-      this.currentHeader = currentHeader;
+      this.latestProof = latestProof;
       this.candidatePeersQueue = candidatePeersQueue;
       this.targetHeader = targetHeader;
       this.pendingRequest = pendingRequest;
@@ -287,26 +285,26 @@ public sealed interface SyncState {
 
     public SyncingState withPendingRequest(NodeId peer, long requestId) {
       return new SyncingState(
-          currentHeader,
+          latestProof,
           candidatePeersQueue,
           targetHeader,
           Optional.of(PendingRequest.create(peer, requestId)));
     }
 
     public SyncingState clearPendingRequest() {
-      return new SyncingState(currentHeader, candidatePeersQueue, targetHeader, Optional.empty());
+      return new SyncingState(latestProof, candidatePeersQueue, targetHeader, Optional.empty());
     }
 
     public SyncingState removeCandidate(NodeId peer) {
       return new SyncingState(
-          currentHeader,
+          latestProof,
           ImmutableList.copyOf(Collections2.filter(candidatePeersQueue, not(equalTo(peer)))),
           targetHeader,
           pendingRequest);
     }
 
-    public SyncingState withTargetHeader(LedgerProof newTargetHeader) {
-      return new SyncingState(currentHeader, candidatePeersQueue, newTargetHeader, pendingRequest);
+    public SyncingState withTargetHeader(LedgerHeader newTargetHeader) {
+      return new SyncingState(latestProof, candidatePeersQueue, newTargetHeader, pendingRequest);
     }
 
     public Pair<SyncingState, Optional<NodeId>> fetchNextCandidatePeer() {
@@ -315,7 +313,7 @@ public sealed interface SyncState {
       if (peerToUse.isPresent()) {
         final var newState =
             new SyncingState(
-                currentHeader,
+                latestProof,
                 new ImmutableList.Builder<NodeId>()
                     .addAll(Collections2.filter(candidatePeersQueue, not(equalTo(peerToUse.get()))))
                     .add(peerToUse.get())
@@ -331,7 +329,7 @@ public sealed interface SyncState {
 
     public SyncingState addCandidatePeers(ImmutableList<NodeId> peers) {
       return new SyncingState(
-          currentHeader,
+          latestProof,
           new ImmutableList.Builder<NodeId>()
               .addAll(peers)
               .addAll(Collections2.filter(candidatePeersQueue, not(peers::contains)))
@@ -352,7 +350,7 @@ public sealed interface SyncState {
       return this.pendingRequest;
     }
 
-    public LedgerProof getTargetHeader() {
+    public LedgerHeader getTargetHeader() {
       return this.targetHeader;
     }
 
@@ -368,20 +366,20 @@ public sealed interface SyncState {
     }
 
     @Override
-    public LedgerProof getCurrentHeader() {
-      return this.currentHeader;
+    public LedgerProof getLatestProof() {
+      return this.latestProof;
     }
 
     @Override
-    public SyncingState withCurrentHeader(LedgerProof newCurrentHeader) {
-      return new SyncingState(newCurrentHeader, candidatePeersQueue, targetHeader, pendingRequest);
+    public SyncingState withLatestProof(LedgerProof latestProof) {
+      return new SyncingState(latestProof, candidatePeersQueue, targetHeader, pendingRequest);
     }
 
     @Override
     public String toString() {
       return String.format(
-          "%s{currentHeader=%s targetHeader=%s}",
-          getClass().getSimpleName(), currentHeader, targetHeader);
+          "%s{primaryProof=%s targetHeader=%s}",
+          getClass().getSimpleName(), latestProof, targetHeader);
     }
 
     @Override
@@ -393,7 +391,7 @@ public sealed interface SyncState {
         return false;
       }
       SyncingState that = (SyncingState) o;
-      return Objects.equals(currentHeader, that.currentHeader)
+      return Objects.equals(latestProof, that.latestProof)
           && Objects.equals(candidatePeersQueue, that.candidatePeersQueue)
           && Objects.equals(targetHeader, that.targetHeader)
           && Objects.equals(pendingRequest, that.pendingRequest);
@@ -401,7 +399,7 @@ public sealed interface SyncState {
 
     @Override
     public int hashCode() {
-      return Objects.hash(currentHeader, candidatePeersQueue, targetHeader, pendingRequest);
+      return Objects.hash(latestProof, candidatePeersQueue, targetHeader, pendingRequest);
     }
   }
 }

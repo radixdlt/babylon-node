@@ -177,7 +177,7 @@ public final class WeightedRotatingLeaders implements ProposerElection {
       // reset if round isn't in cache
       if (curRound == null || round.number() < curRound.number() - cache.length) {
         if (lcm == null || lcm > round.number()) {
-          curRound = Round.genesis();
+          curRound = Round.epochInitial();
         } else {
           long multipleOfLCM = round.number() / lcm;
           curRound = Round.of(multipleOfLCM * lcm);

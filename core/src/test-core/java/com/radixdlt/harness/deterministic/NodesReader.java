@@ -65,7 +65,7 @@
 package com.radixdlt.harness.deterministic;
 
 import com.google.inject.Injector;
-import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.ledger.LedgerProofBundle;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.testutil.TransactionDetails;
 import com.radixdlt.transaction.ExecutedTransaction;
@@ -152,7 +152,10 @@ public final class NodesReader {
         .mapToLong(
             injector -> {
               var reader = injector.getInstance(TransactionsAndProofReader.class);
-              return reader.getLastProof().map(LedgerProof::getStateVersion).orElse(0L);
+              return reader
+                  .getLatestProofBundle()
+                  .map(LedgerProofBundle::resultantStateVersion)
+                  .orElse(0L);
             })
         .max()
         .orElse(0);

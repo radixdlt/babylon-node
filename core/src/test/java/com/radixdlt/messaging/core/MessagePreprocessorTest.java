@@ -78,11 +78,8 @@ import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.lang.Tuple.Tuple2;
-import com.radixdlt.ledger.DtoLedgerExtension;
-import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.messaging.consensus.ConsensusEventMessage;
 import com.radixdlt.messaging.consensus.GetVerticesErrorResponseMessage;
 import com.radixdlt.messaging.consensus.GetVerticesRequestMessage;
@@ -101,6 +98,9 @@ import com.radixdlt.p2p.capability.Capabilities;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.sync.LedgerExtensionSyncDto;
+import com.radixdlt.sync.LedgerProofSyncDto;
+import com.radixdlt.sync.LedgerProofSyncStatusDto;
 import com.radixdlt.utils.Compress;
 import java.io.IOException;
 import java.time.Duration;
@@ -133,11 +133,11 @@ public class MessagePreprocessorTest {
               "request"),
           tuple(new GetVerticesRequestMessage(mock(HashCode.class), 1), "vertexId"),
           tuple(new GetVerticesResponseMessage(mock(List.class)), "vertices"),
-          tuple(new LedgerStatusUpdateMessage(mock(LedgerProof.class)), "header"),
+          tuple(new LedgerStatusUpdateMessage(mock(LedgerProofSyncStatusDto.class)), "proof"),
           tuple(new MempoolAddMessage(mock(List.class)), "txns"),
-          tuple(new StatusResponseMessage(mock(LedgerProof.class)), "header"),
-          tuple(new SyncRequestMessage(mock(DtoLedgerProof.class)), "currentHeader"),
-          tuple(new SyncResponseMessage(mock(DtoLedgerExtension.class)), "ledgerExtension"));
+          tuple(new StatusResponseMessage(mock(LedgerProofSyncStatusDto.class)), "proof"),
+          tuple(new SyncRequestMessage(mock(LedgerProofSyncDto.class)), "startProofExclusive"),
+          tuple(new SyncResponseMessage(mock(LedgerExtensionSyncDto.class)), "ledgerExtension"));
 
   private static final Serialization SERIALIZATION = DefaultSerialization.getInstance();
 

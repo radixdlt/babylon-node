@@ -68,7 +68,8 @@ mod accumulator_tree;
 pub mod jni;
 mod limits;
 pub mod mempool;
-mod metrics;
+pub mod metrics;
+pub mod protocol;
 pub mod query;
 mod receipt;
 mod staging;
@@ -78,6 +79,9 @@ pub mod store;
 pub mod transaction;
 mod types;
 
+#[cfg(test)]
+mod test;
+
 pub use crate::mempool::*;
 pub use crate::metrics::*;
 pub use crate::pending_transaction_result_cache::*;
@@ -85,4 +89,5 @@ pub use crate::receipt::*;
 pub use crate::staging::*;
 pub use crate::state_computer::*;
 pub use crate::state_manager::*;
+pub use crate::store::*;
 pub use crate::types::*;

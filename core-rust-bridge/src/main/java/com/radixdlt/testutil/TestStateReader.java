@@ -94,6 +94,9 @@ public final class TestStateReader {
     this.leastStaleStateHashTreeVersionFunc =
         Natives.builder(nodeRustEnvironment, TestStateReader::leastStaleStateHashTreeVersion)
             .build(new TypeToken<>() {});
+    this.countProofsWithinEpochFunc =
+        Natives.builder(nodeRustEnvironment, TestStateReader::countProofsWithinEpoch)
+            .build(new TypeToken<>() {});
     this.getNodeGlobalRootFunc =
         Natives.builder(nodeRustEnvironment, TestStateReader::getNodeGlobalRoot)
             .build(new TypeToken<>() {});
@@ -134,8 +137,8 @@ public final class TestStateReader {
 
   private final Natives.Call1<Tuple.Tuple0, UInt64> epochFunc;
 
-  public UInt64 getEpoch() {
-    return epochFunc.call(Tuple.tuple());
+  public long getEpoch() {
+    return epochFunc.call(Tuple.tuple()).toNonNegativeLong().unwrap();
   }
 
   private static native byte[] epoch(NodeRustEnvironment nodeRustEnvironment, byte[] payload);
@@ -144,6 +147,15 @@ public final class TestStateReader {
 
   public long getLeastStaleStateHashTreeVersion() {
     return leastStaleStateHashTreeVersionFunc.call(Tuple.tuple()).toLong();
+  }
+
+  private static native byte[] countProofsWithinEpoch(
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
+
+  private final Natives.Call1<UInt64, UInt64> countProofsWithinEpochFunc;
+
+  public long countProofsWithinEpoch(long epoch) {
+    return countProofsWithinEpochFunc.call(UInt64.fromNonNegativeLong(epoch)).toLong();
   }
 
   private static native byte[] leastStaleStateHashTreeVersion(

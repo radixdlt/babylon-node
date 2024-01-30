@@ -143,7 +143,7 @@ public class FullNodeSyncingWithAnotherFullNodeTest {
   }
 
   @Test
-  public void given_a_full_node_that_is_only_conencted_to_another_full_node__it_should_sync() {
+  public void given_a_full_node_that_is_only_connected_to_another_full_node__it_should_sync() {
     final var simulationTest = testBuilder.build();
     final var runningTest = simulationTest.run();
     final var results = runningTest.awaitCompletion();

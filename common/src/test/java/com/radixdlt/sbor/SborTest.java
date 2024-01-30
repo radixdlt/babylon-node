@@ -953,4 +953,33 @@ public class SborTest {
 
     assertEquals(map, decoded);
   }
+
+  @Test
+  public void emptyStringCanBeEncodedAndDecoded() {
+    var r0 = BasicDefaultSbor.encode("", String.class);
+
+    assertEquals(3, r0.length);
+    assertEquals(0x5b, r0[0]); // Prefix byte
+    assertEquals(0x0C, r0[1]); // Type == 0x0C - String
+    assertEquals(0x00, r0[2]); // String length 0
+
+    var r1 = BasicDefaultSbor.decode(r0, String.class);
+
+    assertEquals("", r1);
+  }
+
+  @Test
+  public void emptyByteArrayCanBeEncodedAndDecoded() {
+    var r0 = BasicDefaultSbor.encode(new byte[] {}, byte[].class);
+
+    assertEquals(4, r0.length);
+    assertEquals(0x5b, r0[0]); // Prefix byte
+    assertEquals(0x20, r0[1]); // Type == 0x20 - Array
+    assertEquals(0x07, r0[2]); // Type == 0x07 - u8
+    assertEquals(0x00, r0[3]); // Array length 0
+
+    var r1 = BasicDefaultSbor.decode(r0, byte[].class);
+
+    assertArrayEquals(new byte[] {}, r1);
+  }
 }

@@ -64,11 +64,18 @@
 
 package com.radixdlt.rev2;
 
+import static com.radixdlt.monitoring.Metrics.LedgerSync.UnfulfilledSyncRequestReason.*;
+
 import com.google.inject.Inject;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.ledger.DtoLedgerProof;
+import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.LedgerExtension;
+import com.radixdlt.ledger.LedgerProofBundle;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.Metrics.LedgerSync.UnfulfilledSyncRequest;
+import com.radixdlt.statecomputer.commit.LedgerProof;
 import com.radixdlt.sync.TransactionsAndProofReader;
+import com.radixdlt.transaction.GetSyncableTxnsAndProofError.*;
+import com.radixdlt.transaction.LedgerSyncLimitsConfig;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import java.util.Optional;
@@ -76,71 +83,89 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public final class REv2TransactionsAndProofReader implements TransactionsAndProofReader {
-  /* Maximum number of transactions to return in a single getTransactions response, but only if
-   * at least one proof can be used. In other words:
-   * a) if next proof covers more than MAX_TXNS_FOR_RESPONSES_SPANNING_MORE_THAN_ONE_PROOF txns than all those transactions
-   *    can still be returned (given they fit under MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE limit)
-   * b) if next proof contains less than MAX_TXNS_FOR_RESPONSES_SPANNING_MORE_THAN_ONE_PROOF txns then
-   *    subsequent proof can only be used if its txns fit under this limit */
-  private static final int MAX_TXNS_FOR_RESPONSES_SPANNING_MORE_THAN_ONE_PROOF = 1000;
-
-  /* Maximum transactions size (in terms of their total byte size) to return in a single getTransactions response.
-   * See also MAX_PACKET_LENGTH in PeerChannelInitializer and OVERRIDE_MAX_PAYLOAD_SIZE for transaction size */
-  public static final int MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE = 12 * 1024 * 1024;
-
   private static final Logger log = LogManager.getLogger();
 
   private final REv2TransactionAndProofStore transactionStore;
+  private final LedgerSyncLimitsConfig limitsConfig;
+  private final Metrics metrics;
 
   @Inject
-  public REv2TransactionsAndProofReader(REv2TransactionAndProofStore transactionStore) {
+  public REv2TransactionsAndProofReader(
+      REv2TransactionAndProofStore transactionStore,
+      LedgerSyncLimitsConfig limitsConfig,
+      Metrics metrics) {
     this.transactionStore = transactionStore;
+    this.limitsConfig = limitsConfig;
+    this.metrics = metrics;
   }
 
   @Override
-  public LedgerExtension getTransactions(DtoLedgerProof start) {
-    final var startStateVersionInclusive = start.getLedgerHeader().getStateVersion() + 1;
+  public LedgerExtension getTransactions(long startStateVersionExclusive) {
+    final var startStateVersionInclusive = startStateVersionExclusive + 1;
 
-    final var rawTxnsAndProofOpt =
-        transactionStore.getTxnsAndProof(
-            startStateVersionInclusive,
-            MAX_TXNS_FOR_RESPONSES_SPANNING_MORE_THAN_ONE_PROOF,
-            MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE);
+    final var syncableTxnsResult =
+        this.transactionStore.getSyncableTxnsAndProof(
+            startStateVersionInclusive, this.limitsConfig);
 
-    if (rawTxnsAndProofOpt.isEmpty()) {
-      log.error(
-          "Impossible to build a chain of transactions from state version "
-              + startStateVersionInclusive
-              + " that ends with a proof that is: under "
-              + MAX_TXNS_FOR_RESPONSES_SPANNING_MORE_THAN_ONE_PROOF
-              + " transactions and under "
-              + MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE
-              + " total payload size!");
-    }
-
-    return rawTxnsAndProofOpt
-        .map(
-            rawTxnsAndProof ->
-                LedgerExtension.create(
-                    rawTxnsAndProof.transactions().stream()
-                        .map(RawLedgerTransaction::create)
-                        .toList(),
-                    REv2ToConsensus.ledgerProof(rawTxnsAndProof.proof())))
-        .or(() -> null);
+    return syncableTxnsResult.fold(
+        txnsAndProof ->
+            LedgerExtension.create(
+                txnsAndProof.transactions().stream().map(RawLedgerTransaction::create).toList(),
+                txnsAndProof.proof()),
+        err -> {
+          switch (err) {
+            case FailedToPrepareAResponseWithinLimits unused -> {
+              log.error(
+                  "Impossible to build a chain of txns from state version {} fitting within the"
+                      + " limits {}",
+                  startStateVersionInclusive,
+                  this.limitsConfig);
+            }
+            case NothingToServeAtTheGivenStateVersion unused -> {
+              metrics
+                  .sync()
+                  .unfulfilledSyncRequests()
+                  .label(new UnfulfilledSyncRequest(NOTHING_TO_SERVE_AT_THE_GIVEN_STATE_VERSION));
+            }
+            case RefusedToServeGenesis unused -> {
+              metrics
+                  .sync()
+                  .unfulfilledSyncRequests()
+                  .label(new UnfulfilledSyncRequest(REFUSED_TO_SERVE_GENESIS));
+            }
+            case RefusedToServeProtocolUpdate unused -> {
+              metrics
+                  .sync()
+                  .unfulfilledSyncRequests()
+                  .label(new UnfulfilledSyncRequest(REFUSED_TO_SERVE_PROTOCOL_UPDATE));
+            }
+          }
+          return null;
+        });
   }
 
   @Override
   public Optional<LedgerProof> getPostGenesisEpochProof() {
-    return this.transactionStore.getPostGenesisEpochProof().map(REv2ToConsensus::ledgerProof);
+    return this.transactionStore.getPostGenesisEpochProof();
   }
 
   @Override
-  public Optional<LedgerProof> getEpochProof(long epoch) {
-    return this.transactionStore.getEpochProof(epoch).map(REv2ToConsensus::ledgerProof);
-  }
-
-  @Override
-  public Optional<LedgerProof> getLastProof() {
-    return this.transactionStore.getLastProof().map(REv2ToConsensus::ledgerProof);
+  public Optional<LedgerProofBundle> getLatestProofBundle() {
+    return this.transactionStore
+        .getLatestProof()
+        .map(
+            latestProof -> {
+              final var latestEpochProof =
+                  this.transactionStore.getLatestEpochProof().orElseThrow();
+              final var latestProtocolUpdateProof =
+                  this.transactionStore.getLatestProtocolUpdateInitProof();
+              final var latestPostProtocolUpdateProof =
+                  this.transactionStore.getLatestProtocolUpdateExecutionProof();
+              return new LedgerProofBundle(
+                  latestProof,
+                  latestEpochProof,
+                  Option.from(latestProtocolUpdateProof),
+                  Option.from(latestPostProtocolUpdateProof));
+            });
   }
 }

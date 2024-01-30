@@ -63,7 +63,7 @@ pub(crate) async fn handle_state_component(
 
     let header = read_current_ledger_header(database.deref());
 
-    Ok(models::StateComponentResponse {
+    Ok(Json(models::StateComponentResponse {
         at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
         info: Some(to_api_type_info_substate(
             &mapping_context,
@@ -84,8 +84,7 @@ pub(crate) async fn handle_state_component(
         )?),
         vaults,
         descendent_nodes,
-    })
-    .map(Json)
+    }))
 }
 
 pub(crate) fn component_dump_to_vaults_and_nodes(

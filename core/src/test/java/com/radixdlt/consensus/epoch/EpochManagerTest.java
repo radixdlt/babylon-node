@@ -70,7 +70,6 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.*;
 import com.google.inject.Module;
@@ -92,12 +91,14 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.LedgerExtension;
+import com.radixdlt.ledger.LedgerProofBundle;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.RoundDetails;
 import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
-import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
+import com.radixdlt.ledger.StateComputerLedger.StateComputerPrepareResult;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.messaging.core.GetVerticesRequestRateLimit;
@@ -107,9 +108,10 @@ import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.NodeId;
-import com.radixdlt.rev2.LastEpochProof;
-import com.radixdlt.rev2.LastProof;
+import com.radixdlt.rev2.REv2ToConsensus;
+import com.radixdlt.statecomputer.ProtocolState;
 import com.radixdlt.statecomputer.commit.CommitSummary;
+import com.radixdlt.statecomputer.commit.LedgerProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -155,18 +157,22 @@ public class EpochManagerTest {
         }
 
         @Override
-        public StateComputerResult prepare(
+        public StateComputerPrepareResult prepare(
             LedgerHashes committedLedgerHashes,
             List<ExecutedVertex> preparedUncommittedVertices,
             LedgerHashes preparedUncommittedLedgerHashes,
             List<RawNotarizedTransaction> proposedTransactions,
             RoundDetails roundDetails) {
-          return new StateComputerResult(List.of(), 0, LedgerHashes.zero());
+          return new StateComputerPrepareResult(List.of(), 0, LedgerHashes.zero());
         }
 
         @Override
-        public void commit(LedgerExtension ledgerExtension, VertexStoreState vertexStoreState) {
+        public LedgerProofBundle commit(
+            LedgerExtension ledgerExtension, VertexStoreState vertexStoreState) {
           // No-op
+          // `closestEpochProofOnOrBefore` isn't really correct here, but that's fine
+          return new LedgerProofBundle(
+              ledgerExtension.proof(), ledgerExtension.proof(), Option.none(), Option.none());
         }
       };
 
@@ -270,22 +276,23 @@ public class EpochManagerTest {
       }
 
       @Provides
-      @LastProof
-      LedgerProof verifiedLedgerHeaderAndProof(BFTValidatorSet validatorSet) {
-        return LedgerProof.genesis(0, LedgerHashes.zero(), validatorSet, 0, 0);
+      LedgerProofBundle latestProof(BFTValidatorSet validatorSet) {
+        final var genesisProof =
+            LedgerProof.testingGenesis(
+                0,
+                REv2ToConsensus.ledgerHashes(LedgerHashes.zero()),
+                REv2ToConsensus.validatorSet(validatorSet),
+                0,
+                0);
+        return new LedgerProofBundle(genesisProof, genesisProof, Option.none(), Option.none());
       }
 
       @Provides
-      @LastEpochProof
-      LedgerProof lastEpochProof(BFTValidatorSet validatorSet) {
-        return LedgerProof.genesis(0, LedgerHashes.zero(), validatorSet, 0, 0);
-      }
-
-      @Provides
-      BFTConfiguration bftConfiguration(Hasher hasher, BFTValidatorSet validatorSet) {
+      BFTConfiguration bftConfiguration(
+          Hasher hasher, BFTValidatorSet validatorSet, LedgerProofBundle latestProof) {
         var vertex =
             Vertex.createInitialEpochVertex(
-                    LedgerHeader.genesis(0, LedgerHashes.zero(), validatorSet, 0, 0))
+                    REv2ToConsensus.ledgerHeader(latestProof.epochInitialHeader()))
                 .withId(hasher);
         var qc =
             QuorumCertificate.createInitialEpochQC(
@@ -315,12 +322,22 @@ public class EpochManagerTest {
     epochManager.start();
     BFTValidatorSet nextValidatorSet =
         BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTValidatorId.random(), UInt192.ONE)));
-    LedgerHeader header = LedgerHeader.genesis(0, LedgerHashes.zero(), nextValidatorSet, 0, 0);
+    LedgerHeader header =
+        new LedgerHeader(
+            0,
+            Round.epochInitial(),
+            0,
+            LedgerHashes.zero(),
+            0,
+            0,
+            NextEpoch.create(2, nextValidatorSet.getValidators()),
+            null);
+    final var proofBundle = LedgerProofBundle.mockedOfHeader(header);
     VertexWithHash verifiedGenesisVertex = Vertex.createInitialEpochVertex(header).withId(hasher);
     LedgerHeader nextLedgerHeader =
         LedgerHeader.create(
             header.getEpoch() + 1,
-            Round.genesis(),
+            Round.epochInitial(),
             header.getStateVersion(),
             header.getHashes(),
             header.consensusParentRoundTimestamp(),
@@ -334,25 +351,23 @@ public class EpochManagerTest {
             nextValidatorSet,
             VertexStoreState.create(
                 HighQC.ofInitialEpochQc(initialEpochQC), verifiedGenesisVertex, hasher));
-    LedgerProof proof = mock(LedgerProof.class);
-    when(proof.getEpoch()).thenReturn(header.getEpoch() + 1);
-    when(proof.getNextEpoch())
-        .thenReturn(Optional.of(NextEpoch.create(header.getEpoch() + 2, ImmutableSet.of())));
-    var epochChange = new EpochChange(proof, bftConfiguration);
+    var epochChange = new EpochChange(proofBundle, bftConfiguration);
     final var ledgerUpdateExtension = mock(LedgerExtension.class);
-    when(ledgerUpdateExtension.getProof()).thenReturn(mock(LedgerProof.class));
+    when(ledgerUpdateExtension.proof()).thenReturn(mock(LedgerProof.class));
     var ledgerUpdate =
         new LedgerUpdate(
             new CommitSummary(ImmutableList.of(), UInt32.fromNonNegativeInt(0)),
-            ledgerUpdateExtension,
-            Optional.of(epochChange));
+            proofBundle,
+            Option.some(epochChange),
+            ProtocolState.testingEmpty(),
+            ledgerUpdateExtension.transactions());
 
     // Act
     epochManager.epochsLedgerUpdateEventProcessor().process(ledgerUpdate);
 
     // Assert
     verify(proposalDispatcher, never())
-        .dispatch(any(Iterable.class), argThat(p -> p.getEpoch() == epochChange.getNextEpoch()));
+        .dispatch(any(Iterable.class), argThat(p -> p.getEpoch() == epochChange.nextEpoch()));
     verify(voteDispatcher, never()).dispatch(any(NodeId.class), any());
   }
 }

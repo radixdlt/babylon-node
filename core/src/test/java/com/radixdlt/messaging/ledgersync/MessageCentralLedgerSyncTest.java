@@ -67,14 +67,14 @@ package com.radixdlt.messaging.ledgersync;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.rx.RemoteEvent;
-import com.radixdlt.ledger.DtoLedgerExtension;
-import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.messaging.core.MessageCentral;
 import com.radixdlt.messaging.core.MessageCentralMockProvider;
 import com.radixdlt.p2p.NodeId;
+import com.radixdlt.sync.LedgerExtensionSyncDto;
+import com.radixdlt.sync.LedgerProofSyncDto;
+import com.radixdlt.sync.LedgerProofSyncStatusDto;
 import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
@@ -99,13 +99,13 @@ public class MessageCentralLedgerSyncTest {
         this.messageCentralLedgerSync.syncRequests().test();
     final var peer = createPeer();
     SyncRequestMessage syncRequestMessage = mock(SyncRequestMessage.class);
-    DtoLedgerProof header = mock(DtoLedgerProof.class);
-    when(syncRequestMessage.getCurrentHeader()).thenReturn(header);
+    LedgerProofSyncDto header = mock(LedgerProofSyncDto.class);
+    when(syncRequestMessage.getStartProofExclusive()).thenReturn(header);
     messageCentral.send(peer, syncRequestMessage);
     testObserver.awaitCount(1);
     testObserver.assertValue(
         syncRequest ->
-            syncRequest.getEvent().getHeader().equals(header)
+            syncRequest.getEvent().getStartProofExclusive().equals(header)
                 && syncRequest.getOrigin().equals(peer));
   }
 
@@ -115,7 +115,7 @@ public class MessageCentralLedgerSyncTest {
         this.messageCentralLedgerSync.syncResponses().test();
     final var peer = createPeer();
     SyncResponseMessage syncResponseMessage = mock(SyncResponseMessage.class);
-    DtoLedgerExtension dtoLedgerExtension = mock(DtoLedgerExtension.class);
+    LedgerExtensionSyncDto dtoLedgerExtension = mock(LedgerExtensionSyncDto.class);
     when(syncResponseMessage.getLedgerExtension()).thenReturn(dtoLedgerExtension);
     messageCentral.send(peer, syncResponseMessage);
     testObserver.awaitCount(1);
@@ -139,14 +139,14 @@ public class MessageCentralLedgerSyncTest {
     TestSubscriber<RemoteEvent<NodeId, StatusResponse>> testObserver =
         this.messageCentralLedgerSync.statusResponses().test();
     final var peer = createPeer();
-    final var header = mock(LedgerProof.class);
+    final var header = mock(LedgerProofSyncStatusDto.class);
     StatusResponseMessage statusResponseMessage = mock(StatusResponseMessage.class);
-    when(statusResponseMessage.getHeader()).thenReturn(header);
+    when(statusResponseMessage.getProof()).thenReturn(header);
     messageCentral.send(peer, statusResponseMessage);
     testObserver.awaitCount(1);
     testObserver.assertValue(
         statusResponse ->
-            statusResponse.getEvent().getHeader().equals(header)
+            statusResponse.getEvent().getProof().equals(header)
                 && statusResponse.getOrigin().equals(peer));
   }
 

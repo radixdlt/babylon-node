@@ -30,6 +30,8 @@ pub(crate) async fn handle_lts_transaction_status(
         pending_transaction_result_cache.peek_all_known_payloads_for_intent(&intent_hash);
     drop(pending_transaction_result_cache);
 
+    // TODO(locks): consider this (and other) usages of DB "read current" lock. *Carefully* migrate
+    // all applicable ones to "historical, non-locked" DB access.
     let database = state.state_manager.database.read_current();
 
     if !database.is_local_transaction_execution_index_enabled() {
@@ -113,13 +115,13 @@ pub(crate) async fn handle_lts_transaction_status(
             notarized_transaction_hash,
         )?);
 
-        return Ok(models::LtsTransactionStatusResponse {
+        return Ok(Json(models::LtsTransactionStatusResponse {
             intent_status,
             status_description: format!("The transaction has been committed to the ledger, with an outcome of {outcome}. For more information, use the /transaction/receipt endpoint."),
             committed_state_version: Some(to_api_state_version(txn_state_version)?),
             invalid_from_epoch: None,
             known_payloads,
-        }).map(Json);
+        }));
     }
 
     let mempool = state.state_manager.mempool.read();
@@ -153,13 +155,13 @@ pub(crate) async fn handle_lts_transaction_status(
             known_payloads_not_in_mempool,
         )?);
 
-        return Ok(models::LtsTransactionStatusResponse {
+        return Ok(Json(models::LtsTransactionStatusResponse {
             intent_status: models::LtsTransactionIntentStatus::InMempool,
             status_description: "At least one payload for the intent is in this node's mempool. This node believes it's possible the intent might be able to be committed. Whilst the transaction continues to live in the mempool, you can use the /mempool/transaction endpoint to read its payload.".to_owned(),
             committed_state_version: None,
             invalid_from_epoch: invalid_from_epoch.map(|epoch| to_api_epoch(&mapping_context, epoch)).transpose()?,
             known_payloads,
-        }).map(Json);
+        }));
     }
 
     let known_payloads =
@@ -200,7 +202,7 @@ pub(crate) async fn handle_lts_transaction_status(
         }
     };
 
-    Ok(response).map(Json)
+    Ok(Json(response))
 }
 
 fn map_rejected_payloads_due_to_known_commit(

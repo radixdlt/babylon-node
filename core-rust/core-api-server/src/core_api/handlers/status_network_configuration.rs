@@ -17,7 +17,7 @@ pub(crate) async fn handle_status_network_configuration(
         .map(|entity_type| to_api_address_type(&hrp_set, entity_type))
         .collect::<Vec<_>>();
 
-    Ok(models::NetworkConfigurationResponse {
+    Ok(Json(models::NetworkConfigurationResponse {
         version: Box::new(models::NetworkConfigurationResponseVersion {
             core_version: env!("CARGO_PKG_VERSION").to_string(),
             api_version: models::SCHEMA_VERSION.to_string(),
@@ -82,9 +82,9 @@ pub(crate) async fn handle_status_network_configuration(
             consensus_manager: bech32_encoder.encode(CONSENSUS_MANAGER.as_ref()).unwrap(),
             genesis_helper: bech32_encoder.encode(GENESIS_HELPER.as_ref()).unwrap(),
             faucet: bech32_encoder.encode(FAUCET.as_ref()).unwrap(),
+            transaction_tracker: bech32_encoder.encode(TRANSACTION_TRACKER.as_ref()).unwrap(),
         }),
-    })
-    .map(Json)
+    }))
 }
 
 const ALL_ENTITY_TYPES: [EntityType; 17] = [

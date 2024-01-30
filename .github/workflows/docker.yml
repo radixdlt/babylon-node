@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: cancel running workflows
-        uses: styfle/cancel-workflow-action@0.8.0
+        uses: RDXWorks-actions/cancel-workflow-action@main
         with:
           access_token: ${{ github.token }}
 
@@ -31,27 +31,23 @@ jobs:
       - build_push_container_dockerhub
       - build_push_container_dockerhub_arm
     steps:
-      - uses: actions/checkout@v2
+      - uses: RDXWorks-actions/checkout@main
         with:
           fetch-depth: 0
       ## Dockerhub
-      # This is version v1.7.0
-      # https://github.com/aws-actions/configure-aws-credentials/releases/tag/v1.7.0
       - name: "Configure AWS credentials"
-        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838
+        uses: RDXWorks-actions/configure-aws-credentials@main
         with:
           role-to-assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
           aws-region: eu-west-2
       - name: Read secrets from AWS Secrets Manager into environment variables
-        uses: aws-actions/aws-secretsmanager-get-secrets@v1
+        uses: RDXWorks-actions/aws-secretsmanager-get-secrets@main
         with:
           secret-ids: |
             DOCKERHUB, github-actions/rdxworks/dockerhub-images/release-credentials
           parse-json-secrets: true
-      # This is version v2.1.0
-      # https://github.com/docker/login-action/releases/tag/v2.1.0
       - name: Login to Docker Hub
-        uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a
+        uses: RDXWorks-actions/login-action@master
         with:
           username: ${{ env.DOCKERHUB_USERNAME }}
           password: ${{ env.DOCKERHUB_TOKEN }}
@@ -73,7 +69,7 @@ jobs:
 
   build_deb:
     name: Build debian package
-    runs-on: babylon-runner
+    runs-on: selfhosted-ubuntu-22.04-16-cores
     outputs:
       tags: ${{ steps.meta.outputs.tags }}
       labels: ${{ steps.meta.outputs.labels }}
@@ -82,12 +78,12 @@ jobs:
       contents: read
       pull-requests: read
     steps:
-      - uses: actions/checkout@v2
+      - uses: RDXWorks-actions/checkout@main
         with:
           fetch-depth: 0
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@v4
+        uses: RDXWorks-actions/metadata-action@master
         with:
           images: |
             docker.io/radixdlt/babylon-node
@@ -101,22 +97,22 @@ jobs:
             type=sha
           flavor: |
             latest=false
-      - uses: actions-rs/toolchain@v1
+      - uses: RDXWorks-actions/toolchain@master
         with:
           toolchain: stable
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: RDXWorks-actions/setup-java@main
         with:
           distribution: 'zulu'
           java-version: '17'
       - name: Cache Gradle packages
-        uses: actions/cache@v3
+        uses: RDXWorks-actions/cache@main
         with:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}-deb
           restore-keys: ${{ runner.os }}-gradle-deb
       - id: auth
-        uses: google-github-actions/auth@a61909d048e0be579b6c15b27088d19668493851
+        uses: RDXWorks-actions/auth@main
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
@@ -128,33 +124,31 @@ jobs:
         run: |
           gcloud auth configure-docker -q
       - name: Login to Artifact Registry
-        uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a
+        uses: RDXWorks-actions/login-action@master
         with:
           registry: europe-west2-docker.pkg.dev
           username: oauth2accesstoken
           password: ${{ steps.auth.outputs.access_token }}
       - name: Restore cached image-cache
         id: cache-image-restore
-        uses: actions/cache/restore@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
+        uses: RDXWorks-actions/cache/restore@main
         with:
           path: /tmp/outputs/cache/docker
           key: babylon-node-default-${{ hashFiles('./Dockerfile') }}
-      - name: Install and Configure Buildx
+      - name: Set up Docker Context for Buildx
         run: |
-          wget https://github.com/docker/buildx/releases/download/v0.10.4/buildx-v0.10.4.linux-amd64
-          echo "---- Configure Docker plugins ----"
-          mkdir -p /home/runner/.docker/cli-plugins/
-          mv buildx-v0.10.4.linux-amd64 /home/runner/.docker/cli-plugins/docker-buildx
-          chmod +x /home/runner/.docker/cli-plugins/docker-buildx
-          echo "---- Create build context ----"
-          docker context create babylon-node
-          docker buildx create babylon-node --use
+          docker context create builders | true
+      - name: Set up Docker Buildx
+        uses: RDXWorks-actions/setup-buildx-action@master
+        with:
+          version: latest
+          endpoint: builders
       - name: Create deb package
         run: |
           sudo apt-get update && sudo apt-get install -y make
           cd core && make build-core
       - name: Upload generated debian package
-        uses: actions/upload-artifact@v3.1.0
+        uses: RDXWorks-actions/upload-artifact@main
         with:
           name: deb4docker
           path: "${{ github.workspace }}/docker/*.deb"
@@ -165,7 +159,7 @@ jobs:
     outputs:
       tag: ${{ steps.setup_tags.outputs.tag }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: RDXWorks-actions/checkout@main
         with:
           fetch-depth: 0
       - id: setup_tags
@@ -190,43 +184,83 @@ jobs:
         type=semver,pattern={{major}}.{{minor}}
         type=semver,pattern={{major}}
         type=sha
+      flavor:
+        ${{ contains( github.event.pull_request.labels.*.name, 'ARM-TEST') && 'suffix=-amd64' || '' }}
+        ${{ github.event_name != 'pull_request' && 'suffix=-amd64' || '' }}
       context: "."
       dockerfile: "./Dockerfile"
       platforms: "linux/amd64"
+      cache_tag_suffix: "amd64"
+      use_gh_remote_cache: true
       provenance: "false"
       scan_image: true
       snyk_target_ref: ${{ github.ref_name }}
-    secrets:
-      workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
-      service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
-  # build_push_container_private_arm:
-  #   name: (PRIVATE) Docker ARM
-  #   uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
-  #   with:
-  #     runs_on: babylon-node-arm
-  #     image_registry: "docker.io"
-  #     image_organization: "radixdlt"
-  #     image_name: "private-babylon-node"
-  #     tags: |
-  #       type=ref,event=branch
-  #       type=ref,event=pr
-  #       type=semver,pattern={{version}}
-  #       type=semver,pattern={{major}}.{{minor}}
-  #       type=semver,pattern={{major}}
-  #       type=sha
-  #     flavor: |
-  #       suffix=-arm64
-  #     context: "."
-  #     dockerfile: "./Dockerfile"
-  #     platforms: "linux/arm64"
-  #     cache_tag_suffix: arm64
-  #     provenance: "false"
-  #     build-args: |
-  #       WGET_VERSION=1.21.3-1+b1
-  #   secrets:
-  #     workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
-  #     service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+  build_push_container_private_arm:
+    if: contains( github.event.pull_request.labels.*.name, 'ARM-TEST') || github.event_name != 'pull_request'
+    name: (PRIVATE) Docker ARM
+    needs:
+      - setup_tags
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
+    with:
+      runs_on: babylon-node-arm
+      image_registry: "docker.io"
+      image_organization: "radixdlt"
+      image_name: "private-babylon-node"
+      tag: ${{ needs.setup_tags.outputs.tag }}
+      tags: |
+        type=ref,event=branch
+        type=ref,event=pr
+        type=ref,event=tag
+        type=semver,pattern={{version}}
+        type=semver,pattern={{major}}.{{minor}}
+        type=semver,pattern={{major}}
+        type=sha
+      flavor: |
+        suffix=-arm64
+      context: "."
+      dockerfile: "./Dockerfile"
+      use_gh_remote_cache: true
+      provenance: "false"
+      scan_image: false
+      snyk_target_ref: ${{ github.ref_name }}
+      platforms: "linux/arm64"
+      cache_tag_suffix: arm64
+      build-args: |
+        WGET_VERSION=1.21.3-1+b1
+
+  tag_suffix_remover:
+    if: contains( github.event.pull_request.labels.*.name, 'ARM-TEST') || github.event_name != 'pull_request'
+    name: Calculate base tag
+    runs-on: ubuntu-latest
+    outputs:
+      BASE_TAG: ${{ steps.tag_suffix_remover.outputs.BASE_TAG }}
+    needs:
+      - build_push_container_private
+      - build_push_container_private_arm
+    steps:
+      - name: tag_suffix_remover
+        id: tag_suffix_remover
+        run: |
+          echo ${{needs.build_push_container_private.outputs.default_tag}} | rev |  cut -d- -f2- | rev
+          echo BASE_TAG=$(echo ${{needs.build_push_container_private.outputs.default_tag}} | rev |  cut -d- -f2- | rev) >> $GITHUB_OUTPUT
+
+  join_multiarch_image_private_dockerhub:
+    if: contains( github.event.pull_request.labels.*.name, 'ARM-TEST') || github.event_name != 'pull_request'
+    name: Join Multiarch Image Private Dockerhub
+    needs:
+      - build_push_container_private
+      - build_push_container_private_arm
+      - tag_suffix_remover
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/merge-docker-images.yml@main
+    with:
+      aws_dockerhub_secret: github-actions/common/dockerhub-credentials
+      image_tag: ${{needs.tag_suffix_remover.outputs.BASE_TAG}}
+      image_name: "private-babylon-node"
+      tag_suffix_1: "amd64"
+      tag_suffix_2: "arm64"
+    secrets:
+      role-to-assume: "arn:aws:iam::308190735829:role/gh-common-secrets-read-access"
 
   build_push_container_dockerhub:
     if: github.event_name == 'release'
@@ -243,6 +277,8 @@ jobs:
       context: "."
       dockerfile: "./Dockerfile"
       platforms: "linux/amd64"
+      cache_tag_suffix: "amd64"
+      use_gh_remote_cache: true
       enable_dockerhub: "true"
       provenance: "false"
     secrets:
@@ -265,8 +301,9 @@ jobs:
       context: "."
       dockerfile: "./Dockerfile"
       platforms: "linux/arm64"
+      cache_tag_suffix: "arm64"
+      use_gh_remote_cache: true
       enable_dockerhub: "true"
-      cache_tag_suffix: arm64
       provenance: "false"
       build-args: |
         WGET_VERSION=1.21.3-1+b1
@@ -310,7 +347,7 @@ jobs:
       contents: read
       deployments: write
     steps:
-      - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b
+      - uses: RDXWorks-actions/checkout@main
       - uses: radixdlt/public-iac-resuable-artifacts/fetch-secrets@main
         with:
           role_name: ${{ secrets.AWS_ROLE_NAME_SNYK_SECRET }}
@@ -320,7 +357,7 @@ jobs:
           secret_name: ${{ secrets.AWS_SECRET_NAME_SNYK }}
           parse_json: true
       - name: Enable Snyk online monitoring to check for vulnerabilities
-        uses: snyk/actions/gradle-jdk17@b98d498629f1c368650224d6d212bf7dfa89e4bf # v0.4.0
+        uses: RDXWorks-actions/snyk-actions/gradle-jdk17@master
         with:
           args: --all-projects --org=${{ env.SNYK_NETWORK_ORG_ID }} --target-reference=${{ github.ref_name }}
           command: monitor
@@ -342,7 +379,7 @@ jobs:
 #         echo "DOCKER_TAG=$DOCKER_TAG" >> $GITHUB_ENV
 #         echo "BABYLON_NODE_BRANCH=$GITHUB_HEAD_REF" >> $GITHUB_ENV
 #     - name: Deploy and test on ephemeral network
-#       uses: toptal/jenkins-job-trigger-action@1.0.0
+#       uses: RDXWorks-actions/jenkins-job-trigger-action@master
 #       with:
 #         jenkins_url: "${{ env.JENKINS_URL }}"
 #         jenkins_user: ${{ env.JENKINS_USER }}

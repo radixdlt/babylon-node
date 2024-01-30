@@ -89,11 +89,7 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.ScryptoConstants;
 import io.reactivex.rxjava3.schedulers.Timed;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Random;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -159,6 +155,11 @@ public final class DeterministicTest implements AutoCloseable {
 
     public Builder addModule(Module module) {
       this.modules.add(module);
+      return this;
+    }
+
+    public Builder addModules(Module... modules) {
+      this.modules.addAll(Arrays.asList(modules));
       return this;
     }
 
@@ -462,7 +463,7 @@ public final class DeterministicTest implements AutoCloseable {
       final var message = timedMsg.value();
       if (message.message() instanceof final LedgerUpdate ledgerUpdate) {
         var epochChange = ledgerUpdate.epochChange();
-        return epochChange.isPresent() && epochChange.orElseThrow().getNextEpoch() == epoch;
+        return epochChange.isPresent() && epochChange.orElseThrow().nextEpoch() == epoch;
       }
 
       return false;

@@ -67,29 +67,33 @@ use std::fmt;
 
 use crate::store::traits::*;
 use crate::{
-    CommittedTransactionIdentifiers, LedgerProof, LedgerTransactionReceipt,
+    CommittedTransactionIdentifiers, LedgerProof, LedgerProofOrigin, LedgerTransactionReceipt,
     LocalTransactionExecution, LocalTransactionReceipt, ReceiptTreeHash, StateVersion,
-    TransactionTreeHash, VersionedCommittedTransactionIdentifiers, VersionedLedgerProof,
-    VersionedLedgerTransactionReceipt, VersionedLocalTransactionExecution,
+    SubstateChangeAction, TransactionTreeHash, VersionedCommittedTransactionIdentifiers,
+    VersionedLedgerProof, VersionedLedgerTransactionReceipt, VersionedLocalTransactionExecution,
 };
 use node_common::utils::IsAccountExt;
 use radix_engine::types::*;
 use radix_engine_stores::hash_tree::tree_store::{
-    encode_key, NodeKey, ReadableTreeStore, TreeNode, VersionedTreeNode,
+    NodeKey, ReadableTreeStore, TreeNode, VersionedTreeNode,
 };
 use rocksdb::{ColumnFamilyDescriptor, Direction, Options, DB};
 use transaction::model::*;
 
 use radix_engine_store_interface::interface::*;
 
-use itertools::Itertools;
+use radix_engine_store_interface::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
 use std::path::PathBuf;
 
 use tracing::{error, info, warn};
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::query::TransactionIdentifierLoader;
-use crate::store::traits::gc::StateHashTreeGcStore;
+use crate::store::codecs::*;
+use crate::store::traits::gc::{
+    LedgerProofsGcProgress, LedgerProofsGcStore, StateHashTreeGcStore,
+    VersionedLedgerProofsGcProgress,
+};
 use crate::store::traits::measurement::{CategoryDbVolumeStatistic, MeasurableDatabase};
 use crate::store::traits::scenario::{
     ExecutedGenesisScenario, ExecutedGenesisScenarioStore, ScenarioSequenceNumber,
@@ -120,7 +124,7 @@ use super::traits::extensions::*;
 /// The `NAME` constants defined by `*Cf` structs (and referenced below) are used as database column
 /// family names. Any change would effectively mean a ledger wipe. For this reason, we choose to
 /// define them manually (rather than using the `Into<String>`, which is refactor-sensitive).
-const ALL_COLUMN_FAMILIES: [&str; 19] = [
+const ALL_COLUMN_FAMILIES: [&str; 22] = [
     RawLedgerTransactionsCf::DEFAULT_NAME,
     CommittedTransactionIdentifiersCf::VERSIONED_NAME,
     TransactionReceiptsCf::VERSIONED_NAME,
@@ -130,6 +134,8 @@ const ALL_COLUMN_FAMILIES: [&str; 19] = [
     LedgerTransactionHashesCf::DEFAULT_NAME,
     LedgerProofsCf::VERSIONED_NAME,
     EpochLedgerProofsCf::VERSIONED_NAME,
+    ProtocolUpdateInitLedgerProofsCf::VERSIONED_NAME,
+    ProtocolUpdateExecutionLedgerProofsCf::VERSIONED_NAME,
     SubstatesCf::DEFAULT_NAME,
     SubstateNodeAncestryRecordsCf::VERSIONED_NAME,
     VertexStoreCf::VERSIONED_NAME,
@@ -140,6 +146,7 @@ const ALL_COLUMN_FAMILIES: [&str; 19] = [
     ExtensionsDataCf::NAME,
     AccountChangeStateVersionsCf::NAME,
     ExecutedGenesisScenariosCf::VERSIONED_NAME,
+    LedgerProofsGcProgressCf::VERSIONED_NAME,
 ];
 
 /// Committed transactions.
@@ -147,7 +154,10 @@ const ALL_COLUMN_FAMILIES: [&str; 19] = [
 /// Note: This table does not use explicit versioning wrapper, since the serialized content of
 /// [`RawLedgerTransaction`] is itself versioned.
 struct RawLedgerTransactionsCf;
-impl DefaultCf<StateVersion, RawLedgerTransaction> for RawLedgerTransactionsCf {
+impl DefaultCf for RawLedgerTransactionsCf {
+    type Key = StateVersion;
+    type Value = RawLedgerTransaction;
+
     const DEFAULT_NAME: &'static str = "raw_ledger_transactions";
     type KeyCodec = StateVersionDbCodec;
     type ValueCodec = RawLedgerTransactionDbCodec;
@@ -156,9 +166,10 @@ impl DefaultCf<StateVersion, RawLedgerTransaction> for RawLedgerTransactionsCf {
 /// Identifiers of committed transactions.
 /// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedCommittedTransactionIdentifiers)`
 struct CommittedTransactionIdentifiersCf;
-impl VersionedCf<StateVersion, CommittedTransactionIdentifiers>
-    for CommittedTransactionIdentifiersCf
-{
+impl VersionedCf for CommittedTransactionIdentifiersCf {
+    type Key = StateVersion;
+    type Value = CommittedTransactionIdentifiers;
+
     const VERSIONED_NAME: &'static str = "committed_transaction_identifiers";
     type KeyCodec = StateVersionDbCodec;
     type VersionedValue = VersionedCommittedTransactionIdentifiers;
@@ -167,7 +178,10 @@ impl VersionedCf<StateVersion, CommittedTransactionIdentifiers>
 /// Ledger receipts of committed transactions.
 /// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedLedgerTransactionReceipt)`
 struct TransactionReceiptsCf;
-impl VersionedCf<StateVersion, LedgerTransactionReceipt> for TransactionReceiptsCf {
+impl VersionedCf for TransactionReceiptsCf {
+    type Key = StateVersion;
+    type Value = LedgerTransactionReceipt;
+
     const VERSIONED_NAME: &'static str = "transaction_receipts";
     type KeyCodec = StateVersionDbCodec;
     type VersionedValue = VersionedLedgerTransactionReceipt;
@@ -177,7 +191,10 @@ impl VersionedCf<StateVersion, LedgerTransactionReceipt> for TransactionReceipts
 /// `enable_local_transaction_execution_index`).
 /// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedLocalTransactionExecution)`
 struct LocalTransactionExecutionsCf;
-impl VersionedCf<StateVersion, LocalTransactionExecution> for LocalTransactionExecutionsCf {
+impl VersionedCf for LocalTransactionExecutionsCf {
+    type Key = StateVersion;
+    type Value = LocalTransactionExecution;
+
     const VERSIONED_NAME: &'static str = "local_transaction_executions";
     type KeyCodec = StateVersionDbCodec;
     type VersionedValue = VersionedLocalTransactionExecution;
@@ -186,19 +203,53 @@ impl VersionedCf<StateVersion, LocalTransactionExecution> for LocalTransactionEx
 /// Ledger proofs of committed transactions.
 /// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedLedgerProof)`
 struct LedgerProofsCf;
-impl VersionedCf<StateVersion, LedgerProof> for LedgerProofsCf {
+impl VersionedCf for LedgerProofsCf {
+    type Key = StateVersion;
+    type Value = LedgerProof;
+
     const VERSIONED_NAME: &'static str = "ledger_proofs";
     type KeyCodec = StateVersionDbCodec;
     type VersionedValue = VersionedLedgerProof;
 }
 
-/// Ledger proofs of epochs.
+/// Ledger proofs of new epochs - i.e. the proofs which trigger the given `next_epoch`.
 /// Schema: `Epoch.to_bytes()` -> `scrypto_encode(VersionedLedgerProof)`
-/// Note: This duplicates a small subset of [`StateVersionToLedgerProof`]'s values.
+/// Note: This duplicates a small subset of [`LedgerProofsCf`]'s values.
 struct EpochLedgerProofsCf;
-impl VersionedCf<Epoch, LedgerProof> for EpochLedgerProofsCf {
+impl VersionedCf for EpochLedgerProofsCf {
+    type Key = Epoch;
+    type Value = LedgerProof;
+
     const VERSIONED_NAME: &'static str = "epoch_ledger_proofs";
     type KeyCodec = EpochDbCodec;
+    type VersionedValue = VersionedLedgerProof;
+}
+
+/// Ledger proofs that initialize protocol updates, i.e. proofs of Consensus `origin`,
+/// with headers containing a non-empty `next_protocol_version`.
+/// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedLedgerProof)`
+/// Note: This duplicates a small subset of [`LedgerProofsCf`]'s values.
+struct ProtocolUpdateInitLedgerProofsCf;
+impl VersionedCf for ProtocolUpdateInitLedgerProofsCf {
+    type Key = StateVersion;
+    type Value = LedgerProof;
+
+    const VERSIONED_NAME: &'static str = "protocol_update_init_ledger_proofs";
+    type KeyCodec = StateVersionDbCodec;
+    type VersionedValue = VersionedLedgerProof;
+}
+
+/// Ledger proofs of ProtocolUpdate `origin`, i.e. proofs created locally
+/// while protocol update state modifications were being applied.
+/// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedLedgerProof)`
+/// Note: This duplicates a small subset of [`LedgerProofsCf`]'s values.
+struct ProtocolUpdateExecutionLedgerProofsCf;
+impl VersionedCf for ProtocolUpdateExecutionLedgerProofsCf {
+    type Key = StateVersion;
+    type Value = LedgerProof;
+
+    const VERSIONED_NAME: &'static str = "protocol_update_execution_ledger_proofs";
+    type KeyCodec = StateVersionDbCodec;
     type VersionedValue = VersionedLedgerProof;
 }
 
@@ -207,7 +258,10 @@ impl VersionedCf<Epoch, LedgerProof> for EpochLedgerProofsCf {
 /// Note: This table does not use explicit versioning wrapper, since the value represents a DB
 /// key of another table (and versioning DB keys is not useful).
 struct IntentHashesCf;
-impl DefaultCf<IntentHash, StateVersion> for IntentHashesCf {
+impl DefaultCf for IntentHashesCf {
+    type Key = IntentHash;
+    type Value = StateVersion;
+
     const DEFAULT_NAME: &'static str = "intent_hashes";
     type KeyCodec = HashDbCodec<IntentHash>;
     type ValueCodec = StateVersionDbCodec;
@@ -218,7 +272,10 @@ impl DefaultCf<IntentHash, StateVersion> for IntentHashesCf {
 /// Note: This table does not use explicit versioning wrapper, since the value represents a DB
 /// key of another table (and versioning DB keys is not useful).
 struct NotarizedTransactionHashesCf;
-impl DefaultCf<NotarizedTransactionHash, StateVersion> for NotarizedTransactionHashesCf {
+impl DefaultCf for NotarizedTransactionHashesCf {
+    type Key = NotarizedTransactionHash;
+    type Value = StateVersion;
+
     const DEFAULT_NAME: &'static str = "notarized_transaction_hashes";
     type KeyCodec = HashDbCodec<NotarizedTransactionHash>;
     type ValueCodec = StateVersionDbCodec;
@@ -229,7 +286,10 @@ impl DefaultCf<NotarizedTransactionHash, StateVersion> for NotarizedTransactionH
 /// Note: This table does not use explicit versioning wrapper, since the value represents a DB
 /// key of another table (and versioning DB keys is not useful).
 struct LedgerTransactionHashesCf;
-impl DefaultCf<LedgerTransactionHash, StateVersion> for LedgerTransactionHashesCf {
+impl DefaultCf for LedgerTransactionHashesCf {
+    type Key = LedgerTransactionHash;
+    type Value = StateVersion;
+
     const DEFAULT_NAME: &'static str = "ledger_transaction_hashes";
     type KeyCodec = HashDbCodec<LedgerTransactionHash>;
     type ValueCodec = StateVersionDbCodec;
@@ -240,7 +300,10 @@ impl DefaultCf<LedgerTransactionHash, StateVersion> for LedgerTransactionHashesC
 /// Note: This table does not use explicit versioning wrapper, since each serialized substate
 /// value is already versioned.
 struct SubstatesCf;
-impl DefaultCf<DbSubstateKey, DbSubstateValue> for SubstatesCf {
+impl DefaultCf for SubstatesCf {
+    type Key = DbSubstateKey;
+    type Value = DbSubstateValue;
+
     const DEFAULT_NAME: &'static str = "substates";
     type KeyCodec = SubstateKeyDbCodec;
     type ValueCodec = DirectDbCodec;
@@ -251,17 +314,23 @@ impl DefaultCf<DbSubstateKey, DbSubstateValue> for SubstatesCf {
 /// Schema: `NodeId.0` -> `scrypto_encode(VersionedSubstateNodeAncestryRecord)`
 /// Note: we do not persist records of root Nodes (which do not have any ancestor).
 struct SubstateNodeAncestryRecordsCf;
-impl VersionedCf<NodeId, SubstateNodeAncestryRecord> for SubstateNodeAncestryRecordsCf {
+impl VersionedCf for SubstateNodeAncestryRecordsCf {
+    type Key = NodeId;
+    type Value = SubstateNodeAncestryRecord;
+
     const VERSIONED_NAME: &'static str = "substate_node_ancestry_records";
     type KeyCodec = NodeIdDbCodec;
     type VersionedValue = VersionedSubstateNodeAncestryRecord;
 }
 
 /// Vertex store.
-/// Schema: `[]` -> `scrypto_encode(VersionedVertexStore)`
+/// Schema: `[]` -> `scrypto_encode(VersionedVertexStoreBlob)`
 /// Note: This is a single-entry table (i.e. the empty key is the only allowed key).
 struct VertexStoreCf;
-impl VersionedCf<(), VertexStoreBlob> for VertexStoreCf {
+impl VersionedCf for VertexStoreCf {
+    type Key = ();
+    type Value = VertexStoreBlob;
+
     const VERSIONED_NAME: &'static str = "vertex_store";
     type KeyCodec = UnitDbCodec;
     type VersionedValue = VersionedVertexStoreBlob;
@@ -270,7 +339,10 @@ impl VersionedCf<(), VertexStoreBlob> for VertexStoreCf {
 /// Individual nodes of the Substate database's hash tree.
 /// Schema: `encode_key(NodeKey)` -> `scrypto_encode(VersionedTreeNode)`.
 struct StateHashTreeNodesCf;
-impl VersionedCf<NodeKey, TreeNode> for StateHashTreeNodesCf {
+impl VersionedCf for StateHashTreeNodesCf {
+    type Key = NodeKey;
+    type Value = TreeNode;
+
     const VERSIONED_NAME: &'static str = "state_hash_tree_nodes";
     type KeyCodec = NodeKeyDbCodec;
     type VersionedValue = VersionedTreeNode;
@@ -279,7 +351,10 @@ impl VersionedCf<NodeKey, TreeNode> for StateHashTreeNodesCf {
 /// Parts of the Substate database's hash tree that became stale at a specific state version.
 /// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedStaleTreeParts)`.
 struct StaleStateHashTreePartsCf;
-impl VersionedCf<StateVersion, StaleTreeParts> for StaleStateHashTreePartsCf {
+impl VersionedCf for StaleStateHashTreePartsCf {
+    type Key = StateVersion;
+    type Value = StaleTreeParts;
+
     const VERSIONED_NAME: &'static str = "stale_state_hash_tree_parts";
     type KeyCodec = StateVersionDbCodec;
     type VersionedValue = VersionedStaleTreeParts;
@@ -288,7 +363,10 @@ impl VersionedCf<StateVersion, StaleTreeParts> for StaleStateHashTreePartsCf {
 /// Transaction accumulator tree slices added at a specific state version.
 /// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedTransactionAccuTreeSlice)`.
 struct TransactionAccuTreeSlicesCf;
-impl VersionedCf<StateVersion, TransactionAccuTreeSlice> for TransactionAccuTreeSlicesCf {
+impl VersionedCf for TransactionAccuTreeSlicesCf {
+    type Key = StateVersion;
+    type Value = TransactionAccuTreeSlice;
+
     const VERSIONED_NAME: &'static str = "transaction_accu_tree_slices";
     type KeyCodec = StateVersionDbCodec;
     type VersionedValue = VersionedTransactionAccuTreeSlice;
@@ -297,7 +375,10 @@ impl VersionedCf<StateVersion, TransactionAccuTreeSlice> for TransactionAccuTree
 /// Receipt accumulator tree slices added at a specific state version.
 /// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedReceiptAccuTreeSlice)`.
 struct ReceiptAccuTreeSlicesCf;
-impl VersionedCf<StateVersion, ReceiptAccuTreeSlice> for ReceiptAccuTreeSlicesCf {
+impl VersionedCf for ReceiptAccuTreeSlicesCf {
+    type Key = StateVersion;
+    type Value = ReceiptAccuTreeSlice;
+
     const VERSIONED_NAME: &'static str = "receipt_accu_tree_slices";
     type KeyCodec = StateVersionDbCodec;
     type VersionedValue = VersionedReceiptAccuTreeSlice;
@@ -308,9 +389,13 @@ impl VersionedCf<StateVersion, ReceiptAccuTreeSlice> for ReceiptAccuTreeSlicesCf
 /// Note: This table does not use explicit versioning wrapper, since each extension manages the
 /// serialization of their data (of its custom type).
 struct ExtensionsDataCf;
-impl TypedCf<ExtensionsDataKey, Vec<u8>, PredefinedDbCodec<ExtensionsDataKey>, DirectDbCodec>
-    for ExtensionsDataCf
-{
+impl TypedCf for ExtensionsDataCf {
+    type Key = ExtensionsDataKey;
+    type Value = Vec<u8>;
+
+    type KeyCodec = PredefinedDbCodec<ExtensionsDataKey>;
+    type ValueCodec = DirectDbCodec;
+
     const NAME: &'static str = "extensions_data";
 
     fn key_codec(&self) -> PredefinedDbCodec<ExtensionsDataKey> {
@@ -318,6 +403,7 @@ impl TypedCf<ExtensionsDataKey, Vec<u8>, PredefinedDbCodec<ExtensionsDataKey>, D
             ExtensionsDataKey::AccountChangeIndexEnabled,
             ExtensionsDataKey::AccountChangeIndexLastProcessedStateVersion,
             ExtensionsDataKey::LocalTransactionExecutionIndexEnabled,
+            ExtensionsDataKey::December2023LostSubstatesRestored,
         ])
     }
 
@@ -331,14 +417,13 @@ impl TypedCf<ExtensionsDataKey, Vec<u8>, PredefinedDbCodec<ExtensionsDataKey>, D
 /// Note: This is a key-only table (i.e. the empty value is the only allowed value). Given fast
 /// prefix iterator from RocksDB this emulates a `Map<Account, Set<StateVersion>>`.
 struct AccountChangeStateVersionsCf;
-impl
-    TypedCf<
-        (GlobalAddress, StateVersion),
-        (),
-        PrefixGlobalAddressDbCodec<StateVersion, StateVersionDbCodec>,
-        UnitDbCodec,
-    > for AccountChangeStateVersionsCf
-{
+impl TypedCf for AccountChangeStateVersionsCf {
+    type Key = (GlobalAddress, StateVersion);
+    type Value = ();
+
+    type KeyCodec = PrefixGlobalAddressDbCodec<StateVersion, StateVersionDbCodec>;
+    type ValueCodec = UnitDbCodec;
+
     const NAME: &'static str = "account_change_state_versions";
 
     fn key_codec(&self) -> PrefixGlobalAddressDbCodec<StateVersion, StateVersionDbCodec> {
@@ -354,10 +439,26 @@ impl
 /// keyed by their sequence number (i.e. their index in the list of Scenarios to execute).
 /// Schema: `ScenarioSequenceNumber.to_be_bytes()` -> `scrypto_encode(VersionedExecutedGenesisScenario)`
 struct ExecutedGenesisScenariosCf;
-impl VersionedCf<ScenarioSequenceNumber, ExecutedGenesisScenario> for ExecutedGenesisScenariosCf {
+impl VersionedCf for ExecutedGenesisScenariosCf {
+    type Key = ScenarioSequenceNumber;
+    type Value = ExecutedGenesisScenario;
+
     const VERSIONED_NAME: &'static str = "executed_genesis_scenarios";
     type KeyCodec = ScenarioSequenceNumberDbCodec;
     type VersionedValue = VersionedExecutedGenesisScenario;
+}
+
+/// A progress of the GC process pruning the [`LedgerProofsCf`].
+/// Schema: `[]` -> `scrypto_encode(VersionedLedgerProofsGcProgress)`
+/// Note: This is a single-entry table (i.e. the empty key is the only allowed key).
+struct LedgerProofsGcProgressCf;
+impl VersionedCf for LedgerProofsGcProgressCf {
+    type Key = ();
+    type Value = LedgerProofsGcProgress;
+
+    const VERSIONED_NAME: &'static str = "ledger_proofs_gc_progress";
+    type KeyCodec = UnitDbCodec;
+    type VersionedValue = VersionedLedgerProofsGcProgress;
 }
 
 /// An enum key for [`ExtensionsDataCf`].
@@ -366,6 +467,7 @@ enum ExtensionsDataKey {
     AccountChangeIndexLastProcessedStateVersion,
     AccountChangeIndexEnabled,
     LocalTransactionExecutionIndexEnabled,
+    December2023LostSubstatesRestored,
 }
 
 // IMPORTANT NOTE: the strings defined below are used as database identifiers. Any change would
@@ -381,6 +483,7 @@ impl fmt::Display for ExtensionsDataKey {
             Self::LocalTransactionExecutionIndexEnabled => {
                 "local_transaction_execution_index_enabled"
             }
+            Self::December2023LostSubstatesRestored => "december_2023_lost_substates_restored",
         };
         write!(f, "{str}")
     }
@@ -405,6 +508,7 @@ impl RocksDBStore {
     pub fn new(
         root: PathBuf,
         config: DatabaseFlags,
+        network: &NetworkDefinition,
     ) -> Result<RocksDBStore, DatabaseConfigValidationError> {
         let mut db_opts = Options::default();
         db_opts.create_if_missing(true);
@@ -430,7 +534,79 @@ impl RocksDBStore {
             rocks_db_store.catchup_account_change_index();
         }
 
+        rocks_db_store.restore_december_2023_lost_substates(network);
+
         Ok(rocks_db_store)
+    }
+
+    /// Creates a readonly [`RocksDBStore`] that allows reading from the store while some other
+    /// process is writing to it. Any write operation that happens against a read-only store leads
+    /// to a panic.
+    ///
+    /// This is required for the [`ledger-tools`] CLI tool which only reads data from the database
+    /// and does not write anything to it. Without this constructor, if [`RocksDBStore::new`] is
+    /// used by the [`ledger-tools`] CLI then it leads to a lock contention as two threads would
+    /// want to have a write lock over the database. This provides the [`ledger-tools`] CLI with a
+    /// way of making it clear that it only wants read lock and not a write lock.
+    ///
+    /// [`ledger-tools`]: https://github.com/radixdlt/ledger-tools
+    pub fn new_read_only(root: PathBuf) -> Result<RocksDBStore, DatabaseConfigValidationError> {
+        let mut db_opts = Options::default();
+        db_opts.create_if_missing(false);
+        db_opts.create_missing_column_families(false);
+
+        let column_families: Vec<ColumnFamilyDescriptor> = ALL_COLUMN_FAMILIES
+            .iter()
+            .map(|cf| ColumnFamilyDescriptor::new(cf.to_string(), Options::default()))
+            .collect();
+
+        let db =
+            DB::open_cf_descriptors_read_only(&db_opts, root.as_path(), column_families, false)
+                .unwrap();
+
+        Ok(RocksDBStore {
+            config: DatabaseFlags {
+                enable_local_transaction_execution_index: false,
+                enable_account_change_index: false,
+            },
+            db,
+        })
+    }
+
+    /// Create a RocksDBStore as a secondary instance which may catch up with the primary
+    pub fn new_as_secondary(
+        root: PathBuf,
+        temp: PathBuf,
+        column_families: Vec<&str>,
+    ) -> RocksDBStore {
+        let mut db_opts = Options::default();
+        db_opts.create_if_missing(false);
+        db_opts.create_missing_column_families(false);
+
+        let column_families: Vec<ColumnFamilyDescriptor> = column_families
+            .iter()
+            .map(|cf| ColumnFamilyDescriptor::new(cf.to_string(), Options::default()))
+            .collect();
+
+        let db = DB::open_cf_descriptors_as_secondary(
+            &db_opts,
+            root.as_path(),
+            temp.as_path(),
+            column_families,
+        )
+        .unwrap();
+
+        RocksDBStore {
+            config: DatabaseFlags {
+                enable_local_transaction_execution_index: false,
+                enable_account_change_index: false,
+            },
+            db,
+        }
+    }
+
+    pub fn try_catchup_with_primary(&self) {
+        self.db.try_catch_up_with_primary().unwrap();
     }
 
     /// Starts a read/batch-write interaction with the DB through per-CF type-safe APIs.
@@ -625,10 +801,23 @@ impl CommitStore for RocksDBStore {
         db_context
             .cf(LedgerProofsCf)
             .put(&commit_state_version, &commit_bundle.proof);
+
         if let Some(next_epoch) = &commit_ledger_header.next_epoch {
             db_context
                 .cf(EpochLedgerProofsCf)
                 .put(&next_epoch.epoch, &commit_bundle.proof);
+        }
+
+        if commit_ledger_header.next_protocol_version.is_some() {
+            db_context
+                .cf(ProtocolUpdateInitLedgerProofsCf)
+                .put(&commit_state_version, &commit_bundle.proof);
+        }
+
+        if let LedgerProofOrigin::ProtocolUpdate { .. } = &commit_bundle.proof.origin {
+            db_context
+                .cf(ProtocolUpdateExecutionLedgerProofsCf)
+                .put(&commit_state_version, &commit_bundle.proof);
         }
 
         let substates_cf = db_context.cf(SubstatesCf);
@@ -655,10 +844,7 @@ impl CommitStore for RocksDBStore {
                     PartitionDatabaseUpdates::Reset {
                         new_substate_values,
                     } => {
-                        substates_cf.delete_range(
-                            &(partition_key.clone(), DbSortKey(vec![])),
-                            &(partition_key.next(), DbSortKey(vec![])),
-                        );
+                        substates_cf.delete_group(&partition_key);
                         for (sort_key, substate_value) in new_substate_values {
                             substates_cf.put(&(partition_key.clone(), sort_key), &substate_value);
                         }
@@ -924,6 +1110,42 @@ impl IterableProofStore for RocksDBStore {
                 .map(|(_, proof)| proof),
         )
     }
+
+    fn get_next_epoch_proof_iter(
+        &self,
+        from_epoch: Epoch,
+    ) -> Box<dyn Iterator<Item = LedgerProof> + '_> {
+        Box::new(
+            self.open_db_context()
+                .cf(EpochLedgerProofsCf)
+                .iterate_from(&from_epoch, Direction::Forward)
+                .map(|(_, proof)| proof),
+        )
+    }
+
+    fn get_protocol_update_init_proof_iter(
+        &self,
+        from_state_version: StateVersion,
+    ) -> Box<dyn Iterator<Item = LedgerProof> + '_> {
+        Box::new(
+            self.open_db_context()
+                .cf(ProtocolUpdateInitLedgerProofsCf)
+                .iterate_from(&from_state_version, Direction::Forward)
+                .map(|(_, proof)| proof),
+        )
+    }
+
+    fn get_protocol_update_execution_proof_iter(
+        &self,
+        from_state_version: StateVersion,
+    ) -> Box<dyn Iterator<Item = LedgerProof> + '_> {
+        Box::new(
+            self.open_db_context()
+                .cf(ProtocolUpdateExecutionLedgerProofsCf)
+                .iterate_from(&from_state_version, Direction::Forward)
+                .map(|(_, proof)| proof),
+        )
+    }
 }
 
 impl QueryableProofStore for RocksDBStore {
@@ -934,12 +1156,12 @@ impl QueryableProofStore for RocksDBStore {
             .unwrap_or(StateVersion::pre_genesis())
     }
 
-    fn get_txns_and_proof(
+    fn get_syncable_txns_and_proof(
         &self,
         start_state_version_inclusive: StateVersion,
         max_number_of_txns_if_more_than_one_proof: u32,
         max_payload_size_in_bytes: u32,
-    ) -> Option<(Vec<RawLedgerTransaction>, LedgerProof)> {
+    ) -> Result<TxnsAndProof, GetSyncableTxnsAndProofError> {
         let mut payload_size_so_far = 0;
         let mut latest_usable_proof: Option<LedgerProof> = None;
         let mut txns = Vec::new();
@@ -953,6 +1175,11 @@ impl QueryableProofStore for RocksDBStore {
             .cf(RawLedgerTransactionsCf)
             .iterate_from(&start_state_version_inclusive, Direction::Forward);
 
+        // A few flags used to be able to provide an accurate error response
+        let mut encountered_genesis_proof = None;
+        let mut encountered_protocol_update_proof = None;
+        let mut any_consensus_proof_iterated = false;
+
         'proof_loop: while payload_size_so_far <= max_payload_size_in_bytes
             && txns.len() <= (max_number_of_txns_if_more_than_one_proof as usize)
         {
@@ -962,6 +1189,24 @@ impl QueryableProofStore for RocksDBStore {
             // If we're out of proofs (or some txns are missing): also break the loop
             match proofs_iter.next() {
                 Some((next_proof_state_version, next_proof)) => {
+                    // We're not serving any genesis or protocol update transactions.
+                    // All nodes should have them hardcoded/configured/generated locally.
+                    // Stop iterating the proofs and return whatever txns/proof we have
+                    // collected so far (or an empty response).
+                    match next_proof.origin {
+                        LedgerProofOrigin::Genesis { .. } => {
+                            encountered_genesis_proof = Some(next_proof);
+                            break 'proof_loop;
+                        }
+                        LedgerProofOrigin::ProtocolUpdate { .. } => {
+                            encountered_protocol_update_proof = Some(next_proof);
+                            break 'proof_loop;
+                        }
+                        LedgerProofOrigin::Consensus { .. } => {
+                            any_consensus_proof_iterated = true;
+                        }
+                    }
+
                     let mut payload_size_including_next_proof_txns = payload_size_so_far;
                     let mut next_proof_txns = Vec::new();
 
@@ -1005,13 +1250,16 @@ impl QueryableProofStore for RocksDBStore {
                                 <= (max_number_of_txns_if_more_than_one_proof as usize))
                     {
                         // Yup, all good, use next_proof as the result and add its txns
-                        let next_proof_at_epoch = next_proof.ledger_header.next_epoch.is_some();
+                        let next_proof_is_a_protocol_update =
+                            next_proof.ledger_header.next_protocol_version.is_some();
+                        let next_proof_is_an_epoch_change =
+                            next_proof.ledger_header.next_epoch.is_some();
                         latest_usable_proof = Some(next_proof);
                         txns.append(&mut next_proof_txns);
                         payload_size_so_far = payload_size_including_next_proof_txns;
 
-                        if next_proof_at_epoch {
-                            // Stop if we've reached an epoch proof
+                        if next_proof_is_a_protocol_update || next_proof_is_an_epoch_change {
+                            // Stop if we've reached a protocol update or end of epoch
                             break 'proof_loop;
                         }
                     } else {
@@ -1026,7 +1274,32 @@ impl QueryableProofStore for RocksDBStore {
             }
         }
 
-        latest_usable_proof.map(|proof| (txns, proof))
+        latest_usable_proof
+            .map(|proof| TxnsAndProof { txns, proof })
+            .ok_or(if any_consensus_proof_iterated {
+                // We have iterated at least one valid consensus proof
+                // but still were unable to produce a response,
+                // so this must have been a limit issue.
+                GetSyncableTxnsAndProofError::FailedToPrepareAResponseWithinLimits
+            } else {
+                // We have not iterated any valid consensus proof.
+                // Check if we've broken due to encountering
+                // one of the non-Consensus originated proofs.
+                if let Some(genesis_proof) = encountered_genesis_proof {
+                    GetSyncableTxnsAndProofError::RefusedToServeGenesis {
+                        refused_proof: Box::new(genesis_proof),
+                    }
+                } else if let Some(protocol_update_proof) = encountered_protocol_update_proof {
+                    GetSyncableTxnsAndProofError::RefusedToServeProtocolUpdate {
+                        refused_proof: Box::new(protocol_update_proof),
+                    }
+                } else {
+                    // We have not iterated any Consensus proof
+                    // or any other proof.
+                    // So the request must have been ahead of our current ledger.
+                    GetSyncableTxnsAndProofError::NothingToServeAtTheGivenStateVersion
+                }
+            })
     }
 
     fn get_first_proof(&self) -> Option<LedgerProof> {
@@ -1043,13 +1316,36 @@ impl QueryableProofStore for RocksDBStore {
         self.open_db_context().cf(EpochLedgerProofsCf).get(&epoch)
     }
 
-    fn get_last_proof(&self) -> Option<LedgerProof> {
+    fn get_latest_proof(&self) -> Option<LedgerProof> {
         self.open_db_context().cf(LedgerProofsCf).get_last_value()
     }
 
-    fn get_last_epoch_proof(&self) -> Option<LedgerProof> {
+    fn get_latest_epoch_proof(&self) -> Option<LedgerProof> {
         self.open_db_context()
             .cf(EpochLedgerProofsCf)
+            .get_last_value()
+    }
+
+    fn get_closest_epoch_proof_on_or_before(
+        &self,
+        state_version: StateVersion,
+    ) -> Option<LedgerProof> {
+        self.open_db_context()
+            .cf(LedgerProofsCf)
+            .iterate_from(&state_version, Direction::Reverse)
+            .map(|(_, proof)| proof)
+            .find(|proof| proof.ledger_header.next_epoch.is_some())
+    }
+
+    fn get_latest_protocol_update_init_proof(&self) -> Option<LedgerProof> {
+        self.open_db_context()
+            .cf(ProtocolUpdateInitLedgerProofsCf)
+            .get_last_value()
+    }
+
+    fn get_latest_protocol_update_execution_proof(&self) -> Option<LedgerProof> {
+        self.open_db_context()
+            .cf(ProtocolUpdateExecutionLedgerProofsCf)
             .get_last_value()
     }
 }
@@ -1065,19 +1361,17 @@ impl SubstateDatabase for RocksDBStore {
             .get(&(partition_key.clone(), sort_key.clone()))
     }
 
-    fn list_entries(
+    fn list_entries_from(
         &self,
         partition_key: &DbPartitionKey,
+        from_sort_key: Option<&DbSortKey>,
     ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
         let partition_key = partition_key.clone();
+        let from_sort_key = from_sort_key.cloned().unwrap_or(DbSortKey(vec![]));
         Box::new(
             self.open_db_context()
                 .cf(SubstatesCf)
-                .iterate_from(
-                    &(partition_key.clone(), DbSortKey(vec![])),
-                    Direction::Forward,
-                )
-                .take_while(move |((next_key, _), _)| next_key == &partition_key)
+                .iterate_group_from(&(partition_key.clone(), from_sort_key), Direction::Forward)
                 .map(|((_, sort_key), value)| (sort_key, value)),
         )
     }
@@ -1085,15 +1379,7 @@ impl SubstateDatabase for RocksDBStore {
 
 impl ListableSubstateDatabase for RocksDBStore {
     fn list_partition_keys(&self) -> Box<dyn Iterator<Item = DbPartitionKey> + '_> {
-        Box::new(
-            self.open_db_context()
-                .cf(SubstatesCf)
-                .iterate(Direction::Forward)
-                .map(|(iter_key_bytes, _)| iter_key_bytes.0)
-                // Rocksdb iterator returns sorted entries, so ok to to eliminate
-                // duplicates with dedup()
-                .dedup(),
-        )
+        self.open_db_context().cf(SubstatesCf).iterate_key_groups()
     }
 }
 
@@ -1143,6 +1429,24 @@ impl StateHashTreeGcStore for RocksDBStore {
     }
 }
 
+impl LedgerProofsGcStore for RocksDBStore {
+    fn get_progress(&self) -> Option<LedgerProofsGcProgress> {
+        self.open_db_context().cf(LedgerProofsGcProgressCf).get(&())
+    }
+
+    fn set_progress(&self, progress: LedgerProofsGcProgress) {
+        self.open_db_context()
+            .cf(LedgerProofsGcProgressCf)
+            .put(&(), &progress);
+    }
+
+    fn delete_ledger_proofs_range(&self, from: StateVersion, to: StateVersion) {
+        self.open_db_context()
+            .cf(LedgerProofsCf)
+            .delete_range(&from, &to);
+    }
+}
+
 impl ReadableAccuTreeStore<StateVersion, TransactionTreeHash> for RocksDBStore {
     fn get_tree_slice(
         &self,
@@ -1174,35 +1478,6 @@ impl RecoverableVertexStore for RocksDBStore {
     fn get_vertex_store(&self) -> Option<VertexStoreBlob> {
         self.open_db_context().cf(VertexStoreCf).get(&())
     }
-}
-
-fn encode_to_rocksdb_bytes(partition_key: &DbPartitionKey, sort_key: &DbSortKey) -> Vec<u8> {
-    let mut buffer = Vec::with_capacity(1 + partition_key.node_key.len() + 1 + sort_key.0.len());
-    buffer.push(
-        u8::try_from(partition_key.node_key.len())
-            .expect("Node key length is effectively constant 32 so should fit in a u8"),
-    );
-    buffer.extend(partition_key.node_key.clone());
-    buffer.push(partition_key.partition_num);
-    buffer.extend(sort_key.0.clone());
-    buffer
-}
-
-fn decode_from_rocksdb_bytes(buffer: &[u8]) -> DbSubstateKey {
-    let node_key_start: usize = 1usize;
-    let partition_key_start = 1 + usize::from(buffer[0]);
-    let sort_key_start = 1 + partition_key_start;
-
-    let node_key = buffer[node_key_start..partition_key_start].to_vec();
-    let partition_num = buffer[partition_key_start];
-    let sort_key = buffer[sort_key_start..].to_vec();
-    (
-        DbPartitionKey {
-            node_key,
-            partition_num,
-        },
-        DbSortKey(sort_key),
-    )
 }
 
 impl RocksDBStore {
@@ -1238,7 +1513,7 @@ impl RocksDBStore {
 
         db_context.cf(ExtensionsDataCf).put(
             &ExtensionsDataKey::AccountChangeIndexLastProcessedStateVersion,
-            &state_version.to_bytes().to_vec(),
+            &state_version.to_be_bytes().to_vec(),
         );
     }
 
@@ -1279,7 +1554,7 @@ impl RocksDBStore {
 
         db_context.cf(ExtensionsDataCf).put(
             &ExtensionsDataKey::AccountChangeIndexLastProcessedStateVersion,
-            &last_state_version.to_bytes().to_vec(),
+            &last_state_version.to_be_bytes().to_vec(),
         );
 
         last_state_version
@@ -1291,7 +1566,7 @@ impl AccountChangeIndexExtension for RocksDBStore {
         self.open_db_context()
             .cf(ExtensionsDataCf)
             .get(&ExtensionsDataKey::AccountChangeIndexLastProcessedStateVersion)
-            .map(StateVersion::from_bytes)
+            .map(StateVersion::from_be_bytes)
             .unwrap_or(StateVersion::pre_genesis())
     }
 
@@ -1324,6 +1599,103 @@ impl AccountChangeIndexExtension for RocksDBStore {
     }
 }
 
+impl RestoreDecember2023LostSubstates for RocksDBStore {
+    fn restore_december_2023_lost_substates(&self, network: &NetworkDefinition) {
+        let db_context = self.open_db_context();
+        let extension_data_cf = db_context.cf(ExtensionsDataCf);
+        let december_2023_lost_substates_restored =
+            extension_data_cf.get(&ExtensionsDataKey::December2023LostSubstatesRestored);
+
+        let should_restore_substates = if network.id == NetworkDefinition::mainnet().id {
+            // For mainnet, we have a tested, working fix at an epoch learnt during investigation:
+
+            // Skip restoration if substates already restored
+            if december_2023_lost_substates_restored.is_some() {
+                return;
+            }
+
+            // Substates were deleted on the transition to epoch 51817 so no need to restore
+            // substates if the current epoch has not reached this epoch yet.
+            self.get_latest_epoch_proof().map_or(false, |p| {
+                p.ledger_header.next_epoch.unwrap().epoch.number() >= 51817
+            })
+        } else {
+            // For other networks, we can calculate the "problem" epoch from theoretical principles:
+            let (Some(first_proof), Some(latest_epoch_proof)) =
+                (self.get_first_proof(), self.get_latest_epoch_proof())
+            else {
+                return; // empty ledger; no fix needed
+            };
+            let first_epoch = first_proof.ledger_header.epoch.number();
+            let last_epoch = latest_epoch_proof.ledger_header.epoch.number();
+            let problem_at_end_of_epoch = first_epoch + 19099; // (256 * 3 / 4 - 1) * 100 - 1
+                                                               // Due to another bug, stokenet nodes may mistakenly believe that they already applied
+                                                               // the fix. Thus, we have to ignore the `december_2023_lost_substates_restored` flag and
+                                                               // make a decision based on "being stuck in the problematic epoch range". The fix is
+                                                               // effectively idempotent, so we are fine with re-running it in an edge case.
+            last_epoch >= problem_at_end_of_epoch && last_epoch <= (problem_at_end_of_epoch + 2)
+        };
+
+        if should_restore_substates {
+            info!("Restoring lost substates...");
+            let last_state_version = self
+                .get_latest_proof()
+                .map_or(StateVersion::of(1u64), |s| s.ledger_header.state_version);
+
+            let txn_tracker_db_node_key =
+                SpreadPrefixKeyMapper::to_db_node_key(TRANSACTION_TRACKER.as_node_id());
+
+            let substates_cf = db_context.cf(SubstatesCf);
+
+            let receipts_iter: Box<dyn Iterator<Item = (StateVersion, LedgerTransactionReceipt)>> =
+                db_context
+                    .cf(TransactionReceiptsCf)
+                    .iterate_from(&StateVersion::of(1u64), Direction::Forward);
+
+            for (version, receipt) in receipts_iter {
+                for (substate_ref, change) in receipt.state_changes.substate_level_changes.iter() {
+                    let db_partition_key =
+                        SpreadPrefixKeyMapper::to_db_partition_key(&substate_ref.0, substate_ref.1);
+
+                    // The substate was deleted if it's DbNodeKey is lexicographically greater than the DbNodeKey
+                    // of the transaction tracker. So here we re-flash the substates directly into the state store.
+                    if db_partition_key.node_key.gt(&txn_tracker_db_node_key) {
+                        let sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&substate_ref.2);
+                        let substate_key = (db_partition_key.clone(), sort_key);
+
+                        match change {
+                            SubstateChangeAction::Create { new }
+                            | SubstateChangeAction::Update { new, .. } => {
+                                substates_cf.put(&substate_key, new);
+                            }
+                            SubstateChangeAction::Delete { .. } => {
+                                substates_cf.delete(&substate_key);
+                            }
+                        }
+                    }
+                }
+
+                if version.number() % 10000 == 0 {
+                    db_context.flush();
+                    info!(
+                        "Scanned {} of {} transactions...",
+                        version.number(),
+                        last_state_version.number()
+                    );
+                }
+            }
+
+            info!("Finished restoring lost substates!");
+        }
+
+        db_context.cf(ExtensionsDataCf).put(
+            &ExtensionsDataKey::December2023LostSubstatesRestored,
+            &vec![],
+        );
+        db_context.flush();
+    }
+}
+
 impl IterableAccountChangeIndex for RocksDBStore {
     fn get_state_versions_for_account_iter(
         &self,
@@ -1337,192 +1709,5 @@ impl IterableAccountChangeIndex for RocksDBStore {
                 .take_while(move |((next_account, _), _)| next_account == &account)
                 .map(|((_, state_version), _)| state_version),
         )
-    }
-}
-
-// Concrete DB-level codecs of keys/values:
-
-#[derive(Default)]
-struct StateVersionDbCodec {}
-
-impl DbCodec<StateVersion> for StateVersionDbCodec {
-    fn encode(&self, value: &StateVersion) -> Vec<u8> {
-        value.to_bytes().to_vec()
-    }
-
-    fn decode(&self, bytes: &[u8]) -> StateVersion {
-        StateVersion::from_bytes(bytes)
-    }
-}
-
-#[derive(Default)]
-struct EpochDbCodec {}
-
-impl DbCodec<Epoch> for EpochDbCodec {
-    fn encode(&self, value: &Epoch) -> Vec<u8> {
-        value.number().to_be_bytes().to_vec()
-    }
-
-    fn decode(&self, bytes: &[u8]) -> Epoch {
-        Epoch::of(u64::from_be_bytes(copy_u8_array(bytes)))
-    }
-}
-
-#[derive(Default)]
-struct ScenarioSequenceNumberDbCodec {}
-
-impl DbCodec<ScenarioSequenceNumber> for ScenarioSequenceNumberDbCodec {
-    fn encode(&self, value: &ScenarioSequenceNumber) -> Vec<u8> {
-        value.to_be_bytes().to_vec()
-    }
-
-    fn decode(&self, bytes: &[u8]) -> ScenarioSequenceNumber {
-        ScenarioSequenceNumber::from_be_bytes(copy_u8_array(bytes))
-    }
-}
-
-#[derive(Default)]
-struct RawLedgerTransactionDbCodec {}
-
-impl DbCodec<RawLedgerTransaction> for RawLedgerTransactionDbCodec {
-    fn encode(&self, value: &RawLedgerTransaction) -> Vec<u8> {
-        value.0.to_vec()
-    }
-
-    fn decode(&self, bytes: &[u8]) -> RawLedgerTransaction {
-        RawLedgerTransaction(bytes.to_vec())
-    }
-}
-
-struct HashDbCodec<T: IsHash> {
-    type_parameters_phantom: PhantomData<T>,
-}
-
-impl<T: IsHash> Default for HashDbCodec<T> {
-    fn default() -> Self {
-        Self {
-            type_parameters_phantom: PhantomData,
-        }
-    }
-}
-
-impl<T: IsHash> DbCodec<T> for HashDbCodec<T> {
-    fn encode(&self, value: &T) -> Vec<u8> {
-        value.as_slice().to_vec()
-    }
-
-    fn decode(&self, bytes: &[u8]) -> T {
-        T::from_bytes(copy_u8_array(bytes))
-    }
-}
-
-#[derive(Default)]
-struct SubstateKeyDbCodec {}
-
-impl DbCodec<DbSubstateKey> for SubstateKeyDbCodec {
-    fn encode(&self, value: &DbSubstateKey) -> Vec<u8> {
-        let (partition_key, sort_key) = value;
-        encode_to_rocksdb_bytes(partition_key, sort_key)
-    }
-
-    fn decode(&self, bytes: &[u8]) -> DbSubstateKey {
-        decode_from_rocksdb_bytes(bytes)
-    }
-}
-
-#[derive(Default)]
-struct NodeKeyDbCodec {}
-
-impl DbCodec<NodeKey> for NodeKeyDbCodec {
-    fn encode(&self, value: &NodeKey) -> Vec<u8> {
-        encode_key(value)
-    }
-
-    fn decode(&self, _bytes: &[u8]) -> NodeKey {
-        unimplemented!("no use-case for decoding hash tree's `NodeKey`s exists yet")
-    }
-}
-
-struct PrefixGlobalAddressDbCodec<S, SC: DbCodec<S>> {
-    suffix_codec: SC,
-    type_parameters_phantom: PhantomData<S>,
-}
-
-impl<S, SC: DbCodec<S>> PrefixGlobalAddressDbCodec<S, SC> {
-    pub fn new(suffix_codec: SC) -> Self {
-        Self {
-            suffix_codec,
-            type_parameters_phantom: PhantomData,
-        }
-    }
-}
-
-impl<S, SC: DbCodec<S>> DbCodec<(GlobalAddress, S)> for PrefixGlobalAddressDbCodec<S, SC> {
-    fn encode(&self, (global_address, suffix): &(GlobalAddress, S)) -> Vec<u8> {
-        let mut encoding = global_address.to_vec();
-        encoding.extend_from_slice(self.suffix_codec.encode(suffix).as_slice());
-        encoding
-    }
-
-    fn decode(&self, bytes: &[u8]) -> (GlobalAddress, S) {
-        let global_address = GlobalAddress::new_or_panic(copy_u8_array(&bytes[..NodeId::LENGTH]));
-        let suffix = self.suffix_codec.decode(&bytes[NodeId::LENGTH..]);
-        (global_address, suffix)
-    }
-}
-
-#[derive(Default)]
-struct NodeIdDbCodec {}
-
-impl DbCodec<NodeId> for NodeIdDbCodec {
-    fn encode(&self, value: &NodeId) -> Vec<u8> {
-        value.0.to_vec()
-    }
-
-    fn decode(&self, bytes: &[u8]) -> NodeId {
-        NodeId(copy_u8_array(bytes))
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn rocksdb_key_encoding_is_invertible() {
-        let partition_key = DbPartitionKey {
-            node_key: vec![1, 2, 3, 4, 132],
-            partition_num: 224,
-        };
-        let sort_key = DbSortKey(vec![13, 5]);
-        let buffer = encode_to_rocksdb_bytes(&partition_key, &sort_key);
-
-        let decoded = decode_from_rocksdb_bytes(&buffer);
-
-        assert_eq!(partition_key, decoded.0);
-        assert_eq!(sort_key, decoded.1);
-    }
-
-    /// This is needed for the iteration to work correctly
-    #[test]
-    fn rocksdb_key_encoding_respects_lexicographic_ordering_on_sort_keys() {
-        let partition_key = DbPartitionKey {
-            node_key: vec![73, 85],
-            partition_num: 1,
-        };
-        let sort_key = DbSortKey(vec![0, 4]);
-        let iterator_start = encode_to_rocksdb_bytes(&partition_key, &sort_key);
-
-        assert!(encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![0])) < iterator_start);
-        assert!(encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![0, 3])) < iterator_start);
-        assert_eq!(
-            encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![0, 4])),
-            iterator_start
-        );
-        assert!(iterator_start < encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![0, 5])));
-        assert!(
-            iterator_start < encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![0, 5, 7]))
-        );
-        assert!(iterator_start < encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![1, 51])));
     }
 }
