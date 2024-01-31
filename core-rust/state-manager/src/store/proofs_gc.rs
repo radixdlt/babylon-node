@@ -64,6 +64,7 @@
 
 use radix_engine::types::{Categorize, Decode, Encode};
 
+use node_common::locks::DbLock;
 use radix_engine_common::types::Epoch;
 use std::ops::Deref;
 use std::sync::Arc;
@@ -81,7 +82,7 @@ use crate::traits::GetSyncableTxnsAndProofError::{
     FailedToPrepareAResponseWithinLimits, NothingToServeAtTheGivenStateVersion,
     RefusedToServeGenesis, RefusedToServeProtocolUpdate,
 };
-use crate::{LedgerProof, StateManagerDatabase, StateManagerDatabaseLock, StateVersion};
+use crate::{ActualStateManagerDatabase, LedgerProof, StateManagerDatabase, StateVersion};
 
 /// A configuration for [`LedgerProofsGc`].
 #[derive(Debug, Categorize, Encode, Decode, Clone, Default)]
@@ -103,7 +104,7 @@ pub struct LedgerProofsGcConfig {
 /// proof" logic (used e.g. for ledger-sync responses).
 /// The implementation is suited for being driven by an external scheduler.
 pub struct LedgerProofsGc {
-    database: Arc<StateManagerDatabaseLock>,
+    database: Arc<DbLock<ActualStateManagerDatabase>>,
     interval: Duration,
     most_recent_full_resolution_epoch_count: u64,
     limits_config: LedgerSyncLimitsConfig,
@@ -112,7 +113,7 @@ pub struct LedgerProofsGc {
 impl LedgerProofsGc {
     /// Creates a new GC.
     pub fn new(
-        database: Arc<StateManagerDatabaseLock>,
+        database: Arc<DbLock<ActualStateManagerDatabase>>,
         gc_config: LedgerProofsGcConfig,
         limits_config: LedgerSyncLimitsConfig,
     ) -> Self {
@@ -139,11 +140,11 @@ impl LedgerProofsGc {
     ///
     /// *Note on concurrent database access:*
     /// The proofs' GC process, by its nature, only accesses "old" (i.e. not "top-of-ledger" new)
-    /// proof DB rows. For this reason, it can use the direct [`StateManagerDatabaseLock::access()`]
-    /// and effectively own these rows (for reads and deletes), without locking the database.
+    /// proof DB rows. For this reason, it can use the direct [`DbLock::access()`] and effectively
+    /// own these rows (for reads and deletes), without locking the database.
     /// Of course, a concurrent ledger sync may request a range of "old" proofs too, and thus it
-    /// should use a [`StateManagerDatabaseLock::snapshot()`] to avoid relying on proofs which are
-    /// about to be deleted.
+    /// should use a [`DbLock::snapshot()`] to avoid relying on proofs which are about to be
+    /// deleted.
     pub fn run(&self) -> Vec<ProofPruneRange> {
         // Read the GC's persisted state and initialize the run:
         let database = self.database.access();

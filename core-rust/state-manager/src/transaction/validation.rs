@@ -1,4 +1,4 @@
-use node_common::locks::RwLock;
+use node_common::locks::{DbLock, RwLock};
 use std::ops::Deref;
 use std::sync::Arc;
 use std::time::SystemTime;
@@ -15,8 +15,8 @@ use crate::store::traits::transactions::QueryableTransactionStore;
 use crate::store::traits::{QueryableProofStore, TransactionIndex};
 use crate::transaction::{ExecutionConfigurator, TransactionLogic};
 use crate::{
-    AlreadyCommittedError, AtState, ExecutionRejectionReason, PendingTransactionRecord,
-    PendingTransactionResultCache, RejectionReason, StateManagerDatabaseLock, TransactionAttempt,
+    ActualStateManagerDatabase, AlreadyCommittedError, AtState, ExecutionRejectionReason,
+    PendingTransactionRecord, PendingTransactionResultCache, RejectionReason, TransactionAttempt,
 };
 
 use transaction::prelude::*;
@@ -181,14 +181,14 @@ impl From<PrepareError> for LedgerTransactionValidationError {
 /// A validator for `NotarizedTransaction`, deciding whether they would be rejected or not-rejected
 /// (i.e. "committable") at a specific state of the `store`.
 pub struct CommittabilityValidator {
-    database: Arc<StateManagerDatabaseLock>,
+    database: Arc<DbLock<ActualStateManagerDatabase>>,
     execution_configurator: Arc<RwLock<ExecutionConfigurator>>,
     user_transaction_validator: NotarizedTransactionValidator,
 }
 
 impl CommittabilityValidator {
     pub fn new(
-        database: Arc<StateManagerDatabaseLock>,
+        database: Arc<DbLock<ActualStateManagerDatabase>>,
         execution_configurator: Arc<RwLock<ExecutionConfigurator>>,
         user_transaction_validator: NotarizedTransactionValidator,
     ) -> Self {
@@ -297,14 +297,14 @@ impl CommittabilityValidator {
 
 /// A caching wrapper for a `CommittabilityValidator`.
 pub struct CachedCommittabilityValidator {
-    database: Arc<StateManagerDatabaseLock>,
+    database: Arc<DbLock<ActualStateManagerDatabase>>,
     committability_validator: Arc<RwLock<CommittabilityValidator>>,
     pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
 }
 
 impl CachedCommittabilityValidator {
     pub fn new(
-        database: Arc<StateManagerDatabaseLock>,
+        database: Arc<DbLock<ActualStateManagerDatabase>>,
         committability_validator: Arc<RwLock<CommittabilityValidator>>,
         pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
     ) -> Self {

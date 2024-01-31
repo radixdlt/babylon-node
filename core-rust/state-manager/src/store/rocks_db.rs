@@ -64,7 +64,6 @@
 
 use std::collections::HashSet;
 use std::fmt;
-use std::ops::Deref;
 
 use crate::store::traits::*;
 use crate::{
@@ -89,7 +88,7 @@ use radix_engine_store_interface::interface::*;
 use radix_engine_store_interface::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
 use std::path::PathBuf;
 
-use node_common::locks::{LockFactory, Mutex};
+use node_common::locks::Snapshottable;
 use tracing::{error, info, warn};
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
@@ -654,64 +653,15 @@ impl<'db> ReadableRocks for SnapshotRocks<'db> {
 
 pub type ActualStateManagerDatabase = StateManagerDatabase<DirectRocks>;
 
-// TODO(wip): doc
-pub struct StateManagerDatabaseLock {
-    database: ActualStateManagerDatabase,
-    mutex: Mutex<()>,
-}
+impl<'db> Snapshottable<'db> for StateManagerDatabase<DirectRocks> {
+    type Snapshot = StateManagerDatabase<SnapshotRocks<'db>>;
 
-impl StateManagerDatabaseLock {
-    pub fn new(lock_factory: LockFactory, database: ActualStateManagerDatabase) -> Self {
-        Self {
-            database,
-            mutex: lock_factory.new_mutex(()),
-        }
-    }
-
-    pub fn access(
-        &self,
-    ) -> impl Deref<Target = StateManagerDatabase<impl WriteableRocks + '_>> + '_ {
-        &self.database // TODO(wip): return tracking wrap?
-    }
-
-    pub fn lock(&self) -> impl Deref<Target = StateManagerDatabase<impl WriteableRocks + '_>> + '_ {
-        DatabaseLockGuard {
-            underlying: self.mutex.lock(),
-            database: &self.database,
-        }
-    }
-
-    pub fn snapshot(
-        &self,
-    ) -> impl Deref<Target = StateManagerDatabase<impl ReadableRocks + '_>> + '_ {
-        let StateManagerDatabase { config, rocks } = &self.database;
+    fn snapshot(&'db self) -> Self::Snapshot {
+        let StateManagerDatabase { config, rocks } = self;
         StateManagerDatabase {
             config: config.clone(),
             rocks: rocks.snapshot(),
         }
-    }
-}
-
-pub struct DatabaseLockGuard<'d, D, U> {
-    #[allow(dead_code)] // only held to release the lock when dropped
-    underlying: U,
-    database: &'d D,
-}
-
-impl<'d, D: 'd, U> Deref for DatabaseLockGuard<'d, D, U> {
-    type Target = D;
-
-    fn deref(&self) -> &Self::Target {
-        self.database
-    }
-}
-
-impl<'db> Deref for StateManagerDatabase<SnapshotRocks<'db>> {
-    // TODO(wip): replace with a tracking wrap
-    type Target = StateManagerDatabase<SnapshotRocks<'db>>;
-
-    fn deref(&self) -> &Self::Target {
-        self
     }
 }
 
@@ -925,7 +875,7 @@ impl<R: ReadableRocks> ConfigurableDatabase for StateManagerDatabase<R> {
     }
 }
 
-impl MeasurableDatabase for StateManagerDatabaseLock {
+impl MeasurableDatabase for ActualStateManagerDatabase {
     fn get_data_volume_statistics(&self) -> Vec<CategoryDbVolumeStatistic> {
         let mut statistics = ALL_COLUMN_FAMILIES
             .iter()
@@ -936,7 +886,7 @@ impl MeasurableDatabase for StateManagerDatabaseLock {
                 )
             })
             .collect::<IndexMap<_, _>>();
-        let live_files = match self.database.rocks.db.live_files() {
+        let live_files = match self.rocks.db.live_files() {
             Ok(live_files) => live_files,
             Err(err) => {
                 warn!("could not get DB live files; returning 0: {:?}", err);

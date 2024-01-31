@@ -87,12 +87,10 @@ use crate::{
     mempool_manager::MempoolManager,
     mempool_relay_dispatcher::MempoolRelayDispatcher,
     priority_mempool::PriorityMempool,
-    store::{
-        jmt_gc::StateHashTreeGc, DatabaseBackendConfig, DatabaseFlags, RawDbMetricsCollector,
-        StateManagerDatabaseLock,
-    },
+    store::{jmt_gc::StateHashTreeGc, DatabaseBackendConfig, DatabaseFlags, RawDbMetricsCollector},
     transaction::{CachedCommittabilityValidator, CommittabilityValidator, TransactionPreviewer},
-    PendingTransactionResultCache, ProtocolUpdateResult, StateComputer, StateManagerDatabase,
+    ActualStateManagerDatabase, PendingTransactionResultCache, ProtocolUpdateResult, StateComputer,
+    StateManagerDatabase,
 };
 
 /// An interval between time-intensive measurement of raw DB metrics.
@@ -146,7 +144,7 @@ impl StateManagerConfig {
 pub struct StateManager {
     config: StateManagerConfig,
     pub state_computer: Arc<StateComputer>,
-    pub database: Arc<StateManagerDatabaseLock>,
+    pub database: Arc<DbLock<ActualStateManagerDatabase>>,
     pub pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
     pub mempool: Arc<RwLock<PriorityMempool>>,
     pub mempool_manager: Arc<MempoolManager>,
@@ -189,10 +187,7 @@ impl StateManager {
             }
         };
 
-        let database = Arc::new(StateManagerDatabaseLock::new(
-            lock_factory.named("database"),
-            raw_db,
-        ));
+        let database = Arc::new(lock_factory.named("database").new_db_lock(raw_db));
 
         if let Err(err) = config.protocol_config.validate() {
             panic!("Protocol misconfiguration: {}", err);

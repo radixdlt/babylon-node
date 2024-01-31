@@ -1,4 +1,4 @@
-use node_common::locks::RwLock;
+use node_common::locks::{DbLock, RwLock};
 use radix_engine::transaction::{PreviewError, TransactionReceipt, TransactionResult};
 use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use std::ops::{Deref, Range};
@@ -9,8 +9,8 @@ use crate::query::StateManagerSubstateQueries;
 use crate::store::traits::QueryableProofStore;
 use crate::transaction::*;
 use crate::{
-    GlobalBalanceSummary, LedgerHeader, LedgerStateChanges, PreviewRequest, ProcessedCommitResult,
-    StateManagerDatabaseLock,
+    ActualStateManagerDatabase, GlobalBalanceSummary, LedgerHeader, LedgerStateChanges,
+    PreviewRequest, ProcessedCommitResult,
 };
 use radix_engine_common::prelude::*;
 use transaction::model::*;
@@ -20,7 +20,7 @@ use transaction::validation::ValidationConfig;
 
 /// A transaction preview runner.
 pub struct TransactionPreviewer {
-    database: Arc<StateManagerDatabaseLock>,
+    database: Arc<DbLock<ActualStateManagerDatabase>>,
     execution_configurator: Arc<RwLock<ExecutionConfigurator>>,
     validation_config: ValidationConfig,
 }
@@ -34,7 +34,7 @@ pub struct ProcessedPreviewResult {
 
 impl TransactionPreviewer {
     pub fn new(
-        database: Arc<StateManagerDatabaseLock>,
+        database: Arc<DbLock<ActualStateManagerDatabase>>,
         execution_configurator: Arc<RwLock<ExecutionConfigurator>>,
         validation_config: ValidationConfig,
     ) -> Self {

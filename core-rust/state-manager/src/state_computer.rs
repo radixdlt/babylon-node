@@ -85,7 +85,7 @@ use transaction_scenarios::scenario::DescribedAddress as ScenarioDescribedAddres
 use transaction_scenarios::scenario::*;
 use transaction_scenarios::scenarios::*;
 
-use node_common::locks::{LockFactory, Mutex, RwLock};
+use node_common::locks::{DbLock, LockFactory, Mutex, RwLock};
 use prometheus::Registry;
 use tracing::{debug, info, warn};
 
@@ -102,7 +102,7 @@ use std::time::{Instant, SystemTime};
 
 pub struct StateComputer {
     network: NetworkDefinition,
-    database: Arc<StateManagerDatabaseLock>,
+    database: Arc<DbLock<ActualStateManagerDatabase>>,
     mempool_manager: Arc<MempoolManager>,
     execution_configurator: Arc<RwLock<ExecutionConfigurator>>,
     pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
@@ -122,7 +122,7 @@ impl StateComputer {
     pub fn new(
         network: &NetworkDefinition,
         vertex_limits_config: VertexLimitsConfig,
-        database: Arc<StateManagerDatabaseLock>,
+        database: Arc<DbLock<ActualStateManagerDatabase>>,
         mempool_manager: Arc<MempoolManager>,
         execution_configurator: Arc<RwLock<ExecutionConfigurator>>,
         pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,

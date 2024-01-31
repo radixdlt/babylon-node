@@ -187,6 +187,23 @@ impl LockFactory {
         }
     }
 
+    /// Creates a new DB lock with the current configuration.
+    /// Note: this is a custom lock primitive - please see its documentation.
+    pub fn new_db_lock<D>(self, database: D) -> DbLock<D> {
+        DbLock {
+            exclusive_live_marker_lock: self.named("exclusive_live").new_mutex(()),
+            database,
+            shared_live_access_listener: self
+                .named("shared_live")
+                .not_stopping_on_panic()
+                .into_listener(),
+            on_demand_snapshot_listener: self
+                .named("snapshot")
+                .not_stopping_on_panic()
+                .into_listener(),
+        }
+    }
+
     /// Turns the factory (i.e. its current configuration) into a [`LockListener`] which adds the
     /// requested features to the lock.
     fn into_listener(self) -> ActualLockListener {
@@ -230,6 +247,68 @@ impl<T> RwLock<T> {
     /// Delegates to the [`parking_lot::RwLockReadGuard::write()`].
     pub fn write(&self) -> impl DerefMut<Target = T> + '_ {
         LockGuard::new(|| self.underlying.write(), self.write_listener.clone())
+    }
+}
+
+/// A custom lock primitive guarding a certain type of database.
+///
+/// The database is assumed to be thread-safe on a physical level (i.e. it will not panic nor
+/// destroy data when concurrent writes happen; on the contrary: it may offer some row-level or
+/// batch-level atomicity guarantees). It may additionally support a cheap creation of its read-only
+/// snapshots (by implementing the optional [`Snapshottable`] trait).
+///
+/// With the above assumptions, this lock offers a couple of database access options. Please see the
+/// linked methods to learn more about:
+/// - a direct, non-locked, shared [`Self::access()`] to the live database.
+/// - an exclusive [`Self::lock()`] on the live database.
+/// - _(optional)_ an on-demand [`Self::snapshot()`] creation.
+pub struct DbLock<D> {
+    exclusive_live_marker_lock: Mutex<()>,
+    database: D,
+    shared_live_access_listener: ActualLockListener, // only for metrics of "raw access"
+    on_demand_snapshot_listener: ActualLockListener, // only for metrics of snapshot operations
+}
+
+/// A (presumably cheap) snapshotting support that a database may have.
+pub trait Snapshottable<'s> {
+    type Snapshot;
+
+    /// Creates a snapshot that will enable continuous access to the frozen, current state of this
+    /// database.
+    fn snapshot(&'s self) -> Self::Snapshot;
+}
+
+impl<D> DbLock<D> {
+    /// Immediately returns a reference to the database (disregarding any [`Self::lock()`])s.
+    pub fn access(&self) -> impl Deref<Target = D> + '_ {
+        LockGuard::new(|| &self.database, self.shared_live_access_listener.clone())
+    }
+
+    /// Acquires an internal lock and returns a lock guard allowing access to the database.
+    ///
+    /// This method should be used by clients who need to coordinate exclusive read/write access to
+    /// a known mutable region of the database.
+    // TODO(future enhancement): we really should have a set of `RwLock`s for independent regions?
+    pub fn lock(&self) -> impl Deref<Target = D> + '_ {
+        DbLockGuard {
+            underlying: self.exclusive_live_marker_lock.lock(),
+            database: &self.database,
+        }
+    }
+}
+
+impl<'s, D: Snapshottable<'s>> DbLock<D> {
+    /// Immediately returns a new snapshot of the database (disregarding any [`Self::lock()`])s.
+    ///
+    /// This method should be used by clients who need to see a consistent view of the database at
+    /// a given moment. Please note that it assumes that all writes happen in atomic batches which
+    /// do not leave database inconsistent.
+    // TODO(future enhancement): also provide something like `lock_snapshot_unlock()`?
+    pub fn snapshot(&'s self) -> impl Deref<Target = D::Snapshot> + '_ {
+        LockGuard::new(
+            || SnapshotGuard::new(&self.database),
+            self.on_demand_snapshot_listener.clone(),
+        )
     }
 }
 
@@ -283,6 +362,43 @@ impl<T, U: DerefMut<Target = T>, L: LockListener> DerefMut for LockGuard<U, L> {
 impl<U, L: LockListener> Drop for LockGuard<U, L> {
     fn drop(&mut self) {
         self.listener.on_release();
+    }
+}
+
+/// A guard for a [`DbLock::snapshot()`].
+/// Since no locking is needed for obtaining a snapshot, its only purpose is to implement [`Deref`].
+struct SnapshotGuard<'s, D: Snapshottable<'s>> {
+    snapshot: D::Snapshot,
+}
+
+impl<'s, D: Snapshottable<'s>> SnapshotGuard<'s, D> {
+    fn new(database: &'s D) -> Self {
+        Self {
+            snapshot: database.snapshot(),
+        }
+    }
+}
+
+impl<'s, D: Snapshottable<'s>> Deref for SnapshotGuard<'s, D> {
+    type Target = D::Snapshot;
+
+    fn deref(&self) -> &Self::Target {
+        &self.snapshot
+    }
+}
+
+/// A guard for a [`DbLock::lock()`].
+pub struct DbLockGuard<'d, D, U> {
+    #[allow(dead_code)] // only held to release the lock when dropped
+    underlying: U,
+    database: &'d D,
+}
+
+impl<'d, D: 'd, U> Deref for DbLockGuard<'d, D, U> {
+    type Target = D;
+
+    fn deref(&self) -> &Self::Target {
+        self.database
     }
 }
 

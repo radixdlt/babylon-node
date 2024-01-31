@@ -62,6 +62,7 @@
  * permissions under this License.
  */
 
+use node_common::locks::DbLock;
 use radix_engine::types::{Categorize, Decode, Encode};
 use radix_engine_stores::hash_tree::tree_store::{
     NodeKey, ReadableTreeStore, StaleTreePart, TreeChildEntry, TreeNode,
@@ -75,7 +76,7 @@ use tracing::info;
 use crate::store::traits::gc::StateHashTreeGcStore;
 use crate::store::traits::proofs::QueryableProofStore;
 use crate::store::traits::StaleTreePartsV1;
-use crate::{StateManagerDatabaseLock, StateVersion, StateVersionDelta};
+use crate::{ActualStateManagerDatabase, StateVersion, StateVersionDelta};
 
 /// A maximum number of JMT nodes collected into "batch delete" buffer.
 /// Needed only to avoid OOM problems.
@@ -95,14 +96,17 @@ pub struct StateHashTreeGcConfig {
 /// A garbage collector of sufficiently-old stale state hash tree nodes.
 /// The implementation is suited for being driven by an external scheduler.
 pub struct StateHashTreeGc {
-    database: Arc<StateManagerDatabaseLock>,
+    database: Arc<DbLock<ActualStateManagerDatabase>>,
     interval: Duration,
     history_len: StateVersionDelta,
 }
 
 impl StateHashTreeGc {
     /// Creates a new GC.
-    pub fn new(database: Arc<StateManagerDatabaseLock>, config: StateHashTreeGcConfig) -> Self {
+    pub fn new(
+        database: Arc<DbLock<ActualStateManagerDatabase>>,
+        config: StateHashTreeGcConfig,
+    ) -> Self {
         Self {
             database,
             interval: Duration::from_secs(u64::from(config.interval_sec)),
@@ -120,8 +124,8 @@ impl StateHashTreeGc {
     ///
     /// *Note on concurrent database access:*
     /// The JMT's GC process, by its nature, only accesses "old" (i.e. not "top-of-ledger" new)
-    /// JMT DB rows. For this reason, it can use the direct [`StateManagerDatabaseLock::access()`]
-    /// and effectively own these rows (for reads and deletes), without locking the database.
+    /// JMT DB rows. For this reason, it can use the direct [`DbLock::access()`] and effectively own
+    /// these rows (for reads and deletes), without locking the database.
     pub fn run(&self) {
         let database = self.database.access();
         let current_state_version = database.max_state_version();

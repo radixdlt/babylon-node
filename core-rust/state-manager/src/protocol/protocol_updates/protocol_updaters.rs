@@ -1,21 +1,22 @@
+use crate::ActualStateManagerDatabase;
+use node_common::locks::DbLock;
 use std::ops::Deref;
 use std::sync::Arc;
 
 use crate::protocol::*;
 use crate::traits::*;
-use crate::StateManagerDatabaseLock;
 
 pub trait ProtocolUpdater {
     /// Executes these state updates associated with the given protocol version
     /// that haven't yet been applied
     /// (hence "remaining", e.g. if node is restarted mid-protocol update).
-    fn execute_remaining_state_updates(&self, database: Arc<StateManagerDatabaseLock>);
+    fn execute_remaining_state_updates(&self, database: Arc<DbLock<ActualStateManagerDatabase>>);
 }
 
 pub struct NoOpProtocolUpdater;
 
 impl ProtocolUpdater for NoOpProtocolUpdater {
-    fn execute_remaining_state_updates(&self, _database: Arc<StateManagerDatabaseLock>) {
+    fn execute_remaining_state_updates(&self, _database: Arc<DbLock<ActualStateManagerDatabase>>) {
         // no-op
     }
 }
@@ -41,7 +42,7 @@ impl<G: UpdateBatchGenerator> BatchedUpdater<G> {
 }
 
 impl<R: UpdateBatchGenerator> ProtocolUpdater for BatchedUpdater<R> {
-    fn execute_remaining_state_updates(&self, database: Arc<StateManagerDatabaseLock>) {
+    fn execute_remaining_state_updates(&self, database: Arc<DbLock<ActualStateManagerDatabase>>) {
         let database = database.lock();
         let mut txn_committer = ProtocolUpdateTransactionCommitter::new(
             self.new_protocol_version.clone(),
