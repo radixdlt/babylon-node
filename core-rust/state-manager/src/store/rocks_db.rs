@@ -654,7 +654,7 @@ pub struct StateManagerRocksDb<R> {
     rocks: R,
 }
 
-impl StateManagerRocksDb<DirectRocks> {
+impl StateManagerDatabase {
     pub fn new(
         root: PathBuf,
         config: DatabaseFlags,
@@ -671,22 +671,22 @@ impl StateManagerRocksDb<DirectRocks> {
 
         let db = DB::open_cf_descriptors(&db_opts, root.as_path(), column_families).unwrap();
 
-        let rocks_db_store = StateManagerRocksDb {
+        let state_manager_database = StateManagerRocksDb {
             config: config.clone(),
             rocks: DirectRocks { db },
         };
 
-        let current_database_config = rocks_db_store.read_flags_state();
+        let current_database_config = state_manager_database.read_flags_state();
         config.validate(&current_database_config)?;
-        rocks_db_store.write_flags(&config);
+        state_manager_database.write_flags(&config);
 
-        if rocks_db_store.config.enable_account_change_index {
-            rocks_db_store.catchup_account_change_index();
+        if state_manager_database.config.enable_account_change_index {
+            state_manager_database.catchup_account_change_index();
         }
 
-        rocks_db_store.restore_december_2023_lost_substates(network);
+        state_manager_database.restore_december_2023_lost_substates(network);
 
-        Ok(rocks_db_store)
+        Ok(state_manager_database)
     }
 
     /// Creates a readonly [`StateManagerRocksDb`] that allows reading from the store while some other
@@ -810,7 +810,7 @@ impl<R: ReadableRocks> ConfigurableDatabase for StateManagerRocksDb<R> {
     }
 }
 
-impl MeasurableDatabase for StateManagerRocksDb<DirectRocks> {
+impl MeasurableDatabase for StateManagerDatabase {
     fn get_data_volume_statistics(&self) -> Vec<CategoryDbVolumeStatistic> {
         let mut statistics = ALL_COLUMN_FAMILIES
             .iter()
