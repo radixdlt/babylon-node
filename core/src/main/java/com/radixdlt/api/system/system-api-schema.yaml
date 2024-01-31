@@ -7,7 +7,7 @@ info:
     name: The Radix License, Version 1.0
     url: https://www.radixfoundation.org/licenses/license-v1
   x-logo:
-    url: https://docs.radixdlt.com/main/_images/radix-logo-banner.png
+    url: https://cdn.document360.io/50e78792-5410-4ac9-aa43-4612b4d33953/Images/Documentation/radix-logo-banner.png
     href: https://docs.radixdlt.com
   description: |
     This API is exposed by the Babylon Radix node to give clients access to information about the node itself,
