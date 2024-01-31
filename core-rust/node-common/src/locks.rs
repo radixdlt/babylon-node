@@ -187,19 +187,6 @@ impl LockFactory {
         }
     }
 
-    /// Creates a new state lock with the current configuration.
-    /// Note: this is a custom lock primitive - please see its documentation.
-    pub fn new_state_lock<T>(self, value: T) -> StateLock<T> {
-        StateLock {
-            underlying: self.named("current").new_rwlock(()),
-            value,
-            access_non_locked_historical_listener: self
-                .named("historical")
-                .not_stopping_on_panic()
-                .into_listener(),
-        }
-    }
-
     /// Turns the factory (i.e. its current configuration) into a [`LockListener`] which adds the
     /// requested features to the lock.
     fn into_listener(self) -> ActualLockListener {
@@ -243,70 +230,6 @@ impl<T> RwLock<T> {
     /// Delegates to the [`parking_lot::RwLockReadGuard::write()`].
     pub fn write(&self) -> impl DerefMut<Target = T> + '_ {
         LockGuard::new(|| self.underlying.write(), self.write_listener.clone())
-    }
-}
-
-/// A custom lock primitive guarding a "current state" of a value composed from an (immutable)
-/// "historical" and (live) "current" parts of state.
-/// The assumption is that the current state needs a classic [`RwLock`] access, while the historical
-/// state can be accessed freely, without obtaining any lock.
-/// The lock caller is responsible for distinguishing proper current vs historical access.
-pub struct StateLock<T> {
-    // TODO(wip): Re-purpose to `SnapshotLock`
-    underlying: RwLock<()>, // we use our own primitive to lock a marker for current state
-    value: T,
-    access_non_locked_historical_listener: ActualLockListener, // only for metrics
-}
-
-impl<T> StateLock<T> {
-    /// Locks the current state for reading.
-    /// This method should be used when caller needs a series of reads referring to the current
-    /// state (it "freezes" the notion of "current").
-    pub fn read_current(&self) -> impl Deref<Target = T> + '_ {
-        StateLockGuard {
-            underlying: self.underlying.read(),
-            value: &self.value,
-        }
-    }
-
-    /// Locks the current state for writing.
-    /// This method should be used when caller wants to update the guarded value in a way which
-    /// changes the notion of "current".
-    /// Please note that this method deliberately returns [`Deref`] (not [`DerefMut`]), since it
-    /// would create an undefined behaviour (`&` and `&mut` co-existing). The guarded value is
-    /// assumed to use an interior mutability (i.e. expose mutating methods via `&`).
-    pub fn write_current(&self) -> impl Deref<Target = T> + '_ {
-        StateLockGuard {
-            underlying: self.underlying.write(),
-            value: &self.value,
-        }
-    }
-
-    /// Returns a reference to the guarded value, without locking anything.
-    /// This method should be used when the caller wants to interact selectively with pieces of the
-    /// historical state, in a way known to be safe.
-    /// Note: functionally, we could return a `&T` here directly, but returning a "guard" allows us
-    /// to measure usage of this method (in the same way as we do for lock guards).
-    pub fn access_non_locked_historical(&self) -> impl Deref<Target = T> + '_ {
-        LockGuard::new(
-            || &self.value,
-            self.access_non_locked_historical_listener.clone(),
-        )
-    }
-}
-
-/// A read guard of a [`StateLock`].
-pub struct StateLockGuard<'a, T, U> {
-    #[allow(dead_code)] // only held to release the lock when dropped
-    underlying: U,
-    value: &'a T,
-}
-
-impl<'a, T: 'a, U> Deref for StateLockGuard<'a, T, U> {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        self.value
     }
 }
 

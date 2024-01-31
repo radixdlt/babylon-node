@@ -1,20 +1,18 @@
 // This file contains the protocol update logic for specific protocol versions
 
-use std::ops::Deref;
-use std::sync::Arc;
-
-use node_common::locks::{LockFactory, RwLock, StateLock};
+use node_common::locks::{LockFactory, RwLock};
 use radix_engine::prelude::*;
 
 use transaction::prelude::*;
 
 use crate::epoch_handling::EpochAwareAccuTreeFactory;
 use crate::protocol::*;
+use crate::query::TransactionIdentifierLoader;
 use crate::traits::*;
 use crate::transaction::*;
 use crate::{
     CommittedTransactionIdentifiers, ExecutionCache, LedgerHeader, LedgerProof, LedgerProofOrigin,
-    StateManagerDatabase,
+    ReadableStore,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
@@ -46,23 +44,26 @@ enum ProtocolUpdateProgress {
 /// A helper that manages committing flash transactions state updates.
 /// It handles the logic to fulfill the resumability contract of "execute_remaining_state_updates"
 /// by storing the index of a previously committed transaction batch in the ledger proof.
-pub struct ProtocolUpdateTransactionCommitter {
+pub struct ProtocolUpdateTransactionCommitter<'s, S> {
     protocol_version_name: ProtocolVersionName,
-    store: Arc<StateLock<StateManagerDatabase>>,
+    database: &'s S,
     execution_configurator: RwLock<ExecutionConfigurator>,
     ledger_transaction_validator: LedgerTransactionValidator,
 }
 
-impl ProtocolUpdateTransactionCommitter {
+impl<'s, S> ProtocolUpdateTransactionCommitter<'s, S>
+where
+    S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader + CommitStore,
+{
     pub fn new(
         protocol_version_name: ProtocolVersionName,
-        store: Arc<StateLock<StateManagerDatabase>>,
+        database: &'s S,
         execution_configurator: ExecutionConfigurator,
         ledger_transaction_validator: LedgerTransactionValidator,
     ) -> Self {
         Self {
             protocol_version_name,
-            store,
+            database,
             execution_configurator: LockFactory::new("protocol_update")
                 .new_rwlock(execution_configurator),
             ledger_transaction_validator,
@@ -70,7 +71,7 @@ impl ProtocolUpdateTransactionCommitter {
     }
 
     fn read_protocol_update_progress(&self) -> ProtocolUpdateProgress {
-        let Some(latest_proof) = self.store.read_current().get_latest_proof() else {
+        let Some(latest_proof) = self.database.get_latest_proof() else {
             return ProtocolUpdateProgress::NotUpdating;
         };
 
@@ -147,11 +148,8 @@ impl ProtocolUpdateTransactionCommitter {
             .next_committable_batch_idx()
             .expect("Can't commit next protocol update batch");
 
-        // We are performing a pretty classic "transaction", so (for pure correctness) we obtain the
-        // write lock. In practice, however, we execute this logic only during boot-up or within an
-        // explicit (Java-side) "advance ledger lock" anyway.
-        let write_store = self.store.write_current();
-        let latest_proof: LedgerProof = write_store
+        let latest_proof: LedgerProof = self
+            .database
             .get_latest_proof()
             .expect("Pre-genesis protocol updates are currently not supported");
         let latest_header = latest_proof.ledger_header;
@@ -180,7 +178,7 @@ impl ProtocolUpdateTransactionCommitter {
         };
 
         let mut series_executor = TransactionSeriesExecutor::new(
-            write_store.deref(),
+            self.database,
             &execution_cache,
             &self.execution_configurator,
             dummy_protocol_state,
@@ -264,6 +262,6 @@ impl ProtocolUpdateTransactionCommitter {
             new_substate_node_ancestry_records: new_node_ancestry_records,
         };
 
-        write_store.commit(commit_bundle);
+        self.database.commit(commit_bundle);
     }
 }

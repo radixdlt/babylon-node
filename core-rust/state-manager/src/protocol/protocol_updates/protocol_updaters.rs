@@ -1,22 +1,21 @@
-use node_common::locks::StateLock;
 use std::ops::Deref;
 use std::sync::Arc;
 
 use crate::protocol::*;
 use crate::traits::*;
-use crate::StateManagerDatabase;
+use crate::StateManagerDatabaseLock;
 
 pub trait ProtocolUpdater {
     /// Executes these state updates associated with the given protocol version
     /// that haven't yet been applied
     /// (hence "remaining", e.g. if node is restarted mid-protocol update).
-    fn execute_remaining_state_updates(&self, store: Arc<StateLock<StateManagerDatabase>>);
+    fn execute_remaining_state_updates(&self, database: Arc<StateManagerDatabaseLock>);
 }
 
 pub struct NoOpProtocolUpdater;
 
 impl ProtocolUpdater for NoOpProtocolUpdater {
-    fn execute_remaining_state_updates(&self, _store: Arc<StateLock<StateManagerDatabase>>) {
+    fn execute_remaining_state_updates(&self, _database: Arc<StateManagerDatabaseLock>) {
         // no-op
     }
 }
@@ -42,10 +41,11 @@ impl<G: UpdateBatchGenerator> BatchedUpdater<G> {
 }
 
 impl<R: UpdateBatchGenerator> ProtocolUpdater for BatchedUpdater<R> {
-    fn execute_remaining_state_updates(&self, store: Arc<StateLock<StateManagerDatabase>>) {
+    fn execute_remaining_state_updates(&self, database: Arc<StateManagerDatabaseLock>) {
+        let database = database.lock();
         let mut txn_committer = ProtocolUpdateTransactionCommitter::new(
             self.new_protocol_version.clone(),
-            store.clone(),
+            database.deref(),
             // The costing and logging parameters (of the Engine) are not really used for flash
             // transactions; let's still pass sane values.
             self.new_state_computer_config
@@ -55,12 +55,9 @@ impl<R: UpdateBatchGenerator> ProtocolUpdater for BatchedUpdater<R> {
         );
 
         while let Some(next_batch_idx) = txn_committer.next_committable_batch_idx() {
-            let batch = {
-                // Put it in a scope to ensure the read lock is dropped before we attempt to commit
-                let read_store = store.read_current();
-                self.resolver
-                    .generate_batch(read_store.deref(), next_batch_idx)
-            };
+            let batch = self
+                .resolver
+                .generate_batch(database.deref(), next_batch_idx);
             match batch {
                 Some(flash_txns) => {
                     txn_committer.commit_batch(flash_txns);

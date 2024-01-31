@@ -89,10 +89,10 @@ use crate::{
     priority_mempool::PriorityMempool,
     store::{
         jmt_gc::StateHashTreeGc, DatabaseBackendConfig, DatabaseFlags, RawDbMetricsCollector,
-        StateManagerDatabase,
+        StateManagerDatabaseLock,
     },
     transaction::{CachedCommittabilityValidator, CommittabilityValidator, TransactionPreviewer},
-    PendingTransactionResultCache, ProtocolUpdateResult, StateComputer, StateManagerRocksDb,
+    PendingTransactionResultCache, ProtocolUpdateResult, StateComputer, StateManagerDatabase,
 };
 
 /// An interval between time-intensive measurement of raw DB metrics.
@@ -145,14 +145,14 @@ impl StateManagerConfig {
 #[derive(Clone)]
 pub struct StateManager {
     config: StateManagerConfig,
-    pub state_computer: Arc<StateComputer<StateManagerDatabase>>,
-    pub database: Arc<StateLock<StateManagerDatabase>>,
+    pub state_computer: Arc<StateComputer>,
+    pub database: Arc<StateManagerDatabaseLock>,
     pub pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
     pub mempool: Arc<RwLock<PriorityMempool>>,
     pub mempool_manager: Arc<MempoolManager>,
     pub execution_configurator: Arc<RwLock<ExecutionConfigurator>>,
-    pub committability_validator: Arc<RwLock<CommittabilityValidator<StateManagerDatabase>>>,
-    pub transaction_previewer: Arc<RwLock<TransactionPreviewer<StateManagerDatabase>>>,
+    pub committability_validator: Arc<RwLock<CommittabilityValidator>>,
+    pub transaction_previewer: Arc<RwLock<TransactionPreviewer>>,
 }
 
 impl StateManager {
@@ -175,7 +175,7 @@ impl StateManager {
         let network = config.network_definition.clone();
 
         let db_path = PathBuf::from(config.database_backend_config.rocks_db_path.clone());
-        let raw_db = match StateManagerRocksDb::new(db_path, config.database_flags.clone(), &network) {
+        let raw_db = match StateManagerDatabase::new(db_path, config.database_flags.clone(), &network) {
             Ok(db) => db,
             Err(error) => {
                 match error {
@@ -189,16 +189,17 @@ impl StateManager {
             }
         };
 
-        let database = Arc::new(lock_factory.named("database").new_state_lock(raw_db));
+        let database = Arc::new(StateManagerDatabaseLock::new(
+            lock_factory.named("database"),
+            raw_db,
+        ));
 
         if let Err(err) = config.protocol_config.validate() {
             panic!("Protocol misconfiguration: {}", err);
         };
 
-        let initial_protocol_state = ProtocolState::compute_initial(
-            database.read_current().deref(),
-            &config.protocol_config,
-        );
+        let initial_protocol_state =
+            ProtocolState::compute_initial(database.access().deref(), &config.protocol_config);
 
         let initial_protocol_version = &initial_protocol_state.current_protocol_version;
         let (initial_state_computer_config, initial_protocol_updater) = config
@@ -374,7 +375,7 @@ impl StateManager {
         ProtocolUpdateResult {
             post_update_proof: self
                 .database
-                .read_current()
+                .lock()
                 .get_latest_proof()
                 .expect("Missing post protocol update proof"),
         }

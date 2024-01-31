@@ -75,9 +75,7 @@ use tracing::info;
 use crate::store::traits::gc::StateHashTreeGcStore;
 use crate::store::traits::proofs::QueryableProofStore;
 use crate::store::traits::StaleTreePartsV1;
-use crate::store::StateManagerDatabase;
-use crate::{StateVersion, StateVersionDelta};
-use node_common::locks::StateLock;
+use crate::{StateManagerDatabaseLock, StateVersion, StateVersionDelta};
 
 /// A maximum number of JMT nodes collected into "batch delete" buffer.
 /// Needed only to avoid OOM problems.
@@ -97,17 +95,14 @@ pub struct StateHashTreeGcConfig {
 /// A garbage collector of sufficiently-old stale state hash tree nodes.
 /// The implementation is suited for being driven by an external scheduler.
 pub struct StateHashTreeGc {
-    database: Arc<StateLock<StateManagerDatabase>>,
+    database: Arc<StateManagerDatabaseLock>,
     interval: Duration,
     history_len: StateVersionDelta,
 }
 
 impl StateHashTreeGc {
     /// Creates a new GC.
-    pub fn new(
-        database: Arc<StateLock<StateManagerDatabase>>,
-        config: StateHashTreeGcConfig,
-    ) -> Self {
+    pub fn new(database: Arc<StateManagerDatabaseLock>, config: StateHashTreeGcConfig) -> Self {
         Self {
             database,
             interval: Duration::from_secs(u64::from(config.interval_sec)),
@@ -122,13 +117,13 @@ impl StateHashTreeGc {
 
     /// Performs a single GC run, which is supposed to permanently delete *all* old-enough state
     /// hash tree nodes marked as stale.
-    /// Note: despite the GC modifying the database, we only obtain the "historical" state lock (in
-    /// practice: not locking anything at all). This is valid, since we do not rely on the current
-    /// state's consistency here.
+    ///
+    /// *Note on concurrent database access:*
+    /// The JMT's GC process, by its nature, only accesses "old" (i.e. not "top-of-ledger" new)
+    /// JMT DB rows. For this reason, it can use the direct [`StateManagerDatabaseLock::access()`]
+    /// and effectively own these rows (for reads and deletes), without locking the database.
     pub fn run(&self) {
-        let database = self.database.access_non_locked_historical();
-        // The line below technically reads the "current state" from a "non-locked, historical" DB;
-        // however, we are fine with the current state progressing while we do the GC.
+        let database = self.database.access();
         let current_state_version = database.max_state_version();
         let to_state_version = current_state_version
             .relative(-self.history_len)

@@ -116,9 +116,8 @@ fn flash_protocol_update_test() {
             .state_computer
             .execute_genesis_for_unit_tests_with_default_config();
         // Now we can prepare the state updates based on the initialized database
-        let state_updates = generate_validator_fee_fix_state_updates(
-            tmp_state_manager.database.read_current().deref(),
-        );
+        let state_updates =
+            generate_validator_fee_fix_state_updates(tmp_state_manager.database.access().deref());
         state_updates
     };
 
@@ -152,22 +151,20 @@ fn flash_protocol_update_test() {
         Some(custom_v2_protocol_version.clone())
     );
 
-    let pre_protocol_update_state_version =
-        state_manager.database.read_current().max_state_version();
+    let database = state_manager.database.access();
+    let pre_protocol_update_state_version = database.max_state_version();
 
     // Now let's apply the protocol update (this would normally be called by Java)
     state_manager.apply_protocol_update(&custom_v2_protocol_version);
 
-    let read_db = state_manager.database.read_current();
-
     // Verify a transaction has been committed
     assert_eq!(
-        read_db.max_state_version(),
+        database.max_state_version(),
         pre_protocol_update_state_version.next().unwrap()
     );
 
     // Verify that a new consensus manager config has been flashed
-    let config_substate = read_db.get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ConsensusManagerConfigurationFieldPayload>>(
+    let config_substate = database.get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ConsensusManagerConfigurationFieldPayload>>(
         CONSENSUS_MANAGER.as_node_id(),
         MAIN_BASE_PARTITION,
         &ConsensusManagerField::Configuration.into()
@@ -183,10 +180,10 @@ fn flash_protocol_update_test() {
     );
 
     // Verify the resultant protocol update execution proof
-    let latest_execution_proof: LedgerProof = read_db
+    let latest_execution_proof: LedgerProof = database
         .get_latest_protocol_update_execution_proof()
         .unwrap();
-    let latest_proof_post_update: LedgerProof = read_db.get_latest_proof().unwrap();
+    let latest_proof_post_update: LedgerProof = database.get_latest_proof().unwrap();
 
     // Make sure that the latest protocol update execution proof
     // is the latest proof overall, as we expect.

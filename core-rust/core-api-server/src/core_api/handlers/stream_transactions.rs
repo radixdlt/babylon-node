@@ -2,17 +2,18 @@ use radix_engine::track::{
     BatchPartitionStateUpdate, NodeStateUpdates, PartitionStateUpdates, StateUpdates,
 };
 use std::iter;
+use std::ops::Deref;
 
 use crate::core_api::*;
 
 use radix_engine::types::hash;
 use radix_engine_store_interface::interface::{DatabaseUpdate, DbSubstateValue};
 
-use state_manager::store::{traits::*, StateManagerDatabase};
+use state_manager::store::traits::*;
 use state_manager::transaction::*;
 use state_manager::{
     CommittedTransactionIdentifiers, LedgerHeader, LedgerProof, LedgerProofOrigin,
-    LocalTransactionReceipt, StateVersion,
+    LocalTransactionReceipt, ReadableRocks, StateManagerDatabase, StateVersion,
 };
 
 use transaction::manifest;
@@ -54,7 +55,7 @@ pub(crate) async fn handle_stream_transactions(
 
     let limit = limit.try_into().expect("limit out of usize bounds");
 
-    let database = state.state_manager.database.read_current();
+    let database = state.state_manager.database.snapshot();
 
     if !database.is_local_transaction_execution_index_enabled() {
         return Err(client_error(
@@ -123,7 +124,7 @@ pub(crate) async fn handle_stream_transactions(
             }
         })?;
         let committed_transaction = to_api_committed_transaction(
-            &database,
+            database.deref(),
             &mapping_context,
             state_version,
             raw,
@@ -277,7 +278,7 @@ pub fn to_api_ledger_header(
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_committed_transaction(
-    database: &StateManagerDatabase,
+    database: &StateManagerDatabase<impl ReadableRocks>,
     context: &MappingContext,
     state_version: StateVersion,
     raw_ledger_transaction: RawLedgerTransaction,
@@ -623,7 +624,7 @@ pub fn to_api_system_transaction(
 }
 
 fn to_api_balance_changes(
-    database: &StateManagerDatabase,
+    database: &StateManagerDatabase<impl ReadableRocks>,
     context: &MappingContext,
     receipt: &LocalTransactionReceipt,
 ) -> Result<models::CommittedTransactionBalanceChanges, MappingError> {

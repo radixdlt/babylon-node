@@ -11,7 +11,6 @@ use models::transaction_parse_response::TransactionParseResponse;
 use state_manager::mempool::pending_transaction_result_cache::RejectionReason;
 use state_manager::transaction::*;
 
-use state_manager::store::StateManagerDatabase;
 use transaction::prelude::*;
 
 use super::{
@@ -23,7 +22,7 @@ pub struct ParseContext<'a> {
     response_mode: ResponseMode,
     validation_mode: ValidationMode,
     user_transaction_validator: NotarizedTransactionValidator,
-    committability_validator: &'a CommittabilityValidator<StateManagerDatabase>,
+    committability_validator: &'a CommittabilityValidator,
 }
 
 pub(crate) async fn handle_transaction_parse(

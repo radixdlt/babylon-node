@@ -30,7 +30,7 @@ pub(crate) async fn handle_transaction_status(
         pending_transaction_result_cache.peek_all_known_payloads_for_intent(&intent_hash);
     drop(pending_transaction_result_cache);
 
-    let database = state.state_manager.database.read_current();
+    let database = state.state_manager.database.snapshot();
 
     if !database.is_local_transaction_execution_index_enabled() {
         return Err(client_error(

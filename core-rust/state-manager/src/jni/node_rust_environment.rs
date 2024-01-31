@@ -83,11 +83,9 @@ use crate::mempool_manager::MempoolManager;
 use crate::mempool_relay_dispatcher::MempoolRelayDispatcher;
 use crate::priority_mempool::PriorityMempool;
 
-use crate::store::StateManagerDatabase;
-
 use super::fatal_panic_handler::FatalPanicHandler;
 
-use crate::{StateComputer, StateManager, StateManagerConfig};
+use crate::{StateComputer, StateManager, StateManagerConfig, StateManagerDatabaseLock};
 
 const POINTER_JNI_FIELD_NAME: &str = "rustNodeRustEnvironmentPointer";
 
@@ -189,20 +187,14 @@ impl JNINodeRustEnvironment {
             .unwrap()
     }
 
-    pub fn get_state_computer(
-        env: &JNIEnv,
-        j_node_rust_env: JObject,
-    ) -> Arc<StateComputer<StateManagerDatabase>> {
+    pub fn get_state_computer(env: &JNIEnv, j_node_rust_env: JObject) -> Arc<StateComputer> {
         Self::get(env, j_node_rust_env)
             .state_manager
             .state_computer
             .clone()
     }
 
-    pub fn get_database(
-        env: &JNIEnv,
-        j_node_rust_env: JObject,
-    ) -> Arc<StateLock<StateManagerDatabase>> {
+    pub fn get_database(env: &JNIEnv, j_node_rust_env: JObject) -> Arc<StateManagerDatabaseLock> {
         Self::get(env, j_node_rust_env)
             .state_manager
             .database

@@ -11,7 +11,7 @@ pub(crate) async fn handle_lts_transaction_construction(
     assert_matching_network(&request.network, &state.network)?;
     let mapping_context = MappingContext::new(&state.network);
 
-    let database = state.state_manager.database.read_current();
+    let database = state.state_manager.database.snapshot();
 
     let consensus_manager_substate =
         read_mandatory_main_field_substate::<ConsensusManagerStateFieldPayload>(

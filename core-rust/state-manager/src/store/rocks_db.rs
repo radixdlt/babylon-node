@@ -64,6 +64,7 @@
 
 use std::collections::HashSet;
 use std::fmt;
+use std::ops::Deref;
 
 use crate::store::traits::*;
 use crate::{
@@ -88,6 +89,7 @@ use radix_engine_store_interface::interface::*;
 use radix_engine_store_interface::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
 use std::path::PathBuf;
 
+use node_common::locks::{LockFactory, Mutex};
 use tracing::{error, info, warn};
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
@@ -512,7 +514,7 @@ pub trait ReadableRocks {
     /// Starts iteration over key-value pairs, according to the given [`IteratorMode`].
     fn iterator_cf(
         &self,
-        cf_handle: &impl AsColumnFamilyRef,
+        cf: &impl AsColumnFamilyRef,
         mode: IteratorMode,
     ) -> Box<dyn Iterator<Item = KVBytes> + '_>;
 
@@ -539,7 +541,11 @@ pub trait ReadableRocks {
 ///
 /// Naturally, it is expected that only a "direct" RocksDB instance can implement this one.
 pub trait WriteableRocks: ReadableRocks {
+    /// Atomically writes the given batch of updates.
     fn write(&self, batch: WriteBatch);
+
+    /// Returns a snapshot of the current state.
+    fn snapshot(&self) -> SnapshotRocks;
 }
 
 /// Direct RocksDB instance.
@@ -554,12 +560,12 @@ impl ReadableRocks for DirectRocks {
 
     fn iterator_cf(
         &self,
-        cf_handle: &impl AsColumnFamilyRef,
+        cf: &impl AsColumnFamilyRef,
         mode: IteratorMode,
     ) -> Box<dyn Iterator<Item = KVBytes> + '_> {
         Box::new(
             self.db
-                .iterator_cf(cf_handle, mode)
+                .iterator_cf(cf, mode)
                 .map(|result| result.expect("reading from DB iterator")),
         )
     }
@@ -588,6 +594,13 @@ impl WriteableRocks for DirectRocks {
     fn write(&self, batch: WriteBatch) {
         self.db.write(batch).expect("DB write batch");
     }
+
+    fn snapshot(&self) -> SnapshotRocks {
+        SnapshotRocks {
+            db: &self.db,
+            snapshot: self.db.snapshot(),
+        }
+    }
 }
 
 /// Snapshot of RocksDB.
@@ -607,12 +620,12 @@ impl<'db> ReadableRocks for SnapshotRocks<'db> {
 
     fn iterator_cf(
         &self,
-        cf_handle: &impl AsColumnFamilyRef,
+        cf: &impl AsColumnFamilyRef,
         mode: IteratorMode,
     ) -> Box<dyn Iterator<Item = KVBytes> + '_> {
         Box::new(
             self.snapshot
-                .iterator_cf(cf_handle, mode)
+                .iterator_cf(cf, mode)
                 .map(|result| result.expect("reading from snapshot DB iterator")),
         )
     }
@@ -639,11 +652,71 @@ impl<'db> ReadableRocks for SnapshotRocks<'db> {
     }
 }
 
-/// A convenience alias for the exact [`StateManagerRocksDb`] type owned by state manager.
-pub type StateManagerDatabase = StateManagerRocksDb<DirectRocks>;
+pub type ActualStateManagerDatabase = StateManagerDatabase<DirectRocks>;
+
+// TODO(wip): doc
+pub struct StateManagerDatabaseLock {
+    database: ActualStateManagerDatabase,
+    mutex: Mutex<()>,
+}
+
+impl StateManagerDatabaseLock {
+    pub fn new(lock_factory: LockFactory, database: ActualStateManagerDatabase) -> Self {
+        Self {
+            database,
+            mutex: lock_factory.new_mutex(()),
+        }
+    }
+
+    pub fn access(
+        &self,
+    ) -> impl Deref<Target = StateManagerDatabase<impl WriteableRocks + '_>> + '_ {
+        &self.database // TODO(wip): return tracking wrap?
+    }
+
+    pub fn lock(&self) -> impl Deref<Target = StateManagerDatabase<impl WriteableRocks + '_>> + '_ {
+        DatabaseLockGuard {
+            underlying: self.mutex.lock(),
+            database: &self.database,
+        }
+    }
+
+    pub fn snapshot(
+        &self,
+    ) -> impl Deref<Target = StateManagerDatabase<impl ReadableRocks + '_>> + '_ {
+        let StateManagerDatabase { config, rocks } = &self.database;
+        StateManagerDatabase {
+            config: config.clone(),
+            rocks: rocks.snapshot(),
+        }
+    }
+}
+
+pub struct DatabaseLockGuard<'d, D, U> {
+    #[allow(dead_code)] // only held to release the lock when dropped
+    underlying: U,
+    database: &'d D,
+}
+
+impl<'d, D: 'd, U> Deref for DatabaseLockGuard<'d, D, U> {
+    type Target = D;
+
+    fn deref(&self) -> &Self::Target {
+        self.database
+    }
+}
+
+impl<'db> Deref for StateManagerDatabase<SnapshotRocks<'db>> {
+    // TODO(wip): replace with a tracking wrap
+    type Target = StateManagerDatabase<SnapshotRocks<'db>>;
+
+    fn deref(&self) -> &Self::Target {
+        self
+    }
+}
 
 /// A RocksDB-backed persistence layer for state manager.
-pub struct StateManagerRocksDb<R> {
+pub struct StateManagerDatabase<R> {
     /// Database feature flags.
     ///
     /// These were passed during construction, validated and persisted. They are made available by
@@ -654,7 +727,7 @@ pub struct StateManagerRocksDb<R> {
     rocks: R,
 }
 
-impl StateManagerDatabase {
+impl ActualStateManagerDatabase {
     pub fn new(
         root: PathBuf,
         config: DatabaseFlags,
@@ -671,7 +744,7 @@ impl StateManagerDatabase {
 
         let db = DB::open_cf_descriptors(&db_opts, root.as_path(), column_families).unwrap();
 
-        let state_manager_database = StateManagerRocksDb {
+        let state_manager_database = StateManagerDatabase {
             config: config.clone(),
             rocks: DirectRocks { db },
         };
@@ -688,13 +761,50 @@ impl StateManagerDatabase {
 
         Ok(state_manager_database)
     }
+}
 
-    /// Creates a readonly [`StateManagerRocksDb`] that allows reading from the store while some other
-    /// process is writing to it. Any write operation that happens against a read-only store leads
-    /// to a panic.
+/// A wrapper for [`DirectRocks`] which only exposes it as [`ReadableRocks`].
+/// This is needed to restrict the writing capabilities in compile time (when opening RocksDB in
+/// read-only or secondary mode).
+pub struct ReadonlyRocks {
+    wrapped: DirectRocks,
+}
+
+impl ReadableRocks for ReadonlyRocks {
+    fn cf_handle(&self, name: &str) -> &ColumnFamily {
+        self.wrapped.cf_handle(name)
+    }
+
+    fn iterator_cf(
+        &self,
+        cf: &impl AsColumnFamilyRef,
+        mode: IteratorMode,
+    ) -> Box<dyn Iterator<Item = KVBytes> + '_> {
+        self.wrapped.iterator_cf(cf, mode)
+    }
+
+    fn get_pinned_cf(
+        &self,
+        cf: &impl AsColumnFamilyRef,
+        key: impl AsRef<[u8]>,
+    ) -> Option<DBPinnableSlice> {
+        self.wrapped.get_pinned_cf(cf, key)
+    }
+
+    fn multi_get_cf<'a>(
+        &'a self,
+        keys: impl IntoIterator<Item = (&'a (impl AsColumnFamilyRef + 'a), impl AsRef<[u8]>)>,
+    ) -> Vec<Option<Vec<u8>>> {
+        self.wrapped.multi_get_cf(keys)
+    }
+}
+
+impl StateManagerDatabase<ReadonlyRocks> {
+    /// Creates a readonly [`StateManagerDatabase`] that allows only reading from the store, while
+    /// some other process is writing to it.
     ///
     /// This is required for the [`ledger-tools`] CLI tool which only reads data from the database
-    /// and does not write anything to it. Without this constructor, if [`StateManagerRocksDb::new`] is
+    /// and does not write anything to it. Without this constructor, if [`StateManagerDatabase::new`] is
     /// used by the [`ledger-tools`] CLI then it leads to a lock contention as two threads would
     /// want to have a write lock over the database. This provides the [`ledger-tools`] CLI with a
     /// way of making it clear that it only wants read lock and not a write lock.
@@ -714,16 +824,19 @@ impl StateManagerDatabase {
             DB::open_cf_descriptors_read_only(&db_opts, root.as_path(), column_families, false)
                 .unwrap();
 
-        Ok(StateManagerRocksDb {
+        Ok(StateManagerDatabase {
             config: DatabaseFlags {
                 enable_local_transaction_execution_index: false,
                 enable_account_change_index: false,
             },
-            rocks: DirectRocks { db },
+            rocks: ReadonlyRocks {
+                wrapped: DirectRocks { db },
+            },
         })
     }
 
-    /// Create a [`StateManagerRocksDb`] as a secondary instance which may catch up with the primary
+    /// Creates a [`StateManagerDatabase`] as a secondary instance which may catch up with the
+    /// primary.
     pub fn new_as_secondary(root: PathBuf, temp: PathBuf, column_families: Vec<&str>) -> Self {
         let mut db_opts = Options::default();
         db_opts.create_if_missing(false);
@@ -742,35 +855,37 @@ impl StateManagerDatabase {
         )
         .unwrap();
 
-        StateManagerRocksDb {
+        StateManagerDatabase {
             config: DatabaseFlags {
                 enable_local_transaction_execution_index: false,
                 enable_account_change_index: false,
             },
-            rocks: DirectRocks { db },
+            rocks: ReadonlyRocks {
+                wrapped: DirectRocks { db },
+            },
         }
     }
 
     pub fn try_catchup_with_primary(&self) {
-        self.rocks.db.try_catch_up_with_primary().unwrap();
+        self.rocks.wrapped.db.try_catch_up_with_primary().unwrap();
     }
 }
 
-impl<R: ReadableRocks> StateManagerRocksDb<R> {
+impl<R: ReadableRocks> StateManagerDatabase<R> {
     /// Starts a read-only interaction with the DB through per-CF type-safe APIs.
     fn open_read_context(&self) -> TypedDbContext<R, NoWriteSupport> {
         TypedDbContext::new(&self.rocks, NoWriteSupport)
     }
 }
 
-impl<R: WriteableRocks> StateManagerRocksDb<R> {
+impl<R: WriteableRocks> StateManagerDatabase<R> {
     /// Starts a read/buffered-write interaction with the DB through per-CF type-safe APIs.
     fn open_rw_context(&self) -> TypedDbContext<R, BufferedWriteSupport<R>> {
         TypedDbContext::new(&self.rocks, BufferedWriteSupport::new(&self.rocks))
     }
 }
 
-impl<R: WriteableRocks> StateManagerRocksDb<R> {
+impl<R: WriteableRocks> StateManagerDatabase<R> {
     fn read_flags_state(&self) -> DatabaseFlagsState {
         let db_context = self.open_read_context();
         let extension_data_cf = db_context.cf(ExtensionsDataCf);
@@ -800,7 +915,7 @@ impl<R: WriteableRocks> StateManagerRocksDb<R> {
     }
 }
 
-impl<R: ReadableRocks> ConfigurableDatabase for StateManagerRocksDb<R> {
+impl<R: ReadableRocks> ConfigurableDatabase for StateManagerDatabase<R> {
     fn is_account_change_index_enabled(&self) -> bool {
         self.config.enable_account_change_index
     }
@@ -810,7 +925,7 @@ impl<R: ReadableRocks> ConfigurableDatabase for StateManagerRocksDb<R> {
     }
 }
 
-impl MeasurableDatabase for StateManagerDatabase {
+impl MeasurableDatabase for StateManagerDatabaseLock {
     fn get_data_volume_statistics(&self) -> Vec<CategoryDbVolumeStatistic> {
         let mut statistics = ALL_COLUMN_FAMILIES
             .iter()
@@ -821,7 +936,7 @@ impl MeasurableDatabase for StateManagerDatabase {
                 )
             })
             .collect::<IndexMap<_, _>>();
-        let live_files = match self.rocks.db.live_files() {
+        let live_files = match self.database.rocks.db.live_files() {
             Ok(live_files) => live_files,
             Err(err) => {
                 warn!("could not get DB live files; returning 0: {:?}", err);
@@ -844,7 +959,7 @@ impl MeasurableDatabase for StateManagerDatabase {
     }
 }
 
-impl<R: WriteableRocks> CommitStore for StateManagerRocksDb<R> {
+impl<R: WriteableRocks> CommitStore for StateManagerDatabase<R> {
     fn commit(&self, commit_bundle: CommitBundle) {
         let db_context = self.open_rw_context();
 
@@ -963,7 +1078,7 @@ impl<R: WriteableRocks> CommitStore for StateManagerRocksDb<R> {
     }
 }
 
-impl<R: WriteableRocks> StateManagerRocksDb<R> {
+impl<R: WriteableRocks> StateManagerDatabase<R> {
     fn add_transaction_to_write_batch(
         &self,
         db_context: &TypedDbContext<R, BufferedWriteSupport<R>>,
@@ -1043,7 +1158,7 @@ impl<R: WriteableRocks> StateManagerRocksDb<R> {
     }
 }
 
-impl<R: WriteableRocks> ExecutedGenesisScenarioStore for StateManagerRocksDb<R> {
+impl<R: WriteableRocks> ExecutedGenesisScenarioStore for StateManagerDatabase<R> {
     fn put_scenario(&self, number: ScenarioSequenceNumber, scenario: ExecutedGenesisScenario) {
         self.open_rw_context()
             .cf(ExecutedGenesisScenariosCf)
@@ -1140,7 +1255,7 @@ impl<'r> Iterator for RocksDBCommittedTransactionBundleIterator<'r> {
     }
 }
 
-impl<R: ReadableRocks> IterableTransactionStore for StateManagerRocksDb<R> {
+impl<R: ReadableRocks> IterableTransactionStore for StateManagerDatabase<R> {
     fn get_committed_transaction_bundle_iter(
         &self,
         from_state_version: StateVersion,
@@ -1156,7 +1271,7 @@ impl<R: ReadableRocks> IterableTransactionStore for StateManagerRocksDb<R> {
     }
 }
 
-impl<R: ReadableRocks> QueryableTransactionStore for StateManagerRocksDb<R> {
+impl<R: ReadableRocks> QueryableTransactionStore for StateManagerDatabase<R> {
     fn get_committed_transaction(
         &self,
         state_version: StateVersion,
@@ -1218,7 +1333,7 @@ impl<R: ReadableRocks> QueryableTransactionStore for StateManagerRocksDb<R> {
     }
 }
 
-impl<R: ReadableRocks> TransactionIndex<&IntentHash> for StateManagerRocksDb<R> {
+impl<R: ReadableRocks> TransactionIndex<&IntentHash> for StateManagerDatabase<R> {
     fn get_txn_state_version_by_identifier(
         &self,
         intent_hash: &IntentHash,
@@ -1227,7 +1342,7 @@ impl<R: ReadableRocks> TransactionIndex<&IntentHash> for StateManagerRocksDb<R> 
     }
 }
 
-impl<R: ReadableRocks> TransactionIndex<&NotarizedTransactionHash> for StateManagerRocksDb<R> {
+impl<R: ReadableRocks> TransactionIndex<&NotarizedTransactionHash> for StateManagerDatabase<R> {
     fn get_txn_state_version_by_identifier(
         &self,
         notarized_transaction_hash: &NotarizedTransactionHash,
@@ -1238,7 +1353,7 @@ impl<R: ReadableRocks> TransactionIndex<&NotarizedTransactionHash> for StateMana
     }
 }
 
-impl<R: ReadableRocks> TransactionIndex<&LedgerTransactionHash> for StateManagerRocksDb<R> {
+impl<R: ReadableRocks> TransactionIndex<&LedgerTransactionHash> for StateManagerDatabase<R> {
     fn get_txn_state_version_by_identifier(
         &self,
         ledger_transaction_hash: &LedgerTransactionHash,
@@ -1249,7 +1364,7 @@ impl<R: ReadableRocks> TransactionIndex<&LedgerTransactionHash> for StateManager
     }
 }
 
-impl<R: ReadableRocks> TransactionIdentifierLoader for StateManagerRocksDb<R> {
+impl<R: ReadableRocks> TransactionIdentifierLoader for StateManagerDatabase<R> {
     fn get_top_transaction_identifiers(
         &self,
     ) -> Option<(StateVersion, CommittedTransactionIdentifiers)> {
@@ -1259,7 +1374,7 @@ impl<R: ReadableRocks> TransactionIdentifierLoader for StateManagerRocksDb<R> {
     }
 }
 
-impl<R: ReadableRocks> IterableProofStore for StateManagerRocksDb<R> {
+impl<R: ReadableRocks> IterableProofStore for StateManagerDatabase<R> {
     fn get_proof_iter(
         &self,
         from_state_version: StateVersion,
@@ -1309,7 +1424,7 @@ impl<R: ReadableRocks> IterableProofStore for StateManagerRocksDb<R> {
     }
 }
 
-impl<R: ReadableRocks> QueryableProofStore for StateManagerRocksDb<R> {
+impl<R: ReadableRocks> QueryableProofStore for StateManagerDatabase<R> {
     fn max_state_version(&self) -> StateVersion {
         self.open_read_context()
             .cf(RawLedgerTransactionsCf)
@@ -1513,7 +1628,7 @@ impl<R: ReadableRocks> QueryableProofStore for StateManagerRocksDb<R> {
     }
 }
 
-impl<R: ReadableRocks> SubstateDatabase for StateManagerRocksDb<R> {
+impl<R: ReadableRocks> SubstateDatabase for StateManagerDatabase<R> {
     fn get_substate(
         &self,
         partition_key: &DbPartitionKey,
@@ -1540,7 +1655,7 @@ impl<R: ReadableRocks> SubstateDatabase for StateManagerRocksDb<R> {
     }
 }
 
-impl<R: ReadableRocks> ListableSubstateDatabase for StateManagerRocksDb<R> {
+impl<R: ReadableRocks> ListableSubstateDatabase for StateManagerDatabase<R> {
     fn list_partition_keys(&self) -> Box<dyn Iterator<Item = DbPartitionKey> + '_> {
         self.open_read_context()
             .cf(SubstatesCf)
@@ -1548,7 +1663,7 @@ impl<R: ReadableRocks> ListableSubstateDatabase for StateManagerRocksDb<R> {
     }
 }
 
-impl<R: ReadableRocks> SubstateNodeAncestryStore for StateManagerRocksDb<R> {
+impl<R: ReadableRocks> SubstateNodeAncestryStore for StateManagerDatabase<R> {
     fn batch_get_ancestry<'a>(
         &self,
         node_ids: impl IntoIterator<Item = &'a NodeId>,
@@ -1559,13 +1674,13 @@ impl<R: ReadableRocks> SubstateNodeAncestryStore for StateManagerRocksDb<R> {
     }
 }
 
-impl<R: ReadableRocks> ReadableTreeStore for StateManagerRocksDb<R> {
+impl<R: ReadableRocks> ReadableTreeStore for StateManagerDatabase<R> {
     fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
         self.open_read_context().cf(StateHashTreeNodesCf).get(key)
     }
 }
 
-impl<R: WriteableRocks> StateHashTreeGcStore for StateManagerRocksDb<R> {
+impl<R: WriteableRocks> StateHashTreeGcStore for StateManagerDatabase<R> {
     fn get_stale_tree_parts_iter(
         &self,
     ) -> Box<dyn Iterator<Item = (StateVersion, StaleTreeParts)> + '_> {
@@ -1594,7 +1709,7 @@ impl<R: WriteableRocks> StateHashTreeGcStore for StateManagerRocksDb<R> {
     }
 }
 
-impl<R: WriteableRocks> LedgerProofsGcStore for StateManagerRocksDb<R> {
+impl<R: WriteableRocks> LedgerProofsGcStore for StateManagerDatabase<R> {
     fn get_progress(&self) -> Option<LedgerProofsGcProgress> {
         self.open_read_context()
             .cf(LedgerProofsGcProgressCf)
@@ -1615,7 +1730,7 @@ impl<R: WriteableRocks> LedgerProofsGcStore for StateManagerRocksDb<R> {
 }
 
 impl<R: ReadableRocks> ReadableAccuTreeStore<StateVersion, TransactionTreeHash>
-    for StateManagerRocksDb<R>
+    for StateManagerDatabase<R>
 {
     fn get_tree_slice(
         &self,
@@ -1629,7 +1744,7 @@ impl<R: ReadableRocks> ReadableAccuTreeStore<StateVersion, TransactionTreeHash>
 }
 
 impl<R: ReadableRocks> ReadableAccuTreeStore<StateVersion, ReceiptTreeHash>
-    for StateManagerRocksDb<R>
+    for StateManagerDatabase<R>
 {
     fn get_tree_slice(&self, state_version: &StateVersion) -> Option<TreeSlice<ReceiptTreeHash>> {
         self.open_read_context()
@@ -1639,19 +1754,19 @@ impl<R: ReadableRocks> ReadableAccuTreeStore<StateVersion, ReceiptTreeHash>
     }
 }
 
-impl<R: WriteableRocks> WriteableVertexStore for StateManagerRocksDb<R> {
+impl<R: WriteableRocks> WriteableVertexStore for StateManagerDatabase<R> {
     fn save_vertex_store(&self, blob: VertexStoreBlob) {
         self.open_rw_context().cf(VertexStoreCf).put(&(), &blob)
     }
 }
 
-impl<R: ReadableRocks> RecoverableVertexStore for StateManagerRocksDb<R> {
+impl<R: ReadableRocks> RecoverableVertexStore for StateManagerDatabase<R> {
     fn get_vertex_store(&self) -> Option<VertexStoreBlob> {
         self.open_read_context().cf(VertexStoreCf).get(&())
     }
 }
 
-impl<R: WriteableRocks> StateManagerRocksDb<R> {
+impl<R: WriteableRocks> StateManagerDatabase<R> {
     fn batch_update_account_change_index_from_receipt(
         &self,
         db_context: &TypedDbContext<R, BufferedWriteSupport<R>>,
@@ -1732,7 +1847,7 @@ impl<R: WriteableRocks> StateManagerRocksDb<R> {
     }
 }
 
-impl<R: WriteableRocks> AccountChangeIndexExtension for StateManagerRocksDb<R> {
+impl<R: WriteableRocks> AccountChangeIndexExtension for StateManagerDatabase<R> {
     fn account_change_index_last_processed_state_version(&self) -> StateVersion {
         self.open_read_context()
             .cf(ExtensionsDataCf)
@@ -1770,7 +1885,7 @@ impl<R: WriteableRocks> AccountChangeIndexExtension for StateManagerRocksDb<R> {
     }
 }
 
-impl<R: WriteableRocks> RestoreDecember2023LostSubstates for StateManagerRocksDb<R> {
+impl<R: WriteableRocks> RestoreDecember2023LostSubstates for StateManagerDatabase<R> {
     fn restore_december_2023_lost_substates(&self, network: &NetworkDefinition) {
         let db_context = self.open_rw_context();
         let extension_data_cf = db_context.cf(ExtensionsDataCf);
@@ -1868,7 +1983,7 @@ impl<R: WriteableRocks> RestoreDecember2023LostSubstates for StateManagerRocksDb
     }
 }
 
-impl<R: ReadableRocks> IterableAccountChangeIndex for StateManagerRocksDb<R> {
+impl<R: ReadableRocks> IterableAccountChangeIndex for StateManagerDatabase<R> {
     fn get_state_versions_for_account_iter(
         &self,
         account: GlobalAddress,
