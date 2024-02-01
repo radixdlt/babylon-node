@@ -280,14 +280,18 @@ pub trait Snapshottable<'s> {
 
 impl<D> DbLock<D> {
     /// Immediately returns a reference to the database (disregarding any [`Self::lock()`])s.
+    ///
+    /// This method should be used by clients who:
+    /// - read data known to be immutable,
+    /// - or read+write data which they exclusively own.
     pub fn access(&self) -> impl Deref<Target = D> + '_ {
         LockGuard::new(|| &self.database, self.shared_live_access_listener.clone())
     }
 
     /// Acquires an internal lock and returns a lock guard allowing access to the database.
     ///
-    /// This method should be used by clients who need to coordinate exclusive read/write access to
-    /// a known mutable region of the database.
+    /// This method should be used by clients who need to coordinate an exclusive read+write access
+    /// to a known mutable region of the database.
     // TODO(future enhancement): we really should have a set of `RwLock`s for independent regions?
     pub fn lock(&self) -> impl Deref<Target = D> + '_ {
         DbLockGuard {
@@ -303,10 +307,13 @@ impl<'s, D: Snapshottable<'s>> DbLock<D> {
     /// This method should be used by clients who need to see a consistent view of the database at
     /// a given moment. Please note that it assumes that all writes happen in atomic batches which
     /// do not leave database inconsistent.
-    // TODO(future enhancement): also provide something like `lock_snapshot_unlock()`?
+    // TODO(future enhancement): also provide something like `lock_snapshot_unlock()`, which would
+    // not need the "writes are atomic+consistent" assumption?
     pub fn snapshot(&'s self) -> impl Deref<Target = D::Snapshot> + '_ {
         LockGuard::new(
-            || SnapshotGuard::new(&self.database),
+            || OwnedDeref {
+                owned: self.database.snapshot(),
+            },
             self.on_demand_snapshot_listener.clone(),
         )
     }
@@ -365,31 +372,22 @@ impl<U, L: LockListener> Drop for LockGuard<U, L> {
     }
 }
 
-/// A guard for a [`DbLock::snapshot()`].
-/// Since no locking is needed for obtaining a snapshot, its only purpose is to implement [`Deref`].
-struct SnapshotGuard<'s, D: Snapshottable<'s>> {
-    snapshot: D::Snapshot,
+/// A simple wrapper used only to implement [`Deref`] for an owned instance.
+struct OwnedDeref<T> {
+    owned: T,
 }
 
-impl<'s, D: Snapshottable<'s>> SnapshotGuard<'s, D> {
-    fn new(database: &'s D) -> Self {
-        Self {
-            snapshot: database.snapshot(),
-        }
-    }
-}
-
-impl<'s, D: Snapshottable<'s>> Deref for SnapshotGuard<'s, D> {
-    type Target = D::Snapshot;
+impl<T> Deref for OwnedDeref<T> {
+    type Target = T;
 
     fn deref(&self) -> &Self::Target {
-        &self.snapshot
+        &self.owned
     }
 }
 
 /// A guard for a [`DbLock::lock()`].
 pub struct DbLockGuard<'d, D, U> {
-    #[allow(dead_code)] // only held to release the lock when dropped
+    #[allow(dead_code)] // only held to release the marker lock when dropped
     underlying: U,
     database: &'d D,
 }

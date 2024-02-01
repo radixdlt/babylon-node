@@ -656,6 +656,13 @@ pub type ActualStateManagerDatabase = StateManagerDatabase<DirectRocks>;
 impl<'db> Snapshottable<'db> for StateManagerDatabase<DirectRocks> {
     type Snapshot = StateManagerDatabase<SnapshotRocks<'db>>;
 
+    // TODO(potential performance gain): This is the place where we could use a cached snapshot
+    // instead of creating a new one. There are a few options: e.g. cache on-demand (after
+    // detecting that DB version has grown) or actively hot-swap a snapshot after each batch-write.
+    // However, maybe it's not worth optimizing for at all: according to the measurements from
+    // RocksDB authors (https://github.com/facebook/rocksdb/issues/5083), rapid snapshotting *can*
+    // become a performance problem, but only at rates way above our use-cases (i.e. >10K snapshots
+    // per second).
     fn snapshot(&'db self) -> Self::Snapshot {
         let StateManagerDatabase { config, rocks } = self;
         StateManagerDatabase {

@@ -154,12 +154,6 @@ pub struct StateManager {
 }
 
 impl StateManager {
-    pub fn test(&self, metrics_registry: &Registry) {
-        let mut write_mempool = self.mempool.write();
-        *write_mempool = PriorityMempool::new(MempoolConfig::default(), metrics_registry);
-        drop(write_mempool);
-    }
-
     pub fn new(
         config: StateManagerConfig,
         mempool_relay_dispatcher: Option<MempoolRelayDispatcher>,
