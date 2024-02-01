@@ -196,7 +196,6 @@ jobs:
       scan_image: true
       snyk_target_ref: ${{ github.ref_name }}
 
-      
   build_push_container_private_arm:
     if: contains( github.event.pull_request.labels.*.name, 'ARM-TEST') || github.event_name != 'pull_request'
     name: (PRIVATE) Docker ARM
