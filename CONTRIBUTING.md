@@ -1,142 +1,133 @@
-# Contributing to radixdlt
+# Contributing Guidelines
 
-### Table of contents
+Thank you for your interest in contributing to RadixDLT node!
+
+## Clarification on GitHub Issue Usage and Feature Requests
+
+We want to clarify that GitHub Issues are primarily meant for the purpose of reporting problems or concerns, rather than functioning as an open bug tracker. This means that reported issues on Github may be closed and reported in our internal tracking system or added to our roadmap.
+
+If you are thinking of requesting a feature, make sure it’s not already part of our upcoming features outlined in the [Roadmap](https://docs.radixdlt.com/docs/roadmap). If you have a feature suggestion, we kindly ask that you share it through [Discord](http://discord.gg/radixdlt) or [Telegram](https://t.me/RadixDevelopers).
+
+Our primary focus is on the priorities outlined in our Roadmap. We appreciate your understanding that addressing reported issues may not always align with our immediate roadmap goals.
+
+# Table of contents
 - [Code of conduct](#code-of-conduct)
+- [Reporting Issues](#reporting-issues)
+- [Before you contribute](#before-you-contribute)
 - [Get started](#get-started)
-  - [Reporting a bug](#reporting-a-bug)
+  - [Setting up your environment](#setting-up-your-environment)
 - [Branching strategy](#branching-strategy)
   - [Rebasing](#rebasing)
-  - [Main flow](#main-flow)
-  - [Branch types and naming](#branch-types-and-naming)
-  - [Features](#features)
-  - [Release candidates](#release-candidates)
-  - [Releases](#releases)
-  - [Hotfixes](#hotfixes)
 - [Contribute](#contribute)
   - [Code style](#code-style)
   - [Code structure](#code-structure)
+  - [Testing](#testing)
   - [Commit messages](#commit-messages)
   - [Opening a pull request](#opening-a-pull-request)
+  - [Review process](#review-process)
+  - [License](#license)
 
-
-## Code of conduct
+# Code of conduct
 
 This project adheres to the Contributor Covenant [code of conduct](CODE_OF_CONDUCT.md).
 By participating, you are expected to uphold this code.
 Please report unacceptable behavior to [hello@radixdlt.com](mailto:hello@radixdlt.com).
 
-## Get started
+# Reporting Issues
 
-### Reporting a bug
+Ensure the bug was not already reported by searching on GitHub under [Issues](https://github.com/radixdlt/babylon-node/issues).
 
-* **Ensure the bug was not already reported** by searching on GitHub under [Issues](https://github.com/radixdlt/radixdlt-parent/issues).
-* If you're unable to find an open issue addressing the problem, [open a new one](https://github.com/radixdlt/radixdlt-parent/issues/new). Be sure to include:
-  * a **title**,
-  * a **clear description**,
-  * as much **relevant information** as possible,
-  * a **code sample** or an **executable test case** demonstrating the expected behavior that is not occurring.
+If you're unable to find an open issue addressing the problem, [open a new one](https://github.com/radixdlt/babylon-node/issues). Make sure to provide as much detail as possible, including:
 
-## Branching strategy
+- A clear and descriptive title.
+- Steps to reproduce the issue.
+- Expected behavior and actual behavior.
+- Your operating system and other relevant information.
+- If possible, include screenshots or code snippets that illustrate the issue.
 
-This branching scheme is a combination of GitHub flow and git-flow where there’s the main branch, feature branches and then release branches.
+# Before you contribute
 
+Prior to commencing any work on a PR, we strongly advise initiating a discussion with the team via Discord, Telegram, or GitHub Issues (for bugs).
 
-### Rebasing
+Submitting a Pull Request does not guarantee the acceptance of your proposed changes.
 
-Rebasing in main should be avoided. Rebases cause potential conflicts with other people's work on the same branches, overwrite the history of the project and ruin any GPG signed commits from other developers. On feature branches, especially if only one developer is working on it, it’s ok to do rebasing.
+# Get started
 
+## Setting up your environment
 
-### Main flow
+Please refer to [Development Docs](https://github.com/radixdlt/babylon-node/tree/main/docs/development) on how to setup your local environment.
 
-* Create feature branches using main as a starting point to start new work
+# Branching strategy
 
-When the release process starts:
+We use a git flow-based branching scheme, where there’s the `main` (master) branch, `develop`, feature branches and then release branches.
 
-* Create a release branch
-* Tag the commit with a release candidate tag, e.g. rc/1.0.3
-* Once a release branch is created, only add serious bug fixes to the branch.
-* Once a release branch (release or hotfix) is released, merge back to main
+The `main` branch contains the latest code that is released or ready to be released.
 
+We use `develop` as our everyday development branch. This is where we synchronize the changes for an upcoming release.
 
+Features branches usually branch from `develop`, but keep in mind that it's an unstable and rapidly changing branch,
+so in some circumstances branching from `main` might be preferred.
 
-### Branch types and naming
+As mentioned above, we advise to contact the team prior to commencing any work on a PR.
 
-* Development  - `main`
-* Release - `release/1.0.0`
-* Feature - `feature/cool-bananas`
-* Hotfix - `release/1.0.1`
+## Rebasing
 
+Rebasing in `main`/`develop` should be avoided. Rebases cause potential conflicts with other people's work on the same branches, overwrite the history of the project and ruin any GPG signed commits from other developers. On feature branches, especially if only one developer is working on it, it’s ok to do rebasing.
 
-### Features
+# Contribute
 
-Feature branches are where the main work happens. The goal is to keep them as independent from each other as possible. They can be based on a previous release or from main.
+## Code style
 
-> main branch is not a place to dump WIP features
+Write clear, concise, and well-documented code.
 
-It’s important to remark that feature branches should only be merged to main once they are complete and ideally tested in a test network.
+We rely on automatic code formatting. The following command will format both the Java and Rust code:
 
-### Main
+```shell
+$ ./gradlew spotlessApply
+```
 
-This branch acts as staging for new releases, and are where most of QA should happen.
-
-When QA gives the green light, a new release branch is created
-
-### Releases
-
-These branches will stay alive forever, or at least while we support the release, thereby allowing us to release security hotfixes for older versions.
-
-If QA discovers a bug with any of the features before a release happens, it is fixed in the feature branch taken from the release branch and then merged into the release again.
-
-These changes should immediately be propagated to the current release candidate branch.
-
-### Hotfixes
-
-Hotfix branches are for providing emergency security fixes to older versions and should be treated like release branches.
-
-The hotifx should be created for the oldest affected release, and then merged downstream into the next release or release candidate, repeated until up to date.
-
-## Contribute
-
-
-### Code style
-
-#### Opening Braces on the Same Line
-
-Braces follow the Kernighan and Ritchie (K&R) style for nonempty blocks and block-like constructs:
-
-* No line break before the opening brace.
-* Line break after the opening brace.
-* Line break before the closing brace.
-* Line break after the closing brace, only if that brace terminates a statement or terminates the body of a method, constructor, or named class. For example, there is no line break after the brace if it is followed by else or a comma.
-
-#### Braces Always Required
+### Braces Always Required
 
 * Braces are always required with `if`, `else`, `for`, `do` and `while` statements, even when the body of the statement is empty or contains only a single statement.
 
-#### Use of "this." for Field Access
+### Use of "this." for Field Access
 
 * Use of the `this` keyword is preferred in situations where there may be ambiguity in field and variable names, such as in setters and constructors.
 
-### Code structure
+## Code structure
 
-#### Javadoc locations
+### Javadoc locations
 
 * Properly formatted and complete Javadoc must be included for all fields and methods with either `public` or `protected` visibility.
 * Note that overridden instance methods or implemented `interface` methods need not have Javadoc if the inherited Javadoc is correct and suitable.  In particular methods that override superclass methods and change the behaviour of the method should document the new behaviour.
 
-### Commit messages
+## Testing
 
-  *  Separate subject from body with a blank line
-  *  Limit the subject line to 50 characters
-  *  Capitalise the subject line
-  *  Do not end the subject line with a period
-  *  Use the imperative mood in the subject line
-  *  Wrap the body at 72 characters
-  *  Use the body to explain what and why vs. how, separating paragraphs with an empty line.
+1. Ensure that your changes do not break existing tests (refer to [Development Docs](https://github.com/radixdlt/babylon-node/tree/main/docs/development) on how to run the tests).
+2. Write new tests for your code if applicable.
 
+## Commit messages
 
-### Opening a pull request
+Commit your changes with a descriptive commit message.
+
+*  Separate subject from body with a blank line
+*  Limit the subject line to 50 characters
+*  Capitalise the subject line
+*  Do not end the subject line with a period
+*  Use the imperative mood in the subject line
+*  Use the body to explain what and why vs. how, separating paragraphs with an empty line.
+
+## Opening a pull request
 
 * Fork the codebase and make changes, following these guidelines.
 * Submit a new GitHub pull request with the proposed patch for review.
 * Ensure the **pull request** description clearly describes the problem and solution. Include the relevant issue number if applicable.
+
+## Review Process
+
+Pull requests will be reviewed by project maintainers. Reviewers may provide feedback, request changes, or approve the pull request.
+We appreciate your patience during this process, and we aim to be responsive and constructive in our feedback.
+
+## License
+
+By contributing to RadixDLT node you agree that your contributions will be licensed under [Radix License 1.0 (modified Apache 2.0)](LICENSE).

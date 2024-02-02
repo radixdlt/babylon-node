@@ -1,5 +1,9 @@
 # Pull Request Template
 
+## Before you open a PR
+
+Please red our [Contributing Guidelines](CONTRIBUTING.md) before opening a PR.
+
 ## Title
 Recommendations for the title:
 * use the imperative, present tense: "change" not "changed" nor "changes"
