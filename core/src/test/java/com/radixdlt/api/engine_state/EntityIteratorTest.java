@@ -67,17 +67,19 @@ package com.radixdlt.api.engine_state;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.api.DeterministicEngineStateApiTestBase;
-import com.radixdlt.api.engine_state.generated.models.EntityIteratorRequest;
-import com.radixdlt.api.engine_state.generated.models.ListedEntityItem;
-import com.radixdlt.api.engine_state.generated.models.SystemType;
+import com.radixdlt.api.engine_state.generated.models.*;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
+@RunWith(JUnitParamsRunner.class)
 public final class EntityIteratorTest extends DeterministicEngineStateApiTestBase {
 
   private static final int SMALL_PAGE_SIZE = 7;
@@ -133,6 +135,57 @@ public final class EntityIteratorTest extends DeterministicEngineStateApiTestBas
   }
 
   @Test
+  @Parameters(method = "broadFilters")
+  public void engine_state_api_entity_iterator_pages_through_filtered_entities(
+      EntityIteratorFilter filter) throws Exception {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
+
+      final var allResponse =
+          getEntitiesApi().entityIteratorPost(new EntityIteratorRequest().filter(filter));
+
+      assertThat(allResponse.getContinuationToken()).isNull();
+      final var allEntities = allResponse.getPage();
+
+      final List<ListedEntityItem> pagedEntities = new ArrayList<>();
+      @Nullable String continuationToken = null;
+
+      while (true) {
+        final var smallResponse =
+            getEntitiesApi()
+                .entityIteratorPost(
+                    new EntityIteratorRequest()
+                        .filter(filter)
+                        .continuationToken(continuationToken)
+                        .maxPageSize(SMALL_PAGE_SIZE));
+        final var smallEntities = smallResponse.getPage();
+        pagedEntities.addAll(smallEntities);
+        continuationToken = smallResponse.getContinuationToken();
+        if (continuationToken == null) {
+          assertThat(smallEntities.size()).isLessThanOrEqualTo(SMALL_PAGE_SIZE);
+          break;
+        } else {
+          assertThat(smallEntities.size()).isEqualTo(SMALL_PAGE_SIZE);
+        }
+      }
+
+      assertThat(pagedEntities).isEqualTo(allEntities);
+    }
+  }
+
+  // Note: these parameters are meant to test that even with a filter applied, the paging infra can
+  // correctly go through multiple pages of elements (without duplicates or skips). We only use some
+  // broad filters (i.e. not excluding too many entities, so that pages of `SMALL_PAGE_SIZE` still
+  // happen).
+  // The actual filters' tests are separate below.
+  public EntityIteratorFilter[] broadFilters() {
+    return new EntityIteratorFilter[] {
+      new SystemTypeFilter().systemType(SystemType.OBJECT),
+      new EntityTypeFilter().entityType(EntityType.GLOBALPACKAGE),
+    };
+  }
+
+  @Test
   public void engine_state_api_entity_iterator_sorts_by_creation_asc() throws Exception {
     try (var test = buildRunningServerTest()) {
       test.suppressUnusedWarning();
@@ -146,6 +199,73 @@ public final class EntityIteratorTest extends DeterministicEngineStateApiTestBas
 
       assertThat(creationVersions).isSorted();
       assertThat(creationVersions[0]).isLessThan(creationVersions[creationVersions.length - 1]);
+    }
+  }
+
+  @Test
+  public void engine_state_api_entity_iterator_filters_by_system_type() throws Exception {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
+
+      final var allResponse =
+          getEntitiesApi()
+              .entityIteratorPost(
+                  new EntityIteratorRequest()
+                      .filter(new SystemTypeFilter().systemType(SystemType.KEYVALUESTORE)));
+
+      final var systemTypes =
+          allResponse.getPage().stream()
+              .map(ListedEntityItem::getSystemType)
+              .collect(Collectors.toSet());
+
+      assertThat(systemTypes).containsExactly(SystemType.KEYVALUESTORE);
+    }
+  }
+
+  @Test
+  public void engine_state_api_entity_iterator_filters_by_entity_type() throws Exception {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
+
+      final var allResponse =
+          getEntitiesApi()
+              .entityIteratorPost(
+                  new EntityIteratorRequest()
+                      .filter(
+                          new EntityTypeFilter().entityType(EntityType.GLOBALNONFUNGIBLERESOURCE)));
+
+      final var entityTypes =
+          allResponse.getPage().stream()
+              .map(ListedEntityItem::getEntityType)
+              .collect(Collectors.toSet());
+
+      assertThat(entityTypes).containsExactly(EntityType.GLOBALNONFUNGIBLERESOURCE);
+    }
+  }
+
+  @Test
+  public void engine_state_api_entity_iterator_filters_by_blueprint() throws Exception {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
+
+      final var wellKnownAddresses = getCoreApiHelper().getWellKnownAddresses();
+      final var requestedBlueprint =
+          new UnversionedBlueprintReference()
+              .packageAddress(wellKnownAddresses.getResourcePackage())
+              .blueprintName("FungibleResourceManager");
+
+      final var allResponse =
+          getEntitiesApi()
+              .entityIteratorPost(
+                  new EntityIteratorRequest()
+                      .filter(new BlueprintFilter().blueprint(requestedBlueprint)));
+
+      final var blueprints =
+          allResponse.getPage().stream()
+              .map(ListedEntityItem::getBlueprint)
+              .collect(Collectors.toSet());
+
+      assertThat(blueprints).containsExactly(requestedBlueprint);
     }
   }
 }

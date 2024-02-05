@@ -24,7 +24,9 @@ use radix_engine_interface::blueprints::package::{
 
 use crate::engine_state_api::handlers::RawCollectionKey;
 use crate::engine_state_api::models::ErrorDetails;
-use state_manager::store::traits::indices::{CreationId, EntityBlueprintIdV1, ReNodeListingIndex};
+use state_manager::store::traits::indices::{
+    CreationId, EntityBlueprintId, EntityBlueprintIdV1, ReNodeListingIndex,
+};
 use state_manager::store::traits::SubstateNodeAncestryStore;
 
 use super::*;
@@ -1191,36 +1193,49 @@ impl<'s, S: ReNodeListingIndex> EngineEntityLister<'s, S> {
         Self { database }
     }
 
-    /// Returns an iterator of all entities, starting from the given [`CreationId`] (or its
-    /// successor, if it does not exist), in the [`CreationId`]'s natural order (ascending).
-    pub fn iter_entities(
+    /// Returns an iterator of entities having one of the given [`EntityType`]s, starting from the
+    /// given [`CreationId`] (or its successor, if it does not exist), in the [`CreationId`]'s
+    /// natural order (ascending).
+    pub fn iter_created_entities(
         &self,
+        entity_types: impl Iterator<Item = EntityType>,
         from_creation_id: Option<&CreationId>,
-    ) -> impl Iterator<Item = EntitySummary> + '_ {
-        Self::all_entity_types()
+    ) -> Result<impl Iterator<Item = EntitySummary> + 's, EngineStateBrowsingError> {
+        Ok(entity_types
             .map(|entity_type| {
                 self.database
                     .get_created_entity_iter(entity_type, from_creation_id)
             })
             .kmerge_by(|(a_creation_id, _), (b_creation_id, _)| a_creation_id < b_creation_id)
-            .map(
-                |(
-                    creation_id,
-                    EntityBlueprintIdV1 {
-                        node_id,
-                        blueprint_id,
-                    },
-                )| EntitySummary {
-                    node_id,
-                    creation_id,
-                    blueprint_id,
-                },
-            )
+            .map(Self::to_entity_summary))
     }
 
-    /// Lists all possible [`EntityType`]s.
-    fn all_entity_types() -> impl Iterator<Item = EntityType> {
-        (0..=u8::MAX).filter_map(EntityType::from_repr)
+    /// Returns an iterator of entities having the given [`BlueprintId`], starting from the given
+    /// [`CreationId`] (or its successor, if it does not exist), in the [`CreationId`]'s natural
+    /// order (ascending).
+    pub fn iter_blueprint_entities(
+        &self,
+        blueprint_id: &BlueprintId,
+        from_creation_id: Option<&CreationId>,
+    ) -> Result<impl Iterator<Item = EntitySummary> + 's, EngineStateBrowsingError> {
+        Ok(self
+            .database
+            .get_blueprint_entity_iter(blueprint_id, from_creation_id)
+            .map(Self::to_entity_summary))
+    }
+
+    /// Converts a database index entry into an [`EntitySummary`].
+    fn to_entity_summary(db_entry: (CreationId, EntityBlueprintId)) -> EntitySummary {
+        let (creation_id, entity_blueprint_id) = db_entry;
+        let EntityBlueprintIdV1 {
+            node_id,
+            blueprint_id,
+        } = entity_blueprint_id;
+        EntitySummary {
+            node_id,
+            creation_id,
+            blueprint_id,
+        }
     }
 }
 

@@ -68,6 +68,40 @@ pub fn to_api_entity_type(entity_type: EntityType) -> models::EntityType {
     }
 }
 
+pub fn extract_entity_type(entity_type: models::EntityType) -> EntityType {
+    match entity_type {
+        models::EntityType::GlobalPackage => EntityType::GlobalPackage,
+        models::EntityType::GlobalFungibleResource => EntityType::GlobalFungibleResourceManager,
+        models::EntityType::GlobalNonFungibleResource => {
+            EntityType::GlobalNonFungibleResourceManager
+        }
+        models::EntityType::GlobalConsensusManager => EntityType::GlobalConsensusManager,
+        models::EntityType::GlobalValidator => EntityType::GlobalValidator,
+        models::EntityType::GlobalAccessController => EntityType::GlobalAccessController,
+        models::EntityType::GlobalAccount => EntityType::GlobalAccount,
+        models::EntityType::GlobalIdentity => EntityType::GlobalIdentity,
+        models::EntityType::GlobalGenericComponent => EntityType::GlobalGenericComponent,
+        models::EntityType::GlobalVirtualSecp256k1Account => {
+            EntityType::GlobalVirtualSecp256k1Account
+        }
+        models::EntityType::GlobalVirtualEd25519Account => EntityType::GlobalVirtualEd25519Account,
+        models::EntityType::GlobalVirtualSecp256k1Identity => {
+            EntityType::GlobalVirtualSecp256k1Identity
+        }
+        models::EntityType::GlobalVirtualEd25519Identity => {
+            EntityType::GlobalVirtualEd25519Identity
+        }
+        models::EntityType::InternalFungibleVault => EntityType::InternalFungibleVault,
+        models::EntityType::InternalNonFungibleVault => EntityType::InternalNonFungibleVault,
+        models::EntityType::InternalKeyValueStore => EntityType::InternalKeyValueStore,
+        models::EntityType::InternalGenericComponent => EntityType::InternalGenericComponent,
+        models::EntityType::GlobalOneResourcePool => EntityType::GlobalOneResourcePool,
+        models::EntityType::GlobalTwoResourcePool => EntityType::GlobalTwoResourcePool,
+        models::EntityType::GlobalMultiResourcePool => EntityType::GlobalMultiResourcePool,
+        models::EntityType::GlobalTransactionTracker => EntityType::GlobalTransactionTracker,
+    }
+}
+
 pub fn extract_package_address(
     extraction_context: &ExtractionContext,
     package_address: &str,

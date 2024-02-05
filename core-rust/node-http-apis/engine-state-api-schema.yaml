@@ -617,10 +617,64 @@ components:
     EntityIteratorRequest:
       type: object
       properties:
+        filter:
+          $ref: "#/components/schemas/EntityIteratorFilter"
         max_page_size:
           $ref: "#/components/schemas/MaxPageSize"
         continuation_token:
           $ref: "#/components/schemas/ContinuationToken"
+    EntityIteratorFilterType:
+      type: string
+      enum:
+        - Blueprint
+        - SystemType
+        - EntityType
+    EntityIteratorFilter:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/EntityIteratorFilterType"
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match EntityIteratorFilterType
+          Blueprint: '#/components/schemas/BlueprintFilter'
+          SystemType: '#/components/schemas/SystemTypeFilter'
+          EntityType: '#/components/schemas/EntityTypeFilter'
+    BlueprintFilter:
+      allOf:
+        - $ref: "#/components/schemas/EntityIteratorFilter"
+        - type: object
+          description: |
+            Matches only Object entities instantiated using the given blueprint (disregarding the
+            blueprint's exact version).
+          required:
+            - blueprint
+          properties:
+            blueprint:
+              $ref: "#/components/schemas/UnversionedBlueprintReference"
+    SystemTypeFilter:
+      allOf:
+        - $ref: "#/components/schemas/EntityIteratorFilter"
+        - type: object
+          description: Matches only entities of a specific `system_type`.
+          required:
+            - system_type
+          properties:
+            system_type:
+              $ref: "#/components/schemas/SystemType"
+    EntityTypeFilter:
+      allOf:
+        - $ref: "#/components/schemas/EntityIteratorFilter"
+        - type: object
+          description: Matches only entities of a specific `entity_type`.
+          required:
+            - entity_type
+          properties:
+            entity_type:
+              $ref: "#/components/schemas/EntityType"
     EntityIteratorResponse:
       type: object
       required:

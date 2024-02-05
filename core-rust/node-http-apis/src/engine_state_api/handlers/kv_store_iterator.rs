@@ -2,6 +2,7 @@ use crate::engine_state_api::*;
 
 use radix_engine::types::*;
 
+use crate::engine_state_api::handlers::HandlerPagingSupport;
 use std::ops::Deref;
 
 pub(crate) async fn handle_kv_store_iterator(
@@ -11,18 +12,11 @@ pub(crate) async fn handle_kv_store_iterator(
     let mapping_context =
         MappingContext::new(&state.network).with_sbor_formats(request.sbor_format_options);
     let extraction_context = ExtractionContext::new(&state.network);
+    let paging_support =
+        HandlerPagingSupport::new(request.max_page_size, request.continuation_token);
 
     let node_id = extract_address_as_node_id(&extraction_context, &request.entity_address)
         .map_err(|err| err.into_response_error("entity_address"))?;
-
-    let max_page_size = extract_api_max_page_size(request.max_page_size)
-        .map_err(|error| error.into_response_error("max_page_size"))?;
-    let continuation_token = request
-        .continuation_token
-        .as_ref()
-        .map(extract_api_sbor_hex_string)
-        .transpose()
-        .map_err(|error| error.into_response_error("continuation_token"))?;
 
     let database = state.state_manager.database.read_current();
 
@@ -39,11 +33,8 @@ pub(crate) async fn handle_kv_store_iterator(
 
     let data_loader = EngineStateDataLoader::new(database.deref());
 
-    let page = OrderAgnosticPager::get_page(
-        wrap(|from| data_loader.iter_kv_store_keys(&node_id, &kv_store_meta, from)),
-        MaxItemCountPolicy::new(max_page_size),
-        continuation_token,
-    )?;
+    let page = paging_support
+        .get_page(|from| data_loader.iter_kv_store_keys(&node_id, &kv_store_meta, from))?;
 
     let header = read_current_ledger_header(database.deref());
 
@@ -54,10 +45,7 @@ pub(crate) async fn handle_kv_store_iterator(
             .into_iter()
             .map(|map_key| to_api_key_value_store_map_key(&mapping_context, map_key))
             .collect::<Result<Vec<_>, _>>()?,
-        continuation_token: page
-            .continuation_token
-            .map(|continuation_token| to_api_sbor_hex_string(&continuation_token))
-            .transpose()?,
+        continuation_token: page.continuation_token_string,
     }))
 }
 

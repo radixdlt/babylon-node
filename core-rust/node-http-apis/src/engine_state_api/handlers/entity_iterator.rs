@@ -1,4 +1,5 @@
 use crate::engine_state_api::*;
+use std::iter::once;
 
 use radix_engine::types::*;
 
@@ -6,20 +7,16 @@ use state_manager::store::traits::indices::CreationId;
 use state_manager::store::traits::ConfigurableDatabase;
 use std::ops::Deref;
 
+use crate::engine_state_api::handlers::HandlerPagingSupport;
+
 pub(crate) async fn handle_entity_iterator(
     state: State<EngineStateApiState>,
     Json(request): Json<models::EntityIteratorRequest>,
 ) -> Result<Json<models::EntityIteratorResponse>, ResponseError> {
     let mapping_context = MappingContext::new(&state.network);
-
-    let max_page_size = extract_api_max_page_size(request.max_page_size)
-        .map_err(|error| error.into_response_error("max_page_size"))?;
-    let continuation_token = request
-        .continuation_token
-        .as_ref()
-        .map(extract_api_sbor_hex_string)
-        .transpose()
-        .map_err(|error| error.into_response_error("continuation_token"))?;
+    let extraction_context = ExtractionContext::new(&state.network);
+    let paging_support =
+        HandlerPagingSupport::new(request.max_page_size, request.continuation_token);
 
     let database = state.state_manager.database.read_current();
     if !database.are_re_node_listing_indices_enabled() {
@@ -33,11 +30,24 @@ pub(crate) async fn handle_entity_iterator(
     }
 
     let entity_lister = EngineEntityLister::new(database.deref());
-    let page = OrderAgnosticPager::get_page(
-        wrap_ok::<_, _, _, _, ResponseError>(|from| entity_lister.iter_entities(from)),
-        MaxItemCountPolicy::new(max_page_size),
-        continuation_token,
-    )?;
+    let page = match request.filter.map(|boxed| *boxed) {
+        None => paging_support
+            .get_page(|from| entity_lister.iter_created_entities(all_entity_types(), from))?,
+        Some(models::EntityIteratorFilter::SystemTypeFilter { system_type }) => paging_support
+            .get_page(|from| {
+                entity_lister.iter_created_entities(system_type_to_entity_types(&system_type), from)
+            })?,
+        Some(models::EntityIteratorFilter::EntityTypeFilter { entity_type }) => paging_support
+            .get_page(|from| {
+                entity_lister.iter_created_entities(once(extract_entity_type(entity_type)), from)
+            })?,
+        Some(models::EntityIteratorFilter::BlueprintFilter { blueprint }) => {
+            let blueprint_id = extract_blueprint_id(&extraction_context, &blueprint)
+                .map_err(|err| err.into_response_error("blueprint"))?;
+            paging_support
+                .get_page(|from| entity_lister.iter_blueprint_entities(&blueprint_id, from))?
+        }
+    };
 
     let header = read_current_ledger_header(database.deref());
 
@@ -48,10 +58,7 @@ pub(crate) async fn handle_entity_iterator(
             .into_iter()
             .map(|entity_summary| to_api_listed_entity_item(&mapping_context, &entity_summary))
             .collect::<Result<Vec<_>, _>>()?,
-        continuation_token: page
-            .continuation_token
-            .map(|continuation_token| to_api_sbor_hex_string(&continuation_token))
-            .transpose()?,
+        continuation_token: page.continuation_token_string,
     }))
 }
 
@@ -72,12 +79,8 @@ fn to_api_listed_entity_item(
     } = entity_summary;
     let entity_type = node_id.entity_type().ok_or(MappingError::EntityTypeError)?;
     Ok(models::ListedEntityItem {
+        system_type: entity_type_to_system_type(&entity_type),
         entity_type: to_api_entity_type(entity_type),
-        system_type: if entity_type.is_internal_kv_store() {
-            models::SystemType::KeyValueStore
-        } else {
-            models::SystemType::Object
-        },
         is_global: node_id.is_global(),
         created_at_state_version: to_api_state_version(creation_id.state_version)?,
         entity_address: to_api_entity_address(context, node_id)?,
@@ -101,4 +104,38 @@ fn to_api_unversioned_blueprint_reference(
         package_address: to_api_package_address(context, package_address)?,
         blueprint_name: blueprint_name.clone(),
     })
+}
+
+fn extract_blueprint_id(
+    extraction_context: &ExtractionContext,
+    reference: &models::UnversionedBlueprintReference,
+) -> Result<BlueprintId, ExtractionError> {
+    let models::UnversionedBlueprintReference {
+        package_address,
+        blueprint_name,
+    } = reference;
+    Ok(BlueprintId {
+        package_address: extract_package_address(extraction_context, package_address)?,
+        blueprint_name: blueprint_name.to_string(),
+    })
+}
+
+fn all_entity_types() -> impl Iterator<Item = EntityType> {
+    (0..=u8::MAX).filter_map(EntityType::from_repr)
+}
+
+fn entity_type_to_system_type(entity_type: &EntityType) -> models::SystemType {
+    if entity_type.is_internal_kv_store() {
+        models::SystemType::KeyValueStore
+    } else {
+        models::SystemType::Object
+    }
+}
+
+fn system_type_to_entity_types(
+    system_type: &models::SystemType,
+) -> impl Iterator<Item = EntityType> {
+    let system_type = *system_type;
+    all_entity_types()
+        .filter(move |entity_type| entity_type_to_system_type(entity_type) == system_type)
 }

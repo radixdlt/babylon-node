@@ -342,7 +342,24 @@ impl DbCodec<(EntityType, CreationId)> for TypeAndCreationIndexKeyDbCodec {
     }
 }
 
-impl OrderPreservingDbCodec for TypeAndCreationIndexKeyDbCodec {}
+impl GroupPreservingDbCodec for TypeAndCreationIndexKeyDbCodec {
+    type Group = EntityType;
+
+    fn encode_group_range(&self, entity_type: &EntityType) -> Range<Vec<u8>> {
+        let Range { start, end } = CreationId::full_range();
+        Range {
+            start: self.encode(&(*entity_type, start)),
+            end: self.encode(&(*entity_type, end)),
+        }
+    }
+}
+
+impl IntraGroupOrderPreservingDbCodec<(EntityType, CreationId)> for TypeAndCreationIndexKeyDbCodec {
+    fn resolve_group_of(&self, value: &(EntityType, CreationId)) -> EntityType {
+        let (entity_type, _) = value;
+        *entity_type
+    }
+}
 
 #[derive(Default)]
 pub struct BlueprintAndCreationIndexKeyDbCodec {}
@@ -385,6 +402,31 @@ impl DbCodec<(PackageAddress, Hash, CreationId)> for BlueprintAndCreationIndexKe
                 index_within_txn,
             },
         )
+    }
+}
+
+impl GroupPreservingDbCodec for BlueprintAndCreationIndexKeyDbCodec {
+    type Group = (PackageAddress, Hash);
+
+    fn encode_group_range(&self, group: &(PackageAddress, Hash)) -> Range<Vec<u8>> {
+        let (package_address, blueprint_name_hash) = group;
+        let Range { start, end } = CreationId::full_range();
+        Range {
+            start: self.encode(&(*package_address, *blueprint_name_hash, start)),
+            end: self.encode(&(*package_address, *blueprint_name_hash, end)),
+        }
+    }
+}
+
+impl IntraGroupOrderPreservingDbCodec<(PackageAddress, Hash, CreationId)>
+    for BlueprintAndCreationIndexKeyDbCodec
+{
+    fn resolve_group_of(
+        &self,
+        value: &(PackageAddress, Hash, CreationId),
+    ) -> (PackageAddress, Hash) {
+        let (package_address, blueprint_name_hash, _) = value;
+        (*package_address, *blueprint_name_hash)
     }
 }
 
