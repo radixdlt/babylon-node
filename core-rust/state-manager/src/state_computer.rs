@@ -1195,14 +1195,11 @@ where
             );
         }
 
-        if series_executor.next_protocol_version() != commit_ledger_header.next_protocol_version {
-            panic!(
-                "resultant protocol update at version {} differs from the proof ({:?} != {:?})",
-                commit_state_version,
-                series_executor.next_protocol_version(),
-                commit_ledger_header.next_protocol_version
-            );
-        }
+        self.verify_post_commit_protocol_version(
+            commit_state_version,
+            &series_executor.next_protocol_version(),
+            &commit_ledger_header.next_protocol_version,
+        );
 
         let final_ledger_hashes = series_executor.latest_ledger_hashes();
         if final_ledger_hashes != &commit_ledger_header.hashes {
@@ -1268,6 +1265,47 @@ where
             validator_round_counters: round_counters,
             num_user_transactions,
         })
+    }
+
+    fn verify_post_commit_protocol_version(
+        &self,
+        commit_state_version: StateVersion,
+        next_version_from_local_execution: &Option<ProtocolVersionName>,
+        next_version_from_proof: &Option<ProtocolVersionName>,
+    ) {
+        match (next_version_from_local_execution, next_version_from_proof) {
+            (Some(local_version), Some(proof_version)) if local_version == proof_version => {
+                // All good, local execution enacts the same protocol version as proof. No-op.
+            }
+            (Some(local_version), Some(proof_version)) => {
+                // We're enacting a different version than the proof
+                panic!(
+                    "FATAL: At state version {} this node wants to enact {}, but this doesn't match the proof, which enacts {} (i.e. the validator set have enacted a different version). Make sure your node is running the latest software version.",
+                    commit_state_version,
+                    local_version,
+                    proof_version,
+                );
+            }
+            (Some(local_version), None) => {
+                // We're enacting locally, but the proof doesn't enact anything
+                panic!(
+                    "FATAL: At state version {} this node wants to enact {}, but this doesn't match the proof, which doesn't enact anything (i.e. the validator set haven't enacted it). Make sure your node is running the latest software version.",
+                    commit_state_version,
+                    local_version,
+                );
+            }
+            (None, Some(proof_version)) => {
+                // The proof enacts, but we locally don't
+                panic!(
+                    "FATAL: At state version {} the validator set have enacted {}, but this node didn't expect it to happen (expected enactment at a different time, or protocol version unknown). Make sure your node is running the latest software version.",
+                    commit_state_version,
+                    proof_version,
+                );
+            }
+            (None, None) => {
+                // All good, nothing gets enacted. No-op.
+            }
+        }
     }
 
     pub fn handle_protocol_update(
