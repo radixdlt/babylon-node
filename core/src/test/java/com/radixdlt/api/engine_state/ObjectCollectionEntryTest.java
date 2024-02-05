@@ -148,7 +148,7 @@ public final class ObjectCollectionEntryTest extends DeterministicEngineStateApi
 
       // try to fetch a blueprint of some made-up name:
       final var errorResponse =
-          assertErrorResponseOfType(
+          assertErrorResponse(
               () ->
                   getObjectsApi()
                       .objectCollectionEntryPost(
@@ -160,8 +160,7 @@ public final class ObjectCollectionEntryTest extends DeterministicEngineStateApi
                                       .key(
                                           new SborData()
                                               .programmaticJson(createBlueprintKeyJson("MadeUp")))
-                                      .kind(ObjectCollectionKind.KEYVALUESTORE))),
-              ErrorResponse.class);
+                                      .kind(ObjectCollectionKind.KEYVALUESTORE))));
 
       // assert that it is "not found" type of error:
       assertThat(errorResponse.getDetails())

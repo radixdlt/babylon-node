@@ -9,11 +9,12 @@ mod object_collection_iterator;
 mod object_field;
 
 use super::{HasKey, Page, ResponseError};
-use radix_engine_common::prelude::ScryptoSbor;
+use radix_engine_common::crypto::Hash;
+use radix_engine_common::prelude::{hash, ScryptoSbor};
 
 use crate::engine_state_api::{
-    extract_api_max_page_size, extract_api_sbor_hex_string, to_api_sbor_hex_string, FnIterable,
-    MaxItemCountPolicy, OrderAgnosticPager, Pager,
+    extract_api_max_page_size, extract_api_sbor_hex_string, to_api_sbor_hex_string,
+    ExtractionError, MaxItemCountPolicy, NextKeyPager,
 };
 pub(crate) use blueprint_info::*;
 pub(crate) use entity_info::*;
@@ -26,68 +27,88 @@ pub(crate) use object_collection_iterator::*;
 pub(crate) use object_field::*;
 
 /// A paging support for handlers.
-/// This is technically a convenience facade on top of [`Pager`], adding HTTP-level handling of
+/// This is technically a convenience facade on top of [`NextKeyPager`], adding HTTP-level handling of
 /// continuation token and page size.
 pub struct HandlerPagingSupport {
     max_page_size: Option<i32>,
-    continuation_token_string: Option<String>,
+    requested_continuation_token_string: Option<String>,
+    requested_filter_hash: Hash,
 }
 
 impl HandlerPagingSupport {
     /// Creates an instance from raw HTTP-level arguments.
-    /// Their parsing/validation is deferred until [`Self::get_page()`].
-    /// TODO(filter/sort): move validation here + bring in filter (ensure it matches the continuation token!)
-    pub fn new(max_page_size: Option<i32>, continuation_token_string: Option<String>) -> Self {
+    /// Their parsing/validation of `max_page_size` and `continuation_token` is deferred until
+    /// [`Self::get_page()`], since only then the required item/key types are known.
+    /// The `filter` is used only to ensure it was not changed from previous page - we expect an
+    /// arbitrary (serializable) structure coming from the request (may be `None` if the endpoint
+    /// does not support filtering).
+    pub fn new<F: serde::Serialize>(
+        max_page_size: Option<i32>,
+        continuation_token: Option<String>,
+        filter: &F,
+    ) -> Self {
         Self {
             max_page_size,
-            continuation_token_string,
+            requested_continuation_token_string: continuation_token,
+            requested_filter_hash: hash(serde_json::to_vec(filter).expect("it was serialized")),
         }
     }
 
     /// Retrieves an appropriate page (i.e. according to the page size and continuation token passed
-    /// during construction) from the given collection lister (see [`FnIterable::wrap()`]).
-    pub fn get_page<K: PartialEq + Clone + ScryptoSbor, T: HasKey<K>, I: Iterator<Item = T>, E>(
+    /// during construction) from the given collection lister.
+    pub fn get_page<K: ScryptoSbor, T: HasKey<K>, I: Iterator<Item = T>, E: Into<ResponseError>>(
         self,
         iterable: impl FnOnce(Option<&K>) -> Result<I, E>,
-    ) -> Result<HandlerPage<T>, ResponseError>
-    where
-        ResponseError: From<E>,
-    {
-        let max_page_size = extract_api_max_page_size(self.max_page_size)
-            .map_err(|error| error.into_response_error("max_page_size"))?;
+    ) -> Result<Page<T, String>, ResponseError> {
+        let paging_policy = MaxItemCountPolicy::new(
+            extract_api_max_page_size(self.max_page_size)
+                .map_err(|error| error.into_response_error("max_page_size"))?,
+        );
 
-        let continuation_token = self
-            .continuation_token_string
+        let requested_continuation_token = self
+            .requested_continuation_token_string
             .as_ref()
-            .map(extract_api_sbor_hex_string)
+            .map(extract_api_sbor_hex_string::<NextKeyAndFilterHash<K>>)
             .transpose()
             .map_err(|error| error.into_response_error("continuation_token"))?;
 
-        let Page {
-            items,
-            continuation_token,
-        } = OrderAgnosticPager::get_page(
-            FnIterable::wrap(iterable),
-            MaxItemCountPolicy::new(max_page_size),
-            continuation_token,
-        )?;
-
-        let continuation_token_string = continuation_token
-            .map(|continuation_token| to_api_sbor_hex_string(&continuation_token))
+        let requested_next_key = requested_continuation_token
+            .map(|continuation_token| {
+                let NextKeyAndFilterHash {
+                    next_key,
+                    filter_hash,
+                } = continuation_token;
+                if self.requested_filter_hash == filter_hash {
+                    Ok(next_key)
+                } else {
+                    Err(ExtractionError::DifferentFilterAcrossPages.into_response_error("filter"))
+                }
+            })
             .transpose()?;
 
-        Ok(HandlerPage {
-            items,
-            continuation_token_string,
+        let iterator = iterable(requested_next_key.as_ref()).map_err(|error| error.into())?;
+        let page = NextKeyPager::get_page(iterator, paging_policy);
+
+        let continuation_token_string = page
+            .continuation_token
+            .map(|next_key| {
+                to_api_sbor_hex_string(&NextKeyAndFilterHash {
+                    next_key,
+                    filter_hash: self.requested_filter_hash,
+                })
+            })
+            .transpose()?;
+
+        Ok(Page {
+            items: page.items,
+            continuation_token: continuation_token_string,
         })
     }
 }
 
-/// A [`Page`] with an already-rendered [`ContinuationToken`].
-pub struct HandlerPage<T> {
-    /// Items on this page.
-    pub items: Vec<T>,
-    /// The next continuation token, rendered as a string (only present if there are more pages
-    /// after this one).
-    pub continuation_token_string: Option<String>,
+/// An internal "continuation token" structure.
+#[derive(ScryptoSbor)]
+struct NextKeyAndFilterHash<K> {
+    next_key: K,
+    filter_hash: Hash,
 }

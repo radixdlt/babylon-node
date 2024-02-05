@@ -268,4 +268,31 @@ public final class EntityIteratorTest extends DeterministicEngineStateApiTestBas
       assertThat(blueprints).containsExactly(requestedBlueprint);
     }
   }
+
+  @Test
+  public void engine_state_api_entity_iterator_requires_same_filter_across_pages()
+      throws Exception {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
+
+      final var firstPageResponse =
+          getEntitiesApi()
+              .entityIteratorPost(
+                  new EntityIteratorRequest()
+                      .filter(new EntityTypeFilter().entityType(EntityType.INTERNALKEYVALUESTORE))
+                      .maxPageSize(1)); // we assume there is more than 1 KV-store
+
+      final var errorResponse =
+          assertErrorResponse(
+              () ->
+                  getEntitiesApi()
+                      .entityIteratorPost(
+                          new EntityIteratorRequest()
+                              .filter(new EntityTypeFilter().entityType(EntityType.GLOBALPACKAGE))
+                              .continuationToken(firstPageResponse.getContinuationToken())));
+
+      assertThat(errorResponse.getMessage()).contains("filter");
+      assertThat(errorResponse.getDetails()).isNull(); // it is not an application logic error
+    }
+  }
 }
