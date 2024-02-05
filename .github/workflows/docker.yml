@@ -184,7 +184,7 @@ jobs:
       id-token: write
       contents: read
       pull-requests: read
-    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/join_multiarch_image_by_metadata.yml@DO-2181
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/join-docker-images-all-tags.yml@DO-2181
     with:
       aws_dockerhub_secret: github-actions/common/dockerhub-credentials
       amd_meta_data_json: ${{needs.build_push_container_private.outputs.json}}
@@ -257,7 +257,7 @@ jobs:
       id-token: write
       contents: read
       pull-requests: read
-    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/join_multiarch_image_by_metadata.yml@DO-2181
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/join-docker-images-all-tags.yml@DO-2181
     with:
       aws_dockerhub_secret: github-actions/rdxworks/dockerhub-images/release-credentials
       amd_meta_data_json: ${{needs.build_push_container_dockerhub.outputs.json}}
