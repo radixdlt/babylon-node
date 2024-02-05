@@ -62,106 +62,35 @@
  * permissions under this License.
  */
 
-use std::future::Future;
-use std::sync::Arc;
+package com.radixdlt.api.engine_state;
 
-use super::metrics::EngineStateApiMetrics;
-use super::metrics_layer::MetricsLayer;
-use axum::extract::State;
-use axum::http::StatusCode;
-use axum::middleware::map_response;
+import static org.assertj.core.api.Assertions.assertThat;
 
-use axum::{
-    routing::{get, post},
-    Router,
-};
+import com.radixdlt.api.DeterministicEngineStateApiTestBase;
+import com.radixdlt.api.engine_state.generated.models.MetadataEntryKey;
+import com.radixdlt.api.engine_state.generated.models.ObjectMetadataIteratorRequest;
+import org.junit.Test;
 
-use prometheus::Registry;
-use radix_engine_common::network::NetworkDefinition;
-use radix_engine_common::ScryptoSbor;
-use state_manager::StateManager;
-use tower_http::catch_panic::CatchPanicLayer;
+public final class ObjectMetadataIteratorTest extends DeterministicEngineStateApiTestBase {
 
-use super::{handlers::*, ResponseError};
+  @Test
+  public void engine_state_api_object_metadata_iterator_returns_string_keys() throws Exception {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
 
-use crate::engine_state_api::{emit_error_response_event, InternalServerErrorResponseForPanic};
+      final var wellKnownAddresses = getCoreApiHelper().getWellKnownAddresses();
 
-#[derive(Clone)]
-pub struct EngineStateApiState {
-    pub network: NetworkDefinition,
-    pub state_manager: StateManager,
-}
+      final var metadataKeys =
+          getAttachedModulesApi()
+              .objectAttachedModulesMetadataIteratorPost(
+                  new ObjectMetadataIteratorRequest()
+                      .entityAddress(wellKnownAddresses.getPackageOwnerBadge()))
+              .getPage()
+              .stream()
+              .map(MetadataEntryKey::getKey)
+              .toList();
 
-pub async fn create_server<F>(
-    bind_addr: &str,
-    shutdown_signal: F,
-    engine_state_api_state: EngineStateApiState,
-    metric_registry: &Registry,
-) where
-    F: Future<Output = ()>,
-{
-    let router = Router::new()
-        .route("/blueprint/info", post(handle_blueprint_info))
-        .route("/entity/iterator", post(handle_entity_iterator))
-        .route("/entity/info", post(handle_entity_info))
-        .route("/object/field", post(handle_object_field))
-        .route(
-            "/object/collection/iterator",
-            post(handle_object_collection_iterator),
-        )
-        .route(
-            "/object/collection/entry",
-            post(handle_object_collection_entry),
-        )
-        .route(
-            "/object/attached_modules/metadata/iterator",
-            post(handle_object_metadata_iterator),
-        )
-        .route("/kv-store/iterator", post(handle_kv_store_iterator))
-        .route("/kv-store/entry", post(handle_kv_store_entry))
-        .route("/entity/schema/entry", post(handle_entity_schema_entry))
-        .with_state(engine_state_api_state);
-
-    let metrics = Arc::new(EngineStateApiMetrics::new(metric_registry));
-
-    let prefixed_router = Router::new()
-        .nest("/engine-state", router)
-        .route("/", get(handle_missing_engine_state_path))
-        .layer(CatchPanicLayer::custom(InternalServerErrorResponseForPanic))
-        // Note: it is important to run the metrics middleware only on router matched paths to avoid out of memory crash
-        // of node or full storage for prometheus server.
-        .route_layer(MetricsLayer::new(metrics.clone()))
-        .layer(map_response(emit_error_response_event))
-        .fallback(handle_not_found)
-        .with_state(metrics);
-
-    let bind_addr = bind_addr.parse().expect("Failed to parse bind address");
-
-    axum::Server::bind(&bind_addr)
-        .serve(prefixed_router.into_make_service())
-        .with_graceful_shutdown(shutdown_signal)
-        .await
-        .unwrap();
-}
-
-#[tracing::instrument]
-pub(crate) async fn handle_missing_engine_state_path() -> Result<(), ResponseError> {
-    Err(ResponseError::new(
-        StatusCode::NOT_FOUND,
-        "Try /engine-state",
-    ))
-}
-
-async fn handle_not_found(metrics: State<Arc<EngineStateApiMetrics>>) -> Result<(), ResponseError> {
-    metrics.requests_not_found.inc();
-    Err(ResponseError::new(
-        StatusCode::NOT_FOUND,
-        "Please see API docs for available endpoints",
-    ))
-}
-
-#[derive(Debug, Clone, ScryptoSbor)]
-pub struct EngineStateApiServerConfig {
-    pub bind_interface: String,
-    pub port: u32,
+      assertThat(metadataKeys).containsExactly("name", "description", "icon_url", "tags");
+    }
+  }
 }
