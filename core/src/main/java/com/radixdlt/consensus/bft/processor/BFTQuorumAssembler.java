@@ -110,8 +110,7 @@ public final class BFTQuorumAssembler implements BFTEventProcessorAtCurrentRound
   private boolean hasCurrentRoundBeenResolved = false;
   private boolean hasTimeoutQuorumResolutionBeenDelayedInCurrentRound = false;
 
-  private final DivergentVertexExecutionDetector divergentVertexExecutionDetector =
-      new DivergentVertexExecutionDetector();
+  private final DivergentVertexExecutionDetector divergentVertexExecutionDetector;
 
   public BFTQuorumAssembler(
       BFTEventProcessorAtCurrentRound forwardTo,
@@ -120,6 +119,7 @@ public final class BFTQuorumAssembler implements BFTEventProcessorAtCurrentRound
       ScheduledEventDispatcher<TimeoutQuorumDelayedResolution>
           timeoutQuorumDelayedResolutionDispatcher,
       Metrics metrics,
+      DivergentVertexExecutionDetector divergentVertexExecutionDetector,
       PendingVotes pendingVotes,
       RoundUpdate initialRoundUpdate,
       long timeoutQuorumResolutionDelayMs) {
@@ -132,6 +132,7 @@ public final class BFTQuorumAssembler implements BFTEventProcessorAtCurrentRound
     this.pendingVotes = Objects.requireNonNull(pendingVotes);
     this.latestRoundUpdate = Objects.requireNonNull(initialRoundUpdate);
     this.timeoutQuorumResolutionDelayMs = timeoutQuorumResolutionDelayMs;
+    this.divergentVertexExecutionDetector = divergentVertexExecutionDetector;
   }
 
   @Override
@@ -143,8 +144,7 @@ public final class BFTQuorumAssembler implements BFTEventProcessorAtCurrentRound
 
     // Process the divergent vertex executions we've collected in the previous round
     // and set it up for the next round.
-    this.divergentVertexExecutionDetector.logAndUpdateMetrics(metrics, previousRound);
-    this.divergentVertexExecutionDetector.clear();
+    this.divergentVertexExecutionDetector.finalizeAfterRoundAndReset(previousRound);
 
     forwardTo.processRoundUpdate(roundUpdate);
   }
@@ -172,7 +172,7 @@ public final class BFTQuorumAssembler implements BFTEventProcessorAtCurrentRound
         switch (this.pendingVotes.insertVote(vote)) {
           case VoteAccepted unused -> {
             log.trace("Vote has been processed but didn't form a quorum");
-            divergentVertexExecutionDetector.process(vote);
+            divergentVertexExecutionDetector.processVote(vote);
             yield Metrics.Bft.VoteProcessingResult.ACCEPTED_NO_QUORUM;
           }
           case VoteRejected voteRejected -> {
@@ -184,7 +184,7 @@ public final class BFTQuorumAssembler implements BFTEventProcessorAtCurrentRound
             };
           }
           case QuorumReached quorumReached -> {
-            divergentVertexExecutionDetector.process(vote);
+            divergentVertexExecutionDetector.processVote(vote);
             this.processQuorum(quorumReached.roundQuorum(), vote);
             yield switch (quorumReached.roundQuorum()) {
               case RoundQuorum.RegularRoundQuorum unused -> Metrics.Bft.VoteProcessingResult

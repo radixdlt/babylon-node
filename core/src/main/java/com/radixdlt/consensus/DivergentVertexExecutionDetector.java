@@ -67,8 +67,11 @@ package com.radixdlt.consensus;
 import com.google.common.hash.HashCode;
 import com.google.common.util.concurrent.RateLimiter;
 import com.radixdlt.consensus.bft.BFTValidatorId;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.monitoring.Metrics;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
@@ -85,15 +88,23 @@ public final class DivergentVertexExecutionDetector {
 
   private final RateLimiter logRatelimiter = RateLimiter.create(0.05); // At most one log every 20s
 
+  private final Metrics metrics;
+  private final BFTValidatorSet validatorSet;
+
   // vertexId -> ledgerHeader -> validators who voted for (vertexId, ledgerHeader)
   private final Map<HashCode, Map<LedgerHeader, Set<BFTValidatorId>>> votesByVertexId =
       new HashMap<>();
+
+  public DivergentVertexExecutionDetector(Metrics metrics, BFTValidatorSet validatorSet) {
+    this.metrics = metrics;
+    this.validatorSet = validatorSet;
+  }
 
   /**
    * Processes a received vote. No additional filtering is applied, the caller should ensure that
    * only relevant votes are being processed (e.g. only votes from a single round).
    */
-  public void process(Vote vote) {
+  public void processVote(Vote vote) {
     final var ledgerHeadersByVertexId =
         votesByVertexId.computeIfAbsent(
             vote.getVoteData().getProposed().getVertexId(), unused -> new HashMap<>());
@@ -103,7 +114,7 @@ public final class DivergentVertexExecutionDetector {
     authorsByLedgerHeader.add(vote.getAuthor());
   }
 
-  public void logAndUpdateMetrics(Metrics metrics, Round round) {
+  public void finalizeAfterRoundAndReset(Round round) {
     // Divergent executions are the ones that have more than one resultant header
     // for the same vertexId.
     final StringBuilder logBuilder = new StringBuilder();
@@ -125,10 +136,17 @@ public final class DivergentVertexExecutionDetector {
                       "In round %s validators have voted for vertex %s but they've computed %s"
                           + " distinct results:\n",
                       round, vertexId, distinctResults.size()));
+              final var totalStakeDec = new BigDecimal(validatorSet.getTotalPower().toBigInt());
               for (var result : distinctResults.entrySet()) {
-                // Let's list the actual validators if there's less than 10 of them
+                final var stakeVoted =
+                    result.getValue().stream()
+                        .map(v -> new BigDecimal(validatorSet.getPower(v).toBigInt()))
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                final var stakeVotedProportion =
+                    stakeVoted.divide(totalStakeDec, 4, RoundingMode.HALF_UP);
+                // Let's list the actual validators if they represent less than 10% stake
                 final var validatorsDetails =
-                    result.getValue().size() <= 10
+                    stakeVotedProportion.compareTo(BigDecimal.valueOf(0.1)) < 0
                         ? " ("
                             + result.getValue().stream()
                                 .map(BFTValidatorId::toString)
@@ -137,8 +155,11 @@ public final class DivergentVertexExecutionDetector {
                         : "";
                 logBuilder.append(
                     String.format(
-                        "  * %s validator(s)%s computed %s\n",
-                        result.getValue().size(), validatorsDetails, result.getKey()));
+                        "  * %s validator(s)%s representing %s stake computed %s\n",
+                        result.getValue().size(),
+                        validatorsDetails,
+                        stakeVotedProportion,
+                        result.getKey()));
               }
             });
 
@@ -148,10 +169,8 @@ public final class DivergentVertexExecutionDetector {
               + " follow.\n");
       log.info(logBuilder.toString());
     }
-  }
 
-  /** Resets this detector to its initial state (empty). */
-  public void clear() {
+    // Reset this detector to its initial (empty) state
     this.votesByVertexId.clear();
   }
 }

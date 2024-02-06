@@ -65,38 +65,47 @@
 package com.radixdlt.consensus;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorId;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
+import com.radixdlt.utils.UInt192;
+import java.util.List;
 import org.junit.Test;
 
 public final class DivergentVertexExecutionDetectorTest {
   @Test
   public void when_divergent_execution__then_should_update_the_metrics() {
-    final var detector = new DivergentVertexExecutionDetector();
+    final var metrics = new MetricsInitializer().initialize();
     final var author1 = BFTValidatorId.random();
     final var author2 = BFTValidatorId.random();
     final var author3 = BFTValidatorId.random();
+    final var validatorSet =
+        BFTValidatorSet.from(
+            List.of(
+                BFTValidator.from(author1, UInt192.ONE),
+                BFTValidator.from(author2, UInt192.ONE),
+                BFTValidator.from(author3, UInt192.ONE)));
+    final var detector = new DivergentVertexExecutionDetector(metrics, validatorSet);
     final var vertex1 = HashUtils.random256();
     final var vertex2 = HashUtils.random256();
 
     // No divergence for vertex1
-    detector.process(createVoteForVertexId(author1, vertex1, 1L));
-    detector.process(createVoteForVertexId(author2, vertex1, 1L));
+    detector.processVote(createVoteForVertexId(author1, vertex1, 1L));
+    detector.processVote(createVoteForVertexId(author2, vertex1, 1L));
 
     // Divergence for vertex2
-    detector.process(createVoteForVertexId(author1, vertex2, 2L));
-    detector.process(createVoteForVertexId(author2, vertex2, 2L));
-    detector.process(createVoteForVertexId(author3, vertex2, 3L));
+    detector.processVote(createVoteForVertexId(author1, vertex2, 2L));
+    detector.processVote(createVoteForVertexId(author2, vertex2, 2L));
+    detector.processVote(createVoteForVertexId(author3, vertex2, 3L));
 
-    final var metrics = new MetricsInitializer().initialize();
-    detector.logAndUpdateMetrics(metrics, Round.epochInitial());
+    detector.finalizeAfterRoundAndReset(Round.epochInitial());
 
     assertEquals(
         1, // Expecting 1 divergent execution with 2 conflicting results (label)

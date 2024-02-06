@@ -84,6 +84,7 @@ public final class BFTQuorumAssemblerTest {
   private BFTValidatorId self = mock(BFTValidatorId.class);
   private Metrics metrics = new MetricsInitializer().initialize();
   private PendingVotes pendingVotes = mock(PendingVotes.class);
+  private BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
   private VertexStoreAdapter vertexStore = mock(VertexStoreAdapter.class);
   private Pacemaker pacemaker = mock(Pacemaker.class);
   private EventDispatcher<RoundQuorumResolution> roundQuorumResolutionDispatcher =
@@ -102,6 +103,7 @@ public final class BFTQuorumAssemblerTest {
             this.roundQuorumResolutionDispatcher,
             this.timeoutQuorumDelayedResolutionDispatcher,
             this.metrics,
+            new DivergentVertexExecutionDetector(metrics, validatorSet),
             this.pendingVotes,
             mock(RoundUpdate.class),
             1000L);

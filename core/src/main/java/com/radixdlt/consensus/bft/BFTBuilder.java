@@ -226,6 +226,7 @@ public final class BFTBuilder {
             roundQuorumResolutionDispatcher,
             timeoutQuorumDelayedResolutionDispatcher,
             metrics,
+            new DivergentVertexExecutionDetector(metrics, validatorSet),
             pendingVotes,
             roundUpdate,
             timeoutQuorumResolutionDelayMs);
