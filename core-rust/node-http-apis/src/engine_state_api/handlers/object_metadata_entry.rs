@@ -1,7 +1,5 @@
 use crate::engine_state_api::*;
 
-use radix_engine::system::attached_modules::metadata::MetadataCollection;
-use radix_engine::system::attached_modules::metadata::VersionedMetadataEntry;
 use radix_engine::types::*;
 
 use std::ops::Deref;
@@ -16,29 +14,17 @@ pub(crate) async fn handle_object_metadata_entry(
 
     let node_id = extract_address_as_node_id(&extraction_context, &request.entity_address)
         .map_err(|err| err.into_response_error("entity_address"))?;
-    let key = RawCollectionKey::Unsorted(ScryptoValue::String { value: request.key });
 
     let database = state.state_manager.database.read_current();
+    let loader = ObjectMetadataLoader::new(database.deref());
 
-    let meta_loader = EngineStateMetaLoader::new(database.deref());
-    let metadata_state_meta =
-        meta_loader.load_object_module_state_meta(&node_id, ModuleId::Metadata)?;
-    let entries_meta = metadata_state_meta
-        .collection_by_index(MetadataCollection::EntryKeyValue.collection_index())?;
-    let data_loader = EngineStateDataLoader::new(database.deref());
-
-    let entry_data =
-        data_loader.load_collection_entry(&node_id, ModuleId::Metadata, entries_meta, &key)?;
-
+    let metadata_value = loader.load_entry(
+        &node_id,
+        &MetadataKey {
+            string: request.key,
+        },
+    )?;
     let header = read_current_ledger_header(database.deref());
-
-    let metadata_value = scrypto_decode::<VersionedMetadataEntry>(entry_data.as_bytes())
-        .map_err(|_err| {
-            EngineStateBrowsingError::EngineInvariantBroken(
-                "cannot decode metadata entry".to_string(),
-            )
-        })?
-        .into_latest();
 
     Ok(Json(models::ObjectMetadataEntryResponse {
         at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),

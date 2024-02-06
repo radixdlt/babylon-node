@@ -62,6 +62,7 @@
  * permissions under this License.
  */
 
+mod attached_modules;
 mod conversions;
 mod errors;
 mod extractors;
@@ -79,6 +80,7 @@ mod server;
 #[allow(clippy::all)]
 mod generated;
 
+pub(crate) use attached_modules::*;
 pub(crate) use conversions::*;
 pub(crate) use errors::*;
 pub(crate) use extractors::*;

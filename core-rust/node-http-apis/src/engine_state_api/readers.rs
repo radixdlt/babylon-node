@@ -26,7 +26,6 @@ use crate::engine_state_api::models::ErrorDetails;
 use state_manager::store::traits::indices::{
     CreationId, EntityBlueprintId, EntityBlueprintIdV1, ReNodeListingIndex,
 };
-use state_manager::store::traits::SubstateNodeAncestryStore;
 
 use super::*;
 
@@ -49,7 +48,7 @@ pub struct EngineStateMetaLoader<'s, S: SubstateDatabase> {
     reader: SystemDatabaseReader<'s, S>,
 }
 
-impl<'s, S: SubstateDatabase + SubstateNodeAncestryStore> EngineStateMetaLoader<'s, S> {
+impl<'s, S: SubstateDatabase> EngineStateMetaLoader<'s, S> {
     /// Creates an instance reading from the given database.
     pub fn new(database: &'s S) -> Self {
         Self {
@@ -1491,6 +1490,7 @@ pub enum RawCollectionKey {
 }
 
 /// An [`SborData`] in a wrapper depending on the object collection kind.
+#[derive(Debug)]
 pub enum ObjectCollectionKey<'t> {
     KeyValueStore(SborData<'t>),
     Index(SborData<'t>),
@@ -1498,6 +1498,7 @@ pub enum ObjectCollectionKey<'t> {
 }
 
 /// A top-level SBOR value aware of its schema.
+#[derive(Debug)]
 pub struct SborData<'t> {
     payload_bytes: Vec<u8>,
     schema: &'t SchemaV1<ScryptoCustomSchema>,
