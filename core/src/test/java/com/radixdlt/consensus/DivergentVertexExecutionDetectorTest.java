@@ -105,7 +105,7 @@ public final class DivergentVertexExecutionDetectorTest {
     detector.processVote(createVoteForVertexId(author2, vertex2, 2L));
     detector.processVote(createVoteForVertexId(author3, vertex2, 3L));
 
-    detector.finalizeAfterRoundAndReset(Round.epochInitial());
+    detector.summarizeAfterRoundAndReset(Round.epochInitial());
 
     assertEquals(
         1, // Expecting 1 divergent execution with 2 conflicting results (label)

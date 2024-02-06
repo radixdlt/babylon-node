@@ -144,7 +144,7 @@ public final class BFTQuorumAssembler implements BFTEventProcessorAtCurrentRound
 
     // Process the divergent vertex executions we've collected in the previous round
     // and set it up for the next round.
-    this.divergentVertexExecutionDetector.finalizeAfterRoundAndReset(previousRound);
+    this.divergentVertexExecutionDetector.summarizeAfterRoundAndReset(previousRound);
 
     forwardTo.processRoundUpdate(roundUpdate);
   }

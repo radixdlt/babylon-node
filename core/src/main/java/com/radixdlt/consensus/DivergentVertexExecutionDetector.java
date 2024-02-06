@@ -114,7 +114,7 @@ public final class DivergentVertexExecutionDetector {
     authorsByLedgerHeader.add(vote.getAuthor());
   }
 
-  public void finalizeAfterRoundAndReset(Round round) {
+  public void summarizeAfterRoundAndReset(Round round) {
     // Divergent executions are the ones that have more than one resultant header
     // for the same vertexId.
     final StringBuilder logBuilder = new StringBuilder();
