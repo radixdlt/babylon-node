@@ -117,6 +117,10 @@ pub async fn create_server<F>(
             "/object/attached_modules/metadata/iterator",
             post(handle_object_metadata_iterator),
         )
+        .route(
+            "/object/attached_modules/metadata/entry",
+            post(handle_object_metadata_entry),
+        )
         .route("/kv-store/iterator", post(handle_kv_store_iterator))
         .route("/kv-store/entry", post(handle_kv_store_entry))
         .route("/entity/schema/entry", post(handle_entity_schema_entry))

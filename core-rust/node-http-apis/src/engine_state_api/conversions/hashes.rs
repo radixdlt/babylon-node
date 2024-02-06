@@ -24,3 +24,13 @@ pub fn extract_schema_hash(hash_str: &str) -> Result<SchemaHash, ExtractionError
         .map(SchemaHash::from_hash)
         .map_err(|_| ExtractionError::InvalidHash)
 }
+
+pub fn to_api_public_key_hash(hash: PublicKeyHash) -> models::PublicKeyHash {
+    models::PublicKeyHash {
+        key_type: match hash {
+            PublicKeyHash::Secp256k1(_) => models::PublicKeyType::EcdsaSecp256k1,
+            PublicKeyHash::Ed25519(_) => models::PublicKeyType::EddsaEd25519,
+        },
+        hash: to_hex(hash.get_hash_bytes()),
+    }
+}

@@ -18,6 +18,8 @@ import com.radixdlt.api.engine_state.generated.client.ApiResponse;
 import com.radixdlt.api.engine_state.generated.client.Pair;
 
 import com.radixdlt.api.engine_state.generated.models.ErrorResponse;
+import com.radixdlt.api.engine_state.generated.models.ObjectMetadataEntryRequest;
+import com.radixdlt.api.engine_state.generated.models.ObjectMetadataEntryResponse;
 import com.radixdlt.api.engine_state.generated.models.ObjectMetadataIteratorRequest;
 import com.radixdlt.api.engine_state.generated.models.ObjectMetadataIteratorResponse;
 
@@ -76,6 +78,84 @@ public class AttachedModulesApi {
     return operationId + " call failed with: " + statusCode + " - " + body;
   }
 
+  /**
+   * Get Metadata Entry
+   * Reads the current value of a specific Object&#39;s metadata by key. 
+   * @param objectMetadataEntryRequest  (required)
+   * @return ObjectMetadataEntryResponse
+   * @throws ApiException if fails to make API call
+   */
+  public ObjectMetadataEntryResponse objectAttachedModulesMetadataEntryPost(ObjectMetadataEntryRequest objectMetadataEntryRequest) throws ApiException {
+    ApiResponse<ObjectMetadataEntryResponse> localVarResponse = objectAttachedModulesMetadataEntryPostWithHttpInfo(objectMetadataEntryRequest);
+    return localVarResponse.getData();
+  }
+
+  /**
+   * Get Metadata Entry
+   * Reads the current value of a specific Object&#39;s metadata by key. 
+   * @param objectMetadataEntryRequest  (required)
+   * @return ApiResponse&lt;ObjectMetadataEntryResponse&gt;
+   * @throws ApiException if fails to make API call
+   */
+  public ApiResponse<ObjectMetadataEntryResponse> objectAttachedModulesMetadataEntryPostWithHttpInfo(ObjectMetadataEntryRequest objectMetadataEntryRequest) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = objectAttachedModulesMetadataEntryPostRequestBuilder(objectMetadataEntryRequest);
+    try {
+      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
+          localVarRequestBuilder.build(),
+          HttpResponse.BodyHandlers.ofInputStream());
+      if (memberVarResponseInterceptor != null) {
+        memberVarResponseInterceptor.accept(localVarResponse);
+      }
+      try {
+        if (localVarResponse.statusCode()/ 100 != 2) {
+          throw getApiException("objectAttachedModulesMetadataEntryPost", localVarResponse);
+        }
+        return new ApiResponse<ObjectMetadataEntryResponse>(
+          localVarResponse.statusCode(),
+          localVarResponse.headers().map(),
+          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<ObjectMetadataEntryResponse>() {}) // closes the InputStream
+          
+        );
+      } finally {
+      }
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new ApiException(e);
+    }
+  }
+
+  private HttpRequest.Builder objectAttachedModulesMetadataEntryPostRequestBuilder(ObjectMetadataEntryRequest objectMetadataEntryRequest) throws ApiException {
+    // verify the required parameter 'objectMetadataEntryRequest' is set
+    if (objectMetadataEntryRequest == null) {
+      throw new ApiException(400, "Missing the required parameter 'objectMetadataEntryRequest' when calling objectAttachedModulesMetadataEntryPost");
+    }
+
+    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
+
+    String localVarPath = "/object/attached_modules/metadata/entry";
+
+    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+
+    localVarRequestBuilder.header("Content-Type", "application/json");
+    localVarRequestBuilder.header("Accept", "application/json");
+
+    try {
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(objectMetadataEntryRequest);
+      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    if (memberVarReadTimeout != null) {
+      localVarRequestBuilder.timeout(memberVarReadTimeout);
+    }
+    if (memberVarInterceptor != null) {
+      memberVarInterceptor.accept(localVarRequestBuilder);
+    }
+    return localVarRequestBuilder;
+  }
   /**
    * List Object Metadata
    * Lists keys of all metadata entries defined for a particular Object, in an iterator-like paged fashion
