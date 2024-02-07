@@ -140,14 +140,14 @@ impl LedgerProofsGc {
     ///
     /// *Note on concurrent database access:*
     /// The proofs' GC process, by its nature, only accesses "old" (i.e. not "top-of-ledger" new)
-    /// proof DB rows. For this reason, it can use the direct [`DbLock::access()`] and effectively
-    /// own these rows (for reads and deletes), without locking the database.
+    /// proof DB rows. For this reason, it can use the direct [`DbLock::access_direct()`] and
+    /// effectively own these rows (for reads and deletes), without locking the database.
     /// Of course, a concurrent ledger sync may request a range of "old" proofs too, and thus it
     /// should use a [`DbLock::snapshot()`] to avoid relying on proofs which are about to be
     /// deleted.
     pub fn run(&self) -> Vec<ProofPruneRange> {
         // Read the GC's persisted state and initialize the run:
-        let database = self.database.access();
+        let database = self.database.access_direct();
         let to_epoch = database
             .max_completed_epoch()
             .map(|max_completed_epoch| max_completed_epoch.number())
@@ -390,7 +390,7 @@ mod tests {
 
         commit_round_updates_until_epoch(&state_manager, Epoch::of(8));
 
-        let database = db.access();
+        let database = db.access_direct();
         let post_genesis_epoch_proof = database.get_post_genesis_epoch_proof().unwrap();
         // The calculations below rely on this
         let first_post_genesis_state_version = post_genesis_epoch_proof

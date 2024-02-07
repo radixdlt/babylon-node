@@ -191,12 +191,9 @@ impl LockFactory {
     /// Note: this is a custom lock primitive - please see its documentation.
     pub fn new_db_lock<D>(self, database: D) -> DbLock<D> {
         DbLock {
-            exclusive_live_marker_lock: self.named("exclusive_live").new_mutex(()),
+            cooperative_marker_lock: self.named("cooperative").new_mutex(()),
             database,
-            shared_live_access_listener: self
-                .named("shared_live")
-                .not_stopping_on_panic()
-                .into_listener(),
+            direct_access_listener: self.named("direct").not_stopping_on_panic().into_listener(),
             on_demand_snapshot_listener: self
                 .named("snapshot")
                 .not_stopping_on_panic()
@@ -259,13 +256,13 @@ impl<T> RwLock<T> {
 ///
 /// With the above assumptions, this lock offers a couple of database access options. Please see the
 /// linked methods to learn more about:
-/// - a direct, non-locked, shared [`Self::access()`] to the live database.
-/// - an exclusive [`Self::lock()`] on the live database.
+/// - a completely-non-locked [`Self::access_direct()`] to the live database.
+/// - a cooperative [`Self::lock()`] on the live database.
 /// - _(optional)_ an on-demand [`Self::snapshot()`] creation.
 pub struct DbLock<D> {
-    exclusive_live_marker_lock: Mutex<()>,
+    cooperative_marker_lock: Mutex<()>,
     database: D,
-    shared_live_access_listener: ActualLockListener, // only for metrics of "raw access"
+    direct_access_listener: ActualLockListener, // only for metrics of "direct access"
     on_demand_snapshot_listener: ActualLockListener, // only for metrics of snapshot operations
 }
 
@@ -284,18 +281,21 @@ impl<D> DbLock<D> {
     /// This method should be used by clients who:
     /// - read data known to be immutable,
     /// - or read+write data which they exclusively own.
-    pub fn access(&self) -> impl Deref<Target = D> + '_ {
-        LockGuard::new(|| &self.database, self.shared_live_access_listener.clone())
+    pub fn access_direct(&self) -> impl Deref<Target = D> + '_ {
+        LockGuard::new(|| &self.database, self.direct_access_listener.clone())
     }
 
     /// Acquires an internal lock and returns a lock guard allowing access to the database.
+    /// This can be thought of as a "cooperative locking" (since honest callers need to explicitly
+    /// choose it instead of [`Self::access_direct()`]).
     ///
     /// This method should be used by clients who need to coordinate an exclusive read+write access
     /// to a known mutable region of the database.
-    // TODO(future enhancement): we really should have a set of `RwLock`s for independent regions?
+    // TODO(future enhancement): instead of "direct access + [optional] cooperative locking", we
+    // really should have a set of *mandatory* locks for logically independent "database regions".
     pub fn lock(&self) -> impl Deref<Target = D> + '_ {
         DbLockGuard {
-            underlying: self.exclusive_live_marker_lock.lock(),
+            underlying: self.cooperative_marker_lock.lock(),
             database: &self.database,
         }
     }
@@ -319,7 +319,7 @@ impl<'s, D: Snapshottable<'s>> DbLock<D> {
     }
 }
 
-// Only iternals below:
+// Only internals below:
 
 /// A static type of a [`LockListener`] which provides the extra features to locks produced by our
 /// facade.

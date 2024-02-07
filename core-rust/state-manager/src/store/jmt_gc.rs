@@ -124,10 +124,10 @@ impl StateHashTreeGc {
     ///
     /// *Note on concurrent database access:*
     /// The JMT's GC process, by its nature, only accesses "old" (i.e. not "top-of-ledger" new)
-    /// JMT DB rows. For this reason, it can use the direct [`DbLock::access()`] and effectively own
-    /// these rows (for reads and deletes), without locking the database.
+    /// JMT DB rows. For this reason, it can use the direct [`DbLock::access_direct()`] and
+    /// effectively own these rows (for reads and deletes), without locking the database.
     pub fn run(&self) {
-        let database = self.database.access();
+        let database = self.database.access_direct();
         let current_state_version = database.max_state_version();
         let to_state_version = current_state_version
             .relative(-self.history_len)

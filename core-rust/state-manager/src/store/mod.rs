@@ -105,7 +105,7 @@ impl RawDbMetricsCollector {
     /// Performs a single "collect measurements + update metric primitives" run.
     /// Should be called periodically.
     pub fn run(&self) {
-        let statistics = self.database.access().get_data_volume_statistics();
+        let statistics = self.database.access_direct().get_data_volume_statistics();
         self.raw_db_metrics.update(statistics);
     }
 }

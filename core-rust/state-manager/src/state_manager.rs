@@ -187,8 +187,10 @@ impl StateManager {
             panic!("Protocol misconfiguration: {}", err);
         };
 
-        let initial_protocol_state =
-            ProtocolState::compute_initial(database.access().deref(), &config.protocol_config);
+        let initial_protocol_state = ProtocolState::compute_initial(
+            database.access_direct().deref(),
+            &config.protocol_config,
+        );
 
         let initial_protocol_version = &initial_protocol_state.current_protocol_version;
         let (initial_state_computer_config, initial_protocol_updater) = config

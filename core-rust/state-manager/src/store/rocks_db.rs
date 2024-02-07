@@ -547,6 +547,13 @@ pub trait WriteableRocks: ReadableRocks {
     fn snapshot(&self) -> SnapshotRocks;
 }
 
+/// A [`ReadableRocks`] instance opened as secondary instance.
+pub trait SecondaryRocks: ReadableRocks {
+    /// Tries to catch up with the primary by reading as much as possible from the
+    /// log files.
+    fn try_catchup_with_primary(&self);
+}
+
 /// Direct RocksDB instance.
 pub struct DirectRocks {
     db: DB,
@@ -599,6 +606,14 @@ impl WriteableRocks for DirectRocks {
             db: &self.db,
             snapshot: self.db.snapshot(),
         }
+    }
+}
+
+impl SecondaryRocks for DirectRocks {
+    fn try_catchup_with_primary(&self) {
+        self.db
+            .try_catch_up_with_primary()
+            .expect("secondary DB catchup");
     }
 }
 
@@ -720,43 +735,7 @@ impl ActualStateManagerDatabase {
     }
 }
 
-/// A wrapper for [`DirectRocks`] which only exposes it as [`ReadableRocks`].
-/// This is needed to restrict the writing capabilities in compile time (when opening RocksDB in
-/// read-only or secondary mode).
-pub struct ReadonlyRocks {
-    wrapped: DirectRocks,
-}
-
-impl ReadableRocks for ReadonlyRocks {
-    fn cf_handle(&self, name: &str) -> &ColumnFamily {
-        self.wrapped.cf_handle(name)
-    }
-
-    fn iterator_cf(
-        &self,
-        cf: &impl AsColumnFamilyRef,
-        mode: IteratorMode,
-    ) -> Box<dyn Iterator<Item = KVBytes> + '_> {
-        self.wrapped.iterator_cf(cf, mode)
-    }
-
-    fn get_pinned_cf(
-        &self,
-        cf: &impl AsColumnFamilyRef,
-        key: impl AsRef<[u8]>,
-    ) -> Option<DBPinnableSlice> {
-        self.wrapped.get_pinned_cf(cf, key)
-    }
-
-    fn multi_get_cf<'a>(
-        &'a self,
-        keys: impl IntoIterator<Item = (&'a (impl AsColumnFamilyRef + 'a), impl AsRef<[u8]>)>,
-    ) -> Vec<Option<Vec<u8>>> {
-        self.wrapped.multi_get_cf(keys)
-    }
-}
-
-impl StateManagerDatabase<ReadonlyRocks> {
+impl<R: ReadableRocks> StateManagerDatabase<R> {
     /// Creates a readonly [`StateManagerDatabase`] that allows only reading from the store, while
     /// some other process is writing to it.
     ///
@@ -767,7 +746,7 @@ impl StateManagerDatabase<ReadonlyRocks> {
     /// way of making it clear that it only wants read lock and not a write lock.
     ///
     /// [`ledger-tools`]: https://github.com/radixdlt/ledger-tools
-    pub fn new_read_only(root: PathBuf) -> Result<Self, DatabaseConfigValidationError> {
+    pub fn new_read_only(root: PathBuf) -> StateManagerDatabase<impl ReadableRocks> {
         let mut db_opts = Options::default();
         db_opts.create_if_missing(false);
         db_opts.create_missing_column_families(false);
@@ -781,20 +760,24 @@ impl StateManagerDatabase<ReadonlyRocks> {
             DB::open_cf_descriptors_read_only(&db_opts, root.as_path(), column_families, false)
                 .unwrap();
 
-        Ok(StateManagerDatabase {
+        StateManagerDatabase {
             config: DatabaseFlags {
                 enable_local_transaction_execution_index: false,
                 enable_account_change_index: false,
             },
-            rocks: ReadonlyRocks {
-                wrapped: DirectRocks { db },
-            },
-        })
+            rocks: DirectRocks { db },
+        }
     }
+}
 
+impl<R: SecondaryRocks> StateManagerDatabase<R> {
     /// Creates a [`StateManagerDatabase`] as a secondary instance which may catch up with the
     /// primary.
-    pub fn new_as_secondary(root: PathBuf, temp: PathBuf, column_families: Vec<&str>) -> Self {
+    pub fn new_as_secondary(
+        root: PathBuf,
+        temp: PathBuf,
+        column_families: Vec<&str>,
+    ) -> StateManagerDatabase<impl SecondaryRocks> {
         let mut db_opts = Options::default();
         db_opts.create_if_missing(false);
         db_opts.create_missing_column_families(false);
@@ -817,14 +800,12 @@ impl StateManagerDatabase<ReadonlyRocks> {
                 enable_local_transaction_execution_index: false,
                 enable_account_change_index: false,
             },
-            rocks: ReadonlyRocks {
-                wrapped: DirectRocks { db },
-            },
+            rocks: DirectRocks { db },
         }
     }
 
     pub fn try_catchup_with_primary(&self) {
-        self.rocks.wrapped.db.try_catch_up_with_primary().unwrap();
+        self.rocks.try_catchup_with_primary();
     }
 }
 

@@ -49,6 +49,7 @@ impl<R: UpdateBatchGenerator> ProtocolUpdater for BatchedUpdater<R> {
             database.deref(),
             // The costing and logging parameters (of the Engine) are not really used for flash
             // transactions; let's still pass sane values.
+            // TODO(when we need non-flash transactions): pass the actually configured flags here.
             self.new_state_computer_config
                 .execution_configurator(true, false),
             self.new_state_computer_config

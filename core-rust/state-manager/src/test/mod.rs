@@ -26,7 +26,7 @@ pub fn commit_round_updates_until_epoch(state_manager: &StateManager, epoch: Epo
 pub fn prepare_and_commit_round_update(
     state_manager: &StateManager,
 ) -> (PrepareResult, CommitSummary) {
-    let database = state_manager.database.access();
+    let database = state_manager.database.access_direct();
     let latest_proof: LedgerProof = database.get_latest_proof().unwrap();
     let latest_epoch_proof: LedgerProof = database.get_latest_epoch_proof().unwrap();
     let (top_state_version, top_identifiers) = database.get_top_transaction_identifiers().unwrap();

@@ -277,7 +277,7 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_leastStaleStateHas
     jni_sbor_coded_call(&env, request_payload, |_: ()| -> u64 {
         let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
         let least_stale_state_version = database
-            .access() // the `get_stale_tree_parts_iter()` is inside a trait requiring writeability
+            .access_direct() // the `get_stale_tree_parts_iter()` is inside a trait requiring writeability
             .get_stale_tree_parts_iter()
             .next()
             .map(|(state_version, _)| state_version)

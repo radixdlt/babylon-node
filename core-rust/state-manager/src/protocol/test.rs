@@ -116,8 +116,9 @@ fn flash_protocol_update_test() {
             .state_computer
             .execute_genesis_for_unit_tests_with_default_config();
         // Now we can prepare the state updates based on the initialized database
-        let state_updates =
-            generate_validator_fee_fix_state_updates(tmp_state_manager.database.access().deref());
+        let state_updates = generate_validator_fee_fix_state_updates(
+            tmp_state_manager.database.access_direct().deref(),
+        );
         state_updates
     };
 
@@ -151,7 +152,7 @@ fn flash_protocol_update_test() {
         Some(custom_v2_protocol_version.clone())
     );
 
-    let database = state_manager.database.access();
+    let database = state_manager.database.access_direct();
     let pre_protocol_update_state_version = database.max_state_version();
 
     // Now let's apply the protocol update (this would normally be called by Java)
