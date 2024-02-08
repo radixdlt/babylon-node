@@ -18,8 +18,8 @@ use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintInterface, BlueprintPayloadDef, BlueprintType, BlueprintVersion,
-    BlueprintVersionKey, CanonicalBlueprintId, FunctionAuth, FunctionSchema, IndexedStateSchema,
-    MethodAuthTemplate, RoleSpecification,
+    BlueprintVersionKey, FunctionAuth, FunctionSchema, IndexedStateSchema, MethodAuthTemplate,
+    RoleSpecification,
 };
 
 use crate::engine_state_api::models::ErrorDetails;
@@ -59,18 +59,18 @@ impl<'s, S: SubstateDatabase> EngineStateMetaLoader<'s, S> {
     /// Loads metadata on the given blueprint.
     pub fn load_blueprint_meta(
         &self,
-        blueprint_id: &CanonicalBlueprintId,
+        blueprint_reference: &BlueprintReference,
     ) -> Result<BlueprintMeta, EngineStateBrowsingError> {
-        if blueprint_id.version != BlueprintVersion::default() {
+        if blueprint_reference.version != BlueprintVersion::default() {
             return Err(EngineStateBrowsingError::RequestedItemInvalid(
                 ItemKind::Blueprint,
                 "only the default blueprint version is currently supported".to_string(),
             ));
         }
-        let blueprint_id = BlueprintId::new(&blueprint_id.address, &blueprint_id.blueprint);
+        let blueprint_id = &blueprint_reference.id;
         let definition = self
             .reader
-            .get_blueprint_definition(&blueprint_id)
+            .get_blueprint_definition(blueprint_id)
             .map_err(|error| match error {
                 SystemReaderError::BlueprintDoesNotExist => {
                     EngineStateBrowsingError::RequestedItemNotFound(ItemKind::Blueprint)
@@ -1348,6 +1348,26 @@ impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
         collection_meta: &'s ObjectCollectionMeta,
         from_key: Option<&RawCollectionKey>,
     ) -> Result<impl Iterator<Item = ObjectCollectionKey> + '_, EngineStateBrowsingError> {
+        // From performance PoV, there is no way to iterate over keys without iterating over values
+        // too. The cost of the (discarded) `SborData` wrapper construction is negligible, hence:
+        Ok(self
+            .iter_object_collection(node_id, module_id, collection_meta, from_key)?
+            .map(|(key, _value)| key))
+    }
+
+    /// Returns an iterator over all entries (i.e. both keys and values) of the given object's
+    /// collection, starting from the given key (or its successor, if it does not exist), in an
+    /// arbitrary but deterministic key order used by the backing storage.
+    pub fn iter_object_collection(
+        &self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        collection_meta: &'s ObjectCollectionMeta,
+        from_key: Option<&RawCollectionKey>,
+    ) -> Result<
+        impl Iterator<Item = (ObjectCollectionKey, SborData<'s>)> + '_,
+        EngineStateBrowsingError,
+    > {
         let collection_index = collection_meta.index.number;
         let from_key = from_key.map(|key| Self::to_substate_key(key));
         Ok(self
@@ -1361,7 +1381,12 @@ impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
                 )
             })?
             .0
-            .map(|(substate_key, _)| Self::to_object_collection_key(substate_key, collection_meta)))
+            .map(|(substate_key, value_bytes)| {
+                (
+                    Self::to_object_collection_key(substate_key, collection_meta),
+                    SborData::new(value_bytes, &collection_meta.resolved_value_type),
+                )
+            }))
     }
 
     /// Returns an iterator over all keys of the given Key-Value Store entity, starting from the

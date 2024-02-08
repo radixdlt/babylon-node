@@ -96,6 +96,21 @@ public final class EntityIteratorTest extends DeterministicEngineStateApiTestBas
       assertThat(allResponse.getContinuationToken()).isNull();
       final var allEntities = allResponse.getPage();
 
+      for (var e : allEntities) {
+        var info =
+            getEntitiesApi()
+                .entityInfoPost(new EntityInfoRequest().entityAddress(e.getEntityAddress()))
+                .getInfo();
+        if (info instanceof ObjectEntityInfo obj) {
+          obj.getAttachedModules().stream()
+              .filter(f -> f.getAttachedModuleId() == AttachedModuleId.ROLEASSIGNMENT)
+              .forEach(
+                  m -> {
+                    System.out.println(e.getEntityAddress() + ": " + m);
+                  });
+        }
+      }
+
       // assert (heuristically) that "all" different kinds of entities are listed:
       final var allSystemTypes =
           allEntities.stream().map(ListedEntityItem::getSystemType).collect(Collectors.toSet());

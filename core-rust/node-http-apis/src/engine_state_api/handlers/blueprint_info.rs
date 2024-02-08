@@ -1,7 +1,6 @@
 use crate::engine_state_api::*;
 use radix_engine::types::*;
 
-use radix_engine_interface::blueprints::package::CanonicalBlueprintId;
 use std::ops::Deref;
 
 pub(crate) async fn handle_blueprint_info(
@@ -13,9 +12,11 @@ pub(crate) async fn handle_blueprint_info(
 
     let package_address = extract_package_address(&extraction_context, &request.package_address)
         .map_err(|err| err.into_response_error("package_address"))?;
-    let blueprint_id = CanonicalBlueprintId {
-        address: package_address,
-        blueprint: request.blueprint_name,
+    let blueprint_reference = BlueprintReference {
+        id: BlueprintId {
+            package_address,
+            blueprint_name: request.blueprint_name,
+        },
         version: request
             .blueprint_version
             .map(|blueprint_version| extract_blueprint_version(blueprint_version.as_str()))
@@ -27,7 +28,7 @@ pub(crate) async fn handle_blueprint_info(
     let database = state.state_manager.database.read_current();
 
     let meta_loader = EngineStateMetaLoader::new(database.deref());
-    let blueprint_meta = meta_loader.load_blueprint_meta(&blueprint_id)?;
+    let blueprint_meta = meta_loader.load_blueprint_meta(&blueprint_reference)?;
 
     let header = read_current_ledger_header(database.deref());
 

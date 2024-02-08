@@ -18,12 +18,7 @@ pub(crate) async fn handle_object_metadata_entry(
     let database = state.state_manager.database.read_current();
     let loader = ObjectMetadataLoader::new(database.deref());
 
-    let metadata_value = loader.load_entry(
-        &node_id,
-        &MetadataKey {
-            string: request.key,
-        },
-    )?;
+    let metadata_value = loader.load_entry(&node_id, &MetadataKey::from(request.key))?;
     let header = read_current_ledger_header(database.deref());
 
     Ok(Json(models::ObjectMetadataEntryResponse {

@@ -166,6 +166,7 @@ def generate_rust_models(schema_file, tmp_client_folder, out_location, rust_pack
         fix_for_enum_not_implementing_default(file_path, "StreamProofsErrorDetails")
         fix_for_enum_not_implementing_default(file_path, "StreamProofsFilter")
         fix_for_enum_not_implementing_default(file_path, "MetadataValue")
+        fix_for_enum_not_implementing_default(file_path, "Assignment")
 
     logging.info("Successfully fixed up rust models.")
 
