@@ -114,6 +114,25 @@ pub fn to_api_sbor_data(
     })
 }
 
+pub fn to_api_public_key(public_key: &PublicKey) -> models::PublicKey {
+    match public_key {
+        PublicKey::Secp256k1(key) => models::PublicKey::EcdsaSecp256k1PublicKey {
+            key_hex: to_hex(key.to_vec()),
+        },
+        PublicKey::Ed25519(key) => models::PublicKey::EddsaEd25519PublicKey {
+            key_hex: to_hex(key.to_vec()),
+        },
+    }
+}
+
+pub fn to_api_url(url: UncheckedUrl) -> String {
+    url.0
+}
+
+pub fn to_api_origin(origin: UncheckedOrigin) -> String {
+    origin.0
+}
+
 /// An input specification of a [`RichIndex`] (a number outputted together with an optional name).
 /// Such index may be unambiguously specified either by a number or by a name.
 /// See [`extract_api_rich_index_input()`].

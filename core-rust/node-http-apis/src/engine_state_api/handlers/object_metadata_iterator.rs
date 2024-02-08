@@ -1,5 +1,6 @@
 use crate::engine_state_api::*;
 
+use radix_engine::system::attached_modules::metadata::MetadataCollection;
 use radix_engine::types::*;
 
 use crate::engine_state_api::handlers::HandlerPagingSupport;
@@ -25,8 +26,8 @@ pub(crate) async fn handle_object_metadata_iterator(
     let meta_loader = EngineStateMetaLoader::new(database.deref());
     let metadata_state_meta =
         meta_loader.load_object_module_state_meta(&node_id, ModuleId::Metadata)?;
-    let entries_meta = metadata_state_meta.collection_by_index(0)?;
-
+    let entries_meta = metadata_state_meta
+        .collection_by_index(MetadataCollection::EntryKeyValue.collection_index())?;
     let data_loader = EngineStateDataLoader::new(database.deref());
 
     let page = paging_support.get_page(|from| {

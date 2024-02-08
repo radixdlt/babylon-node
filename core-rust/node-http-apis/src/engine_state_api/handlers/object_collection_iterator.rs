@@ -56,14 +56,6 @@ pub(crate) async fn handle_object_collection_iterator(
     }))
 }
 
-/// A "raw" representation of an [`ObjectCollectionKey`], suitable for use in a paging continuation
-/// token (see [`HasKey`] below).
-#[derive(Clone, PartialEq, Eq, ScryptoSbor)] // plain `Sbor` cannot be implemented due to `ScryptoValue` there
-pub enum RawCollectionKey {
-    Sorted([u8; 2], ScryptoValue),
-    Unsorted(ScryptoValue),
-}
-
 impl HasKey<RawCollectionKey> for ObjectCollectionKey<'_> {
     fn as_key(&self) -> RawCollectionKey {
         match self {

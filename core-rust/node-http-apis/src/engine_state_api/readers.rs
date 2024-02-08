@@ -22,7 +22,6 @@ use radix_engine_interface::blueprints::package::{
     MethodAuthTemplate, RoleSpecification,
 };
 
-use crate::engine_state_api::handlers::RawCollectionKey;
 use crate::engine_state_api::models::ErrorDetails;
 use state_manager::store::traits::indices::{
     CreationId, EntityBlueprintId, EntityBlueprintIdV1, ReNodeListingIndex,
@@ -1046,7 +1045,7 @@ pub struct RichIndex {
 
 impl RichIndex {
     /// Creates an instance with unknown name.
-    fn of(number: usize) -> Self {
+    pub fn of(number: usize) -> Self {
         Self {
             number: number
                 .try_into()
@@ -1288,7 +1287,7 @@ impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
     /// Loads an SBOR-encoded value of the given field.
     /// Note: technically, loading an SBOR does not need the fully-resolved field metadata (just its
     /// index); however, the object we return is schema-aware, so that it can render itself
-    /// together with field names. Hence the field metadata must first be obtained from the
+    /// together with field names. Hence, the field metadata must first be obtained from the
     /// [`EngineStateMetaLoader`].
     pub fn load_collection_entry<'m>(
         &self,
@@ -1481,6 +1480,14 @@ impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
             }
         })
     }
+}
+
+/// A "raw" representation of an [`ObjectCollectionKey`], suitable for accepting it as input (where the schema is not
+/// known, nor required).
+#[derive(Clone, PartialEq, Eq, ScryptoSbor)] // plain `Sbor` cannot be implemented due to `ScryptoValue` there
+pub enum RawCollectionKey {
+    Sorted([u8; 2], ScryptoValue),
+    Unsorted(ScryptoValue),
 }
 
 /// An [`SborData`] in a wrapper depending on the object collection kind.

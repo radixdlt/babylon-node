@@ -340,11 +340,43 @@ paths:
               $ref: "#/components/schemas/ObjectMetadataIteratorRequest"
       responses:
         '200':
-          description: A page of metadate keys.
+          description: A page of metadata keys.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ObjectMetadataIteratorResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/object/attached_modules/metadata/entry":
+    post:
+      summary: Get Metadata Entry
+      description: |
+        Reads the current value of a specific Object's metadata by key.
+      tags:
+        - AttachedModules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ObjectMetadataEntryRequest"
+      responses:
+        '200':
+          description: Current value of the entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObjectMetadataEntryResponse"
         '400':
           description: Client error
           content:
@@ -1940,6 +1972,416 @@ components:
         key:
           type: string
           description: Metadata entry key (which is always a string).
+#########################################################
+# REQUEST: /object/attached_modules/metadata/entry      #
+#########################################################
+    ObjectMetadataEntryRequest:
+      type: object
+      required:
+        - entity_address
+        - key
+      properties:
+        entity_address:
+          $ref: "#/components/schemas/EntityAddress"
+        key:
+          type: string
+          description: The metadata key (i.e. always a string) to look up the entry by.
+        sbor_format_options:
+          $ref: "#/components/schemas/SborFormatOptions"
+    ObjectMetadataEntryResponse:
+      type: object
+      required:
+        - at_ledger_state
+        - content
+      properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+          description: A summarized state of the ledger at which the query was performed.
+        content:
+          $ref: '#/components/schemas/MetadataValue'
+          description: The requested Object metadata value.
+    MetadataValueType:
+      type: string
+      enum:
+        - String
+        - Bool
+        - U8
+        - U32
+        - U64
+        - I32
+        - I64
+        - Decimal
+        - GlobalAddress
+        - PublicKey
+        - NonFungibleGlobalId
+        - NonFungibleLocalId
+        - Instant
+        - Url
+        - Origin
+        - PublicKeyHash
+        - StringArray
+        - BoolArray
+        - U8Array
+        - U32Array
+        - U64Array
+        - I32Array
+        - I64Array
+        - DecimalArray
+        - GlobalAddressArray
+        - PublicKeyArray
+        - NonFungibleGlobalIdArray
+        - NonFungibleLocalIdArray
+        - InstantArray
+        - UrlArray
+        - OriginArray
+        - PublicKeyHashArray
+    MetadataValue:
+      type: object
+      required:
+        - type
+        - value
+      properties:
+        type:
+          $ref: "#/components/schemas/MetadataValueType"
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match MetadataValueType
+          String: '#/components/schemas/StringMetadataValue'
+          Bool: '#/components/schemas/BoolMetadataValue'
+          U8: '#/components/schemas/U8MetadataValue'
+          U32: '#/components/schemas/U32MetadataValue'
+          U64: '#/components/schemas/U64MetadataValue'
+          I32: '#/components/schemas/I32MetadataValue'
+          I64: '#/components/schemas/I64MetadataValue'
+          Decimal: '#/components/schemas/DecimalMetadataValue'
+          GlobalAddress: '#/components/schemas/GlobalAddressMetadataValue'
+          PublicKey: '#/components/schemas/PublicKeyMetadataValue'
+          NonFungibleGlobalId: '#/components/schemas/NonFungibleGlobalIdMetadataValue'
+          NonFungibleLocalId: '#/components/schemas/NonFungibleLocalIdMetadataValue'
+          Instant: '#/components/schemas/InstantMetadataValue'
+          Url: '#/components/schemas/UrlMetadataValue'
+          Origin: '#/components/schemas/OriginMetadataValue'
+          PublicKeyHash: '#/components/schemas/PublicKeyHashMetadataValue'
+          StringArray: '#/components/schemas/StringArrayMetadataValue'
+          BoolArray: '#/components/schemas/BoolArrayMetadataValue'
+          U8Array: '#/components/schemas/U8ArrayMetadataValue'
+          U32Array: '#/components/schemas/U32ArrayMetadataValue'
+          U64Array: '#/components/schemas/U64ArrayMetadataValue'
+          I32Array: '#/components/schemas/I32ArrayMetadataValue'
+          I64Array: '#/components/schemas/I64ArrayMetadataValue'
+          DecimalArray: '#/components/schemas/DecimalArrayMetadataValue'
+          GlobalAddressArray: '#/components/schemas/GlobalAddressArrayMetadataValue'
+          PublicKeyArray: '#/components/schemas/PublicKeyArrayMetadataValue'
+          NonFungibleGlobalIdArray: '#/components/schemas/NonFungibleGlobalIdArrayMetadataValue'
+          NonFungibleLocalIdArray: '#/components/schemas/NonFungibleLocalIdArrayMetadataValue'
+          InstantArray: '#/components/schemas/InstantArrayMetadataValue'
+          UrlArray: '#/components/schemas/UrlArrayMetadataValue'
+          OriginArray: '#/components/schemas/OriginArrayMetadataValue'
+          PublicKeyHashArray: '#/components/schemas/PublicKeyHashArrayMetadataValue'
+    StringMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: string
+    BoolMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: boolean
+    U8MetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: integer
+              format: int32
+              minimum: 0
+              maximum: 255
+    U32MetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 4294967295
+    U64MetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: string
+              description: An unsigned 64-bit integer, encoded as a string (because of JSON limitations).
+    I32MetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: integer
+              format: int64
+              minimum: -2147483648
+              maximum: 2147483647
+    I64MetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: string
+              description: A signed 64-bit integer, encoded as a string (because of JSON limitations).
+    DecimalMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: string
+              description: A string-encoded fixed-precision decimal to 18 decimal places.
+    GlobalAddressMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              $ref: '#/components/schemas/GlobalAddress'
+    PublicKeyMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              $ref: "#/components/schemas/PublicKey"
+    NonFungibleGlobalIdMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              $ref: "#/components/schemas/NonFungibleGlobalId"
+    NonFungibleLocalIdMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              $ref: "#/components/schemas/NonFungibleLocalId"
+    InstantMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              $ref: '#/components/schemas/Instant'
+    UrlMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: string
+    OriginMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: string
+    PublicKeyHashMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              $ref: "#/components/schemas/PublicKeyHash"
+    StringArrayMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: array
+              items:
+                type: string
+    BoolArrayMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: array
+              items:
+                type: boolean
+    U8ArrayMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: array
+              items:
+                type: integer
+                format: int32
+                minimum: 0
+                maximum: 255
+    U32ArrayMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: array
+              items:
+                type: integer
+                format: int64
+                minimum: 0
+                maximum: 4294967295
+    U64ArrayMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: array
+              items:
+                type: string
+                description: An unsigned 64-bit integer, encoded as a string (because of JSON limitations).
+    I32ArrayMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: array
+              items:
+                type: integer
+                format: int64
+                minimum: -2147483648
+                maximum: 2147483647
+    I64ArrayMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: array
+              items:
+                type: string
+                description: A signed 64-bit integer, encoded as a string (because of JSON limitations).
+    DecimalArrayMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: array
+              items:
+                type: string
+                description: A string-encoded fixed-precision decimal to 18 decimal places.
+    GlobalAddressArrayMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: array
+              items:
+                $ref: '#/components/schemas/GlobalAddress'
+    PublicKeyArrayMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: array
+              items:
+                $ref: "#/components/schemas/PublicKey"
+    NonFungibleGlobalIdArrayMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: array
+              items:
+                $ref: "#/components/schemas/NonFungibleGlobalId"
+    NonFungibleLocalIdArrayMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: array
+              items:
+                $ref: "#/components/schemas/NonFungibleLocalId"
+    InstantArrayMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: array
+              items:
+                $ref: '#/components/schemas/Instant'
+    UrlArrayMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: array
+              items:
+                type: string
+    OriginArrayMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: array
+              items:
+                type: string
+    PublicKeyHashArrayMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: array
+              items:
+                $ref: "#/components/schemas/PublicKeyHash"
+    PublicKeyType:
+      type: string
+      enum:
+        - EcdsaSecp256k1
+        - EddsaEd25519
+    PublicKey:
+      type: object
+      required:
+        - key_type
+      properties:
+        key_type:
+          $ref: "#/components/schemas/PublicKeyType"
+      discriminator:
+        propertyName: key_type
+        mapping:
+          # NOTE: These need to match PublicKeyType
+          EcdsaSecp256k1: '#/components/schemas/EcdsaSecp256k1PublicKey'
+          EddsaEd25519: '#/components/schemas/EddsaEd25519PublicKey'
+    EcdsaSecp256k1PublicKey:
+      allOf:
+        - $ref: "#/components/schemas/PublicKey"
+        - type: object
+          required:
+            - key_hex
+          properties:
+            key_hex:
+              type: string
+              minLength: 66
+              maxLength: 66
+              description: The hex-encoded compressed ECDSA Secp256k1 public key (33 bytes)
+    EddsaEd25519PublicKey:
+      allOf:
+        - $ref: "#/components/schemas/PublicKey"
+        - type: object
+          required:
+            - key_hex
+          properties:
+            key_hex:
+              type: string
+              minLength: 64
+              maxLength: 64
+              description: The hex-encoded compressed EdDSA Ed25519 public key (32 bytes)
+    PublicKeyHash:
+      type: object
+      required:
+        - key_type
+        - hash
+      properties:
+        key_type:
+          $ref: "#/components/schemas/PublicKeyType"
+        hash:
+          type: string
+          minLength: 58
+          maxLength: 58
+          description: The hex-encoded last 29 bytes of a Blake2b-256 hash of the public key in the Radix canonical encoding.
 #########################################################
 # REQUEST: /kv-store/iterator                           #
 #########################################################

@@ -81,15 +81,34 @@ pub fn to_api_u8_as_i32(input: u8) -> i32 {
     input.into()
 }
 
+pub fn to_api_u32_as_i64(input: u32) -> i64 {
+    input.into()
+}
+
+pub fn to_api_i32_as_i64(input: i32) -> i64 {
+    input.into()
+}
+
 pub fn to_api_index_as_i64(index: usize) -> Result<i64, MappingError> {
     index.try_into().map_err(|_| MappingError::IntegerError {
         message: "Index number too large".to_string(),
     })
 }
 
-#[allow(dead_code)]
 pub fn to_api_u64_as_string(input: u64) -> String {
     input.to_string()
+}
+
+pub fn to_api_i64_as_string(input: i64) -> String {
+    input.to_string()
+}
+
+pub fn to_api_instant(instant: &Instant) -> Result<models::Instant, MappingError> {
+    to_api_instant_from_safe_timestamp(instant.seconds_since_unix_epoch.checked_mul(1000).ok_or(
+        MappingError::IntegerError {
+            message: "Timestamp must be representable as millis in i64".to_owned(),
+        },
+    )?)
 }
 
 pub fn to_api_instant_from_safe_timestamp(
@@ -130,15 +149,6 @@ pub fn extract_api_max_page_size(max_page_size: Option<i32>) -> Result<usize, Ex
         });
     }
     Ok(usize::try_from(max_page_size).expect("bounds checked already"))
-}
-
-#[allow(dead_code)]
-pub fn extract_api_u64_as_string(input: String) -> Result<u64, ExtractionError> {
-    input
-        .parse::<u64>()
-        .map_err(|_| ExtractionError::InvalidInteger {
-            message: "Is not valid u64 string".to_owned(),
-        })
 }
 
 pub fn extract_api_u8_as_i32(input: i32) -> Result<u8, ExtractionError> {

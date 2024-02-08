@@ -149,6 +149,13 @@ pub fn to_api_non_fungible_global_id(
             context,
             &non_fungible_global_id.resource_address(),
         )?,
-        local_id: non_fungible_global_id.local_id().to_string(),
+        local_id: to_api_non_fungible_local_id(context, non_fungible_global_id.local_id())?,
     })
+}
+
+pub fn to_api_non_fungible_local_id(
+    _context: &MappingContext,
+    non_fungible_local_id: &NonFungibleLocalId,
+) -> Result<String, MappingError> {
+    Ok(non_fungible_local_id.to_string())
 }
