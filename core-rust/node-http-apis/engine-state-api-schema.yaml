@@ -326,7 +326,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  "/object/attached_modules/metadata/iterator":
+  "/object/attached-modules/metadata/iterator":
     post:
       summary: List Object Metadata
       description: Lists keys of all metadata entries defined for a particular Object, in an iterator-like paged fashion
@@ -357,7 +357,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  "/object/attached_modules/metadata/entry":
+  "/object/attached-modules/metadata/entry":
     post:
       summary: Get Metadata Entry
       description: |
@@ -389,7 +389,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  "/object/attached_modules/role_assignment":
+  "/object/attached-modules/role-assignment":
     post:
       summary: Get Role Assignment
       description: |
@@ -1967,7 +1967,7 @@ components:
           $ref: '#/components/schemas/SborData'
           description: The requested Object Collection entry's value.
 #########################################################
-# REQUEST: /object/attached_modules/metadata/iterator   #
+# REQUEST: /object/attached-modules/metadata/iterator   #
 #########################################################
     ObjectMetadataIteratorRequest:
       type: object
@@ -2005,7 +2005,7 @@ components:
           type: string
           description: Metadata entry key (which is always a string).
 #########################################################
-# REQUEST: /object/attached_modules/metadata/entry      #
+# REQUEST: /object/attached-modules/metadata/entry      #
 #########################################################
     ObjectMetadataEntryRequest:
       type: object
@@ -2415,7 +2415,7 @@ components:
           maxLength: 58
           description: The hex-encoded last 29 bytes of a Blake2b-256 hash of the public key in the Radix canonical encoding.
 #########################################################
-# REQUEST: /object/attached_modules/role_assignment     #
+# REQUEST: /object/attached-modules/role-assignment     #
 #########################################################
     ObjectRoleAssignmentRequest:
       type: object

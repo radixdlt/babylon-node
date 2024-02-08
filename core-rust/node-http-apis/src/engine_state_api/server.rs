@@ -114,15 +114,15 @@ pub async fn create_server<F>(
             post(handle_object_collection_entry),
         )
         .route(
-            "/object/attached_modules/metadata/iterator", // TODO(wip): kebab case!
+            "/object/attached-modules/metadata/iterator",
             post(handle_object_metadata_iterator),
         )
         .route(
-            "/object/attached_modules/metadata/entry",
+            "/object/attached-modules/metadata/entry",
             post(handle_object_metadata_entry),
         )
         .route(
-            "/object/attached_modules/role_assignment",
+            "/object/attached-modules/role-assignment",
             post(handle_object_role_assignment),
         )
         .route("/kv-store/iterator", post(handle_kv_store_iterator))

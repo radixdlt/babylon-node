@@ -137,7 +137,7 @@ public class AttachedModulesApi {
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
 
-    String localVarPath = "/object/attached_modules/metadata/entry";
+    String localVarPath = "/object/attached-modules/metadata/entry";
 
     localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
 
@@ -215,7 +215,7 @@ public class AttachedModulesApi {
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
 
-    String localVarPath = "/object/attached_modules/metadata/iterator";
+    String localVarPath = "/object/attached-modules/metadata/iterator";
 
     localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
 
@@ -293,7 +293,7 @@ public class AttachedModulesApi {
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
 
-    String localVarPath = "/object/attached_modules/role_assignment";
+    String localVarPath = "/object/attached-modules/role-assignment";
 
     localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
 
