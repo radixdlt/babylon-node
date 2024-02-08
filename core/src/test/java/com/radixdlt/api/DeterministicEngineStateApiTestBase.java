@@ -211,6 +211,10 @@ public abstract class DeterministicEngineStateApiTestBase {
     return new ObjectsApi(apiClient);
   }
 
+  protected AttachedModulesApi getAttachedModulesApi() {
+    return new AttachedModulesApi(apiClient);
+  }
+
   protected TypesApi getTypesApi() {
     return new TypesApi(apiClient);
   }

@@ -29,6 +29,9 @@ tags:
   - name: Objects
     x-displayName: Objects
     description: Endpoints dealing with Objects.
+  - name: AttachedModules
+    x-displayName: Attached Modules
+    description: Endpoints dealing with Attached Modules of Objects.
   - name: KvStores
     x-displayName: Key-Value Stores
     description: Endpoints dealing with Key-Value Stores.
@@ -311,6 +314,37 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/EntitySchemaEntryResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/object/attached_modules/metadata/iterator":
+    post:
+      summary: List Object Metadata
+      description: Lists keys of all metadata entries defined for a particular Object, in an iterator-like paged fashion
+      tags:
+        - AttachedModules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ObjectMetadataIteratorRequest"
+      responses:
+        '200':
+          description: A page of metadate keys.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObjectMetadataIteratorResponse"
         '400':
           description: Client error
           content:
@@ -1868,6 +1902,44 @@ components:
         content:
           $ref: '#/components/schemas/SborData'
           description: The requested Object Collection entry's value.
+#########################################################
+# REQUEST: /object/attached_modules/metadata/iterator   #
+#########################################################
+    ObjectMetadataIteratorRequest:
+      type: object
+      required:
+        - entity_address
+      properties:
+        entity_address:
+          $ref: "#/components/schemas/EntityAddress"
+        max_page_size:
+          $ref: "#/components/schemas/MaxPageSize"
+        continuation_token:
+          $ref: "#/components/schemas/ContinuationToken"
+    ObjectMetadataIteratorResponse:
+      type: object
+      required:
+        - at_ledger_state
+        - page
+      properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+          description: A summarized state of the ledger at which the query was performed.
+        page:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetadataEntryKey"
+          description: A page of metadata keys. If this page is the last one, the `continuation_token` will be not be included.
+        continuation_token:
+          $ref: "#/components/schemas/ContinuationToken"
+    MetadataEntryKey:
+      type: object
+      required:
+        - key
+      properties:
+        key:
+          type: string
+          description: Metadata entry key (which is always a string).
 #########################################################
 # REQUEST: /kv-store/iterator                           #
 #########################################################
