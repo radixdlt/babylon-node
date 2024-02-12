@@ -26,4 +26,4 @@
 
 > [!TIP]
 > 
-> Explain what manual testing was done, if relevant.
+> Explain what testing / verification is done, including manual testing or automated testing.
