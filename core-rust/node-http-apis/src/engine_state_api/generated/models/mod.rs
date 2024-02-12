@@ -398,6 +398,8 @@ pub mod role_assignment_entry;
 pub use self::role_assignment_entry::RoleAssignmentEntry;
 pub mod root_only_blueprint_function_authorization;
 pub use self::root_only_blueprint_function_authorization::RootOnlyBlueprintFunctionAuthorization;
+pub mod royalty_amount;
+pub use self::royalty_amount::RoyaltyAmount;
 pub mod sbor_data;
 pub use self::sbor_data::SborData;
 pub mod sbor_format_options;

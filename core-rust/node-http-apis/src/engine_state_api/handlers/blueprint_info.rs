@@ -151,6 +151,7 @@ fn to_api_blueprint_function_info(
         declared_input_type,
         declared_output_type,
         authorization,
+        royalty,
     } = function;
     Ok(models::BlueprintFunctionInfo {
         name,
@@ -169,6 +170,7 @@ fn to_api_blueprint_function_info(
                 }
             }
         }),
+        royalty_amount: to_api_royalty_amount(&royalty).map(Box::new),
     })
 }
 
@@ -182,6 +184,7 @@ fn to_api_blueprint_method_info(
         declared_input_type,
         declared_output_type,
         authorization,
+        royalty,
     } = method;
     Ok(models::BlueprintMethodInfo {
         name,
@@ -204,6 +207,7 @@ fn to_api_blueprint_method_info(
                 }
             }
         }),
+        royalty_amount: to_api_royalty_amount(&royalty).map(Box::new),
     })
 }
 

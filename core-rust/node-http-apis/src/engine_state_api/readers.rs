@@ -8,6 +8,7 @@ use convert_case::{Case, Casing};
 use itertools::Itertools;
 use radix_engine::blueprints::package::{
     PackageCollection, VersionedPackageBlueprintVersionAuthConfig,
+    VersionedPackageBlueprintVersionRoyaltyConfig,
 };
 
 use radix_engine::system::system_db_reader::ObjectCollectionKey as ScryptoObjectCollectionKey;
@@ -247,8 +248,8 @@ impl<'s, S: SubstateDatabase> EngineStateMetaLoader<'s, S> {
         })
     }
 
-    /// Loads extra metadata on authorization-aware callables (i.e. methods and functions) belonging
-    /// to the given blueprint (a part of [`Self::load_blueprint_meta()`]).
+    /// Loads extra metadata on authorization-aware and royalty-aware callables (i.e. methods and
+    /// functions) belonging to the given blueprint (a part of [`Self::load_blueprint_meta()`]).
     fn load_authorized_callables_meta(
         &self,
         node_id: &NodeId,
@@ -281,6 +282,33 @@ impl<'s, S: SubstateDatabase> EngineStateMetaLoader<'s, S> {
             })?
             .into_latest();
 
+        let royalty_config = self
+            .reader
+            .read_object_collection_entry::<_, VersionedPackageBlueprintVersionRoyaltyConfig>(
+                node_id,
+                ModuleId::Main,
+                ScryptoObjectCollectionKey::KeyValue(
+                    PackageCollection::BlueprintVersionRoyaltyConfigKeyValue.collection_index(),
+                    &BlueprintVersionKey::new_default(blueprint_name),
+                ),
+            )
+            .map_err(|error| {
+                EngineStateBrowsingError::UnexpectedEngineError(
+                    error,
+                    "when getting blueprint royalty config".to_string(),
+                )
+            })?
+            .ok_or_else(|| {
+                EngineStateBrowsingError::EngineInvariantBroken(
+                    "no royalty config found for blueprint".to_string(),
+                )
+            })?
+            .into_latest();
+        let mut royalties = match royalty_config {
+            PackageRoyaltyConfig::Disabled => index_map_new(),
+            PackageRoyaltyConfig::Enabled(royalties) => royalties,
+        };
+
         let mut functions = Vec::new();
         let mut methods = Vec::new();
 
@@ -292,6 +320,7 @@ impl<'s, S: SubstateDatabase> EngineStateMetaLoader<'s, S> {
             } = schema;
             let declared_input_type = self.load_blueprint_type_meta(node_id, input)?;
             let declared_output_type = self.load_blueprint_type_meta(node_id, output)?;
+            let royalty = royalties.remove(&name).unwrap_or(RoyaltyAmount::Free);
             match receiver {
                 None => {
                     let authorization = match &function_auth {
@@ -311,6 +340,7 @@ impl<'s, S: SubstateDatabase> EngineStateMetaLoader<'s, S> {
                         declared_input_type,
                         declared_output_type,
                         authorization,
+                        royalty,
                     });
                 }
                 Some(receiver) => {
@@ -345,6 +375,7 @@ impl<'s, S: SubstateDatabase> EngineStateMetaLoader<'s, S> {
                         declared_input_type,
                         declared_output_type,
                         authorization,
+                        royalty,
                     });
                 }
             }
@@ -761,6 +792,7 @@ pub struct BlueprintFunctionMeta {
     pub declared_input_type: BlueprintTypeMeta,
     pub declared_output_type: BlueprintTypeMeta,
     pub authorization: BlueprintFunctionAuthorization,
+    pub royalty: RoyaltyAmount,
 }
 
 /// Authorization configuration of a function.
@@ -779,6 +811,7 @@ pub struct BlueprintMethodMeta {
     pub declared_input_type: BlueprintTypeMeta,
     pub declared_output_type: BlueprintTypeMeta,
     pub authorization: BlueprintMethodAuthorization,
+    pub royalty: RoyaltyAmount,
 }
 
 /// Authorization configuration of a method.
