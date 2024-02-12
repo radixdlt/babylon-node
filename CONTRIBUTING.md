@@ -97,6 +97,7 @@ $ ./gradlew spotlessApply
 
 Commit your changes with a descriptive commit message.
 
+*  We prefer [convential commit messages](https://www.conventionalcommits.org/en/v1.0.0/), although don't enforce it
 *  Separate the subject from body with a blank line
 *  Limit the subject line to 50 characters
 *  Capitalise the subject line
