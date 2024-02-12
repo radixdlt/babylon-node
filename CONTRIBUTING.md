@@ -55,26 +55,13 @@ Submitting a Pull Request does not guarantee the acceptance of your proposed cha
 
 ## Setting up your environment
 
-Please refer to [Development Docs](https://github.com/radixdlt/babylon-node/tree/main/docs/development) on how to setup your local environment.
-
-# Branching strategy
-
-We use a git flow-based branching scheme, where there’s the `main` (master) branch, `develop`, feature branches and then release branches.
-
-The `main` branch contains the latest code that is released or ready to be released.
-
-We use `develop` as our everyday development branch. This is where we synchronize the changes for an upcoming release.
-
-Features branches usually branch from `develop`, but keep in mind that it's an unstable and rapidly changing branch,
-so in some circumstances branching from `main` might be preferred.
-
-As mentioned above, we advise to contact the team prior to commencing any work on a PR.
-
-## Rebasing
-
-Rebasing in `main`/`develop` should be avoided. Rebases cause potential conflicts with other people's work on the same branches, overwrite the history of the project and ruin any GPG signed commits from other developers. On feature branches, especially if only one developer is working on it, it’s ok to do rebasing.
+Please refer to [development Docs](./docs/development) on how to setup your local environment.
 
 # Contribute
+
+## Branching strategy
+
+Please read the [branching strategy documentation](./docs/branching-strategy.md) to know how to branch correctly.
 
 ## Code style
 
@@ -110,7 +97,7 @@ $ ./gradlew spotlessApply
 
 Commit your changes with a descriptive commit message.
 
-*  Separate subject from body with a blank line
+*  Separate the subject from body with a blank line
 *  Limit the subject line to 50 characters
 *  Capitalise the subject line
 *  Do not end the subject line with a period
@@ -126,6 +113,7 @@ Commit your changes with a descriptive commit message.
 ## Review Process
 
 Pull requests will be reviewed by project maintainers. Reviewers may provide feedback, request changes, or approve the pull request.
+
 We appreciate your patience during this process, and we aim to be responsive and constructive in our feedback.
 
 ## License
