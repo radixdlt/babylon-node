@@ -2,11 +2,18 @@
 
 ## Getting Prepared
 
+### Setting up git
+
+All commits to this repository need to be signed. If working for RDX Works, you will have this set up as part of on-boarding.
+
+Otherwise, please set it up as [directed by GitHub docs](https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification).
+
 ### Installing dependencies
 
 Main dependencies:
 - Java 17.0.4+ SDK installed and configured. It's very important to have at least 17.0.4, else you will hit Java Compiler bugs.
-- Latest [stable rust installed](https://www.rust-lang.org/tools/install) - if you hit any rust compilation issues, try `rustup update` and try again.
+- Install the latest [rust toolchain](https://www.rust-lang.org/tools/install). If you hit any rust compilation issues, try `rustup update` and try again.
+- Follow the set-up instructions for [radixdlt-scrypto](https://github.com/radixdlt/radixdlt-scrypto).
 
 If you wish to launch a local network through Docker:
 - Docker version 20.10+
@@ -23,7 +30,9 @@ If an internal contributor, simply clone the main repository.
 
 ### Branching strategy
 
-We follow the git-flow branch management model. Typically, you should branch off the `develop` branch and put a PR up merging back into the `develop` branch.
+We follow the git-flow branch management model, please see the [branching strategy](../branching-strategy.md).
+
+To summarise - for code changes, you should branch off the `develop` branch and put a PR up merging back into the `develop` branch. For CI/workflows, do the same with the earliest supported `release/*` branch. For docs, use `main`.
 
 ## Developing
 
