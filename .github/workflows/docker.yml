@@ -148,7 +148,7 @@ jobs:
       packages: write
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
-      runs_on: babylon-node-arm
+      runs_on: selfhosted-ubuntu-22.04-arm
       image_registry: "docker.io"
       image_organization: "radixdlt"
       image_name: "private-babylon-node"
@@ -228,7 +228,7 @@ jobs:
       packages: write
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
-      runs_on: babylon-node-arm
+      runs_on: selfhosted-ubuntu-22.04-arm
       image_registry: "docker.io"
       image_organization: "radixdlt"
       image_name: "babylon-node"
