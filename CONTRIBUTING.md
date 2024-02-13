@@ -1,6 +1,6 @@
 # Contributing Guidelines
 
-Thank you for your interest in contributing to RadixDLT node!
+Thank you for your interest in contributing to the Radix node!
 
 ## Clarification on GitHub Issue Usage and Feature Requests
 
@@ -55,7 +55,7 @@ Submitting a Pull Request does not guarantee the acceptance of your proposed cha
 
 ## Setting up your environment
 
-Please refer to [development Docs](./docs/development) on how to setup your local environment.
+Please refer to the [development docs](./docs/development) on how to setup your local environment.
 
 # Contribute
 
@@ -90,7 +90,7 @@ $ ./gradlew spotlessApply
 
 ## Testing
 
-1. Ensure that your changes do not break existing tests (refer to [Development Docs](https://github.com/radixdlt/babylon-node/tree/main/docs/development) on how to run the tests).
+1. Ensure that your changes do not break existing tests (refer to the [Development Docs](https://github.com/radixdlt/babylon-node/tree/main/docs/development) on how to run the tests).
 2. Write new tests for your code if applicable.
 
 ## Commit messages
