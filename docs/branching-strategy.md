@@ -2,7 +2,7 @@
 
 Once you have read the [contributing guide](../CONTRIBUTING.md), if you want to start development, you will need to know which branches to use.
 
-> ![NOTE]
+> [!NOTE]
 >
 > As of 2024-02-12, the strictly ordered list of supported base branches, starting from furthest upstream, is:
 > 
