@@ -52,13 +52,13 @@ When working on changes:
 
 Features branches usually branch from `develop`, unless they need to target the current/previous protocol version, in which case, they will need to target the appropriate `release/*` branch.
 
-### Doc changes
+### Stand-alone doc changes
 
-Docs changes should use a base branch of `main`.
+Public facing docs change unrelated to another ticket should use a base branch of `main` - as this is the branch which is first visible when someone looks at the repository.
 
 ### Workflow / CI changes
 
-Should branch from the _most downstream_ (earliest) supported branch. Typically this is a `release/*` branch.
+Workflow changes should branch from the _most downstream_ (earliest) supported branch. Typically this is a `release/*` branch.
 
 Once the post-merge process is followed, this change will find itself on all downstream base branches too.
 
