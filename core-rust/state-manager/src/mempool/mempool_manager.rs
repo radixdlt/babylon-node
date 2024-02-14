@@ -280,12 +280,12 @@ impl MempoolManager {
             }
         };
 
-        // We need to lock the mempool to prevent concurrent threads updating it while
-        // we attempt to insert a transaction (both mempool sync and Core API use this method).
-        let mut locked_mempool = self.mempool.write();
-
         // STEP 2 - Check if transaction is already in mempool to avoid transaction execution.
-        if locked_mempool.contains_transaction(&prepared.notarized_transaction_hash()) {
+        if self
+            .mempool
+            .read()
+            .contains_transaction(&prepared.notarized_transaction_hash())
+        {
             return Err(MempoolAddError::Duplicate(
                 prepared.notarized_transaction_hash(),
             ));
@@ -315,7 +315,7 @@ impl MempoolManager {
                     validated,
                     raw: raw_transaction,
                 });
-                match locked_mempool.add_transaction(
+                match self.mempool.write().add_transaction_if_not_present(
                     mempool_transaction.clone(),
                     source,
                     Instant::now(),
