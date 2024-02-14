@@ -916,4 +916,35 @@ mod tests {
             .add_transaction_if_not_present(mt9, MempoolAddSource::CoreApi, time_point[2])
             .is_err());
     }
+
+    #[test]
+    fn test_duplicate_txn_not_inserted() {
+        let mempool_txn = create_fake_pending_transaction(1, 0, 10);
+
+        let now = Instant::now();
+
+        let registry = Registry::new();
+
+        let mut mempool = PriorityMempool::new(
+            MempoolConfig {
+                max_transaction_count: 1,
+                max_total_transactions_size: 1024 * 1024,
+            },
+            &registry,
+        );
+
+        // Inserting the same transaction twice should be a non-panicking no-op
+        assert!(mempool
+            .add_transaction_if_not_present(mempool_txn.clone(), MempoolAddSource::CoreApi, now)
+            .unwrap()
+            .is_empty());
+        assert!(mempool
+            .add_transaction_if_not_present(
+                mempool_txn.clone(),
+                MempoolAddSource::MempoolSync,
+                now + Duration::from_secs(1)
+            )
+            .unwrap()
+            .is_empty());
+    }
 }
