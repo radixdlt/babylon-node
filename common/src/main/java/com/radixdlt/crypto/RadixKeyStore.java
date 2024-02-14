@@ -110,9 +110,9 @@ import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
  * store,
  *
  * <p><b>Implementation note:</b><br>
- * This store uses a PKCS#12 representation for the underlying storage.
- * It's required to supply a non-null password for the keystore, but it can be empty.
- * An empty password will be used as-is, without any replacement default.
+ * This store uses a PKCS#12 representation for the underlying storage. It's required to supply a
+ * non-null password for the keystore, but it can be empty. An empty password will be used as-is,
+ * without any replacement default.
  */
 @SecurityCritical(SecurityKind.KEY_STORE)
 public final class RadixKeyStore implements Closeable {
