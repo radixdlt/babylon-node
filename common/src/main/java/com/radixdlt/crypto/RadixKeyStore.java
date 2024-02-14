@@ -110,11 +110,9 @@ import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
  * store,
  *
  * <p><b>Implementation note:</b><br>
- * This store uses a PKCS#12 representation for the underlying storage, and the store requires a
- * non-empty password to protect it. In order to ease unattended use, note that where a password is
- * required, a {@code null}, or zero length password may be provided, in which case the default 5
- * character password, "radix" is used. Clearly this is insecure, and clients should make an effort
- * to specify passwords in a secure way.
+ * This store uses a PKCS#12 representation for the underlying storage.
+ * It's required to supply a non-null password for the keystore, but it can be empty.
+ * An empty password will be used as-is, without any replacement default.
  */
 @SecurityCritical(SecurityKind.KEY_STORE)
 public final class RadixKeyStore implements Closeable {
