@@ -1,7 +1,5 @@
 use crate::core_api::*;
-use radix_engine::types::*;
-use radix_engine_common::types::EntityType;
-use radix_engine_interface::address::HrpSet;
+use crate::scrypto_prelude::*;
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_status_network_configuration(

@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use radix_engine_common::prelude::*;
+use crate::scrypto_prelude::*;
 
 // TODO: revisit & tune before Babylon
 pub const DEFAULT_MAX_VERTEX_TRANSACTION_COUNT: u32 = 100;

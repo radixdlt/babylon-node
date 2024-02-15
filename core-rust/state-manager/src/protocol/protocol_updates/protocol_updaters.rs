@@ -2,8 +2,10 @@ use node_common::locks::StateLock;
 use std::ops::Deref;
 use std::sync::Arc;
 
+use crate::scrypto_prelude::*;
+
 use crate::protocol::*;
-use crate::traits::*;
+
 use crate::StateManagerDatabase;
 
 pub trait ProtocolUpdater {

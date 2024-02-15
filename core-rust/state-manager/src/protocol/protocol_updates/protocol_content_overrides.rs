@@ -1,10 +1,6 @@
 use super::definitions::*;
 use crate::protocol::*;
-use radix_engine::types::scrypto_encode;
-use sbor::Sbor;
-
-use radix_engine_common::ScryptoSbor;
-use utils::prelude::*;
+use crate::scrypto_prelude::*;
 
 type Overrides<X> = <X as ProtocolUpdateDefinition>::Overrides;
 

@@ -66,6 +66,7 @@ use std::ops::Deref;
 use std::str::FromStr;
 use std::sync::Arc;
 
+use crate::scrypto_prelude::*;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -73,7 +74,6 @@ use node_common::environment::setup_tracing;
 use node_common::java::{jni_call, jni_jbytearray_to_vector, StructFromJava};
 use node_common::locks::*;
 use prometheus::Registry;
-use radix_engine_common::prelude::NetworkDefinition;
 
 use node_common::scheduler::{Scheduler, UntilDropTracker};
 use tokio::runtime::Runtime;

@@ -63,14 +63,11 @@
  */
 
 use crate::java::utils::jni_sbor_coded_call;
+use crate::scrypto_prelude::*;
 use bech32::{FromBase32, ToBase32, Variant};
 use jni::objects::JClass;
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use radix_engine::types::ComponentAddress;
-use radix_engine_common::prelude::{AddressBech32Encoder, NetworkDefinition};
-use radix_engine_common::types::{EntityType, NodeId, ResourceAddress};
-use radix_engine_interface::crypto::Secp256k1PublicKey;
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_identifiers_Bech32mCoder_encodeAddress(

@@ -1,13 +1,6 @@
-use radix_engine::prelude::ScryptoSbor;
-use radix_engine_common::math::Decimal;
-use radix_engine_common::network::NetworkDefinition;
-use radix_engine_common::prelude::{hash, scrypto_encode};
-
-use radix_engine_common::types::Epoch;
-use sbor::Sbor;
+use crate::scrypto_prelude::*;
 
 use crate::protocol::*;
-use utils::prelude::*;
 
 // This file contains types for node's local static protocol configuration
 

@@ -1,7 +1,5 @@
 use crate::core_api::*;
-use radix_engine::blueprints::package::PackageField;
-use radix_engine::system::attached_modules::role_assignment::RoleAssignmentField;
-use radix_engine::types::*;
+use crate::scrypto_prelude::*;
 
 use std::ops::Deref;
 

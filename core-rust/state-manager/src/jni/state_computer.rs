@@ -63,20 +63,15 @@
  */
 
 use crate::protocol::ProtocolVersionName;
+use crate::scrypto_prelude::*;
 use crate::{protocol::ProtocolState, CommitSummary, LedgerProof};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use radix_engine::types::*;
-use radix_engine_interface::blueprints::consensus_manager::{
-    ConsensusManagerConfig, EpochChangeCondition,
-};
 
 use node_common::java::*;
 
 use crate::types::{CommitRequest, InvalidCommitRequestError, PrepareRequest, PrepareResult};
-
-use radix_engine::system::bootstrap::GenesisDataChunk;
 
 use super::node_rust_environment::JNINodeRustEnvironment;
 

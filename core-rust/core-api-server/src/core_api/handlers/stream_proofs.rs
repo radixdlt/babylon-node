@@ -1,9 +1,7 @@
 use crate::core_api::*;
-
+use crate::scrypto_prelude::*;
 use state_manager::store::{traits::*, StateManagerDatabase};
 use state_manager::{LedgerProof, LedgerProofOrigin, StateVersion};
-
-use transaction::prelude::*;
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_stream_proofs(

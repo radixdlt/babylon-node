@@ -1,11 +1,7 @@
 use super::super::*;
 use super::*;
 use crate::core_api::models;
-use radix_engine::system::system_substates::KeyValueEntrySubstate;
-use radix_engine::transaction::PackageTypeReference;
-
-use radix_engine::types::*;
-use radix_engine_queries::typed_substate_layout::*;
+use crate::scrypto_prelude::*;
 
 pub fn to_api_package_royalty_accumulator_substate(
     context: &MappingContext,

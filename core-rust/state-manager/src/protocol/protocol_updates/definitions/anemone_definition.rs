@@ -1,11 +1,6 @@
 use crate::protocol::*;
+use crate::scrypto_prelude::*;
 use crate::transaction::FlashTransactionV1;
-use radix_engine::types::*;
-use radix_engine::utils::{
-    generate_pools_v1_1_state_updates, generate_seconds_precision_state_updates,
-    generate_validator_fee_fix_state_updates, generate_vm_boot_scrypto_minor_version_state_updates,
-};
-use radix_engine_store_interface::interface::SubstateDatabase;
 
 pub struct AnemoneProtocolUpdateDefinition;
 

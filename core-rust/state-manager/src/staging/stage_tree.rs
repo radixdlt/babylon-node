@@ -62,9 +62,7 @@
  * permissions under this License.
  */
 
-use radix_engine::types::*;
-
-use sbor::rust::vec::Vec;
+use crate::scrypto_prelude::*;
 use slotmap::{new_key_type, SlotMap};
 
 new_key_type! {
@@ -309,9 +307,8 @@ impl<D: Delta, A: Accumulator<D>> StageTree<D, A> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use radix_engine::types::rust::iter::zip;
-    use sbor::rust::collections::HashMap;
-    use sbor::rust::vec::Vec;
+
+    use std::iter::zip;
 
     struct TestDelta(Vec<(u8, u32)>);
 

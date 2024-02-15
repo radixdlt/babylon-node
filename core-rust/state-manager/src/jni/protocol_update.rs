@@ -62,11 +62,11 @@
  * permissions under this License.
  */
 
+use crate::scrypto_prelude::*;
 use crate::{protocol::*, ProtocolUpdateResult};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use radix_engine::types::*;
 
 use node_common::java::*;
 

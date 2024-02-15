@@ -1,6 +1,6 @@
 use crate::core_api::*;
-use radix_engine::types::*;
-use radix_engine_queries::typed_substate_layout::*;
+use crate::scrypto_prelude::*;
+
 use std::ops::Deref;
 
 #[tracing::instrument(skip(state))]

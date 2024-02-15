@@ -1,17 +1,7 @@
 use super::super::*;
 use super::*;
 use crate::core_api::models;
-use radix_engine::blueprints::pool::v1::substates::multi_resource_pool::{
-    MultiResourcePoolState, MultiResourcePoolStateFieldSubstate,
-};
-use radix_engine::blueprints::pool::v1::substates::one_resource_pool::{
-    OneResourcePoolState, OneResourcePoolStateFieldSubstate,
-};
-use radix_engine::blueprints::pool::v1::substates::two_resource_pool::{
-    TwoResourcePoolState, TwoResourcePoolStateFieldSubstate,
-};
-
-use radix_engine::types::*;
+use crate::scrypto_prelude::*;
 
 pub fn to_api_one_resource_pool_substate(
     context: &MappingContext,

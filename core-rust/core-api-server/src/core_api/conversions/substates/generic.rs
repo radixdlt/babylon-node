@@ -1,10 +1,7 @@
 use super::super::*;
 use super::*;
 use crate::core_api::models;
-use radix_engine::system::system_substates::{FieldSubstate, KeyValueEntrySubstate};
-
-use radix_engine::types::*;
-use radix_engine_queries::typed_substate_layout::*;
+use crate::scrypto_prelude::*;
 
 pub fn to_api_generic_scrypto_component_state_substate(
     context: &MappingContext,

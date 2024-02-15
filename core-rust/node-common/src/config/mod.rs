@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use sbor::*;
+use crate::scrypto_prelude::*;
 
 pub mod limits;
 

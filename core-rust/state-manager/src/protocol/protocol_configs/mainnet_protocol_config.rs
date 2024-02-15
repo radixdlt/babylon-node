@@ -1,4 +1,4 @@
-use radix_engine::prelude::*;
+use crate::scrypto_prelude::*;
 
 use crate::protocol::*;
 use ProtocolUpdateEnactmentCondition::*;

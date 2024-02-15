@@ -70,3 +70,7 @@ pub mod locks;
 pub mod metrics;
 pub mod scheduler;
 pub mod utils;
+
+pub(crate) mod scrypto_prelude {
+    pub use radix_engine_common::prelude::*;
+}

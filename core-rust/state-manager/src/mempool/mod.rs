@@ -62,8 +62,7 @@
  * permissions under this License.
  */
 
-use radix_engine_common::types::Epoch;
-use transaction::{errors::TransactionValidationError, prelude::NotarizedTransactionHash};
+use crate::scrypto_prelude::*;
 
 use std::string::ToString;
 
@@ -87,7 +86,7 @@ pub enum MempoolAddError {
 
 #[derive(Debug)]
 pub struct MempoolAddRejection {
-    pub reason: RejectionReason,
+    pub reason: MempoolRejectionReason,
     pub against_state: AtState,
     pub retry_from: RetryFrom,
     pub was_cached: bool,
@@ -99,7 +98,7 @@ pub struct MempoolAddRejection {
 impl MempoolAddRejection {
     pub fn for_static_rejection(validation_error: TransactionValidationError) -> Self {
         Self {
-            reason: RejectionReason::ValidationError(validation_error),
+            reason: MempoolRejectionReason::ValidationError(validation_error),
             against_state: AtState::Static,
             retry_from: RetryFrom::Never,
             was_cached: false,

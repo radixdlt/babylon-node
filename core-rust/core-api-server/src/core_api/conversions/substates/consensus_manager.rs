@@ -1,12 +1,7 @@
-use radix_engine::blueprints::models::SortedIndexKeyPayload;
-
 use super::super::*;
 use super::*;
 use crate::core_api::models;
-use radix_engine_interface::blueprints::consensus_manager::*;
-
-use radix_engine::types::*;
-use radix_engine_queries::typed_substate_layout::*;
+use crate::scrypto_prelude::*;
 
 pub fn to_api_registered_validators_by_stake_index_entry_substate(
     context: &MappingContext,

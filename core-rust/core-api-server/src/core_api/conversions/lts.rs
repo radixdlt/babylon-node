@@ -1,18 +1,9 @@
-use models::*;
-use radix_engine::{
-    system::system_modules::costing::RoyaltyRecipient,
-    transaction::BalanceChange,
-    types::{Decimal, GlobalAddress, IndexMap, ResourceAddress},
-};
-
+use crate::scrypto_prelude::*;
 use state_manager::store::{traits::SubstateNodeAncestryStore, StateManagerDatabase};
 use state_manager::{
     CommittedTransactionIdentifiers, LedgerTransactionOutcome, LocalTransactionReceipt,
     StateVersion, TransactionTreeHash,
 };
-
-use radix_engine::transaction::{FeeDestination, FeeSource, TransactionFeeSummary};
-use transaction::prelude::*;
 
 use crate::core_api::*;
 
@@ -89,14 +80,14 @@ pub fn to_api_lts_committed_transaction_outcome(
 pub fn to_api_lts_entity_non_fungible_balance_changes(
     context: &MappingContext,
     global_balance_summary: &IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>>,
-) -> Result<Vec<LtsEntityNonFungibleBalanceChanges>, MappingError> {
+) -> Result<Vec<models::LtsEntityNonFungibleBalanceChanges>, MappingError> {
     let mut changes = Vec::new();
     for (address, balance_changes) in global_balance_summary.iter() {
         for (resource, balance_change) in balance_changes.iter() {
             match balance_change {
                 BalanceChange::Fungible(_) => {}
                 BalanceChange::NonFungible { added, removed } => {
-                    changes.push(LtsEntityNonFungibleBalanceChanges {
+                    changes.push(models::LtsEntityNonFungibleBalanceChanges {
                         entity_address: to_api_global_address(context, address)?,
                         resource_address: to_api_resource_address(context, resource)?,
                         added: added

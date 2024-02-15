@@ -1,10 +1,10 @@
 use crate::core_api::*;
+use crate::scrypto_prelude::*;
 
 use crate::core_api::handlers::to_api_committed_intent_metadata;
 use hyper::StatusCode;
 use models::lts_transaction_submit_error_details::LtsTransactionSubmitErrorDetails;
 use state_manager::{MempoolAddError, MempoolAddSource};
-use transaction::prelude::RawNotarizedTransaction;
 
 #[tracing::instrument(level = "debug", skip(state))]
 pub(crate) async fn handle_lts_transaction_submit(

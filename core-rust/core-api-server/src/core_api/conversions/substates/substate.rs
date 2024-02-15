@@ -1,24 +1,8 @@
 use super::super::*;
-use crate::core_api::models;
-use radix_engine::blueprints::account::{
-    AccountTypedFieldSubstateValue, AccountTypedSubstateValue,
-};
-use radix_engine::blueprints::pool::v1::substates::multi_resource_pool::{
-    MultiResourcePoolTypedFieldSubstateValue, MultiResourcePoolTypedSubstateValue,
-};
-use radix_engine::blueprints::pool::v1::substates::one_resource_pool::{
-    OneResourcePoolTypedFieldSubstateValue, OneResourcePoolTypedSubstateValue,
-};
-use radix_engine::blueprints::pool::v1::substates::two_resource_pool::{
-    TwoResourcePoolTypedFieldSubstateValue, TwoResourcePoolTypedSubstateValue,
-};
-
-use radix_engine::types::*;
-
-use radix_engine_queries::typed_substate_layout::*;
-
-use super::super::MappingError;
 use super::*;
+use crate::core_api::models;
+
+use crate::scrypto_prelude::*;
 
 pub fn to_api_substate(
     context: &MappingContext,

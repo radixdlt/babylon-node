@@ -2,9 +2,7 @@ use super::super::*;
 use super::*;
 use crate::core_api::models;
 
-use radix_engine::types::*;
-use radix_engine::vm::VmBoot;
-use radix_engine_queries::typed_substate_layout::*;
+use crate::scrypto_prelude::*;
 
 pub fn to_api_vm_boot_substate(
     _context: &MappingContext,

@@ -31,7 +31,7 @@ pub use type_info_module::*;
 //====================================
 
 use super::MappingError;
-use radix_engine::system::system_substates::{KeyValueEntrySubstate, LockStatus};
+use crate::scrypto_prelude::*;
 
 macro_rules! assert_key_type {
     (

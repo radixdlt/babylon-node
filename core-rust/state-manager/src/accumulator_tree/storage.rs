@@ -62,8 +62,8 @@
  * permissions under this License.
  */
 
+use crate::scrypto_prelude::*;
 use enum_dispatch::enum_dispatch;
-use radix_engine::types::{ScryptoCategorize, ScryptoDecode, ScryptoEncode};
 
 /// The "read" part of an accumulator tree storage SPI.
 /// Both the key type and node type are implementation-dependent.

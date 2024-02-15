@@ -1,7 +1,4 @@
-use radix_engine::types::PublicKey;
-use radix_engine_interface::crypto::{Ed25519PublicKey, Secp256k1PublicKey};
-use transaction::model::{SignatureV1, SignatureWithPublicKeyV1};
-use transaction::prelude::{Ed25519Signature, Secp256k1Signature};
+use crate::scrypto_prelude::*;
 
 use crate::core_api::*;
 

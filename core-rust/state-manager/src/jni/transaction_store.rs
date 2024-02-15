@@ -65,13 +65,13 @@
 use crate::jni::node_rust_environment::JNINodeRustEnvironment;
 use crate::jni::LedgerSyncLimitsConfig;
 use crate::protocol::epoch_change_iter;
+use crate::scrypto_prelude::*;
 use crate::store::traits::*;
 use crate::{LedgerProof, StateVersion};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use node_common::java::*;
-use radix_engine::types::*;
 use std::ops::Deref;
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

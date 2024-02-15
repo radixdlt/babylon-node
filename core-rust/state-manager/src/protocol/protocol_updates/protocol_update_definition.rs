@@ -1,12 +1,10 @@
 // This file contains the protocol update logic for specific protocol versions
 
 use crate::protocol::*;
-use radix_engine::transaction::CostingParameters;
-use radix_engine::types::*;
+use crate::scrypto_prelude::*;
 
 use crate::transaction::*;
 use crate::LoggingConfig;
-use transaction::validation::{NotarizedTransactionValidator, ValidationConfig};
 
 /// A protocol update definition consists of two parts:
 /// 1) Updating the current (state computer) configuration ("transaction processing rules").

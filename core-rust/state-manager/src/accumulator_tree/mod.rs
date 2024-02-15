@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use radix_engine_interface::prelude::*;
+use crate::scrypto_prelude::*;
 use tree_builder::Merklizable;
 
 pub mod slice_merger;

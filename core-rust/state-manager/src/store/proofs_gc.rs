@@ -62,9 +62,7 @@
  * permissions under this License.
  */
 
-use radix_engine::types::{Categorize, Decode, Encode};
-
-use radix_engine_common::types::Epoch;
+use crate::scrypto_prelude::*;
 use std::sync::Arc;
 use std::time::Duration;
 use tracing::{error, info};
@@ -315,6 +313,7 @@ mod tests {
     use crate::jni::LedgerSyncLimitsConfig;
     use crate::proofs_gc::{LedgerProofsGc, LedgerProofsGcConfig};
     use crate::protocol::*;
+    use crate::scrypto_prelude::*;
     use crate::store::traits::proofs::QueryableProofStore;
     use crate::test::commit_round_updates_until_epoch;
     use crate::traits::GetSyncableTxnsAndProofError;
@@ -322,10 +321,6 @@ mod tests {
     use node_common::locks::LockFactory;
     use node_common::scheduler::Scheduler;
     use prometheus::Registry;
-    use radix_engine_common::prelude::*;
-    use radix_engine_interface::blueprints::consensus_manager::{
-        ConsensusManagerConfig, EpochChangeCondition,
-    };
     use std::time::Duration;
 
     #[test]

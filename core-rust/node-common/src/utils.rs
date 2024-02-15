@@ -62,8 +62,7 @@
  * permissions under this License.
  */
 
-use radix_engine::types::GlobalAddress;
-use radix_engine_common::types::EntityType;
+use crate::scrypto_prelude::*;
 
 pub trait IsAccountExt {
     fn is_account(&self) -> bool;

@@ -62,12 +62,11 @@
  * permissions under this License.
  */
 
+use crate::scrypto_prelude::*;
 use crate::store::traits::*;
 use crate::{SubstateChangeAction, SubstateReference};
 use std::borrow::Borrow;
 use std::collections::hash_map::Entry;
-
-use radix_engine::types::*;
 
 /// A parent Substate and its owned Nodes.
 /// This structure may be used to represent only directly owned Nodes (i.e. all immediate children),
@@ -297,7 +296,6 @@ impl NodeAncestryResolver {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use sbor::Value;
 
     #[test]
     pub fn newly_created_child_nodes_are_recorded_under_their_existing_parents() {

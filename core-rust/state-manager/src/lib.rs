@@ -91,3 +91,35 @@ pub use crate::state_computer::*;
 pub use crate::state_manager::*;
 pub use crate::store::*;
 pub use crate::types::*;
+
+pub(crate) mod scrypto_prelude {
+    pub use radix_engine::errors::*;
+    pub use radix_engine::system::bootstrap::*;
+    pub use radix_engine::system::system_db_reader::*;
+    pub use radix_engine::system::system_substates::*;
+    pub use radix_engine::transaction::*;
+    pub use radix_engine::utils::*;
+    pub use radix_engine::vm::wasm::*;
+    pub use radix_engine::vm::*;
+    pub use radix_engine_common::prelude::*;
+    pub use radix_engine_interface::blueprints::transaction_processor::*;
+    pub use radix_engine_interface::prelude::*;
+    pub use substate_store_impls::hash_tree::tree_store::*;
+    pub use substate_store_impls::hash_tree::*;
+    pub use substate_store_interface::db_key_mapper::*;
+    pub use substate_store_interface::interface::*;
+    pub use substate_store_queries::query::*;
+    pub use substate_store_queries::typed_substate_layout::*;
+    pub use transaction::builder::*;
+    pub use transaction::errors::*;
+    pub use transaction::manifest::*;
+    pub use transaction::model::*;
+    pub use transaction::prelude::*;
+    pub use transaction::validation::*;
+    pub use transaction::*;
+
+    // Note: plain `pub use radix_engine::track::*` would clash with the top-level `utils::prelude`
+    // (because it contains a private module of the same name)
+    pub use radix_engine::track::interface::*;
+    pub use radix_engine::track::state_updates::*;
+}
