@@ -598,7 +598,6 @@ pub mod extensions {
 
 pub mod indices {
     use super::*;
-    use radix_engine::prelude::{BlueprintId, EntityType, NodeId, Sbor};
     use std::ops::Range;
 
     #[enum_dispatch]

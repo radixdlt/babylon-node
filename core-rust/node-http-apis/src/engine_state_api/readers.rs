@@ -245,7 +245,7 @@ impl<'s, S: SubstateDatabase> EngineStateMetaLoader<'s, S> {
             .read_object_collection_entry::<_, VersionedPackageBlueprintVersionAuthConfig>(
                 node_id,
                 ModuleId::Main,
-                ScryptoObjectCollectionKey::KeyValue(
+                ObjectCollectionKey::KeyValue(
                     PackageCollection::BlueprintVersionAuthConfigKeyValue.collection_index(),
                     &BlueprintVersionKey::new_default(blueprint_name),
                 ),
@@ -268,7 +268,7 @@ impl<'s, S: SubstateDatabase> EngineStateMetaLoader<'s, S> {
             .read_object_collection_entry::<_, VersionedPackageBlueprintVersionRoyaltyConfig>(
                 node_id,
                 ModuleId::Main,
-                ScryptoObjectCollectionKey::KeyValue(
+                ObjectCollectionKey::KeyValue(
                     PackageCollection::BlueprintVersionRoyaltyConfigKeyValue.collection_index(),
                     &BlueprintVersionKey::new_default(blueprint_name),
                 ),
@@ -1361,7 +1361,7 @@ impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
         module_id: ModuleId,
         collection_meta: &'s ObjectCollectionMeta,
         from_key: Option<&RawCollectionKey>,
-    ) -> Result<impl Iterator<Item = ObjectCollectionKey> + '_, EngineStateBrowsingError> {
+    ) -> Result<impl Iterator<Item = SborCollectionKey> + '_, EngineStateBrowsingError> {
         // From performance PoV, there is no way to iterate over keys without iterating over values
         // too. The cost of the (discarded) `SborData` wrapper construction is negligible, hence:
         Ok(self
@@ -1379,7 +1379,7 @@ impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
         collection_meta: &'s ObjectCollectionMeta,
         from_key: Option<&RawCollectionKey>,
     ) -> Result<
-        impl Iterator<Item = (ObjectCollectionKey, SborData<'s>)> + '_,
+        impl Iterator<Item = (SborCollectionKey, SborData<'s>)> + '_,
         EngineStateBrowsingError,
     > {
         let collection_index = collection_meta.index.number;
@@ -1454,19 +1454,19 @@ impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
     fn to_object_collection_key(
         substate_key: SubstateKey,
         collection_meta: &ObjectCollectionMeta,
-    ) -> ObjectCollectionKey {
+    ) -> SborCollectionKey {
         match (&collection_meta.kind, substate_key) {
             (ObjectCollectionKind::KeyValueStore, SubstateKey::Map(key)) => {
-                ObjectCollectionKey::KeyValueStore(SborData::new(
+                SborCollectionKey::KeyValueStore(SborData::new(
                     key,
                     &collection_meta.resolved_key_type,
                 ))
             }
             (ObjectCollectionKind::Index, SubstateKey::Map(key)) => {
-                ObjectCollectionKey::Index(SborData::new(key, &collection_meta.resolved_key_type))
+                SborCollectionKey::Index(SborData::new(key, &collection_meta.resolved_key_type))
             }
             (ObjectCollectionKind::SortedIndex, SubstateKey::Sorted((sorted_prefix, key))) => {
-                ObjectCollectionKey::SortedIndex(
+                SborCollectionKey::SortedIndex(
                     sorted_prefix,
                     SborData::new(key, &collection_meta.resolved_key_type),
                 )
@@ -1494,21 +1494,17 @@ impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
     fn to_scrypto_object_collection_key<'k>(
         key: &'k RawCollectionKey,
         collection_meta: &ObjectCollectionMeta,
-    ) -> Result<ScryptoObjectCollectionKey<'k, ScryptoValue>, EngineStateBrowsingError> {
+    ) -> Result<ObjectCollectionKey<'k, ScryptoValue>, EngineStateBrowsingError> {
         let index = collection_meta.index.number;
         Ok(match (&collection_meta.kind, key) {
             (ObjectCollectionKind::KeyValueStore, RawCollectionKey::Unsorted(value)) => {
-                ScryptoObjectCollectionKey::KeyValue(index, value)
+                ObjectCollectionKey::KeyValue(index, value)
             }
             (ObjectCollectionKind::Index, RawCollectionKey::Unsorted(value)) => {
-                ScryptoObjectCollectionKey::Index(index, value)
+                ObjectCollectionKey::Index(index, value)
             }
             (ObjectCollectionKind::SortedIndex, RawCollectionKey::Sorted(sort_prefix, value)) => {
-                ScryptoObjectCollectionKey::SortedIndex(
-                    index,
-                    u16::from_be_bytes(*sort_prefix),
-                    value,
-                )
+                ObjectCollectionKey::SortedIndex(index, u16::from_be_bytes(*sort_prefix), value)
             }
             _ => {
                 return Err(EngineStateBrowsingError::RequestedItemInvalid(
@@ -1520,8 +1516,8 @@ impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
     }
 }
 
-/// A "raw" representation of an [`ObjectCollectionKey`], suitable for accepting it as input (where the schema is not
-/// known, nor required).
+/// A "raw" representation of an [`SborCollectionKey`], suitable for accepting it as input (where
+/// the schema is not known, nor required).
 #[derive(Clone, PartialEq, Eq, ScryptoSbor)] // plain `Sbor` cannot be implemented due to `ScryptoValue` there
 pub enum RawCollectionKey {
     Sorted([u8; 2], ScryptoValue),
@@ -1530,7 +1526,7 @@ pub enum RawCollectionKey {
 
 /// An [`SborData`] in a wrapper depending on the object collection kind.
 #[derive(Debug)]
-pub enum ObjectCollectionKey<'t> {
+pub enum SborCollectionKey<'t> {
     KeyValueStore(SborData<'t>),
     Index(SborData<'t>),
     SortedIndex([u8; 2], SborData<'t>),
@@ -1739,9 +1735,11 @@ impl From<EngineStateBrowsingError> for ResponseError {
                     StatusCode::BAD_REQUEST,
                     format!("Invalid {:?}: {}", item_kind, reason),
                 )
-                .with_public_details(models::ErrorDetails::RequestedItemInvalidDetails {
-                    item_type: to_api_requested_item_type(item_kind),
-                })
+                .with_public_details(
+                    models::ErrorDetails::RequestedItemInvalidDetails {
+                        item_type: to_api_requested_item_type(item_kind),
+                    },
+                )
             }
             EngineStateBrowsingError::UnexpectedEngineError(system_reader_error, circumstances) => {
                 ResponseError::new(

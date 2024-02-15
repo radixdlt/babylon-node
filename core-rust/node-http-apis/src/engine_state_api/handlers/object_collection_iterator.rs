@@ -56,14 +56,13 @@ pub(crate) async fn handle_object_collection_iterator(
     }))
 }
 
-impl HasKey<RawCollectionKey> for ObjectCollectionKey<'_> {
+impl HasKey<RawCollectionKey> for SborCollectionKey<'_> {
     fn as_key(&self) -> RawCollectionKey {
         match self {
-            ObjectCollectionKey::KeyValueStore(sbor_data)
-            | ObjectCollectionKey::Index(sbor_data) => {
+            SborCollectionKey::KeyValueStore(sbor_data) | SborCollectionKey::Index(sbor_data) => {
                 RawCollectionKey::Unsorted(sbor_data.to_scrypto_value())
             }
-            ObjectCollectionKey::SortedIndex(sorted_prefix, sbor_data) => {
+            SborCollectionKey::SortedIndex(sorted_prefix, sbor_data) => {
                 RawCollectionKey::Sorted(*sorted_prefix, sbor_data.to_scrypto_value())
             }
         }
@@ -72,18 +71,18 @@ impl HasKey<RawCollectionKey> for ObjectCollectionKey<'_> {
 
 fn to_api_object_collection_entry_key(
     context: &MappingContext,
-    key: ObjectCollectionKey,
+    key: SborCollectionKey,
 ) -> Result<models::CollectionEntryKey, MappingError> {
     Ok(match key {
-        ObjectCollectionKey::KeyValueStore(sbor_data) => {
+        SborCollectionKey::KeyValueStore(sbor_data) => {
             models::CollectionEntryKey::KeyValueStoreEntryKey {
                 key: Box::new(to_api_sbor_data(context, sbor_data)?),
             }
         }
-        ObjectCollectionKey::Index(sbor_data) => models::CollectionEntryKey::IndexEntryKey {
+        SborCollectionKey::Index(sbor_data) => models::CollectionEntryKey::IndexEntryKey {
             key: Box::new(to_api_sbor_data(context, sbor_data)?),
         },
-        ObjectCollectionKey::SortedIndex(sorted_part, sbor_data) => {
+        SborCollectionKey::SortedIndex(sorted_part, sbor_data) => {
             models::CollectionEntryKey::SortedIndexEntryKey {
                 sort_prefix_hex: to_hex(sorted_part),
                 key: Box::new(to_api_sbor_data(context, sbor_data)?),

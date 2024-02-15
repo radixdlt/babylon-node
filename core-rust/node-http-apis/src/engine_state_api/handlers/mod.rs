@@ -12,8 +12,7 @@ mod object_metadata_iterator;
 mod object_role_assignment;
 
 use super::{HasKey, Page, ResponseError};
-use radix_engine_common::crypto::Hash;
-use radix_engine_common::prelude::{hash, ScryptoSbor};
+use crate::engine_prelude::*;
 
 use crate::engine_state_api::{
     extract_api_max_page_size, extract_api_sbor_hex_string, to_api_sbor_hex_string,

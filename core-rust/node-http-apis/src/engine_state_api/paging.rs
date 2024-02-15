@@ -1,4 +1,3 @@
-
 /// A type holding its key internally.
 /// In the paging use-cases, we list items (e.g. `{id: 7, name: John}`), but we identify a point in
 /// the listing by some item's key (e.g. `7`).

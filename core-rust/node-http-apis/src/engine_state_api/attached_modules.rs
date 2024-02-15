@@ -259,14 +259,14 @@ impl From<String> for MetadataKey {
     }
 }
 
-impl<'t> From<ObjectCollectionKey<'t>> for MetadataKey {
-    fn from(key: ObjectCollectionKey<'t>) -> Self {
+impl<'t> From<SborCollectionKey<'t>> for MetadataKey {
+    fn from(key: SborCollectionKey<'t>) -> Self {
         Self::from(decode_kv_collection_key::<String>(key))
     }
 }
 
-impl<'t> From<ObjectCollectionKey<'t>> for ModuleRoleKey {
-    fn from(key: ObjectCollectionKey<'t>) -> Self {
+impl<'t> From<SborCollectionKey<'t>> for ModuleRoleKey {
+    fn from(key: SborCollectionKey<'t>) -> Self {
         decode_kv_collection_key(key)
     }
 }
@@ -303,8 +303,8 @@ impl From<AttachedModuleBrowsingError> for ResponseError {
     }
 }
 
-fn decode_kv_collection_key<D: ScryptoDecode>(key: ObjectCollectionKey) -> D {
-    let ObjectCollectionKey::KeyValueStore(sbor_data) = key else {
+fn decode_kv_collection_key<D: ScryptoDecode>(key: SborCollectionKey) -> D {
+    let SborCollectionKey::KeyValueStore(sbor_data) = key else {
         panic!("expected the Key-Value collection key; got {:?}", key)
     };
     let Ok(decoded) = scrypto_decode(sbor_data.as_bytes()) else {
