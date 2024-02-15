@@ -31,7 +31,7 @@ pub use type_info_module::*;
 //====================================
 
 use super::MappingError;
-use crate::scrypto_prelude::*;
+use crate::engine_prelude::*;
 
 macro_rules! assert_key_type {
     (

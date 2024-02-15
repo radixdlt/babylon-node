@@ -1,6 +1,6 @@
 use super::definitions::*;
+use crate::engine_prelude::*;
 use crate::protocol::*;
-use crate::scrypto_prelude::*;
 
 type Overrides<X> = <X as ProtocolUpdateDefinition>::Overrides;
 

@@ -1,4 +1,4 @@
-use crate::scrypto_prelude::*;
+use crate::engine_prelude::*;
 use state_manager::{transaction::*, ReceiptTreeHash, StateHash, TransactionTreeHash};
 
 use crate::core_api::*;

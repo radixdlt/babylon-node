@@ -62,8 +62,8 @@
  * permissions under this License.
  */
 
+use crate::engine_prelude::*;
 use crate::protocol::ProtocolVersionName;
-use crate::scrypto_prelude::*;
 use crate::{protocol::ProtocolState, CommitSummary, LedgerProof};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;

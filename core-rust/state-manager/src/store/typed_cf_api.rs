@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::scrypto_prelude::*;
+use crate::engine_prelude::*;
 use itertools::Itertools;
 use rocksdb::{ColumnFamily, Direction, IteratorMode, WriteBatch, DB};
 use std::ops::Range;

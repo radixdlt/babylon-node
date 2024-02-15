@@ -1,4 +1,4 @@
-use crate::scrypto_prelude::*;
+use crate::engine_prelude::*;
 use node_common::locks::{RwLock, StateLock};
 use std::ops::{Deref, Range};
 use std::sync::Arc;
@@ -126,7 +126,7 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
 #[cfg(test)]
 mod tests {
 
-    use crate::scrypto_prelude::*;
+    use crate::engine_prelude::*;
     use crate::{PreviewRequest, StateManager, StateManagerConfig};
     use node_common::locks::LockFactory;
     use node_common::scheduler::Scheduler;

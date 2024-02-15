@@ -71,8 +71,8 @@ use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 
+use crate::engine_prelude::*;
 use crate::mempool::*;
-use crate::scrypto_prelude::*;
 use crate::MempoolAddSource;
 use node_common::java::*;
 

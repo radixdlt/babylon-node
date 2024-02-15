@@ -6,7 +6,7 @@ use axum::{
 use models::stream_proofs_error_details::StreamProofsErrorDetails;
 use std::any::Any;
 
-use crate::scrypto_prelude::*;
+use crate::engine_prelude::*;
 use hyper::StatusCode;
 use tower_http::catch_panic::ResponseForPanic;
 

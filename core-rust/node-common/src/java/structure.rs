@@ -62,8 +62,8 @@
  * permissions under this License.
  */
 
+use crate::engine_prelude::*;
 use crate::java::result::JavaResult;
-use crate::scrypto_prelude::*;
 
 pub trait StructFromJava {
     fn from_java(data: &[u8]) -> JavaResult<Self>

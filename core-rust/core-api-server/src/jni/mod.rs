@@ -63,7 +63,7 @@
  */
 
 use crate::core_api::{create_server, CoreApiServerConfig, CoreApiState};
-use crate::scrypto_prelude::*;
+use crate::engine_prelude::*;
 use futures::channel::oneshot;
 use futures::channel::oneshot::Sender;
 use futures::FutureExt;

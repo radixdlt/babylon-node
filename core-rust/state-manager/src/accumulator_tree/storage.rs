@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::scrypto_prelude::*;
+use crate::engine_prelude::*;
 use enum_dispatch::enum_dispatch;
 
 /// The "read" part of an accumulator tree storage SPI.

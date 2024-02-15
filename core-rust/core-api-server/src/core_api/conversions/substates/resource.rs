@@ -1,7 +1,7 @@
 use super::super::*;
 use super::*;
 use crate::core_api::models;
-use crate::scrypto_prelude::*;
+use crate::engine_prelude::*;
 
 pub fn to_api_fungible_vault_balance_substate(
     _context: &MappingContext,

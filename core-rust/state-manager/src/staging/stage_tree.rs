@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::scrypto_prelude::*;
+use crate::engine_prelude::*;
 use slotmap::{new_key_type, SlotMap};
 
 new_key_type! {

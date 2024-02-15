@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::scrypto_prelude::*;
+use crate::engine_prelude::*;
 use node_common::config::limits::VertexLimitsConfig;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

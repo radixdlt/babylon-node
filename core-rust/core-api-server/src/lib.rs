@@ -68,7 +68,7 @@ extern crate serde_json;
 mod core_api;
 pub mod jni;
 
-pub(crate) mod scrypto_prelude {
+pub(crate) mod engine_prelude {
     pub use blueprint_schema_init::*;
     pub use radix_engine::blueprints::account::*;
     pub use radix_engine::blueprints::models::*;

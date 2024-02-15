@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::scrypto_prelude::*;
+use crate::engine_prelude::*;
 use jni::errors::Result;
 use jni::objects::{GlobalRef, JObject, JValue};
 use jni::{JNIEnv, JavaVM};

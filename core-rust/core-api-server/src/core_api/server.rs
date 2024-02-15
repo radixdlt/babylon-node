@@ -77,7 +77,7 @@ use axum::{
     Router,
 };
 
-use crate::scrypto_prelude::*;
+use crate::engine_prelude::*;
 use prometheus::Registry;
 use state_manager::StateManager;
 use tower_http::catch_panic::CatchPanicLayer;

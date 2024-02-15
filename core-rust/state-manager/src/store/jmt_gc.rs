@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::scrypto_prelude::*;
+use crate::engine_prelude::*;
 use std::iter;
 use std::ops::Deref;
 use std::sync::Arc;

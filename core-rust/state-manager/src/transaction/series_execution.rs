@@ -71,7 +71,7 @@ use crate::store::traits::*;
 use crate::transaction::*;
 use crate::*;
 
-use crate::scrypto_prelude::*;
+use crate::engine_prelude::*;
 use node_common::locks::{Mutex, RwLock};
 
 /// An internal delegate for executing a series of consecutive transactions while tracking their

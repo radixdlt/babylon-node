@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::scrypto_prelude::*;
+use crate::engine_prelude::*;
 use std::sync::Arc;
 use std::time::Duration;
 use tracing::{error, info};
@@ -310,10 +310,10 @@ impl ProofPruneRange {
 
 #[cfg(test)]
 mod tests {
+    use crate::engine_prelude::*;
     use crate::jni::LedgerSyncLimitsConfig;
     use crate::proofs_gc::{LedgerProofsGc, LedgerProofsGcConfig};
     use crate::protocol::*;
-    use crate::scrypto_prelude::*;
     use crate::store::traits::proofs::QueryableProofStore;
     use crate::test::commit_round_updates_until_epoch;
     use crate::traits::GetSyncableTxnsAndProofError;

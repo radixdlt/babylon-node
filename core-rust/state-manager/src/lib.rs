@@ -92,7 +92,7 @@ pub use crate::state_manager::*;
 pub use crate::store::*;
 pub use crate::types::*;
 
-pub(crate) mod scrypto_prelude {
+pub(crate) mod engine_prelude {
     pub use radix_engine::errors::*;
     pub use radix_engine::system::bootstrap::*;
     pub use radix_engine::system::system_db_reader::*;

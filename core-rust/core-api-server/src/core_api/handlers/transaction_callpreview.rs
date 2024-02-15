@@ -1,5 +1,5 @@
 use crate::core_api::*;
-use crate::scrypto_prelude::*;
+use crate::engine_prelude::*;
 
 use state_manager::PreviewRequest;
 
@@ -7,9 +7,9 @@ macro_rules! args_from_bytes_vec {
     ($args: expr) => {{
         let mut fields = Vec::new();
         for arg in $args {
-            fields.push(crate::scrypto_prelude::manifest_decode(&arg).unwrap());
+            fields.push(crate::engine_prelude::manifest_decode(&arg).unwrap());
         }
-        crate::scrypto_prelude::ManifestValue::Tuple { fields }
+        crate::engine_prelude::ManifestValue::Tuple { fields }
     }};
 }
 

@@ -1,4 +1,4 @@
-use crate::scrypto_prelude::*;
+use crate::engine_prelude::*;
 use crate::{protocol::*, transaction::FlashTransactionV1};
 
 /// Any protocol update beginning `test-` just injects a single transaction.

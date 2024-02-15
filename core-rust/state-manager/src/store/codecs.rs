@@ -66,7 +66,7 @@ use std::ops::Range;
 
 use crate::StateVersion;
 
-use crate::scrypto_prelude::*;
+use crate::engine_prelude::*;
 use crate::store::traits::scenario::ScenarioSequenceNumber;
 use crate::store::typed_cf_api::*;
 use crate::transaction::RawLedgerTransaction;

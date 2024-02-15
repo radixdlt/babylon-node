@@ -1,5 +1,5 @@
+use crate::engine_prelude::*;
 use crate::protocol::*;
-use crate::scrypto_prelude::*;
 
 pub struct DefaultConfigOnlyProtocolDefinition;
 

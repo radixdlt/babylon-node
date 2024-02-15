@@ -1,5 +1,5 @@
+use crate::engine_prelude::*;
 use crate::protocol::*;
-use crate::scrypto_prelude::*;
 
 /// Any protocol update beginning `custom-` can have content injected via config.
 pub struct CustomProtocolUpdateDefinition;

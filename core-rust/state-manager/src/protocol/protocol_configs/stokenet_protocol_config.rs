@@ -1,4 +1,4 @@
-use crate::scrypto_prelude::*;
+use crate::engine_prelude::*;
 
 use crate::protocol::*;
 use ProtocolUpdateEnactmentCondition::*;

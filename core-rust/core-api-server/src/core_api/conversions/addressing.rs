@@ -1,6 +1,6 @@
 use crate::core_api::models;
 use crate::core_api::*;
-use crate::scrypto_prelude::*;
+use crate::engine_prelude::*;
 use models::SubstateType;
 
 pub fn to_api_global_address(

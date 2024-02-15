@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::scrypto_prelude::*;
+use crate::engine_prelude::*;
 
 #[derive(Debug, PartialEq, Eq, Categorize, Encode, Decode)]
 pub struct JavaHashCode(Vec<u8>);

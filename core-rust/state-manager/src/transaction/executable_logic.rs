@@ -1,4 +1,4 @@
-use crate::scrypto_prelude::*;
+use crate::engine_prelude::*;
 // disambiguation needed because of a wide prelude
 
 use crate::LoggingConfig;

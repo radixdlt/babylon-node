@@ -66,9 +66,9 @@ use std::ops::Deref;
 use std::sync::Arc;
 use std::time::Duration;
 
+use crate::engine_prelude::*;
 use crate::jni::LedgerSyncLimitsConfig;
 use crate::protocol::{ProtocolConfig, ProtocolState, ProtocolVersionName};
-use crate::scrypto_prelude::*;
 use crate::store::jmt_gc::StateHashTreeGcConfig;
 use crate::store::proofs_gc::{LedgerProofsGc, LedgerProofsGcConfig};
 use crate::store::traits::proofs::QueryableProofStore;

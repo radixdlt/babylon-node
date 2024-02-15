@@ -66,7 +66,7 @@ use super::slice_merger::AccuTreeSliceMerger;
 use super::storage::{ReadableAccuTreeStore, WriteableAccuTreeStore};
 use super::storage::{TreeSlice, TreeSliceLevel};
 use super::tree_builder::{AccuTree, Merklizable};
-use crate::scrypto_prelude::*;
+use crate::engine_prelude::*;
 use std::collections::HashMap;
 
 // Simple smoke tests using the actual hashing coming from our business use-cases:

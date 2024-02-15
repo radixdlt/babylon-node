@@ -73,7 +73,7 @@ use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
 use crate::*;
 use node_common::config::limits::VertexLimitsConfig;
 
-use crate::scrypto_prelude::*;
+use crate::engine_prelude::*;
 use ::transaction::model::PrepareError; // disambiguation needed because of a wide prelude
 
 use transaction_scenarios::scenario::DescribedAddress as ScenarioDescribedAddress;
@@ -1461,7 +1461,7 @@ struct PendingTransactionResult {
 mod tests {
     use std::ops::Deref;
 
-    use crate::scrypto_prelude::*;
+    use crate::engine_prelude::*;
     use crate::transaction::{LedgerTransaction, RoundUpdateTransactionV1};
     use crate::{
         LedgerProof, PrepareRequest, PrepareResult, RoundHistory, StateManager, StateManagerConfig,

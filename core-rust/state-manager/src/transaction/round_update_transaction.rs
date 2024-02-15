@@ -1,4 +1,4 @@
-use crate::scrypto_prelude::*;
+use crate::engine_prelude::*;
 use ::transaction::model::PrepareError; // disambiguation needed because of a wide prelude
 
 use crate::{LedgerHeader, RoundHistory, ValidatorId};

@@ -2,7 +2,7 @@ use node_common::locks::StateLock;
 use std::ops::Deref;
 use std::sync::Arc;
 
-use crate::scrypto_prelude::*;
+use crate::engine_prelude::*;
 
 use crate::protocol::*;
 

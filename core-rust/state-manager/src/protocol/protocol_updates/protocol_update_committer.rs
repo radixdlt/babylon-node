@@ -3,7 +3,7 @@
 use std::ops::Deref;
 use std::sync::Arc;
 
-use crate::scrypto_prelude::*;
+use crate::engine_prelude::*;
 use node_common::locks::{LockFactory, RwLock, StateLock};
 
 use crate::epoch_handling::EpochAwareAccuTreeFactory;

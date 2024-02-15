@@ -1,6 +1,6 @@
 use std::any::type_name;
 
-use crate::scrypto_prelude::*;
+use crate::engine_prelude::*;
 use state_manager::store::traits::scenario::ScenarioSequenceNumber;
 use state_manager::StateVersion;
 

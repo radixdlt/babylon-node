@@ -1,5 +1,5 @@
 use crate::core_api::*;
-use crate::scrypto_prelude::*;
+use crate::engine_prelude::*;
 
 use state_manager::query::{dump_component_state, VaultData};
 

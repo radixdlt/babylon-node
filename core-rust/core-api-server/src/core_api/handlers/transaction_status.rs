@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::core_api::*;
-use crate::scrypto_prelude::*;
+use crate::engine_prelude::*;
 
 use state_manager::{
     AlreadyCommittedError, DetailedTransactionOutcome, MempoolRejectionReason, StateVersion,

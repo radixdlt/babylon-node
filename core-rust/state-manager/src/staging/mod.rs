@@ -70,7 +70,7 @@ mod result;
 mod stage_tree;
 
 use crate::accumulator_tree::storage::ReadableAccuTreeStore;
-use crate::scrypto_prelude::*;
+use crate::engine_prelude::*;
 use crate::{ReceiptTreeHash, StateVersion, TransactionTreeHash};
 
 use crate::store::traits::SubstateNodeAncestryStore;

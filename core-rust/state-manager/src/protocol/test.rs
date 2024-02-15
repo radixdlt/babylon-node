@@ -64,7 +64,7 @@
 
 use prometheus::Registry;
 
-use crate::scrypto_prelude::*;
+use crate::engine_prelude::*;
 use crate::traits::QueryableProofStore;
 
 use node_common::locks::LockFactory;

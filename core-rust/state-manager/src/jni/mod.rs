@@ -74,7 +74,7 @@ pub mod transaction_preparer;
 pub mod transaction_store;
 pub mod vertex_store_recovery;
 
-use crate::scrypto_prelude::*;
+use crate::engine_prelude::*;
 
 /// Limits regarding the granularity of ledger sync (and thus of ledger proofs kept in storage).
 /// This struct is defined publicly here, since it is used by the transaction store and the ledger

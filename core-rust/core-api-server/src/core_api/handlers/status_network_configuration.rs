@@ -1,5 +1,5 @@
 use crate::core_api::*;
-use crate::scrypto_prelude::*;
+use crate::engine_prelude::*;
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_status_network_configuration(

@@ -1,7 +1,7 @@
 // This file contains the protocol update logic for specific protocol versions
 
+use crate::engine_prelude::*;
 use crate::protocol::*;
-use crate::scrypto_prelude::*;
 
 use crate::transaction::*;
 use crate::LoggingConfig;

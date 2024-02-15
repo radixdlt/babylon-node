@@ -1,4 +1,4 @@
-use crate::scrypto_prelude::*;
+use crate::engine_prelude::*;
 
 pub trait StateManagerSubstateQueries {
     fn get_epoch(&self) -> Epoch;

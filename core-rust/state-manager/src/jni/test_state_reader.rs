@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::scrypto_prelude::*;
+use crate::engine_prelude::*;
 use crate::{DetailedTransactionOutcome, LedgerTransactionOutcome, StateVersion};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
