@@ -9,6 +9,7 @@ mod object_collection_iterator;
 mod object_field;
 mod object_metadata_entry;
 mod object_metadata_iterator;
+mod object_role_assignment;
 
 use super::{HasKey, Page, ResponseError};
 use radix_engine_common::crypto::Hash;
@@ -29,6 +30,7 @@ pub(crate) use object_collection_iterator::*;
 pub(crate) use object_field::*;
 pub(crate) use object_metadata_entry::*;
 pub(crate) use object_metadata_iterator::*;
+pub(crate) use object_role_assignment::*;
 
 /// A paging support for handlers.
 /// This is technically a convenience facade on top of [`NextKeyPager`], adding HTTP-level handling of
