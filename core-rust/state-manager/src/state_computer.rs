@@ -71,16 +71,11 @@ use crate::store::traits::*;
 use crate::transaction::*;
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
 use crate::*;
-use ::transaction::errors::TransactionValidationError;
-use ::transaction::model::{IntentHash, NotarizedTransactionHash};
-use ::transaction::prelude::*;
 use node_common::config::limits::VertexLimitsConfig;
 
-use radix_engine::system::bootstrap::*;
-use radix_engine::transaction::TransactionReceipt;
-use radix_engine_interface::blueprints::consensus_manager::{
-    ConsensusManagerConfig, EpochChangeCondition,
-};
+use crate::engine_prelude::*;
+use ::transaction::model::PrepareError; // disambiguation needed because of a wide prelude
+
 use transaction_scenarios::scenario::DescribedAddress as ScenarioDescribedAddress;
 use transaction_scenarios::scenario::*;
 use transaction_scenarios::scenarios::*;
@@ -556,7 +551,7 @@ where
                         intent_hash,
                         notarized_transaction_hash,
                         invalid_at_epoch,
-                        rejection_reason: Some(RejectionReason::ValidationError(
+                        rejection_reason: Some(MempoolRejectionReason::ValidationError(
                             error.into_user_validation_error(),
                         )),
                     });
@@ -639,7 +634,7 @@ where
                         intent_hash,
                         notarized_transaction_hash,
                         invalid_at_epoch,
-                        rejection_reason: Some(RejectionReason::FromExecution(Box::new(
+                        rejection_reason: Some(MempoolRejectionReason::FromExecution(Box::new(
                             result.reason,
                         ))),
                     });
@@ -1459,13 +1454,14 @@ struct PendingTransactionResult {
     pub intent_hash: IntentHash,
     pub notarized_transaction_hash: NotarizedTransactionHash,
     pub invalid_at_epoch: Epoch,
-    pub rejection_reason: Option<RejectionReason>,
+    pub rejection_reason: Option<MempoolRejectionReason>,
 }
 
 #[cfg(test)]
 mod tests {
     use std::ops::Deref;
 
+    use crate::engine_prelude::*;
     use crate::transaction::{LedgerTransaction, RoundUpdateTransactionV1};
     use crate::{
         LedgerProof, PrepareRequest, PrepareResult, RoundHistory, StateManager, StateManagerConfig,
@@ -1474,11 +1470,7 @@ mod tests {
     use node_common::locks::LockFactory;
     use node_common::scheduler::Scheduler;
     use prometheus::Registry;
-    use radix_engine_common::prelude::NetworkDefinition;
-    use radix_engine_common::types::{Epoch, Round};
     use tempfile::TempDir;
-    use transaction::builder::ManifestBuilder;
-    use transaction::prelude::*;
 
     // TODO: maybe move/refactor testing infra as we add more Rust tests
     fn build_unit_test_round_history(proof: &LedgerProof) -> RoundHistory {
