@@ -1,29 +1,10 @@
 use std::ops::Deref;
 
-use radix_engine::types::*;
-
-use radix_engine_store_interface::interface::SubstateDatabase;
+use crate::engine_prelude::*;
 
 use convert_case::{Case, Casing};
 use itertools::Itertools;
-use radix_engine::blueprints::package::{
-    PackageCollection, VersionedPackageBlueprintVersionAuthConfig,
-    VersionedPackageBlueprintVersionRoyaltyConfig,
-};
 
-use radix_engine::system::system_db_reader::ObjectCollectionKey as ScryptoObjectCollectionKey;
-use radix_engine::system::system_db_reader::{SystemDatabaseReader, SystemReaderError};
-use radix_engine::system::system_type_checker::{BlueprintTypeTarget, SchemaValidationMeta};
-use radix_engine::system::type_info::TypeInfoSubstate;
-use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
-use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
-use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintInterface, BlueprintPayloadDef, BlueprintType, BlueprintVersion,
-    BlueprintVersionKey, FunctionAuth, FunctionSchema, IndexedStateSchema, MethodAuthTemplate,
-    RoleSpecification,
-};
-
-use crate::engine_state_api::models::ErrorDetails;
 use state_manager::store::traits::indices::{
     CreationId, EntityBlueprintId, EntityBlueprintIdV1, ReNodeListingIndex,
 };
@@ -1749,7 +1730,7 @@ impl From<EngineStateBrowsingError> for ResponseError {
         match error {
             EngineStateBrowsingError::RequestedItemNotFound(item_kind) => {
                 ResponseError::new(StatusCode::NOT_FOUND, format!("{:?} not found", item_kind))
-                    .with_public_details(ErrorDetails::RequestedItemNotFoundDetails {
+                    .with_public_details(models::ErrorDetails::RequestedItemNotFoundDetails {
                         item_type: to_api_requested_item_type(item_kind),
                     })
             }
@@ -1758,7 +1739,7 @@ impl From<EngineStateBrowsingError> for ResponseError {
                     StatusCode::BAD_REQUEST,
                     format!("Invalid {:?}: {}", item_kind, reason),
                 )
-                .with_public_details(ErrorDetails::RequestedItemInvalidDetails {
+                .with_public_details(models::ErrorDetails::RequestedItemInvalidDetails {
                     item_type: to_api_requested_item_type(item_kind),
                 })
             }

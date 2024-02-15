@@ -1,7 +1,7 @@
 use crate::engine_state_api::models;
 use crate::engine_state_api::*;
 
-use radix_engine::types::*;
+use crate::engine_prelude::*;
 
 pub fn to_api_global_address(
     context: &MappingContext,

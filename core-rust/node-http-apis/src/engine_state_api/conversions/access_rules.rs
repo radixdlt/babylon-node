@@ -1,7 +1,7 @@
 use super::*;
 use crate::engine_state_api::models;
 
-use radix_engine::types::*;
+use crate::engine_prelude::*;
 
 pub fn to_api_access_rule(
     context: &MappingContext,

@@ -1,5 +1,5 @@
+use crate::engine_prelude::*;
 use crate::protocol::*;
-use radix_engine::types::*;
 
 pub struct DefaultConfigOnlyProtocolDefinition;
 

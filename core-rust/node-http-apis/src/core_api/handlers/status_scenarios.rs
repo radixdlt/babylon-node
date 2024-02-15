@@ -1,6 +1,6 @@
 use crate::core_api::*;
 
-use radix_engine_interface::prelude::*;
+use crate::engine_prelude::*;
 
 use state_manager::store::traits::scenario::{
     ExecutedGenesisScenario, ExecutedGenesisScenarioStore, ExecutedScenarioTransaction,

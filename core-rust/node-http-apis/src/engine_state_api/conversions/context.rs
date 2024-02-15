@@ -1,6 +1,6 @@
 use crate::engine_state_api::models::SborFormatOptions;
-use radix_engine::types::{AddressBech32Decoder, AddressBech32Encoder};
-use radix_engine_interface::network::NetworkDefinition;
+use crate::engine_prelude::*;
+
 use transaction::model::{TransactionHashBech32Decoder, TransactionHashBech32Encoder};
 
 pub struct MappingContext {
