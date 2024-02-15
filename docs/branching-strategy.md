@@ -4,13 +4,13 @@ Once you have read the [contributing guide](../CONTRIBUTING.md), if you want to 
 
 > [!NOTE]
 >
-> As of 2024-02-12, the strictly ordered list of supported base branches, starting from furthest upstream, is:
+> As of 2024-02-12, the strictly ordered list of supported base branches, starting from earliest/furthest upstream, is:
 > 
 > * `release/anemone` - This is currently running on mainnet.
 > * `main`
 > * `develop`
 > 
-> When clicking merge on a PR to one of these branches, it is your duty to ensure that PRs are raised to merge that branch into all downstream supported base branches.
+> When clicking merge on a PR to one of these branches, it is your duty to ensure that PRs are raised to merge that branch into all later/downstream supported base branches.
 
 ## Summary of approach
 
@@ -22,7 +22,7 @@ We use a variant of `git-flow`, where there are three types of base branches: th
 * The `develop` branch is the primary integration branch, for work targeting the next protocol version.
 * The `release/*` branches are for all named protocol versions (i.e. each 1.X in the naming scheme. Typically patch releases should re-use same branch). A subset of release branches are **currently supported** - typically these are those currently on a live environment, or under development.
 
-At any given time, there is a strict ordering on the supported base branches, where the process aims to guarantee all work on previous branches is in the downstream branches. This order (from most upstream to most downstream) is as follows:
+At any given time, there is a strict ordering on the supported base branches, where the process aims to guarantee all work on previous branches is in the later/downstream branches. This order (from earliest/most upstream to latest/most downstream) is as follows:
 
 * Released `release/*` branches still compatibile with a mainnet network
 * `main`
@@ -58,13 +58,13 @@ Public facing docs change unrelated to another ticket should use a base branch o
 
 ### Workflow / CI changes
 
-Workflow changes should branch from the _most downstream_ (earliest) supported branch. Typically this is a `release/*` branch.
+Workflow changes should branch from the _most upstream_ (earliest) supported branch. Typically this is a `release/*` branch.
 
-Once the post-merge process is followed, this change will find itself on all downstream base branches too.
+Once the post-merge process is followed, this change will find itself on all later/downstream base branches too.
 
 This ensures that these changes are on all supported branches, so builds can be built on `develop` or on all supported branches.
 
-## Merge or Rebase?
+## Merge or Rebase/Cherry-pick?
 
 This strategy relies on the fact that we always merge.
 
