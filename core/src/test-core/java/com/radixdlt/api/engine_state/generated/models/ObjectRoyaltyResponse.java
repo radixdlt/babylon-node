@@ -22,84 +22,92 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.engine_state.generated.models.Assignment;
+import com.radixdlt.api.engine_state.generated.models.LedgerStateSummary;
+import com.radixdlt.api.engine_state.generated.models.ObjectMethodRoyalty;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import java.util.ArrayList;
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * RoleAssignmentEntry
+ * ObjectRoyaltyResponse
  */
 @JsonPropertyOrder({
-  RoleAssignmentEntry.JSON_PROPERTY_KEY,
-  RoleAssignmentEntry.JSON_PROPERTY_ASSIGNMENT
+  ObjectRoyaltyResponse.JSON_PROPERTY_AT_LEDGER_STATE,
+  ObjectRoyaltyResponse.JSON_PROPERTY_METHOD_ROYALTIES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class RoleAssignmentEntry {
-  public static final String JSON_PROPERTY_KEY = "key";
-  private String key;
+public class ObjectRoyaltyResponse {
+  public static final String JSON_PROPERTY_AT_LEDGER_STATE = "at_ledger_state";
+  private LedgerStateSummary atLedgerState;
 
-  public static final String JSON_PROPERTY_ASSIGNMENT = "assignment";
-  private Assignment assignment;
+  public static final String JSON_PROPERTY_METHOD_ROYALTIES = "method_royalties";
+  private List<ObjectMethodRoyalty> methodRoyalties = new ArrayList<>();
 
-  public RoleAssignmentEntry() { 
+  public ObjectRoyaltyResponse() { 
   }
 
-  public RoleAssignmentEntry key(String key) {
-    this.key = key;
+  public ObjectRoyaltyResponse atLedgerState(LedgerStateSummary atLedgerState) {
+    this.atLedgerState = atLedgerState;
     return this;
   }
 
    /**
-   * Role key.
-   * @return key
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "Role key.")
-  @JsonProperty(JSON_PROPERTY_KEY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getKey() {
-    return key;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_KEY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setKey(String key) {
-    this.key = key;
-  }
-
-
-  public RoleAssignmentEntry assignment(Assignment assignment) {
-    this.assignment = assignment;
-    return this;
-  }
-
-   /**
-   * Get assignment
-   * @return assignment
+   * Get atLedgerState
+   * @return atLedgerState
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ASSIGNMENT)
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Assignment getAssignment() {
-    return assignment;
+  public LedgerStateSummary getAtLedgerState() {
+    return atLedgerState;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ASSIGNMENT)
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAssignment(Assignment assignment) {
-    this.assignment = assignment;
+  public void setAtLedgerState(LedgerStateSummary atLedgerState) {
+    this.atLedgerState = atLedgerState;
+  }
+
+
+  public ObjectRoyaltyResponse methodRoyalties(List<ObjectMethodRoyalty> methodRoyalties) {
+    this.methodRoyalties = methodRoyalties;
+    return this;
+  }
+
+  public ObjectRoyaltyResponse addMethodRoyaltiesItem(ObjectMethodRoyalty methodRoyaltiesItem) {
+    this.methodRoyalties.add(methodRoyaltiesItem);
+    return this;
+  }
+
+   /**
+   * Get methodRoyalties
+   * @return methodRoyalties
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_METHOD_ROYALTIES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public List<ObjectMethodRoyalty> getMethodRoyalties() {
+    return methodRoyalties;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_METHOD_ROYALTIES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setMethodRoyalties(List<ObjectMethodRoyalty> methodRoyalties) {
+    this.methodRoyalties = methodRoyalties;
   }
 
 
   /**
-   * Return true if this RoleAssignmentEntry object is equal to o.
+   * Return true if this ObjectRoyaltyResponse object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -109,22 +117,22 @@ public class RoleAssignmentEntry {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    RoleAssignmentEntry roleAssignmentEntry = (RoleAssignmentEntry) o;
-    return Objects.equals(this.key, roleAssignmentEntry.key) &&
-        Objects.equals(this.assignment, roleAssignmentEntry.assignment);
+    ObjectRoyaltyResponse objectRoyaltyResponse = (ObjectRoyaltyResponse) o;
+    return Objects.equals(this.atLedgerState, objectRoyaltyResponse.atLedgerState) &&
+        Objects.equals(this.methodRoyalties, objectRoyaltyResponse.methodRoyalties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, assignment);
+    return Objects.hash(atLedgerState, methodRoyalties);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class RoleAssignmentEntry {\n");
-    sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    assignment: ").append(toIndentedString(assignment)).append("\n");
+    sb.append("class ObjectRoyaltyResponse {\n");
+    sb.append("    atLedgerState: ").append(toIndentedString(atLedgerState)).append("\n");
+    sb.append("    methodRoyalties: ").append(toIndentedString(methodRoyalties)).append("\n");
     sb.append("}");
     return sb.toString();
   }

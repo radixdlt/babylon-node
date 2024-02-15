@@ -421,6 +421,39 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  "/object/attached-modules/royalty":
+    post:
+      summary: Get Royalty Configuration
+      description: |
+        Reads the currently configured Package and Component Royalty amounts of particular Object's 
+        methods.
+      tags:
+        - AttachedModules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ObjectRoyaltyRequest"
+      responses:
+        '200':
+          description: Current assignment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObjectRoyaltyResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
 #############################################################################################
 components:
@@ -2493,7 +2526,7 @@ components:
       properties:
         key:
           type: string
-          description: A summarized state of the ledger at which the query was performed.
+          description: Role key.
         assignment:
           $ref: "#/components/schemas/Assignment"
     AssignmentType:
@@ -2552,6 +2585,54 @@ components:
         - None: Owner is fixed and cannot be updated by anyone.
         - Owner: Owner role may only be updated by the owner themselves.
         - Object: Owner role may be updated by the object containing the access rules. This is currently primarily used for Presecurified objects.
+#########################################################
+# REQUEST: /object/attached-modules/royalty             #
+#########################################################
+    ObjectRoyaltyRequest:
+      type: object
+      required:
+        - entity_address
+        - key
+      properties:
+        entity_address:
+          $ref: "#/components/schemas/EntityAddress"
+    ObjectRoyaltyResponse:
+      type: object
+      required:
+        - at_ledger_state
+        - method_royalties
+      properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+          description: A summarized state of the ledger at which the query was performed.
+        method_royalties:
+          type: array
+          items:
+            $ref: "#/components/schemas/ObjectMethodRoyalty"
+    ObjectMethodRoyalty:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Method name.
+        component_royalty_amount:
+          description: |
+            An amount to be paid in royalties to the Component's owner for calling the method.
+            When not present, then no Component royalty is due (either because of explicit
+            configuration, or because of disabled Component royalties).
+            Please note that on top of this amount, a `package_royalty_amount` may also be due.
+          $ref: "#/components/schemas/RoyaltyAmount"
+        package_royalty_amount:
+          description: |
+            An amount to be paid in royalties to the Package's owner for calling the method (on
+            top of the `component_royalty_amount`). 
+            When not present, then no Package royalty is due (either because of explicit
+            configuration, or because of disabled Package royalties).
+            Note: this field is returned here only for convenience; since this is a Blueprint-level
+            configuration, the same information can be obtained from the `/blueprint/info` endpoint.
+          $ref: "#/components/schemas/RoyaltyAmount"
 #########################################################
 # REQUEST: /kv-store/iterator                           #
 #########################################################

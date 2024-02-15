@@ -10,6 +10,7 @@ mod object_field;
 mod object_metadata_entry;
 mod object_metadata_iterator;
 mod object_role_assignment;
+mod object_royalty;
 
 use super::{HasKey, Page, ResponseError};
 use crate::engine_prelude::*;
@@ -30,6 +31,7 @@ pub(crate) use object_field::*;
 pub(crate) use object_metadata_entry::*;
 pub(crate) use object_metadata_iterator::*;
 pub(crate) use object_role_assignment::*;
+pub(crate) use object_royalty::*;
 
 /// A paging support for handlers.
 /// This is technically a convenience facade on top of [`NextKeyPager`], adding HTTP-level handling of

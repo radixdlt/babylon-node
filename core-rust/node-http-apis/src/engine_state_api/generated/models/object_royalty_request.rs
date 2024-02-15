@@ -12,19 +12,16 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct RoleAssignmentEntry {
-    /// Role key.
-    #[serde(rename = "key")]
-    pub key: String,
-    #[serde(rename = "assignment")]
-    pub assignment: Option<crate::engine_state_api::generated::models::Assignment>, // Using Option permits Default trait; Will always be Some in normal use
+pub struct ObjectRoyaltyRequest {
+    /// A Bech32m-encoded, human readable rendering of an arbitrary Entity's address.
+    #[serde(rename = "entity_address")]
+    pub entity_address: String,
 }
 
-impl RoleAssignmentEntry {
-    pub fn new(key: String, assignment: crate::engine_state_api::generated::models::Assignment) -> RoleAssignmentEntry {
-        RoleAssignmentEntry {
-            key,
-            assignment: Option::Some(assignment),
+impl ObjectRoyaltyRequest {
+    pub fn new(entity_address: String) -> ObjectRoyaltyRequest {
+        ObjectRoyaltyRequest {
+            entity_address,
         }
     }
 }
