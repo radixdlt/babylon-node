@@ -62,10 +62,8 @@
  * permissions under this License.
  */
 
+use crate::engine_prelude::*;
 use crate::java::result::JavaResult;
-use radix_engine::types::{scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode};
-
-pub use sbor::{Decode, Encode};
 
 pub trait StructFromJava {
     fn from_java(data: &[u8]) -> JavaResult<Self>

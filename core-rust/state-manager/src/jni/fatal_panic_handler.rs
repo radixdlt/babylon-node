@@ -67,7 +67,6 @@ use jni::objects::{GlobalRef, JObject};
 use jni::{JNIEnv, JavaVM};
 use std::ops::Deref;
 use tracing::error;
-use transaction::prelude::*;
 
 /// An interface for notifying Java about a fatal panic.
 pub struct FatalPanicHandler {

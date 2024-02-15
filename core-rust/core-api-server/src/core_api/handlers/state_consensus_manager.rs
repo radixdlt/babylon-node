@@ -1,6 +1,5 @@
 use crate::core_api::*;
-use radix_engine::blueprints::consensus_manager::*;
-use radix_engine::types::*;
+use crate::engine_prelude::*;
 
 use state_manager::protocol::ProtocolVersionName;
 use state_manager::{ReadableRocks, StateManagerDatabase};

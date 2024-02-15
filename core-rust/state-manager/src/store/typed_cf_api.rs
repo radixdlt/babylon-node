@@ -62,9 +62,9 @@
  * permissions under this License.
  */
 
+use crate::engine_prelude::*;
 use crate::store::rocks_db::{ReadableRocks, WriteableRocks};
 use itertools::Itertools;
-use radix_engine::types::*;
 use rocksdb::{ColumnFamily, Direction, IteratorMode, WriteBatch};
 use std::ops::Range;
 

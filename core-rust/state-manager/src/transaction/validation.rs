@@ -2,12 +2,9 @@ use node_common::locks::{DbLock, RwLock};
 use std::ops::Deref;
 use std::sync::Arc;
 use std::time::SystemTime;
-use transaction::errors::TransactionValidationError;
 
-use radix_engine::transaction::{AbortReason, RejectResult, TransactionReceipt, TransactionResult};
-
-use radix_engine_common::network::NetworkDefinition;
-use radix_engine_store_interface::interface::SubstateDatabase;
+use crate::engine_prelude::*;
+use ::transaction::model::PrepareError; // disambiguation needed because of a wide prelude
 
 use crate::query::StateManagerSubstateQueries;
 
@@ -16,11 +13,9 @@ use crate::store::traits::{QueryableProofStore, TransactionIndex};
 use crate::transaction::{ExecutionConfigurator, TransactionLogic};
 use crate::{
     ActualStateManagerDatabase, AlreadyCommittedError, AtState, ExecutionRejectionReason,
-    PendingTransactionRecord, PendingTransactionResultCache, RejectionReason, TransactionAttempt,
+    MempoolRejectionReason, PendingTransactionRecord, PendingTransactionResultCache,
+    TransactionAttempt,
 };
-
-use transaction::prelude::*;
-use transaction::validation::*;
 
 use super::{
     LedgerTransaction, PreparedLedgerTransaction, PreparedLedgerTransactionInner,
@@ -234,16 +229,20 @@ impl CommittabilityValidator {
                 .expect("transaction of a state version obtained from an index");
 
             return TransactionAttempt {
-                rejection: Some(RejectionReason::AlreadyCommitted(AlreadyCommittedError {
-                    notarized_transaction_hash: transaction.prepared.notarized_transaction_hash(),
-                    committed_state_version: state_version,
-                    committed_notarized_transaction_hash: *committed_transaction_identifiers
-                        .payload
-                        .typed
-                        .user()
-                        .expect("non-user transaction located by intent hash")
-                        .notarized_transaction_hash,
-                })),
+                rejection: Some(MempoolRejectionReason::AlreadyCommitted(
+                    AlreadyCommittedError {
+                        notarized_transaction_hash: transaction
+                            .prepared
+                            .notarized_transaction_hash(),
+                        committed_state_version: state_version,
+                        committed_notarized_transaction_hash: *committed_transaction_identifiers
+                            .payload
+                            .typed
+                            .user()
+                            .expect("non-user transaction located by intent hash")
+                            .notarized_transaction_hash,
+                    },
+                )),
                 against_state: AtState::Committed {
                     state_version: executed_at_state_version,
                 },
@@ -263,7 +262,7 @@ impl CommittabilityValidator {
                         transaction.prepared.intent_hash()
                     );
                 }
-                Err(RejectionReason::FromExecution(Box::new(reason)))
+                Err(MempoolRejectionReason::FromExecution(Box::new(reason)))
             }
             TransactionResult::Commit(..) => Ok(()),
             TransactionResult::Abort(abort_result) => {
@@ -287,7 +286,7 @@ impl CommittabilityValidator {
         &self,
         root_store: &S,
         transaction: &ValidatedNotarizedTransactionV1,
-    ) -> TransactionReceipt {
+    ) -> TransactionReceiptV1 {
         self.execution_configurator
             .read()
             .wrap_pending_transaction(transaction)
@@ -450,7 +449,7 @@ impl CachedCommittabilityValidator {
             Err(validation_error) => {
                 // The transaction is statically invalid
                 let attempt = TransactionAttempt {
-                    rejection: Some(RejectionReason::ValidationError(validation_error)),
+                    rejection: Some(MempoolRejectionReason::ValidationError(validation_error)),
                     against_state: AtState::Static,
                     timestamp: current_time,
                 };

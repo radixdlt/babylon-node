@@ -12,9 +12,10 @@ transaction = { workspace = true }
 radix-engine-common = { workspace = true }
 radix-engine-interface = { workspace = true }
 radix-engine = { workspace = true }
-radix-engine-stores = { workspace = true }
-radix-engine-store-interface = { workspace = true }
-radix-engine-queries = { workspace = true }
+substate-store-impls = { workspace = true }
+substate-store-interface = { workspace = true }
+substate-store-queries = { workspace = true }
+blueprint-schema-init = { workspace = true }
 utils = { workspace = true }
 
 # Non-Radix Engine Dependencies:

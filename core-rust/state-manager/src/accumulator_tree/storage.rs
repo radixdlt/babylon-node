@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use radix_engine::types::{ScryptoCategorize, ScryptoDecode, ScryptoEncode};
+use crate::engine_prelude::*;
 
 /// The "read" part of an accumulator tree storage SPI.
 /// Both the key type and node type are implementation-dependent.
