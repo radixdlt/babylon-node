@@ -215,7 +215,7 @@ RUN apt-get update -y \
     # Fixes CVE-2023-4911 can be removed when we update the base OS image to include this fix
     # docker run -it debian:12.1-slim ldd --version
     # This fix can be removed as long as the version printed in the above command is 2.36-9+deb12u3 or above
-    libc6=2.36-9+deb12u3 \ 
+    libc6=2.36-9+deb12u4 \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
