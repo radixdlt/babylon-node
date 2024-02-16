@@ -4,7 +4,9 @@ use crate::engine_prelude::*;
 use std::ops::Range;
 
 use state_manager::transaction::ProcessedPreviewResult;
-use state_manager::{ExecutionFeeData, LocalTransactionReceipt, PreviewRequest};
+use state_manager::{
+    ActualStateManagerDatabase, ExecutionFeeData, LocalTransactionReceipt, PreviewRequest,
+};
 
 pub(crate) async fn handle_transaction_preview(
     state: State<CoreApiState>,
@@ -164,7 +166,11 @@ fn to_api_response(
             models::TransactionPreviewResponse {
                 at_ledger_state,
                 encoded_receipt,
-                receipt: Box::new(to_api_receipt(None, context, local_receipt)?),
+                receipt: Box::new(to_api_receipt(
+                    None::<&ActualStateManagerDatabase>,
+                    context,
+                    local_receipt,
+                )?),
                 instruction_resource_changes,
                 logs,
             }

@@ -6,10 +6,10 @@ use models::transaction_parse_request::{ParseMode, ResponseMode, ValidationMode}
 use models::transaction_parse_response::TransactionParseResponse;
 
 use state_manager::mempool::pending_transaction_result_cache::MempoolRejectionReason;
+
 use state_manager::transaction::*;
 
 use crate::engine_prelude::*;
-use state_manager::store::StateManagerDatabase;
 
 use super::{
     to_api_intent, to_api_ledger_transaction, to_api_notarized_transaction, to_api_signed_intent,
@@ -20,7 +20,7 @@ pub struct ParseContext<'a> {
     response_mode: ResponseMode,
     validation_mode: ValidationMode,
     user_transaction_validator: NotarizedTransactionValidator,
-    committability_validator: &'a CommittabilityValidator<StateManagerDatabase>,
+    committability_validator: &'a CommittabilityValidator,
 }
 
 pub(crate) async fn handle_transaction_parse(

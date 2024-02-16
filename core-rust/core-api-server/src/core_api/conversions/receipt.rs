@@ -3,16 +3,15 @@
 use super::addressing::*;
 use crate::core_api::*;
 use crate::engine_prelude::*;
-use state_manager::store::StateManagerDatabase;
 
 use state_manager::{
     ApplicationEvent, BySubstate, DetailedTransactionOutcome, LedgerStateChanges,
-    LocalTransactionReceipt, PartitionChangeAction, PartitionReference, SubstateChangeAction,
-    SubstateReference,
+    LocalTransactionReceipt, PartitionChangeAction, PartitionReference, ReadableRocks,
+    StateManagerDatabase, SubstateChangeAction, SubstateReference,
 };
 
 pub fn to_api_receipt(
-    database: Option<&StateManagerDatabase>,
+    database: Option<&StateManagerDatabase<impl ReadableRocks>>,
     context: &MappingContext,
     receipt: LocalTransactionReceipt,
 ) -> Result<models::TransactionReceipt, MappingError> {
@@ -298,7 +297,7 @@ pub fn to_api_next_epoch(
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_state_updates(
-    database: Option<&StateManagerDatabase>,
+    database: Option<&StateManagerDatabase<impl ReadableRocks>>,
     context: &MappingContext,
     system_structures: &BySubstate<SubstateSystemStructure>,
     state_changes: &LedgerStateChanges,
@@ -455,7 +454,7 @@ pub struct StateMappingLookups {
 
 impl StateMappingLookups {
     pub fn create_from_database(
-        database: Option<&StateManagerDatabase>,
+        database: Option<&StateManagerDatabase<impl ReadableRocks>>,
         changes_to_map: &[(SubstateReference, TypedSubstateKey, &SubstateChangeAction)],
     ) -> Result<Self, MappingError> {
         let Some(database) = database else {
@@ -503,7 +502,7 @@ impl StateMappingLookups {
     }
 
     fn create_blueprint_type_lookups(
-        database: &StateManagerDatabase,
+        database: &StateManagerDatabase<impl ReadableRocks>,
         typed_values: &[TypedSubstateValue],
     ) -> Result<IndexMap<BlueprintId, IndexMap<String, ScopedTypeId>>, MappingError> {
         // Step 1 - work out what database reads we need to do
