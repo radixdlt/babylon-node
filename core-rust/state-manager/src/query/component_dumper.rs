@@ -62,12 +62,7 @@
  * permissions under this License.
  */
 
-use radix_engine::types::*;
-use radix_engine_interface::blueprints::resource::{
-    LiquidFungibleResource, LiquidNonFungibleVault,
-};
-use radix_engine_queries::query::{StateTreeTraverser, StateTreeVisitor};
-use radix_engine_store_interface::interface::SubstateDatabase;
+use crate::engine_prelude::*;
 
 pub enum VaultData {
     Fungible {

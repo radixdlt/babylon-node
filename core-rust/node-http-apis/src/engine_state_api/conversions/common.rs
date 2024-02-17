@@ -1,5 +1,5 @@
+use crate::engine_prelude::*;
 use itertools::Either;
-use radix_engine::types::*;
 
 use state_manager::LedgerHeader;
 
@@ -131,6 +131,20 @@ pub fn to_api_url(url: UncheckedUrl) -> String {
 
 pub fn to_api_origin(origin: UncheckedOrigin) -> String {
     origin.0
+}
+
+pub fn to_api_royalty_amount(royalty_amount: &RoyaltyAmount) -> Option<models::RoyaltyAmount> {
+    match royalty_amount {
+        RoyaltyAmount::Free => None,
+        RoyaltyAmount::Xrd(amount) => Some(models::RoyaltyAmount {
+            amount: to_api_decimal(amount),
+            unit: models::royalty_amount::Unit::XRD,
+        }),
+        RoyaltyAmount::Usd(amount) => Some(models::RoyaltyAmount {
+            amount: to_api_decimal(amount),
+            unit: models::royalty_amount::Unit::USD,
+        }),
+    }
 }
 
 /// An input specification of a [`RichIndex`] (a number outputted together with an optional name).

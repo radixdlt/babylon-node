@@ -1,29 +1,15 @@
 use crate::core_api::*;
-use models::{
-    target_identifier::TargetIdentifier,
-    transaction_call_preview_response::TransactionCallPreviewResponse,
-    transaction_status::TransactionStatus,
-};
-use radix_engine::{
-    transaction::{PreviewError, TransactionOutcome, TransactionResult},
-    types::Decimal,
-};
+use crate::engine_prelude::*;
 
-use radix_engine_interface::constants::FAUCET;
-use radix_engine_interface::manifest_args;
-use radix_engine_interface::{
-    blueprints::transaction_processor::InstructionOutput, data::scrypto::scrypto_encode,
-};
 use state_manager::PreviewRequest;
-use transaction::prelude::*;
 
 macro_rules! args_from_bytes_vec {
     ($args: expr) => {{
         let mut fields = Vec::new();
         for arg in $args {
-            fields.push(::radix_engine::types::manifest_decode(&arg).unwrap());
+            fields.push(crate::engine_prelude::manifest_decode(&arg).unwrap());
         }
-        ::radix_engine::types::ManifestValue::Tuple { fields }
+        crate::engine_prelude::ManifestValue::Tuple { fields }
     }};
 }
 
@@ -47,7 +33,7 @@ pub(crate) async fn handle_transaction_callpreview(
         .ok_or_else(|| client_error("Missing target from request".to_string()))?;
 
     let requested_call = match call_target {
-        TargetIdentifier::BlueprintFunctionTargetIdentifier {
+        models::TargetIdentifier::BlueprintFunctionTargetIdentifier {
             package_address,
             blueprint_name,
             function_name,
@@ -63,7 +49,7 @@ pub(crate) async fn handle_transaction_callpreview(
                 args: args_from_bytes_vec!(args),
             }
         }
-        TargetIdentifier::ComponentMethodTargetIdentifier {
+        models::TargetIdentifier::ComponentMethodTargetIdentifier {
             component_address,
             method_name,
         } => {
@@ -93,7 +79,7 @@ pub(crate) async fn handle_transaction_callpreview(
                     },
                     requested_call,
                 ],
-                blobs: btreemap!(),
+                blobs: index_map_new(),
             },
             explicit_epoch_range: None,
             notary_public_key: None,
@@ -136,15 +122,19 @@ pub(crate) async fn handle_transaction_callpreview(
                         Some(Err(err)) => Err(server_error(format!("{err:?}")))?,
                     };
 
-                    (TransactionStatus::Succeeded, output, None)
+                    (models::TransactionStatus::Succeeded, output, None)
                 }
-                TransactionOutcome::Failure(f) => {
-                    (TransactionStatus::Failed, None, Some(format!("{f:?}")))
-                }
+                TransactionOutcome::Failure(f) => (
+                    models::TransactionStatus::Failed,
+                    None,
+                    Some(format!("{f:?}")),
+                ),
             },
-            TransactionResult::Reject(r) => {
-                (TransactionStatus::Rejected, None, Some(format!("{r:?}")))
-            }
+            TransactionResult::Reject(r) => (
+                models::TransactionStatus::Rejected,
+                None,
+                Some(format!("{r:?}")),
+            ),
             TransactionResult::Abort(_) => {
                 // TODO: Should remove this
                 panic!("Should not be aborting");
@@ -152,7 +142,7 @@ pub(crate) async fn handle_transaction_callpreview(
         }
     };
 
-    Ok(Json(TransactionCallPreviewResponse {
+    Ok(Json(models::TransactionCallPreviewResponse {
         at_ledger_state: Box::new(to_api_ledger_state_summary(
             &mapping_context,
             &result.base_ledger_header,

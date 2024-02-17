@@ -62,9 +62,7 @@
  * permissions under this License.
  */
 
-use radix_engine::types::{Categorize, Decode, Encode};
-
-use radix_engine_common::types::Epoch;
+use crate::engine_prelude::*;
 use std::sync::Arc;
 use std::time::Duration;
 use tracing::{error, info};
@@ -312,6 +310,7 @@ impl ProofPruneRange {
 
 #[cfg(test)]
 mod tests {
+    use crate::engine_prelude::*;
     use crate::jni::LedgerSyncLimitsConfig;
     use crate::proofs_gc::{LedgerProofsGc, LedgerProofsGcConfig};
     use crate::protocol::*;
@@ -322,10 +321,6 @@ mod tests {
     use node_common::locks::LockFactory;
     use node_common::scheduler::Scheduler;
     use prometheus::Registry;
-    use radix_engine_common::prelude::*;
-    use radix_engine_interface::blueprints::consensus_manager::{
-        ConsensusManagerConfig, EpochChangeCondition,
-    };
     use std::time::Duration;
 
     #[test]

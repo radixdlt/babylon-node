@@ -1,10 +1,4 @@
-use radix_engine::blueprints::consensus_manager::{
-    ConsensusManagerField, ConsensusManagerStateFieldSubstate,
-};
-use radix_engine::types::*;
-
-use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
-use radix_engine_store_interface::interface::SubstateDatabase;
+use crate::engine_prelude::*;
 
 pub trait StateManagerSubstateQueries {
     fn get_epoch(&self) -> Epoch;

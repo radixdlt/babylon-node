@@ -118,6 +118,7 @@ public final class BlueprintInfoTest extends DeterministicEngineStateApiTestBase
       // the only function there is convenient to assert the access rule on:
       final var createFunction = Iterables.getOnlyElement(blueprintInfo.getFunctions());
       assertThat(createFunction.getName()).isEqualTo("create");
+      assertThat(createFunction.getRoyaltyAmount()).isNull();
       assertThat(createFunction.getAuthorization())
           .isEqualTo(
               new ByAccessRuleBlueprintFunctionAuthorization()
@@ -171,4 +172,7 @@ public final class BlueprintInfoTest extends DeterministicEngineStateApiTestBase
       assertThat(eventNames).isEqualTo(List.of("RoundChangeEvent", "EpochChangeEvent"));
     }
   }
+
+  // TODO(after merging the `royalties` Scenario in the Engine): Add a test which shows non-zero
+  // Package royalties on some Blueprint
 }

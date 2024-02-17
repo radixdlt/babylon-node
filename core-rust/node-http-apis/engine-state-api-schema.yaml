@@ -1234,6 +1234,25 @@ components:
           $ref: "#/components/schemas/BlueprintResolvedTypeReference"
         authorization:
           $ref: "#/components/schemas/BlueprintFunctionAuthorization"
+        royalty_amount:
+          description: |
+            An amount to be paid in royalties for calling the function belonging to the Blueprint.
+            When not present, then the function is free (either because of explicit configuration,
+            or because of disabled Package royalties).
+          $ref: "#/components/schemas/RoyaltyAmount"
+    RoyaltyAmount:
+      type: object
+      required:
+        - amount
+        - unit
+      properties:
+        amount:
+          $ref: '#/components/schemas/Decimal'
+        unit:
+          type: string
+          enum:
+            - XRD
+            - USD
     BlueprintFunctionAuthorizationType:
       type: string
       enum:
@@ -1515,6 +1534,13 @@ components:
           $ref: "#/components/schemas/BlueprintResolvedTypeReference"
         authorization:
           $ref: "#/components/schemas/BlueprintMethodAuthorization"
+        royalty_amount:
+          description: |
+            An amount to be paid in royalties for calling the method belonging to the Blueprint (on
+            top of any additional Component royalties defined on an instance-by-instance basis). 
+            When not present, then no Package royalty is due (either because of explicit
+            configuration, or because of disabled Package royalties).
+          $ref: "#/components/schemas/RoyaltyAmount"
     BlueprintMethodReceiverInfo:
       type: object
       required:

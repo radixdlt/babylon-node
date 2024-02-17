@@ -21,6 +21,8 @@ pub struct BlueprintFunctionInfo {
     pub output_type_reference: Option<crate::engine_state_api::generated::models::BlueprintResolvedTypeReference>, // Using Option permits Default trait; Will always be Some in normal use
     #[serde(rename = "authorization")]
     pub authorization: Option<crate::engine_state_api::generated::models::BlueprintFunctionAuthorization>, // Using Option permits Default trait; Will always be Some in normal use
+    #[serde(rename = "royalty_amount", skip_serializing_if = "Option::is_none")]
+    pub royalty_amount: Option<Box<crate::engine_state_api::generated::models::RoyaltyAmount>>,
 }
 
 impl BlueprintFunctionInfo {
@@ -30,6 +32,7 @@ impl BlueprintFunctionInfo {
             input_type_reference: Option::Some(input_type_reference),
             output_type_reference: Option::Some(output_type_reference),
             authorization: Option::Some(authorization),
+            royalty_amount: None,
         }
     }
 }

@@ -1,9 +1,6 @@
 use std::any::type_name;
 
-use radix_engine_common::math::*;
-use radix_engine_interface::blueprints::package::BlueprintVersion;
-use radix_engine_interface::prelude::*;
-use sbor::WellKnownTypeId;
+use crate::engine_prelude::*;
 use state_manager::store::traits::scenario::ScenarioSequenceNumber;
 use state_manager::StateVersion;
 
@@ -172,7 +169,8 @@ pub fn to_api_instant_from_safe_timestamp(
     use chrono::prelude::*;
     let date_time = NaiveDateTime::from_timestamp_millis(timestamp_millis)
         .map(|d| {
-            DateTime::<Utc>::from_utc(d, Utc).to_rfc3339_opts(chrono::SecondsFormat::Millis, true)
+            DateTime::<Utc>::from_naive_utc_and_offset(d, Utc)
+                .to_rfc3339_opts(chrono::SecondsFormat::Millis, true)
         })
         .ok_or_else(|| MappingError::IntegerError {
             message: "Timestamp invalid when converted to DateTime".to_string(),

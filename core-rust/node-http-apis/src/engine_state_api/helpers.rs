@@ -1,5 +1,3 @@
-use radix_engine::types::*;
-
 use state_manager::store::traits::*;
 use state_manager::store::StateManagerDatabase;
 use state_manager::LedgerHeader;

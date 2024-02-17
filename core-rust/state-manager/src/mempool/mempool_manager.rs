@@ -68,7 +68,6 @@ use crate::mempool::*;
 use crate::MempoolAddSource;
 use node_common::metrics::TakesMetricLabels;
 use prometheus::Registry;
-use transaction::model::*;
 
 use std::cmp::max;
 use std::collections::HashSet;

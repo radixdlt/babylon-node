@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.engine_state.generated.models.BlueprintFunctionAuthorization;
 import com.radixdlt.api.engine_state.generated.models.BlueprintResolvedTypeReference;
+import com.radixdlt.api.engine_state.generated.models.RoyaltyAmount;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -36,7 +37,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   BlueprintFunctionInfo.JSON_PROPERTY_NAME,
   BlueprintFunctionInfo.JSON_PROPERTY_INPUT_TYPE_REFERENCE,
   BlueprintFunctionInfo.JSON_PROPERTY_OUTPUT_TYPE_REFERENCE,
-  BlueprintFunctionInfo.JSON_PROPERTY_AUTHORIZATION
+  BlueprintFunctionInfo.JSON_PROPERTY_AUTHORIZATION,
+  BlueprintFunctionInfo.JSON_PROPERTY_ROYALTY_AMOUNT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class BlueprintFunctionInfo {
@@ -51,6 +53,9 @@ public class BlueprintFunctionInfo {
 
   public static final String JSON_PROPERTY_AUTHORIZATION = "authorization";
   private BlueprintFunctionAuthorization authorization;
+
+  public static final String JSON_PROPERTY_ROYALTY_AMOUNT = "royalty_amount";
+  private RoyaltyAmount royaltyAmount;
 
   public BlueprintFunctionInfo() { 
   }
@@ -159,6 +164,32 @@ public class BlueprintFunctionInfo {
   }
 
 
+  public BlueprintFunctionInfo royaltyAmount(RoyaltyAmount royaltyAmount) {
+    this.royaltyAmount = royaltyAmount;
+    return this;
+  }
+
+   /**
+   * Get royaltyAmount
+   * @return royaltyAmount
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_ROYALTY_AMOUNT)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public RoyaltyAmount getRoyaltyAmount() {
+    return royaltyAmount;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ROYALTY_AMOUNT)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setRoyaltyAmount(RoyaltyAmount royaltyAmount) {
+    this.royaltyAmount = royaltyAmount;
+  }
+
+
   /**
    * Return true if this BlueprintFunctionInfo object is equal to o.
    */
@@ -174,12 +205,13 @@ public class BlueprintFunctionInfo {
     return Objects.equals(this.name, blueprintFunctionInfo.name) &&
         Objects.equals(this.inputTypeReference, blueprintFunctionInfo.inputTypeReference) &&
         Objects.equals(this.outputTypeReference, blueprintFunctionInfo.outputTypeReference) &&
-        Objects.equals(this.authorization, blueprintFunctionInfo.authorization);
+        Objects.equals(this.authorization, blueprintFunctionInfo.authorization) &&
+        Objects.equals(this.royaltyAmount, blueprintFunctionInfo.royaltyAmount);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, inputTypeReference, outputTypeReference, authorization);
+    return Objects.hash(name, inputTypeReference, outputTypeReference, authorization, royaltyAmount);
   }
 
   @Override
@@ -190,6 +222,7 @@ public class BlueprintFunctionInfo {
     sb.append("    inputTypeReference: ").append(toIndentedString(inputTypeReference)).append("\n");
     sb.append("    outputTypeReference: ").append(toIndentedString(outputTypeReference)).append("\n");
     sb.append("    authorization: ").append(toIndentedString(authorization)).append("\n");
+    sb.append("    royaltyAmount: ").append(toIndentedString(royaltyAmount)).append("\n");
     sb.append("}");
     return sb.toString();
   }

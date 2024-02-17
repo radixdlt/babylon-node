@@ -1,25 +1,29 @@
-# Pull Request Template
+> [!IMPORTANT]
+>
+> * Please read our [Contributing Guidelines](CONTRIBUTING.md) before opening a PR.
+> * Before creating your PR, please ensure you have used the _correct base branch_ as per the [branching strategy](/docs/branching-strategy.md), both for branching from, and in the PR UI above.
+>   * For most code changes, this is `develop`.
+>   * For stand-alone docs changes, this is `main`.
+>   * For workflow changes, this is the oldest supported `release/*` branch. 
+> * Please remove these sections as you fill out your PR.
+> 
 
-## Title
-Recommendations for the title:
-* use the imperative, present tense: "change" not "changed" nor "changes"
-* don't capitalize the first letter
-* no dot (.) at the end
+## Summary
 
+> [!TIP]
+> 
+> Start with the context of your PR. Why are you making this change? What does it address? Link back to an issue if relevant.
+> 
+> Then summarise the changes that were made. Bullet points are fine.
 
-## Description
+## Details
 
-Please include a summary of the change and which issue is fixed. Please also include relevant motivation and context. 
-List any dependencies that are required for this change.
+> [!TIP]
+> 
+> This section is optional. Go into more detail about the changes that were made, or the thinking behind the changes.
 
-## Labels
+## Testing
 
-It is recommended to label the PRs, this will help to generate the release notes in a meaningful way. Here is a list of
-labels that can be used and the group in the release notes they will be added to:
-
-* Features: feature, enhancement  
-* Bug fixes: fix, bugfix, bug
-* Maintenance: chore, task, docs, refactor
-* Documentation: docs
-* Improvements: performance, test
-* CI & Build: ci, build
+> [!TIP]
+> 
+> Explain what testing / verification is done, including manual testing or automated testing.

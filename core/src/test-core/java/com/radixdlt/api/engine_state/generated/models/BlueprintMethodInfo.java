@@ -25,6 +25,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.engine_state.generated.models.BlueprintMethodAuthorization;
 import com.radixdlt.api.engine_state.generated.models.BlueprintMethodReceiverInfo;
 import com.radixdlt.api.engine_state.generated.models.BlueprintResolvedTypeReference;
+import com.radixdlt.api.engine_state.generated.models.RoyaltyAmount;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -38,7 +39,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   BlueprintMethodInfo.JSON_PROPERTY_RECEIVER,
   BlueprintMethodInfo.JSON_PROPERTY_INPUT_TYPE_REFERENCE,
   BlueprintMethodInfo.JSON_PROPERTY_OUTPUT_TYPE_REFERENCE,
-  BlueprintMethodInfo.JSON_PROPERTY_AUTHORIZATION
+  BlueprintMethodInfo.JSON_PROPERTY_AUTHORIZATION,
+  BlueprintMethodInfo.JSON_PROPERTY_ROYALTY_AMOUNT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class BlueprintMethodInfo {
@@ -56,6 +58,9 @@ public class BlueprintMethodInfo {
 
   public static final String JSON_PROPERTY_AUTHORIZATION = "authorization";
   private BlueprintMethodAuthorization authorization;
+
+  public static final String JSON_PROPERTY_ROYALTY_AMOUNT = "royalty_amount";
+  private RoyaltyAmount royaltyAmount;
 
   public BlueprintMethodInfo() { 
   }
@@ -190,6 +195,32 @@ public class BlueprintMethodInfo {
   }
 
 
+  public BlueprintMethodInfo royaltyAmount(RoyaltyAmount royaltyAmount) {
+    this.royaltyAmount = royaltyAmount;
+    return this;
+  }
+
+   /**
+   * Get royaltyAmount
+   * @return royaltyAmount
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_ROYALTY_AMOUNT)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public RoyaltyAmount getRoyaltyAmount() {
+    return royaltyAmount;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ROYALTY_AMOUNT)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setRoyaltyAmount(RoyaltyAmount royaltyAmount) {
+    this.royaltyAmount = royaltyAmount;
+  }
+
+
   /**
    * Return true if this BlueprintMethodInfo object is equal to o.
    */
@@ -206,12 +237,13 @@ public class BlueprintMethodInfo {
         Objects.equals(this.receiver, blueprintMethodInfo.receiver) &&
         Objects.equals(this.inputTypeReference, blueprintMethodInfo.inputTypeReference) &&
         Objects.equals(this.outputTypeReference, blueprintMethodInfo.outputTypeReference) &&
-        Objects.equals(this.authorization, blueprintMethodInfo.authorization);
+        Objects.equals(this.authorization, blueprintMethodInfo.authorization) &&
+        Objects.equals(this.royaltyAmount, blueprintMethodInfo.royaltyAmount);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, receiver, inputTypeReference, outputTypeReference, authorization);
+    return Objects.hash(name, receiver, inputTypeReference, outputTypeReference, authorization, royaltyAmount);
   }
 
   @Override
@@ -223,6 +255,7 @@ public class BlueprintMethodInfo {
     sb.append("    inputTypeReference: ").append(toIndentedString(inputTypeReference)).append("\n");
     sb.append("    outputTypeReference: ").append(toIndentedString(outputTypeReference)).append("\n");
     sb.append("    authorization: ").append(toIndentedString(authorization)).append("\n");
+    sb.append("    royaltyAmount: ").append(toIndentedString(royaltyAmount)).append("\n");
     sb.append("}");
     return sb.toString();
   }
