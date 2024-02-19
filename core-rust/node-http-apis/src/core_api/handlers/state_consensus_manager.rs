@@ -2,7 +2,7 @@ use crate::core_api::*;
 use crate::engine_prelude::*;
 
 use state_manager::protocol::ProtocolVersionName;
-use state_manager::StateManagerDatabase;
+use state_manager::{ReadableRocks, StateManagerDatabase};
 use std::ops::Deref;
 
 #[tracing::instrument(skip(state))]
@@ -12,7 +12,7 @@ pub(crate) async fn handle_state_consensus_manager(
 ) -> Result<Json<models::StateConsensusManagerResponse>, ResponseError<()>> {
     assert_matching_network(&request.network, &state.network)?;
     let mapping_context = MappingContext::new(&state.network);
-    let database = state.state_manager.database.read_current();
+    let database = state.state_manager.database.snapshot();
 
     let config_substate = read_mandatory_main_field_substate(
         database.deref(),
@@ -84,7 +84,7 @@ pub(crate) async fn handle_state_consensus_manager(
 }
 
 fn collect_current_validators_by_signalled_protocol_version(
-    database: &StateManagerDatabase,
+    database: &StateManagerDatabase<impl ReadableRocks>,
     substate: ConsensusManagerCurrentValidatorSetFieldSubstate,
 ) -> Result<ValidatorsBySignalledProtocolVersion, ResponseError<()>> {
     let mut validators = ValidatorsBySignalledProtocolVersion::default();

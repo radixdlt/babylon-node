@@ -63,11 +63,9 @@
  */
 
 use crate::engine_prelude::*;
-use enum_dispatch::enum_dispatch;
 
 /// The "read" part of an accumulator tree storage SPI.
 /// Both the key type and node type are implementation-dependent.
-#[enum_dispatch]
 pub trait ReadableAccuTreeStore<K, N> {
     /// Gets a vertical `TreeSlice` by the given key.
     fn get_tree_slice(&self, key: &K) -> Option<TreeSlice<N>>;

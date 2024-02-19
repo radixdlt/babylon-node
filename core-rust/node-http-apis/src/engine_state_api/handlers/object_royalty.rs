@@ -14,7 +14,7 @@ pub(crate) async fn handle_object_royalty(
     let node_id = extract_address_as_node_id(&extraction_context, &request.entity_address)
         .map_err(|err| err.into_response_error("entity_address"))?;
 
-    let database = state.state_manager.database.read_current();
+    let database = state.state_manager.database.snapshot();
     let loader = ObjectRoyaltyLoader::new(database.deref());
 
     let method_amounts = loader.load_method_amounts(&node_id)?;

@@ -17,7 +17,7 @@ pub(crate) async fn handle_kv_store_entry(
     let key = extract_api_sbor_data(&extraction_context, *request.key)
         .map_err(|err| err.into_response_error("key"))?;
 
-    let database = state.state_manager.database.read_current();
+    let database = state.state_manager.database.snapshot();
 
     let meta_loader = EngineStateMetaLoader::new(database.deref());
     let EntityMeta::KeyValueStore(kv_store_meta) = meta_loader.load_entity_meta(&node_id)? else {

@@ -25,7 +25,7 @@ pub(crate) async fn handle_blueprint_info(
             .unwrap_or_default(),
     };
 
-    let database = state.state_manager.database.read_current();
+    let database = state.state_manager.database.snapshot();
 
     let meta_loader = EngineStateMetaLoader::new(database.deref());
     let blueprint_meta = meta_loader.load_blueprint_meta(&blueprint_reference)?;

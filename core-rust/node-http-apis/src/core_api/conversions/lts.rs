@@ -1,15 +1,15 @@
 use crate::engine_prelude::*;
-use state_manager::store::{traits::SubstateNodeAncestryStore, StateManagerDatabase};
+use state_manager::store::traits::SubstateNodeAncestryStore;
 use state_manager::{
     CommittedTransactionIdentifiers, LedgerTransactionOutcome, LocalTransactionReceipt,
-    StateVersion, TransactionTreeHash,
+    ReadableRocks, StateManagerDatabase, StateVersion, TransactionTreeHash,
 };
 
 use crate::core_api::*;
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_lts_committed_transaction_outcome(
-    database: &StateManagerDatabase,
+    database: &StateManagerDatabase<impl ReadableRocks>,
     context: &MappingContext,
     state_version: StateVersion,
     receipt: LocalTransactionReceipt,
@@ -107,7 +107,7 @@ pub fn to_api_lts_entity_non_fungible_balance_changes(
 }
 
 pub fn to_api_lts_fungible_balance_changes(
-    database: &StateManagerDatabase,
+    database: &StateManagerDatabase<impl ReadableRocks>,
     context: &MappingContext,
     fee_summary: &TransactionFeeSummary,
     fee_source: &FeeSource,
@@ -127,7 +127,7 @@ pub fn to_api_lts_fungible_balance_changes(
 /// Uses the [`SubstateNodeAncestryStore`] (from the given DB) to transform the input
 /// `vault ID -> payment` map into a `global address -> balance change` map.
 fn resolve_global_fee_balance_changes(
-    database: &StateManagerDatabase,
+    database: &StateManagerDatabase<impl ReadableRocks>,
     fee_source: &FeeSource,
 ) -> Result<IndexMap<GlobalAddress, Decimal>, MappingError> {
     let paying_vaults = &fee_source.paying_vaults;

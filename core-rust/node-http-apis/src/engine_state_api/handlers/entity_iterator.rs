@@ -21,7 +21,7 @@ pub(crate) async fn handle_entity_iterator(
         &request.filter,
     );
 
-    let database = state.state_manager.database.read_current();
+    let database = state.state_manager.database.snapshot();
     if !database.are_re_node_listing_indices_enabled() {
         return Err(ResponseError::new(
             StatusCode::CONFLICT,

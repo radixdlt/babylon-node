@@ -63,6 +63,8 @@
  */
 
 use crate::engine_prelude::*;
+use node_common::locks::DbLock;
+use std::ops::Deref;
 use std::sync::Arc;
 use std::time::Duration;
 use tracing::{error, info};
@@ -72,15 +74,13 @@ use crate::store::traits::gc::{
 };
 use crate::store::traits::proofs::QueryableProofStore;
 
-use crate::store::StateManagerDatabase;
-
 use crate::jni::LedgerSyncLimitsConfig;
+use crate::store::rocks_db::ReadableRocks;
 use crate::traits::GetSyncableTxnsAndProofError::{
     FailedToPrepareAResponseWithinLimits, NothingToServeAtTheGivenStateVersion,
     RefusedToServeGenesis, RefusedToServeProtocolUpdate,
 };
-use crate::{LedgerProof, StateVersion};
-use node_common::locks::StateLock;
+use crate::{ActualStateManagerDatabase, LedgerProof, StateManagerDatabase, StateVersion};
 
 /// A configuration for [`LedgerProofsGc`].
 #[derive(Debug, Categorize, Encode, Decode, Clone, Default)]
@@ -102,7 +102,7 @@ pub struct LedgerProofsGcConfig {
 /// proof" logic (used e.g. for ledger-sync responses).
 /// The implementation is suited for being driven by an external scheduler.
 pub struct LedgerProofsGc {
-    database: Arc<StateLock<StateManagerDatabase>>,
+    database: Arc<DbLock<ActualStateManagerDatabase>>,
     interval: Duration,
     most_recent_full_resolution_epoch_count: u64,
     limits_config: LedgerSyncLimitsConfig,
@@ -111,7 +111,7 @@ pub struct LedgerProofsGc {
 impl LedgerProofsGc {
     /// Creates a new GC.
     pub fn new(
-        database: Arc<StateLock<StateManagerDatabase>>,
+        database: Arc<DbLock<ActualStateManagerDatabase>>,
         gc_config: LedgerProofsGcConfig,
         limits_config: LedgerSyncLimitsConfig,
     ) -> Self {
@@ -135,20 +135,18 @@ impl LedgerProofsGc {
     /// proofs of configured old-enough epochs.
     /// Returns proof ranges that have been pruned.
     /// TODO: the return value is only used in tests, consider refactoring
+    ///
+    /// *Note on concurrent database access:*
+    /// The proofs' GC process, by its nature, only accesses "old" (i.e. not "top-of-ledger" new)
+    /// proof DB rows. For this reason, it can use the direct [`DbLock::access_direct()`] and
+    /// effectively own these rows (for reads and deletes), without locking the database.
+    /// Of course, a concurrent ledger sync may request a range of "old" proofs too, and thus it
+    /// should use a [`DbLock::snapshot()`] to avoid relying on proofs which are about to be
+    /// deleted.
     pub fn run(&self) -> Vec<ProofPruneRange> {
-        // TODO(locks/snapshots): The GC's operation does not interact with the "current state", and
-        // intuitively could use the "historical, non-locked" DB access. However, we have a (very
-        // related) use-case, which lists arbitrary past transactions and their proof - and it could
-        // happen that a concurrently-running GC deletes the very proof that has to be used to fit
-        // within the limits. For this reason, the logic below carefully acquires/releases the DB's
-        // read/write lock for relevant stages of the execution.
-        // A more robust solution should either use DB snapshots (a development direction we are
-        // considering anyway), or a more selective lock over the ledger proofs CF alone (or even
-        // over a selected *range* of the ledger proofs CF).
-
         // Read the GC's persisted state and initialize the run:
-        let read_progress_database = self.database.read_current();
-        let to_epoch = read_progress_database
+        let database = self.database.access_direct();
+        let to_epoch = database
             .max_completed_epoch()
             .map(|max_completed_epoch| max_completed_epoch.number())
             .and_then(|number| number.checked_sub(self.most_recent_full_resolution_epoch_count))
@@ -158,15 +156,14 @@ impl LedgerProofsGc {
             return vec![];
         };
         let progress_started_at: LedgerProofsGcProgress =
-            read_progress_database.get_progress().unwrap_or_else(|| {
+            database.get_progress().unwrap_or_else(|| {
                 LedgerProofsGcProgress::new(
-                    read_progress_database
+                    database
                         .get_post_genesis_epoch_proof()
                         .expect("we checked that there is some completed epoch above")
                         .ledger_header,
                 )
             });
-        drop(read_progress_database);
 
         if progress_started_at.last_pruned_epoch >= to_epoch {
             // Nothing to GC during this run.
@@ -182,9 +179,12 @@ impl LedgerProofsGc {
 
         let mut pruned_proof_ranges = vec![];
         let mut retained_proofs = 0; // only for logging purposes
-        while let Some(next_prune_range) = self.locate_next_prune_range(last_pruned_state_version) {
-            let delete_database = self.database.write_current();
-            delete_database.delete_ledger_proofs_range(
+        while let Some(next_prune_range) = Self::locate_next_prune_range(
+            database.deref(),
+            last_pruned_state_version,
+            &self.limits_config,
+        ) {
+            database.delete_ledger_proofs_range(
                 next_prune_range.from_state_version_inclusive,
                 next_prune_range.to_state_version_exclusive(),
             );
@@ -202,7 +202,7 @@ impl LedgerProofsGc {
                     retained_proofs
                 );
                 retained_proofs = 0;
-                delete_database.set_progress(LedgerProofsGcProgressV1 {
+                database.set_progress(LedgerProofsGcProgressV1 {
                     last_pruned_epoch: retained_header.epoch,
                     epoch_proof_state_version: last_pruned_state_version,
                 });
@@ -210,7 +210,6 @@ impl LedgerProofsGc {
                     break;
                 }
             }
-            drop(delete_database);
         }
 
         info!("Ledger proofs' GC run finished");
@@ -218,11 +217,12 @@ impl LedgerProofsGc {
     }
 
     /// Returns a range of proofs to delete.
-    /// A return value of `None` means that (for now) no more proofs should be deleted
-    /// and the current run should end.
+    /// A return value of `None` means that (for now) no more proofs should be deleted and the
+    /// current run should end.
     fn locate_next_prune_range(
-        &self,
+        database: &StateManagerDatabase<impl ReadableRocks>,
         last_pruned_state_version: StateVersion,
+        limits_config: &LedgerSyncLimitsConfig,
     ) -> Option<ProofPruneRange> {
         let mut from_state_version_inclusive = last_pruned_state_version
             .next()
@@ -230,14 +230,11 @@ impl LedgerProofsGc {
 
         let mut skipped_proofs = 0;
         loop {
-            let locate_proof_database = self.database.read_current();
-            let syncable_txns_and_proof_result = locate_proof_database.get_syncable_txns_and_proof(
+            let syncable_txns_and_proof_result = database.get_syncable_txns_and_proof(
                 from_state_version_inclusive,
-                self.limits_config
-                    .max_txns_for_responses_spanning_more_than_one_proof,
-                self.limits_config.max_txn_bytes_for_single_response,
+                limits_config.max_txns_for_responses_spanning_more_than_one_proof,
+                limits_config.max_txn_bytes_for_single_response,
             );
-            drop(locate_proof_database);
 
             match syncable_txns_and_proof_result {
                 Ok(syncable_txns_and_proof) => {
@@ -282,7 +279,7 @@ impl LedgerProofsGc {
                             error!(
                                 "A chain of transactions-without-proof from state version {} does not fit within the limits {:?}; aborting the GC",
                                 from_state_version_inclusive,
-                                self.limits_config
+                                limits_config
                             );
                             return None;
                         }
@@ -388,7 +385,8 @@ mod tests {
 
         commit_round_updates_until_epoch(&state_manager, Epoch::of(8));
 
-        let post_genesis_epoch_proof = db.read_current().get_post_genesis_epoch_proof().unwrap();
+        let database = db.access_direct();
+        let post_genesis_epoch_proof = database.get_post_genesis_epoch_proof().unwrap();
         // The calculations below rely on this
         let first_post_genesis_state_version = post_genesis_epoch_proof
             .ledger_header
@@ -422,9 +420,7 @@ mod tests {
         }
 
         // Verify that sync works as expected
-        let read_db = db.read_current();
-
-        let protocol_update_init_state_version = read_db
+        let protocol_update_init_state_version = database
             .get_latest_protocol_update_init_proof()
             .unwrap()
             .ledger_header
@@ -433,7 +429,7 @@ mod tests {
 
         let first_protocol_update_txn = protocol_update_init_state_version.checked_add(1).unwrap();
 
-        let last_protocol_update_state_version = read_db
+        let last_protocol_update_state_version = database
             .get_latest_protocol_update_execution_proof()
             .unwrap()
             .ledger_header
@@ -443,12 +439,12 @@ mod tests {
         let first_post_protocol_update_state_version =
             last_protocol_update_state_version.checked_add(1).unwrap();
 
-        let latest_state_version = read_db.max_state_version().number();
+        let latest_state_version = database.max_state_version().number();
 
         let mut total_state_versions_tried = 0;
         // 0 -> post genesis version (exclusive): unsyncable
         for state_version in 0..first_post_genesis_state_version {
-            let res = read_db.get_syncable_txns_and_proof(
+            let res = database.get_syncable_txns_and_proof(
                 StateVersion::of(state_version),
                 sync_limits_config.max_txns_for_responses_spanning_more_than_one_proof,
                 sync_limits_config.max_txn_bytes_for_single_response,
@@ -462,7 +458,7 @@ mod tests {
 
         // post genesis -> protocol update trigger (inclusive): syncable
         for state_version in first_post_genesis_state_version..=protocol_update_init_state_version {
-            let res = read_db.get_syncable_txns_and_proof(
+            let res = database.get_syncable_txns_and_proof(
                 StateVersion::of(state_version),
                 sync_limits_config.max_txns_for_responses_spanning_more_than_one_proof,
                 sync_limits_config.max_txn_bytes_for_single_response,
@@ -474,7 +470,7 @@ mod tests {
 
         // protocol update transactions (1): unsyncable
         for state_version in first_protocol_update_txn..=last_protocol_update_state_version {
-            let res = read_db.get_syncable_txns_and_proof(
+            let res = database.get_syncable_txns_and_proof(
                 StateVersion::of(state_version),
                 sync_limits_config.max_txns_for_responses_spanning_more_than_one_proof,
                 sync_limits_config.max_txn_bytes_for_single_response,
@@ -488,7 +484,7 @@ mod tests {
 
         // post-protocol update transactions: syncable
         for state_version in first_post_protocol_update_state_version..=latest_state_version {
-            let res = read_db.get_syncable_txns_and_proof(
+            let res = database.get_syncable_txns_and_proof(
                 StateVersion::of(state_version),
                 sync_limits_config.max_txns_for_responses_spanning_more_than_one_proof,
                 sync_limits_config.max_txn_bytes_for_single_response,
@@ -503,7 +499,5 @@ mod tests {
             total_state_versions_tried,
             latest_state_version + 1 /* starting at 0, so +1 here */
         );
-
-        drop(read_db);
     }
 }

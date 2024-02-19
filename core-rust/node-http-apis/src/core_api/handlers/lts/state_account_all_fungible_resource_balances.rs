@@ -32,7 +32,7 @@ pub(crate) async fn handle_lts_state_account_all_fungible_resource_balances(
         ));
     }
 
-    let database = state.state_manager.database.read_current();
+    let database = state.state_manager.database.snapshot();
     let header = read_current_ledger_header(database.deref());
 
     let type_info: Option<TypeInfoSubstate> = read_optional_substate::<TypeInfoSubstate>(
