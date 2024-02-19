@@ -12,19 +12,18 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct RoleAssignmentEntry {
-    /// Role key.
-    #[serde(rename = "key")]
-    pub key: String,
-    #[serde(rename = "assignment")]
-    pub assignment: Option<crate::engine_state_api::generated::models::Assignment>, // Using Option permits Default trait; Will always be Some in normal use
+pub struct ObjectRoyaltyResponse {
+    #[serde(rename = "at_ledger_state")]
+    pub at_ledger_state: Box<crate::engine_state_api::generated::models::LedgerStateSummary>,
+    #[serde(rename = "method_royalties")]
+    pub method_royalties: Vec<crate::engine_state_api::generated::models::ObjectMethodRoyalty>,
 }
 
-impl RoleAssignmentEntry {
-    pub fn new(key: String, assignment: crate::engine_state_api::generated::models::Assignment) -> RoleAssignmentEntry {
-        RoleAssignmentEntry {
-            key,
-            assignment: Option::Some(assignment),
+impl ObjectRoyaltyResponse {
+    pub fn new(at_ledger_state: crate::engine_state_api::generated::models::LedgerStateSummary, method_royalties: Vec<crate::engine_state_api::generated::models::ObjectMethodRoyalty>) -> ObjectRoyaltyResponse {
+        ObjectRoyaltyResponse {
+            at_ledger_state: Box::new(at_ledger_state),
+            method_royalties,
         }
     }
 }

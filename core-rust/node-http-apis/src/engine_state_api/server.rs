@@ -124,6 +124,10 @@ pub async fn create_server<F>(
             "/object/attached-modules/role-assignment",
             post(handle_object_role_assignment),
         )
+        .route(
+            "/object/attached-modules/royalty",
+            post(handle_object_royalty),
+        )
         .route("/kv-store/iterator", post(handle_kv_store_iterator))
         .route("/kv-store/entry", post(handle_kv_store_entry))
         .route("/entity/schema/entry", post(handle_entity_schema_entry))

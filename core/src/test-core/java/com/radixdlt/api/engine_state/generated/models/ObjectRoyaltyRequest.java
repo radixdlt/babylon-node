@@ -22,84 +22,53 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.engine_state.generated.models.Assignment;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * RoleAssignmentEntry
+ * ObjectRoyaltyRequest
  */
 @JsonPropertyOrder({
-  RoleAssignmentEntry.JSON_PROPERTY_KEY,
-  RoleAssignmentEntry.JSON_PROPERTY_ASSIGNMENT
+  ObjectRoyaltyRequest.JSON_PROPERTY_ENTITY_ADDRESS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class RoleAssignmentEntry {
-  public static final String JSON_PROPERTY_KEY = "key";
-  private String key;
+public class ObjectRoyaltyRequest {
+  public static final String JSON_PROPERTY_ENTITY_ADDRESS = "entity_address";
+  private String entityAddress;
 
-  public static final String JSON_PROPERTY_ASSIGNMENT = "assignment";
-  private Assignment assignment;
-
-  public RoleAssignmentEntry() { 
+  public ObjectRoyaltyRequest() { 
   }
 
-  public RoleAssignmentEntry key(String key) {
-    this.key = key;
+  public ObjectRoyaltyRequest entityAddress(String entityAddress) {
+    this.entityAddress = entityAddress;
     return this;
   }
 
    /**
-   * Role key.
-   * @return key
+   * A Bech32m-encoded, human readable rendering of an arbitrary Entity&#39;s address.
+   * @return entityAddress
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "Role key.")
-  @JsonProperty(JSON_PROPERTY_KEY)
+  @ApiModelProperty(required = true, value = "A Bech32m-encoded, human readable rendering of an arbitrary Entity's address.")
+  @JsonProperty(JSON_PROPERTY_ENTITY_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getKey() {
-    return key;
+  public String getEntityAddress() {
+    return entityAddress;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_KEY)
+  @JsonProperty(JSON_PROPERTY_ENTITY_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setKey(String key) {
-    this.key = key;
-  }
-
-
-  public RoleAssignmentEntry assignment(Assignment assignment) {
-    this.assignment = assignment;
-    return this;
-  }
-
-   /**
-   * Get assignment
-   * @return assignment
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ASSIGNMENT)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Assignment getAssignment() {
-    return assignment;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_ASSIGNMENT)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAssignment(Assignment assignment) {
-    this.assignment = assignment;
+  public void setEntityAddress(String entityAddress) {
+    this.entityAddress = entityAddress;
   }
 
 
   /**
-   * Return true if this RoleAssignmentEntry object is equal to o.
+   * Return true if this ObjectRoyaltyRequest object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -109,22 +78,20 @@ public class RoleAssignmentEntry {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    RoleAssignmentEntry roleAssignmentEntry = (RoleAssignmentEntry) o;
-    return Objects.equals(this.key, roleAssignmentEntry.key) &&
-        Objects.equals(this.assignment, roleAssignmentEntry.assignment);
+    ObjectRoyaltyRequest objectRoyaltyRequest = (ObjectRoyaltyRequest) o;
+    return Objects.equals(this.entityAddress, objectRoyaltyRequest.entityAddress);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, assignment);
+    return Objects.hash(entityAddress);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class RoleAssignmentEntry {\n");
-    sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    assignment: ").append(toIndentedString(assignment)).append("\n");
+    sb.append("class ObjectRoyaltyRequest {\n");
+    sb.append("    entityAddress: ").append(toIndentedString(entityAddress)).append("\n");
     sb.append("}");
     return sb.toString();
   }

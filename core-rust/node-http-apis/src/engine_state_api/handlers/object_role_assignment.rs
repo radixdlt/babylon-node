@@ -14,7 +14,7 @@ pub(crate) async fn handle_object_role_assignment(
     let node_id = extract_address_as_node_id(&extraction_context, &request.entity_address)
         .map_err(|err| err.into_response_error("entity_address"))?;
 
-    let database = state.state_manager.database.read_current();
+    let database = state.state_manager.database.snapshot();
     let loader = ObjectRoleAssignmentLoader::new(database.deref());
 
     let ObjectRoleAssignment {

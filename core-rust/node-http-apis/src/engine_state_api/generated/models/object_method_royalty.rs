@@ -12,19 +12,22 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct RoleAssignmentEntry {
-    /// Role key.
-    #[serde(rename = "key")]
-    pub key: String,
-    #[serde(rename = "assignment")]
-    pub assignment: Option<crate::engine_state_api::generated::models::Assignment>, // Using Option permits Default trait; Will always be Some in normal use
+pub struct ObjectMethodRoyalty {
+    /// Method name.
+    #[serde(rename = "name")]
+    pub name: String,
+    #[serde(rename = "component_royalty_amount", skip_serializing_if = "Option::is_none")]
+    pub component_royalty_amount: Option<Box<crate::engine_state_api::generated::models::RoyaltyAmount>>,
+    #[serde(rename = "package_royalty_amount", skip_serializing_if = "Option::is_none")]
+    pub package_royalty_amount: Option<Box<crate::engine_state_api::generated::models::RoyaltyAmount>>,
 }
 
-impl RoleAssignmentEntry {
-    pub fn new(key: String, assignment: crate::engine_state_api::generated::models::Assignment) -> RoleAssignmentEntry {
-        RoleAssignmentEntry {
-            key,
-            assignment: Option::Some(assignment),
+impl ObjectMethodRoyalty {
+    pub fn new(name: String) -> ObjectMethodRoyalty {
+        ObjectMethodRoyalty {
+            name,
+            component_royalty_amount: None,
+            package_royalty_amount: None,
         }
     }
 }

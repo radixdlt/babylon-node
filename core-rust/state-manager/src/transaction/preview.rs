@@ -1,19 +1,20 @@
 use crate::engine_prelude::*;
-use node_common::locks::{RwLock, StateLock};
+use node_common::locks::{DbLock, RwLock};
 use std::ops::{Deref, Range};
 use std::sync::Arc;
 
-use crate::query::{StateManagerSubstateQueries, TransactionIdentifierLoader};
-use crate::staging::ReadableStore;
+use crate::query::StateManagerSubstateQueries;
+
 use crate::store::traits::QueryableProofStore;
 use crate::transaction::*;
 use crate::{
-    GlobalBalanceSummary, LedgerHeader, LedgerStateChanges, PreviewRequest, ProcessedCommitResult,
+    ActualStateManagerDatabase, GlobalBalanceSummary, LedgerHeader, LedgerStateChanges,
+    PreviewRequest, ProcessedCommitResult,
 };
 
 /// A transaction preview runner.
-pub struct TransactionPreviewer<S> {
-    store: Arc<StateLock<S>>,
+pub struct TransactionPreviewer {
+    database: Arc<DbLock<ActualStateManagerDatabase>>,
     execution_configurator: Arc<RwLock<ExecutionConfigurator>>,
     validation_config: ValidationConfig,
 }
@@ -25,28 +26,28 @@ pub struct ProcessedPreviewResult {
     pub global_balance_summary: GlobalBalanceSummary,
 }
 
-impl<S> TransactionPreviewer<S> {
+impl TransactionPreviewer {
     pub fn new(
-        store: Arc<StateLock<S>>,
+        database: Arc<DbLock<ActualStateManagerDatabase>>,
         execution_configurator: Arc<RwLock<ExecutionConfigurator>>,
         validation_config: ValidationConfig,
     ) -> Self {
         Self {
-            store,
+            database,
             execution_configurator,
             validation_config,
         }
     }
 }
 
-impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> TransactionPreviewer<S> {
+impl TransactionPreviewer {
     /// Executes the transaction compiled from the given request in a preview mode.
     pub fn preview(
         &self,
         preview_request: PreviewRequest,
     ) -> Result<ProcessedPreviewResult, PreviewError> {
-        let read_store = self.store.read_current();
-        let intent = self.create_intent(preview_request, read_store.deref());
+        let database = self.database.snapshot();
+        let intent = self.create_intent(preview_request, database.deref());
 
         let validator = NotarizedTransactionValidator::new(self.validation_config);
         let validated = validator
@@ -55,15 +56,15 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
         let read_execution_configurator = self.execution_configurator.read();
         let transaction_logic = read_execution_configurator.wrap_preview_transaction(&validated);
 
-        let receipt = transaction_logic.execute_on(read_store.deref());
+        let receipt = transaction_logic.execute_on(database.deref());
         let (state_changes, global_balance_summary) = match &receipt.result {
             TransactionResult::Commit(commit) => {
                 let state_changes = ProcessedCommitResult::compute_ledger_state_changes::<
-                    S,
+                    _,
                     SpreadPrefixKeyMapper,
-                >(read_store.deref(), &commit.state_updates);
+                >(database.deref(), &commit.state_updates);
                 let global_balance_update = ProcessedCommitResult::compute_global_balance_update(
-                    read_store.deref(),
+                    database.deref(),
                     &state_changes,
                     &commit.state_update_summary.vault_balance_changes,
                 );
@@ -75,7 +76,7 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
             ),
         };
 
-        let base_ledger_header = read_store
+        let base_ledger_header = database
             .get_latest_proof()
             .expect("proof for preview's base state")
             .ledger_header;
@@ -88,12 +89,16 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
         })
     }
 
-    fn create_intent(&self, preview_request: PreviewRequest, read_store: &S) -> PreviewIntentV1 {
+    fn create_intent<S: StateManagerSubstateQueries>(
+        &self,
+        preview_request: PreviewRequest,
+        store: &S,
+    ) -> PreviewIntentV1 {
         let notary = preview_request.notary_public_key.unwrap_or_else(|| {
             PublicKey::Secp256k1(Secp256k1PrivateKey::from_u64(2).unwrap().public_key())
         });
         let effective_epoch_range = preview_request.explicit_epoch_range.unwrap_or_else(|| {
-            let current_epoch = read_store.get_epoch();
+            let current_epoch = store.get_epoch();
             Range {
                 start: current_epoch,
                 end: current_epoch

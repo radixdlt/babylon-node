@@ -119,8 +119,9 @@ public abstract class DeterministicEngineStateApiTestBase {
         1000000, new DatabaseFlags(true, false, true), GenesisData.NO_SCENARIOS);
   }
 
-  protected DeterministicTest buildRunningServerTestWithScenarios(ImmutableList<String> scenarios) {
-    return buildRunningServerTest(1000000, new DatabaseFlags(true, false, true), scenarios);
+  protected DeterministicTest buildRunningServerTestWithScenarios(String... scenarios) {
+    return buildRunningServerTest(
+        1000000, new DatabaseFlags(true, false, true), ImmutableList.copyOf(scenarios));
   }
 
   protected DeterministicTest buildRunningServerTest(DatabaseFlags databaseFlags) {

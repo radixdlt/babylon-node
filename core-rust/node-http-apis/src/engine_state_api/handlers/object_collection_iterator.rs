@@ -28,7 +28,7 @@ pub(crate) async fn handle_object_collection_iterator(
         extract_api_rich_index_input(request.collection_name, request.collection_index)
             .map_err(|err| err.into_response_error("collection_name or collection_index"))?;
 
-    let database = state.state_manager.database.read_current();
+    let database = state.state_manager.database.snapshot();
 
     let meta_loader = EngineStateMetaLoader::new(database.deref());
     let module_state_meta = meta_loader.load_object_module_state_meta(&node_id, module_id)?;

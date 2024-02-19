@@ -17,7 +17,7 @@ pub(crate) async fn handle_entity_schema_entry(
     let schema_hash = extract_schema_hash(request.schema_hash.as_str())
         .map_err(|err| err.into_response_error("schema_hash"))?;
 
-    let database = state.state_manager.database.read_current();
+    let database = state.state_manager.database.snapshot();
 
     let data_loader = EngineStateDataLoader::new(database.deref());
     let versioned_schema_data = data_loader.load_schema(&SchemaReference {

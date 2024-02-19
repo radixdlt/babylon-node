@@ -16,6 +16,82 @@ lazy_static::lazy_static! {
 
     /// A statically-known type information of the [`RoleAssignmentCollection::AccessRuleKeyValue`].
     static ref ROLE_ASSIGNMENT_COLLECTION_META: ObjectCollectionMeta = create_object_collection_meta::<ModuleRoleKey, VersionedRoleAssignmentAccessRule>(RoleAssignmentCollection::AccessRuleKeyValue);
+
+    /// A statically-known type information of the [`ComponentRoyaltyCollection::MethodAmountKeyValue`].
+    static ref METHOD_ROYALTY_COLLECTION_META: ObjectCollectionMeta = create_object_collection_meta::<String, VersionedComponentRoyaltyMethodAmount>(ComponentRoyaltyCollection::MethodAmountKeyValue);
+}
+
+/// A loader of Object's attached Royalty information.
+///
+/// Note: as evident by its sole [`EngineStateDataLoader`] dependency, this loader operates at an
+/// abstraction layer higher than the rest of the Engine State API (i.e. it interprets the data that
+/// can be read using other, lower-level means).
+pub struct ObjectRoyaltyLoader<'s, S: SubstateDatabase> {
+    meta_loader: EngineStateMetaLoader<'s, S>,
+    data_loader: EngineStateDataLoader<'s, S>,
+}
+
+impl<'s, S: SubstateDatabase> ObjectRoyaltyLoader<'s, S> {
+    /// Creates an instance reading from the given database.
+    pub fn new(database: &'s S) -> Self {
+        Self {
+            meta_loader: EngineStateMetaLoader::new(database),
+            data_loader: EngineStateDataLoader::new(database),
+        }
+    }
+
+    /// Returns Package and Component royalty amounts for all methods of the given object.
+    pub fn load_method_amounts(
+        &self,
+        node_id: &NodeId,
+    ) -> Result<Vec<MethodRoyaltyAmount>, AttachedModuleBrowsingError> {
+        let EntityMeta::Object(object_meta) = self.meta_loader.load_entity_meta(node_id)? else {
+            return Err(AttachedModuleBrowsingError::NotAnObject);
+        };
+
+        let mut component_royalties = if object_meta
+            .attached_module_states
+            .contains_key(&AttachedModuleId::Royalty)
+        {
+            self.data_loader
+                .iter_object_collection(
+                    node_id,
+                    ModuleId::Royalty,
+                    METHOD_ROYALTY_COLLECTION_META.deref(),
+                    None,
+                )?
+                .map(|(key, value)| {
+                    Ok::<_, AttachedModuleBrowsingError>((
+                        decode_kv_collection_key::<String>(key),
+                        decode_latest::<VersionedComponentRoyaltyMethodAmount>(value)?,
+                    ))
+                })
+                .collect::<Result<NonIterMap<_, _>, _>>()?
+        } else {
+            NonIterMap::new()
+        };
+
+        Ok(self
+            .meta_loader
+            .load_blueprint_meta(&object_meta.blueprint_reference)?
+            .methods
+            .into_iter()
+            .map(|method| MethodRoyaltyAmount {
+                for_component: component_royalties
+                    .remove(&method.name)
+                    .unwrap_or(RoyaltyAmount::Free),
+                for_package: method.royalty,
+                name: method.name,
+            })
+            .collect())
+    }
+}
+
+/// Resolved Package and Component royalty amounts of a specific method.
+pub struct MethodRoyaltyAmount {
+    pub name: String,
+    pub for_component: RoyaltyAmount,
+    pub for_package: RoyaltyAmount,
 }
 
 /// A loader of Object's attached Role Assignments.
