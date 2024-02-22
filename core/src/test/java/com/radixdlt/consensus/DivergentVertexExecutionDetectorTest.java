@@ -62,81 +62,87 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft.processor;
+package com.radixdlt.consensus;
 
-import static com.radixdlt.utils.TypedMocks.rmock;
-import static org.mockito.ArgumentMatchers.any;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.*;
 
-import com.radixdlt.consensus.*;
-import com.radixdlt.consensus.bft.*;
-import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.TimeoutQuorumDelayedResolution;
-import com.radixdlt.consensus.liveness.Pacemaker;
-import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorId;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
-import org.junit.Before;
+import com.radixdlt.utils.UInt192;
+import java.util.List;
 import org.junit.Test;
 
-public final class BFTQuorumAssemblerTest {
-  private BFTValidatorId self = mock(BFTValidatorId.class);
-  private Metrics metrics = new MetricsInitializer().initialize();
-  private PendingVotes pendingVotes = mock(PendingVotes.class);
-  private BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
-  private VertexStoreAdapter vertexStore = mock(VertexStoreAdapter.class);
-  private Pacemaker pacemaker = mock(Pacemaker.class);
-  private EventDispatcher<RoundQuorumResolution> roundQuorumResolutionDispatcher =
-      rmock(EventDispatcher.class);
-  private ScheduledEventDispatcher<TimeoutQuorumDelayedResolution>
-      timeoutQuorumDelayedResolutionDispatcher = rmock(ScheduledEventDispatcher.class);
+public final class DivergentVertexExecutionDetectorTest {
+  @Test
+  public void when_divergent_execution__then_should_update_the_metrics() {
+    final var metrics = new MetricsInitializer().initialize();
+    final var author1 = BFTValidatorId.random();
+    final var author2 = BFTValidatorId.random();
+    final var author3 = BFTValidatorId.random();
+    final var validatorSet =
+        BFTValidatorSet.from(
+            List.of(
+                BFTValidator.from(author1, UInt192.ONE),
+                BFTValidator.from(author2, UInt192.ONE),
+                BFTValidator.from(author3, UInt192.ONE)));
+    final var detector = new DivergentVertexExecutionDetector(metrics, validatorSet);
+    final var vertex1 = HashUtils.random256();
+    final var vertex2 = HashUtils.random256();
 
-  private BFTQuorumAssembler bftQuorumAssembler;
+    // No divergence for vertex1
+    detector.processVote(createVoteForVertexId(author1, vertex1, 1L));
+    detector.processVote(createVoteForVertexId(author2, vertex1, 1L));
 
-  @Before
-  public void setUp() {
-    this.bftQuorumAssembler =
-        new BFTQuorumAssembler(
-            this.pacemaker,
-            this.self,
-            this.roundQuorumResolutionDispatcher,
-            this.timeoutQuorumDelayedResolutionDispatcher,
-            this.metrics,
-            new DivergentVertexExecutionDetector(metrics, validatorSet),
-            this.pendingVotes,
-            mock(RoundUpdate.class),
-            1000L);
+    // Divergence for vertex2
+    detector.processVote(createVoteForVertexId(author1, vertex2, 2L));
+    detector.processVote(createVoteForVertexId(author2, vertex2, 2L));
+    detector.processVote(createVoteForVertexId(author3, vertex2, 3L));
+
+    detector.summarizeAfterRoundAndReset(Round.epochInitial());
+
+    assertEquals(
+        1, // Expecting 1 divergent execution with 2 conflicting results (label)
+        (int)
+            metrics
+                .bft()
+                .divergentVertexExecutions()
+                .label(new Metrics.Bft.DivergentVertexExecution(2))
+                .get());
+
+    assertEquals(
+        1, // Expecting no more results from other labels
+        (int) metrics.bft().divergentVertexExecutions().getSum());
   }
 
-  @Test
-  public void when_process_vote_with_quorum__then_processed() {
-    BFTValidatorId author = mock(BFTValidatorId.class);
-    Vote vote = mock(Vote.class);
-    when(vote.getAuthor()).thenReturn(author);
+  private Vote createVoteForVertexId(
+      BFTValidatorId author, HashCode vertexId, long resultDiscriminator) {
+    final var ledgerHeader =
+        LedgerHeader.create(
+            0L,
+            Round.epochInitial(),
+            resultDiscriminator, // Using a different state version as a discriminator
+            LedgerHashes.zero(),
+            0L,
+            0L);
 
-    QuorumCertificate qc = mock(QuorumCertificate.class);
-    HighQC highQc = mock(HighQC.class);
-    QuorumCertificate highestCommittedQc = mock(QuorumCertificate.class);
-    when(highQc.highestCommittedQC()).thenReturn(highestCommittedQc);
-    when(vote.getRound()).thenReturn(Round.of(1));
     final var bftHeader = mock(BFTHeader.class);
-    when(bftHeader.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
+    when(bftHeader.getVertexId()).thenReturn(vertexId);
+    when(bftHeader.getLedgerHeader()).thenReturn(ledgerHeader);
+
     final var voteData = mock(VoteData.class);
     when(voteData.getProposed()).thenReturn(bftHeader);
+
+    final var vote = mock(Vote.class);
+    when(vote.getAuthor()).thenReturn(author);
     when(vote.getVoteData()).thenReturn(voteData);
 
-    when(this.pendingVotes.insertVote(any())).thenReturn(VoteProcessingResult.regularQuorum(qc));
-    when(this.vertexStore.highQC()).thenReturn(highQc);
-
-    // Move to round 1
-    this.bftQuorumAssembler.processRoundUpdate(
-        RoundUpdate.create(Round.of(1), highQc, mock(BFTValidatorId.class), this.self));
-
-    this.bftQuorumAssembler.processVote(vote);
-
-    verify(this.roundQuorumResolutionDispatcher, times(1)).dispatch(any());
-    verify(this.pendingVotes, times(1)).insertVote(eq(vote));
-    verifyNoMoreInteractions(this.pendingVotes);
+    return vote;
   }
 }
