@@ -313,7 +313,7 @@ impl MempoolManager {
                     validated,
                     raw: raw_transaction,
                 });
-                match self.mempool.write().add_transaction(
+                match self.mempool.write().add_transaction_if_not_present(
                     mempool_transaction.clone(),
                     source,
                     Instant::now(),
