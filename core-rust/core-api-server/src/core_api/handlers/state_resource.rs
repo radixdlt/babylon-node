@@ -1,11 +1,7 @@
 use crate::core_api::*;
-
-use radix_engine::types::*;
-use radix_engine_queries::typed_substate_layout::*;
+use crate::engine_prelude::*;
 
 use std::ops::Deref;
-
-use radix_engine_common::types::EntityType;
 
 enum ManagerByType {
     Fungible(
@@ -30,7 +26,7 @@ pub(crate) async fn handle_state_resource(
     let resource_address = extract_resource_address(&extraction_context, &request.resource_address)
         .map_err(|err| err.into_response_error("resource_address"))?;
 
-    let database = state.state_manager.database.read_current();
+    let database = state.state_manager.database.snapshot();
 
     let resource_node_id = resource_address.as_node_id();
     let is_fungible =

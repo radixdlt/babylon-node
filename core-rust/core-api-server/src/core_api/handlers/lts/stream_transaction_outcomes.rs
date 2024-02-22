@@ -32,7 +32,7 @@ pub(crate) async fn handle_lts_stream_transaction_outcomes(
 
     let limit = limit.try_into().expect("limit out of usize bounds");
 
-    let database = state.state_manager.database.read_current();
+    let database = state.state_manager.database.snapshot();
 
     if !database.is_local_transaction_execution_index_enabled() {
         return Err(client_error(

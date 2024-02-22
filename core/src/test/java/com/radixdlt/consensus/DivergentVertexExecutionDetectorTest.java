@@ -62,43 +62,87 @@
  * permissions under this License.
  */
 
-extern crate serde;
-extern crate serde_json;
+package com.radixdlt.consensus;
 
-mod core_api;
-pub mod jni;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.*;
 
-pub(crate) mod engine_prelude {
-    pub use blueprint_schema_init::*;
-    pub use radix_engine::blueprints::account::*;
-    pub use radix_engine::blueprints::models::*;
-    pub use radix_engine::blueprints::transaction_tracker::*;
-    pub use radix_engine::object_modules::metadata::*;
-    pub use radix_engine::system::system_modules::costing::*;
-    pub use radix_engine::system::system_substates::*;
-    pub use radix_engine::transaction::*;
-    pub use radix_engine::vm::*;
-    pub use radix_engine_common::prelude::*;
-    pub use radix_engine_interface::blueprints::access_controller::*;
-    pub use radix_engine_interface::blueprints::account::*;
-    pub use radix_engine_interface::blueprints::transaction_processor::*;
-    pub use radix_engine_interface::prelude::*;
-    pub use sbor::representations::*;
-    pub use substate_store_impls::hash_tree::tree_store::*;
-    pub use substate_store_interface::db_key_mapper::*;
-    pub use substate_store_interface::interface::*;
-    pub use substate_store_queries::typed_substate_layout::multi_resource_pool::*;
-    pub use substate_store_queries::typed_substate_layout::one_resource_pool::*;
-    pub use substate_store_queries::typed_substate_layout::two_resource_pool::*;
-    pub use substate_store_queries::typed_substate_layout::*;
-    pub use transaction::errors::*;
-    pub use transaction::manifest::*;
-    pub use transaction::model::*;
-    pub use transaction::validation::*;
-    pub use transaction::*;
+import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorId;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.MetricsInitializer;
+import com.radixdlt.utils.UInt192;
+import java.util.List;
+import org.junit.Test;
 
-    // Note: plain `pub use radix_engine::track::*` would clash with the top-level `utils::prelude`
-    // (because it contains a private module of the same name)
-    pub use radix_engine::track::interface::*;
-    pub use radix_engine::track::state_updates::*;
+public final class DivergentVertexExecutionDetectorTest {
+  @Test
+  public void when_divergent_execution__then_should_update_the_metrics() {
+    final var metrics = new MetricsInitializer().initialize();
+    final var author1 = BFTValidatorId.random();
+    final var author2 = BFTValidatorId.random();
+    final var author3 = BFTValidatorId.random();
+    final var validatorSet =
+        BFTValidatorSet.from(
+            List.of(
+                BFTValidator.from(author1, UInt192.ONE),
+                BFTValidator.from(author2, UInt192.ONE),
+                BFTValidator.from(author3, UInt192.ONE)));
+    final var detector = new DivergentVertexExecutionDetector(metrics, validatorSet);
+    final var vertex1 = HashUtils.random256();
+    final var vertex2 = HashUtils.random256();
+
+    // No divergence for vertex1
+    detector.processVote(createVoteForVertexId(author1, vertex1, 1L));
+    detector.processVote(createVoteForVertexId(author2, vertex1, 1L));
+
+    // Divergence for vertex2
+    detector.processVote(createVoteForVertexId(author1, vertex2, 2L));
+    detector.processVote(createVoteForVertexId(author2, vertex2, 2L));
+    detector.processVote(createVoteForVertexId(author3, vertex2, 3L));
+
+    detector.summarizeAfterRoundAndReset(Round.epochInitial());
+
+    assertEquals(
+        1, // Expecting 1 divergent execution with 2 conflicting results (label)
+        (int)
+            metrics
+                .bft()
+                .divergentVertexExecutions()
+                .label(new Metrics.Bft.DivergentVertexExecution(2))
+                .get());
+
+    assertEquals(
+        1, // Expecting no more results from other labels
+        (int) metrics.bft().divergentVertexExecutions().getSum());
+  }
+
+  private Vote createVoteForVertexId(
+      BFTValidatorId author, HashCode vertexId, long resultDiscriminator) {
+    final var ledgerHeader =
+        LedgerHeader.create(
+            0L,
+            Round.epochInitial(),
+            resultDiscriminator, // Using a different state version as a discriminator
+            LedgerHashes.zero(),
+            0L,
+            0L);
+
+    final var bftHeader = mock(BFTHeader.class);
+    when(bftHeader.getVertexId()).thenReturn(vertexId);
+    when(bftHeader.getLedgerHeader()).thenReturn(ledgerHeader);
+
+    final var voteData = mock(VoteData.class);
+    when(voteData.getProposed()).thenReturn(bftHeader);
+
+    final var vote = mock(Vote.class);
+    when(vote.getAuthor()).thenReturn(author);
+    when(vote.getVoteData()).thenReturn(voteData);
+
+    return vote;
+  }
 }

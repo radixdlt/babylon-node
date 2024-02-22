@@ -65,20 +65,16 @@
 use std::cmp::Ordering;
 use std::iter::Peekable;
 
+use crate::engine_prelude::*;
 use crate::staging::StateHashTreeDiff;
-use crate::store::StateManagerDatabase;
+
 use crate::transaction::*;
 use crate::{CommittedTransactionIdentifiers, LedgerProof, LocalTransactionReceipt, StateVersion};
 pub use commit::*;
-use enum_dispatch::enum_dispatch;
 pub use proofs::*;
-use radix_engine_common::{Categorize, Decode, Encode};
 pub use substate::*;
 pub use transactions::*;
 pub use vertex::*;
-
-use radix_engine::types::{ScryptoCategorize, ScryptoDecode, ScryptoEncode};
-use sbor::define_single_versioned;
 
 #[derive(Debug, Clone)]
 pub enum DatabaseConfigValidationError {
@@ -134,12 +130,7 @@ impl DatabaseFlags {
     }
 }
 
-#[enum_dispatch]
 pub trait ConfigurableDatabase {
-    fn read_flags_state(&self) -> DatabaseFlagsState;
-
-    fn write_flags(&self, flags: &DatabaseFlags);
-
     fn is_account_change_index_enabled(&self) -> bool;
 
     fn is_local_transaction_execution_index_enabled(&self) -> bool;
@@ -156,12 +147,10 @@ pub struct CommittedTransactionBundle {
 pub mod vertex {
     use super::*;
 
-    #[enum_dispatch]
     pub trait RecoverableVertexStore {
         fn get_vertex_store(&self) -> Option<VertexStoreBlob>;
     }
 
-    #[enum_dispatch]
     pub trait WriteableVertexStore {
         fn save_vertex_store(&self, blob: VertexStoreBlob);
     }
@@ -177,20 +166,15 @@ pub mod vertex {
 
 pub mod substate {
     use super::*;
-    use radix_engine_common::types::NodeId;
     use std::slice;
 
     use crate::SubstateReference;
-    pub use radix_engine_store_interface::interface::{
-        CommittableSubstateDatabase, SubstateDatabase,
-    };
 
     /// A low-level storage of [`SubstateNodeAncestryRecord`].
     /// API note: this trait defines a simple "get by ID" method, and also a performance-driven
     /// batch method. Both provide default implementations (which mutually reduce one problem to the
     /// other). The implementer must choose to implement at least one of the methods, based on its
     /// nature (though implementing both rarely makes sense).
-    #[enum_dispatch]
     pub trait SubstateNodeAncestryStore {
         /// Returns the [`SubstateNodeAncestryRecord`] for the given [`NodeId`], or [`None`] if:
         /// - the `node_id` happens to be a root Node (since they do not have "ancestry");
@@ -249,7 +233,6 @@ pub mod transactions {
         LocalTransactionExecution, LocalTransactionReceipt,
     };
 
-    #[enum_dispatch]
     pub trait IterableTransactionStore {
         fn get_committed_transaction_bundle_iter(
             &self,
@@ -257,7 +240,6 @@ pub mod transactions {
         ) -> Box<dyn Iterator<Item = CommittedTransactionBundle> + '_>;
     }
 
-    #[enum_dispatch]
     pub trait QueryableTransactionStore {
         fn get_committed_transaction(
             &self,
@@ -296,11 +278,9 @@ pub mod transactions {
 }
 
 pub mod proofs {
-    use radix_engine_common::types::Epoch;
 
     use super::*;
 
-    #[enum_dispatch]
     pub trait IterableProofStore {
         fn get_proof_iter(
             &self,
@@ -323,7 +303,6 @@ pub mod proofs {
         ) -> Box<dyn Iterator<Item = LedgerProof> + '_>;
     }
 
-    #[enum_dispatch]
     pub trait QueryableProofStore {
         fn max_state_version(&self) -> StateVersion;
         fn max_completed_epoch(&self) -> Option<Epoch> {
@@ -368,11 +347,6 @@ pub mod commit {
     use super::*;
     use crate::accumulator_tree::storage::TreeSlice;
     use crate::{ReceiptTreeHash, StateVersion, TransactionTreeHash};
-
-    use radix_engine_store_interface::interface::{
-        DatabaseUpdate, DatabaseUpdates, NodeDatabaseUpdates, PartitionDatabaseUpdates,
-    };
-    use radix_engine_stores::hash_tree::tree_store::{NodeKey, StaleTreePart, TreeNode};
 
     pub struct CommitBundle {
         pub transactions: Vec<CommittedTransactionBundle>,
@@ -528,7 +502,6 @@ pub mod commit {
     #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
     pub struct ReceiptAccuTreeSliceV1(pub TreeSlice<ReceiptTreeHash>);
 
-    #[enum_dispatch]
     pub trait CommitStore {
         fn commit(&self, commit_bundle: CommitBundle);
     }
@@ -536,8 +509,6 @@ pub mod commit {
 
 pub mod scenario {
     use super::*;
-
-    use transaction::model::IntentHash;
 
     pub type ScenarioSequenceNumber = u32;
 
@@ -569,7 +540,6 @@ pub mod scenario {
     /// A store of testing-specific [`ExecutedGenesisScenario`], meant to be as separated as
     /// possible from the production stores (e.g. the writes happening outside of the regular commit
     /// batch write).
-    #[enum_dispatch]
     pub trait ExecutedGenesisScenarioStore {
         /// Writes the given Scenario under a caller-managed sequence number (which means: it allows
         /// overwriting, writing out-of-order, leaving gaps, etc.).
@@ -584,22 +554,17 @@ pub mod scenario {
 
 pub mod extensions {
     use super::*;
-    use radix_engine::types::GlobalAddress;
-    use radix_engine_common::network::NetworkDefinition;
 
-    #[enum_dispatch]
     pub trait AccountChangeIndexExtension {
         fn account_change_index_last_processed_state_version(&self) -> StateVersion;
 
         fn catchup_account_change_index(&self);
     }
 
-    #[enum_dispatch]
     pub trait RestoreDecember2023LostSubstates {
         fn restore_december_2023_lost_substates(&self, network: &NetworkDefinition);
     }
 
-    #[enum_dispatch]
     pub trait IterableAccountChangeIndex {
         fn get_state_versions_for_account_iter(
             &self,
@@ -610,11 +575,10 @@ pub mod extensions {
 }
 
 pub mod measurement {
-    use super::*;
+
     use std::cmp::max;
 
     /// A database capable of returning some metrics describing itself.
-    #[enum_dispatch]
     pub trait MeasurableDatabase {
         /// Gets approximate data volume statistics per table/map/cf (i.e. a category of persisted
         /// items, however it is called by the specific database implementation).
@@ -673,11 +637,8 @@ pub mod measurement {
 pub mod gc {
     use super::*;
     use crate::LedgerHeader;
-    use radix_engine_common::types::Epoch;
-    use radix_engine_stores::hash_tree::tree_store::NodeKey;
 
     /// A storage API tailored for the [`StateHashTreeGc`].
-    #[enum_dispatch]
     pub trait StateHashTreeGcStore {
         /// Returns an iterator of stale hash tree parts, ordered by the state version at which
         /// they became stale, ascending.
@@ -696,7 +657,6 @@ pub mod gc {
     }
 
     /// A storage API tailored for the [`LedgerProofsGc`].
-    #[enum_dispatch]
     pub trait LedgerProofsGcStore {
         /// Returns the current state of the GC's progress.
         fn get_progress(&self) -> Option<LedgerProofsGcProgress>;

@@ -71,21 +71,16 @@ use crate::store::traits::*;
 use crate::transaction::*;
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
 use crate::*;
-use ::transaction::errors::TransactionValidationError;
-use ::transaction::model::{IntentHash, NotarizedTransactionHash};
-use ::transaction::prelude::*;
 use node_common::config::limits::VertexLimitsConfig;
 
-use radix_engine::system::bootstrap::*;
-use radix_engine::transaction::TransactionReceipt;
-use radix_engine_interface::blueprints::consensus_manager::{
-    ConsensusManagerConfig, EpochChangeCondition,
-};
+use crate::engine_prelude::*;
+use ::transaction::model::PrepareError; // disambiguation needed because of a wide prelude
+
 use transaction_scenarios::scenario::DescribedAddress as ScenarioDescribedAddress;
 use transaction_scenarios::scenario::*;
 use transaction_scenarios::scenarios::*;
 
-use node_common::locks::{LockFactory, Mutex, RwLock, StateLock};
+use node_common::locks::{DbLock, LockFactory, Mutex, RwLock};
 use prometheus::Registry;
 use tracing::{debug, info, warn};
 
@@ -95,13 +90,14 @@ use crate::store::traits::scenario::{
     ExecutedScenarioTransaction, ScenarioSequenceNumber,
 };
 
+use crate::accumulator_tree::storage::ReadableAccuTreeStore;
 use std::ops::Deref;
 use std::sync::Arc;
 use std::time::{Instant, SystemTime};
 
-pub struct StateComputer<S> {
+pub struct StateComputer {
     network: NetworkDefinition,
-    store: Arc<StateLock<S>>,
+    database: Arc<DbLock<ActualStateManagerDatabase>>,
     mempool_manager: Arc<MempoolManager>,
     execution_configurator: Arc<RwLock<ExecutionConfigurator>>,
     pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
@@ -115,21 +111,13 @@ pub struct StateComputer<S> {
     protocol_state: RwLock<ProtocolState>,
 }
 
-impl<
-        S: QueryableProofStore
-            + IterableProofStore
-            + QueryableTransactionStore
-            + TransactionIdentifierLoader
-            + CommitStore
-            + ReadableStore,
-    > StateComputer<S>
-{
+impl StateComputer {
     // TODO: refactor and maybe make clippy happy too
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         network: &NetworkDefinition,
         vertex_limits_config: VertexLimitsConfig,
-        store: Arc<StateLock<S>>,
+        database: Arc<DbLock<ActualStateManagerDatabase>>,
         mempool_manager: Arc<MempoolManager>,
         execution_configurator: Arc<RwLock<ExecutionConfigurator>>,
         pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
@@ -137,9 +125,9 @@ impl<
         lock_factory: LockFactory,
         initial_updatable_config: &ProtocolStateComputerConfig,
         initial_protocol_state: ProtocolState,
-    ) -> StateComputer<S> {
-        let (current_transaction_root, current_ledger_proposer_timestamp_ms) = store
-            .read_current()
+    ) -> Self {
+        let (current_transaction_root, current_ledger_proposer_timestamp_ms) = database
+            .lock()
             .get_latest_proof()
             .map(|proof| proof.ledger_header)
             .map(|header| (header.hashes.transaction_root, header.proposer_timestamp_ms))
@@ -152,7 +140,7 @@ impl<
 
         StateComputer {
             network: network.clone(),
-            store,
+            database,
             mempool_manager,
             execution_configurator,
             pending_transaction_result_cache,
@@ -279,12 +267,7 @@ pub struct GenesisCommitRequest {
     require_success: bool,
 }
 
-impl<S> StateComputer<S>
-where
-    S: ReadableStore,
-    S: for<'a> TransactionIndex<&'a IntentHash>,
-    S: QueryableProofStore + TransactionIdentifierLoader,
-{
+impl StateComputer {
     pub fn prepare_genesis(&self, genesis_transaction: GenesisTransaction) -> GenesisPrepareResult {
         let raw = LedgerTransaction::Genesis(Box::new(genesis_transaction))
             .to_raw()
@@ -296,8 +279,8 @@ where
             .read()
             .validate_genesis(prepared);
 
-        let read_store = self.store.read_current();
-        let mut series_executor = self.start_series_execution(read_store.deref());
+        let database = self.database.lock();
+        let mut series_executor = self.start_series_execution(database.deref());
 
         let commit = series_executor
             .execute_and_update_state(&validated, "genesis")
@@ -332,15 +315,15 @@ where
             .validate_user_or_round_update(prepared_ledger_transaction)
             .unwrap_or_else(|_| panic!("Expected that {} was valid", qualified_name));
 
-        let read_store = self.store.read_current();
+        let database = self.database.lock();
 
         // Note - we first create a basic receipt - because we need it for later
         let basic_receipt = self
             .execution_configurator
             .read()
             .wrap_ledger_transaction(&validated, "scenario transaction")
-            .execute_on(read_store.deref());
-        let mut series_executor = self.start_series_execution(read_store.deref());
+            .execute_on(database.deref());
+        let mut series_executor = self.start_series_execution(database.deref());
 
         let commit = series_executor.execute_and_update_state(&validated, "scenario transaction");
 
@@ -363,8 +346,8 @@ where
         // themselves, which is part of the validation process
         //========================================================================================
 
-        let read_store = self.store.read_current();
-        let mut series_executor = self.start_series_execution(read_store.deref());
+        let database = self.database.snapshot();
+        let mut series_executor = self.start_series_execution(database.deref());
 
         if &prepare_request.committed_ledger_hashes != series_executor.latest_ledger_hashes() {
             panic!(
@@ -556,7 +539,7 @@ where
                         intent_hash,
                         notarized_transaction_hash,
                         invalid_at_epoch,
-                        rejection_reason: Some(RejectionReason::ValidationError(
+                        rejection_reason: Some(MempoolRejectionReason::ValidationError(
                             error.into_user_validation_error(),
                         )),
                     });
@@ -639,7 +622,7 @@ where
                         intent_hash,
                         notarized_transaction_hash,
                         invalid_at_epoch,
-                        rejection_reason: Some(RejectionReason::FromExecution(Box::new(
+                        rejection_reason: Some(MempoolRejectionReason::FromExecution(Box::new(
                             result.reason,
                         ))),
                     });
@@ -726,7 +709,10 @@ where
             })
     }
 
-    fn start_series_execution<'s>(&'s self, store: &'s S) -> TransactionSeriesExecutor<'s, S> {
+    fn start_series_execution<'s, S>(&'s self, store: &'s S) -> TransactionSeriesExecutor<'s, S>
+    where
+        S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader,
+    {
         TransactionSeriesExecutor::new(
             store,
             &self.execution_cache,
@@ -736,13 +722,7 @@ where
     }
 }
 
-impl<S> StateComputer<S>
-where
-    S: CommitStore + ExecutedGenesisScenarioStore,
-    S: ReadableStore,
-    S: for<'a> TransactionIndex<&'a IntentHash>,
-    S: QueryableProofStore + TransactionIdentifierLoader + QueryableTransactionStore,
-{
+impl StateComputer {
     pub fn execute_genesis_for_unit_tests_with_config(
         &self,
         consensus_manager_config: ConsensusManagerConfig,
@@ -811,12 +791,13 @@ where
     ) -> LedgerProof {
         let start_instant = Instant::now();
 
-        let read_db = self.store.read_current();
-        if read_db.get_post_genesis_epoch_proof().is_some() {
+        let database = self.database.lock();
+        if database.get_post_genesis_epoch_proof().is_some() {
             panic!("Can't execute genesis: database already initialized")
         }
-        let maybe_top_txn_identifiers = read_db.get_top_transaction_identifiers();
-        drop(read_db);
+        let maybe_top_txn_identifiers = database.get_top_transaction_identifiers();
+        drop(database);
+
         if let Some(top_txn_identifiers) = maybe_top_txn_identifiers {
             // No epoch proof, but there are some committed txns
             panic!(
@@ -990,8 +971,8 @@ where
                             .collect::<Vec<_>>()
                             .join("\n")
                     );
-                    let write_store = self.store.write_current();
-                    write_store.put_scenario(sequence_number, executed_scenario);
+                    let database = self.database.lock();
+                    database.put_scenario(sequence_number, executed_scenario);
                     return end_state.next_unused_nonce;
                 }
             }
@@ -1030,15 +1011,17 @@ where
         let commit_ledger_header = &commit_request.proof.ledger_header;
         let commit_state_version = commit_ledger_header.state_version;
         let commit_request_start_state_version =
-            commit_state_version.relative(-(commit_transactions_len as i128)).expect("`commit_request_start_state_version` should be computable from `commit_state_version - commit_transactions_len` and valid.");
+            commit_state_version.relative(-(commit_transactions_len as i128))
+                .expect("`commit_request_start_state_version` should be computable from `commit_state_version - commit_transactions_len` and valid.");
+
+        // We advance the top-of-ledger, hence lock:
+        let database = self.database.lock();
 
         // Step 1.: Parse the transactions (and collect specific metrics from them, as a drive-by)
         let mut prepared_transactions = Vec::new();
         let mut leader_round_counters_builder = LeaderRoundCountersBuilder::default();
         let mut proposer_timestamps = Vec::new();
-        let mut proposer_timestamp_ms = self
-            .store
-            .read_current()
+        let mut proposer_timestamp_ms = database
             .get_latest_proof()
             .unwrap()
             .ledger_header
@@ -1072,9 +1055,8 @@ where
             proposer_timestamps.push(proposer_timestamp_ms);
         }
 
-        // Step 2.: Start the write DB transaction, check invariants, set-up DB update structures
-        let write_store = self.store.write_current();
-        let mut series_executor = self.start_series_execution(write_store.deref());
+        // Step 2.: Check invariants, set-up DB update structures
+        let mut series_executor = self.start_series_execution(database.deref());
 
         if commit_request_start_state_version != series_executor.latest_state_version() {
             panic!(
@@ -1093,7 +1075,7 @@ where
             )
             .unwrap_or_else(|| {
                 Self::calculate_transaction_root(
-                    write_store.deref(),
+                    database.deref(),
                     series_executor.epoch_identifiers(),
                     series_executor.latest_state_version(),
                     &prepared_transactions,
@@ -1220,7 +1202,7 @@ where
             .as_ref()
             .map(|next_epoch| next_epoch.epoch);
 
-        write_store.commit(CommitBundle {
+        database.commit(CommitBundle {
             transactions: committed_transaction_bundles,
             proof: commit_request.proof,
             substate_store_update,
@@ -1232,7 +1214,7 @@ where
             receipt_tree_slice: ReceiptAccuTreeSliceV1(receipt_tree_slice_merger.into_slice()),
             new_substate_node_ancestry_records: new_node_ancestry_records,
         });
-        drop(write_store);
+        drop(database);
 
         let num_user_transactions = committed_user_transactions.len() as u32;
 
@@ -1318,8 +1300,8 @@ where
         self.protocol_state.write().current_protocol_version = protocol_version_name.clone();
 
         let current_header = self
-            .store
-            .read_current()
+            .database
+            .lock()
             .get_latest_proof()
             .map(|proof| proof.ledger_header)
             .expect("Can't apply a protocol update pre-genesis");
@@ -1332,8 +1314,8 @@ where
     /// This method accepts a pre-validated transaction and trusts its contents (i.e. skips some
     /// validations).
     fn commit_genesis(&self, request: GenesisCommitRequest) {
-        let write_store = self.store.write_current();
-        let mut series_executor = self.start_series_execution(write_store.deref());
+        let database = self.database.lock();
+        let mut series_executor = self.start_series_execution(database.deref());
 
         let mut commit = series_executor
             .execute_and_update_state(&request.validated, "genesis")
@@ -1365,7 +1347,7 @@ where
 
         // for metrics only
         let hash_structures_diff = commit.hash_structures_diff;
-        write_store.commit(CommitBundle {
+        database.commit(CommitBundle {
             transactions: vec![committed_transaction_bundle],
             proof,
             substate_store_update: SubstateStoreUpdate::from_single(commit.database_updates),
@@ -1390,7 +1372,7 @@ where
         *locked_protocol_state = series_executor.protocol_state();
         drop(locked_protocol_state);
 
-        drop(write_store);
+        drop(database);
 
         self.ledger_metrics.update(
             1,
@@ -1420,7 +1402,7 @@ where
         Some(*transaction_root)
     }
 
-    fn calculate_transaction_root(
+    fn calculate_transaction_root<S: ReadableAccuTreeStore<StateVersion, TransactionTreeHash>>(
         store: &S,
         epoch_identifiers: &EpochTransactionIdentifiers,
         parent_version: StateVersion,
@@ -1459,13 +1441,14 @@ struct PendingTransactionResult {
     pub intent_hash: IntentHash,
     pub notarized_transaction_hash: NotarizedTransactionHash,
     pub invalid_at_epoch: Epoch,
-    pub rejection_reason: Option<RejectionReason>,
+    pub rejection_reason: Option<MempoolRejectionReason>,
 }
 
 #[cfg(test)]
 mod tests {
     use std::ops::Deref;
 
+    use crate::engine_prelude::*;
     use crate::transaction::{LedgerTransaction, RoundUpdateTransactionV1};
     use crate::{
         LedgerProof, PrepareRequest, PrepareResult, RoundHistory, StateManager, StateManagerConfig,
@@ -1474,11 +1457,7 @@ mod tests {
     use node_common::locks::LockFactory;
     use node_common::scheduler::Scheduler;
     use prometheus::Registry;
-    use radix_engine_common::prelude::NetworkDefinition;
-    use radix_engine_common::types::{Epoch, Round};
     use tempfile::TempDir;
-    use transaction::builder::ManifestBuilder;
-    use transaction::prelude::*;
 
     // TODO: maybe move/refactor testing infra as we add more Rust tests
     fn build_unit_test_round_history(proof: &LedgerProof) -> RoundHistory {
@@ -1610,10 +1589,10 @@ mod tests {
         state_manager: &StateManager,
         prepare_request: PrepareRequest,
     ) -> u32 {
-        let read_store = state_manager.state_computer.store.read_current();
+        let database = state_manager.state_computer.database.snapshot();
         let mut series_executor = state_manager
             .state_computer
-            .start_series_execution(read_store.deref());
+            .start_series_execution(database.deref());
 
         let round_update = RoundUpdateTransactionV1::new(
             series_executor.epoch_header(),

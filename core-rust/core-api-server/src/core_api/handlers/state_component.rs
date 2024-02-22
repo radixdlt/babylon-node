@@ -1,7 +1,6 @@
 use crate::core_api::*;
-use radix_engine::types::*;
-use radix_engine_queries::typed_substate_layout::*;
-use radix_engine_store_interface::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
+use crate::engine_prelude::*;
+
 use state_manager::query::{dump_component_state, ComponentStateDump, DescendantParentOpt};
 
 use std::ops::Deref;
@@ -26,7 +25,7 @@ pub(crate) async fn handle_state_component(
         return Err(client_error("Only component addresses starting component_ currently work with this endpoint. Try another endpoint instead."));
     }
 
-    let database = state.state_manager.database.read_current();
+    let database = state.state_manager.database.snapshot();
     let type_info_substate = read_optional_substate(
         database.deref(),
         component_address.as_node_id(),

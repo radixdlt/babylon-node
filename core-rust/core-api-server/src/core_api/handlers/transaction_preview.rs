@@ -1,18 +1,12 @@
 use crate::core_api::*;
-use radix_engine::prelude::*;
-use radix_engine::transaction::*;
+use crate::engine_prelude::*;
+
 use std::ops::Range;
 
 use state_manager::transaction::ProcessedPreviewResult;
-use state_manager::{ExecutionFeeData, LocalTransactionReceipt, PreviewRequest};
-use transaction::manifest;
-use transaction::manifest::BlobProvider;
-use transaction::model::{
-    AesGcmPayload, AesWrapped128BitKey, DecryptorsByCurve, EncryptedMessageV1, MessageV1,
-    PlaintextMessageV1, PreviewFlags, PublicKeyFingerprint,
+use state_manager::{
+    ActualStateManagerDatabase, ExecutionFeeData, LocalTransactionReceipt, PreviewRequest,
 };
-use transaction::prelude::MessageContentsV1;
-use utils::copy_u8_array;
 
 pub(crate) async fn handle_transaction_preview(
     state: State<CoreApiState>,
@@ -172,7 +166,11 @@ fn to_api_response(
             models::TransactionPreviewResponse {
                 at_ledger_state,
                 encoded_receipt,
-                receipt: Box::new(to_api_receipt(None, context, local_receipt)?),
+                receipt: Box::new(to_api_receipt(
+                    None::<&ActualStateManagerDatabase>,
+                    context,
+                    local_receipt,
+                )?),
                 instruction_resource_changes,
                 logs,
             }

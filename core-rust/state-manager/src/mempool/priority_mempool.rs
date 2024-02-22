@@ -67,8 +67,6 @@ use node_common::metrics::TakesMetricLabels;
 use prometheus::Registry;
 use rand::seq::index::sample;
 use tracing::warn;
-use transaction::model::*;
-use utils::prelude::indexmap::IndexMap;
 
 use crate::mempool::*;
 use itertools::Itertools;
@@ -549,11 +547,6 @@ impl PriorityMempool {
 #[cfg(test)]
 mod tests {
     use std::time::Duration;
-
-    use radix_engine::types::PublicKey;
-    use radix_engine_common::crypto::{Secp256k1PublicKey, Secp256k1Signature};
-    use radix_engine_common::types::Epoch;
-    use transaction::model::*;
 
     use crate::mempool::priority_mempool::*;
 

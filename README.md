@@ -32,17 +32,8 @@ some of our tests.
 
 ## Contribute
 
-To contribute, you'll need to [setup development environment](docs/development/README.md).
-
-[Contributions](CONTRIBUTING.md) are welcome, we simply ask to:
-
-* Fork the codebase
-* Make changes
-* Submit a pull request for review
-
-When contributing to this repository, we recommend discussing with the development team the change you wish to make using a [GitHub issue](https://github.com/radixdlt/radixdlt/issues) before making changes.
-
 Please follow our [Code of Conduct](CODE_OF_CONDUCT.md) in all your interactions with the project.
+See the [Contributing Guide](CONTRIBUTING.md) for more details on how to get involved.
 
 ## Links
 
@@ -55,9 +46,9 @@ Please follow our [Code of Conduct](CODE_OF_CONDUCT.md) in all your interactions
 
 ## License
 
-The executable components of the Babylon Node Code are licensed under the [Radix Node EULA](http://www.radixdlt.com/terms/nodeEULA).
+The executable components of the Babylon Node code are licensed under the [Radix Node EULA](http://www.radixdlt.com/terms/nodeEULA).
 
-The Babylon Node Code is released under the [Radix License 1.0 (modified Apache 2.0)](LICENSE):
+The Babylon Node code is released under the [Radix License 1.0 (modified Apache 2.0)](LICENSE):
 
 ```
 Copyright 2023 Radix Publishing Ltd incorporated in Jersey, Channel Islands.

@@ -71,9 +71,8 @@ use crate::store::traits::*;
 use crate::transaction::*;
 use crate::*;
 
-use ::transaction::prelude::*;
+use crate::engine_prelude::*;
 use node_common::locks::{Mutex, RwLock};
-use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
 
 /// An internal delegate for executing a series of consecutive transactions while tracking their
 /// progress.

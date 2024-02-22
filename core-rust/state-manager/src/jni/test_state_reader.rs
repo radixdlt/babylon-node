@@ -62,28 +62,22 @@
  * permissions under this License.
  */
 
+use crate::engine_prelude::*;
 use crate::{DetailedTransactionOutcome, LedgerTransactionOutcome, StateVersion};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use radix_engine::types::*;
-
-use radix_engine_queries::query::ResourceAccounter;
 use std::ops::Deref;
 
 use crate::jni::node_rust_environment::JNINodeRustEnvironment;
 use crate::query::StateManagerSubstateQueries;
 use node_common::java::*;
 
-use radix_engine::blueprints::consensus_manager::{ValidatorField, ValidatorStateFieldSubstate};
-use radix_engine::system::type_info::TypeInfoSubstate;
-
 use crate::store::traits::{
     gc::StateHashTreeGcStore, IterableProofStore, QueryableProofStore, QueryableTransactionStore,
     SubstateNodeAncestryStore,
 };
 use crate::transaction::LedgerTransactionHash;
-use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 
 //
 // JNI Interface (for test purposes only)
@@ -129,14 +123,14 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_getTransactionAtSt
         |state_version_number: u64| -> Option<ExecutedTransaction> {
             let state_version = StateVersion::of(state_version_number);
             let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
-            let read_database = database.access_non_locked_historical();
-            let committed_transaction = read_database.get_committed_transaction(state_version)?;
+            let database = database.snapshot();
+            let committed_transaction = database.get_committed_transaction(state_version)?;
             let committed_identifiers =
-                read_database.get_committed_transaction_identifiers(state_version)?;
+                database.get_committed_transaction_identifiers(state_version)?;
             let committed_ledger_transaction_receipt =
-                read_database.get_committed_ledger_transaction_receipt(state_version)?;
+                database.get_committed_ledger_transaction_receipt(state_version)?;
             let local_transaction_execution =
-                read_database.get_committed_local_transaction_execution(state_version)?;
+                database.get_committed_local_transaction_execution(state_version)?;
 
             Some(ExecutedTransaction {
                 ledger_transaction_hash: committed_identifiers.payload.ledger_transaction_hash,
@@ -171,9 +165,9 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_getTransactionDeta
         |state_version_number: u64| -> Option<TransactionDetails> {
             let state_version = StateVersion::of(state_version_number);
             let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
-            let read_database = database.access_non_locked_historical();
-            let committed_local_transaction_execution =
-                read_database.get_committed_local_transaction_execution(state_version)?;
+            let committed_local_transaction_execution = database
+                .snapshot()
+                .get_committed_local_transaction_execution(state_version)?;
 
             Some(TransactionDetails {
                 new_component_addresses: committed_local_transaction_execution
@@ -200,10 +194,10 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_componentXrdAmount
         |component_address: ComponentAddress| -> Decimal {
             let node_id = component_address.as_node_id();
             let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
-            let read_store = database.read_current();
+            let database = database.snapshot();
 
             // a quick fix for handling virtual accounts
-            if read_store
+            if database
                 .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
                     node_id,
                     TYPE_INFO_FIELD_PARTITION,
@@ -211,7 +205,7 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_componentXrdAmount
                 )
                 .is_some()
             {
-                let mut accounter = ResourceAccounter::new(read_store.deref());
+                let mut accounter = ResourceAccounter::new(database.deref());
                 accounter.traverse(*node_id);
                 let balances = accounter.close().balances;
                 balances.get(&XRD).cloned().unwrap_or_else(Decimal::zero)
@@ -234,8 +228,8 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_validatorInfo(
         request_payload,
         |validator_address: ComponentAddress| -> JavaValidatorInfo {
             let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
-            let read_store = database.read_current();
-            let validator_state = read_store
+            let validator_state = database
+                .snapshot()
                 .get_mapped::<SpreadPrefixKeyMapper, ValidatorStateFieldSubstate>(
                     validator_address.as_node_id(),
                     MAIN_BASE_PARTITION,
@@ -262,8 +256,8 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_epoch(
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |_: ()| -> u64 {
         let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
-        let read_store = database.read_current();
-        read_store.get_epoch().number()
+        let database = database.snapshot();
+        database.get_epoch().number()
     })
 }
 
@@ -276,8 +270,8 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_leastStaleStateHas
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |_: ()| -> u64 {
         let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
-        let read_store = database.access_non_locked_historical();
-        let least_stale_state_version = read_store
+        let least_stale_state_version = database
+            .access_direct() // the `get_stale_tree_parts_iter()` is inside a trait requiring writeability
             .get_stale_tree_parts_iter()
             .next()
             .map(|(state_version, _)| state_version)
@@ -296,9 +290,9 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_countProofsWithinE
     jni_sbor_coded_call(&env, request_payload, |epoch_number: u64| -> usize {
         let epoch = Epoch::of(epoch_number);
         let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
-        let read_store = database.access_non_locked_historical();
-        let epoch_proof = read_store.get_epoch_proof(epoch).unwrap();
-        read_store
+        let database = database.snapshot();
+        let epoch_proof = database.get_epoch_proof(epoch).unwrap();
+        database
             .get_proof_iter(epoch_proof.ledger_header.state_version.next().unwrap())
             .take_while(|proof| proof.ledger_header.epoch == epoch)
             .count()
@@ -317,8 +311,9 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_getNodeGlobalRoot(
         request_payload,
         |internal_address: InternalAddress| -> Option<GlobalAddress> {
             let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
-            let read_store = database.access_non_locked_historical();
-            let node_ancestry_record = read_store.get_ancestry(internal_address.as_node_id());
+            let node_ancestry_record = database
+                .snapshot()
+                .get_ancestry(internal_address.as_node_id());
             node_ancestry_record.map(|node_ancestry_record| {
                 GlobalAddress::new_or_panic(node_ancestry_record.root.0 .0)
             })

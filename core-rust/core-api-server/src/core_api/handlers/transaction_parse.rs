@@ -1,18 +1,15 @@
 use crate::core_api::*;
 use std::ops::Deref;
 use std::time::SystemTime;
-use transaction::validation::{
-    NotarizedTransactionValidator, TransactionValidator, ValidationConfig,
-};
 
 use models::transaction_parse_request::{ParseMode, ResponseMode, ValidationMode};
 use models::transaction_parse_response::TransactionParseResponse;
 
-use state_manager::mempool::pending_transaction_result_cache::RejectionReason;
+use state_manager::mempool::pending_transaction_result_cache::MempoolRejectionReason;
+
 use state_manager::transaction::*;
 
-use state_manager::store::StateManagerDatabase;
-use transaction::prelude::*;
+use crate::engine_prelude::*;
 
 use super::{
     to_api_intent, to_api_ledger_transaction, to_api_notarized_transaction, to_api_signed_intent,
@@ -23,7 +20,7 @@ pub struct ParseContext<'a> {
     response_mode: ResponseMode,
     validation_mode: ValidationMode,
     user_transaction_validator: NotarizedTransactionValidator,
-    committability_validator: &'a CommittabilityValidator<StateManagerDatabase>,
+    committability_validator: &'a CommittabilityValidator,
 }
 
 pub(crate) async fn handle_transaction_parse(
@@ -116,7 +113,7 @@ fn attempt_parsing_as_any_payload_type_and_map_for_api(
 struct ParsedNotarizedTransactionV1 {
     model: NotarizedTransactionV1,
     prepared: PreparedNotarizedTransactionV1,
-    validation: Option<Result<(), RejectionReason>>,
+    validation: Option<Result<(), MempoolRejectionReason>>,
 }
 
 fn attempt_parsing_as_notarized_transaction(
@@ -147,7 +144,7 @@ fn attempt_parsing_as_notarized_transaction(
                     .user_transaction_validator
                     .validate(prepared.clone())
                     .map(|_| ())
-                    .map_err(RejectionReason::ValidationError),
+                    .map_err(MempoolRejectionReason::ValidationError),
             );
             ParsedNotarizedTransactionV1 {
                 model,
@@ -160,7 +157,7 @@ fn attempt_parsing_as_notarized_transaction(
                 context
                     .user_transaction_validator
                     .validate(prepared.clone())
-                    .map_err(RejectionReason::ValidationError)
+                    .map_err(MempoolRejectionReason::ValidationError)
                     .and_then(|validated| {
                         let rejection = context
                             .committability_validator
