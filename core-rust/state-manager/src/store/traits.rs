@@ -222,6 +222,33 @@ pub mod substate {
     /// A [`SubstateNodeAncestryRecord`] accompanied by a set of sibling [`NodeId`]s (which of
     /// course share the same parent).
     pub type KeyedSubstateNodeAncestryRecord = (Vec<NodeId>, SubstateNodeAncestryRecord);
+
+    /// A store of historical Substate upserts.
+    pub trait SubstateUpsertValueStore {
+        /// Returns a value that was upserted for the given Substate at the given version.
+        ///
+        /// Note: this is *not* a "historical values" store, but only its lower-level source of
+        /// values.
+        ///
+        /// E.g. if Substate "X" was created at version 7 with value "a", then updated at version 9
+        /// to value "b", and then deleted at version 13, we should expect:
+        /// - `get_value("X", 6) -> None`
+        /// - `get_value("X", 7) -> Some("a")`
+        /// - `get_value("X", 8) -> None`
+        /// - `get_value("X", 9) -> Some("b")`
+        /// - `get_value("X", 10) -> None`
+        /// - `get_value("X", 13) -> None`
+        /// - `get_value("X", 14) -> None`
+        ///
+        /// In other words, it only records the *acts of upserting* key-value pairs. It also
+        /// deliberately disregards deletes.
+        fn get_value(
+            &self,
+            partition_key: &DbPartitionKey,
+            sort_key: &DbSortKey,
+            upserted_at_state_version: StateVersion,
+        ) -> Option<DbSubstateValue>;
+    }
 }
 
 pub mod transactions {
