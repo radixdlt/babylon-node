@@ -235,7 +235,7 @@ impl<
         'r,
         'w,
         K,
-        KC: OrderPreservingDbCodec + DbCodec<K>,
+        KC: OrderPreservingDbCodec + DbCodec<Subject = K>,
         CF: TypedCf<Key = K, KeyCodec = KC>,
         R: ReadableRocks,
         W: WriteSupport,
@@ -330,7 +330,7 @@ impl<
         'r,
         'w,
         K,
-        KC: OrderPreservingDbCodec + DbCodec<K>,
+        KC: OrderPreservingDbCodec + DbCodec<Subject = K>,
         CF: TypedCf<Key = K, KeyCodec = KC>,
         R: WriteableRocks,
     > TypedCfApi<'r, 'w, CF, R, BufferedWriteSupport<'r, R>>
@@ -350,7 +350,7 @@ impl<
         'r,
         'w,
         K,
-        KC: IntraGroupOrderPreservingDbCodec<K> + DbCodec<K>,
+        KC: IntraGroupOrderPreservingDbCodec<Key = K> + DbCodec<Subject = K>,
         CF: TypedCf<Key = K, KeyCodec = KC>,
         R: ReadableRocks,
         W: WriteSupport,
@@ -431,10 +431,10 @@ pub trait TypedCf {
     type Value;
 
     /// Type of the [`DbCodec`] for the keys.
-    type KeyCodec: DbCodec<Self::Key>;
+    type KeyCodec: DbCodec<Subject = Self::Key>;
 
     /// Type of the [`DbCodec`] for the values.
-    type ValueCodec: DbCodec<Self::Value>;
+    type ValueCodec: DbCodec<Subject = Self::Value>;
 
     /// Column family name (as known to the DB).
     const NAME: &'static str;
@@ -466,8 +466,8 @@ pub trait DefaultCf {
 impl<
         K,
         V,
-        KC: Default + DbCodec<K>,
-        VC: Default + DbCodec<V>,
+        KC: Default + DbCodec<Subject = K>,
+        VC: Default + DbCodec<Subject = V>,
         D: DefaultCf<Key = K, Value = V, KeyCodec = KC, ValueCodec = VC>,
     > TypedCf for D
 {
@@ -527,11 +527,14 @@ where
 /// like `trait DbEncodable` to be implemented by types stored in the database):
 /// - codecs are composable (e.g. `VersioningCodec::new(SborCodec::<MyType>::new())`);
 /// - the same type may have different encodings (e.g. when used for a key vs for a value).
-pub trait DbCodec<T> {
+pub trait DbCodec {
+    /// The type subject to being encoded/decoded.
+    type Subject;
+
     /// Encodes the value into bytes.
-    fn encode(&self, value: &T) -> Vec<u8>;
+    fn encode(&self, value: &Self::Subject) -> Vec<u8>;
     /// Decodes the bytes into value.
-    fn decode(&self, bytes: &[u8]) -> T;
+    fn decode(&self, bytes: &[u8]) -> Self::Subject;
 }
 
 /// A marker trait which must only be implemented on [`DbCodec`]s which preserve the business-level
@@ -608,19 +611,26 @@ pub trait GroupPreservingDbCodec {
 ///
 /// The group's order preservation is important for database *key* codecs of column families which
 /// follow a classic "partition key + sort key" pattern.
-pub trait IntraGroupOrderPreservingDbCodec<T>: GroupPreservingDbCodec {
+pub trait IntraGroupOrderPreservingDbCodec: GroupPreservingDbCodec {
+    /// A full key from which a group can be inferred.
+    type Key;
+
     /// Determines the group which the given value belongs to.
-    fn resolve_group_of(&self, value: &T) -> <Self as GroupPreservingDbCodec>::Group;
+    fn resolve_group_of(&self, value: &Self::Key) -> <Self as GroupPreservingDbCodec>::Group;
 }
 
 /// A reusable versioning decorator for [`DbCodec`]s.
-pub struct VersionedDbCodec<U: DbCodec<VT>, T: Into<VT> + Clone, VT: HasLatestVersion<Latest = T>> {
+pub struct VersionedDbCodec<
+    U: DbCodec<Subject = VT>,
+    T: Into<VT> + Clone,
+    VT: HasLatestVersion<Latest = T>,
+> {
     underlying: U,
     type_parameters_phantom: PhantomData<VT>,
 }
 
-impl<U: DbCodec<VT> + Default, T: Into<VT> + Clone, VT: HasLatestVersion<Latest = T>> Default
-    for VersionedDbCodec<U, T, VT>
+impl<U: DbCodec<Subject = VT> + Default, T: Into<VT> + Clone, VT: HasLatestVersion<Latest = T>>
+    Default for VersionedDbCodec<U, T, VT>
 {
     fn default() -> Self {
         Self {
@@ -630,15 +640,17 @@ impl<U: DbCodec<VT> + Default, T: Into<VT> + Clone, VT: HasLatestVersion<Latest 
     }
 }
 
-impl<U: DbCodec<VT>, T: Into<VT> + Clone, VT: HasLatestVersion<Latest = T>> DbCodec<T>
+impl<U: DbCodec<Subject = VT>, T: Into<VT> + Clone, VT: HasLatestVersion<Latest = T>> DbCodec
     for VersionedDbCodec<U, T, VT>
 {
-    fn encode(&self, value: &T) -> Vec<u8> {
+    type Subject = T;
+
+    fn encode(&self, value: &Self::Subject) -> Vec<u8> {
         let versioned = value.clone().into();
         self.underlying.encode(&versioned)
     }
 
-    fn decode(&self, bytes: &[u8]) -> T {
+    fn decode(&self, bytes: &[u8]) -> Self::Subject {
         let versioned = self.underlying.decode(bytes);
         versioned.into_latest()
     }
@@ -657,12 +669,14 @@ impl<T: ScryptoEncode + ScryptoDecode> Default for SborDbCodec<T> {
     }
 }
 
-impl<T: ScryptoEncode + ScryptoDecode> DbCodec<T> for SborDbCodec<T> {
-    fn encode(&self, value: &T) -> Vec<u8> {
+impl<T: ScryptoEncode + ScryptoDecode> DbCodec for SborDbCodec<T> {
+    type Subject = T;
+
+    fn encode(&self, value: &Self::Subject) -> Vec<u8> {
         scrypto_encode(value).unwrap()
     }
 
-    fn decode(&self, bytes: &[u8]) -> T {
+    fn decode(&self, bytes: &[u8]) -> Self::Subject {
         scrypto_decode(bytes).unwrap()
     }
 }
@@ -671,12 +685,14 @@ impl<T: ScryptoEncode + ScryptoDecode> DbCodec<T> for SborDbCodec<T> {
 #[derive(Clone, Default)]
 pub struct DirectDbCodec {}
 
-impl DbCodec<Vec<u8>> for DirectDbCodec {
-    fn encode(&self, value: &Vec<u8>) -> Vec<u8> {
+impl DbCodec for DirectDbCodec {
+    type Subject = Vec<u8>;
+
+    fn encode(&self, value: &Self::Subject) -> Vec<u8> {
         value.clone()
     }
 
-    fn decode(&self, bytes: &[u8]) -> Vec<u8> {
+    fn decode(&self, bytes: &[u8]) -> Self::Subject {
         bytes.to_vec()
     }
 }
@@ -687,12 +703,14 @@ impl DbCodec<Vec<u8>> for DirectDbCodec {
 #[derive(Clone, Default)]
 pub struct UnitDbCodec {}
 
-impl DbCodec<()> for UnitDbCodec {
-    fn encode(&self, _value: &()) -> Vec<u8> {
+impl DbCodec for UnitDbCodec {
+    type Subject = ();
+
+    fn encode(&self, _value: &Self::Subject) -> Vec<u8> {
         vec![]
     }
 
-    fn decode(&self, bytes: &[u8]) {
+    fn decode(&self, bytes: &[u8]) -> Self::Subject {
         assert_eq!(bytes.len(), 0);
     }
 }
@@ -728,15 +746,17 @@ impl<T: core::hash::Hash + Eq + Clone + ToString> PredefinedDbCodec<T> {
     }
 }
 
-impl<T: core::hash::Hash + Eq + Clone> DbCodec<T> for PredefinedDbCodec<T> {
-    fn encode(&self, value: &T) -> Vec<u8> {
+impl<T: core::hash::Hash + Eq + Clone> DbCodec for PredefinedDbCodec<T> {
+    type Subject = T;
+
+    fn encode(&self, value: &Self::Subject) -> Vec<u8> {
         self.encoding
             .get(value)
             .expect("value outside mappings")
             .clone()
     }
 
-    fn decode(&self, bytes: &[u8]) -> T {
+    fn decode(&self, bytes: &[u8]) -> Self::Subject {
         self.decoding
             .get(bytes)
             .expect("encoding outside mappings")

@@ -74,12 +74,14 @@ use crate::transaction::RawLedgerTransaction;
 #[derive(Default)]
 pub struct StateVersionDbCodec {}
 
-impl DbCodec<StateVersion> for StateVersionDbCodec {
-    fn encode(&self, value: &StateVersion) -> Vec<u8> {
+impl DbCodec for StateVersionDbCodec {
+    type Subject = StateVersion;
+
+    fn encode(&self, value: &Self::Subject) -> Vec<u8> {
         value.to_be_bytes().to_vec()
     }
 
-    fn decode(&self, bytes: &[u8]) -> StateVersion {
+    fn decode(&self, bytes: &[u8]) -> Self::Subject {
         StateVersion::from_be_bytes(bytes)
     }
 }
@@ -89,12 +91,14 @@ impl OrderPreservingDbCodec for StateVersionDbCodec {}
 #[derive(Default)]
 pub struct EpochDbCodec {}
 
-impl DbCodec<Epoch> for EpochDbCodec {
-    fn encode(&self, value: &Epoch) -> Vec<u8> {
+impl DbCodec for EpochDbCodec {
+    type Subject = Epoch;
+
+    fn encode(&self, value: &Self::Subject) -> Vec<u8> {
         value.number().to_be_bytes().to_vec()
     }
 
-    fn decode(&self, bytes: &[u8]) -> Epoch {
+    fn decode(&self, bytes: &[u8]) -> Self::Subject {
         Epoch::of(u64::from_be_bytes(copy_u8_array(bytes)))
     }
 }
@@ -104,12 +108,14 @@ impl OrderPreservingDbCodec for EpochDbCodec {}
 #[derive(Default)]
 pub struct ScenarioSequenceNumberDbCodec {}
 
-impl DbCodec<ScenarioSequenceNumber> for ScenarioSequenceNumberDbCodec {
-    fn encode(&self, value: &ScenarioSequenceNumber) -> Vec<u8> {
+impl DbCodec for ScenarioSequenceNumberDbCodec {
+    type Subject = ScenarioSequenceNumber;
+
+    fn encode(&self, value: &Self::Subject) -> Vec<u8> {
         value.to_be_bytes().to_vec()
     }
 
-    fn decode(&self, bytes: &[u8]) -> ScenarioSequenceNumber {
+    fn decode(&self, bytes: &[u8]) -> Self::Subject {
         ScenarioSequenceNumber::from_be_bytes(copy_u8_array(bytes))
     }
 }
@@ -119,12 +125,14 @@ impl OrderPreservingDbCodec for ScenarioSequenceNumberDbCodec {}
 #[derive(Default)]
 pub struct RawLedgerTransactionDbCodec {}
 
-impl DbCodec<RawLedgerTransaction> for RawLedgerTransactionDbCodec {
-    fn encode(&self, value: &RawLedgerTransaction) -> Vec<u8> {
+impl DbCodec for RawLedgerTransactionDbCodec {
+    type Subject = RawLedgerTransaction;
+
+    fn encode(&self, value: &Self::Subject) -> Vec<u8> {
         value.0.to_vec()
     }
 
-    fn decode(&self, bytes: &[u8]) -> RawLedgerTransaction {
+    fn decode(&self, bytes: &[u8]) -> Self::Subject {
         RawLedgerTransaction(bytes.to_vec())
     }
 }
@@ -141,7 +149,9 @@ impl<T: IsHash> Default for HashDbCodec<T> {
     }
 }
 
-impl<T: IsHash> DbCodec<T> for HashDbCodec<T> {
+impl<T: IsHash> DbCodec for HashDbCodec<T> {
+    type Subject = T;
+
     fn encode(&self, value: &T) -> Vec<u8> {
         value.as_slice().to_vec()
     }
@@ -174,8 +184,10 @@ impl<T: IsHash> DbCodec<T> for HashDbCodec<T> {
 #[derive(Default)]
 pub struct SubstateKeyDbCodec {}
 
-impl DbCodec<DbSubstateKey> for SubstateKeyDbCodec {
-    fn encode(&self, value: &DbSubstateKey) -> Vec<u8> {
+impl DbCodec for SubstateKeyDbCodec {
+    type Subject = DbSubstateKey;
+
+    fn encode(&self, value: &Self::Subject) -> Vec<u8> {
         let (partition_key, sort_key) = value;
         let mut buffer =
             Vec::with_capacity(1 + partition_key.node_key.len() + 1 + sort_key.0.len());
@@ -189,7 +201,7 @@ impl DbCodec<DbSubstateKey> for SubstateKeyDbCodec {
         buffer
     }
 
-    fn decode(&self, buffer: &[u8]) -> DbSubstateKey {
+    fn decode(&self, buffer: &[u8]) -> Self::Subject {
         let node_key_start: usize = 1usize;
         let partition_key_start = 1 + usize::from(buffer[0]);
         let sort_key_start = 1 + partition_key_start;
@@ -218,8 +230,10 @@ impl GroupPreservingDbCodec for SubstateKeyDbCodec {
     }
 }
 
-impl IntraGroupOrderPreservingDbCodec<DbSubstateKey> for SubstateKeyDbCodec {
-    fn resolve_group_of(&self, key: &DbSubstateKey) -> <Self as GroupPreservingDbCodec>::Group {
+impl IntraGroupOrderPreservingDbCodec for SubstateKeyDbCodec {
+    type Key = DbSubstateKey;
+
+    fn resolve_group_of(&self, key: &Self::Key) -> <Self as GroupPreservingDbCodec>::Group {
         key.0.clone()
     }
 }
@@ -245,58 +259,77 @@ impl SubstateKeyDbCodec {
 #[derive(Default)]
 pub struct NodeKeyDbCodec {}
 
-impl DbCodec<NodeKey> for NodeKeyDbCodec {
-    fn encode(&self, value: &NodeKey) -> Vec<u8> {
+impl DbCodec for NodeKeyDbCodec {
+    type Subject = NodeKey;
+
+    fn encode(&self, value: &Self::Subject) -> Vec<u8> {
         encode_key(value)
     }
 
-    fn decode(&self, _bytes: &[u8]) -> NodeKey {
+    fn decode(&self, _bytes: &[u8]) -> Self::Subject {
         unimplemented!("no use-case for decoding hash tree's `NodeKey`s exists yet")
     }
 }
 
-pub struct PrefixGlobalAddressDbCodec<S, SC: DbCodec<S>> {
+#[derive(Default)]
+pub struct GlobalAddressDbCodec {}
+
+impl DbCodec for GlobalAddressDbCodec {
+    type Subject = GlobalAddress;
+
+    fn encode(&self, global_address: &Self::Subject) -> Vec<u8> {
+        global_address.to_vec()
+    }
+
+    fn decode(&self, bytes: &[u8]) -> Self::Subject {
+        GlobalAddress::new_or_panic(copy_u8_array(bytes))
+    }
+}
+
+impl OrderPreservingDbCodec for GlobalAddressDbCodec {}
+
+#[derive(Default)]
+pub struct ConstantLengthPrefixDbCodec<PC, SC, const PL: usize> {
+    prefix_codec: PC,
     suffix_codec: SC,
-    type_parameters_phantom: PhantomData<S>,
 }
 
-impl<S, SC: DbCodec<S>> PrefixGlobalAddressDbCodec<S, SC> {
-    pub fn new(suffix_codec: SC) -> Self {
-        Self {
-            suffix_codec,
-            type_parameters_phantom: PhantomData,
-        }
+impl<PC: DbCodec, SC: DbCodec, const PL: usize> DbCodec
+    for ConstantLengthPrefixDbCodec<PC, SC, PL>
+{
+    type Subject = (PC::Subject, SC::Subject);
+
+    fn encode(&self, pair: &Self::Subject) -> Vec<u8> {
+        let (prefix, suffix) = pair;
+        let mut bytes = self.prefix_codec.encode(prefix);
+        assert_eq!(bytes.len(), PL);
+        bytes.extend(self.suffix_codec.encode(suffix));
+        bytes
+    }
+
+    fn decode(&self, bytes: &[u8]) -> Self::Subject {
+        let prefix = self.prefix_codec.decode(&bytes[..PL]);
+        let suffix = self.suffix_codec.decode(&bytes[PL..]);
+        (prefix, suffix)
     }
 }
 
-impl<S, SC: DbCodec<S>> DbCodec<(GlobalAddress, S)> for PrefixGlobalAddressDbCodec<S, SC> {
-    fn encode(&self, (global_address, suffix): &(GlobalAddress, S)) -> Vec<u8> {
-        let mut encoding = global_address.to_vec();
-        encoding.extend_from_slice(self.suffix_codec.encode(suffix).as_slice());
-        encoding
-    }
-
-    fn decode(&self, bytes: &[u8]) -> (GlobalAddress, S) {
-        let global_address = GlobalAddress::new_or_panic(copy_u8_array(&bytes[..NodeId::LENGTH]));
-        let suffix = self.suffix_codec.decode(&bytes[NodeId::LENGTH..]);
-        (global_address, suffix)
-    }
-}
-
-impl<S, SC: DbCodec<S> + OrderPreservingDbCodec> OrderPreservingDbCodec
-    for PrefixGlobalAddressDbCodec<S, SC>
+impl<PC: OrderPreservingDbCodec, SC: OrderPreservingDbCodec, const PL: usize> OrderPreservingDbCodec
+    for ConstantLengthPrefixDbCodec<PC, SC, PL>
 {
 }
 
 #[derive(Default)]
 pub struct NodeIdDbCodec {}
 
-impl DbCodec<NodeId> for NodeIdDbCodec {
-    fn encode(&self, value: &NodeId) -> Vec<u8> {
+impl DbCodec for NodeIdDbCodec {
+    type Subject = NodeId;
+
+    fn encode(&self, value: &Self::Subject) -> Vec<u8> {
         value.0.to_vec()
     }
 
-    fn decode(&self, bytes: &[u8]) -> NodeId {
+    fn decode(&self, bytes: &[u8]) -> Self::Subject {
         NodeId(copy_u8_array(bytes))
     }
 }

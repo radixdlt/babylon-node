@@ -141,7 +141,7 @@ const ALL_COLUMN_FAMILIES: [&str; 22] = [
     TransactionAccuTreeSlicesCf::VERSIONED_NAME,
     ReceiptAccuTreeSlicesCf::VERSIONED_NAME,
     ExtensionsDataCf::NAME,
-    AccountChangeStateVersionsCf::NAME,
+    AccountChangeStateVersionsCf::DEFAULT_NAME,
     ExecutedGenesisScenariosCf::VERSIONED_NAME,
     LedgerProofsGcProgressCf::VERSIONED_NAME,
 ];
@@ -414,22 +414,15 @@ impl TypedCf for ExtensionsDataCf {
 /// Note: This is a key-only table (i.e. the empty value is the only allowed value). Given fast
 /// prefix iterator from RocksDB this emulates a `Map<Account, Set<StateVersion>>`.
 struct AccountChangeStateVersionsCf;
-impl TypedCf for AccountChangeStateVersionsCf {
+impl DefaultCf for AccountChangeStateVersionsCf {
     type Key = (GlobalAddress, StateVersion);
     type Value = ();
 
-    type KeyCodec = PrefixGlobalAddressDbCodec<StateVersion, StateVersionDbCodec>;
+    const DEFAULT_NAME: &'static str = "account_change_state_versions";
+
+    type KeyCodec =
+        ConstantLengthPrefixDbCodec<GlobalAddressDbCodec, StateVersionDbCodec, { NodeId::LENGTH }>;
     type ValueCodec = UnitDbCodec;
-
-    const NAME: &'static str = "account_change_state_versions";
-
-    fn key_codec(&self) -> PrefixGlobalAddressDbCodec<StateVersion, StateVersionDbCodec> {
-        PrefixGlobalAddressDbCodec::new(StateVersionDbCodec::default())
-    }
-
-    fn value_codec(&self) -> UnitDbCodec {
-        UnitDbCodec::default()
-    }
 }
 
 /// Additional details of "Scenarios" (and their transactions) executed as part of Genesis,
