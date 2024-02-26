@@ -251,18 +251,7 @@ fn recurse_until_leafs<'t, T: Deref<Target = impl ReadableTreeStore> + Clone + '
         TreeNode::Leaf(leaf) => Box::new(
             Some(leaf)
                 .filter(move |leaf| leaf.key_suffix.nibbles().ge(from_nibbles))
-                .map(
-                    |TreeLeafNode {
-                         key_suffix,
-                         last_hash_change_version,
-                         ..
-                     }| ResolvedLeaf {
-                        nibble_path: NibblePath::from_iter(
-                            at_key.nibble_path().nibbles().chain(key_suffix.nibbles()),
-                        ),
-                        last_hash_change_version,
-                    },
-                )
+                .map(|leaf| ResolvedLeaf::new(at_key.nibble_path(), leaf))
                 .into_iter(),
         ),
         TreeNode::Null => Box::new(iter::empty()),
@@ -274,6 +263,21 @@ fn recurse_until_leafs<'t, T: Deref<Target = impl ReadableTreeStore> + Clone + '
 struct ResolvedLeaf {
     nibble_path: NibblePath,
     last_hash_change_version: Version,
+}
+
+impl ResolvedLeaf {
+    /// Creates an instance by augmenting the given [`TreeLeafNode`] with its missing key prefix.
+    pub fn new(key_prefix: &NibblePath, leaf: TreeLeafNode) -> Self {
+        let TreeLeafNode {
+            key_suffix,
+            last_hash_change_version,
+            ..
+        } = leaf;
+        Self {
+            nibble_path: NibblePath::from_iter(key_prefix.nibbles().chain(key_suffix.nibbles())),
+            last_hash_change_version,
+        }
+    }
 }
 
 #[cfg(test)]
