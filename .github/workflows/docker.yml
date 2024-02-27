@@ -169,6 +169,11 @@ jobs:
     name: (PRIVATE) Docker AMD
     needs:
       - setup_tags
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+      packages: write
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
       runs_on: ubuntu-latest
@@ -201,6 +206,11 @@ jobs:
     name: (PRIVATE) Docker ARM
     needs:
       - setup_tags
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+      packages: write
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
       runs_on: babylon-node-arm
@@ -252,6 +262,10 @@ jobs:
       - build_push_container_private
       - build_push_container_private_arm
       - tag_suffix_remover
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: read
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/merge-docker-images.yml@main
     with:
       aws_dockerhub_secret: github-actions/common/dockerhub-credentials
@@ -265,6 +279,11 @@ jobs:
   build_push_container_dockerhub:
     if: github.event_name == 'release'
     name: (DockerHub) Docker AMD
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+      packages: write
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
       runs_on: ubuntu-latest
@@ -289,6 +308,11 @@ jobs:
   build_push_container_dockerhub_arm:
     if: github.event_name == 'release'
     name: (DockerHub) Docker ARM
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+      packages: write
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
       runs_on: babylon-node-arm
