@@ -84,6 +84,7 @@ import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.sync.*;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.consensus.vertexstore.PersistentVertexStore;
+import com.radixdlt.consensus.vertexstore.VertexStoreConfig;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
@@ -167,7 +168,7 @@ public class EpochManagerTest {
 
         @Override
         public LedgerProofBundle commit(
-            LedgerExtension ledgerExtension, VertexStoreState vertexStoreState) {
+            LedgerExtension ledgerExtension, Option<byte[]> serializedVertexStoreState) {
           // No-op
           // `closestEpochProofOnOrBefore` isn't really correct here, but that's fine
           return new LedgerProofBundle(
@@ -190,8 +191,6 @@ public class EpochManagerTest {
         bind(new TypeLiteral<EventDispatcher<BFTRebuildUpdate>>() {})
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<BFTHighQCUpdate>>() {})
-            .toInstance(rmock(EventDispatcher.class));
-        bind(new TypeLiteral<EventDispatcher<BFTCommittedUpdate>>() {})
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<EpochLocalTimeoutOccurrence>>() {})
             .toInstance(rmock(EventDispatcher.class));
@@ -257,6 +256,7 @@ public class EpochManagerTest {
         bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0);
         bindConstant().annotatedWith(AdditionalRoundTimeIfProposalReceivedMs.class).to(10L);
         bindConstant().annotatedWith(TimeoutQuorumResolutionDelayMs.class).to(10L);
+        bind(VertexStoreConfig.class).toInstance(VertexStoreConfig.testingDefault());
         bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
 
         bind(new TypeLiteral<Consumer<EpochRoundUpdate>>() {}).toInstance(rmock(Consumer.class));

@@ -44,3 +44,5 @@ testing_forks.fork_config_name=$RADIXDLT_TESTING_FORK_CONFIG_NAME
 
 consensus.use_genesis_for_validator_address=$RADIXDLT_CONSENSUS_USE_GENESIS_FOR_VALIDATOR_ADDRESS
 consensus.validator_address=$RADIXDLT_CONSENSUS_VALIDATOR_ADDRESS
+
+bft.vertex_store.max_serialized_size_bytes=$RADIXDLT_BFT_VERTEX_STORE_MAX_SERIALIZED_SIZE_BYTES

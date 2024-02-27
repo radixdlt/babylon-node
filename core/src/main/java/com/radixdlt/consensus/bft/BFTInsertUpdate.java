@@ -64,71 +64,9 @@
 
 package com.radixdlt.consensus.bft;
 
-import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
-import com.radixdlt.consensus.vertexstore.VertexStoreState;
-import java.util.Objects;
+import com.radixdlt.utils.WrappedByteArray;
 
-/** An update emitted when the BFT has inserted a new vertex */
-public final class BFTInsertUpdate {
-  private final VertexStoreState vertexStoreState;
-  private final ExecutedVertex insertedVertex;
-  private final int siblingsCount;
-
-  private BFTInsertUpdate(
-      ExecutedVertex insertedVertex, int siblingsCount, VertexStoreState vertexStoreState) {
-    this.insertedVertex = Objects.requireNonNull(insertedVertex);
-    this.siblingsCount = siblingsCount;
-    this.vertexStoreState = Objects.requireNonNull(vertexStoreState);
-  }
-
-  public static BFTInsertUpdate insertedVertex(
-      ExecutedVertex insertedVertex, int siblingsCount, VertexStoreState vertexStoreState) {
-    return new BFTInsertUpdate(insertedVertex, siblingsCount, vertexStoreState);
-  }
-
-  public VertexStoreState getVertexStoreState() {
-    return vertexStoreState;
-  }
-
-  public int getSiblingsCount() {
-    return siblingsCount;
-  }
-
-  public int getVertexStoreSize() {
-    return vertexStoreState.getVertices().size();
-  }
-
-  public BFTHeader getHeader() {
-    return new BFTHeader(
-        insertedVertex.getRound(),
-        insertedVertex.getVertexHash(),
-        insertedVertex.getLedgerHeader());
-  }
-
-  public ExecutedVertex getInserted() {
-    return insertedVertex;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(vertexStoreState, insertedVertex, siblingsCount);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof BFTInsertUpdate)) {
-      return false;
-    }
-
-    BFTInsertUpdate other = (BFTInsertUpdate) o;
-    return Objects.equals(this.vertexStoreState, other.vertexStoreState)
-        && Objects.equals(this.insertedVertex, other.insertedVertex)
-        && this.siblingsCount == other.siblingsCount;
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s{inserted=%s}", getClass().getSimpleName(), insertedVertex);
-  }
-}
+/** An event emitted after a vertex has been inserted into the vertex store. */
+public record BFTInsertUpdate(
+    ExecutedVertex insertedVertex, WrappedByteArray serializedVertexStoreState) {}

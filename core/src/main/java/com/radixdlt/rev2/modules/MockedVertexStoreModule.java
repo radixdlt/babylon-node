@@ -66,7 +66,6 @@ package com.radixdlt.rev2.modules;
 
 import com.google.inject.AbstractModule;
 import com.radixdlt.consensus.vertexstore.PersistentVertexStore;
-import com.radixdlt.consensus.vertexstore.VertexStoreState;
 
 public final class MockedVertexStoreModule extends AbstractModule {
 
@@ -77,7 +76,7 @@ public final class MockedVertexStoreModule extends AbstractModule {
 
   private static class MockedPersistentVertexStore implements PersistentVertexStore {
     @Override
-    public void save(VertexStoreState vertexStoreState) {
+    public void save(byte[] serializedVertexStoreState) {
       // Nothing to do here
     }
   }

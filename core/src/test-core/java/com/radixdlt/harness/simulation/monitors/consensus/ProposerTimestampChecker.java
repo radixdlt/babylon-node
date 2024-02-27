@@ -64,7 +64,8 @@
 
 package com.radixdlt.harness.simulation.monitors.consensus;
 
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.harness.simulation.TestInvariant;
 import com.radixdlt.harness.simulation.monitors.NodeEvents;
@@ -80,14 +81,14 @@ public final class ProposerTimestampChecker implements TestInvariant {
 
   @Override
   public Observable<TestInvariantError> check(RunningNetwork network) {
-    return Observable.<BFTCommittedUpdate>create(
+    return Observable.<BFTHighQCUpdate>create(
             emitter ->
                 nodeEvents.addListener(
-                    (node, update) -> emitter.onNext(update), BFTCommittedUpdate.class))
+                    (node, update) -> emitter.onNext(update), BFTHighQCUpdate.class))
         .serialize()
         .flatMap(
             e -> {
-              for (ExecutedVertex v : e.committed()) {
+              for (ExecutedVertex v : e.committedVertices().or(ImmutableList.of())) {
                 final var proposerTimestamp = v.getLedgerHeader().proposerTimestamp();
                 final var prevTimestamp = v.vertex().parentLedgerHeader().proposerTimestamp();
                 if (proposerTimestamp < prevTimestamp) {

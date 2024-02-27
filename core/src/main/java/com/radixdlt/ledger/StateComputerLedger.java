@@ -86,7 +86,6 @@ import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.*;
-import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -162,7 +161,8 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
         List<RawNotarizedTransaction> proposedTransactions,
         RoundDetails roundDetails);
 
-    LedgerProofBundle commit(LedgerExtension ledgerExtension, VertexStoreState vertexStore);
+    LedgerProofBundle commit(
+        LedgerExtension ledgerExtension, Option<byte[]> serializedVertexStoreState);
   }
 
   private final StateComputer stateComputer;
@@ -294,53 +294,61 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
             this.timeSupplier.currentTime()));
   }
 
-  public EventProcessor<BFTCommittedUpdate> bftCommittedUpdateEventProcessor() {
-    return committedUpdate -> {
-      updateCommittedVerticesMetrics(committedUpdate);
+  public EventProcessor<BFTHighQCUpdate> bftHighQcUpdateEventProcessor() {
+    return highQcUpdate -> {
+      highQcUpdate
+          .committedVertices()
+          .ifPresent(
+              committedVertices -> {
+                updateCommittedVerticesMetrics(committedVertices);
 
-      final ImmutableList<RawLedgerTransaction> transactions =
-          committedUpdate.committed().stream()
-              .flatMap(ExecutedVertex::successfulTransactions)
-              .map(ExecutedTransaction::transaction)
-              .collect(ImmutableList.toImmutableList());
+                final ImmutableList<RawLedgerTransaction> transactions =
+                    committedVertices.stream()
+                        .flatMap(ExecutedVertex::successfulTransactions)
+                        .map(ExecutedTransaction::transaction)
+                        .collect(ImmutableList.toImmutableList());
 
-      final var maybeProcessedQcCommit =
-          committedUpdate
-              .vertexStoreState()
-              .getHighQC()
-              .highestCommittedQC()
-              .getProcessedCommit(hasher);
-
-      maybeProcessedQcCommit.ifPresentOrElse(
-          processedQcCommit -> {
-            switch (processedQcCommit) {
-              case ProcessedQcCommit.OfConensusQc ofConensusQc -> {
-                final var ledgerExtension =
-                    LedgerExtension.create(transactions, ofConensusQc.ledgerProof());
-                metrics
-                    .ledger()
-                    .commit()
-                    .measure(
-                        () -> this.commit(ledgerExtension, committedUpdate.vertexStoreState()));
-              }
-              case ProcessedQcCommit.OfInitialEpochQc ofInitialEpochQc -> {
-                // no-op, ignore
-                this.metrics.ledger().ignoredBftCommittedUpdates().inc();
-              }
-            }
-          },
-          () -> {
-            // no-op, ignore
-            this.metrics.ledger().ignoredBftCommittedUpdates().inc();
-          });
+                highQcUpdate
+                    .newHighQc()
+                    .highestCommittedQC()
+                    .getProcessedCommit(hasher)
+                    .ifPresentOrElse(
+                        processedQcCommit -> {
+                          switch (processedQcCommit) {
+                            case ProcessedQcCommit.OfConensusQc ofConensusQc -> {
+                              final var ledgerExtension =
+                                  LedgerExtension.create(transactions, ofConensusQc.ledgerProof());
+                              metrics
+                                  .ledger()
+                                  .commit()
+                                  .measure(
+                                      () ->
+                                          this.commit(
+                                              ledgerExtension,
+                                              Option.some(
+                                                  highQcUpdate
+                                                      .serializedVertexStoreState()
+                                                      .value())));
+                            }
+                            case ProcessedQcCommit.OfInitialEpochQc ofInitialEpochQc -> {
+                              // no-op, ignore
+                              this.metrics.ledger().ignoredBftCommittedUpdates().inc();
+                            }
+                          }
+                        },
+                        () -> {
+                          // no-op, ignore
+                          this.metrics.ledger().ignoredBftCommittedUpdates().inc();
+                        });
+              });
     };
   }
 
-  private void updateCommittedVerticesMetrics(BFTCommittedUpdate committedUpdate) {
+  private void updateCommittedVerticesMetrics(ImmutableList<ExecutedVertex> committedVertices) {
     final var numCommittedFallbackVertices =
-        committedUpdate.committed().stream().filter(v -> v.vertex().isFallback()).count();
+        committedVertices.stream().filter(v -> v.vertex().isFallback()).count();
     final var numCommittedNonFallbackVertices =
-        committedUpdate.committed().size() - numCommittedFallbackVertices;
+        committedVertices.size() - numCommittedFallbackVertices;
 
     metrics
         .bft()
@@ -356,12 +364,12 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
   }
 
   public EventProcessor<LedgerExtension> syncEventProcessor() {
-    return p -> metrics.ledger().commit().measure(() -> this.commit(p, null));
+    return p -> metrics.ledger().commit().measure(() -> this.commit(p, Option.empty()));
   }
 
   /**
    * Appends a useful suffix of the given {@link LedgerExtension} to the persistent ledger (while
-   * also writing the new {@link VertexStoreState}, if non-{@literal null}).
+   * also writing the new serialized {@link VertexStoreState}, if present).
    *
    * <p>A "useful suffix" is a sub-list of transactions that are not yet persisted in the local
    * ledger. The implementation will resolve this sub-list based on the end state version from the
@@ -388,7 +396,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
    *       InvalidCommitRequestException} is propagated from the Rust state computer.
    * </ul>
    */
-  private void commit(LedgerExtension ledgerExtension, @Nullable VertexStoreState vertexStore) {
+  private void commit(LedgerExtension ledgerExtension, Option<byte[]> serializedVertexStoreState) {
     final var proofToCommit = ledgerExtension.proof();
 
     final int extensionTransactionCount; // for metrics purposes only
@@ -406,7 +414,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       final var extensionToCommit = ledgerExtension.getExtensionFrom(latestStateVersion);
 
       // persist
-      this.latestProof = this.stateComputer.commit(extensionToCommit, vertexStore);
+      this.latestProof = this.stateComputer.commit(extensionToCommit, serializedVertexStoreState);
 
       extensionTransactionCount = extensionToCommit.transactions().size();
     }
@@ -415,7 +423,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
     // synchronization theoretically needed here).
 
     this.metrics.ledger().stateVersion().set(this.latestProof.resultantStateVersion());
-    if (vertexStore == null) {
+    if (serializedVertexStoreState.isPresent()) {
       this.metrics.ledger().syncTransactionsProcessed().inc(extensionTransactionCount);
     } else {
       this.metrics.ledger().bftTransactionsProcessed().inc(extensionTransactionCount);

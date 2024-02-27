@@ -88,7 +88,6 @@ import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.protocol.RustProtocolUpdate;
 import com.radixdlt.recovery.VertexStoreRecovery;
 import com.radixdlt.rev2.*;
-import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.state.RustStateReader;
 import com.radixdlt.statecomputer.RustStateComputer;
@@ -275,12 +274,10 @@ public final class REv2StateManagerModule extends AbstractModule {
           }
 
           @Provides
-          PersistentVertexStore vertexStore(
-              VertexStoreRecovery recovery, Metrics metrics, Serialization serialization) {
-            return s -> {
+          PersistentVertexStore vertexStore(VertexStoreRecovery recovery, Metrics metrics) {
+            return serializedVertexStoreState -> {
               metrics.misc().vertexStoreSaved().inc();
-              var vertexStoreBytes = serialization.toDson(s.toSerialized(), DsonOutput.Output.ALL);
-              recovery.saveVertexStore(vertexStoreBytes);
+              recovery.saveVertexStore(serializedVertexStoreState);
             };
           }
 
@@ -288,14 +285,30 @@ public final class REv2StateManagerModule extends AbstractModule {
           @ProcessOnDispatch
           EventProcessor<BFTHighQCUpdate> onQCUpdatePersistVertexStore(
               PersistentVertexStore persistentVertexStore) {
-            return update -> persistentVertexStore.save(update.getVertexStoreState());
+            return update -> {
+              // We're only persisting the vertex store state here if the update
+              // doesn't carry a commit. Otherwise, the vertex store state is
+              // already persisted alongside the commit, so no need to repeat it here.
+              if (update.committedVertices().isEmpty()) {
+                persistentVertexStore.save(update.serializedVertexStoreState().value());
+              }
+            };
           }
 
           @ProvidesIntoSet
           @ProcessOnDispatch
           EventProcessor<BFTInsertUpdate> onInsertUpdatePersistVertexStore(
               PersistentVertexStore persistentVertexStore) {
-            return update -> persistentVertexStore.save(update.getVertexStoreState());
+            return update ->
+                persistentVertexStore.save(update.serializedVertexStoreState().value());
+          }
+
+          @ProvidesIntoSet
+          @ProcessOnDispatch
+          EventProcessor<BFTRebuildUpdate> onRebuildUpdatePersistVertexStore(
+              PersistentVertexStore persistentVertexStore) {
+            return update ->
+                persistentVertexStore.save(update.serializedVertexStoreState().value());
           }
         });
 

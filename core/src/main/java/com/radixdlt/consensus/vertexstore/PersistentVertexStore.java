@@ -69,5 +69,5 @@ package com.radixdlt.consensus.vertexstore;
  * RadixEngine ((RPNV1-718)
  */
 public interface PersistentVertexStore {
-  void save(VertexStoreState vertexStoreState);
+  void save(byte[] serializedVertexStoreState);
 }

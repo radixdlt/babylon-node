@@ -125,7 +125,7 @@ public final class MockedStateComputer implements StateComputer {
 
   @Override
   public LedgerProofBundle commit(
-      LedgerExtension ledgerExtension, VertexStoreState vertexStoreState) {
+      LedgerExtension ledgerExtension, Option<byte[]> serializedVertexStoreState) {
     latestProof =
         new LedgerProofBundle(
             ledgerExtension.proof(),

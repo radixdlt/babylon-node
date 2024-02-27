@@ -302,6 +302,17 @@ public final class DeterministicTest implements AutoCloseable {
     this.startNode(nodeIndex);
   }
 
+  public void restartNodeWithOverrideModule(int nodeIndex, Module overrideModule) {
+    this.shutdownNode(nodeIndex);
+    // Keep the current module
+    final var origOverrideModule = this.nodes.getOverrideModule();
+    // Use the provided module for starting this node
+    this.nodes.setOverrideModule(overrideModule);
+    this.startNode(nodeIndex);
+    // Restore the original module
+    this.nodes.setOverrideModule(origOverrideModule);
+  }
+
   public static class NeverReachedStateException extends IllegalStateException {
     private NeverReachedStateException(int max) {
       super("Never reached state after " + max + " messages");

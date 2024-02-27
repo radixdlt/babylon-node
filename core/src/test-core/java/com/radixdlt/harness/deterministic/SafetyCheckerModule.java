@@ -69,7 +69,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
+import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.harness.invariants.SafetyChecker;
 import com.radixdlt.harness.simulation.TestInvariant;
 import java.util.Optional;
@@ -84,7 +84,7 @@ public class SafetyCheckerModule extends AbstractModule {
   @ProvidesIntoSet
   public NodeEvents.NodeEventProcessor<?> safetyCheckProcessor(SafetyChecker safetyChecker) {
     return new NodeEvents.NodeEventProcessor<>(
-        BFTCommittedUpdate.class,
+        BFTHighQCUpdate.class,
         (node, update) -> {
           Optional<TestInvariant.TestInvariantError> maybeError =
               safetyChecker.process(node, update);

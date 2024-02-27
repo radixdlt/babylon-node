@@ -75,6 +75,7 @@ import com.radixdlt.consensus.ProposalLimitsConfig;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
+import com.radixdlt.consensus.vertexstore.VertexStoreConfig;
 import com.radixdlt.environment.*;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.genesis.GenesisProvider;
@@ -155,6 +156,19 @@ public final class RadixNodeModule extends AbstractModule {
     bindConstant().annotatedWith(PacemakerMaxExponent.class).to(8);
     bindConstant().annotatedWith(AdditionalRoundTimeIfProposalReceivedMs.class).to(30_000L);
     bindConstant().annotatedWith(TimeoutQuorumResolutionDelayMs.class).to(0L);
+
+    final var vertexStoreConfig =
+        new VertexStoreConfig(
+            properties.get(
+                "bft.vertex_store.max_serialized_size_bytes",
+                VertexStoreConfig.DEFAULT_MAX_SERIALIZED_SIZE_BYTES));
+    bind(VertexStoreConfig.class).toInstance(vertexStoreConfig);
+
+    Preconditions.checkArgument(
+        vertexStoreConfig.maxSerializedSizeBytes()
+            >= VertexStoreConfig.MIN_MAX_SERIALIZED_SIZE_BYTES,
+        "Invalid configuration: bft.vertex_store.max_serialized_size_byte must be at least "
+            + VertexStoreConfig.MIN_MAX_SERIALIZED_SIZE_BYTES);
 
     // System (e.g. time, random)
     install(new SystemModule());

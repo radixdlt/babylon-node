@@ -64,48 +64,17 @@
 
 package com.radixdlt.consensus.bft;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.vertexstore.VertexStoreState;
-import java.util.Objects;
+import com.radixdlt.consensus.vertexstore.ExecutedVertex;
+import com.radixdlt.lang.Option;
+import com.radixdlt.utils.WrappedByteArray;
 
-/** An event emitted when the high qc has been updated */
-public final class BFTHighQCUpdate {
-  private final VertexStoreState vertexStoreState;
-
-  private BFTHighQCUpdate(VertexStoreState vertexStoreState) {
-    this.vertexStoreState = vertexStoreState;
-  }
-
-  public static BFTHighQCUpdate create(VertexStoreState vertexStoreState) {
-    return new BFTHighQCUpdate(vertexStoreState);
-  }
-
-  public HighQC getHighQC() {
-    return vertexStoreState.getHighQC();
-  }
-
-  public VertexStoreState getVertexStoreState() {
-    return vertexStoreState;
-  }
-
-  @Override
-  public String toString() {
-    return String.format(
-        "%s{highQC=%s}", this.getClass().getSimpleName(), vertexStoreState.getHighQC());
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(vertexStoreState);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof BFTHighQCUpdate)) {
-      return false;
-    }
-
-    BFTHighQCUpdate other = (BFTHighQCUpdate) o;
-    return Objects.equals(other.vertexStoreState, this.vertexStoreState);
-  }
-}
+/**
+ * An event emitted when vertex store updates its highQC, which possibly results in some vertices
+ * being committed.
+ */
+public record BFTHighQCUpdate(
+    HighQC newHighQc,
+    Option<ImmutableList<ExecutedVertex>> committedVertices,
+    WrappedByteArray serializedVertexStoreState) {}

@@ -66,7 +66,6 @@ package com.radixdlt.harness.simulation.monitors.consensus;
 
 import com.google.common.collect.Ordering;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.EpochRound;
@@ -99,14 +98,14 @@ public class LivenessInvariant implements TestInvariant {
             emitter -> {
               nodeEvents.addListener(
                   (node, highQCUpdate) -> {
-                    emitter.onNext(highQCUpdate.getHighQC().highestQC());
+                    emitter.onNext(highQCUpdate.newHighQc().highestQC());
                   },
                   BFTHighQCUpdate.class);
               nodeEvents.addListener(
-                  (node, committed) -> {
-                    emitter.onNext(committed.vertexStoreState().getHighQC().highestQC());
+                  (node, highQcUpdate) -> {
+                    emitter.onNext(highQcUpdate.newHighQc().highestQC());
                   },
-                  BFTCommittedUpdate.class);
+                  BFTHighQCUpdate.class);
             })
         .serialize()
         .map(QuorumCertificate::getProposedHeader)

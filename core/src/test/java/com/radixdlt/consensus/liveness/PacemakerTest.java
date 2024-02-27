@@ -208,14 +208,12 @@ public class PacemakerTest {
     when(bftHeader.getRound()).thenReturn(round);
     HighQC highQC = mock(HighQC.class);
     BFTInsertUpdate bftInsertUpdate = mock(BFTInsertUpdate.class);
-    when(bftInsertUpdate.getHeader()).thenReturn(bftHeader);
     ExecutedVertex executedVertex = mock(ExecutedVertex.class);
     when(executedVertex.getRound()).thenReturn(round);
     when(executedVertex.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
     VertexStoreState vertexStoreState = mock(VertexStoreState.class);
     when(vertexStoreState.getHighQC()).thenReturn(highQC);
-    when(bftInsertUpdate.getInserted()).thenReturn(executedVertex);
-    when(bftInsertUpdate.getVertexStoreState()).thenReturn(vertexStoreState);
+    when(bftInsertUpdate.insertedVertex()).thenReturn(executedVertex);
     final var vertexHash = hasher.hashDsonEncoded(Vertex.createFallback(highestQc, round, leader));
     when(executedVertex.getVertexHash()).thenReturn(vertexHash);
 

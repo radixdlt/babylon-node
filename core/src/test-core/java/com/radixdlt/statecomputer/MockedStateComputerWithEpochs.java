@@ -70,9 +70,9 @@ import com.radixdlt.consensus.NextEpoch;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
-import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.*;
 import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
@@ -146,7 +146,8 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
   }
 
   @Override
-  public LedgerProofBundle commit(LedgerExtension ledgerExtension, VertexStoreState vertexStore) {
-    return this.stateComputer.commit(ledgerExtension, vertexStore);
+  public LedgerProofBundle commit(
+      LedgerExtension ledgerExtension, Option<byte[]> serializedVertexStoreState) {
+    return this.stateComputer.commit(ledgerExtension, serializedVertexStoreState);
   }
 }

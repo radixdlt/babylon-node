@@ -68,6 +68,7 @@ import com.google.inject.Injector;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.safety.SafetyRules;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.statecomputer.commit.LedgerProof;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.testutil.TestStateReader;
@@ -165,6 +166,14 @@ public class NodePredicate {
 
   public static Predicate<Injector> bftAtOrOverRound(Round round) {
     return i -> i.getInstance(PacemakerState.class).highQC().getHighestRound().gte(round);
+  }
+
+  public static Predicate<Injector> atOrOverRound(Round round) {
+    return metricsPredicate(metrics -> metrics.bft().pacemaker().round().get() >= round.number());
+  }
+
+  public static Predicate<Injector> metricsPredicate(Predicate<Metrics> predicate) {
+    return i -> predicate.test(i.getInstance(Metrics.class));
   }
 
   public static Predicate<Injector> votedAtRound(Round round) {
