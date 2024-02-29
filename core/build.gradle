@@ -379,6 +379,8 @@ task deb4docker(dependsOn: buildDeb) {
     }
 }
 
-applicationDistribution.from(new File(project(':keygen').buildDir, "scripts")) {
+applicationDistribution.from(project(":keygen").getTasksByName("startScripts", false).outputs) {
     into "bin"
 }
+
+[distZip, distTar]*.shouldRunAfter ":keygen:startScripts"
