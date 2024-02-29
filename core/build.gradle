@@ -379,8 +379,14 @@ task deb4docker(dependsOn: buildDeb) {
     }
 }
 
+// This adds the `startScripts` task artifacts from the keygen subproject (i.e. app
+// run scripts: `keygen` and `keygen.bat`) to the "bin" folder in core's distribution.
+// Note that we don't need to manually add keygen jars (to "libs") - this is taken care of
+// by regular dependency management.
 applicationDistribution.from(project(":keygen").getTasksByName("startScripts", false).outputs) {
     into "bin"
 }
 
+// This ensures that keygen scripts are built (and can be copied over to "bin", see above)
+// before we assemble core's packages.
 [distZip, distTar]*.mustRunAfter ":keygen:startScripts"
