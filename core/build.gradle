@@ -383,4 +383,4 @@ applicationDistribution.from(project(":keygen").getTasksByName("startScripts", f
     into "bin"
 }
 
-[distZip, distTar]*.shouldRunAfter ":keygen:startScripts"
+[distZip, distTar]*.mustRunAfter ":keygen:startScripts"
