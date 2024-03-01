@@ -149,7 +149,7 @@ impl<'t, 'v, T: ReadableTreeStore, V: SubstateUpsertValueStore> SubstateDatabase
 
         let partition_key = partition_key.clone(); // avoid lifetime dependency within iterator
         Box::new(substate_tier_tree_browser
-            .iter_leafs_from(&NibblePath::new_even(sort_key_bytes))
+            .iter_leaves_from(&NibblePath::new_even(sort_key_bytes))
             .map(move |ResolvedLeaf { nibble_path, last_hash_change_version }| {
                 let sort_key = DbSortKey(nibble_path.bytes().to_vec());
                 let value = self.upsert_value_store
@@ -186,18 +186,18 @@ impl<'t, T: Deref<Target = impl ReadableTreeStore> + Clone + 't> TreeStoreBrowse
     /// Returns a specific leaf, if found by starting at the scoped version's root and following the
     /// given [`NibblePath`].
     pub fn get_leaf(&self, nibble_path: &NibblePath) -> Option<ResolvedLeaf> {
-        self.iter_leafs_from(nibble_path)
+        self.iter_leaves_from(nibble_path)
             .next()
             .filter(|leaf| &leaf.nibble_path == nibble_path)
     }
 
-    /// Returns an iterator of all leafs reachable from the scoped version's root, in
+    /// Returns an iterator of all leaves reachable from the scoped version's root, in
     /// lexicographical order, starting from the given one.
-    pub fn iter_leafs_from(
+    pub fn iter_leaves_from(
         &self,
         nibble_path: &NibblePath,
     ) -> Box<dyn Iterator<Item = ResolvedLeaf> + 't> {
-        recurse_until_leafs(
+        recurse_until_leaves(
             self.tree_store.clone(),
             NodeKey::new_empty_path(self.version),
             nibble_path.nibbles().collect(),
@@ -218,7 +218,7 @@ impl<'t, T: Deref<Target = impl ReadableTreeStore> + Clone + 't> TreeStoreBrowse
 /// - but only leaf nodes are returned.
 ///
 /// The implementation is a lazy recursive composite of child iterators.
-fn recurse_until_leafs<'t, T: Deref<Target = impl ReadableTreeStore> + Clone + 't>(
+fn recurse_until_leaves<'t, T: Deref<Target = impl ReadableTreeStore> + Clone + 't>(
     tree_store: T,
     at_key: NodeKey,
     from_nibbles: VecDeque<Nibble>,
@@ -244,7 +244,7 @@ fn recurse_until_leafs<'t, T: Deref<Target = impl ReadableTreeStore> + Clone + '
                         } else {
                             VecDeque::new()
                         };
-                        recurse_until_leafs(tree_store.clone(), child_key, child_from_nibbles)
+                        recurse_until_leaves(tree_store.clone(), child_key, child_from_nibbles)
                     }),
             )
         }

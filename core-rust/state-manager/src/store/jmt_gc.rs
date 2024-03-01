@@ -178,8 +178,8 @@ impl StateHashTreeGc {
 
 /// Iterates the node keys from the state hash tree's subtree starting at the given root key, in a
 /// depth-first-search, post-order way (i.e. parent after children).
-/// Note: the implementation will only traverse internal nodes, reading the leafs' state from their
-/// parent's child-list. This means that it can return node keys of leafs that were already deleted
+/// Note: the implementation will only traverse internal nodes, reading the leaves' state from their
+/// parent's child-list. This means that it can return node keys of leaves that were already deleted
 /// from the database (in a previous, incomplete GC run).
 fn iterate_dfs_post_order<'s, S: ReadableTreeStore>(
     tree_store: &'s S,
