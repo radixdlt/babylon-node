@@ -93,6 +93,8 @@ jobs:
     if: github.event_name == 'release'
     needs: 
       - build-core-rust
+    permissions:
+      contents: write
     runs-on: 'ubuntu-latest'
     continue-on-error: true
     strategy:
@@ -147,6 +149,8 @@ jobs:
   publish-distribution-zip:
     if: github.event_name == 'release'
     name: Build and Upload Application Binary
+    permissions:
+      contents: write
     runs-on: ubuntu-22.04
     environment: publish-artifacts
     steps:
