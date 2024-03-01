@@ -50,7 +50,9 @@ impl UpdateBatchGenerator for AnemoneBatchGenerator {
                     .into(),
                     FlashTransactionV1 {
                         name: "anemone-vm-boot".to_string(),
-                        state_updates: generate_vm_boot_scrypto_minor_version_state_updates(),
+                        state_updates: generate_vm_boot_scrypto_version_state_updates(
+                            ScryptoVmVersion::V1_1,
+                        ),
                     }
                     .into(),
                     FlashTransactionV1 {

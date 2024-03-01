@@ -63,6 +63,7 @@
  */
 
 mod codecs;
+mod historical_state;
 pub mod jmt_gc;
 pub mod proofs_gc;
 mod rocks_db;
