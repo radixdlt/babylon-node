@@ -229,17 +229,15 @@ fn recurse_until_leaves<'t, T: Deref<Target = impl ReadableTreeStore> + Clone + 
     match node {
         TreeNode::Internal(internal) => {
             let mut child_from_nibbles = from_nibbles;
-            let from_nibble = child_from_nibbles
-                .pop_front()
-                .unwrap_or_else(|| Nibble::from(0));
+            let from_nibble = child_from_nibbles.pop_front();
             Box::new(
                 internal
                     .children
                     .into_iter()
-                    .filter(move |child| child.nibble >= from_nibble)
+                    .filter(move |child| Some(child.nibble) >= from_nibble)
                     .flat_map(move |child| {
                         let child_key = at_key.gen_child_node_key(child.version, child.nibble);
-                        let child_from_nibbles = if child.nibble == from_nibble {
+                        let child_from_nibbles = if Some(child.nibble) == from_nibble {
                             mem::take(&mut child_from_nibbles)
                         } else {
                             VecDeque::new()
