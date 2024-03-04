@@ -67,7 +67,7 @@ package com.radixdlt.rev2;
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 
 import com.google.inject.Injector;
-import com.radixdlt.environment.DatabaseFlags;
+import com.radixdlt.environment.DatabaseConfig;
 import com.radixdlt.environment.LedgerProofsGcConfig;
 import com.radixdlt.environment.StateHashTreeGcConfig;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
@@ -118,7 +118,7 @@ public final class StateHashTreeGcTest {
                             1,
                             Decimal.ONE,
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(100)),
-                        new DatabaseFlags(false, false),
+                        new DatabaseConfig(false, false),
                         REV2ProposerConfig.noUserTransactions(),
                         false,
                         new StateHashTreeGcConfig(

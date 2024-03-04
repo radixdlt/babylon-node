@@ -122,7 +122,7 @@ public class REv2StateComputerTest {
         new CryptoModule(),
         REv2StateManagerModule.createForTesting(
             ProposalLimitsConfig.testDefaults(),
-            new DatabaseFlags(false, false),
+            new DatabaseConfig(false, false),
             Option.none(),
             false,
             StateHashTreeGcConfig.forTesting(),

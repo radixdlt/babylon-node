@@ -69,7 +69,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.DatabaseFlags;
+import com.radixdlt.environment.DatabaseConfig;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.rev2.Manifest;
 import com.radixdlt.rev2.ScryptoConstants;
@@ -79,7 +79,7 @@ import org.junit.Test;
 public final class LtsAccountResourceBalanceTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_lts_account_xrd_balance() throws Exception {
-    try (var test = buildRunningServerTest(new DatabaseFlags(true, true))) {
+    try (var test = buildRunningServerTest(new DatabaseConfig(true, true))) {
       test.suppressUnusedWarning();
 
       var accountKeyPair = ECKeyPair.generateNew();

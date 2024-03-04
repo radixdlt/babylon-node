@@ -79,7 +79,7 @@ import com.radixdlt.api.core.generated.client.ApiException;
 import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.CoreApiServerFlags;
-import com.radixdlt.environment.DatabaseFlags;
+import com.radixdlt.environment.DatabaseConfig;
 import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
@@ -123,7 +123,7 @@ public abstract class DeterministicCoreApiTestBase {
   protected DeterministicTest buildRunningServerTest() {
     return buildRunningServerTest(
         1000000,
-        new DatabaseFlags(true, false),
+        new DatabaseConfig(true, false),
         GenesisData.NO_SCENARIOS,
         ProtocolConfig.testingDefault());
   }
@@ -131,30 +131,30 @@ public abstract class DeterministicCoreApiTestBase {
   protected DeterministicTest buildRunningServerTestWithProtocolConfig(
       int roundsPerEpoch, ProtocolConfig protocolConfig) {
     return buildRunningServerTest(
-        roundsPerEpoch, new DatabaseFlags(true, false), GenesisData.NO_SCENARIOS, protocolConfig);
+        roundsPerEpoch, new DatabaseConfig(true, false), GenesisData.NO_SCENARIOS, protocolConfig);
   }
 
   protected DeterministicTest buildRunningServerTestWithScenarios(ImmutableList<String> scenarios) {
     return buildRunningServerTest(
-        1000000, new DatabaseFlags(true, false), scenarios, ProtocolConfig.testingDefault());
+        1000000, new DatabaseConfig(true, false), scenarios, ProtocolConfig.testingDefault());
   }
 
-  protected DeterministicTest buildRunningServerTest(DatabaseFlags databaseFlags) {
+  protected DeterministicTest buildRunningServerTest(DatabaseConfig databaseConfig) {
     return buildRunningServerTest(
-        1000000, databaseFlags, GenesisData.NO_SCENARIOS, ProtocolConfig.testingDefault());
+        1000000, databaseConfig, GenesisData.NO_SCENARIOS, ProtocolConfig.testingDefault());
   }
 
   protected DeterministicTest buildRunningServerTest(int roundsPerEpoch) {
     return buildRunningServerTest(
         roundsPerEpoch,
-        new DatabaseFlags(true, false),
+        new DatabaseConfig(true, false),
         GenesisData.NO_SCENARIOS,
         ProtocolConfig.testingDefault());
   }
 
   protected DeterministicTest buildRunningServerTest(
       int roundsPerEpoch,
-      DatabaseFlags databaseConfig,
+      DatabaseConfig databaseConfig,
       ImmutableList<String> scenariosToRun,
       ProtocolConfig protocolConfig) {
     var test =

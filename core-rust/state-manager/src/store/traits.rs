@@ -82,17 +82,16 @@ pub enum DatabaseConfigValidationError {
     LocalTransactionExecutionIndexChanged,
 }
 
-/// Database flags required for initialization built from
-/// config file and environment variables.
+/// Database flags required for initialization built from config file and environment variables.
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
-pub struct DatabaseFlags {
+pub struct DatabaseConfig {
     pub enable_local_transaction_execution_index: bool,
     pub enable_account_change_index: bool,
 }
 
-impl Default for DatabaseFlags {
+impl Default for DatabaseConfig {
     fn default() -> Self {
-        DatabaseFlags {
+        DatabaseConfig {
             enable_local_transaction_execution_index: true,
             enable_account_change_index: true,
         }
@@ -104,15 +103,15 @@ impl Default for DatabaseFlags {
 /// just being initialized (when all of the fields are None) but also
 /// when new configurations are added - this is a cheap work around to
 /// limit future needed ledger wipes until we have a better solution.
-pub struct DatabaseFlagsState {
+pub struct DatabaseConfigState {
     pub local_transaction_execution_index_enabled: Option<bool>,
     pub account_change_index_enabled: Option<bool>,
 }
 
-impl DatabaseFlags {
+impl DatabaseConfig {
     pub fn validate(
         &self,
-        current_database_config: &DatabaseFlagsState,
+        current_database_config: &DatabaseConfigState,
     ) -> Result<(), DatabaseConfigValidationError> {
         if !self.enable_local_transaction_execution_index && self.enable_account_change_index {
             return Err(DatabaseConfigValidationError::AccountChangeIndexRequiresLocalTransactionExecutionIndex);
