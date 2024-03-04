@@ -74,6 +74,7 @@ import com.radixdlt.config.SelfValidatorAddressConfig;
 import com.radixdlt.consensus.ProposalLimitsConfig;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
+import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculatorConfig;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.vertexstore.VertexStoreConfig;
 import com.radixdlt.environment.*;
@@ -150,11 +151,16 @@ public final class RadixNodeModule extends AbstractModule {
         .annotatedWith(BFTSyncPatienceMillis.class)
         .to(properties.get("bft.sync.patience", 200));
 
-    // Max timeout = (1.2^8)×3 ~= 13s
-    bindConstant().annotatedWith(PacemakerBaseTimeoutMs.class).to(3000L);
-    bindConstant().annotatedWith(PacemakerBackoffRate.class).to(1.2);
-    bindConstant().annotatedWith(PacemakerMaxExponent.class).to(8);
-    bindConstant().annotatedWith(AdditionalRoundTimeIfProposalReceivedMs.class).to(30_000L);
+    /* Default timeouts config:
+    Max exponential timeout (based on consecutive timeout occurrences) = (1.2^8)×3 ~= 13s
+    Additionally, when vertex store reaches 2/3 of its max capacity (that is: 2/3*150 = 100 MB by default)
+    we start multiplying the timeout by a linearly increasing value, up to 10x.
+    So a maximum theoretical timeout is 130s. */
+    bind(PacemakerTimeoutCalculatorConfig.class)
+        .toInstance(new PacemakerTimeoutCalculatorConfig(3000L, 1.2, 8, 30_000L, 0.66, 10));
+
+    // Delayed resolution is disabled for now.
+    // TODO: consider reviving this feature or clean it up
     bindConstant().annotatedWith(TimeoutQuorumResolutionDelayMs.class).to(0L);
 
     final var vertexStoreConfig =

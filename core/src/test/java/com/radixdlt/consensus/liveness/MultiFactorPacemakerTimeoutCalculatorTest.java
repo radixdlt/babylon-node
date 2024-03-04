@@ -62,19 +62,81 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.liveness;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.Assert.assertEquals;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import javax.inject.Qualifier;
+import java.util.Map;
+import org.junit.Test;
 
-/** Pacemaker's max exponent */
-@Qualifier
-@Target({FIELD, PARAMETER, METHOD})
-@Retention(RUNTIME)
-public @interface PacemakerMaxExponent {}
+public class MultiFactorPacemakerTimeoutCalculatorTest {
+
+  @Test
+  public void when_creating_timeout_calculator_with_invalid_timeout__then_exception_is_thrown() {
+    checkConstructionParams(0, 1.2, 1, "timeoutMs must be > 0");
+    checkConstructionParams(-1, 1.2, 1, "timeoutMs must be > 0");
+    checkConstructionParams(1, 1.0, 1, "rate must be > 1.0");
+    checkConstructionParams(1, 1.2, -1, "maxExponent must be >= 0");
+    checkConstructionParams(1, 100.0, 100, "Maximum timeout value");
+  }
+
+  @Test
+  public void timeout_should_grow_exponentially() {
+    final MultiFactorPacemakerTimeoutCalculator calculator =
+        new MultiFactorPacemakerTimeoutCalculator(
+            new PacemakerTimeoutCalculatorConfig(1000L, 2.0, 6, 0L, 0, 1));
+
+    final Map<Long, Long> expectedTimeouts =
+        Map.of(
+            0L, 1000L,
+            1L, 2000L,
+            2L, 4000L,
+            3L, 8000L,
+            4L, 16000L,
+            5L, 32000L);
+
+    expectedTimeouts.forEach(
+        (timeoutOccurrences, expectedResult) ->
+            assertEquals(
+                expectedResult.longValue(), calculator.calculateTimeoutMs(timeoutOccurrences, 0)));
+  }
+
+  @Test
+  public void timeout_should_grow_linearly_when_vertex_store_size_is_above_threshold() {
+    final var baseTimeout = 1000L;
+    // No exponent, threshold = 0.6, max multiplier = 10
+    final MultiFactorPacemakerTimeoutCalculator calculator =
+        new MultiFactorPacemakerTimeoutCalculator(
+            new PacemakerTimeoutCalculatorConfig(baseTimeout, 2.0, 0, 0L, 0.6, 10));
+
+    // spotless:off
+    final Map<Double, Long> testCases =
+        Map.of(
+          (double) -1, baseTimeout,
+          0.5, baseTimeout,
+          0.6, baseTimeout,
+          0.61, 1225L,
+          0.7, 3250L,
+          0.8, 5500L,
+          0.999, 9978L,
+          (double) 1, baseTimeout * 10,
+          (double) 2, baseTimeout * 10,
+          (double) 5, baseTimeout * 10);
+    // spotless:on
+
+    testCases.forEach(
+        (vertexStoreUtilizationRatio, expectedResult) ->
+            assertEquals(
+                expectedResult.longValue(),
+                calculator.calculateTimeoutMs(0, vertexStoreUtilizationRatio)));
+  }
+
+  private void checkConstructionParams(
+      long timeout, double rate, int maxExponent, String exceptionMessage) {
+    assertThatThrownBy(
+            () -> new PacemakerTimeoutCalculatorConfig(timeout, rate, maxExponent, 0L, 0, 1))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageStartingWith(exceptionMessage);
+  }
+}

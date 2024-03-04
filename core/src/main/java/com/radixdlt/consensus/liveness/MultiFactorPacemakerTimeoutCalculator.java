@@ -64,48 +64,62 @@
 
 package com.radixdlt.consensus.liveness;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.Assert.assertEquals;
+import com.google.inject.Inject;
 
-import java.util.Map;
-import org.junit.Test;
+/**
+ * Main timeout calculator implementation: uses the number of consecutive timeout occurrences to
+ * calculate an exponential timeout and then on top of that applies a multiplier that's based on
+ * vertex store utilization.
+ */
+public final class MultiFactorPacemakerTimeoutCalculator implements PacemakerTimeoutCalculator {
+  private final PacemakerTimeoutCalculatorConfig config;
 
-public class ExponentialPacemakerTimeoutCalculatorTest {
-
-  @Test
-  public void when_creating_timeout_calculator_with_invalid_timeout__then_exception_is_thrown() {
-    checkConstructionParams(0, 1.2, 1, "timeoutMilliseconds must be > 0");
-    checkConstructionParams(-1, 1.2, 1, "timeoutMilliseconds must be > 0");
-    checkConstructionParams(1, 1.0, 1, "rate must be > 1.0");
-    checkConstructionParams(1, 1.2, -1, "maxExponent must be >= 0");
-    checkConstructionParams(1, 100.0, 100, "Maximum timeout value");
+  @Inject
+  public MultiFactorPacemakerTimeoutCalculator(PacemakerTimeoutCalculatorConfig config) {
+    this.config = config;
   }
 
-  @Test
-  public void timeout_should_grow_exponentially() {
-    final ExponentialPacemakerTimeoutCalculator calculator =
-        new ExponentialPacemakerTimeoutCalculator(1000L, 2.0, 6, 0L);
+  @Override
+  public long calculateTimeoutMs(long timeoutOccurrences, double vertexStoreUtilizationRatio) {
+    final var exponential =
+        Math.pow(config.rate(), Math.min(config.maxExponent(), timeoutOccurrences));
 
-    final Map<Long, Long> expectedTimeouts =
-        Map.of(
-            0L, 1000L,
-            1L, 2000L,
-            2L, 4000L,
-            3L, 8000L,
-            4L, 16000L,
-            5L, 32000L);
+    final var exponentialTimeout = config.baseTimeoutMs() * exponential;
 
-    expectedTimeouts.forEach(
-        (uncommittedRounds, expectedResult) ->
-            assertEquals(
-                expectedResult.longValue(), calculator.calculateTimeoutMs(uncommittedRounds)));
+    // It should already be in the [0, 1] range, but we're nonetheless sanitizing the input
+    final var vertexStoreUtilizationRatioClamped =
+        Math.max(0, Math.min(1, vertexStoreUtilizationRatio));
+
+    // We're only applying the multiplier if vertexStoreUtilizationRatio is
+    // on or above vertexStoreMultiplierThreshold: we're translating from
+    // range [vertexStoreMultiplierThreshold, 1] to [1, maxVertexStoreMultiplier].
+    // The multiplier starts at 1 right at the threshold
+    // and linearly grows to reach maxVertexStoreMultiplier
+    // when vertexStoreUtilizationRatio = 1.
+    final var multiplier =
+        Math.max(
+            1, // Multiplier is 1 (i.e. no-op) if we're below the threshold
+            lerp(
+                config.vertexStoreMultiplierThreshold(),
+                1,
+                1,
+                config.maxVertexStoreMultiplier(),
+                vertexStoreUtilizationRatioClamped));
+
+    return Math.round(exponentialTimeout * multiplier);
   }
 
-  private void checkConstructionParams(
-      long timeout, double rate, int maxExponent, String exceptionMessage) {
-    assertThatThrownBy(
-            () -> new ExponentialPacemakerTimeoutCalculator(timeout, rate, maxExponent, 0L))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageStartingWith(exceptionMessage);
+  // Computes a linear interpolation (or extrapolation)
+  // between [p, q] given the parameter z expressed in [x, y].
+  // E.g. if [x, y] = [10, 20], z = 15 and [p, q] = [0, 1], returns 0.5.
+  // If z is outside [x, y] then it's extrapolated (linearly) and can produce
+  // a value outside [p, q]. This should be handled by the caller.
+  private static double lerp(double x, double y, double p, double q, double z) {
+    return p + (q - p) * (z - x) / (y - x);
+  }
+
+  @Override
+  public long additionalRoundTimeIfProposalReceivedMs() {
+    return config.additionalRoundTimeIfProposalReceivedMs();
   }
 }

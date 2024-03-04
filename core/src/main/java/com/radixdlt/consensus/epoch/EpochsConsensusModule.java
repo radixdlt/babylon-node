@@ -95,8 +95,8 @@ import java.util.Random;
 public class EpochsConsensusModule extends AbstractModule {
   @Override
   protected void configure() {
-    bind(ExponentialPacemakerTimeoutCalculator.class).in(Scopes.SINGLETON);
-    bind(PacemakerTimeoutCalculator.class).to(ExponentialPacemakerTimeoutCalculator.class);
+    bind(MultiFactorPacemakerTimeoutCalculator.class).in(Scopes.SINGLETON);
+    bind(PacemakerTimeoutCalculator.class).to(MultiFactorPacemakerTimeoutCalculator.class);
 
     OptionalBinder.newOptionalBinder(
         binder(), EpochManager.class); // So that this is consistent with tests

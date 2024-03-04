@@ -71,9 +71,12 @@ public interface PacemakerTimeoutCalculator {
    *
    * @param timeoutOccurrences the number of timeout occurrences that have happened so far in the
    *     current round
+   * @param vertexStoreUtilizationRatio a percentage value (between 0 and 1) of vertex store
+   *     capacity utilization (based on its size limit) e.g. a value of 0.5 means that vertex store
+   *     is 50% full
    * @return pacemaker round timeout in milliseconds
    */
-  long calculateTimeoutMs(long timeoutOccurrences);
+  long calculateTimeoutMs(long timeoutOccurrences, double vertexStoreUtilizationRatio);
 
   /**
    * Returns the amount of time (in milliseconds) by which the round can be extended if proposal was

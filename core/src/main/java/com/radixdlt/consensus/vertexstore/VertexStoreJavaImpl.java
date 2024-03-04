@@ -123,10 +123,6 @@ public final class VertexStoreJavaImpl implements VertexStore {
     resetToState(initialState, serializeState(initialState));
   }
 
-  public int getCurrentSerializedSizeBytes() {
-    return currentSerializedSizeBytes;
-  }
-
   private void resetToState(VertexStoreState state, WrappedByteArray serializedState) {
     this.rootVertex = state.getRoot();
     this.highQC = state.getHighQC();
@@ -525,6 +521,17 @@ public final class VertexStoreJavaImpl implements VertexStore {
 
   private WrappedByteArray serializeState(VertexStoreState state) {
     return new WrappedByteArray(serialization.toDson(state.toSerialized(), DsonOutput.Output.ALL));
+  }
+
+  public int getCurrentSerializedSizeBytes() {
+    return currentSerializedSizeBytes;
+  }
+
+  @Override
+  public double getCurrentUtilizationRatio() {
+    // In practice the actual size can slightly exceed the limit (see the comments above)
+    // So we need to clamp the result at 1.
+    return Math.max(0, Math.min(1, currentSerializedSizeBytes / config.maxSerializedSizeBytes()));
   }
 
   @VisibleForTesting
