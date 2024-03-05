@@ -151,7 +151,9 @@ public final class MetricInstaller {
         .anyMatch(
             selfValidatorId ->
                 this.inMemorySystemInfo
-                    .getEpochProof()
+                    .getLedgerSummary()
+                    .latestProof()
+                    .closestEpochProofOnOrBefore()
                     .ledgerHeader()
                     .nextEpoch()
                     .map(
@@ -166,7 +168,9 @@ public final class MetricInstaller {
 
   private int countValidators() {
     return this.inMemorySystemInfo
-        .getEpochProof()
+        .getLedgerSummary()
+        .latestProof()
+        .closestEpochProofOnOrBefore()
         .ledgerHeader()
         .nextEpoch()
         .map(ne -> ne.validators().size())

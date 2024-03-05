@@ -70,10 +70,18 @@ import com.google.inject.Inject;
 import com.radixdlt.api.system.SystemGetJsonHandler;
 import com.radixdlt.api.system.generated.models.*;
 import com.radixdlt.api.system.health.HealthInfoService;
-import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition;
+import com.radixdlt.lang.Option;
+import com.radixdlt.lang.Tuple;
+import com.radixdlt.ledger.LedgerProofBundle;
+import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactAtStartOfEpochIfValidatorsReady;
+import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactAtStartOfEpochUnconditionally;
 import com.radixdlt.statecomputer.ProtocolState;
+import com.radixdlt.statecomputer.ProtocolState.PendingProtocolUpdateState.ForSignalledReadinessSupportCondition;
+import java.util.stream.Collectors;
 
 public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
+  private static final long EXPECTED_EPOCH_LENGTH_IN_MS = 5 * 60_000 /* 5 min */;
+
   private final HealthInfoService healthInfoService;
 
   @Inject
@@ -95,8 +103,11 @@ public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
 
     final var statistic = healthInfoService.recentSelfProposalMissStatistic();
 
-    final var protocolState = healthInfoService.protocolState();
     final var readinessSignalStatuses = healthInfoService.readinessSignalStatuses();
+
+    final var ledgerSummary = healthInfoService.ledgerSummary();
+    final var latestProof = ledgerSummary.latestProof();
+    final var protocolState = ledgerSummary.protocolState();
 
     return new HealthResponse()
         .status(statusEnum)
@@ -122,24 +133,89 @@ public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
                             p,
                             readinessSignalStatuses.getOrDefault(
                                 p.protocolUpdateTrigger().nextProtocolVersion(),
-                                NO_SIGNAL_REQUIRED)))
+                                NO_SIGNAL_REQUIRED),
+                            latestProof))
                 .toList());
   }
 
   private com.radixdlt.api.system.generated.models.PendingProtocolUpdate pendingProtocolUpdate(
       ProtocolState.PendingProtocolUpdate pendingProtocolUpdate,
-      PendingProtocolUpdate.ReadinessSignalStatusEnum readinessSignalStatus) {
-    final var state =
-        switch (pendingProtocolUpdate.state()) {
-          case ProtocolState.PendingProtocolUpdateState.Empty
-          empty -> new EmptyPendingProtocolUpdateState().type(PendingProtocolUpdateStateType.EMPTY);
-          case ProtocolState.PendingProtocolUpdateState.ForSignalledReadinessSupportCondition
-          forSignalledReadinessSupportCondition -> new SignalledReadinessPendingProtocolUpdateState()
-              .thresholdsState(
-                  forSignalledReadinessSupportCondition.thresholdsState().stream()
-                      .map(
-                          thresholdState ->
-                              new SignalledReadinessPendingProtocolUpdateStateAllOfThresholdsState()
+      PendingProtocolUpdate.ReadinessSignalStatusEnum readinessSignalStatus,
+      LedgerProofBundle latestProof) {
+    final var latestEpochProof = latestProof.closestEpochProofOnOrBefore();
+    final var latestEpochChange = latestEpochProof.ledgerHeader().nextEpoch().unwrap();
+    final var currentEpoch = latestEpochChange.epoch().toLong();
+    // It's okay to use proposer timestamp (rather than epoch effective start)
+    // for the purpose of this estimate.
+    final var epochStartTimeCalculator =
+        new EpochStartTimeCalculator(
+            EXPECTED_EPOCH_LENGTH_IN_MS,
+            currentEpoch,
+            latestEpochProof.ledgerHeader().proposerTimestampMs());
+
+    return switch (pendingProtocolUpdate.protocolUpdateTrigger().enactmentCondition()) {
+      case EnactAtStartOfEpochIfValidatorsReady condition -> {
+        final var state = (ForSignalledReadinessSupportCondition) pendingProtocolUpdate.state();
+
+        final var projectedFulfillmentEpochByThreshold =
+            state.thresholdsState().stream()
+                .collect(
+                    Collectors.toMap(
+                        Tuple.Tuple2::first,
+                        thresholdState -> {
+                          final var consecutiveStartedEpochsOfSupport =
+                              thresholdState.last().consecutiveStartedEpochsOfSupport().toLong();
+                          if (consecutiveStartedEpochsOfSupport <= 0) {
+                            return Option.<Long>empty();
+                          } else {
+                            final var requiredConsecutiveCompletedEpochsOfSupport =
+                                thresholdState
+                                    .first()
+                                    .requiredConsecutiveCompletedEpochsOfSupport()
+                                    .toLong();
+                            final var projectedFulfillmentEpoch =
+                                currentEpoch
+                                    + requiredConsecutiveCompletedEpochsOfSupport
+                                    - consecutiveStartedEpochsOfSupport
+                                    + 1;
+
+                            if (projectedFulfillmentEpoch
+                                    >= condition.lowerBoundInclusive().toLong()
+                                && projectedFulfillmentEpoch
+                                    < condition.upperBoundExclusive().toLong()) {
+                              return Option.some(projectedFulfillmentEpoch);
+                            } else {
+                              return Option.<Long>none();
+                            }
+                          }
+                        }));
+
+        final var apiState =
+            new SignalledReadinessPendingProtocolUpdateState()
+                .thresholdsState(
+                    state.thresholdsState().stream()
+                        .map(
+                            thresholdState -> {
+                              final var apiThresholdState =
+                                  new SignalledReadinessThresholdState()
+                                      .consecutiveStartedEpochsOfSupport(
+                                          thresholdState
+                                              .last()
+                                              .consecutiveStartedEpochsOfSupport()
+                                              .toLong());
+
+                              projectedFulfillmentEpochByThreshold
+                                  .getOrDefault(thresholdState.first(), Option.none())
+                                  .ifPresent(
+                                      projectedEnactmentEpoch -> {
+                                        apiThresholdState.setProjectedFulfillmentAtStartOfEpoch(
+                                            projectedEnactmentEpoch);
+                                        apiThresholdState.setProjectedFulfillmentTimestamp(
+                                            epochStartTimeCalculator.estimateStartOfEpoch(
+                                                projectedEnactmentEpoch));
+                                      });
+
+                              return new SignalledReadinessPendingProtocolUpdateStateAllOfThresholdsState()
                                   .threshold(
                                       new SignalledReadinessThreshold()
                                           .requiredRatioOfStakeSupported(
@@ -152,30 +228,49 @@ public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
                                                   .first()
                                                   .requiredConsecutiveCompletedEpochsOfSupport()
                                                   .toLong()))
-                                  .thresholdState(
-                                      new SignalledReadinessThresholdState()
-                                          .consecutiveStartedEpochsOfSupport(
-                                              thresholdState
-                                                  .last()
-                                                  .consecutiveStartedEpochsOfSupport()
-                                                  .toLong())))
-                      .toList())
-              .type(PendingProtocolUpdateStateType.FORSIGNALLEDREADINESSSUPPORTCONDITION);
-        };
+                                  .thresholdState(apiThresholdState);
+                            })
+                        .toList())
+                .type(PendingProtocolUpdateStateType.FORSIGNALLEDREADINESSSUPPORTCONDITION);
 
-    final var res =
-        new PendingProtocolUpdate()
+        final var res =
+            new PendingProtocolUpdate()
+                .protocolVersion(
+                    pendingProtocolUpdate.protocolUpdateTrigger().nextProtocolVersion())
+                .state(apiState)
+                .readinessSignalStatus(readinessSignalStatus);
+
+        projectedFulfillmentEpochByThreshold.values().stream()
+            .flatMap(Option::stream)
+            .mapToLong(l -> l)
+            .min()
+            .ifPresent(
+                earliestFulfillmentEpoch -> {
+                  res.setProjectedEnactmentAtStartOfEpoch(earliestFulfillmentEpoch);
+                  res.setProjectedEnactmentTimestamp(
+                      epochStartTimeCalculator.estimateStartOfEpoch(earliestFulfillmentEpoch));
+                });
+
+        yield res;
+      }
+      case EnactAtStartOfEpochUnconditionally condition -> {
+        final var enactmentEpoch = condition.epoch().toLong();
+        yield new PendingProtocolUpdate()
             .protocolVersion(pendingProtocolUpdate.protocolUpdateTrigger().nextProtocolVersion())
-            .state(state)
+            .state(new EmptyPendingProtocolUpdateState().type(PendingProtocolUpdateStateType.EMPTY))
+            .projectedEnactmentAtStartOfEpoch(enactmentEpoch)
+            .projectedEnactmentTimestamp(
+                epochStartTimeCalculator.estimateStartOfEpoch(enactmentEpoch))
             .readinessSignalStatus(readinessSignalStatus);
+      }
+    };
+  }
 
-    if (pendingProtocolUpdate.protocolUpdateTrigger().enactmentCondition()
-        instanceof ProtocolUpdateEnactmentCondition.EnactAtStartOfEpochIfValidatorsReady) {
-      final var readinessSignalName =
-          pendingProtocolUpdate.protocolUpdateTrigger().readinessSignalName();
-      res.setReadinessSignalName(readinessSignalName);
+  private record EpochStartTimeCalculator(
+      long expectedEpochLengthMs, long baseEpoch, long baseEpochStartTimestamp) {
+
+    long estimateStartOfEpoch(long epoch) {
+      return baseEpochStartTimestamp + expectedEpochLengthMs * (epoch - baseEpoch);
     }
-
-    return res;
   }
 }

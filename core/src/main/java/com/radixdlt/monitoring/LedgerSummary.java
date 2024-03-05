@@ -62,48 +62,9 @@
  * permissions under this License.
  */
 
-package com.radixdlt.modules;
+package com.radixdlt.monitoring;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
-import com.radixdlt.consensus.bft.BFTHighQCUpdate;
-import com.radixdlt.consensus.epoch.EpochRoundUpdate;
-import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
-import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.LocalEvents;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.monitoring.InMemorySystemInfo;
+import com.radixdlt.ledger.LedgerProofBundle;
+import com.radixdlt.statecomputer.ProtocolState;
 
-/** Module which manages system info */
-public class SystemInfoModule extends AbstractModule {
-  @Override
-  protected void configure() {
-    bind(InMemorySystemInfo.class).in(Scopes.SINGLETON);
-    var eventBinder =
-        Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
-            .permitDuplicates();
-    eventBinder.addBinding().toInstance(EpochRoundUpdate.class);
-    eventBinder.addBinding().toInstance(EpochLocalTimeoutOccurrence.class);
-    eventBinder.addBinding().toInstance(BFTCommittedUpdate.class);
-    eventBinder.addBinding().toInstance(BFTHighQCUpdate.class);
-  }
-
-  @ProvidesIntoSet
-  private EventProcessorOnRunner<?> epochsLedgerUpdateProcessor(
-      InMemorySystemInfo inMemorySystemInfo) {
-    return new EventProcessorOnRunner<>(
-        Runners.SYSTEM_INFO, LedgerUpdate.class, inMemorySystemInfo.ledgerUpdateEventProcessor());
-  }
-
-  @ProvidesIntoSet
-  private EventProcessorOnRunner<?> epochRoundUpdateEventProcessor(
-      InMemorySystemInfo inMemorySystemInfo) {
-    return new EventProcessorOnRunner<>(
-        Runners.SYSTEM_INFO, EpochRoundUpdate.class, inMemorySystemInfo::processRoundUpdate);
-  }
-}
+public record LedgerSummary(LedgerProofBundle latestProof, ProtocolState protocolState) {}

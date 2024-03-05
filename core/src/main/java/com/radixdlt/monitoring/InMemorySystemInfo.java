@@ -65,49 +65,41 @@
 package com.radixdlt.monitoring;
 
 import com.google.inject.Inject;
-import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.EpochRound;
+import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.LedgerProofBundle;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.statecomputer.ProtocolState;
-import com.radixdlt.statecomputer.commit.LedgerProof;
-import java.util.concurrent.atomic.AtomicReference;
 
 /** Manages system information to be consumed by clients such as the api. */
 public final class InMemorySystemInfo {
-  private final AtomicReference<EpochRound> currentEpochRound =
-      new AtomicReference<>(EpochRound.of(0L, Round.epochInitial()));
-  private final AtomicReference<LedgerProof> epochsLedgerProof;
-
-  private ProtocolState protocolState;
+  private EpochRound currentEpochRound;
+  private LedgerSummary ledgerSummary;
 
   @Inject
   public InMemorySystemInfo(LedgerProofBundle latestProof, ProtocolState initialProtocolState) {
-    this.epochsLedgerProof = new AtomicReference<>(latestProof.closestEpochProofOnOrBefore());
-    this.protocolState = initialProtocolState;
+    this.currentEpochRound =
+        EpochRound.of(latestProof.resultantEpoch(), latestProof.resultantRound());
+    this.ledgerSummary = new LedgerSummary(latestProof, initialProtocolState);
   }
 
-  public void processEpochRound(EpochRound epochRound) {
-    currentEpochRound.set(epochRound);
+  public void processRoundUpdate(EpochRoundUpdate roundUpdate) {
+    currentEpochRound = roundUpdate.getEpochRound();
+  }
+
+  public EpochRound getCurrentRound() {
+    return currentEpochRound;
   }
 
   public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
     return update -> {
-      epochsLedgerProof.set(update.committedProof().closestEpochProofOnOrBefore());
-      this.protocolState = update.resultantProtocolState();
+      this.ledgerSummary =
+          new LedgerSummary(update.committedProof(), update.resultantProtocolState());
     };
   }
 
-  public LedgerProof getEpochProof() {
-    return epochsLedgerProof.get();
-  }
-
-  public EpochRound getCurrentRound() {
-    return this.currentEpochRound.get();
-  }
-
-  public ProtocolState getProtocolState() {
-    return this.protocolState;
+  public LedgerSummary getLedgerSummary() {
+    return this.ledgerSummary;
   }
 }
