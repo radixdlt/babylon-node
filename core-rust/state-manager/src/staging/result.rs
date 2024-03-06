@@ -531,7 +531,7 @@ pub struct HashStructuresDiff {
 #[derive(Clone, Debug)]
 pub struct StateHashTreeDiff {
     pub new_root: StateHash,
-    pub new_nodes: Vec<(NodeKey, TreeNode)>,
+    pub new_nodes: Vec<(StoredTreeNodeKey, TreeNode)>,
     pub stale_tree_parts: Vec<StaleTreePart>,
 }
 
@@ -619,14 +619,22 @@ impl<'s, S: ReadableStateTreeStore> CollectingTreeStore<'s, S> {
 }
 
 impl<'s, S: ReadableTreeStore> ReadableTreeStore for CollectingTreeStore<'s, S> {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
+    fn get_node(&self, key: &StoredTreeNodeKey) -> Option<TreeNode> {
         self.readable_delegate.get_node(key)
     }
 }
 
 impl<'s, S> WriteableTreeStore for CollectingTreeStore<'s, S> {
-    fn insert_node(&self, key: NodeKey, node: TreeNode) {
+    fn insert_node(&self, key: StoredTreeNodeKey, node: TreeNode) {
         self.diff.borrow_mut().new_nodes.push((key, node));
+    }
+
+    fn associate_substate_value(
+        &self,
+        _global_key: &StoredTreeNodeKey,
+        _substate_value: &DbSubstateValue,
+    ) {
+        // TODO(historical-state): Collect these if the feature is enabled
     }
 
     fn record_stale_tree_part(&self, part: StaleTreePart) {
