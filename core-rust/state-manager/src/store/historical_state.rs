@@ -88,6 +88,13 @@ impl<'t, T: ReadableTreeStore + LeafSubstateValueStore> StateHashTreeBasedSubsta
             at_state_version,
         }
     }
+
+    fn create_entity_tier(&self) -> EntityTier<'t, T> {
+        EntityTier::new(
+            self.tree_store,
+            Some(self.at_state_version.number()).filter(|v| *v > 0),
+        )
+    }
 }
 
 impl<'t, T: ReadableTreeStore + LeafSubstateValueStore> SubstateDatabase
@@ -98,15 +105,14 @@ impl<'t, T: ReadableTreeStore + LeafSubstateValueStore> SubstateDatabase
         partition_key: &DbPartitionKey,
         sort_key: &DbSortKey,
     ) -> Option<DbSubstateValue> {
-        // Performance note:
-        // When reading from a tree-based store, getting a leaf has the same cost as starting an
-        // iterator and taking its first element. The only possible savings would be available in
-        // the "not found" case, which is rare in our use-cases.
-        // Hence, for simplicity, we prefer to re-use a single (non-trivial) leaf-locating code.
-        self.list_entries_from(partition_key, Some(sort_key))
-            .next()
-            .filter(|(first_ge_sort_key, _)| first_ge_sort_key == sort_key)
-            .map(|(_, value)| value)
+        self.create_entity_tier()
+            .get_entity_partition_tier(partition_key.node_key.clone())
+            .get_partition_substate_tier(partition_key.partition_num)
+            .get_substate_summary(sort_key)
+            .and_then(|summary| {
+                self.tree_store
+                    .get_associated_value(&summary.state_tree_leaf_key)
+            })
     }
 
     fn list_entries_from(
@@ -114,15 +120,10 @@ impl<'t, T: ReadableTreeStore + LeafSubstateValueStore> SubstateDatabase
         partition_key: &DbPartitionKey,
         from_sort_key: Option<&DbSortKey>,
     ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
-        let DbPartitionKey {
-            node_key,
-            partition_num,
-        } = partition_key.clone();
-        let entity_tier = EntityTier::new(self.tree_store, self.at_state_version.into());
-        let partition_tier = entity_tier.get_entity_partition_tier(node_key);
-        let substate_tier = partition_tier.get_partition_substate_tier(partition_num);
         Box::new(
-            substate_tier
+            self.create_entity_tier()
+                .get_entity_partition_tier(partition_key.node_key.clone())
+                .get_partition_substate_tier(partition_key.partition_num)
                 .into_iter_substate_summaries_from(from_sort_key)
                 .map(|substate| {
                     let value = self
@@ -132,15 +133,6 @@ impl<'t, T: ReadableTreeStore + LeafSubstateValueStore> SubstateDatabase
                     (substate.sort_key, value)
                 }),
         )
-    }
-}
-
-impl From<StateVersion> for Option<Version> {
-    fn from(value: StateVersion) -> Self {
-        match value.number() {
-            0 => None,
-            positive => Some(positive),
-        }
     }
 }
 
