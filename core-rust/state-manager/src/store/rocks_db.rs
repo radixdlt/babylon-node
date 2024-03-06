@@ -334,14 +334,14 @@ impl VersionedCf for VertexStoreCf {
 }
 
 /// Individual nodes of the Substate database's hash tree.
-/// Schema: `encode_key(NodeKey)` -> `scrypto_encode(VersionedTreeNode)`.
+/// Schema: `encode_key(StoredTreeNodeKey)` -> `scrypto_encode(VersionedTreeNode)`.
 struct StateHashTreeNodesCf;
 impl VersionedCf for StateHashTreeNodesCf {
-    type Key = NodeKey;
+    type Key = StoredTreeNodeKey;
     type Value = TreeNode;
 
     const VERSIONED_NAME: &'static str = "state_hash_tree_nodes";
-    type KeyCodec = NodeKeyDbCodec;
+    type KeyCodec = StoredTreeNodeKeyDbCodec;
     type VersionedValue = VersionedTreeNode;
 }
 
@@ -1608,7 +1608,7 @@ impl<R: ReadableRocks> SubstateNodeAncestryStore for StateManagerDatabase<R> {
 }
 
 impl<R: ReadableRocks> ReadableTreeStore for StateManagerDatabase<R> {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
+    fn get_node(&self, key: &StoredTreeNodeKey) -> Option<TreeNode> {
         self.open_read_context().cf(StateHashTreeNodesCf).get(key)
     }
 }
@@ -1622,7 +1622,7 @@ impl<R: WriteableRocks> StateHashTreeGcStore for StateManagerDatabase<R> {
             .iterate(Direction::Forward)
     }
 
-    fn batch_delete_node<'a>(&self, keys: impl IntoIterator<Item = &'a NodeKey>) {
+    fn batch_delete_node<'a>(&self, keys: impl IntoIterator<Item = &'a StoredTreeNodeKey>) {
         let db_context = self.open_rw_context();
         for key in keys {
             db_context.cf(StateHashTreeNodesCf).delete(key);

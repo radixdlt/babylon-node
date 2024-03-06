@@ -146,7 +146,7 @@ impl StateHashTreeGc {
         let mut deleted_nodes = Vec::new();
         for (state_version, StaleTreePartsV1(stale_tree_parts)) in stale_entries {
             for stale_tree_part in stale_tree_parts {
-                let part_keys: Box<dyn Iterator<Item = NodeKey>> = match stale_tree_part {
+                let part_keys: Box<dyn Iterator<Item = StoredTreeNodeKey>> = match stale_tree_part {
                     StaleTreePart::Node(key) => Box::new(iter::once(key)),
                     // In case of "delete partition", we have to traverse its entire subtree:
                     // Note: it is critical to do a post-order DFS here (i.e. to delete a parent
@@ -183,8 +183,8 @@ impl StateHashTreeGc {
 /// from the database (in a previous, incomplete GC run).
 fn iterate_dfs_post_order<'s, S: ReadableTreeStore>(
     tree_store: &'s S,
-    root_key: NodeKey,
-) -> Box<dyn Iterator<Item = NodeKey> + 's> {
+    root_key: StoredTreeNodeKey,
+) -> Box<dyn Iterator<Item = StoredTreeNodeKey> + 's> {
     let Some(root_node) = tree_store.get_node(&root_key) else {
         // A "top-level recovery" case: may happen when we resume an interrupted delete of a
         // state version (i.e. this entire subtree was one of the early entries within some
@@ -219,35 +219,37 @@ fn iterate_dfs_post_order<'s, S: ReadableTreeStore>(
 fn recurse_children_and_append_parent<'s, S: ReadableTreeStore + 's>(
     tree_store: &'s S,
     children: Vec<TreeChildEntry>,
-    parent_key: NodeKey,
-) -> impl Iterator<Item = NodeKey> + 's {
+    parent_key: StoredTreeNodeKey,
+) -> impl Iterator<Item = StoredTreeNodeKey> + 's {
     let parent_key_to_be_appended_after_children = iter::once(parent_key.clone());
     children
         .into_iter()
-        .flat_map(move |child| -> Box<dyn Iterator<Item = NodeKey>> {
-            let child_key = parent_key.gen_child_node_key(child.version, child.nibble);
-            if child.is_leaf {
-                // A terminal case: we do not need to recurse into children (nor load them from DB).
-                // Not loading from the DB is an optimization to speed up the performance.
-                // This can mean that we return children which are already deleted / no longer exist.
-                // This is mentioned in the rust doc for `iterate_dfs_post_order`
-                return Box::new(iter::once(child_key));
-            }
-            let Some(child_node) = tree_store.get_node(&child_key) else {
-                // A mid-way "recovery" case: may happen when we resume an interrupted
-                // delete of a particular subtree (and reach an already-deleted child).
-                return Box::new(iter::empty());
-            };
-            let TreeNode::Internal(child_internal_node) = child_node else {
-                panic!("unexpected non-leaf child: {:?}", child_node);
-            };
-            // A recursion case: this internal node has some child internal node.
-            Box::new(recurse_children_and_append_parent(
-                tree_store,
-                child_internal_node.children,
-                child_key,
-            ))
-        })
+        .flat_map(
+            move |child| -> Box<dyn Iterator<Item = StoredTreeNodeKey>> {
+                let child_key = parent_key.gen_child_node_key(child.version, child.nibble);
+                if child.is_leaf {
+                    // A terminal case: we do not need to recurse into children (nor load them from DB).
+                    // Not loading from the DB is an optimization to speed up the performance.
+                    // This can mean that we return children which are already deleted / no longer exist.
+                    // This is mentioned in the rust doc for `iterate_dfs_post_order`
+                    return Box::new(iter::once(child_key));
+                }
+                let Some(child_node) = tree_store.get_node(&child_key) else {
+                    // A mid-way "recovery" case: may happen when we resume an interrupted
+                    // delete of a particular subtree (and reach an already-deleted child).
+                    return Box::new(iter::empty());
+                };
+                let TreeNode::Internal(child_internal_node) = child_node else {
+                    panic!("unexpected non-leaf child: {:?}", child_node);
+                };
+                // A recursion case: this internal node has some child internal node.
+                Box::new(recurse_children_and_append_parent(
+                    tree_store,
+                    child_internal_node.children,
+                    child_key,
+                ))
+            },
+        )
         // DFS post-order: as promised, list the parent after its children.
         .chain(parent_key_to_be_appended_after_children)
 }
@@ -341,7 +343,7 @@ mod tests {
         // Note: "5f" is the tier separator byte - an implementation detail of our [`NestedTreeStore`].
         assert_eq!(
             deleted_partition_root_key,
-            NodeKey::new(2, nibbles("c0ffee 5f 07 5f"))
+            StoredTreeNodeKey::new(2, nibbles("c0ffee 5f 07 5f"))
         );
 
         // Act: Request a DFS iterator starting at the deleted partition's root
@@ -353,21 +355,21 @@ mod tests {
             iterated_node_keys,
             vec![
                 // this starts leftmost and completes larger and larger subtrees: (like DFS should)
-                NodeKey::new(2, nibbles("c0ffee 5f 07 5f b0")), // leaf b000000000
-                NodeKey::new(1, nibbles("c0ffee 5f 07 5f ba")), // leaf bada55
-                NodeKey::new(1, nibbles("c0ffee 5f 07 5f be")), // leaf beef
-                NodeKey::new(2, nibbles("c0ffee 5f 07 5f b")),  // parent of these ^ three
+                StoredTreeNodeKey::new(2, nibbles("c0ffee 5f 07 5f b0")), // leaf b000000000
+                StoredTreeNodeKey::new(1, nibbles("c0ffee 5f 07 5f ba")), // leaf bada55
+                StoredTreeNodeKey::new(1, nibbles("c0ffee 5f 07 5f be")), // leaf beef
+                StoredTreeNodeKey::new(2, nibbles("c0ffee 5f 07 5f b")),  // parent of these ^ three
                 // drills down the next sibling's subtree: (like DFS should)
-                NodeKey::new(2, nibbles("c0ffee 5f 07 5f dead")), // leaf dead
-                NodeKey::new(2, nibbles("c0ffee 5f 07 5f deaf")), // leaf deafd00d
-                NodeKey::new(2, nibbles("c0ffee 5f 07 5f dea")),  // parent of these ^ two
-                NodeKey::new(2, nibbles("c0ffee 5f 07 5f dec")), // leaf dec0 (sibling of that parent)
-                NodeKey::new(2, nibbles("c0ffee 5f 07 5f de")),  // parent of these ^ two
-                NodeKey::new(2, nibbles("c0ffee 5f 07 5f d")), // parent of this ^ one (yup, "long common prefix")
+                StoredTreeNodeKey::new(2, nibbles("c0ffee 5f 07 5f dead")), // leaf dead
+                StoredTreeNodeKey::new(2, nibbles("c0ffee 5f 07 5f deaf")), // leaf deafd00d
+                StoredTreeNodeKey::new(2, nibbles("c0ffee 5f 07 5f dea")),  // parent of these ^ two
+                StoredTreeNodeKey::new(2, nibbles("c0ffee 5f 07 5f dec")), // leaf dec0 (sibling of that parent)
+                StoredTreeNodeKey::new(2, nibbles("c0ffee 5f 07 5f de")),  // parent of these ^ two
+                StoredTreeNodeKey::new(2, nibbles("c0ffee 5f 07 5f d")), // parent of this ^ one (yup, "long common prefix")
                 // and visits the rightmost top-level leaf sibling too: (like DFS should)
-                NodeKey::new(1, nibbles("c0ffee 5f 07 5f e")), // leaf ee
+                StoredTreeNodeKey::new(1, nibbles("c0ffee 5f 07 5f e")), // leaf ee
                 // and the root at the end: (like DFS should)
-                NodeKey::new(2, nibbles("c0ffee 5f 07 5f")), // root
+                StoredTreeNodeKey::new(2, nibbles("c0ffee 5f 07 5f")), // root
             ]
         );
 
@@ -416,13 +418,15 @@ mod tests {
         );
 
         // Act: Request a DFS iterator starting at the partition's root
-        let iterator =
-            iterate_dfs_post_order(&tree_store, NodeKey::new(1, nibbles("c0ffee 5f 03 5f")));
+        let iterator = iterate_dfs_post_order(
+            &tree_store,
+            StoredTreeNodeKey::new(1, nibbles("c0ffee 5f 03 5f")),
+        );
 
         // Assert: The single listed node key
         assert_eq!(
             iterator.collect::<Vec<_>>(),
-            vec![NodeKey::new(1, nibbles("c0ffee 5f 03 5f"))], // the root is also the leaf afffff
+            vec![StoredTreeNodeKey::new(1, nibbles("c0ffee 5f 03 5f"))], // the root is also the leaf afffff
         );
     }
 
@@ -433,14 +437,16 @@ mod tests {
         tree_store
             .stale_part_buffer
             .borrow_mut()
-            .push(StaleTreePart::Subtree(NodeKey::new(
+            .push(StaleTreePart::Subtree(StoredTreeNodeKey::new(
                 1,
                 nibbles("c0ffee 5f 03 5f"),
             )));
 
         // Act: Request a DFS iterator starting at the partition's root
-        let mut iterator =
-            iterate_dfs_post_order(&tree_store, NodeKey::new(1, nibbles("c0ffee 5f 03 5f")));
+        let mut iterator = iterate_dfs_post_order(
+            &tree_store,
+            StoredTreeNodeKey::new(1, nibbles("c0ffee 5f 03 5f")),
+        );
 
         // Assert: Empty iterator
         assert!(iterator.next().is_none());

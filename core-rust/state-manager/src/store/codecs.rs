@@ -168,7 +168,7 @@ impl<T: IsHash> DbCodec<T> for HashDbCodec<T> {
 ///
 /// An example:
 ///
-/// `(NodeKey[1, 3, 3, 7], PartitionNum(88), SortKey(200, 100, 150))`
+/// `(StoredTreeNodeKey[1, 3, 3, 7], PartitionNum(88), SortKey(200, 100, 150))`
 /// is encoded into:
 /// `[4, 1, 3, 3, 7, 88, 200, 100, 150]`
 #[derive(Default)]
@@ -243,15 +243,15 @@ impl SubstateKeyDbCodec {
 }
 
 #[derive(Default)]
-pub struct NodeKeyDbCodec {}
+pub struct StoredTreeNodeKeyDbCodec {}
 
-impl DbCodec<NodeKey> for NodeKeyDbCodec {
-    fn encode(&self, value: &NodeKey) -> Vec<u8> {
+impl DbCodec<StoredTreeNodeKey> for StoredTreeNodeKeyDbCodec {
+    fn encode(&self, value: &StoredTreeNodeKey) -> Vec<u8> {
         encode_key(value)
     }
 
-    fn decode(&self, _bytes: &[u8]) -> NodeKey {
-        unimplemented!("no use-case for decoding hash tree's `NodeKey`s exists yet")
+    fn decode(&self, _bytes: &[u8]) -> StoredTreeNodeKey {
+        unimplemented!("no use-case for decoding hash tree's `StoredTreeNodeKey`s exists yet")
     }
 }
 

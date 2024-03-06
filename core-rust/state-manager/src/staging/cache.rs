@@ -359,7 +359,7 @@ impl<'s, S: SubstateDatabase> SubstateDatabase for StagedStore<'s, S> {
 }
 
 impl<'s, S: ReadableTreeStore> ReadableTreeStore for StagedStore<'s, S> {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
+    fn get_node(&self, key: &StoredTreeNodeKey) -> Option<TreeNode> {
         self.overlay
             .state_tree_nodes
             .get(key)
@@ -445,7 +445,7 @@ impl<K, N> AccuTreeDiff<K, N> {
 #[derive(Clone)]
 pub struct ImmutableStore {
     partition_updates: ImmutableHashMap<DbPartitionKey, ImmutablePartitionUpdates>,
-    state_tree_nodes: ImmutableHashMap<NodeKey, TreeNode>,
+    state_tree_nodes: ImmutableHashMap<StoredTreeNodeKey, TreeNode>,
     transaction_tree_slices: ImmutableHashMap<StateVersion, TreeSlice<TransactionTreeHash>>,
     receipt_tree_slices: ImmutableHashMap<StateVersion, TreeSlice<ReceiptTreeHash>>,
     node_ancestry_records: ImmutableHashMap<NodeId, SubstateNodeAncestryRecord>,

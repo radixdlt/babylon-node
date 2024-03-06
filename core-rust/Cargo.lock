@@ -209,7 +209,7 @@ dependencies = [
 [[package]]
 name = "blueprint-schema-init"
 version = "1.2.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-af7de944#af7de9441e07e9c283704a2dad74aeb81ffecaa6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-1b29786b#1b29786b43189dec07d94e76fcf2450fbb811cce"
 dependencies = [
  "bitflags 1.3.2",
  "radix-engine-common",
@@ -1175,7 +1175,7 @@ dependencies = [
 [[package]]
 name = "native-sdk"
 version = "1.2.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-af7de944#af7de9441e07e9c283704a2dad74aeb81ffecaa6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-1b29786b#1b29786b43189dec07d94e76fcf2450fbb811cce"
 dependencies = [
  "radix-engine-common",
  "radix-engine-interface",
@@ -1521,7 +1521,7 @@ dependencies = [
 [[package]]
 name = "radix-engine"
 version = "1.2.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-af7de944#af7de9441e07e9c283704a2dad74aeb81ffecaa6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-1b29786b#1b29786b43189dec07d94e76fcf2450fbb811cce"
 dependencies = [
  "bitflags 1.3.2",
  "blueprint-schema-init",
@@ -1552,7 +1552,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-common"
 version = "1.2.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-af7de944#af7de9441e07e9c283704a2dad74aeb81ffecaa6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-1b29786b#1b29786b43189dec07d94e76fcf2450fbb811cce"
 dependencies = [
  "bech32",
  "blake2",
@@ -1577,7 +1577,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-derive"
 version = "1.2.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-af7de944#af7de9441e07e9c283704a2dad74aeb81ffecaa6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-1b29786b#1b29786b43189dec07d94e76fcf2450fbb811cce"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1588,7 +1588,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-interface"
 version = "1.2.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-af7de944#af7de9441e07e9c283704a2dad74aeb81ffecaa6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-1b29786b#1b29786b43189dec07d94e76fcf2450fbb811cce"
 dependencies = [
  "bitflags 1.3.2",
  "blueprint-schema-init",
@@ -1609,7 +1609,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-macros"
 version = "1.2.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-af7de944#af7de9441e07e9c283704a2dad74aeb81ffecaa6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-1b29786b#1b29786b43189dec07d94e76fcf2450fbb811cce"
 dependencies = [
  "paste",
  "proc-macro2",
@@ -1621,7 +1621,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-profiling"
 version = "1.2.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-af7de944#af7de9441e07e9c283704a2dad74aeb81ffecaa6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-1b29786b#1b29786b43189dec07d94e76fcf2450fbb811cce"
 dependencies = [
  "fixedstr",
 ]
@@ -1747,7 +1747,7 @@ checksum = "e5ea92a5b6195c6ef2a0295ea818b312502c6fc94dde986c5553242e18fd4ce2"
 [[package]]
 name = "resources-tracker-macro"
 version = "1.2.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-af7de944#af7de9441e07e9c283704a2dad74aeb81ffecaa6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-1b29786b#1b29786b43189dec07d94e76fcf2450fbb811cce"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1823,7 +1823,7 @@ dependencies = [
 [[package]]
 name = "sbor"
 version = "1.2.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-af7de944#af7de9441e07e9c283704a2dad74aeb81ffecaa6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-1b29786b#1b29786b43189dec07d94e76fcf2450fbb811cce"
 dependencies = [
  "const-sha1",
  "hex",
@@ -1837,7 +1837,7 @@ dependencies = [
 [[package]]
 name = "sbor-derive"
 version = "1.2.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-af7de944#af7de9441e07e9c283704a2dad74aeb81ffecaa6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-1b29786b#1b29786b43189dec07d94e76fcf2450fbb811cce"
 dependencies = [
  "proc-macro2",
  "sbor-derive-common",
@@ -1846,7 +1846,7 @@ dependencies = [
 [[package]]
 name = "sbor-derive-common"
 version = "1.2.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-af7de944#af7de9441e07e9c283704a2dad74aeb81ffecaa6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-1b29786b#1b29786b43189dec07d94e76fcf2450fbb811cce"
 dependencies = [
  "const-sha1",
  "itertools 0.10.5",
@@ -2135,7 +2135,7 @@ dependencies = [
 [[package]]
 name = "substate-store-impls"
 version = "1.2.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-af7de944#af7de9441e07e9c283704a2dad74aeb81ffecaa6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-1b29786b#1b29786b43189dec07d94e76fcf2450fbb811cce"
 dependencies = [
  "hex",
  "itertools 0.10.5",
@@ -2148,7 +2148,7 @@ dependencies = [
 [[package]]
 name = "substate-store-interface"
 version = "1.2.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-af7de944#af7de9441e07e9c283704a2dad74aeb81ffecaa6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-1b29786b#1b29786b43189dec07d94e76fcf2450fbb811cce"
 dependencies = [
  "hex",
  "itertools 0.10.5",
@@ -2160,7 +2160,7 @@ dependencies = [
 [[package]]
 name = "substate-store-queries"
 version = "1.2.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-af7de944#af7de9441e07e9c283704a2dad74aeb81ffecaa6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-1b29786b#1b29786b43189dec07d94e76fcf2450fbb811cce"
 dependencies = [
  "hex",
  "itertools 0.10.5",
@@ -2466,7 +2466,7 @@ dependencies = [
 [[package]]
 name = "transaction"
 version = "1.2.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-af7de944#af7de9441e07e9c283704a2dad74aeb81ffecaa6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-1b29786b#1b29786b43189dec07d94e76fcf2450fbb811cce"
 dependencies = [
  "bech32",
  "hex",
@@ -2481,7 +2481,7 @@ dependencies = [
 [[package]]
 name = "transaction-scenarios"
 version = "1.2.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-af7de944#af7de9441e07e9c283704a2dad74aeb81ffecaa6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-1b29786b#1b29786b43189dec07d94e76fcf2450fbb811cce"
 dependencies = [
  "blueprint-schema-init",
  "hex",
@@ -2539,7 +2539,7 @@ checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
 [[package]]
 name = "utils"
 version = "1.2.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-af7de944#af7de9441e07e9c283704a2dad74aeb81ffecaa6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-1b29786b#1b29786b43189dec07d94e76fcf2450fbb811cce"
 dependencies = [
  "indexmap 2.0.0-pre",
  "serde",

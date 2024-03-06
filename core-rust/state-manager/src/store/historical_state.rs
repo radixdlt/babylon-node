@@ -64,8 +64,7 @@
 #![allow(dead_code)]
 // TODO(historical-state): Remove the allow above once the impl here is used
 
-use std::ops::Deref;
-use std::{iter, mem};
+use substate_store_impls::hash_tree::entity_tier::EntityTier;
 
 use crate::engine_prelude::*;
 use crate::store::traits::*;
@@ -75,47 +74,45 @@ use crate::StateVersion;
 ///
 /// This database is backed by:
 /// - a [`ReadableTreeStore`] - a versioned source of ReNodes / Partitions / Substates metadata,
-/// - and a [`SubstateUpsertValueStore`] - a raw history of Substate values' upserts.
-pub struct StateHashTreeBasedSubstateDatabase<'t, 'v, T, V> {
+/// - and a [`LeafSubstateValueStore`] - a store of Substate values' associated with their leafs.
+pub struct StateHashTreeBasedSubstateDatabase<'t, T> {
     tree_store: &'t T,
-    upsert_value_store: &'v V,
     at_state_version: StateVersion,
 }
 
-impl<'t, 'v, T: ReadableTreeStore, V: SubstateUpsertValueStore>
-    StateHashTreeBasedSubstateDatabase<'t, 'v, T, V>
-{
+impl<'t, T: ReadableTreeStore + LeafSubstateValueStore> StateHashTreeBasedSubstateDatabase<'t, T> {
     /// Creates an instance backed by the given lower-level stores and scoped at the given version.
-    pub fn new(
-        tree_store: &'t T,
-        upsert_value_store: &'v V,
-        at_state_version: StateVersion,
-    ) -> Self {
+    pub fn new(tree_store: &'t T, at_state_version: StateVersion) -> Self {
         Self {
             tree_store,
-            upsert_value_store,
             at_state_version,
         }
     }
+
+    fn create_entity_tier(&self) -> EntityTier<'t, T> {
+        EntityTier::new(
+            self.tree_store,
+            Some(self.at_state_version.number()).filter(|v| *v > 0),
+        )
+    }
 }
 
-impl<'t, 'v, T: ReadableTreeStore, V: SubstateUpsertValueStore> SubstateDatabase
-    for StateHashTreeBasedSubstateDatabase<'t, 'v, T, V>
+impl<'t, T: ReadableTreeStore + LeafSubstateValueStore> SubstateDatabase
+    for StateHashTreeBasedSubstateDatabase<'t, T>
 {
     fn get_substate(
         &self,
         partition_key: &DbPartitionKey,
         sort_key: &DbSortKey,
     ) -> Option<DbSubstateValue> {
-        // Performance note:
-        // When reading from a tree-based store, getting a leaf has the same cost as starting an
-        // iterator and taking its first element. The only possible savings would be available in
-        // the "not found" case, which is rare in our use-cases.
-        // Hence, for simplicity, we prefer to re-use a single (non-trivial) leaf-locating code.
-        self.list_entries_from(partition_key, Some(sort_key))
-            .next()
-            .filter(|(first_ge_sort_key, _)| first_ge_sort_key == sort_key)
-            .map(|(_, value)| value)
+        self.create_entity_tier()
+            .get_entity_partition_tier(partition_key.node_key.clone())
+            .get_partition_substate_tier(partition_key.partition_num)
+            .get_substate_summary(sort_key)
+            .and_then(|summary| {
+                self.tree_store
+                    .get_associated_value(&summary.state_tree_leaf_key)
+            })
     }
 
     fn list_entries_from(
@@ -123,158 +120,19 @@ impl<'t, 'v, T: ReadableTreeStore, V: SubstateUpsertValueStore> SubstateDatabase
         partition_key: &DbPartitionKey,
         from_sort_key: Option<&DbSortKey>,
     ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
-        let DbPartitionKey {
-            node_key,
-            partition_num,
-        } = partition_key.clone();
-
-        let node_tier_tree_browser =
-            TreeStoreBrowser::new(self.tree_store, self.at_state_version.number());
-        let node_leaf = node_tier_tree_browser.get_leaf(&NibblePath::new_even(node_key));
-        let Some(node_leaf) = node_leaf else {
-            return Box::new(iter::empty()); // The requested ReNode does not exist - treat as empty
-        };
-
-        let partition_tier_tree_browser = node_tier_tree_browser.nested(&node_leaf);
-        let partition_leaf =
-            partition_tier_tree_browser.get_leaf(&NibblePath::new_even(vec![partition_num]));
-        let Some(partition_leaf) = partition_leaf else {
-            return Box::new(iter::empty()); // The requested Partition does not exist - it is empty
-        };
-
-        let substate_tier_tree_browser = partition_tier_tree_browser.nested(&partition_leaf);
-        let sort_key_bytes = from_sort_key
-            .map(|sort_key| sort_key.0.clone())
-            .unwrap_or_default();
-
-        let partition_key = partition_key.clone(); // avoid lifetime dependency within iterator
-        Box::new(substate_tier_tree_browser
-            .iter_leaves_from(&NibblePath::new_even(sort_key_bytes))
-            .map(move |ResolvedLeaf { nibble_path, last_hash_change_version }| {
-                let sort_key = DbSortKey(nibble_path.bytes().to_vec());
-                let value = self.upsert_value_store
-                    .get_value(&partition_key, &sort_key, StateVersion::of(last_hash_change_version))
-                    .expect("DB inconsistency: value not found for substate upsert found in tree");
-                (sort_key, value)
-            }))
-    }
-}
-
-/// An implementation delegate allowing to browse a [`ReadableTreeStore`] at a specific version.
-struct TreeStoreBrowser<T> {
-    tree_store: T,
-    version: Version,
-}
-
-impl<'t, T: Deref<Target = impl ReadableTreeStore> + Clone + 't> TreeStoreBrowser<T> {
-    /// Creates an instance directly.
-    pub fn new(tree_store: T, version: Version) -> Self {
-        Self {
-            tree_store,
-            version,
-        }
-    }
-
-    /// Creates an instance for browsing a [`NestedTreeStore`] nested at the given leaf.
-    /// This effectively allows to access a lower Tier tree (of a Radix-specific 3-Tier JMT).
-    pub fn nested(&self, leaf: &ResolvedLeaf) -> TreeStoreBrowser<Rc<NestedTreeStore<T>>> {
-        let nested_tree_store =
-            NestedTreeStore::new(self.tree_store.clone(), leaf.nibble_path.bytes().to_vec());
-        TreeStoreBrowser::new(Rc::new(nested_tree_store), leaf.last_hash_change_version)
-    }
-
-    /// Returns a specific leaf, if found by starting at the scoped version's root and following the
-    /// given [`NibblePath`].
-    pub fn get_leaf(&self, nibble_path: &NibblePath) -> Option<ResolvedLeaf> {
-        self.iter_leaves_from(nibble_path)
-            .next()
-            .filter(|leaf| &leaf.nibble_path == nibble_path)
-    }
-
-    /// Returns an iterator of all leaves reachable from the scoped version's root, in
-    /// lexicographical order, starting from the given one.
-    pub fn iter_leaves_from(
-        &self,
-        nibble_path: &NibblePath,
-    ) -> Box<dyn Iterator<Item = ResolvedLeaf> + 't> {
-        recurse_until_leaves(
-            self.tree_store.clone(),
-            NodeKey::new_empty_path(self.version),
-            nibble_path.nibbles().collect(),
+        Box::new(
+            self.create_entity_tier()
+                .get_entity_partition_tier(partition_key.node_key.clone())
+                .get_partition_substate_tier(partition_key.partition_num)
+                .into_iter_substate_summaries_from(from_sort_key)
+                .map(|substate| {
+                    let value = self
+                        .tree_store
+                        .get_associated_value(&substate.state_tree_leaf_key)
+                        .expect("DB inconsistency: associated value not found for leaf key");
+                    (substate.sort_key, value)
+                }),
         )
-    }
-}
-
-/// Returns a lexicographically-sorted iterator of all the `tree_store`'s [`ResolvedLeaf`]s having
-/// [`NibblePath`]s greater or equal to the given `from_nibbles`.
-///
-/// The algorithm:
-/// - starts at the given `at_key`,
-/// - then goes down the tree, guided by the given `from_nibbles` chain, for as long as it is
-///   possible,
-///   - Note: this means it will either locate exactly this nibble path, or - if it does not
-///     exist - settle at its direct successor.
-/// - and then continues as if it was a classic DFS all the way,
-/// - but only leaf nodes are returned.
-///
-/// The implementation is a lazy recursive composite of child iterators.
-fn recurse_until_leaves<'t, T: Deref<Target = impl ReadableTreeStore> + Clone + 't>(
-    tree_store: T,
-    at_key: NodeKey,
-    from_nibbles: VecDeque<Nibble>,
-) -> Box<dyn Iterator<Item = ResolvedLeaf> + 't> {
-    let Some(node) = tree_store.get_node(&at_key) else {
-        panic!("{:?} referenced but not found in the storage", at_key);
-    };
-    match node {
-        TreeNode::Internal(internal) => {
-            let mut child_from_nibbles = from_nibbles;
-            let from_nibble = child_from_nibbles.pop_front();
-            Box::new(
-                internal
-                    .children
-                    .into_iter()
-                    .filter(move |child| Some(child.nibble) >= from_nibble)
-                    .flat_map(move |child| {
-                        let child_key = at_key.gen_child_node_key(child.version, child.nibble);
-                        let child_from_nibbles = if Some(child.nibble) == from_nibble {
-                            mem::take(&mut child_from_nibbles)
-                        } else {
-                            VecDeque::new()
-                        };
-                        recurse_until_leaves(tree_store.clone(), child_key, child_from_nibbles)
-                    }),
-            )
-        }
-        TreeNode::Leaf(leaf) => Box::new(
-            Some(leaf)
-                .filter(move |leaf| leaf.key_suffix.nibbles().ge(from_nibbles))
-                .map(|leaf| ResolvedLeaf::new(at_key.nibble_path(), leaf))
-                .into_iter(),
-        ),
-        TreeNode::Null => Box::new(iter::empty()),
-    }
-}
-
-/// A relevant information from a [`TreeLeafNode`] (specifically, with a resolved [`NibblePath`]).
-#[derive(Clone, Hash, Debug, Eq, PartialEq, Ord, PartialOrd)]
-struct ResolvedLeaf {
-    nibble_path: NibblePath,
-    last_hash_change_version: Version,
-}
-
-impl ResolvedLeaf {
-    /// Creates an instance by augmenting the given [`TreeLeafNode`] with its missing key prefix.
-    pub fn new(key_prefix: &NibblePath, leaf: TreeLeafNode) -> Self {
-        let TreeLeafNode {
-            key_suffix,
-            last_hash_change_version,
-            ..
-        } = leaf;
-        Self {
-            nibble_path: NibblePath::from_iter(key_prefix.nibbles().chain(key_suffix.nibbles())),
-            last_hash_change_version,
-        }
     }
 }
 
@@ -443,6 +301,51 @@ mod tests {
         );
     }
 
+    #[test]
+    fn lists_partition_substates_from_different_starting_keys() {
+        let mut test_stores = TestStores::new_empty();
+        let the_only_version = test_stores.put_substate_changes(vec![
+            change(8, 7, 1, Some(3)),
+            change(8, 7, 2, Some(5)),
+            change(8, 7, 4, Some(7)),
+            change(8, 7, 7, Some(9)),
+        ]);
+
+        let subject = test_stores.create_subject(the_only_version);
+        let all_substates = subject
+            .list_entries_from(&partition_key(8, 7), None)
+            .collect::<Vec<_>>();
+        assert_eq!(
+            all_substates,
+            vec![
+                (sort_key(1), from_seed(3)),
+                (sort_key(2), from_seed(5)),
+                (sort_key(4), from_seed(7)),
+                (sort_key(7), from_seed(9)),
+            ]
+        );
+
+        let from_existent = subject
+            .list_entries_from(&partition_key(8, 7), Some(&sort_key(2)))
+            .collect::<Vec<_>>();
+        assert_eq!(from_existent, all_substates[1..]);
+
+        let from_non_existent = subject
+            .list_entries_from(&partition_key(8, 7), Some(&sort_key(3)))
+            .collect::<Vec<_>>();
+        assert_eq!(from_non_existent, all_substates[2..]);
+
+        let from_lt_min = subject
+            .list_entries_from(&partition_key(8, 7), Some(&sort_key(0)))
+            .collect::<Vec<_>>();
+        assert_eq!(from_lt_min, all_substates);
+
+        let from_gt_max = subject
+            .list_entries_from(&partition_key(8, 7), Some(&sort_key(9)))
+            .collect::<Vec<_>>();
+        assert_eq!(from_gt_max, vec![]);
+    }
+
     // Only test utils below:
 
     type SingleSubstateChange = (DbSubstateKey, DatabaseUpdate);
@@ -509,15 +412,13 @@ mod tests {
 
     struct TestStores {
         tree_store: TypedInMemoryTreeStore,
-        upsert_value_store: MemorySubstateUpsertValueStore,
         current_version: StateVersion,
     }
 
     impl TestStores {
         pub fn new_empty() -> Self {
             Self {
-                tree_store: TypedInMemoryTreeStore::new(),
-                upsert_value_store: MemorySubstateUpsertValueStore::default(),
+                tree_store: TypedInMemoryTreeStore::new().storing_substate_values(),
                 current_version: StateVersion::pre_genesis(),
             }
         }
@@ -556,15 +457,8 @@ mod tests {
         pub fn create_subject(
             &self,
             at_state_version: StateVersion,
-        ) -> StateHashTreeBasedSubstateDatabase<
-            TypedInMemoryTreeStore,
-            MemorySubstateUpsertValueStore,
-        > {
-            StateHashTreeBasedSubstateDatabase::new(
-                &self.tree_store,
-                &self.upsert_value_store,
-                at_state_version,
-            )
+        ) -> StateHashTreeBasedSubstateDatabase<TypedInMemoryTreeStore> {
+            StateHashTreeBasedSubstateDatabase::new(&self.tree_store, at_state_version)
         }
 
         fn apply_database_updates(&mut self, database_updates: &DatabaseUpdates) -> StateVersion {
@@ -575,8 +469,6 @@ mod tests {
                 database_updates,
             );
             let next_version = current_version.next().expect("too high version in a test");
-            self.upsert_value_store
-                .put_at_version(next_version, database_updates);
             self.current_version = next_version;
             self.current_version
         }
@@ -597,58 +489,14 @@ mod tests {
         }
     }
 
-    #[derive(Debug, PartialEq, Eq, Clone, Default)]
-    struct MemorySubstateUpsertValueStore {
-        memory: BTreeMap<(DbPartitionKey, DbSortKey, StateVersion), DbSubstateValue>,
-    }
-
-    impl MemorySubstateUpsertValueStore {
-        pub fn put_at_version(&mut self, version: StateVersion, updates: &DatabaseUpdates) {
-            for (node_key, node_updates) in &updates.node_updates {
-                for (partition_num, partition_updates) in &node_updates.partition_updates {
-                    let upserted_values = match partition_updates {
-                        PartitionDatabaseUpdates::Delta { substate_updates } => substate_updates
-                            .iter()
-                            .filter_map(|(sort_key, update)| match update {
-                                DatabaseUpdate::Set(value) => Some((sort_key, value)),
-                                DatabaseUpdate::Delete => None,
-                            })
-                            .collect::<Vec<_>>(),
-                        PartitionDatabaseUpdates::Reset {
-                            new_substate_values,
-                        } => new_substate_values.iter().collect::<Vec<_>>(),
-                    };
-                    for (sort_key, value) in upserted_values {
-                        self.memory.insert(
-                            (
-                                DbPartitionKey {
-                                    node_key: node_key.clone(),
-                                    partition_num: *partition_num,
-                                },
-                                sort_key.clone(),
-                                version,
-                            ),
-                            value.clone(),
-                        );
-                    }
-                }
-            }
-        }
-    }
-
-    impl SubstateUpsertValueStore for MemorySubstateUpsertValueStore {
-        fn get_value(
+    impl LeafSubstateValueStore for TypedInMemoryTreeStore {
+        fn get_associated_value(
             &self,
-            partition_key: &DbPartitionKey,
-            sort_key: &DbSortKey,
-            upserted_at_state_version: StateVersion,
+            state_tree_leaf_key: &StoredTreeNodeKey,
         ) -> Option<DbSubstateValue> {
-            self.memory
-                .get(&(
-                    partition_key.clone(),
-                    sort_key.clone(),
-                    upserted_at_state_version,
-                ))
+            self.associated_substate_values
+                .borrow()
+                .get(state_tree_leaf_key)
                 .cloned()
         }
     }

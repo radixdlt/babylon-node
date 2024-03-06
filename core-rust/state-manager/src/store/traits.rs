@@ -222,31 +222,14 @@ pub mod substate {
     /// course share the same parent).
     pub type KeyedSubstateNodeAncestryRecord = (Vec<NodeId>, SubstateNodeAncestryRecord);
 
-    /// A store of historical Substate upserts.
-    pub trait SubstateUpsertValueStore {
-        /// Returns a value that was upserted for the given Substate at the given version.
-        ///
-        /// Note: this is *not* a "historical values" store, but only its lower-level source of
-        /// values.
-        ///
-        /// E.g. if Substate "X" was created at version 7 with value "a", then updated at version 9
-        /// to value "b", and then deleted at version 13, we should expect:
-        /// - `get_value("X", 6) -> None`
-        /// - `get_value("X", 7) -> Some("a")`
-        /// - `get_value("X", 8) -> None`
-        /// - `get_value("X", 9) -> Some("b")`
-        /// - `get_value("X", 10) -> None`
-        /// - `get_value("X", 13) -> None`
-        /// - `get_value("X", 14) -> None`
-        ///
-        /// In other words, it only records the *acts of upserting* key-value pairs. It also
-        /// deliberately disregards deletes.
-        fn get_value(
-            &self,
-            partition_key: &DbPartitionKey,
-            sort_key: &DbSortKey,
-            upserted_at_state_version: StateVersion,
-        ) -> Option<DbSubstateValue>;
+    /// A store of historical substate values associated with state tree's leaves.
+    /// See [`WriteableTreeStore::associate_substate_value()`].
+    ///
+    /// Note: this is *not* a "historical values" store, but only its lower-level source of values.
+    pub trait LeafSubstateValueStore {
+        /// Returns a value associated with the given leaf, or [`None`] if the leaf does not exist
+        /// or the historical state feature was not enabled during creation of the leaf.
+        fn get_associated_value(&self, global_key: &StoredTreeNodeKey) -> Option<DbSubstateValue>;
     }
 }
 
@@ -477,7 +460,7 @@ pub mod commit {
     pub struct StaleTreePartsV1(pub Vec<StaleTreePart>);
 
     pub struct HashTreeUpdate {
-        pub new_nodes: Vec<(NodeKey, TreeNode)>,
+        pub new_nodes: Vec<(StoredTreeNodeKey, TreeNode)>,
         pub stale_tree_parts_at_state_version: Vec<(StateVersion, StaleTreeParts)>,
     }
 
@@ -673,7 +656,7 @@ pub mod gc {
         ) -> Box<dyn Iterator<Item = (StateVersion, StaleTreeParts)> + '_>;
 
         /// Deletes a batch of state hash tree nodes.
-        fn batch_delete_node<'a>(&self, keys: impl IntoIterator<Item = &'a NodeKey>);
+        fn batch_delete_node<'a>(&self, keys: impl IntoIterator<Item = &'a StoredTreeNodeKey>);
 
         /// Deletes a batch of stale hash tree parts' records.
         fn batch_delete_stale_tree_part<'a>(
