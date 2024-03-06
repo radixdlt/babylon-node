@@ -69,7 +69,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.DatabaseFlags;
+import com.radixdlt.environment.DatabaseConfig;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.lang.Option;
@@ -83,7 +83,7 @@ import org.junit.Test;
 public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_non_fungible_entity_changes() throws Exception {
-    try (var test = buildRunningServerTest(new DatabaseFlags(true, true))) {
+    try (var test = buildRunningServerTest(new DatabaseConfig(true, true))) {
       test.suppressUnusedWarning();
 
       var accountKeyPair = ECKeyPair.generateNew();
@@ -248,7 +248,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
 
   @Test
   public void test_multiple_transactions_have_correct_outcomes() throws Exception {
-    try (var test = buildRunningServerTest(new DatabaseFlags(true, true))) {
+    try (var test = buildRunningServerTest(new DatabaseConfig(true, true))) {
       test.suppressUnusedWarning();
 
       var faucetAddressStr = ScryptoConstants.FAUCET_ADDRESS.encode(networkDefinition);

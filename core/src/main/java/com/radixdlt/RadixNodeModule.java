@@ -277,8 +277,8 @@ public final class RadixNodeModule extends AbstractModule {
     var enableLocalTransactionExecutionIndex =
         properties.get("db.local_transaction_execution_index.enable", true);
     var enableAccountChangeIndex = properties.get("db.account_change_index.enable", true);
-    var databaseFlags =
-        new DatabaseFlags(enableLocalTransactionExecutionIndex, enableAccountChangeIndex);
+    var databaseConfig =
+        new DatabaseConfig(enableLocalTransactionExecutionIndex, enableAccountChangeIndex);
 
     install(new REv2LedgerInitializerModule(genesisProvider));
 
@@ -371,7 +371,7 @@ public final class RadixNodeModule extends AbstractModule {
         REv2StateManagerModule.create(
             ProposalLimitsConfig.from(vertexLimitsConfig),
             vertexLimitsConfig,
-            databaseFlags,
+            databaseConfig,
             Option.some(mempoolConfig),
             stateHashTreeGcConfig,
             ledgerProofsGcConfig,

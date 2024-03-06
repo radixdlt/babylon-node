@@ -77,7 +77,7 @@ public record StateManagerConfig(
     Option<RustMempoolConfig> mempoolConfigOpt,
     Option<VertexLimitsConfig> vertexLimitsConfigOpt,
     DatabaseBackendConfig databaseBackendConfig,
-    DatabaseFlags databaseFlags,
+    DatabaseConfig databaseConfig,
     LoggingConfig loggingConfig,
     StateHashTreeGcConfig stateHashTreeGcConfig,
     LedgerProofsGcConfig ledgerProofsGcConfig,

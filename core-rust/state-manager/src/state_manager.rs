@@ -79,7 +79,9 @@ use crate::{
     mempool_manager::MempoolManager,
     mempool_relay_dispatcher::MempoolRelayDispatcher,
     priority_mempool::PriorityMempool,
-    store::{jmt_gc::StateHashTreeGc, DatabaseBackendConfig, DatabaseFlags, RawDbMetricsCollector},
+    store::{
+        jmt_gc::StateHashTreeGc, DatabaseBackendConfig, DatabaseConfig, RawDbMetricsCollector,
+    },
     transaction::{CachedCommittabilityValidator, CommittabilityValidator, TransactionPreviewer},
     ActualStateManagerDatabase, PendingTransactionResultCache, ProtocolUpdateResult, StateComputer,
     StateManagerDatabase,
@@ -104,7 +106,7 @@ pub struct StateManagerConfig {
     pub mempool_config: Option<MempoolConfig>,
     pub vertex_limits_config: Option<VertexLimitsConfig>,
     pub database_backend_config: DatabaseBackendConfig,
-    pub database_flags: DatabaseFlags,
+    pub database_config: DatabaseConfig,
     pub logging_config: LoggingConfig,
     pub state_hash_tree_gc_config: StateHashTreeGcConfig,
     pub ledger_proofs_gc_config: LedgerProofsGcConfig,
@@ -127,7 +129,7 @@ impl StateManagerConfig {
             database_backend_config: DatabaseBackendConfig {
                 rocks_db_path: rocks_db_path.into(),
             },
-            database_flags: DatabaseFlags::default(),
+            database_config: DatabaseConfig::default(),
             logging_config: LoggingConfig::default(),
             state_hash_tree_gc_config: StateHashTreeGcConfig::default(),
             ledger_proofs_gc_config: LedgerProofsGcConfig::default(),
@@ -165,7 +167,7 @@ impl StateManager {
         let network = config.network_definition.clone();
 
         let db_path = PathBuf::from(config.database_backend_config.rocks_db_path.clone());
-        let raw_db = match StateManagerDatabase::new(db_path, config.database_flags.clone(), &network) {
+        let raw_db = match StateManagerDatabase::new(db_path, config.database_config.clone(), &network) {
             Ok(db) => db,
             Err(error) => {
                 match error {

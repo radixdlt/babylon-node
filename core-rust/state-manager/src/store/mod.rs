@@ -78,7 +78,7 @@ pub use rocks_db::{ActualStateManagerDatabase, StateManagerDatabase};
 pub use rocks_db::{ReadableRocks, WriteableRocks};
 use sbor::{Categorize, Decode, Encode};
 use std::sync::Arc;
-pub use traits::DatabaseFlags;
+pub use traits::DatabaseConfig;
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
 pub struct DatabaseBackendConfig {

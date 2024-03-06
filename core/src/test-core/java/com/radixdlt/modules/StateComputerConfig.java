@@ -73,7 +73,7 @@ import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.ProposerElections;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
-import com.radixdlt.environment.DatabaseFlags;
+import com.radixdlt.environment.DatabaseConfig;
 import com.radixdlt.environment.LedgerProofsGcConfig;
 import com.radixdlt.environment.StateHashTreeGcConfig;
 import com.radixdlt.genesis.GenesisData;
@@ -142,7 +142,7 @@ public sealed interface StateComputerConfig {
   static StateComputerConfig rev2(
       int networkId,
       GenesisData genesis,
-      DatabaseFlags databaseFlags,
+      DatabaseConfig databaseConfig,
       REV2ProposerConfig proposerConfig,
       boolean debugLogging,
       boolean noFees,
@@ -150,7 +150,7 @@ public sealed interface StateComputerConfig {
     return new REv2StateComputerConfig(
         networkId,
         genesis,
-        databaseFlags,
+        databaseConfig,
         proposerConfig,
         debugLogging,
         StateHashTreeGcConfig.forTesting(),
@@ -163,12 +163,12 @@ public sealed interface StateComputerConfig {
   static StateComputerConfig rev2(
       int networkId,
       GenesisData genesis,
-      DatabaseFlags databaseFlags,
+      DatabaseConfig databaseConfig,
       REV2ProposerConfig proposerConfig) {
     return new REv2StateComputerConfig(
         networkId,
         genesis,
-        databaseFlags,
+        databaseConfig,
         proposerConfig,
         false,
         StateHashTreeGcConfig.forTesting(),
@@ -191,7 +191,7 @@ public sealed interface StateComputerConfig {
     return new REv2StateComputerConfig(
         networkId,
         genesis,
-        new DatabaseFlags(true, false),
+        new DatabaseConfig(true, false),
         proposerConfig,
         false,
         StateHashTreeGcConfig.forTesting(),
@@ -263,7 +263,7 @@ public sealed interface StateComputerConfig {
   record REv2StateComputerConfig(
       int networkId,
       GenesisData genesis,
-      DatabaseFlags databaseFlags,
+      DatabaseConfig databaseConfig,
       REV2ProposerConfig proposerConfig,
       boolean debugLogging,
       StateHashTreeGcConfig stateHashTreeGcConfig,

@@ -106,7 +106,7 @@ public final class REv2StateManagerModule extends AbstractModule {
 
   private final ProposalLimitsConfig proposalLimitsConfig;
   private final Option<VertexLimitsConfig> vertexLimitsConfigOpt;
-  private final DatabaseFlags databaseFlags;
+  private final DatabaseConfig databaseConfig;
   private final Option<RustMempoolConfig> mempoolConfig;
   private final boolean debugLogging;
   private final StateHashTreeGcConfig stateHashTreeGcConfig;
@@ -118,7 +118,7 @@ public final class REv2StateManagerModule extends AbstractModule {
   private REv2StateManagerModule(
       ProposalLimitsConfig proposalLimitsConfig,
       Option<VertexLimitsConfig> vertexLimitsConfigOpt,
-      DatabaseFlags databaseFlags,
+      DatabaseConfig databaseConfig,
       Option<RustMempoolConfig> mempoolConfig,
       boolean debugLogging,
       StateHashTreeGcConfig stateHashTreeGcConfig,
@@ -128,7 +128,7 @@ public final class REv2StateManagerModule extends AbstractModule {
       boolean noFees) {
     this.proposalLimitsConfig = proposalLimitsConfig;
     this.vertexLimitsConfigOpt = vertexLimitsConfigOpt;
-    this.databaseFlags = databaseFlags;
+    this.databaseConfig = databaseConfig;
     this.mempoolConfig = mempoolConfig;
     this.debugLogging = debugLogging;
     this.stateHashTreeGcConfig = stateHashTreeGcConfig;
@@ -141,7 +141,7 @@ public final class REv2StateManagerModule extends AbstractModule {
   public static REv2StateManagerModule create(
       ProposalLimitsConfig proposalLimitsConfig,
       VertexLimitsConfig vertexLimitsConfig,
-      DatabaseFlags databaseFlags,
+      DatabaseConfig databaseConfig,
       Option<RustMempoolConfig> mempoolConfig,
       StateHashTreeGcConfig stateHashTreeGcConfig,
       LedgerProofsGcConfig ledgerProofsGcConfig,
@@ -150,7 +150,7 @@ public final class REv2StateManagerModule extends AbstractModule {
     return new REv2StateManagerModule(
         proposalLimitsConfig,
         Option.some(vertexLimitsConfig),
-        databaseFlags,
+        databaseConfig,
         mempoolConfig,
         false,
         stateHashTreeGcConfig,
@@ -162,7 +162,7 @@ public final class REv2StateManagerModule extends AbstractModule {
 
   public static REv2StateManagerModule createForTesting(
       ProposalLimitsConfig proposalLimitsConfig,
-      DatabaseFlags databaseFlags,
+      DatabaseConfig databaseConfig,
       Option<RustMempoolConfig> mempoolConfig,
       boolean debugLogging,
       StateHashTreeGcConfig stateHashTreeGcConfig,
@@ -173,7 +173,7 @@ public final class REv2StateManagerModule extends AbstractModule {
     return new REv2StateManagerModule(
         proposalLimitsConfig,
         Option.none(),
-        databaseFlags,
+        databaseConfig,
         mempoolConfig,
         debugLogging,
         stateHashTreeGcConfig,
@@ -188,7 +188,7 @@ public final class REv2StateManagerModule extends AbstractModule {
     bind(StateComputerLedger.StateComputer.class).to(REv2StateComputer.class);
     bind(REv2TransactionsAndProofReader.class).in(Scopes.SINGLETON);
     bind(TransactionsAndProofReader.class).to(REv2TransactionsAndProofReader.class);
-    bind(DatabaseFlags.class).toInstance(databaseFlags);
+    bind(DatabaseConfig.class).toInstance(databaseConfig);
     bind(LedgerSyncLimitsConfig.class).toInstance(ledgerSyncLimitsConfig);
     bind(ProtocolConfig.class).toInstance(protocolConfig);
     install(proposalLimitsConfig.asModule());
@@ -210,7 +210,7 @@ public final class REv2StateManagerModule extends AbstractModule {
               FatalPanicHandler fatalPanicHandler,
               Network network,
               DatabaseBackendConfig databaseBackendConfig,
-              DatabaseFlags databaseFlags) {
+              DatabaseConfig databaseConfig) {
             return new NodeRustEnvironment(
                 mempoolRelayDispatcher,
                 fatalPanicHandler,
@@ -219,7 +219,7 @@ public final class REv2StateManagerModule extends AbstractModule {
                     mempoolConfig,
                     vertexLimitsConfigOpt,
                     databaseBackendConfig,
-                    databaseFlags,
+                    databaseConfig,
                     getLoggingConfig(),
                     stateHashTreeGcConfig,
                     ledgerProofsGcConfig,

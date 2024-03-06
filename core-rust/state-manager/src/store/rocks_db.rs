@@ -682,11 +682,11 @@ impl<'db> Snapshottable<'db> for StateManagerDatabase<DirectRocks> {
 
 /// A RocksDB-backed persistence layer for state manager.
 pub struct StateManagerDatabase<R> {
-    /// Database feature flags.
+    /// Database config.
     ///
-    /// These were passed during construction, validated and persisted. They are made available by
-    /// this field as a cache.
-    config: DatabaseFlags,
+    /// The config is passed during construction, validated, persisted, and effectively immutable
+    /// during the state manager's lifetime. This field only acts as a cache.
+    config: DatabaseConfig,
 
     /// Underlying RocksDB instance.
     rocks: R,
@@ -695,7 +695,7 @@ pub struct StateManagerDatabase<R> {
 impl ActualStateManagerDatabase {
     pub fn new(
         root: PathBuf,
-        config: DatabaseFlags,
+        config: DatabaseConfig,
         network: &NetworkDefinition,
     ) -> Result<Self, DatabaseConfigValidationError> {
         let mut db_opts = Options::default();
@@ -710,18 +710,13 @@ impl ActualStateManagerDatabase {
         let db = DB::open_cf_descriptors(&db_opts, root.as_path(), column_families).unwrap();
 
         let state_manager_database = StateManagerDatabase {
-            config: config.clone(),
+            config,
             rocks: DirectRocks { db },
         };
 
-        let current_database_config = state_manager_database.read_flags_state();
-        config.validate(&current_database_config)?;
-        state_manager_database.write_flags(&config);
+        state_manager_database.validate_and_persist_new_config()?;
 
-        if state_manager_database.config.enable_account_change_index {
-            state_manager_database.catchup_account_change_index();
-        }
-
+        state_manager_database.catchup_account_change_index();
         state_manager_database.restore_december_2023_lost_substates(network);
 
         Ok(state_manager_database)
@@ -754,7 +749,7 @@ impl<R: ReadableRocks> StateManagerDatabase<R> {
                 .unwrap();
 
         StateManagerDatabase {
-            config: DatabaseFlags {
+            config: DatabaseConfig {
                 enable_local_transaction_execution_index: false,
                 enable_account_change_index: false,
             },
@@ -789,7 +784,7 @@ impl<R: SecondaryRocks> StateManagerDatabase<R> {
         .unwrap();
 
         StateManagerDatabase {
-            config: DatabaseFlags {
+            config: DatabaseConfig {
                 enable_local_transaction_execution_index: false,
                 enable_account_change_index: false,
             },
@@ -817,7 +812,14 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
 }
 
 impl<R: WriteableRocks> StateManagerDatabase<R> {
-    fn read_flags_state(&self) -> DatabaseFlagsState {
+    fn validate_and_persist_new_config(&self) -> Result<(), DatabaseConfigValidationError> {
+        let stored_config_state = self.read_config_state();
+        self.config.validate(&stored_config_state)?;
+        self.write_config();
+        Ok(())
+    }
+
+    fn read_config_state(&self) -> DatabaseConfigState {
         let db_context = self.open_read_context();
         let extension_data_cf = db_context.cf(ExtensionsDataCf);
         let account_change_index_enabled = extension_data_cf
@@ -826,22 +828,22 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
         let local_transaction_execution_index_enabled = extension_data_cf
             .get(&ExtensionsDataKey::LocalTransactionExecutionIndexEnabled)
             .map(|bytes| scrypto_decode::<bool>(&bytes).unwrap());
-        DatabaseFlagsState {
+        DatabaseConfigState {
             account_change_index_enabled,
             local_transaction_execution_index_enabled,
         }
     }
 
-    fn write_flags(&self, database_config: &DatabaseFlags) {
+    fn write_config(&self) {
         let db_context = self.open_rw_context();
         let extension_data_cf = db_context.cf(ExtensionsDataCf);
         extension_data_cf.put(
             &ExtensionsDataKey::AccountChangeIndexEnabled,
-            &scrypto_encode(&database_config.enable_account_change_index).unwrap(),
+            &scrypto_encode(&self.config.enable_account_change_index).unwrap(),
         );
         extension_data_cf.put(
             &ExtensionsDataKey::LocalTransactionExecutionIndexEnabled,
-            &scrypto_encode(&database_config.enable_local_transaction_execution_index).unwrap(),
+            &scrypto_encode(&self.config.enable_local_transaction_execution_index).unwrap(),
         );
     }
 }
@@ -1788,6 +1790,10 @@ impl<R: WriteableRocks> AccountChangeIndexExtension for StateManagerDatabase<R> 
     }
 
     fn catchup_account_change_index(&self) {
+        if !self.config.enable_account_change_index {
+            return; // Nothing to do
+        }
+
         const MAX_TRANSACTION_BATCH: u64 = 16 * 1024;
 
         info!("Account Change Index is enabled!");
