@@ -70,12 +70,12 @@ import static org.junit.Assert.assertEquals;
 import java.util.Map;
 import org.junit.Test;
 
-public class ExponentialPacemakerTimeoutCalculatorTest {
+public class MultiFactorPacemakerTimeoutCalculatorTest {
 
   @Test
   public void when_creating_timeout_calculator_with_invalid_timeout__then_exception_is_thrown() {
-    checkConstructionParams(0, 1.2, 1, "timeoutMilliseconds must be > 0");
-    checkConstructionParams(-1, 1.2, 1, "timeoutMilliseconds must be > 0");
+    checkConstructionParams(0, 1.2, 1, "timeoutMs must be > 0");
+    checkConstructionParams(-1, 1.2, 1, "timeoutMs must be > 0");
     checkConstructionParams(1, 1.0, 1, "rate must be > 1.0");
     checkConstructionParams(1, 1.2, -1, "maxExponent must be >= 0");
     checkConstructionParams(1, 100.0, 100, "Maximum timeout value");
@@ -83,8 +83,9 @@ public class ExponentialPacemakerTimeoutCalculatorTest {
 
   @Test
   public void timeout_should_grow_exponentially() {
-    final ExponentialPacemakerTimeoutCalculator calculator =
-        new ExponentialPacemakerTimeoutCalculator(1000L, 2.0, 6, 0L);
+    final MultiFactorPacemakerTimeoutCalculator calculator =
+        new MultiFactorPacemakerTimeoutCalculator(
+            new PacemakerTimeoutCalculatorConfig(1000L, 2.0, 6, 0L, 0, 1));
 
     final Map<Long, Long> expectedTimeouts =
         Map.of(
@@ -96,15 +97,45 @@ public class ExponentialPacemakerTimeoutCalculatorTest {
             5L, 32000L);
 
     expectedTimeouts.forEach(
-        (uncommittedRounds, expectedResult) ->
+        (timeoutOccurrences, expectedResult) ->
             assertEquals(
-                expectedResult.longValue(), calculator.calculateTimeoutMs(uncommittedRounds)));
+                expectedResult.longValue(), calculator.calculateTimeoutMs(timeoutOccurrences, 0)));
+  }
+
+  @Test
+  public void timeout_should_grow_linearly_when_vertex_store_size_is_above_threshold() {
+    final var baseTimeout = 1000L;
+    // No exponent, threshold = 0.6, max multiplier = 10
+    final MultiFactorPacemakerTimeoutCalculator calculator =
+        new MultiFactorPacemakerTimeoutCalculator(
+            new PacemakerTimeoutCalculatorConfig(baseTimeout, 2.0, 0, 0L, 0.6, 10));
+
+    // spotless:off
+    final Map<Double, Long> testCases =
+        Map.of(
+          (double) -1, baseTimeout,
+          0.5, baseTimeout,
+          0.6, baseTimeout,
+          0.61, 1225L,
+          0.7, 3250L,
+          0.8, 5500L,
+          0.999, 9978L,
+          (double) 1, baseTimeout * 10,
+          (double) 2, baseTimeout * 10,
+          (double) 5, baseTimeout * 10);
+    // spotless:on
+
+    testCases.forEach(
+        (vertexStoreUtilizationRatio, expectedResult) ->
+            assertEquals(
+                expectedResult.longValue(),
+                calculator.calculateTimeoutMs(0, vertexStoreUtilizationRatio)));
   }
 
   private void checkConstructionParams(
       long timeout, double rate, int maxExponent, String exceptionMessage) {
     assertThatThrownBy(
-            () -> new ExponentialPacemakerTimeoutCalculator(timeout, rate, maxExponent, 0L))
+            () -> new PacemakerTimeoutCalculatorConfig(timeout, rate, maxExponent, 0L, 0, 1))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageStartingWith(exceptionMessage);
   }

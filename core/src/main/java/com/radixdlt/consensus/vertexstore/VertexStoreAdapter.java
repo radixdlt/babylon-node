@@ -197,4 +197,8 @@ public final class VertexStoreAdapter {
   public int getCurrentSerializedSizeBytes() {
     return vertexStore.getCurrentSerializedSizeBytes();
   }
+
+  public double getCurrentUtilizationRatio() {
+    return vertexStore.getCurrentUtilizationRatio();
+  }
 }

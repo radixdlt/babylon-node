@@ -62,19 +62,36 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.liveness;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import com.google.common.base.Preconditions;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import javax.inject.Qualifier;
+public record PacemakerTimeoutCalculatorConfig(
+    long baseTimeoutMs,
+    double rate,
+    int maxExponent,
+    long additionalRoundTimeIfProposalReceivedMs,
+    double vertexStoreMultiplierThreshold,
+    double maxVertexStoreMultiplier) {
 
-/** Pacemaker's max exponent */
-@Qualifier
-@Target({FIELD, PARAMETER, METHOD})
-@Retention(RUNTIME)
-public @interface PacemakerMaxExponent {}
+  public PacemakerTimeoutCalculatorConfig {
+    Preconditions.checkArgument(
+        baseTimeoutMs > 0, "timeoutMs must be > 0 but was {}", baseTimeoutMs);
+
+    Preconditions.checkArgument(rate > 1.0, "rate must be > 1.0, but was {}", rate);
+
+    Preconditions.checkArgument(
+        maxExponent >= 0, "maxExponent must be >= 0, but was {}", maxExponent);
+
+    double maxTimeout = baseTimeoutMs * Math.pow(rate, maxExponent);
+    Preconditions.checkArgument(
+        maxTimeout <= Long.MAX_VALUE, "Maximum timeout value of {} is too large", maxTimeout);
+
+    Preconditions.checkArgument(
+        vertexStoreMultiplierThreshold >= 0 && vertexStoreMultiplierThreshold < 1,
+        "vertexStoreMultiplierThreshold must be between 0 (inclusive) and 1 (exclusive)");
+
+    Preconditions.checkArgument(
+        maxVertexStoreMultiplier >= 1, "maxVertexStoreMultiplier must be at least 1");
+  }
+}
