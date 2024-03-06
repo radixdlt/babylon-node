@@ -76,16 +76,16 @@ public record PacemakerTimeoutCalculatorConfig(
 
   public PacemakerTimeoutCalculatorConfig {
     Preconditions.checkArgument(
-        baseTimeoutMs > 0, "timeoutMs must be > 0 but was " + baseTimeoutMs);
+        baseTimeoutMs > 0, "timeoutMs must be > 0 but was {}", baseTimeoutMs);
 
-    Preconditions.checkArgument(rate > 1.0, "rate must be > 1.0, but was " + rate);
+    Preconditions.checkArgument(rate > 1.0, "rate must be > 1.0, but was {}", rate);
 
     Preconditions.checkArgument(
-        maxExponent >= 0, "maxExponent must be >= 0, but was " + maxExponent);
+        maxExponent >= 0, "maxExponent must be >= 0, but was {}", maxExponent);
 
     double maxTimeout = baseTimeoutMs * Math.pow(rate, maxExponent);
     Preconditions.checkArgument(
-        maxTimeout <= Long.MAX_VALUE, "Maximum timeout value of " + maxTimeout + " is too large");
+        maxTimeout <= Long.MAX_VALUE, "Maximum timeout value of {} is too large", maxTimeout);
 
     Preconditions.checkArgument(
         vertexStoreMultiplierThreshold >= 0 && vertexStoreMultiplierThreshold < 1,

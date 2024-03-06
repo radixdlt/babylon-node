@@ -64,6 +64,8 @@
 
 package com.radixdlt.consensus.liveness;
 
+import com.google.common.math.LinearTransformation;
+import com.google.common.primitives.Doubles;
 import com.google.inject.Inject;
 
 /**
@@ -80,6 +82,7 @@ public final class MultiFactorPacemakerTimeoutCalculator implements PacemakerTim
   }
 
   @Override
+  @SuppressWarnings("UnstableApiUsage")
   public long calculateTimeoutMs(long timeoutOccurrences, double vertexStoreUtilizationRatio) {
     final var exponential =
         Math.pow(config.rate(), Math.min(config.maxExponent(), timeoutOccurrences));
@@ -88,7 +91,7 @@ public final class MultiFactorPacemakerTimeoutCalculator implements PacemakerTim
 
     // It should already be in the [0, 1] range, but we're nonetheless sanitizing the input
     final var vertexStoreUtilizationRatioClamped =
-        Math.max(0, Math.min(1, vertexStoreUtilizationRatio));
+        Doubles.constrainToRange(vertexStoreUtilizationRatio, 0, 1);
 
     // We're only applying the multiplier if vertexStoreUtilizationRatio is
     // on or above vertexStoreMultiplierThreshold: we're translating from
@@ -99,23 +102,11 @@ public final class MultiFactorPacemakerTimeoutCalculator implements PacemakerTim
     final var multiplier =
         Math.max(
             1, // Multiplier is 1 (i.e. no-op) if we're below the threshold
-            lerp(
-                config.vertexStoreMultiplierThreshold(),
-                1,
-                1,
-                config.maxVertexStoreMultiplier(),
-                vertexStoreUtilizationRatioClamped));
+            LinearTransformation.mapping(config.vertexStoreMultiplierThreshold(), 1.0)
+                .and(1.0, config.maxVertexStoreMultiplier())
+                .transform(vertexStoreUtilizationRatioClamped));
 
     return Math.round(exponentialTimeout * multiplier);
-  }
-
-  // Computes a linear interpolation (or extrapolation)
-  // between [p, q] given the parameter z expressed in [x, y].
-  // E.g. if [x, y] = [10, 20], z = 15 and [p, q] = [0, 1], returns 0.5.
-  // If z is outside [x, y] then it's extrapolated (linearly) and can produce
-  // a value outside [p, q]. This should be handled by the caller.
-  private static double lerp(double x, double y, double p, double q, double z) {
-    return p + (q - p) * (z - x) / (y - x);
   }
 
   @Override

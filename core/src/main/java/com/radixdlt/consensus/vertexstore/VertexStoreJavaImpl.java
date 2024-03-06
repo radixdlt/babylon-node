@@ -69,6 +69,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
 import com.google.common.hash.HashCode;
+import com.google.common.primitives.Doubles;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Ledger;
@@ -518,10 +519,12 @@ public final class VertexStoreJavaImpl implements VertexStore {
   }
 
   @Override
+  @SuppressWarnings("UnstableApiUsage")
   public double getCurrentUtilizationRatio() {
     // In practice the actual size can slightly exceed the limit (see the comments above)
     // So we need to clamp the result at 1.
-    return Math.max(0, Math.min(1, currentSerializedSizeBytes / config.maxSerializedSizeBytes()));
+    return Doubles.constrainToRange(
+        (double) currentSerializedSizeBytes / config.maxSerializedSizeBytes(), 0, 1);
   }
 
   @VisibleForTesting
