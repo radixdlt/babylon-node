@@ -173,8 +173,8 @@ public final class RadixNodeModule extends AbstractModule {
     Preconditions.checkArgument(
         vertexStoreConfig.maxSerializedSizeBytes()
             >= VertexStoreConfig.MIN_MAX_SERIALIZED_SIZE_BYTES,
-        "Invalid configuration: bft.vertex_store.max_serialized_size_byte must be at least "
-            + VertexStoreConfig.MIN_MAX_SERIALIZED_SIZE_BYTES);
+        "Invalid configuration: bft.vertex_store.max_serialized_size_byte must be at least {}",
+        VertexStoreConfig.MIN_MAX_SERIALIZED_SIZE_BYTES);
 
     // System (e.g. time, random)
     install(new SystemModule());
