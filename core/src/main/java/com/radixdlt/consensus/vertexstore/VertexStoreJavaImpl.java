@@ -178,7 +178,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
       this.executedVertices.put(executedVertex.getVertexHash(), executedVertex);
     }
 
-    metrics.bft().vertexStore().size().set(vertexStoreState.getVertices().size());
+    metrics.bft().vertexStore().vertexCount().set(vertexStoreState.getVertices().size());
     metrics.bft().vertexStore().rebuilds().inc();
 
     return Result.success(new RebuildSummary(vertexStoreState, serializedVertexStoreState));
@@ -217,7 +217,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
       committedUpdate = Option.empty();
     }
 
-    metrics.bft().vertexStore().size().set(vertices.size());
+    metrics.bft().vertexStore().vertexCount().set(vertices.size());
 
     if (isHighQC || committedUpdate.isPresent()) {
       // We have either received a new highQc, or some vertices
@@ -402,7 +402,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
               trackCurrentStateSize(postInsertSerializedState);
 
               // Update the metrics
-              metrics.bft().vertexStore().size().set(vertices.size());
+              metrics.bft().vertexStore().vertexCount().set(vertices.size());
               if (siblings.size() > 1) {
                 metrics.bft().vertexStore().forks().inc();
               }

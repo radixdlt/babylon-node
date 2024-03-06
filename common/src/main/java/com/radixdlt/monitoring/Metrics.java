@@ -233,7 +233,7 @@ public record Metrics(
         Counter invalidEpochInitialQcSyncStates) {}
 
     public record VertexStore(
-        Gauge size,
+        Gauge vertexCount,
         Gauge byteSize,
         Counter forks,
         Counter rebuilds,

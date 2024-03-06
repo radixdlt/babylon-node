@@ -285,7 +285,7 @@ public final class DivergentExecutionLivenessBreakTest {
             assertTrue(metrics.bft().divergentVertexExecutions().getSum() > 1);
             // Cross-check another metric to verify that vertex store
             // indeed holds more vertices than expected in a healthy scenario.
-            assertTrue(metrics.bft().vertexStore().size().get() >= 20);
+            assertTrue(metrics.bft().vertexStore().vertexCount().get() >= 20);
           });
 
       // Another verification that we're in a liveness break
@@ -334,7 +334,7 @@ public final class DivergentExecutionLivenessBreakTest {
             // No more errors due to size limit
             assertEquals(0, (int) metrics.bft().vertexStore().errorsDueToSizeLimit().get());
             // There are no more than 3 vertices (as expected in a healthy network)
-            assertTrue(metrics.bft().vertexStore().size().get() <= 3);
+            assertTrue(metrics.bft().vertexStore().vertexCount().get() <= 3);
             // No timeouts
             assertEquals(
                 0,
