@@ -65,7 +65,9 @@
 package com.radixdlt.consensus.vertexstore;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Multimap;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HighQC;
@@ -99,7 +101,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
   private final VertexStoreConfig config;
 
   private final Map<HashCode, VertexWithHash> vertices = new HashMap<>();
-  private final Map<HashCode, Set<HashCode>> vertexChildren = new HashMap<>();
+  private final Multimap<HashCode, HashCode> vertexChildren = HashMultimap.create();
   private final Map<HashCode, ExecutedVertex> executedVertices = new HashMap<>();
 
   // These should never be null
@@ -133,13 +135,10 @@ public final class VertexStoreJavaImpl implements VertexStore {
     this.vertices.clear();
     this.executedVertices.clear();
     this.vertexChildren.clear();
-    this.vertexChildren.put(rootVertex.hash(), new HashSet<>());
 
     for (var vertexWithHash : state.getVertices()) {
       this.vertices.put(vertexWithHash.hash(), vertexWithHash);
-      this.vertexChildren.put(vertexWithHash.hash(), new HashSet<>());
-      var siblings = this.vertexChildren.get(vertexWithHash.vertex().getParentVertexId());
-      siblings.add(vertexWithHash.hash());
+      this.vertexChildren.put(vertexWithHash.vertex().getParentVertexId(), vertexWithHash.hash());
     }
 
     trackCurrentStateSize(serializedState);
@@ -190,7 +189,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
       return new VertexStore.InsertQcResult.VertexIsMissing();
     }
 
-    final var hasAnyChildren = !vertexChildren.get(qc.getProposedHeader().getVertexId()).isEmpty();
+    final var hasAnyChildren = vertexChildren.containsKey(qc.getProposedHeader().getVertexId());
     if (hasAnyChildren) {
       // TODO: Check to see if qc's match in case there's a fault
       return new VertexStore.InsertQcResult.Ignored();
@@ -393,9 +392,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
               // The vertex was executed successfully, so we're inserting it
               vertices.put(executedVertex.getVertexHash(), executedVertex.getVertexWithHash());
               executedVertices.put(executedVertex.getVertexHash(), executedVertex);
-              vertexChildren.put(executedVertex.getVertexHash(), new HashSet<>());
-              Set<HashCode> siblings = vertexChildren.get(executedVertex.getParentId());
-              siblings.add(executedVertex.getVertexHash());
+              vertexChildren.put(executedVertex.getParentId(), executedVertex.getVertexHash());
 
               // We've already calculated the post-insert state (and verified
               // its size against the limit), so we can just use it here.
@@ -403,7 +400,8 @@ public final class VertexStoreJavaImpl implements VertexStore {
 
               // Update the metrics
               metrics.bft().vertexStore().vertexCount().set(vertices.size());
-              if (siblings.size() > 1) {
+              final var vertexAndSiblings = vertexChildren.get(executedVertex.getParentId());
+              if (vertexAndSiblings.size() > 1) {
                 metrics.bft().vertexStore().forks().inc();
               }
               if (!vertexWithHash.vertex().hasDirectParent()) {
@@ -417,10 +415,9 @@ public final class VertexStoreJavaImpl implements VertexStore {
 
   private void removeVertexAndPruneInternal(HashCode vertexId, Optional<HashCode> skip) {
     Optional.ofNullable(vertices.remove(vertexId))
-        .flatMap(
+        .ifPresent(
             removedVertex ->
-                Optional.ofNullable(vertexChildren.get(removedVertex.vertex().getParentVertexId())))
-        .ifPresent(siblings -> siblings.remove(vertexId));
+                vertexChildren.remove(removedVertex.vertex().getParentVertexId(), vertexId));
 
     executedVertices.remove(vertexId);
 
@@ -428,12 +425,10 @@ public final class VertexStoreJavaImpl implements VertexStore {
       return;
     }
 
-    var children = vertexChildren.remove(vertexId);
-    if (children != null) {
-      for (HashCode child : children) {
-        if (!skip.map(child::equals).orElse(false)) {
-          removeVertexAndPruneInternal(child, Optional.empty());
-        }
+    final var children = vertexChildren.removeAll(vertexId);
+    for (HashCode child : children) {
+      if (!Optional.of(child).equals(skip)) {
+        removeVertexAndPruneInternal(child, Optional.empty());
       }
     }
   }
@@ -480,13 +475,8 @@ public final class VertexStoreJavaImpl implements VertexStore {
 
   private void getChildrenVerticesList(
       VertexWithHash parent, ImmutableList.Builder<VertexWithHash> builder) {
-    Set<HashCode> childrenIds = this.vertexChildren.get(parent.hash());
-    if (childrenIds == null) {
-      return;
-    }
-
-    for (HashCode childId : childrenIds) {
-      final var v = vertices.get(childId);
+    for (HashCode child : this.vertexChildren.get(parent.hash())) {
+      final var v = vertices.get(child);
       builder.add(v);
       getChildrenVerticesList(v, builder);
     }
