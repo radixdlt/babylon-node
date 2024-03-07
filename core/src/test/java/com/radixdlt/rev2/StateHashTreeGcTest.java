@@ -118,7 +118,8 @@ public final class StateHashTreeGcTest {
                             1,
                             Decimal.ONE,
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(100)),
-                        new DatabaseConfig(false, false),
+                        // TODO(historical-state): test that GC actually cleans the history table
+                        new DatabaseConfig(false, false, true),
                         REV2ProposerConfig.noUserTransactions(),
                         false,
                         new StateHashTreeGcConfig(

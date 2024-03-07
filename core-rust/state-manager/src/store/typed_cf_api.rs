@@ -111,6 +111,11 @@ impl<'r, R: WriteableRocks> BufferedWriteSupport<'r, R> {
             self.rocks.write(write_batch);
         }
     }
+
+    /// Returns the size of buffered data, in bytes.
+    fn buffered_data_size(&self) -> usize {
+        self.buffer.byte_size()
+    }
 }
 
 impl<'r, R: WriteableRocks> Drop for BufferedWriteSupport<'r, R> {
@@ -144,6 +149,11 @@ impl<'r, R: WriteableRocks> TypedDbContext<'r, R, BufferedWriteSupport<'r, R>> {
     /// subsequent reads).
     pub fn flush(&self) {
         self.write_support.flush();
+    }
+
+    /// Returns the size of buffered data, in bytes.
+    pub fn buffered_data_size(&self) -> usize {
+        self.write_support.buffered_data_size()
     }
 }
 
@@ -765,6 +775,10 @@ impl WriteBuffer {
 
     pub fn flip(&self) -> WriteBatch {
         self.write_batch.replace(WriteBatch::default())
+    }
+
+    pub fn byte_size(&self) -> usize {
+        self.write_batch.borrow().size_in_bytes()
     }
 }
 

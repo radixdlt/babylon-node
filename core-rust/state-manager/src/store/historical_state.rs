@@ -80,7 +80,7 @@ pub struct StateHashTreeBasedSubstateDatabase<'t, T> {
     at_state_version: StateVersion,
 }
 
-impl<'t, T: ReadableTreeStore + LeafSubstateValueStore> StateHashTreeBasedSubstateDatabase<'t, T> {
+impl<'t, T> StateHashTreeBasedSubstateDatabase<'t, T> {
     /// Creates an instance backed by the given lower-level stores and scoped at the given version.
     pub fn new(tree_store: &'t T, at_state_version: StateVersion) -> Self {
         Self {
@@ -94,6 +94,30 @@ impl<'t, T: ReadableTreeStore + LeafSubstateValueStore> StateHashTreeBasedSubsta
             self.tree_store,
             Some(self.at_state_version.number()).filter(|v| *v > 0),
         )
+    }
+}
+
+impl<'t, T: ReadableTreeStore> StateHashTreeBasedSubstateDatabase<'t, T> {
+    /// Returns an iterator over *all* Substate-Tier's leaf keys accessible from the scoped version
+    /// (i.e. from all Entities/Partitions).
+    /// Each Substate leaf key is accompanied by a full key of the Substate it represents.
+    pub fn iter_substate_leaf_keys(
+        &self,
+    ) -> impl Iterator<Item = (StoredTreeNodeKey, DbSubstateKey)> + 't {
+        self.create_entity_tier()
+            .into_iter_entity_partition_tiers_from(None)
+            .flat_map(|partition_tier| partition_tier.into_iter_partition_substate_tiers_from(None))
+            .flat_map(|substate_tier| {
+                let partition_key = substate_tier.partition_key().clone();
+                substate_tier
+                    .into_iter_substate_summaries_from(None)
+                    .map(move |summary| {
+                        (
+                            summary.state_tree_leaf_key,
+                            (partition_key.clone(), summary.sort_key),
+                        )
+                    })
+            })
     }
 }
 

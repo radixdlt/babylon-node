@@ -87,6 +87,7 @@ pub enum DatabaseConfigValidationError {
 pub struct DatabaseConfig {
     pub enable_local_transaction_execution_index: bool,
     pub enable_account_change_index: bool,
+    pub enable_historical_substate_values: bool,
 }
 
 impl Default for DatabaseConfig {
@@ -94,6 +95,7 @@ impl Default for DatabaseConfig {
         DatabaseConfig {
             enable_local_transaction_execution_index: true,
             enable_account_change_index: true,
+            enable_historical_substate_values: false,
         }
     }
 }
@@ -133,6 +135,8 @@ pub trait ConfigurableDatabase {
     fn is_account_change_index_enabled(&self) -> bool;
 
     fn is_local_transaction_execution_index_enabled(&self) -> bool;
+
+    fn is_historical_substate_value_storage_enabled(&self) -> bool;
 }
 
 #[derive(Debug, Clone)]
@@ -222,7 +226,7 @@ pub mod substate {
     /// course share the same parent).
     pub type KeyedSubstateNodeAncestryRecord = (Vec<NodeId>, SubstateNodeAncestryRecord);
 
-    /// A store of historical substate values associated with state tree's leaves.
+    /// A store of historical substate values associated with state hash tree's leaves.
     /// See [`WriteableTreeStore::associate_substate_value()`].
     ///
     /// Note: this is *not* a "historical values" store, but only its lower-level source of values.

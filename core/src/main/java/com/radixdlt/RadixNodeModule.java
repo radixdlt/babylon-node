@@ -274,11 +274,18 @@ public final class RadixNodeModule extends AbstractModule {
         NodeConstants.DEFAULT_MAX_TRANSACTION_SIZE);
     var mempoolConfig =
         new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount);
+
     var enableLocalTransactionExecutionIndex =
         properties.get("db.local_transaction_execution_index.enable", true);
     var enableAccountChangeIndex = properties.get("db.account_change_index.enable", true);
+    // TODO(during review): should it be on by default?
+    var enableHistoricalSubstateValues =
+        properties.get("db.historical_substate_values.enable", false);
     var databaseConfig =
-        new DatabaseConfig(enableLocalTransactionExecutionIndex, enableAccountChangeIndex);
+        new DatabaseConfig(
+            enableLocalTransactionExecutionIndex,
+            enableAccountChangeIndex,
+            enableHistoricalSubstateValues);
 
     install(new REv2LedgerInitializerModule(genesisProvider));
 
@@ -450,7 +457,7 @@ public final class RadixNodeModule extends AbstractModule {
     // - a peak user transaction throughput is 100 TPS;
     // - we want to offer Merkle proofs verification up to 10 minutes after their generation.
     var stateVersionHistoryLength =
-        properties.get("state_hash_tree.state_version_history_length", 60000);
+        properties.get("state_hash_tree.state_version_history_length", 5000);
     Preconditions.checkArgument(
         stateVersionHistoryLength >= 0,
         "state version history length must not be negative: %s",

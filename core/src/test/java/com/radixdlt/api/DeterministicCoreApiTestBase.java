@@ -106,6 +106,8 @@ import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 
 public abstract class DeterministicCoreApiTestBase {
+  private static final DatabaseConfig TEST_DATABASE_CONFIG = new DatabaseConfig(true, false, false);
+
   @Rule public TemporaryFolder folder = new TemporaryFolder();
   public static NetworkDefinition networkDefinition = NetworkDefinition.INT_TEST_NET;
   public static Addressing addressing = Addressing.ofNetwork(NetworkDefinition.INT_TEST_NET);
@@ -122,21 +124,18 @@ public abstract class DeterministicCoreApiTestBase {
 
   protected DeterministicTest buildRunningServerTest() {
     return buildRunningServerTest(
-        1000000,
-        new DatabaseConfig(true, false),
-        GenesisData.NO_SCENARIOS,
-        ProtocolConfig.testingDefault());
+        1000000, TEST_DATABASE_CONFIG, GenesisData.NO_SCENARIOS, ProtocolConfig.testingDefault());
   }
 
   protected DeterministicTest buildRunningServerTestWithProtocolConfig(
       int roundsPerEpoch, ProtocolConfig protocolConfig) {
     return buildRunningServerTest(
-        roundsPerEpoch, new DatabaseConfig(true, false), GenesisData.NO_SCENARIOS, protocolConfig);
+        roundsPerEpoch, TEST_DATABASE_CONFIG, GenesisData.NO_SCENARIOS, protocolConfig);
   }
 
   protected DeterministicTest buildRunningServerTestWithScenarios(ImmutableList<String> scenarios) {
     return buildRunningServerTest(
-        1000000, new DatabaseConfig(true, false), scenarios, ProtocolConfig.testingDefault());
+        1000000, TEST_DATABASE_CONFIG, scenarios, ProtocolConfig.testingDefault());
   }
 
   protected DeterministicTest buildRunningServerTest(DatabaseConfig databaseConfig) {
@@ -147,7 +146,7 @@ public abstract class DeterministicCoreApiTestBase {
   protected DeterministicTest buildRunningServerTest(int roundsPerEpoch) {
     return buildRunningServerTest(
         roundsPerEpoch,
-        new DatabaseConfig(true, false),
+        TEST_DATABASE_CONFIG,
         GenesisData.NO_SCENARIOS,
         ProtocolConfig.testingDefault());
   }

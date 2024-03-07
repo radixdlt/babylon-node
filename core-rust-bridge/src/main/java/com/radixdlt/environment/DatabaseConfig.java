@@ -69,7 +69,9 @@ import com.radixdlt.sbor.codec.StructCodec;
 
 /** Database configuration options */
 public record DatabaseConfig(
-    boolean enableLocalTransactionExecutionIndex, boolean enableAccountChangeIndex) {
+    boolean enableLocalTransactionExecutionIndex,
+    boolean enableAccountChangeIndex,
+    boolean enableHistoricalSubstateValues) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         DatabaseConfig.class,

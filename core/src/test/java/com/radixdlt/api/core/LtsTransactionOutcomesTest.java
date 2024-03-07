@@ -83,7 +83,7 @@ import org.junit.Test;
 public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_non_fungible_entity_changes() throws Exception {
-    try (var test = buildRunningServerTest(new DatabaseConfig(true, true))) {
+    try (var test = buildRunningServerTest(new DatabaseConfig(true, true, false))) {
       test.suppressUnusedWarning();
 
       var accountKeyPair = ECKeyPair.generateNew();
@@ -248,7 +248,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
 
   @Test
   public void test_multiple_transactions_have_correct_outcomes() throws Exception {
-    try (var test = buildRunningServerTest(new DatabaseConfig(true, true))) {
+    try (var test = buildRunningServerTest(new DatabaseConfig(true, true, false))) {
       test.suppressUnusedWarning();
 
       var faucetAddressStr = ScryptoConstants.FAUCET_ADDRESS.encode(networkDefinition);
