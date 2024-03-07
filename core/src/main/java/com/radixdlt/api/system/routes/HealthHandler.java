@@ -72,7 +72,7 @@ import com.radixdlt.api.system.generated.models.*;
 import com.radixdlt.api.system.health.HealthInfoService;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Tuple;
-import com.radixdlt.ledger.LedgerProofBundle;
+import com.radixdlt.monitoring.LedgerSummary;
 import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactAtStartOfEpochIfValidatorsReady;
 import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactAtStartOfEpochUnconditionally;
 import com.radixdlt.statecomputer.ProtocolState;
@@ -80,8 +80,6 @@ import com.radixdlt.statecomputer.ProtocolState.PendingProtocolUpdateState.ForSi
 import java.util.stream.Collectors;
 
 public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
-  private static final long EXPECTED_EPOCH_LENGTH_IN_MS = 5 * 60_000 /* 5 min */;
-
   private final HealthInfoService healthInfoService;
 
   @Inject
@@ -106,7 +104,6 @@ public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
     final var readinessSignalStatuses = healthInfoService.readinessSignalStatuses();
 
     final var ledgerSummary = healthInfoService.ledgerSummary();
-    final var latestProof = ledgerSummary.latestProof();
     final var protocolState = ledgerSummary.protocolState();
 
     return new HealthResponse()
@@ -134,24 +131,20 @@ public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
                             readinessSignalStatuses.getOrDefault(
                                 p.protocolUpdateTrigger().nextProtocolVersion(),
                                 NO_SIGNAL_REQUIRED),
-                            latestProof))
+                            ledgerSummary))
                 .toList());
   }
 
   private com.radixdlt.api.system.generated.models.PendingProtocolUpdate pendingProtocolUpdate(
       ProtocolState.PendingProtocolUpdate pendingProtocolUpdate,
       PendingProtocolUpdate.ReadinessSignalStatusEnum readinessSignalStatus,
-      LedgerProofBundle latestProof) {
-    final var latestEpochProof = latestProof.closestEpochProofOnOrBefore();
-    final var latestEpochChange = latestEpochProof.ledgerHeader().nextEpoch().unwrap();
-    final var currentEpoch = latestEpochChange.epoch().toLong();
-    // It's okay to use proposer timestamp (rather than epoch effective start)
-    // for the purpose of this estimate.
+      LedgerSummary ledgerSummary) {
+    final var currentEpoch = ledgerSummary.currentEpoch();
     final var epochStartTimeCalculator =
         new EpochStartTimeCalculator(
-            EXPECTED_EPOCH_LENGTH_IN_MS,
+            ledgerSummary.consensusManagerConfigEpochTargetDurationMs(),
             currentEpoch,
-            latestEpochProof.ledgerHeader().proposerTimestampMs());
+            ledgerSummary.consenusManagerStateEpochEffectiveStartMs());
 
     return switch (pendingProtocolUpdate.protocolUpdateTrigger().enactmentCondition()) {
       case EnactAtStartOfEpochIfValidatorsReady condition -> {

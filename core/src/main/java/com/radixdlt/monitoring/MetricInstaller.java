@@ -150,30 +150,12 @@ public final class MetricInstaller {
     return this.self.bftValidatorId().stream()
         .anyMatch(
             selfValidatorId ->
-                this.inMemorySystemInfo
-                    .getLedgerSummary()
-                    .latestProof()
-                    .closestEpochProofOnOrBefore()
-                    .ledgerHeader()
-                    .nextEpoch()
-                    .map(
-                        nextEpoch ->
-                            nextEpoch.validators().stream()
-                                .anyMatch(
-                                    v ->
-                                        BFTValidatorId.create(v.address(), v.key())
-                                            .equals(selfValidatorId)))
-                    .orElse(false));
+                this.inMemorySystemInfo.getLedgerSummary().currentEpochValidators().stream()
+                    .anyMatch(
+                        v -> BFTValidatorId.create(v.address(), v.key()).equals(selfValidatorId)));
   }
 
   private int countValidators() {
-    return this.inMemorySystemInfo
-        .getLedgerSummary()
-        .latestProof()
-        .closestEpochProofOnOrBefore()
-        .ledgerHeader()
-        .nextEpoch()
-        .map(ne -> ne.validators().size())
-        .orElse(0);
+    return this.inMemorySystemInfo.getLedgerSummary().currentEpochValidators().size();
   }
 }

@@ -64,7 +64,13 @@
 
 package com.radixdlt.monitoring;
 
-import com.radixdlt.ledger.LedgerProofBundle;
 import com.radixdlt.statecomputer.ProtocolState;
+import com.radixdlt.statecomputer.commit.ActiveValidatorInfo;
+import java.util.Set;
 
-public record LedgerSummary(LedgerProofBundle latestProof, ProtocolState protocolState) {}
+public record LedgerSummary(
+    ProtocolState protocolState,
+    long currentEpoch,
+    Set<ActiveValidatorInfo> currentEpochValidators,
+    long consensusManagerConfigEpochTargetDurationMs,
+    long consenusManagerStateEpochEffectiveStartMs) {}

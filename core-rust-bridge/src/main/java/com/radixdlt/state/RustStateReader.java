@@ -67,9 +67,11 @@ package com.radixdlt.state;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.environment.NodeRustEnvironment;
 import com.radixdlt.lang.Option;
+import com.radixdlt.lang.Tuple;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.sbor.Natives;
+import com.radixdlt.utils.UInt64;
 
 public final class RustStateReader {
   static {
@@ -87,6 +89,26 @@ public final class RustStateReader {
                     new Metrics.MethodId(
                         RustStateReader.class, "getValidatorProtocolUpdateReadinessSignal")))
             .build(new TypeToken<>() {});
+    getConsensusManagerConfigEpochTargetDurationMsFunc =
+        Natives.builder(
+                nodeRustEnvironment,
+                RustStateReader::getConsensusManagerConfigEpochTargetDurationMs)
+            .measure(
+                timer.label(
+                    new Metrics.MethodId(
+                        RustStateReader.class,
+                        "getConsensusManagerConfigEpochTargetDurationMs")))
+            .build(new TypeToken<>() {});
+    getConsensusManagerStateEpochEffectiveStartMsFunc =
+        Natives.builder(
+                nodeRustEnvironment,
+                RustStateReader::getConsensusManagerStateEpochEffectiveStartMs)
+            .measure(
+                timer.label(
+                    new Metrics.MethodId(
+                        RustStateReader.class,
+                        "getConsensusManagerStateEpochEffectiveStartMs")))
+            .build(new TypeToken<>() {});
   }
 
   public Option<String> getValidatorProtocolUpdateReadinessSignal(
@@ -99,4 +121,23 @@ public final class RustStateReader {
 
   private final Natives.Call1<ComponentAddress, Option<String>>
       getValidatorProtocolUpdateReadinessSignalFunc;
+
+  public UInt64 getConsensusManagerConfigEpochTargetDurationMs() {
+    return this.getConsensusManagerConfigEpochTargetDurationMsFunc.call(Tuple.Tuple0.of());
+  }
+
+  private static native byte[] getConsensusManagerConfigEpochTargetDurationMs(
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
+
+  private final Natives.Call1<Tuple.Tuple0, UInt64>
+      getConsensusManagerConfigEpochTargetDurationMsFunc;
+
+  public long getConsensusManagerStateEpochEffectiveStartMs() {
+    return this.getConsensusManagerStateEpochEffectiveStartMsFunc.call(Tuple.Tuple0.of());
+  }
+
+  private static native byte[] getConsensusManagerStateEpochEffectiveStartMs(
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
+
+  private final Natives.Call1<Tuple.Tuple0, Long> getConsensusManagerStateEpochEffectiveStartMsFunc;
 }
