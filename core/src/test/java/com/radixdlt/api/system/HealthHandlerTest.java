@@ -64,16 +64,96 @@
 
 package com.radixdlt.api.system;
 
+import static com.radixdlt.lang.Tuple.tuple;
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.inject.AbstractModule;
 import com.google.inject.Inject;
 import com.radixdlt.api.SystemApiTestBase;
 import com.radixdlt.api.system.generated.models.HealthResponse;
+import com.radixdlt.api.system.generated.models.SignalledReadinessPendingProtocolUpdateState;
 import com.radixdlt.api.system.routes.HealthHandler;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.epoch.EpochRound;
+import com.radixdlt.monitoring.InMemorySystemInfo;
+import com.radixdlt.monitoring.LedgerSummary;
+import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition;
+import com.radixdlt.protocol.ProtocolUpdateTrigger;
+import com.radixdlt.rev2.Decimal;
+import com.radixdlt.statecomputer.ProtocolState;
+import com.radixdlt.utils.UInt64;
+import java.util.Set;
 import org.junit.Test;
 
 public class HealthHandlerTest extends SystemApiTestBase {
+
+  // Test setup parameters
+  // Threshold: 70% for 20 epochs.
+  // At epoch 100 we already have 5 started epochs of support.
+  // Expected enactment at start of epoch 116.
+  private static final long REQUIRED_EPOCHS = 20L;
+  private static final long STARTED_EPOCHS_OF_SUPPORT = 5L;
+  private static final long CURRENT_EPOCH = 100L;
+  private static final long EPOCH_TARGET_DURATION_MS = 5 * 60 * 1000; /* 5 minutes */
+  private static final long EPOCH_EFFECTIVE_START_MS = 1709835872431L;
+
+  // Test assertion parameters
+  private static final long EXPECTED_PROJECTED_ENACTMENT_EPOCH = 116;
+  private static final long EXPECTED_PROJECTED_ENACTMENT_TIMESTAMP =
+      EPOCH_EFFECTIVE_START_MS + (EPOCH_TARGET_DURATION_MS * 16);
+
   @Inject private HealthHandler sut;
+
+  public HealthHandlerTest() {
+    super(
+        new AbstractModule() {
+          @Override
+          public void configure() {
+            final var threshold =
+                new ProtocolUpdateEnactmentCondition.SignalledReadinessThreshold(
+                    Decimal.ofNonNegativeFraction(7, 10),
+                    UInt64.fromNonNegativeLong(REQUIRED_EPOCHS));
+            final var thresholdState =
+                new ProtocolState.PendingProtocolUpdateState.SignalledReadinessThresholdState(
+                    UInt64.fromNonNegativeLong(STARTED_EPOCHS_OF_SUPPORT));
+            final var pendingProtocolUpdate =
+                new ProtocolState.PendingProtocolUpdate(
+                    new ProtocolUpdateTrigger(
+                        "pending-v3",
+                        new ProtocolUpdateEnactmentCondition.EnactAtStartOfEpochIfValidatorsReady(
+                            UInt64.fromNonNegativeLong(10L),
+                            UInt64.fromNonNegativeLong(200L),
+                            ImmutableList.of(threshold))),
+                    new ProtocolState.PendingProtocolUpdateState
+                        .ForSignalledReadinessSupportCondition(
+                        ImmutableList.of(tuple(threshold, thresholdState))));
+            final var protocolState =
+                new ProtocolState(
+                    "genesis",
+                    ImmutableMap.of(UInt64.fromNonNegativeLong(5L), "enacted-v2"),
+                    ImmutableList.of(pendingProtocolUpdate));
+
+            final var systemInfo = mock(InMemorySystemInfo.class);
+            when(systemInfo.getCurrentRound())
+                .thenReturn(EpochRound.of(CURRENT_EPOCH, Round.epochInitial()));
+            when(systemInfo.getLedgerSummary())
+                .thenReturn(
+                    new LedgerSummary(
+                        protocolState,
+                        CURRENT_EPOCH,
+                        Set.of() /* unused in this test */,
+                        EPOCH_TARGET_DURATION_MS,
+                        EPOCH_EFFECTIVE_START_MS));
+            bind(InMemorySystemInfo.class).toInstance(systemInfo);
+          }
+        });
+  }
 
   @Test
   public void can_retrieve_health_response() throws Exception {
@@ -85,5 +165,43 @@ public class HealthHandlerTest extends SystemApiTestBase {
 
     // Assert
     assertThat(response.getStatus()).isNotNull();
+  }
+
+  @Test
+  public void test_protocol_update_enactment_projection() throws Exception {
+    // Arrange
+    start();
+
+    // Act
+    final var response = handleRequestWithExpectedResponse(sut, HealthResponse.class);
+
+    // Assert
+    assertEquals(
+        EXPECTED_PROJECTED_ENACTMENT_EPOCH,
+        requireNonNull(
+                response.getPendingProtocolUpdates().get(0).getProjectedEnactmentAtStartOfEpoch())
+            .longValue());
+
+    assertEquals(
+        EXPECTED_PROJECTED_ENACTMENT_TIMESTAMP,
+        requireNonNull(response.getPendingProtocolUpdates().get(0).getProjectedEnactmentTimestamp())
+            .longValue());
+
+    final var thresholdState =
+        ((SignalledReadinessPendingProtocolUpdateState)
+                response.getPendingProtocolUpdates().get(0).getState())
+            .getThresholdsState()
+            .get(0)
+            .getThresholdState();
+
+    assertEquals(
+        STARTED_EPOCHS_OF_SUPPORT,
+        requireNonNull(thresholdState.getConsecutiveStartedEpochsOfSupport()).longValue());
+    assertEquals(
+        EXPECTED_PROJECTED_ENACTMENT_EPOCH,
+        requireNonNull(thresholdState.getProjectedFulfillmentAtStartOfEpoch()).longValue());
+    assertEquals(
+        EXPECTED_PROJECTED_ENACTMENT_TIMESTAMP,
+        requireNonNull(thresholdState.getProjectedFulfillmentTimestamp()).longValue());
   }
 }

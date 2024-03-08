@@ -64,98 +64,13 @@
 
 package com.radixdlt.monitoring;
 
-import com.google.inject.Inject;
-import com.radixdlt.addressing.Addressing;
-import com.radixdlt.consensus.bft.BFTValidatorId;
-import com.radixdlt.consensus.bft.SelfValidatorInfo;
-import com.radixdlt.monitoring.Metrics.Config;
-import com.radixdlt.p2p.PeersView;
-import com.radixdlt.rev2.modules.REv2LedgerInitializerToken;
-import com.radixdlt.utils.TimeSupplier;
+import com.radixdlt.statecomputer.ProtocolState;
+import com.radixdlt.statecomputer.commit.ActiveValidatorInfo;
+import java.util.Set;
 
-/** An installer of extra metrics which do not follow the conventional Prometheus usage patterns. */
-public final class MetricInstaller {
-
-  /** An own node, for exposing the {@link Config} information. */
-  private final SelfValidatorInfo self;
-
-  /** A source of post-genesis ledger hashes. */
-  private final REv2LedgerInitializerToken ledgerInitialization;
-
-  /** A source of "system" getters to be exposed as gauges. */
-  private final InMemorySystemInfo inMemorySystemInfo;
-
-  /** A source of "peers" getters to be exposed as gauges. */
-  private final PeersView peersView;
-
-  /** An address renderer (for self validator component). */
-  private final Addressing addressing;
-
-  /** A wallclock, to be exposed as a metric as well. */
-  private final TimeSupplier timeSupplier;
-
-  @Inject
-  public MetricInstaller(
-      final SelfValidatorInfo self,
-      final REv2LedgerInitializerToken ledgerInitialization,
-      final InMemorySystemInfo inMemorySystemInfo,
-      final PeersView peersView,
-      final Addressing addressing,
-      final TimeSupplier timeSupplier) {
-    this.self = self;
-    this.ledgerInitialization = ledgerInitialization;
-    this.inMemorySystemInfo = inMemorySystemInfo;
-    this.peersView = peersView;
-    this.addressing = addressing;
-    this.timeSupplier = timeSupplier;
-  }
-
-  /**
-   * Sets up the metrics which - for different reasons (most often legacy) - do not use the regular
-   * Prometheus measurement primitives.
-   *
-   * <p>This includes e.g. static "info" metrics, and directly-read "getter gauges".
-   *
-   * @param metrics Hierarchy where some legacy metrics need to be set.
-   */
-  public void installAt(Metrics metrics) {
-    final var config =
-        new Config(
-            ApplicationVersion.INSTANCE.string(),
-            this.self.key().toHex(),
-            this.self
-                .bftValidatorId()
-                .map(id -> this.addressing.encode(id.getValidatorAddress()))
-                .orElse(null),
-            this.ledgerInitialization.postGenesisEpochProof().ledgerHeader().hashes().stateRoot());
-    metrics.misc().config().set(config);
-    metrics.misc().peerCount().initialize(() -> this.peersView.peers().count());
-    metrics
-        .misc()
-        .wallclockEpochSecond()
-        .initialize(() -> this.timeSupplier.currentTime() / 1000.0);
-    metrics.bft().validatorCount().initialize(this::countValidators);
-    metrics.bft().inValidatorSet().initialize(() -> this.isInValidatorSet() ? 1 : 0);
-    metrics
-        .epochManager()
-        .currentEpoch()
-        .initialize(() -> this.inMemorySystemInfo.getCurrentRound().getEpoch());
-    metrics
-        .epochManager()
-        .currentRound()
-        .initialize(() -> this.inMemorySystemInfo.getCurrentRound().getRound().number());
-  }
-
-  private boolean isInValidatorSet() {
-    return this.self.bftValidatorId().stream()
-        .anyMatch(
-            selfValidatorId ->
-                this.inMemorySystemInfo.getLedgerSummary().currentEpochValidators().stream()
-                    .anyMatch(
-                        v -> BFTValidatorId.create(v.address(), v.key()).equals(selfValidatorId)));
-  }
-
-  private int countValidators() {
-    return this.inMemorySystemInfo.getLedgerSummary().currentEpochValidators().size();
-  }
-}
+public record LedgerSummary(
+    ProtocolState protocolState,
+    long currentEpoch,
+    Set<ActiveValidatorInfo> currentEpochValidators,
+    long consensusManagerConfigEpochTargetDurationMs,
+    long consenusManagerStateEpochEffectiveStartMs) {}

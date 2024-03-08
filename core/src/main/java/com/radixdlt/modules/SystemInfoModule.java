@@ -104,8 +104,6 @@ public class SystemInfoModule extends AbstractModule {
   private EventProcessorOnRunner<?> epochRoundUpdateEventProcessor(
       InMemorySystemInfo inMemorySystemInfo) {
     return new EventProcessorOnRunner<>(
-        Runners.SYSTEM_INFO,
-        EpochRoundUpdate.class,
-        v -> inMemorySystemInfo.processEpochRound(v.getEpochRound()));
+        Runners.SYSTEM_INFO, EpochRoundUpdate.class, inMemorySystemInfo::processRoundUpdate);
   }
 }

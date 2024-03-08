@@ -31,12 +31,20 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * SignalledReadinessThresholdState
  */
 @JsonPropertyOrder({
-  SignalledReadinessThresholdState.JSON_PROPERTY_CONSECUTIVE_STARTED_EPOCHS_OF_SUPPORT
+  SignalledReadinessThresholdState.JSON_PROPERTY_CONSECUTIVE_STARTED_EPOCHS_OF_SUPPORT,
+  SignalledReadinessThresholdState.JSON_PROPERTY_PROJECTED_FULFILLMENT_AT_START_OF_EPOCH,
+  SignalledReadinessThresholdState.JSON_PROPERTY_PROJECTED_FULFILLMENT_TIMESTAMP
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class SignalledReadinessThresholdState {
   public static final String JSON_PROPERTY_CONSECUTIVE_STARTED_EPOCHS_OF_SUPPORT = "consecutive_started_epochs_of_support";
   private Long consecutiveStartedEpochsOfSupport;
+
+  public static final String JSON_PROPERTY_PROJECTED_FULFILLMENT_AT_START_OF_EPOCH = "projected_fulfillment_at_start_of_epoch";
+  private Long projectedFulfillmentAtStartOfEpoch;
+
+  public static final String JSON_PROPERTY_PROJECTED_FULFILLMENT_TIMESTAMP = "projected_fulfillment_timestamp";
+  private Long projectedFulfillmentTimestamp;
 
 
   public SignalledReadinessThresholdState consecutiveStartedEpochsOfSupport(Long consecutiveStartedEpochsOfSupport) {
@@ -65,6 +73,58 @@ public class SignalledReadinessThresholdState {
   }
 
 
+  public SignalledReadinessThresholdState projectedFulfillmentAtStartOfEpoch(Long projectedFulfillmentAtStartOfEpoch) {
+    this.projectedFulfillmentAtStartOfEpoch = projectedFulfillmentAtStartOfEpoch;
+    return this;
+  }
+
+   /**
+   * Get projectedFulfillmentAtStartOfEpoch
+   * @return projectedFulfillmentAtStartOfEpoch
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_PROJECTED_FULFILLMENT_AT_START_OF_EPOCH)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public Long getProjectedFulfillmentAtStartOfEpoch() {
+    return projectedFulfillmentAtStartOfEpoch;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_PROJECTED_FULFILLMENT_AT_START_OF_EPOCH)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setProjectedFulfillmentAtStartOfEpoch(Long projectedFulfillmentAtStartOfEpoch) {
+    this.projectedFulfillmentAtStartOfEpoch = projectedFulfillmentAtStartOfEpoch;
+  }
+
+
+  public SignalledReadinessThresholdState projectedFulfillmentTimestamp(Long projectedFulfillmentTimestamp) {
+    this.projectedFulfillmentTimestamp = projectedFulfillmentTimestamp;
+    return this;
+  }
+
+   /**
+   * Get projectedFulfillmentTimestamp
+   * @return projectedFulfillmentTimestamp
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_PROJECTED_FULFILLMENT_TIMESTAMP)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public Long getProjectedFulfillmentTimestamp() {
+    return projectedFulfillmentTimestamp;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_PROJECTED_FULFILLMENT_TIMESTAMP)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setProjectedFulfillmentTimestamp(Long projectedFulfillmentTimestamp) {
+    this.projectedFulfillmentTimestamp = projectedFulfillmentTimestamp;
+  }
+
+
   /**
    * Return true if this SignalledReadinessThresholdState object is equal to o.
    */
@@ -77,12 +137,14 @@ public class SignalledReadinessThresholdState {
       return false;
     }
     SignalledReadinessThresholdState signalledReadinessThresholdState = (SignalledReadinessThresholdState) o;
-    return Objects.equals(this.consecutiveStartedEpochsOfSupport, signalledReadinessThresholdState.consecutiveStartedEpochsOfSupport);
+    return Objects.equals(this.consecutiveStartedEpochsOfSupport, signalledReadinessThresholdState.consecutiveStartedEpochsOfSupport) &&
+        Objects.equals(this.projectedFulfillmentAtStartOfEpoch, signalledReadinessThresholdState.projectedFulfillmentAtStartOfEpoch) &&
+        Objects.equals(this.projectedFulfillmentTimestamp, signalledReadinessThresholdState.projectedFulfillmentTimestamp);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(consecutiveStartedEpochsOfSupport);
+    return Objects.hash(consecutiveStartedEpochsOfSupport, projectedFulfillmentAtStartOfEpoch, projectedFulfillmentTimestamp);
   }
 
   @Override
@@ -90,6 +152,8 @@ public class SignalledReadinessThresholdState {
     StringBuilder sb = new StringBuilder();
     sb.append("class SignalledReadinessThresholdState {\n");
     sb.append("    consecutiveStartedEpochsOfSupport: ").append(toIndentedString(consecutiveStartedEpochsOfSupport)).append("\n");
+    sb.append("    projectedFulfillmentAtStartOfEpoch: ").append(toIndentedString(projectedFulfillmentAtStartOfEpoch)).append("\n");
+    sb.append("    projectedFulfillmentTimestamp: ").append(toIndentedString(projectedFulfillmentTimestamp)).append("\n");
     sb.append("}");
     return sb.toString();
   }

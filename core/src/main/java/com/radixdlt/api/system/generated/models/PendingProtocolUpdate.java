@@ -35,7 +35,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   PendingProtocolUpdate.JSON_PROPERTY_PROTOCOL_VERSION,
   PendingProtocolUpdate.JSON_PROPERTY_STATE,
   PendingProtocolUpdate.JSON_PROPERTY_READINESS_SIGNAL_NAME,
-  PendingProtocolUpdate.JSON_PROPERTY_READINESS_SIGNAL_STATUS
+  PendingProtocolUpdate.JSON_PROPERTY_READINESS_SIGNAL_STATUS,
+  PendingProtocolUpdate.JSON_PROPERTY_PROJECTED_ENACTMENT_AT_START_OF_EPOCH,
+  PendingProtocolUpdate.JSON_PROPERTY_PROJECTED_ENACTMENT_TIMESTAMP
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class PendingProtocolUpdate {
@@ -87,6 +89,12 @@ public class PendingProtocolUpdate {
 
   public static final String JSON_PROPERTY_READINESS_SIGNAL_STATUS = "readiness_signal_status";
   private ReadinessSignalStatusEnum readinessSignalStatus;
+
+  public static final String JSON_PROPERTY_PROJECTED_ENACTMENT_AT_START_OF_EPOCH = "projected_enactment_at_start_of_epoch";
+  private Long projectedEnactmentAtStartOfEpoch;
+
+  public static final String JSON_PROPERTY_PROJECTED_ENACTMENT_TIMESTAMP = "projected_enactment_timestamp";
+  private Long projectedEnactmentTimestamp;
 
 
   public PendingProtocolUpdate protocolVersion(String protocolVersion) {
@@ -193,6 +201,58 @@ public class PendingProtocolUpdate {
   }
 
 
+  public PendingProtocolUpdate projectedEnactmentAtStartOfEpoch(Long projectedEnactmentAtStartOfEpoch) {
+    this.projectedEnactmentAtStartOfEpoch = projectedEnactmentAtStartOfEpoch;
+    return this;
+  }
+
+   /**
+   * Get projectedEnactmentAtStartOfEpoch
+   * @return projectedEnactmentAtStartOfEpoch
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_PROJECTED_ENACTMENT_AT_START_OF_EPOCH)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public Long getProjectedEnactmentAtStartOfEpoch() {
+    return projectedEnactmentAtStartOfEpoch;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_PROJECTED_ENACTMENT_AT_START_OF_EPOCH)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setProjectedEnactmentAtStartOfEpoch(Long projectedEnactmentAtStartOfEpoch) {
+    this.projectedEnactmentAtStartOfEpoch = projectedEnactmentAtStartOfEpoch;
+  }
+
+
+  public PendingProtocolUpdate projectedEnactmentTimestamp(Long projectedEnactmentTimestamp) {
+    this.projectedEnactmentTimestamp = projectedEnactmentTimestamp;
+    return this;
+  }
+
+   /**
+   * Get projectedEnactmentTimestamp
+   * @return projectedEnactmentTimestamp
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_PROJECTED_ENACTMENT_TIMESTAMP)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public Long getProjectedEnactmentTimestamp() {
+    return projectedEnactmentTimestamp;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_PROJECTED_ENACTMENT_TIMESTAMP)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setProjectedEnactmentTimestamp(Long projectedEnactmentTimestamp) {
+    this.projectedEnactmentTimestamp = projectedEnactmentTimestamp;
+  }
+
+
   /**
    * Return true if this PendingProtocolUpdate object is equal to o.
    */
@@ -208,12 +268,14 @@ public class PendingProtocolUpdate {
     return Objects.equals(this.protocolVersion, pendingProtocolUpdate.protocolVersion) &&
         Objects.equals(this.state, pendingProtocolUpdate.state) &&
         Objects.equals(this.readinessSignalName, pendingProtocolUpdate.readinessSignalName) &&
-        Objects.equals(this.readinessSignalStatus, pendingProtocolUpdate.readinessSignalStatus);
+        Objects.equals(this.readinessSignalStatus, pendingProtocolUpdate.readinessSignalStatus) &&
+        Objects.equals(this.projectedEnactmentAtStartOfEpoch, pendingProtocolUpdate.projectedEnactmentAtStartOfEpoch) &&
+        Objects.equals(this.projectedEnactmentTimestamp, pendingProtocolUpdate.projectedEnactmentTimestamp);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(protocolVersion, state, readinessSignalName, readinessSignalStatus);
+    return Objects.hash(protocolVersion, state, readinessSignalName, readinessSignalStatus, projectedEnactmentAtStartOfEpoch, projectedEnactmentTimestamp);
   }
 
   @Override
@@ -224,6 +286,8 @@ public class PendingProtocolUpdate {
     sb.append("    state: ").append(toIndentedString(state)).append("\n");
     sb.append("    readinessSignalName: ").append(toIndentedString(readinessSignalName)).append("\n");
     sb.append("    readinessSignalStatus: ").append(toIndentedString(readinessSignalStatus)).append("\n");
+    sb.append("    projectedEnactmentAtStartOfEpoch: ").append(toIndentedString(projectedEnactmentAtStartOfEpoch)).append("\n");
+    sb.append("    projectedEnactmentTimestamp: ").append(toIndentedString(projectedEnactmentTimestamp)).append("\n");
     sb.append("}");
     return sb.toString();
   }
