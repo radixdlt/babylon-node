@@ -96,18 +96,15 @@ public final class RustStateReader {
             .measure(
                 timer.label(
                     new Metrics.MethodId(
-                        RustStateReader.class,
-                        "getConsensusManagerConfigEpochTargetDurationMs")))
+                        RustStateReader.class, "getConsensusManagerConfigEpochTargetDurationMs")))
             .build(new TypeToken<>() {});
     getConsensusManagerStateEpochEffectiveStartMsFunc =
         Natives.builder(
-                nodeRustEnvironment,
-                RustStateReader::getConsensusManagerStateEpochEffectiveStartMs)
+                nodeRustEnvironment, RustStateReader::getConsensusManagerStateEpochEffectiveStartMs)
             .measure(
                 timer.label(
                     new Metrics.MethodId(
-                        RustStateReader.class,
-                        "getConsensusManagerStateEpochEffectiveStartMs")))
+                        RustStateReader.class, "getConsensusManagerStateEpochEffectiveStartMs")))
             .build(new TypeToken<>() {});
   }
 
