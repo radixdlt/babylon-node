@@ -27,6 +27,8 @@ pub enum ConfigType {
     Pending,
     /// A user transaction during preview execution.
     Preview,
+    /// A user transaction during preview execution with auth module disabled.
+    PreviewNoAuth,
 }
 
 const PENDING_UP_TO_FEE_LOAN_RUNTIME_WARN_THRESHOLD: Duration = Duration::from_millis(100);
@@ -39,7 +41,7 @@ impl ConfigType {
         match self {
             ConfigType::Genesis => GENESIS_TRANSACTION_RUNTIME_WARN_THRESHOLD,
             ConfigType::Pending => PENDING_UP_TO_FEE_LOAN_RUNTIME_WARN_THRESHOLD,
-            ConfigType::Preview => PREVIEW_RUNTIME_WARN_THRESHOLD,
+            ConfigType::Preview | ConfigType::PreviewNoAuth => PREVIEW_RUNTIME_WARN_THRESHOLD,
             _ => TRANSACTION_RUNTIME_WARN_THRESHOLD,
         }
     }
@@ -91,6 +93,10 @@ impl ExecutionConfigurator {
                     ConfigType::Preview,
                     ExecutionConfig::for_preview(network.clone()),
                 ),
+                (
+                    ConfigType::PreviewNoAuth,
+                    ExecutionConfig::for_preview_no_auth(network.clone()),
+                ),
             ]),
         }
     }
@@ -130,9 +136,14 @@ impl ExecutionConfigurator {
         &'a self,
         validated_preview_intent: &'a ValidatedPreviewIntent,
     ) -> ConfiguredExecutable<'a> {
+        let config_type = if validated_preview_intent.flags.disable_auth {
+            ConfigType::PreviewNoAuth
+        } else {
+            ConfigType::Preview
+        };
         self.wrap_transaction(
             validated_preview_intent.get_executable(),
-            ConfigType::Preview,
+            config_type,
             "preview".to_string(),
         )
     }
