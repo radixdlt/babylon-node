@@ -91,6 +91,7 @@ use crate::store::traits::scenario::{
 };
 
 use crate::accumulator_tree::storage::ReadableAccuTreeStore;
+use crate::commit_bundle::CommitBundleBuilder;
 use std::ops::Deref;
 use std::sync::Arc;
 use std::time::{Instant, SystemTime};
@@ -1092,21 +1093,14 @@ impl StateComputer {
             return Err(InvalidCommitRequestError::TransactionRootMismatch);
         }
 
-        // TODO(after RCnet-v3): Refactor this group of fields into a "commit bundle builder"
-        let mut committed_transaction_bundles = Vec::new();
         let mut transactions_metrics_data = Vec::new();
-        let mut substate_store_update = SubstateStoreUpdate::new();
-        let mut state_tree_update = HashTreeUpdate::new();
-        let mut new_node_ancestry_records = Vec::new();
-        let epoch_accu_trees = EpochAwareAccuTreeFactory::new(
-            series_executor.epoch_identifiers().state_version,
-            series_executor.latest_state_version(),
-        );
-        let mut transaction_tree_slice_merger = epoch_accu_trees.create_merger();
-        let mut receipt_tree_slice_merger = epoch_accu_trees.create_merger();
         let mut committed_user_transactions = Vec::new();
 
         // Step 3.: Actually execute the transactions, collect their results into DB structures
+        let mut commit_bundle_builder = CommitBundleBuilder::new(
+            series_executor.epoch_identifiers().state_version,
+            series_executor.latest_state_version(),
+        );
         for ((raw, prepared), proposer_timestamp_ms) in commit_request
             .transactions
             .into_iter()
@@ -1132,31 +1126,18 @@ impl StateComputer {
                     notarized_transaction_hash: user_transaction.notarized_transaction_hash(),
                 });
             }
-
-            substate_store_update.apply(commit.database_updates);
-            let hash_structures_diff = commit.hash_structures_diff;
-            state_tree_update.add(
-                series_executor.latest_state_version(),
-                hash_structures_diff.state_hash_tree_diff,
-            );
-            new_node_ancestry_records.extend(commit.new_substate_node_ancestry_records);
-            transaction_tree_slice_merger.append(hash_structures_diff.transaction_tree_diff.slice);
-            receipt_tree_slice_merger.append(hash_structures_diff.receipt_tree_diff.slice);
-
             transactions_metrics_data.push(TransactionMetricsData::new(
                 raw.0.len(),
                 commit.local_receipt.local_execution.fee_summary.clone(),
             ));
-            committed_transaction_bundles.push(CommittedTransactionBundle {
-                state_version: series_executor.latest_state_version(),
+
+            commit_bundle_builder.add_executed_transaction(
+                series_executor.latest_state_version(),
+                proposer_timestamp_ms,
                 raw,
-                receipt: commit.local_receipt,
-                identifiers: CommittedTransactionIdentifiers {
-                    payload: validated.create_identifiers(),
-                    resultant_ledger_hashes: *series_executor.latest_ledger_hashes(),
-                    proposer_timestamp_ms,
-                },
-            });
+                validated,
+                commit,
+            );
         }
 
         let new_protocol_state = series_executor.protocol_state();
@@ -1191,42 +1172,31 @@ impl StateComputer {
             );
         }
 
-        self.execution_cache
-            .lock()
-            .progress_base(&final_ledger_hashes.transaction_root);
-
+        // capture these before we lose the appropriate borrows:
+        let proposer_timestamp_ms = commit_ledger_header.proposer_timestamp_ms;
         let round_counters = leader_round_counters_builder.build(series_executor.epoch_header());
-        let proposer_timestamp_ms = commit_ledger_header.proposer_timestamp_ms; // for metrics only
-        let next_epoch = commit_ledger_header
-            .next_epoch
-            .as_ref()
-            .map(|next_epoch| next_epoch.epoch);
+        let final_transaction_root = final_ledger_hashes.transaction_root;
 
-        database.commit(CommitBundle {
-            transactions: committed_transaction_bundles,
-            proof: commit_request.proof,
-            substate_store_update,
-            vertex_store: commit_request.vertex_store.map(VertexStoreBlobV1),
-            state_tree_update,
-            transaction_tree_slice: TransactionAccuTreeSliceV1(
-                transaction_tree_slice_merger.into_slice(),
-            ),
-            receipt_tree_slice: ReceiptAccuTreeSliceV1(receipt_tree_slice_merger.into_slice()),
-            new_substate_node_ancestry_records: new_node_ancestry_records,
-        });
+        database
+            .commit(commit_bundle_builder.build(commit_request.proof, commit_request.vertex_store));
         drop(database);
 
-        let num_user_transactions = committed_user_transactions.len() as u32;
+        self.execution_cache
+            .lock()
+            .progress_base(&final_transaction_root);
 
         self.mempool_manager.remove_committed(
             committed_user_transactions
                 .iter()
                 .map(|txn| &txn.intent_hash),
         );
-        if let Some(epoch) = next_epoch {
+
+        if let Some(next_epoch) = next_epoch {
             self.mempool_manager
-                .remove_txns_where_end_epoch_expired(epoch);
+                .remove_txns_where_end_epoch_expired(next_epoch.epoch);
         }
+
+        let num_user_transactions = committed_user_transactions.len() as u32;
         self.pending_transaction_result_cache
             .write()
             .track_committed_transactions(SystemTime::now(), committed_user_transactions);
@@ -1238,6 +1208,7 @@ impl StateComputer {
             proposer_timestamp_ms,
             commit_request.self_validator_id,
         );
+
         self.committed_transactions_metrics
             .update(transactions_metrics_data);
 
