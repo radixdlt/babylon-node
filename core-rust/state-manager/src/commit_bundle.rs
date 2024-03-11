@@ -62,65 +62,91 @@
  * permissions under this License.
  */
 
-extern crate core;
+use crate::staging::epoch_handling::EpochAwareAccuTreeFactory;
 
-mod accumulator_tree;
-mod commit_bundle;
-pub mod jni;
-mod limits;
-pub mod mempool;
-pub mod metrics;
-pub mod protocol;
-pub mod query;
-mod receipt;
-mod staging;
-mod state_computer;
-mod state_manager;
-pub mod store;
-pub mod transaction;
-mod types;
+use crate::store::traits::*;
+use crate::transaction::*;
 
-#[cfg(test)]
-mod test;
+use crate::*;
 
-pub use crate::mempool::*;
-pub use crate::metrics::*;
-pub use crate::pending_transaction_result_cache::*;
-pub use crate::receipt::*;
-pub use crate::staging::*;
-pub use crate::state_computer::*;
-pub use crate::state_manager::*;
-pub use crate::store::*;
-pub use crate::types::*;
+use crate::engine_prelude::*;
 
-pub(crate) mod engine_prelude {
-    pub use radix_engine::errors::*;
-    pub use radix_engine::system::bootstrap::*;
-    pub use radix_engine::system::system_db_reader::*;
-    pub use radix_engine::system::system_substates::*;
-    pub use radix_engine::transaction::*;
-    pub use radix_engine::utils::*;
-    pub use radix_engine::vm::wasm::*;
-    pub use radix_engine::vm::*;
-    pub use radix_engine_common::prelude::*;
-    pub use radix_engine_interface::blueprints::transaction_processor::*;
-    pub use radix_engine_interface::prelude::*;
-    pub use substate_store_impls::hash_tree::tree_store::*;
-    pub use substate_store_impls::hash_tree::*;
-    pub use substate_store_interface::db_key_mapper::*;
-    pub use substate_store_interface::interface::*;
-    pub use substate_store_queries::query::*;
-    pub use substate_store_queries::typed_substate_layout::*;
-    pub use transaction::builder::*;
-    pub use transaction::errors::*;
-    pub use transaction::manifest::*;
-    pub use transaction::model::*;
-    pub use transaction::prelude::*;
-    pub use transaction::validation::*;
-    pub use transaction::*;
+use crate::accumulator_tree::slice_merger::AccuTreeSliceMerger;
 
-    // Note: plain `pub use radix_engine::track::*` would clash with the top-level `utils::prelude`
-    // (because it contains a private module of the same name)
-    pub use radix_engine::track::interface::*;
-    pub use radix_engine::track::state_updates::*;
+/// A builder of a [`CommitBundle`] from individual transactions and their commit results
+pub struct CommitBundleBuilder {
+    committed_transaction_bundles: Vec<CommittedTransactionBundle>,
+    substate_store_update: SubstateStoreUpdate,
+    state_hash_tree_update: HashTreeUpdate,
+    new_substate_node_ancestry_records: Vec<KeyedSubstateNodeAncestryRecord>,
+    transaction_tree_slice_merger: AccuTreeSliceMerger<TransactionTreeHash>,
+    receipt_tree_slice_merger: AccuTreeSliceMerger<ReceiptTreeHash>,
+}
+
+impl CommitBundleBuilder {
+    /// Starts a new build.
+    ///
+    /// The `epoch_state_version` vs `current_state_version` relationship is required only for
+    /// proper merging of hash accumulation trees (see [`AccuTreeSliceMerger`]).
+    pub fn new(epoch_state_version: StateVersion, current_state_version: StateVersion) -> Self {
+        let epoch_accu_trees =
+            EpochAwareAccuTreeFactory::new(epoch_state_version, current_state_version);
+        Self {
+            committed_transaction_bundles: Vec::new(),
+            substate_store_update: SubstateStoreUpdate::new(),
+            state_hash_tree_update: HashTreeUpdate::new(),
+            new_substate_node_ancestry_records: Vec::new(),
+            transaction_tree_slice_merger: epoch_accu_trees.create_merger(),
+            receipt_tree_slice_merger: epoch_accu_trees.create_merger(),
+        }
+    }
+
+    /// Adds another transaction execution to the bundle.
+    pub fn add_executed_transaction(
+        &mut self,
+        state_version: StateVersion,
+        proposer_timestamp_ms: i64,
+        raw: RawLedgerTransaction,
+        validated: ValidatedLedgerTransaction,
+        result: ProcessedCommitResult,
+    ) {
+        self.substate_store_update.apply(result.database_updates);
+        let hash_structures_diff = result.hash_structures_diff;
+        self.state_hash_tree_update
+            .add(state_version, hash_structures_diff.state_hash_tree_diff);
+        self.new_substate_node_ancestry_records
+            .extend(result.new_substate_node_ancestry_records);
+        self.transaction_tree_slice_merger
+            .append(hash_structures_diff.transaction_tree_diff.slice);
+        self.receipt_tree_slice_merger
+            .append(hash_structures_diff.receipt_tree_diff.slice);
+
+        self.committed_transaction_bundles
+            .push(CommittedTransactionBundle {
+                state_version,
+                raw,
+                receipt: result.local_receipt,
+                identifiers: CommittedTransactionIdentifiers {
+                    payload: validated.create_identifiers(),
+                    resultant_ledger_hashes: hash_structures_diff.ledger_hashes,
+                    proposer_timestamp_ms,
+                },
+            });
+    }
+
+    /// Finalizes the build with the given proof.
+    pub fn build(self, proof: LedgerProof, vertex_store: Option<Vec<u8>>) -> CommitBundle {
+        CommitBundle {
+            transactions: self.committed_transaction_bundles,
+            proof,
+            substate_store_update: self.substate_store_update,
+            vertex_store: vertex_store.map(VertexStoreBlobV1),
+            state_tree_update: self.state_hash_tree_update,
+            transaction_tree_slice: TransactionAccuTreeSliceV1(
+                self.transaction_tree_slice_merger.into_slice(),
+            ),
+            receipt_tree_slice: ReceiptAccuTreeSliceV1(self.receipt_tree_slice_merger.into_slice()),
+            new_substate_node_ancestry_records: self.new_substate_node_ancestry_records,
+        }
+    }
 }
