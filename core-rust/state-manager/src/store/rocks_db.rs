@@ -739,7 +739,7 @@ impl ActualStateManagerDatabase {
 
         state_manager_database.catchup_account_change_index();
         state_manager_database.restore_december_2023_lost_substates(network);
-        state_manager_database.ensure_historical_values();
+        state_manager_database.ensure_historical_substate_values();
 
         Ok(state_manager_database)
     }
@@ -882,7 +882,7 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
     /// [`Self::populate_hash_tree_associated_substate_values()`] initialization and records its
     /// success afterwards. With this approach, the lengthy backfill is tolerant to the Node's
     /// restarts (i.e. it will simply be re-run).
-    fn ensure_historical_values(&self) {
+    fn ensure_historical_substate_values(&self) {
         let db_context = self.open_rw_context();
         let extension_data_cf = db_context.cf(ExtensionsDataCf);
         let values_associated_since = extension_data_cf
