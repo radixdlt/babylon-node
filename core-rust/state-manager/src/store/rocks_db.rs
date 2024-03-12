@@ -1104,18 +1104,20 @@ impl<R: WriteableRocks> CommitStore for StateManagerDatabase<R> {
             }
         }
 
-        for new_leaf_substate_key in commit_bundle.new_leaf_substate_keys {
-            let LeafSubstateKeyAssociation {
-                tree_node_key,
-                substate_key,
-            } = new_leaf_substate_key;
-            let substate_value = commit_bundle
-                .substate_store_update
-                .get_upserted_value(&substate_key)
-                .expect("no value found for upserted substate");
-            db_context
-                .cf(AssociatedStateHashTreeValuesCf)
-                .put(&tree_node_key, substate_value);
+        if self.config.enable_historical_substate_values {
+            for new_leaf_substate_key in commit_bundle.new_leaf_substate_keys {
+                let LeafSubstateKeyAssociation {
+                    tree_node_key,
+                    substate_key,
+                } = new_leaf_substate_key;
+                let substate_value = commit_bundle
+                    .substate_store_update
+                    .get_upserted_value(&substate_key)
+                    .expect("no value found for upserted substate");
+                db_context
+                    .cf(AssociatedStateHashTreeValuesCf)
+                    .put(&tree_node_key, substate_value);
+            }
         }
 
         db_context
