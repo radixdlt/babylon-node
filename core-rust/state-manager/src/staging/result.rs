@@ -204,7 +204,7 @@ impl ProcessedCommitResult {
             &commit_result.state_update_summary.vault_balance_changes,
         );
 
-        let state_hash_tree_diff =
+        let (new_state_root, state_hash_tree_diff) =
             Self::compute_state_tree_update(store, parent_state_version, &database_updates);
 
         let epoch_accu_trees =
@@ -231,7 +231,7 @@ impl ProcessedCommitResult {
         );
 
         let ledger_hashes = LedgerHashes {
-            state_root: state_hash_tree_diff.new_root,
+            state_root: new_state_root,
             transaction_root: *transaction_tree_diff.slice.root(),
             receipt_root: *receipt_tree_diff.slice.root(),
         };
@@ -380,14 +380,14 @@ impl ProcessedCommitResult {
         store: &S,
         parent_state_version: StateVersion,
         database_updates: &DatabaseUpdates,
-    ) -> StateHashTreeDiff {
+    ) -> (StateHash, StateHashTreeDiff) {
         let collector = CollectingTreeStore::new(store);
         let root_hash = put_at_next_version(
             &collector,
             Some(parent_state_version.number()).filter(|v| *v > 0),
             database_updates,
         );
-        collector.into_diff_with(root_hash)
+        (StateHash::from(root_hash), collector.into_diff())
     }
 }
 
@@ -530,7 +530,6 @@ pub struct HashStructuresDiff {
 
 #[derive(Clone, Debug)]
 pub struct StateHashTreeDiff {
-    pub new_root: StateHash,
     pub new_nodes: Vec<(StoredTreeNodeKey, TreeNode)>,
     pub stale_tree_parts: Vec<StaleTreePart>,
 }
@@ -538,7 +537,6 @@ pub struct StateHashTreeDiff {
 impl StateHashTreeDiff {
     pub fn new() -> Self {
         Self {
-            new_root: StateHash::from(Hash([0; Hash::LENGTH])),
             new_nodes: Vec::new(),
             stale_tree_parts: Vec::new(),
         }
@@ -611,10 +609,8 @@ impl<'s, S: ReadableStateTreeStore> CollectingTreeStore<'s, S> {
         }
     }
 
-    pub fn into_diff_with(self, new_root: Hash) -> StateHashTreeDiff {
-        let mut diff = self.diff.take();
-        diff.new_root = StateHash::from(new_root);
-        diff
+    pub fn into_diff(self) -> StateHashTreeDiff {
+        self.diff.take()
     }
 }
 
