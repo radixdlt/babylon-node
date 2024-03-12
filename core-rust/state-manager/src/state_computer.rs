@@ -1285,60 +1285,46 @@ impl StateComputer {
     /// This method accepts a pre-validated transaction and trusts its contents (i.e. skips some
     /// validations).
     fn commit_genesis(&self, request: GenesisCommitRequest) {
+        let GenesisCommitRequest {
+            raw,
+            validated,
+            proof,
+            require_success,
+        } = request;
         let database = self.database.lock();
         let mut series_executor = self.start_series_execution(database.deref());
+        let mut commit_bundle_builder = CommitBundleBuilder::new(
+            series_executor.epoch_identifiers().state_version,
+            series_executor.latest_state_version(),
+        );
 
         let mut commit = series_executor
-            .execute_and_update_state(&request.validated, "genesis")
+            .execute_and_update_state(&validated, "genesis")
             .expect("cannot execute genesis");
 
-        if request.require_success {
+        if require_success {
             commit = commit.expect_success("genesis not successful");
         }
 
+        let proposer_timestamp_ms = proof.ledger_header.proposer_timestamp_ms;
         let resultant_state_version = series_executor.latest_state_version();
-        let resultant_ledger_hashes = *series_executor.latest_ledger_hashes();
+
+        commit_bundle_builder.add_executed_transaction(
+            resultant_state_version,
+            proposer_timestamp_ms,
+            raw,
+            validated,
+            commit,
+        );
 
         self.execution_cache
             .lock()
-            .progress_base(&resultant_ledger_hashes.transaction_root);
+            .progress_base(&series_executor.latest_ledger_hashes().transaction_root);
 
-        let proof = request.proof;
-        let proposer_timestamp_ms = proof.ledger_header.proposer_timestamp_ms;
-        let committed_transaction_bundle = CommittedTransactionBundle {
-            state_version: resultant_state_version,
-            raw: request.raw,
-            receipt: commit.local_receipt,
-            identifiers: CommittedTransactionIdentifiers {
-                payload: request.validated.create_identifiers(),
-                resultant_ledger_hashes,
-                proposer_timestamp_ms,
-            },
-        };
+        database.commit(commit_bundle_builder.build(proof, None));
 
-        // for metrics only
-        let hash_structures_diff = commit.hash_structures_diff;
-        database.commit(CommitBundle {
-            transactions: vec![committed_transaction_bundle],
-            proof,
-            substate_store_update: SubstateStoreUpdate::from_single(commit.database_updates),
-            vertex_store: None,
-            state_tree_update: HashTreeUpdate::from_single(
-                resultant_state_version,
-                hash_structures_diff.state_hash_tree_diff,
-            ),
-            transaction_tree_slice: TransactionAccuTreeSliceV1(
-                hash_structures_diff.transaction_tree_diff.slice,
-            ),
-            receipt_tree_slice: ReceiptAccuTreeSliceV1(
-                hash_structures_diff.receipt_tree_diff.slice,
-            ),
-            new_substate_node_ancestry_records: commit.new_substate_node_ancestry_records,
-        });
-
-        // Protocol updates aren't allowed during genesis,
-        // so no need to handle an update here
-        // just assign the latest protocol state.
+        // Protocol updates aren't allowed during genesis, so no need to handle an update here, just
+        // assign the latest protocol state.
         let mut locked_protocol_state = self.protocol_state.write();
         *locked_protocol_state = series_executor.protocol_state();
         drop(locked_protocol_state);

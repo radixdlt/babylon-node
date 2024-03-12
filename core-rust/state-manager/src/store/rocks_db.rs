@@ -1050,19 +1050,19 @@ impl<R: WriteableRocks> CommitStore for StateManagerDatabase<R> {
         }
 
         let substates_cf = db_context.cf(SubstatesCf);
-        for (node_key, node_updates) in commit_bundle.substate_store_update.updates.node_updates {
-            for (partition_num, partition_updates) in node_updates.partition_updates {
+        for (node_key, node_updates) in &commit_bundle.substate_store_update.updates.node_updates {
+            for (partition_num, partition_updates) in &node_updates.partition_updates {
                 let partition_key = DbPartitionKey {
                     node_key: node_key.clone(),
-                    partition_num,
+                    partition_num: *partition_num,
                 };
                 match partition_updates {
                     PartitionDatabaseUpdates::Delta { substate_updates } => {
                         for (sort_key, update) in substate_updates {
-                            let substate_key = (partition_key.clone(), sort_key);
+                            let substate_key = (partition_key.clone(), sort_key.clone());
                             match update {
                                 DatabaseUpdate::Set(substate_value) => {
-                                    substates_cf.put(&substate_key, &substate_value);
+                                    substates_cf.put(&substate_key, substate_value);
                                 }
                                 DatabaseUpdate::Delete => {
                                     substates_cf.delete(&substate_key);
@@ -1074,8 +1074,8 @@ impl<R: WriteableRocks> CommitStore for StateManagerDatabase<R> {
                         new_substate_values,
                     } => {
                         substates_cf.delete_group(&partition_key);
-                        for (sort_key, substate_value) in new_substate_values {
-                            substates_cf.put(&(partition_key.clone(), sort_key), &substate_value);
+                        for (sort_key, value) in new_substate_values {
+                            substates_cf.put(&(partition_key.clone(), sort_key.clone()), value);
                         }
                     }
                 }
@@ -1102,6 +1102,20 @@ impl<R: WriteableRocks> CommitStore for StateManagerDatabase<R> {
                     .cf(SubstateNodeAncestryRecordsCf)
                     .put(&node_id, &record);
             }
+        }
+
+        for new_leaf_substate_key in commit_bundle.new_leaf_substate_keys {
+            let LeafSubstateKeyAssociation {
+                tree_node_key,
+                substate_key,
+            } = new_leaf_substate_key;
+            let substate_value = commit_bundle
+                .substate_store_update
+                .get_upserted_value(&substate_key)
+                .expect("no value found for upserted substate");
+            db_context
+                .cf(AssociatedStateHashTreeValuesCf)
+                .put(&tree_node_key, substate_value);
         }
 
         db_context
