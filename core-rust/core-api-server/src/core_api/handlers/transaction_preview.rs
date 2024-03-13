@@ -78,6 +78,7 @@ fn extract_preview_request(
             use_free_credit: request.flags.use_free_credit,
             assume_all_signature_proofs: request.flags.assume_all_signature_proofs,
             skip_epoch_check: request.flags.skip_epoch_check,
+            disable_auth: request.flags.disable_auth_checks.unwrap_or(false),
         },
         message: request
             .message

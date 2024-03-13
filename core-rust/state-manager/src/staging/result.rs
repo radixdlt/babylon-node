@@ -629,9 +629,11 @@ impl<'s, S> WriteableTreeStore for CollectingTreeStore<'s, S> {
         self.diff.borrow_mut().new_nodes.push((key, node));
     }
 
-    fn associate_substate_value(
+    fn associate_substate(
         &self,
         _global_key: &StoredTreeNodeKey,
+        _partition_key: &DbPartitionKey,
+        _db_sort_key: &DbSortKey,
         _substate_value: &DbSubstateValue,
     ) {
         // TODO(historical-state): Collect these if the feature is enabled

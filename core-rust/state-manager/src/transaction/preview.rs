@@ -171,6 +171,7 @@ mod tests {
                     use_free_credit: true,
                     assume_all_signature_proofs: true,
                     skip_epoch_check: false,
+                    disable_auth: false,
                 },
                 message: MessageV1::None,
             });
