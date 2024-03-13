@@ -33,6 +33,12 @@ jobs:
           secret_prefix: "JENKINS"
           secret_name: "github-actions/radixdlt/babylon-node/jenkins-api-token"
           parse_json: true
+      - name: Connect to tailnet
+        uses: radixdlt/public-iac-resuable-artifacts/tailnet@main
+        with:
+          role_name: "arn:aws:iam::${{ secrets.SECRETS_ACCOUNT_ID }}:role/gh-common-secrets-read-access"
+          region: "eu-west-2"
+          secret_name: "arn:aws:secretsmanager:eu-west-2:${{ secrets.SECRETS_ACCOUNT_ID }}:secret:github-actions/common/tailscale-public-workflows-DpiE80"
       - name: Deploy
         uses: RDXWorks-actions/jenkins-job-trigger-action@master
         with:
@@ -68,6 +74,12 @@ jobs:
           secret_prefix: "JENKINS"
           secret_name: "github-actions/radixdlt/babylon-node/jenkins-api-token"
           parse_json: true
+      - name: Connect to tailnet
+        uses: radixdlt/public-iac-resuable-artifacts/tailnet@main
+        with:
+          role_name: "arn:aws:iam::${{ secrets.SECRETS_ACCOUNT_ID }}:role/gh-common-secrets-read-access"
+          region: "eu-west-2"
+          secret_name: "arn:aws:secretsmanager:eu-west-2:${{ secrets.SECRETS_ACCOUNT_ID }}:secret:github-actions/common/tailscale-public-workflows-DpiE80"
       - name: SmokeTests
         uses: RDXWorks-actions/jenkins-job-trigger-action@master
         with:
