@@ -27,7 +27,7 @@ ARG WGET_VERSION="1.21.3-1+b2"
 # The latest available version can be found at these links.
 # Update the references versions in case the build fails
 # Source Repositories:
-# - https://packages.debian.org/source/bookworm/docker.io
+# - https://packages.debian.org/bookworm/docker.io
 # - https://packages.debian.org/bookworm/libssl-dev
 # - https://packages.debian.org/bookworm/pkg-config
 # - https://packages.debian.org/bookworm/unzip
