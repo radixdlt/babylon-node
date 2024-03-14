@@ -121,13 +121,22 @@ pub struct LoggingConfig {
 }
 
 impl StateManagerConfig {
-    pub fn new_for_testing(rocks_db_path: impl Into<String>) -> Self {
+    pub fn new_for_testing(rocks_db_root_path: impl Into<String>) -> Self {
+        let rocks_db_root_path = PathBuf::from(rocks_db_root_path.into());
+        let rocks_db_checkpoints_path = rocks_db_root_path.join("checkpoints");
         StateManagerConfig {
             network_definition: NetworkDefinition::simulator(),
             mempool_config: Some(MempoolConfig::new_for_testing()),
             vertex_limits_config: None,
             database_backend_config: DatabaseBackendConfig {
-                rocks_db_path: rocks_db_path.into(),
+                rocks_db_root_path: rocks_db_root_path
+                    .into_os_string()
+                    .into_string()
+                    .expect("Invalid RocksDB root path"),
+                rocks_db_checkpoints_path: rocks_db_checkpoints_path
+                    .into_os_string()
+                    .into_string()
+                    .expect("Invalid RocksDB checkpoints path"),
             },
             database_config: DatabaseConfig::default(),
             logging_config: LoggingConfig::default(),
@@ -166,8 +175,19 @@ impl StateManager {
         let mempool_config = config.mempool_config.clone().unwrap_or_default();
         let network = config.network_definition.clone();
 
-        let db_path = PathBuf::from(config.database_backend_config.rocks_db_path.clone());
-        let raw_db = match StateManagerDatabase::new(db_path, config.database_config.clone(), &network) {
+        let db_root_path = PathBuf::from(config.database_backend_config.rocks_db_root_path.clone());
+        let db_checkpoints_path = PathBuf::from(
+            config
+                .database_backend_config
+                .rocks_db_checkpoints_path
+                .clone(),
+        );
+        let raw_db = match StateManagerDatabase::new(
+            db_root_path,
+            db_checkpoints_path,
+            config.database_config.clone(),
+            &network
+        ) {
             Ok(db) => db,
             Err(error) => {
                 match error {

@@ -13,6 +13,7 @@ db.location=$RADIXDLT_DB_LOCATION
 db.local_transaction_execution_index.enable=$RADIXDLT_DB_LOCAL_TRANSACTION_EXECUTION_INDEX_ENABLE
 db.account_change_index.enable=$RADIXDLT_DB_ACCOUNT_CHANGE_INDEX_ENABLE
 db.historical_substate_values.enable=$RADIXDLT_DB_HISTORICAL_SUBSTATE_VALUES_ENABLE
+db.checkpoints_path=${RADIXDLT_DB_CHECKPOINTS_PATH}
 
 mempool.max_transaction_count=${RADIXDLT_MEMPOOL_MAX_TRANSACTION_COUNT}
 mempool.max_memory=${RADIXDLT_MEMPOOL_MAX_MEMORY}
@@ -36,6 +37,7 @@ api.core.flags.enable_unbounded_endpoints=${RADIXDLT_CORE_API_FLAGS_ENABLE_UNBOU
 
 api.system.port=$RADIXDLT_SYSTEM_API_PORT
 api.system.bind_address=$RADIXDLT_SYSTEM_API_BIND_ADDRESS
+api.system.enable_db_checkpoint=${RADIXDLT_SYSTEM_API_ENABLE_DB_CHECKPOINT}
 
 api.prometheus.port=$RADIXDLT_PROMETHEUS_API_PORT
 api.prometheus.bind_address=$RADIXDLT_PROMETHEUS_API_BIND_ADDRESS

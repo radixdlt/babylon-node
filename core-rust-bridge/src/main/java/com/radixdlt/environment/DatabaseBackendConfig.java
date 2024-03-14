@@ -68,7 +68,7 @@ import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 
 /** REv2 Database configuration options */
-public record DatabaseBackendConfig(String rocksDbPath) {
+public record DatabaseBackendConfig(String rocksDbRootPath, String rocksDbCheckpointsPath) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         DatabaseBackendConfig.class,

@@ -62,31 +62,68 @@
  * permissions under this License.
  */
 
-mod constants;
+package com.radixdlt.api.system;
 
-/// A workaround for including the symbols defined in state_manager / core_api_server
-/// in the output library file. See: https://github.com/rust-lang/rfcs/issues/2771
-/// I truly have no idea why this works, but it does.
-#[no_mangle]
-fn export_extern_functions() {
-    constants::export_extern_functions();
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Throwables;
+import com.radixdlt.api.common.JSON;
+import com.radixdlt.api.system.errors.InternalServerError;
+import com.radixdlt.api.system.errors.SystemApiErrorCode;
+import com.radixdlt.api.system.errors.UnexpectedErrorDetails;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 
-    // node-common
-    node_common::jni::addressing::export_extern_functions();
-    node_common::jni::scrypto_constants::export_extern_functions();
+public abstract class SystemJsonHandler<T> implements HttpHandler {
+  private static final String CONTENT_TYPE_JSON = "application/json";
+  private static final long DEFAULT_MAX_REQUEST_SIZE = 1024L * 1024L;
+  private final ObjectMapper objectMapper;
 
-    // state-manager
-    state_manager::jni::db_checkpoints::export_extern_functions();
-    state_manager::jni::mempool::export_extern_functions();
-    state_manager::jni::node_rust_environment::export_extern_functions();
-    state_manager::jni::protocol_update::export_extern_functions();
-    state_manager::jni::state_computer::export_extern_functions();
-    state_manager::jni::state_reader::export_extern_functions();
-    state_manager::jni::transaction_preparer::export_extern_functions();
-    state_manager::jni::transaction_store::export_extern_functions();
-    state_manager::jni::vertex_store_recovery::export_extern_functions();
-    state_manager::jni::test_state_reader::export_extern_functions();
+  protected SystemJsonHandler() {
+    this.objectMapper = JSON.getDefault().getMapper();
+  }
 
-    // core-api-server
-    core_api_server::jni::export_extern_functions();
+  public abstract T handleRequest();
+
+  @Override
+  public final void handleRequest(HttpServerExchange exchange) throws Exception {
+    if (exchange.isInIoThread()) {
+      exchange.dispatch(this);
+      return;
+    }
+
+    exchange.setMaxEntitySize(DEFAULT_MAX_REQUEST_SIZE);
+    exchange.startBlocking();
+    exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
+
+    var mapper = JSON.getDefault().getMapper();
+    T response;
+    try {
+      response = handleRequest();
+    } catch (Exception e) {
+      var errorResponse = createUnknownExceptionResponse(e);
+      exchange.setStatusCode(500);
+      exchange.getResponseSender().send(objectMapper.writeValueAsString(errorResponse));
+      return;
+    }
+
+    exchange.setStatusCode(200);
+    mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+    exchange.getResponseSender().send(mapper.writeValueAsString(response));
+  }
+
+  private UnexpectedErrorDetails createUnknownExceptionResponse(Exception e) {
+    // TODO-NT-258 - consider hiding error message and returning a Trace GUID
+    var rootCause = Throwables.getRootCause(e);
+
+    return new UnexpectedErrorDetails()
+        .code(SystemApiErrorCode.INTERNAL_SERVER_ERROR.getErrorCode())
+        .message(SystemApiErrorCode.INTERNAL_SERVER_ERROR.getMessage())
+        .details(
+            new InternalServerError()
+                .cause(rootCause.getMessage())
+                .exception(rootCause.getClass().getSimpleName())
+                .type("InternalServerError"));
+  }
 }

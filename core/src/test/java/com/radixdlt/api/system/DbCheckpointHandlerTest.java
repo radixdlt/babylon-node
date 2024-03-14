@@ -64,66 +64,43 @@
 
 package com.radixdlt.api.system;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Throwables;
-import com.radixdlt.api.common.JSON;
-import com.radixdlt.api.system.errors.InternalServerError;
-import com.radixdlt.api.system.errors.SystemApiErrorCode;
-import com.radixdlt.api.system.errors.UnexpectedErrorDetails;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
+import static org.assertj.core.api.Assertions.assertThat;
 
-public abstract class SystemGetJsonHandler<T> implements HttpHandler {
-  private static final String CONTENT_TYPE_JSON = "application/json";
-  private static final long DEFAULT_MAX_REQUEST_SIZE = 1024L * 1024L;
-  private final ObjectMapper objectMapper;
+import com.google.inject.Inject;
+import com.radixdlt.api.SystemApiTestBase;
+import com.radixdlt.api.system.generated.models.CreateDbCheckpointResponse;
+import com.radixdlt.api.system.routes.DbCheckpointHandler;
+import com.radixdlt.utils.properties.RuntimeProperties;
+import java.nio.file.Paths;
+import java.util.stream.Stream;
+import org.junit.Test;
 
-  protected SystemGetJsonHandler() {
-    this.objectMapper = JSON.getDefault().getMapper();
-  }
+public class DbCheckpointHandlerTest extends SystemApiTestBase {
+  @Inject private DbCheckpointHandler sut;
 
-  public abstract T handleRequest();
+  @Inject RuntimeProperties runtimeProperties;
 
-  @Override
-  public final void handleRequest(HttpServerExchange exchange) throws Exception {
-    if (exchange.isInIoThread()) {
-      exchange.dispatch(this);
-      return;
-    }
+  @Test
+  public void can_create_a_db_checkpoint() throws Exception {
+    // Arrange
+    start();
 
-    exchange.setMaxEntitySize(DEFAULT_MAX_REQUEST_SIZE);
-    exchange.startBlocking();
-    exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
+    // Act
+    final var response = handleRequestWithExpectedResponse(sut, CreateDbCheckpointResponse.class);
 
-    var mapper = JSON.getDefault().getMapper();
-    T response;
-    try {
-      response = handleRequest();
-    } catch (Exception e) {
-      var errorResponse = createUnknownExceptionResponse(e);
-      exchange.setStatusCode(500);
-      exchange.getResponseSender().send(objectMapper.writeValueAsString(errorResponse));
-      return;
-    }
+    // Assert
+    final var checkpointPath = response.getCheckpointRelativePath();
+    assertThat(checkpointPath).isNotNull();
+    final var checkpointsPath = runtimeProperties.get("db.checkpoints_path");
+    final var checkpointAbsolutePath = Paths.get(checkpointsPath, checkpointPath);
 
-    exchange.setStatusCode(200);
-    mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-    exchange.getResponseSender().send(mapper.writeValueAsString(response));
-  }
-
-  private UnexpectedErrorDetails createUnknownExceptionResponse(Exception e) {
-    // TODO-NT-258 - consider hiding error message and returning a Trace GUID
-    var rootCause = Throwables.getRootCause(e);
-
-    return new UnexpectedErrorDetails()
-        .code(SystemApiErrorCode.INTERNAL_SERVER_ERROR.getErrorCode())
-        .message(SystemApiErrorCode.INTERNAL_SERVER_ERROR.getMessage())
-        .details(
-            new InternalServerError()
-                .cause(rootCause.getMessage())
-                .exception(rootCause.getClass().getSimpleName())
-                .type("InternalServerError"));
+    // Sanity check that the checkpoint was really created in the resultant path:
+    // at least one sst file present in the checkpoint dir.
+    final var numSstFilesInCheckpointDir =
+        Stream.of(checkpointAbsolutePath.toFile().listFiles())
+            .filter(file -> !file.isDirectory())
+            .filter(f -> f.getName().endsWith(".sst"))
+            .count();
+    assertThat(numSstFilesInCheckpointDir).isGreaterThanOrEqualTo(1L);
   }
 }

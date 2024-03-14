@@ -63,7 +63,7 @@
  */
 
 use std::collections::HashSet;
-use std::fmt;
+use std::{fmt, fs};
 
 use crate::engine_prelude::*;
 use crate::store::traits::*;
@@ -74,12 +74,14 @@ use crate::{
     VersionedLedgerProof, VersionedLedgerTransactionReceipt, VersionedLocalTransactionExecution,
 };
 use node_common::utils::IsAccountExt;
+use rocksdb::checkpoint::Checkpoint;
 use rocksdb::{
     AsColumnFamilyRef, ColumnFamily, ColumnFamilyDescriptor, DBPinnableSlice, Direction,
     IteratorMode, Options, Snapshot, WriteBatch, DB,
 };
 
 use std::path::PathBuf;
+use std::time::SystemTime;
 
 use node_common::locks::Snapshottable;
 use tracing::{error, info, warn};
@@ -101,6 +103,7 @@ use crate::store::typed_cf_api::*;
 use crate::transaction::{
     LedgerTransactionHash, RawLedgerTransaction, TypedTransactionIdentifiers,
 };
+use chrono::{DateTime, Utc};
 
 use super::traits::extensions::*;
 
@@ -568,6 +571,11 @@ pub trait SecondaryRocks: ReadableRocks {
     fn try_catchup_with_primary(&self);
 }
 
+/// RocksDB checkpoint support.
+pub trait CheckpointableRocks {
+    fn create_checkpoint(&self, checkpoint_path: PathBuf) -> Result<(), rocksdb::Error>;
+}
+
 /// Direct RocksDB instance.
 pub struct DirectRocks {
     db: DB,
@@ -629,6 +637,24 @@ impl SecondaryRocks for DirectRocks {
             .try_catch_up_with_primary()
             .expect("secondary DB catchup");
     }
+}
+
+impl CheckpointableRocks for DirectRocks {
+    fn create_checkpoint(&self, checkpoint_path: PathBuf) -> Result<(), rocksdb::Error> {
+        create_checkpoint(&self.db, checkpoint_path)
+    }
+}
+
+impl<'db> CheckpointableRocks for SnapshotRocks<'db> {
+    fn create_checkpoint(&self, checkpoint_path: PathBuf) -> Result<(), rocksdb::Error> {
+        create_checkpoint(self.db, checkpoint_path)
+    }
+}
+
+fn create_checkpoint(db: &DB, checkpoint_path: PathBuf) -> Result<(), rocksdb::Error> {
+    let checkpoint = Checkpoint::new(db)?;
+    checkpoint.create_checkpoint(checkpoint_path)?;
+    Ok(())
 }
 
 /// Snapshot of RocksDB.
@@ -693,8 +719,13 @@ impl<'db> Snapshottable<'db> for StateManagerDatabase<DirectRocks> {
     // become a performance problem, but only at rates way above our use-cases (i.e. >10K snapshots
     // per second).
     fn snapshot(&'db self) -> Self::Snapshot {
-        let StateManagerDatabase { config, rocks } = self;
+        let StateManagerDatabase {
+            checkpoints_path,
+            config,
+            rocks,
+        } = self;
         StateManagerDatabase {
+            checkpoints_path: checkpoints_path.clone(),
             config: config.clone(),
             rocks: rocks.snapshot(),
         }
@@ -703,6 +734,8 @@ impl<'db> Snapshottable<'db> for StateManagerDatabase<DirectRocks> {
 
 /// A RocksDB-backed persistence layer for state manager.
 pub struct StateManagerDatabase<R> {
+    checkpoints_path: PathBuf,
+
     /// Database config.
     ///
     /// The config is passed during construction, validated, persisted, and effectively immutable
@@ -715,7 +748,8 @@ pub struct StateManagerDatabase<R> {
 
 impl ActualStateManagerDatabase {
     pub fn new(
-        root: PathBuf,
+        root_path: PathBuf,
+        checkpoints_path: PathBuf,
         config: DatabaseConfig,
         network: &NetworkDefinition,
     ) -> Result<Self, DatabaseConfigValidationError> {
@@ -728,9 +762,10 @@ impl ActualStateManagerDatabase {
             .map(|cf| ColumnFamilyDescriptor::new(cf.to_string(), Options::default()))
             .collect();
 
-        let db = DB::open_cf_descriptors(&db_opts, root.as_path(), column_families).unwrap();
+        let db = DB::open_cf_descriptors(&db_opts, root_path.as_path(), column_families).unwrap();
 
         let state_manager_database = StateManagerDatabase {
+            checkpoints_path,
             config,
             rocks: DirectRocks { db },
         };
@@ -756,7 +791,10 @@ impl<R: ReadableRocks> StateManagerDatabase<R> {
     /// way of making it clear that it only wants read lock and not a write lock.
     ///
     /// [`ledger-tools`]: https://github.com/radixdlt/ledger-tools
-    pub fn new_read_only(root: PathBuf) -> StateManagerDatabase<impl ReadableRocks> {
+    pub fn new_read_only(
+        root_path: PathBuf,
+        checkpoints_path: PathBuf,
+    ) -> StateManagerDatabase<impl ReadableRocks> {
         let mut db_opts = Options::default();
         db_opts.create_if_missing(false);
         db_opts.create_missing_column_families(false);
@@ -766,11 +804,16 @@ impl<R: ReadableRocks> StateManagerDatabase<R> {
             .map(|cf| ColumnFamilyDescriptor::new(cf.to_string(), Options::default()))
             .collect();
 
-        let db =
-            DB::open_cf_descriptors_read_only(&db_opts, root.as_path(), column_families, false)
-                .unwrap();
+        let db = DB::open_cf_descriptors_read_only(
+            &db_opts,
+            root_path.as_path(),
+            column_families,
+            false,
+        )
+        .unwrap();
 
         StateManagerDatabase {
+            checkpoints_path,
             config: DatabaseConfig {
                 enable_local_transaction_execution_index: false,
                 enable_account_change_index: false,
@@ -785,8 +828,9 @@ impl<R: SecondaryRocks> StateManagerDatabase<R> {
     /// Creates a [`StateManagerDatabase`] as a secondary instance which may catch up with the
     /// primary.
     pub fn new_as_secondary(
-        root: PathBuf,
-        temp: PathBuf,
+        root_path: PathBuf,
+        temp_path: PathBuf,
+        checkpoints_path: PathBuf,
         column_families: Vec<&str>,
     ) -> StateManagerDatabase<impl SecondaryRocks> {
         let mut db_opts = Options::default();
@@ -800,13 +844,14 @@ impl<R: SecondaryRocks> StateManagerDatabase<R> {
 
         let db = DB::open_cf_descriptors_as_secondary(
             &db_opts,
-            root.as_path(),
-            temp.as_path(),
+            root_path.as_path(),
+            temp_path.as_path(),
             column_families,
         )
         .unwrap();
 
         StateManagerDatabase {
+            checkpoints_path,
             config: DatabaseConfig {
                 enable_local_transaction_execution_index: false,
                 enable_account_change_index: false,
@@ -1660,6 +1705,19 @@ impl<R: ReadableRocks> QueryableProofStore for StateManagerDatabase<R> {
         self.open_read_context()
             .cf(ProtocolUpdateExecutionLedgerProofsCf)
             .get_last_value()
+    }
+}
+
+impl<R: CheckpointableRocks> StateManagerDatabase<R> {
+    pub fn create_checkpoint(&self) -> Result<String, String> {
+        fs::create_dir_all(self.checkpoints_path.clone()).map_err(|err| err.to_string())?;
+        let datetime: DateTime<Utc> = SystemTime::now().into();
+        let checkpoint_dir = datetime.format("%Y-%m-%d_%H-%M-%S_%f").to_string();
+        let checkpoint_path = self.checkpoints_path.join(checkpoint_dir.as_str());
+        self.rocks
+            .create_checkpoint(checkpoint_path)
+            .map_err(|err| err.to_string())?;
+        Ok(checkpoint_dir)
     }
 }
 

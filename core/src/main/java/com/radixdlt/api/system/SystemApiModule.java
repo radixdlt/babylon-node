@@ -101,6 +101,7 @@ public class SystemApiModule extends AbstractModule {
     binder
         .addBinding(HandlerRoute.get("/system/network-sync-status"))
         .to(NetworkSyncStatusHandler.class);
+    binder.addBinding(HandlerRoute.post("/system/db-checkpoint")).to(DbCheckpointHandler.class);
   }
 
   @Provides

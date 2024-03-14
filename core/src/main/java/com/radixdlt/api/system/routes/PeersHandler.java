@@ -65,12 +65,12 @@
 package com.radixdlt.api.system.routes;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.system.SystemGetJsonHandler;
+import com.radixdlt.api.system.SystemJsonHandler;
 import com.radixdlt.api.system.SystemModelMapper;
 import com.radixdlt.api.system.generated.models.SystemPeersResponse;
 import com.radixdlt.p2p.PeersView;
 
-public final class PeersHandler extends SystemGetJsonHandler<SystemPeersResponse> {
+public final class PeersHandler extends SystemJsonHandler<SystemPeersResponse> {
 
   private final SystemModelMapper systemModelMapper;
   private final PeersView peersView;

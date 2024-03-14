@@ -62,31 +62,34 @@
  * permissions under this License.
  */
 
-mod constants;
+package com.radixdlt.api.system.routes;
 
-/// A workaround for including the symbols defined in state_manager / core_api_server
-/// in the output library file. See: https://github.com/rust-lang/rfcs/issues/2771
-/// I truly have no idea why this works, but it does.
-#[no_mangle]
-fn export_extern_functions() {
-    constants::export_extern_functions();
+import com.google.inject.Inject;
+import com.radixdlt.api.system.SystemJsonHandler;
+import com.radixdlt.api.system.generated.models.CreateDbCheckpointResponse;
+import com.radixdlt.db.checkpoint.RustDbCheckpoints;
+import com.radixdlt.utils.properties.RuntimeProperties;
 
-    // node-common
-    node_common::jni::addressing::export_extern_functions();
-    node_common::jni::scrypto_constants::export_extern_functions();
+public final class DbCheckpointHandler extends SystemJsonHandler<CreateDbCheckpointResponse> {
 
-    // state-manager
-    state_manager::jni::db_checkpoints::export_extern_functions();
-    state_manager::jni::mempool::export_extern_functions();
-    state_manager::jni::node_rust_environment::export_extern_functions();
-    state_manager::jni::protocol_update::export_extern_functions();
-    state_manager::jni::state_computer::export_extern_functions();
-    state_manager::jni::state_reader::export_extern_functions();
-    state_manager::jni::transaction_preparer::export_extern_functions();
-    state_manager::jni::transaction_store::export_extern_functions();
-    state_manager::jni::vertex_store_recovery::export_extern_functions();
-    state_manager::jni::test_state_reader::export_extern_functions();
+  private final boolean enabled;
+  private final RustDbCheckpoints rustCheckpoints;
 
-    // core-api-server
-    core_api_server::jni::export_extern_functions();
+  @Inject
+  DbCheckpointHandler(RustDbCheckpoints rustCheckpoints, RuntimeProperties runtimeProperties) {
+    this.enabled = runtimeProperties.get("api.system.enable_db_checkpoint", false);
+    this.rustCheckpoints = rustCheckpoints;
+  }
+
+  @Override
+  public CreateDbCheckpointResponse handleRequest() {
+    if (!enabled) {
+      throw new RuntimeException(
+          "DB checkpoint API must be enabled by setting the `api.system.enable_db_checkpoint` flag"
+              + " to true");
+    } else {
+      final var checkpointRelativePath = rustCheckpoints.createCheckpoint();
+      return new CreateDbCheckpointResponse().checkpointRelativePath(checkpointRelativePath);
+    }
+  }
 }
