@@ -91,6 +91,7 @@ pub(crate) async fn handle_transaction_callpreview(
                 use_free_credit: true,
                 assume_all_signature_proofs: true,
                 skip_epoch_check: true,
+                disable_auth: false,
             },
             message: MessageV1::None,
         })
