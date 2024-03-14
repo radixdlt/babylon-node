@@ -81,6 +81,7 @@ use crate::staging::ReadableStore;
 use crate::staging::node_ancestry_resolver::NodeAncestryResolver;
 use crate::staging::overlays::{MapSubstateNodeAncestryStore, StagedSubstateNodeAncestryStore};
 use crate::store::traits::{KeyedSubstateNodeAncestryRecord, SubstateNodeAncestryStore};
+use crate::traits::LeafSubstateKeyAssociation;
 use node_common::utils::IsAccountExt;
 
 pub enum ProcessedTransactionReceipt {
@@ -101,6 +102,7 @@ pub struct ProcessedCommitResult {
     pub hash_structures_diff: HashStructuresDiff,
     pub database_updates: DatabaseUpdates,
     pub new_substate_node_ancestry_records: Vec<KeyedSubstateNodeAncestryRecord>,
+    pub new_leaf_substate_keys: Vec<LeafSubstateKeyAssociation>,
     pub new_protocol_state: ProtocolState,
     pub next_protocol_version: Option<ProtocolVersionName>,
 }
@@ -204,7 +206,7 @@ impl ProcessedCommitResult {
             &commit_result.state_update_summary.vault_balance_changes,
         );
 
-        let state_hash_tree_diff =
+        let (new_state_root, state_hash_tree_diff, new_leaf_substate_keys) =
             Self::compute_state_tree_update(store, parent_state_version, &database_updates);
 
         let epoch_accu_trees =
@@ -231,7 +233,7 @@ impl ProcessedCommitResult {
         );
 
         let ledger_hashes = LedgerHashes {
-            state_root: state_hash_tree_diff.new_root,
+            state_root: new_state_root,
             transaction_root: *transaction_tree_diff.slice.root(),
             receipt_root: *receipt_tree_diff.slice.root(),
         };
@@ -252,6 +254,7 @@ impl ProcessedCommitResult {
             database_updates,
             new_substate_node_ancestry_records: global_balance_update
                 .new_substate_node_ancestry_records,
+            new_leaf_substate_keys,
             new_protocol_state,
             next_protocol_version,
         }
@@ -380,14 +383,22 @@ impl ProcessedCommitResult {
         store: &S,
         parent_state_version: StateVersion,
         database_updates: &DatabaseUpdates,
-    ) -> StateHashTreeDiff {
+    ) -> (
+        StateHash,
+        StateHashTreeDiff,
+        Vec<LeafSubstateKeyAssociation>,
+    ) {
         let collector = CollectingTreeStore::new(store);
         let root_hash = put_at_next_version(
             &collector,
             Some(parent_state_version.number()).filter(|v| *v > 0),
             database_updates,
         );
-        collector.into_diff_with(root_hash)
+        let CollectedTreeWrites {
+            diff,
+            key_associations,
+        } = collector.done();
+        (StateHash::from(root_hash), diff, key_associations)
     }
 }
 
@@ -530,7 +541,6 @@ pub struct HashStructuresDiff {
 
 #[derive(Clone, Debug)]
 pub struct StateHashTreeDiff {
-    pub new_root: StateHash,
     pub new_nodes: Vec<(StoredTreeNodeKey, TreeNode)>,
     pub stale_tree_parts: Vec<StaleTreePart>,
 }
@@ -538,7 +548,6 @@ pub struct StateHashTreeDiff {
 impl StateHashTreeDiff {
     pub fn new() -> Self {
         Self {
-            new_root: StateHash::from(Hash([0; Hash::LENGTH])),
             new_nodes: Vec::new(),
             stale_tree_parts: Vec::new(),
         }
@@ -601,6 +610,12 @@ impl<'s, S, K, N> WriteableAccuTreeStore<K, N> for CollectingAccuTreeStore<'s, S
 struct CollectingTreeStore<'s, S> {
     readable_delegate: &'s S,
     diff: RefCell<StateHashTreeDiff>,
+    key_associations: RefCell<Vec<LeafSubstateKeyAssociation>>,
+}
+
+struct CollectedTreeWrites {
+    diff: StateHashTreeDiff,
+    key_associations: Vec<LeafSubstateKeyAssociation>,
 }
 
 impl<'s, S: ReadableStateTreeStore> CollectingTreeStore<'s, S> {
@@ -608,13 +623,15 @@ impl<'s, S: ReadableStateTreeStore> CollectingTreeStore<'s, S> {
         Self {
             readable_delegate,
             diff: RefCell::new(StateHashTreeDiff::new()),
+            key_associations: RefCell::new(Vec::new()),
         }
     }
 
-    pub fn into_diff_with(self, new_root: Hash) -> StateHashTreeDiff {
-        let mut diff = self.diff.take();
-        diff.new_root = StateHash::from(new_root);
-        diff
+    pub fn done(self) -> CollectedTreeWrites {
+        CollectedTreeWrites {
+            diff: self.diff.take(),
+            key_associations: self.key_associations.take(),
+        }
     }
 }
 
@@ -631,12 +648,17 @@ impl<'s, S> WriteableTreeStore for CollectingTreeStore<'s, S> {
 
     fn associate_substate(
         &self,
-        _global_key: &StoredTreeNodeKey,
-        _partition_key: &DbPartitionKey,
-        _db_sort_key: &DbSortKey,
+        state_tree_leaf_key: &StoredTreeNodeKey,
+        partition_key: &DbPartitionKey,
+        sort_key: &DbSortKey,
         _substate_value: &DbSubstateValue,
     ) {
-        // TODO(historical-state): Collect these if the feature is enabled
+        self.key_associations
+            .borrow_mut()
+            .push(LeafSubstateKeyAssociation {
+                tree_node_key: state_tree_leaf_key.clone(),
+                substate_key: (partition_key.clone(), sort_key.clone()),
+            });
     }
 
     fn record_stale_tree_part(&self, part: StaleTreePart) {
