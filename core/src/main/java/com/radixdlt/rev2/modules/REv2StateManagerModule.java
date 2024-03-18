@@ -201,12 +201,8 @@ public final class REv2StateManagerModule extends AbstractModule {
           @Singleton
           DatabaseBackendConfig databaseBackendConfig(
               @NodeStorageLocation String nodeStorageLocation, RuntimeProperties properties) {
-            final var rocksDbRootPath = new File(nodeStorageLocation, "state_manager").getPath();
-            final var rocksDbCheckpointsPath =
-                properties.get(
-                    "db.checkpoints_path",
-                    new File(nodeStorageLocation, "state_manager_checkpoints").getPath());
-            return new DatabaseBackendConfig(rocksDbRootPath, rocksDbCheckpointsPath);
+            return new DatabaseBackendConfig(
+                new File(nodeStorageLocation, "state_manager").getPath());
           }
 
           @Provides

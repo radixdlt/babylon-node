@@ -82,8 +82,7 @@ pub use traits::DatabaseConfig;
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
 pub struct DatabaseBackendConfig {
-    pub rocks_db_root_path: String,
-    pub rocks_db_checkpoints_path: String,
+    pub rocks_db_path: String,
 }
 
 /// A synchronous collector of costly (I/O-intensive) raw DB metrics.

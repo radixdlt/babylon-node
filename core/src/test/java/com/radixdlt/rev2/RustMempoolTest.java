@@ -130,7 +130,7 @@ public final class RustMempoolTest {
             Option.some(
                 new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount)),
             Option.none(),
-            new DatabaseBackendConfig(folder.newFolder().getPath(), folder.newFolder().getPath()),
+            new DatabaseBackendConfig(folder.newFolder().getPath()),
             TEST_DATABASE_CONFIG,
             LoggingConfig.getDefault(),
             StateHashTreeGcConfig.forTesting(),
@@ -188,7 +188,7 @@ public final class RustMempoolTest {
             Option.some(
                 new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount)),
             Option.none(),
-            new DatabaseBackendConfig(folder.newFolder().getPath(), folder.newFolder().getPath()),
+            new DatabaseBackendConfig(folder.newFolder().getPath()),
             TEST_DATABASE_CONFIG,
             LoggingConfig.getDefault(),
             StateHashTreeGcConfig.forTesting(),
@@ -329,7 +329,7 @@ public final class RustMempoolTest {
             Option.some(
                 new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount)),
             Option.none(),
-            new DatabaseBackendConfig(folder.newFolder().getPath(), folder.newFolder().getPath()),
+            new DatabaseBackendConfig(folder.newFolder().getPath()),
             TEST_DATABASE_CONFIG,
             LoggingConfig.getDefault(),
             StateHashTreeGcConfig.forTesting(),

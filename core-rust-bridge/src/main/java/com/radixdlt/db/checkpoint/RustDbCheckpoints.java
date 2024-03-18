@@ -64,8 +64,6 @@
 
 package com.radixdlt.db.checkpoint;
 
-import static com.radixdlt.lang.Tuple.tuple;
-
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.environment.NodeRustEnvironment;
 import com.radixdlt.lang.Tuple;
@@ -86,12 +84,12 @@ public final class RustDbCheckpoints {
             .build(new TypeToken<>() {});
   }
 
-  public String createCheckpoint() {
-    return this.createCheckpointFunc.call(tuple());
+  public void createCheckpoint(String path) {
+    this.createCheckpointFunc.call(path);
   }
 
   private static native byte[] createCheckpoint(
       NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
-  private final Natives.Call1<Tuple.Tuple0, String> createCheckpointFunc;
+  private final Natives.Call1<String, Tuple.Tuple0> createCheckpointFunc;
 }

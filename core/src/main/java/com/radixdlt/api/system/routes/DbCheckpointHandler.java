@@ -68,16 +68,31 @@ import com.google.inject.Inject;
 import com.radixdlt.api.system.SystemJsonHandler;
 import com.radixdlt.api.system.generated.models.CreateDbCheckpointResponse;
 import com.radixdlt.db.checkpoint.RustDbCheckpoints;
+import com.radixdlt.store.NodeStorageLocation;
 import com.radixdlt.utils.properties.RuntimeProperties;
+import java.io.File;
+import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public final class DbCheckpointHandler extends SystemJsonHandler<CreateDbCheckpointResponse> {
 
   private final boolean enabled;
+  private final String checkpointsPath;
   private final RustDbCheckpoints rustCheckpoints;
 
   @Inject
-  DbCheckpointHandler(RustDbCheckpoints rustCheckpoints, RuntimeProperties runtimeProperties) {
+  DbCheckpointHandler(
+      RustDbCheckpoints rustCheckpoints,
+      RuntimeProperties runtimeProperties,
+      @NodeStorageLocation String nodeStorageLocation) {
     this.enabled = runtimeProperties.get("api.system.enable_db_checkpoint", false);
+
+    this.checkpointsPath =
+        runtimeProperties.get(
+            "db.checkpoints_path",
+            Path.of(nodeStorageLocation, "state_manager_checkpoints").toString());
+
     this.rustCheckpoints = rustCheckpoints;
   }
 
@@ -88,8 +103,17 @@ public final class DbCheckpointHandler extends SystemJsonHandler<CreateDbCheckpo
           "DB checkpoint API must be enabled by setting the `api.system.enable_db_checkpoint` flag"
               + " to true");
     } else {
-      final var checkpointRelativePath = rustCheckpoints.createCheckpoint();
-      return new CreateDbCheckpointResponse().checkpointRelativePath(checkpointRelativePath);
+      final var checkpointsDir = new File(checkpointsPath);
+      if (!checkpointsDir.exists() && !checkpointsDir.mkdirs()) {
+        throw new RuntimeException("Checkpoints directory doesn't exist and failed to create");
+      }
+      final var checkpointDir =
+          LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss_SSS"));
+      final var checkpointPath = Path.of(this.checkpointsPath, checkpointDir).toString();
+
+      rustCheckpoints.createCheckpoint(checkpointPath);
+
+      return new CreateDbCheckpointResponse().checkpointRelativePath(checkpointDir);
     }
   }
 }
