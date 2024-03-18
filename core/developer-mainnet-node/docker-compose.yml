@@ -1,0 +1,36 @@
+version: '3.8'
+name: radixdlt-babylon-node-mainnet-node
+services:
+  core:
+    container_name: radixdlt-mainnet-node
+    #### Chose to either uncomment "image" or "build" to either pull the image from dockerhub or build locally from source
+    image: radixdlt/babylon-node:v1.1.2
+    # build:
+    #   context: ..
+    #   dockerfile: Dockerfile
+    init: true
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+      memlock: -1
+    restart: unless-stopped
+    mem_limit: 12000m
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - "127.0.0.1:3333:3333"   # Core API - binds to localhost:3333
+      - "127.0.0.1:3334:3334"   # System API - binds to localhost:3334
+      - "127.0.0.1:3335:3335"   # Prometheus API - binds to localhost:3335
+      - "127.0.0.1:9011:9011"   # JMX Port for Java debugging - binds to localhost:9001
+      - "127.0.0.1:50505:50505" # JDWP Port for Java debugging - binds to localhost:50505
+      - "127.0.0.1:30000:30000" # Gossip port - binds to localhost:30000
+    env_file:
+      - radix-node.env
+    volumes:
+      - ./../NODEMOUNT/mainnet/ledger:/home/radixdlt/RADIXDB
+      - ./../NODEMOUNT/mainnet/key:/home/radixdlt/key
+
+volumes:
+  ledger-data:
+  key-data:
