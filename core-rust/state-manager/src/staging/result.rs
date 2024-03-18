@@ -81,7 +81,7 @@ use crate::staging::ReadableStore;
 use crate::staging::node_ancestry_resolver::NodeAncestryResolver;
 use crate::staging::overlays::{MapSubstateNodeAncestryStore, StagedSubstateNodeAncestryStore};
 use crate::store::traits::{KeyedSubstateNodeAncestryRecord, SubstateNodeAncestryStore};
-use crate::traits::LeafSubstateKeyAssociation;
+use crate::traits::{AssociationCause, LeafSubstateKeyAssociation};
 use node_common::utils::IsAccountExt;
 
 pub enum ProcessedTransactionReceipt {
@@ -652,13 +652,14 @@ impl<'s, S> WriteableTreeStore for CollectingTreeStore<'s, S> {
         state_tree_leaf_key: &StoredTreeNodeKey,
         partition_key: &DbPartitionKey,
         sort_key: &DbSortKey,
-        _substate_value: AssociatedSubstateValue,
+        substate_value: AssociatedSubstateValue,
     ) {
         self.key_associations
             .borrow_mut()
             .push(LeafSubstateKeyAssociation {
                 tree_node_key: state_tree_leaf_key.clone(),
                 substate_key: (partition_key.clone(), sort_key.clone()),
+                cause: AssociationCause::from(substate_value),
             });
     }
 

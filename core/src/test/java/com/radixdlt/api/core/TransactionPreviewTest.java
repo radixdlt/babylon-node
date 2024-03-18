@@ -107,7 +107,7 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
       var manifest = Manifest.depositFromFaucet(accountAddress);
 
       // Execute it once, to initialize the account and learn its XRD vault address:
-      submitAndWaitForSuccess(test, manifest, List.of(accountKeyPair));
+      var firstCommit = submitAndWaitForSuccess(test, manifest, List.of(accountKeyPair));
       var initialVaultBalance =
           this.getStateApi()
               .stateAccountPost(
@@ -123,26 +123,26 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
       var initialAmount = (FungibleResourceAmount) initialVaultBalance.getResourceAmount();
       assertThat(Double.parseDouble(initialAmount.getAmount())).isEqualTo(FAUCET_AMOUNT);
 
-      // Reach a known state version:
-      test.runUntilState(NodesPredicate.anyAtOrOverStateVersion(37));
-
-      // Sanity check - a preview at the current version should result in the vault having "2x from
-      // Faucet" amount:
-      var previewedWhile37 = previewAtVersion(manifest, Optional.empty());
-      assertThat(getVaultBalance(previewedWhile37, vaultAddress)).isEqualTo(2 * FAUCET_AMOUNT);
+      // Sanity check - a preview of the same manifest at the current version should result in the
+      // vault having "2x from Faucet" amount:
+      var previewedDirectlyAfterFirstCommit = previewAtVersion(manifest, Optional.empty());
+      assertThat(getVaultBalance(previewedDirectlyAfterFirstCommit, vaultAddress))
+          .isEqualTo(2 * FAUCET_AMOUNT);
 
       // Execute precisely the deposit that was just previewed:
-      var committed = submitAndWaitForSuccess(test, manifest, List.of(accountKeyPair));
-      assertThat(committed.stateVersion()).isGreaterThan(37);
+      var secondCommit = submitAndWaitForSuccess(test, manifest, List.of(accountKeyPair));
+      assertThat(secondCommit.stateVersion()).isGreaterThan(firstCommit.stateVersion()); // (sanity)
 
-      // Now a true assert: if we preview another deposit at the (new) current version, then we see
-      // "3x from Faucet":
-      var previewedWhileCurrent = previewAtVersion(manifest, Optional.empty());
-      assertThat(getVaultBalance(previewedWhileCurrent, vaultAddress)).isEqualTo(3 * FAUCET_AMOUNT);
+      // Sanity check - a preview now should give "3x from Faucet" amount:
+      var previewedAfterSecondCommit = previewAtVersion(manifest, Optional.empty());
+      assertThat(getVaultBalance(previewedAfterSecondCommit, vaultAddress))
+          .isEqualTo(3 * FAUCET_AMOUNT);
 
-      // ...but if we preview that at version 37, we will see the same old "2x from Faucet":
-      var previewedAt37 = previewAtVersion(manifest, Optional.of(37L));
-      assertThat(getVaultBalance(previewedAt37, vaultAddress)).isEqualTo(2 * FAUCET_AMOUNT);
+      // And a true assert: a preview executed *at version* of the first commit returns exactly the
+      // same receipt as the preview executed *directly* on top of the first commit.
+      var previewedAsOfAfterFirstCommit =
+          previewAtVersion(manifest, Optional.of(firstCommit.stateVersion()));
+      assertThat(previewedAsOfAfterFirstCommit).isEqualTo(previewedDirectlyAfterFirstCommit);
     }
   }
 

@@ -404,7 +404,7 @@ impl TypedCf for ExtensionsDataCf {
             ExtensionsDataKey::AccountChangeIndexLastProcessedStateVersion,
             ExtensionsDataKey::LocalTransactionExecutionIndexEnabled,
             ExtensionsDataKey::December2023LostSubstatesRestored,
-            ExtensionsDataKey::ValuesAssociatedWithStateHashTreeSince,
+            ExtensionsDataKey::StateHashTreeAssociatedValuesStatus,
         ])
     }
 
@@ -483,7 +483,7 @@ enum ExtensionsDataKey {
     AccountChangeIndexEnabled,
     LocalTransactionExecutionIndexEnabled,
     December2023LostSubstatesRestored,
-    ValuesAssociatedWithStateHashTreeSince,
+    StateHashTreeAssociatedValuesStatus,
 }
 
 // IMPORTANT NOTE: the strings defined below are used as database identifiers. Any change would
@@ -500,9 +500,7 @@ impl fmt::Display for ExtensionsDataKey {
                 "local_transaction_execution_index_enabled"
             }
             Self::December2023LostSubstatesRestored => "december_2023_lost_substates_restored",
-            Self::ValuesAssociatedWithStateHashTreeSince => {
-                "values_associated_with_state_hash_tree_since"
-            }
+            Self::StateHashTreeAssociatedValuesStatus => "state_hash_tree_associated_values_status",
         };
         write!(f, "{str}")
     }
@@ -886,13 +884,17 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
     fn ensure_historical_substate_values(&self) {
         let db_context = self.open_rw_context();
         let extension_data_cf = db_context.cf(ExtensionsDataCf);
-        let values_associated_since = extension_data_cf
-            .get(&ExtensionsDataKey::ValuesAssociatedWithStateHashTreeSince)
-            .map(|bytes| scrypto_decode::<StateVersion>(&bytes).unwrap());
+        let status = extension_data_cf
+            .get(&ExtensionsDataKey::StateHashTreeAssociatedValuesStatus)
+            .map(|bytes| {
+                scrypto_decode::<VersionedStateHashTreeAssociatedValuesStatus>(&bytes)
+                    .unwrap()
+                    .into_latest()
+            });
 
         if self.config.enable_historical_substate_values {
-            if let Some(version) = values_associated_since {
-                info!("Historical Substate values enabled since {:?}", version);
+            if let Some(status) = status {
+                info!("Historical Substate values enabled since {:?}", status);
             } else {
                 let current_version = self.max_state_version();
                 info!(
@@ -900,17 +902,21 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
                     current_version
                 );
                 self.populate_hash_tree_associated_substate_values(current_version);
+                let status = StateHashTreeAssociatedValuesStatusV1 {
+                    values_associated_from: current_version,
+                };
                 extension_data_cf.put(
-                    &ExtensionsDataKey::ValuesAssociatedWithStateHashTreeSince,
-                    &scrypto_encode(&current_version).unwrap(),
+                    &ExtensionsDataKey::StateHashTreeAssociatedValuesStatus,
+                    &scrypto_encode(&VersionedStateHashTreeAssociatedValuesStatus::from(status))
+                        .unwrap(),
                 );
             }
-        } else if let Some(version) = values_associated_since {
+        } else if let Some(status) = status {
             info!(
                 "Disabling historical Substate values (were enabled since {:?})",
-                version
+                status.values_associated_from
             );
-            extension_data_cf.delete(&ExtensionsDataKey::ValuesAssociatedWithStateHashTreeSince);
+            extension_data_cf.delete(&ExtensionsDataKey::StateHashTreeAssociatedValuesStatus);
         } else {
             info!("Historical Substate values remain disabled");
         }
@@ -933,14 +939,6 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
                 .get_substate(&partition_key, &sort_key)
                 .expect("substate value referenced by hash tree does not exist");
             tree_values_cf.put(&tree_node_key, &value);
-
-            println!(
-                ">>>>>>>>> {}:{}/{}",
-                hex::encode(&partition_key.node_key[20..]),
-                partition_key.partition_num,
-                hex::encode(&sort_key.0)
-            );
-
             if db_context.buffered_data_size() >= SUBSTATE_BATCH_BYTE_SIZE {
                 db_context.flush();
                 info!(
@@ -978,14 +976,19 @@ impl<R: ReadableRocks> ConfigurableDatabase for StateManagerDatabase<R> {
         };
 
         // we also need to take the "still collecting the max history length" case into account:
-        let values_associated_since = self
+        let values_associated_from = self
             .open_read_context()
             .cf(ExtensionsDataCf)
-            .get(&ExtensionsDataKey::ValuesAssociatedWithStateHashTreeSince)
-            .map(|bytes| scrypto_decode::<StateVersion>(&bytes).unwrap())
-            .expect("state history feature enabled, but its metadata not found");
+            .get(&ExtensionsDataKey::StateHashTreeAssociatedValuesStatus)
+            .map(|bytes| {
+                scrypto_decode::<VersionedStateHashTreeAssociatedValuesStatus>(&bytes)
+                    .unwrap()
+                    .into_latest()
+            })
+            .expect("state history feature enabled, but its metadata not found")
+            .values_associated_from;
 
-        Some(max(first_state_hash_tree_version, values_associated_since))
+        Some(max(first_state_hash_tree_version, values_associated_from))
     }
 }
 
@@ -1138,18 +1141,20 @@ impl<R: WriteableRocks> CommitStore for StateManagerDatabase<R> {
                 let LeafSubstateKeyAssociation {
                     tree_node_key,
                     substate_key,
+                    cause,
                 } = new_leaf_substate_key;
-                let substate_value = commit_bundle
-                    .substate_store_update
-                    .get_upserted_value(&substate_key)
-                    .map(Cow::Borrowed)
-                    .or_else(|| {
-                        db_context
-                            .cf(SubstatesCf)
-                            .get(&substate_key)
-                            .map(Cow::Owned)
-                    })
-                    .expect("neither upserted nor unchanged value found for substate key");
+                let substate_value = match cause {
+                    AssociationCause::SubstateUpsert => commit_bundle
+                        .substate_store_update
+                        .get_upserted_value(&substate_key)
+                        .map(Cow::Borrowed)
+                        .expect("upserted value not found in database updates"),
+                    AssociationCause::TreeRestructuring => db_context
+                        .cf(SubstatesCf)
+                        .get(&substate_key)
+                        .map(Cow::Owned)
+                        .expect("unchanged value not found in substate database"),
+                };
                 db_context
                     .cf(AssociatedStateHashTreeValuesCf)
                     .put(&tree_node_key, substate_value.as_ref());

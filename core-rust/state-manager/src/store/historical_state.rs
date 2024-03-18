@@ -159,6 +159,16 @@ impl<'t, T: ReadableTreeStore + LeafSubstateValueStore> SubstateDatabase
 }
 
 impl<'t, T: LeafSubstateValueStore> StateHashTreeBasedSubstateDatabase<'t, T> {
+    /// Returns the substate value associated with the given leaf key.
+    ///
+    /// The implementation makes a few assumptions and *panics* is any of them is not met:
+    /// - The queried tree node represents a Substate-Tier's leaf,
+    /// - The queried tree node was stored while the "state history" feature was enabled (see
+    ///   [`DatabaseConfig::enable_historical_substate_values`]),
+    /// - The queried tree node was not garbage-collected yet (see
+    ///   [`StateHashTreeGcConfig::state_version_history_length`]).
+    ///
+    /// These assumptions are enforced by the [`VersionScopedSubstateDatabase::new`] constructor.
     fn get_value(&self, tree_leaf_key: &StoredTreeNodeKey) -> DbSubstateValue {
         let Some(value) = self.tree_store.get_associated_value(tree_leaf_key) else {
             panic!(

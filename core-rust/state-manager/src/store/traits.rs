@@ -156,6 +156,32 @@ pub struct CommittedTransactionBundle {
 pub struct LeafSubstateKeyAssociation {
     pub tree_node_key: StoredTreeNodeKey,
     pub substate_key: DbSubstateKey,
+    pub cause: AssociationCause,
+}
+
+/// The reason of a particular [`LeafSubstateKeyAssociation`].
+#[derive(Debug, Clone)]
+pub enum AssociationCause {
+    /// A dominant, simple case: a Substate was created or updated. This naturally leads its leaf
+    /// node to be created within the state tree.
+    ///
+    /// The Substate's new value can be found in the [`DatabaseUpdates`].
+    SubstateUpsert,
+    /// The JMT-specific case: a leaf node had to be re-created at different key, because its nibble
+    /// path length has changed, because some other related tree nodes (on this path) were created
+    /// or deleted - see [`AssociatedSubstateValue`]'s docs for more details.
+    ///
+    /// The Substate's value was not changed and can be found in the [`SubstateDatabase`].
+    TreeRestructuring,
+}
+
+impl From<AssociatedSubstateValue<'_>> for AssociationCause {
+    fn from(value: AssociatedSubstateValue) -> Self {
+        match value {
+            AssociatedSubstateValue::Upserted(_) => AssociationCause::SubstateUpsert,
+            AssociatedSubstateValue::Unchanged => AssociationCause::TreeRestructuring,
+        }
+    }
 }
 
 pub mod vertex {
@@ -621,6 +647,21 @@ pub mod extensions {
             account: GlobalAddress,
             from_state_version: StateVersion,
         ) -> Box<dyn Iterator<Item = StateVersion> + '_>;
+    }
+
+    define_single_versioned! {
+        #[derive(Debug, Clone, Sbor)]
+        pub enum VersionedStateHashTreeAssociatedValuesStatus => StateHashTreeAssociatedValuesStatus = StateHashTreeAssociatedValuesStatusV1
+    }
+
+    #[derive(Debug, Clone, Sbor)]
+    pub struct StateHashTreeAssociatedValuesStatusV1 {
+        /// The [`StateVersion`] at which the "state history" feature was most recently enabled.
+        ///
+        /// From this version (inclusive) onwards, the values of upserted Substates are persisted
+        /// in a dedicated historical table. This piece of metadata is needed to calculate whether
+        /// historical state at particular state version is available or not.
+        pub values_associated_from: StateVersion,
     }
 }
 
