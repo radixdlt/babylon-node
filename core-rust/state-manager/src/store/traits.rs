@@ -147,6 +147,12 @@ pub struct CommittedTransactionBundle {
     pub identifiers: CommittedTransactionIdentifiers,
 }
 
+#[derive(Debug, Clone)]
+pub struct LeafSubstateKeyAssociation {
+    pub tree_node_key: StoredTreeNodeKey,
+    pub substate_key: DbSubstateKey,
+}
+
 pub mod vertex {
     use super::*;
 
@@ -370,6 +376,7 @@ pub mod commit {
         pub transaction_tree_slice: TransactionAccuTreeSlice,
         pub receipt_tree_slice: ReceiptAccuTreeSlice,
         pub new_substate_node_ancestry_records: Vec<KeyedSubstateNodeAncestryRecord>,
+        pub new_leaf_substate_keys: Vec<LeafSubstateKeyAssociation>,
     }
 
     pub struct SubstateStoreUpdate {
@@ -400,6 +407,21 @@ pub mod commit {
                     node_updates,
                 );
             }
+        }
+
+        pub fn get_upserted_value(&self, key: &DbSubstateKey) -> Option<&DbSubstateValue> {
+            let (
+                DbPartitionKey {
+                    node_key,
+                    partition_num,
+                },
+                sort_key,
+            ) = key;
+            self.updates
+                .node_updates
+                .get(node_key)
+                .and_then(|node_update| node_update.partition_updates.get(partition_num))
+                .and_then(|partition_update| partition_update.get_upserted_value(sort_key))
         }
 
         fn merge_in_node_updates(target: &mut NodeDatabaseUpdates, source: NodeDatabaseUpdates) {

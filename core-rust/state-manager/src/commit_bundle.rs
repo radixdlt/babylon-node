@@ -73,12 +73,13 @@ use crate::engine_prelude::*;
 
 use crate::accumulator_tree::slice_merger::AccuTreeSliceMerger;
 
-/// A builder of a [`CommitBundle`] from individual transactions and their commit results
+/// A builder of a [`CommitBundle`] from individual transactions and their commit results.
 pub struct CommitBundleBuilder {
     committed_transaction_bundles: Vec<CommittedTransactionBundle>,
     substate_store_update: SubstateStoreUpdate,
     state_hash_tree_update: HashTreeUpdate,
     new_substate_node_ancestry_records: Vec<KeyedSubstateNodeAncestryRecord>,
+    new_leaf_substate_keys: Vec<LeafSubstateKeyAssociation>,
     transaction_tree_slice_merger: AccuTreeSliceMerger<TransactionTreeHash>,
     receipt_tree_slice_merger: AccuTreeSliceMerger<ReceiptTreeHash>,
 }
@@ -96,6 +97,7 @@ impl CommitBundleBuilder {
             substate_store_update: SubstateStoreUpdate::new(),
             state_hash_tree_update: HashTreeUpdate::new(),
             new_substate_node_ancestry_records: Vec::new(),
+            new_leaf_substate_keys: Vec::new(),
             transaction_tree_slice_merger: epoch_accu_trees.create_merger(),
             receipt_tree_slice_merger: epoch_accu_trees.create_merger(),
         }
@@ -116,6 +118,8 @@ impl CommitBundleBuilder {
             .add(state_version, hash_structures_diff.state_hash_tree_diff);
         self.new_substate_node_ancestry_records
             .extend(result.new_substate_node_ancestry_records);
+        self.new_leaf_substate_keys
+            .extend(result.new_leaf_substate_keys);
         self.transaction_tree_slice_merger
             .append(hash_structures_diff.transaction_tree_diff.slice);
         self.receipt_tree_slice_merger
@@ -147,6 +151,7 @@ impl CommitBundleBuilder {
             ),
             receipt_tree_slice: ReceiptAccuTreeSliceV1(self.receipt_tree_slice_merger.into_slice()),
             new_substate_node_ancestry_records: self.new_substate_node_ancestry_records,
+            new_leaf_substate_keys: self.new_leaf_substate_keys,
         }
     }
 }
