@@ -77,6 +77,7 @@ use crate::store::traits::{
     gc::StateHashTreeGcStore, IterableProofStore, QueryableProofStore, QueryableTransactionStore,
     SubstateNodeAncestryStore,
 };
+use crate::traits::measurement::MeasurableDatabase;
 use crate::transaction::LedgerTransactionHash;
 
 //
@@ -277,6 +278,22 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_leastStaleStateHas
             .map(|(state_version, _)| state_version)
             .unwrap_or(StateVersion::pre_genesis());
         least_stale_state_version.number()
+    })
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_testutil_TestStateReader_historicalSubstateCount(
+    env: JNIEnv,
+    _class: JClass,
+    j_rust_global_context: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| -> u64 {
+        let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
+        let count = database
+            .lock()
+            .count_entries("associated_state_hash_tree_values");
+        count.try_into().expect("count out of bounds")
     })
 }
 

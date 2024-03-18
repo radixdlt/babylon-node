@@ -906,9 +906,15 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
             }
         } else if let Some(version) = values_associated_since {
             info!(
-                "Disabling historical Substate values (were enabled since {:?})",
+                "Clearing and disabling historical Substate values (were enabled since {:?})",
                 version
             );
+            // Note: in theory, the associated values could be automatically, gradually deleted by
+            // the GC process (by simply catching up to the current state version). However, the GC
+            // is not "free" (i.e. it performs no-op delete operations), so we prefer to actually
+            // skip it if the history feature is disabled. Thus, we also have to clear the leftovers
+            // when we disable the history, here:
+            db_context.cf(AssociatedStateHashTreeValuesCf).delete_all();
             extension_data_cf.delete(&ExtensionsDataKey::ValuesAssociatedWithStateHashTreeSince);
         } else {
             info!("Historical Substate values remain disabled");
@@ -991,6 +997,12 @@ impl MeasurableDatabase for ActualStateManagerDatabase {
             );
         }
         statistics.into_values().collect()
+    }
+
+    fn count_entries(&self, category_name: &str) -> usize {
+        self.rocks
+            .iterator_cf(self.rocks.cf_handle(category_name), IteratorMode::Start)
+            .count()
     }
 }
 
@@ -1742,8 +1754,15 @@ impl<R: WriteableRocks> StateHashTreeGcStore for StateManagerDatabase<R> {
 
     fn batch_delete_node<'a>(&self, keys: impl IntoIterator<Item = &'a StoredTreeNodeKey>) {
         let db_context = self.open_rw_context();
+        let tree_nodes_cf = db_context.cf(StateHashTreeNodesCf);
+        let associated_values_cf = db_context.cf(AssociatedStateHashTreeValuesCf);
         for key in keys {
-            db_context.cf(StateHashTreeNodesCf).delete(key);
+            tree_nodes_cf.delete(key);
+            if self.config.enable_historical_substate_values {
+                // Note: not every key represents a Substate. But majority does, so we simply accept
+                // some fraction of no-op deletes here, in the name of simplicity.
+                associated_values_cf.delete(key);
+            }
         }
     }
 
@@ -1752,10 +1771,9 @@ impl<R: WriteableRocks> StateHashTreeGcStore for StateManagerDatabase<R> {
         state_versions: impl IntoIterator<Item = &'a StateVersion>,
     ) {
         let db_context = self.open_rw_context();
+        let stale_tree_parts_cf = db_context.cf(StaleStateHashTreePartsCf);
         for state_version in state_versions {
-            db_context
-                .cf(StaleStateHashTreePartsCf)
-                .delete(state_version);
+            stale_tree_parts_cf.delete(state_version);
         }
     }
 }
