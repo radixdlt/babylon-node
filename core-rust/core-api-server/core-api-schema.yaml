@@ -6965,6 +6965,12 @@ components:
       properties:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
+        at_state_version:
+          $ref: "#/components/schemas/StateVersion"
+          description: |
+            An optional historical version at which to execute the call preview.
+            The "historical state" feature must be enabled on the Node, and the requested state
+            version must be recent enough (in accordance with the Node's configured history length).
         target:
           $ref: "#/components/schemas/TargetIdentifier"
         arguments:
@@ -7051,6 +7057,12 @@ components:
       properties:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
+        at_state_version:
+          $ref: "#/components/schemas/StateVersion"
+          description: |
+            An optional historical version at which to execute the preview.
+            The "historical state" feature must be enabled on the Node, and the requested state
+            version must be recent enough (in accordance with the Node's configured history length).
         manifest:
           description: A text-representation of a transaction manifest
           type: string

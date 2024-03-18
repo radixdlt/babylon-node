@@ -14,6 +14,11 @@ pub(crate) async fn handle_transaction_preview(
 ) -> Result<Json<models::TransactionPreviewResponse>, ResponseError<()>> {
     assert_matching_network(&request.network, &state.network)?;
     let mapping_context = MappingContext::new(&state.network);
+    let at_state_version = request
+        .at_state_version
+        .map(extract_api_state_version)
+        .transpose()
+        .map_err(|err| err.into_response_error("at_state_version"))?;
 
     let preview_request = extract_preview_request(&state.network, request)?;
 
@@ -21,12 +26,7 @@ pub(crate) async fn handle_transaction_preview(
         .state_manager
         .transaction_previewer
         .read()
-        .preview(preview_request)
-        .map_err(|err| match err {
-            PreviewError::TransactionValidationError(err) => {
-                client_error(format!("Transaction validation error: {err:?}"))
-            }
-        })?;
+        .preview(preview_request, at_state_version)?;
 
     to_api_response(&mapping_context, result).map(Json)
 }

@@ -35,6 +35,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   TransactionCallPreviewRequest.JSON_PROPERTY_NETWORK,
+  TransactionCallPreviewRequest.JSON_PROPERTY_AT_STATE_VERSION,
   TransactionCallPreviewRequest.JSON_PROPERTY_TARGET,
   TransactionCallPreviewRequest.JSON_PROPERTY_ARGUMENTS
 })
@@ -42,6 +43,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 public class TransactionCallPreviewRequest {
   public static final String JSON_PROPERTY_NETWORK = "network";
   private String network;
+
+  public static final String JSON_PROPERTY_AT_STATE_VERSION = "at_state_version";
+  private Long atStateVersion;
 
   public static final String JSON_PROPERTY_TARGET = "target";
   private TargetIdentifier target;
@@ -75,6 +79,34 @@ public class TransactionCallPreviewRequest {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setNetwork(String network) {
     this.network = network;
+  }
+
+
+  public TransactionCallPreviewRequest atStateVersion(Long atStateVersion) {
+    this.atStateVersion = atStateVersion;
+    return this;
+  }
+
+   /**
+   * Get atStateVersion
+   * minimum: 1
+   * maximum: 100000000000000
+   * @return atStateVersion
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_AT_STATE_VERSION)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public Long getAtStateVersion() {
+    return atStateVersion;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_AT_STATE_VERSION)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setAtStateVersion(Long atStateVersion) {
+    this.atStateVersion = atStateVersion;
   }
 
 
@@ -148,13 +180,14 @@ public class TransactionCallPreviewRequest {
     }
     TransactionCallPreviewRequest transactionCallPreviewRequest = (TransactionCallPreviewRequest) o;
     return Objects.equals(this.network, transactionCallPreviewRequest.network) &&
+        Objects.equals(this.atStateVersion, transactionCallPreviewRequest.atStateVersion) &&
         Objects.equals(this.target, transactionCallPreviewRequest.target) &&
         Objects.equals(this.arguments, transactionCallPreviewRequest.arguments);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(network, target, arguments);
+    return Objects.hash(network, atStateVersion, target, arguments);
   }
 
   @Override
@@ -162,6 +195,7 @@ public class TransactionCallPreviewRequest {
     StringBuilder sb = new StringBuilder();
     sb.append("class TransactionCallPreviewRequest {\n");
     sb.append("    network: ").append(toIndentedString(network)).append("\n");
+    sb.append("    atStateVersion: ").append(toIndentedString(atStateVersion)).append("\n");
     sb.append("    target: ").append(toIndentedString(target)).append("\n");
     sb.append("    arguments: ").append(toIndentedString(arguments)).append("\n");
     sb.append("}");

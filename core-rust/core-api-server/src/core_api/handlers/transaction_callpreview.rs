@@ -21,6 +21,12 @@ pub(crate) async fn handle_transaction_callpreview(
     let extraction_context = ExtractionContext::new(&state.network);
     let mapping_context = MappingContext::new(&state.network);
 
+    let at_state_version = request
+        .at_state_version
+        .map(extract_api_state_version)
+        .transpose()
+        .map_err(|err| err.into_response_error("at_state_version"))?;
+
     let args: Vec<_> = request
         .arguments
         .into_iter()
@@ -65,11 +71,8 @@ pub(crate) async fn handle_transaction_callpreview(
         }
     };
 
-    let result = state
-        .state_manager
-        .transaction_previewer
-        .read()
-        .preview(PreviewRequest {
+    let result = state.state_manager.transaction_previewer.read().preview(
+        PreviewRequest {
             manifest: TransactionManifestV1 {
                 instructions: vec![
                     InstructionV1::CallMethod {
@@ -94,12 +97,9 @@ pub(crate) async fn handle_transaction_callpreview(
                 disable_auth: false,
             },
             message: MessageV1::None,
-        })
-        .map_err(|err| match err {
-            PreviewError::TransactionValidationError(err) => {
-                server_error(format!("Transaction validation error: {err:?}"))
-            }
-        })?;
+        },
+        at_state_version,
+    )?;
 
     let (status, output, error) = {
         match result.receipt.result {

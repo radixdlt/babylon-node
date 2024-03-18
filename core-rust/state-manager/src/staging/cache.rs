@@ -174,7 +174,7 @@ impl ExecutionCache {
                     StagedStore::new(root_store, self.stage_tree.get_accumulator(&parent_key));
                 let transaction_receipt = executable.execute_on(&staged_store);
 
-                let processed = ProcessedTransactionReceipt::process::<_, SpreadPrefixKeyMapper>(
+                let processed = ProcessedTransactionReceipt::process(
                     HashUpdateContext {
                         store: &staged_store,
                         epoch_transaction_identifiers,

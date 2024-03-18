@@ -16,6 +16,8 @@ pub struct TransactionPreviewRequest {
     /// The logical name of the network
     #[serde(rename = "network")]
     pub network: String,
+    #[serde(rename = "at_state_version", skip_serializing_if = "Option::is_none")]
+    pub at_state_version: Option<i64>,
     /// A text-representation of a transaction manifest
     #[serde(rename = "manifest")]
     pub manifest: String,
@@ -52,6 +54,7 @@ impl TransactionPreviewRequest {
     pub fn new(network: String, manifest: String, start_epoch_inclusive: i64, end_epoch_exclusive: i64, tip_percentage: i32, nonce: i64, signer_public_keys: Vec<crate::core_api::generated::models::PublicKey>, flags: crate::core_api::generated::models::TransactionPreviewRequestFlags) -> TransactionPreviewRequest {
         TransactionPreviewRequest {
             network,
+            at_state_version: None,
             manifest,
             blobs_hex: None,
             start_epoch_inclusive,

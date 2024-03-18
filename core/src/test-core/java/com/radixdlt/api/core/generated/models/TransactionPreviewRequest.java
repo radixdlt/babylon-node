@@ -37,6 +37,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   TransactionPreviewRequest.JSON_PROPERTY_NETWORK,
+  TransactionPreviewRequest.JSON_PROPERTY_AT_STATE_VERSION,
   TransactionPreviewRequest.JSON_PROPERTY_MANIFEST,
   TransactionPreviewRequest.JSON_PROPERTY_BLOBS_HEX,
   TransactionPreviewRequest.JSON_PROPERTY_START_EPOCH_INCLUSIVE,
@@ -53,6 +54,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 public class TransactionPreviewRequest {
   public static final String JSON_PROPERTY_NETWORK = "network";
   private String network;
+
+  public static final String JSON_PROPERTY_AT_STATE_VERSION = "at_state_version";
+  private Long atStateVersion;
 
   public static final String JSON_PROPERTY_MANIFEST = "manifest";
   private String manifest;
@@ -113,6 +117,34 @@ public class TransactionPreviewRequest {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setNetwork(String network) {
     this.network = network;
+  }
+
+
+  public TransactionPreviewRequest atStateVersion(Long atStateVersion) {
+    this.atStateVersion = atStateVersion;
+    return this;
+  }
+
+   /**
+   * Get atStateVersion
+   * minimum: 1
+   * maximum: 100000000000000
+   * @return atStateVersion
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_AT_STATE_VERSION)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public Long getAtStateVersion() {
+    return atStateVersion;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_AT_STATE_VERSION)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setAtStateVersion(Long atStateVersion) {
+    this.atStateVersion = atStateVersion;
   }
 
 
@@ -436,6 +468,7 @@ public class TransactionPreviewRequest {
     }
     TransactionPreviewRequest transactionPreviewRequest = (TransactionPreviewRequest) o;
     return Objects.equals(this.network, transactionPreviewRequest.network) &&
+        Objects.equals(this.atStateVersion, transactionPreviewRequest.atStateVersion) &&
         Objects.equals(this.manifest, transactionPreviewRequest.manifest) &&
         Objects.equals(this.blobsHex, transactionPreviewRequest.blobsHex) &&
         Objects.equals(this.startEpochInclusive, transactionPreviewRequest.startEpochInclusive) &&
@@ -451,7 +484,7 @@ public class TransactionPreviewRequest {
 
   @Override
   public int hashCode() {
-    return Objects.hash(network, manifest, blobsHex, startEpochInclusive, endEpochExclusive, notaryPublicKey, notaryIsSignatory, tipPercentage, nonce, signerPublicKeys, message, flags);
+    return Objects.hash(network, atStateVersion, manifest, blobsHex, startEpochInclusive, endEpochExclusive, notaryPublicKey, notaryIsSignatory, tipPercentage, nonce, signerPublicKeys, message, flags);
   }
 
   @Override
@@ -459,6 +492,7 @@ public class TransactionPreviewRequest {
     StringBuilder sb = new StringBuilder();
     sb.append("class TransactionPreviewRequest {\n");
     sb.append("    network: ").append(toIndentedString(network)).append("\n");
+    sb.append("    atStateVersion: ").append(toIndentedString(atStateVersion)).append("\n");
     sb.append("    manifest: ").append(toIndentedString(manifest)).append("\n");
     sb.append("    blobsHex: ").append(toIndentedString(blobsHex)).append("\n");
     sb.append("    startEpochInclusive: ").append(toIndentedString(startEpochInclusive)).append("\n");

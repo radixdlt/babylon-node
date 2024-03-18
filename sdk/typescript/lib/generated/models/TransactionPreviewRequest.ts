@@ -45,6 +45,12 @@ export interface TransactionPreviewRequest {
      */
     network: string;
     /**
+     * 
+     * @type {number}
+     * @memberof TransactionPreviewRequest
+     */
+    at_state_version?: number;
+    /**
      * A text-representation of a transaction manifest
      * @type {string}
      * @memberof TransactionPreviewRequest
@@ -140,6 +146,7 @@ export function TransactionPreviewRequestFromJSONTyped(json: any, ignoreDiscrimi
     return {
         
         'network': json['network'],
+        'at_state_version': !exists(json, 'at_state_version') ? undefined : json['at_state_version'],
         'manifest': json['manifest'],
         'blobs_hex': !exists(json, 'blobs_hex') ? undefined : json['blobs_hex'],
         'start_epoch_inclusive': json['start_epoch_inclusive'],
@@ -164,6 +171,7 @@ export function TransactionPreviewRequestToJSON(value?: TransactionPreviewReques
     return {
         
         'network': value.network,
+        'at_state_version': value.at_state_version,
         'manifest': value.manifest,
         'blobs_hex': value.blobs_hex,
         'start_epoch_inclusive': value.start_epoch_inclusive,

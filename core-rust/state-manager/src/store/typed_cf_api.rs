@@ -256,6 +256,11 @@ impl<
         self.iterate(Direction::Forward).next()
     }
 
+    /// Gets the least key.
+    pub fn get_first_key(&self) -> Option<CF::Key> {
+        self.get_first().map(|(key, _)| key)
+    }
+
     /// Gets the value associated with the least key.
     pub fn get_first_value(&self) -> Option<CF::Value> {
         self.get_first().map(|(_, value)| value)

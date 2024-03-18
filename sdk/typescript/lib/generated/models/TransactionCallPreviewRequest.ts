@@ -34,6 +34,12 @@ export interface TransactionCallPreviewRequest {
     network: string;
     /**
      * 
+     * @type {number}
+     * @memberof TransactionCallPreviewRequest
+     */
+    at_state_version?: number;
+    /**
+     * 
      * @type {TargetIdentifier}
      * @memberof TransactionCallPreviewRequest
      */
@@ -69,6 +75,7 @@ export function TransactionCallPreviewRequestFromJSONTyped(json: any, ignoreDisc
     return {
         
         'network': json['network'],
+        'at_state_version': !exists(json, 'at_state_version') ? undefined : json['at_state_version'],
         'target': TargetIdentifierFromJSON(json['target']),
         'arguments': json['arguments'],
     };
@@ -84,6 +91,7 @@ export function TransactionCallPreviewRequestToJSON(value?: TransactionCallPrevi
     return {
         
         'network': value.network,
+        'at_state_version': value.at_state_version,
         'target': TargetIdentifierToJSON(value.target),
         'arguments': value.arguments,
     };

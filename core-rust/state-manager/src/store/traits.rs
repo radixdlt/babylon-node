@@ -136,7 +136,12 @@ pub trait ConfigurableDatabase {
 
     fn is_local_transaction_execution_index_enabled(&self) -> bool;
 
-    fn is_historical_substate_value_storage_enabled(&self) -> bool;
+    /// Returns the first [`StateVersion`]s for which *historical* Substate values are currently
+    /// available in the database.
+    ///
+    /// Returns [`None`] if the state history feature is disabled, or if the history length
+    /// configuration is 0.
+    fn get_first_stored_historical_state_version(&self) -> Option<StateVersion>;
 }
 
 #[derive(Debug, Clone)]
@@ -421,7 +426,17 @@ pub mod commit {
                 .node_updates
                 .get(node_key)
                 .and_then(|node_update| node_update.partition_updates.get(partition_num))
-                .and_then(|partition_update| partition_update.get_upserted_value(sort_key))
+                .and_then(|partition_update| match partition_update {
+                    PartitionDatabaseUpdates::Delta { substate_updates } => substate_updates
+                        .get(sort_key)
+                        .and_then(|update| match update {
+                            DatabaseUpdate::Set(value) => Some(value),
+                            DatabaseUpdate::Delete => None,
+                        }),
+                    PartitionDatabaseUpdates::Reset {
+                        new_substate_values,
+                    } => new_substate_values.get(sort_key),
+                })
         }
 
         fn merge_in_node_updates(target: &mut NodeDatabaseUpdates, source: NodeDatabaseUpdates) {

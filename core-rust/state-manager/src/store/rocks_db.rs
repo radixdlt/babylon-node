@@ -62,6 +62,7 @@
  * permissions under this License.
  */
 
+use std::cmp::max;
 use std::collections::HashSet;
 use std::fmt;
 
@@ -932,6 +933,14 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
                 .get_substate(&partition_key, &sort_key)
                 .expect("substate value referenced by hash tree does not exist");
             tree_values_cf.put(&tree_node_key, &value);
+
+            println!(
+                ">>>>>>>>> {}:{}/{}",
+                hex::encode(&partition_key.node_key[20..]),
+                partition_key.partition_num,
+                hex::encode(&sort_key.0)
+            );
+
             if db_context.buffered_data_size() >= SUBSTATE_BATCH_BYTE_SIZE {
                 db_context.flush();
                 info!(
@@ -955,8 +964,28 @@ impl<R: ReadableRocks> ConfigurableDatabase for StateManagerDatabase<R> {
         self.config.enable_local_transaction_execution_index
     }
 
-    fn is_historical_substate_value_storage_enabled(&self) -> bool {
-        self.config.enable_historical_substate_values
+    fn get_first_stored_historical_state_version(&self) -> Option<StateVersion> {
+        if !self.config.enable_historical_substate_values {
+            return None; // state history feature disabled explicitly
+        }
+
+        let first_state_hash_tree_version = self
+            .open_read_context()
+            .cf(StaleStateHashTreePartsCf)
+            .get_first_key();
+        let Some(first_state_hash_tree_version) = first_state_hash_tree_version else {
+            return None; // JMT past gets immediately GC'ed - the history length must be 0
+        };
+
+        // we also need to take the "still collecting the max history length" case into account:
+        let values_associated_since = self
+            .open_read_context()
+            .cf(ExtensionsDataCf)
+            .get(&ExtensionsDataKey::ValuesAssociatedWithStateHashTreeSince)
+            .map(|bytes| scrypto_decode::<StateVersion>(&bytes).unwrap())
+            .expect("state history feature enabled, but its metadata not found");
+
+        Some(max(first_state_hash_tree_version, values_associated_since))
     }
 }
 
@@ -1113,10 +1142,17 @@ impl<R: WriteableRocks> CommitStore for StateManagerDatabase<R> {
                 let substate_value = commit_bundle
                     .substate_store_update
                     .get_upserted_value(&substate_key)
-                    .expect("no value found for upserted substate");
+                    .map(Cow::Borrowed)
+                    .or_else(|| {
+                        db_context
+                            .cf(SubstatesCf)
+                            .get(&substate_key)
+                            .map(Cow::Owned)
+                    })
+                    .expect("neither upserted nor unchanged value found for substate key");
                 db_context
                     .cf(AssociatedStateHashTreeValuesCf)
-                    .put(&tree_node_key, substate_value);
+                    .put(&tree_node_key, substate_value.as_ref());
             }
         }
 
@@ -2051,5 +2087,13 @@ impl<R: ReadableRocks> IterableAccountChangeIndex for StateManagerDatabase<R> {
                 .take_while(move |((next_account, _), _)| next_account == &account)
                 .map(|((_, state_version), _)| state_version),
         )
+    }
+}
+
+impl<R: ReadableRocks> LeafSubstateValueStore for StateManagerDatabase<R> {
+    fn get_associated_value(&self, tree_node_key: &StoredTreeNodeKey) -> Option<DbSubstateValue> {
+        self.open_read_context()
+            .cf(AssociatedStateHashTreeValuesCf)
+            .get(tree_node_key)
     }
 }

@@ -10,7 +10,7 @@ use super::ValidatedLedgerTransaction;
 
 /// A logic of an already-validated transaction, ready to be executed against an arbitrary state of
 /// a substate store.
-pub trait TransactionLogic<S>: Sized {
+pub trait TransactionLogic<S> {
     fn execute_on(self, store: &S) -> TransactionReceipt;
 }
 

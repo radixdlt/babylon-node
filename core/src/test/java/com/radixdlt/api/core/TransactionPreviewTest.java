@@ -66,14 +66,154 @@ package com.radixdlt.api.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.collect.MoreCollectors;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
+import com.radixdlt.api.core.generated.client.ApiException;
 import com.radixdlt.api.core.generated.models.*;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.environment.DatabaseConfig;
+import com.radixdlt.environment.StateHashTreeGcConfig;
+import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.predicates.NodesPredicate;
+import com.radixdlt.identifiers.Address;
+import com.radixdlt.lang.Functions;
 import com.radixdlt.rev2.Manifest;
+import com.radixdlt.testutil.TestStateReader;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.PrivateKeys;
+import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.UInt64;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
+import org.awaitility.Awaitility;
 import org.junit.Test;
 
 public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
+
+  // a known amount coming from faucet; for assert purposes
+  private static final double FAUCET_AMOUNT = 10000;
+
+  @Test
+  public void transaction_preview_executes_at_historical_version() throws Exception {
+    try (var test = buildTest(true, 20L)) {
+      test.suppressUnusedWarning();
+
+      // Prepare a simple manifest which just gets some amount from faucet, once:
+      var accountKeyPair = ECKeyPair.generateNew();
+      var accountAddress = Address.virtualAccountAddress(accountKeyPair.getPublicKey());
+      var manifest = Manifest.depositFromFaucet(accountAddress);
+
+      // Execute it once, to initialize the account and learn its XRD vault address:
+      submitAndWaitForSuccess(test, manifest, List.of(accountKeyPair));
+      var initialVaultBalance =
+          this.getStateApi()
+              .stateAccountPost(
+                  new StateAccountRequest()
+                      .network(networkLogicalName)
+                      .accountAddress(addressing.encode(accountAddress)))
+              .getVaults()
+              .stream()
+              .collect(MoreCollectors.onlyElement());
+      var vaultAddress = initialVaultBalance.getVaultEntity().getEntityAddress();
+
+      // Sanity check - the vault has a known balance (the "1x from Faucet" amount):
+      var initialAmount = (FungibleResourceAmount) initialVaultBalance.getResourceAmount();
+      assertThat(Double.parseDouble(initialAmount.getAmount())).isEqualTo(FAUCET_AMOUNT);
+
+      // Reach a known state version:
+      test.runUntilState(NodesPredicate.anyAtOrOverStateVersion(37));
+
+      // Sanity check - a preview at the current version should result in the vault having "2x from
+      // Faucet" amount:
+      var previewedWhile37 = previewAtVersion(manifest, Optional.empty());
+      assertThat(getVaultBalance(previewedWhile37, vaultAddress)).isEqualTo(2 * FAUCET_AMOUNT);
+
+      // Execute precisely the deposit that was just previewed:
+      var committed = submitAndWaitForSuccess(test, manifest, List.of(accountKeyPair));
+      assertThat(committed.stateVersion()).isGreaterThan(37);
+
+      // Now a true assert: if we preview another deposit at the (new) current version, then we see
+      // "3x from Faucet":
+      var previewedWhileCurrent = previewAtVersion(manifest, Optional.empty());
+      assertThat(getVaultBalance(previewedWhileCurrent, vaultAddress)).isEqualTo(3 * FAUCET_AMOUNT);
+
+      // ...but if we preview that at version 37, we will see the same old "2x from Faucet":
+      var previewedAt37 = previewAtVersion(manifest, Optional.of(37L));
+      assertThat(getVaultBalance(previewedAt37, vaultAddress)).isEqualTo(2 * FAUCET_AMOUNT);
+    }
+  }
+
+  @Test
+  public void transaction_preview_refuses_too_old_state_version() throws Exception {
+    final var historyLength = 7L;
+    final var inspectedAtVersion = 23L;
+    final var oldestAvailableVersion = inspectedAtVersion - historyLength;
+    try (var test = buildTest(true, historyLength)) {
+      test.suppressUnusedWarning();
+
+      // Reach a known state version:
+      test.runUntilState(NodesPredicate.anyAtOrOverStateVersion(inspectedAtVersion));
+
+      // Wait for the async GC to catch up its target:
+      Awaitility.await()
+          .until(
+              test.getInstance(0, TestStateReader.class)::getLeastStaleStateHashTreeVersion,
+              Predicate.isEqual(oldestAvailableVersion));
+
+      // Assert that the oldest available version is fine:
+      var atOldestVersion = previewAtVersion(Manifest.valid(), Optional.of(oldestAvailableVersion));
+      assertThat(atOldestVersion.getStatus()).isEqualTo(TransactionStatus.SUCCEEDED);
+
+      // ... but the 1-too-old is not:
+      var atTooOldVersion =
+          assertErrorResponseOfType(
+              () -> previewAtVersion(Manifest.valid(), Optional.of(oldestAvailableVersion - 1)),
+              BasicErrorResponse.class);
+      assertThat(atTooOldVersion.getMessage()).containsIgnoringCase("cannot request state version");
+      assertThat(atTooOldVersion.getMessage()).contains(String.valueOf(oldestAvailableVersion));
+    }
+  }
+
+  @Test
+  public void transaction_preview_refuses_future_state_version() throws Exception {
+    try (var test = buildTest(true, 100L)) {
+      test.suppressUnusedWarning();
+
+      // Reach a known state version:
+      test.runUntilState(NodesPredicate.anyAtOrOverStateVersion(10L));
+
+      // Assert that a future version is not available:
+      var atTooOldVersion =
+          assertErrorResponseOfType(
+              () -> previewAtVersion(Manifest.valid(), Optional.of(11L)), BasicErrorResponse.class);
+      assertThat(atTooOldVersion.getMessage())
+          .containsIgnoringCase("state version ahead of the current top-of-ledger 10");
+    }
+  }
+
+  @Test
+  public void transaction_preview_does_not_support_state_version_when_disabled() throws Exception {
+    try (var test = buildTest(false, 100L)) {
+      test.suppressUnusedWarning();
+
+      // Reach a known state version:
+      test.runUntilState(NodesPredicate.anyAtOrOverStateVersion(10L));
+
+      // Assert that a historical state version is not available
+      var atTooOldVersion =
+          assertErrorResponseOfType(
+              () -> previewAtVersion(Manifest.valid(), Optional.of(9L)), BasicErrorResponse.class);
+      assertThat(atTooOldVersion.getMessage()).containsIgnoringCase("feature must be enabled");
+
+      // The current version can still be requested explicitly, though:
+      var atOldestVersion = previewAtVersion(Manifest.valid(), Optional.of(10L));
+      assertThat(atOldestVersion.getStatus()).isEqualTo(TransactionStatus.SUCCEEDED);
+    }
+  }
+
   @SuppressWarnings("DataFlowIssue") // Suppress invalid null reference warnings
   @Test
   public void transaction_previewed_with_message_consumes_more_cost_units() throws Exception {
@@ -131,5 +271,55 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
       // Message should add some cost
       assertThat(largeEncryptedMessageCost).isGreaterThan(noMessageCost);
     }
+  }
+
+  private TransactionReceipt previewAtVersion(
+      Functions.Func1<Manifest.Parameters, String> manifest, Optional<Long> atStateVersion)
+      throws ApiException {
+    return getTransactionApi()
+        .transactionPreviewPost(
+            new TransactionPreviewRequest()
+                .network(networkLogicalName)
+                .startEpochInclusive(1L)
+                .endEpochExclusive(100L)
+                .tipPercentage(1)
+                .nonce(10L)
+                .atStateVersion(atStateVersion.orElse(null))
+                .flags(
+                    new TransactionPreviewRequestFlags()
+                        .useFreeCredit(false)
+                        .skipEpochCheck(false)
+                        .assumeAllSignatureProofs(true))
+                .manifest(manifest.apply(new Manifest.Parameters(networkDefinition))))
+        .getReceipt();
+  }
+
+  private static double getVaultBalance(TransactionReceipt receipt, String vaultAddress) {
+    assertThat(receipt.getErrorMessage()).isNull();
+    var changes = receipt.getStateUpdates();
+    var upserts =
+        Stream.concat(
+            changes.getCreatedSubstates().stream()
+                .map(created -> Map.entry(created.getSubstateId(), created.getValue())),
+            changes.getUpdatedSubstates().stream()
+                .map(updated -> Map.entry(updated.getSubstateId(), updated.getNewValue())));
+    var balanceSubstate =
+        (FungibleVaultFieldBalanceSubstate)
+            upserts
+                .filter(entry -> entry.getKey().getEntityAddress().equals(vaultAddress))
+                .filter(
+                    entry ->
+                        entry.getKey().getSubstateType() == SubstateType.FUNGIBLEVAULTFIELDBALANCE)
+                .collect(MoreCollectors.onlyElement())
+                .getValue()
+                .getSubstateData();
+    return Double.parseDouble(balanceSubstate.getValue().getAmount());
+  }
+
+  private DeterministicTest buildTest(boolean stateHistoryEnabled, long historyLength) {
+    return buildRunningServerTest(
+        new DatabaseConfig(true, false, stateHistoryEnabled),
+        new StateHashTreeGcConfig(
+            UInt32.fromNonNegativeInt(1), UInt64.fromNonNegativeLong(historyLength)));
   }
 }
