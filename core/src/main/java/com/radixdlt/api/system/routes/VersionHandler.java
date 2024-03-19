@@ -65,11 +65,11 @@
 package com.radixdlt.api.system.routes;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.system.SystemGetJsonHandler;
+import com.radixdlt.api.system.SystemJsonHandler;
 import com.radixdlt.api.system.generated.models.VersionResponse;
 import com.radixdlt.monitoring.ApplicationVersion;
 
-public class VersionHandler extends SystemGetJsonHandler<VersionResponse> {
+public class VersionHandler extends SystemJsonHandler<VersionResponse> {
 
   @Inject
   public VersionHandler() {}
