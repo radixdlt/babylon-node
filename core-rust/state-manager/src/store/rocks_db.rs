@@ -932,20 +932,35 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
                     &scrypto_encode(&current_version).unwrap(),
                 );
             }
-        } else if let Some(version) = values_associated_since {
-            info!(
-                "Clearing and disabling historical Substate values (were enabled since {:?})",
-                version
-            );
-            // Note: in theory, the associated values could be automatically, gradually deleted by
-            // the GC process (by simply catching up to the current state version). However, the GC
-            // is not "free" (i.e. it performs no-op delete operations), so we prefer to actually
-            // skip it if the history feature is disabled. Thus, we also have to clear the leftovers
-            // when we disable the history, here:
-            db_context.cf(AssociatedStateHashTreeValuesCf).delete_all();
-            extension_data_cf.delete(&ExtensionsDataKey::ValuesAssociatedWithStateHashTreeSince);
         } else {
-            info!("Historical Substate values remain disabled");
+            if let Some(version) = values_associated_since {
+                info!(
+                    "Disabling historical Substate values (were enabled since {:?})",
+                    version
+                );
+                extension_data_cf
+                    .delete(&ExtensionsDataKey::ValuesAssociatedWithStateHashTreeSince);
+            } else {
+                info!("Historical Substate values remain disabled");
+            }
+            // The line below wipes the entire historical values table, which may rise questions:
+            //
+            // - Why do we even need to wipe it?
+            //   In theory, the associated values could be automatically, gradually deleted by
+            //   the GC process (by simply catching up to the current state version). However, the
+            //   GC is not "free" (i.e. it performs no-op delete operations), so we prefer to
+            //   actually skip it if the history feature is disabled. Thus, we also have to clear
+            //   the leftovers when we disable the history here.
+            //
+            // - So could we only wipe when we actually switch from "enabled" to "disabled"?
+            //   If we only considered happy-paths - yes. But we also want to handle the situation
+            //   where the backfill (i.e. `populate_hash_tree_associated_substate_values()`) is
+            //   interrupted, and then the Node is restarted with the history disabled. In such
+            //   case, the history was never really enabled (since the backfill did not finish!),
+            //   so it remains disabled, and yet we have that backfill's partial results persisted
+            //   in the DB (unreachable, yet never GCed). It is cheap enough to simply ensure that
+            //   this table is empty on every history-disabled boot-up.
+            db_context.cf(AssociatedStateHashTreeValuesCf).delete_all();
         }
     }
 
