@@ -62,31 +62,34 @@
  * permissions under this License.
  */
 
-mod constants;
+use crate::engine_prelude::*;
+use jni::objects::{JClass, JObject};
+use jni::sys::jbyteArray;
+use jni::JNIEnv;
 
-/// A workaround for including the symbols defined in state_manager / core_api_server
-/// in the output library file. See: https://github.com/rust-lang/rfcs/issues/2771
-/// I truly have no idea why this works, but it does.
+use node_common::java::*;
+
+use super::node_rust_environment::JNINodeRustEnvironment;
+
+//
+// JNI Interface
+//
+
 #[no_mangle]
-fn export_extern_functions() {
-    constants::export_extern_functions();
-
-    // node-common
-    node_common::jni::addressing::export_extern_functions();
-    node_common::jni::scrypto_constants::export_extern_functions();
-
-    // state-manager
-    state_manager::jni::db_checkpoints::export_extern_functions();
-    state_manager::jni::mempool::export_extern_functions();
-    state_manager::jni::node_rust_environment::export_extern_functions();
-    state_manager::jni::protocol_update::export_extern_functions();
-    state_manager::jni::state_computer::export_extern_functions();
-    state_manager::jni::state_reader::export_extern_functions();
-    state_manager::jni::transaction_preparer::export_extern_functions();
-    state_manager::jni::transaction_store::export_extern_functions();
-    state_manager::jni::vertex_store_recovery::export_extern_functions();
-    state_manager::jni::test_state_reader::export_extern_functions();
-
-    // core-api-server
-    core_api_server::jni::export_extern_functions();
+extern "system" fn Java_com_radixdlt_db_checkpoint_RustDbCheckpoints_createCheckpoint(
+    env: JNIEnv,
+    _class: JClass,
+    j_node_rust_env: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_fallible_call(&env, request_payload, |path: String| -> JavaResult<()> {
+        JNINodeRustEnvironment::get(&env, j_node_rust_env)
+            .state_manager
+            .database
+            .snapshot()
+            .create_checkpoint(path)
+            .map_err(JavaError)
+    })
 }
+
+pub fn export_extern_functions() {}

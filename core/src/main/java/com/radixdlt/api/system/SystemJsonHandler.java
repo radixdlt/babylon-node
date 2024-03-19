@@ -75,12 +75,12 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 
-public abstract class SystemGetJsonHandler<T> implements HttpHandler {
+public abstract class SystemJsonHandler<T> implements HttpHandler {
   private static final String CONTENT_TYPE_JSON = "application/json";
   private static final long DEFAULT_MAX_REQUEST_SIZE = 1024L * 1024L;
   private final ObjectMapper objectMapper;
 
-  protected SystemGetJsonHandler() {
+  protected SystemJsonHandler() {
     this.objectMapper = JSON.getDefault().getMapper();
   }
 
