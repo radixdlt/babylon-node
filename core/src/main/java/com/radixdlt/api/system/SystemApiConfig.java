@@ -64,41 +64,4 @@
 
 package com.radixdlt.api.system;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import com.google.inject.Inject;
-import com.radixdlt.api.SystemApiTestBase;
-import com.radixdlt.api.system.generated.models.CreateDbCheckpointResponse;
-import com.radixdlt.api.system.routes.DbCheckpointHandler;
-import java.nio.file.Paths;
-import java.util.stream.Stream;
-import org.junit.Test;
-
-public class DbCheckpointHandlerTest extends SystemApiTestBase {
-  @Inject private DbCheckpointHandler sut;
-
-  @Inject SystemApiConfig config;
-
-  @Test
-  public void can_create_a_db_checkpoint() throws Exception {
-    // Arrange
-    start();
-
-    // Act
-    final var response = handleRequestWithExpectedResponse(sut, CreateDbCheckpointResponse.class);
-
-    // Assert
-    final var checkpointPath = response.getCheckpointRelativePath();
-    assertThat(checkpointPath).isNotNull();
-    final var checkpointAbsolutePath = Paths.get(config.dbCheckpointsPath(), checkpointPath);
-
-    // Sanity check that the checkpoint was really created in the resultant path:
-    // at least one sst file present in the checkpoint dir.
-    final var numSstFilesInCheckpointDir =
-        Stream.of(checkpointAbsolutePath.toFile().listFiles())
-            .filter(file -> !file.isDirectory())
-            .filter(f -> f.getName().endsWith(".sst"))
-            .count();
-    assertThat(numSstFilesInCheckpointDir).isGreaterThanOrEqualTo(1L);
-  }
-}
+public record SystemApiConfig(boolean dbCheckpointEnabled, String dbCheckpointsPath) {}

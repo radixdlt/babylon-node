@@ -65,11 +65,10 @@
 package com.radixdlt.api.system.routes;
 
 import com.google.inject.Inject;
+import com.radixdlt.api.system.SystemApiConfig;
 import com.radixdlt.api.system.SystemJsonHandler;
 import com.radixdlt.api.system.generated.models.CreateDbCheckpointResponse;
 import com.radixdlt.db.checkpoint.RustDbCheckpoints;
-import com.radixdlt.store.NodeStorageLocation;
-import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.File;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
@@ -82,17 +81,9 @@ public final class DbCheckpointHandler extends SystemJsonHandler<CreateDbCheckpo
   private final RustDbCheckpoints rustCheckpoints;
 
   @Inject
-  DbCheckpointHandler(
-      RustDbCheckpoints rustCheckpoints,
-      RuntimeProperties runtimeProperties,
-      @NodeStorageLocation String nodeStorageLocation) {
-    this.enabled = runtimeProperties.get("api.system.enable_db_checkpoint", false);
-
-    this.checkpointsPath =
-        runtimeProperties.get(
-            "db.checkpoints_path",
-            Path.of(nodeStorageLocation, "state_manager_checkpoints").toString());
-
+  DbCheckpointHandler(RustDbCheckpoints rustCheckpoints, SystemApiConfig config) {
+    this.enabled = config.dbCheckpointEnabled();
+    this.checkpointsPath = config.dbCheckpointsPath();
     this.rustCheckpoints = rustCheckpoints;
   }
 

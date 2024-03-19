@@ -65,7 +65,6 @@
 package com.radixdlt.api;
 
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.ArgumentMatchers.matches;
 import static org.mockito.Mockito.*;
 
 import com.google.inject.AbstractModule;
@@ -73,6 +72,7 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Scopes;
 import com.radixdlt.api.common.JSON;
+import com.radixdlt.api.system.SystemApiConfig;
 import com.radixdlt.api.system.health.HealthInfoService;
 import com.radixdlt.api.system.health.HealthInfoServiceImpl;
 import com.radixdlt.consensus.bft.Self;
@@ -156,19 +156,13 @@ public abstract class SystemApiTestBase {
                         "localhost",
                         23456);
                 bind(RadixNodeUri.class).annotatedWith(Self.class).toInstance(selfUri);
-                final var runtimeProperties = mock(RuntimeProperties.class);
                 try {
-                  final var checkpointsPath = folder.newFolder().getAbsolutePath();
-                  when(runtimeProperties.get(
-                          matches("api.system.enable_db_checkpoint"), anyBoolean()))
-                      .thenReturn(true);
-                  when(runtimeProperties.get("db.checkpoints_path")).thenReturn(checkpointsPath);
-                  when(runtimeProperties.get(matches("db.checkpoints_path"), anyString()))
-                      .thenReturn(checkpointsPath);
+                  bind(SystemApiConfig.class)
+                      .toInstance(new SystemApiConfig(true, folder.newFolder().getAbsolutePath()));
                 } catch (IOException e) {
                   throw new RuntimeException(e);
                 }
-                bind(RuntimeProperties.class).toInstance(runtimeProperties);
+                bind(RuntimeProperties.class).toInstance(mock(RuntimeProperties.class));
                 bind(HealthInfoService.class).to(HealthInfoServiceImpl.class);
                 bind(HealthInfoServiceImpl.class).in(Scopes.SINGLETON);
               }

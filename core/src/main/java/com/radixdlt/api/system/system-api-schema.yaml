@@ -136,7 +136,7 @@ paths:
                 $ref: '#/components/schemas/Error'
   "/db-checkpoint":
     post:
-      summary: Create a persistent snapshot (checkpoint) of the state manager database
+      summary: Create DB Checkpoint
       description: |
         Creates a persistent snapshot (checkpoint) of the state manager database.
         This feature needs to be explicitly enabled with the `api.system.enable_db_checkpoint` flag (defaults to `false`).
