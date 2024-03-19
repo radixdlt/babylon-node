@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.TransactionFormatOptions;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,7 +33,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   TransactionReceiptRequest.JSON_PROPERTY_NETWORK,
-  TransactionReceiptRequest.JSON_PROPERTY_INTENT_HASH
+  TransactionReceiptRequest.JSON_PROPERTY_INTENT_HASH,
+  TransactionReceiptRequest.JSON_PROPERTY_TRANSACTION_FORMAT_OPTIONS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class TransactionReceiptRequest {
@@ -41,6 +43,9 @@ public class TransactionReceiptRequest {
 
   public static final String JSON_PROPERTY_INTENT_HASH = "intent_hash";
   private String intentHash;
+
+  public static final String JSON_PROPERTY_TRANSACTION_FORMAT_OPTIONS = "transaction_format_options";
+  private TransactionFormatOptions transactionFormatOptions;
 
   public TransactionReceiptRequest() { 
   }
@@ -97,6 +102,32 @@ public class TransactionReceiptRequest {
   }
 
 
+  public TransactionReceiptRequest transactionFormatOptions(TransactionFormatOptions transactionFormatOptions) {
+    this.transactionFormatOptions = transactionFormatOptions;
+    return this;
+  }
+
+   /**
+   * Get transactionFormatOptions
+   * @return transactionFormatOptions
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_TRANSACTION_FORMAT_OPTIONS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public TransactionFormatOptions getTransactionFormatOptions() {
+    return transactionFormatOptions;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_TRANSACTION_FORMAT_OPTIONS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setTransactionFormatOptions(TransactionFormatOptions transactionFormatOptions) {
+    this.transactionFormatOptions = transactionFormatOptions;
+  }
+
+
   /**
    * Return true if this TransactionReceiptRequest object is equal to o.
    */
@@ -110,12 +141,13 @@ public class TransactionReceiptRequest {
     }
     TransactionReceiptRequest transactionReceiptRequest = (TransactionReceiptRequest) o;
     return Objects.equals(this.network, transactionReceiptRequest.network) &&
-        Objects.equals(this.intentHash, transactionReceiptRequest.intentHash);
+        Objects.equals(this.intentHash, transactionReceiptRequest.intentHash) &&
+        Objects.equals(this.transactionFormatOptions, transactionReceiptRequest.transactionFormatOptions);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(network, intentHash);
+    return Objects.hash(network, intentHash, transactionFormatOptions);
   }
 
   @Override
@@ -124,6 +156,7 @@ public class TransactionReceiptRequest {
     sb.append("class TransactionReceiptRequest {\n");
     sb.append("    network: ").append(toIndentedString(network)).append("\n");
     sb.append("    intentHash: ").append(toIndentedString(intentHash)).append("\n");
+    sb.append("    transactionFormatOptions: ").append(toIndentedString(transactionFormatOptions)).append("\n");
     sb.append("}");
     return sb.toString();
   }
