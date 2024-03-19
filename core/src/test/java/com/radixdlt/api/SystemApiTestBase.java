@@ -72,6 +72,7 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Scopes;
 import com.radixdlt.api.common.JSON;
+import com.radixdlt.api.system.SystemApiConfig;
 import com.radixdlt.api.system.health.HealthInfoService;
 import com.radixdlt.api.system.health.HealthInfoServiceImpl;
 import com.radixdlt.consensus.bft.Self;
@@ -101,6 +102,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.ExceptionHandler;
 import io.undertow.util.HeaderMap;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 import org.junit.Rule;
@@ -154,8 +156,13 @@ public abstract class SystemApiTestBase {
                         "localhost",
                         23456);
                 bind(RadixNodeUri.class).annotatedWith(Self.class).toInstance(selfUri);
-                var runtimeProperties = mock(RuntimeProperties.class);
-                bind(RuntimeProperties.class).toInstance(runtimeProperties);
+                try {
+                  bind(SystemApiConfig.class)
+                      .toInstance(new SystemApiConfig(true, folder.newFolder().getAbsolutePath()));
+                } catch (IOException e) {
+                  throw new RuntimeException(e);
+                }
+                bind(RuntimeProperties.class).toInstance(mock(RuntimeProperties.class));
                 bind(HealthInfoService.class).to(HealthInfoServiceImpl.class);
                 bind(HealthInfoServiceImpl.class).in(Scopes.SINGLETON);
               }

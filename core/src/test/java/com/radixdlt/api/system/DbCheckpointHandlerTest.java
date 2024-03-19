@@ -62,31 +62,43 @@
  * permissions under this License.
  */
 
-mod constants;
+package com.radixdlt.api.system;
 
-/// A workaround for including the symbols defined in state_manager / core_api_server
-/// in the output library file. See: https://github.com/rust-lang/rfcs/issues/2771
-/// I truly have no idea why this works, but it does.
-#[no_mangle]
-fn export_extern_functions() {
-    constants::export_extern_functions();
+import static org.assertj.core.api.Assertions.assertThat;
 
-    // node-common
-    node_common::jni::addressing::export_extern_functions();
-    node_common::jni::scrypto_constants::export_extern_functions();
+import com.google.inject.Inject;
+import com.radixdlt.api.SystemApiTestBase;
+import com.radixdlt.api.system.generated.models.CreateDbCheckpointResponse;
+import com.radixdlt.api.system.routes.DbCheckpointHandler;
+import java.nio.file.Paths;
+import java.util.stream.Stream;
+import org.junit.Test;
 
-    // state-manager
-    state_manager::jni::db_checkpoints::export_extern_functions();
-    state_manager::jni::mempool::export_extern_functions();
-    state_manager::jni::node_rust_environment::export_extern_functions();
-    state_manager::jni::protocol_update::export_extern_functions();
-    state_manager::jni::state_computer::export_extern_functions();
-    state_manager::jni::state_reader::export_extern_functions();
-    state_manager::jni::transaction_preparer::export_extern_functions();
-    state_manager::jni::transaction_store::export_extern_functions();
-    state_manager::jni::vertex_store_recovery::export_extern_functions();
-    state_manager::jni::test_state_reader::export_extern_functions();
+public class DbCheckpointHandlerTest extends SystemApiTestBase {
+  @Inject private DbCheckpointHandler sut;
 
-    // core-api-server
-    core_api_server::jni::export_extern_functions();
+  @Inject SystemApiConfig config;
+
+  @Test
+  public void can_create_a_db_checkpoint() throws Exception {
+    // Arrange
+    start();
+
+    // Act
+    final var response = handleRequestWithExpectedResponse(sut, CreateDbCheckpointResponse.class);
+
+    // Assert
+    final var checkpointPath = response.getCheckpointRelativePath();
+    assertThat(checkpointPath).isNotNull();
+    final var checkpointAbsolutePath = Paths.get(config.dbCheckpointsPath(), checkpointPath);
+
+    // Sanity check that the checkpoint was really created in the resultant path:
+    // at least one sst file present in the checkpoint dir.
+    final var numSstFilesInCheckpointDir =
+        Stream.of(checkpointAbsolutePath.toFile().listFiles())
+            .filter(file -> !file.isDirectory())
+            .filter(f -> f.getName().endsWith(".sst"))
+            .count();
+    assertThat(numSstFilesInCheckpointDir).isGreaterThanOrEqualTo(1L);
+  }
 }

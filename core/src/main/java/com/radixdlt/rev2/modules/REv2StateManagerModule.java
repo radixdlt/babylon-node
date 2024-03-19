@@ -71,6 +71,7 @@ import com.radixdlt.consensus.ProposalLimitsConfig;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.vertexstore.PersistentVertexStore;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.db.checkpoint.RustDbCheckpoints;
 import com.radixdlt.environment.*;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
@@ -100,6 +101,7 @@ import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.NotarizedTransactionHash;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
+import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.File;
 
 public final class REv2StateManagerModule extends AbstractModule {
@@ -198,7 +200,7 @@ public final class REv2StateManagerModule extends AbstractModule {
           @Provides
           @Singleton
           DatabaseBackendConfig databaseBackendConfig(
-              @NodeStorageLocation String nodeStorageLocation) {
+              @NodeStorageLocation String nodeStorageLocation, RuntimeProperties properties) {
             return new DatabaseBackendConfig(
                 new File(nodeStorageLocation, "state_manager").getPath());
           }
@@ -347,5 +349,12 @@ public final class REv2StateManagerModule extends AbstractModule {
   @NewestProtocolVersion
   private String newestProtocolVersion(RustStateComputer rustStateComputer) {
     return rustStateComputer.newestProtocolVersion();
+  }
+
+  @Provides
+  @Singleton
+  private RustDbCheckpoints rustCheckpoints(
+      Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
+    return new RustDbCheckpoints(metrics, nodeRustEnvironment);
   }
 }
