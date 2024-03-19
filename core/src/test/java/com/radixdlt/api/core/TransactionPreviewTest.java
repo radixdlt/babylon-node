@@ -284,7 +284,14 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
                 .endEpochExclusive(100L)
                 .tipPercentage(1)
                 .nonce(10L)
-                .atStateVersion(atStateVersion.orElse(null))
+                .atLedgerState(
+                    atStateVersion
+                        .map(
+                            version ->
+                                new VersionLedgerStateCoordinate()
+                                    .stateVersion(version)
+                                    .type(LedgerStateCoordinateType.BYSTATEVERSION))
+                        .orElse(null))
                 .flags(
                     new TransactionPreviewRequestFlags()
                         .useFreeCredit(false)

@@ -13,81 +13,63 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { LedgerStateCoordinate } from './LedgerStateCoordinate';
-import {
-    LedgerStateCoordinateFromJSON,
-    LedgerStateCoordinateFromJSONTyped,
-    LedgerStateCoordinateToJSON,
-} from './LedgerStateCoordinate';
-import type { TargetIdentifier } from './TargetIdentifier';
-import {
-    TargetIdentifierFromJSON,
-    TargetIdentifierFromJSONTyped,
-    TargetIdentifierToJSON,
-} from './TargetIdentifier';
-
 /**
  * 
  * @export
- * @interface TransactionCallPreviewRequest
+ * @interface VersionLedgerStateCoordinate
  */
-export interface TransactionCallPreviewRequest {
+export interface VersionLedgerStateCoordinate {
     /**
-     * The logical name of the network
+     * 
      * @type {string}
-     * @memberof TransactionCallPreviewRequest
+     * @memberof VersionLedgerStateCoordinate
      */
-    network: string;
+    type: VersionLedgerStateCoordinateTypeEnum;
     /**
      * 
-     * @type {LedgerStateCoordinate}
-     * @memberof TransactionCallPreviewRequest
+     * @type {number}
+     * @memberof VersionLedgerStateCoordinate
      */
-    at_ledger_state?: LedgerStateCoordinate;
-    /**
-     * 
-     * @type {TargetIdentifier}
-     * @memberof TransactionCallPreviewRequest
-     */
-    target: TargetIdentifier;
-    /**
-     * Argument list
-     * @type {Array<string>}
-     * @memberof TransactionCallPreviewRequest
-     */
-    arguments: Array<string>;
+    state_version: number;
 }
 
+
 /**
- * Check if a given object implements the TransactionCallPreviewRequest interface.
+ * @export
  */
-export function instanceOfTransactionCallPreviewRequest(value: object): boolean {
+export const VersionLedgerStateCoordinateTypeEnum = {
+    ByStateVersion: 'ByStateVersion'
+} as const;
+export type VersionLedgerStateCoordinateTypeEnum = typeof VersionLedgerStateCoordinateTypeEnum[keyof typeof VersionLedgerStateCoordinateTypeEnum];
+
+
+/**
+ * Check if a given object implements the VersionLedgerStateCoordinate interface.
+ */
+export function instanceOfVersionLedgerStateCoordinate(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "network" in value;
-    isInstance = isInstance && "target" in value;
-    isInstance = isInstance && "arguments" in value;
+    isInstance = isInstance && "type" in value;
+    isInstance = isInstance && "state_version" in value;
 
     return isInstance;
 }
 
-export function TransactionCallPreviewRequestFromJSON(json: any): TransactionCallPreviewRequest {
-    return TransactionCallPreviewRequestFromJSONTyped(json, false);
+export function VersionLedgerStateCoordinateFromJSON(json: any): VersionLedgerStateCoordinate {
+    return VersionLedgerStateCoordinateFromJSONTyped(json, false);
 }
 
-export function TransactionCallPreviewRequestFromJSONTyped(json: any, ignoreDiscriminator: boolean): TransactionCallPreviewRequest {
+export function VersionLedgerStateCoordinateFromJSONTyped(json: any, ignoreDiscriminator: boolean): VersionLedgerStateCoordinate {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'network': json['network'],
-        'at_ledger_state': !exists(json, 'at_ledger_state') ? undefined : LedgerStateCoordinateFromJSON(json['at_ledger_state']),
-        'target': TargetIdentifierFromJSON(json['target']),
-        'arguments': json['arguments'],
+        'type': json['type'],
+        'state_version': json['state_version'],
     };
 }
 
-export function TransactionCallPreviewRequestToJSON(value?: TransactionCallPreviewRequest | null): any {
+export function VersionLedgerStateCoordinateToJSON(value?: VersionLedgerStateCoordinate | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -96,10 +78,8 @@ export function TransactionCallPreviewRequestToJSON(value?: TransactionCallPrevi
     }
     return {
         
-        'network': value.network,
-        'at_ledger_state': LedgerStateCoordinateToJSON(value.at_ledger_state),
-        'target': TargetIdentifierToJSON(value.target),
-        'arguments': value.arguments,
+        'type': value.type,
+        'state_version': value.state_version,
     };
 }
 

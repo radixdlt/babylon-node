@@ -22,10 +22,11 @@ pub(crate) async fn handle_transaction_callpreview(
     let mapping_context = MappingContext::new(&state.network);
 
     let at_state_version = request
-        .at_state_version
-        .map(extract_api_state_version)
+        .at_ledger_state
+        .as_deref()
+        .map(extract_ledger_state_coordinate)
         .transpose()
-        .map_err(|err| err.into_response_error("at_state_version"))?;
+        .map_err(|err| err.into_response_error("at_ledger_state"))?;
 
     let args: Vec<_> = request
         .arguments

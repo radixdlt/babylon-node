@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.LedgerStateCoordinate;
 import com.radixdlt.api.core.generated.models.TargetIdentifier;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -35,7 +36,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   TransactionCallPreviewRequest.JSON_PROPERTY_NETWORK,
-  TransactionCallPreviewRequest.JSON_PROPERTY_AT_STATE_VERSION,
+  TransactionCallPreviewRequest.JSON_PROPERTY_AT_LEDGER_STATE,
   TransactionCallPreviewRequest.JSON_PROPERTY_TARGET,
   TransactionCallPreviewRequest.JSON_PROPERTY_ARGUMENTS
 })
@@ -44,8 +45,8 @@ public class TransactionCallPreviewRequest {
   public static final String JSON_PROPERTY_NETWORK = "network";
   private String network;
 
-  public static final String JSON_PROPERTY_AT_STATE_VERSION = "at_state_version";
-  private Long atStateVersion;
+  public static final String JSON_PROPERTY_AT_LEDGER_STATE = "at_ledger_state";
+  private LedgerStateCoordinate atLedgerState;
 
   public static final String JSON_PROPERTY_TARGET = "target";
   private TargetIdentifier target;
@@ -82,31 +83,29 @@ public class TransactionCallPreviewRequest {
   }
 
 
-  public TransactionCallPreviewRequest atStateVersion(Long atStateVersion) {
-    this.atStateVersion = atStateVersion;
+  public TransactionCallPreviewRequest atLedgerState(LedgerStateCoordinate atLedgerState) {
+    this.atLedgerState = atLedgerState;
     return this;
   }
 
    /**
-   * Get atStateVersion
-   * minimum: 1
-   * maximum: 100000000000000
-   * @return atStateVersion
+   * Get atLedgerState
+   * @return atLedgerState
   **/
   @javax.annotation.Nullable
   @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_AT_STATE_VERSION)
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public Long getAtStateVersion() {
-    return atStateVersion;
+  public LedgerStateCoordinate getAtLedgerState() {
+    return atLedgerState;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_AT_STATE_VERSION)
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setAtStateVersion(Long atStateVersion) {
-    this.atStateVersion = atStateVersion;
+  public void setAtLedgerState(LedgerStateCoordinate atLedgerState) {
+    this.atLedgerState = atLedgerState;
   }
 
 
@@ -180,14 +179,14 @@ public class TransactionCallPreviewRequest {
     }
     TransactionCallPreviewRequest transactionCallPreviewRequest = (TransactionCallPreviewRequest) o;
     return Objects.equals(this.network, transactionCallPreviewRequest.network) &&
-        Objects.equals(this.atStateVersion, transactionCallPreviewRequest.atStateVersion) &&
+        Objects.equals(this.atLedgerState, transactionCallPreviewRequest.atLedgerState) &&
         Objects.equals(this.target, transactionCallPreviewRequest.target) &&
         Objects.equals(this.arguments, transactionCallPreviewRequest.arguments);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(network, atStateVersion, target, arguments);
+    return Objects.hash(network, atLedgerState, target, arguments);
   }
 
   @Override
@@ -195,7 +194,7 @@ public class TransactionCallPreviewRequest {
     StringBuilder sb = new StringBuilder();
     sb.append("class TransactionCallPreviewRequest {\n");
     sb.append("    network: ").append(toIndentedString(network)).append("\n");
-    sb.append("    atStateVersion: ").append(toIndentedString(atStateVersion)).append("\n");
+    sb.append("    atLedgerState: ").append(toIndentedString(atLedgerState)).append("\n");
     sb.append("    target: ").append(toIndentedString(target)).append("\n");
     sb.append("    arguments: ").append(toIndentedString(arguments)).append("\n");
     sb.append("}");
