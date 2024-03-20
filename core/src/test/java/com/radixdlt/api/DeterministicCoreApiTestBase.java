@@ -78,9 +78,7 @@ import com.radixdlt.api.core.generated.client.ApiClient;
 import com.radixdlt.api.core.generated.client.ApiException;
 import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.CoreApiServerFlags;
-import com.radixdlt.environment.DatabaseConfig;
-import com.radixdlt.environment.StartProcessorOnRunner;
+import com.radixdlt.environment.*;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.genesis.GenesisData;
@@ -143,6 +141,16 @@ public abstract class DeterministicCoreApiTestBase {
         1000000, databaseConfig, GenesisData.NO_SCENARIOS, ProtocolConfig.testingDefault());
   }
 
+  protected DeterministicTest buildRunningServerTest(
+      DatabaseConfig databaseConfig, StateHashTreeGcConfig stateHashTreeGcConfig) {
+    return buildRunningServerTest(
+        1000000,
+        databaseConfig,
+        GenesisData.NO_SCENARIOS,
+        ProtocolConfig.testingDefault(),
+        stateHashTreeGcConfig);
+  }
+
   protected DeterministicTest buildRunningServerTest(int roundsPerEpoch) {
     return buildRunningServerTest(
         roundsPerEpoch,
@@ -155,7 +163,47 @@ public abstract class DeterministicCoreApiTestBase {
       int roundsPerEpoch,
       DatabaseConfig databaseConfig,
       ImmutableList<String> scenariosToRun,
+      ProtocolConfig protocolConfig,
+      StateHashTreeGcConfig stateHashTreeGcConfig) {
+    return buildRunningServerTest(
+        StateComputerConfig.rev2(
+            Network.INTEGRATIONTESTNET.getId(),
+            GenesisBuilder.createTestGenesisWithNumValidators(
+                1,
+                Decimal.ONE,
+                GenesisConsensusManagerConfig.Builder.testDefaults()
+                    .epochExactRoundCount(roundsPerEpoch),
+                scenariosToRun),
+            databaseConfig,
+            StateComputerConfig.REV2ProposerConfig.Mempool.defaults(),
+            false,
+            false,
+            protocolConfig,
+            stateHashTreeGcConfig));
+  }
+
+  protected DeterministicTest buildRunningServerTest(
+      int roundsPerEpoch,
+      DatabaseConfig databaseConfig,
+      ImmutableList<String> scenariosToRun,
       ProtocolConfig protocolConfig) {
+    return buildRunningServerTest(
+        StateComputerConfig.rev2(
+            Network.INTEGRATIONTESTNET.getId(),
+            GenesisBuilder.createTestGenesisWithNumValidators(
+                1,
+                Decimal.ONE,
+                GenesisConsensusManagerConfig.Builder.testDefaults()
+                    .epochExactRoundCount(roundsPerEpoch),
+                scenariosToRun),
+            databaseConfig,
+            StateComputerConfig.REV2ProposerConfig.Mempool.defaults(),
+            false,
+            false,
+            protocolConfig));
+  }
+
+  protected DeterministicTest buildRunningServerTest(StateComputerConfig stateComputerConfig) {
     var test =
         DeterministicTest.builder()
             .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
@@ -180,20 +228,7 @@ public abstract class DeterministicCoreApiTestBase {
                     FunctionalRadixNodeModule.SafetyRecoveryConfig.MOCKED,
                     FunctionalRadixNodeModule.ConsensusConfig.of(1000),
                     FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
-                        StateComputerConfig.rev2(
-                            Network.INTEGRATIONTESTNET.getId(),
-                            GenesisBuilder.createTestGenesisWithNumValidators(
-                                1,
-                                Decimal.ONE,
-                                GenesisConsensusManagerConfig.Builder.testDefaults()
-                                    .epochExactRoundCount(roundsPerEpoch),
-                                scenariosToRun),
-                            databaseConfig,
-                            StateComputerConfig.REV2ProposerConfig.Mempool.defaults(),
-                            false,
-                            false,
-                            protocolConfig),
-                        SyncRelayConfig.of(200, 10, 2000))));
+                        stateComputerConfig, SyncRelayConfig.of(200, 10, 2000))));
     try {
       test.startAllNodes();
     } catch (Exception ex) {

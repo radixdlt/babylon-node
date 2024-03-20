@@ -235,6 +235,9 @@ models/LedgerProof.ts
 models/LedgerProofOrigin.ts
 models/LedgerProofOriginBase.ts
 models/LedgerProofOriginType.ts
+models/LedgerStateCoordinate.ts
+models/LedgerStateCoordinateBase.ts
+models/LedgerStateCoordinateType.ts
 models/LedgerStateSummary.ts
 models/LedgerTransaction.ts
 models/LedgerTransactionBase.ts
@@ -660,6 +663,8 @@ models/ValidatorFieldStateSubstate.ts
 models/ValidatorFieldStateSubstateAllOf.ts
 models/ValidatorFieldStateValue.ts
 models/VaultBalance.ts
+models/VersionLedgerStateCoordinate.ts
+models/VersionLedgerStateCoordinateAllOf.ts
 models/VirtualLazyLoadSchema.ts
 models/VmType.ts
 models/index.ts

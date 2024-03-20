@@ -9,31 +9,28 @@
  */
 
 
+/// 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
+pub enum LedgerStateCoordinateType {
+    #[serde(rename = "ByStateVersion")]
+    ByStateVersion,
 
-
-#[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct TransactionCallPreviewRequest {
-    /// The logical name of the network
-    #[serde(rename = "network")]
-    pub network: String,
-    #[serde(rename = "at_ledger_state", skip_serializing_if = "Option::is_none")]
-    pub at_ledger_state: Option<Box<crate::core_api::generated::models::LedgerStateCoordinate>>,
-    #[serde(rename = "target")]
-    pub target: Option<crate::core_api::generated::models::TargetIdentifier>, // Using Option permits Default trait; Will always be Some in normal use
-    /// Argument list
-    #[serde(rename = "arguments")]
-    pub arguments: Vec<String>,
 }
 
-impl TransactionCallPreviewRequest {
-    pub fn new(network: String, target: crate::core_api::generated::models::TargetIdentifier, arguments: Vec<String>) -> TransactionCallPreviewRequest {
-        TransactionCallPreviewRequest {
-            network,
-            at_ledger_state: None,
-            target: Option::Some(target),
-            arguments,
+impl ToString for LedgerStateCoordinateType {
+    fn to_string(&self) -> String {
+        match self {
+            Self::ByStateVersion => String::from("ByStateVersion"),
         }
     }
 }
+
+impl Default for LedgerStateCoordinateType {
+    fn default() -> LedgerStateCoordinateType {
+        Self::ByStateVersion
+    }
+}
+
+
 
 
