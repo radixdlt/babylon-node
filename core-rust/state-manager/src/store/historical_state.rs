@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use substate_store_impls::hash_tree::entity_tier::EntityTier;
+use substate_store_impls::state_tree::entity_tier::EntityTier;
 
 use crate::engine_prelude::*;
 use crate::store::traits::*;
@@ -73,12 +73,12 @@ use crate::{ReadableRocks, StateManagerDatabase, StateVersion};
 /// This database is backed by:
 /// - a [`ReadableTreeStore`] - a versioned source of ReNodes / Partitions / Substates metadata,
 /// - and a [`LeafSubstateValueStore`] - a store of Substate values' associated with their leafs.
-pub struct StateHashTreeBasedSubstateDatabase<'t, T> {
+pub struct StateTreeBasedSubstateDatabase<'t, T> {
     tree_store: &'t T,
     at_state_version: StateVersion,
 }
 
-impl<'t, T> StateHashTreeBasedSubstateDatabase<'t, T> {
+impl<'t, T> StateTreeBasedSubstateDatabase<'t, T> {
     /// Creates an instance backed by the given lower-level stores and scoped at the given version.
     pub fn new(tree_store: &'t T, at_state_version: StateVersion) -> Self {
         Self {
@@ -99,7 +99,7 @@ impl<'t, T> StateHashTreeBasedSubstateDatabase<'t, T> {
     }
 }
 
-impl<'t, T: ReadableTreeStore> StateHashTreeBasedSubstateDatabase<'t, T> {
+impl<'t, T: ReadableTreeStore> StateTreeBasedSubstateDatabase<'t, T> {
     /// Returns an iterator over *all* Substate-Tier's leaf keys accessible from the scoped version
     /// (i.e. from all Entities/Partitions).
     /// Each Substate leaf key is accompanied by a full key of the Substate it represents.
@@ -124,7 +124,7 @@ impl<'t, T: ReadableTreeStore> StateHashTreeBasedSubstateDatabase<'t, T> {
 }
 
 impl<'t, T: ReadableTreeStore + LeafSubstateValueStore> SubstateDatabase
-    for StateHashTreeBasedSubstateDatabase<'t, T>
+    for StateTreeBasedSubstateDatabase<'t, T>
 {
     fn get_substate(
         &self,
@@ -158,7 +158,7 @@ impl<'t, T: ReadableTreeStore + LeafSubstateValueStore> SubstateDatabase
     }
 }
 
-impl<'t, T: LeafSubstateValueStore> StateHashTreeBasedSubstateDatabase<'t, T> {
+impl<'t, T: LeafSubstateValueStore> StateTreeBasedSubstateDatabase<'t, T> {
     /// Returns the substate value associated with the given leaf key.
     ///
     /// The implementation makes a few assumptions and *panics* is any of them is not met:
@@ -166,7 +166,7 @@ impl<'t, T: LeafSubstateValueStore> StateHashTreeBasedSubstateDatabase<'t, T> {
     /// - The queried tree node was stored while the "state history" feature was enabled (see
     ///   [`DatabaseConfig::enable_historical_substate_values`]),
     /// - The queried tree node was not garbage-collected yet (see
-    ///   [`StateHashTreeGcConfig::state_version_history_length`]).
+    ///   [`StateTreeGcConfig::state_version_history_length`]).
     ///
     /// These assumptions are enforced by the [`VersionScopedSubstateDatabase::new`] constructor.
     fn get_value(&self, tree_leaf_key: &StoredTreeNodeKey) -> DbSubstateValue {
@@ -189,7 +189,7 @@ pub enum VersionScopedSubstateDatabase<'s, S> {
         database: &'s S,
         current_version: StateVersion,
     },
-    Historical(StateHashTreeBasedSubstateDatabase<'s, S>),
+    Historical(StateTreeBasedSubstateDatabase<'s, S>),
 }
 
 /// An error that may happen during opening [`VersionScopedSubstateDatabase`] at a past version.
@@ -252,7 +252,7 @@ impl<'s, R: ReadableRocks> VersionScopedSubstateDatabase<'s, StateManagerDatabas
     }
 
     fn historical(database: &'s StateManagerDatabase<R>, historical_version: StateVersion) -> Self {
-        Self::Historical(StateHashTreeBasedSubstateDatabase::new(
+        Self::Historical(StateTreeBasedSubstateDatabase::new(
             database,
             historical_version,
         ))
@@ -614,8 +614,8 @@ mod tests {
         pub fn create_subject(
             &self,
             at_state_version: StateVersion,
-        ) -> StateHashTreeBasedSubstateDatabase<TypedInMemoryTreeStore> {
-            StateHashTreeBasedSubstateDatabase::new(&self.tree_store, at_state_version)
+        ) -> StateTreeBasedSubstateDatabase<TypedInMemoryTreeStore> {
+            StateTreeBasedSubstateDatabase::new(&self.tree_store, at_state_version)
         }
 
         fn apply_database_updates(&mut self, database_updates: &DatabaseUpdates) -> StateVersion {

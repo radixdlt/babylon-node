@@ -68,7 +68,7 @@ import static com.radixdlt.environment.deterministic.network.MessageSelector.fir
 
 import com.radixdlt.environment.DatabaseConfig;
 import com.radixdlt.environment.LedgerProofsGcConfig;
-import com.radixdlt.environment.StateHashTreeGcConfig;
+import com.radixdlt.environment.StateTreeGcConfig;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
@@ -96,7 +96,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public final class StateHashTreeGcTest {
+public final class StateTreeGcTest {
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
@@ -122,7 +122,7 @@ public final class StateHashTreeGcTest {
                         new DatabaseConfig(false, false, storeHistoricalSubstates),
                         REV2ProposerConfig.noUserTransactions(),
                         false,
-                        new StateHashTreeGcConfig(
+                        new StateTreeGcConfig(
                             UInt32.fromNonNegativeInt(1),
                             UInt64.fromNonNegativeLong(stateVersionHistoryLength)),
                         LedgerProofsGcConfig.forTesting(),
@@ -132,7 +132,7 @@ public final class StateHashTreeGcTest {
   }
 
   @Test
-  public void node_keeps_exactly_the_configured_number_of_stale_state_hash_tree_versions() {
+  public void node_keeps_exactly_the_configured_number_of_stale_state_tree_versions() {
     // Arrange: configure 37 historical state versions to be kept in the state hash tree
     try (var test = createTest(37, false)) {
       test.startAllNodes();
@@ -144,7 +144,7 @@ public final class StateHashTreeGcTest {
       // - 37 = 6):
       Awaitility.await()
           .until(
-              test.getInstance(0, TestStateReader.class)::getLeastStaleStateHashTreeVersion,
+              test.getInstance(0, TestStateReader.class)::getLeastStaleStateTreeVersion,
               Predicate.isEqual(6L));
     }
   }

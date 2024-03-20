@@ -105,8 +105,8 @@ pub(crate) mod engine_prelude {
     pub use radix_engine_common::prelude::*;
     pub use radix_engine_interface::blueprints::transaction_processor::*;
     pub use radix_engine_interface::prelude::*;
-    pub use substate_store_impls::hash_tree::tree_store::*;
-    pub use substate_store_impls::hash_tree::*;
+    pub use substate_store_impls::state_tree::tree_store::*;
+    pub use substate_store_impls::state_tree::*;
     pub use substate_store_interface::db_key_mapper::*;
     pub use substate_store_interface::interface::*;
     pub use substate_store_queries::query::*;
