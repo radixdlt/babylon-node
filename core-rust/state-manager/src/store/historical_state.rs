@@ -61,14 +61,12 @@
  * Work. You assume all risks associated with Your use of the Work and the exercise of
  * permissions under this License.
  */
-#![allow(dead_code)]
-// TODO(historical-state): Remove the allow above once the impl here is used
 
 use substate_store_impls::hash_tree::entity_tier::EntityTier;
 
 use crate::engine_prelude::*;
 use crate::store::traits::*;
-use crate::StateVersion;
+use crate::{ReadableRocks, StateManagerDatabase, StateVersion};
 
 /// An implementation of a [`SubstateDatabase`] viewed at a specific [`StateVersion`].
 ///
@@ -87,6 +85,10 @@ impl<'t, T> StateHashTreeBasedSubstateDatabase<'t, T> {
             tree_store,
             at_state_version,
         }
+    }
+
+    pub fn at_state_version(&self) -> StateVersion {
+        self.at_state_version
     }
 
     fn create_entity_tier(&self) -> EntityTier<'t, T> {
@@ -133,10 +135,7 @@ impl<'t, T: ReadableTreeStore + LeafSubstateValueStore> SubstateDatabase
             .get_entity_partition_tier(partition_key.node_key.clone())
             .get_partition_substate_tier(partition_key.partition_num)
             .get_substate_summary(sort_key)
-            .and_then(|summary| {
-                self.tree_store
-                    .get_associated_value(&summary.state_tree_leaf_key)
-            })
+            .map(|substate| self.get_value(&substate.state_tree_leaf_key))
     }
 
     fn list_entries_from(
@@ -150,13 +149,147 @@ impl<'t, T: ReadableTreeStore + LeafSubstateValueStore> SubstateDatabase
                 .get_partition_substate_tier(partition_key.partition_num)
                 .into_iter_substate_summaries_from(from_sort_key)
                 .map(|substate| {
-                    let value = self
-                        .tree_store
-                        .get_associated_value(&substate.state_tree_leaf_key)
-                        .expect("DB inconsistency: associated value not found for leaf key");
-                    (substate.sort_key, value)
+                    (
+                        substate.sort_key,
+                        self.get_value(&substate.state_tree_leaf_key),
+                    )
                 }),
         )
+    }
+}
+
+impl<'t, T: LeafSubstateValueStore> StateHashTreeBasedSubstateDatabase<'t, T> {
+    /// Returns the substate value associated with the given leaf key.
+    ///
+    /// The implementation makes a few assumptions and *panics* is any of them is not met:
+    /// - The queried tree node represents a Substate-Tier's leaf,
+    /// - The queried tree node was stored while the "state history" feature was enabled (see
+    ///   [`DatabaseConfig::enable_historical_substate_values`]),
+    /// - The queried tree node was not garbage-collected yet (see
+    ///   [`StateHashTreeGcConfig::state_version_history_length`]).
+    ///
+    /// These assumptions are enforced by the [`VersionScopedSubstateDatabase::new`] constructor.
+    fn get_value(&self, tree_leaf_key: &StoredTreeNodeKey) -> DbSubstateValue {
+        let Some(value) = self.tree_store.get_associated_value(tree_leaf_key) else {
+            panic!(
+                "DB inconsistency: associated value not found for leaf key {:?}",
+                tree_leaf_key
+            );
+        };
+        value
+    }
+}
+
+/// A [`SubstateDatabase`] aware of its state version.
+///
+/// The implementation enum-dispatches either to the runtime store (when at current version), or to
+/// a historical store.
+pub enum VersionScopedSubstateDatabase<'s, S> {
+    Current {
+        database: &'s S,
+        current_version: StateVersion,
+    },
+    Historical(StateHashTreeBasedSubstateDatabase<'s, S>),
+}
+
+/// An error that may happen during opening [`VersionScopedSubstateDatabase`] at a past version.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum StateHistoryError {
+    StateHistoryDisabled,
+    StateVersionInTooDistantPast {
+        first_available_version: StateVersion,
+    },
+    StateVersionInFuture {
+        current_version: StateVersion,
+    },
+}
+
+impl<'s, R: ReadableRocks> VersionScopedSubstateDatabase<'s, StateManagerDatabase<R>> {
+    /// Creates an instance backed by the given database, and depending on a requested version.
+    pub fn new(
+        database: &'s StateManagerDatabase<R>,
+        requested_version: Option<StateVersion>,
+    ) -> Result<Self, StateHistoryError> {
+        let current_version = database.max_state_version();
+        let Some(requested_version) = requested_version else {
+            return Ok(Self::current(database, current_version)); // implicit "use current version"
+        };
+        if requested_version == current_version {
+            return Ok(Self::current(database, current_version)); // explicit "use current version"
+        }
+
+        let first_available_version = database.get_first_stored_historical_state_version();
+        let Some(first_available_version) = first_available_version else {
+            return Err(StateHistoryError::StateHistoryDisabled);
+        };
+        if requested_version < first_available_version {
+            return Err(StateHistoryError::StateVersionInTooDistantPast {
+                first_available_version,
+            });
+        }
+        if requested_version > current_version {
+            return Err(StateHistoryError::StateVersionInFuture { current_version });
+        }
+
+        return Ok(Self::historical(database, requested_version));
+    }
+
+    /// Returns the state version at which this store is scoped.
+    pub fn at_state_version(&self) -> StateVersion {
+        match self {
+            VersionScopedSubstateDatabase::Current {
+                current_version, ..
+            } => *current_version,
+            VersionScopedSubstateDatabase::Historical(database) => database.at_state_version(),
+        }
+    }
+
+    fn current(database: &'s StateManagerDatabase<R>, current_version: StateVersion) -> Self {
+        Self::Current {
+            database,
+            current_version,
+        }
+    }
+
+    fn historical(database: &'s StateManagerDatabase<R>, historical_version: StateVersion) -> Self {
+        Self::Historical(StateHashTreeBasedSubstateDatabase::new(
+            database,
+            historical_version,
+        ))
+    }
+}
+
+impl<'s, R: ReadableRocks> SubstateDatabase
+    for VersionScopedSubstateDatabase<'s, StateManagerDatabase<R>>
+{
+    fn get_substate(
+        &self,
+        partition_key: &DbPartitionKey,
+        sort_key: &DbSortKey,
+    ) -> Option<DbSubstateValue> {
+        match self {
+            VersionScopedSubstateDatabase::Current { database, .. } => {
+                database.get_substate(partition_key, sort_key)
+            }
+            VersionScopedSubstateDatabase::Historical(database) => {
+                database.get_substate(partition_key, sort_key)
+            }
+        }
+    }
+
+    fn list_entries_from(
+        &self,
+        partition_key: &DbPartitionKey,
+        from_sort_key: Option<&DbSortKey>,
+    ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
+        match self {
+            VersionScopedSubstateDatabase::Current { database, .. } => {
+                database.list_entries_from(partition_key, from_sort_key)
+            }
+            VersionScopedSubstateDatabase::Historical(database) => {
+                database.list_entries_from(partition_key, from_sort_key)
+            }
+        }
     }
 }
 
@@ -442,7 +575,7 @@ mod tests {
     impl TestStores {
         pub fn new_empty() -> Self {
             Self {
-                tree_store: TypedInMemoryTreeStore::new().storing_substate_values(),
+                tree_store: TypedInMemoryTreeStore::new().storing_associated_substates(),
                 current_version: StateVersion::pre_genesis(),
             }
         }
@@ -518,10 +651,10 @@ mod tests {
             &self,
             state_tree_leaf_key: &StoredTreeNodeKey,
         ) -> Option<DbSubstateValue> {
-            self.associated_substate_values
+            self.associated_substates
                 .borrow()
                 .get(state_tree_leaf_key)
-                .cloned()
+                .and_then(|(_key, value)| value.clone())
         }
     }
 }

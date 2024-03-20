@@ -147,13 +147,33 @@ public sealed interface StateComputerConfig {
       boolean debugLogging,
       boolean noFees,
       ProtocolConfig protocolConfig) {
+    return rev2(
+        networkId,
+        genesis,
+        databaseConfig,
+        proposerConfig,
+        debugLogging,
+        noFees,
+        protocolConfig,
+        StateHashTreeGcConfig.forTesting());
+  }
+
+  static StateComputerConfig rev2(
+      int networkId,
+      GenesisData genesis,
+      DatabaseConfig databaseConfig,
+      REV2ProposerConfig proposerConfig,
+      boolean debugLogging,
+      boolean noFees,
+      ProtocolConfig protocolConfig,
+      StateHashTreeGcConfig stateHashTreeGcConfig) {
     return new REv2StateComputerConfig(
         networkId,
         genesis,
         databaseConfig,
         proposerConfig,
         debugLogging,
-        StateHashTreeGcConfig.forTesting(),
+        stateHashTreeGcConfig,
         LedgerProofsGcConfig.forTesting(),
         LedgerSyncLimitsConfig.defaults(),
         protocolConfig,

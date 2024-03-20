@@ -81,7 +81,7 @@ use crate::staging::ReadableStore;
 use crate::staging::node_ancestry_resolver::NodeAncestryResolver;
 use crate::staging::overlays::{MapSubstateNodeAncestryStore, StagedSubstateNodeAncestryStore};
 use crate::store::traits::{KeyedSubstateNodeAncestryRecord, SubstateNodeAncestryStore};
-use crate::traits::LeafSubstateKeyAssociation;
+use crate::traits::{AssociationCause, LeafSubstateKeyAssociation};
 use node_common::utils::IsAccountExt;
 
 pub enum ProcessedTransactionReceipt {
@@ -121,14 +121,14 @@ pub struct ExecutionFeeData {
 }
 
 impl ProcessedTransactionReceipt {
-    pub fn process<S: ReadableStore, D: DatabaseKeyMapper>(
+    pub fn process<S: ReadableStore>(
         hash_update_context: HashUpdateContext<S>,
         receipt: TransactionReceipt,
         parent_protocol_state: &ProtocolState,
     ) -> Self {
         match receipt.result {
             TransactionResult::Commit(commit) => {
-                ProcessedTransactionReceipt::Commit(ProcessedCommitResult::process::<_, D>(
+                ProcessedTransactionReceipt::Commit(ProcessedCommitResult::process(
                     hash_update_context,
                     commit,
                     ExecutionFeeData {
@@ -184,7 +184,7 @@ impl ProcessedTransactionReceipt {
 }
 
 impl ProcessedCommitResult {
-    pub fn process<S: ReadableStore, D: DatabaseKeyMapper>(
+    pub fn process<S: ReadableStore>(
         hash_update_context: HashUpdateContext<S>,
         commit_result: CommitResult,
         execution_fee_data: ExecutionFeeData,
@@ -195,10 +195,11 @@ impl ProcessedCommitResult {
         let ledger_transaction_hash = *hash_update_context.ledger_transaction_hash;
         let store = hash_update_context.store;
 
-        let state_changes =
-            Self::compute_ledger_state_changes::<S, D>(store, &commit_result.state_updates);
+        let state_changes = Self::compute_ledger_state_changes(store, &commit_result.state_updates);
 
-        let database_updates = commit_result.state_updates.create_database_updates::<D>();
+        let database_updates = commit_result
+            .state_updates
+            .create_database_updates::<SpreadPrefixKeyMapper>();
 
         let global_balance_update = Self::compute_global_balance_update(
             store,
@@ -307,7 +308,7 @@ impl ProcessedCommitResult {
         }
     }
 
-    pub fn compute_ledger_state_changes<S: SubstateDatabase, D: DatabaseKeyMapper>(
+    pub fn compute_ledger_state_changes<S: SubstateDatabase>(
         store: &S,
         state_updates: &StateUpdates,
     ) -> LedgerStateChanges {
@@ -341,10 +342,10 @@ impl ProcessedCommitResult {
                     },
                 };
                 for (substate_key, update) in substate_updates.as_ref() {
-                    let partition_key = D::to_db_partition_key(node_id, *partition_num);
-                    let sort_key = D::to_db_sort_key(substate_key);
-
-                    let previous_opt = store.get_substate(&partition_key, &sort_key);
+                    let previous_opt = store.get_substate(
+                        &SpreadPrefixKeyMapper::to_db_partition_key(node_id, *partition_num),
+                        &SpreadPrefixKeyMapper::to_db_sort_key(substate_key),
+                    );
                     let change_action_opt = match (update, previous_opt) {
                         (DatabaseUpdate::Set(new), Some(previous)) if previous != *new => {
                             Some(SubstateChangeAction::Update {
@@ -651,13 +652,14 @@ impl<'s, S> WriteableTreeStore for CollectingTreeStore<'s, S> {
         state_tree_leaf_key: &StoredTreeNodeKey,
         partition_key: &DbPartitionKey,
         sort_key: &DbSortKey,
-        _substate_value: &DbSubstateValue,
+        substate_value: AssociatedSubstateValue,
     ) {
         self.key_associations
             .borrow_mut()
             .push(LeafSubstateKeyAssociation {
                 tree_node_key: state_tree_leaf_key.clone(),
                 substate_key: (partition_key.clone(), sort_key.clone()),
+                cause: AssociationCause::from(substate_value),
             });
     }
 

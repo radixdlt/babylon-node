@@ -12,26 +12,18 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct TransactionCallPreviewRequest {
-    /// The logical name of the network
-    #[serde(rename = "network")]
-    pub network: String,
-    #[serde(rename = "at_ledger_state", skip_serializing_if = "Option::is_none")]
-    pub at_ledger_state: Option<Box<crate::core_api::generated::models::LedgerStateCoordinate>>,
-    #[serde(rename = "target")]
-    pub target: Option<crate::core_api::generated::models::TargetIdentifier>, // Using Option permits Default trait; Will always be Some in normal use
-    /// Argument list
-    #[serde(rename = "arguments")]
-    pub arguments: Vec<String>,
+pub struct VersionLedgerStateCoordinate {
+    #[serde(rename = "type")]
+    pub _type: crate::core_api::generated::models::LedgerStateCoordinateType,
+    #[serde(rename = "state_version")]
+    pub state_version: i64,
 }
 
-impl TransactionCallPreviewRequest {
-    pub fn new(network: String, target: crate::core_api::generated::models::TargetIdentifier, arguments: Vec<String>) -> TransactionCallPreviewRequest {
-        TransactionCallPreviewRequest {
-            network,
-            at_ledger_state: None,
-            target: Option::Some(target),
-            arguments,
+impl VersionLedgerStateCoordinate {
+    pub fn new(_type: crate::core_api::generated::models::LedgerStateCoordinateType, state_version: i64) -> VersionLedgerStateCoordinate {
+        VersionLedgerStateCoordinate {
+            _type,
+            state_version,
         }
     }
 }

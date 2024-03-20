@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.LedgerStateCoordinate;
 import com.radixdlt.api.core.generated.models.PublicKey;
 import com.radixdlt.api.core.generated.models.TransactionMessage;
 import com.radixdlt.api.core.generated.models.TransactionPreviewRequestFlags;
@@ -37,6 +38,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   TransactionPreviewRequest.JSON_PROPERTY_NETWORK,
+  TransactionPreviewRequest.JSON_PROPERTY_AT_LEDGER_STATE,
   TransactionPreviewRequest.JSON_PROPERTY_MANIFEST,
   TransactionPreviewRequest.JSON_PROPERTY_BLOBS_HEX,
   TransactionPreviewRequest.JSON_PROPERTY_START_EPOCH_INCLUSIVE,
@@ -53,6 +55,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 public class TransactionPreviewRequest {
   public static final String JSON_PROPERTY_NETWORK = "network";
   private String network;
+
+  public static final String JSON_PROPERTY_AT_LEDGER_STATE = "at_ledger_state";
+  private LedgerStateCoordinate atLedgerState;
 
   public static final String JSON_PROPERTY_MANIFEST = "manifest";
   private String manifest;
@@ -113,6 +118,32 @@ public class TransactionPreviewRequest {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setNetwork(String network) {
     this.network = network;
+  }
+
+
+  public TransactionPreviewRequest atLedgerState(LedgerStateCoordinate atLedgerState) {
+    this.atLedgerState = atLedgerState;
+    return this;
+  }
+
+   /**
+   * Get atLedgerState
+   * @return atLedgerState
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public LedgerStateCoordinate getAtLedgerState() {
+    return atLedgerState;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setAtLedgerState(LedgerStateCoordinate atLedgerState) {
+    this.atLedgerState = atLedgerState;
   }
 
 
@@ -436,6 +467,7 @@ public class TransactionPreviewRequest {
     }
     TransactionPreviewRequest transactionPreviewRequest = (TransactionPreviewRequest) o;
     return Objects.equals(this.network, transactionPreviewRequest.network) &&
+        Objects.equals(this.atLedgerState, transactionPreviewRequest.atLedgerState) &&
         Objects.equals(this.manifest, transactionPreviewRequest.manifest) &&
         Objects.equals(this.blobsHex, transactionPreviewRequest.blobsHex) &&
         Objects.equals(this.startEpochInclusive, transactionPreviewRequest.startEpochInclusive) &&
@@ -451,7 +483,7 @@ public class TransactionPreviewRequest {
 
   @Override
   public int hashCode() {
-    return Objects.hash(network, manifest, blobsHex, startEpochInclusive, endEpochExclusive, notaryPublicKey, notaryIsSignatory, tipPercentage, nonce, signerPublicKeys, message, flags);
+    return Objects.hash(network, atLedgerState, manifest, blobsHex, startEpochInclusive, endEpochExclusive, notaryPublicKey, notaryIsSignatory, tipPercentage, nonce, signerPublicKeys, message, flags);
   }
 
   @Override
@@ -459,6 +491,7 @@ public class TransactionPreviewRequest {
     StringBuilder sb = new StringBuilder();
     sb.append("class TransactionPreviewRequest {\n");
     sb.append("    network: ").append(toIndentedString(network)).append("\n");
+    sb.append("    atLedgerState: ").append(toIndentedString(atLedgerState)).append("\n");
     sb.append("    manifest: ").append(toIndentedString(manifest)).append("\n");
     sb.append("    blobsHex: ").append(toIndentedString(blobsHex)).append("\n");
     sb.append("    startEpochInclusive: ").append(toIndentedString(startEpochInclusive)).append("\n");

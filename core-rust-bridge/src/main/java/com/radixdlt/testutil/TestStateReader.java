@@ -91,6 +91,9 @@ public final class TestStateReader {
             .build(new TypeToken<>() {});
     this.epochFunc =
         Natives.builder(nodeRustEnvironment, TestStateReader::epoch).build(new TypeToken<>() {});
+    this.historicalSubstateCountFunc =
+        Natives.builder(nodeRustEnvironment, TestStateReader::historicalSubstateCount)
+            .build(new TypeToken<>() {});
     this.leastStaleStateHashTreeVersionFunc =
         Natives.builder(nodeRustEnvironment, TestStateReader::leastStaleStateHashTreeVersion)
             .build(new TypeToken<>() {});
@@ -142,6 +145,15 @@ public final class TestStateReader {
   }
 
   private static native byte[] epoch(NodeRustEnvironment nodeRustEnvironment, byte[] payload);
+
+  private final Natives.Call1<Tuple.Tuple0, UInt64> historicalSubstateCountFunc;
+
+  public long getHistoricalSubstateCount() {
+    return historicalSubstateCountFunc.call(Tuple.tuple()).toLong();
+  }
+
+  private static native byte[] historicalSubstateCount(
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
   private final Natives.Call1<Tuple.Tuple0, UInt64> leastStaleStateHashTreeVersionFunc;
 

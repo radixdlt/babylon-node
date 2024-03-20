@@ -15,18 +15,20 @@ pub(crate) async fn handle_transaction_preview(
     assert_matching_network(&request.network, &state.network)?;
     let mapping_context = MappingContext::new(&state.network);
 
+    let at_state_version = request
+        .at_ledger_state
+        .as_deref()
+        .map(extract_ledger_state_coordinate)
+        .transpose()
+        .map_err(|err| err.into_response_error("at_ledger_state"))?;
+
     let preview_request = extract_preview_request(&state.network, request)?;
 
     let result = state
         .state_manager
         .transaction_previewer
         .read()
-        .preview(preview_request)
-        .map_err(|err| match err {
-            PreviewError::TransactionValidationError(err) => {
-                client_error(format!("Transaction validation error: {err:?}"))
-            }
-        })?;
+        .preview(preview_request, at_state_version)?;
 
     to_api_response(&mapping_context, result).map(Json)
 }

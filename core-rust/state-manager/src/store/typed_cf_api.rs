@@ -227,6 +227,19 @@ impl<'r, 'w, CF: TypedCf, R: WriteableRocks>
     }
 }
 
+impl<'r, 'w, KC: BoundedDbCodec, CF: TypedCf<KeyCodec = KC>, R: WriteableRocks>
+    TypedCfApi<'r, 'w, CF, R, BufferedWriteSupport<'r, R>>
+{
+    /// Deletes all entries.
+    pub fn delete_all(&self) {
+        self.write_support.buffer.delete_range(
+            self.cf.handle,
+            vec![],
+            self.cf.key_codec.upper_bound_encoding(),
+        );
+    }
+}
+
 impl<'r, 'w, KC: GroupPreservingDbCodec, CF: TypedCf<KeyCodec = KC>, R: WriteableRocks>
     TypedCfApi<'r, 'w, CF, R, BufferedWriteSupport<'r, R>>
 {
@@ -254,6 +267,11 @@ impl<
     /// Gets the entry of the least key.
     pub fn get_first(&self) -> Option<(CF::Key, CF::Value)> {
         self.iterate(Direction::Forward).next()
+    }
+
+    /// Gets the least key.
+    pub fn get_first_key(&self) -> Option<CF::Key> {
+        self.get_first().map(|(key, _)| key)
     }
 
     /// Gets the value associated with the least key.
@@ -542,6 +560,16 @@ pub trait DbCodec<T> {
     fn encode(&self, value: &T) -> Vec<u8>;
     /// Decodes the bytes into value.
     fn decode(&self, bytes: &[u8]) -> T;
+}
+
+/// An extra trait to be implemented on [`DbCodec`]s which know an upper bound on their subjects'
+/// encoding.
+///
+/// This capability allows e.g. for an efficient, atomic "delete all" operation (using a range of
+/// keys `[vec![], upper_bound)`).
+pub trait BoundedDbCodec {
+    /// Returns an encoding of an (exclusive) upper bound element.
+    fn upper_bound_encoding(&self) -> Vec<u8>;
 }
 
 /// A marker trait which must only be implemented on [`DbCodec`]s which preserve the business-level
