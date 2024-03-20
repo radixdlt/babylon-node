@@ -939,14 +939,34 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
                         .unwrap(),
                 );
             }
-        } else if let Some(status) = status {
-            info!(
-                "Disabling historical Substate values (were enabled since {:?})",
-                status.values_associated_from
-            );
-            extension_data_cf.delete(&ExtensionsDataKey::StateHashTreeAssociatedValuesStatus);
         } else {
-            info!("Historical Substate values remain disabled");
+            if let Some(status) = status {
+                info!(
+                    "Disabling historical Substate values (were enabled since {:?})",
+                    status.values_associated_from
+                );
+                extension_data_cf.delete(&ExtensionsDataKey::StateHashTreeAssociatedValuesStatus);
+            } else {
+                info!("Historical Substate values remain disabled");
+            }
+            // The line below wipes the entire historical values table, which may rise questions:
+            //
+            // - Why do we even need to wipe it?
+            //   In theory, the associated values could be automatically, gradually deleted by
+            //   the GC process (by simply catching up to the current state version). However, the
+            //   GC is not "free" (i.e. it performs no-op delete operations), so we prefer to
+            //   actually skip it if the history feature is disabled. Thus, we also have to clear
+            //   the leftovers when we disable the history here.
+            //
+            // - So could we only wipe when we actually switch from "enabled" to "disabled"?
+            //   If we only considered happy-paths - yes. But we also want to handle the situation
+            //   where the backfill (i.e. `populate_hash_tree_associated_substate_values()`) is
+            //   interrupted, and then the Node is restarted with the history disabled. In such
+            //   case, the history was never really enabled (since the backfill did not finish!),
+            //   so it remains disabled, and yet we have that backfill's partial results persisted
+            //   in the DB (unreachable, yet never GCed). It is cheap enough to simply ensure that
+            //   this table is empty on every history-disabled boot-up.
+            db_context.cf(AssociatedStateHashTreeValuesCf).delete_all();
         }
     }
 
@@ -959,14 +979,14 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
         const SUBSTATE_BATCH_BYTE_SIZE: usize = 50 * 1024 * 1024; // arbitrary 50 MB work chunks
 
         let db_context = self.open_rw_context();
-        let tree_values_cf = db_context.cf(AssociatedStateHashTreeValuesCf);
+        let associated_values_cf = db_context.cf(AssociatedStateHashTreeValuesCf);
         let substate_leaf_keys = StateHashTreeBasedSubstateDatabase::new(self, current_version)
             .iter_substate_leaf_keys();
         for (tree_node_key, (partition_key, sort_key)) in substate_leaf_keys {
             let value = self
                 .get_substate(&partition_key, &sort_key)
                 .expect("substate value referenced by hash tree does not exist");
-            tree_values_cf.put(&tree_node_key, &value);
+            associated_values_cf.put(&tree_node_key, &value);
             if db_context.buffered_data_size() >= SUBSTATE_BATCH_BYTE_SIZE {
                 db_context.flush();
                 info!(
@@ -1051,6 +1071,12 @@ impl MeasurableDatabase for ActualStateManagerDatabase {
             );
         }
         statistics.into_values().collect()
+    }
+
+    fn count_entries(&self, category_name: &str) -> usize {
+        self.rocks
+            .iterator_cf(self.rocks.cf_handle(category_name), IteratorMode::Start)
+            .count()
     }
 }
 
@@ -1165,6 +1191,7 @@ impl<R: WriteableRocks> CommitStore for StateManagerDatabase<R> {
         }
 
         if self.config.enable_historical_substate_values {
+            let associated_values_cf = db_context.cf(AssociatedStateHashTreeValuesCf);
             for new_leaf_substate_key in commit_bundle.new_leaf_substate_keys {
                 let LeafSubstateKeyAssociation {
                     tree_node_key,
@@ -1183,9 +1210,7 @@ impl<R: WriteableRocks> CommitStore for StateManagerDatabase<R> {
                         .map(Cow::Owned)
                         .expect("unchanged value not found in substate database"),
                 };
-                db_context
-                    .cf(AssociatedStateHashTreeValuesCf)
-                    .put(&tree_node_key, substate_value.as_ref());
+                associated_values_cf.put(&tree_node_key, substate_value.as_ref());
             }
         }
 
@@ -1820,8 +1845,15 @@ impl<R: WriteableRocks> StateHashTreeGcStore for StateManagerDatabase<R> {
 
     fn batch_delete_node<'a>(&self, keys: impl IntoIterator<Item = &'a StoredTreeNodeKey>) {
         let db_context = self.open_rw_context();
+        let tree_nodes_cf = db_context.cf(StateHashTreeNodesCf);
+        let associated_values_cf = db_context.cf(AssociatedStateHashTreeValuesCf);
         for key in keys {
-            db_context.cf(StateHashTreeNodesCf).delete(key);
+            tree_nodes_cf.delete(key);
+            if self.config.enable_historical_substate_values {
+                // Note: not every key represents a Substate. But majority does, so we simply accept
+                // some fraction of no-op deletes here, in the name of simplicity.
+                associated_values_cf.delete(key);
+            }
         }
     }
 
@@ -1830,10 +1862,9 @@ impl<R: WriteableRocks> StateHashTreeGcStore for StateManagerDatabase<R> {
         state_versions: impl IntoIterator<Item = &'a StateVersion>,
     ) {
         let db_context = self.open_rw_context();
+        let stale_tree_parts_cf = db_context.cf(StaleStateHashTreePartsCf);
         for state_version in state_versions {
-            db_context
-                .cf(StaleStateHashTreePartsCf)
-                .delete(state_version);
+            stale_tree_parts_cf.delete(state_version);
         }
     }
 }

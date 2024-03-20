@@ -66,7 +66,6 @@ package com.radixdlt.rev2;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 
-import com.google.inject.Injector;
 import com.radixdlt.environment.DatabaseConfig;
 import com.radixdlt.environment.LedgerProofsGcConfig;
 import com.radixdlt.environment.StateHashTreeGcConfig;
@@ -86,12 +85,13 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.protocol.ProtocolConfig;
-import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.testutil.TestStateReader;
 import com.radixdlt.transaction.LedgerSyncLimitsConfig;
 import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
+import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -100,7 +100,8 @@ public final class StateHashTreeGcTest {
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-  private DeterministicTest createTest(long stateVersionHistoryLength) {
+  private DeterministicTest createTest(
+      long stateVersionHistoryLength, boolean storeHistoricalSubstates) {
     return DeterministicTest.builder()
         .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
         .messageSelector(firstSelector())
@@ -118,8 +119,7 @@ public final class StateHashTreeGcTest {
                             1,
                             Decimal.ONE,
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(100)),
-                        // TODO(historical-state): test that GC actually cleans the history table
-                        new DatabaseConfig(false, false, true),
+                        new DatabaseConfig(false, false, storeHistoricalSubstates),
                         REV2ProposerConfig.noUserTransactions(),
                         false,
                         new StateHashTreeGcConfig(
@@ -134,29 +134,37 @@ public final class StateHashTreeGcTest {
   @Test
   public void node_keeps_exactly_the_configured_number_of_stale_state_hash_tree_versions() {
     // Arrange: configure 37 historical state versions to be kept in the state hash tree
-    try (var test = createTest(37)) {
+    try (var test = createTest(37, false)) {
       test.startAllNodes();
 
       // Act: Advance at least that many versions, so we are sure about the `current - leastStale`
-      test.runUntilState(NodesPredicate.nodeAt(0, NodePredicate.atExactlyStateVersion(39)), 10000);
+      test.runUntilState(NodesPredicate.nodeAt(0, NodePredicate.atExactlyStateVersion(43)), 10000);
 
-      // Assert: Run a few rounds, until an async GC executes
-      test.runUntilState(
-          NodesPredicate.nodeAt(0, atExactDifferenceToLeastStaleStateHashTreeVersion(37)), 50000);
+      // Assert: Wait until an async GC executes and deletes old state hash tree versions (until 43
+      // - 37 = 6):
+      Awaitility.await()
+          .until(
+              test.getInstance(0, TestStateReader.class)::getLeastStaleStateHashTreeVersion,
+              Predicate.isEqual(6L));
     }
   }
 
-  private Predicate<Injector> atExactDifferenceToLeastStaleStateHashTreeVersion(long difference) {
-    return injector -> {
-      var currentStateVersion =
-          injector
-              .getInstance(TransactionsAndProofReader.class)
-              .getLatestProofBundle()
-              .orElseThrow()
-              .resultantStateVersion();
-      var leastStaleStateHashTreeVersion =
-          injector.getInstance(TestStateReader.class).getLeastStaleStateHashTreeVersion();
-      return currentStateVersion - leastStaleStateHashTreeVersion == difference;
-    };
+  @Test
+  public void node_keeps_historical_substate_values_only_for_configured_number_of_versions() {
+    // Configure a small number of historical versions to be kept together with values
+    try (var test = createTest(5, true)) {
+      test.startAllNodes();
+      final var testReader = test.getInstance(0, TestStateReader.class);
+
+      // Keep progressing the state versions, and assert that at some point the count of history
+      // table rows will *decrease*, which proves the existence of some GC process:
+      final var previousCount = new AtomicLong();
+      test.runUntilState(
+          injector -> {
+            final var currentCount = testReader.getHistoricalSubstateCount();
+            return currentCount < previousCount.getAndSet(currentCount);
+          },
+          10000);
+    }
   }
 }

@@ -674,6 +674,11 @@ pub mod measurement {
         /// Gets approximate data volume statistics per table/map/cf (i.e. a category of persisted
         /// items, however it is called by the specific database implementation).
         fn get_data_volume_statistics(&self) -> Vec<CategoryDbVolumeStatistic>;
+
+        /// Gets a number of entries stored in the given category.
+        ///
+        /// Note: this is an extremely inefficient method, meant only for test purposes.
+        fn count_entries(&self, category_name: &str) -> usize;
     }
 
     /// An approximate data volume statistic of a given category of persisted items.
