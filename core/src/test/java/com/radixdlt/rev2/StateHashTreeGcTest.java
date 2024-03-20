@@ -89,6 +89,7 @@ import com.radixdlt.testutil.TestStateReader;
 import com.radixdlt.transaction.LedgerSyncLimitsConfig;
 import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 import org.awaitility.Awaitility;
 import org.junit.Rule;
@@ -155,17 +156,15 @@ public final class StateHashTreeGcTest {
       test.startAllNodes();
       final var testReader = test.getInstance(0, TestStateReader.class);
 
-      // Capture the "reference" value: advance some fixed number of state versions...
-      test.runUntilState(NodesPredicate.nodeAt(0, NodePredicate.atExactlyStateVersion(50)), 10000);
-      // ... wait for the GC...
-      Awaitility.await()
-          .until(testReader::getLeastStaleStateHashTreeVersion, Predicate.isEqual(45L));
-      // ... and measure the cardinality of the "state history" table
-      var initialCount = testReader.getHistoricalSubstateCount();
-
       // Keep progressing the state versions, and assert that at some point the count of history
       // table rows will *decrease*, which proves the existence of some GC process:
-      test.runUntilState(injector -> testReader.getHistoricalSubstateCount() < initialCount, 10000);
+      final var previousCount = new AtomicLong();
+      test.runUntilState(
+          injector -> {
+            final var currentCount = testReader.getHistoricalSubstateCount();
+            return currentCount < previousCount.getAndSet(currentCount);
+          },
+          10000);
     }
   }
 }

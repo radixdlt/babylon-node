@@ -979,14 +979,14 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
         const SUBSTATE_BATCH_BYTE_SIZE: usize = 50 * 1024 * 1024; // arbitrary 50 MB work chunks
 
         let db_context = self.open_rw_context();
-        let tree_values_cf = db_context.cf(AssociatedStateHashTreeValuesCf);
+        let associated_values_cf = db_context.cf(AssociatedStateHashTreeValuesCf);
         let substate_leaf_keys = StateHashTreeBasedSubstateDatabase::new(self, current_version)
             .iter_substate_leaf_keys();
         for (tree_node_key, (partition_key, sort_key)) in substate_leaf_keys {
             let value = self
                 .get_substate(&partition_key, &sort_key)
                 .expect("substate value referenced by hash tree does not exist");
-            tree_values_cf.put(&tree_node_key, &value);
+            associated_values_cf.put(&tree_node_key, &value);
             if db_context.buffered_data_size() >= SUBSTATE_BATCH_BYTE_SIZE {
                 db_context.flush();
                 info!(
@@ -1191,6 +1191,7 @@ impl<R: WriteableRocks> CommitStore for StateManagerDatabase<R> {
         }
 
         if self.config.enable_historical_substate_values {
+            let associated_values_cf = db_context.cf(AssociatedStateHashTreeValuesCf);
             for new_leaf_substate_key in commit_bundle.new_leaf_substate_keys {
                 let LeafSubstateKeyAssociation {
                     tree_node_key,
@@ -1209,9 +1210,7 @@ impl<R: WriteableRocks> CommitStore for StateManagerDatabase<R> {
                         .map(Cow::Owned)
                         .expect("unchanged value not found in substate database"),
                 };
-                db_context
-                    .cf(AssociatedStateHashTreeValuesCf)
-                    .put(&tree_node_key, substate_value.as_ref());
+                associated_values_cf.put(&tree_node_key, substate_value.as_ref());
             }
         }
 
