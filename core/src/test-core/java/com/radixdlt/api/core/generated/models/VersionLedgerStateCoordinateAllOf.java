@@ -28,20 +28,20 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * CommittedStateIdentifierAllOf
+ * VersionLedgerStateCoordinateAllOf
  */
 @JsonPropertyOrder({
-  CommittedStateIdentifierAllOf.JSON_PROPERTY_STATE_VERSION
+  VersionLedgerStateCoordinateAllOf.JSON_PROPERTY_STATE_VERSION
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class CommittedStateIdentifierAllOf {
+public class VersionLedgerStateCoordinateAllOf {
   public static final String JSON_PROPERTY_STATE_VERSION = "state_version";
   private Long stateVersion;
 
-  public CommittedStateIdentifierAllOf() { 
+  public VersionLedgerStateCoordinateAllOf() { 
   }
 
-  public CommittedStateIdentifierAllOf stateVersion(Long stateVersion) {
+  public VersionLedgerStateCoordinateAllOf stateVersion(Long stateVersion) {
     this.stateVersion = stateVersion;
     return this;
   }
@@ -70,7 +70,7 @@ public class CommittedStateIdentifierAllOf {
 
 
   /**
-   * Return true if this CommittedStateIdentifier_allOf object is equal to o.
+   * Return true if this VersionLedgerStateCoordinate_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -80,8 +80,8 @@ public class CommittedStateIdentifierAllOf {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    CommittedStateIdentifierAllOf committedStateIdentifierAllOf = (CommittedStateIdentifierAllOf) o;
-    return Objects.equals(this.stateVersion, committedStateIdentifierAllOf.stateVersion);
+    VersionLedgerStateCoordinateAllOf versionLedgerStateCoordinateAllOf = (VersionLedgerStateCoordinateAllOf) o;
+    return Objects.equals(this.stateVersion, versionLedgerStateCoordinateAllOf.stateVersion);
   }
 
   @Override
@@ -92,7 +92,7 @@ public class CommittedStateIdentifierAllOf {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class CommittedStateIdentifierAllOf {\n");
+    sb.append("class VersionLedgerStateCoordinateAllOf {\n");
     sb.append("    stateVersion: ").append(toIndentedString(stateVersion)).append("\n");
     sb.append("}");
     return sb.toString();

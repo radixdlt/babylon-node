@@ -70,7 +70,7 @@ COPY ./cli-tools /radixdlt/cli-tools
 COPY ./shell /radixdlt/shell
 COPY ./keygen /radixdlt/keygen
 # Need .git for tag versions - but this can probably be removed soon
-COPY ./.git /radixdlt/.git
+COPY ./.git/* /radixdlt/.git/
 
 WORKDIR /radixdlt
 

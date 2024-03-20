@@ -13,81 +13,62 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { LedgerStateCoordinate } from './LedgerStateCoordinate';
-import {
-    LedgerStateCoordinateFromJSON,
-    LedgerStateCoordinateFromJSONTyped,
-    LedgerStateCoordinateToJSON,
-} from './LedgerStateCoordinate';
-import type { TargetIdentifier } from './TargetIdentifier';
-import {
-    TargetIdentifierFromJSON,
-    TargetIdentifierFromJSONTyped,
-    TargetIdentifierToJSON,
-} from './TargetIdentifier';
-
 /**
  * 
  * @export
- * @interface TransactionCallPreviewRequest
+ * @interface VersionLedgerStateCoordinateAllOf
  */
-export interface TransactionCallPreviewRequest {
+export interface VersionLedgerStateCoordinateAllOf {
     /**
-     * The logical name of the network
+     * 
+     * @type {number}
+     * @memberof VersionLedgerStateCoordinateAllOf
+     */
+    state_version: number;
+    /**
+     * 
      * @type {string}
-     * @memberof TransactionCallPreviewRequest
+     * @memberof VersionLedgerStateCoordinateAllOf
      */
-    network: string;
-    /**
-     * 
-     * @type {LedgerStateCoordinate}
-     * @memberof TransactionCallPreviewRequest
-     */
-    at_ledger_state?: LedgerStateCoordinate;
-    /**
-     * 
-     * @type {TargetIdentifier}
-     * @memberof TransactionCallPreviewRequest
-     */
-    target: TargetIdentifier;
-    /**
-     * Argument list
-     * @type {Array<string>}
-     * @memberof TransactionCallPreviewRequest
-     */
-    arguments: Array<string>;
+    type?: VersionLedgerStateCoordinateAllOfTypeEnum;
 }
 
+
 /**
- * Check if a given object implements the TransactionCallPreviewRequest interface.
+ * @export
  */
-export function instanceOfTransactionCallPreviewRequest(value: object): boolean {
+export const VersionLedgerStateCoordinateAllOfTypeEnum = {
+    ByStateVersion: 'ByStateVersion'
+} as const;
+export type VersionLedgerStateCoordinateAllOfTypeEnum = typeof VersionLedgerStateCoordinateAllOfTypeEnum[keyof typeof VersionLedgerStateCoordinateAllOfTypeEnum];
+
+
+/**
+ * Check if a given object implements the VersionLedgerStateCoordinateAllOf interface.
+ */
+export function instanceOfVersionLedgerStateCoordinateAllOf(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "network" in value;
-    isInstance = isInstance && "target" in value;
-    isInstance = isInstance && "arguments" in value;
+    isInstance = isInstance && "state_version" in value;
 
     return isInstance;
 }
 
-export function TransactionCallPreviewRequestFromJSON(json: any): TransactionCallPreviewRequest {
-    return TransactionCallPreviewRequestFromJSONTyped(json, false);
+export function VersionLedgerStateCoordinateAllOfFromJSON(json: any): VersionLedgerStateCoordinateAllOf {
+    return VersionLedgerStateCoordinateAllOfFromJSONTyped(json, false);
 }
 
-export function TransactionCallPreviewRequestFromJSONTyped(json: any, ignoreDiscriminator: boolean): TransactionCallPreviewRequest {
+export function VersionLedgerStateCoordinateAllOfFromJSONTyped(json: any, ignoreDiscriminator: boolean): VersionLedgerStateCoordinateAllOf {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'network': json['network'],
-        'at_ledger_state': !exists(json, 'at_ledger_state') ? undefined : LedgerStateCoordinateFromJSON(json['at_ledger_state']),
-        'target': TargetIdentifierFromJSON(json['target']),
-        'arguments': json['arguments'],
+        'state_version': json['state_version'],
+        'type': !exists(json, 'type') ? undefined : json['type'],
     };
 }
 
-export function TransactionCallPreviewRequestToJSON(value?: TransactionCallPreviewRequest | null): any {
+export function VersionLedgerStateCoordinateAllOfToJSON(value?: VersionLedgerStateCoordinateAllOf | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -96,10 +77,8 @@ export function TransactionCallPreviewRequestToJSON(value?: TransactionCallPrevi
     }
     return {
         
-        'network': value.network,
-        'at_ledger_state': LedgerStateCoordinateToJSON(value.at_ledger_state),
-        'target': TargetIdentifierToJSON(value.target),
-        'arguments': value.arguments,
+        'state_version': value.state_version,
+        'type': value.type,
     };
 }
 
