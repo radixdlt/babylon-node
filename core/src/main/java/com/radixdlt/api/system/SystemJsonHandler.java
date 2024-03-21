@@ -62,19 +62,68 @@
  * permissions under this License.
  */
 
-package com.radixdlt.environment;
+package com.radixdlt.api.system;
 
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Throwables;
+import com.radixdlt.api.common.JSON;
+import com.radixdlt.api.system.errors.InternalServerError;
+import com.radixdlt.api.system.errors.SystemApiErrorCode;
+import com.radixdlt.api.system.errors.UnexpectedErrorDetails;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 
-/** Database configuration options */
-public record DatabaseFlags(
-    boolean enableLocalTransactionExecutionIndex,
-    boolean enableAccountChangeIndex,
-    boolean enableReNodeListingIndices) {
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        DatabaseFlags.class,
-        codecs -> StructCodec.fromRecordComponents(DatabaseFlags.class, codecs));
+public abstract class SystemJsonHandler<T> implements HttpHandler {
+  private static final String CONTENT_TYPE_JSON = "application/json";
+  private static final long DEFAULT_MAX_REQUEST_SIZE = 1024L * 1024L;
+  private final ObjectMapper objectMapper;
+
+  protected SystemJsonHandler() {
+    this.objectMapper = JSON.getDefault().getMapper();
+  }
+
+  public abstract T handleRequest();
+
+  @Override
+  public final void handleRequest(HttpServerExchange exchange) throws Exception {
+    if (exchange.isInIoThread()) {
+      exchange.dispatch(this);
+      return;
+    }
+
+    exchange.setMaxEntitySize(DEFAULT_MAX_REQUEST_SIZE);
+    exchange.startBlocking();
+    exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
+
+    var mapper = JSON.getDefault().getMapper();
+    T response;
+    try {
+      response = handleRequest();
+    } catch (Exception e) {
+      var errorResponse = createUnknownExceptionResponse(e);
+      exchange.setStatusCode(500);
+      exchange.getResponseSender().send(objectMapper.writeValueAsString(errorResponse));
+      return;
+    }
+
+    exchange.setStatusCode(200);
+    mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+    exchange.getResponseSender().send(mapper.writeValueAsString(response));
+  }
+
+  private UnexpectedErrorDetails createUnknownExceptionResponse(Exception e) {
+    // TODO-NT-258 - consider hiding error message and returning a Trace GUID
+    var rootCause = Throwables.getRootCause(e);
+
+    return new UnexpectedErrorDetails()
+        .code(SystemApiErrorCode.INTERNAL_SERVER_ERROR.getErrorCode())
+        .message(SystemApiErrorCode.INTERNAL_SERVER_ERROR.getMessage())
+        .details(
+            new InternalServerError()
+                .cause(rootCause.getMessage())
+                .exception(rootCause.getClass().getSimpleName())
+                .type("InternalServerError"));
   }
 }

@@ -22,6 +22,18 @@ CMD ["/bin/bash"]
 
 ARG WGET_VERSION="1.21.3-1+b2"
 
+# The installed versions are fixed to create an immutable build.
+# Availability of fixed version is subject to change.
+# The latest available version can be found at these links.
+# Update the references versions in case the build fails
+# Source Repositories:
+# - https://packages.debian.org/bookworm/docker.io
+# - https://packages.debian.org/bookworm/libssl-dev
+# - https://packages.debian.org/bookworm/pkg-config
+# - https://packages.debian.org/bookworm/unzip
+# - https://packages.debian.org/bookworm/wget
+# - https://packages.debian.org/bookworm/software-properties-commo
+# - https://packages.debian.org/bookworm/openjdk-17-jdk
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
     docker.io=20.10.24+dfsg1-1+b3 \
@@ -58,7 +70,7 @@ COPY ./cli-tools /radixdlt/cli-tools
 COPY ./shell /radixdlt/shell
 COPY ./keygen /radixdlt/keygen
 # Need .git for tag versions - but this can probably be removed soon
-COPY ./.git /radixdlt/.git
+COPY ./.git/* /radixdlt/.git/
 
 WORKDIR /radixdlt
 
@@ -82,6 +94,18 @@ COPY --from=java-build-stage /radixdlt/core/build/distributions /
 FROM debian:12.1-slim as library-build-stage-base
 WORKDIR /app
 
+
+# The installed versions are fixed to create an immutable build.
+# Availability of fixed version is subject to change.
+# The latest available version can be found at these links.
+# Update the references versions in case the build fails
+# Source Repositories:
+# - https://packages.debian.org/bookworm/build-essential
+# - https://packages.debian.org/bookworm/curl
+# - https://packages.debian.org/bookworm/libc6-dev-arm64-cross
+# - https://packages.debian.org/bookworm/libclang-dev
+# - https://packages.debian.org/bookworm/libssl-dev
+# - https://packages.debian.org/bookworm/pkg-config
 # Install dependencies needed for building the Rust library
 # - NB: ca-certificates is needed for the rustup installation, and is not a fixed version for security reasons
 # hadolint ignore=DL3008
@@ -204,6 +228,17 @@ LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 # - software-properties-common is needed for installing debian packages with dpkg
 # - gettext-base is needed for envsubst in config_radixdlt.sh
 # - curl is needed for the docker-healthcheck
+#
+# The installed versions are fixed to create an immutable build.
+# Availability of fixed version is subject to change.
+# The latest available version can be found at these links.
+# Update the references versions in case the build fails
+# Source Repositories:
+# - https://packages.debian.org/bookworm/openjdk-17-jre-headless
+# - https://packages.debian.org/bookworm/curl
+# - https://packages.debian.org/bookworm/gettext-base
+# - https://packages.debian.org/bookworm/daemontools
+# - https://packages.debian.org/bookworm/libc6
 RUN apt-get update -y \
   && apt-get -y --no-install-recommends install \
     openjdk-17-jre-headless=17.0.10+7-1~deb12u1 \

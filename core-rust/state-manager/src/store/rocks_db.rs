@@ -62,6 +62,7 @@
  * permissions under this License.
  */
 
+use std::cmp::max;
 use std::collections::HashSet;
 use std::fmt;
 
@@ -75,6 +76,7 @@ use crate::{
     VersionedLedgerTransactionReceipt, VersionedLocalTransactionExecution,
 };
 use node_common::utils::IsAccountExt;
+use rocksdb::checkpoint::Checkpoint;
 use rocksdb::{
     AsColumnFamilyRef, ColumnFamily, ColumnFamilyDescriptor, DBPinnableSlice, Direction,
     IteratorMode, Options, Snapshot, WriteBatch, DB,
@@ -88,6 +90,7 @@ use tracing::{error, info, warn};
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::query::TransactionIdentifierLoader;
 use crate::store::codecs::*;
+use crate::store::historical_state::StateHashTreeBasedSubstateDatabase;
 use crate::store::traits::gc::{
     LedgerProofsGcProgress, LedgerProofsGcStore, StateHashTreeGcStore,
     VersionedLedgerProofsGcProgress,
@@ -126,7 +129,7 @@ use super::traits::extensions::*;
 /// The `NAME` constants defined by `*Cf` structs (and referenced below) are used as database column
 /// family names. Any change would effectively mean a ledger wipe. For this reason, we choose to
 /// define them manually (rather than using the `Into<String>`, which is refactor-sensitive).
-const ALL_COLUMN_FAMILIES: [&str; 24] = [
+const ALL_COLUMN_FAMILIES: [&str; 25] = [
     RawLedgerTransactionsCf::DEFAULT_NAME,
     CommittedTransactionIdentifiersCf::VERSIONED_NAME,
     TransactionReceiptsCf::VERSIONED_NAME,
@@ -151,6 +154,7 @@ const ALL_COLUMN_FAMILIES: [&str; 24] = [
     LedgerProofsGcProgressCf::VERSIONED_NAME,
     TypeAndCreationIndexedEntitiesCf::VERSIONED_NAME,
     BlueprintAndCreationIndexedObjectsCf::VERSIONED_NAME,
+    AssociatedStateHashTreeValuesCf::DEFAULT_NAME,
 ];
 
 /// Committed transactions.
@@ -341,14 +345,14 @@ impl VersionedCf for VertexStoreCf {
 }
 
 /// Individual nodes of the Substate database's hash tree.
-/// Schema: `encode_key(NodeKey)` -> `scrypto_encode(VersionedTreeNode)`.
+/// Schema: `encode_key(StoredTreeNodeKey)` -> `scrypto_encode(VersionedTreeNode)`.
 struct StateHashTreeNodesCf;
 impl VersionedCf for StateHashTreeNodesCf {
-    type Key = NodeKey;
+    type Key = StoredTreeNodeKey;
     type Value = TreeNode;
 
     const VERSIONED_NAME: &'static str = "state_hash_tree_nodes";
-    type KeyCodec = NodeKeyDbCodec;
+    type KeyCodec = StoredTreeNodeKeyDbCodec;
     type VersionedValue = VersionedTreeNode;
 }
 
@@ -408,6 +412,7 @@ impl TypedCf for ExtensionsDataCf {
             ExtensionsDataKey::AccountChangeIndexLastProcessedStateVersion,
             ExtensionsDataKey::LocalTransactionExecutionIndexEnabled,
             ExtensionsDataKey::December2023LostSubstatesRestored,
+            ExtensionsDataKey::StateHashTreeAssociatedValuesStatus,
             ExtensionsDataKey::ReNodeListingIndicesLastProcessedStateVersion,
         ])
     }
@@ -490,6 +495,20 @@ impl VersionedCf for BlueprintAndCreationIndexedObjectsCf {
     type VersionedValue = VersionedObjectBlueprintName;
 }
 
+/// Substate values associated with leaf nodes of the state hash tree's Substate Tier.
+/// Needed for [`LeafSubstateValueStore`].
+/// Note: This table does not use explicit versioning wrapper, since each serialized substate
+/// value is already versioned.
+struct AssociatedStateHashTreeValuesCf;
+impl DefaultCf for AssociatedStateHashTreeValuesCf {
+    type Key = StoredTreeNodeKey;
+    type Value = DbSubstateValue;
+
+    const DEFAULT_NAME: &'static str = "associated_state_hash_tree_values";
+    type KeyCodec = StoredTreeNodeKeyDbCodec;
+    type ValueCodec = DirectDbCodec;
+}
+
 /// An enum key for [`ExtensionsDataCf`].
 #[derive(Eq, PartialEq, Hash, PartialOrd, Ord, Clone, Debug)]
 enum ExtensionsDataKey {
@@ -497,6 +516,7 @@ enum ExtensionsDataKey {
     AccountChangeIndexEnabled,
     LocalTransactionExecutionIndexEnabled,
     December2023LostSubstatesRestored,
+    StateHashTreeAssociatedValuesStatus,
     ReNodeListingIndicesLastProcessedStateVersion,
 }
 
@@ -514,9 +534,10 @@ impl fmt::Display for ExtensionsDataKey {
                 "local_transaction_execution_index_enabled"
             }
             Self::December2023LostSubstatesRestored => "december_2023_lost_substates_restored",
+            Self::StateHashTreeAssociatedValuesStatus => "state_hash_tree_associated_values_status",
             Self::ReNodeListingIndicesLastProcessedStateVersion => {
                 "re_node_listing_indices_last_processed_state_version"
-            }
+            },
         };
         write!(f, "{str}")
     }
@@ -583,6 +604,11 @@ pub trait SecondaryRocks: ReadableRocks {
     fn try_catchup_with_primary(&self);
 }
 
+/// RocksDB checkpoint support.
+pub trait CheckpointableRocks {
+    fn create_checkpoint(&self, checkpoint_path: PathBuf) -> Result<(), rocksdb::Error>;
+}
+
 /// Direct RocksDB instance.
 pub struct DirectRocks {
     db: DB,
@@ -644,6 +670,24 @@ impl SecondaryRocks for DirectRocks {
             .try_catch_up_with_primary()
             .expect("secondary DB catchup");
     }
+}
+
+impl CheckpointableRocks for DirectRocks {
+    fn create_checkpoint(&self, checkpoint_path: PathBuf) -> Result<(), rocksdb::Error> {
+        create_checkpoint(&self.db, checkpoint_path)
+    }
+}
+
+impl<'db> CheckpointableRocks for SnapshotRocks<'db> {
+    fn create_checkpoint(&self, checkpoint_path: PathBuf) -> Result<(), rocksdb::Error> {
+        create_checkpoint(self.db, checkpoint_path)
+    }
+}
+
+fn create_checkpoint(db: &DB, checkpoint_path: PathBuf) -> Result<(), rocksdb::Error> {
+    let checkpoint = Checkpoint::new(db)?;
+    checkpoint.create_checkpoint(checkpoint_path)?;
+    Ok(())
 }
 
 /// Snapshot of RocksDB.
@@ -718,11 +762,11 @@ impl<'db> Snapshottable<'db> for StateManagerDatabase<DirectRocks> {
 
 /// A RocksDB-backed persistence layer for state manager.
 pub struct StateManagerDatabase<R> {
-    /// Database feature flags.
+    /// Database config.
     ///
-    /// These were passed during construction, validated and persisted. They are made available by
-    /// this field as a cache.
-    config: DatabaseFlags,
+    /// The config is passed during construction, validated, persisted, and effectively immutable
+    /// during the state manager's lifetime. This field only acts as a cache.
+    config: DatabaseConfig,
 
     /// Underlying RocksDB instance.
     rocks: R,
@@ -730,8 +774,8 @@ pub struct StateManagerDatabase<R> {
 
 impl ActualStateManagerDatabase {
     pub fn new(
-        root: PathBuf,
-        config: DatabaseFlags,
+        root_path: PathBuf,
+        config: DatabaseConfig,
         network: &NetworkDefinition,
     ) -> Result<Self, DatabaseConfigValidationError> {
         let mut db_opts = Options::default();
@@ -743,22 +787,18 @@ impl ActualStateManagerDatabase {
             .map(|cf| ColumnFamilyDescriptor::new(cf.to_string(), Options::default()))
             .collect();
 
-        let db = DB::open_cf_descriptors(&db_opts, root.as_path(), column_families).unwrap();
+        let db = DB::open_cf_descriptors(&db_opts, root_path.as_path(), column_families).unwrap();
 
         let state_manager_database = StateManagerDatabase {
-            config: config.clone(),
+            config,
             rocks: DirectRocks { db },
         };
 
-        let current_database_config = state_manager_database.read_flags_state();
-        config.validate(&current_database_config)?;
-        state_manager_database.write_flags(&config);
+        state_manager_database.validate_and_persist_new_config()?;
 
-        if state_manager_database.config.enable_account_change_index {
-            state_manager_database.catchup_account_change_index();
-        }
-
+        state_manager_database.catchup_account_change_index();
         state_manager_database.restore_december_2023_lost_substates(network);
+        state_manager_database.ensure_historical_substate_values();
 
         if state_manager_database.config.enable_re_node_listing_indices {
             state_manager_database.catchup_re_node_listing_indices()
@@ -779,7 +819,7 @@ impl<R: ReadableRocks> StateManagerDatabase<R> {
     /// way of making it clear that it only wants read lock and not a write lock.
     ///
     /// [`ledger-tools`]: https://github.com/radixdlt/ledger-tools
-    pub fn new_read_only(root: PathBuf) -> StateManagerDatabase<impl ReadableRocks> {
+    pub fn new_read_only(root_path: PathBuf) -> StateManagerDatabase<impl ReadableRocks> {
         let mut db_opts = Options::default();
         db_opts.create_if_missing(false);
         db_opts.create_missing_column_families(false);
@@ -789,14 +829,19 @@ impl<R: ReadableRocks> StateManagerDatabase<R> {
             .map(|cf| ColumnFamilyDescriptor::new(cf.to_string(), Options::default()))
             .collect();
 
-        let db =
-            DB::open_cf_descriptors_read_only(&db_opts, root.as_path(), column_families, false)
-                .unwrap();
+        let db = DB::open_cf_descriptors_read_only(
+            &db_opts,
+            root_path.as_path(),
+            column_families,
+            false,
+        )
+        .unwrap();
 
         StateManagerDatabase {
-            config: DatabaseFlags {
+            config: DatabaseConfig {
                 enable_local_transaction_execution_index: false,
                 enable_account_change_index: false,
+                enable_historical_substate_values: false,
                 enable_re_node_listing_indices: false,
             },
             rocks: DirectRocks { db },
@@ -808,8 +853,8 @@ impl<R: SecondaryRocks> StateManagerDatabase<R> {
     /// Creates a [`StateManagerDatabase`] as a secondary instance which may catch up with the
     /// primary.
     pub fn new_as_secondary(
-        root: PathBuf,
-        temp: PathBuf,
+        root_path: PathBuf,
+        temp_path: PathBuf,
         column_families: Vec<&str>,
     ) -> StateManagerDatabase<impl SecondaryRocks> {
         let mut db_opts = Options::default();
@@ -823,16 +868,17 @@ impl<R: SecondaryRocks> StateManagerDatabase<R> {
 
         let db = DB::open_cf_descriptors_as_secondary(
             &db_opts,
-            root.as_path(),
-            temp.as_path(),
+            root_path.as_path(),
+            temp_path.as_path(),
             column_families,
         )
         .unwrap();
 
         StateManagerDatabase {
-            config: DatabaseFlags {
+            config: DatabaseConfig {
                 enable_local_transaction_execution_index: false,
                 enable_account_change_index: false,
+                enable_historical_substate_values: false,
                 enable_re_node_listing_indices: false,
             },
             rocks: DirectRocks { db },
@@ -859,7 +905,14 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
 }
 
 impl<R: WriteableRocks> StateManagerDatabase<R> {
-    fn read_flags_state(&self) -> DatabaseFlagsState {
+    fn validate_and_persist_new_config(&self) -> Result<(), DatabaseConfigValidationError> {
+        let stored_config_state = self.read_config_state();
+        self.config.validate(&stored_config_state)?;
+        self.write_config();
+        Ok(())
+    }
+
+    fn read_config_state(&self) -> DatabaseConfigState {
         let db_context = self.open_read_context();
         let extension_data_cf = db_context.cf(ExtensionsDataCf);
         let account_change_index_enabled = extension_data_cf
@@ -868,23 +921,125 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
         let local_transaction_execution_index_enabled = extension_data_cf
             .get(&ExtensionsDataKey::LocalTransactionExecutionIndexEnabled)
             .map(|bytes| scrypto_decode::<bool>(&bytes).unwrap());
-        DatabaseFlagsState {
+        DatabaseConfigState {
             account_change_index_enabled,
             local_transaction_execution_index_enabled,
         }
     }
 
-    fn write_flags(&self, database_config: &DatabaseFlags) {
+    fn write_config(&self) {
         let db_context = self.open_rw_context();
         let extension_data_cf = db_context.cf(ExtensionsDataCf);
         extension_data_cf.put(
             &ExtensionsDataKey::AccountChangeIndexEnabled,
-            &scrypto_encode(&database_config.enable_account_change_index).unwrap(),
+            &scrypto_encode(&self.config.enable_account_change_index).unwrap(),
         );
         extension_data_cf.put(
             &ExtensionsDataKey::LocalTransactionExecutionIndexEnabled,
-            &scrypto_encode(&database_config.enable_local_transaction_execution_index).unwrap(),
+            &scrypto_encode(&self.config.enable_local_transaction_execution_index).unwrap(),
         );
+        // Note: the `enable_values_in_state_hash_tree` is written by the "initialize values" logic,
+        // after actual values - so that it correctly handles unexpected Node's restarts.
+    }
+}
+
+impl<R: WriteableRocks> StateManagerDatabase<R> {
+    /// Ensures that the database structures related to historical Substate values are initialized
+    /// properly, according to the database configuration.
+    ///
+    /// Most notably: if the historical state feature becomes enabled, this method runs the
+    /// [`Self::populate_hash_tree_associated_substate_values()`] initialization and records its
+    /// success afterwards. With this approach, the lengthy backfill is tolerant to the Node's
+    /// restarts (i.e. it will simply be re-run).
+    fn ensure_historical_substate_values(&self) {
+        let db_context = self.open_rw_context();
+        let extension_data_cf = db_context.cf(ExtensionsDataCf);
+        let status = extension_data_cf
+            .get(&ExtensionsDataKey::StateHashTreeAssociatedValuesStatus)
+            .map(|bytes| {
+                scrypto_decode::<VersionedStateHashTreeAssociatedValuesStatus>(&bytes)
+                    .unwrap()
+                    .into_latest()
+            });
+
+        if self.config.enable_historical_substate_values {
+            if let Some(status) = status {
+                info!("Historical Substate values enabled since {:?}", status);
+            } else {
+                let current_version = self.max_state_version();
+                info!(
+                    "Enabling historical Substate values at {:?}",
+                    current_version
+                );
+                self.populate_hash_tree_associated_substate_values(current_version);
+                let status = StateHashTreeAssociatedValuesStatusV1 {
+                    values_associated_from: current_version,
+                };
+                extension_data_cf.put(
+                    &ExtensionsDataKey::StateHashTreeAssociatedValuesStatus,
+                    &scrypto_encode(&VersionedStateHashTreeAssociatedValuesStatus::from(status))
+                        .unwrap(),
+                );
+            }
+        } else {
+            if let Some(status) = status {
+                info!(
+                    "Disabling historical Substate values (were enabled since {:?})",
+                    status.values_associated_from
+                );
+                extension_data_cf.delete(&ExtensionsDataKey::StateHashTreeAssociatedValuesStatus);
+            } else {
+                info!("Historical Substate values remain disabled");
+            }
+            // The line below wipes the entire historical values table, which may rise questions:
+            //
+            // - Why do we even need to wipe it?
+            //   In theory, the associated values could be automatically, gradually deleted by
+            //   the GC process (by simply catching up to the current state version). However, the
+            //   GC is not "free" (i.e. it performs no-op delete operations), so we prefer to
+            //   actually skip it if the history feature is disabled. Thus, we also have to clear
+            //   the leftovers when we disable the history here.
+            //
+            // - So could we only wipe when we actually switch from "enabled" to "disabled"?
+            //   If we only considered happy-paths - yes. But we also want to handle the situation
+            //   where the backfill (i.e. `populate_hash_tree_associated_substate_values()`) is
+            //   interrupted, and then the Node is restarted with the history disabled. In such
+            //   case, the history was never really enabled (since the backfill did not finish!),
+            //   so it remains disabled, and yet we have that backfill's partial results persisted
+            //   in the DB (unreachable, yet never GCed). It is cheap enough to simply ensure that
+            //   this table is empty on every history-disabled boot-up.
+            db_context.cf(AssociatedStateHashTreeValuesCf).delete_all();
+        }
+    }
+
+    /// Traverses the entire state hash tree at the given version (which necessarily must be the
+    /// current version) and populates [`AssociatedStateHashTreeValuesCf`] for all the Substate
+    /// leaf keys, using values from the [`SubstateDatabase`].
+    ///
+    /// The writing is implemented in byte-size-driven batches (since Substates' sizes vary a lot).
+    fn populate_hash_tree_associated_substate_values(&self, current_version: StateVersion) {
+        const SUBSTATE_BATCH_BYTE_SIZE: usize = 50 * 1024 * 1024; // arbitrary 50 MB work chunks
+
+        let db_context = self.open_rw_context();
+        let associated_values_cf = db_context.cf(AssociatedStateHashTreeValuesCf);
+        let substate_leaf_keys = StateHashTreeBasedSubstateDatabase::new(self, current_version)
+            .iter_substate_leaf_keys();
+        for (tree_node_key, (partition_key, sort_key)) in substate_leaf_keys {
+            let value = self
+                .get_substate(&partition_key, &sort_key)
+                .expect("substate value referenced by hash tree does not exist");
+            associated_values_cf.put(&tree_node_key, &value);
+            if db_context.buffered_data_size() >= SUBSTATE_BATCH_BYTE_SIZE {
+                db_context.flush();
+                info!(
+                    "Populated historical values up to tree node key {} (Substate key {:?}:{:?})",
+                    tree_node_key.nibble_path(),
+                    SpreadPrefixKeyMapper::from_db_partition_key(&partition_key),
+                    hex::encode(&sort_key.0),
+                );
+            }
+        }
+        info!("Finished capturing all current Substate values as historical");
     }
 }
 
@@ -897,8 +1052,33 @@ impl<R: ReadableRocks> ConfigurableDatabase for StateManagerDatabase<R> {
         self.config.enable_local_transaction_execution_index
     }
 
-    fn are_re_node_listing_indices_enabled(&self) -> bool {
-        self.config.enable_re_node_listing_indices
+    fn get_first_stored_historical_state_version(&self) -> Option<StateVersion> {
+        if !self.config.enable_historical_substate_values {
+            return None; // state history feature disabled explicitly
+        }
+
+        let first_state_hash_tree_version = self
+            .open_read_context()
+            .cf(StaleStateHashTreePartsCf)
+            .get_first_key();
+        let Some(first_state_hash_tree_version) = first_state_hash_tree_version else {
+            return None; // JMT past gets immediately GC'ed - the history length must be 0
+        };
+
+        // we also need to take the "still collecting the max history length" case into account:
+        let values_associated_from = self
+            .open_read_context()
+            .cf(ExtensionsDataCf)
+            .get(&ExtensionsDataKey::StateHashTreeAssociatedValuesStatus)
+            .map(|bytes| {
+                scrypto_decode::<VersionedStateHashTreeAssociatedValuesStatus>(&bytes)
+                    .unwrap()
+                    .into_latest()
+            })
+            .expect("state history feature enabled, but its metadata not found")
+            .values_associated_from;
+
+        Some(max(first_state_hash_tree_version, values_associated_from))
     }
 }
 
@@ -933,6 +1113,12 @@ impl MeasurableDatabase for ActualStateManagerDatabase {
             );
         }
         statistics.into_values().collect()
+    }
+
+    fn count_entries(&self, category_name: &str) -> usize {
+        self.rocks
+            .iterator_cf(self.rocks.cf_handle(category_name), IteratorMode::Start)
+            .count()
     }
 }
 
@@ -992,19 +1178,19 @@ impl<R: WriteableRocks> CommitStore for StateManagerDatabase<R> {
         }
 
         let substates_cf = db_context.cf(SubstatesCf);
-        for (node_key, node_updates) in commit_bundle.substate_store_update.updates.node_updates {
-            for (partition_num, partition_updates) in node_updates.partition_updates {
+        for (node_key, node_updates) in &commit_bundle.substate_store_update.updates.node_updates {
+            for (partition_num, partition_updates) in &node_updates.partition_updates {
                 let partition_key = DbPartitionKey {
                     node_key: node_key.clone(),
-                    partition_num,
+                    partition_num: *partition_num,
                 };
                 match partition_updates {
                     PartitionDatabaseUpdates::Delta { substate_updates } => {
                         for (sort_key, update) in substate_updates {
-                            let substate_key = (partition_key.clone(), sort_key);
+                            let substate_key = (partition_key.clone(), sort_key.clone());
                             match update {
                                 DatabaseUpdate::Set(substate_value) => {
-                                    substates_cf.put(&substate_key, &substate_value);
+                                    substates_cf.put(&substate_key, substate_value);
                                 }
                                 DatabaseUpdate::Delete => {
                                     substates_cf.delete(&substate_key);
@@ -1016,8 +1202,8 @@ impl<R: WriteableRocks> CommitStore for StateManagerDatabase<R> {
                         new_substate_values,
                     } => {
                         substates_cf.delete_group(&partition_key);
-                        for (sort_key, substate_value) in new_substate_values {
-                            substates_cf.put(&(partition_key.clone(), sort_key), &substate_value);
+                        for (sort_key, value) in new_substate_values {
+                            substates_cf.put(&(partition_key.clone(), sort_key.clone()), value);
                         }
                     }
                 }
@@ -1043,6 +1229,30 @@ impl<R: WriteableRocks> CommitStore for StateManagerDatabase<R> {
                 db_context
                     .cf(SubstateNodeAncestryRecordsCf)
                     .put(&node_id, &record);
+            }
+        }
+
+        if self.config.enable_historical_substate_values {
+            let associated_values_cf = db_context.cf(AssociatedStateHashTreeValuesCf);
+            for new_leaf_substate_key in commit_bundle.new_leaf_substate_keys {
+                let LeafSubstateKeyAssociation {
+                    tree_node_key,
+                    substate_key,
+                    cause,
+                } = new_leaf_substate_key;
+                let substate_value = match cause {
+                    AssociationCause::SubstateUpsert => commit_bundle
+                        .substate_store_update
+                        .get_upserted_value(&substate_key)
+                        .map(Cow::Borrowed)
+                        .expect("upserted value not found in database updates"),
+                    AssociationCause::TreeRestructuring => db_context
+                        .cf(SubstatesCf)
+                        .get(&substate_key)
+                        .map(Cow::Owned)
+                        .expect("unchanged value not found in substate database"),
+                };
+                associated_values_cf.put(&tree_node_key, substate_value.as_ref());
             }
         }
 
@@ -1616,6 +1826,15 @@ impl<R: ReadableRocks> QueryableProofStore for StateManagerDatabase<R> {
     }
 }
 
+impl<R: CheckpointableRocks> StateManagerDatabase<R> {
+    /// Creates a checkpoint in `path`
+    pub fn create_checkpoint(&self, path: String) -> Result<(), String> {
+        self.rocks
+            .create_checkpoint(PathBuf::from(path))
+            .map_err(|err| err.to_string())
+    }
+}
+
 impl<R: ReadableRocks> SubstateDatabase for StateManagerDatabase<R> {
     fn get_substate(
         &self,
@@ -1663,7 +1882,7 @@ impl<R: ReadableRocks> SubstateNodeAncestryStore for StateManagerDatabase<R> {
 }
 
 impl<R: ReadableRocks> ReadableTreeStore for StateManagerDatabase<R> {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
+    fn get_node(&self, key: &StoredTreeNodeKey) -> Option<TreeNode> {
         self.open_read_context().cf(StateHashTreeNodesCf).get(key)
     }
 }
@@ -1677,10 +1896,17 @@ impl<R: WriteableRocks> StateHashTreeGcStore for StateManagerDatabase<R> {
             .iterate(Direction::Forward)
     }
 
-    fn batch_delete_node<'a>(&self, keys: impl IntoIterator<Item = &'a NodeKey>) {
+    fn batch_delete_node<'a>(&self, keys: impl IntoIterator<Item = &'a StoredTreeNodeKey>) {
         let db_context = self.open_rw_context();
+        let tree_nodes_cf = db_context.cf(StateHashTreeNodesCf);
+        let associated_values_cf = db_context.cf(AssociatedStateHashTreeValuesCf);
         for key in keys {
-            db_context.cf(StateHashTreeNodesCf).delete(key);
+            tree_nodes_cf.delete(key);
+            if self.config.enable_historical_substate_values {
+                // Note: not every key represents a Substate. But majority does, so we simply accept
+                // some fraction of no-op deletes here, in the name of simplicity.
+                associated_values_cf.delete(key);
+            }
         }
     }
 
@@ -1689,10 +1915,9 @@ impl<R: WriteableRocks> StateHashTreeGcStore for StateManagerDatabase<R> {
         state_versions: impl IntoIterator<Item = &'a StateVersion>,
     ) {
         let db_context = self.open_rw_context();
+        let stale_tree_parts_cf = db_context.cf(StaleStateHashTreePartsCf);
         for state_version in state_versions {
-            db_context
-                .cf(StaleStateHashTreePartsCf)
-                .delete(state_version);
+            stale_tree_parts_cf.delete(state_version);
         }
     }
 }
@@ -1943,6 +2168,10 @@ impl<R: WriteableRocks> AccountChangeIndexExtension for StateManagerDatabase<R> 
     }
 
     fn catchup_account_change_index(&self) {
+        if !self.config.enable_account_change_index {
+            return; // Nothing to do
+        }
+
         const MAX_TRANSACTION_BATCH: u64 = 16 * 1024;
 
         info!("Account Change Index is enabled!");
@@ -2090,7 +2319,7 @@ impl<R: ReadableRocks> ReNodeListingIndex for StateManagerDatabase<R> {
         &self,
         entity_type: EntityType,
         from_creation_id: Option<&CreationId>,
-    ) -> Box<dyn Iterator<Item = (CreationId, EntityBlueprintId)> + '_> {
+    ) -> Box<dyn Iterator<Item=(CreationId, EntityBlueprintId)> + '_> {
         let from_creation_id = from_creation_id.cloned().unwrap_or_else(CreationId::zero);
         Box::new(
             self.open_read_context()
@@ -2104,7 +2333,7 @@ impl<R: ReadableRocks> ReNodeListingIndex for StateManagerDatabase<R> {
         &self,
         blueprint_id: &BlueprintId,
         from_creation_id: Option<&CreationId>,
-    ) -> Box<dyn Iterator<Item = (CreationId, EntityBlueprintId)> + '_> {
+    ) -> Box<dyn Iterator<Item=(CreationId, EntityBlueprintId)> + '_> {
         let BlueprintId {
             package_address,
             blueprint_name,
@@ -2133,5 +2362,13 @@ impl<R: ReadableRocks> ReNodeListingIndex for StateManagerDatabase<R> {
                     },
                 ),
         )
+    }
+}
+
+impl<R: ReadableRocks> LeafSubstateValueStore for StateManagerDatabase<R> {
+    fn get_associated_value(&self, tree_node_key: &StoredTreeNodeKey) -> Option<DbSubstateValue> {
+        self.open_read_context()
+            .cf(AssociatedStateHashTreeValuesCf)
+            .get(tree_node_key)
     }
 }

@@ -3,15 +3,12 @@
 use crate::engine_prelude::*;
 use node_common::locks::{LockFactory, RwLock};
 
-use crate::epoch_handling::EpochAwareAccuTreeFactory;
+use crate::commit_bundle::CommitBundleBuilder;
 use crate::protocol::*;
 use crate::query::TransactionIdentifierLoader;
 use crate::traits::*;
 use crate::transaction::*;
-use crate::{
-    CommittedTransactionIdentifiers, ExecutionCache, LedgerHeader, LedgerProof, LedgerProofOrigin,
-    ReadableStore,
-};
+use crate::{ExecutionCache, LedgerHeader, LedgerProof, LedgerProofOrigin, ReadableStore};
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum UpdateTransaction {
@@ -182,17 +179,10 @@ where
             dummy_protocol_state,
         );
 
-        // TODO: extract common code from here and StateComputer::commit (also see the comment there)
-        let mut committed_transaction_bundles = Vec::new();
-        let mut substate_store_update = SubstateStoreUpdate::new();
-        let mut state_tree_update = HashTreeUpdate::new();
-        let mut new_node_ancestry_records = Vec::new();
-        let epoch_accu_trees = EpochAwareAccuTreeFactory::new(
+        let mut commit_bundle_builder = CommitBundleBuilder::new(
             series_executor.epoch_identifiers().state_version,
             series_executor.latest_state_version(),
         );
-        let mut transaction_tree_slice_merger = epoch_accu_trees.create_merger();
-        let mut receipt_tree_slice_merger = epoch_accu_trees.create_merger();
 
         for transaction in transactions {
             let raw = transaction.to_raw().unwrap();
@@ -204,27 +194,13 @@ where
                 .expect("protocol update not committable")
                 .expect_success("protocol update");
 
-            substate_store_update.apply(commit.database_updates);
-            let hash_structures_diff = commit.hash_structures_diff;
-            state_tree_update.add(
+            commit_bundle_builder.add_executed_transaction(
                 series_executor.latest_state_version(),
-                hash_structures_diff.state_hash_tree_diff,
-            );
-            new_node_ancestry_records.extend(commit.new_substate_node_ancestry_records);
-            transaction_tree_slice_merger.append(hash_structures_diff.transaction_tree_diff.slice);
-            receipt_tree_slice_merger.append(hash_structures_diff.receipt_tree_diff.slice);
-
-            let proposer_timestamp_ms = latest_header.proposer_timestamp_ms;
-            committed_transaction_bundles.push(CommittedTransactionBundle {
-                state_version: series_executor.latest_state_version(),
+                latest_header.proposer_timestamp_ms,
                 raw,
-                receipt: commit.local_receipt,
-                identifiers: CommittedTransactionIdentifiers {
-                    payload: validated.create_identifiers(),
-                    resultant_ledger_hashes: *series_executor.latest_ledger_hashes(),
-                    proposer_timestamp_ms,
-                },
-            });
+                validated,
+                commit,
+            );
         }
 
         let resultant_state_version = series_executor.latest_state_version();
@@ -247,19 +223,7 @@ where
             },
         };
 
-        let commit_bundle = CommitBundle {
-            transactions: committed_transaction_bundles,
-            proof,
-            substate_store_update,
-            vertex_store: None,
-            state_tree_update,
-            transaction_tree_slice: TransactionAccuTreeSliceV1(
-                transaction_tree_slice_merger.into_slice(),
-            ),
-            receipt_tree_slice: ReceiptAccuTreeSliceV1(receipt_tree_slice_merger.into_slice()),
-            new_substate_node_ancestry_records: new_node_ancestry_records,
-        };
-
-        self.database.commit(commit_bundle);
+        self.database
+            .commit(commit_bundle_builder.build(proof, None));
     }
 }

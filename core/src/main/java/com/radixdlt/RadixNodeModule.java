@@ -277,14 +277,18 @@ public final class RadixNodeModule extends AbstractModule {
         NodeConstants.DEFAULT_MAX_TRANSACTION_SIZE);
     var mempoolConfig =
         new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount);
+
     var enableLocalTransactionExecutionIndex =
         properties.get("db.local_transaction_execution_index.enable", true);
     var enableAccountChangeIndex = properties.get("db.account_change_index.enable", true);
+    var enableHistoricalSubstateValues =
+        properties.get("db.historical_substate_values.enable", false);
     var enableReNodeListingIndices = properties.get("db.re_node_listing_indices.enable", true);
-    var databaseFlags =
-        new DatabaseFlags(
+    var databaseConfig =
+        new DatabaseConfig(
             enableLocalTransactionExecutionIndex,
             enableAccountChangeIndex,
+            enableHistoricalSubstateValues,
             enableReNodeListingIndices);
 
     install(new REv2LedgerInitializerModule(genesisProvider));
@@ -378,7 +382,7 @@ public final class RadixNodeModule extends AbstractModule {
         REv2StateManagerModule.create(
             ProposalLimitsConfig.from(vertexLimitsConfig),
             vertexLimitsConfig,
-            databaseFlags,
+            databaseConfig,
             Option.some(mempoolConfig),
             stateHashTreeGcConfig,
             ledgerProofsGcConfig,

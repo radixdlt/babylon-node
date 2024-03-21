@@ -111,6 +111,11 @@ impl<'r, R: WriteableRocks> BufferedWriteSupport<'r, R> {
             self.rocks.write(write_batch);
         }
     }
+
+    /// Returns the size of buffered data, in bytes.
+    fn buffered_data_size(&self) -> usize {
+        self.buffer.byte_size()
+    }
 }
 
 impl<'r, R: WriteableRocks> Drop for BufferedWriteSupport<'r, R> {
@@ -144,6 +149,11 @@ impl<'r, R: WriteableRocks> TypedDbContext<'r, R, BufferedWriteSupport<'r, R>> {
     /// subsequent reads).
     pub fn flush(&self) {
         self.write_support.flush();
+    }
+
+    /// Returns the size of buffered data, in bytes.
+    pub fn buffered_data_size(&self) -> usize {
+        self.write_support.buffered_data_size()
     }
 }
 
@@ -217,6 +227,19 @@ impl<'r, 'w, CF: TypedCf, R: WriteableRocks>
     }
 }
 
+impl<'r, 'w, KC: BoundedDbCodec, CF: TypedCf<KeyCodec = KC>, R: WriteableRocks>
+    TypedCfApi<'r, 'w, CF, R, BufferedWriteSupport<'r, R>>
+{
+    /// Deletes all entries.
+    pub fn delete_all(&self) {
+        self.write_support.buffer.delete_range(
+            self.cf.handle,
+            vec![],
+            self.cf.key_codec.upper_bound_encoding(),
+        );
+    }
+}
+
 impl<'r, 'w, KC: GroupPreservingDbCodec, CF: TypedCf<KeyCodec = KC>, R: WriteableRocks>
     TypedCfApi<'r, 'w, CF, R, BufferedWriteSupport<'r, R>>
 {
@@ -244,6 +267,11 @@ impl<
     /// Gets the entry of the least key.
     pub fn get_first(&self) -> Option<(CF::Key, CF::Value)> {
         self.iterate(Direction::Forward).next()
+    }
+
+    /// Gets the least key.
+    pub fn get_first_key(&self) -> Option<CF::Key> {
+        self.get_first().map(|(key, _)| key)
     }
 
     /// Gets the value associated with the least key.
@@ -534,6 +562,16 @@ pub trait DbCodec<T> {
     fn decode(&self, bytes: &[u8]) -> T;
 }
 
+/// An extra trait to be implemented on [`DbCodec`]s which know an upper bound on their subjects'
+/// encoding.
+///
+/// This capability allows e.g. for an efficient, atomic "delete all" operation (using a range of
+/// keys `[vec![], upper_bound)`).
+pub trait BoundedDbCodec {
+    /// Returns an encoding of an (exclusive) upper bound element.
+    fn upper_bound_encoding(&self) -> Vec<u8>;
+}
+
 /// A marker trait which must only be implemented on [`DbCodec`]s which preserve the business-level
 /// ordering of values when encoding/decoding.
 ///
@@ -765,6 +803,10 @@ impl WriteBuffer {
 
     pub fn flip(&self) -> WriteBatch {
         self.write_batch.replace(WriteBatch::default())
+    }
+
+    pub fn byte_size(&self) -> usize {
+        self.write_batch.borrow().size_in_bytes()
     }
 }
 

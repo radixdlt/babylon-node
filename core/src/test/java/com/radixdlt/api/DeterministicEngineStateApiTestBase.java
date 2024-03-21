@@ -77,6 +77,7 @@ import com.radixdlt.api.engine_state.generated.client.ApiClient;
 import com.radixdlt.api.engine_state.generated.client.ApiException;
 import com.radixdlt.api.engine_state.generated.models.*;
 import com.radixdlt.environment.CoreApiServerFlags;
+import com.radixdlt.environment.DatabaseConfig;
 import com.radixdlt.environment.DatabaseFlags;
 import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.genesis.GenesisBuilder;
@@ -97,6 +98,8 @@ import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 
 public abstract class DeterministicEngineStateApiTestBase {
+  private static final DatabaseConfig DEFAULT_DATABASE_CONFIG = new DatabaseConfig(true, false, false, true);
+
   @Rule public TemporaryFolder folder = new TemporaryFolder();
   public static NetworkDefinition networkDefinition = NetworkDefinition.INT_TEST_NET;
   public static Addressing addressing = Addressing.ofNetwork(NetworkDefinition.INT_TEST_NET);
@@ -116,25 +119,25 @@ public abstract class DeterministicEngineStateApiTestBase {
 
   protected DeterministicTest buildRunningServerTest() {
     return buildRunningServerTest(
-        1000000, new DatabaseFlags(true, false, true), GenesisData.NO_SCENARIOS);
+        1000000, DEFAULT_DATABASE_CONFIG, GenesisData.NO_SCENARIOS);
   }
 
   protected DeterministicTest buildRunningServerTestWithScenarios(String... scenarios) {
     return buildRunningServerTest(
-        1000000, new DatabaseFlags(true, false, true), ImmutableList.copyOf(scenarios));
+        1000000, DEFAULT_DATABASE_CONFIG, ImmutableList.copyOf(scenarios));
   }
 
-  protected DeterministicTest buildRunningServerTest(DatabaseFlags databaseFlags) {
-    return buildRunningServerTest(1000000, databaseFlags, GenesisData.NO_SCENARIOS);
+  protected DeterministicTest buildRunningServerTest(DatabaseConfig databaseConfig) {
+    return buildRunningServerTest(1000000, databaseConfig, GenesisData.NO_SCENARIOS);
   }
 
   protected DeterministicTest buildRunningServerTest(int roundsPerEpoch) {
     return buildRunningServerTest(
-        roundsPerEpoch, new DatabaseFlags(true, false, true), GenesisData.NO_SCENARIOS);
+        roundsPerEpoch, DEFAULT_DATABASE_CONFIG, GenesisData.NO_SCENARIOS);
   }
 
   protected DeterministicTest buildRunningServerTest(
-      int roundsPerEpoch, DatabaseFlags databaseConfig, ImmutableList<String> scenariosToRun) {
+      int roundsPerEpoch, DatabaseConfig databaseConfig, ImmutableList<String> scenariosToRun) {
     var test =
         DeterministicTest.builder()
             .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))

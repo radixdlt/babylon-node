@@ -65,6 +65,7 @@
 extern crate core;
 
 mod accumulator_tree;
+mod commit_bundle;
 pub mod jni;
 mod limits;
 pub mod mempool;

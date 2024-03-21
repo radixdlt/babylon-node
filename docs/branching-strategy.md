@@ -1,3 +1,4 @@
+
 # Branching Strategy
 
 Once you have read the [contributing guide](../CONTRIBUTING.md), if you want to start development, you will need to know which branches to use.

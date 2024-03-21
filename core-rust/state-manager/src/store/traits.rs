@@ -82,20 +82,21 @@ pub enum DatabaseConfigValidationError {
     LocalTransactionExecutionIndexChanged,
 }
 
-/// Database flags required for initialization built from
-/// config file and environment variables.
+/// Database flags required for initialization built from config file and environment variables.
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
-pub struct DatabaseFlags {
+pub struct DatabaseConfig {
     pub enable_local_transaction_execution_index: bool,
     pub enable_account_change_index: bool,
+    pub enable_historical_substate_values: bool,
     pub enable_re_node_listing_indices: bool,
 }
 
-impl Default for DatabaseFlags {
+impl Default for DatabaseConfig {
     fn default() -> Self {
-        DatabaseFlags {
+        DatabaseConfig {
             enable_local_transaction_execution_index: true,
             enable_account_change_index: true,
+            enable_historical_substate_values: false,
             enable_re_node_listing_indices: true,
         }
     }
@@ -106,15 +107,15 @@ impl Default for DatabaseFlags {
 /// just being initialized (when all of the fields are None) but also
 /// when new configurations are added - this is a cheap work around to
 /// limit future needed ledger wipes until we have a better solution.
-pub struct DatabaseFlagsState {
+pub struct DatabaseConfigState {
     pub local_transaction_execution_index_enabled: Option<bool>,
     pub account_change_index_enabled: Option<bool>,
 }
 
-impl DatabaseFlags {
+impl DatabaseConfig {
     pub fn validate(
         &self,
-        current_database_config: &DatabaseFlagsState,
+        current_database_config: &DatabaseConfigState,
     ) -> Result<(), DatabaseConfigValidationError> {
         if !self.enable_local_transaction_execution_index && self.enable_account_change_index {
             return Err(DatabaseConfigValidationError::AccountChangeIndexRequiresLocalTransactionExecutionIndex);
@@ -137,7 +138,12 @@ pub trait ConfigurableDatabase {
 
     fn is_local_transaction_execution_index_enabled(&self) -> bool;
 
-    fn are_re_node_listing_indices_enabled(&self) -> bool;
+    /// Returns the first [`StateVersion`]s for which *historical* Substate values are currently
+    /// available in the database.
+    ///
+    /// Returns [`None`] if the state history feature is disabled, or if the history length
+    /// configuration is 0.
+    fn get_first_stored_historical_state_version(&self) -> Option<StateVersion>;
 }
 
 #[derive(Debug, Clone)]
@@ -146,6 +152,38 @@ pub struct CommittedTransactionBundle {
     pub raw: RawLedgerTransaction,
     pub receipt: LocalTransactionReceipt,
     pub identifiers: CommittedTransactionIdentifiers,
+}
+
+#[derive(Debug, Clone)]
+pub struct LeafSubstateKeyAssociation {
+    pub tree_node_key: StoredTreeNodeKey,
+    pub substate_key: DbSubstateKey,
+    pub cause: AssociationCause,
+}
+
+/// The reason of a particular [`LeafSubstateKeyAssociation`].
+#[derive(Debug, Clone)]
+pub enum AssociationCause {
+    /// A dominant, simple case: a Substate was created or updated. This naturally leads its leaf
+    /// node to be created within the state tree.
+    ///
+    /// The Substate's new value can be found in the [`DatabaseUpdates`].
+    SubstateUpsert,
+    /// The JMT-specific case: a leaf node had to be re-created at different key, because its nibble
+    /// path length has changed, because some other related tree nodes (on this path) were created
+    /// or deleted - see [`AssociatedSubstateValue`]'s docs for more details.
+    ///
+    /// The Substate's value was not changed and can be found in the [`SubstateDatabase`].
+    TreeRestructuring,
+}
+
+impl From<AssociatedSubstateValue<'_>> for AssociationCause {
+    fn from(value: AssociatedSubstateValue) -> Self {
+        match value {
+            AssociatedSubstateValue::Upserted(_) => AssociationCause::SubstateUpsert,
+            AssociatedSubstateValue::Unchanged => AssociationCause::TreeRestructuring,
+        }
+    }
 }
 
 pub mod vertex {
@@ -226,6 +264,16 @@ pub mod substate {
     /// A [`SubstateNodeAncestryRecord`] accompanied by a set of sibling [`NodeId`]s (which of
     /// course share the same parent).
     pub type KeyedSubstateNodeAncestryRecord = (Vec<NodeId>, SubstateNodeAncestryRecord);
+
+    /// A store of historical substate values associated with state hash tree's leaves.
+    /// See [`WriteableTreeStore::associate_substate_value()`].
+    ///
+    /// Note: this is *not* a "historical values" store, but only its lower-level source of values.
+    pub trait LeafSubstateValueStore {
+        /// Returns a value associated with the given leaf, or [`None`] if the leaf does not exist
+        /// or the historical state feature was not enabled during creation of the leaf.
+        fn get_associated_value(&self, global_key: &StoredTreeNodeKey) -> Option<DbSubstateValue>;
+    }
 }
 
 pub mod transactions {
@@ -361,6 +409,7 @@ pub mod commit {
         pub transaction_tree_slice: TransactionAccuTreeSlice,
         pub receipt_tree_slice: ReceiptAccuTreeSlice,
         pub new_substate_node_ancestry_records: Vec<KeyedSubstateNodeAncestryRecord>,
+        pub new_leaf_substate_keys: Vec<LeafSubstateKeyAssociation>,
     }
 
     pub struct SubstateStoreUpdate {
@@ -391,6 +440,31 @@ pub mod commit {
                     node_updates,
                 );
             }
+        }
+
+        pub fn get_upserted_value(&self, key: &DbSubstateKey) -> Option<&DbSubstateValue> {
+            let (
+                DbPartitionKey {
+                    node_key,
+                    partition_num,
+                },
+                sort_key,
+            ) = key;
+            self.updates
+                .node_updates
+                .get(node_key)
+                .and_then(|node_update| node_update.partition_updates.get(partition_num))
+                .and_then(|partition_update| match partition_update {
+                    PartitionDatabaseUpdates::Delta { substate_updates } => substate_updates
+                        .get(sort_key)
+                        .and_then(|update| match update {
+                            DatabaseUpdate::Set(value) => Some(value),
+                            DatabaseUpdate::Delete => None,
+                        }),
+                    PartitionDatabaseUpdates::Reset {
+                        new_substate_values,
+                    } => new_substate_values.get(sort_key),
+                })
         }
 
         fn merge_in_node_updates(target: &mut NodeDatabaseUpdates, source: NodeDatabaseUpdates) {
@@ -455,7 +529,7 @@ pub mod commit {
     pub struct StaleTreePartsV1(pub Vec<StaleTreePart>);
 
     pub struct HashTreeUpdate {
-        pub new_nodes: Vec<(NodeKey, TreeNode)>,
+        pub new_nodes: Vec<(StoredTreeNodeKey, TreeNode)>,
         pub stale_tree_parts_at_state_version: Vec<(StateVersion, StaleTreeParts)>,
     }
 
@@ -575,6 +649,21 @@ pub mod extensions {
             account: GlobalAddress,
             from_state_version: StateVersion,
         ) -> Box<dyn Iterator<Item = StateVersion> + '_>;
+    }
+
+    define_single_versioned! {
+        #[derive(Debug, Clone, Sbor)]
+        pub enum VersionedStateHashTreeAssociatedValuesStatus => StateHashTreeAssociatedValuesStatus = StateHashTreeAssociatedValuesStatusV1
+    }
+
+    #[derive(Debug, Clone, Sbor)]
+    pub struct StateHashTreeAssociatedValuesStatusV1 {
+        /// The [`StateVersion`] at which the "state history" feature was most recently enabled.
+        ///
+        /// From this version (inclusive) onwards, the values of upserted Substates are persisted
+        /// in a dedicated historical table. This piece of metadata is needed to calculate whether
+        /// historical state at particular state version is available or not.
+        pub values_associated_from: StateVersion,
     }
 }
 
@@ -696,6 +785,11 @@ pub mod measurement {
         /// Gets approximate data volume statistics per table/map/cf (i.e. a category of persisted
         /// items, however it is called by the specific database implementation).
         fn get_data_volume_statistics(&self) -> Vec<CategoryDbVolumeStatistic>;
+
+        /// Gets a number of entries stored in the given category.
+        ///
+        /// Note: this is an extremely inefficient method, meant only for test purposes.
+        fn count_entries(&self, category_name: &str) -> usize;
     }
 
     /// An approximate data volume statistic of a given category of persisted items.
@@ -760,7 +854,7 @@ pub mod gc {
         ) -> Box<dyn Iterator<Item = (StateVersion, StaleTreeParts)> + '_>;
 
         /// Deletes a batch of state hash tree nodes.
-        fn batch_delete_node<'a>(&self, keys: impl IntoIterator<Item = &'a NodeKey>);
+        fn batch_delete_node<'a>(&self, keys: impl IntoIterator<Item = &'a StoredTreeNodeKey>);
 
         /// Deletes a batch of stale hash tree parts' records.
         fn batch_delete_stale_tree_part<'a>(
