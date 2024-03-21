@@ -78,7 +78,6 @@ import com.radixdlt.api.engine_state.generated.client.ApiException;
 import com.radixdlt.api.engine_state.generated.models.*;
 import com.radixdlt.environment.CoreApiServerFlags;
 import com.radixdlt.environment.DatabaseConfig;
-import com.radixdlt.environment.DatabaseFlags;
 import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
@@ -98,7 +97,8 @@ import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 
 public abstract class DeterministicEngineStateApiTestBase {
-  private static final DatabaseConfig DEFAULT_DATABASE_CONFIG = new DatabaseConfig(true, false, false, true);
+  private static final DatabaseConfig DEFAULT_DATABASE_CONFIG =
+      new DatabaseConfig(true, false, false, true);
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
   public static NetworkDefinition networkDefinition = NetworkDefinition.INT_TEST_NET;
@@ -118,8 +118,7 @@ public abstract class DeterministicEngineStateApiTestBase {
   }
 
   protected DeterministicTest buildRunningServerTest() {
-    return buildRunningServerTest(
-        1000000, DEFAULT_DATABASE_CONFIG, GenesisData.NO_SCENARIOS);
+    return buildRunningServerTest(1000000, DEFAULT_DATABASE_CONFIG, GenesisData.NO_SCENARIOS);
   }
 
   protected DeterministicTest buildRunningServerTestWithScenarios(String... scenarios) {

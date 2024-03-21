@@ -77,10 +77,9 @@ import com.radixdlt.api.core.generated.api.*;
 import com.radixdlt.api.core.generated.client.ApiClient;
 import com.radixdlt.api.core.generated.client.ApiException;
 import com.radixdlt.api.core.generated.models.*;
+import com.radixdlt.environment.*;
 import com.radixdlt.environment.CoreApiServerFlags;
 import com.radixdlt.environment.StartProcessorOnRunner;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.*;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.genesis.GenesisData;
@@ -101,7 +100,8 @@ import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 
 public abstract class DeterministicCoreApiTestBase {
-  private static final DatabaseConfig TEST_DATABASE_CONFIG = new DatabaseConfig(true, false, false, false);
+  private static final DatabaseConfig TEST_DATABASE_CONFIG =
+      new DatabaseConfig(true, false, false, false);
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
   public static NetworkDefinition networkDefinition = NetworkDefinition.INT_TEST_NET;

@@ -138,6 +138,8 @@ pub trait ConfigurableDatabase {
 
     fn is_local_transaction_execution_index_enabled(&self) -> bool;
 
+    fn are_re_node_listing_indices_enabled(&self) -> bool;
+
     /// Returns the first [`StateVersion`]s for which *historical* Substate values are currently
     /// available in the database.
     ///

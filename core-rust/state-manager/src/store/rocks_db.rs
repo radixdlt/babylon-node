@@ -537,7 +537,7 @@ impl fmt::Display for ExtensionsDataKey {
             Self::StateHashTreeAssociatedValuesStatus => "state_hash_tree_associated_values_status",
             Self::ReNodeListingIndicesLastProcessedStateVersion => {
                 "re_node_listing_indices_last_processed_state_version"
-            },
+            }
         };
         write!(f, "{str}")
     }
@@ -1050,6 +1050,10 @@ impl<R: ReadableRocks> ConfigurableDatabase for StateManagerDatabase<R> {
 
     fn is_local_transaction_execution_index_enabled(&self) -> bool {
         self.config.enable_local_transaction_execution_index
+    }
+
+    fn are_re_node_listing_indices_enabled(&self) -> bool {
+        self.config.enable_re_node_listing_indices
     }
 
     fn get_first_stored_historical_state_version(&self) -> Option<StateVersion> {
@@ -2319,7 +2323,7 @@ impl<R: ReadableRocks> ReNodeListingIndex for StateManagerDatabase<R> {
         &self,
         entity_type: EntityType,
         from_creation_id: Option<&CreationId>,
-    ) -> Box<dyn Iterator<Item=(CreationId, EntityBlueprintId)> + '_> {
+    ) -> Box<dyn Iterator<Item = (CreationId, EntityBlueprintId)> + '_> {
         let from_creation_id = from_creation_id.cloned().unwrap_or_else(CreationId::zero);
         Box::new(
             self.open_read_context()
@@ -2333,7 +2337,7 @@ impl<R: ReadableRocks> ReNodeListingIndex for StateManagerDatabase<R> {
         &self,
         blueprint_id: &BlueprintId,
         from_creation_id: Option<&CreationId>,
-    ) -> Box<dyn Iterator<Item=(CreationId, EntityBlueprintId)> + '_> {
+    ) -> Box<dyn Iterator<Item = (CreationId, EntityBlueprintId)> + '_> {
         let BlueprintId {
             package_address,
             blueprint_name,
