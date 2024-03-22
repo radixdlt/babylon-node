@@ -75,7 +75,7 @@ import com.radixdlt.consensus.liveness.ProposerElections;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.environment.DatabaseConfig;
 import com.radixdlt.environment.LedgerProofsGcConfig;
-import com.radixdlt.environment.StateHashTreeGcConfig;
+import com.radixdlt.environment.StateTreeGcConfig;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.mempool.MempoolReceiverConfig;
@@ -155,7 +155,7 @@ public sealed interface StateComputerConfig {
         debugLogging,
         noFees,
         protocolConfig,
-        StateHashTreeGcConfig.forTesting());
+        StateTreeGcConfig.forTesting());
   }
 
   static StateComputerConfig rev2(
@@ -166,14 +166,14 @@ public sealed interface StateComputerConfig {
       boolean debugLogging,
       boolean noFees,
       ProtocolConfig protocolConfig,
-      StateHashTreeGcConfig stateHashTreeGcConfig) {
+      StateTreeGcConfig stateTreeGcConfig) {
     return new REv2StateComputerConfig(
         networkId,
         genesis,
         databaseConfig,
         proposerConfig,
         debugLogging,
-        stateHashTreeGcConfig,
+        stateTreeGcConfig,
         LedgerProofsGcConfig.forTesting(),
         LedgerSyncLimitsConfig.defaults(),
         protocolConfig,
@@ -191,7 +191,7 @@ public sealed interface StateComputerConfig {
         databaseConfig,
         proposerConfig,
         false,
-        StateHashTreeGcConfig.forTesting(),
+        StateTreeGcConfig.forTesting(),
         LedgerProofsGcConfig.forTesting(),
         LedgerSyncLimitsConfig.defaults(),
         ProtocolConfig.testingDefault(),
@@ -214,7 +214,7 @@ public sealed interface StateComputerConfig {
         new DatabaseConfig(true, false, false, false),
         proposerConfig,
         false,
-        StateHashTreeGcConfig.forTesting(),
+        StateTreeGcConfig.forTesting(),
         LedgerProofsGcConfig.forTesting(),
         LedgerSyncLimitsConfig.defaults(),
         protocolConfig,
@@ -286,7 +286,7 @@ public sealed interface StateComputerConfig {
       DatabaseConfig databaseConfig,
       REV2ProposerConfig proposerConfig,
       boolean debugLogging,
-      StateHashTreeGcConfig stateHashTreeGcConfig,
+      StateTreeGcConfig stateTreeGcConfig,
       LedgerProofsGcConfig ledgerProofsGcConfig,
       LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
       ProtocolConfig protocolConfig,

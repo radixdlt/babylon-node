@@ -142,13 +142,13 @@ public abstract class DeterministicCoreApiTestBase {
   }
 
   protected DeterministicTest buildRunningServerTest(
-      DatabaseConfig databaseConfig, StateHashTreeGcConfig stateHashTreeGcConfig) {
+      DatabaseConfig databaseConfig, StateTreeGcConfig stateTreeGcConfig) {
     return buildRunningServerTest(
         1000000,
         databaseConfig,
         GenesisData.NO_SCENARIOS,
         ProtocolConfig.testingDefault(),
-        stateHashTreeGcConfig);
+        stateTreeGcConfig);
   }
 
   protected DeterministicTest buildRunningServerTest(int roundsPerEpoch) {
@@ -164,7 +164,7 @@ public abstract class DeterministicCoreApiTestBase {
       DatabaseConfig databaseConfig,
       ImmutableList<String> scenariosToRun,
       ProtocolConfig protocolConfig,
-      StateHashTreeGcConfig stateHashTreeGcConfig) {
+      StateTreeGcConfig stateTreeGcConfig) {
     return buildRunningServerTest(
         StateComputerConfig.rev2(
             Network.INTEGRATIONTESTNET.getId(),
@@ -179,7 +179,7 @@ public abstract class DeterministicCoreApiTestBase {
             false,
             false,
             protocolConfig,
-            stateHashTreeGcConfig));
+            stateTreeGcConfig));
   }
 
   protected DeterministicTest buildRunningServerTest(

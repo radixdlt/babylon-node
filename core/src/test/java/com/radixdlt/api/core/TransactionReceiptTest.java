@@ -62,22 +62,67 @@
  * permissions under this License.
  */
 
-package com.radixdlt.environment;
+package com.radixdlt.api.core;
 
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.utils.UInt32;
-import com.radixdlt.utils.UInt64;
+import static com.radixdlt.harness.predicates.EventPredicate.onlyConsensusEvents;
+import static com.radixdlt.harness.predicates.EventPredicate.onlyLocalMempoolAddEvents;
+import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransactionSuccess;
+import static org.assertj.core.api.Assertions.assertThat;
 
-public record StateHashTreeGcConfig(UInt32 intervalSec, UInt64 stateVersionHistoryLength) {
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        StateHashTreeGcConfig.class,
-        codecs -> StructCodec.fromRecordComponents(StateHashTreeGcConfig.class, codecs));
-  }
+import com.google.inject.Key;
+import com.google.inject.TypeLiteral;
+import com.radixdlt.api.DeterministicCoreApiTestBase;
+import com.radixdlt.api.core.generated.models.*;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.identifiers.Address;
+import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.rev2.Manifest;
+import com.radixdlt.rev2.ScryptoConstants;
+import com.radixdlt.rev2.TransactionBuilder;
+import org.junit.Test;
 
-  public static StateHashTreeGcConfig forTesting() {
-    // Remove everything stale, frequently (in tests).
-    return new StateHashTreeGcConfig(UInt32.fromNonNegativeInt(1), UInt64.ZERO);
+public final class TransactionReceiptTest extends DeterministicCoreApiTestBase {
+  @Test
+  public void core_api_returns_transaction_receipt_with_balance_changes() throws Exception {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
+
+      // Prepare a transaction which deposits from faucet:
+      var accountKeyPair = ECKeyPair.generateNew();
+      var accountAddress = Address.virtualAccountAddress(accountKeyPair.getPublicKey());
+      var transaction =
+          TransactionBuilder.forNetwork(networkDefinition)
+              .manifest(Manifest.depositFromFaucet(accountAddress))
+              .prepare();
+
+      // Submit it and await its commit:
+      test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}))
+          .dispatch(MempoolAdd.create(transaction.raw()));
+      test.runUntilState(
+          allCommittedTransactionSuccess(transaction.raw()),
+          onlyConsensusEvents().or(onlyLocalMempoolAddEvents()));
+
+      // Retrieve its receipt, with the flag requesting to include the balance changes:
+      final var receipt =
+          getTransactionApi()
+              .transactionReceiptPost(
+                  new TransactionReceiptRequest()
+                      .network(networkLogicalName)
+                      .intentHash(transaction.hexIntentHash())
+                      .transactionFormatOptions(
+                          new TransactionFormatOptions().balanceChanges(true)));
+
+      // Assert that balance changes are returned, and that they contain the faucet's amount:
+      assertThat(receipt.getCommitted().getBalanceChanges().getFungibleEntityBalanceChanges())
+          .contains(
+              new LtsEntityFungibleBalanceChanges()
+                  .entityAddress(accountAddress.encode(networkDefinition))
+                  .addNonFeeBalanceChangesItem(
+                      new LtsFungibleResourceBalanceChange()
+                          .resourceAddress(
+                              ScryptoConstants.XRD_RESOURCE_ADDRESS.encode(networkDefinition))
+                          .balanceChange(ScryptoConstants.FREE_AMOUNT_FROM_FAUCET.toString())));
+    }
   }
 }

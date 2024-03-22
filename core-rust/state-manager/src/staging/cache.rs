@@ -74,8 +74,7 @@ use crate::staging::overlays::{
     MapSubstateNodeAncestryStore, StagedSubstateNodeAncestryStore, SubstateOverlayIterator,
 };
 use crate::staging::{
-    AccuTreeDiff, HashStructuresDiff, HashUpdateContext, ProcessedTransactionReceipt,
-    StateHashTreeDiff,
+    AccuTreeDiff, HashStructuresDiff, HashUpdateContext, ProcessedTransactionReceipt, StateTreeDiff,
 };
 use crate::transaction::{LedgerTransactionHash, TransactionLogic};
 use crate::{EpochTransactionIdentifiers, ReceiptTreeHash, StateVersion, TransactionTreeHash};
@@ -418,13 +417,13 @@ impl Delta for ProcessedTransactionReceipt {
 
 impl HashStructuresDiff {
     pub fn weight(&self) -> usize {
-        self.state_hash_tree_diff.weight()
+        self.state_tree_diff.weight()
             + self.transaction_tree_diff.weight()
             + self.receipt_tree_diff.weight()
     }
 }
 
-impl StateHashTreeDiff {
+impl StateTreeDiff {
     pub fn weight(&self) -> usize {
         self.new_nodes.len()
     }
@@ -569,7 +568,7 @@ impl Accumulator<ProcessedTransactionReceipt> for ImmutableStore {
             }
 
             let hash_structures_diff = &commit.hash_structures_diff;
-            let state_tree_diff = &hash_structures_diff.state_hash_tree_diff;
+            let state_tree_diff = &hash_structures_diff.state_tree_diff;
             self.state_tree_nodes
                 .extend(state_tree_diff.new_nodes.iter().cloned());
             let transaction_tree_diff = &hash_structures_diff.transaction_tree_diff;

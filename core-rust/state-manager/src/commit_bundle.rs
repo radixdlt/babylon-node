@@ -77,7 +77,7 @@ use crate::accumulator_tree::slice_merger::AccuTreeSliceMerger;
 pub struct CommitBundleBuilder {
     committed_transaction_bundles: Vec<CommittedTransactionBundle>,
     substate_store_update: SubstateStoreUpdate,
-    state_hash_tree_update: HashTreeUpdate,
+    state_tree_update: StateTreeUpdate,
     new_substate_node_ancestry_records: Vec<KeyedSubstateNodeAncestryRecord>,
     new_leaf_substate_keys: Vec<LeafSubstateKeyAssociation>,
     transaction_tree_slice_merger: AccuTreeSliceMerger<TransactionTreeHash>,
@@ -95,7 +95,7 @@ impl CommitBundleBuilder {
         Self {
             committed_transaction_bundles: Vec::new(),
             substate_store_update: SubstateStoreUpdate::new(),
-            state_hash_tree_update: HashTreeUpdate::new(),
+            state_tree_update: StateTreeUpdate::new(),
             new_substate_node_ancestry_records: Vec::new(),
             new_leaf_substate_keys: Vec::new(),
             transaction_tree_slice_merger: epoch_accu_trees.create_merger(),
@@ -114,8 +114,8 @@ impl CommitBundleBuilder {
     ) {
         self.substate_store_update.apply(result.database_updates);
         let hash_structures_diff = result.hash_structures_diff;
-        self.state_hash_tree_update
-            .add(state_version, hash_structures_diff.state_hash_tree_diff);
+        self.state_tree_update
+            .add(state_version, hash_structures_diff.state_tree_diff);
         self.new_substate_node_ancestry_records
             .extend(result.new_substate_node_ancestry_records);
         self.new_leaf_substate_keys
@@ -145,7 +145,7 @@ impl CommitBundleBuilder {
             proof,
             substate_store_update: self.substate_store_update,
             vertex_store: vertex_store.map(VertexStoreBlobV1),
-            state_tree_update: self.state_hash_tree_update,
+            state_tree_update: self.state_tree_update,
             transaction_tree_slice: TransactionAccuTreeSliceV1(
                 self.transaction_tree_slice_merger.into_slice(),
             ),

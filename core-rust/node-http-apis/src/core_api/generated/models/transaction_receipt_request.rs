@@ -19,6 +19,8 @@ pub struct TransactionReceiptRequest {
     /// The intent hash for a user transaction, also known as the transaction id. This hash identifies the core content \"intent\" of the transaction. Each intent can only be committed once. This hash gets signed by any signatories on the transaction, to create the signed intent. Either hex or Bech32m-encoded strings are supported. 
     #[serde(rename = "intent_hash")]
     pub intent_hash: String,
+    #[serde(rename = "transaction_format_options", skip_serializing_if = "Option::is_none")]
+    pub transaction_format_options: Option<Box<crate::core_api::generated::models::TransactionFormatOptions>>,
 }
 
 impl TransactionReceiptRequest {
@@ -26,6 +28,7 @@ impl TransactionReceiptRequest {
         TransactionReceiptRequest {
             network,
             intent_hash,
+            transaction_format_options: None,
         }
     }
 }

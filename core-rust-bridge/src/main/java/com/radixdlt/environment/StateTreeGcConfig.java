@@ -62,65 +62,22 @@
  * permissions under this License.
  */
 
-extern crate core;
+package com.radixdlt.environment;
 
-mod accumulator_tree;
-mod commit_bundle;
-pub mod jni;
-mod limits;
-pub mod mempool;
-pub mod metrics;
-pub mod protocol;
-pub mod query;
-mod receipt;
-mod staging;
-mod state_computer;
-mod state_manager;
-pub mod store;
-pub mod transaction;
-mod types;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.UInt64;
 
-#[cfg(test)]
-mod test;
+public record StateTreeGcConfig(UInt32 intervalSec, UInt64 stateVersionHistoryLength) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        StateTreeGcConfig.class,
+        codecs -> StructCodec.fromRecordComponents(StateTreeGcConfig.class, codecs));
+  }
 
-pub use crate::mempool::*;
-pub use crate::metrics::*;
-pub use crate::pending_transaction_result_cache::*;
-pub use crate::receipt::*;
-pub use crate::staging::*;
-pub use crate::state_computer::*;
-pub use crate::state_manager::*;
-pub use crate::store::*;
-pub use crate::types::*;
-
-pub(crate) mod engine_prelude {
-    pub use radix_engine::errors::*;
-    pub use radix_engine::system::bootstrap::*;
-    pub use radix_engine::system::system_db_reader::*;
-    pub use radix_engine::system::system_substates::*;
-    pub use radix_engine::transaction::*;
-    pub use radix_engine::utils::*;
-    pub use radix_engine::vm::wasm::*;
-    pub use radix_engine::vm::*;
-    pub use radix_engine_common::prelude::*;
-    pub use radix_engine_interface::blueprints::transaction_processor::*;
-    pub use radix_engine_interface::prelude::*;
-    pub use substate_store_impls::state_tree::tree_store::*;
-    pub use substate_store_impls::state_tree::*;
-    pub use substate_store_interface::db_key_mapper::*;
-    pub use substate_store_interface::interface::*;
-    pub use substate_store_queries::query::*;
-    pub use substate_store_queries::typed_substate_layout::*;
-    pub use transaction::builder::*;
-    pub use transaction::errors::*;
-    pub use transaction::manifest::*;
-    pub use transaction::model::*;
-    pub use transaction::prelude::*;
-    pub use transaction::validation::*;
-    pub use transaction::*;
-
-    // Note: plain `pub use radix_engine::track::*` would clash with the top-level `utils::prelude`
-    // (because it contains a private module of the same name)
-    pub use radix_engine::track::interface::*;
-    pub use radix_engine::track::state_updates::*;
+  public static StateTreeGcConfig forTesting() {
+    // Remove everything stale, frequently (in tests).
+    return new StateTreeGcConfig(UInt32.fromNonNegativeInt(1), UInt64.ZERO);
+  }
 }

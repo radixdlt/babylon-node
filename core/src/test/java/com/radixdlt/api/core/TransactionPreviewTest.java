@@ -72,7 +72,7 @@ import com.radixdlt.api.core.generated.client.ApiException;
 import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.DatabaseConfig;
-import com.radixdlt.environment.StateHashTreeGcConfig;
+import com.radixdlt.environment.StateTreeGcConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.predicates.NodesPredicate;
 import com.radixdlt.identifiers.Address;
@@ -162,7 +162,7 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
       // Wait for the async GC to catch up its target:
       Awaitility.await()
           .until(
-              test.getInstance(0, TestStateReader.class)::getLeastStaleStateHashTreeVersion,
+              test.getInstance(0, TestStateReader.class)::getLeastStaleStateTreeVersion,
               Predicate.isEqual(oldestAvailableVersion));
 
       // Assert that the oldest available version is fine:
@@ -328,7 +328,7 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
   private DeterministicTest buildTest(boolean stateHistoryEnabled, long historyLength) {
     return buildRunningServerTest(
         new DatabaseConfig(true, false, stateHistoryEnabled, false),
-        new StateHashTreeGcConfig(
+        new StateTreeGcConfig(
             UInt32.fromNonNegativeInt(1), UInt64.fromNonNegativeLong(historyLength)));
   }
 }

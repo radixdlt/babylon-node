@@ -66,7 +66,7 @@ use std::cmp::Ordering;
 use std::iter::Peekable;
 
 use crate::engine_prelude::*;
-use crate::staging::StateHashTreeDiff;
+use crate::staging::StateTreeDiff;
 
 use crate::transaction::*;
 use crate::{CommittedTransactionIdentifiers, LedgerProof, LocalTransactionReceipt, StateVersion};
@@ -407,7 +407,7 @@ pub mod commit {
         pub proof: LedgerProof,
         pub substate_store_update: SubstateStoreUpdate,
         pub vertex_store: Option<VertexStoreBlob>,
-        pub state_tree_update: HashTreeUpdate,
+        pub state_tree_update: StateTreeUpdate,
         pub transaction_tree_slice: TransactionAccuTreeSlice,
         pub receipt_tree_slice: ReceiptAccuTreeSlice,
         pub new_substate_node_ancestry_records: Vec<KeyedSubstateNodeAncestryRecord>,
@@ -530,12 +530,12 @@ pub mod commit {
     #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
     pub struct StaleTreePartsV1(pub Vec<StaleTreePart>);
 
-    pub struct HashTreeUpdate {
+    pub struct StateTreeUpdate {
         pub new_nodes: Vec<(StoredTreeNodeKey, TreeNode)>,
         pub stale_tree_parts_at_state_version: Vec<(StateVersion, StaleTreeParts)>,
     }
 
-    impl HashTreeUpdate {
+    impl StateTreeUpdate {
         pub fn new() -> Self {
             Self {
                 new_nodes: Vec::new(),
@@ -543,7 +543,7 @@ pub mod commit {
             }
         }
 
-        pub fn from_single(at_state_version: StateVersion, diff: StateHashTreeDiff) -> Self {
+        pub fn from_single(at_state_version: StateVersion, diff: StateTreeDiff) -> Self {
             Self {
                 new_nodes: diff.new_nodes,
                 stale_tree_parts_at_state_version: vec![(
@@ -553,14 +553,14 @@ pub mod commit {
             }
         }
 
-        pub fn add(&mut self, at_state_version: StateVersion, diff: StateHashTreeDiff) {
+        pub fn add(&mut self, at_state_version: StateVersion, diff: StateTreeDiff) {
             self.new_nodes.extend(diff.new_nodes);
             self.stale_tree_parts_at_state_version
                 .push((at_state_version, StaleTreePartsV1(diff.stale_tree_parts)));
         }
     }
 
-    impl Default for HashTreeUpdate {
+    impl Default for StateTreeUpdate {
         fn default() -> Self {
             Self::new()
         }
@@ -655,11 +655,11 @@ pub mod extensions {
 
     define_single_versioned! {
         #[derive(Debug, Clone, Sbor)]
-        pub enum VersionedStateHashTreeAssociatedValuesStatus => StateHashTreeAssociatedValuesStatus = StateHashTreeAssociatedValuesStatusV1
+        pub enum VersionedStateTreeAssociatedValuesStatus => StateTreeAssociatedValuesStatus = StateTreeAssociatedValuesStatusV1
     }
 
     #[derive(Debug, Clone, Sbor)]
-    pub struct StateHashTreeAssociatedValuesStatusV1 {
+    pub struct StateTreeAssociatedValuesStatusV1 {
         /// The [`StateVersion`] at which the "state history" feature was most recently enabled.
         ///
         /// From this version (inclusive) onwards, the values of upserted Substates are persisted
@@ -847,8 +847,8 @@ pub mod gc {
     use super::*;
     use crate::LedgerHeader;
 
-    /// A storage API tailored for the [`StateHashTreeGc`].
-    pub trait StateHashTreeGcStore {
+    /// A storage API tailored for the [`StateTreeGc`].
+    pub trait StateTreeGcStore {
         /// Returns an iterator of stale hash tree parts, ordered by the state version at which
         /// they became stale, ascending.
         fn get_stale_tree_parts_iter(

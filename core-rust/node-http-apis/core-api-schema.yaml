@@ -6976,6 +6976,8 @@ components:
           $ref: "#/components/schemas/NetworkIdentifier"
         intent_hash:
           $ref: "#/components/schemas/IntentHashInput"
+        transaction_format_options:
+          $ref: "#/components/schemas/TransactionFormatOptions"
     TransactionReceiptResponse:
       type: object
       required:

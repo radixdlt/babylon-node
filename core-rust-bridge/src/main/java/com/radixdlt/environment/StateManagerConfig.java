@@ -79,7 +79,7 @@ public record StateManagerConfig(
     DatabaseBackendConfig databaseBackendConfig,
     DatabaseConfig databaseConfig,
     LoggingConfig loggingConfig,
-    StateHashTreeGcConfig stateHashTreeGcConfig,
+    StateTreeGcConfig stateTreeGcConfig,
     LedgerProofsGcConfig ledgerProofsGcConfig,
     LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
     ProtocolConfig protocolConfig,

@@ -125,7 +125,7 @@ public class REv2StateComputerTest {
             new DatabaseConfig(false, false, false, false),
             Option.none(),
             false,
-            StateHashTreeGcConfig.forTesting(),
+            StateTreeGcConfig.forTesting(),
             LedgerProofsGcConfig.forTesting(),
             LedgerSyncLimitsConfig.defaults(),
             ProtocolConfig.testingDefault(),
