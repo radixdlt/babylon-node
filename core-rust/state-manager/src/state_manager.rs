@@ -70,7 +70,7 @@ use std::time::Duration;
 use crate::engine_prelude::*;
 use crate::jni::LedgerSyncLimitsConfig;
 use crate::protocol::{ProtocolConfig, ProtocolState, ProtocolVersionName};
-use crate::store::jmt_gc::StateHashTreeGcConfig;
+use crate::store::jmt_gc::StateTreeGcConfig;
 use crate::store::proofs_gc::{LedgerProofsGc, LedgerProofsGcConfig};
 use crate::store::traits::proofs::QueryableProofStore;
 use crate::traits::DatabaseConfigValidationError;
@@ -79,9 +79,7 @@ use crate::{
     mempool_manager::MempoolManager,
     mempool_relay_dispatcher::MempoolRelayDispatcher,
     priority_mempool::PriorityMempool,
-    store::{
-        jmt_gc::StateHashTreeGc, DatabaseBackendConfig, DatabaseConfig, RawDbMetricsCollector,
-    },
+    store::{jmt_gc::StateTreeGc, DatabaseBackendConfig, DatabaseConfig, RawDbMetricsCollector},
     transaction::{CachedCommittabilityValidator, CommittabilityValidator, TransactionPreviewer},
     ActualStateManagerDatabase, PendingTransactionResultCache, ProtocolUpdateResult, StateComputer,
     StateManagerDatabase,
@@ -108,7 +106,7 @@ pub struct StateManagerConfig {
     pub database_backend_config: DatabaseBackendConfig,
     pub database_config: DatabaseConfig,
     pub logging_config: LoggingConfig,
-    pub state_hash_tree_gc_config: StateHashTreeGcConfig,
+    pub state_tree_gc_config: StateTreeGcConfig,
     pub ledger_proofs_gc_config: LedgerProofsGcConfig,
     pub ledger_sync_limits_config: LedgerSyncLimitsConfig,
     pub protocol_config: ProtocolConfig,
@@ -131,7 +129,7 @@ impl StateManagerConfig {
             },
             database_config: DatabaseConfig::default(),
             logging_config: LoggingConfig::default(),
-            state_hash_tree_gc_config: StateHashTreeGcConfig::default(),
+            state_tree_gc_config: StateTreeGcConfig::default(),
             ledger_proofs_gc_config: LedgerProofsGcConfig::default(),
             ledger_sync_limits_config: LedgerSyncLimitsConfig::default(),
             protocol_config: ProtocolConfig::new_with_no_updates(),
@@ -291,13 +289,10 @@ impl StateManager {
             });
 
         // ... and for deleting the stale state hash tree nodes (a.k.a. "JMT GC")...
-        let state_hash_tree_gc =
-            StateHashTreeGc::new(database.clone(), config.state_hash_tree_gc_config.clone());
+        let state_tree_gc = StateTreeGc::new(database.clone(), config.state_tree_gc_config.clone());
         scheduler
-            .named("state_hash_tree_gc")
-            .start_periodic(state_hash_tree_gc.interval(), move || {
-                state_hash_tree_gc.run()
-            });
+            .named("state_tree_gc")
+            .start_periodic(state_tree_gc.interval(), move || state_tree_gc.run());
 
         // ... and for deleting the old, non-critical ledger proofs (a.k.a. "Proofs GC"):
         let ledger_proofs_gc = LedgerProofsGc::new(

@@ -69,15 +69,15 @@ import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
 
-public record StateHashTreeGcConfig(UInt32 intervalSec, UInt64 stateVersionHistoryLength) {
+public record StateTreeGcConfig(UInt32 intervalSec, UInt64 stateVersionHistoryLength) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        StateHashTreeGcConfig.class,
-        codecs -> StructCodec.fromRecordComponents(StateHashTreeGcConfig.class, codecs));
+        StateTreeGcConfig.class,
+        codecs -> StructCodec.fromRecordComponents(StateTreeGcConfig.class, codecs));
   }
 
-  public static StateHashTreeGcConfig forTesting() {
+  public static StateTreeGcConfig forTesting() {
     // Remove everything stale, frequently (in tests).
-    return new StateHashTreeGcConfig(UInt32.fromNonNegativeInt(1), UInt64.ZERO);
+    return new StateTreeGcConfig(UInt32.fromNonNegativeInt(1), UInt64.ZERO);
   }
 }

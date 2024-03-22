@@ -70,7 +70,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use tracing::info;
 
-use crate::store::traits::gc::StateHashTreeGcStore;
+use crate::store::traits::gc::StateTreeGcStore;
 use crate::store::traits::proofs::QueryableProofStore;
 use crate::store::traits::StaleTreePartsV1;
 use crate::{ActualStateManagerDatabase, StateVersion, StateVersionDelta};
@@ -79,9 +79,9 @@ use crate::{ActualStateManagerDatabase, StateVersion, StateVersionDelta};
 /// Needed only to avoid OOM problems.
 const DELETED_NODE_BUFFER_MAX_LEN: usize = 1000000;
 
-/// A configuration for [`StateHashTreeGc`].
+/// A configuration for [`StateTreeGc`].
 #[derive(Debug, Categorize, Encode, Decode, Clone, Default)]
-pub struct StateHashTreeGcConfig {
+pub struct StateTreeGcConfig {
     /// How often to run the GC, in seconds.
     /// This should be at least an order of magnitude shorter than an expected duration over which
     /// the [`state_version_history_length`] spans (to honour the precision of these settings).
@@ -92,17 +92,17 @@ pub struct StateHashTreeGcConfig {
 
 /// A garbage collector of sufficiently-old stale state hash tree nodes.
 /// The implementation is suited for being driven by an external scheduler.
-pub struct StateHashTreeGc {
+pub struct StateTreeGc {
     database: Arc<DbLock<ActualStateManagerDatabase>>,
     interval: Duration,
     history_len: StateVersionDelta,
 }
 
-impl StateHashTreeGc {
+impl StateTreeGc {
     /// Creates a new GC.
     pub fn new(
         database: Arc<DbLock<ActualStateManagerDatabase>>,
-        config: StateHashTreeGcConfig,
+        config: StateTreeGcConfig,
     ) -> Self {
         Self {
             database,

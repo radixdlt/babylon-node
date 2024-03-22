@@ -74,7 +74,7 @@ use crate::query::StateManagerSubstateQueries;
 use node_common::java::*;
 
 use crate::store::traits::{
-    gc::StateHashTreeGcStore, IterableProofStore, QueryableProofStore, QueryableTransactionStore,
+    gc::StateTreeGcStore, IterableProofStore, QueryableProofStore, QueryableTransactionStore,
     SubstateNodeAncestryStore,
 };
 use crate::traits::measurement::MeasurableDatabase;
@@ -263,7 +263,7 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_epoch(
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_testutil_TestStateReader_leastStaleStateHashTreeVersion(
+extern "system" fn Java_com_radixdlt_testutil_TestStateReader_leastStaleStateTreeVersion(
     env: JNIEnv,
     _class: JClass,
     j_rust_global_context: JObject,
@@ -292,7 +292,7 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_historicalSubstate
         let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
         let count = database
             .lock()
-            .count_entries("associated_state_hash_tree_values");
+            .count_entries("associated_state_tree_values");
         count.try_into().expect("count out of bounds")
     })
 }

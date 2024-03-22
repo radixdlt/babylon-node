@@ -207,7 +207,7 @@ impl ProcessedCommitResult {
             &commit_result.state_update_summary.vault_balance_changes,
         );
 
-        let (new_state_root, state_hash_tree_diff, new_leaf_substate_keys) =
+        let (new_state_root, state_tree_diff, new_leaf_substate_keys) =
             Self::compute_state_tree_update(store, parent_state_version, &database_updates);
 
         let epoch_accu_trees =
@@ -248,7 +248,7 @@ impl ProcessedCommitResult {
             local_receipt,
             hash_structures_diff: HashStructuresDiff {
                 ledger_hashes,
-                state_hash_tree_diff,
+                state_tree_diff,
                 transaction_tree_diff,
                 receipt_tree_diff,
             },
@@ -384,11 +384,7 @@ impl ProcessedCommitResult {
         store: &S,
         parent_state_version: StateVersion,
         database_updates: &DatabaseUpdates,
-    ) -> (
-        StateHash,
-        StateHashTreeDiff,
-        Vec<LeafSubstateKeyAssociation>,
-    ) {
+    ) -> (StateHash, StateTreeDiff, Vec<LeafSubstateKeyAssociation>) {
         let collector = CollectingTreeStore::new(store);
         let root_hash = put_at_next_version(
             &collector,
@@ -535,18 +531,18 @@ impl From<EpochChangeEvent> for NextEpoch {
 #[derive(Clone, Debug)]
 pub struct HashStructuresDiff {
     pub ledger_hashes: LedgerHashes,
-    pub state_hash_tree_diff: StateHashTreeDiff,
+    pub state_tree_diff: StateTreeDiff,
     pub transaction_tree_diff: AccuTreeDiff<StateVersion, TransactionTreeHash>,
     pub receipt_tree_diff: AccuTreeDiff<StateVersion, ReceiptTreeHash>,
 }
 
 #[derive(Clone, Debug)]
-pub struct StateHashTreeDiff {
+pub struct StateTreeDiff {
     pub new_nodes: Vec<(StoredTreeNodeKey, TreeNode)>,
     pub stale_tree_parts: Vec<StaleTreePart>,
 }
 
-impl StateHashTreeDiff {
+impl StateTreeDiff {
     pub fn new() -> Self {
         Self {
             new_nodes: Vec::new(),
@@ -555,7 +551,7 @@ impl StateHashTreeDiff {
     }
 }
 
-impl Default for StateHashTreeDiff {
+impl Default for StateTreeDiff {
     fn default() -> Self {
         Self::new()
     }
@@ -610,12 +606,12 @@ impl<'s, S, K, N> WriteableAccuTreeStore<K, N> for CollectingAccuTreeStore<'s, S
 
 struct CollectingTreeStore<'s, S> {
     readable_delegate: &'s S,
-    diff: RefCell<StateHashTreeDiff>,
+    diff: RefCell<StateTreeDiff>,
     key_associations: RefCell<Vec<LeafSubstateKeyAssociation>>,
 }
 
 struct CollectedTreeWrites {
-    diff: StateHashTreeDiff,
+    diff: StateTreeDiff,
     key_associations: Vec<LeafSubstateKeyAssociation>,
 }
 
@@ -623,7 +619,7 @@ impl<'s, S: ReadableStateTreeStore> CollectingTreeStore<'s, S> {
     pub fn new(readable_delegate: &'s S) -> Self {
         Self {
             readable_delegate,
-            diff: RefCell::new(StateHashTreeDiff::new()),
+            diff: RefCell::new(StateTreeDiff::new()),
             key_associations: RefCell::new(Vec::new()),
         }
     }

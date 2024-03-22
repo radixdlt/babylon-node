@@ -111,7 +111,7 @@ public final class REv2StateManagerModule extends AbstractModule {
   private final DatabaseConfig databaseConfig;
   private final Option<RustMempoolConfig> mempoolConfig;
   private final boolean debugLogging;
-  private final StateHashTreeGcConfig stateHashTreeGcConfig;
+  private final StateTreeGcConfig stateTreeGcConfig;
   private final LedgerProofsGcConfig ledgerProofsGcConfig;
   private final LedgerSyncLimitsConfig ledgerSyncLimitsConfig;
   private final ProtocolConfig protocolConfig;
@@ -123,7 +123,7 @@ public final class REv2StateManagerModule extends AbstractModule {
       DatabaseConfig databaseConfig,
       Option<RustMempoolConfig> mempoolConfig,
       boolean debugLogging,
-      StateHashTreeGcConfig stateHashTreeGcConfig,
+      StateTreeGcConfig stateTreeGcConfig,
       LedgerProofsGcConfig ledgerProofsGcConfig,
       LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
       ProtocolConfig protocolConfig,
@@ -133,7 +133,7 @@ public final class REv2StateManagerModule extends AbstractModule {
     this.databaseConfig = databaseConfig;
     this.mempoolConfig = mempoolConfig;
     this.debugLogging = debugLogging;
-    this.stateHashTreeGcConfig = stateHashTreeGcConfig;
+    this.stateTreeGcConfig = stateTreeGcConfig;
     this.ledgerProofsGcConfig = ledgerProofsGcConfig;
     this.ledgerSyncLimitsConfig = ledgerSyncLimitsConfig;
     this.protocolConfig = protocolConfig;
@@ -145,7 +145,7 @@ public final class REv2StateManagerModule extends AbstractModule {
       VertexLimitsConfig vertexLimitsConfig,
       DatabaseConfig databaseConfig,
       Option<RustMempoolConfig> mempoolConfig,
-      StateHashTreeGcConfig stateHashTreeGcConfig,
+      StateTreeGcConfig stateTreeGcConfig,
       LedgerProofsGcConfig ledgerProofsGcConfig,
       LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
       ProtocolConfig protocolConfig) {
@@ -155,7 +155,7 @@ public final class REv2StateManagerModule extends AbstractModule {
         databaseConfig,
         mempoolConfig,
         false,
-        stateHashTreeGcConfig,
+        stateTreeGcConfig,
         ledgerProofsGcConfig,
         ledgerSyncLimitsConfig,
         protocolConfig,
@@ -167,7 +167,7 @@ public final class REv2StateManagerModule extends AbstractModule {
       DatabaseConfig databaseConfig,
       Option<RustMempoolConfig> mempoolConfig,
       boolean debugLogging,
-      StateHashTreeGcConfig stateHashTreeGcConfig,
+      StateTreeGcConfig stateTreeGcConfig,
       LedgerProofsGcConfig ledgerProofsGcConfig,
       LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
       ProtocolConfig protocolConfig,
@@ -178,7 +178,7 @@ public final class REv2StateManagerModule extends AbstractModule {
         databaseConfig,
         mempoolConfig,
         debugLogging,
-        stateHashTreeGcConfig,
+        stateTreeGcConfig,
         ledgerProofsGcConfig,
         ledgerSyncLimitsConfig,
         protocolConfig,
@@ -223,7 +223,7 @@ public final class REv2StateManagerModule extends AbstractModule {
                     databaseBackendConfig,
                     databaseConfig,
                     getLoggingConfig(),
-                    stateHashTreeGcConfig,
+                    stateTreeGcConfig,
                     ledgerProofsGcConfig,
                     ledgerSyncLimitsConfig,
                     protocolConfig,
