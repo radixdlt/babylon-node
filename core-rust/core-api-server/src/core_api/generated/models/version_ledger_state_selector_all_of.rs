@@ -12,14 +12,14 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct VersionLedgerStateCoordinateAllOf {
+pub struct VersionLedgerStateSelectorAllOf {
     #[serde(rename = "state_version")]
     pub state_version: i64,
 }
 
-impl VersionLedgerStateCoordinateAllOf {
-    pub fn new(state_version: i64) -> VersionLedgerStateCoordinateAllOf {
-        VersionLedgerStateCoordinateAllOf {
+impl VersionLedgerStateSelectorAllOf {
+    pub fn new(state_version: i64) -> VersionLedgerStateSelectorAllOf {
+        VersionLedgerStateSelectorAllOf {
             state_version,
         }
     }

@@ -24,15 +24,15 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
- * Gets or Sets LedgerStateCoordinateType
+ * Gets or Sets LedgerStateSelectorType
  */
-public enum LedgerStateCoordinateType {
+public enum LedgerStateSelectorType {
   
   BYSTATEVERSION("ByStateVersion");
 
   private String value;
 
-  LedgerStateCoordinateType(String value) {
+  LedgerStateSelectorType(String value) {
     this.value = value;
   }
 
@@ -47,8 +47,8 @@ public enum LedgerStateCoordinateType {
   }
 
   @JsonCreator
-  public static LedgerStateCoordinateType fromValue(String value) {
-    for (LedgerStateCoordinateType b : LedgerStateCoordinateType.values()) {
+  public static LedgerStateSelectorType fromValue(String value) {
+    for (LedgerStateSelectorType b : LedgerStateSelectorType.values()) {
       if (b.value.equals(value)) {
         return b;
       }

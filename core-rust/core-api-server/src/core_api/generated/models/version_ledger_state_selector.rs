@@ -9,28 +9,23 @@
  */
 
 
-/// 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
-pub enum LedgerStateCoordinateType {
-    #[serde(rename = "ByStateVersion")]
-    ByStateVersion,
 
+
+#[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
+pub struct VersionLedgerStateSelector {
+    #[serde(rename = "type")]
+    pub _type: crate::core_api::generated::models::LedgerStateSelectorType,
+    #[serde(rename = "state_version")]
+    pub state_version: i64,
 }
 
-impl ToString for LedgerStateCoordinateType {
-    fn to_string(&self) -> String {
-        match self {
-            Self::ByStateVersion => String::from("ByStateVersion"),
+impl VersionLedgerStateSelector {
+    pub fn new(_type: crate::core_api::generated::models::LedgerStateSelectorType, state_version: i64) -> VersionLedgerStateSelector {
+        VersionLedgerStateSelector {
+            _type,
+            state_version,
         }
     }
 }
-
-impl Default for LedgerStateCoordinateType {
-    fn default() -> LedgerStateCoordinateType {
-        Self::ByStateVersion
-    }
-}
-
-
 
 

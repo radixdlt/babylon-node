@@ -13,12 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { LedgerStateCoordinate } from './LedgerStateCoordinate';
+import type { LedgerStateSelector } from './LedgerStateSelector';
 import {
-    LedgerStateCoordinateFromJSON,
-    LedgerStateCoordinateFromJSONTyped,
-    LedgerStateCoordinateToJSON,
-} from './LedgerStateCoordinate';
+    LedgerStateSelectorFromJSON,
+    LedgerStateSelectorFromJSONTyped,
+    LedgerStateSelectorToJSON,
+} from './LedgerStateSelector';
 import type { TargetIdentifier } from './TargetIdentifier';
 import {
     TargetIdentifierFromJSON,
@@ -40,10 +40,10 @@ export interface TransactionCallPreviewRequest {
     network: string;
     /**
      * 
-     * @type {LedgerStateCoordinate}
+     * @type {LedgerStateSelector}
      * @memberof TransactionCallPreviewRequest
      */
-    at_ledger_state?: LedgerStateCoordinate;
+    at_ledger_state?: LedgerStateSelector;
     /**
      * 
      * @type {TargetIdentifier}
@@ -81,7 +81,7 @@ export function TransactionCallPreviewRequestFromJSONTyped(json: any, ignoreDisc
     return {
         
         'network': json['network'],
-        'at_ledger_state': !exists(json, 'at_ledger_state') ? undefined : LedgerStateCoordinateFromJSON(json['at_ledger_state']),
+        'at_ledger_state': !exists(json, 'at_ledger_state') ? undefined : LedgerStateSelectorFromJSON(json['at_ledger_state']),
         'target': TargetIdentifierFromJSON(json['target']),
         'arguments': json['arguments'],
     };
@@ -97,7 +97,7 @@ export function TransactionCallPreviewRequestToJSON(value?: TransactionCallPrevi
     return {
         
         'network': value.network,
-        'at_ledger_state': LedgerStateCoordinateToJSON(value.at_ledger_state),
+        'at_ledger_state': LedgerStateSelectorToJSON(value.at_ledger_state),
         'target': TargetIdentifierToJSON(value.target),
         'arguments': value.arguments,
     };

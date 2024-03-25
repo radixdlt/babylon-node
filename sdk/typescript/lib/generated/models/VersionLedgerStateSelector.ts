@@ -13,54 +13,63 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { LedgerStateCoordinateType } from './LedgerStateCoordinateType';
-import {
-    LedgerStateCoordinateTypeFromJSON,
-    LedgerStateCoordinateTypeFromJSONTyped,
-    LedgerStateCoordinateTypeToJSON,
-} from './LedgerStateCoordinateType';
-
 /**
- * An optional specification of a historical ledger state at which to execute the request.
- * The "historical state" feature must be enabled on the Node, and the requested point in
- * history must be recent enough (in accordance with the Node's configured history length).
+ * 
  * @export
- * @interface LedgerStateCoordinateBase
+ * @interface VersionLedgerStateSelector
  */
-export interface LedgerStateCoordinateBase {
+export interface VersionLedgerStateSelector {
     /**
      * 
-     * @type {LedgerStateCoordinateType}
-     * @memberof LedgerStateCoordinateBase
+     * @type {string}
+     * @memberof VersionLedgerStateSelector
      */
-    type: LedgerStateCoordinateType;
+    type: VersionLedgerStateSelectorTypeEnum;
+    /**
+     * 
+     * @type {number}
+     * @memberof VersionLedgerStateSelector
+     */
+    state_version: number;
 }
 
+
 /**
- * Check if a given object implements the LedgerStateCoordinateBase interface.
+ * @export
  */
-export function instanceOfLedgerStateCoordinateBase(value: object): boolean {
+export const VersionLedgerStateSelectorTypeEnum = {
+    ByStateVersion: 'ByStateVersion'
+} as const;
+export type VersionLedgerStateSelectorTypeEnum = typeof VersionLedgerStateSelectorTypeEnum[keyof typeof VersionLedgerStateSelectorTypeEnum];
+
+
+/**
+ * Check if a given object implements the VersionLedgerStateSelector interface.
+ */
+export function instanceOfVersionLedgerStateSelector(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "type" in value;
+    isInstance = isInstance && "state_version" in value;
 
     return isInstance;
 }
 
-export function LedgerStateCoordinateBaseFromJSON(json: any): LedgerStateCoordinateBase {
-    return LedgerStateCoordinateBaseFromJSONTyped(json, false);
+export function VersionLedgerStateSelectorFromJSON(json: any): VersionLedgerStateSelector {
+    return VersionLedgerStateSelectorFromJSONTyped(json, false);
 }
 
-export function LedgerStateCoordinateBaseFromJSONTyped(json: any, ignoreDiscriminator: boolean): LedgerStateCoordinateBase {
+export function VersionLedgerStateSelectorFromJSONTyped(json: any, ignoreDiscriminator: boolean): VersionLedgerStateSelector {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'type': LedgerStateCoordinateTypeFromJSON(json['type']),
+        'type': json['type'],
+        'state_version': json['state_version'],
     };
 }
 
-export function LedgerStateCoordinateBaseToJSON(value?: LedgerStateCoordinateBase | null): any {
+export function VersionLedgerStateSelectorToJSON(value?: VersionLedgerStateSelector | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -69,7 +78,8 @@ export function LedgerStateCoordinateBaseToJSON(value?: LedgerStateCoordinateBas
     }
     return {
         
-        'type': LedgerStateCoordinateTypeToJSON(value.type),
+        'type': value.type,
+        'state_version': value.state_version,
     };
 }
 
