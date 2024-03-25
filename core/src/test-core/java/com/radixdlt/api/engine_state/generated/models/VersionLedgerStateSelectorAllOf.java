@@ -28,20 +28,20 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * VersionLedgerStateCoordinateAllOf
+ * VersionLedgerStateSelectorAllOf
  */
 @JsonPropertyOrder({
-  VersionLedgerStateCoordinateAllOf.JSON_PROPERTY_STATE_VERSION
+  VersionLedgerStateSelectorAllOf.JSON_PROPERTY_STATE_VERSION
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class VersionLedgerStateCoordinateAllOf {
+public class VersionLedgerStateSelectorAllOf {
   public static final String JSON_PROPERTY_STATE_VERSION = "state_version";
   private Long stateVersion;
 
-  public VersionLedgerStateCoordinateAllOf() { 
+  public VersionLedgerStateSelectorAllOf() { 
   }
 
-  public VersionLedgerStateCoordinateAllOf stateVersion(Long stateVersion) {
+  public VersionLedgerStateSelectorAllOf stateVersion(Long stateVersion) {
     this.stateVersion = stateVersion;
     return this;
   }
@@ -70,7 +70,7 @@ public class VersionLedgerStateCoordinateAllOf {
 
 
   /**
-   * Return true if this VersionLedgerStateCoordinate_allOf object is equal to o.
+   * Return true if this VersionLedgerStateSelector_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -80,8 +80,8 @@ public class VersionLedgerStateCoordinateAllOf {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    VersionLedgerStateCoordinateAllOf versionLedgerStateCoordinateAllOf = (VersionLedgerStateCoordinateAllOf) o;
-    return Objects.equals(this.stateVersion, versionLedgerStateCoordinateAllOf.stateVersion);
+    VersionLedgerStateSelectorAllOf versionLedgerStateSelectorAllOf = (VersionLedgerStateSelectorAllOf) o;
+    return Objects.equals(this.stateVersion, versionLedgerStateSelectorAllOf.stateVersion);
   }
 
   @Override
@@ -92,7 +92,7 @@ public class VersionLedgerStateCoordinateAllOf {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class VersionLedgerStateCoordinateAllOf {\n");
+    sb.append("class VersionLedgerStateSelectorAllOf {\n");
     sb.append("    stateVersion: ").append(toIndentedString(stateVersion)).append("\n");
     sb.append("}");
     return sb.toString();

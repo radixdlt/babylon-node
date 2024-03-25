@@ -9,20 +9,28 @@
  */
 
 
+/// 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
+pub enum LedgerStateSelectorType {
+    #[serde(rename = "ByStateVersion")]
+    ByStateVersion,
 
-
-#[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct VersionLedgerStateCoordinateAllOf {
-    #[serde(rename = "state_version")]
-    pub state_version: i64,
 }
 
-impl VersionLedgerStateCoordinateAllOf {
-    pub fn new(state_version: i64) -> VersionLedgerStateCoordinateAllOf {
-        VersionLedgerStateCoordinateAllOf {
-            state_version,
+impl ToString for LedgerStateSelectorType {
+    fn to_string(&self) -> String {
+        match self {
+            Self::ByStateVersion => String::from("ByStateVersion"),
         }
     }
 }
+
+impl Default for LedgerStateSelectorType {
+    fn default() -> LedgerStateSelectorType {
+        Self::ByStateVersion
+    }
+}
+
+
 
 

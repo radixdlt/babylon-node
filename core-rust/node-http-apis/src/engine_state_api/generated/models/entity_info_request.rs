@@ -17,7 +17,7 @@ pub struct EntityInfoRequest {
     #[serde(rename = "entity_address")]
     pub entity_address: String,
     #[serde(rename = "at_ledger_state", skip_serializing_if = "Option::is_none")]
-    pub at_ledger_state: Option<Box<crate::engine_state_api::generated::models::LedgerStateCoordinate>>,
+    pub at_ledger_state: Option<Box<crate::engine_state_api::generated::models::LedgerStateSelector>>,
 }
 
 impl EntityInfoRequest {

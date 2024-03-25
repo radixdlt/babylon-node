@@ -12,16 +12,16 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct VersionLedgerStateCoordinate {
+pub struct VersionLedgerStateSelector {
     #[serde(rename = "type")]
-    pub _type: crate::engine_state_api::generated::models::LedgerStateCoordinateType,
+    pub _type: crate::engine_state_api::generated::models::LedgerStateSelectorType,
     #[serde(rename = "state_version")]
     pub state_version: i64,
 }
 
-impl VersionLedgerStateCoordinate {
-    pub fn new(_type: crate::engine_state_api::generated::models::LedgerStateCoordinateType, state_version: i64) -> VersionLedgerStateCoordinate {
-        VersionLedgerStateCoordinate {
+impl VersionLedgerStateSelector {
+    pub fn new(_type: crate::engine_state_api::generated::models::LedgerStateSelectorType, state_version: i64) -> VersionLedgerStateSelector {
+        VersionLedgerStateSelector {
             _type,
             state_version,
         }

@@ -149,17 +149,17 @@ pub fn to_api_royalty_amount(royalty_amount: &RoyaltyAmount) -> Option<models::R
 
 // Note: we currently only support version-based (and always optional) `at_ledger_state` parameter,
 // hence this convenience method wins.
-pub fn extract_opt_ledger_state_coordinate(
-    coordinate: Option<&models::LedgerStateCoordinate>,
+pub fn extract_opt_ledger_state_selector(
+    selector: Option<&models::LedgerStateSelector>,
 ) -> Result<Option<StateVersion>, ExtractionError> {
-    coordinate.map(extract_ledger_state_coordinate).transpose()
+    selector.map(extract_ledger_state_selector).transpose()
 }
 
-pub fn extract_ledger_state_coordinate(
-    coordinate: &models::LedgerStateCoordinate,
+pub fn extract_ledger_state_selector(
+    selector: &models::LedgerStateSelector,
 ) -> Result<StateVersion, ExtractionError> {
-    Ok(match coordinate {
-        models::LedgerStateCoordinate::VersionLedgerStateCoordinate { state_version } => {
+    Ok(match selector {
+        models::LedgerStateSelector::VersionLedgerStateSelector { state_version } => {
             extract_api_state_version(*state_version)?
         }
     })

@@ -253,9 +253,9 @@ public final class EntityInfoTest extends DeterministicEngineStateApiTestBase {
                   new EntityInfoRequest()
                       .entityAddress(wellKnownAddresses.getConsensusManager())
                       .atLedgerState(
-                          new VersionLedgerStateCoordinate()
+                          new VersionLedgerStateSelector()
                               .stateVersion(3L)
-                              .type(LedgerStateCoordinateType.BYSTATEVERSION)));
+                              .type(LedgerStateSelectorType.BYSTATEVERSION)));
       assertThat(responseAtVersion3.getInfo()).isNotNull();
       assertThat(responseAtVersion3.getAtLedgerState().getStateVersion()).isEqualTo(3L);
 
@@ -268,9 +268,9 @@ public final class EntityInfoTest extends DeterministicEngineStateApiTestBase {
                           new EntityInfoRequest()
                               .entityAddress(wellKnownAddresses.getConsensusManager())
                               .atLedgerState(
-                                  new VersionLedgerStateCoordinate()
+                                  new VersionLedgerStateSelector()
                                       .stateVersion(1L)
-                                      .type(LedgerStateCoordinateType.BYSTATEVERSION))));
+                                      .type(LedgerStateSelectorType.BYSTATEVERSION))));
       assertThat((RequestedItemNotFoundDetails) errorResponseAtVersion1.getDetails())
           .isEqualTo(
               new RequestedItemNotFoundDetails()

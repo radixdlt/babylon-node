@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.engine_state.generated.models.LedgerStateCoordinate;
+import com.radixdlt.api.engine_state.generated.models.LedgerStateSelector;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -41,7 +41,7 @@ public class EntityInfoRequest {
   private String entityAddress;
 
   public static final String JSON_PROPERTY_AT_LEDGER_STATE = "at_ledger_state";
-  private LedgerStateCoordinate atLedgerState;
+  private LedgerStateSelector atLedgerState;
 
   public EntityInfoRequest() { 
   }
@@ -72,7 +72,7 @@ public class EntityInfoRequest {
   }
 
 
-  public EntityInfoRequest atLedgerState(LedgerStateCoordinate atLedgerState) {
+  public EntityInfoRequest atLedgerState(LedgerStateSelector atLedgerState) {
     this.atLedgerState = atLedgerState;
     return this;
   }
@@ -86,14 +86,14 @@ public class EntityInfoRequest {
   @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public LedgerStateCoordinate getAtLedgerState() {
+  public LedgerStateSelector getAtLedgerState() {
     return atLedgerState;
   }
 
 
   @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setAtLedgerState(LedgerStateCoordinate atLedgerState) {
+  public void setAtLedgerState(LedgerStateSelector atLedgerState) {
     this.atLedgerState = atLedgerState;
   }
 

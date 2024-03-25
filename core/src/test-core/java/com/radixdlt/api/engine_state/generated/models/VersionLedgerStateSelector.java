@@ -25,10 +25,10 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.engine_state.generated.models.LedgerStateCoordinate;
-import com.radixdlt.api.engine_state.generated.models.LedgerStateCoordinateType;
-import com.radixdlt.api.engine_state.generated.models.VersionLedgerStateCoordinate;
-import com.radixdlt.api.engine_state.generated.models.VersionLedgerStateCoordinateAllOf;
+import com.radixdlt.api.engine_state.generated.models.LedgerStateSelector;
+import com.radixdlt.api.engine_state.generated.models.LedgerStateSelectorType;
+import com.radixdlt.api.engine_state.generated.models.VersionLedgerStateSelector;
+import com.radixdlt.api.engine_state.generated.models.VersionLedgerStateSelectorAllOf;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -36,10 +36,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.engine_state.generated.client.JSON;
 /**
- * VersionLedgerStateCoordinate
+ * VersionLedgerStateSelector
  */
 @JsonPropertyOrder({
-  VersionLedgerStateCoordinate.JSON_PROPERTY_STATE_VERSION
+  VersionLedgerStateSelector.JSON_PROPERTY_STATE_VERSION
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -48,17 +48,17 @@ import com.radixdlt.api.engine_state.generated.client.JSON;
 )
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = VersionLedgerStateCoordinate.class, name = "ByStateVersion"),
+  @JsonSubTypes.Type(value = VersionLedgerStateSelector.class, name = "ByStateVersion"),
 })
 
-public class VersionLedgerStateCoordinate extends LedgerStateCoordinate {
+public class VersionLedgerStateSelector extends LedgerStateSelector {
   public static final String JSON_PROPERTY_STATE_VERSION = "state_version";
   private Long stateVersion;
 
-  public VersionLedgerStateCoordinate() { 
+  public VersionLedgerStateSelector() { 
   }
 
-  public VersionLedgerStateCoordinate stateVersion(Long stateVersion) {
+  public VersionLedgerStateSelector stateVersion(Long stateVersion) {
     this.stateVersion = stateVersion;
     return this;
   }
@@ -87,7 +87,7 @@ public class VersionLedgerStateCoordinate extends LedgerStateCoordinate {
 
 
   /**
-   * Return true if this VersionLedgerStateCoordinate object is equal to o.
+   * Return true if this VersionLedgerStateSelector object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -97,8 +97,8 @@ public class VersionLedgerStateCoordinate extends LedgerStateCoordinate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    VersionLedgerStateCoordinate versionLedgerStateCoordinate = (VersionLedgerStateCoordinate) o;
-    return Objects.equals(this.stateVersion, versionLedgerStateCoordinate.stateVersion) &&
+    VersionLedgerStateSelector versionLedgerStateSelector = (VersionLedgerStateSelector) o;
+    return Objects.equals(this.stateVersion, versionLedgerStateSelector.stateVersion) &&
         super.equals(o);
   }
 
@@ -110,7 +110,7 @@ public class VersionLedgerStateCoordinate extends LedgerStateCoordinate {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class VersionLedgerStateCoordinate {\n");
+    sb.append("class VersionLedgerStateSelector {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    stateVersion: ").append(toIndentedString(stateVersion)).append("\n");
     sb.append("}");
@@ -131,9 +131,9 @@ public class VersionLedgerStateCoordinate extends LedgerStateCoordinate {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("ByStateVersion", VersionLedgerStateCoordinate.class);
-  mappings.put("VersionLedgerStateCoordinate", VersionLedgerStateCoordinate.class);
-  JSON.registerDiscriminator(VersionLedgerStateCoordinate.class, "type", mappings);
+  mappings.put("ByStateVersion", VersionLedgerStateSelector.class);
+  mappings.put("VersionLedgerStateSelector", VersionLedgerStateSelector.class);
+  JSON.registerDiscriminator(VersionLedgerStateSelector.class, "type", mappings);
 }
 }
 

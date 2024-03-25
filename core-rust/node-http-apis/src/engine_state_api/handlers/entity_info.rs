@@ -14,7 +14,7 @@ pub(crate) async fn handle_entity_info(
     let node_id = extract_address_as_node_id(&extraction_context, &request.entity_address)
         .map_err(|err| err.into_response_error("entity_address"))?;
     let requested_state_version =
-        extract_opt_ledger_state_coordinate(request.at_ledger_state.as_deref())
+        extract_opt_ledger_state_selector(request.at_ledger_state.as_deref())
             .map_err(|err| err.into_response_error("at_ledger_state"))?;
 
     let database = state.state_manager.database.snapshot();
