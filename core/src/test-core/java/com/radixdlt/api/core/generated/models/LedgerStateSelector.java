@@ -25,10 +25,8 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.LedgerStateCoordinate;
-import com.radixdlt.api.core.generated.models.LedgerStateCoordinateType;
-import com.radixdlt.api.core.generated.models.VersionLedgerStateCoordinate;
-import com.radixdlt.api.core.generated.models.VersionLedgerStateCoordinateAllOf;
+import com.radixdlt.api.core.generated.models.LedgerStateSelectorType;
+import com.radixdlt.api.core.generated.models.VersionLedgerStateSelector;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -36,10 +34,11 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * VersionLedgerStateCoordinate
+ * An optional specification of a historical ledger state at which to execute the request. The \&quot;historical state\&quot; feature must be enabled on the Node, and the requested point in history must be recent enough (in accordance with the Node&#39;s configured history length). 
  */
+@ApiModel(description = "An optional specification of a historical ledger state at which to execute the request. The \"historical state\" feature must be enabled on the Node, and the requested point in history must be recent enough (in accordance with the Node's configured history length). ")
 @JsonPropertyOrder({
-  VersionLedgerStateCoordinate.JSON_PROPERTY_STATE_VERSION
+  LedgerStateSelector.JSON_PROPERTY_TYPE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -48,46 +47,45 @@ import com.radixdlt.api.core.generated.client.JSON;
 )
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = VersionLedgerStateCoordinate.class, name = "ByStateVersion"),
+  @JsonSubTypes.Type(value = VersionLedgerStateSelector.class, name = "ByStateVersion"),
+  @JsonSubTypes.Type(value = VersionLedgerStateSelector.class, name = "VersionLedgerStateSelector"),
 })
 
-public class VersionLedgerStateCoordinate extends LedgerStateCoordinate {
-  public static final String JSON_PROPERTY_STATE_VERSION = "state_version";
-  private Long stateVersion;
+public class LedgerStateSelector {
+  public static final String JSON_PROPERTY_TYPE = "type";
+  private LedgerStateSelectorType type;
 
-  public VersionLedgerStateCoordinate() { 
+  public LedgerStateSelector() { 
   }
 
-  public VersionLedgerStateCoordinate stateVersion(Long stateVersion) {
-    this.stateVersion = stateVersion;
+  public LedgerStateSelector type(LedgerStateSelectorType type) {
+    this.type = type;
     return this;
   }
 
    /**
-   * Get stateVersion
-   * minimum: 1
-   * maximum: 100000000000000
-   * @return stateVersion
+   * Get type
+   * @return type
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_STATE_VERSION)
+  @JsonProperty(JSON_PROPERTY_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Long getStateVersion() {
-    return stateVersion;
+  public LedgerStateSelectorType getType() {
+    return type;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_STATE_VERSION)
+  @JsonProperty(JSON_PROPERTY_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setStateVersion(Long stateVersion) {
-    this.stateVersion = stateVersion;
+  public void setType(LedgerStateSelectorType type) {
+    this.type = type;
   }
 
 
   /**
-   * Return true if this VersionLedgerStateCoordinate object is equal to o.
+   * Return true if this LedgerStateSelector object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -97,22 +95,20 @@ public class VersionLedgerStateCoordinate extends LedgerStateCoordinate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    VersionLedgerStateCoordinate versionLedgerStateCoordinate = (VersionLedgerStateCoordinate) o;
-    return Objects.equals(this.stateVersion, versionLedgerStateCoordinate.stateVersion) &&
-        super.equals(o);
+    LedgerStateSelector ledgerStateSelector = (LedgerStateSelector) o;
+    return Objects.equals(this.type, ledgerStateSelector.type);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(stateVersion, super.hashCode());
+    return Objects.hash(type);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class VersionLedgerStateCoordinate {\n");
-    sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    stateVersion: ").append(toIndentedString(stateVersion)).append("\n");
+    sb.append("class LedgerStateSelector {\n");
+    sb.append("    type: ").append(toIndentedString(type)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -131,9 +127,10 @@ public class VersionLedgerStateCoordinate extends LedgerStateCoordinate {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("ByStateVersion", VersionLedgerStateCoordinate.class);
-  mappings.put("VersionLedgerStateCoordinate", VersionLedgerStateCoordinate.class);
-  JSON.registerDiscriminator(VersionLedgerStateCoordinate.class, "type", mappings);
+  mappings.put("ByStateVersion", VersionLedgerStateSelector.class);
+  mappings.put("VersionLedgerStateSelector", VersionLedgerStateSelector.class);
+  mappings.put("LedgerStateSelector", LedgerStateSelector.class);
+  JSON.registerDiscriminator(LedgerStateSelector.class, "type", mappings);
 }
 }
 

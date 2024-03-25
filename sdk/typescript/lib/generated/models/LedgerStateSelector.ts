@@ -13,37 +13,37 @@
  */
 
 import {
-    VersionLedgerStateCoordinate,
-    instanceOfVersionLedgerStateCoordinate,
-    VersionLedgerStateCoordinateFromJSON,
-    VersionLedgerStateCoordinateFromJSONTyped,
-    VersionLedgerStateCoordinateToJSON,
-} from './VersionLedgerStateCoordinate';
+    VersionLedgerStateSelector,
+    instanceOfVersionLedgerStateSelector,
+    VersionLedgerStateSelectorFromJSON,
+    VersionLedgerStateSelectorFromJSONTyped,
+    VersionLedgerStateSelectorToJSON,
+} from './VersionLedgerStateSelector';
 
 /**
- * @type LedgerStateCoordinate
+ * @type LedgerStateSelector
  * 
  * @export
  */
-export type LedgerStateCoordinate = { type: 'ByStateVersion' } & VersionLedgerStateCoordinate;
+export type LedgerStateSelector = { type: 'ByStateVersion' } & VersionLedgerStateSelector;
 
-export function LedgerStateCoordinateFromJSON(json: any): LedgerStateCoordinate {
-    return LedgerStateCoordinateFromJSONTyped(json, false);
+export function LedgerStateSelectorFromJSON(json: any): LedgerStateSelector {
+    return LedgerStateSelectorFromJSONTyped(json, false);
 }
 
-export function LedgerStateCoordinateFromJSONTyped(json: any, ignoreDiscriminator: boolean): LedgerStateCoordinate {
+export function LedgerStateSelectorFromJSONTyped(json: any, ignoreDiscriminator: boolean): LedgerStateSelector {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     switch (json['type']) {
         case 'ByStateVersion':
-            return {...VersionLedgerStateCoordinateFromJSONTyped(json, true), type: 'ByStateVersion'};
+            return {...VersionLedgerStateSelectorFromJSONTyped(json, true), type: 'ByStateVersion'};
         default:
-            throw new Error(`No variant of LedgerStateCoordinate exists with 'type=${json['type']}'`);
+            throw new Error(`No variant of LedgerStateSelector exists with 'type=${json['type']}'`);
     }
 }
 
-export function LedgerStateCoordinateToJSON(value?: LedgerStateCoordinate | null): any {
+export function LedgerStateSelectorToJSON(value?: LedgerStateSelector | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -52,9 +52,9 @@ export function LedgerStateCoordinateToJSON(value?: LedgerStateCoordinate | null
     }
     switch (value['type']) {
         case 'ByStateVersion':
-            return VersionLedgerStateCoordinateToJSON(value);
+            return VersionLedgerStateSelectorToJSON(value);
         default:
-            throw new Error(`No variant of LedgerStateCoordinate exists with 'type=${value['type']}'`);
+            throw new Error(`No variant of LedgerStateSelector exists with 'type=${value['type']}'`);
     }
 
 }

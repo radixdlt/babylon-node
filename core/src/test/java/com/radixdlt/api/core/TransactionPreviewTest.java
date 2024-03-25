@@ -290,9 +290,9 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
                     atStateVersion
                         .map(
                             version ->
-                                new VersionLedgerStateCoordinate()
+                                new VersionLedgerStateSelector()
                                     .stateVersion(version)
-                                    .type(LedgerStateCoordinateType.BYSTATEVERSION))
+                                    .type(LedgerStateSelectorType.BYSTATEVERSION))
                         .orElse(null))
                 .flags(
                     new TransactionPreviewRequestFlags()

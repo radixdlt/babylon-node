@@ -12,26 +12,64 @@
  * Do not edit the class manually.
  */
 
+import { exists, mapValues } from '../runtime';
+import type { LedgerStateSelectorType } from './LedgerStateSelectorType';
+import {
+    LedgerStateSelectorTypeFromJSON,
+    LedgerStateSelectorTypeFromJSONTyped,
+    LedgerStateSelectorTypeToJSON,
+} from './LedgerStateSelectorType';
 
 /**
- * 
+ * An optional specification of a historical ledger state at which to execute the request.
+ * The "historical state" feature must be enabled on the Node, and the requested point in
+ * history must be recent enough (in accordance with the Node's configured history length).
  * @export
+ * @interface LedgerStateSelectorBase
  */
-export const LedgerStateCoordinateType = {
-    ByStateVersion: 'ByStateVersion'
-} as const;
-export type LedgerStateCoordinateType = typeof LedgerStateCoordinateType[keyof typeof LedgerStateCoordinateType];
-
-
-export function LedgerStateCoordinateTypeFromJSON(json: any): LedgerStateCoordinateType {
-    return LedgerStateCoordinateTypeFromJSONTyped(json, false);
+export interface LedgerStateSelectorBase {
+    /**
+     * 
+     * @type {LedgerStateSelectorType}
+     * @memberof LedgerStateSelectorBase
+     */
+    type: LedgerStateSelectorType;
 }
 
-export function LedgerStateCoordinateTypeFromJSONTyped(json: any, ignoreDiscriminator: boolean): LedgerStateCoordinateType {
-    return json as LedgerStateCoordinateType;
+/**
+ * Check if a given object implements the LedgerStateSelectorBase interface.
+ */
+export function instanceOfLedgerStateSelectorBase(value: object): boolean {
+    let isInstance = true;
+    isInstance = isInstance && "type" in value;
+
+    return isInstance;
 }
 
-export function LedgerStateCoordinateTypeToJSON(value?: LedgerStateCoordinateType | null): any {
-    return value as any;
+export function LedgerStateSelectorBaseFromJSON(json: any): LedgerStateSelectorBase {
+    return LedgerStateSelectorBaseFromJSONTyped(json, false);
+}
+
+export function LedgerStateSelectorBaseFromJSONTyped(json: any, ignoreDiscriminator: boolean): LedgerStateSelectorBase {
+    if ((json === undefined) || (json === null)) {
+        return json;
+    }
+    return {
+        
+        'type': LedgerStateSelectorTypeFromJSON(json['type']),
+    };
+}
+
+export function LedgerStateSelectorBaseToJSON(value?: LedgerStateSelectorBase | null): any {
+    if (value === undefined) {
+        return undefined;
+    }
+    if (value === null) {
+        return null;
+    }
+    return {
+        
+        'type': LedgerStateSelectorTypeToJSON(value.type),
+    };
 }
 
