@@ -92,16 +92,6 @@ public final class EntityInfoTest extends DeterministicEngineStateApiTestBase {
                   new EntityInfoRequest().entityAddress(wellKnownAddresses.getConsensusManager()))
               .getInfo();
 
-      final var reso =
-          getEntitiesApi()
-              .entityInfoPost(
-                  new EntityInfoRequest()
-                      .atLedgerState(
-                          new VersionLedgerStateCoordinate()
-                              .stateVersion(1L)
-                              .type(LedgerStateCoordinateType.BYSTATEVERSION))
-                      .entityAddress(wellKnownAddresses.getConsensusManager()));
-      System.out.println("============= " + reso.getAtLedgerState());
       assertThat(entityInfo.getSystemType()).isEqualTo(SystemType.OBJECT);
       assertThat(entityInfo.getAncestry()).isNull();
 
