@@ -18,10 +18,7 @@ runs:
       run: |
         IS_RELEASE="${{ inputs.is_release }}"
         echo "IS_RELEASE $IS_RELEASE"
-        if [[ "$IS_RELEASE" == "false" ]] ;then
-          export CI_VERSION=true
-        fi
-        version=$(./gradlew radixCiVersion | grep radixdlt-version | cut -d: -f2)
+        version=$(./gradlew getRadixVersion | grep radixdlt-version | cut -d: -f2)
         echo "Version: $version"
         echo "radixdlt_version=$(echo $version)" >> $GITHUB_OUTPUT
         docker_tag=$(echo $version | sed 's/~/-/g')
