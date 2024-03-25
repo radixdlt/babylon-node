@@ -17,7 +17,7 @@ pub struct TransactionPreviewRequest {
     #[serde(rename = "network")]
     pub network: String,
     #[serde(rename = "at_ledger_state", skip_serializing_if = "Option::is_none")]
-    pub at_ledger_state: Option<Box<crate::core_api::generated::models::LedgerStateCoordinate>>,
+    pub at_ledger_state: Option<Box<crate::core_api::generated::models::LedgerStateSelector>>,
     /// A text-representation of a transaction manifest
     #[serde(rename = "manifest")]
     pub manifest: String,
