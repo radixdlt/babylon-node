@@ -485,6 +485,36 @@ components:
       minimum: 1
       maximum: 100
       description: A maximum number of items to be included in the paged listing response.
+    LedgerStateCoordinateType:
+      type: string
+      enum:
+        - ByStateVersion
+    LedgerStateCoordinate:
+      description: |
+        An optional specification of a historical ledger state at which to execute the request.
+        The "historical state" feature must be enabled on the Node, and the requested point in
+        history must be recent enough (in accordance with the Node's configured history length).
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/LedgerStateCoordinateType'
+      discriminator:
+        propertyName: type
+        mapping:
+          ByStateVersion: '#/components/schemas/VersionLedgerStateCoordinate'
+          # Currently no other options exist, but we plan to have e.g. `ByTimestamp` in future.
+    VersionLedgerStateCoordinate:
+      allOf:
+        - $ref: '#/components/schemas/LedgerStateCoordinate'
+        - type: object
+          required:
+            - state_version
+          properties:
+            state_version:
+              description: An exact version at which to execute the request.
+              $ref: "#/components/schemas/StateVersion"
 
 ###########################################################
 # SHARED MODELS                                           #
@@ -868,6 +898,8 @@ components:
       properties:
         entity_address:
           $ref: "#/components/schemas/EntityAddress"
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateCoordinate"
     EntityInfoResponse:
       type: object
       required:

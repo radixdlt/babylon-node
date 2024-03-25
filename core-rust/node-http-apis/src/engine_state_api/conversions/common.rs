@@ -1,7 +1,7 @@
 use crate::engine_prelude::*;
 use itertools::Either;
 
-use state_manager::LedgerHeader;
+use state_manager::{LedgerHeader, StateVersion};
 
 use crate::engine_state_api::*;
 
@@ -145,6 +145,24 @@ pub fn to_api_royalty_amount(royalty_amount: &RoyaltyAmount) -> Option<models::R
             unit: models::royalty_amount::Unit::USD,
         }),
     }
+}
+
+// Note: we currently only support version-based (and always optional) `at_ledger_state` parameter,
+// hence this convenience method wins.
+pub fn extract_opt_ledger_state_coordinate(
+    coordinate: Option<&models::LedgerStateCoordinate>,
+) -> Result<Option<StateVersion>, ExtractionError> {
+    coordinate.map(extract_ledger_state_coordinate).transpose()
+}
+
+pub fn extract_ledger_state_coordinate(
+    coordinate: &models::LedgerStateCoordinate,
+) -> Result<StateVersion, ExtractionError> {
+    Ok(match coordinate {
+        models::LedgerStateCoordinate::VersionLedgerStateCoordinate { state_version } => {
+            extract_api_state_version(*state_version)?
+        }
+    })
 }
 
 /// An input specification of a [`RichIndex`] (a number outputted together with an optional name).

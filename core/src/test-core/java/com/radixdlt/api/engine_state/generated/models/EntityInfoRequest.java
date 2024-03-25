@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.engine_state.generated.models.LedgerStateCoordinate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -31,12 +32,16 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * EntityInfoRequest
  */
 @JsonPropertyOrder({
-  EntityInfoRequest.JSON_PROPERTY_ENTITY_ADDRESS
+  EntityInfoRequest.JSON_PROPERTY_ENTITY_ADDRESS,
+  EntityInfoRequest.JSON_PROPERTY_AT_LEDGER_STATE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class EntityInfoRequest {
   public static final String JSON_PROPERTY_ENTITY_ADDRESS = "entity_address";
   private String entityAddress;
+
+  public static final String JSON_PROPERTY_AT_LEDGER_STATE = "at_ledger_state";
+  private LedgerStateCoordinate atLedgerState;
 
   public EntityInfoRequest() { 
   }
@@ -67,6 +72,32 @@ public class EntityInfoRequest {
   }
 
 
+  public EntityInfoRequest atLedgerState(LedgerStateCoordinate atLedgerState) {
+    this.atLedgerState = atLedgerState;
+    return this;
+  }
+
+   /**
+   * Get atLedgerState
+   * @return atLedgerState
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public LedgerStateCoordinate getAtLedgerState() {
+    return atLedgerState;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setAtLedgerState(LedgerStateCoordinate atLedgerState) {
+    this.atLedgerState = atLedgerState;
+  }
+
+
   /**
    * Return true if this EntityInfoRequest object is equal to o.
    */
@@ -79,12 +110,13 @@ public class EntityInfoRequest {
       return false;
     }
     EntityInfoRequest entityInfoRequest = (EntityInfoRequest) o;
-    return Objects.equals(this.entityAddress, entityInfoRequest.entityAddress);
+    return Objects.equals(this.entityAddress, entityInfoRequest.entityAddress) &&
+        Objects.equals(this.atLedgerState, entityInfoRequest.atLedgerState);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entityAddress);
+    return Objects.hash(entityAddress, atLedgerState);
   }
 
   @Override
@@ -92,6 +124,7 @@ public class EntityInfoRequest {
     StringBuilder sb = new StringBuilder();
     sb.append("class EntityInfoRequest {\n");
     sb.append("    entityAddress: ").append(toIndentedString(entityAddress)).append("\n");
+    sb.append("    atLedgerState: ").append(toIndentedString(atLedgerState)).append("\n");
     sb.append("}");
     return sb.toString();
   }

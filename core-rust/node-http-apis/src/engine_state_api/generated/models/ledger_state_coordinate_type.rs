@@ -9,24 +9,28 @@
  */
 
 
+/// 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
+pub enum LedgerStateCoordinateType {
+    #[serde(rename = "ByStateVersion")]
+    ByStateVersion,
 
-
-#[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct EntityInfoRequest {
-    /// A Bech32m-encoded, human readable rendering of an arbitrary Entity's address.
-    #[serde(rename = "entity_address")]
-    pub entity_address: String,
-    #[serde(rename = "at_ledger_state", skip_serializing_if = "Option::is_none")]
-    pub at_ledger_state: Option<Box<crate::engine_state_api::generated::models::LedgerStateCoordinate>>,
 }
 
-impl EntityInfoRequest {
-    pub fn new(entity_address: String) -> EntityInfoRequest {
-        EntityInfoRequest {
-            entity_address,
-            at_ledger_state: None,
+impl ToString for LedgerStateCoordinateType {
+    fn to_string(&self) -> String {
+        match self {
+            Self::ByStateVersion => String::from("ByStateVersion"),
         }
     }
 }
+
+impl Default for LedgerStateCoordinateType {
+    fn default() -> LedgerStateCoordinateType {
+        Self::ByStateVersion
+    }
+}
+
+
 
 
