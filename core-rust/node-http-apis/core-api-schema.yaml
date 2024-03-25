@@ -1245,11 +1245,11 @@ components:
         previous:
           description: Whether to return the previous substate value for updates and deletes (default false)
           type: boolean
-    LedgerStateCoordinateType:
+    LedgerStateSelectorType:
       type: string
       enum:
         - ByStateVersion
-    LedgerStateCoordinate:
+    LedgerStateSelector:
       description: |
         An optional specification of a historical ledger state at which to execute the request.
         The "historical state" feature must be enabled on the Node, and the requested point in
@@ -1259,15 +1259,15 @@ components:
         - type
       properties:
         type:
-          $ref: '#/components/schemas/LedgerStateCoordinateType'
+          $ref: '#/components/schemas/LedgerStateSelectorType'
       discriminator:
         propertyName: type
         mapping:
-          ByStateVersion: '#/components/schemas/VersionLedgerStateCoordinate'
+          ByStateVersion: '#/components/schemas/VersionLedgerStateSelector'
           # Currently no other options exist, but we plan to have e.g. `ByTimestamp` in future.
-    VersionLedgerStateCoordinate:
+    VersionLedgerStateSelector:
       allOf:
-        - $ref: '#/components/schemas/LedgerStateCoordinate'
+        - $ref: '#/components/schemas/LedgerStateSelector'
         - type: object
           required:
             - state_version
@@ -6998,7 +6998,7 @@ components:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
         at_ledger_state:
-          $ref: "#/components/schemas/LedgerStateCoordinate"
+          $ref: "#/components/schemas/LedgerStateSelector"
         target:
           $ref: "#/components/schemas/TargetIdentifier"
         arguments:
@@ -7086,7 +7086,7 @@ components:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
         at_ledger_state:
-          $ref: "#/components/schemas/LedgerStateCoordinate"
+          $ref: "#/components/schemas/LedgerStateSelector"
         manifest:
           description: A text-representation of a transaction manifest
           type: string

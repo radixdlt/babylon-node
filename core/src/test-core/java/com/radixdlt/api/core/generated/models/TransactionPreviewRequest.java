@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.LedgerStateCoordinate;
+import com.radixdlt.api.core.generated.models.LedgerStateSelector;
 import com.radixdlt.api.core.generated.models.PublicKey;
 import com.radixdlt.api.core.generated.models.TransactionMessage;
 import com.radixdlt.api.core.generated.models.TransactionPreviewRequestFlags;
@@ -57,7 +57,7 @@ public class TransactionPreviewRequest {
   private String network;
 
   public static final String JSON_PROPERTY_AT_LEDGER_STATE = "at_ledger_state";
-  private LedgerStateCoordinate atLedgerState;
+  private LedgerStateSelector atLedgerState;
 
   public static final String JSON_PROPERTY_MANIFEST = "manifest";
   private String manifest;
@@ -121,7 +121,7 @@ public class TransactionPreviewRequest {
   }
 
 
-  public TransactionPreviewRequest atLedgerState(LedgerStateCoordinate atLedgerState) {
+  public TransactionPreviewRequest atLedgerState(LedgerStateSelector atLedgerState) {
     this.atLedgerState = atLedgerState;
     return this;
   }
@@ -135,14 +135,14 @@ public class TransactionPreviewRequest {
   @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public LedgerStateCoordinate getAtLedgerState() {
+  public LedgerStateSelector getAtLedgerState() {
     return atLedgerState;
   }
 
 
   @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setAtLedgerState(LedgerStateCoordinate atLedgerState) {
+  public void setAtLedgerState(LedgerStateSelector atLedgerState) {
     this.atLedgerState = atLedgerState;
   }
 

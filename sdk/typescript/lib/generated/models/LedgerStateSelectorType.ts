@@ -12,74 +12,26 @@
  * Do not edit the class manually.
  */
 
-import { exists, mapValues } from '../runtime';
+
 /**
  * 
  * @export
- * @interface VersionLedgerStateCoordinate
  */
-export interface VersionLedgerStateCoordinate {
-    /**
-     * 
-     * @type {string}
-     * @memberof VersionLedgerStateCoordinate
-     */
-    type: VersionLedgerStateCoordinateTypeEnum;
-    /**
-     * 
-     * @type {number}
-     * @memberof VersionLedgerStateCoordinate
-     */
-    state_version: number;
-}
-
-
-/**
- * @export
- */
-export const VersionLedgerStateCoordinateTypeEnum = {
+export const LedgerStateSelectorType = {
     ByStateVersion: 'ByStateVersion'
 } as const;
-export type VersionLedgerStateCoordinateTypeEnum = typeof VersionLedgerStateCoordinateTypeEnum[keyof typeof VersionLedgerStateCoordinateTypeEnum];
+export type LedgerStateSelectorType = typeof LedgerStateSelectorType[keyof typeof LedgerStateSelectorType];
 
 
-/**
- * Check if a given object implements the VersionLedgerStateCoordinate interface.
- */
-export function instanceOfVersionLedgerStateCoordinate(value: object): boolean {
-    let isInstance = true;
-    isInstance = isInstance && "type" in value;
-    isInstance = isInstance && "state_version" in value;
-
-    return isInstance;
+export function LedgerStateSelectorTypeFromJSON(json: any): LedgerStateSelectorType {
+    return LedgerStateSelectorTypeFromJSONTyped(json, false);
 }
 
-export function VersionLedgerStateCoordinateFromJSON(json: any): VersionLedgerStateCoordinate {
-    return VersionLedgerStateCoordinateFromJSONTyped(json, false);
+export function LedgerStateSelectorTypeFromJSONTyped(json: any, ignoreDiscriminator: boolean): LedgerStateSelectorType {
+    return json as LedgerStateSelectorType;
 }
 
-export function VersionLedgerStateCoordinateFromJSONTyped(json: any, ignoreDiscriminator: boolean): VersionLedgerStateCoordinate {
-    if ((json === undefined) || (json === null)) {
-        return json;
-    }
-    return {
-        
-        'type': json['type'],
-        'state_version': json['state_version'],
-    };
-}
-
-export function VersionLedgerStateCoordinateToJSON(value?: VersionLedgerStateCoordinate | null): any {
-    if (value === undefined) {
-        return undefined;
-    }
-    if (value === null) {
-        return null;
-    }
-    return {
-        
-        'type': value.type,
-        'state_version': value.state_version,
-    };
+export function LedgerStateSelectorTypeToJSON(value?: LedgerStateSelectorType | null): any {
+    return value as any;
 }
 

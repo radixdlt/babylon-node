@@ -16,48 +16,48 @@ import { exists, mapValues } from '../runtime';
 /**
  * 
  * @export
- * @interface VersionLedgerStateCoordinateAllOf
+ * @interface VersionLedgerStateSelectorAllOf
  */
-export interface VersionLedgerStateCoordinateAllOf {
+export interface VersionLedgerStateSelectorAllOf {
     /**
      * 
      * @type {number}
-     * @memberof VersionLedgerStateCoordinateAllOf
+     * @memberof VersionLedgerStateSelectorAllOf
      */
     state_version: number;
     /**
      * 
      * @type {string}
-     * @memberof VersionLedgerStateCoordinateAllOf
+     * @memberof VersionLedgerStateSelectorAllOf
      */
-    type?: VersionLedgerStateCoordinateAllOfTypeEnum;
+    type?: VersionLedgerStateSelectorAllOfTypeEnum;
 }
 
 
 /**
  * @export
  */
-export const VersionLedgerStateCoordinateAllOfTypeEnum = {
+export const VersionLedgerStateSelectorAllOfTypeEnum = {
     ByStateVersion: 'ByStateVersion'
 } as const;
-export type VersionLedgerStateCoordinateAllOfTypeEnum = typeof VersionLedgerStateCoordinateAllOfTypeEnum[keyof typeof VersionLedgerStateCoordinateAllOfTypeEnum];
+export type VersionLedgerStateSelectorAllOfTypeEnum = typeof VersionLedgerStateSelectorAllOfTypeEnum[keyof typeof VersionLedgerStateSelectorAllOfTypeEnum];
 
 
 /**
- * Check if a given object implements the VersionLedgerStateCoordinateAllOf interface.
+ * Check if a given object implements the VersionLedgerStateSelectorAllOf interface.
  */
-export function instanceOfVersionLedgerStateCoordinateAllOf(value: object): boolean {
+export function instanceOfVersionLedgerStateSelectorAllOf(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "state_version" in value;
 
     return isInstance;
 }
 
-export function VersionLedgerStateCoordinateAllOfFromJSON(json: any): VersionLedgerStateCoordinateAllOf {
-    return VersionLedgerStateCoordinateAllOfFromJSONTyped(json, false);
+export function VersionLedgerStateSelectorAllOfFromJSON(json: any): VersionLedgerStateSelectorAllOf {
+    return VersionLedgerStateSelectorAllOfFromJSONTyped(json, false);
 }
 
-export function VersionLedgerStateCoordinateAllOfFromJSONTyped(json: any, ignoreDiscriminator: boolean): VersionLedgerStateCoordinateAllOf {
+export function VersionLedgerStateSelectorAllOfFromJSONTyped(json: any, ignoreDiscriminator: boolean): VersionLedgerStateSelectorAllOf {
     if ((json === undefined) || (json === null)) {
         return json;
     }
@@ -68,7 +68,7 @@ export function VersionLedgerStateCoordinateAllOfFromJSONTyped(json: any, ignore
     };
 }
 
-export function VersionLedgerStateCoordinateAllOfToJSON(value?: VersionLedgerStateCoordinateAllOf | null): any {
+export function VersionLedgerStateSelectorAllOfToJSON(value?: VersionLedgerStateSelectorAllOf | null): any {
     if (value === undefined) {
         return undefined;
     }

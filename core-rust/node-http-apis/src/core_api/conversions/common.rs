@@ -168,11 +168,11 @@ pub fn to_api_ledger_header_summary(
 
 // Note: currently our only way of specifying this is using StateVersion, but we may have to return
 // an enum at some point.
-pub fn extract_ledger_state_coordinate(
-    coordinate: &models::LedgerStateCoordinate,
+pub fn extract_ledger_state_selector(
+    selector: &models::LedgerStateSelector,
 ) -> Result<StateVersion, ExtractionError> {
-    Ok(match coordinate {
-        models::LedgerStateCoordinate::VersionLedgerStateCoordinate { state_version } => {
+    Ok(match selector {
+        models::LedgerStateSelector::VersionLedgerStateSelector { state_version } => {
             extract_api_state_version(*state_version)?
         }
     })

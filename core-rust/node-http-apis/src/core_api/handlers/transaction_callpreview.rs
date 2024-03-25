@@ -24,7 +24,7 @@ pub(crate) async fn handle_transaction_callpreview(
     let at_state_version = request
         .at_ledger_state
         .as_deref()
-        .map(extract_ledger_state_coordinate)
+        .map(extract_ledger_state_selector)
         .transpose()
         .map_err(|err| err.into_response_error("at_ledger_state"))?;
 
