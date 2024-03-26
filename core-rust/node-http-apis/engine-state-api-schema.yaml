@@ -65,6 +65,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        '409':
+          description: Request conflicting with the Node's configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         '500':
           description: Server error
           content:
@@ -92,6 +98,12 @@ paths:
                 $ref: "#/components/schemas/BlueprintInfoResponse"
         '400':
           description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '409':
+          description: Request conflicting with the Node's configuration
           content:
             application/json:
               schema:
@@ -129,6 +141,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        '409':
+          description: Request conflicting with the Node's configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         '500':
           description: Server error
           content:
@@ -162,6 +180,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        '409':
+          description: Request conflicting with the Node's configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         '500':
           description: Server error
           content:
@@ -189,6 +213,12 @@ paths:
                 $ref: "#/components/schemas/ObjectCollectionIteratorResponse"
         '400':
           description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '409':
+          description: Request conflicting with the Node's configuration
           content:
             application/json:
               schema:
@@ -225,6 +255,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        '409':
+          description: Request conflicting with the Node's configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         '500':
           description: Server error
           content:
@@ -252,6 +288,12 @@ paths:
                 $ref: "#/components/schemas/KeyValueStoreIteratorResponse"
         '400':
           description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '409':
+          description: Request conflicting with the Node's configuration
           content:
             application/json:
               schema:
@@ -288,6 +330,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        '409':
+          description: Request conflicting with the Node's configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         '500':
           description: Server error
           content:
@@ -320,6 +368,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        '409':
+          description: Request conflicting with the Node's configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         '500':
           description: Server error
           content:
@@ -347,6 +401,12 @@ paths:
                 $ref: "#/components/schemas/ObjectMetadataIteratorResponse"
         '400':
           description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '409':
+          description: Request conflicting with the Node's configuration
           content:
             application/json:
               schema:
@@ -383,6 +443,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        '409':
+          description: Request conflicting with the Node's configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         '500':
           description: Server error
           content:
@@ -411,6 +477,12 @@ paths:
                 $ref: "#/components/schemas/ObjectRoleAssignmentResponse"
         '400':
           description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '409':
+          description: Request conflicting with the Node's configuration
           content:
             application/json:
               schema:
@@ -444,6 +516,12 @@ paths:
                 $ref: "#/components/schemas/ObjectRoyaltyResponse"
         '400':
           description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '409':
+          description: Request conflicting with the Node's configuration
           content:
             application/json:
               schema:
@@ -731,14 +809,18 @@ components:
       enum:
         - RequestedItemNotFound
         - RequestedItemInvalid
+        - StateVersionInTooDistantPast
+        - StateVersionInFuture
     ErrorDetails:
       type: object
       discriminator:
         propertyName: error_type
         mapping:
-          # NOTE: These need to match ErrorResponseType
+          # NOTE: These need to match ErrorType
           RequestedItemNotFound: "#/components/schemas/RequestedItemNotFoundDetails"
           RequestedItemInvalid: "#/components/schemas/RequestedItemInvalidDetails"
+          StateVersionInTooDistantPast: "#/components/schemas/StateVersionInTooDistantPastDetails"
+          StateVersionInFuture: "#/components/schemas/StateVersionInFutureDetails"
       required:
         - error_type
       properties:
@@ -762,6 +844,24 @@ components:
           properties:
             item_type:
               $ref: "#/components/schemas/RequestedItemType"
+    StateVersionInTooDistantPastDetails:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - earliest_available_state_version
+          properties:
+            earliest_available_state_version:
+              $ref: "#/components/schemas/StateVersion"
+    StateVersionInFutureDetails:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - current_state_version
+          properties:
+            current_state_version:
+              $ref: "#/components/schemas/StateVersion"
     RequestedItemType:
       type: string
       enum:

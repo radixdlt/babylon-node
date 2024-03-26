@@ -23,6 +23,16 @@ pub enum ErrorDetails {
         #[serde(rename = "item_type")]
         item_type: crate::engine_state_api::generated::models::RequestedItemType,
     },
+    #[serde(rename="StateVersionInFuture")]
+    StateVersionInFutureDetails {
+        #[serde(rename = "current_state_version")]
+        current_state_version: i64,
+    },
+    #[serde(rename="StateVersionInTooDistantPast")]
+    StateVersionInTooDistantPastDetails {
+        #[serde(rename = "earliest_available_state_version")]
+        earliest_available_state_version: i64,
+    },
 }
 
 
