@@ -34,9 +34,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * An optional specification of a historical ledger state at which to execute the request. The \&quot;historical state\&quot; feature must be enabled on the Node, and the requested point in history must be recent enough (in accordance with the Node&#39;s configured history length). 
+ * An optional specification of a historical ledger state at which to execute the request. The \&quot;historical state\&quot; feature (see the &#x60;db.historical_substate_values.enable&#x60; flag) must be enabled on the Node, and the requested point in history must be recent enough (in accordance with the Node&#39;s configured &#x60;state_hash_tree.state_version_history_length&#x60;). 
  */
-@ApiModel(description = "An optional specification of a historical ledger state at which to execute the request. The \"historical state\" feature must be enabled on the Node, and the requested point in history must be recent enough (in accordance with the Node's configured history length). ")
+@ApiModel(description = "An optional specification of a historical ledger state at which to execute the request. The \"historical state\" feature (see the `db.historical_substate_values.enable` flag) must be enabled on the Node, and the requested point in history must be recent enough (in accordance with the Node's configured `state_hash_tree.state_version_history_length`). ")
 @JsonPropertyOrder({
   LedgerStateSelector.JSON_PROPERTY_TYPE
 })
