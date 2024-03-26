@@ -35,13 +35,11 @@ pub(crate) async fn handle_entity_iterator(
 
     let database = state.state_manager.database.snapshot();
     if !database.are_re_node_listing_indices_enabled() {
-        return Err(ResponseError::new(
-            StatusCode::CONFLICT,
-            "Required Node feature is not enabled",
+        return Err(NodeFeatureDisabledError::new(
+            "Entity listing",
+            "db.re_node_listing_indices.enable",
         )
-        .with_internal_message(
-            "Missing `db.re_node_listing_indices.enable = true` Node configuration flag",
-        ));
+        .into());
     }
     let effective_state_version =
         resolve_effective_state_version(database.deref(), effective_filter.at_state_version)?;

@@ -10,6 +10,7 @@ use hyper::StatusCode;
 
 use rand::distributions::Alphanumeric;
 use rand::Rng;
+use state_manager::historical_state::StateHistoryError;
 use tower_http::catch_panic::ResponseForPanic;
 use tracing::{debug, error, info, trace, warn, Level};
 
@@ -146,4 +147,76 @@ pub async fn emit_error_response_event(uri: Uri, response: Response) -> Response
         }
     }
     response
+}
+
+impl From<StateHistoryError> for ResponseError {
+    fn from(error: StateHistoryError) -> Self {
+        match error {
+            StateHistoryError::StateHistoryDisabled => NodeFeatureDisabledError::new(
+                "State history",
+                "db.historical_substate_values.enable",
+            )
+            .into(),
+            StateHistoryError::StateVersionInTooDistantPast {
+                first_available_version,
+            } => {
+                ResponseError::new(
+                    StatusCode::BAD_REQUEST,
+                    "Cannot request state version past the earliest available",
+                )
+                .with_public_details(models::ErrorDetails::StateVersionInTooDistantPastDetails {
+                    // best-effort conversion - we should not error-out within error-handling:
+                    earliest_available_state_version: first_available_version.number() as i64,
+                })
+                .with_internal_message(
+                    "See the `state_hash_tree.state_version_history_length` Node configuration",
+                )
+            }
+            StateHistoryError::StateVersionInFuture { current_version } => {
+                ResponseError::new(
+                    StatusCode::BAD_REQUEST,
+                    "Cannot request state version ahead of the current top-of-ledger",
+                )
+                .with_public_details(
+                    models::ErrorDetails::StateVersionInFutureDetails {
+                        // best-effort conversion - we should not error-out within error-handling:
+                        current_state_version: current_version.number() as i64,
+                    },
+                )
+            }
+        }
+    }
+}
+
+/// An error occurring when a Node feature required to handle the request is not configured.
+/// To be translated into [`StatusCode::CONFLICT`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NodeFeatureDisabledError {
+    public_feature_name: String,
+    property_name: String,
+}
+
+impl NodeFeatureDisabledError {
+    pub fn new(public_feature_name: impl Into<String>, property_name: impl Into<String>) -> Self {
+        Self {
+            public_feature_name: public_feature_name.into(),
+            property_name: property_name.into(),
+        }
+    }
+}
+
+impl From<NodeFeatureDisabledError> for ResponseError {
+    fn from(error: NodeFeatureDisabledError) -> Self {
+        ResponseError::new(
+            StatusCode::CONFLICT,
+            format!(
+                "{} feature is not enabled on this Node",
+                error.public_feature_name
+            ),
+        )
+        .with_internal_message(format!(
+            "Missing `{}` Node configuration flag",
+            error.property_name
+        ))
+    }
 }

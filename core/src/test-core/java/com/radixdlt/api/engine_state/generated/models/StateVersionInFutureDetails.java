@@ -29,9 +29,8 @@ import com.radixdlt.api.engine_state.generated.models.ErrorDetails;
 import com.radixdlt.api.engine_state.generated.models.ErrorType;
 import com.radixdlt.api.engine_state.generated.models.RequestedItemInvalidDetails;
 import com.radixdlt.api.engine_state.generated.models.RequestedItemNotFoundDetails;
-import com.radixdlt.api.engine_state.generated.models.RequestedItemNotFoundDetailsAllOf;
-import com.radixdlt.api.engine_state.generated.models.RequestedItemType;
 import com.radixdlt.api.engine_state.generated.models.StateVersionInFutureDetails;
+import com.radixdlt.api.engine_state.generated.models.StateVersionInFutureDetailsAllOf;
 import com.radixdlt.api.engine_state.generated.models.StateVersionInTooDistantPastDetails;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -40,10 +39,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.engine_state.generated.client.JSON;
 /**
- * RequestedItemNotFoundDetails
+ * StateVersionInFutureDetails
  */
 @JsonPropertyOrder({
-  RequestedItemNotFoundDetails.JSON_PROPERTY_ITEM_TYPE
+  StateVersionInFutureDetails.JSON_PROPERTY_CURRENT_STATE_VERSION
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -58,41 +57,43 @@ import com.radixdlt.api.engine_state.generated.client.JSON;
   @JsonSubTypes.Type(value = StateVersionInTooDistantPastDetails.class, name = "StateVersionInTooDistantPast"),
 })
 
-public class RequestedItemNotFoundDetails extends ErrorDetails {
-  public static final String JSON_PROPERTY_ITEM_TYPE = "item_type";
-  private RequestedItemType itemType;
+public class StateVersionInFutureDetails extends ErrorDetails {
+  public static final String JSON_PROPERTY_CURRENT_STATE_VERSION = "current_state_version";
+  private Long currentStateVersion;
 
-  public RequestedItemNotFoundDetails() { 
+  public StateVersionInFutureDetails() { 
   }
 
-  public RequestedItemNotFoundDetails itemType(RequestedItemType itemType) {
-    this.itemType = itemType;
+  public StateVersionInFutureDetails currentStateVersion(Long currentStateVersion) {
+    this.currentStateVersion = currentStateVersion;
     return this;
   }
 
    /**
-   * Get itemType
-   * @return itemType
+   * Get currentStateVersion
+   * minimum: 1
+   * maximum: 100000000000000
+   * @return currentStateVersion
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ITEM_TYPE)
+  @JsonProperty(JSON_PROPERTY_CURRENT_STATE_VERSION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public RequestedItemType getItemType() {
-    return itemType;
+  public Long getCurrentStateVersion() {
+    return currentStateVersion;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ITEM_TYPE)
+  @JsonProperty(JSON_PROPERTY_CURRENT_STATE_VERSION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setItemType(RequestedItemType itemType) {
-    this.itemType = itemType;
+  public void setCurrentStateVersion(Long currentStateVersion) {
+    this.currentStateVersion = currentStateVersion;
   }
 
 
   /**
-   * Return true if this RequestedItemNotFoundDetails object is equal to o.
+   * Return true if this StateVersionInFutureDetails object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -102,22 +103,22 @@ public class RequestedItemNotFoundDetails extends ErrorDetails {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    RequestedItemNotFoundDetails requestedItemNotFoundDetails = (RequestedItemNotFoundDetails) o;
-    return Objects.equals(this.itemType, requestedItemNotFoundDetails.itemType) &&
+    StateVersionInFutureDetails stateVersionInFutureDetails = (StateVersionInFutureDetails) o;
+    return Objects.equals(this.currentStateVersion, stateVersionInFutureDetails.currentStateVersion) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(itemType, super.hashCode());
+    return Objects.hash(currentStateVersion, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class RequestedItemNotFoundDetails {\n");
+    sb.append("class StateVersionInFutureDetails {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    itemType: ").append(toIndentedString(itemType)).append("\n");
+    sb.append("    currentStateVersion: ").append(toIndentedString(currentStateVersion)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -140,8 +141,8 @@ static {
   mappings.put("RequestedItemNotFound", RequestedItemNotFoundDetails.class);
   mappings.put("StateVersionInFuture", StateVersionInFutureDetails.class);
   mappings.put("StateVersionInTooDistantPast", StateVersionInTooDistantPastDetails.class);
-  mappings.put("RequestedItemNotFoundDetails", RequestedItemNotFoundDetails.class);
-  JSON.registerDiscriminator(RequestedItemNotFoundDetails.class, "error_type", mappings);
+  mappings.put("StateVersionInFutureDetails", StateVersionInFutureDetails.class);
+  JSON.registerDiscriminator(StateVersionInFutureDetails.class, "error_type", mappings);
 }
 }
 

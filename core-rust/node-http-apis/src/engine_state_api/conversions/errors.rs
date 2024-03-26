@@ -1,6 +1,5 @@
 use crate::engine_prelude::*;
 
-use state_manager::historical_state::StateHistoryError;
 use transaction::errors::TransactionValidationError;
 
 use crate::engine_state_api::*;
@@ -32,23 +31,6 @@ impl From<MappingError> for ResponseError {
             "Could not render response".to_string(),
         )
         .with_internal_message(format!("{:?}", mapping_error))
-    }
-}
-
-impl From<StateHistoryError> for ResponseError {
-    fn from(error: StateHistoryError) -> Self {
-        let message = match error {
-            StateHistoryError::StateHistoryDisabled => {
-                "State history feature must be enabled (see the `db.historical_substate_values.enable` Node configuration flag)".to_string()
-            }
-            StateHistoryError::StateVersionInTooDistantPast { first_available_version } => {
-                format!("Cannot request state version past the earliest available {} (see the `state_hash_tree.state_version_history_length` Node configuration flag)", first_available_version)
-            }
-            StateHistoryError::StateVersionInFuture { current_version } => {
-                format!("Cannot request state version ahead of the current top-of-ledger {}", current_version)
-            }
-        };
-        ResponseError::new(StatusCode::BAD_REQUEST, message)
     }
 }
 

@@ -31,6 +31,8 @@ import com.radixdlt.api.engine_state.generated.models.RequestedItemInvalidDetail
 import com.radixdlt.api.engine_state.generated.models.RequestedItemNotFoundDetails;
 import com.radixdlt.api.engine_state.generated.models.RequestedItemNotFoundDetailsAllOf;
 import com.radixdlt.api.engine_state.generated.models.RequestedItemType;
+import com.radixdlt.api.engine_state.generated.models.StateVersionInFutureDetails;
+import com.radixdlt.api.engine_state.generated.models.StateVersionInTooDistantPastDetails;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -52,6 +54,8 @@ import com.radixdlt.api.engine_state.generated.client.JSON;
 @JsonSubTypes({
   @JsonSubTypes.Type(value = RequestedItemInvalidDetails.class, name = "RequestedItemInvalid"),
   @JsonSubTypes.Type(value = RequestedItemNotFoundDetails.class, name = "RequestedItemNotFound"),
+  @JsonSubTypes.Type(value = StateVersionInFutureDetails.class, name = "StateVersionInFuture"),
+  @JsonSubTypes.Type(value = StateVersionInTooDistantPastDetails.class, name = "StateVersionInTooDistantPast"),
 })
 
 public class RequestedItemInvalidDetails extends ErrorDetails {
@@ -134,6 +138,8 @@ static {
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
   mappings.put("RequestedItemInvalid", RequestedItemInvalidDetails.class);
   mappings.put("RequestedItemNotFound", RequestedItemNotFoundDetails.class);
+  mappings.put("StateVersionInFuture", StateVersionInFutureDetails.class);
+  mappings.put("StateVersionInTooDistantPast", StateVersionInTooDistantPastDetails.class);
   mappings.put("RequestedItemInvalidDetails", RequestedItemInvalidDetails.class);
   JSON.registerDiscriminator(RequestedItemInvalidDetails.class, "error_type", mappings);
 }

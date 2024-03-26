@@ -16,6 +16,10 @@ pub enum ErrorType {
     RequestedItemNotFound,
     #[serde(rename = "RequestedItemInvalid")]
     RequestedItemInvalid,
+    #[serde(rename = "StateVersionInTooDistantPast")]
+    StateVersionInTooDistantPast,
+    #[serde(rename = "StateVersionInFuture")]
+    StateVersionInFuture,
 
 }
 
@@ -24,6 +28,8 @@ impl ToString for ErrorType {
         match self {
             Self::RequestedItemNotFound => String::from("RequestedItemNotFound"),
             Self::RequestedItemInvalid => String::from("RequestedItemInvalid"),
+            Self::StateVersionInTooDistantPast => String::from("StateVersionInTooDistantPast"),
+            Self::StateVersionInFuture => String::from("StateVersionInFuture"),
         }
     }
 }

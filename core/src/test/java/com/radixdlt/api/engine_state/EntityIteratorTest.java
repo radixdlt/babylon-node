@@ -413,7 +413,12 @@ public final class EntityIteratorTest extends DeterministicEngineStateApiTestBas
 
       // Assert that the error informs about it:
       assertThat(errorResponse.getMessage())
-          .containsIgnoringCase("state version past the earliest available 27");
+          .containsIgnoringCase("state version past the earliest available");
+      assertThat(errorResponse.getDetails())
+          .isEqualTo(
+              new StateVersionInTooDistantPastDetails()
+                  .earliestAvailableStateVersion(27L)
+                  .errorType(ErrorType.STATEVERSIONINTOODISTANTPAST));
     }
   }
 }

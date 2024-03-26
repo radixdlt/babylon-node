@@ -30,7 +30,11 @@ public enum ErrorType {
   
   REQUESTEDITEMNOTFOUND("RequestedItemNotFound"),
   
-  REQUESTEDITEMINVALID("RequestedItemInvalid");
+  REQUESTEDITEMINVALID("RequestedItemInvalid"),
+  
+  STATEVERSIONINTOODISTANTPAST("StateVersionInTooDistantPast"),
+  
+  STATEVERSIONINFUTURE("StateVersionInFuture");
 
   private String value;
 
