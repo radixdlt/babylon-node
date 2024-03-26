@@ -182,9 +182,7 @@ pub fn to_api_instant_from_safe_timestamp(
     })
 }
 
-pub fn extract_api_state_version(
-    state_version_number: i64,
-) -> Result<StateVersion, ExtractionError> {
+pub fn extract_state_version(state_version_number: i64) -> Result<StateVersion, ExtractionError> {
     if state_version_number < 1 {
         return Err(ExtractionError::InvalidInteger {
             message: "State version must be >= 1".to_owned(),

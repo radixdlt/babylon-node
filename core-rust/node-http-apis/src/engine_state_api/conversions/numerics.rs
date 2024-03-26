@@ -47,9 +47,7 @@ pub fn to_api_state_version(state_version: StateVersion) -> Result<i64, MappingE
         .expect("State version too large somehow"))
 }
 
-pub fn extract_api_state_version(
-    state_version_number: i64,
-) -> Result<StateVersion, ExtractionError> {
+pub fn extract_state_version(state_version_number: i64) -> Result<StateVersion, ExtractionError> {
     if !(0..=MAX_API_STATE_VERSION as i64).contains(&state_version_number) {
         return Err(ExtractionError::InvalidInteger {
             message: format!(
