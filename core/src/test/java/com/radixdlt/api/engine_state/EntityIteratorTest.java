@@ -66,13 +66,13 @@ package com.radixdlt.api.engine_state;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.collect.Multimaps;
+import com.google.common.collect.Ordering;
 import com.radixdlt.api.DeterministicEngineStateApiTestBase;
 import com.radixdlt.api.engine_state.generated.models.*;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
@@ -270,29 +270,101 @@ public final class EntityIteratorTest extends DeterministicEngineStateApiTestBas
   }
 
   @Test
-  public void engine_state_api_entity_iterator_requires_same_filter_across_pages()
+  public void engine_state_api_entity_iterator_requires_same_params_across_pages()
       throws Exception {
     try (var test = buildRunningServerTest()) {
       test.suppressUnusedWarning();
+
+      final var sameFilter = new EntityTypeFilter().entityType(EntityType.INTERNALKEYVALUESTORE);
+      final var sameLedgerStateSelector =
+          new VersionLedgerStateSelector()
+              .stateVersion(5L)
+              .type(LedgerStateSelectorType.BYSTATEVERSION);
 
       final var firstPageResponse =
           getEntitiesApi()
               .entityIteratorPost(
                   new EntityIteratorRequest()
-                      .filter(new EntityTypeFilter().entityType(EntityType.INTERNALKEYVALUESTORE))
+                      .filter(sameFilter)
+                      .atLedgerState(sameLedgerStateSelector)
                       .maxPageSize(1)); // we assume there is more than 1 KV-store
 
-      final var errorResponse =
+      final var whenDifferingFilter =
           assertErrorResponse(
               () ->
                   getEntitiesApi()
                       .entityIteratorPost(
                           new EntityIteratorRequest()
                               .filter(new EntityTypeFilter().entityType(EntityType.GLOBALPACKAGE))
+                              .atLedgerState(sameLedgerStateSelector)
                               .continuationToken(firstPageResponse.getContinuationToken())));
+      assertThat(whenDifferingFilter.getMessage()).contains("filter");
+      assertThat(whenDifferingFilter.getDetails()).isNull(); // it is not an application logic error
 
-      assertThat(errorResponse.getMessage()).contains("filter");
-      assertThat(errorResponse.getDetails()).isNull(); // it is not an application logic error
+      final var whenDifferingLedgerStateSelector =
+          assertErrorResponse(
+              () ->
+                  getEntitiesApi()
+                      .entityIteratorPost(
+                          new EntityIteratorRequest()
+                              .filter(sameFilter)
+                              .atLedgerState(
+                                  new VersionLedgerStateSelector()
+                                      .stateVersion(4L)
+                                      .type(LedgerStateSelectorType.BYSTATEVERSION))
+                              .continuationToken(firstPageResponse.getContinuationToken())));
+      assertThat(whenDifferingLedgerStateSelector.getMessage()).contains("filter");
+      assertThat(whenDifferingLedgerStateSelector.getDetails())
+          .isNull(); // it is not an application logic error
+    }
+  }
+
+  // Note: we want to test "historical state" working with and without filters.
+  public EntityIteratorFilter[] noneOrBroadFilters() {
+    return Stream.concat(Stream.of((EntityIteratorFilter) null), Arrays.stream(broadFilters()))
+        .toArray(EntityIteratorFilter[]::new);
+  }
+
+  @Test
+  @Parameters(method = "noneOrBroadFilters")
+  public void engine_state_api_entity_iterator_supports_history(
+      @Nullable EntityIteratorFilter filter) throws Exception {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
+
+      // Arrange: collect all entities (as of now) and index them by creation version:
+      final var currentVersionResponse =
+          getEntitiesApi().entityIteratorPost(new EntityIteratorRequest().filter(filter));
+      // sanity check: make sure we don't have to deal with pages in this scenario:
+      assertThat(currentVersionResponse.getContinuationToken()).isNull();
+
+      final var entitiesByCreationVersion =
+          Multimaps.index(
+              currentVersionResponse.getPage(), ListedEntityItem::getCreatedAtStateVersion);
+      // find all the non-latest entities (called "older" from this point on):
+      final var latestEntitiesCreatedAtVersion =
+          Ordering.natural().max(entitiesByCreationVersion.keySet());
+      final var olderEntities =
+          entitiesByCreationVersion.asMap().entrySet().stream()
+              .filter(entry -> entry.getKey() < latestEntitiesCreatedAtVersion)
+              .flatMap(entry -> entry.getValue().stream())
+              .toList();
+      // sanity check: make sure that there are >0 older entities
+      assertThat(olderEntities).isNotEmpty();
+
+      // Act: list all entities at a state version just before the creation of the latest ones:
+      final var olderVersionResponse =
+          getEntitiesApi()
+              .entityIteratorPost(
+                  new EntityIteratorRequest()
+                      .filter(filter)
+                      .atLedgerState(
+                          new VersionLedgerStateSelector()
+                              .stateVersion(latestEntitiesCreatedAtVersion - 1)
+                              .type(LedgerStateSelectorType.BYSTATEVERSION)));
+
+      // Assert: we clearly know the older entities:
+      assertThat(olderVersionResponse.getPage()).hasSameElementsAs(olderEntities);
     }
   }
 }

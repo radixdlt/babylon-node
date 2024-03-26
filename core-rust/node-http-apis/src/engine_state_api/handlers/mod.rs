@@ -43,21 +43,58 @@ pub struct HandlerPagingSupport {
 }
 
 impl HandlerPagingSupport {
-    /// Creates an instance from raw HTTP-level arguments.
-    /// Their parsing/validation of `max_page_size` and `continuation_token` is deferred until
-    /// [`Self::get_page()`], since only then the required item/key types are known.
-    /// The `filter` is used only to ensure it was not changed from previous page - we expect an
-    /// arbitrary (serializable) structure coming from the request (may be `None` if the endpoint
-    /// does not support filtering).
-    pub fn new<F: serde::Serialize>(
+    /// A convenience [`Self::new_with_serialized_filter`] adapter for a filter directly coming from
+    /// a `serde`-serialized request field.
+    #[allow(dead_code)] // TODO(state-history): it will be used by other listing endpoints soon
+    pub fn new_with_serde_filter(
         max_page_size: Option<i32>,
         continuation_token: Option<String>,
-        filter: &F,
+        filter: &impl serde::Serialize,
+    ) -> Self {
+        Self::new_with_serialized_filter(
+            max_page_size,
+            continuation_token,
+            serde_json::to_vec(filter).expect("cannot encode serde"),
+        )
+    }
+
+    /// A convenience [`Self::new_with_serialized_filter`] adapter for a filter constructed by the
+    /// endpoint logic (e.g. via composing a few de-facto-filtering request fields).
+    pub fn new_with_sbor_filter(
+        max_page_size: Option<i32>,
+        continuation_token: Option<String>,
+        filter: &impl ScryptoEncode,
+    ) -> Self {
+        Self::new_with_serialized_filter(
+            max_page_size,
+            continuation_token,
+            scrypto_encode(filter).expect("cannot encode SBOR"),
+        )
+    }
+
+    /// A convenience [`Self::new_with_serialized_filter`] adapter for endpoints without filters.
+    pub fn new_without_filter(
+        max_page_size: Option<i32>,
+        continuation_token: Option<String>,
+    ) -> Self {
+        Self::new_with_serialized_filter(max_page_size, continuation_token, vec![])
+    }
+
+    /// Creates an instance from HTTP-level arguments.
+    /// The parsing/validation of `max_page_size` and `continuation_token` is deferred until
+    /// [`Self::get_page()`], since only then the required item/key types are known.
+    /// The opaque `serialized_filter` is used only to ensure it was not changed from the previous
+    /// page - we expect an arbitrary (serializable) structure coming from the request (possibly
+    /// empty, if the endpoint does not support filtering).
+    pub fn new_with_serialized_filter(
+        max_page_size: Option<i32>,
+        continuation_token: Option<String>,
+        serialized_filter: impl AsRef<[u8]>,
     ) -> Self {
         Self {
             max_page_size,
             requested_continuation_token_string: continuation_token,
-            requested_filter_hash: hash(serde_json::to_vec(filter).expect("it was serialized")),
+            requested_filter_hash: hash(serialized_filter),
         }
     }
 

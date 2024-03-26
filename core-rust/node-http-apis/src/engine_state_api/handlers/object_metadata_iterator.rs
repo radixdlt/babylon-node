@@ -11,11 +11,8 @@ pub(crate) async fn handle_object_metadata_iterator(
 ) -> Result<Json<models::ObjectMetadataIteratorResponse>, ResponseError> {
     let mapping_context = MappingContext::new(&state.network);
     let extraction_context = ExtractionContext::new(&state.network);
-    let paging_support = HandlerPagingSupport::new(
-        request.max_page_size,
-        request.continuation_token,
-        &Option::<()>::None,
-    );
+    let paging_support =
+        HandlerPagingSupport::new_without_filter(request.max_page_size, request.continuation_token);
 
     let node_id = extract_address_as_node_id(&extraction_context, &request.entity_address)
         .map_err(|err| err.into_response_error("entity_address"))?;

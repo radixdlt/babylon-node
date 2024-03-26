@@ -21,6 +21,8 @@ pub struct EntityIteratorRequest {
     /// An opaque string conveying the information on where the next page of results starts. It is returned in every paged listing response (except for the last page), and it can be passed in every paged listing request (in order to begin listing from where the previous response ended). 
     #[serde(rename = "continuation_token", skip_serializing_if = "Option::is_none")]
     pub continuation_token: Option<String>,
+    #[serde(rename = "at_ledger_state", skip_serializing_if = "Option::is_none")]
+    pub at_ledger_state: Option<Box<crate::engine_state_api::generated::models::LedgerStateSelector>>,
 }
 
 impl EntityIteratorRequest {
@@ -29,6 +31,7 @@ impl EntityIteratorRequest {
             filter: None,
             max_page_size: None,
             continuation_token: None,
+            at_ledger_state: None,
         }
     }
 }
