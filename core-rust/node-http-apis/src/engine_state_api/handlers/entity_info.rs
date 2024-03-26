@@ -1,5 +1,6 @@
 use crate::engine_prelude::*;
 use crate::engine_state_api::*;
+use state_manager::historical_state::VersionScopedSubstateDatabase;
 use state_manager::store::traits::{SubstateNodeAncestryRecord, SubstateNodeAncestryStore};
 use std::ops::Deref;
 
@@ -12,10 +13,15 @@ pub(crate) async fn handle_entity_info(
 
     let node_id = extract_address_as_node_id(&extraction_context, &request.entity_address)
         .map_err(|err| err.into_response_error("entity_address"))?;
+    let requested_state_version =
+        extract_opt_ledger_state_selector(request.at_ledger_state.as_deref())
+            .map_err(|err| err.into_response_error("at_ledger_state"))?;
 
     let database = state.state_manager.database.snapshot();
 
-    let meta_loader = EngineStateMetaLoader::new(database.deref());
+    let substate_database =
+        VersionScopedSubstateDatabase::new(database.deref(), requested_state_version)?;
+    let meta_loader = EngineStateMetaLoader::new(&substate_database);
     let entity_meta = meta_loader.load_entity_meta(&node_id)?;
 
     // Technically, the ancestry information could be interpreted as part of "meta" and included in
@@ -24,7 +30,7 @@ pub(crate) async fn handle_entity_info(
     // available there. So let's load the ancestry directly from our database here.
     let entity_ancestry = database.deref().get_ancestry(&node_id);
 
-    let header = read_current_ledger_header(database.deref());
+    let header = read_effective_ledger_header(database.deref(), requested_state_version);
 
     Ok(Json(models::EntityInfoResponse {
         at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),

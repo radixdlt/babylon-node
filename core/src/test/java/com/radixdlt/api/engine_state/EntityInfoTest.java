@@ -236,4 +236,46 @@ public final class EntityInfoTest extends DeterministicEngineStateApiTestBase {
       assertThat(objectInfo.getInstanceInfo().getOuterObjectAddress()).isNull();
     }
   }
+
+  @Test
+  public void engine_state_api_entity_info_supports_history() throws Exception {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
+
+      // The Entity info is effectively immutable, but we can still experience "historical state"
+      // with this endpoint by querying an Entity before and after it was created.
+      final var wellKnownAddresses = getCoreApiHelper().getWellKnownAddresses();
+
+      // The ConsensusManager was created at version 2, so let us ask about version 3...
+      final var responseAtVersion3 =
+          getEntitiesApi()
+              .entityInfoPost(
+                  new EntityInfoRequest()
+                      .entityAddress(wellKnownAddresses.getConsensusManager())
+                      .atLedgerState(
+                          new VersionLedgerStateSelector()
+                              .stateVersion(3L)
+                              .type(LedgerStateSelectorType.BYSTATEVERSION)));
+      assertThat(responseAtVersion3.getInfo()).isNotNull();
+      assertThat(responseAtVersion3.getAtLedgerState().getStateVersion()).isEqualTo(3L);
+
+      // ... and at version 1, where it does not exist yet:
+      final var errorResponseAtVersion1 =
+          assertErrorResponse(
+              () ->
+                  getEntitiesApi()
+                      .entityInfoPost(
+                          new EntityInfoRequest()
+                              .entityAddress(wellKnownAddresses.getConsensusManager())
+                              .atLedgerState(
+                                  new VersionLedgerStateSelector()
+                                      .stateVersion(1L)
+                                      .type(LedgerStateSelectorType.BYSTATEVERSION))));
+      assertThat((RequestedItemNotFoundDetails) errorResponseAtVersion1.getDetails())
+          .isEqualTo(
+              new RequestedItemNotFoundDetails()
+                  .itemType(RequestedItemType.ENTITY)
+                  .errorType(ErrorType.REQUESTEDITEMNOTFOUND));
+    }
+  }
 }

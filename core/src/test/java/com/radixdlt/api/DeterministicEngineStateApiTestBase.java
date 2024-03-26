@@ -98,7 +98,7 @@ import org.junit.rules.TemporaryFolder;
 
 public abstract class DeterministicEngineStateApiTestBase {
   private static final DatabaseConfig DEFAULT_DATABASE_CONFIG =
-      new DatabaseConfig(true, false, false, true);
+      new DatabaseConfig(true, false, true, true);
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
   public static NetworkDefinition networkDefinition = NetworkDefinition.INT_TEST_NET;

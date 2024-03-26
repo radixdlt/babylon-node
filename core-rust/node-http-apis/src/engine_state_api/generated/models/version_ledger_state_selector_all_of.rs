@@ -12,19 +12,15 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct EntityInfoRequest {
-    /// A Bech32m-encoded, human readable rendering of an arbitrary Entity's address.
-    #[serde(rename = "entity_address")]
-    pub entity_address: String,
-    #[serde(rename = "at_ledger_state", skip_serializing_if = "Option::is_none")]
-    pub at_ledger_state: Option<Box<crate::engine_state_api::generated::models::LedgerStateSelector>>,
+pub struct VersionLedgerStateSelectorAllOf {
+    #[serde(rename = "state_version")]
+    pub state_version: i64,
 }
 
-impl EntityInfoRequest {
-    pub fn new(entity_address: String) -> EntityInfoRequest {
-        EntityInfoRequest {
-            entity_address,
-            at_ledger_state: None,
+impl VersionLedgerStateSelectorAllOf {
+    pub fn new(state_version: i64) -> VersionLedgerStateSelectorAllOf {
+        VersionLedgerStateSelectorAllOf {
+            state_version,
         }
     }
 }
