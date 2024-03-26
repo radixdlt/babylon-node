@@ -45,7 +45,6 @@ pub struct HandlerPagingSupport {
 impl HandlerPagingSupport {
     /// A convenience [`Self::new_with_serialized_filter`] adapter for a filter directly coming from
     /// a `serde`-serialized request field.
-    #[allow(dead_code)] // TODO(state-history): it will be used by other listing endpoints soon
     pub fn new_with_serde_filter(
         max_page_size: Option<i32>,
         continuation_token: Option<String>,

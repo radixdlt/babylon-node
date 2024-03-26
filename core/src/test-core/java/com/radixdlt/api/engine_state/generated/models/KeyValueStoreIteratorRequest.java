@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.engine_state.generated.models.LedgerStateSelector;
 import com.radixdlt.api.engine_state.generated.models.SborFormatOptions;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -35,7 +36,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   KeyValueStoreIteratorRequest.JSON_PROPERTY_ENTITY_ADDRESS,
   KeyValueStoreIteratorRequest.JSON_PROPERTY_SBOR_FORMAT_OPTIONS,
   KeyValueStoreIteratorRequest.JSON_PROPERTY_MAX_PAGE_SIZE,
-  KeyValueStoreIteratorRequest.JSON_PROPERTY_CONTINUATION_TOKEN
+  KeyValueStoreIteratorRequest.JSON_PROPERTY_CONTINUATION_TOKEN,
+  KeyValueStoreIteratorRequest.JSON_PROPERTY_AT_LEDGER_STATE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class KeyValueStoreIteratorRequest {
@@ -50,6 +52,9 @@ public class KeyValueStoreIteratorRequest {
 
   public static final String JSON_PROPERTY_CONTINUATION_TOKEN = "continuation_token";
   private String continuationToken;
+
+  public static final String JSON_PROPERTY_AT_LEDGER_STATE = "at_ledger_state";
+  private LedgerStateSelector atLedgerState;
 
   public KeyValueStoreIteratorRequest() { 
   }
@@ -160,6 +165,32 @@ public class KeyValueStoreIteratorRequest {
   }
 
 
+  public KeyValueStoreIteratorRequest atLedgerState(LedgerStateSelector atLedgerState) {
+    this.atLedgerState = atLedgerState;
+    return this;
+  }
+
+   /**
+   * Get atLedgerState
+   * @return atLedgerState
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public LedgerStateSelector getAtLedgerState() {
+    return atLedgerState;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setAtLedgerState(LedgerStateSelector atLedgerState) {
+    this.atLedgerState = atLedgerState;
+  }
+
+
   /**
    * Return true if this KeyValueStoreIteratorRequest object is equal to o.
    */
@@ -175,12 +206,13 @@ public class KeyValueStoreIteratorRequest {
     return Objects.equals(this.entityAddress, keyValueStoreIteratorRequest.entityAddress) &&
         Objects.equals(this.sborFormatOptions, keyValueStoreIteratorRequest.sborFormatOptions) &&
         Objects.equals(this.maxPageSize, keyValueStoreIteratorRequest.maxPageSize) &&
-        Objects.equals(this.continuationToken, keyValueStoreIteratorRequest.continuationToken);
+        Objects.equals(this.continuationToken, keyValueStoreIteratorRequest.continuationToken) &&
+        Objects.equals(this.atLedgerState, keyValueStoreIteratorRequest.atLedgerState);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entityAddress, sborFormatOptions, maxPageSize, continuationToken);
+    return Objects.hash(entityAddress, sborFormatOptions, maxPageSize, continuationToken, atLedgerState);
   }
 
   @Override
@@ -191,6 +223,7 @@ public class KeyValueStoreIteratorRequest {
     sb.append("    sborFormatOptions: ").append(toIndentedString(sborFormatOptions)).append("\n");
     sb.append("    maxPageSize: ").append(toIndentedString(maxPageSize)).append("\n");
     sb.append("    continuationToken: ").append(toIndentedString(continuationToken)).append("\n");
+    sb.append("    atLedgerState: ").append(toIndentedString(atLedgerState)).append("\n");
     sb.append("}");
     return sb.toString();
   }

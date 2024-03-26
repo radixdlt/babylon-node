@@ -69,8 +69,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.common.collect.Iterables;
 import com.radixdlt.api.DeterministicEngineStateApiTestBase;
 import com.radixdlt.api.engine_state.generated.models.*;
+import com.radixdlt.environment.StateTreeGcConfig;
 import com.radixdlt.rev2.Manifest;
+import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.UInt64;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
@@ -125,7 +129,7 @@ public final class KeyValueStoreIteratorTest extends DeterministicEngineStateApi
   }
 
   @Test
-  public void engine_state_api_entity_iterator_returns_actual_kv_store_keys() throws Exception {
+  public void engine_state_api_kv_store_iterator_returns_actual_kv_store_keys() throws Exception {
     try (var test = buildRunningServerTest()) {
       test.suppressUnusedWarning();
 
@@ -152,6 +156,45 @@ public final class KeyValueStoreIteratorTest extends DeterministicEngineStateApi
                   "kind", "Bytes",
                   "element_kind", "U8",
                   "hex", intentHash.hex()));
+    }
+  }
+
+  @Test
+  public void engine_state_api_kv_store_iterator_supports_history() throws Exception {
+    final var longHistory =
+        new StateTreeGcConfig(UInt32.fromNonNegativeInt(1), UInt64.fromNonNegativeLong(100));
+    try (var test = buildRunningServerTest(longHistory)) {
+      test.suppressUnusedWarning();
+
+      // Arrange: execute dummy transactions to grow the Faucet's KV-Store in successive versions:
+      final var versionToStoreSize = new HashMap<Long, Integer>();
+      for (int storeSize = 1; storeSize <= 10; ++storeSize) {
+        final var stateVersion =
+            getCoreApiHelper()
+                .submitAndWaitForSuccess(test, Manifest.newRandomAccount(), List.of())
+                .stateVersion();
+        versionToStoreSize.put(stateVersion, storeSize);
+      }
+
+      for (final var versionAndStoreSize : versionToStoreSize.entrySet()) {
+        // Act: list the KV-store at an arbitrary point in history:
+        final var responseAtVersion =
+            getKvStoresApi()
+                .kvStoreIteratorPost(
+                    new KeyValueStoreIteratorRequest()
+                        .entityAddress(getTransactionsKeyValueStoreAddress())
+                        .atLedgerState(
+                            new VersionLedgerStateSelector()
+                                .stateVersion(versionAndStoreSize.getKey())
+                                .type(LedgerStateSelectorType.BYSTATEVERSION)));
+
+        // Assert: we know how large the KV-store was at that point:
+        assertThat(responseAtVersion.getPage().size()).isEqualTo(versionAndStoreSize.getValue());
+        // sanity checks:
+        assertThat(responseAtVersion.getContinuationToken()).isNull(); // it fits on one page
+        assertThat(responseAtVersion.getAtLedgerState().getStateVersion())
+            .isEqualTo(versionAndStoreSize.getKey()); // the response confirms the request
+      }
     }
   }
 

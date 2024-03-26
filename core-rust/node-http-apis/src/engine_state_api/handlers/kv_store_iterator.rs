@@ -3,6 +3,7 @@ use crate::engine_state_api::*;
 use crate::engine_prelude::*;
 
 use crate::engine_state_api::handlers::HandlerPagingSupport;
+use state_manager::historical_state::VersionScopedSubstateDatabase;
 use std::ops::Deref;
 
 pub(crate) async fn handle_kv_store_iterator(
@@ -12,15 +13,24 @@ pub(crate) async fn handle_kv_store_iterator(
     let mapping_context =
         MappingContext::new(&state.network).with_sbor_formats(request.sbor_format_options);
     let extraction_context = ExtractionContext::new(&state.network);
-    let paging_support =
-        HandlerPagingSupport::new_without_filter(request.max_page_size, request.continuation_token);
+    let paging_support = HandlerPagingSupport::new_with_serde_filter(
+        request.max_page_size,
+        request.continuation_token,
+        &request.at_ledger_state,
+    );
 
     let node_id = extract_address_as_node_id(&extraction_context, &request.entity_address)
         .map_err(|err| err.into_response_error("entity_address"))?;
+    let requested_state_version =
+        extract_opt_ledger_state_selector(request.at_ledger_state.as_deref())
+            .map_err(|err| err.into_response_error("at_ledger_state"))?;
 
     let database = state.state_manager.database.snapshot();
 
-    let meta_loader = EngineStateMetaLoader::new(database.deref());
+    let substate_database =
+        VersionScopedSubstateDatabase::new(database.deref(), requested_state_version)?;
+
+    let meta_loader = EngineStateMetaLoader::new(&substate_database);
     let EntityMeta::KeyValueStore(kv_store_meta) = meta_loader.load_entity_meta(&node_id)? else {
         return Err(ResponseError::new(
             StatusCode::BAD_REQUEST,
@@ -31,12 +41,12 @@ pub(crate) async fn handle_kv_store_iterator(
         }));
     };
 
-    let data_loader = EngineStateDataLoader::new(database.deref());
+    let data_loader = EngineStateDataLoader::new(&substate_database);
 
     let page = paging_support
         .get_page(|from| data_loader.iter_kv_store_keys(&node_id, &kv_store_meta, from))?;
 
-    let header = read_current_ledger_header(database.deref());
+    let header = read_proving_ledger_header(database.deref(), substate_database.at_state_version());
 
     Ok(Json(models::KeyValueStoreIteratorResponse {
         at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
