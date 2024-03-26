@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.engine_state.generated.models.EntityIteratorFilter;
+import com.radixdlt.api.engine_state.generated.models.LedgerStateSelector;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -34,7 +35,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   EntityIteratorRequest.JSON_PROPERTY_FILTER,
   EntityIteratorRequest.JSON_PROPERTY_MAX_PAGE_SIZE,
-  EntityIteratorRequest.JSON_PROPERTY_CONTINUATION_TOKEN
+  EntityIteratorRequest.JSON_PROPERTY_CONTINUATION_TOKEN,
+  EntityIteratorRequest.JSON_PROPERTY_AT_LEDGER_STATE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class EntityIteratorRequest {
@@ -46,6 +48,9 @@ public class EntityIteratorRequest {
 
   public static final String JSON_PROPERTY_CONTINUATION_TOKEN = "continuation_token";
   private String continuationToken;
+
+  public static final String JSON_PROPERTY_AT_LEDGER_STATE = "at_ledger_state";
+  private LedgerStateSelector atLedgerState;
 
   public EntityIteratorRequest() { 
   }
@@ -130,6 +135,32 @@ public class EntityIteratorRequest {
   }
 
 
+  public EntityIteratorRequest atLedgerState(LedgerStateSelector atLedgerState) {
+    this.atLedgerState = atLedgerState;
+    return this;
+  }
+
+   /**
+   * Get atLedgerState
+   * @return atLedgerState
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public LedgerStateSelector getAtLedgerState() {
+    return atLedgerState;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setAtLedgerState(LedgerStateSelector atLedgerState) {
+    this.atLedgerState = atLedgerState;
+  }
+
+
   /**
    * Return true if this EntityIteratorRequest object is equal to o.
    */
@@ -144,12 +175,13 @@ public class EntityIteratorRequest {
     EntityIteratorRequest entityIteratorRequest = (EntityIteratorRequest) o;
     return Objects.equals(this.filter, entityIteratorRequest.filter) &&
         Objects.equals(this.maxPageSize, entityIteratorRequest.maxPageSize) &&
-        Objects.equals(this.continuationToken, entityIteratorRequest.continuationToken);
+        Objects.equals(this.continuationToken, entityIteratorRequest.continuationToken) &&
+        Objects.equals(this.atLedgerState, entityIteratorRequest.atLedgerState);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(filter, maxPageSize, continuationToken);
+    return Objects.hash(filter, maxPageSize, continuationToken, atLedgerState);
   }
 
   @Override
@@ -159,6 +191,7 @@ public class EntityIteratorRequest {
     sb.append("    filter: ").append(toIndentedString(filter)).append("\n");
     sb.append("    maxPageSize: ").append(toIndentedString(maxPageSize)).append("\n");
     sb.append("    continuationToken: ").append(toIndentedString(continuationToken)).append("\n");
+    sb.append("    atLedgerState: ").append(toIndentedString(atLedgerState)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -30,7 +30,7 @@ pub(crate) async fn handle_entity_info(
     // available there. So let's load the ancestry directly from our database here.
     let entity_ancestry = database.deref().get_ancestry(&node_id);
 
-    let header = read_effective_ledger_header(database.deref(), requested_state_version);
+    let header = read_proving_ledger_header(database.deref(), substate_database.at_state_version());
 
     Ok(Json(models::EntityInfoResponse {
         at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),

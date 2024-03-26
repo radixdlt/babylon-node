@@ -259,6 +259,19 @@ impl<'s, R: ReadableRocks> VersionScopedSubstateDatabase<'s, StateManagerDatabas
     }
 }
 
+/// Validates the requested historical state version and returns it (if present), or returns the
+/// current state version otherwise.
+///
+/// Implementation note:
+/// We re-use the validation performed by the [`VersionScopedSubstateDatabase::new()`] (which means
+/// throwing away a constructed instance).
+pub fn resolve_effective_state_version<R: ReadableRocks>(
+    database: &StateManagerDatabase<R>,
+    requested_version: Option<StateVersion>,
+) -> Result<StateVersion, StateHistoryError> {
+    Ok(VersionScopedSubstateDatabase::new(database, requested_version)?.at_state_version())
+}
+
 impl<'s, R: ReadableRocks> SubstateDatabase
     for VersionScopedSubstateDatabase<'s, StateManagerDatabase<R>>
 {
