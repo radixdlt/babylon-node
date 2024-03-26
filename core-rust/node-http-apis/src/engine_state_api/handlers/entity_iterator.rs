@@ -2,6 +2,7 @@ use crate::engine_state_api::*;
 
 use crate::engine_prelude::*;
 
+use state_manager::historical_state::resolve_effective_state_version;
 use state_manager::store::traits::indices::CreationId;
 use state_manager::store::traits::ConfigurableDatabase;
 use state_manager::traits::indices::ReNodeListingIndex;
@@ -42,10 +43,12 @@ pub(crate) async fn handle_entity_iterator(
             "Missing `db.re_node_listing_indices.enable = true` Node configuration flag",
         ));
     }
-
-    let header = read_effective_ledger_header(database.deref(), effective_filter.at_state_version);
+    let effective_state_version =
+        resolve_effective_state_version(database.deref(), effective_filter.at_state_version)?;
 
     let page = paging_support.get_page(create_listing_call(database.deref(), effective_filter))?;
+
+    let header = read_proving_ledger_header(database.deref(), effective_state_version);
 
     Ok(Json(models::EntityIteratorResponse {
         at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),

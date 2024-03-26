@@ -70,12 +70,19 @@ import com.google.common.collect.Multimaps;
 import com.google.common.collect.Ordering;
 import com.radixdlt.api.DeterministicEngineStateApiTestBase;
 import com.radixdlt.api.engine_state.generated.models.*;
+import com.radixdlt.environment.StateTreeGcConfig;
+import com.radixdlt.harness.predicates.NodesPredicate;
+import com.radixdlt.testutil.TestStateReader;
+import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.UInt64;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
+import org.awaitility.Awaitility;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -367,6 +374,46 @@ public final class EntityIteratorTest extends DeterministicEngineStateApiTestBas
       assertThat(olderVersionResponse.getPage()).hasSameElementsAs(olderEntities);
       assertThat(olderVersionResponse.getAtLedgerState().getStateVersion())
           .isEqualTo(latestEntitiesCreatedAtVersion - 1);
+    }
+  }
+
+  // Note: the claim in the test's name below is technically false - in fact, the historical Entity
+  // iteration is powered by the Node's internal index of "Entities created at state versions", and
+  // does not touch the JMT at all.
+  // However, for consistency with other "historical" endpoints of the API, we explicitly validate
+  // this aspect, so it's also worth testing.
+  @Test
+  public void engine_state_api_entity_iterator_at_state_version_requires_history_feature()
+      throws Exception {
+    final var tooShortHistory =
+        new StateTreeGcConfig(UInt32.fromNonNegativeInt(1), UInt64.fromNonNegativeLong(10));
+    try (var test = buildRunningServerTest(tooShortHistory)) {
+      test.suppressUnusedWarning();
+
+      // Reach a known state version:
+      test.runUntilState(NodesPredicate.anyAtOrOverStateVersion(37));
+
+      // Wait for the async GC to catch up its target:
+      Awaitility.await()
+          .until(
+              test.getInstance(0, TestStateReader.class)::getLeastStaleStateTreeVersion,
+              Predicate.isEqual(27L));
+
+      // Try to list Entities at "too old" state version:
+      final var errorResponse =
+          assertErrorResponse(
+              () ->
+                  getEntitiesApi()
+                      .entityIteratorPost(
+                          new EntityIteratorRequest()
+                              .atLedgerState(
+                                  new VersionLedgerStateSelector()
+                                      .stateVersion(26L)
+                                      .type(LedgerStateSelectorType.BYSTATEVERSION))));
+
+      // Assert that the error informs about it:
+      assertThat(errorResponse.getMessage())
+          .containsIgnoringCase("state version past the earliest available 27");
     }
   }
 }

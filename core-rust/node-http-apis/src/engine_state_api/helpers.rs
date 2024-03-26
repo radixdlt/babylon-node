@@ -12,13 +12,13 @@ pub(crate) fn read_current_ledger_header(
         .ledger_header
 }
 
-pub(crate) fn read_effective_ledger_header(
+pub(crate) fn read_proving_ledger_header(
     database: &StateManagerDatabase<impl ReadableRocks>,
-    requested_state_version: Option<StateVersion>,
+    proven_state_version: StateVersion,
 ) -> LedgerHeader {
-    requested_state_version
-        .map(|state_version| database.get_proof_iter(state_version).next())
-        .unwrap_or_else(|| database.get_latest_proof())
+    database
+        .get_proof_iter(proven_state_version)
+        .next()
         .expect("proof for outputted state must exist")
         .ledger_header
 }

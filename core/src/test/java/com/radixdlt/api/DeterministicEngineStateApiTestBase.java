@@ -79,6 +79,7 @@ import com.radixdlt.api.engine_state.generated.models.*;
 import com.radixdlt.environment.CoreApiServerFlags;
 import com.radixdlt.environment.DatabaseConfig;
 import com.radixdlt.environment.StartProcessorOnRunner;
+import com.radixdlt.environment.StateTreeGcConfig;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.genesis.GenesisData;
@@ -88,9 +89,12 @@ import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
+import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.rev2.*;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.FreePortFinder;
+import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.UInt64;
 import java.net.http.HttpClient;
 import org.assertj.core.api.ThrowableAssert;
 import org.junit.Rule;
@@ -99,6 +103,9 @@ import org.junit.rules.TemporaryFolder;
 public abstract class DeterministicEngineStateApiTestBase {
   private static final DatabaseConfig DEFAULT_DATABASE_CONFIG =
       new DatabaseConfig(true, false, true, true);
+
+  private static final StateTreeGcConfig DEFAULT_JMT_GC_CONFIG =
+      new StateTreeGcConfig(UInt32.fromNonNegativeInt(1), UInt64.fromNonNegativeLong(20));
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
   public static NetworkDefinition networkDefinition = NetworkDefinition.INT_TEST_NET;
@@ -118,25 +125,25 @@ public abstract class DeterministicEngineStateApiTestBase {
   }
 
   protected DeterministicTest buildRunningServerTest() {
-    return buildRunningServerTest(1000000, DEFAULT_DATABASE_CONFIG, GenesisData.NO_SCENARIOS);
+    return buildRunningServerTest(
+        1000000, DEFAULT_DATABASE_CONFIG, DEFAULT_JMT_GC_CONFIG, GenesisData.NO_SCENARIOS);
   }
 
   protected DeterministicTest buildRunningServerTestWithScenarios(String... scenarios) {
     return buildRunningServerTest(
-        1000000, DEFAULT_DATABASE_CONFIG, ImmutableList.copyOf(scenarios));
+        1000000, DEFAULT_DATABASE_CONFIG, DEFAULT_JMT_GC_CONFIG, ImmutableList.copyOf(scenarios));
   }
 
-  protected DeterministicTest buildRunningServerTest(DatabaseConfig databaseConfig) {
-    return buildRunningServerTest(1000000, databaseConfig, GenesisData.NO_SCENARIOS);
-  }
-
-  protected DeterministicTest buildRunningServerTest(int roundsPerEpoch) {
+  protected DeterministicTest buildRunningServerTest(StateTreeGcConfig stateTreeGcConfig) {
     return buildRunningServerTest(
-        roundsPerEpoch, DEFAULT_DATABASE_CONFIG, GenesisData.NO_SCENARIOS);
+        1000000, DEFAULT_DATABASE_CONFIG, stateTreeGcConfig, GenesisData.NO_SCENARIOS);
   }
 
   protected DeterministicTest buildRunningServerTest(
-      int roundsPerEpoch, DatabaseConfig databaseConfig, ImmutableList<String> scenariosToRun) {
+      int roundsPerEpoch,
+      DatabaseConfig databaseConfig,
+      StateTreeGcConfig stateTreeGcConfig,
+      ImmutableList<String> scenariosToRun) {
     var test =
         DeterministicTest.builder()
             .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
@@ -175,7 +182,11 @@ public abstract class DeterministicEngineStateApiTestBase {
                                     .epochExactRoundCount(roundsPerEpoch),
                                 scenariosToRun),
                             databaseConfig,
-                            StateComputerConfig.REV2ProposerConfig.Mempool.defaults()),
+                            StateComputerConfig.REV2ProposerConfig.Mempool.defaults(),
+                            false,
+                            false,
+                            ProtocolConfig.testingDefault(),
+                            stateTreeGcConfig),
                         SyncRelayConfig.of(200, 10, 2000))));
     try {
       test.startAllNodes();
