@@ -365,6 +365,8 @@ public final class EntityIteratorTest extends DeterministicEngineStateApiTestBas
 
       // Assert: we clearly know the older entities:
       assertThat(olderVersionResponse.getPage()).hasSameElementsAs(olderEntities);
+      assertThat(olderVersionResponse.getAtLedgerState().getStateVersion())
+          .isEqualTo(latestEntitiesCreatedAtVersion - 1);
     }
   }
 }

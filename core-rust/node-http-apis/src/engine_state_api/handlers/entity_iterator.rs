@@ -43,9 +43,9 @@ pub(crate) async fn handle_entity_iterator(
         ));
     }
 
-    let page = paging_support.get_page(create_listing_call(database.deref(), effective_filter))?;
+    let header = read_effective_ledger_header(database.deref(), effective_filter.at_state_version);
 
-    let header = read_current_ledger_header(database.deref());
+    let page = paging_support.get_page(create_listing_call(database.deref(), effective_filter))?;
 
     Ok(Json(models::EntityIteratorResponse {
         at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
