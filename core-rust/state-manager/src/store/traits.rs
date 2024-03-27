@@ -215,10 +215,12 @@ pub mod substate {
     use crate::SubstateReference;
 
     /// A low-level storage of [`SubstateNodeAncestryRecord`].
+    ///
     /// API note: this trait defines a simple "get by ID" method, and also a performance-driven
     /// batch method. Both provide default implementations (which mutually reduce one problem to the
     /// other). The implementer must choose to implement at least one of the methods, based on its
     /// nature (though implementing both rarely makes sense).
+    /// When in doubt, implementing the batch method should be the default.
     pub trait SubstateNodeAncestryStore {
         /// Returns the [`SubstateNodeAncestryRecord`] for the given [`NodeId`], or [`None`] if:
         /// - the `node_id` happens to be a root Node (since they do not have "ancestry");
@@ -380,6 +382,22 @@ pub mod proofs {
         ) -> Option<LedgerProof>;
         fn get_latest_protocol_update_init_proof(&self) -> Option<LedgerProof>;
         fn get_latest_protocol_update_execution_proof(&self) -> Option<LedgerProof>;
+    }
+
+    /// A Proof store specialized for retrieving proofs of committed transactions.
+    ///
+    /// Please note that the more robust [`IterableProofStore`] can already achieve this, and indeed
+    /// such implementation is provided below.
+    pub trait TransactionProofStore {
+        /// Returns the nearest [`LedgerProof`] proving a transaction committed at the given state
+        /// version.
+        fn get_proof_for_transaction(&self, state_version: StateVersion) -> Option<LedgerProof>;
+    }
+
+    impl<T: IterableProofStore> TransactionProofStore for T {
+        fn get_proof_for_transaction(&self, state_version: StateVersion) -> Option<LedgerProof> {
+            self.get_proof_iter(state_version).next()
+        }
     }
 
     #[derive(Clone, Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

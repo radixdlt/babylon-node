@@ -1,8 +1,7 @@
 use crate::engine_prelude::*;
 use crate::engine_state_api::*;
-use state_manager::historical_state::VersionScopedSubstateDatabase;
+use state_manager::historical_state::VersionScopingSupport;
 use state_manager::store::traits::{SubstateNodeAncestryRecord, SubstateNodeAncestryStore};
-use std::ops::Deref;
 
 pub(crate) async fn handle_entity_info(
     state: State<EngineStateApiState>,
@@ -17,20 +16,22 @@ pub(crate) async fn handle_entity_info(
         extract_opt_ledger_state_selector(request.at_ledger_state.as_deref())
             .map_err(|err| err.into_response_error("at_ledger_state"))?;
 
-    let database = state.state_manager.database.snapshot();
+    let database = state
+        .state_manager
+        .database
+        .snapshot()
+        .scoped_at(requested_state_version)?;
 
-    let substate_database =
-        VersionScopedSubstateDatabase::new(database.deref(), requested_state_version)?;
-    let meta_loader = EngineStateMetaLoader::new(&substate_database);
+    let meta_loader = EngineStateMetaLoader::new(&database);
     let entity_meta = meta_loader.load_entity_meta(&node_id)?;
 
     // Technically, the ancestry information could be interpreted as part of "meta" and included in
     // the `EntityMeta` above. However, we plan to move `EngineStateMetaLoader` (among others) into
     // the Scrypto repo (e.g. make it a part of `SystemDatabaseReader`), and ancestry index is not
     // available there. So let's load the ancestry directly from our database here.
-    let entity_ancestry = database.deref().get_ancestry(&node_id);
+    let entity_ancestry = database.get_ancestry(&node_id);
 
-    let header = read_proving_ledger_header(database.deref(), substate_database.at_state_version());
+    let header = database.proving_ledger_header();
 
     Ok(Json(models::EntityInfoResponse {
         at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
