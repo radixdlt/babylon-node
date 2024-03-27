@@ -215,9 +215,9 @@ jobs:
       contents: read
       pull-requests: write
       packages: write
-      steps:
-        - uses: ./.github/actions/setup-version-properties
-        - uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
+    steps:
+      - uses: ./.github/actions/setup-version-properties
+      - uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
         with:
           runs_on: ubuntu-latest
           image_registry: "docker.io"
