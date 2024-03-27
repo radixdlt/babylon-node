@@ -25,6 +25,8 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: RDXWorks-actions/checkout@main
+        with:
+          fetch-depth: 0
       - name: get version
         uses: ./.github/actions/get-version
         with:
