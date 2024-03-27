@@ -20,6 +20,15 @@ jobs:
         with:
           access_token: ${{ github.token }}
 
+  test_get_radix_version:
+    name: Get radix version test
+    runs-on: ubuntu-22.04
+    steps:
+      - name: get version
+        uses: ./.github/actions/get-version
+        with:
+          is_release: true
+
   build_deb:
     name: Build debian package
     runs-on: selfhosted-ubuntu-22.04-16-cores
