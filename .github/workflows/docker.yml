@@ -103,7 +103,7 @@ jobs:
   setup_version_properties:
     name: Setup version properties
     runs-on: ubuntu-latest
-    uses: ./.github/actions/setup-version-properties
+    uses: ./.github/actions/setup-version-properties@main
 
   build_push_container_private:
     name: (PRIVATE) Docker AMD
