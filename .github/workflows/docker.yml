@@ -115,6 +115,9 @@ jobs:
         with:
           fetch-depth: 0
       - uses: ./.github/actions/setup-version-properties
+      - id: debug
+        run: |
+          - echo "BRANCH: ${{ steps.setup_version_properties.outputs.VERSION_BRANCH }}"
 
   build_push_container_private:
     name: (PRIVATE) Docker AMD
