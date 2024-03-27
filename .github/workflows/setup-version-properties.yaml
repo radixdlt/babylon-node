@@ -35,7 +35,6 @@ jobs:
       - id: setup_version_properties
         run: |
           echo "VERSION_BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
-          echo "VERSION_BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_ENV
           echo "VERSION_BUILD=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
           echo "VERSION_COMMIT=${GITHUB_SHA}" >> $GITHUB_OUTPUT
           if [[  $GITHUB_REF == *"refs/tags/"* ]]; then 
@@ -45,8 +44,8 @@ jobs:
       - id: set_display_version
         run: |
           if [ -z "${VERSION_TAG}" ]; then
-            echo "VERSION_DISPLAY=$VERSION_BRANCH-$VERSION_BUILD" >> $GITHUB_OUTPUT
+            echo "VERSION_DISPLAY=${{steps.setup_version_properties.outputs.VERSION_BRANCH}}-${{steps.setup_version_properties.outputs.VERSION_BUILD}}" >> $GITHUB_OUTPUT
           else
-            echo "VERSION_DISPLAY=$VERSION_TAG" >> $GITHUB_OUTPUT
+            echo "VERSION_DISPLAY=${{steps.setup_version_properties.outputs.VERSION_TAG}}" >> $GITHUB_OUTPUT
           fi
         shell: bash
