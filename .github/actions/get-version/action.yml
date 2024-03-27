@@ -16,7 +16,7 @@ runs:
   steps:
     - id: setup_version_properties
       name: Setup version properties
-      uses: ./.github/workflows/setup-version-properties.yaml
+      uses: ./.github/actions/setup-version-properties.yaml
     - id: get_release
       run: |
         IS_RELEASE="${{ inputs.is_release }}"

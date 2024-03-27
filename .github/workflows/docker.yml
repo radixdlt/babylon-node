@@ -24,9 +24,7 @@ jobs:
     name: Get radix version test
     runs-on: ubuntu-22.04
     steps:
-      - uses: RDXWorks-actions/checkout@main
-        with:
-          lfs: true
+      - uses: actions/checkout@main
       - name: get version
         uses: ./.github/actions/get-version
         with:
