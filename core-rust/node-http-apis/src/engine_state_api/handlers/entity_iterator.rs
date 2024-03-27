@@ -2,10 +2,10 @@ use crate::engine_state_api::*;
 
 use crate::engine_prelude::*;
 
-use state_manager::historical_state::resolve_effective_state_version;
+use state_manager::historical_state::VersionScopingSupport;
 use state_manager::store::traits::indices::CreationId;
 use state_manager::store::traits::ConfigurableDatabase;
-use state_manager::traits::indices::ReNodeListingIndex;
+
 use state_manager::StateVersion;
 use std::ops::Deref;
 
@@ -33,7 +33,11 @@ pub(crate) async fn handle_entity_iterator(
         &effective_filter,
     );
 
-    let database = state.state_manager.database.snapshot();
+    let database = state
+        .state_manager
+        .database
+        .snapshot()
+        .scoped_at(effective_filter.at_state_version)?;
     if !database.are_re_node_listing_indices_enabled() {
         return Err(NodeFeatureDisabledError::new(
             "Entity listing",
@@ -41,12 +45,18 @@ pub(crate) async fn handle_entity_iterator(
         )
         .into());
     }
-    let effective_state_version =
-        resolve_effective_state_version(database.deref(), effective_filter.at_state_version)?;
 
-    let page = paging_support.get_page(create_listing_call(database.deref(), effective_filter))?;
+    let entity_lister = EngineEntityLister::new(&database);
+    let page = match effective_filter.explicit_filter {
+        None => paging_support
+            .get_page(|from| entity_lister.iter_created_entities(all_entity_types(), from))?,
+        Some(ExplicitFilter::OneOfEntityTypes(entity_types)) => paging_support
+            .get_page(|from| entity_lister.iter_created_entities(entity_types.into_iter(), from))?,
+        Some(ExplicitFilter::Blueprint(blueprint_id)) => paging_support
+            .get_page(|from| entity_lister.iter_blueprint_entities(&blueprint_id, from))?,
+    };
 
-    let header = read_proving_ledger_header(database.deref(), effective_state_version);
+    let header = database.proving_ledger_header();
 
     Ok(Json(models::EntityIteratorResponse {
         at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
@@ -57,67 +67,6 @@ pub(crate) async fn handle_entity_iterator(
             .collect::<Result<Vec<_>, _>>()?,
         continuation_token: page.continuation_token,
     }))
-}
-
-// Note: the usual "listing call" (expected by the paging infra) looks like:
-// `impl FnOnce(Option<K>) -> Result<impl Iterator<Item = T>, E>`
-// For this endpoint, however, the chained nature of filters force us to apply them selectively (and
-// thus operate on fully polymorphic functions and iterators).
-// The type aliases below are only needed to reduce the super-long typing and simplify lifetimes.
-type BoxListingCall<'l, A, T, E> = Box<dyn FnOnce(Option<&A>) -> Result<BoxIter<'l, T>, E> + 'l>;
-type BoxIter<'l, T> = Box<dyn Iterator<Item = T> + 'l>;
-
-fn create_listing_call(
-    database: &impl ReNodeListingIndex,
-    effective_filter: EffectiveFilter,
-) -> BoxListingCall<CreationId, EntitySummary, EngineStateBrowsingError> {
-    let EffectiveFilter {
-        explicit_filter,
-        at_state_version,
-    } = effective_filter;
-    let current_version_listing_call =
-        create_current_version_listing_call(database, explicit_filter);
-    apply_historical_version_filter(current_version_listing_call, at_state_version)
-}
-
-fn create_current_version_listing_call(
-    database: &impl ReNodeListingIndex,
-    explicit_filter: Option<ExplicitFilter>,
-) -> BoxListingCall<CreationId, EntitySummary, EngineStateBrowsingError> {
-    let entity_lister = EngineEntityLister::new(database);
-    match explicit_filter {
-        None => Box::new(move |from| {
-            entity_lister
-                .iter_created_entities(all_entity_types(), from)
-                .map(|iterator| Box::new(iterator) as BoxIter<EntitySummary>)
-        }),
-        Some(ExplicitFilter::OneOfEntityTypes(entity_types)) => Box::new(move |from| {
-            entity_lister
-                .iter_created_entities(entity_types.into_iter(), from)
-                .map(|iterator| Box::new(iterator) as BoxIter<EntitySummary>)
-        }),
-        Some(ExplicitFilter::Blueprint(blueprint_id)) => Box::new(move |from| {
-            entity_lister
-                .iter_blueprint_entities(&blueprint_id, from)
-                .map(|iterator| Box::new(iterator) as BoxIter<EntitySummary>)
-        }),
-    }
-}
-
-fn apply_historical_version_filter(
-    listing_call: BoxListingCall<CreationId, EntitySummary, EngineStateBrowsingError>,
-    at_state_version: Option<StateVersion>,
-) -> BoxListingCall<CreationId, EntitySummary, EngineStateBrowsingError> {
-    match at_state_version {
-        None => listing_call,
-        Some(at_state_version) => Box::new(move |from| {
-            listing_call(from).map(|iterator| {
-                Box::new(iterator.take_while(move |summary| {
-                    summary.creation_id.state_version <= at_state_version
-                })) as BoxIter<EntitySummary>
-            })
-        }),
-    }
 }
 
 impl HasKey<CreationId> for EntitySummary {

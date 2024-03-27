@@ -1025,8 +1025,8 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
 
         let db_context = self.open_rw_context();
         let associated_values_cf = db_context.cf(AssociatedStateTreeValuesCf);
-        let substate_leaf_keys =
-            StateTreeBasedSubstateDatabase::new(self, current_version).iter_substate_leaf_keys();
+        let substate_database = StateTreeBasedSubstateDatabase::new(self, current_version);
+        let substate_leaf_keys = substate_database.iter_substate_leaf_keys();
         for (tree_node_key, (partition_key, sort_key)) in substate_leaf_keys {
             let value = self
                 .get_substate(&partition_key, &sort_key)
