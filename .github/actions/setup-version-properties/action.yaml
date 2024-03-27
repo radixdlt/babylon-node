@@ -1,27 +1,41 @@
 name: 'Setup version properties'
 description: 'Get version information from Git, used by gradle'
-steps:
-  - uses: RDXWorks-actions/checkout@main
-    with:
-      fetch-depth: 0
-  - id: setup_version_properties
-    run: |
-      echo "VERSION_BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_ENV
-      echo "VERSION_BUILD=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-      echo "VERSION_COMMIT=${GITHUB_SHA}" >> $GITHUB_ENV
-      if [[  $GITHUB_REF == *"refs/tags/"* ]]; then 
-        echo "VERSION_TAG=$(echo $GITHUB_REF | cut -d'/' -f 3)" >> $GITHUB_ENV
-      fi
-  - id: set_display_version
-    run: |
-      if [ -z "${VERSION_TAG}" ]; then
-        echo "VERSION_DISPLAY=$VERSION_BRANCH-$VERSION_BUILD" >> $GITHUB_ENV
-      else
-        echo "VERSION_DISPLAY=$VERSION_TAG" >> $GITHUB_ENV
-      fi
 outputs:
-  VERSION_BRANCH: ${{ env.VERSION_BRANCH }}
-  VERSION_BUILD: ${{ env.VERSION_BUILD }}
-  VERSION_COMMIT: ${{ env.VERSION_COMMIT }}
-  VERSION_DISPLAY: ${{ env.VERSION_DISPLAY }}
-  VERSION_TAG: ${{ env.VERSION_TAG }}
+  VERSION_BRANCH:
+    description:
+    value: ${{ steps.setup_version_properties.outputs.VERSION_BRANCH }}
+  VERSION_BUILD:
+    description:
+    value: ${{ steps.setup_version_properties.outputs.VERSION_BUILD }}
+  VERSION_COMMIT:
+    description:
+    value: ${{ steps.setup_version_properties.outputs.VERSION_COMMIT }}
+  VERSION_DISPLAY:
+    description:
+    value: ${{ steps.setup_version_properties.outputs.VERSION_DISPLAY }}
+  VERSION_TAG:
+    description:
+    value: ${{ steps.setup_version_properties.outputs.VERSION_TAG }}
+runs:
+  using: "composite"
+  steps:
+    - uses: RDXWorks-actions/checkout@main
+      with:
+        fetch-depth: 0
+    - id: setup_version_properties
+      run: |
+        echo "VERSION_BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
+        echo "VERSION_BUILD=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+        echo "VERSION_COMMIT=${GITHUB_SHA}" >> $GITHUB_OUTPUT
+        if [[  $GITHUB_REF == *"refs/tags/"* ]]; then 
+          echo "VERSION_TAG=$(echo $GITHUB_REF | cut -d'/' -f 3)" >> $GITHUB_OUTPUT
+        fi
+      shell: bash
+    - id: set_display_version
+      run: |
+        if [ -z "${VERSION_TAG}" ]; then
+          echo "VERSION_DISPLAY=$VERSION_BRANCH-$VERSION_BUILD" >> $GITHUB_OUTPUT
+        else
+          echo "VERSION_DISPLAY=$VERSION_TAG" >> $GITHUB_OUTPUT
+        fi
+      shell: bash
