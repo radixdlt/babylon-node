@@ -104,7 +104,6 @@ jobs:
     name: Setup version properties
     runs-on: ubuntu-latest
     outputs:
-      tag: ${{ steps.setup_tags.outputs.tag }}
       VERSION_BRANCH: ${{ steps.setup_version_properties.outputs.VERSION_BRANCH }}
       VERSION_BUILD: ${{ steps.setup_version_properties.outputs.VERSION_BUILD }}
       VERSION_COMMIT: ${{ steps.setup_version_properties.outputs.VERSION_COMMIT }}
