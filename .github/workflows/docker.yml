@@ -146,6 +146,7 @@ jobs:
         VERSION_DISPLAY=${{ needs.setup_version_properties.outputs.VERSION_DISPLAY }}
         VERSION_BUILD=${{ needs.setup_version_properties.outputs.VERSION_BUILD }}
         VERSION_TAG=${{ needs.setup_version_properties.outputs.VERSION_TAG }}
+        VERSION_LAST_TAG=${{ needs.setup_version_properties.outputs.VERSION_LAST_TAG }}
 
   build_push_container_private_arm:
     if: contains( github.event.pull_request.labels.*.name, 'ARM-TEST') || github.event_name != 'pull_request'
@@ -190,6 +191,7 @@ jobs:
         VERSION_DISPLAY=${{ needs.setup_version_properties.outputs.VERSION_DISPLAY }}
         VERSION_BUILD=${{ needs.setup_version_properties.outputs.VERSION_BUILD }}
         VERSION_TAG=${{ needs.setup_version_properties.outputs.VERSION_TAG }}
+        VERSION_LAST_TAG=${{ needs.setup_version_properties.outputs.VERSION_LAST_TAG }}
 
   join_multiarch_image_private_dockerhub:
     if: contains( github.event.pull_request.labels.*.name, 'ARM-TEST') || github.event_name != 'pull_request'
@@ -240,6 +242,7 @@ jobs:
         VERSION_DISPLAY=${{ needs.setup_version_properties.outputs.VERSION_DISPLAY }}
         VERSION_BUILD=${{ needs.setup_version_properties.outputs.VERSION_BUILD }}
         VERSION_TAG=${{ needs.setup_version_properties.outputs.VERSION_TAG }}
+        VERSION_LAST_TAG=${{ needs.setup_version_properties.outputs.VERSION_LAST_TAG }}
     secrets:
       role_to_assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
 
@@ -276,6 +279,7 @@ jobs:
         VERSION_DISPLAY=${{ needs.setup_version_properties.outputs.VERSION_DISPLAY }}
         VERSION_BUILD=${{ needs.setup_version_properties.outputs.VERSION_BUILD }}
         VERSION_TAG=${{ needs.setup_version_properties.outputs.VERSION_TAG }}
+        VERSION_LAST_TAG=${{ needs.setup_version_properties.outputs.VERSION_LAST_TAG }}
     secrets:
       role_to_assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
 
