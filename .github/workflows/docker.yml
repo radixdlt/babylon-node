@@ -102,7 +102,6 @@ jobs:
 
   setup_version_properties:
     name: Setup version properties
-    runs-on: ubuntu-latest
     uses: ./.github/workflows/setup-version-properties.yaml
 
   build_push_container_private:
