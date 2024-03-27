@@ -232,7 +232,7 @@ jobs:
       build-args: |
         VERSION_BRANCH=${{ steps.setup_version_properties.outputs.VERSION_BRANCH }}
         VERSION_COMMIT=${{ steps.setup_version_properties.outputs.VERSION_COMMIT }}
-        VERSION_DISPLAY=${{ env.VERSION_DISPLAY }}
+        VERSION_DISPLAY=${{ steps.setup_version_properties.outputs.VERSION_DISPLAY }}
         VERSION_BUILD=${{ steps.setup_version_properties.outputs.VERSION_BUILD }}
         VERSION_TAG=${{ steps.setup_version_properties.outputs.VERSION_TAG }}
     secrets:
