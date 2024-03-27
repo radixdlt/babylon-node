@@ -1,5 +1,4 @@
 name: 'Setup version properties'
-description: 'Get version information from Git, used by gradle'
 on:
   workflow_call:
     outputs:
