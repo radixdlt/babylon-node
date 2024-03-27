@@ -100,6 +100,22 @@ jobs:
       - id: setup_tags
         run: echo "tag=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
+  test_get_radix_version:
+    name: Get radix version test
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: RDXWorks-actions/checkout@main
+        with:
+          fetch-depth: 0
+      - name: get version
+        uses: ./.github/actions/get-version
+        with:
+          is_release: true
+      - name: gradle task
+        uses: ./.github/actions/gradle-task
+        with:
+          gradle_command: clean
+
   setup_version_properties:
     name: Setup version properties
     runs-on: ubuntu-latest
@@ -114,9 +130,9 @@ jobs:
       - uses: RDXWorks-actions/checkout@main
         with:
           fetch-depth: 0
-      - uses: ./.github/actions/setup-version-properties
-      - id: debug
-        run: echo "BRANCH=${{ steps.setup_version_properties.outputs.VERSION_BRANCH }}"
+      - name: Setup version properties
+        id: setup_version_properties
+        uses: ./.github/actions/setup-version-properties
 
   build_push_container_private:
     name: (PRIVATE) Docker AMD
