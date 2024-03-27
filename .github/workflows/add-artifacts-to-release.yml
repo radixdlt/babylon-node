@@ -212,7 +212,7 @@ jobs:
       - name: Generate SBOM
         uses: RDXWorks-actions/snyk-actions/gradle-jdk17@master
         with:
-          args: --all-projects --org=${{ env.SNYK_NETWORK_ORG_ID }} --format=cyclonedx1.4+json --json-file-output sbom.json
+          args: --all-projects --org=${{ env.SNYK_NETWORK_ORG_ID }} --format=cyclonedx1.4+json > sbom.json
           command: sbom
       - name: Upload SBOM
         uses: RDXWorks-actions/action-gh-release@master
