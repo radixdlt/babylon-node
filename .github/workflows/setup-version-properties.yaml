@@ -29,7 +29,7 @@ jobs:
       VERSION_BRANCH: ${{ steps.setup_version_properties.outputs.VERSION_BRANCH }}
       VERSION_BUILD: ${{ steps.setup_version_properties.outputs.VERSION_BUILD }}
       VERSION_COMMIT: ${{ steps.setup_version_properties.outputs.VERSION_COMMIT }}
-      VERSION_DISPLAY: ${{ steps.set_display_version.outputs.VERSION_DISPLAY }}
+      VERSION_DISPLAY: ${{ steps.setup_version_properties.outputs.VERSION_DISPLAY }}
       VERSION_TAG: ${{ steps.setup_version_properties.outputs.VERSION_TAG }}
       VERSION_LAST_TAG: ${{ steps.setup_version_properties.outputs.VERSION_LAST_TAG }}
     steps:
@@ -38,19 +38,18 @@ jobs:
           fetch-depth: 0
       - id: setup_version_properties
         run: |
-          echo "VERSION_BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
-          echo "VERSION_BUILD=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-          echo "VERSION_COMMIT=${GITHUB_SHA}" >> $GITHUB_OUTPUT
-          echo "VERSION_LAST_TAG=$(git tag --sort=-creatordate | head -n 1)" >> $GITHUB_OUTPUT
           if [[  $GITHUB_REF == *"refs/tags/"* ]]; then 
-            echo "VERSION_TAG=$(echo $GITHUB_REF | cut -d'/' -f 3)" >> $GITHUB_OUTPUT
-          fi
-        shell: bash
-      - id: set_display_version
-        run: |
-          if [ -z "${VERSION_TAG}" ]; then
-            echo "VERSION_DISPLAY=${{steps.setup_version_properties.outputs.VERSION_BRANCH}}-${{steps.setup_version_properties.outputs.VERSION_BUILD}}" >> $GITHUB_OUTPUT
+            VERSION_TAG=$(echo $GITHUB_REF | cut -d'/' -f 3)
+            echo "VERSION_TAG=$VERSION_TAG" >> $GITHUB_OUTPUT
+            echo "VERSION_BRANCH=$VERSION_TAG" >> $GITHUB_OUTPUT
+            echo "VERSION_DISPLAY=$VERSION_TAG" >> $GITHUB_OUTPUT
           else
-            echo "VERSION_DISPLAY=${{steps.setup_version_properties.outputs.VERSION_TAG}}" >> $GITHUB_OUTPUT
+            VERSION_BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
+            VERSION_BUILD=$(git rev-parse --short HEAD)
+            echo "VERSION_BRANCH=$VERSION_BRANCH" >> $GITHUB_OUTPUT
+            echo "VERSION_BUILD=$VERSION_BUILD" >> $GITHUB_OUTPUT
+            echo "VERSION_DISPLAY=$VERSION_BRANCH-$VERSION_BUILD" >> $GITHUB_OUTPUT
+            echo "VERSION_COMMIT=${GITHUB_SHA}" >> $GITHUB_OUTPUT
+            echo "VERSION_LAST_TAG=$(git tag --sort=-creatordate | head -n 1)" >> $GITHUB_OUTPUT
           fi
         shell: bash
