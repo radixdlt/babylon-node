@@ -100,47 +100,18 @@ jobs:
       - id: setup_tags
         run: echo "tag=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
-  setup_version_properties:
-    name: Setup version properties
-    runs-on: ubuntu-latest
-    steps:
-      - uses: RDXWorks-actions/checkout@main
-        with:
-          fetch-depth: 0
-      - id: setup_version_properties
-        run: |
-          echo "VERSION_BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_ENV
-          echo "VERSION_BUILD=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-          echo "VERSION_COMMIT=${GITHUB_SHA}" >> $GITHUB_ENV
-          echo "VERSION_LAST_TAG=$(git tag --sort=-creatordate | head -n 1)" >> $GITHUB_ENV
-          if [[ $(git describe --exact-match --tag 2>&1) != *"no tag exactly matches"* ]]; then 
-            echo "VERSION_TAG=$(git describe --exact-match --tag)" >> $GITHUB_ENV
-          fi
-      - id: set_display_version
-        run: |
-          if [ -z "${VERSION_TAG}" ]; then
-            echo "VERSION_DISPLAY=$VERSION_BRANCH-$VERSION_BUILD" >> $GITHUB_ENV
-          else
-            echo "VERSION_DISPLAY=$VERSION_TAG" >> $GITHUB_ENV
-          fi
-    outputs:
-      VERSION_BRANCH: ${{ env.VERSION_BRANCH }}
-      VERSION_BUILD: ${{ env.VERSION_BUILD }}
-      VERSION_COMMIT: ${{ env.VERSION_COMMIT }}
-      VERSION_LAST_TAG: ${{ env.VERSION_LAST_TAG }}
-      VERSION_DISPLAY: ${{ env.VERSION_DISPLAY }}
-      VERSION_TAG: ${{ env.VERSION_TAG }}
+
   build_push_container_private:
     name: (PRIVATE) Docker AMD
     needs:
       - setup_tags
-      - setup_version_properties
     permissions:
       id-token: write
       contents: read
       pull-requests: write
       packages: write
-    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
+    - uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
+    - uses: ./.github/actions/setup-version-properties
     with:
       runs_on: ubuntu-latest
       image_registry: "docker.io"
@@ -172,7 +143,6 @@ jobs:
         VERSION_DISPLAY=${{ needs.setup_version_properties.outputs.VERSION_DISPLAY }}
         VERSION_BUILD=${{ needs.setup_version_properties.outputs.VERSION_BUILD }}
         VERSION_TAG=${{ needs.setup_version_properties.outputs.VERSION_TAG }}
-        VERSION_LAST_TAG=${{ needs.setup_version_properties.outputs.VERSION_LAST_TAG }}
 
   build_push_container_private_arm:
     if: contains( github.event.pull_request.labels.*.name, 'ARM-TEST') || github.event_name != 'pull_request'
@@ -184,7 +154,8 @@ jobs:
       contents: read
       pull-requests: write
       packages: write
-    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
+    - uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
+    - uses: ./.github/actions/setup-version-properties
     with:
       runs_on: selfhosted-ubuntu-22.04-arm
       image_registry: "docker.io"
@@ -211,6 +182,11 @@ jobs:
       cache_tag_suffix: arm64
       build-args: |
         WGET_VERSION=1.21.3-1+b1
+        VERSION_BRANCH=${{ steps.setup_version_properties.outputs.VERSION_BRANCH }}
+        VERSION_COMMIT=${{ steps.setup_version_properties.outputs.VERSION_COMMIT }}
+        VERSION_DISPLAY=${{ steps.setup_version_properties.outputs.VERSION_DISPLAY }}
+        VERSION_BUILD=${{ steps.setup_version_properties.outputs.VERSION_BUILD }}
+        VERSION_TAG=${{ steps.setup_version_properties.outputs.VERSION_TAG }}
 
   join_multiarch_image_private_dockerhub:
     if: contains( github.event.pull_request.labels.*.name, 'ARM-TEST') || github.event_name != 'pull_request'
@@ -253,6 +229,12 @@ jobs:
       use_gh_remote_cache: true
       enable_dockerhub: "true"
       provenance: "false"
+      build-args: |
+        VERSION_BRANCH=${{ steps.setup_version_properties.outputs.VERSION_BRANCH }}
+        VERSION_COMMIT=${{ steps.setup_version_properties.outputs.VERSION_COMMIT }}
+        VERSION_DISPLAY=${{ env.VERSION_DISPLAY }}
+        VERSION_BUILD=${{ steps.setup_version_properties.outputs.VERSION_BUILD }}
+        VERSION_TAG=${{ steps.setup_version_properties.outputs.VERSION_TAG }}
     secrets:
       role_to_assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
 
@@ -282,6 +264,11 @@ jobs:
       provenance: "false"
       build-args: |
         WGET_VERSION=1.21.3-1+b1
+        VERSION_BRANCH=${{ steps.setup_version_properties.outputs.VERSION_BRANCH }}
+        VERSION_COMMIT=${{ steps.setup_version_properties.outputs.VERSION_COMMIT }}
+        VERSION_DISPLAY=${{ steps.setup_version_properties.outputs.VERSION_DISPLAY }}
+        VERSION_BUILD=${{ steps.setup_version_properties.outputs.VERSION_BUILD }}
+        VERSION_TAG=${{ steps.setup_version_properties.outputs.VERSION_TAG }}
     secrets:
       role_to_assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
 
