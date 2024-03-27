@@ -33,7 +33,7 @@ runs:
           VERSION_BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
           VERSION_BUILD=$(git rev-parse --short HEAD)
           VERSION_LAST_TAG=$(git tag --sort=-creatordate | head -n 1)
-          echo "$VERSION_LAST_TAG-$VERSION_BRANCH-$VERSION_BUILD
+          echo "$VERSION_LAST_TAG-$VERSION_BRANCH-$VERSION_BUILD"
           echo "VERSION_BRANCH=$VERSION_BRANCH" >> $GITHUB_OUTPUT
           echo "VERSION_BUILD=$VERSION_BUILD" >> $GITHUB_OUTPUT
           echo "VERSION_COMMIT=${GITHUB_SHA}" >> $GITHUB_OUTPUT
