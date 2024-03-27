@@ -31,6 +31,10 @@ jobs:
         uses: ./.github/actions/get-version
         with:
           is_release: true
+      - name: gradle task
+        uses: ./.github/actions/gradle-task
+        with:
+          gradle_command: clean
 
   build_deb:
     name: Build debian package
@@ -114,7 +118,7 @@ jobs:
 
   setup_version_properties:
     name: Setup version properties
-    uses: ./.github/workflows/setup-version-properties.yaml
+    uses: ./.github/actions/setup-version-properties
 
   build_push_container_private:
     name: (PRIVATE) Docker AMD
