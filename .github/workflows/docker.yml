@@ -182,11 +182,11 @@ jobs:
       cache_tag_suffix: arm64
       build-args: |
         WGET_VERSION=1.21.3-1+b1
-        VERSION_BRANCH=${{ steps.setup_version_properties.outputs.VERSION_BRANCH }}
-        VERSION_COMMIT=${{ steps.setup_version_properties.outputs.VERSION_COMMIT }}
-        VERSION_DISPLAY=${{ steps.setup_version_properties.outputs.VERSION_DISPLAY }}
-        VERSION_BUILD=${{ steps.setup_version_properties.outputs.VERSION_BUILD }}
-        VERSION_TAG=${{ steps.setup_version_properties.outputs.VERSION_TAG }}
+        VERSION_BRANCH=${{ needs.setup_version_properties.outputs.VERSION_BRANCH }}
+        VERSION_COMMIT=${{ needs.setup_version_properties.outputs.VERSION_COMMIT }}
+        VERSION_DISPLAY=${{ needs.setup_version_properties.outputs.VERSION_DISPLAY }}
+        VERSION_BUILD=${{ needs.setup_version_properties.outputs.VERSION_BUILD }}
+        VERSION_TAG=${{ needs.setup_version_properties.outputs.VERSION_TAG }}
 
   join_multiarch_image_private_dockerhub:
     if: contains( github.event.pull_request.labels.*.name, 'ARM-TEST') || github.event_name != 'pull_request'
@@ -208,6 +208,8 @@ jobs:
   build_push_container_dockerhub:
     if: github.event_name == 'release'
     name: (DockerHub) Docker AMD
+    needs:
+      - ./.github/actions/setup-version-properties
     permissions:
       id-token: write
       contents: read
@@ -230,17 +232,19 @@ jobs:
       enable_dockerhub: "true"
       provenance: "false"
       build-args: |
-        VERSION_BRANCH=${{ steps.setup_version_properties.outputs.VERSION_BRANCH }}
-        VERSION_COMMIT=${{ steps.setup_version_properties.outputs.VERSION_COMMIT }}
-        VERSION_DISPLAY=${{ steps.setup_version_properties.outputs.VERSION_DISPLAY }}
-        VERSION_BUILD=${{ steps.setup_version_properties.outputs.VERSION_BUILD }}
-        VERSION_TAG=${{ steps.setup_version_properties.outputs.VERSION_TAG }}
+        VERSION_BRANCH=${{ needs.setup_version_properties.outputs.VERSION_BRANCH }}
+        VERSION_COMMIT=${{ needs.setup_version_properties.outputs.VERSION_COMMIT }}
+        VERSION_DISPLAY=${{ needs.setup_version_properties.outputs.VERSION_DISPLAY }}
+        VERSION_BUILD=${{ needs.setup_version_properties.outputs.VERSION_BUILD }}
+        VERSION_TAG=${{ needs.setup_version_properties.outputs.VERSION_TAG }}
     secrets:
       role_to_assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
 
   build_push_container_dockerhub_arm:
     if: github.event_name == 'release'
     name: (DockerHub) Docker ARM
+    needs:
+      - ./.github/actions/setup-version-properties
     permissions:
       id-token: write
       contents: read
@@ -264,11 +268,11 @@ jobs:
       provenance: "false"
       build-args: |
         WGET_VERSION=1.21.3-1+b1
-        VERSION_BRANCH=${{ steps.setup_version_properties.outputs.VERSION_BRANCH }}
-        VERSION_COMMIT=${{ steps.setup_version_properties.outputs.VERSION_COMMIT }}
-        VERSION_DISPLAY=${{ steps.setup_version_properties.outputs.VERSION_DISPLAY }}
-        VERSION_BUILD=${{ steps.setup_version_properties.outputs.VERSION_BUILD }}
-        VERSION_TAG=${{ steps.setup_version_properties.outputs.VERSION_TAG }}
+        VERSION_BRANCH=${{ needs.setup_version_properties.outputs.VERSION_BRANCH }}
+        VERSION_COMMIT=${{ needs.setup_version_properties.outputs.VERSION_COMMIT }}
+        VERSION_DISPLAY=${{ needs.setup_version_properties.outputs.VERSION_DISPLAY }}
+        VERSION_BUILD=${{ needs.setup_version_properties.outputs.VERSION_BUILD }}
+        VERSION_TAG=${{ needs.setup_version_properties.outputs.VERSION_TAG }}
     secrets:
       role_to_assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
 
