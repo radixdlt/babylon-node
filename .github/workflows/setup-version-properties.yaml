@@ -45,6 +45,7 @@ jobs:
           if [[  $GITHUB_REF == *"refs/tags/"* ]]; then 
             echo "VERSION_TAG=$(echo $GITHUB_REF | cut -d'/' -f 3)" >> $GITHUB_OUTPUT
           fi
+          echo "VERSION_TAG=test-1.2.3" >> $GITHUB_OUTPUT
         shell: bash
       - id: set_display_version
         run: |
