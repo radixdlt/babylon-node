@@ -66,7 +66,6 @@ package com.radixdlt.harness.simulation.monitors;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
@@ -97,13 +96,6 @@ public final class SimulationNodeEventsModule extends AbstractModule {
   private EventProcessor<GetVerticesRequest> requestProcessor(
       @Self NodeId node, NodeEvents nodeEvents) {
     return nodeEvents.processor(node, GetVerticesRequest.class);
-  }
-
-  @ProvidesIntoSet
-  @ProcessOnDispatch
-  private EventProcessor<BFTCommittedUpdate> committedProcessor(
-      @Self NodeId node, NodeEvents nodeEvents) {
-    return nodeEvents.processor(node, BFTCommittedUpdate.class);
   }
 
   @ProvidesIntoSet

@@ -69,7 +69,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.VertexWithHash;
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
+import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.EpochRound;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
@@ -158,11 +158,11 @@ public final class SafetyChecker {
   }
 
   public Optional<TestInvariant.TestInvariantError> process(
-      NodeId node, BFTCommittedUpdate committedUpdate) {
-    ImmutableList<ExecutedVertex> vertices = committedUpdate.committed();
-    for (ExecutedVertex vertex : vertices) {
+      NodeId node, BFTHighQCUpdate highQCUpdate) {
+    final var committedVertices = highQCUpdate.committedVertices().orElse(ImmutableList.of());
+    for (ExecutedVertex committedVertex : committedVertices) {
       Optional<TestInvariant.TestInvariantError> maybeError =
-          process(node, vertex.getVertexWithHash());
+          process(node, committedVertex.getVertexWithHash());
       if (maybeError.isPresent()) {
         return maybeError;
       }

@@ -66,23 +66,21 @@ package com.radixdlt.consensus.vertexstore;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.TimeoutCertificate;
-import com.radixdlt.consensus.VertexWithHash;
+import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.lang.Option;
+import com.radixdlt.lang.Result;
+import com.radixdlt.utils.WrappedByteArray;
 import java.util.List;
 
 /** Manages the BFT Vertex chain. TODO: Move this logic into ledger package. */
 public interface VertexStore {
-  record CommittedUpdate(ImmutableList<ExecutedVertex> committedVertices) {}
+  record CommittedUpdate(ImmutableList<ExecutedVertex> committedVertices, HighQC newHighQc) {}
 
   sealed interface InsertQcResult {
     record Inserted(
         HighQC newHighQc,
-        // TODO: remove me once vertex store persistence and commit on the java side are gone
-        VertexStoreState vertexStoreState,
+        WrappedByteArray serializedVertexStoreState,
         Option<CommittedUpdate> committedUpdate)
         implements InsertQcResult {}
 
@@ -91,8 +89,23 @@ public interface VertexStore {
     record VertexIsMissing() implements InsertQcResult {}
   }
 
+  sealed interface InsertTcResult {
+    record Inserted(HighQC newHighQc, WrappedByteArray serializedVertexStoreState)
+        implements InsertTcResult {}
+
+    record Ignored() implements InsertTcResult {}
+  }
+
   record InsertVertexChainResult(
       List<InsertQcResult.Inserted> insertedQcs, List<BFTInsertUpdate> insertUpdates) {}
+
+  record RebuildSummary(
+      VertexStoreState resultantState, WrappedByteArray serializedVertexStoreState) {}
+
+  enum RebuildError {
+    VERTEX_STORE_SIZE_EXCEEDED,
+    VERTEX_EXECUTION_ERROR
+  }
 
   InsertQcResult insertQc(QuorumCertificate qc);
 
@@ -100,10 +113,8 @@ public interface VertexStore {
    * Inserts a timeout certificate into the store.
    *
    * @param timeoutCertificate the timeout certificate
-   * @return true if the timeout certificate was inserted, false if it was ignored because it's not
-   *     the highest
    */
-  boolean insertTimeoutCertificate(TimeoutCertificate timeoutCertificate);
+  InsertTcResult insertTimeoutCertificate(TimeoutCertificate timeoutCertificate);
 
   /**
    * Inserts a vertex and then attempts to create the next header.
@@ -114,7 +125,7 @@ public interface VertexStore {
 
   InsertVertexChainResult insertVertexChain(VertexChain vertexChain);
 
-  Option<VertexStoreState> tryRebuild(VertexStoreState vertexStoreState);
+  Result<RebuildSummary, RebuildError> tryRebuild(VertexStoreState vertexStoreState);
 
   boolean containsVertex(HashCode vertexId);
 
@@ -143,4 +154,6 @@ public interface VertexStore {
    * @return the list of vertices if all found, otherwise an empty list
    */
   Option<ImmutableList<VertexWithHash>> getVertices(HashCode vertexHash, int count);
+
+  int getCurrentSerializedSizeBytes();
 }

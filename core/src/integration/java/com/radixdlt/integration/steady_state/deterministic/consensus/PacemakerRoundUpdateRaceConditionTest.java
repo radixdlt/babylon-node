@@ -126,7 +126,7 @@ public class PacemakerRoundUpdateRaceConditionTest {
                   private EventProcessor<BFTInsertUpdate> bftInsertUpdateProcessor() {
                     final Map<HashCode, ExecutedVertex> insertedVertices = new HashMap<>();
                     return bftInsertUpdate -> {
-                      final ExecutedVertex inserted = bftInsertUpdate.getInserted();
+                      final ExecutedVertex inserted = bftInsertUpdate.insertedVertex();
                       insertedVertices.putIfAbsent(inserted.getVertexHash(), inserted);
                       final Optional<ExecutedVertex> maybeParent =
                           Optional.ofNullable(insertedVertices.get(inserted.getParentId()));
@@ -204,7 +204,7 @@ public class PacemakerRoundUpdateRaceConditionTest {
         queue.add(message.withAdditionalDelay(additionalMessageDelay));
         return true;
       } else if (msg instanceof BFTInsertUpdate
-          && ((BFTInsertUpdate) msg).getInserted().getRound().equals(Round.of(1))) {
+          && ((BFTInsertUpdate) msg).insertedVertex().getRound().equals(Round.of(1))) {
         queue.add(message.withAdditionalDelay(additionalMessageDelay));
         return true;
       } else {

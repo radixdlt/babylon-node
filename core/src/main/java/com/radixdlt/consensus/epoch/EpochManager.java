@@ -483,7 +483,7 @@ public final class EpochManager {
   public EventProcessor<BFTRebuildUpdate> bftRebuildUpdateEventProcessor() {
     return update -> {
       if (update
-              .getVertexStoreState()
+              .vertexStoreState()
               .getRoot()
               .vertex()
               .getParentHeader()

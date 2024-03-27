@@ -68,7 +68,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Ledger;
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
+import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.ledger.LedgerExtension;
@@ -91,8 +91,8 @@ public class LedgerModule extends AbstractModule {
 
   @ProvidesIntoSet
   @ProcessOnDispatch
-  private EventProcessor<BFTCommittedUpdate> bftToLedgerCommittor(
+  private EventProcessor<BFTHighQCUpdate> bftToLedgerCommittor(
       StateComputerLedger stateComputerLedger) {
-    return stateComputerLedger.bftCommittedUpdateEventProcessor();
+    return stateComputerLedger.bftHighQcUpdateEventProcessor();
   }
 }

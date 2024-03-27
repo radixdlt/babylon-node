@@ -92,6 +92,7 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
   private final StatelessTransactionVerifier verifier;
   private final EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher;
   private final Hasher hasher;
+  private final LedgerHashes fixedLedgerHashes;
   private int successCount = 0;
   private int invalidCount = 0;
 
@@ -99,9 +100,18 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
       StatelessTransactionVerifier verifier,
       EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
       Hasher hasher) {
+    this(verifier, ledgerUpdateDispatcher, hasher, LedgerHashes.zero());
+  }
+
+  public StatelessComputer(
+      StatelessTransactionVerifier verifier,
+      EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
+      Hasher hasher,
+      LedgerHashes fixedLedgerHashes) {
     this.verifier = verifier;
     this.ledgerUpdateDispatcher = ledgerUpdateDispatcher;
     this.hasher = hasher;
+    this.fixedLedgerHashes = fixedLedgerHashes;
   }
 
   public int getSuccessCount() {
@@ -144,7 +154,7 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
     invalidCount += invalidTransactionCount;
 
     return new StateComputerLedger.StateComputerPrepareResult(
-        successfulTransactions, invalidTransactionCount, LedgerHashes.zero());
+        successfulTransactions, invalidTransactionCount, fixedLedgerHashes);
   }
 
   private LedgerUpdate generateLedgerUpdate(LedgerExtension ledgerExtension) {
@@ -194,7 +204,7 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
 
   @Override
   public LedgerProofBundle commit(
-      LedgerExtension ledgerExtension, VertexStoreState vertexStoreState) {
+      LedgerExtension ledgerExtension, Option<byte[]> serializedVertexStoreState) {
     var ledgerUpdate = this.generateLedgerUpdate(ledgerExtension);
     ledgerUpdateDispatcher.dispatch(ledgerUpdate);
     return ledgerUpdate.committedProof();

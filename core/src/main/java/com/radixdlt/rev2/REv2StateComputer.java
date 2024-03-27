@@ -84,7 +84,6 @@ import com.radixdlt.mempool.*;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.protocol.RustProtocolUpdate;
-import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statecomputer.commit.*;
@@ -283,21 +282,17 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   }
 
   @Override
-  public LedgerProofBundle commit(LedgerExtension ledgerExtension, VertexStoreState vertexStore) {
+  public LedgerProofBundle commit(
+      LedgerExtension ledgerExtension, Option<byte[]> serializedVertexStoreState) {
     final var proof = ledgerExtension.proof();
     final var header = proof.ledgerHeader();
 
-    final Option<byte[]> vertexStoreBytes;
-    if (vertexStore != null) {
-      vertexStoreBytes =
-          Option.some(serialization.toDson(vertexStore.toSerialized(), DsonOutput.Output.ALL));
-    } else {
-      vertexStoreBytes = Option.none();
-    }
-
     var commitRequest =
         new CommitRequest(
-            ledgerExtension.transactions(), proof, vertexStoreBytes, Option.from(selfValidatorId));
+            ledgerExtension.transactions(),
+            proof,
+            serializedVertexStoreState,
+            Option.from(selfValidatorId));
 
     final var result = stateComputer.commit(commitRequest);
     final var commitSummary =

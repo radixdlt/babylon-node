@@ -67,9 +67,9 @@ package com.radixdlt.statecomputer;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.LedgerHashes;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
-import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.*;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerPrepareResult;
@@ -136,8 +136,9 @@ public final class MockedMempoolStateComputer implements StateComputer {
   }
 
   @Override
-  public LedgerProofBundle commit(LedgerExtension ledgerExtension, VertexStoreState vertexStore) {
-    final var proof = this.stateComputer.commit(ledgerExtension, vertexStore);
+  public LedgerProofBundle commit(
+      LedgerExtension ledgerExtension, Option<byte[]> serializedVertexStoreState) {
+    final var proof = this.stateComputer.commit(ledgerExtension, serializedVertexStoreState);
     this.mempool.handleTransactionsCommitted(
         ledgerExtension.transactions().stream()
             // This undoes the (hacky) re-mapping done by a fake `prepare()` using `MockExecuted`

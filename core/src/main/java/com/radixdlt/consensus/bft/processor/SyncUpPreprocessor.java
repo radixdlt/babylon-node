@@ -150,7 +150,7 @@ public final class SyncUpPreprocessor implements BFTEventProcessor {
 
   @Override
   public void processBFTUpdate(BFTInsertUpdate update) {
-    final var vertexId = update.getInserted().getVertexHash();
+    final var vertexId = update.insertedVertex().getVertexHash();
     log.trace("LOCAL_SYNC: {}", vertexId);
 
     syncingEvents.stream()
@@ -167,7 +167,7 @@ public final class SyncUpPreprocessor implements BFTEventProcessor {
   @Override
   public void processBFTRebuildUpdate(BFTRebuildUpdate rebuildUpdate) {
     rebuildUpdate
-        .getVertexStoreState()
+        .vertexStoreState()
         .getVertices()
         .forEach(
             v -> {

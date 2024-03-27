@@ -67,7 +67,7 @@ package com.radixdlt.harness.simulation.monitors.consensus;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.multibindings.ProvidesIntoMap;
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
+import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
@@ -174,7 +174,8 @@ public final class ConsensusMonitors {
       @ProvidesIntoMap
       @MonitorKey(Monitor.CONSENSUS_NONE_COMMITTED)
       TestInvariant noneCommittedInvariant(NodeEvents nodeEvents) {
-        return new EventNeverOccursInvariant<>(nodeEvents, BFTCommittedUpdate.class, u -> true);
+        return new EventNeverOccursInvariant<>(
+            nodeEvents, BFTHighQCUpdate.class, ev -> ev.committedVertices().isPresent());
       }
     };
   }

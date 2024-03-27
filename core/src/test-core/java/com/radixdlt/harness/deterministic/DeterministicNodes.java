@@ -107,7 +107,8 @@ public final class DeterministicNodes implements AutoCloseable {
   private final ControlledAddressBook addressBook;
   private final Map<Integer, PhysicalNodeConfig> nodeConfigs;
   private final Module baseModule;
-  private final Module overrideModule;
+
+  private Module overrideModule;
 
   // Network
   private final DeterministicNetwork network;
@@ -164,6 +165,14 @@ public final class DeterministicNodes implements AutoCloseable {
     public Integer apply(NodeId nodeId) {
       return this.addressBook.get(nodeId);
     }
+  }
+
+  void setOverrideModule(Module overrideModule) {
+    this.overrideModule = overrideModule;
+  }
+
+  Module getOverrideModule() {
+    return this.overrideModule;
   }
 
   private Injector createBFTInstance(

@@ -64,7 +64,8 @@
 
 package com.radixdlt.harness.simulation.monitors.epochs;
 
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.harness.simulation.TestInvariant;
 import com.radixdlt.harness.simulation.monitors.NodeEvents;
@@ -74,22 +75,25 @@ import java.util.Objects;
 
 /** Invariant which checks that a committed vertex never goes above some round */
 public class EpochRoundInvariant implements TestInvariant {
-  private final NodeEvents commits;
+  private final NodeEvents nodeEvents;
   private final Round epochMaxRound;
 
-  public EpochRoundInvariant(Round epochMaxRound, NodeEvents commits) {
-    this.commits = commits;
+  public EpochRoundInvariant(Round epochMaxRound, NodeEvents nodeEvents) {
+    this.nodeEvents = nodeEvents;
     this.epochMaxRound = Objects.requireNonNull(epochMaxRound);
   }
 
   @Override
   public Observable<TestInvariantError> check(RunningNetwork network) {
-    return Observable.<BFTCommittedUpdate>create(
+    return Observable.<BFTHighQCUpdate>create(
             emitter ->
-                this.commits.addListener(
-                    (node, commit) -> emitter.onNext(commit), BFTCommittedUpdate.class))
+                this.nodeEvents.addListener(
+                    (node, commit) -> emitter.onNext(commit), BFTHighQCUpdate.class))
         .serialize()
-        .concatMap(committedUpdate -> Observable.fromStream(committedUpdate.committed().stream()))
+        .concatMap(
+            highQCUpdate ->
+                Observable.fromStream(
+                    highQCUpdate.committedVertices().or(ImmutableList.of()).stream()))
         .flatMap(
             vertex -> {
               final Round round = vertex.getRound();
