@@ -100,95 +100,97 @@ jobs:
       - id: setup_tags
         run: echo "tag=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
+  setup_version_properties:
+    name: Setup version properties
+    runs-on: ubuntu-latest
+    uses: ./.github/actions/setup-version-properties
 
   build_push_container_private:
     name: (PRIVATE) Docker AMD
     needs:
       - setup_tags
+      - setup_version_properties
     permissions:
       id-token: write
       contents: read
       pull-requests: write
       packages: write
-    steps:
-      - uses: ./.github/actions/setup-version-properties
-      - uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
-        with:
-          runs_on: ubuntu-latest
-          image_registry: "docker.io"
-          image_organization: "radixdlt"
-          image_name: "private-babylon-node"
-          tag: ${{ needs.setup_tags.outputs.tag }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=ref,event=tag
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=sha
-          flavor:
-            ${{ contains( github.event.pull_request.labels.*.name, 'ARM-TEST') && 'suffix=-amd64' || '' }}
-            ${{ github.event_name != 'pull_request' && 'suffix=-amd64' || '' }}
-          context: "."
-          dockerfile: "./Dockerfile"
-          platforms: "linux/amd64"
-          cache_tag_suffix: "amd64"
-          use_gh_remote_cache: true
-          provenance: "false"
-          scan_image: true
-          snyk_target_ref: ${{ github.ref_name }}
-          build-args: |
-            VERSION_BRANCH=${{ needs.setup_version_properties.outputs.VERSION_BRANCH }}
-            VERSION_COMMIT=${{ needs.setup_version_properties.outputs.VERSION_COMMIT }}
-            VERSION_DISPLAY=${{ needs.setup_version_properties.outputs.VERSION_DISPLAY }}
-            VERSION_BUILD=${{ needs.setup_version_properties.outputs.VERSION_BUILD }}
-            VERSION_TAG=${{ needs.setup_version_properties.outputs.VERSION_TAG }}
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
+    with:
+      runs_on: ubuntu-latest
+      image_registry: "docker.io"
+      image_organization: "radixdlt"
+      image_name: "private-babylon-node"
+      tag: ${{ needs.setup_tags.outputs.tag }}
+      tags: |
+        type=ref,event=branch
+        type=ref,event=pr
+        type=ref,event=tag
+        type=semver,pattern={{version}}
+        type=semver,pattern={{major}}.{{minor}}
+        type=semver,pattern={{major}}
+        type=sha
+      flavor:
+        ${{ contains( github.event.pull_request.labels.*.name, 'ARM-TEST') && 'suffix=-amd64' || '' }}
+        ${{ github.event_name != 'pull_request' && 'suffix=-amd64' || '' }}
+      context: "."
+      dockerfile: "./Dockerfile"
+      platforms: "linux/amd64"
+      cache_tag_suffix: "amd64"
+      use_gh_remote_cache: true
+      provenance: "false"
+      scan_image: true
+      snyk_target_ref: ${{ github.ref_name }}
+      build-args: |
+        VERSION_BRANCH=${{ needs.setup_version_properties.outputs.VERSION_BRANCH }}
+        VERSION_COMMIT=${{ needs.setup_version_properties.outputs.VERSION_COMMIT }}
+        VERSION_DISPLAY=${{ needs.setup_version_properties.outputs.VERSION_DISPLAY }}
+        VERSION_BUILD=${{ needs.setup_version_properties.outputs.VERSION_BUILD }}
+        VERSION_TAG=${{ needs.setup_version_properties.outputs.VERSION_TAG }}
 
   build_push_container_private_arm:
     if: contains( github.event.pull_request.labels.*.name, 'ARM-TEST') || github.event_name != 'pull_request'
     name: (PRIVATE) Docker ARM
     needs:
       - setup_tags
+      - setup_version_properties
     permissions:
       id-token: write
       contents: read
       pull-requests: write
       packages: write
-    steps:
-      - uses: ./.github/actions/setup-version-properties
-      - uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
-        with:
-          runs_on: selfhosted-ubuntu-22.04-arm
-          image_registry: "docker.io"
-          image_organization: "radixdlt"
-          image_name: "private-babylon-node"
-          tag: ${{ needs.setup_tags.outputs.tag }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=ref,event=tag
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=sha
-          flavor: |
-            suffix=-arm64
-          context: "."
-          dockerfile: "./Dockerfile"
-          use_gh_remote_cache: true
-          provenance: "false"
-          scan_image: false
-          snyk_target_ref: ${{ github.ref_name }}
-          platforms: "linux/arm64"
-          cache_tag_suffix: arm64
-          build-args: |
-            WGET_VERSION=1.21.3-1+b1
-            VERSION_BRANCH=${{ needs.setup_version_properties.outputs.VERSION_BRANCH }}
-            VERSION_COMMIT=${{ needs.setup_version_properties.outputs.VERSION_COMMIT }}
-            VERSION_DISPLAY=${{ needs.setup_version_properties.outputs.VERSION_DISPLAY }}
-            VERSION_BUILD=${{ needs.setup_version_properties.outputs.VERSION_BUILD }}
-            VERSION_TAG=${{ needs.setup_version_properties.outputs.VERSION_TAG }}
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
+    with:
+      runs_on: selfhosted-ubuntu-22.04-arm
+      image_registry: "docker.io"
+      image_organization: "radixdlt"
+      image_name: "private-babylon-node"
+      tag: ${{ needs.setup_tags.outputs.tag }}
+      tags: |
+        type=ref,event=branch
+        type=ref,event=pr
+        type=ref,event=tag
+        type=semver,pattern={{version}}
+        type=semver,pattern={{major}}.{{minor}}
+        type=semver,pattern={{major}}
+        type=sha
+      flavor: |
+        suffix=-arm64
+      context: "."
+      dockerfile: "./Dockerfile"
+      use_gh_remote_cache: true
+      provenance: "false"
+      scan_image: false
+      snyk_target_ref: ${{ github.ref_name }}
+      platforms: "linux/arm64"
+      cache_tag_suffix: arm64
+      build-args: |
+        WGET_VERSION=1.21.3-1+b1
+        VERSION_BRANCH=${{ needs.setup_version_properties.outputs.VERSION_BRANCH }}
+        VERSION_COMMIT=${{ needs.setup_version_properties.outputs.VERSION_COMMIT }}
+        VERSION_DISPLAY=${{ needs.setup_version_properties.outputs.VERSION_DISPLAY }}
+        VERSION_BUILD=${{ needs.setup_version_properties.outputs.VERSION_BUILD }}
+        VERSION_TAG=${{ needs.setup_version_properties.outputs.VERSION_TAG }}
 
   join_multiarch_image_private_dockerhub:
     if: contains( github.event.pull_request.labels.*.name, 'ARM-TEST') || github.event_name != 'pull_request'
@@ -210,35 +212,35 @@ jobs:
   build_push_container_dockerhub:
     if: github.event_name == 'release'
     name: (DockerHub) Docker AMD
+    needs:
+      - setup_version_properties
     permissions:
       id-token: write
       contents: read
       pull-requests: write
       packages: write
-    steps:
-      - uses: ./.github/actions/setup-version-properties
-      - uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
-        with:
-          runs_on: ubuntu-latest
-          image_registry: "docker.io"
-          image_organization: "radixdlt"
-          image_name: "babylon-node"
-          tag: ${{ github.event.release.tag_name }}
-          flavor: |
-            suffix=-amd64
-          context: "."
-          dockerfile: "./Dockerfile"
-          platforms: "linux/amd64"
-          cache_tag_suffix: "amd64"
-          use_gh_remote_cache: true
-          enable_dockerhub: "true"
-          provenance: "false"
-          build-args: |
-            VERSION_BRANCH=${{ needs.setup_version_properties.outputs.VERSION_BRANCH }}
-            VERSION_COMMIT=${{ needs.setup_version_properties.outputs.VERSION_COMMIT }}
-            VERSION_DISPLAY=${{ needs.setup_version_properties.outputs.VERSION_DISPLAY }}
-            VERSION_BUILD=${{ needs.setup_version_properties.outputs.VERSION_BUILD }}
-            VERSION_TAG=${{ needs.setup_version_properties.outputs.VERSION_TAG }}
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
+    with:
+      runs_on: ubuntu-latest
+      image_registry: "docker.io"
+      image_organization: "radixdlt"
+      image_name: "babylon-node"
+      tag: ${{ github.event.release.tag_name }}
+      flavor: |
+        suffix=-amd64
+      context: "."
+      dockerfile: "./Dockerfile"
+      platforms: "linux/amd64"
+      cache_tag_suffix: "amd64"
+      use_gh_remote_cache: true
+      enable_dockerhub: "true"
+      provenance: "false"
+      build-args: |
+        VERSION_BRANCH=${{ needs.setup_version_properties.outputs.VERSION_BRANCH }}
+        VERSION_COMMIT=${{ needs.setup_version_properties.outputs.VERSION_COMMIT }}
+        VERSION_DISPLAY=${{ needs.setup_version_properties.outputs.VERSION_DISPLAY }}
+        VERSION_BUILD=${{ needs.setup_version_properties.outputs.VERSION_BUILD }}
+        VERSION_TAG=${{ needs.setup_version_properties.outputs.VERSION_TAG }}
     secrets:
       role_to_assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
 
@@ -246,37 +248,35 @@ jobs:
     if: github.event_name == 'release'
     name: (DockerHub) Docker ARM
     needs:
-      - ./.github/actions/setup-version-properties
+      - setup_version_properties
     permissions:
       id-token: write
       contents: read
       pull-requests: write
       packages: write
-      steps:
-        - uses: ./.github/actions/setup-version-properties
-        - uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
-          with:
-            runs_on: selfhosted-ubuntu-22.04-arm
-            image_registry: "docker.io"
-            image_organization: "radixdlt"
-            image_name: "babylon-node"
-            tag: ${{ github.event.release.tag_name }}
-            flavor: |
-              suffix=-arm64
-            context: "."
-            dockerfile: "./Dockerfile"
-            platforms: "linux/arm64"
-            cache_tag_suffix: "arm64"
-            use_gh_remote_cache: true
-            enable_dockerhub: "true"
-            provenance: "false"
-            build-args: |
-              WGET_VERSION=1.21.3-1+b1
-              VERSION_BRANCH=${{ needs.setup_version_properties.outputs.VERSION_BRANCH }}
-              VERSION_COMMIT=${{ needs.setup_version_properties.outputs.VERSION_COMMIT }}
-              VERSION_DISPLAY=${{ needs.setup_version_properties.outputs.VERSION_DISPLAY }}
-              VERSION_BUILD=${{ needs.setup_version_properties.outputs.VERSION_BUILD }}
-              VERSION_TAG=${{ needs.setup_version_properties.outputs.VERSION_TAG }}
+      uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
+      with:
+        runs_on: selfhosted-ubuntu-22.04-arm
+        image_registry: "docker.io"
+        image_organization: "radixdlt"
+        image_name: "babylon-node"
+        tag: ${{ github.event.release.tag_name }}
+        flavor: |
+          suffix=-arm64
+        context: "."
+        dockerfile: "./Dockerfile"
+        platforms: "linux/arm64"
+        cache_tag_suffix: "arm64"
+        use_gh_remote_cache: true
+        enable_dockerhub: "true"
+        provenance: "false"
+        build-args: |
+          WGET_VERSION=1.21.3-1+b1
+          VERSION_BRANCH=${{ needs.setup_version_properties.outputs.VERSION_BRANCH }}
+          VERSION_COMMIT=${{ needs.setup_version_properties.outputs.VERSION_COMMIT }}
+          VERSION_DISPLAY=${{ needs.setup_version_properties.outputs.VERSION_DISPLAY }}
+          VERSION_BUILD=${{ needs.setup_version_properties.outputs.VERSION_BUILD }}
+          VERSION_TAG=${{ needs.setup_version_properties.outputs.VERSION_TAG }}
     secrets:
       role_to_assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
 
