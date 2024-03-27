@@ -14,14 +14,14 @@ outputs:
 runs:
   using: "composite"
   steps:
+    - id: setup_version_properties
+      name: Setup version properties
+      uses: ./.github/actions/setup-version-properties
     - id: get_release
       run: |
         IS_RELEASE="${{ inputs.is_release }}"
         echo "IS_RELEASE $IS_RELEASE"
-        if [[ "$IS_RELEASE" == "false" ]] ;then
-          export CI_VERSION=true
-        fi
-        version=$(./gradlew radixCiVersion | grep radixdlt-version | cut -d: -f2)
+        version=${{ steps.setup_version_properties.outputs.VERSION_DISPLAY }}
         echo "Version: $version"
         echo "radixdlt_version=$(echo $version)" >> $GITHUB_OUTPUT
         docker_tag=$(echo $version | sed 's/~/-/g')

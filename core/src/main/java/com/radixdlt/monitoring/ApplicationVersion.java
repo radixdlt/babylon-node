@@ -117,8 +117,8 @@ public record ApplicationVersion(String branch, String commit, String display, S
 
   @VisibleForTesting
   static String calculateVersionString(Map<String, String> details) {
-    if (isCleanTag(details)) {
-      return lastTag(details);
+    if (isTagVersion(details)) {
+      return tag(details);
     } else {
       var version =
           branchName(details) == null
@@ -131,8 +131,12 @@ public record ApplicationVersion(String branch, String commit, String display, S
     }
   }
 
-  private static boolean isCleanTag(Map<String, String> details) {
-    return Objects.equals(details.get("tag"), details.get("last_tag"));
+  private static boolean isTagVersion(Map<String, String> details) {
+    return (tag(details).isBlank() ? false : true);
+  }
+
+  private static String tag(Map<String, String> details) {
+    return details.get("tag");
   }
 
   private static String lastTag(Map<String, String> details) {
