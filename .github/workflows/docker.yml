@@ -254,29 +254,29 @@ jobs:
       contents: read
       pull-requests: write
       packages: write
-      uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
-      with:
-        runs_on: selfhosted-ubuntu-22.04-arm
-        image_registry: "docker.io"
-        image_organization: "radixdlt"
-        image_name: "babylon-node"
-        tag: ${{ github.event.release.tag_name }}
-        flavor: |
-          suffix=-arm64
-        context: "."
-        dockerfile: "./Dockerfile"
-        platforms: "linux/arm64"
-        cache_tag_suffix: "arm64"
-        use_gh_remote_cache: true
-        enable_dockerhub: "true"
-        provenance: "false"
-        build-args: |
-          WGET_VERSION=1.21.3-1+b1
-          VERSION_BRANCH=${{ needs.setup_version_properties.outputs.VERSION_BRANCH }}
-          VERSION_COMMIT=${{ needs.setup_version_properties.outputs.VERSION_COMMIT }}
-          VERSION_DISPLAY=${{ needs.setup_version_properties.outputs.VERSION_DISPLAY }}
-          VERSION_BUILD=${{ needs.setup_version_properties.outputs.VERSION_BUILD }}
-          VERSION_TAG=${{ needs.setup_version_properties.outputs.VERSION_TAG }}
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
+    with:
+      runs_on: selfhosted-ubuntu-22.04-arm
+      image_registry: "docker.io"
+      image_organization: "radixdlt"
+      image_name: "babylon-node"
+      tag: ${{ github.event.release.tag_name }}
+      flavor: |
+        suffix=-arm64
+      context: "."
+      dockerfile: "./Dockerfile"
+      platforms: "linux/arm64"
+      cache_tag_suffix: "arm64"
+      use_gh_remote_cache: true
+      enable_dockerhub: "true"
+      provenance: "false"
+      build-args: |
+        WGET_VERSION=1.21.3-1+b1
+        VERSION_BRANCH=${{ needs.setup_version_properties.outputs.VERSION_BRANCH }}
+        VERSION_COMMIT=${{ needs.setup_version_properties.outputs.VERSION_COMMIT }}
+        VERSION_DISPLAY=${{ needs.setup_version_properties.outputs.VERSION_DISPLAY }}
+        VERSION_BUILD=${{ needs.setup_version_properties.outputs.VERSION_BUILD }}
+        VERSION_TAG=${{ needs.setup_version_properties.outputs.VERSION_TAG }}
     secrets:
       role_to_assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
 
