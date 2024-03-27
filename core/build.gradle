@@ -179,7 +179,6 @@ VERSION_COMMIT=${getEnvironmentVariable('VERSION_COMMIT')}
 VERSION_DISPLAY=${getEnvironmentVariable('VERSION_DISPLAY')}
 VERSION_BUILD=${getEnvironmentVariable('VERSION_BUILD')}
 VERSION_TAG=${getEnvironmentVariable('VERSION_TAG')}
-VERSION_LAST_TAG=${getEnvironmentVariable('VERSION_LAST_TAG')}
     """
     }
 }
