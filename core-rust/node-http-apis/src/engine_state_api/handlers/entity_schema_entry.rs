@@ -2,7 +2,7 @@ use crate::engine_state_api::*;
 
 use crate::engine_prelude::*;
 
-use std::ops::Deref;
+use state_manager::historical_state::VersionScopingSupport;
 
 pub(crate) async fn handle_entity_schema_entry(
     state: State<EngineStateApiState>,
@@ -16,16 +16,23 @@ pub(crate) async fn handle_entity_schema_entry(
         .map_err(|err| err.into_response_error("entity_address"))?;
     let schema_hash = extract_schema_hash(request.schema_hash.as_str())
         .map_err(|err| err.into_response_error("schema_hash"))?;
+    let requested_state_version =
+        extract_opt_ledger_state_selector(request.at_ledger_state.as_deref())
+            .map_err(|err| err.into_response_error("at_ledger_state"))?;
 
-    let database = state.state_manager.database.snapshot();
+    let database = state
+        .state_manager
+        .database
+        .snapshot()
+        .scoped_at(requested_state_version)?;
 
-    let data_loader = EngineStateDataLoader::new(database.deref());
+    let data_loader = EngineStateDataLoader::new(&database);
     let versioned_schema_data = data_loader.load_schema(&SchemaReference {
         node_id,
         schema_hash,
     })?;
 
-    let header = read_current_ledger_header(database.deref());
+    let header = database.proving_ledger_header();
 
     Ok(Json(models::EntitySchemaEntryResponse {
         at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),

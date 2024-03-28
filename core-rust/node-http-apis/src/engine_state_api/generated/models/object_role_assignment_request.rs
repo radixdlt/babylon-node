@@ -16,12 +16,15 @@ pub struct ObjectRoleAssignmentRequest {
     /// A Bech32m-encoded, human readable rendering of an arbitrary Entity's address.
     #[serde(rename = "entity_address")]
     pub entity_address: String,
+    #[serde(rename = "at_ledger_state", skip_serializing_if = "Option::is_none")]
+    pub at_ledger_state: Option<Box<crate::engine_state_api::generated::models::LedgerStateSelector>>,
 }
 
 impl ObjectRoleAssignmentRequest {
     pub fn new(entity_address: String) -> ObjectRoleAssignmentRequest {
         ObjectRoleAssignmentRequest {
             entity_address,
+            at_ledger_state: None,
         }
     }
 }

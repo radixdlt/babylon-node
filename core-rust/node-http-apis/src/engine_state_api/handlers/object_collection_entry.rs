@@ -2,7 +2,7 @@ use crate::engine_state_api::*;
 
 use crate::engine_prelude::*;
 
-use std::ops::Deref;
+use state_manager::historical_state::VersionScopingSupport;
 
 pub(crate) async fn handle_object_collection_entry(
     state: State<EngineStateApiState>,
@@ -27,21 +27,29 @@ pub(crate) async fn handle_object_collection_entry(
     )
     .map_err(|err| err.into_response_error("key"))?;
 
-    let database = state.state_manager.database.snapshot();
+    let requested_state_version =
+        extract_opt_ledger_state_selector(request.at_ledger_state.as_deref())
+            .map_err(|err| err.into_response_error("at_ledger_state"))?;
 
-    let meta_loader = EngineStateMetaLoader::new(database.deref());
+    let database = state
+        .state_manager
+        .database
+        .snapshot()
+        .scoped_at(requested_state_version)?;
+
+    let meta_loader = EngineStateMetaLoader::new(&database);
     let module_state_meta = meta_loader.load_object_module_state_meta(&node_id, module_id)?;
     let collection_meta = match collection_input {
         RichIndexInput::Name(name) => module_state_meta.collection_by_name(name),
         RichIndexInput::Index(index) => module_state_meta.collection_by_index(index),
     }?;
 
-    let data_loader = EngineStateDataLoader::new(database.deref());
+    let data_loader = EngineStateDataLoader::new(&database);
 
     let entry_data =
         data_loader.load_collection_entry(&node_id, module_id, collection_meta, &key)?;
 
-    let header = read_current_ledger_header(database.deref());
+    let header = database.proving_ledger_header();
 
     Ok(Json(models::ObjectCollectionEntryResponse {
         at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
