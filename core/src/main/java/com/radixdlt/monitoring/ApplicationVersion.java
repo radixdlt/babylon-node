@@ -64,7 +64,6 @@
 
 package com.radixdlt.monitoring;
 
-import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.util.*;
 
@@ -84,7 +83,10 @@ public record ApplicationVersion(String branch, String commit, String display, S
   /**
    * Loads version information from the given resource properties file.
    *
-   * <p>Silently falls back to default "unknown" version indicators in case of any problems.
+   * <p>The version information is initially populated in
+   * .github/actions/setup-version-properties/action.yaml The environment variables are then added
+   * to the version.properties file in core/build.gradle, task: versionFile Silently falls back to
+   * default "unknown" version indicators in case of any problems.
    *
    * @param resourceName Resource name.
    * @return Version information.
@@ -107,43 +109,11 @@ public record ApplicationVersion(String branch, String commit, String display, S
           var defaultValue = "unknown-" + mapKey;
           map.put(mapKey, p.getProperty(key, defaultValue));
         }
-        string = calculateVersionString(map);
+        string = display.replace('/', '~');
       }
     } catch (IOException e) {
       // Ignore exception
     }
     return new ApplicationVersion(branch, commit, display, string);
-  }
-
-  @VisibleForTesting
-  static String calculateVersionString(Map<String, String> details) {
-    if (isCleanTag(details)) {
-      return lastTag(details);
-    } else {
-      var version =
-          branchName(details) == null
-              ? "detached-head-" + gitHash(details)
-              : (lastTag(details) + "-" + branchName(details)).replace('/', '~')
-                  + "-"
-                  + gitHash(details);
-
-      return version;
-    }
-  }
-
-  private static boolean isCleanTag(Map<String, String> details) {
-    return Objects.equals(details.get("tag"), details.get("last_tag"));
-  }
-
-  private static String lastTag(Map<String, String> details) {
-    return details.get("last_tag");
-  }
-
-  private static String gitHash(Map<String, String> details) {
-    return details.get("build");
-  }
-
-  private static String branchName(Map<String, String> details) {
-    return details.get("branch");
   }
 }

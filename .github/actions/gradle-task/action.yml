@@ -11,13 +11,15 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - id: setup_version_properties
+      name: Setup version properties
+      uses: ./.github/actions/setup-version-properties
     - id: set_variables
       run: |
         if [[ ${{ inputs.is_release }} == "false"  ]];then
           echo "Workflow triggered by push to a branch"
-          export CI_VERSION=true
         fi
-        version=$(./gradlew radixCiVersion | grep radixdlt-version | cut -d: -f2)
+        version=${{ steps.setup_version_properties.outputs.VERSION_DISPLAY }}
         echo "Version: $version"
         ./gradlew ${{ inputs.gradle_command }}
       shell: bash

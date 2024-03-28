@@ -23,9 +23,18 @@ jobs:
   build_deb:
     name: Build debian package
     runs-on: selfhosted-ubuntu-22.04-16-cores
+    needs:
+      - setup_version_properties
     outputs:
       tags: ${{ steps.meta.outputs.tags }}
       labels: ${{ steps.meta.outputs.labels }}
+    env:
+        VERSION_BRANCH: ${{ needs.setup_version_properties.outputs.VERSION_BRANCH }}
+        VERSION_COMMIT: ${{ needs.setup_version_properties.outputs.VERSION_COMMIT }}
+        VERSION_DISPLAY: ${{ needs.setup_version_properties.outputs.VERSION_DISPLAY }}
+        VERSION_BUILD: ${{ needs.setup_version_properties.outputs.VERSION_BUILD }}
+        VERSION_TAG: ${{ needs.setup_version_properties.outputs.VERSION_TAG }}
+        VERSION_LAST_TAG: ${{ needs.setup_version_properties.outputs.VERSION_LAST_TAG }}
     permissions:
       id-token: write
       contents: read
@@ -100,10 +109,29 @@ jobs:
       - id: setup_tags
         run: echo "tag=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
+  setup_version_properties:
+    name: Setup version properties
+    runs-on: ubuntu-latest
+    outputs:
+      VERSION_BRANCH: ${{ steps.setup_version_properties.outputs.VERSION_BRANCH }}
+      VERSION_BUILD: ${{ steps.setup_version_properties.outputs.VERSION_BUILD }}
+      VERSION_COMMIT: ${{ steps.setup_version_properties.outputs.VERSION_COMMIT }}
+      VERSION_DISPLAY: ${{ steps.setup_version_properties.outputs.VERSION_DISPLAY }}
+      VERSION_TAG: ${{ steps.setup_version_properties.outputs.VERSION_TAG }}
+      VERSION_LAST_TAG: ${{ steps.setup_version_properties.outputs.VERSION_LAST_TAG }}
+    steps:
+      - uses: RDXWorks-actions/checkout@main
+        with:
+          fetch-depth: 0
+      - name: Setup version properties
+        id: setup_version_properties
+        uses: ./.github/actions/setup-version-properties
+
   build_push_container_private:
     name: (PRIVATE) Docker AMD
     needs:
       - setup_tags
+      - setup_version_properties
     permissions:
       id-token: write
       contents: read
@@ -135,12 +163,20 @@ jobs:
       provenance: "false"
       scan_image: true
       snyk_target_ref: ${{ github.ref_name }}
+      build-args: |
+        VERSION_BRANCH=${{ needs.setup_version_properties.outputs.VERSION_BRANCH }}
+        VERSION_COMMIT=${{ needs.setup_version_properties.outputs.VERSION_COMMIT }}
+        VERSION_DISPLAY=${{ needs.setup_version_properties.outputs.VERSION_DISPLAY }}
+        VERSION_BUILD=${{ needs.setup_version_properties.outputs.VERSION_BUILD }}
+        VERSION_TAG=${{ needs.setup_version_properties.outputs.VERSION_TAG }}
+        VERSION_LAST_TAG=${{ needs.setup_version_properties.outputs.VERSION_LAST_TAG }}
 
   build_push_container_private_arm:
     if: contains( github.event.pull_request.labels.*.name, 'ARM-TEST') || github.event_name != 'pull_request'
     name: (PRIVATE) Docker ARM
     needs:
       - setup_tags
+      - setup_version_properties
     permissions:
       id-token: write
       contents: read
@@ -173,6 +209,12 @@ jobs:
       cache_tag_suffix: arm64
       build-args: |
         WGET_VERSION=1.21.3-1+b1
+        VERSION_BRANCH=${{ needs.setup_version_properties.outputs.VERSION_BRANCH }}
+        VERSION_COMMIT=${{ needs.setup_version_properties.outputs.VERSION_COMMIT }}
+        VERSION_DISPLAY=${{ needs.setup_version_properties.outputs.VERSION_DISPLAY }}
+        VERSION_BUILD=${{ needs.setup_version_properties.outputs.VERSION_BUILD }}
+        VERSION_TAG=${{ needs.setup_version_properties.outputs.VERSION_TAG }}
+        VERSION_LAST_TAG=${{ needs.setup_version_properties.outputs.VERSION_LAST_TAG }}
 
   join_multiarch_image_private_dockerhub:
     if: contains( github.event.pull_request.labels.*.name, 'ARM-TEST') || github.event_name != 'pull_request'
@@ -194,6 +236,8 @@ jobs:
   build_push_container_dockerhub:
     if: github.event_name == 'release'
     name: (DockerHub) Docker AMD
+    needs:
+      - setup_version_properties
     permissions:
       id-token: write
       contents: read
@@ -215,12 +259,21 @@ jobs:
       use_gh_remote_cache: true
       enable_dockerhub: "true"
       provenance: "false"
+      build-args: |
+        VERSION_BRANCH=${{ needs.setup_version_properties.outputs.VERSION_BRANCH }}
+        VERSION_COMMIT=${{ needs.setup_version_properties.outputs.VERSION_COMMIT }}
+        VERSION_DISPLAY=${{ needs.setup_version_properties.outputs.VERSION_DISPLAY }}
+        VERSION_BUILD=${{ needs.setup_version_properties.outputs.VERSION_BUILD }}
+        VERSION_TAG=${{ needs.setup_version_properties.outputs.VERSION_TAG }}
+        VERSION_LAST_TAG=${{ needs.setup_version_properties.outputs.VERSION_LAST_TAG }}
     secrets:
       role_to_assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
 
   build_push_container_dockerhub_arm:
     if: github.event_name == 'release'
     name: (DockerHub) Docker ARM
+    needs:
+      - setup_version_properties
     permissions:
       id-token: write
       contents: read
@@ -244,6 +297,12 @@ jobs:
       provenance: "false"
       build-args: |
         WGET_VERSION=1.21.3-1+b1
+        VERSION_BRANCH=${{ needs.setup_version_properties.outputs.VERSION_BRANCH }}
+        VERSION_COMMIT=${{ needs.setup_version_properties.outputs.VERSION_COMMIT }}
+        VERSION_DISPLAY=${{ needs.setup_version_properties.outputs.VERSION_DISPLAY }}
+        VERSION_BUILD=${{ needs.setup_version_properties.outputs.VERSION_BUILD }}
+        VERSION_TAG=${{ needs.setup_version_properties.outputs.VERSION_TAG }}
+        VERSION_LAST_TAG=${{ needs.setup_version_properties.outputs.VERSION_LAST_TAG }}
     secrets:
       role_to_assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
 
