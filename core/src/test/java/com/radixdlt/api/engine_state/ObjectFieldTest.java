@@ -207,7 +207,6 @@ public final class ObjectFieldTest extends DeterministicEngineStateApiTestBase {
                     field -> (String) field.get("field_name"),
                     field -> String.valueOf(field.get("value"))));
     return EpochRound.of(
-        Long.parseLong(fieldMap.get("epoch")),
-        Round.of(Long.parseLong(fieldMap.get("round"))));
+        Long.parseLong(fieldMap.get("epoch")), Round.of(Long.parseLong(fieldMap.get("round"))));
   }
 }
