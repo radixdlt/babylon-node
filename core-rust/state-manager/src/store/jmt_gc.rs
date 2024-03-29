@@ -142,7 +142,6 @@ impl StateTreeGc {
             .take_while(|(state_version, _)| state_version < &to_state_version);
 
         // Collect the stale node keys into a "delete buffer":
-        let mut deleted_state_versions = Vec::new();
         let mut deleted_nodes = Vec::new();
         for (state_version, StaleTreePartsV1(stale_tree_parts)) in stale_entries {
             for stale_tree_part in stale_tree_parts {
@@ -166,13 +165,12 @@ impl StateTreeGc {
                     }
                 }
             }
-            deleted_state_versions.push(state_version);
         }
 
         // Delete the last collected batch of keys, and then delete the processed "stale tree parts" records:
         info!("Flushing the last buffer ({} deletes)", deleted_nodes.len());
         database.batch_delete_node(deleted_nodes.iter());
-        database.batch_delete_stale_tree_part(deleted_state_versions.iter());
+        database.delete_stale_tree_parts_up_to_version(to_state_version);
     }
 }
 
