@@ -16,6 +16,8 @@ pub struct TransactionCallPreviewRequest {
     /// The logical name of the network
     #[serde(rename = "network")]
     pub network: String,
+    #[serde(rename = "at_ledger_state", skip_serializing_if = "Option::is_none")]
+    pub at_ledger_state: Option<Box<crate::core_api::generated::models::LedgerStateSelector>>,
     #[serde(rename = "target")]
     pub target: Option<crate::core_api::generated::models::TargetIdentifier>, // Using Option permits Default trait; Will always be Some in normal use
     /// Argument list
@@ -27,6 +29,7 @@ impl TransactionCallPreviewRequest {
     pub fn new(network: String, target: crate::core_api::generated::models::TargetIdentifier, arguments: Vec<String>) -> TransactionCallPreviewRequest {
         TransactionCallPreviewRequest {
             network,
+            at_ledger_state: None,
             target: Option::Some(target),
             arguments,
         }

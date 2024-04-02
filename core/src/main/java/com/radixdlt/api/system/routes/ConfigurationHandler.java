@@ -65,7 +65,7 @@
 package com.radixdlt.api.system.routes;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.system.SystemGetJsonHandler;
+import com.radixdlt.api.system.SystemJsonHandler;
 import com.radixdlt.api.system.SystemModelMapper;
 import com.radixdlt.api.system.generated.models.BFTConfiguration;
 import com.radixdlt.api.system.generated.models.MempoolConfiguration;
@@ -79,7 +79,7 @@ import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.sync.SyncRelayConfig;
 
-public final class ConfigurationHandler extends SystemGetJsonHandler<SystemConfigurationResponse> {
+public final class ConfigurationHandler extends SystemJsonHandler<SystemConfigurationResponse> {
 
   private final long pacemakerTimeout;
   private final int bftSyncPatienceMillis;

@@ -62,137 +62,216 @@
  * permissions under this License.
  */
 
+use crate::engine_prelude::*;
+use crate::store::rocks_db::{ReadableRocks, WriteableRocks};
 use itertools::Itertools;
-use radix_engine::types::*;
-use rocksdb::{ColumnFamily, Direction, IteratorMode, WriteBatch, DB};
+use rocksdb::{ColumnFamily, Direction, IteratorMode, WriteBatch};
 use std::ops::Range;
 
-/// A higher-level database read/write context.
+/// An optional-write-enabling marker trait to be used with [`TypedDbContext`].
 ///
-/// Operates with the following contract:
-/// - All reads see the current DB state;
-/// - All writes are accumulated in the internal buffer and are not visible to subsequent reads (of
-///   this or other contexts), until [`TypedDbContext::flush()`] (either an explicit one, or an
-///   implicit on [`Drop`]).
-pub struct TypedDbContext<'db> {
-    db: &'db DB,
-    write_buffer: WriteBuffer,
+/// This trait is `pub` only so that the callers of [`TypedDbContext`] can properly reference it.
+/// It should not be implemented by any structs other than internally known options below (because
+/// the [`TypedDbContext`] has to be statically aware of them - we selectively expose the available
+/// write methods based on that).
+pub trait WriteSupport {}
+
+/// No write support.
+pub struct NoWriteSupport;
+
+impl WriteSupport for NoWriteSupport {}
+
+/// Buffered write support.
+///
+/// All writes are accumulated in the internal buffer and are not visible to any subsequent reads,
+/// until [`BufferedWriteSupport::flush()`] happens (either an explicit one, likely propagated from
+/// [`TypedDbContext::flush()`], or an implicit one on [`Drop`]).
+pub struct BufferedWriteSupport<'r, R: WriteableRocks> {
+    buffer: WriteBuffer,
+    rocks: &'r R,
 }
 
-impl<'db> TypedDbContext<'db> {
-    /// Creates a new context, with an empty write buffer.
-    pub fn new(db: &'db DB) -> Self {
+impl<'r, R: WriteableRocks> BufferedWriteSupport<'r, R> {
+    /// Creates an instance that will flush to the given RocksDB.
+    pub fn new(rocks: &'r R) -> Self {
         Self {
-            db,
-            write_buffer: WriteBuffer::default(),
-        }
-    }
-
-    /// Returns a typed helper scoped at the given column family.
-    pub fn cf<CF: TypedCf>(&self, cf: CF) -> TypedCfApi<'db, '_, CF> {
-        TypedCfApi::new(self.db, cf, &self.write_buffer)
-    }
-
-    /// Explicitly flushes the current contents of the write buffer (so that it is visible to
-    /// subsequent reads).
-    pub fn flush(&self) {
-        let write_batch = self.write_buffer.flip();
-        if !write_batch.is_empty() {
-            self.db.write(write_batch).expect("DB write batch");
+            buffer: WriteBuffer::default(),
+            rocks,
         }
     }
 }
 
-impl<'db> Drop for TypedDbContext<'db> {
+impl<'r, R: WriteableRocks> WriteSupport for BufferedWriteSupport<'r, R> {}
+
+impl<'r, R: WriteableRocks> BufferedWriteSupport<'r, R> {
+    /// Writes the batch to the RocksDB and flips the internal buffer.
+    fn flush(&self) {
+        let write_batch = self.buffer.flip();
+        if !write_batch.is_empty() {
+            self.rocks.write(write_batch);
+        }
+    }
+
+    /// Returns the size of buffered data, in bytes.
+    fn buffered_data_size(&self) -> usize {
+        self.buffer.byte_size()
+    }
+}
+
+impl<'r, R: WriteableRocks> Drop for BufferedWriteSupport<'r, R> {
     fn drop(&mut self) {
         self.flush();
     }
 }
 
-/// A higher-level DB access API bound to its [`TypedDbContext`] and scoped at a specific column
-/// family.
-pub struct TypedCfApi<'db, 'wb, CF: TypedCf> {
-    db: &'db DB,
-    typed_cf: CF,
-    write_buffer: &'wb WriteBuffer,
-    cf_handle: &'db ColumnFamily, // only a cache - computable from `typed_cf`
-    key_codec: CF::KeyCodec,      // only a cache - computable from `typed_cf`
-    value_codec: CF::ValueCodec,  // only a cache - computable from `typed_cf`
+/// A higher-level database context.
+///
+/// All reads see the current DB state.
+/// All (optional) write capabilities depend upon the used [`WriteSupport`].
+pub struct TypedDbContext<'r, R: ReadableRocks, W: WriteSupport> {
+    rocks: &'r R,
+    write_support: W,
 }
 
-impl<'db, 'wb, CF: TypedCf> TypedCfApi<'db, 'wb, CF> {
-    /// Creates an instance for the given column family.
-    fn new(db: &'db DB, typed_cf: CF, write_buffer: &'wb WriteBuffer) -> Self {
-        // cache a few values:
-        let cf_handle = db.cf_handle(CF::NAME).unwrap();
-        let key_codec = typed_cf.key_codec();
-        let value_codec = typed_cf.value_codec();
+impl<'r, R: ReadableRocks, W: WriteSupport> TypedDbContext<'r, R, W> {
+    /// Creates an instance using the given RocksDB.
+    /// The write capabilities depend on the given [`WriteSupport`] implementation.
+    pub fn new(rocks: &'r R, write_support: W) -> Self {
         Self {
-            db,
-            typed_cf,
-            write_buffer,
-            cf_handle,
-            key_codec,
-            value_codec,
+            rocks,
+            write_support,
+        }
+    }
+}
+
+impl<'r, R: WriteableRocks> TypedDbContext<'r, R, BufferedWriteSupport<'r, R>> {
+    /// Explicitly flushes the current contents of the write buffer (so that it is visible to
+    /// subsequent reads).
+    pub fn flush(&self) {
+        self.write_support.flush();
+    }
+
+    /// Returns the size of buffered data, in bytes.
+    pub fn buffered_data_size(&self) -> usize {
+        self.write_support.buffered_data_size()
+    }
+}
+
+impl<'r, R: ReadableRocks, W: WriteSupport> TypedDbContext<'r, R, W> {
+    /// Returns a typed helper scoped at the given column family.
+    pub fn cf<CF: TypedCf>(&self, typed_cf: CF) -> TypedCfApi<'r, '_, CF, R, W> {
+        TypedCfApi::new(
+            ResolvedCf::resolve(self.rocks, typed_cf),
+            self.rocks,
+            &self.write_support,
+        )
+    }
+}
+
+/// A higher-level DB access API bound to its [`TypedDbContext`] and scoped at a specific column
+/// family.
+pub struct TypedCfApi<'r, 'w, CF: TypedCf, R: ReadableRocks, W: WriteSupport> {
+    cf: ResolvedCf<'r, CF>,
+    rocks: &'r R,
+    write_support: &'w W,
+}
+
+impl<'r, 'w, CF: TypedCf, R: ReadableRocks, W: WriteSupport> TypedCfApi<'r, 'w, CF, R, W> {
+    /// Creates an instance for the given column family.
+    fn new(cf: ResolvedCf<'r, CF>, rocks: &'r R, write_support: &'w W) -> Self {
+        Self {
+            cf,
+            rocks,
+            write_support,
         }
     }
 
     /// Gets value by key.
     pub fn get(&self, key: &CF::Key) -> Option<CF::Value> {
-        self.db
-            .get_pinned_cf(self.cf_handle, self.key_codec.encode(key).as_slice())
-            .expect("database get by key")
-            .map(|pinnable_slice| self.value_codec.decode(pinnable_slice.as_ref()))
+        self.rocks
+            .get_pinned_cf(self.cf.handle, self.cf.key_codec.encode(key).as_slice())
+            .map(|pinnable_slice| self.cf.value_codec.decode(pinnable_slice.as_ref()))
     }
 
     /// Gets multiple values by keys.
     /// The order of returned values (or [`None`]s) matches the order of requested keys.
     pub fn get_many(&self, keys: Vec<&CF::Key>) -> Vec<Option<CF::Value>> {
-        self.db
+        self.rocks
             .multi_get_cf(
                 keys.into_iter()
-                    .map(|key| (self.cf_handle, self.key_codec.encode(key))),
+                    .map(|key| (self.cf.handle, self.cf.key_codec.encode(key))),
             )
             .into_iter()
-            .map(|result| {
-                result
-                    .expect("multi get")
-                    .map(|bytes| self.value_codec.decode(&bytes))
-            })
+            .map(|result| result.map(|bytes| self.cf.value_codec.decode(&bytes)))
             .collect()
     }
+}
 
+impl<'r, 'w, CF: TypedCf, R: WriteableRocks>
+    TypedCfApi<'r, 'w, CF, R, BufferedWriteSupport<'r, R>>
+{
     /// Upserts the new value at the given key.
     pub fn put(&self, key: &CF::Key, value: &CF::Value) {
-        self.write_buffer.put(
-            self.cf_handle,
-            self.key_codec.encode(key),
-            self.value_codec.encode(value),
+        self.write_support.buffer.put(
+            self.cf.handle,
+            self.cf.key_codec.encode(key),
+            self.cf.value_codec.encode(value),
         );
     }
 
     /// Deletes the entry of the given key.
     pub fn delete(&self, key: &CF::Key) {
-        self.write_buffer
-            .delete(self.cf_handle, self.key_codec.encode(key));
+        self.write_support
+            .buffer
+            .delete(self.cf.handle, self.cf.key_codec.encode(key));
     }
 }
 
-impl<'db, 'wb, KC: GroupPreservingDbCodec, CF: TypedCf<KeyCodec = KC>> TypedCfApi<'db, 'wb, CF> {
+impl<'r, 'w, KC: BoundedDbCodec, CF: TypedCf<KeyCodec = KC>, R: WriteableRocks>
+    TypedCfApi<'r, 'w, CF, R, BufferedWriteSupport<'r, R>>
+{
+    /// Deletes all entries.
+    pub fn delete_all(&self) {
+        self.write_support.buffer.delete_range(
+            self.cf.handle,
+            vec![],
+            self.cf.key_codec.upper_bound_encoding(),
+        );
+    }
+}
+
+impl<'r, 'w, KC: GroupPreservingDbCodec, CF: TypedCf<KeyCodec = KC>, R: WriteableRocks>
+    TypedCfApi<'r, 'w, CF, R, BufferedWriteSupport<'r, R>>
+{
     /// Deletes all the entries from the given group.
     pub fn delete_group(&self, group: &KC::Group) {
-        let prefix_range = self.key_codec.encode_group_range(group);
-        self.write_buffer
-            .delete_range(self.cf_handle, prefix_range.start, prefix_range.end);
+        let prefix_range = self.cf.key_codec.encode_group_range(group);
+        self.write_support.buffer.delete_range(
+            self.cf.handle,
+            prefix_range.start,
+            prefix_range.end,
+        );
     }
 }
 
-impl<'db, 'wb, K, KC: OrderPreservingDbCodec + DbCodec<K>, CF: TypedCf<Key = K, KeyCodec = KC>>
-    TypedCfApi<'db, 'wb, CF>
+impl<
+        'r,
+        'w,
+        K,
+        KC: OrderPreservingDbCodec + DbCodec<K>,
+        CF: TypedCf<Key = K, KeyCodec = KC>,
+        R: ReadableRocks,
+        W: WriteSupport,
+    > TypedCfApi<'r, 'w, CF, R, W>
 {
     /// Gets the entry of the least key.
     pub fn get_first(&self) -> Option<(CF::Key, CF::Value)> {
         self.iterate(Direction::Forward).next()
+    }
+
+    /// Gets the least key.
+    pub fn get_first_key(&self) -> Option<CF::Key> {
+        self.get_first().map(|(key, _)| key)
     }
 
     /// Gets the value associated with the least key.
@@ -220,10 +299,10 @@ impl<'db, 'wb, K, KC: OrderPreservingDbCodec + DbCodec<K>, CF: TypedCf<Key = K, 
     pub fn iterate(
         &self,
         direction: Direction,
-    ) -> Box<dyn Iterator<Item = (CF::Key, CF::Value)> + 'db>
+    ) -> Box<dyn Iterator<Item = (CF::Key, CF::Value)> + 'r>
     where
-        CF::KeyCodec: 'db,
-        CF::ValueCodec: 'db,
+        CF::KeyCodec: 'r,
+        CF::ValueCodec: 'r,
     {
         self.iterate_with_mode(match direction {
             Direction::Forward => IteratorMode::Start,
@@ -237,25 +316,15 @@ impl<'db, 'wb, K, KC: OrderPreservingDbCodec + DbCodec<K>, CF: TypedCf<Key = K, 
         &self,
         from: &CF::Key,
         direction: Direction,
-    ) -> Box<dyn Iterator<Item = (CF::Key, CF::Value)> + 'db>
+    ) -> Box<dyn Iterator<Item = (CF::Key, CF::Value)> + 'r>
     where
-        CF::KeyCodec: 'db,
-        CF::ValueCodec: 'db,
+        CF::KeyCodec: 'r,
+        CF::ValueCodec: 'r,
     {
         self.iterate_with_mode(IteratorMode::From(
-            self.key_codec.encode(from).as_slice(),
+            self.cf.key_codec.encode(from).as_slice(),
             direction,
         ))
-    }
-
-    /// Deletes all the entries from the given key range.
-    /// Follows the classic convention of "from inclusive, to exclusive".
-    pub fn delete_range(&self, from_key: &CF::Key, to_key: &CF::Key) {
-        self.write_buffer.delete_range(
-            self.cf_handle,
-            self.key_codec.encode(from_key),
-            self.key_codec.encode(to_key),
-        );
     }
 
     /// Returns an iterator based on the [`IteratorMode`] (which already contains encoded key).
@@ -264,19 +333,18 @@ impl<'db, 'wb, K, KC: OrderPreservingDbCodec + DbCodec<K>, CF: TypedCf<Key = K, 
     fn iterate_with_mode(
         &self,
         mode: IteratorMode,
-    ) -> Box<dyn Iterator<Item = (CF::Key, CF::Value)> + 'db>
+    ) -> Box<dyn Iterator<Item = (CF::Key, CF::Value)> + 'r>
     where
-        CF::KeyCodec: 'db,
-        CF::ValueCodec: 'db,
+        CF::KeyCodec: 'r,
+        CF::ValueCodec: 'r,
     {
         // create dedicated instances; do not reference those cached by `&self` from returned value:
-        let key_codec = self.typed_cf.key_codec();
-        let value_codec = self.typed_cf.value_codec();
+        let key_codec = self.cf.inner.key_codec();
+        let value_codec = self.cf.inner.value_codec();
         Box::new(
-            self.db
-                .iterator_cf(self.cf_handle, mode)
-                .map(move |result| {
-                    let (key, value) = result.expect("starting iteration");
+            self.rocks
+                .iterator_cf(self.cf.handle, mode)
+                .map(move |(key, value)| {
                     (
                         key_codec.decode(key.as_ref()),
                         value_codec.decode(value.as_ref()),
@@ -287,12 +355,34 @@ impl<'db, 'wb, K, KC: OrderPreservingDbCodec + DbCodec<K>, CF: TypedCf<Key = K, 
 }
 
 impl<
-        'db,
-        'wb,
+        'r,
+        'w,
+        K,
+        KC: OrderPreservingDbCodec + DbCodec<K>,
+        CF: TypedCf<Key = K, KeyCodec = KC>,
+        R: WriteableRocks,
+    > TypedCfApi<'r, 'w, CF, R, BufferedWriteSupport<'r, R>>
+{
+    /// Deletes all the entries from the given key range.
+    /// Follows the classic convention of "from inclusive, to exclusive".
+    pub fn delete_range(&self, from_key: &CF::Key, to_key: &CF::Key) {
+        self.write_support.buffer.delete_range(
+            self.cf.handle,
+            self.cf.key_codec.encode(from_key),
+            self.cf.key_codec.encode(to_key),
+        );
+    }
+}
+
+impl<
+        'r,
+        'w,
         K,
         KC: IntraGroupOrderPreservingDbCodec<K> + DbCodec<K>,
         CF: TypedCf<Key = K, KeyCodec = KC>,
-    > TypedCfApi<'db, 'wb, CF>
+        R: ReadableRocks,
+        W: WriteSupport,
+    > TypedCfApi<'r, 'w, CF, R, W>
 {
     /// Returns an iterator starting at the given key (inclusive) and traversing over (potentially)
     /// all the entries remaining *in this element's group*, in the requested direction.
@@ -300,22 +390,21 @@ impl<
         &self,
         from: &CF::Key,
         direction: Direction,
-    ) -> Box<dyn Iterator<Item = (CF::Key, CF::Value)> + 'db>
+    ) -> Box<dyn Iterator<Item = (CF::Key, CF::Value)> + 'r>
     where
-        CF::KeyCodec: 'db,
-        CF::ValueCodec: 'db,
+        CF::KeyCodec: 'r,
+        CF::ValueCodec: 'r,
     {
-        let key_codec = self.typed_cf.key_codec();
-        let value_codec = self.typed_cf.value_codec();
-        let group = self.key_codec.resolve_group_of(from);
-        let group_range = self.key_codec.encode_group_range(&group);
+        let group = self.cf.key_codec.resolve_group_of(from);
+        let group_range = self.cf.key_codec.encode_group_range(&group);
+        let key_codec = self.cf.inner.key_codec();
+        let value_codec = self.cf.inner.value_codec();
         Box::new(
-            self.db
+            self.rocks
                 .iterator_cf(
-                    self.cf_handle,
-                    IteratorMode::From(&self.key_codec.encode(from), direction),
+                    self.cf.handle,
+                    IteratorMode::From(&self.cf.key_codec.encode(from), direction),
                 )
-                .map(|result| result.expect("while iterating"))
                 .take_while(move |(key, _value)| match direction {
                     Direction::Forward => key.as_ref() < group_range.end.as_slice(),
                     Direction::Reverse => key.as_ref() >= group_range.start.as_slice(),
@@ -337,17 +426,16 @@ impl<
     /// involves a lot of "wasted" DB reads and thus makes it not suitable for production purposes
     /// (i.e. an index of groups should be used instead).
     /// Hence, this method is meant only for test / investigation / DB verification purposes.
-    pub fn iterate_key_groups(&self) -> Box<dyn Iterator<Item = KC::Group> + 'db>
+    pub fn iterate_key_groups(&self) -> Box<dyn Iterator<Item = KC::Group> + 'r>
     where
-        CF::KeyCodec: 'db,
+        CF::KeyCodec: 'r,
         KC::Group: PartialEq,
     {
-        let key_codec = self.typed_cf.key_codec();
+        let key_codec = self.cf.inner.key_codec();
         Box::new(
-            self.db
-                .iterator_cf(self.cf_handle, IteratorMode::Start)
-                .map(move |result| {
-                    let key_bytes = result.expect("while iterating").0;
+            self.rocks
+                .iterator_cf(self.cf.handle, IteratorMode::Start)
+                .map(move |(key_bytes, _)| {
                     let key = key_codec.decode(key_bytes.as_ref());
                     key_codec.resolve_group_of(&key)
                 })
@@ -472,6 +560,16 @@ pub trait DbCodec<T> {
     fn encode(&self, value: &T) -> Vec<u8>;
     /// Decodes the bytes into value.
     fn decode(&self, bytes: &[u8]) -> T;
+}
+
+/// An extra trait to be implemented on [`DbCodec`]s which know an upper bound on their subjects'
+/// encoding.
+///
+/// This capability allows e.g. for an efficient, atomic "delete all" operation (using a range of
+/// keys `[vec![], upper_bound)`).
+pub trait BoundedDbCodec {
+    /// Returns an encoding of an (exclusive) upper bound element.
+    fn upper_bound_encoding(&self) -> Vec<u8>;
 }
 
 /// A marker trait which must only be implemented on [`DbCodec`]s which preserve the business-level
@@ -705,5 +803,32 @@ impl WriteBuffer {
 
     pub fn flip(&self) -> WriteBatch {
         self.write_batch.replace(WriteBatch::default())
+    }
+
+    pub fn byte_size(&self) -> usize {
+        self.write_batch.borrow().size_in_bytes()
+    }
+}
+
+/// An internal wrapper for a [`TypedCf`] and dependencies resolved from it.
+struct ResolvedCf<'r, CF: TypedCf> {
+    inner: CF,
+    handle: &'r ColumnFamily,    // only a cache - computable from `typed_cf`
+    key_codec: CF::KeyCodec,     // only a cache - computable from `typed_cf`
+    value_codec: CF::ValueCodec, // only a cache - computable from `typed_cf`
+}
+
+impl<'r, CF: TypedCf> ResolvedCf<'r, CF> {
+    /// Resolves and caches properties of the given [`TypedCf`].
+    pub fn resolve<R: ReadableRocks>(rocks: &'r R, inner: CF) -> Self {
+        let handle = rocks.cf_handle(CF::NAME);
+        let key_codec = inner.key_codec();
+        let value_codec = inner.value_codec();
+        Self {
+            inner,
+            handle,
+            key_codec,
+            value_codec,
+        }
     }
 }

@@ -63,35 +63,33 @@
  */
 
 use std::ops::Deref;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
+use crate::engine_prelude::*;
+use crate::jni::LedgerSyncLimitsConfig;
+use crate::protocol::{ProtocolConfig, ProtocolState, ProtocolVersionName};
+use crate::store::jmt_gc::StateTreeGcConfig;
+use crate::store::proofs_gc::{LedgerProofsGc, LedgerProofsGcConfig};
+use crate::store::traits::proofs::QueryableProofStore;
+use crate::traits::DatabaseConfigValidationError;
+use crate::transaction::ExecutionConfigurator;
+use crate::{
+    mempool_manager::MempoolManager,
+    mempool_relay_dispatcher::MempoolRelayDispatcher,
+    priority_mempool::PriorityMempool,
+    store::{jmt_gc::StateTreeGc, DatabaseBackendConfig, DatabaseConfig, RawDbMetricsCollector},
+    transaction::{CachedCommittabilityValidator, CommittabilityValidator, TransactionPreviewer},
+    ActualStateManagerDatabase, PendingTransactionResultCache, ProtocolUpdateResult, StateComputer,
+    StateManagerDatabase,
+};
 use node_common::scheduler::{Metrics, Scheduler, Spawner, Tracker};
 use node_common::{
     config::{limits::VertexLimitsConfig, MempoolConfig},
     locks::*,
 };
 use prometheus::Registry;
-
-use radix_engine_common::prelude::*;
-
-use crate::jni::LedgerSyncLimitsConfig;
-use crate::protocol::{ProtocolConfig, ProtocolState, ProtocolVersionName};
-use crate::store::jmt_gc::StateHashTreeGcConfig;
-use crate::store::proofs_gc::{LedgerProofsGc, LedgerProofsGcConfig};
-use crate::store::traits::proofs::QueryableProofStore;
-use crate::transaction::ExecutionConfigurator;
-use crate::{
-    mempool_manager::MempoolManager,
-    mempool_relay_dispatcher::MempoolRelayDispatcher,
-    priority_mempool::PriorityMempool,
-    store::{
-        jmt_gc::StateHashTreeGc, DatabaseBackendConfig, DatabaseFlags, RawDbMetricsCollector,
-        StateManagerDatabase,
-    },
-    transaction::{CachedCommittabilityValidator, CommittabilityValidator, TransactionPreviewer},
-    PendingTransactionResultCache, ProtocolUpdateResult, StateComputer,
-};
 
 /// An interval between time-intensive measurement of raw DB metrics.
 /// Some of our raw DB metrics take ~a few milliseconds to collect. We cannot afford the overhead of
@@ -106,9 +104,9 @@ pub struct StateManagerConfig {
     pub mempool_config: Option<MempoolConfig>,
     pub vertex_limits_config: Option<VertexLimitsConfig>,
     pub database_backend_config: DatabaseBackendConfig,
-    pub database_flags: DatabaseFlags,
+    pub database_config: DatabaseConfig,
     pub logging_config: LoggingConfig,
-    pub state_hash_tree_gc_config: StateHashTreeGcConfig,
+    pub state_tree_gc_config: StateTreeGcConfig,
     pub ledger_proofs_gc_config: LedgerProofsGcConfig,
     pub ledger_sync_limits_config: LedgerSyncLimitsConfig,
     pub protocol_config: ProtocolConfig,
@@ -129,9 +127,9 @@ impl StateManagerConfig {
             database_backend_config: DatabaseBackendConfig {
                 rocks_db_path: rocks_db_path.into(),
             },
-            database_flags: DatabaseFlags::default(),
+            database_config: DatabaseConfig::default(),
             logging_config: LoggingConfig::default(),
-            state_hash_tree_gc_config: StateHashTreeGcConfig::default(),
+            state_tree_gc_config: StateTreeGcConfig::default(),
             ledger_proofs_gc_config: LedgerProofsGcConfig::default(),
             ledger_sync_limits_config: LedgerSyncLimitsConfig::default(),
             protocol_config: ProtocolConfig::new_with_no_updates(),
@@ -143,23 +141,17 @@ impl StateManagerConfig {
 #[derive(Clone)]
 pub struct StateManager {
     config: StateManagerConfig,
-    pub state_computer: Arc<StateComputer<StateManagerDatabase>>,
-    pub database: Arc<StateLock<StateManagerDatabase>>,
+    pub state_computer: Arc<StateComputer>,
+    pub database: Arc<DbLock<ActualStateManagerDatabase>>,
     pub pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
     pub mempool: Arc<RwLock<PriorityMempool>>,
     pub mempool_manager: Arc<MempoolManager>,
     pub execution_configurator: Arc<RwLock<ExecutionConfigurator>>,
-    pub committability_validator: Arc<RwLock<CommittabilityValidator<StateManagerDatabase>>>,
-    pub transaction_previewer: Arc<RwLock<TransactionPreviewer<StateManagerDatabase>>>,
+    pub committability_validator: Arc<RwLock<CommittabilityValidator>>,
+    pub transaction_previewer: Arc<RwLock<TransactionPreviewer>>,
 }
 
 impl StateManager {
-    pub fn test(&self, metrics_registry: &Registry) {
-        let mut write_mempool = self.mempool.write();
-        *write_mempool = PriorityMempool::new(MempoolConfig::default(), metrics_registry);
-        drop(write_mempool);
-    }
-
     pub fn new(
         config: StateManagerConfig,
         mempool_relay_dispatcher: Option<MempoolRelayDispatcher>,
@@ -171,22 +163,30 @@ impl StateManager {
         // but for now just using a default
         let mempool_config = config.mempool_config.clone().unwrap_or_default();
         let network = config.network_definition.clone();
-        let _logging_config = config.logging_config.clone();
 
-        let raw_db = StateManagerDatabase::from_config(
-            config.database_backend_config.clone(),
-            config.database_flags.clone(),
-            &network,
-        );
+        let db_path = PathBuf::from(config.database_backend_config.rocks_db_path.clone());
+        let raw_db = match StateManagerDatabase::new(db_path, config.database_config.clone(), &network) {
+            Ok(db) => db,
+            Err(error) => {
+                match error {
+                    DatabaseConfigValidationError::AccountChangeIndexRequiresLocalTransactionExecutionIndex => {
+                        panic!("Local transaction execution index needs to be enabled in order for account change index to work.");
+                    },
+                    DatabaseConfigValidationError::LocalTransactionExecutionIndexChanged => {
+                        panic!("Local transaction execution index can not be changed once configured.\nIf you need to change it, please wipe ledger data and resync.");
+                    }
+                }
+            }
+        };
 
-        let database = Arc::new(lock_factory.named("database").new_state_lock(raw_db));
+        let database = Arc::new(lock_factory.named("database").new_db_lock(raw_db));
 
         if let Err(err) = config.protocol_config.validate() {
             panic!("Protocol misconfiguration: {}", err);
         };
 
         let initial_protocol_state = ProtocolState::compute_initial(
-            database.read_current().deref(),
+            database.access_direct().deref(),
             &config.protocol_config,
         );
 
@@ -202,9 +202,10 @@ impl StateManager {
             });
 
         let execution_configurator = Arc::new(
-            lock_factory
-                .named("execution_configurator")
-                .new_rwlock(initial_state_computer_config.execution_configurator(config.no_fees)),
+            lock_factory.named("execution_configurator").new_rwlock(
+                initial_state_computer_config
+                    .execution_configurator(config.no_fees, config.logging_config.engine_trace),
+            ),
         );
 
         let pending_transaction_result_cache = Arc::new(
@@ -288,13 +289,10 @@ impl StateManager {
             });
 
         // ... and for deleting the stale state hash tree nodes (a.k.a. "JMT GC")...
-        let state_hash_tree_gc =
-            StateHashTreeGc::new(database.clone(), config.state_hash_tree_gc_config.clone());
+        let state_tree_gc = StateTreeGc::new(database.clone(), config.state_tree_gc_config.clone());
         scheduler
-            .named("state_hash_tree_gc")
-            .start_periodic(state_hash_tree_gc.interval(), move || {
-                state_hash_tree_gc.run()
-            });
+            .named("state_tree_gc")
+            .start_periodic(state_tree_gc.interval(), move || state_tree_gc.run());
 
         // ... and for deleting the old, non-critical ledger proofs (a.k.a. "Proofs GC"):
         let ledger_proofs_gc = LedgerProofsGc::new(
@@ -337,8 +335,8 @@ impl StateManager {
                 )
             });
 
-        let new_execution_configurator =
-            new_state_computer_config.execution_configurator(self.config.no_fees);
+        let new_execution_configurator = new_state_computer_config
+            .execution_configurator(self.config.no_fees, self.config.logging_config.engine_trace);
 
         *self.execution_configurator.write() = new_execution_configurator;
 
@@ -363,7 +361,7 @@ impl StateManager {
         ProtocolUpdateResult {
             post_update_proof: self
                 .database
-                .read_current()
+                .lock()
                 .get_latest_proof()
                 .expect("Missing post protocol update proof"),
         }

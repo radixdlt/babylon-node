@@ -68,7 +68,6 @@ use crate::mempool::*;
 use crate::MempoolAddSource;
 use node_common::metrics::TakesMetricLabels;
 use prometheus::Registry;
-use transaction::model::*;
 
 use std::cmp::max;
 use std::collections::HashSet;
@@ -76,7 +75,6 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use crate::mempool_relay_dispatcher::MempoolRelayDispatcher;
-use crate::store::StateManagerDatabase;
 use crate::transaction::{
     CachedCommittabilityValidator, ForceRecalculation, PrevalidatedCheckMetadata,
 };
@@ -87,7 +85,7 @@ use tracing::warn;
 pub struct MempoolManager {
     mempool: Arc<RwLock<PriorityMempool>>,
     relay_dispatcher: Option<MempoolRelayDispatcher>,
-    cached_committability_validator: CachedCommittabilityValidator<StateManagerDatabase>,
+    cached_committability_validator: CachedCommittabilityValidator,
     metrics: MempoolManagerMetrics,
 }
 
@@ -96,7 +94,7 @@ impl MempoolManager {
     pub fn new(
         mempool: Arc<RwLock<PriorityMempool>>,
         relay_dispatcher: MempoolRelayDispatcher,
-        cached_committability_validator: CachedCommittabilityValidator<StateManagerDatabase>,
+        cached_committability_validator: CachedCommittabilityValidator,
         metric_registry: &Registry,
     ) -> Self {
         Self {
@@ -110,7 +108,7 @@ impl MempoolManager {
     /// Creates a testing manager (without the JNI-based relay dispatcher) and registers its metrics.
     pub fn new_for_testing(
         mempool: Arc<RwLock<PriorityMempool>>,
-        cached_committability_validator: CachedCommittabilityValidator<StateManagerDatabase>,
+        cached_committability_validator: CachedCommittabilityValidator,
         metric_registry: &Registry,
     ) -> Self {
         Self {

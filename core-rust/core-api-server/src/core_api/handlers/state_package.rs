@@ -1,7 +1,5 @@
 use crate::core_api::*;
-use radix_engine::blueprints::package::PackageField;
-use radix_engine::system::attached_modules::role_assignment::RoleAssignmentField;
-use radix_engine::types::*;
+use crate::engine_prelude::*;
 
 use std::ops::Deref;
 
@@ -16,7 +14,7 @@ pub(crate) async fn handle_state_package(
     let package_address = extract_package_address(&extraction_context, &request.package_address)
         .map_err(|err| err.into_response_error("package_address"))?;
 
-    let database = state.state_manager.database.read_current();
+    let database = state.state_manager.database.snapshot();
 
     let owner_role_substate = read_optional_substate(
         database.deref(),

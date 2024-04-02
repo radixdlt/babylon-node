@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.LedgerStateSelector;
 import com.radixdlt.api.core.generated.models.TargetIdentifier;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -35,6 +36,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   TransactionCallPreviewRequest.JSON_PROPERTY_NETWORK,
+  TransactionCallPreviewRequest.JSON_PROPERTY_AT_LEDGER_STATE,
   TransactionCallPreviewRequest.JSON_PROPERTY_TARGET,
   TransactionCallPreviewRequest.JSON_PROPERTY_ARGUMENTS
 })
@@ -42,6 +44,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 public class TransactionCallPreviewRequest {
   public static final String JSON_PROPERTY_NETWORK = "network";
   private String network;
+
+  public static final String JSON_PROPERTY_AT_LEDGER_STATE = "at_ledger_state";
+  private LedgerStateSelector atLedgerState;
 
   public static final String JSON_PROPERTY_TARGET = "target";
   private TargetIdentifier target;
@@ -75,6 +80,32 @@ public class TransactionCallPreviewRequest {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setNetwork(String network) {
     this.network = network;
+  }
+
+
+  public TransactionCallPreviewRequest atLedgerState(LedgerStateSelector atLedgerState) {
+    this.atLedgerState = atLedgerState;
+    return this;
+  }
+
+   /**
+   * Get atLedgerState
+   * @return atLedgerState
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public LedgerStateSelector getAtLedgerState() {
+    return atLedgerState;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setAtLedgerState(LedgerStateSelector atLedgerState) {
+    this.atLedgerState = atLedgerState;
   }
 
 
@@ -148,13 +179,14 @@ public class TransactionCallPreviewRequest {
     }
     TransactionCallPreviewRequest transactionCallPreviewRequest = (TransactionCallPreviewRequest) o;
     return Objects.equals(this.network, transactionCallPreviewRequest.network) &&
+        Objects.equals(this.atLedgerState, transactionCallPreviewRequest.atLedgerState) &&
         Objects.equals(this.target, transactionCallPreviewRequest.target) &&
         Objects.equals(this.arguments, transactionCallPreviewRequest.arguments);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(network, target, arguments);
+    return Objects.hash(network, atLedgerState, target, arguments);
   }
 
   @Override
@@ -162,6 +194,7 @@ public class TransactionCallPreviewRequest {
     StringBuilder sb = new StringBuilder();
     sb.append("class TransactionCallPreviewRequest {\n");
     sb.append("    network: ").append(toIndentedString(network)).append("\n");
+    sb.append("    atLedgerState: ").append(toIndentedString(atLedgerState)).append("\n");
     sb.append("    target: ").append(toIndentedString(target)).append("\n");
     sb.append("    arguments: ").append(toIndentedString(arguments)).append("\n");
     sb.append("}");

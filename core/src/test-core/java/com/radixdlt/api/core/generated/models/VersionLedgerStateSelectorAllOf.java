@@ -28,20 +28,20 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * CommittedStateIdentifierAllOf
+ * VersionLedgerStateSelectorAllOf
  */
 @JsonPropertyOrder({
-  CommittedStateIdentifierAllOf.JSON_PROPERTY_STATE_VERSION
+  VersionLedgerStateSelectorAllOf.JSON_PROPERTY_STATE_VERSION
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class CommittedStateIdentifierAllOf {
+public class VersionLedgerStateSelectorAllOf {
   public static final String JSON_PROPERTY_STATE_VERSION = "state_version";
   private Long stateVersion;
 
-  public CommittedStateIdentifierAllOf() { 
+  public VersionLedgerStateSelectorAllOf() { 
   }
 
-  public CommittedStateIdentifierAllOf stateVersion(Long stateVersion) {
+  public VersionLedgerStateSelectorAllOf stateVersion(Long stateVersion) {
     this.stateVersion = stateVersion;
     return this;
   }
@@ -70,7 +70,7 @@ public class CommittedStateIdentifierAllOf {
 
 
   /**
-   * Return true if this CommittedStateIdentifier_allOf object is equal to o.
+   * Return true if this VersionLedgerStateSelector_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -80,8 +80,8 @@ public class CommittedStateIdentifierAllOf {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    CommittedStateIdentifierAllOf committedStateIdentifierAllOf = (CommittedStateIdentifierAllOf) o;
-    return Objects.equals(this.stateVersion, committedStateIdentifierAllOf.stateVersion);
+    VersionLedgerStateSelectorAllOf versionLedgerStateSelectorAllOf = (VersionLedgerStateSelectorAllOf) o;
+    return Objects.equals(this.stateVersion, versionLedgerStateSelectorAllOf.stateVersion);
   }
 
   @Override
@@ -92,7 +92,7 @@ public class CommittedStateIdentifierAllOf {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class CommittedStateIdentifierAllOf {\n");
+    sb.append("class VersionLedgerStateSelectorAllOf {\n");
     sb.append("    stateVersion: ").append(toIndentedString(stateVersion)).append("\n");
     sb.append("}");
     return sb.toString();

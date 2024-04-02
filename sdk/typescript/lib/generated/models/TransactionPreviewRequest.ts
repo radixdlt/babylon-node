@@ -13,6 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { LedgerStateSelector } from './LedgerStateSelector';
+import {
+    LedgerStateSelectorFromJSON,
+    LedgerStateSelectorFromJSONTyped,
+    LedgerStateSelectorToJSON,
+} from './LedgerStateSelector';
 import type { PublicKey } from './PublicKey';
 import {
     PublicKeyFromJSON,
@@ -44,6 +50,12 @@ export interface TransactionPreviewRequest {
      * @memberof TransactionPreviewRequest
      */
     network: string;
+    /**
+     * 
+     * @type {LedgerStateSelector}
+     * @memberof TransactionPreviewRequest
+     */
+    at_ledger_state?: LedgerStateSelector;
     /**
      * A text-representation of a transaction manifest
      * @type {string}
@@ -140,6 +152,7 @@ export function TransactionPreviewRequestFromJSONTyped(json: any, ignoreDiscrimi
     return {
         
         'network': json['network'],
+        'at_ledger_state': !exists(json, 'at_ledger_state') ? undefined : LedgerStateSelectorFromJSON(json['at_ledger_state']),
         'manifest': json['manifest'],
         'blobs_hex': !exists(json, 'blobs_hex') ? undefined : json['blobs_hex'],
         'start_epoch_inclusive': json['start_epoch_inclusive'],
@@ -164,6 +177,7 @@ export function TransactionPreviewRequestToJSON(value?: TransactionPreviewReques
     return {
         
         'network': value.network,
+        'at_ledger_state': LedgerStateSelectorToJSON(value.at_ledger_state),
         'manifest': value.manifest,
         'blobs_hex': value.blobs_hex,
         'start_epoch_inclusive': value.start_epoch_inclusive,

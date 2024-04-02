@@ -62,6 +62,7 @@
  * permissions under this License.
  */
 
+use crate::engine_prelude::*;
 use crate::jni::node_rust_environment::JNINodeRustEnvironment;
 use crate::jni::LedgerSyncLimitsConfig;
 use crate::protocol::epoch_change_iter;
@@ -71,7 +72,6 @@ use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use node_common::java::*;
-use radix_engine::types::*;
 use std::ops::Deref;
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -92,9 +92,7 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
         request_payload,
         |request: TxnsAndProofRequest| -> Result<TxnsAndProof, GetSyncableTxnsAndProofError> {
             let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
-            // Note: even though we read a strictly historical state here, we cannot use the
-            // "historical, non-locked" DB access - please see the TODO note at `LedgerProofsGc`.
-            let res = database.read_current().get_syncable_txns_and_proof(
+            let res = database.snapshot().get_syncable_txns_and_proof(
                 StateVersion::of(request.start_state_version_inclusive),
                 request
                     .limits_config
@@ -118,7 +116,7 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
         request_payload,
         |_no_args: ()| -> Option<LedgerProof> {
             let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
-            let proof = database.read_current().get_latest_proof();
+            let proof = database.snapshot().get_latest_proof();
             proof
         },
     )
@@ -136,7 +134,7 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
         request_payload,
         |_no_args: ()| -> Option<LedgerProof> {
             let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
-            let proof = database.read_current().get_latest_epoch_proof();
+            let proof = database.snapshot().get_latest_epoch_proof();
             proof
         },
     )
@@ -154,9 +152,7 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
         request_payload,
         |_no_args: ()| -> Option<LedgerProof> {
             let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
-            let proof = database
-                .read_current()
-                .get_latest_protocol_update_init_proof();
+            let proof = database.snapshot().get_latest_protocol_update_init_proof();
             proof
         },
     )
@@ -175,7 +171,7 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
         |_no_args: ()| -> Option<LedgerProof> {
             let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
             let proof = database
-                .read_current()
+                .snapshot()
                 .get_latest_protocol_update_execution_proof();
             proof
         },
@@ -191,9 +187,7 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |_: ()| -> Option<LedgerProof> {
         let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
-        let proof = database
-            .access_non_locked_historical()
-            .get_post_genesis_epoch_proof();
+        let proof = database.snapshot().get_post_genesis_epoch_proof();
         proof
     })
 }
@@ -210,9 +204,7 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
         request_payload,
         |epoch: Epoch| -> Option<LedgerProof> {
             let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
-            let proof = database
-                .access_non_locked_historical()
-                .get_epoch_proof(epoch);
+            let proof = database.snapshot().get_epoch_proof(epoch);
             proof
         },
     )
@@ -230,8 +222,8 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
         request_payload,
         |epoch: Epoch| -> Option<IndexMap<String, Decimal>> {
             let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
-            let non_locked_db = database.access_non_locked_historical();
-            let mut epoch_change_event_iter = epoch_change_iter(non_locked_db.deref(), epoch);
+            let database = database.snapshot();
+            let mut epoch_change_event_iter = epoch_change_iter(database.deref(), epoch);
             let maybe_epoch_change = epoch_change_event_iter.next();
             maybe_epoch_change
                 .filter(|(_, epoch_change_event)| epoch_change_event.epoch == epoch)

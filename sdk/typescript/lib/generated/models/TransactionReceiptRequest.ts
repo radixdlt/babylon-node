@@ -13,6 +13,13 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { TransactionFormatOptions } from './TransactionFormatOptions';
+import {
+    TransactionFormatOptionsFromJSON,
+    TransactionFormatOptionsFromJSONTyped,
+    TransactionFormatOptionsToJSON,
+} from './TransactionFormatOptions';
+
 /**
  * 
  * @export
@@ -34,6 +41,12 @@ export interface TransactionReceiptRequest {
      * @memberof TransactionReceiptRequest
      */
     intent_hash: string;
+    /**
+     * 
+     * @type {TransactionFormatOptions}
+     * @memberof TransactionReceiptRequest
+     */
+    transaction_format_options?: TransactionFormatOptions;
 }
 
 /**
@@ -59,6 +72,7 @@ export function TransactionReceiptRequestFromJSONTyped(json: any, ignoreDiscrimi
         
         'network': json['network'],
         'intent_hash': json['intent_hash'],
+        'transaction_format_options': !exists(json, 'transaction_format_options') ? undefined : TransactionFormatOptionsFromJSON(json['transaction_format_options']),
     };
 }
 
@@ -73,6 +87,7 @@ export function TransactionReceiptRequestToJSON(value?: TransactionReceiptReques
         
         'network': value.network,
         'intent_hash': value.intent_hash,
+        'transaction_format_options': TransactionFormatOptionsToJSON(value.transaction_format_options),
     };
 }
 

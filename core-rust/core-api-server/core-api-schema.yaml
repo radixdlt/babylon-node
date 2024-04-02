@@ -1245,6 +1245,36 @@ components:
         previous:
           description: Whether to return the previous substate value for updates and deletes (default false)
           type: boolean
+    LedgerStateSelectorType:
+      type: string
+      enum:
+        - ByStateVersion
+    LedgerStateSelector:
+      description: |
+        An optional specification of a historical ledger state at which to execute the request.
+        The "historical state" feature must be enabled on the Node, and the requested point in
+        history must be recent enough (in accordance with the Node's configured history length).
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/LedgerStateSelectorType'
+      discriminator:
+        propertyName: type
+        mapping:
+          ByStateVersion: '#/components/schemas/VersionLedgerStateSelector'
+          # Currently no other options exist, but we plan to have e.g. `ByTimestamp` in future.
+    VersionLedgerStateSelector:
+      allOf:
+        - $ref: '#/components/schemas/LedgerStateSelector'
+        - type: object
+          required:
+            - state_version
+          properties:
+            state_version:
+              description: An exact version at which to execute the request.
+              $ref: "#/components/schemas/StateVersion"
 ############################################
 # GENERAL / SHARED MODELS - General Models #
 ############################################
@@ -6946,6 +6976,8 @@ components:
           $ref: "#/components/schemas/NetworkIdentifier"
         intent_hash:
           $ref: "#/components/schemas/IntentHashInput"
+        transaction_format_options:
+          $ref: "#/components/schemas/TransactionFormatOptions"
     TransactionReceiptResponse:
       type: object
       required:
@@ -6965,6 +6997,8 @@ components:
       properties:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSelector"
         target:
           $ref: "#/components/schemas/TargetIdentifier"
         arguments:
@@ -7051,6 +7085,8 @@ components:
       properties:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSelector"
         manifest:
           description: A text-representation of a transaction manifest
           type: string
@@ -7110,6 +7146,27 @@ components:
             assume_all_signature_proofs:
               type: boolean
             skip_epoch_check:
+              type: boolean
+            # This was added later so isn't required; for backwards compatibility
+            disable_auth_checks:
+              description: |
+                Can be used to skip performing auth checks during runtime.
+                
+                This could be used to e.g.:
+                * Preview protocol update style transactions
+                * Mint resources for previewing trades with resources you don't own. If doing this, be warned:
+                  * Only resources which were potentially mintable/burnable at creation time
+                  will be mintable/burnable, due to feature flags on the resource.
+                  * Please see the below warning about unexpected results if using this approach.
+                
+                Please be warned - this mode of operation is quite a departure from normal operation:
+                * Calculated fees will likely be lower than a standard execution
+                * This mode can subtly break invariants some dApp code might rely on, or result in unexpected
+                behaviour, so the resulting execution result might not be valid for your needs. For example,
+                if I used this flag to mint pool units to preview a redemption (or some dApp interaction which
+                behind the scenes redeemed them), they'd redeem for less than they're currently worth,
+                because the blueprint code relies on the total supply of the pool units to calculate their
+                redemption worth, and you've just inflated the total supply through the mint operation.
               type: boolean
     TransactionPreviewResponse:
       type: object

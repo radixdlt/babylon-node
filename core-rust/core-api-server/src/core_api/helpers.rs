@@ -1,12 +1,7 @@
-use radix_engine::types::*;
-
-use radix_engine::system::system_substates::{FieldSubstate, KeyValueEntrySubstate};
-use radix_engine_interface::api::CollectionIndex;
-use radix_engine_store_interface::{db_key_mapper::*, interface::SubstateDatabase};
+use crate::engine_prelude::*;
 use serde::Serialize;
 use state_manager::store::traits::*;
-use state_manager::store::StateManagerDatabase;
-use state_manager::LedgerHeader;
+use state_manager::{LedgerHeader, ReadableRocks, StateManagerDatabase};
 use std::io::Write;
 
 use super::*;
@@ -14,7 +9,7 @@ use super::*;
 #[allow(unused)]
 pub(crate) fn read_typed_substate(
     context: &MappingContext,
-    database: &StateManagerDatabase,
+    database: &StateManagerDatabase<impl ReadableRocks>,
     node_id: &NodeId,
     partition_number: PartitionNumber,
     substate_key: &SubstateKey,
@@ -39,7 +34,7 @@ pub(crate) fn read_typed_substate(
 
 #[tracing::instrument(skip_all)]
 pub(crate) fn read_mandatory_main_field_substate<D: ScryptoDecode>(
-    database: &StateManagerDatabase,
+    database: &StateManagerDatabase<impl ReadableRocks>,
     node_id: &NodeId,
     substate_key: &SubstateKey,
 ) -> Result<FieldSubstate<D>, ResponseError<()>> {
@@ -53,7 +48,7 @@ pub(crate) fn read_mandatory_main_field_substate<D: ScryptoDecode>(
 
 #[tracing::instrument(skip_all)]
 pub(crate) fn read_mandatory_substate<D: ScryptoDecode>(
-    database: &StateManagerDatabase,
+    database: &StateManagerDatabase<impl ReadableRocks>,
     node_id: &NodeId,
     partition_number: PartitionNumber,
     substate_key: &SubstateKey,
@@ -77,7 +72,7 @@ pub(crate) fn read_mandatory_substate<D: ScryptoDecode>(
 
 #[tracing::instrument(skip_all)]
 pub(crate) fn read_optional_main_field_substate<D: ScryptoDecode>(
-    database: &StateManagerDatabase,
+    database: &StateManagerDatabase<impl ReadableRocks>,
     node_id: &NodeId,
     substate_key: &SubstateKey,
 ) -> Option<FieldSubstate<D>> {
@@ -86,7 +81,7 @@ pub(crate) fn read_optional_main_field_substate<D: ScryptoDecode>(
 
 #[tracing::instrument(skip_all)]
 pub(crate) fn read_optional_collection_substate<D: ScryptoDecode>(
-    database: &StateManagerDatabase,
+    database: &StateManagerDatabase<impl ReadableRocks>,
     node_id: &NodeId,
     collection_index: CollectionIndex,
     substate_key: &SubstateKey,
@@ -107,7 +102,7 @@ pub(crate) fn read_optional_collection_substate<D: ScryptoDecode>(
 
 #[tracing::instrument(skip_all)]
 pub(crate) fn read_optional_collection_substate_value<D: ScryptoDecode>(
-    database: &StateManagerDatabase,
+    database: &StateManagerDatabase<impl ReadableRocks>,
     node_id: &NodeId,
     collection_index: CollectionIndex,
     substate_key: &SubstateKey,
@@ -118,7 +113,7 @@ pub(crate) fn read_optional_collection_substate_value<D: ScryptoDecode>(
 
 #[tracing::instrument(skip_all)]
 pub(crate) fn read_optional_substate<D: ScryptoDecode>(
-    database: &StateManagerDatabase,
+    database: &StateManagerDatabase<impl ReadableRocks>,
     node_id: &NodeId,
     partition_number: PartitionNumber,
     substate_key: &SubstateKey,
@@ -127,7 +122,9 @@ pub(crate) fn read_optional_substate<D: ScryptoDecode>(
 }
 
 #[tracing::instrument(skip_all)]
-pub(crate) fn read_current_ledger_header(database: &StateManagerDatabase) -> LedgerHeader {
+pub(crate) fn read_current_ledger_header(
+    database: &StateManagerDatabase<impl ReadableRocks>,
+) -> LedgerHeader {
     database
         .get_latest_proof()
         .expect("proof for outputted state must exist")

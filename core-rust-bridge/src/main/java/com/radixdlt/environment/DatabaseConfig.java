@@ -68,11 +68,13 @@ import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 
 /** Database configuration options */
-public record DatabaseFlags(
-    boolean enableLocalTransactionExecutionIndex, boolean enableAccountChangeIndex) {
+public record DatabaseConfig(
+    boolean enableLocalTransactionExecutionIndex,
+    boolean enableAccountChangeIndex,
+    boolean enableHistoricalSubstateValues) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        DatabaseFlags.class,
-        codecs -> StructCodec.fromRecordComponents(DatabaseFlags.class, codecs));
+        DatabaseConfig.class,
+        codecs -> StructCodec.fromRecordComponents(DatabaseConfig.class, codecs));
   }
 }

@@ -1,15 +1,15 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::core_api::*;
+use crate::engine_prelude::*;
 
 use state_manager::{
-    AlreadyCommittedError, DetailedTransactionOutcome, RejectionReason, StateVersion,
+    AlreadyCommittedError, DetailedTransactionOutcome, MempoolRejectionReason, StateVersion,
 };
 
 use state_manager::mempool::pending_transaction_result_cache::PendingTransactionRecord;
 use state_manager::query::StateManagerSubstateQueries;
 use state_manager::store::traits::*;
-use transaction::prelude::*;
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_transaction_status(
@@ -30,7 +30,7 @@ pub(crate) async fn handle_transaction_status(
         pending_transaction_result_cache.peek_all_known_payloads_for_intent(&intent_hash);
     drop(pending_transaction_result_cache);
 
-    let database = state.state_manager.database.read_current();
+    let database = state.state_manager.database.snapshot();
 
     if !database.is_local_transaction_execution_index_enabled() {
         return Err(client_error(
@@ -223,7 +223,7 @@ fn map_rejected_payloads_due_to_known_commit(
                 // commit, and we may see a "not-yet-updated" entry - luckily, in such case, we can
                 // precisely tell the transaction's status ourselves:
                 .unwrap_or_else(|| {
-                    RejectionReason::AlreadyCommitted(AlreadyCommittedError {
+                    MempoolRejectionReason::AlreadyCommitted(AlreadyCommittedError {
                         notarized_transaction_hash,
                         committed_state_version,
                         committed_notarized_transaction_hash: *committed_notarized_transaction_hash,

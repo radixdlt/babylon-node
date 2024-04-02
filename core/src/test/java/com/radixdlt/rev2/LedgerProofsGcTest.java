@@ -67,9 +67,9 @@ package com.radixdlt.rev2;
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.radixdlt.environment.DatabaseFlags;
+import com.radixdlt.environment.DatabaseConfig;
 import com.radixdlt.environment.LedgerProofsGcConfig;
-import com.radixdlt.environment.StateHashTreeGcConfig;
+import com.radixdlt.environment.StateTreeGcConfig;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
@@ -138,12 +138,12 @@ public final class LedgerProofsGcTest {
                             Decimal.ONE,
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
                                 roundsPerEpoch)),
-                        new DatabaseFlags(false, false),
+                        new DatabaseConfig(false, false, false),
                         REV2ProposerConfig.transactionGenerator(
                             new SizedTransactionGenerator(NetworkDefinition.INT_TEST_NET, txnSize),
                             1),
                         false,
-                        StateHashTreeGcConfig.forTesting(),
+                        StateTreeGcConfig.forTesting(),
                         new LedgerProofsGcConfig(
                             UInt32.fromNonNegativeInt(GC_INTERVAL_SEC),
                             UInt64.fromNonNegativeLong(mostRecentFullResolutionEpochCount)),

@@ -1,9 +1,10 @@
 use crate::core_api::*;
 
-use state_manager::store::{traits::*, StateManagerDatabase};
-use state_manager::{LedgerProof, LedgerProofOrigin, StateVersion};
-
-use transaction::prelude::*;
+use crate::engine_prelude::*;
+use state_manager::store::traits::*;
+use state_manager::{
+    LedgerProof, LedgerProofOrigin, ReadableRocks, StateManagerDatabase, StateVersion,
+};
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_stream_proofs(
@@ -31,7 +32,7 @@ pub(crate) async fn handle_stream_proofs(
         extract_continuation_token::<StateVersion>(request.continuation_token)
             .map_err(|err| err.into_response_error("continuation_token"))?;
 
-    let database = state.state_manager.database.read_current();
+    let database = state.state_manager.database.snapshot();
 
     use models::StreamProofsFilter::*;
     let mut proofs_iter = match *filter {
@@ -77,7 +78,7 @@ pub(crate) async fn handle_stream_proofs(
 }
 
 fn iterate_all_proofs<'a>(
-    database: &'a StateManagerDatabase,
+    database: &'a StateManagerDatabase<impl ReadableRocks>,
     continue_from_state_version: Option<StateVersion>,
     from_state_version: StateVersion,
 ) -> Result<
@@ -90,7 +91,7 @@ fn iterate_all_proofs<'a>(
 }
 
 fn iterate_end_of_epoch_proofs<'a>(
-    database: &'a StateManagerDatabase,
+    database: &'a StateManagerDatabase<impl ReadableRocks>,
     continue_from_state_version: Option<StateVersion>,
     from_epoch: Epoch,
 ) -> Result<
@@ -111,7 +112,7 @@ fn iterate_end_of_epoch_proofs<'a>(
 }
 
 fn iterate_protocol_update_initialization_proofs<'a>(
-    database: &'a StateManagerDatabase,
+    database: &'a StateManagerDatabase<impl ReadableRocks>,
     continue_from_state_version: Option<StateVersion>,
     from_state_version: StateVersion,
 ) -> Result<
@@ -124,7 +125,7 @@ fn iterate_protocol_update_initialization_proofs<'a>(
 }
 
 fn iterate_protocol_update_execution_proofs<'a>(
-    database: &'a StateManagerDatabase,
+    database: &'a StateManagerDatabase<impl ReadableRocks>,
     continue_from_state_version: Option<StateVersion>,
     from_state_version: StateVersion,
     protocol_version: Option<String>,
@@ -152,7 +153,7 @@ fn iterate_protocol_update_execution_proofs<'a>(
 }
 
 fn extract_from_state_version(
-    database: &StateManagerDatabase,
+    database: &StateManagerDatabase<impl ReadableRocks>,
     from_state_version: Option<i64>,
 ) -> Result<StateVersion, ResponseError<models::StreamProofsErrorDetails>> {
     let Some(from_state_version) = from_state_version else {
@@ -180,7 +181,7 @@ fn extract_from_state_version(
 
 fn extract_from_epoch(
     mapping_context: &MappingContext,
-    database: &StateManagerDatabase,
+    database: &StateManagerDatabase<impl ReadableRocks>,
     from_epoch: Option<i64>,
 ) -> Result<Epoch, ResponseError<models::StreamProofsErrorDetails>> {
     let Some(from_epoch) = from_epoch else {

@@ -63,7 +63,7 @@
  */
 
 mod codecs;
-mod db;
+pub mod historical_state;
 pub mod jmt_gc;
 pub mod proofs_gc;
 mod rocks_db;
@@ -72,22 +72,31 @@ mod typed_cf_api;
 
 use crate::store::traits::measurement::MeasurableDatabase;
 use crate::RawDbMetrics;
-pub use db::{DatabaseBackendConfig, StateManagerDatabase};
-use node_common::locks::StateLock;
+use node_common::locks::DbLock;
 use prometheus::Registry;
-pub use rocks_db::RocksDBStore;
+pub use rocks_db::{ActualStateManagerDatabase, StateManagerDatabase};
+pub use rocks_db::{ReadableRocks, WriteableRocks};
+use sbor::{Categorize, Decode, Encode};
 use std::sync::Arc;
-pub use traits::DatabaseFlags;
+pub use traits::DatabaseConfig;
+
+#[derive(Debug, Categorize, Encode, Decode, Clone)]
+pub struct DatabaseBackendConfig {
+    pub rocks_db_path: String,
+}
 
 /// A synchronous collector of costly (I/O-intensive) raw DB metrics.
 pub struct RawDbMetricsCollector {
-    database: Arc<StateLock<StateManagerDatabase>>,
+    database: Arc<DbLock<ActualStateManagerDatabase>>,
     raw_db_metrics: RawDbMetrics,
 }
 
 impl RawDbMetricsCollector {
     /// Creates a collector measuring the given DB and updating the metrics in the given registry.
-    pub fn new(database: Arc<StateLock<StateManagerDatabase>>, metric_registry: &Registry) -> Self {
+    pub fn new(
+        database: Arc<DbLock<ActualStateManagerDatabase>>,
+        metric_registry: &Registry,
+    ) -> Self {
         Self {
             database,
             raw_db_metrics: RawDbMetrics::new(metric_registry),
@@ -97,10 +106,7 @@ impl RawDbMetricsCollector {
     /// Performs a single "collect measurements + update metric primitives" run.
     /// Should be called periodically.
     pub fn run(&self) {
-        let statistics = self
-            .database
-            .access_non_locked_historical()
-            .get_data_volume_statistics();
+        let statistics = self.database.access_direct().get_data_volume_statistics();
         self.raw_db_metrics.update(statistics);
     }
 }

@@ -84,6 +84,7 @@ public final class BFTQuorumAssemblerTest {
   private BFTValidatorId self = mock(BFTValidatorId.class);
   private Metrics metrics = new MetricsInitializer().initialize();
   private PendingVotes pendingVotes = mock(PendingVotes.class);
+  private BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
   private VertexStoreAdapter vertexStore = mock(VertexStoreAdapter.class);
   private Pacemaker pacemaker = mock(Pacemaker.class);
   private EventDispatcher<RoundQuorumResolution> roundQuorumResolutionDispatcher =
@@ -102,6 +103,7 @@ public final class BFTQuorumAssemblerTest {
             this.roundQuorumResolutionDispatcher,
             this.timeoutQuorumDelayedResolutionDispatcher,
             this.metrics,
+            new DivergentVertexExecutionDetector(metrics, validatorSet),
             this.pendingVotes,
             mock(RoundUpdate.class),
             1000L);
@@ -118,6 +120,11 @@ public final class BFTQuorumAssemblerTest {
     QuorumCertificate highestCommittedQc = mock(QuorumCertificate.class);
     when(highQc.highestCommittedQC()).thenReturn(highestCommittedQc);
     when(vote.getRound()).thenReturn(Round.of(1));
+    final var bftHeader = mock(BFTHeader.class);
+    when(bftHeader.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
+    final var voteData = mock(VoteData.class);
+    when(voteData.getProposed()).thenReturn(bftHeader);
+    when(vote.getVoteData()).thenReturn(voteData);
 
     when(this.pendingVotes.insertVote(any())).thenReturn(VoteProcessingResult.regularQuorum(qc));
     when(this.vertexStore.highQC()).thenReturn(highQc);

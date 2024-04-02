@@ -13,6 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { LedgerStateSelector } from './LedgerStateSelector';
+import {
+    LedgerStateSelectorFromJSON,
+    LedgerStateSelectorFromJSONTyped,
+    LedgerStateSelectorToJSON,
+} from './LedgerStateSelector';
 import type { TargetIdentifier } from './TargetIdentifier';
 import {
     TargetIdentifierFromJSON,
@@ -32,6 +38,12 @@ export interface TransactionCallPreviewRequest {
      * @memberof TransactionCallPreviewRequest
      */
     network: string;
+    /**
+     * 
+     * @type {LedgerStateSelector}
+     * @memberof TransactionCallPreviewRequest
+     */
+    at_ledger_state?: LedgerStateSelector;
     /**
      * 
      * @type {TargetIdentifier}
@@ -69,6 +81,7 @@ export function TransactionCallPreviewRequestFromJSONTyped(json: any, ignoreDisc
     return {
         
         'network': json['network'],
+        'at_ledger_state': !exists(json, 'at_ledger_state') ? undefined : LedgerStateSelectorFromJSON(json['at_ledger_state']),
         'target': TargetIdentifierFromJSON(json['target']),
         'arguments': json['arguments'],
     };
@@ -84,6 +97,7 @@ export function TransactionCallPreviewRequestToJSON(value?: TransactionCallPrevi
     return {
         
         'network': value.network,
+        'at_ledger_state': LedgerStateSelectorToJSON(value.at_ledger_state),
         'target': TargetIdentifierToJSON(value.target),
         'arguments': value.arguments,
     };

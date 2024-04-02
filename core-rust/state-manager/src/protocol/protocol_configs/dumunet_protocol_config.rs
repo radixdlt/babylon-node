@@ -1,4 +1,4 @@
-use radix_engine::prelude::*;
+use crate::engine_prelude::*;
 
 use crate::protocol::*;
 use ProtocolUpdateEnactmentCondition::*;

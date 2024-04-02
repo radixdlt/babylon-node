@@ -274,11 +274,17 @@ public final class RadixNodeModule extends AbstractModule {
         NodeConstants.DEFAULT_MAX_TRANSACTION_SIZE);
     var mempoolConfig =
         new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount);
+
     var enableLocalTransactionExecutionIndex =
         properties.get("db.local_transaction_execution_index.enable", true);
     var enableAccountChangeIndex = properties.get("db.account_change_index.enable", true);
-    var databaseFlags =
-        new DatabaseFlags(enableLocalTransactionExecutionIndex, enableAccountChangeIndex);
+    var enableHistoricalSubstateValues =
+        properties.get("db.historical_substate_values.enable", false);
+    var databaseConfig =
+        new DatabaseConfig(
+            enableLocalTransactionExecutionIndex,
+            enableAccountChangeIndex,
+            enableHistoricalSubstateValues);
 
     install(new REv2LedgerInitializerModule(genesisProvider));
 
@@ -348,7 +354,7 @@ public final class RadixNodeModule extends AbstractModule {
             vertexMaxTotalExecutionCostUnitsConsumed,
             vertexMaxTotalFinalizationCostUnitsConsumed);
 
-    var stateHashTreeGcConfig = parseStateHashTreeGcConfig(properties);
+    var stateTreeGcConfig = parseStateTreeGcConfig(properties);
     var ledgerProofsGcConfig = parseLedgerProofsGcConfig(properties);
 
     // this is tied to the number of actually-persisted proofs, and should not be configureable:
@@ -371,9 +377,9 @@ public final class RadixNodeModule extends AbstractModule {
         REv2StateManagerModule.create(
             ProposalLimitsConfig.from(vertexLimitsConfig),
             vertexLimitsConfig,
-            databaseFlags,
+            databaseConfig,
             Option.some(mempoolConfig),
-            stateHashTreeGcConfig,
+            stateTreeGcConfig,
             ledgerProofsGcConfig,
             ledgerSyncLimitsConfig,
             protocolConfig));
@@ -431,16 +437,16 @@ public final class RadixNodeModule extends AbstractModule {
 
   /**
    * Parses the part of the configuration related to the garbage collection process pruning the
-   * state hash tree. Each {@link StateHashTreeGcConfig#intervalSec()} seconds, we start a GC
-   * process which fully processes the entire backlog of "stale tree parts" recorded in the DB,
-   * <b>except</b> the most recent {@link StateHashTreeGcConfig#stateVersionHistoryLength()}
-   * entries.
+   * state hash tree. Each {@link StateTreeGcConfig#intervalSec()} seconds, we start a GC process
+   * which fully processes the entire backlog of "stale tree parts" recorded in the DB,
+   * <b>except</b> the most recent {@link StateTreeGcConfig#stateVersionHistoryLength()} entries.
    */
-  private StateHashTreeGcConfig parseStateHashTreeGcConfig(RuntimeProperties properties) {
+  private StateTreeGcConfig parseStateTreeGcConfig(RuntimeProperties properties) {
     // How often to run the GC.
     // This only needs to be one order of magnitude shorter than our intended state hash tree
     // minimum history duration (which is ~10 minutes below), and could be computed/hardcoded.
     // However, we make it configurable for tests' purposes.
+    // Note: the legacy `state_hash_tree` name lives on here to avoid breaking configurations.
     var intervalSec = properties.get("state_hash_tree.gc.interval_sec", 60);
     Preconditions.checkArgument(
         intervalSec > 0, "state hash tree GC interval must be positive: %s sec", intervalSec);
@@ -449,6 +455,7 @@ public final class RadixNodeModule extends AbstractModule {
     // The default of "100 * 10 * 60 = 60000" assumes that:
     // - a peak user transaction throughput is 100 TPS;
     // - we want to offer Merkle proofs verification up to 10 minutes after their generation.
+    // Note: the legacy `state_hash_tree` name lives on here to avoid breaking configurations.
     var stateVersionHistoryLength =
         properties.get("state_hash_tree.state_version_history_length", 60000);
     Preconditions.checkArgument(
@@ -456,7 +463,7 @@ public final class RadixNodeModule extends AbstractModule {
         "state version history length must not be negative: %s",
         stateVersionHistoryLength);
 
-    return new StateHashTreeGcConfig(
+    return new StateTreeGcConfig(
         UInt32.fromNonNegativeInt(intervalSec),
         UInt64.fromNonNegativeLong(stateVersionHistoryLength));
   }

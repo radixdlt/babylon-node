@@ -72,7 +72,7 @@ import static com.radixdlt.rev2.protocol.ProtocolUpdateWithEpochBoundsTest.TestE
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.environment.DatabaseFlags;
+import com.radixdlt.environment.DatabaseConfig;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -303,7 +303,7 @@ public final class ProtocolUpdateWithEpochBoundsTest {
                             STAKE_PER_VALIDATOR,
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(30)
                                 .totalEmissionXrdPerEpoch(Decimal.ZERO)),
-                        new DatabaseFlags(true, false),
+                        new DatabaseConfig(true, false, false),
                         StateComputerConfig.REV2ProposerConfig.Mempool.defaults(),
                         false,
                         true,

@@ -6,8 +6,8 @@ use axum::{
 use models::stream_proofs_error_details::StreamProofsErrorDetails;
 use std::any::Any;
 
+use crate::engine_prelude::*;
 use hyper::StatusCode;
-use radix_engine_interface::network::NetworkDefinition;
 use tower_http::catch_panic::ResponseForPanic;
 
 use super::{models, CoreApiState};
@@ -16,9 +16,11 @@ use models::{
     lts_transaction_submit_error_details::LtsTransactionSubmitErrorDetails,
     transaction_submit_error_details::TransactionSubmitErrorDetails,
 };
+use state_manager::historical_state::StateHistoryError;
+use state_manager::transaction::PreviewerError;
 
 /// A marker trait for custom error details
-pub trait ErrorDetails: serde::Serialize + std::fmt::Debug + Sized {
+pub trait ErrorDetails: serde::Serialize + Debug + Sized {
     fn to_error_response(
         details: Option<Self>,
         code: i32,
@@ -171,6 +173,29 @@ pub(crate) fn assert_unbounded_endpoints_flag_enabled<E: ErrorDetails>(
         ));
     }
     Ok(())
+}
+
+impl<E: ErrorDetails> From<PreviewerError> for ResponseError<E> {
+    fn from(error: PreviewerError) -> Self {
+        client_error(match error {
+            PreviewerError::FromEngine(error) => match error {
+                PreviewError::TransactionValidationError(error) => {
+                    format!("Transaction validation error: {error:?}")
+                }
+            }
+            PreviewerError::FromStateHistory(error) => match error {
+                StateHistoryError::StateHistoryDisabled => {
+                    "State history feature must be enabled (see the `db.historical_substate_values.enable` Node configuration flag)".to_string()
+                }
+                StateHistoryError::StateVersionInTooDistantPast { first_available_version } => {
+                    format!("Cannot request state version past the earliest available {} (see the `state_hash_tree.state_version_history_length` Node configuration flag)", first_available_version)
+                }
+                StateHistoryError::StateVersionInFuture { current_version } => {
+                    format!("Cannot request state version ahead of the current top-of-ledger {}", current_version)
+                }
+            }
+        })
+    }
 }
 
 // TODO - Add logging, metrics and tracing for all of these errors - require the error is passed in here

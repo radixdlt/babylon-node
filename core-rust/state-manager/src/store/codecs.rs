@@ -66,10 +66,7 @@ use std::ops::Range;
 
 use crate::StateVersion;
 
-use radix_engine::types::*;
-use radix_engine_store_interface::interface::*;
-use radix_engine_stores::hash_tree::tree_store::{encode_key, NodeKey};
-
+use crate::engine_prelude::*;
 use crate::store::traits::scenario::ScenarioSequenceNumber;
 use crate::store::typed_cf_api::*;
 use crate::transaction::RawLedgerTransaction;
@@ -171,7 +168,7 @@ impl<T: IsHash> DbCodec<T> for HashDbCodec<T> {
 ///
 /// An example:
 ///
-/// `(NodeKey[1, 3, 3, 7], PartitionNum(88), SortKey(200, 100, 150))`
+/// `(StoredTreeNodeKey[1, 3, 3, 7], PartitionNum(88), SortKey(200, 100, 150))`
 /// is encoded into:
 /// `[4, 1, 3, 3, 7, 88, 200, 100, 150]`
 #[derive(Default)]
@@ -246,15 +243,26 @@ impl SubstateKeyDbCodec {
 }
 
 #[derive(Default)]
-pub struct NodeKeyDbCodec {}
+pub struct StoredTreeNodeKeyDbCodec {}
 
-impl DbCodec<NodeKey> for NodeKeyDbCodec {
-    fn encode(&self, value: &NodeKey) -> Vec<u8> {
+impl DbCodec<StoredTreeNodeKey> for StoredTreeNodeKeyDbCodec {
+    fn encode(&self, value: &StoredTreeNodeKey) -> Vec<u8> {
         encode_key(value)
     }
 
-    fn decode(&self, _bytes: &[u8]) -> NodeKey {
-        unimplemented!("no use-case for decoding hash tree's `NodeKey`s exists yet")
+    fn decode(&self, _bytes: &[u8]) -> StoredTreeNodeKey {
+        unimplemented!("no use-case for decoding hash tree's `StoredTreeNodeKey`s exists yet")
+    }
+}
+
+impl BoundedDbCodec for StoredTreeNodeKeyDbCodec {
+    fn upper_bound_encoding(&self) -> Vec<u8> {
+        // Note: here we use knowledge of `encode_key()`'s internals: it puts the state version
+        // first. Additionally we need to assume that maximum state version is never reached.
+        encode_key(&StoredTreeNodeKey::new(
+            Version::MAX,
+            NibblePath::new_even(vec![]),
+        ))
     }
 }
 
