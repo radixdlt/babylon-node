@@ -1,6 +1,6 @@
 use crate::core_api::*;
 
-use radix_engine_interface::prelude::*;
+use crate::engine_prelude::*;
 
 use state_manager::store::traits::scenario::{
     ExecutedGenesisScenario, ExecutedGenesisScenarioStore, ExecutedScenarioTransaction,
@@ -15,16 +15,15 @@ pub(crate) async fn handle_status_scenarios(
     assert_matching_network(&request.network, &state.network)?;
     let context = MappingContext::new(&state.network);
 
-    let database = state.state_manager.database.access_non_locked_historical();
+    let database = state.state_manager.database.access_direct();
     let scenarios = database.list_all_scenarios();
 
-    Ok(models::ScenariosResponse {
+    Ok(Json(models::ScenariosResponse {
         executed_scenarios: scenarios
             .iter()
             .map(|(number, scenario)| to_api_executed_scenario(&context, *number, scenario))
             .collect::<Result<Vec<_>, _>>()?,
-    })
-    .map(Json)
+    }))
 }
 
 pub fn to_api_executed_scenario(

@@ -67,8 +67,6 @@ use node_common::metrics::TakesMetricLabels;
 use prometheus::Registry;
 use rand::seq::index::sample;
 use tracing::warn;
-use transaction::model::*;
-use utils::prelude::indexmap::IndexMap;
 
 use crate::{mempool::*, StateVersion};
 use itertools::Itertools;
@@ -292,11 +290,11 @@ impl PriorityMempool {
 }
 
 impl PriorityMempool {
-    /// ASSUMPTION: Mempool does not already contain the transaction (panics otherwise).
     /// Tries to add a new transaction into the mempool.
     /// Will return either a [`Vec`] of [`MempoolData`] that was evicted in order to fit the new transaction or an error
     /// if the mempool is full and the new transaction proposal priority is not better than what already exists.
-    pub fn add_transaction(
+    /// Returns an empty [`Vec`] if the transaction was already present in the mempool.
+    pub fn add_transaction_if_not_present(
         &mut self,
         transaction: Arc<MempoolTransaction>,
         source: MempoolAddSource,
@@ -304,6 +302,11 @@ impl PriorityMempool {
         executed_at: StateVersion,
     ) -> Result<Vec<Arc<MempoolData>>, MempoolAddError> {
         let payload_hash = transaction.notarized_transaction_hash();
+
+        if self.contains_transaction(&payload_hash) {
+            return Ok(vec![]);
+        }
+
         let intent_hash = transaction.intent_hash();
         let transaction_size = transaction.raw.0.len() as u64;
 
@@ -378,7 +381,8 @@ impl PriorityMempool {
             .insert(payload_hash, transaction_data.clone())
             .is_some()
         {
-            panic!("Broken precondition: Transaction already inside mempool");
+            // This should have been checked at the beginning of this method
+            panic!("Broken precondition: Transaction already inside mempool.");
         }
 
         // Add proposal priority index
@@ -641,12 +645,6 @@ impl PriorityMempool {
 mod tests {
     use std::time::Duration;
 
-    use radix_engine::types::PublicKey;
-    use radix_engine_common::types::Epoch;
-    use radix_engine_interface::crypto::Secp256k1PublicKey;
-    use transaction::model::*;
-    use transaction::signing::secp256k1::Secp256k1Signature;
-
     use crate::mempool::priority_mempool::*;
 
     fn create_fake_pub_key() -> PublicKey {
@@ -721,6 +719,7 @@ mod tests {
         let mt1 = create_fake_pending_transaction(1, 0, 0);
         let mt2 = create_fake_pending_transaction(2, 0, 0);
         let mt3 = create_fake_pending_transaction(3, 0, 0);
+        let v1 = StateVersion::of(1);
 
         let registry = Registry::new();
 
@@ -734,22 +733,22 @@ mod tests {
         assert_eq!(mp.remaining_transaction_count, 5);
         assert_eq!(mp.get_count(), 0);
 
-        mp.add_transaction(
+        mp.add_transaction_if_not_present(
             mt1.clone(),
             MempoolAddSource::CoreApi,
             Instant::now(),
-            StateVersion::of(1),
+            v1,
         )
         .unwrap();
         assert_eq!(mp.remaining_transaction_count, 4);
         assert_eq!(mp.get_count(), 1);
         assert!(mp.contains_transaction(&mt1.notarized_transaction_hash()));
 
-        mp.add_transaction(
+        mp.add_transaction_if_not_present(
             mt2.clone(),
             MempoolAddSource::MempoolSync,
             Instant::now(),
-            StateVersion::of(1),
+            v1,
         )
         .unwrap();
         assert_eq!(mp.remaining_transaction_count, 3);
@@ -784,6 +783,7 @@ mod tests {
         let intent_1_payload_3 = create_fake_pending_transaction(1, 3, 0);
         let intent_2_payload_1 = create_fake_pending_transaction(2, 1, 0);
         let intent_2_payload_2 = create_fake_pending_transaction(2, 2, 0);
+        let v1 = StateVersion::of(1);
 
         let registry = Registry::new();
 
@@ -795,38 +795,38 @@ mod tests {
             &registry,
         );
         assert!(mp
-            .add_transaction(
+            .add_transaction_if_not_present(
                 intent_1_payload_1.clone(),
                 MempoolAddSource::CoreApi,
                 Instant::now(),
-                StateVersion::of(1)
+                v1
             )
             .unwrap()
             .is_empty());
         assert!(mp
-            .add_transaction(
+            .add_transaction_if_not_present(
                 intent_1_payload_2.clone(),
                 MempoolAddSource::CoreApi,
                 Instant::now(),
-                StateVersion::of(1)
+                v1
             )
             .unwrap()
             .is_empty());
         assert!(mp
-            .add_transaction(
+            .add_transaction_if_not_present(
                 intent_1_payload_3,
                 MempoolAddSource::MempoolSync,
                 Instant::now(),
-                StateVersion::of(1)
+                v1
             )
             .unwrap()
             .is_empty());
         assert!(mp
-            .add_transaction(
+            .add_transaction_if_not_present(
                 intent_2_payload_1.clone(),
                 MempoolAddSource::CoreApi,
                 Instant::now(),
-                StateVersion::of(1)
+                v1
             )
             .unwrap()
             .is_empty());
@@ -865,11 +865,11 @@ mod tests {
             0
         );
         assert!(mp
-            .add_transaction(
+            .add_transaction_if_not_present(
                 intent_2_payload_1,
                 MempoolAddSource::MempoolSync,
                 Instant::now(),
-                StateVersion::of(1)
+                v1
             )
             .unwrap()
             .is_empty());
@@ -882,11 +882,11 @@ mod tests {
         );
 
         assert!(mp
-            .add_transaction(
+            .add_transaction_if_not_present(
                 intent_2_payload_2.clone(),
                 MempoolAddSource::CoreApi,
                 Instant::now(),
-                StateVersion::of(1)
+                v1
             )
             .unwrap()
             .is_empty());
@@ -954,6 +954,7 @@ mod tests {
         let mt9 = create_fake_pending_transaction(5, 0, 40);
 
         let now = Instant::now();
+        let v1 = StateVersion::of(1);
         let time_point = [
             now + Duration::from_secs(1),
             now + Duration::from_secs(2),
@@ -971,94 +972,102 @@ mod tests {
         );
 
         assert!(mp
-            .add_transaction(
+            .add_transaction_if_not_present(
                 mt4.clone(),
                 MempoolAddSource::CoreApi,
                 time_point[0],
-                StateVersion::of(1)
+                v1
             )
             .unwrap()
             .is_empty());
         assert!(mp
-            .add_transaction(
+            .add_transaction_if_not_present(
                 mt2.clone(),
                 MempoolAddSource::CoreApi,
                 time_point[1],
-                StateVersion::of(1)
+                v1
             )
             .unwrap()
             .is_empty());
         assert!(mp
-            .add_transaction(
+            .add_transaction_if_not_present(
                 mt3.clone(),
                 MempoolAddSource::MempoolSync,
                 time_point[0],
-                StateVersion::of(1)
+                v1
             )
             .unwrap()
             .is_empty());
         assert!(mp
-            .add_transaction(
+            .add_transaction_if_not_present(
                 mt1.clone(),
                 MempoolAddSource::CoreApi,
                 time_point[0],
-                StateVersion::of(1)
+                v1
             )
             .unwrap()
             .is_empty());
 
         let evicted = mp
-            .add_transaction(
-                mt5,
-                MempoolAddSource::CoreApi,
-                time_point[1],
-                StateVersion::of(1),
-            )
+            .add_transaction_if_not_present(mt5, MempoolAddSource::CoreApi, time_point[1], v1)
             .unwrap();
         assert_eq!(evicted.len(), 1);
         assert_eq!(evicted[0].transaction, mt1);
 
         // mt2 should be evicted before mt3 because of lower time spent in the mempool
         let evicted = mp
-            .add_transaction(
-                mt6,
-                MempoolAddSource::CoreApi,
-                time_point[1],
-                StateVersion::of(1),
-            )
+            .add_transaction_if_not_present(mt6, MempoolAddSource::CoreApi, time_point[1], v1)
             .unwrap();
         assert_eq!(evicted.len(), 1);
         assert_eq!(evicted[0].transaction, mt2);
 
         let evicted = mp
-            .add_transaction(
-                mt7,
-                MempoolAddSource::CoreApi,
-                time_point[1],
-                StateVersion::of(1),
-            )
+            .add_transaction_if_not_present(mt7, MempoolAddSource::CoreApi, time_point[1], v1)
             .unwrap();
         assert_eq!(evicted.len(), 1);
         assert_eq!(evicted[0].transaction, mt3);
 
         let evicted = mp
-            .add_transaction(
-                mt8,
-                MempoolAddSource::CoreApi,
-                time_point[1],
-                StateVersion::of(1),
-            )
+            .add_transaction_if_not_present(mt8, MempoolAddSource::CoreApi, time_point[1], v1)
             .unwrap();
         assert_eq!(evicted.len(), 1);
         assert_eq!(evicted[0].transaction, mt4);
 
         assert!(mp
-            .add_transaction(
-                mt9,
-                MempoolAddSource::CoreApi,
-                time_point[2],
-                StateVersion::of(1)
-            )
+            .add_transaction_if_not_present(mt9, MempoolAddSource::CoreApi, time_point[2], v1)
             .is_err());
+    }
+
+    #[test]
+    fn test_duplicate_txn_not_inserted() {
+        let mempool_txn = create_fake_pending_transaction(1, 0, 10);
+
+        let now = Instant::now();
+        let v1 = StateVersion::of(1);
+
+        let registry = Registry::new();
+
+        let mut mempool = PriorityMempool::new(
+            MempoolConfig {
+                max_transaction_count: 1,
+                max_total_transactions_size: 1024 * 1024,
+            },
+            &registry,
+        );
+
+        // Inserting the same transaction twice should be a non-panicking no-op
+        assert!(mempool
+            .add_transaction_if_not_present(mempool_txn.clone(), MempoolAddSource::CoreApi, now, v1)
+            .unwrap()
+            .is_empty());
+        assert!(mempool
+            .add_transaction_if_not_present(
+                mempool_txn.clone(),
+                MempoolAddSource::MempoolSync,
+                now + Duration::from_secs(1),
+                v1
+            )
+            .unwrap()
+            .is_empty());
     }
 }

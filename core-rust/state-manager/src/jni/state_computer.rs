@@ -62,20 +62,16 @@
  * permissions under this License.
  */
 
-use crate::{CommitSummary, LedgerProof};
+use crate::engine_prelude::*;
+use crate::protocol::ProtocolVersionName;
+use crate::{protocol::ProtocolState, CommitSummary, LedgerProof};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use radix_engine::types::*;
-use radix_engine_interface::blueprints::consensus_manager::{
-    ConsensusManagerConfig, EpochChangeCondition,
-};
 
 use node_common::java::*;
 
 use crate::types::{CommitRequest, InvalidCommitRequestError, PrepareRequest, PrepareResult};
-
-use radix_engine::system::bootstrap::GenesisDataChunk;
 
 use super::node_rust_environment::JNINodeRustEnvironment;
 
@@ -182,6 +178,32 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_commit(
             state_computer.commit(commit_request)
         },
     )
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_newestProtocolVersion(
+    env: JNIEnv,
+    _class: JClass,
+    j_node_rust_env: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| -> ProtocolVersionName {
+        let env = JNINodeRustEnvironment::get(&env, j_node_rust_env);
+        env.state_manager.newest_protocol_version()
+    })
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_protocolState(
+    env: JNIEnv,
+    _class: JClass,
+    j_node_rust_env: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| -> ProtocolState {
+        let env = JNINodeRustEnvironment::get(&env, j_node_rust_env);
+        env.state_manager.state_computer.protocol_state()
+    })
 }
 
 pub fn export_extern_functions() {}

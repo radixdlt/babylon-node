@@ -69,7 +69,10 @@ import com.google.inject.*;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.util.Modules;
 import com.radixdlt.addressing.Addressing;
+import com.radixdlt.consensus.LedgerHashes;
+import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.bft.BFTValidatorId;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyOps;
@@ -81,6 +84,7 @@ import com.radixdlt.environment.deterministic.network.ControlledDispatcher;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
+import com.radixdlt.ledger.LedgerProofBundle;
 import com.radixdlt.messaging.MaxMessageSize;
 import com.radixdlt.modules.DispatcherModule;
 import com.radixdlt.modules.PrefixedNodeStorageLocationModule;
@@ -92,8 +96,11 @@ import com.radixdlt.p2p.addressbook.AddressBook;
 import com.radixdlt.p2p.addressbook.AddressBookPersistence;
 import com.radixdlt.p2p.capability.Capabilities;
 import com.radixdlt.p2p.transport.PeerOutboundBootstrap;
+import com.radixdlt.protocol.NewestProtocolVersion;
+import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.statecomputer.ProtocolState;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.IOException;
 import java.util.Objects;
@@ -200,6 +207,18 @@ public final class P2PTestNetworkRunner {
                       p2pNetwork.createChannel(selfNodeIndex, uri);
                     };
                   }
+
+                  @Provides
+                  public LedgerProofBundle latestProof() {
+                    return LedgerProofBundle.mockedOfHeader(
+                        LedgerHeader.create(
+                            1L, Round.epochInitial(), 1L, LedgerHashes.zero(), 0L, 0L));
+                  }
+
+                  @Provides
+                  public ProtocolState initialProtocolState() {
+                    return ProtocolState.testingEmpty();
+                  }
                 }),
         new DispatcherModule(),
         new PrefixedNodeStorageLocationModule(sharedDbDir.getRoot().getAbsolutePath()),
@@ -233,6 +252,9 @@ public final class P2PTestNetworkRunner {
                         network,
                         NodeId.fromPublicKey(nodeKey.getPublicKey()),
                         selfNodeIndex));
+            bind(String.class)
+                .annotatedWith(NewestProtocolVersion.class)
+                .toInstance(ProtocolConfig.GENESIS_PROTOCOL_VERSION_NAME);
             bind(RuntimeProperties.class).toInstance(properties);
             bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
             bind(DeterministicProcessor.class);

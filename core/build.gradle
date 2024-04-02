@@ -210,6 +210,7 @@ dependencies {
     implementation project(':olympia-engine')
     implementation project(':common')
     implementation project(':core-rust-bridge')
+    implementation project(':keygen')
     implementation 'com.fasterxml.jackson.core:jackson-databind'
 
     implementation 'io.swagger:swagger-annotations:1.5.0'
@@ -377,3 +378,15 @@ task deb4docker(dependsOn: buildDeb) {
         println "SUCCESS: deb package copied for the docker build to: $destinationLocation"
     }
 }
+
+// This adds the `startScripts` task artifacts from the keygen subproject (i.e. app
+// run scripts: `keygen` and `keygen.bat`) to the "bin" folder in core's distribution.
+// Note that we don't need to manually add keygen jars (to "libs") - this is taken care of
+// by regular dependency management.
+applicationDistribution.from(project(":keygen").getTasksByName("startScripts", false).outputs) {
+    into "bin"
+}
+
+// This ensures that keygen scripts are built (and can be copied over to "bin", see above)
+// before we assemble core's packages.
+[distZip, distTar]*.mustRunAfter ":keygen:startScripts"

@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: cancel running workflows
-        uses: styfle/cancel-workflow-action@0.8.0
+        uses: RDXWorks-actions/cancel-workflow-action@main
         with:
           access_token: ${{ github.token }}
   deploy:
@@ -21,7 +21,7 @@ jobs:
     name: Deploy to Gilganet
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: RDXWorks-actions/checkout@main
         with:
           # Shallow clones should be disabled for a better relevancy of analysis
           fetch-depth: 0
@@ -33,8 +33,14 @@ jobs:
           secret_prefix: "JENKINS"
           secret_name: "github-actions/radixdlt/babylon-node/jenkins-api-token"
           parse_json: true
+      - name: Connect to tailnet
+        uses: radixdlt/public-iac-resuable-artifacts/tailnet@main
+        with:
+          role_name: "arn:aws:iam::${{ secrets.SECRETS_ACCOUNT_ID }}:role/gh-common-secrets-read-access"
+          region: "eu-west-2"
+          secret_name: "arn:aws:secretsmanager:eu-west-2:${{ secrets.SECRETS_ACCOUNT_ID }}:secret:github-actions/common/tailscale-public-workflows-DpiE80"
       - name: Deploy
-        uses: toptal/jenkins-job-trigger-action@1.0.0
+        uses: RDXWorks-actions/jenkins-job-trigger-action@master
         with:
           jenkins_url: "${{ env.JENKINS_URL }}"
           jenkins_user: ${{ env.JENKINS_USER }}
@@ -56,7 +62,7 @@ jobs:
     name: Run smoke tests
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: RDXWorks-actions/checkout@main
         with:
           # Shallow clones should be disabled for a better relevancy of analysis
           fetch-depth: 0
@@ -68,8 +74,14 @@ jobs:
           secret_prefix: "JENKINS"
           secret_name: "github-actions/radixdlt/babylon-node/jenkins-api-token"
           parse_json: true
+      - name: Connect to tailnet
+        uses: radixdlt/public-iac-resuable-artifacts/tailnet@main
+        with:
+          role_name: "arn:aws:iam::${{ secrets.SECRETS_ACCOUNT_ID }}:role/gh-common-secrets-read-access"
+          region: "eu-west-2"
+          secret_name: "arn:aws:secretsmanager:eu-west-2:${{ secrets.SECRETS_ACCOUNT_ID }}:secret:github-actions/common/tailscale-public-workflows-DpiE80"
       - name: SmokeTests
-        uses: toptal/jenkins-job-trigger-action@1.0.0
+        uses: RDXWorks-actions/jenkins-job-trigger-action@master
         with:
           jenkins_url: "${{ env.JENKINS_URL }}"
           jenkins_user: ${{ env.JENKINS_USER }}

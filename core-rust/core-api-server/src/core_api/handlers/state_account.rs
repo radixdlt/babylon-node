@@ -1,7 +1,6 @@
 use crate::core_api::*;
-use radix_engine::blueprints::account::AccountField;
-use radix_engine::system::attached_modules::role_assignment::RoleAssignmentField;
-use radix_engine::types::*;
+use crate::engine_prelude::*;
+
 use state_manager::query::{dump_component_state, VaultData};
 
 use std::ops::Deref;
@@ -24,7 +23,7 @@ pub(crate) async fn handle_state_account(
         return Err(client_error("Only account addresses starting account_ currently work with this endpoint. Try another endpoint instead."));
     }
 
-    let database = state.state_manager.database.read_current();
+    let database = state.state_manager.database.snapshot();
     let type_info = read_optional_substate(
         database.deref(),
         component_address.as_node_id(),
@@ -56,7 +55,7 @@ pub(crate) async fn handle_state_account(
 
     let header = read_current_ledger_header(database.deref());
 
-    Ok(models::StateAccountResponse {
+    Ok(Json(models::StateAccountResponse {
         at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
         info: Some(to_api_type_info_substate(
             &mapping_context,
@@ -72,8 +71,7 @@ pub(crate) async fn handle_state_account(
             &state_substate,
         )?),
         vaults,
-    })
-    .map(Json)
+    }))
 }
 
 pub(crate) fn map_to_vault_balance(

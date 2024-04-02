@@ -1,26 +1,20 @@
-use node_common::locks::StateLock;
-use radix_engine::transaction::{PreviewError, TransactionReceipt, TransactionResult};
-use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
+use crate::engine_prelude::*;
+use node_common::locks::{DbLock, RwLock};
 use std::ops::{Deref, Range};
 use std::sync::Arc;
 
-use crate::query::{StateManagerSubstateQueries, TransactionIdentifierLoader};
-use crate::staging::ReadableStore;
-use crate::store::traits::QueryableProofStore;
+use crate::historical_state::{StateHistoryError, VersionScopedSubstateDatabase};
+use crate::traits::IterableProofStore;
 use crate::transaction::*;
 use crate::{
-    GlobalBalanceSummary, LedgerHeader, LedgerStateChanges, PreviewRequest, ProcessedCommitResult,
+    ActualStateManagerDatabase, GlobalBalanceSummary, LedgerHeader, LedgerStateChanges,
+    PreviewRequest, ProcessedCommitResult, StateVersion,
 };
-use radix_engine_common::prelude::*;
-use transaction::model::*;
-use transaction::signing::secp256k1::Secp256k1PrivateKey;
-use transaction::validation::NotarizedTransactionValidator;
-use transaction::validation::ValidationConfig;
 
 /// A transaction preview runner.
-pub struct TransactionPreviewer<S> {
-    store: Arc<StateLock<S>>,
-    execution_configurator: Arc<ExecutionConfigurator>,
+pub struct TransactionPreviewer {
+    database: Arc<DbLock<ActualStateManagerDatabase>>,
+    execution_configurator: Arc<RwLock<ExecutionConfigurator>>,
     validation_config: ValidationConfig,
 }
 
@@ -31,46 +25,64 @@ pub struct ProcessedPreviewResult {
     pub global_balance_summary: GlobalBalanceSummary,
 }
 
-impl<S> TransactionPreviewer<S> {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PreviewerError {
+    FromEngine(PreviewError),
+    FromStateHistory(StateHistoryError),
+}
+
+impl TransactionPreviewer {
     pub fn new(
-        network: &NetworkDefinition,
-        store: Arc<StateLock<S>>,
-        execution_configurator: Arc<ExecutionConfigurator>,
+        database: Arc<DbLock<ActualStateManagerDatabase>>,
+        execution_configurator: Arc<RwLock<ExecutionConfigurator>>,
+        validation_config: ValidationConfig,
     ) -> Self {
         Self {
-            store,
+            database,
             execution_configurator,
-            validation_config: ValidationConfig::default(network.id),
+            validation_config,
         }
     }
 }
 
-impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> TransactionPreviewer<S> {
+impl TransactionPreviewer {
     /// Executes the transaction compiled from the given request in a preview mode.
     pub fn preview(
         &self,
         preview_request: PreviewRequest,
-    ) -> Result<ProcessedPreviewResult, PreviewError> {
-        let read_store = self.store.read_current();
-        let intent = self.create_intent(preview_request, read_store.deref());
+        requested_state_version: Option<StateVersion>,
+    ) -> Result<ProcessedPreviewResult, PreviewerError> {
+        // Note: we need to access a snapshot even if running against historical version, since we
+        // do not want JMT GC to interfere.
+        let database = self.database.snapshot();
+
+        let substate_database =
+            VersionScopedSubstateDatabase::new(database.deref(), requested_state_version)?;
+
+        let base_ledger_header = database
+            .get_proof_iter(substate_database.at_state_version())
+            .next()
+            .expect("proof for preview's base state")
+            .ledger_header;
+
+        let intent = self.create_intent(preview_request, base_ledger_header.epoch);
 
         let validator = NotarizedTransactionValidator::new(self.validation_config);
         let validated = validator
             .validate_preview_intent_v1(intent)
             .map_err(PreviewError::TransactionValidationError)?;
-        let transaction_logic = self
-            .execution_configurator
-            .wrap_preview_transaction(&validated);
+        let read_execution_configurator = self.execution_configurator.read();
+        let transaction_logic = read_execution_configurator.wrap_preview_transaction(&validated);
 
-        let receipt = transaction_logic.execute_on(read_store.deref());
+        let receipt = transaction_logic.execute_on(&substate_database);
         let (state_changes, global_balance_summary) = match &receipt.result {
             TransactionResult::Commit(commit) => {
-                let state_changes = ProcessedCommitResult::compute_ledger_state_changes::<
-                    S,
-                    SpreadPrefixKeyMapper,
-                >(read_store.deref(), &commit.state_updates);
+                let state_changes = ProcessedCommitResult::compute_ledger_state_changes(
+                    &substate_database,
+                    &commit.state_updates,
+                );
                 let global_balance_update = ProcessedCommitResult::compute_global_balance_update(
-                    read_store.deref(),
+                    database.deref(), // the unversioned `SubstateNodeAncestryStore` is fine - all entries are immutable
                     &state_changes,
                     &commit.state_update_summary.vault_balance_changes,
                 );
@@ -82,11 +94,6 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
             ),
         };
 
-        let base_ledger_header = read_store
-            .get_last_proof()
-            .expect("proof for preview's base state")
-            .ledger_header;
-
         Ok(ProcessedPreviewResult {
             base_ledger_header,
             receipt,
@@ -95,19 +102,22 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
         })
     }
 
-    fn create_intent(&self, preview_request: PreviewRequest, read_store: &S) -> PreviewIntentV1 {
+    fn create_intent(
+        &self,
+        preview_request: PreviewRequest,
+        at_epoch: Epoch, // used only to resolve implicit epoch range (if not explicitly requested)
+    ) -> PreviewIntentV1 {
         let notary = preview_request.notary_public_key.unwrap_or_else(|| {
             PublicKey::Secp256k1(Secp256k1PrivateKey::from_u64(2).unwrap().public_key())
         });
-        let effective_epoch_range = preview_request.explicit_epoch_range.unwrap_or_else(|| {
-            let current_epoch = read_store.get_epoch();
-            Range {
-                start: current_epoch,
-                end: current_epoch
+        let effective_epoch_range = preview_request
+            .explicit_epoch_range
+            .unwrap_or_else(|| Range {
+                start: at_epoch,
+                end: at_epoch
                     .after(self.validation_config.max_epoch_range)
                     .expect("currently calculated max end epoch is outside of valid range"),
-            }
-        });
+            });
         let (instructions, blobs) = preview_request.manifest.for_intent();
         PreviewIntentV1 {
             intent: IntentV1 {
@@ -130,15 +140,26 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
     }
 }
 
+impl From<PreviewError> for PreviewerError {
+    fn from(value: PreviewError) -> Self {
+        Self::FromEngine(value)
+    }
+}
+
+impl From<StateHistoryError> for PreviewerError {
+    fn from(value: StateHistoryError) -> Self {
+        Self::FromStateHistory(value)
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
+    use crate::engine_prelude::*;
     use crate::{PreviewRequest, StateManager, StateManagerConfig};
     use node_common::locks::LockFactory;
     use node_common::scheduler::Scheduler;
     use prometheus::Registry;
-    use transaction::builder::ManifestBuilder;
-    use transaction::model::{MessageV1, PreviewFlags};
 
     #[test]
     fn test_preview_processed_substate_changes() {
@@ -155,25 +176,29 @@ mod tests {
 
         state_manager
             .state_computer
-            .execute_genesis_for_unit_tests();
+            .execute_genesis_for_unit_tests_with_default_config();
 
         let preview_manifest = ManifestBuilder::new().lock_fee_from_faucet().build();
 
-        let preview_response = state_manager.transaction_previewer.preview(PreviewRequest {
-            manifest: preview_manifest,
-            explicit_epoch_range: None,
-            notary_public_key: None,
-            notary_is_signatory: true,
-            tip_percentage: 0,
-            nonce: 0,
-            signer_public_keys: vec![],
-            flags: PreviewFlags {
-                use_free_credit: true,
-                assume_all_signature_proofs: true,
-                skip_epoch_check: false,
+        let preview_response = state_manager.transaction_previewer.read().preview(
+            PreviewRequest {
+                manifest: preview_manifest,
+                explicit_epoch_range: None,
+                notary_public_key: None,
+                notary_is_signatory: true,
+                tip_percentage: 0,
+                nonce: 0,
+                signer_public_keys: vec![],
+                flags: PreviewFlags {
+                    use_free_credit: true,
+                    assume_all_signature_proofs: true,
+                    skip_epoch_check: false,
+                    disable_auth: false,
+                },
+                message: MessageV1::None,
             },
-            message: MessageV1::None,
-        });
+            None,
+        );
 
         // just checking that we're getting some processed substate changes back in the response
         assert!(!preview_response.unwrap().state_changes.is_empty());

@@ -65,7 +65,7 @@
 package com.radixdlt.api.system.routes;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.system.SystemGetJsonHandler;
+import com.radixdlt.api.system.SystemJsonHandler;
 import com.radixdlt.api.system.SystemModelMapper;
 import com.radixdlt.api.system.generated.models.BFTConfiguration;
 import com.radixdlt.api.system.generated.models.MempoolConfiguration;
@@ -76,9 +76,10 @@ import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.p2p.P2PConfig;
+import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.sync.SyncRelayConfig;
 
-public final class ConfigurationHandler extends SystemGetJsonHandler<SystemConfigurationResponse> {
+public final class ConfigurationHandler extends SystemJsonHandler<SystemConfigurationResponse> {
 
   private final long pacemakerTimeout;
   private final int bftSyncPatienceMillis;
@@ -87,6 +88,7 @@ public final class ConfigurationHandler extends SystemGetJsonHandler<SystemConfi
   private final P2PConfig p2PConfig;
   private final ECDSASecp256k1PublicKey self;
   private final SystemModelMapper systemModelMapper;
+  private final ProtocolConfig protocolConfig;
 
   @Inject
   ConfigurationHandler(
@@ -96,7 +98,8 @@ public final class ConfigurationHandler extends SystemGetJsonHandler<SystemConfi
       @MempoolThrottleMs long mempoolThrottleMs,
       SyncRelayConfig syncRelayConfig,
       P2PConfig p2PConfig,
-      SystemModelMapper systemModelMapper) {
+      SystemModelMapper systemModelMapper,
+      ProtocolConfig protocolConfig) {
     super();
     this.self = self;
     this.pacemakerTimeout = pacemakerTimeout;
@@ -105,6 +108,7 @@ public final class ConfigurationHandler extends SystemGetJsonHandler<SystemConfi
     this.syncRelayConfig = syncRelayConfig;
     this.p2PConfig = p2PConfig;
     this.systemModelMapper = systemModelMapper;
+    this.protocolConfig = protocolConfig;
   }
 
   @Override
@@ -119,6 +123,7 @@ public final class ConfigurationHandler extends SystemGetJsonHandler<SystemConfi
                 .pacemakerTimeout(pacemakerTimeout))
         .mempool(new MempoolConfiguration().maxSize(0).throttle(mempoolThrottleMs))
         .sync(systemModelMapper.syncConfiguration(syncRelayConfig))
-        .networking(systemModelMapper.networkingConfiguration(self, p2PConfig));
+        .networking(systemModelMapper.networkingConfiguration(self, p2PConfig))
+        .protocol(systemModelMapper.protocolConfiguration(protocolConfig));
   }
 }

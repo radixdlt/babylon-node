@@ -65,7 +65,7 @@
 use node_common::metrics::*;
 use prometheus::*;
 
-use crate::{MempoolAddError, MempoolAddSource, RejectionReason};
+use crate::{MempoolAddError, MempoolAddSource, MempoolRejectionReason};
 
 pub struct MempoolMetrics {
     pub current_transactions: IntGauge,
@@ -142,9 +142,9 @@ impl MetricLabel for MempoolAddError {
         match self {
             MempoolAddError::PriorityThresholdNotMet { .. } => "PriorityThresholdNotMet",
             MempoolAddError::Rejected(rejection) => match &rejection.reason {
-                RejectionReason::AlreadyCommitted(_) => "AlreadyCommitted",
-                RejectionReason::FromExecution(_) => "ExecutionError",
-                RejectionReason::ValidationError(_) => "ValidationError",
+                MempoolRejectionReason::AlreadyCommitted(_) => "AlreadyCommitted",
+                MempoolRejectionReason::FromExecution(_) => "ExecutionError",
+                MempoolRejectionReason::ValidationError(_) => "ValidationError",
             },
             MempoolAddError::Duplicate(_) => "Duplicate",
         }

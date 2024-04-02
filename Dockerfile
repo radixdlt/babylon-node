@@ -12,6 +12,7 @@
 # =================================================================================================
 FROM debian:12.1-slim AS java-build-stage
 
+LABEL org.opencontainers.image.source https://github.com/radixdlt/babylon-node
 LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 LABEL org.opencontainers.image.description="Java + Debian 12 (OpenJDK)"
 
@@ -21,16 +22,28 @@ CMD ["/bin/bash"]
 
 ARG WGET_VERSION="1.21.3-1+b2"
 
+# The installed versions are fixed to create an immutable build.
+# Availability of fixed version is subject to change.
+# The latest available version can be found at these links.
+# Update the references versions in case the build fails
+# Source Repositories:
+# - https://packages.debian.org/bookworm/docker.io
+# - https://packages.debian.org/bookworm/libssl-dev
+# - https://packages.debian.org/bookworm/pkg-config
+# - https://packages.debian.org/bookworm/unzip
+# - https://packages.debian.org/bookworm/wget
+# - https://packages.debian.org/bookworm/software-properties-commo
+# - https://packages.debian.org/bookworm/openjdk-17-jdk
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
     docker.io=20.10.24+dfsg1-1+b3 \
-    libssl-dev=3.0.11-1~deb12u1 \
+    libssl-dev=3.0.11-1~deb12u2 \
     pkg-config=1.8.1-1 \
     unzip=6.0-28 \
     wget=${WGET_VERSION} \
     software-properties-common=0.99.30-4 \
   && apt-get install -y --no-install-recommends \
-    openjdk-17-jdk=17.0.8+7-1~deb12u1 \
+    openjdk-17-jdk=17.0.10+7-1~deb12u1 \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
@@ -57,7 +70,7 @@ COPY ./cli-tools /radixdlt/cli-tools
 COPY ./shell /radixdlt/shell
 COPY ./keygen /radixdlt/keygen
 # Need .git for tag versions - but this can probably be removed soon
-COPY ./.git /radixdlt/.git
+COPY ./.git/* /radixdlt/.git/
 
 WORKDIR /radixdlt
 
@@ -81,6 +94,18 @@ COPY --from=java-build-stage /radixdlt/core/build/distributions /
 FROM debian:12.1-slim as library-build-stage-base
 WORKDIR /app
 
+
+# The installed versions are fixed to create an immutable build.
+# Availability of fixed version is subject to change.
+# The latest available version can be found at these links.
+# Update the references versions in case the build fails
+# Source Repositories:
+# - https://packages.debian.org/bookworm/build-essential
+# - https://packages.debian.org/bookworm/curl
+# - https://packages.debian.org/bookworm/libc6-dev-arm64-cross
+# - https://packages.debian.org/bookworm/libclang-dev
+# - https://packages.debian.org/bookworm/libssl-dev
+# - https://packages.debian.org/bookworm/pkg-config
 # Install dependencies needed for building the Rust library
 # - NB: ca-certificates is needed for the rustup installation, and is not a fixed version for security reasons
 # hadolint ignore=DL3008
@@ -89,12 +114,12 @@ RUN apt-get update \
     ca-certificates \
     build-essential=12.9 \
     # https://security-tracker.debian.org/tracker/CVE-2023-38545
-    curl=7.88.1-10+deb12u4 \
+    curl=7.88.1-10+deb12u5 \
     g++-aarch64-linux-gnu \
     g++-x86-64-linux-gnu \
     libc6-dev-arm64-cross=2.36-8cross1 \
     libclang-dev=1:14.0-55.7~deb12u1 \
-    libssl-dev=3.0.11-1~deb12u1 \
+    libssl-dev=3.0.11-1~deb12u2 \
     pkg-config=1.8.1-1 \
   && rm -rf /var/lib/apt/lists/*
 
@@ -103,7 +128,7 @@ RUN apt-get update \
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o rustup.sh \
   && sh rustup.sh -y --target 1.71.1-aarch64-unknown-linux-gnu 1.71.1-x86_64-unknown-linux-gnu
 
-RUN "$HOME/.cargo/bin/cargo" install sccache --version 0.3.3
+RUN "$HOME/.cargo/bin/cargo" install sccache --version 0.7.4
 
 ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
 ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc
@@ -193,6 +218,8 @@ COPY --from=library-build-stage /libcorerust.so /
 # The application container which will actually run the application
 # =================================================================================================
 FROM debian:12.1-slim as app-container
+
+LABEL org.opencontainers.image.source https://github.com/radixdlt/babylon-node
 LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 
 # Install dependencies needed for building the image or running the application
@@ -201,18 +228,29 @@ LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 # - software-properties-common is needed for installing debian packages with dpkg
 # - gettext-base is needed for envsubst in config_radixdlt.sh
 # - curl is needed for the docker-healthcheck
+#
+# The installed versions are fixed to create an immutable build.
+# Availability of fixed version is subject to change.
+# The latest available version can be found at these links.
+# Update the references versions in case the build fails
+# Source Repositories:
+# - https://packages.debian.org/bookworm/openjdk-17-jre-headless
+# - https://packages.debian.org/bookworm/curl
+# - https://packages.debian.org/bookworm/gettext-base
+# - https://packages.debian.org/bookworm/daemontools
+# - https://packages.debian.org/bookworm/libc6
 RUN apt-get update -y \
   && apt-get -y --no-install-recommends install \
-    openjdk-17-jre-headless=17.0.8+7-1~deb12u1 \
+    openjdk-17-jre-headless=17.0.10+7-1~deb12u1 \
     # https://security-tracker.debian.org/tracker/CVE-2023-38545
-    curl=7.88.1-10+deb12u4 \
+    curl=7.88.1-10+deb12u5 \
     gettext-base=0.21-12 \
     daemontools=1:0.76-8.1 \
     # https://security-tracker.debian.org/tracker/CVE-2023-4911
     # Fixes CVE-2023-4911 can be removed when we update the base OS image to include this fix
     # docker run -it debian:12.1-slim ldd --version
     # This fix can be removed as long as the version printed in the above command is 2.36-9+deb12u3 or above
-    libc6=2.36-9+deb12u3 \ 
+    libc6=2.36-9+deb12u4 \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 

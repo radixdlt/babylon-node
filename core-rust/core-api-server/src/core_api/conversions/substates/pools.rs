@@ -1,12 +1,7 @@
 use super::super::*;
 use super::*;
 use crate::core_api::models;
-use radix_engine::blueprints::pool::multi_resource_pool::MultiResourcePoolStateFieldSubstate;
-use radix_engine::blueprints::pool::one_resource_pool::OneResourcePoolStateFieldSubstate;
-use radix_engine::blueprints::pool::two_resource_pool::TwoResourcePoolStateFieldSubstate;
-
-use radix_engine::types::*;
-use radix_engine_queries::typed_substate_layout::*;
+use crate::engine_prelude::*;
 
 pub fn to_api_one_resource_pool_substate(
     context: &MappingContext,
@@ -15,7 +10,7 @@ pub fn to_api_one_resource_pool_substate(
     Ok(field_substate_versioned!(
         substate,
         OneResourcePoolFieldState,
-        one_resource_pool::OneResourcePoolSubstate {
+        OneResourcePoolState {
             vault,
             pool_unit_resource_manager,
         },
@@ -36,7 +31,7 @@ pub fn to_api_two_resource_pool_substate(
     Ok(field_substate_versioned!(
         substate,
         TwoResourcePoolFieldState,
-        two_resource_pool::TwoResourcePoolSubstate {
+        TwoResourcePoolState {
             vaults,
             pool_unit_resource_manager,
         },
@@ -64,7 +59,7 @@ pub fn to_api_multi_resource_pool_substate(
     Ok(field_substate_versioned!(
         substate,
         MultiResourcePoolFieldState,
-        multi_resource_pool::MultiResourcePoolSubstate {
+        MultiResourcePoolState {
             vaults,
             pool_unit_resource_manager,
         },

@@ -66,10 +66,11 @@ package com.radixdlt.rev2;
 
 import com.google.common.base.Preconditions;
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.genesis.GenesisProvider;
 import com.radixdlt.statecomputer.RustStateComputer;
+import com.radixdlt.statecomputer.commit.LedgerProof;
+import com.radixdlt.statecomputer.commit.LedgerProofOrigin;
 import com.radixdlt.sync.TransactionsAndProofReader;
 
 public record REv2LedgerInitializer(
@@ -83,10 +84,8 @@ public record REv2LedgerInitializer(
       checkGenesisDataHashMatches(genesisProvider.genesisDataHash(), existingPostGenesisEpochProof);
       return existingPostGenesisEpochProof;
     } else {
-      // the database is fresh, so execute the genesis:
-      var executedPostGenesisEpochProof =
-          rustStateComputer.executeGenesis(genesisProvider.genesisData().value());
-      return REv2ToConsensus.ledgerProof(executedPostGenesisEpochProof);
+      // The database is fresh, so execute the genesis:
+      return rustStateComputer.executeGenesis(genesisProvider.genesisData().value());
     }
   }
 
@@ -97,16 +96,20 @@ public record REv2LedgerInitializer(
    */
   private void checkGenesisDataHashMatches(
       HashCode configuredGenesisDataHash, LedgerProof postGenesisEpochProof) {
-    // Opaque value of the first epoch proof is the hash of GenesisData
-    final var existingGenesisHash = postGenesisEpochProof.getOpaque();
-    Preconditions.checkState(
-        existingGenesisHash.equals(configuredGenesisDataHash),
-        """
-        Current genesis data (of hash %s) doesn't match the genesis data that has previously been \
-        used to initialize the database (%s). \
-        Make sure your configuration is correct (check `network.id` and/or `network.genesis_data` \
-        and/or `network.genesis_data_file`).""",
-        configuredGenesisDataHash,
-        existingGenesisHash);
+    if (postGenesisEpochProof.origin() instanceof LedgerProofOrigin.Genesis genesisOrigin) {
+      // Opaque value of the genesis proof is the hash of GenesisData
+      final var existingGenesisHash = genesisOrigin.genesisOpaqueHash();
+      Preconditions.checkState(
+          existingGenesisHash.equals(configuredGenesisDataHash),
+          """
+          Current genesis data (of hash %s) doesn't match the genesis data that has previously been \
+          used to initialize the database (%s). \
+          Make sure your configuration is correct (check `network.id` and/or `network.genesis_data` \
+          and/or `network.genesis_data_file`).""",
+          configuredGenesisDataHash,
+          existingGenesisHash);
+    } else {
+      throw new IllegalStateException("Post genesis epoch proof is not of Genesis origin.");
+    }
   }
 }

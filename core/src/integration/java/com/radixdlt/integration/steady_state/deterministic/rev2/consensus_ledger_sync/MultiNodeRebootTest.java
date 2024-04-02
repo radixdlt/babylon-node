@@ -69,7 +69,7 @@ import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitor
 import static org.assertj.core.api.Assertions.*;
 
 import com.google.inject.Module;
-import com.radixdlt.environment.DatabaseFlags;
+import com.radixdlt.environment.DatabaseConfig;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -83,6 +83,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
+import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.modules.MockedVertexStoreModule;
@@ -219,11 +220,12 @@ public final class MultiNodeRebootTest {
                         GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
                                 this.roundsPerEpoch)
                             .totalEmissionXrdPerEpoch(Decimal.ofNonNegative(0))),
-                    new DatabaseFlags(true, false),
+                    new DatabaseConfig(true, false, false),
                     StateComputerConfig.REV2ProposerConfig.transactionGenerator(
                         new REV2TransactionGenerator(), 1),
                     false,
-                    noFees),
+                    noFees,
+                    ProtocolConfig.testingDefault()),
                 // This test can, in some cases, rely on ledger sync
                 // requests timing out in reasonable time,
                 // so setting the request timeout to 100 ms

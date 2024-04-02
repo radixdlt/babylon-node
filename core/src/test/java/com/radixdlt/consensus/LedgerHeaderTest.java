@@ -83,7 +83,7 @@ public class LedgerHeaderTest {
   public void setup() {
     this.timestamp = 12345678L;
     this.ledgerHeader =
-        LedgerHeader.create(0, Round.genesis(), 0, LedgerHashes.zero(), timestamp, timestamp);
+        LedgerHeader.create(0, Round.epochInitial(), 0, LedgerHashes.zero(), timestamp, timestamp);
   }
 
   @Test
@@ -109,18 +109,18 @@ public class LedgerHeaderTest {
   @Test(expected = IllegalArgumentException.class)
   public void deserializationWithWrongEpochThrowsException() {
     new LedgerHeader(
-        -1L, 1L, 1L, LedgerHashes.zero(), 1L, 1L, NextEpoch.create(1, ImmutableSet.of()));
+        -1L, 1L, 1L, LedgerHashes.zero(), 1L, 1L, NextEpoch.create(1, ImmutableSet.of()), null);
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void deserializationWithWrongRoundThrowsException() {
     new LedgerHeader(
-        1L, -1L, 1L, LedgerHashes.zero(), 1L, 1L, NextEpoch.create(1, ImmutableSet.of()));
+        1L, -1L, 1L, LedgerHashes.zero(), 1L, 1L, NextEpoch.create(1, ImmutableSet.of()), null);
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void deserializationWithWrongStateVersionThrowsException() {
     new LedgerHeader(
-        1L, 1L, -1L, LedgerHashes.zero(), 1L, 1L, NextEpoch.create(1, ImmutableSet.of()));
+        1L, 1L, -1L, LedgerHashes.zero(), 1L, 1L, NextEpoch.create(1, ImmutableSet.of()), null);
   }
 }

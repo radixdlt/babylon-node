@@ -82,7 +82,7 @@ public class EpochsNodeSelector implements NodeSelector {
         .map(
             e -> {
               ImmutableList<BFTValidatorId> validators =
-                  e.getBFTConfiguration().getValidatorSet().validators().asList();
+                  e.bftConfiguration().getValidatorSet().validators().asList();
               int validatorSetSize = validators.size();
               return NodeId.fromPublicKey(
                   validators.get(random.nextInt(validatorSetSize)).getKey());

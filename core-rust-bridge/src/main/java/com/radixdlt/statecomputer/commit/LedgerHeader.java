@@ -76,7 +76,8 @@ public record LedgerHeader(
     LedgerHashes hashes,
     long consensusParentRoundTimestampMs,
     long proposerTimestampMs,
-    Option<NextEpoch> nextEpoch) {
+    Option<NextEpoch> nextEpoch,
+    Option<String> nextProtocolVersion) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         LedgerHeader.class, codecs -> StructCodec.fromRecordComponents(LedgerHeader.class, codecs));

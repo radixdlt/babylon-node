@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use radix_engine_common::prelude::*;
+use crate::engine_prelude::*;
 
 pub const DEFAULT_MAX_VERTEX_TRANSACTION_COUNT: u32 = 100;
 pub const DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE: usize = (3.8 * 1024.0 * 1024.0) as usize;

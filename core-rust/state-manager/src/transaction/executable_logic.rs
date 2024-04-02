@@ -1,26 +1,16 @@
-use radix_engine::system::bootstrap::{create_substate_flash_for_genesis, FlashReceipt};
-use radix_engine::transaction::{
-    execute_transaction, CostingParameters, ExecutionConfig, TransactionReceipt,
-};
-use radix_engine::vm::wasm::DefaultWasmEngine;
-use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
-use radix_engine_common::network::NetworkDefinition;
+use crate::engine_prelude::*;
+
 use std::collections::HashMap;
+
 use std::time::{Duration, Instant};
 
-use radix_engine_interface::*;
-use radix_engine_store_interface::interface::SubstateDatabase;
-
 use tracing::warn;
-
-use crate::LoggingConfig;
-use transaction::model::*;
 
 use super::ValidatedLedgerTransaction;
 
 /// A logic of an already-validated transaction, ready to be executed against an arbitrary state of
 /// a substate store.
-pub trait TransactionLogic<S>: Sized {
+pub trait TransactionLogic<S> {
     fn execute_on(self, store: &S) -> TransactionReceipt;
 }
 
@@ -37,6 +27,8 @@ pub enum ConfigType {
     Pending,
     /// A user transaction during preview execution.
     Preview,
+    /// A user transaction during preview execution with auth module disabled.
+    PreviewNoAuth,
 }
 
 const PENDING_UP_TO_FEE_LOAN_RUNTIME_WARN_THRESHOLD: Duration = Duration::from_millis(100);
@@ -49,7 +41,7 @@ impl ConfigType {
         match self {
             ConfigType::Genesis => GENESIS_TRANSACTION_RUNTIME_WARN_THRESHOLD,
             ConfigType::Pending => PENDING_UP_TO_FEE_LOAN_RUNTIME_WARN_THRESHOLD,
-            ConfigType::Preview => PREVIEW_RUNTIME_WARN_THRESHOLD,
+            ConfigType::Preview | ConfigType::PreviewNoAuth => PREVIEW_RUNTIME_WARN_THRESHOLD,
             _ => TRANSACTION_RUNTIME_WARN_THRESHOLD,
         }
     }
@@ -66,10 +58,9 @@ pub struct ExecutionConfigurator {
 impl ExecutionConfigurator {
     pub fn new(
         network: &NetworkDefinition,
-        logging_config: &LoggingConfig,
+        engine_trace: bool,
         costing_parameters: CostingParameters,
     ) -> Self {
-        let trace = logging_config.engine_trace;
         Self {
             scrypto_vm: ScryptoVm::<DefaultWasmEngine>::default(),
             costing_parameters,
@@ -77,30 +68,34 @@ impl ExecutionConfigurator {
                 (
                     ConfigType::Genesis,
                     ExecutionConfig::for_genesis_transaction(network.clone())
-                        .with_kernel_trace(trace),
+                        .with_kernel_trace(engine_trace),
                 ),
                 (
                     ConfigType::OtherSystem,
                     ExecutionConfig {
                         max_number_of_events: 1_000_000,
                         ..ExecutionConfig::for_system_transaction(network.clone())
-                            .with_kernel_trace(trace)
+                            .with_kernel_trace(engine_trace)
                     },
                 ),
                 (
                     ConfigType::Regular,
                     ExecutionConfig::for_notarized_transaction(network.clone())
-                        .with_kernel_trace(trace),
+                        .with_kernel_trace(engine_trace),
                 ),
                 (
                     ConfigType::Pending,
                     ExecutionConfig::for_notarized_transaction(network.clone())
                         .up_to_loan_repayment(true)
-                        .with_kernel_trace(trace),
+                        .with_kernel_trace(engine_trace),
                 ),
                 (
                     ConfigType::Preview,
                     ExecutionConfig::for_preview(network.clone()),
+                ),
+                (
+                    ConfigType::PreviewNoAuth,
+                    ExecutionConfig::for_preview_no_auth(network.clone()),
                 ),
             ]),
         }
@@ -112,11 +107,10 @@ impl ExecutionConfigurator {
         transaction: &'a ValidatedLedgerTransaction,
         description: impl ToString,
     ) -> ConfiguredExecutable<'a> {
-        if transaction.as_genesis_flash().is_some() {
-            return ConfiguredExecutable::Flash {
-                flash_receipt: create_substate_flash_for_genesis(),
-            };
+        if let Some(executable) = transaction.as_flash() {
+            return executable;
         }
+
         self.wrap_transaction(
             transaction.get_executable(),
             transaction.config_type(),
@@ -142,9 +136,14 @@ impl ExecutionConfigurator {
         &'a self,
         validated_preview_intent: &'a ValidatedPreviewIntent,
     ) -> ConfiguredExecutable<'a> {
+        let config_type = if validated_preview_intent.flags.disable_auth {
+            ConfigType::PreviewNoAuth
+        } else {
+            ConfigType::Preview
+        };
         self.wrap_transaction(
             validated_preview_intent.get_executable(),
-            ConfigType::Preview,
+            config_type,
             "preview".to_string(),
         )
     }
@@ -168,8 +167,11 @@ impl ExecutionConfigurator {
 
 /// An `Executable` transaction bound to a specific execution configuration.
 pub enum ConfiguredExecutable<'a> {
-    Flash {
+    GenesisFlash {
         flash_receipt: FlashReceipt,
+    },
+    SystemFlash {
+        state_updates: StateUpdates,
     },
     Transaction {
         executable: Executable<'a>,
@@ -184,7 +186,39 @@ pub enum ConfiguredExecutable<'a> {
 impl<'a, S: SubstateDatabase> TransactionLogic<S> for ConfiguredExecutable<'a> {
     fn execute_on(self, store: &S) -> TransactionReceipt {
         match self {
-            ConfiguredExecutable::Flash { flash_receipt } => flash_receipt.into(),
+            ConfiguredExecutable::GenesisFlash { flash_receipt } => flash_receipt.into(),
+            ConfiguredExecutable::SystemFlash { state_updates } => {
+                let mut substate_schema_mapper =
+                    SubstateSchemaMapper::new(SystemDatabaseReader::new(store));
+                substate_schema_mapper.add_for_all_individually_updated(&state_updates);
+                let substate_system_structures = substate_schema_mapper.done();
+
+                // Sanity check that all updates are to existing nodes so that
+                // we can assure there are no new entities in the receipt
+                let reader = SystemDatabaseReader::new(store);
+                for (node_id, ..) in &state_updates.by_node {
+                    reader
+                        .get_object_info(*node_id)
+                        .expect("Substate flash is currently only supported for existing nodes.");
+                }
+
+                let commit_result = CommitResult {
+                    state_updates,
+                    state_update_summary: Default::default(),
+                    fee_source: Default::default(),
+                    fee_destination: Default::default(),
+                    outcome: TransactionOutcome::Success(vec![]),
+                    application_events: vec![],
+                    application_logs: vec![],
+                    system_structure: SystemStructure {
+                        substate_system_structures,
+                        event_system_structures: index_map_new(),
+                    },
+                    execution_trace: None,
+                };
+
+                TransactionReceipt::empty_with_commit(commit_result)
+            }
             ConfiguredExecutable::Transaction {
                 executable,
                 scrypto_interpreter,

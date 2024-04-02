@@ -62,9 +62,8 @@
  * permissions under this License.
  */
 
+use crate::engine_prelude::*;
 use node_common::config::limits::VertexLimitsConfig;
-use radix_engine::transaction::TransactionFeeSummary;
-use radix_engine::types::*;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum VertexLimitsExceeded {
@@ -161,7 +160,7 @@ impl VertexLimitsTracker {
     ) -> Result<VertexLimitsAdvanceSuccess, VertexLimitsExceeded> {
         self.check_post_execution(fee_summary)?;
 
-        // We do not count finalization cost because it is "payed" at commit time.
+        // We do not count finalization cost because it is "paid" at commit time.
         self.remaining_execution_cost_units -= fee_summary.total_execution_cost_units_consumed;
 
         Ok(self.check_filled())

@@ -2,30 +2,16 @@
 
 use super::addressing::*;
 use crate::core_api::*;
-use radix_engine::blueprints::models::KeyValueKeyPayload;
-use radix_engine::types::*;
-
-use radix_engine::system::system_modules::costing::*;
-use radix_engine::transaction::{
-    CostingParameters, EventSystemStructure, FeeDestination, FeeSource,
-    IndexPartitionEntryStructure, KeyValuePartitionEntryStructure, KeyValueStoreEntryStructure,
-    ObjectInstanceTypeReference, ObjectSubstateTypeReference, PackageTypeReference,
-    SortedIndexPartitionEntryStructure, StateUpdateSummary, SubstateSystemStructure,
-    SystemFieldKind, SystemFieldStructure, TransactionFeeSummary,
-};
-use radix_engine_queries::typed_substate_layout::*;
-use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
-use state_manager::store::StateManagerDatabase;
-use transaction::prelude::TransactionCostingParameters;
+use crate::engine_prelude::*;
 
 use state_manager::{
     ApplicationEvent, BySubstate, DetailedTransactionOutcome, LedgerStateChanges,
-    LocalTransactionReceipt, PartitionChangeAction, PartitionReference, SubstateChangeAction,
-    SubstateReference,
+    LocalTransactionReceipt, PartitionChangeAction, PartitionReference, ReadableRocks,
+    StateManagerDatabase, SubstateChangeAction, SubstateReference,
 };
 
 pub fn to_api_receipt(
-    database: Option<&StateManagerDatabase>,
+    database: Option<&StateManagerDatabase<impl ReadableRocks>>,
     context: &MappingContext,
     receipt: LocalTransactionReceipt,
 ) -> Result<models::TransactionReceipt, MappingError> {
@@ -167,6 +153,7 @@ pub fn to_api_substate_system_structure(
             models::SubstateSystemStructure::SystemFieldStructure {
                 field_kind: match field_kind {
                     SystemFieldKind::TypeInfo => models::SystemFieldKind::TypeInfo,
+                    SystemFieldKind::BootLoader => models::SystemFieldKind::BootLoader,
                 },
             }
         }
@@ -284,7 +271,7 @@ pub fn to_api_next_epoch(
     let EpochChangeEvent {
         epoch,
         validator_set,
-        .. // TODO: expose `significant_protocol_update_readiness` when it becomes more important
+        significant_protocol_update_readiness,
     } = epoch_change_event;
     let next_epoch = models::NextEpoch {
         epoch: to_api_epoch(context, epoch)?,
@@ -293,13 +280,24 @@ pub fn to_api_next_epoch(
             .into_iter()
             .map(|(address, validator)| to_api_active_validator(context, &address, &validator))
             .collect::<Result<_, _>>()?,
+        significant_protocol_update_readiness: Some(
+            significant_protocol_update_readiness
+                .into_iter()
+                .map(|(readiness_signal_name, signalled_stake)| {
+                    models::SignificantProtocolUpdateReadinessEntry {
+                        readiness_signal_name,
+                        signalled_stake: signalled_stake.to_string(),
+                    }
+                })
+                .collect(),
+        ),
     };
     Ok(next_epoch)
 }
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_state_updates(
-    database: Option<&StateManagerDatabase>,
+    database: Option<&StateManagerDatabase<impl ReadableRocks>>,
     context: &MappingContext,
     system_structures: &BySubstate<SubstateSystemStructure>,
     state_changes: &LedgerStateChanges,
@@ -456,7 +454,7 @@ pub struct StateMappingLookups {
 
 impl StateMappingLookups {
     pub fn create_from_database(
-        database: Option<&StateManagerDatabase>,
+        database: Option<&StateManagerDatabase<impl ReadableRocks>>,
         changes_to_map: &[(SubstateReference, TypedSubstateKey, &SubstateChangeAction)],
     ) -> Result<Self, MappingError> {
         let Some(database) = database else {
@@ -504,7 +502,7 @@ impl StateMappingLookups {
     }
 
     fn create_blueprint_type_lookups(
-        database: &StateManagerDatabase,
+        database: &StateManagerDatabase<impl ReadableRocks>,
         typed_values: &[TypedSubstateValue],
     ) -> Result<IndexMap<BlueprintId, IndexMap<String, ScopedTypeId>>, MappingError> {
         // Step 1 - work out what database reads we need to do
@@ -563,7 +561,7 @@ impl StateMappingLookups {
                     BlueprintVersionKey::new_default(blueprint_name.clone())
                 )).unwrap()),
             ).ok_or_else(|| MappingError::CouldNotResolveRemoteGenericSubstitution {
-                message: "Could not find blueprint definition referenced in Remote Generic Substition, but this was checked by the engine".to_string(),
+                message: "Could not find blueprint definition referenced in Remote Generic Substitution, but this was checked by the engine".to_string(),
             })?
             .into_value()
             .ok_or_else(|| MappingError::CouldNotResolveRemoteGenericSubstitution {
@@ -703,8 +701,9 @@ pub fn to_api_costing_parameters(
         finalization_cost_unit_limit: to_api_u32_as_i64(
             engine_costing_parameters.finalization_cost_unit_limit,
         ),
-        xrd_usd_price: to_api_decimal(&engine_costing_parameters.finalization_cost_unit_price),
-        xrd_storage_price: to_api_decimal(&engine_costing_parameters.finalization_cost_unit_price),
+        xrd_usd_price: to_api_decimal(&engine_costing_parameters.usd_price),
+        xrd_storage_price: to_api_decimal(&engine_costing_parameters.state_storage_price),
+        xrd_archive_storage_price: to_api_decimal(&engine_costing_parameters.archive_storage_price),
         tip_percentage: to_api_u16_as_i32(transaction_costing_parameters.tip_percentage),
     })
 }

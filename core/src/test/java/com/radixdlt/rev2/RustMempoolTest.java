@@ -74,8 +74,10 @@ import com.radixdlt.genesis.RawGenesisDataWithHash;
 import com.radixdlt.lang.Option;
 import com.radixdlt.mempool.*;
 import com.radixdlt.monitoring.MetricsInitializer;
+import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.statecomputer.RustStateComputer;
+import com.radixdlt.transaction.LedgerSyncLimitsConfig;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -88,6 +90,9 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public final class RustMempoolTest {
+
+  private static final DatabaseConfig TEST_DATABASE_CONFIG =
+      new DatabaseConfig(false, false, false);
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
@@ -109,7 +114,9 @@ public final class RustMempoolTest {
             new Blake2b256Hasher(DefaultSerialization.getInstance()),
             new RustStateComputer(metrics, nodeRustEnvironment),
             new REv2TransactionsAndProofReader(
-                new REv2TransactionAndProofStore(metrics, nodeRustEnvironment)))
+                new REv2TransactionAndProofStore(metrics, nodeRustEnvironment),
+                LedgerSyncLimitsConfig.defaults(),
+                metrics))
         .initialize(genesisProvider);
   }
 
@@ -124,9 +131,12 @@ public final class RustMempoolTest {
                 new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount)),
             Option.none(),
             new DatabaseBackendConfig(folder.newFolder().getPath()),
-            new DatabaseFlags(false, false),
+            TEST_DATABASE_CONFIG,
             LoggingConfig.getDefault(),
-            StateHashTreeGcConfig.forTesting(),
+            StateTreeGcConfig.forTesting(),
+            LedgerProofsGcConfig.forTesting(),
+            LedgerSyncLimitsConfig.defaults(),
+            ProtocolConfig.testingDefault(),
             false);
     final var metrics = new MetricsInitializer().initialize();
 
@@ -179,9 +189,12 @@ public final class RustMempoolTest {
                 new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount)),
             Option.none(),
             new DatabaseBackendConfig(folder.newFolder().getPath()),
-            new DatabaseFlags(false, false),
+            TEST_DATABASE_CONFIG,
             LoggingConfig.getDefault(),
-            StateHashTreeGcConfig.forTesting(),
+            StateTreeGcConfig.forTesting(),
+            LedgerProofsGcConfig.forTesting(),
+            LedgerSyncLimitsConfig.defaults(),
+            ProtocolConfig.testingDefault(),
             false);
     final var metrics = new MetricsInitializer().initialize();
 
@@ -317,9 +330,12 @@ public final class RustMempoolTest {
                 new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount)),
             Option.none(),
             new DatabaseBackendConfig(folder.newFolder().getPath()),
-            new DatabaseFlags(false, false),
+            TEST_DATABASE_CONFIG,
             LoggingConfig.getDefault(),
-            StateHashTreeGcConfig.forTesting(),
+            StateTreeGcConfig.forTesting(),
+            LedgerProofsGcConfig.forTesting(),
+            LedgerSyncLimitsConfig.defaults(),
+            ProtocolConfig.testingDefault(),
             false);
     final var metrics = new MetricsInitializer().initialize();
 

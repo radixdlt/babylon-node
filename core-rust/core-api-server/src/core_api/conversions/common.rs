@@ -1,7 +1,5 @@
-use radix_engine::types::*;
-
-use sbor::representations::*;
-use state_manager::LedgerHeader;
+use crate::engine_prelude::*;
+use state_manager::{LedgerHeader, StateVersion};
 
 use crate::core_api::handlers::to_api_epoch_round;
 use crate::core_api::*;
@@ -165,5 +163,17 @@ pub fn to_api_ledger_header_summary(
         proposer_timestamp: Box::new(to_api_instant_from_safe_timestamp(
             header.proposer_timestamp_ms,
         )?),
+    })
+}
+
+// Note: currently our only way of specifying this is using StateVersion, but we may have to return
+// an enum at some point.
+pub fn extract_ledger_state_selector(
+    selector: &models::LedgerStateSelector,
+) -> Result<StateVersion, ExtractionError> {
+    Ok(match selector {
+        models::LedgerStateSelector::VersionLedgerStateSelector { state_version } => {
+            extract_api_state_version(*state_version)?
+        }
     })
 }

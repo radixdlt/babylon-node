@@ -73,13 +73,16 @@ import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.ProposerElections;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
-import com.radixdlt.environment.DatabaseFlags;
-import com.radixdlt.environment.StateHashTreeGcConfig;
+import com.radixdlt.environment.DatabaseConfig;
+import com.radixdlt.environment.LedgerProofsGcConfig;
+import com.radixdlt.environment.StateTreeGcConfig;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.mempool.MempoolReceiverConfig;
 import com.radixdlt.mempool.MempoolRelayerConfig;
 import com.radixdlt.mempool.RustMempoolConfig;
+import com.radixdlt.protocol.ProtocolConfig;
+import com.radixdlt.transaction.LedgerSyncLimitsConfig;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -139,44 +142,82 @@ public sealed interface StateComputerConfig {
   static StateComputerConfig rev2(
       int networkId,
       GenesisData genesis,
-      DatabaseFlags databaseFlags,
+      DatabaseConfig databaseConfig,
       REV2ProposerConfig proposerConfig,
       boolean debugLogging,
-      boolean noFees) {
+      boolean noFees,
+      ProtocolConfig protocolConfig) {
+    return rev2(
+        networkId,
+        genesis,
+        databaseConfig,
+        proposerConfig,
+        debugLogging,
+        noFees,
+        protocolConfig,
+        StateTreeGcConfig.forTesting());
+  }
+
+  static StateComputerConfig rev2(
+      int networkId,
+      GenesisData genesis,
+      DatabaseConfig databaseConfig,
+      REV2ProposerConfig proposerConfig,
+      boolean debugLogging,
+      boolean noFees,
+      ProtocolConfig protocolConfig,
+      StateTreeGcConfig stateTreeGcConfig) {
     return new REv2StateComputerConfig(
         networkId,
         genesis,
-        databaseFlags,
+        databaseConfig,
         proposerConfig,
         debugLogging,
-        StateHashTreeGcConfig.forTesting(),
+        stateTreeGcConfig,
+        LedgerProofsGcConfig.forTesting(),
+        LedgerSyncLimitsConfig.defaults(),
+        protocolConfig,
         noFees);
   }
 
   static StateComputerConfig rev2(
       int networkId,
       GenesisData genesis,
-      DatabaseFlags databaseFlags,
+      DatabaseConfig databaseConfig,
       REV2ProposerConfig proposerConfig) {
     return new REv2StateComputerConfig(
         networkId,
         genesis,
-        databaseFlags,
+        databaseConfig,
         proposerConfig,
         false,
-        StateHashTreeGcConfig.forTesting(),
+        StateTreeGcConfig.forTesting(),
+        LedgerProofsGcConfig.forTesting(),
+        LedgerSyncLimitsConfig.defaults(),
+        ProtocolConfig.testingDefault(),
         false);
   }
 
   static StateComputerConfig rev2(
       int networkId, GenesisData genesis, REV2ProposerConfig proposerConfig) {
+    return rev2(networkId, genesis, proposerConfig, ProtocolConfig.testingDefault());
+  }
+
+  static StateComputerConfig rev2(
+      int networkId,
+      GenesisData genesis,
+      REV2ProposerConfig proposerConfig,
+      ProtocolConfig protocolConfig) {
     return new REv2StateComputerConfig(
         networkId,
         genesis,
-        new DatabaseFlags(true, false),
+        new DatabaseConfig(true, false, false),
         proposerConfig,
         false,
-        StateHashTreeGcConfig.forTesting(),
+        StateTreeGcConfig.forTesting(),
+        LedgerProofsGcConfig.forTesting(),
+        LedgerSyncLimitsConfig.defaults(),
+        protocolConfig,
         false);
   }
 
@@ -242,10 +283,13 @@ public sealed interface StateComputerConfig {
   record REv2StateComputerConfig(
       int networkId,
       GenesisData genesis,
-      DatabaseFlags databaseFlags,
+      DatabaseConfig databaseConfig,
       REV2ProposerConfig proposerConfig,
       boolean debugLogging,
-      StateHashTreeGcConfig stateHashTreeGcConfig,
+      StateTreeGcConfig stateTreeGcConfig,
+      LedgerProofsGcConfig ledgerProofsGcConfig,
+      LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
+      ProtocolConfig protocolConfig,
       boolean noFees)
       implements StateComputerConfig {}
 

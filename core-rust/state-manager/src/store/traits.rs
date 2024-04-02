@@ -65,39 +65,37 @@
 use std::cmp::Ordering;
 use std::iter::Peekable;
 
-use crate::staging::StateHashTreeDiff;
-use crate::store::StateManagerDatabase;
+use crate::engine_prelude::*;
+use crate::staging::StateTreeDiff;
+
 use crate::transaction::*;
 use crate::{CommittedTransactionIdentifiers, LedgerProof, LocalTransactionReceipt, StateVersion};
 pub use commit::*;
-use enum_dispatch::enum_dispatch;
 pub use proofs::*;
-use radix_engine_common::{Categorize, Decode, Encode};
 pub use substate::*;
 pub use transactions::*;
 pub use vertex::*;
 
-use radix_engine::types::{ScryptoCategorize, ScryptoDecode, ScryptoEncode};
-use sbor::define_single_versioned;
-
+#[derive(Debug, Clone)]
 pub enum DatabaseConfigValidationError {
     AccountChangeIndexRequiresLocalTransactionExecutionIndex,
     LocalTransactionExecutionIndexChanged,
 }
 
-/// Database flags required for initialization built from
-/// config file and environment variables.
+/// Database flags required for initialization built from config file and environment variables.
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
-pub struct DatabaseFlags {
+pub struct DatabaseConfig {
     pub enable_local_transaction_execution_index: bool,
     pub enable_account_change_index: bool,
+    pub enable_historical_substate_values: bool,
 }
 
-impl Default for DatabaseFlags {
+impl Default for DatabaseConfig {
     fn default() -> Self {
-        DatabaseFlags {
+        DatabaseConfig {
             enable_local_transaction_execution_index: true,
             enable_account_change_index: true,
+            enable_historical_substate_values: false,
         }
     }
 }
@@ -107,15 +105,15 @@ impl Default for DatabaseFlags {
 /// just being initialized (when all of the fields are None) but also
 /// when new configurations are added - this is a cheap work around to
 /// limit future needed ledger wipes until we have a better solution.
-pub struct DatabaseFlagsState {
+pub struct DatabaseConfigState {
     pub local_transaction_execution_index_enabled: Option<bool>,
     pub account_change_index_enabled: Option<bool>,
 }
 
-impl DatabaseFlags {
+impl DatabaseConfig {
     pub fn validate(
         &self,
-        current_database_config: &DatabaseFlagsState,
+        current_database_config: &DatabaseConfigState,
     ) -> Result<(), DatabaseConfigValidationError> {
         if !self.enable_local_transaction_execution_index && self.enable_account_change_index {
             return Err(DatabaseConfigValidationError::AccountChangeIndexRequiresLocalTransactionExecutionIndex);
@@ -133,15 +131,17 @@ impl DatabaseFlags {
     }
 }
 
-#[enum_dispatch]
 pub trait ConfigurableDatabase {
-    fn read_flags_state(&self) -> DatabaseFlagsState;
-
-    fn write_flags(&self, flags: &DatabaseFlags);
-
     fn is_account_change_index_enabled(&self) -> bool;
 
     fn is_local_transaction_execution_index_enabled(&self) -> bool;
+
+    /// Returns the first [`StateVersion`]s for which *historical* Substate values are currently
+    /// available in the database.
+    ///
+    /// Returns [`None`] if the state history feature is disabled, or if the history length
+    /// configuration is 0.
+    fn get_first_stored_historical_state_version(&self) -> Option<StateVersion>;
 }
 
 #[derive(Debug, Clone)]
@@ -152,15 +152,45 @@ pub struct CommittedTransactionBundle {
     pub identifiers: CommittedTransactionIdentifiers,
 }
 
+#[derive(Debug, Clone)]
+pub struct LeafSubstateKeyAssociation {
+    pub tree_node_key: StoredTreeNodeKey,
+    pub substate_key: DbSubstateKey,
+    pub cause: AssociationCause,
+}
+
+/// The reason of a particular [`LeafSubstateKeyAssociation`].
+#[derive(Debug, Clone)]
+pub enum AssociationCause {
+    /// A dominant, simple case: a Substate was created or updated. This naturally leads its leaf
+    /// node to be created within the state tree.
+    ///
+    /// The Substate's new value can be found in the [`DatabaseUpdates`].
+    SubstateUpsert,
+    /// The JMT-specific case: a leaf node had to be re-created at different key, because its nibble
+    /// path length has changed, because some other related tree nodes (on this path) were created
+    /// or deleted - see [`AssociatedSubstateValue`]'s docs for more details.
+    ///
+    /// The Substate's value was not changed and can be found in the [`SubstateDatabase`].
+    TreeRestructuring,
+}
+
+impl From<AssociatedSubstateValue<'_>> for AssociationCause {
+    fn from(value: AssociatedSubstateValue) -> Self {
+        match value {
+            AssociatedSubstateValue::Upserted(_) => AssociationCause::SubstateUpsert,
+            AssociatedSubstateValue::Unchanged => AssociationCause::TreeRestructuring,
+        }
+    }
+}
+
 pub mod vertex {
     use super::*;
 
-    #[enum_dispatch]
     pub trait RecoverableVertexStore {
         fn get_vertex_store(&self) -> Option<VertexStoreBlob>;
     }
 
-    #[enum_dispatch]
     pub trait WriteableVertexStore {
         fn save_vertex_store(&self, blob: VertexStoreBlob);
     }
@@ -176,20 +206,15 @@ pub mod vertex {
 
 pub mod substate {
     use super::*;
-    use radix_engine_common::types::NodeId;
     use std::slice;
 
     use crate::SubstateReference;
-    pub use radix_engine_store_interface::interface::{
-        CommittableSubstateDatabase, SubstateDatabase,
-    };
 
     /// A low-level storage of [`SubstateNodeAncestryRecord`].
     /// API note: this trait defines a simple "get by ID" method, and also a performance-driven
     /// batch method. Both provide default implementations (which mutually reduce one problem to the
     /// other). The implementer must choose to implement at least one of the methods, based on its
     /// nature (though implementing both rarely makes sense).
-    #[enum_dispatch]
     pub trait SubstateNodeAncestryStore {
         /// Returns the [`SubstateNodeAncestryRecord`] for the given [`NodeId`], or [`None`] if:
         /// - the `node_id` happens to be a root Node (since they do not have "ancestry");
@@ -237,6 +262,16 @@ pub mod substate {
     /// A [`SubstateNodeAncestryRecord`] accompanied by a set of sibling [`NodeId`]s (which of
     /// course share the same parent).
     pub type KeyedSubstateNodeAncestryRecord = (Vec<NodeId>, SubstateNodeAncestryRecord);
+
+    /// A store of historical substate values associated with state hash tree's leaves.
+    /// See [`WriteableTreeStore::associate_substate_value()`].
+    ///
+    /// Note: this is *not* a "historical values" store, but only its lower-level source of values.
+    pub trait LeafSubstateValueStore {
+        /// Returns a value associated with the given leaf, or [`None`] if the leaf does not exist
+        /// or the historical state feature was not enabled during creation of the leaf.
+        fn get_associated_value(&self, global_key: &StoredTreeNodeKey) -> Option<DbSubstateValue>;
+    }
 }
 
 pub mod transactions {
@@ -248,7 +283,6 @@ pub mod transactions {
         LocalTransactionExecution, LocalTransactionReceipt,
     };
 
-    #[enum_dispatch]
     pub trait IterableTransactionStore {
         fn get_committed_transaction_bundle_iter(
             &self,
@@ -256,7 +290,6 @@ pub mod transactions {
         ) -> Box<dyn Iterator<Item = CommittedTransactionBundle> + '_>;
     }
 
-    #[enum_dispatch]
     pub trait QueryableTransactionStore {
         fn get_committed_transaction(
             &self,
@@ -295,32 +328,68 @@ pub mod transactions {
 }
 
 pub mod proofs {
-    use radix_engine_common::types::Epoch;
 
     use super::*;
 
-    #[enum_dispatch]
     pub trait IterableProofStore {
         fn get_proof_iter(
             &self,
             from_state_version: StateVersion,
         ) -> Box<dyn Iterator<Item = LedgerProof> + '_>;
+
+        fn get_next_epoch_proof_iter(
+            &self,
+            from_epoch: Epoch,
+        ) -> Box<dyn Iterator<Item = LedgerProof> + '_>;
+
+        fn get_protocol_update_init_proof_iter(
+            &self,
+            from_state_version: StateVersion,
+        ) -> Box<dyn Iterator<Item = LedgerProof> + '_>;
+
+        fn get_protocol_update_execution_proof_iter(
+            &self,
+            from_state_version: StateVersion,
+        ) -> Box<dyn Iterator<Item = LedgerProof> + '_>;
     }
 
-    #[enum_dispatch]
     pub trait QueryableProofStore {
         fn max_state_version(&self) -> StateVersion;
-        fn get_txns_and_proof(
+        fn max_completed_epoch(&self) -> Option<Epoch> {
+            self.get_latest_epoch_proof()
+                .map(|proof| proof.ledger_header.epoch)
+        }
+        fn get_syncable_txns_and_proof(
             &self,
             start_state_version_inclusive: StateVersion,
             max_number_of_txns_if_more_than_one_proof: u32,
             max_payload_size_in_bytes: u32,
-        ) -> Option<(Vec<RawLedgerTransaction>, LedgerProof)>;
+        ) -> Result<TxnsAndProof, GetSyncableTxnsAndProofError>;
         fn get_first_proof(&self) -> Option<LedgerProof>;
         fn get_post_genesis_epoch_proof(&self) -> Option<LedgerProof>;
         fn get_epoch_proof(&self, epoch: Epoch) -> Option<LedgerProof>;
-        fn get_last_proof(&self) -> Option<LedgerProof>;
-        fn get_last_epoch_proof(&self) -> Option<LedgerProof>;
+        fn get_latest_proof(&self) -> Option<LedgerProof>;
+        fn get_latest_epoch_proof(&self) -> Option<LedgerProof>;
+        fn get_closest_epoch_proof_on_or_before(
+            &self,
+            state_version: StateVersion,
+        ) -> Option<LedgerProof>;
+        fn get_latest_protocol_update_init_proof(&self) -> Option<LedgerProof>;
+        fn get_latest_protocol_update_execution_proof(&self) -> Option<LedgerProof>;
+    }
+
+    #[derive(Clone, Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub struct TxnsAndProof {
+        pub txns: Vec<RawLedgerTransaction>,
+        pub proof: LedgerProof,
+    }
+
+    #[derive(Clone, Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub enum GetSyncableTxnsAndProofError {
+        RefusedToServeGenesis { refused_proof: Box<LedgerProof> },
+        RefusedToServeProtocolUpdate { refused_proof: Box<LedgerProof> },
+        NothingToServeAtTheGivenStateVersion,
+        FailedToPrepareAResponseWithinLimits,
     }
 }
 
@@ -329,20 +398,16 @@ pub mod commit {
     use crate::accumulator_tree::storage::TreeSlice;
     use crate::{ReceiptTreeHash, StateVersion, TransactionTreeHash};
 
-    use radix_engine_store_interface::interface::{
-        DatabaseUpdate, DatabaseUpdates, NodeDatabaseUpdates, PartitionDatabaseUpdates,
-    };
-    use radix_engine_stores::hash_tree::tree_store::{NodeKey, StaleTreePart, TreeNode};
-
     pub struct CommitBundle {
         pub transactions: Vec<CommittedTransactionBundle>,
         pub proof: LedgerProof,
         pub substate_store_update: SubstateStoreUpdate,
         pub vertex_store: Option<VertexStoreBlob>,
-        pub state_tree_update: HashTreeUpdate,
+        pub state_tree_update: StateTreeUpdate,
         pub transaction_tree_slice: TransactionAccuTreeSlice,
         pub receipt_tree_slice: ReceiptAccuTreeSlice,
         pub new_substate_node_ancestry_records: Vec<KeyedSubstateNodeAncestryRecord>,
+        pub new_leaf_substate_keys: Vec<LeafSubstateKeyAssociation>,
     }
 
     pub struct SubstateStoreUpdate {
@@ -373,6 +438,31 @@ pub mod commit {
                     node_updates,
                 );
             }
+        }
+
+        pub fn get_upserted_value(&self, key: &DbSubstateKey) -> Option<&DbSubstateValue> {
+            let (
+                DbPartitionKey {
+                    node_key,
+                    partition_num,
+                },
+                sort_key,
+            ) = key;
+            self.updates
+                .node_updates
+                .get(node_key)
+                .and_then(|node_update| node_update.partition_updates.get(partition_num))
+                .and_then(|partition_update| match partition_update {
+                    PartitionDatabaseUpdates::Delta { substate_updates } => substate_updates
+                        .get(sort_key)
+                        .and_then(|update| match update {
+                            DatabaseUpdate::Set(value) => Some(value),
+                            DatabaseUpdate::Delete => None,
+                        }),
+                    PartitionDatabaseUpdates::Reset {
+                        new_substate_values,
+                    } => new_substate_values.get(sort_key),
+                })
         }
 
         fn merge_in_node_updates(target: &mut NodeDatabaseUpdates, source: NodeDatabaseUpdates) {
@@ -436,12 +526,12 @@ pub mod commit {
     #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
     pub struct StaleTreePartsV1(pub Vec<StaleTreePart>);
 
-    pub struct HashTreeUpdate {
-        pub new_nodes: Vec<(NodeKey, TreeNode)>,
+    pub struct StateTreeUpdate {
+        pub new_nodes: Vec<(StoredTreeNodeKey, TreeNode)>,
         pub stale_tree_parts_at_state_version: Vec<(StateVersion, StaleTreeParts)>,
     }
 
-    impl HashTreeUpdate {
+    impl StateTreeUpdate {
         pub fn new() -> Self {
             Self {
                 new_nodes: Vec::new(),
@@ -449,7 +539,7 @@ pub mod commit {
             }
         }
 
-        pub fn from_single(at_state_version: StateVersion, diff: StateHashTreeDiff) -> Self {
+        pub fn from_single(at_state_version: StateVersion, diff: StateTreeDiff) -> Self {
             Self {
                 new_nodes: diff.new_nodes,
                 stale_tree_parts_at_state_version: vec![(
@@ -459,14 +549,14 @@ pub mod commit {
             }
         }
 
-        pub fn add(&mut self, at_state_version: StateVersion, diff: StateHashTreeDiff) {
+        pub fn add(&mut self, at_state_version: StateVersion, diff: StateTreeDiff) {
             self.new_nodes.extend(diff.new_nodes);
             self.stale_tree_parts_at_state_version
                 .push((at_state_version, StaleTreePartsV1(diff.stale_tree_parts)));
         }
     }
 
-    impl Default for HashTreeUpdate {
+    impl Default for StateTreeUpdate {
         fn default() -> Self {
             Self::new()
         }
@@ -488,7 +578,6 @@ pub mod commit {
     #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
     pub struct ReceiptAccuTreeSliceV1(pub TreeSlice<ReceiptTreeHash>);
 
-    #[enum_dispatch]
     pub trait CommitStore {
         fn commit(&self, commit_bundle: CommitBundle);
     }
@@ -496,8 +585,6 @@ pub mod commit {
 
 pub mod scenario {
     use super::*;
-
-    use transaction::model::IntentHash;
 
     pub type ScenarioSequenceNumber = u32;
 
@@ -529,7 +616,6 @@ pub mod scenario {
     /// A store of testing-specific [`ExecutedGenesisScenario`], meant to be as separated as
     /// possible from the production stores (e.g. the writes happening outside of the regular commit
     /// batch write).
-    #[enum_dispatch]
     pub trait ExecutedGenesisScenarioStore {
         /// Writes the given Scenario under a caller-managed sequence number (which means: it allows
         /// overwriting, writing out-of-order, leaving gaps, etc.).
@@ -544,16 +630,17 @@ pub mod scenario {
 
 pub mod extensions {
     use super::*;
-    use radix_engine::types::GlobalAddress;
 
-    #[enum_dispatch]
     pub trait AccountChangeIndexExtension {
         fn account_change_index_last_processed_state_version(&self) -> StateVersion;
 
         fn catchup_account_change_index(&self);
     }
 
-    #[enum_dispatch]
+    pub trait RestoreDecember2023LostSubstates {
+        fn restore_december_2023_lost_substates(&self, network: &NetworkDefinition);
+    }
+
     pub trait IterableAccountChangeIndex {
         fn get_state_versions_for_account_iter(
             &self,
@@ -561,18 +648,37 @@ pub mod extensions {
             from_state_version: StateVersion,
         ) -> Box<dyn Iterator<Item = StateVersion> + '_>;
     }
+
+    define_single_versioned! {
+        #[derive(Debug, Clone, Sbor)]
+        pub enum VersionedStateTreeAssociatedValuesStatus => StateTreeAssociatedValuesStatus = StateTreeAssociatedValuesStatusV1
+    }
+
+    #[derive(Debug, Clone, Sbor)]
+    pub struct StateTreeAssociatedValuesStatusV1 {
+        /// The [`StateVersion`] at which the "state history" feature was most recently enabled.
+        ///
+        /// From this version (inclusive) onwards, the values of upserted Substates are persisted
+        /// in a dedicated historical table. This piece of metadata is needed to calculate whether
+        /// historical state at particular state version is available or not.
+        pub values_associated_from: StateVersion,
+    }
 }
 
 pub mod measurement {
-    use super::*;
+
     use std::cmp::max;
 
     /// A database capable of returning some metrics describing itself.
-    #[enum_dispatch]
     pub trait MeasurableDatabase {
         /// Gets approximate data volume statistics per table/map/cf (i.e. a category of persisted
         /// items, however it is called by the specific database implementation).
         fn get_data_volume_statistics(&self) -> Vec<CategoryDbVolumeStatistic>;
+
+        /// Gets a number of entries stored in the given category.
+        ///
+        /// Note: this is an extremely inefficient method, meant only for test purposes.
+        fn count_entries(&self, category_name: &str) -> usize;
     }
 
     /// An approximate data volume statistic of a given category of persisted items.
@@ -626,11 +732,10 @@ pub mod measurement {
 
 pub mod gc {
     use super::*;
-    use radix_engine_stores::hash_tree::tree_store::NodeKey;
+    use crate::LedgerHeader;
 
-    /// A storage API tailored for the [`StateHashTreeGc`].
-    #[enum_dispatch]
-    pub trait StateHashTreeGcStore {
+    /// A storage API tailored for the [`StateTreeGc`].
+    pub trait StateTreeGcStore {
         /// Returns an iterator of stale hash tree parts, ordered by the state version at which
         /// they became stale, ascending.
         fn get_stale_tree_parts_iter(
@@ -638,13 +743,53 @@ pub mod gc {
         ) -> Box<dyn Iterator<Item = (StateVersion, StaleTreeParts)> + '_>;
 
         /// Deletes a batch of state hash tree nodes.
-        fn batch_delete_node<'a>(&self, keys: impl IntoIterator<Item = &'a NodeKey>);
+        fn batch_delete_node<'a>(&self, keys: impl IntoIterator<Item = &'a StoredTreeNodeKey>);
 
         /// Deletes a batch of stale hash tree parts' records.
         fn batch_delete_stale_tree_part<'a>(
             &self,
             state_versions: impl IntoIterator<Item = &'a StateVersion>,
         );
+    }
+
+    /// A storage API tailored for the [`LedgerProofsGc`].
+    pub trait LedgerProofsGcStore {
+        /// Returns the current state of the GC's progress.
+        fn get_progress(&self) -> Option<LedgerProofsGcProgress>;
+
+        /// Updates the progress.
+        fn set_progress(&self, progress: LedgerProofsGcProgress);
+
+        /// Deletes the given range (from inclusive, to exclusive) of ledger proofs.
+        fn delete_ledger_proofs_range(&self, from: StateVersion, to: StateVersion);
+    }
+
+    define_single_versioned! {
+        #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+        pub enum VersionedLedgerProofsGcProgress => LedgerProofsGcProgress = LedgerProofsGcProgressV1
+    }
+
+    /// A state of the GC's progress.
+    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub struct LedgerProofsGcProgressV1 {
+        /// The last epoch pruned by the GC. The next run should start from the beginning of the
+        /// next epoch.
+        pub last_pruned_epoch: Epoch,
+
+        /// The state version at which the epoch proof of the [`last_pruned_epoch`] was persisted.
+        /// This field simply holds a cached value (which could be read from the DB based on the
+        /// epoch).
+        pub epoch_proof_state_version: StateVersion,
+    }
+
+    impl LedgerProofsGcProgressV1 {
+        /// Initializes the very first progress, which skips over the genesis.
+        pub fn new(post_genesis_ledger_header: LedgerHeader) -> Self {
+            Self {
+                last_pruned_epoch: post_genesis_ledger_header.epoch,
+                epoch_proof_state_version: post_genesis_ledger_header.state_version,
+            }
+        }
     }
 }
 

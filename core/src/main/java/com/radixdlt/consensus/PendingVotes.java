@@ -78,13 +78,10 @@ import com.radixdlt.consensus.liveness.VoteTimeout;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.monitoring.Metrics;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.concurrent.NotThreadSafe;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Manages pending votes for various vertices.
@@ -96,48 +93,20 @@ import org.apache.logging.log4j.Logger;
 @NotThreadSafe
 @SecurityCritical({SecurityKind.SIG_VERIFY, SecurityKind.GENERAL})
 public final class PendingVotes {
-  private static final Logger log = LogManager.getLogger();
-
   private final Map<HashCode, ValidationState> voteState = Maps.newHashMap();
   private final Map<HashCode, ValidationState> timeoutVoteState = Maps.newHashMap();
   private final Map<BFTValidatorId, PreviousVote> previousVotes = Maps.newHashMap();
   private final Hasher hasher;
   private final EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher;
   private final BFTValidatorSet validatorSet;
-  private final Metrics metrics;
 
   public PendingVotes(
       Hasher hasher,
       EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher,
-      BFTValidatorSet validatorSet,
-      Metrics metrics) {
+      BFTValidatorSet validatorSet) {
     this.hasher = Objects.requireNonNull(hasher);
     this.doubleVoteEventDispatcher = Objects.requireNonNull(doubleVoteEventDispatcher);
     this.validatorSet = Objects.requireNonNull(validatorSet);
-    this.metrics = metrics;
-  }
-
-  private void checkForDivergentVertexExecution(Vote vote) {
-    final var voteVertexId = vote.getVoteData().getProposed().getVertexId();
-    final var voteLedgerHeader = vote.getVoteData().getProposed().getLedgerHeader();
-    for (var otherVote : this.previousVotes.entrySet()) {
-      final var otherVertexId = otherVote.getValue().proposedHeader().getVertexId();
-      final var otherLedgerHeader = otherVote.getValue().proposedHeader().getLedgerHeader();
-      if (voteVertexId.equals(otherVertexId) && !voteLedgerHeader.equals(otherLedgerHeader)) {
-        log.warn(
-            "Divergent vertex execution detected! An incoming vote (from {}) for vertex {} claims"
-                + " the following resultant ledger header: {}, while validator {} thinks that the"
-                + " resultant ledger header is {}. [this_vote={}, other_vote={}]",
-            vote.getAuthor(),
-            voteVertexId,
-            voteLedgerHeader,
-            otherVote.getKey(),
-            otherLedgerHeader,
-            vote,
-            otherVote);
-        this.metrics.bft().divergentVertexExecutions().inc();
-      }
-    }
   }
 
   /**
@@ -152,10 +121,6 @@ public final class PendingVotes {
     final BFTValidatorId author = vote.getAuthor();
     final VoteData voteData = vote.getVoteData();
     final HashCode voteDataHash = this.hasher.hashDsonEncoded(voteData);
-
-    // This doesn't do anything, other than logging and bumping the metrics,
-    // when divergent execution is detected (which should hopefully never happen).
-    checkForDivergentVertexExecution(vote);
 
     if (!validatorSet.containsValidator(author)) {
       return VoteProcessingResult.rejected(VoteRejectedReason.INVALID_AUTHOR);

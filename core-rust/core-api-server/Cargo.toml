@@ -12,9 +12,10 @@ transaction = { workspace = true }
 radix-engine-common = { workspace = true }
 radix-engine-interface = { workspace = true }
 radix-engine = { workspace = true }
-radix-engine-stores = { workspace = true }
-radix-engine-store-interface = { workspace = true }
-radix-engine-queries = { workspace = true }
+substate-store-impls = { workspace = true }
+substate-store-interface = { workspace = true }
+substate-store-queries = { workspace = true }
+blueprint-schema-init = { workspace = true }
 utils = { workspace = true }
 
 # Non-Radix Engine Dependencies:
@@ -26,7 +27,7 @@ blake2 = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 
-chrono = { version = "0.4.23", default-features = false, features = ["std"] }
+chrono = { workspace = true }
 hex = { version = "0.4.3", default-features = false }
 futures = { version = "0.3" }
 futures-util = "0.3.28"

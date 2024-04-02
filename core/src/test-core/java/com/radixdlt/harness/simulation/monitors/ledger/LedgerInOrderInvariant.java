@@ -98,7 +98,7 @@ public class LedgerInOrderInvariant implements TestInvariant {
               final var ledgerUpdate = nodeAndLedgerUpdate.getSecond();
               final var nodeTxns =
                   transactionsPerNode.computeIfAbsent(node, k -> new ArrayList<>());
-              nodeTxns.addAll(ledgerUpdate.transactions());
+              nodeTxns.addAll(ledgerUpdate.committedNonProtocolUpdateTransactions());
 
               return transactionsPerNode.entrySet().stream()
                   .filter(e -> nodeTxns != e.getValue())

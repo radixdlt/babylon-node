@@ -53,13 +53,13 @@ openapi: 3.1.0
 # => Hex-encoded bytes/payload should end _hex and not include _bytes
 info:
   # Should be the release version, and the release display name
-  version: 'v1.0.4'
-  title: 'Radix Core API - Babylon'
+  version: 'v1.1.0'
+  title: 'Radix Core API - Babylon (Anemone)'
   license:
     name: The Radix License, Version 1.0
     url: https://www.radixfoundation.org/licenses/license-v1
   x-logo:
-    url: https://docs.radixdlt.com/main/_images/radix-logo-banner.png
+    url: https://cdn.document360.io/50e78792-5410-4ac9-aa43-4612b4d33953/Images/Documentation/radix-logo-banner.png
     href: https://docs.radixdlt.com
   description: |
     This API is exposed by the Babylon Radix node to give clients access to the Radix Engine, Mempool and State in the node.
@@ -207,7 +207,7 @@ tags:
       For reading the state of entities. At present, we only support reading details from the top of the currently committed ledger.
   - name: Stream
     x-displayName: Stream Endpoints
-    description: To query the transaction stream of the ledger.
+    description: To query the transaction or proof stream of the ledger.
 paths:
 ##################################################
 # Long Term Support backwards compatible Sub-API #
@@ -262,13 +262,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TransactionSubmitErrorResponse"
+                $ref: "#/components/schemas/LtsTransactionSubmitErrorResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TransactionSubmitErrorResponse"
+                $ref: "#/components/schemas/LtsTransactionSubmitErrorResponse"
   "/lts/transaction/status":
     post:
       summary: Get Transaction Status
@@ -788,6 +788,67 @@ paths:
 ##################
 # Stream Sub-API #
 ##################
+  "/stream/proofs":
+    post:
+      summary: Stream Proofs
+      description: |
+        Returns a stream of proofs committed to the node's ledger.
+        
+        NOTE: This endpoint may return different results on different nodes:
+        * Each node may persist different subset of signatures on a given proofs, as long as enough
+        of the validator set has signed.
+        * Inside an epoch, different nodes may receive and persist / keep different proofs, subject to
+        constraints on gaps between proofs.
+        
+        Proofs during an epoch can also be garbage collected by the node after the fact. Therefore
+        proofs may disappear from this stream.
+
+        Some proofs (such as during genesis and protocol update enactment) are created on a node and don't
+        include signatures.
+
+        This stream accepts four different options in the request:
+        * All proofs forward (from state version)
+        * All end-of-epoch proofs (from epoch number)
+        * All end-of-epoch proofs triggering a protocol update
+        * All node-injected proofs enacting genesis or a protocol update (for protocol update name, from state version)
+        
+        The end-of-epoch proofs can be used to "trustlessly" verify the validator set for a given epoch.
+        By tracking the fact that validators for epoch N sign the next validator set for epoch N + 1,
+        this chain of proofs can be used to provide proof of the current validator set from a hardcoded
+        start.
+
+        When a validator set is known for a given epoch, this can be used to verify the various transaction
+        hash trees in the epoch, and to prove other data.
+
+        NOTE: This endpoint was built after agreeing the new Radix convention for paged APIs. Its models
+        therefore follow the new convention, rather than attempting to align with existing loose Core API conventions.
+      tags:
+        - Stream
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StreamProofsRequest"
+      responses:
+        '200':
+          description: Stream proofs response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StreamProofsResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StreamProofsErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StreamProofsErrorResponse"
   "/stream/transactions":
     post:
       summary: Get Committed Transactions
@@ -813,13 +874,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/BasicErrorResponse"
+                $ref: "#/components/schemas/StreamTransactionsErrorResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/BasicErrorResponse"
+                $ref: "#/components/schemas/StreamTransactionsErrorResponse"
 #################
 # State Sub-API #
 #################
@@ -1156,6 +1217,9 @@ components:
         message:
           description: Whether to return the transaction message (default true)
           type: boolean
+        balance_changes:
+          description: Whether to return the transaction balance changes (default false)
+          type: boolean
         raw_system_transaction:
           description: Whether to return the raw hex-encoded system transaction bytes (default false)
           type: boolean
@@ -1181,6 +1245,84 @@ components:
         previous:
           description: Whether to return the previous substate value for updates and deletes (default false)
           type: boolean
+    LedgerStateSelectorType:
+      type: string
+      enum:
+        - ByStateVersion
+    LedgerStateSelector:
+      description: |
+        An optional specification of a historical ledger state at which to execute the request.
+        The "historical state" feature must be enabled on the Node, and the requested point in
+        history must be recent enough (in accordance with the Node's configured history length).
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/LedgerStateSelectorType'
+      discriminator:
+        propertyName: type
+        mapping:
+          ByStateVersion: '#/components/schemas/VersionLedgerStateSelector'
+          # Currently no other options exist, but we plan to have e.g. `ByTimestamp` in future.
+    VersionLedgerStateSelector:
+      allOf:
+        - $ref: '#/components/schemas/LedgerStateSelector'
+        - type: object
+          required:
+            - state_version
+          properties:
+            state_version:
+              description: An exact version at which to execute the request.
+              $ref: "#/components/schemas/StateVersion"
+############################################
+# GENERAL / SHARED MODELS - General Models #
+############################################
+    ErrorResponseType:
+      type: string
+      enum:
+        - Basic
+        - TransactionSubmit
+        - LtsTransactionSubmit
+        - StreamTransactions
+        - StreamProofs
+    ErrorResponse:
+      type: object
+      discriminator:
+        propertyName: error_type
+        mapping:
+          # NOTE: These need to match ErrorResponseType
+          Basic: "#/components/schemas/BasicErrorResponse"
+          TransactionSubmit: "#/components/schemas/TransactionSubmitErrorResponse"
+          LtsTransactionSubmit: "#/components/schemas/LtsTransactionSubmitErrorResponse"
+          StreamTransactions: "#/components/schemas/StreamTransactionsErrorResponse"
+          StreamProofs: "#/components/schemas/StreamProofsErrorResponse"
+      required:
+        - error_type
+        - code
+        - message
+      properties:
+        error_type:
+          $ref: "#/components/schemas/ErrorResponseType"
+        code:
+          type: integer
+          description: A numeric code corresponding to the given HTTP error code.
+        message:
+          description: A human-readable error message.
+          type: string
+        trace_id:
+          description: A GUID to be used when reporting errors, to allow correlation with the Core API's error logs, in the case where the Core API details are hidden.
+          type: string
+    BasicErrorResponse:
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+        - type: object
+    ContinuationToken:
+      type: string
+      description: |
+        A continuation token is returned if and only if there are further non-empty pages of items currently available.
+        The token can be provided in a following request to fetch the next page of results.
+        The filter and sort should not be changed when re-using the continuation token.
 ###########################################################
 # GENERAL / SHARED MODELS - General / Numeric / Utilities #
 ###########################################################
@@ -1629,43 +1771,6 @@ components:
             Whether the intent was committed in a transaction with the same payload.
             This is a convenience field, which can also be computed using `payload_hash` by a client
             knowing the payload of the submitted transaction.
-    ErrorResponseType:
-      type: string
-      enum:
-        - Basic
-        - TransactionSubmit
-        - LtsTransactionSubmit
-        - StreamTransactions
-    ErrorResponse:
-      type: object
-      discriminator:
-        propertyName: error_type
-        mapping:
-          # NOTE: These need to match ErrorResponseType
-          Basic: "#/components/schemas/BasicErrorResponse"
-          TransactionSubmit: "#/components/schemas/TransactionSubmitErrorResponse"
-          LtsTransactionSubmit: "#/components/schemas/LtsTransactionSubmitErrorResponse"
-          StreamTransactions: "#/components/schemas/StreamTransactionsErrorResponse"
-      required:
-        - error_type
-        - code
-        - message
-      properties:
-        error_type:
-          $ref: "#/components/schemas/ErrorResponseType"
-        code:
-          type: integer
-          description: A numeric code corresponding to the given HTTP error code.
-        message:
-          description: A human-readable error message.
-          type: string
-        trace_id:
-          description: A GUID to be used when reporting errors, to allow correlation with the Core API's error logs, in the case where the Core API details are hidden.
-          type: string
-    BasicErrorResponse:
-      allOf:
-        - $ref: "#/components/schemas/ErrorResponse"
-        - type: object
 ######################################
 # GENERAL / SHARED MODELS - Receipts #
 ######################################
@@ -1727,6 +1832,7 @@ components:
         - finalization_cost_unit_limit
         - xrd_usd_price
         - xrd_storage_price
+        - xrd_archive_storage_price
         - tip_percentage
       properties:
         execution_cost_unit_price:
@@ -1765,7 +1871,12 @@ components:
         xrd_storage_price:
           type: string
           description: |
-            The string-encoded decimal representing the price of 1 byte of storage, expressed in XRD.
+            The string-encoded decimal representing the price of 1 byte of state storage, expressed in XRD.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
+        xrd_archive_storage_price:
+          type: string
+          description: |
+            The string-encoded decimal representing the price of 1 byte of archive storage, expressed in XRD.
             A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
         tip_percentage:
           type: integer
@@ -1898,6 +2009,20 @@ components:
           items:
             $ref: '#/components/schemas/ActiveValidator'
           description: Active validator set for the new epoch, ordered by stake descending.
+        significant_protocol_update_readiness:
+          type: array
+          items:
+            $ref: '#/components/schemas/SignificantProtocolUpdateReadinessEntry'
+    SignificantProtocolUpdateReadinessEntry:
+      type: object
+      required:
+        - readiness_signal_name
+        - signalled_stake
+      properties:
+        readiness_signal_name:
+          type: string
+        signalled_stake:
+          type: string
     CreatedSubstate:
       type: object
       required:
@@ -2013,6 +2138,7 @@ components:
         - Royalty
         - Main
         - Schema
+        - BootLoader
     PartitionKind:
       type: string
       description: |
@@ -3122,6 +3248,7 @@ components:
     SystemFieldKind:
       type: string
       enum:
+        - BootLoader
         - TypeInfo
     ObjectSubstateTypeReferenceType:
       type: string
@@ -3640,6 +3767,7 @@ components:
           #   - value - which references the type [SubstateValue]
           #   - key (if it's in a collection partition) - which references a substate key type [X]Key for some X.
           #   - is_locked - this is added to all substates via inclusion on the `Substate` object
+          BootLoaderModuleFieldVmBoot: '#/components/schemas/BootLoaderModuleFieldVmBootSubstate'
           TypeInfoModuleFieldTypeInfo: '#/components/schemas/TypeInfoModuleFieldTypeInfoSubstate'
           RoleAssignmentModuleFieldOwnerRole: '#/components/schemas/RoleAssignmentModuleFieldOwnerRoleSubstate'
           RoleAssignmentModuleRuleEntry: '#/components/schemas/RoleAssignmentModuleRuleEntrySubstate'
@@ -3691,6 +3819,7 @@ components:
     SubstateType:
       type: string
       enum:
+        - BootLoaderModuleFieldVmBoot
         - TypeInfoModuleFieldTypeInfo
         - RoleAssignmentModuleFieldOwnerRole
         - RoleAssignmentModuleRuleEntry
@@ -3886,6 +4015,25 @@ components:
 ################################################
 # GENERAL / SHARED MODELS - specific substates #
 ################################################
+    BootLoaderModuleFieldVmBootSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - value
+          properties:
+            value:
+              $ref: '#/components/schemas/BootLoaderModuleFieldVmBootValue'
+    BootLoaderModuleFieldVmBootValue:
+      type: object
+      required:
+        - scrypto_v1_minor_version
+      properties:
+        scrypto_v1_minor_version:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
     TypeInfoModuleFieldTypeInfoSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -5749,9 +5897,6 @@ components:
       description: |
         For the given transaction, contains the status, total fee summary and individual entity resource balance changes.
         The balance changes accounts for the fee payments as well.
-        Current implementation does not take into account recalls, but this will change in a future update.
-        For failed transactions, current implementation does not return any balance changes (not even the fee payments).
-        This will also change in a future update.
       type: object
       required:
         - state_version
@@ -5807,7 +5952,7 @@ components:
         total_fee:
           type: string
           description: |
-            The string-encoded decimal representing the total amount of XRD payed as fee (execution, validator tip and royalties).
+            The string-encoded decimal representing the total amount of XRD paid as fee (execution, validator tip and royalties).
             A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
     LtsEntityFungibleBalanceChanges:
       type: object
@@ -6067,6 +6212,7 @@ components:
             - consensus_manager
             - genesis_helper
             - faucet
+            - transaction_tracker
           properties:
             xrd:
               type: string
@@ -6119,6 +6265,8 @@ components:
             genesis_helper:
               type: string
             faucet:
+              type: string
+            transaction_tracker:
               type: string
     AddressType:
       type: object
@@ -6828,6 +6976,8 @@ components:
           $ref: "#/components/schemas/NetworkIdentifier"
         intent_hash:
           $ref: "#/components/schemas/IntentHashInput"
+        transaction_format_options:
+          $ref: "#/components/schemas/TransactionFormatOptions"
     TransactionReceiptResponse:
       type: object
       required:
@@ -6847,6 +6997,8 @@ components:
       properties:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSelector"
         target:
           $ref: "#/components/schemas/TargetIdentifier"
         arguments:
@@ -6933,6 +7085,8 @@ components:
       properties:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSelector"
         manifest:
           description: A text-representation of a transaction manifest
           type: string
@@ -6993,6 +7147,27 @@ components:
               type: boolean
             skip_epoch_check:
               type: boolean
+            # This was added later so isn't required; for backwards compatibility
+            disable_auth_checks:
+              description: |
+                Can be used to skip performing auth checks during runtime.
+                
+                This could be used to e.g.:
+                * Preview protocol update style transactions
+                * Mint resources for previewing trades with resources you don't own. If doing this, be warned:
+                  * Only resources which were potentially mintable/burnable at creation time
+                  will be mintable/burnable, due to feature flags on the resource.
+                  * Please see the below warning about unexpected results if using this approach.
+                
+                Please be warned - this mode of operation is quite a departure from normal operation:
+                * Calculated fees will likely be lower than a standard execution
+                * This mode can subtly break invariants some dApp code might rely on, or result in unexpected
+                behaviour, so the resulting execution result might not be valid for your needs. For example,
+                if I used this flag to mint pool units to preview a redemption (or some dApp interaction which
+                behind the scenes redeemed them), they'd redeem for less than they're currently worth,
+                because the blueprint code relies on the total supply of the pool units to calculate their
+                redemption worth, and you've just inflated the total supply through the mint operation.
+              type: boolean
     TransactionPreviewResponse:
       type: object
       required:
@@ -7026,6 +7201,175 @@ components:
                 type: string
               message:
                 type: string
+############################
+# REQUEST: /stream/proofs #
+###########################
+    StreamProofsRequest:
+      description: |
+        A request to retrieve a sublist of proofs.
+      type: object
+      required:
+        - network
+      properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
+        filter:
+          $ref: "#/components/schemas/StreamProofsFilter"
+        max_page_size:
+          description: If specified, the maximum number of proofs that will be returned.
+          type: integer
+        continuation_token:
+          $ref: "#/components/schemas/ContinuationToken"
+    StreamProofsFilterType:
+      type: string
+      enum:
+        - Any
+        - NewEpochs
+        - ProtocolUpdateInitializations
+        - ProtocolUpdateExecution
+    StreamProofsFilter:
+      type: object
+      description: If not provided, defaults to "Any".
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/StreamProofsFilterType"
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match StreamProofsFilterType
+          Any: '#/components/schemas/StreamProofsFilterAny'
+          NewEpochs: '#/components/schemas/StreamProofsFilterNewEpochs'
+          ProtocolUpdateInitializations: '#/components/schemas/StreamProofsFilterProtocolUpdateInitializations'
+          ProtocolUpdateExecution: '#/components/schemas/StreamProofsFilterProtocolUpdateExecution'
+    StreamProofsFilterAny:
+      allOf:
+        - $ref: "#/components/schemas/StreamProofsFilter"
+        - type: object
+          properties:
+            from_state_version:
+              $ref: "#/components/schemas/StateVersion"
+              description:
+                The first proof to be returned should be at this state version or above.
+                If empty, it starts from 0.
+    StreamProofsFilterNewEpochs:
+      allOf:
+        - $ref: "#/components/schemas/StreamProofsFilter"
+        - type: object
+          properties:
+            from_epoch:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 10000000000
+              description:
+                The first proof to be returned should be the proof starting this epoch.
+                If empty, it starts from the first epoch proof after genesis.
+                The network status endpoint can be used to find the current epoch.
+    StreamProofsFilterProtocolUpdateInitializations:
+      allOf:
+        - $ref: "#/components/schemas/StreamProofsFilter"
+        - type: object
+          properties:
+            from_state_version:
+              $ref: "#/components/schemas/StateVersion"
+              description:
+                The first proof to be returned should be at this state version or above.
+                If empty, it starts from 0.
+    StreamProofsFilterProtocolUpdateExecution:
+      allOf:
+        - $ref: "#/components/schemas/StreamProofsFilter"
+        - type: object
+          properties:
+            protocol_version:
+              type: string
+              description: |
+                The protocol version name to filter to.
+            from_state_version:
+              $ref: "#/components/schemas/StateVersion"
+              description:
+                The first proof to be returned should be at this state version or above.
+                If empty, it starts from 0.
+    StreamProofsResponse:
+      type: object
+      required:
+        - page
+      properties:
+        page:
+          description: A page of ledger proofs stored by this node.
+          type: array
+          items:
+            $ref: "#/components/schemas/LedgerProof"
+        continuation_token:
+          $ref: "#/components/schemas/ContinuationToken"
+    StreamProofsErrorResponse:
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+        - type: object
+          properties:
+            details:
+              $ref: "#/components/schemas/StreamProofsErrorDetails"
+    StreamProofsErrorDetailsType:
+      type: string
+      enum:
+        - RequestedStateVersionOutOfBounds
+        - RequestedEpochOutOfBounds
+    StreamProofsErrorDetails:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/StreamProofsErrorDetailsType"
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match StreamProofsErrorDetailsType
+          RequestedStateVersionOutOfBounds: '#/components/schemas/StreamProofsErrorDetailsRequestedStateVersionOutOfBounds'
+          RequestedEpochOutOfBounds: '#/components/schemas/StreamProofsErrorDetailsRequestedEpochOutOfBounds'
+    StreamProofsErrorDetailsRequestedStateVersionOutOfBounds:
+      allOf:
+        - $ref: "#/components/schemas/StreamProofsErrorDetails"
+        - type: object
+          required:
+            - max_ledger_state_version
+          properties:
+            max_ledger_state_version:
+              $ref: "#/components/schemas/StateVersion"
+              description: |
+                The maximum state version currently committed on this node's ledger.
+                *Note on the bounds:* the requested `from_state_version` cannot be greater than
+                `max_ledger_state_version + 1`. Any greater requested value triggers this error.
+    StreamProofsErrorDetailsRequestedEpochOutOfBounds:
+      allOf:
+        - $ref: "#/components/schemas/StreamProofsErrorDetails"
+        - type: object
+          required:
+            - max_ledger_epoch
+          properties:
+            max_ledger_epoch:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 10000000000
+              description: |
+                The maximum completed epoch committed to this node's ledger.
+                *Note on the bounds:* the requested `from_epoch` cannot be greater than
+                `max_ledger_epoch + 1`. Any greater requested value triggers this error.
+    EpochEndLedgerProof:
+      type: object
+      required:
+        - end_of_epoch
+        - ledger_proof
+      properties:
+        end_of_epoch:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+        ledger_proof:
+          $ref: "#/components/schemas/LedgerProof"
 #################################
 # REQUEST: /stream/transactions #
 #################################
@@ -7146,27 +7490,102 @@ components:
           $ref: "#/components/schemas/LedgerTransaction"
         receipt:
           $ref: "#/components/schemas/TransactionReceipt"
+        balance_changes:
+          description: |
+            All balance changes of a transaction (including those fee-related), aggregated by resource and global entity
+            within which the change occurred. Only returned if available and enabled in `TransactionFormatOptions` on your request.
+          $ref: "#/components/schemas/CommittedTransactionBalanceChanges"
         proposer_timestamp_ms:
           type: integer
           format: int64
           minimum: 0
           maximum: 100000000000000
           description: An integer between `0` and `10^14`, marking the proposer timestamp in ms.
+    CommittedTransactionBalanceChanges:
+      type: object
+      required:
+        - fungible_entity_balance_changes
+        - non_fungible_entity_balance_changes
+      properties:
+        fungible_entity_balance_changes:
+          description: |
+            A list of all fungible balance updates which occurred in this transaction, aggregated by the global entity (such as account)
+            which owns the vaults which were updated.
+          type: array
+          items:
+            $ref: "#/components/schemas/LtsEntityFungibleBalanceChanges"
+        non_fungible_entity_balance_changes:
+          description: |
+            Non fungible changes per entity and resource
+          type: array
+          items:
+            $ref: "#/components/schemas/LtsEntityNonFungibleBalanceChanges"
+    LedgerProofOriginType:
+      type: string
+      enum:
+        - Genesis
+        - Consensus
+        - ProtocolUpdate
+    LedgerProofOrigin:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/LedgerProofOriginType"
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match LedgerProofOriginType
+          Genesis: '#/components/schemas/GenesisLedgerProofOrigin'
+          Consensus: '#/components/schemas/ConsensusLedgerProofOrigin'
+          ProtocolUpdate: '#/components/schemas/ProtocolUpdateLedgerProofOrigin'
+    GenesisLedgerProofOrigin:
+      allOf:
+        - $ref: "#/components/schemas/LedgerProofOrigin"
+        - type: object
+          required:
+            - genesis_opaque_hash
+          properties:
+            genesis_opaque_hash:
+              type: string
+    ConsensusLedgerProofOrigin:
+      allOf:
+        - $ref: "#/components/schemas/LedgerProofOrigin"
+        - type: object
+          required:
+            - opaque_hash
+            - timestamped_signatures
+          properties:
+            opaque_hash:
+              $ref: "#/components/schemas/OpaqueHash"
+            timestamped_signatures:
+              type: array
+              items:
+                $ref: "#/components/schemas/TimestampedValidatorSignature"
+    ProtocolUpdateLedgerProofOrigin:
+      allOf:
+        - $ref: "#/components/schemas/LedgerProofOrigin"
+        - type: object
+          required:
+            - protocol_version_name
+            - batch_idx
+          properties:
+            protocol_version_name:
+              type: string
+            batch_idx:
+              type: integer
+              format: int64
     LedgerProof:
       type: object
       required:
-        - opaque_hash
         - ledger_header
-        - timestamped_signatures
+        - origin
       properties:
-        opaque_hash: 
-          $ref: "#/components/schemas/OpaqueHash"
         ledger_header:
           $ref: "#/components/schemas/LedgerHeader"
-        timestamped_signatures:
-          type: array
-          items:
-            $ref: "#/components/schemas/TimestampedValidatorSignature"
+        origin:
+          $ref: "#/components/schemas/LedgerProofOrigin"
     LedgerHeader:
       type: object
       required:
@@ -7207,6 +7626,9 @@ components:
           description: An integer between `0` and `10^14`, marking the proposer timestamp in ms.
         next_epoch:
           $ref: "#/components/schemas/NextEpoch"
+        next_protocol_version:
+          type: string
+          description: If present, indicates that this proof triggers the enactment of the given protocol version.
     TimestampedValidatorSignature:
       type: object
       required:
@@ -7239,6 +7661,7 @@ components:
         - Genesis
         - User
         - RoundUpdate
+        - Flash
     LedgerTransaction:
       type: object
       required:
@@ -7256,6 +7679,7 @@ components:
           Genesis: '#/components/schemas/GenesisLedgerTransaction'
           User: '#/components/schemas/UserLedgerTransaction'
           RoundUpdate: '#/components/schemas/RoundUpdateLedgerTransaction'
+          Flash: '#/components/schemas/FlashLedgerTransaction'
     GenesisLedgerTransaction:
       allOf:
         - $ref: "#/components/schemas/LedgerTransaction"
@@ -7288,6 +7712,19 @@ components:
           properties:
             round_update_transaction:
               $ref: "#/components/schemas/RoundUpdateTransaction"
+    FlashLedgerTransaction:
+      allOf:
+        - $ref: "#/components/schemas/LedgerTransaction"
+        - type: object
+          required:
+            - name
+            - flashed_state_updates
+          properties:
+            name:
+              type: string
+              description: Human-readable identifier of the flash transaction.
+            flashed_state_updates:
+              $ref: "#/components/schemas/FlashedStateUpdates"
     RoundUpdateTransaction:
       type: object
       required:
@@ -7315,6 +7752,37 @@ components:
         leader_proposal_history:
           $ref: '#/components/schemas/LeaderProposalHistory'
           description: A recent history (i.e. since the previous `RoundUpdateValidatorTransaction`) of consensus round leaders' reliability. Used for validator emissions calculation.
+    FlashedStateUpdates:
+      type: object
+      description: Direct state updates performed by a Flash Transaction.
+      required:
+        - deleted_partitions
+        - set_substates
+        - deleted_substates
+      properties:
+        deleted_partitions:
+          type: array
+          items:
+            $ref: "#/components/schemas/PartitionId"
+        set_substates:
+          type: array
+          items:
+            $ref: "#/components/schemas/FlashSetSubstate"
+        deleted_substates:
+          type: array
+          items:
+            $ref: "#/components/schemas/SubstateId"
+    FlashSetSubstate:
+      type: object
+      required:
+        - substate_id
+        - value
+      properties:
+        substate_id:
+          $ref: "#/components/schemas/SubstateId"
+        value:
+          $ref: "#/components/schemas/SubstateValue"
+          description: The new value set on the substate.
     LeaderProposalHistory:
       type: object
       required:
@@ -7360,6 +7828,9 @@ components:
       properties:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
+        include_readiness_signals:
+          description: Whether to include protocol update readiness signals of active validator set (default false).
+          type: boolean
     StateConsensusManagerResponse:
       type: object
       required:
@@ -7386,6 +7857,56 @@ components:
           $ref: "#/components/schemas/Substate"
         current_time_rounded_to_minutes:
           $ref: "#/components/schemas/Substate"
+        current_validator_readiness_signals:
+          description: |
+            Protocol versions signalled by the current validator set.
+            Every validator from `current_validator_set` will be referenced by exactly one of the items here.
+            Only returned if enabled by `include_readiness_signals` on your request.
+          type: array
+          items:
+            $ref: "#/components/schemas/ProtocolVersionReadiness"
+    ProtocolVersionReadiness:
+      type: object
+      required:
+        - total_active_stake_proportion
+        - signalling_validators
+      properties:
+        signalled_protocol_version:
+          # Note: Re-using "#/components/schemas/ProtocolVersion" hits a quirk of the TypeScript's
+          # generator ("attribute components.schemas.ProtocolVersionReadiness.ProtocolVersion is not
+          # of type `schema`").
+          type: string
+          description: |
+            A name identifying a protocol version. May be absent to denote no readiness signalled by
+            the `signalling_validators`.
+        total_active_stake_proportion:
+          type: string
+          description: |
+            A sum of `active_stake_proportion` across `signalling_validators` (i.e. an easily-computable convenience field).
+            This is a string-encoded fixed-precision decimal to 18 decimal places.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
+        signalling_validators:
+          description: |
+            References to some of the current validators (i.e. a subset of `current_validator_set`)
+            which have signalled readiness for the `signalled_protocol_version`.
+          type: array
+          items:
+            $ref: '#/components/schemas/SignallingValidator'
+    SignallingValidator:
+      type: object
+      required:
+        - index
+        - active_stake_proportion
+      properties:
+        index:
+          $ref: '#/components/schemas/ActiveValidatorIndex'
+          description: Validator index within the `current_validator_set`.
+        active_stake_proportion:
+          type: string
+          description: |
+            A proportion (between 0 and 1) of the total active stake of an entire `current_validator_set` (i.e. an easily-computable convenience field).
+            This is a string-encoded fixed-precision decimal to 18 decimal places.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
 ###########################
 # REQUEST: /state/account #
 ###########################
@@ -7528,6 +8049,7 @@ components:
         - at_ledger_state
         - address
         - state
+        - protocol_update_readiness_signal
         - owner_role
         - vaults
         - descendent_nodes
@@ -7538,6 +8060,8 @@ components:
         address:
           $ref: '#/components/schemas/ComponentAddress'
         state:
+          $ref: "#/components/schemas/Substate"
+        protocol_update_readiness_signal:
           $ref: "#/components/schemas/Substate"
         owner_role:
           $ref: "#/components/schemas/Substate"

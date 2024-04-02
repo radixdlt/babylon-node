@@ -70,26 +70,30 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.ValidationState;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.statecomputer.commit.LedgerProof;
+import com.radixdlt.statecomputer.commit.LedgerProofOrigin;
+import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 
 public class RemoteSyncResponseValidatorSetVerifierTest {
   private BFTValidatorSet validatorSet;
   private RemoteSyncResponseValidatorSetVerifier validatorSetVerifier;
-  private LedgerProof headerAndProof;
+  private LedgerProof proof;
 
   @Before
   public void setup() {
     this.validatorSet = mock(BFTValidatorSet.class);
     this.validatorSetVerifier = new RemoteSyncResponseValidatorSetVerifier(validatorSet);
-    this.headerAndProof = mock(LedgerProof.class);
+    this.proof = mock(LedgerProof.class);
     TimestampedECDSASignatures signatures = mock(TimestampedECDSASignatures.class);
     when(signatures.getSignatures()).thenReturn(ImmutableMap.of());
-    when(headerAndProof.getSignatures()).thenReturn(signatures);
+    when(proof.origin())
+        .thenReturn(new LedgerProofOrigin.Consensus(HashUtils.zero256(), List.of()));
   }
 
   @Test
@@ -98,7 +102,7 @@ public class RemoteSyncResponseValidatorSetVerifierTest {
     when(validatorSet.newValidationState()).thenReturn(validationState);
     when(validationState.complete()).thenReturn(true);
 
-    assertTrue(validatorSetVerifier.verifyValidatorSet(headerAndProof));
+    assertTrue(validatorSetVerifier.verifyValidatorSet(proof));
   }
 
   @Test
@@ -107,6 +111,6 @@ public class RemoteSyncResponseValidatorSetVerifierTest {
     when(validatorSet.newValidationState()).thenReturn(validationState);
     when(validationState.complete()).thenReturn(false);
 
-    assertFalse(validatorSetVerifier.verifyValidatorSet(headerAndProof));
+    assertFalse(validatorSetVerifier.verifyValidatorSet(proof));
   }
 }

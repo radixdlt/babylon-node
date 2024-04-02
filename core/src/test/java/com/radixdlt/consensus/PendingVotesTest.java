@@ -78,8 +78,6 @@ import com.radixdlt.consensus.bft.VoteProcessingResult.VoteRejected.VoteRejected
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.utils.RandomHasher;
 import com.radixdlt.utils.UInt192;
 import java.util.Arrays;
@@ -92,12 +90,9 @@ import org.junit.Test;
 public class PendingVotesTest {
   private Hasher hasher;
 
-  private Metrics metrics;
-
   @Before
   public void setup() {
     this.hasher = new RandomHasher();
-    this.metrics = new MetricsInitializer().initialize();
   }
 
   @Test
@@ -110,13 +105,13 @@ public class PendingVotesTest {
   @Test
   public void when_inserting_valid_but_unaccepted_votes__then_no_qc_is_returned() {
     HashCode vertexId = HashUtils.random256();
-    Vote vote1 = makeSignedVoteFor(mock(BFTValidatorId.class), Round.genesis(), vertexId);
-    Vote vote2 = makeSignedVoteFor(mock(BFTValidatorId.class), Round.genesis(), vertexId);
+    Vote vote1 = makeSignedVoteFor(mock(BFTValidatorId.class), Round.epochInitial(), vertexId);
+    Vote vote2 = makeSignedVoteFor(mock(BFTValidatorId.class), Round.epochInitial(), vertexId);
 
     BFTValidatorSet validatorSet =
         BFTValidatorSet.from(
             Collections.singleton(BFTValidator.from(vote1.getAuthor(), UInt192.ONE)));
-    final var pendingVotes = new PendingVotes(hasher, e -> {}, validatorSet, metrics);
+    final var pendingVotes = new PendingVotes(hasher, e -> {}, validatorSet);
 
     VoteData voteData = mock(VoteData.class);
     BFTHeader proposed = vote1.getVoteData().getProposed();
@@ -130,7 +125,7 @@ public class PendingVotesTest {
   @Test
   public void when_inserting_valid_and_accepted_votes__then_qc_is_formed() {
     BFTValidatorId author = mock(BFTValidatorId.class);
-    Vote vote = makeSignedVoteFor(author, Round.genesis(), HashUtils.random256());
+    Vote vote = makeSignedVoteFor(author, Round.epochInitial(), HashUtils.random256());
 
     BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
     ValidationState validationState = mock(ValidationState.class);
@@ -145,7 +140,7 @@ public class PendingVotesTest {
     BFTHeader proposed = vote.getVoteData().getProposed();
     when(voteData.getProposed()).thenReturn(proposed);
 
-    final var pendingVotes = new PendingVotes(hasher, e -> {}, validatorSet, metrics);
+    final var pendingVotes = new PendingVotes(hasher, e -> {}, validatorSet);
 
     assertTrue(pendingVotes.insertVote(vote) instanceof VoteProcessingResult.QuorumReached);
   }
@@ -154,10 +149,10 @@ public class PendingVotesTest {
   public void when_inserting_valid_timeout_votes__then_tc_is_formed() {
     HashCode vertexId1 = HashUtils.random256();
     HashCode vertexId2 = HashUtils.random256();
-    Vote vote1 = makeSignedVoteFor(mock(BFTValidatorId.class), Round.genesis(), vertexId1);
+    Vote vote1 = makeSignedVoteFor(mock(BFTValidatorId.class), Round.epochInitial(), vertexId1);
     when(vote1.getTimeoutSignature()).thenReturn(Optional.of(mock(ECDSASecp256k1Signature.class)));
     when(vote1.isTimeout()).thenReturn(true);
-    Vote vote2 = makeSignedVoteFor(mock(BFTValidatorId.class), Round.genesis(), vertexId2);
+    Vote vote2 = makeSignedVoteFor(mock(BFTValidatorId.class), Round.epochInitial(), vertexId2);
     when(vote2.getTimeoutSignature()).thenReturn(Optional.of(mock(ECDSASecp256k1Signature.class)));
     when(vote2.isTimeout()).thenReturn(true);
 
@@ -167,7 +162,7 @@ public class PendingVotesTest {
                 BFTValidator.from(vote1.getAuthor(), UInt192.ONE),
                 BFTValidator.from(vote2.getAuthor(), UInt192.ONE)));
 
-    final var pendingVotes = new PendingVotes(hasher, e -> {}, validatorSet, metrics);
+    final var pendingVotes = new PendingVotes(hasher, e -> {}, validatorSet);
 
     assertTrue(pendingVotes.insertVote(vote1) instanceof VoteProcessingResult.VoteAccepted);
 
@@ -183,7 +178,7 @@ public class PendingVotesTest {
   @Test
   public void when_voting_again__previous_vote_is_removed() {
     BFTValidatorId author = mock(BFTValidatorId.class);
-    Vote vote = makeSignedVoteFor(author, Round.genesis(), HashUtils.random256());
+    Vote vote = makeSignedVoteFor(author, Round.epochInitial(), HashUtils.random256());
 
     BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
     ValidationState validationState = mock(ValidationState.class);
@@ -197,7 +192,7 @@ public class PendingVotesTest {
     BFTHeader proposed = vote.getVoteData().getProposed();
     when(voteData.getProposed()).thenReturn(proposed);
 
-    final var pendingVotes = new PendingVotes(hasher, e -> {}, validatorSet, metrics);
+    final var pendingVotes = new PendingVotes(hasher, e -> {}, validatorSet);
 
     // Preconditions
     assertEquals(VoteProcessingResult.accepted(), pendingVotes.insertVote(vote));
@@ -214,7 +209,7 @@ public class PendingVotesTest {
   @Test
   public void when_voting_again__previous_timeoutvote_is_removed() {
     BFTValidatorId author = mock(BFTValidatorId.class);
-    Vote vote = makeSignedVoteFor(author, Round.genesis(), HashUtils.random256());
+    Vote vote = makeSignedVoteFor(author, Round.epochInitial(), HashUtils.random256());
     when(vote.getTimeoutSignature()).thenReturn(Optional.of(mock(ECDSASecp256k1Signature.class)));
     when(vote.isTimeout()).thenReturn(true);
 
@@ -230,7 +225,7 @@ public class PendingVotesTest {
     BFTHeader proposed = vote.getVoteData().getProposed();
     when(voteData.getProposed()).thenReturn(proposed);
 
-    final var pendingVotes = new PendingVotes(hasher, e -> {}, validatorSet, metrics);
+    final var pendingVotes = new PendingVotes(hasher, e -> {}, validatorSet);
 
     // Preconditions
     assertEquals(VoteProcessingResult.accepted(), pendingVotes.insertVote(vote));
@@ -250,10 +245,12 @@ public class PendingVotesTest {
   public void when_submitting_a_duplicate_vote__then_can_be_replaced_if_has_timeout() {
     final var vertexId1 = HashUtils.random256();
     final var vertexId2 = HashUtils.random256();
-    final var vote1 = makeSignedVoteFor(mock(BFTValidatorId.class), Round.genesis(), vertexId1);
+    final var vote1 =
+        makeSignedVoteFor(mock(BFTValidatorId.class), Round.epochInitial(), vertexId1);
     when(vote1.getTimeoutSignature()).thenReturn(Optional.empty());
     when(vote1.isTimeout()).thenReturn(false);
-    final var vote2 = makeSignedVoteFor(mock(BFTValidatorId.class), Round.genesis(), vertexId2);
+    final var vote2 =
+        makeSignedVoteFor(mock(BFTValidatorId.class), Round.epochInitial(), vertexId2);
     when(vote2.getTimeoutSignature()).thenReturn(Optional.of(mock(ECDSASecp256k1Signature.class)));
     when(vote2.isTimeout()).thenReturn(true);
 
@@ -263,7 +260,7 @@ public class PendingVotesTest {
                 BFTValidator.from(vote1.getAuthor(), UInt192.ONE),
                 BFTValidator.from(vote2.getAuthor(), UInt192.ONE)));
 
-    final var pendingVotes = new PendingVotes(hasher, e -> {}, validatorSet, metrics);
+    final var pendingVotes = new PendingVotes(hasher, e -> {}, validatorSet);
 
     assertTrue(pendingVotes.insertVote(vote1) instanceof VoteProcessingResult.VoteAccepted);
 
@@ -288,52 +285,6 @@ public class PendingVotesTest {
     assertTrue(
         ((VoteProcessingResult.QuorumReached) result2).roundQuorum()
             instanceof RoundQuorum.TimeoutRoundQuorum);
-  }
-
-  @Test
-  public void divergent_vertex_execution_should_be_detected() {
-    // Arrange: create two votes on the same vertexId, but having
-    // different ledger headers
-    final var vertexId = HashUtils.random256();
-
-    final var ledgerHeader1 = mock(LedgerHeader.class);
-    when(ledgerHeader1.getStateVersion()).thenReturn(1L);
-    final var bftHeader1 = mock(BFTHeader.class);
-    when(bftHeader1.getLedgerHeader()).thenReturn(ledgerHeader1);
-    when(bftHeader1.getVertexId()).thenReturn(vertexId);
-    final var voteData1 = mock(VoteData.class);
-    when(voteData1.getProposed()).thenReturn(bftHeader1);
-    final var vote1 =
-        makeVoteWithoutSignatureFor(mock(BFTValidatorId.class), Round.genesis(), vertexId);
-    when(vote1.getSignature()).thenReturn(ECDSASecp256k1Signature.zeroSignature());
-    when(vote1.getVoteData()).thenReturn(voteData1);
-
-    final var ledgerHeader2 = mock(LedgerHeader.class);
-    when(ledgerHeader1.getStateVersion()).thenReturn(2L);
-    final var bftHeader2 = mock(BFTHeader.class);
-    when(bftHeader2.getLedgerHeader()).thenReturn(ledgerHeader2);
-    when(bftHeader2.getVertexId()).thenReturn(vertexId);
-    final var voteData2 = mock(VoteData.class);
-    when(voteData2.getProposed()).thenReturn(bftHeader2);
-    final var vote2 =
-        makeVoteWithoutSignatureFor(mock(BFTValidatorId.class), Round.genesis(), vertexId);
-    when(vote2.getSignature()).thenReturn(ECDSASecp256k1Signature.zeroSignature());
-    when(vote2.getVoteData()).thenReturn(voteData2);
-
-    final var validatorSet =
-        BFTValidatorSet.from(
-            Arrays.asList(
-                BFTValidator.from(vote1.getAuthor(), UInt192.ONE),
-                BFTValidator.from(vote2.getAuthor(), UInt192.ONE)));
-
-    final var pendingVotes = new PendingVotes(hasher, e -> {}, validatorSet, metrics);
-
-    // Should still accept both votes...
-    assertTrue(pendingVotes.insertVote(vote1) instanceof VoteProcessingResult.VoteAccepted);
-    assertTrue(pendingVotes.insertVote(vote2) instanceof VoteProcessingResult.VoteAccepted);
-
-    // ...but produce a warning and bump the metrics
-    assertEquals((int) metrics.bft().divergentVertexExecutions().get(), 1);
   }
 
   private Vote makeSignedVoteFor(BFTValidatorId author, Round parentRound, HashCode vertexId) {

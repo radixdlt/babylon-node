@@ -11,13 +11,14 @@ pub(crate) async fn handle_transaction_receipt(
 ) -> Result<Json<models::TransactionReceiptResponse>, ResponseError<()>> {
     assert_matching_network(&request.network, &state.network)?;
 
-    let mapping_context = MappingContext::new(&state.network);
+    let mapping_context = MappingContext::new(&state.network)
+        .with_transaction_formats(&request.transaction_format_options);
     let extraction_context = ExtractionContext::new(&state.network);
 
     let intent_hash = extract_intent_hash(&extraction_context, request.intent_hash)
         .map_err(|err| err.into_response_error("intent_hash"))?;
 
-    let database = state.state_manager.database.read_current();
+    let database = state.state_manager.database.snapshot();
 
     if !database.is_local_transaction_execution_index_enabled() {
         return Err(client_error(
@@ -49,9 +50,9 @@ pub(crate) async fn handle_transaction_receipt(
             }
         })?;
 
-        Ok(models::TransactionReceiptResponse {
+        Ok(Json(models::TransactionReceiptResponse {
             committed: Box::new(to_api_committed_transaction(
-                Some(&database),
+                &database,
                 &mapping_context,
                 txn_state_version,
                 raw,
@@ -59,8 +60,7 @@ pub(crate) async fn handle_transaction_receipt(
                 receipt,
                 identifiers,
             )?),
-        })
-        .map(Json)
+        }))
     } else {
         Err(not_found_error(format!(
             "Committed transaction not found with intent hash: {intent_hash:?}"

@@ -1,12 +1,7 @@
-use radix_engine::blueprints::models::SortedIndexKeyPayload;
-
 use super::super::*;
 use super::*;
 use crate::core_api::models;
-use radix_engine_interface::blueprints::consensus_manager::*;
-
-use radix_engine::types::*;
-use radix_engine_queries::typed_substate_layout::*;
+use crate::engine_prelude::*;
 
 pub fn to_api_registered_validators_by_stake_index_entry_substate(
     context: &MappingContext,
@@ -130,7 +125,7 @@ pub fn to_api_proposer_reward(
     })
 }
 
-pub fn to_api_validator_substate(
+pub fn to_api_validator_state_substate(
     context: &MappingContext,
     substate: &ValidatorStateFieldSubstate,
 ) -> Result<models::Substate, MappingError> {

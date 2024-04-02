@@ -68,11 +68,11 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.ProposerElections;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
-import com.radixdlt.rev2.LastEpochProof;
+import com.radixdlt.ledger.LedgerProofBundle;
+import com.radixdlt.rev2.REv2ToConsensus;
 
 public final class REv2ConsensusRecoveryModule extends AbstractModule {
   @Provides
@@ -90,19 +90,22 @@ public final class REv2ConsensusRecoveryModule extends AbstractModule {
   @Provides
   @Singleton
   private BFTConfiguration initialConfig(
-      @LastEpochProof LedgerProof lastEpochProof,
+      LedgerProofBundle latestProof,
       BFTValidatorSet validatorSet,
       VertexStoreState vertexStoreState) {
     final var proposerElection =
-        ProposerElections.defaultRotation(
-            lastEpochProof.getNextEpoch().orElseThrow().getEpoch(), validatorSet);
+        ProposerElections.defaultRotation(latestProof.resultantEpoch(), validatorSet);
     return new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
   }
 
   @Provides
-  private BFTValidatorSet initialValidatorSet(@LastEpochProof LedgerProof lastEpochProof) {
-    return lastEpochProof
-        .getNextValidatorSet()
-        .orElseThrow(() -> new IllegalStateException("Genesis has no validator set"));
+  private BFTValidatorSet initialValidatorSet(LedgerProofBundle latestProof) {
+    return REv2ToConsensus.validatorSet(
+        latestProof
+            .closestEpochProofOnOrBefore()
+            .ledgerHeader()
+            .nextEpoch()
+            .orElseThrow()
+            .validators());
   }
 }

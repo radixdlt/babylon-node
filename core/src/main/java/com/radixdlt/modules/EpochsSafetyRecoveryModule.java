@@ -108,12 +108,12 @@ public final class EpochsSafetyRecoveryModule extends AbstractModule {
 
       final long persistedStateEpoch = persistedState.getLastVote().map(Vote::getEpoch).orElse(0L);
 
-      if (persistedStateEpoch > initialEpoch.getNextEpoch()) {
+      if (persistedStateEpoch > initialEpoch.nextEpoch()) {
         throw new IllegalStateException(
             String.format(
                 "Last vote is in a future epoch. Vote epoch: %s, Epoch: %s",
-                persistedStateEpoch, initialEpoch.getNextEpoch()));
-      } else if (persistedStateEpoch == initialEpoch.getNextEpoch()) {
+                persistedStateEpoch, initialEpoch.nextEpoch()));
+      } else if (persistedStateEpoch == initialEpoch.nextEpoch()) {
         log.info("Initial Safety State (loaded): {}", persistedState);
         return persistedState;
       } else {

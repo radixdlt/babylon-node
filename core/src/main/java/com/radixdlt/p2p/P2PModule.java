@@ -64,16 +64,13 @@
 
 package com.radixdlt.p2p;
 
-import static com.radixdlt.protocol.ProtocolVersion.ONLY_PROTOCOL_VERSION;
-
 import com.google.inject.*;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
-import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.LocalEvents;
-import com.radixdlt.environment.Runners;
+import com.radixdlt.environment.*;
+import com.radixdlt.ledger.LedgerProofBundle;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.PendingOutboundChannelsManager.PeerOutboundConnectionTimeout;
@@ -87,10 +84,10 @@ import com.radixdlt.p2p.hostip.HostIpModule;
 import com.radixdlt.p2p.transport.PeerOutboundBootstrap;
 import com.radixdlt.p2p.transport.PeerOutboundBootstrapImpl;
 import com.radixdlt.p2p.transport.PeerServerBootstrap;
-import com.radixdlt.protocol.Current;
-import com.radixdlt.protocol.Newest;
-import com.radixdlt.protocol.ProtocolVersion;
+import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactAtStartOfEpochIfValidatorsReady;
+import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactAtStartOfEpochUnconditionally;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.statecomputer.ProtocolState;
 import com.radixdlt.store.BerkeleyDbDefaults;
 import com.radixdlt.store.NodeStorageLocation;
 import com.radixdlt.utils.properties.RuntimeProperties;
@@ -110,10 +107,6 @@ public final class P2PModule extends AbstractModule {
             .permitDuplicates();
     eventBinder.addBinding().toInstance(PeerEvent.class);
     eventBinder.addBinding().toInstance(PeerOutboundConnectionTimeout.class);
-
-    // TODO(when introducing actual protocol updates): design how to manage this
-    bind(ProtocolVersion.class).annotatedWith(Current.class).toInstance(ONLY_PROTOCOL_VERSION);
-    bind(ProtocolVersion.class).annotatedWith(Newest.class).toInstance(ONLY_PROTOCOL_VERSION);
 
     bind(AddressBook.class).in(Scopes.SINGLETON);
     bind(PeersView.class).to(PeerManagerPeersView.class).in(Scopes.SINGLETON);
@@ -177,5 +170,44 @@ public final class P2PModule extends AbstractModule {
         metrics,
         nodeStorageLocation,
         BerkeleyDbDefaults.createDefaultEnvConfigFromProperties(properties));
+  }
+
+  /**
+   * A start processor that unbans all peers if the node is booting within enactment bounds of an
+   * upcoming protocol update. It is likely that any banned peers have been banned because the node
+   * was running an outdated version and their ledger sync responses were rejected as invalid. This
+   * is harmless if ban was for a different reason.
+   */
+  @ProvidesIntoSet
+  private StartProcessorOnRunner clearNearProtocolUpdateBans(
+      ProtocolState initialProtocolState, LedgerProofBundle latestProof, AddressBook addressBook) {
+    return new StartProcessorOnRunner(
+        Runners.P2P_NETWORK,
+        () -> {
+          final var initialEpoch = latestProof.primaryProof().ledgerHeader().epoch().toLong();
+          final var shouldClearAllBans =
+              initialProtocolState.pendingProtocolUpdates().stream()
+                  .anyMatch(
+                      pendingProtocolUpdate ->
+                          switch (pendingProtocolUpdate
+                              .protocolUpdateTrigger()
+                              .enactmentCondition()) {
+                            case EnactAtStartOfEpochIfValidatorsReady cond -> {
+                              // Clear if we're within enactment bounds or one epoch before the
+                              // lower bound
+                              final var lower = cond.lowerBoundInclusive().toLong();
+                              final var upper = cond.upperBoundExclusive().toLong();
+                              yield initialEpoch >= (lower - 1) && initialEpoch < upper;
+                            }
+                            case EnactAtStartOfEpochUnconditionally cond -> {
+                              final var updateEpoch = cond.epoch().toLong();
+                              // Clear if we're right before the update
+                              yield initialEpoch == updateEpoch - 1;
+                            }
+                          });
+          if (shouldClearAllBans) {
+            addressBook.clearAllBans();
+          }
+        });
   }
 }

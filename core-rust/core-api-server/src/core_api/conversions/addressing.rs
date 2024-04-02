@@ -1,20 +1,7 @@
 use crate::core_api::models;
 use crate::core_api::*;
+use crate::engine_prelude::*;
 use models::SubstateType;
-use radix_engine::blueprints::account::{AccountField, AccountTypedSubstateKey};
-use radix_engine::blueprints::pool::multi_resource_pool::{
-    MultiResourcePoolField, MultiResourcePoolTypedSubstateKey,
-};
-use radix_engine::blueprints::pool::one_resource_pool::{
-    OneResourcePoolField, OneResourcePoolTypedSubstateKey,
-};
-use radix_engine::blueprints::pool::two_resource_pool::{
-    TwoResourcePoolField, TwoResourcePoolTypedSubstateKey,
-};
-use radix_engine::types::*;
-
-use radix_engine_queries::typed_substate_layout::*;
-use radix_engine_store_interface::db_key_mapper::*;
 
 pub fn to_api_global_address(
     context: &MappingContext,
@@ -134,6 +121,12 @@ pub fn to_api_substate_id(
     let api_substate_key = to_api_substate_key(substate_key);
 
     let (substate_type, partition_kind) = match typed_substate_key {
+        TypedSubstateKey::BootLoader(TypedBootLoaderSubstateKey::BootLoaderField(
+            BootLoaderField::Vm,
+        )) => (
+            SubstateType::BootLoaderModuleFieldVmBoot,
+            models::PartitionKind::Field,
+        ),
         TypedSubstateKey::TypeInfo(TypedTypeInfoSubstateKey::TypeInfoField(
             TypeInfoField::TypeInfo,
         )) => (
@@ -446,6 +439,7 @@ pub fn to_api_substate_id(
     };
 
     let entity_module = match typed_substate_key {
+        TypedSubstateKey::BootLoader(_) => models::EntityModule::BootLoader,
         TypedSubstateKey::TypeInfo(_) => models::EntityModule::TypeInfo,
         TypedSubstateKey::RoleAssignmentModule(_) => models::EntityModule::RoleAssignment,
         TypedSubstateKey::RoyaltyModule(_) => models::EntityModule::Royalty,

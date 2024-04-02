@@ -63,8 +63,10 @@
  */
 
 use std::ops::Deref;
+use std::str::FromStr;
 use std::sync::Arc;
 
+use crate::engine_prelude::*;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -72,19 +74,18 @@ use node_common::environment::setup_tracing;
 use node_common::java::{jni_call, jni_jbytearray_to_vector, StructFromJava};
 use node_common::locks::*;
 use prometheus::Registry;
-use radix_engine_common::prelude::NetworkDefinition;
 
 use node_common::scheduler::{Scheduler, UntilDropTracker};
 use tokio::runtime::Runtime;
+use tracing::Level;
 
 use crate::mempool_manager::MempoolManager;
 use crate::mempool_relay_dispatcher::MempoolRelayDispatcher;
 use crate::priority_mempool::PriorityMempool;
 
-use crate::store::StateManagerDatabase;
-
 use super::fatal_panic_handler::FatalPanicHandler;
-use crate::{StateComputer, StateManager, StateManagerConfig};
+
+use crate::{ActualStateManagerDatabase, StateComputer, StateManager, StateManagerConfig};
 
 const POINTER_JNI_FIELD_NAME: &str = "rustNodeRustEnvironmentPointer";
 
@@ -128,7 +129,14 @@ impl JNINodeRustEnvironment {
 
         let runtime = Arc::new(Runtime::new().unwrap());
 
-        setup_tracing(runtime.deref(), std::env::var("JAEGER_AGENT_ENDPOINT").ok());
+        setup_tracing(
+            runtime.deref(),
+            std::env::var("JAEGER_AGENT_ENDPOINT").ok(),
+            std::env::var("RADIXDLT_LOG_LEVEL")
+                .ok()
+                .and_then(|level| Level::from_str(level.as_str()).ok())
+                .unwrap_or(Level::INFO),
+        );
 
         let fatal_panic_handler = FatalPanicHandler::new(env, j_node_rust_env).unwrap();
         let metric_registry = Arc::new(Registry::new());
@@ -179,10 +187,7 @@ impl JNINodeRustEnvironment {
             .unwrap()
     }
 
-    pub fn get_state_computer(
-        env: &JNIEnv,
-        j_node_rust_env: JObject,
-    ) -> Arc<StateComputer<StateManagerDatabase>> {
+    pub fn get_state_computer(env: &JNIEnv, j_node_rust_env: JObject) -> Arc<StateComputer> {
         Self::get(env, j_node_rust_env)
             .state_manager
             .state_computer
@@ -192,7 +197,7 @@ impl JNINodeRustEnvironment {
     pub fn get_database(
         env: &JNIEnv,
         j_node_rust_env: JObject,
-    ) -> Arc<StateLock<StateManagerDatabase>> {
+    ) -> Arc<DbLock<ActualStateManagerDatabase>> {
         Self::get(env, j_node_rust_env)
             .state_manager
             .database

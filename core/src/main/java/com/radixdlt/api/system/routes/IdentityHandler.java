@@ -66,7 +66,7 @@ package com.radixdlt.api.system.routes;
 
 import com.google.inject.Inject;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.api.system.SystemGetJsonHandler;
+import com.radixdlt.api.system.SystemJsonHandler;
 import com.radixdlt.api.system.generated.models.IdentityResponse;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.SelfValidatorInfo;
@@ -76,7 +76,7 @@ import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.RadixNodeUri;
 import java.util.Optional;
 
-public final class IdentityHandler extends SystemGetJsonHandler<IdentityResponse> {
+public final class IdentityHandler extends SystemJsonHandler<IdentityResponse> {
 
   private final Addressing addressing;
 

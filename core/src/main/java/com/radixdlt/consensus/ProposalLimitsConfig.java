@@ -66,6 +66,10 @@ package com.radixdlt.consensus;
 
 import com.google.inject.AbstractModule;
 import com.radixdlt.environment.VertexLimitsConfig;
+import com.radixdlt.transaction.LedgerSyncLimitsConfig;
+import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * [`maxTransactionCount`]: Maximum number of transactions to include in a proposal.
@@ -117,11 +121,26 @@ public record ProposalLimitsConfig(
 
   public AbstractModule asModule() {
     return new AbstractModule() {
-      @Override
-      protected void configure() {
-        bindConstant()
-            .annotatedWith(ProposalMaxUncommittedTransactionsPayloadSize.class)
-            .to(maxUncommittedTransactionsPayloadSize);
+      private static final Logger log = LogManager.getLogger();
+
+      @Singleton
+      @ProposalMaxUncommittedTransactionsPayloadSize
+      public int maxUncommittedTransactionsPayloadSize(
+          LedgerSyncLimitsConfig ledgerSyncLimitsConfig) {
+        final var ledgerSyncMaxPayloadSize =
+            ledgerSyncLimitsConfig.maxTxnBytesForSingleResponse().toInt();
+        if (maxUncommittedTransactionsPayloadSize > ledgerSyncMaxPayloadSize) {
+          log.warn(
+              """
+              Maximum uncommitted transactions payload size was configured to be {} bytes, but
+              instead we have to use the limit of transactions payload size in a ledger sync
+              response (configured to be {} bytes)""",
+              maxUncommittedTransactionsPayloadSize,
+              ledgerSyncMaxPayloadSize);
+          return ledgerSyncMaxPayloadSize;
+        } else {
+          return maxUncommittedTransactionsPayloadSize;
+        }
       }
     };
   }

@@ -65,16 +65,35 @@
 package com.radixdlt.api.system.health;
 
 import com.google.inject.Inject;
+import com.radixdlt.api.system.generated.models.PendingProtocolUpdate;
+import com.radixdlt.consensus.bft.SelfValidatorInfo;
+import com.radixdlt.monitoring.InMemorySystemInfo;
 import com.radixdlt.prometheus.LedgerStatus;
 import com.radixdlt.prometheus.RecentSelfProposalMissStatistic;
 import com.radixdlt.prometheus.RustPrometheus;
+import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition;
+import com.radixdlt.protocol.RustProtocolUpdate;
+import com.radixdlt.state.RustStateReader;
+import com.radixdlt.statecomputer.ProtocolState;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public final class HealthInfoServiceImpl implements HealthInfoService {
   private final RustPrometheus rustPrometheus;
+  private final RustStateReader rustStateReader;
+  private final InMemorySystemInfo inMemorySystemInfo;
+  private final SelfValidatorInfo selfValidatorInfo;
 
   @Inject
-  public HealthInfoServiceImpl(RustPrometheus rustPrometheus) {
+  public HealthInfoServiceImpl(
+      RustPrometheus rustPrometheus,
+      RustStateReader rustStateReader,
+      InMemorySystemInfo inMemorySystemInfo,
+      SelfValidatorInfo selfValidatorInfo) {
     this.rustPrometheus = rustPrometheus;
+    this.rustStateReader = rustStateReader;
+    this.inMemorySystemInfo = inMemorySystemInfo;
+    this.selfValidatorInfo = selfValidatorInfo;
   }
 
   @Override
@@ -95,5 +114,55 @@ public final class HealthInfoServiceImpl implements HealthInfoService {
   @Override
   public RecentSelfProposalMissStatistic recentSelfProposalMissStatistic() {
     return this.rustPrometheus.recentSelfProposalMissStatistic();
+  }
+
+  @Override
+  public ProtocolState protocolState() {
+    return inMemorySystemInfo.getProtocolState();
+  }
+
+  @Override
+  public Map<String, PendingProtocolUpdate.ReadinessSignalStatusEnum> readinessSignalStatuses() {
+    final var protocolState = inMemorySystemInfo.getProtocolState();
+    return selfValidatorInfo
+        .bftValidatorId()
+        .map(
+            selfValidatorId -> {
+              final var selfAddress = selfValidatorId.getValidatorAddress();
+              final var selfSignal =
+                  this.rustStateReader.getValidatorProtocolUpdateReadinessSignal(selfAddress);
+              return protocolState.pendingProtocolUpdates().stream()
+                  .collect(
+                      Collectors.toMap(
+                          p -> p.protocolUpdateTrigger().nextProtocolVersion(),
+                          p -> {
+                            if (p.protocolUpdateTrigger().enactmentCondition()
+                                instanceof
+                                ProtocolUpdateEnactmentCondition
+                                    .EnactAtStartOfEpochIfValidatorsReady) {
+                              final var expectedSignal =
+                                  RustProtocolUpdate.readinessSignalName(p.protocolUpdateTrigger());
+                              if (selfSignal.fold(s -> s.equals(expectedSignal), () -> false)) {
+                                return PendingProtocolUpdate.ReadinessSignalStatusEnum
+                                    .READINESS_SIGNALLED;
+                              } else {
+                                return PendingProtocolUpdate.ReadinessSignalStatusEnum
+                                    .READINESS_NOT_SIGNALLED;
+                              }
+                            } else {
+                              return PendingProtocolUpdate.ReadinessSignalStatusEnum
+                                  .NO_SIGNAL_REQUIRED;
+                            }
+                          }));
+            })
+        .orElseGet(
+            () ->
+                protocolState.pendingProtocolUpdates().stream()
+                    .collect(
+                        Collectors.toMap(
+                            p -> p.protocolUpdateTrigger().nextProtocolVersion(),
+                            p ->
+                                PendingProtocolUpdate.ReadinessSignalStatusEnum
+                                    .NO_SIGNAL_REQUIRED)));
   }
 }

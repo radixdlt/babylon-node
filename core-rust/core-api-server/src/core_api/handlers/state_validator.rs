@@ -1,8 +1,6 @@
 use crate::core_api::*;
-use radix_engine::types::*;
+use crate::engine_prelude::*;
 
-use radix_engine::blueprints::consensus_manager::ValidatorField;
-use radix_engine::system::attached_modules::role_assignment::RoleAssignmentField;
 use state_manager::query::dump_component_state;
 
 use std::ops::Deref;
@@ -28,14 +26,20 @@ pub(crate) async fn handle_state_validator(
         ));
     }
 
-    let database = state.state_manager.database.read_current();
+    let database = state.state_manager.database.snapshot();
 
-    let validator_substate = read_optional_main_field_substate(
+    let validator_state_substate = read_optional_main_field_substate(
         database.deref(),
         validator_address.as_node_id(),
         &ValidatorField::State.into(),
     )
     .ok_or_else(|| not_found_error("Validator not found".to_string()))?;
+
+    let validator_readiness_signal_substate = read_mandatory_main_field_substate(
+        database.deref(),
+        validator_address.as_node_id(),
+        &ValidatorField::ProtocolUpdateReadinessSignal.into(),
+    )?;
 
     let owner_role_substate = read_mandatory_substate(
         database.deref(),
@@ -51,19 +55,24 @@ pub(crate) async fn handle_state_validator(
 
     let header = read_current_ledger_header(database.deref());
 
-    Ok(models::StateValidatorResponse {
+    Ok(Json(models::StateValidatorResponse {
         at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
         address: to_api_component_address(&mapping_context, &validator_address)?,
-        state: Some(to_api_validator_substate(
+        state: Some(to_api_validator_state_substate(
             &mapping_context,
-            &validator_substate,
+            &validator_state_substate,
         )?),
+        protocol_update_readiness_signal: Some(
+            to_api_validator_protocol_update_readiness_signal_substate(
+                &mapping_context,
+                &validator_readiness_signal_substate,
+            )?,
+        ),
         owner_role: Some(to_api_owner_role_substate(
             &mapping_context,
             &owner_role_substate,
         )?),
         vaults,
         descendent_nodes,
-    })
-    .map(Json)
+    }))
 }

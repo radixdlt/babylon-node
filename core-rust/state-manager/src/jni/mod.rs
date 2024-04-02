@@ -62,12 +62,28 @@
  * permissions under this License.
  */
 
+pub mod db_checkpoints;
 pub mod fatal_panic_handler;
 pub mod mempool;
 pub mod node_rust_environment;
 pub mod prometheus;
+pub mod protocol_update;
 pub mod state_computer;
+pub mod state_reader;
 pub mod test_state_reader;
 pub mod transaction_preparer;
 pub mod transaction_store;
 pub mod vertex_store_recovery;
+
+use crate::engine_prelude::*;
+
+/// Limits regarding the granularity of ledger sync (and thus of ledger proofs kept in storage).
+/// This struct is defined publicly here, since it is used by the transaction store and the ledger
+/// proofs GC.
+/// Please see the Java counterpart (i.e. `record LedgerSyncLimitsConfig`) for detailed descriptions
+/// of the fields.
+#[derive(Debug, Categorize, Encode, Decode, Clone, Default)]
+pub struct LedgerSyncLimitsConfig {
+    pub max_txns_for_responses_spanning_more_than_one_proof: u32,
+    pub max_txn_bytes_for_single_response: u32,
+}

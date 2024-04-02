@@ -418,10 +418,13 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                 install(
                     REv2StateManagerModule.createForTesting(
                         ProposalLimitsConfig.testDefaults(),
-                        rev2Config.databaseFlags(),
+                        rev2Config.databaseConfig(),
                         Option.none(),
                         rev2Config.debugLogging(),
-                        rev2Config.stateHashTreeGcConfig(),
+                        rev2Config.stateTreeGcConfig(),
+                        rev2Config.ledgerProofsGcConfig(),
+                        rev2Config.ledgerSyncLimitsConfig(),
+                        rev2Config.protocolConfig(),
                         rev2Config.noFees()));
               }
               case REV2ProposerConfig.Mempool mempool -> {
@@ -432,10 +435,13 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                 install(
                     REv2StateManagerModule.createForTesting(
                         mempool.proposalLimitsConfig(),
-                        rev2Config.databaseFlags(),
+                        rev2Config.databaseConfig(),
                         Option.some(mempool.mempoolConfig()),
                         rev2Config.debugLogging(),
-                        rev2Config.stateHashTreeGcConfig(),
+                        rev2Config.stateTreeGcConfig(),
+                        rev2Config.ledgerProofsGcConfig(),
+                        rev2Config.ledgerSyncLimitsConfig(),
+                        rev2Config.protocolConfig(),
                         rev2Config.noFees()));
               }
             }

@@ -70,6 +70,6 @@ import com.radixdlt.consensus.bft.Round;
 
 public class LedgerHeaderMock {
   public static LedgerHeader get() {
-    return LedgerHeader.create(0, Round.genesis(), 0, LedgerHashes.zero(), 0, 0);
+    return LedgerHeader.create(0, Round.epochInitial(), 0, LedgerHashes.zero(), 0, 0);
   }
 }

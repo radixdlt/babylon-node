@@ -1,6 +1,4 @@
-use radix_engine::types::{AddressBech32Decoder, AddressBech32Encoder};
-use radix_engine_interface::network::NetworkDefinition;
-use transaction::model::{TransactionHashBech32Decoder, TransactionHashBech32Encoder};
+use crate::engine_prelude::*;
 
 use crate::core_api::models;
 
@@ -85,6 +83,9 @@ impl MappingContext {
             if let Some(value) = formats.message {
                 options.include_message = value;
             }
+            if let Some(value) = formats.balance_changes {
+                options.include_balance_changes = value;
+            }
             if let Some(value) = formats.raw_system_transaction {
                 options.include_raw_system = value;
             }
@@ -139,6 +140,7 @@ pub struct TransactionOptions {
     pub include_manifest: bool,
     pub include_blobs: bool,
     pub include_message: bool,
+    pub include_balance_changes: bool,
     pub include_raw_system: bool,
     pub include_raw_notarized: bool,
     pub include_raw_ledger: bool,
@@ -150,6 +152,7 @@ impl Default for TransactionOptions {
             include_manifest: true,
             include_blobs: false,
             include_message: true,
+            include_balance_changes: false,
             include_raw_system: false,
             include_raw_notarized: true,
             include_raw_ledger: false,

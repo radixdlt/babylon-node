@@ -32,7 +32,7 @@ pub(crate) async fn handle_lts_stream_transaction_outcomes(
 
     let limit = limit.try_into().expect("limit out of usize bounds");
 
-    let database = state.state_manager.database.read_current();
+    let database = state.state_manager.database.snapshot();
 
     if !database.is_local_transaction_execution_index_enabled() {
         return Err(client_error(
@@ -46,7 +46,7 @@ pub(crate) async fn handle_lts_stream_transaction_outcomes(
 
     let mut response = models::LtsStreamTransactionOutcomesResponse {
         from_state_version: to_api_state_version(from_state_version)?,
-        count: MAX_BATCH_COUNT_PER_REQUEST as i32, // placeholder to get a better size aproximation for the header
+        count: MAX_BATCH_COUNT_PER_REQUEST as i32, // placeholder to get a better size approximation for the header
         max_ledger_state_version: to_api_state_version(max_state_version)?,
         committed_transaction_outcomes: Vec::new(),
     };
@@ -95,5 +95,5 @@ pub(crate) async fn handle_lts_stream_transaction_outcomes(
 
     response.count = count;
 
-    Ok(response).map(Json)
+    Ok(Json(response))
 }
