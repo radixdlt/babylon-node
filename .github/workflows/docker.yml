@@ -127,6 +127,7 @@ jobs:
         id: setup_version_properties
         uses: ./.github/actions/setup-version-properties
 
+
   build_push_container_private:
     name: (PRIVATE) Docker AMD
     needs:
