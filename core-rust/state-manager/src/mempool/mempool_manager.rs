@@ -162,9 +162,8 @@ impl MempoolManager {
             .collect()
     }
 
-    /// Checks the committability of a subset of transactions executed against earliest state versions
-    /// and removes the newly rejected ones from the mempool.
-    /// Obeys the given limit on the number of actually executed (i.e. not cached) transactions.
+    /// Checks the committability of up to `max_reevaluated_count` of transactions executed against
+    /// earliest state versions and removes the newly rejected ones from the mempool.
     pub fn reevaluate_transaction_committability(&self, max_reevaluated_count: u32) {
         let candidate_transactions: Vec<Arc<MempoolData>> = self
             .mempool
@@ -175,12 +174,9 @@ impl MempoolManager {
 
         let mut transactions_to_remove = Vec::new();
         for candidate_transaction in candidate_transactions {
-            let (record, _was_cached) = self
+            let record = self
                 .cached_committability_validator
-                .check_for_rejection_cached_prevalidated(
-                    &candidate_transaction.transaction.validated,
-                    ForceRecalculation::Yes,
-                );
+                .check_for_rejection_validated(&candidate_transaction.transaction.validated);
             if record.latest_attempt.rejection.is_some() {
                 transactions_to_remove.push(candidate_transaction);
             }
@@ -294,29 +290,24 @@ impl MempoolManager {
             .check_for_rejection_cached(prepared, force_recalculation);
 
         // STEP 4 - We check if the result should mean we add the transaction to our mempool
-        let result = record
+        let PendingExecutedTransaction {
+            transaction,
+            latest_attempt_against_state_version,
+        } = record
             .should_accept_into_mempool(check_result)
-            .map_err(MempoolAddError::Rejected);
+            .map_err(MempoolAddError::Rejected)?;
 
-        match result {
-            Ok(DynamicValidatedTransaction {
-                transaction,
-                state_version,
-            }) => {
-                let mempool_transaction = Arc::new(MempoolTransaction {
-                    validated: transaction,
-                    raw: raw_transaction,
-                });
-                match self.mempool.write().add_transaction_if_not_present(
-                    mempool_transaction.clone(),
-                    source,
-                    Instant::now(),
-                    state_version,
-                ) {
-                    Ok(_evicted) => Ok(mempool_transaction),
-                    Err(error) => Err(error),
-                }
-            }
+        let mempool_transaction = Arc::new(MempoolTransaction {
+            validated: transaction,
+            raw: raw_transaction,
+        });
+        match self.mempool.write().add_transaction_if_not_present(
+            mempool_transaction.clone(),
+            source,
+            Instant::now(),
+            latest_attempt_against_state_version,
+        ) {
+            Ok(_evicted) => Ok(mempool_transaction),
             Err(error) => Err(error),
         }
     }

@@ -286,19 +286,19 @@ pub enum RetryFrom {
 }
 
 #[derive(Debug, Clone)]
-pub struct DynamicValidatedTransaction {
+pub struct PendingExecutedTransaction {
     pub transaction: Box<ValidatedNotarizedTransactionV1>,
-    pub state_version: StateVersion,
+    pub latest_attempt_against_state_version: StateVersion,
 }
 
-impl DynamicValidatedTransaction {
+impl PendingExecutedTransaction {
     pub fn new(
         transaction: Box<ValidatedNotarizedTransactionV1>,
         state_version: StateVersion,
     ) -> Self {
         Self {
             transaction,
-            state_version,
+            latest_attempt_against_state_version: state_version,
         }
     }
 }
@@ -374,7 +374,7 @@ impl PendingTransactionRecord {
     pub fn should_accept_into_mempool(
         self,
         check: CheckMetadata,
-    ) -> Result<DynamicValidatedTransaction, MempoolAddRejection> {
+    ) -> Result<PendingExecutedTransaction, MempoolAddRejection> {
         if let Some(permanent_rejection) = self.earliest_permanent_rejection {
             return Err(MempoolAddRejection {
                 reason: permanent_rejection.rejection.unwrap(),
@@ -400,7 +400,7 @@ impl PendingTransactionRecord {
                 panic!("Precondition was not met - the result was cached, but the latest attempt was not a rejection")
             }
             CheckMetadata::Fresh(StaticValidation::Valid(transaction)) => {
-                Ok(DynamicValidatedTransaction::new(
+                Ok(PendingExecutedTransaction::new(
                     transaction,
                     self.latest_attempt
                         .against_state
