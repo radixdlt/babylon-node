@@ -505,6 +505,27 @@ pub struct RocksDBStore {
 }
 
 impl RocksDBStore {
+
+    pub fn get_all_substates_iter(
+        &self,
+    ) -> Box<dyn Iterator<Item = (DbSubstateKey, DbSubstateValue)> + '_> {
+        Box::new(
+            self.open_db_context()
+                .cf(SubstatesCf)
+                .iterate_all()
+        )
+    }
+
+    pub fn get_all_ancestry_records_iter(
+        &self,
+    ) -> Box<dyn Iterator<Item = (NodeId, SubstateNodeAncestryRecord)> + '_> {
+        Box::new(
+            self.open_db_context()
+                .cf(SubstateNodeAncestryRecordsCf)
+                .iterate_all()
+        )
+    }
+
     pub fn new(
         root: PathBuf,
         config: DatabaseFlags,

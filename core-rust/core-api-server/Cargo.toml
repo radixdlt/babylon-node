@@ -18,6 +18,7 @@ radix-engine-queries = { workspace = true }
 utils = { workspace = true }
 
 # Non-Radix Engine Dependencies:
+itertools = { workspace = true }
 jni = { workspace = true }
 tracing = { workspace = true }
 tokio = { workspace = true }
@@ -35,3 +36,6 @@ tower = "0.4.13"
 tower-http = { version = "0.4.3", features = ["catch-panic"]}
 hyper = { version = "0.14.20", features = ["server", "http1"] }
 paste = { version = "1.0.12", default-features = false }
+fuser = "0.14.0"
+libc = "0.2.153"
+lru = "0.12.2"

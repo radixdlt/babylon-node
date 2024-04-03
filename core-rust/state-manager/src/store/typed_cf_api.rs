@@ -121,6 +121,32 @@ pub struct TypedCfApi<'db, 'wb, CF: TypedCf> {
 }
 
 impl<'db, 'wb, CF: TypedCf> TypedCfApi<'db, 'wb, CF> {
+
+    pub fn iterate_all(
+        &self,
+    ) -> Box<dyn Iterator<Item = (CF::Key, CF::Value)> + 'db>
+    where
+        CF::KeyCodec: 'db,
+        CF::ValueCodec: 'db,
+    {
+        let key_codec = self.typed_cf.key_codec();
+        let value_codec = self.typed_cf.value_codec();
+        Box::new(
+            self.db
+                .iterator_cf(
+                    self.cf_handle,
+                    IteratorMode::Start,
+                )
+                .map(|result| result.expect("while iterating"))
+                .map(move |(key, value)| {
+                    (
+                        key_codec.decode(key.as_ref()),
+                        value_codec.decode(value.as_ref()),
+                    )
+                }),
+        )
+    }
+    
     /// Creates an instance for the given column family.
     fn new(db: &'db DB, typed_cf: CF, write_buffer: &'wb WriteBuffer) -> Self {
         // cache a few values:
@@ -190,6 +216,8 @@ impl<'db, 'wb, KC: GroupPreservingDbCodec, CF: TypedCf<KeyCodec = KC>> TypedCfAp
 impl<'db, 'wb, K, KC: OrderPreservingDbCodec + DbCodec<K>, CF: TypedCf<Key = K, KeyCodec = KC>>
     TypedCfApi<'db, 'wb, CF>
 {
+
+    
     /// Gets the entry of the least key.
     pub fn get_first(&self) -> Option<(CF::Key, CF::Value)> {
         self.iterate(Direction::Forward).next()
@@ -328,6 +356,8 @@ impl<
                 }),
         )
     }
+
+    
 
     /// Returns an iterator over all groups (as defined by [`GroupPreservingDbCodec`]) of keys, in
     /// a deterministic but arbitrary order.
