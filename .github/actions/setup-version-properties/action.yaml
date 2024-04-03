@@ -1,0 +1,42 @@
+name: 'Setup version properties'
+description: 'Setup the github version properties'
+outputs:
+  VERSION_BRANCH:
+    description: The branch (if available) that triggered this build
+    value: ${{ steps.setup_version_properties.outputs.VERSION_BRANCH }}
+  VERSION_TAG:
+    description: The git tag (if applicable) that triggered the release
+    value: ${{ steps.setup_version_properties.outputs.VERSION_TAG }}
+  VERSION_COMMIT:
+    description: The full git commit hash
+    value: ${{ steps.setup_version_properties.outputs.VERSION_COMMIT }}
+  VERSION_BUILD:
+    description: The first 8 characters of the git commit hash
+    value: ${{ steps.setup_version_properties.outputs.VERSION_BUILD }}
+  VERSION_LAST_TAG:
+    description: The name of the last tag added.
+    value: ${{ steps.setup_version_properties.outputs.VERSION_LAST_TAG }}
+  VERSION_DISPLAY:
+    description: The display version for this build. If the build is triggered by a tag, then the tag is used. Otherwise, the version consists of $VERSION_LAST_TAG-$VERSION_BRANCH-$VERSION_BUILD
+    value: ${{ steps.setup_version_properties.outputs.VERSION_DISPLAY }}
+runs:
+  using: "composite"
+  steps:
+    - id: setup_version_properties
+      run: |
+        VERSION_BUILD=$(git rev-parse --short=8 HEAD | cut -c1-8)
+        VERSION_LAST_TAG=$(git tag --sort=-creatordate | head -n 1)
+        echo "VERSION_BUILD=$VERSION_BUILD" >> $GITHUB_OUTPUT
+        echo "VERSION_COMMIT=${GITHUB_SHA}" >> $GITHUB_OUTPUT
+        echo "VERSION_LAST_TAG=$VERSION_LAST_TAG" >> $GITHUB_OUTPUT
+        
+        if [[  $GITHUB_REF == *"refs/tags/"* ]]; then 
+          VERSION_TAG=$(echo $GITHUB_REF | cut -d'/' -f 3)
+          echo "VERSION_TAG=$VERSION_TAG" >> $GITHUB_OUTPUT
+          echo "VERSION_DISPLAY=$VERSION_TAG" >> $GITHUB_OUTPUT
+        else
+          VERSION_BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
+          echo "VERSION_BRANCH=$VERSION_BRANCH" >> $GITHUB_OUTPUT
+          echo "VERSION_DISPLAY=$VERSION_LAST_TAG-$VERSION_BRANCH-$VERSION_BUILD" >> $GITHUB_OUTPUT
+        fi
+      shell: bash
