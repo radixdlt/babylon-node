@@ -17,14 +17,14 @@ pub struct StaticRoleDefinitionAuthTemplate {
     pub role_specification: crate::core_api::generated::models::RoleSpecification,
     /// A map from role name to role details
     #[serde(rename = "roles", skip_serializing_if = "Option::is_none")]
-    pub roles: Option<::utils::rust::prelude::IndexMap<String, crate::core_api::generated::models::RoleDetails>>,
+    pub roles: Option<::radix_rust::prelude::IndexMap<String, crate::core_api::generated::models::RoleDetails>>,
     /// A map from a method identifier to MethodAccessibility
     #[serde(rename = "method_accessibility_map")]
-    pub method_accessibility_map: ::utils::rust::prelude::IndexMap<String, crate::core_api::generated::models::MethodAccessibility>,
+    pub method_accessibility_map: ::radix_rust::prelude::IndexMap<String, crate::core_api::generated::models::MethodAccessibility>,
 }
 
 impl StaticRoleDefinitionAuthTemplate {
-    pub fn new(role_specification: crate::core_api::generated::models::RoleSpecification, method_accessibility_map: ::utils::rust::prelude::IndexMap<String, crate::core_api::generated::models::MethodAccessibility>) -> StaticRoleDefinitionAuthTemplate {
+    pub fn new(role_specification: crate::core_api::generated::models::RoleSpecification, method_accessibility_map: ::radix_rust::prelude::IndexMap<String, crate::core_api::generated::models::MethodAccessibility>) -> StaticRoleDefinitionAuthTemplate {
         StaticRoleDefinitionAuthTemplate {
             role_specification,
             roles: None,

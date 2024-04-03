@@ -16,12 +16,16 @@ models/AccessRuleNode.ts
 models/AccessRuleNodeBase.ts
 models/AccessRuleNodeType.ts
 models/AccessRuleType.ts
+models/AccountAddressKey.ts
 models/AccountAuthorizedDepositorEntrySubstate.ts
 models/AccountAuthorizedDepositorEntrySubstateAllOf.ts
 models/AccountAuthorizedDepositorEntryValue.ts
 models/AccountFieldStateSubstate.ts
 models/AccountFieldStateSubstateAllOf.ts
 models/AccountFieldStateValue.ts
+models/AccountLockerAccountClaimsEntrySubstate.ts
+models/AccountLockerAccountClaimsEntrySubstateAllOf.ts
+models/AccountLockerAccountClaimsEntryValue.ts
 models/AccountResourcePreferenceEntrySubstate.ts
 models/AccountResourcePreferenceEntrySubstateAllOf.ts
 models/AccountResourcePreferenceEntryValue.ts

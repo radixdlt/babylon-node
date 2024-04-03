@@ -14,7 +14,7 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-pub type ExecutionRejectionReason = radix_engine::errors::RejectionReason;
+pub type ExecutionRejectionReason = RejectionReason;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MempoolRejectionReason {
@@ -49,7 +49,7 @@ impl MempoolRejectionReason {
         match self {
             MempoolRejectionReason::AlreadyCommitted(_) => true,
             MempoolRejectionReason::FromExecution(rejection_reason) => match **rejection_reason {
-                ExecutionRejectionReason::SuccessButFeeLoanNotRepaid => false,
+                ExecutionRejectionReason::BootloadingError(_) => false,
                 ExecutionRejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(_) => false,
                 ExecutionRejectionReason::TransactionEpochNotYetValid { .. } => false,
                 ExecutionRejectionReason::TransactionEpochNoLongerValid { .. } => false,
@@ -75,13 +75,11 @@ impl MempoolRejectionReason {
                 RejectionPermanence::PermanentForAnyPayloadWithThisIntent
             }
             MempoolRejectionReason::FromExecution(rejection_error) => match **rejection_error {
-                ExecutionRejectionReason::SuccessButFeeLoanNotRepaid => {
-                    RejectionPermanence::Temporary {
-                        retry: RetrySettings::AfterDelay {
-                            base_delay: Duration::from_secs(2 * 60),
-                        },
-                    }
-                }
+                ExecutionRejectionReason::BootloadingError(_) => RejectionPermanence::Temporary {
+                    retry: RetrySettings::AfterDelay {
+                        base_delay: Duration::from_secs(2 * 60),
+                    },
+                },
                 ExecutionRejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(_) => {
                     RejectionPermanence::Temporary {
                         retry: RetrySettings::AfterDelay {
@@ -636,8 +634,8 @@ struct CommittedIntentRecord {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
+    use radix_engine::system::system_modules::costing::{CostingError, FeeReserveError};
 
     fn user_payload_hash(nonce: u8) -> NotarizedTransactionHash {
         NotarizedTransactionHash::from(blake2b_256_hash([0, nonce]))
@@ -676,7 +674,11 @@ mod tests {
 
         let example_attempt_2 = TransactionAttempt {
             rejection: Some(MempoolRejectionReason::FromExecution(Box::new(
-                ExecutionRejectionReason::SuccessButFeeLoanNotRepaid,
+                ExecutionRejectionReason::BootloadingError(
+                    BootloadingError::FailedToApplyDeferredCosts(CostingError::FeeReserveError(
+                        FeeReserveError::Overflow,
+                    )),
+                ),
             ))),
             against_state: AtState::Committed {
                 state_version: StateVersion::pre_genesis(),
@@ -844,7 +846,11 @@ mod tests {
 
         let attempt_with_temporary_rejection = TransactionAttempt {
             rejection: Some(MempoolRejectionReason::FromExecution(Box::new(
-                ExecutionRejectionReason::SuccessButFeeLoanNotRepaid,
+                ExecutionRejectionReason::BootloadingError(
+                    BootloadingError::FailedToApplyDeferredCosts(CostingError::FeeReserveError(
+                        FeeReserveError::Overflow,
+                    )),
+                ),
             ))),
             against_state: AtState::Committed {
                 state_version: StateVersion::pre_genesis(),

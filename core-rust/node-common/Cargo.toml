@@ -5,14 +5,14 @@ edition = "2021"
 
 [dependencies]
 sbor = { workspace = true }
-transaction = { workspace = true }
-radix-engine-common = { workspace = true }
+radix-transactions = { workspace = true }
+radix-common = { workspace = true }
 radix-engine-interface = { workspace = true }
 radix-engine = { workspace = true }
-substate-store-impls = { workspace = true }
-substate-store-interface = { workspace = true }
-substate-store-queries = { workspace = true }
-utils = { workspace = true }
+radix-substate-store-impls = { workspace = true }
+radix-substate-store-interface = { workspace = true }
+radix-substate-store-queries = { workspace = true }
+radix-rust = { workspace = true }
 
 # Non-Radix Engine Dependencies:
 jni = { workspace = true }

@@ -27,17 +27,17 @@ pub struct BlueprintInterface {
     pub state: Box<crate::core_api::generated::models::IndexedStateSchema>,
     /// A map from the function name to the FunctionSchema
     #[serde(rename = "functions")]
-    pub functions: ::utils::rust::prelude::IndexMap<String, crate::core_api::generated::models::FunctionSchema>,
+    pub functions: ::radix_rust::prelude::IndexMap<String, crate::core_api::generated::models::FunctionSchema>,
     /// A map from the event name to the event payload type reference.
     #[serde(rename = "events")]
-    pub events: ::utils::rust::prelude::IndexMap<String, crate::core_api::generated::models::BlueprintPayloadDef>,
+    pub events: ::radix_rust::prelude::IndexMap<String, crate::core_api::generated::models::BlueprintPayloadDef>,
     /// A map from the registered type name to the concrete type, resolved against a schema from the package's schema partition. 
     #[serde(rename = "types")]
-    pub types: ::utils::rust::prelude::IndexMap<String, crate::core_api::generated::models::ScopedTypeId>,
+    pub types: ::radix_rust::prelude::IndexMap<String, crate::core_api::generated::models::ScopedTypeId>,
 }
 
 impl BlueprintInterface {
-    pub fn new(generic_type_parameters: Vec<crate::core_api::generated::models::GenericTypeParameter>, is_transient: bool, features: Vec<String>, state: crate::core_api::generated::models::IndexedStateSchema, functions: ::utils::rust::prelude::IndexMap<String, crate::core_api::generated::models::FunctionSchema>, events: ::utils::rust::prelude::IndexMap<String, crate::core_api::generated::models::BlueprintPayloadDef>, types: ::utils::rust::prelude::IndexMap<String, crate::core_api::generated::models::ScopedTypeId>) -> BlueprintInterface {
+    pub fn new(generic_type_parameters: Vec<crate::core_api::generated::models::GenericTypeParameter>, is_transient: bool, features: Vec<String>, state: crate::core_api::generated::models::IndexedStateSchema, functions: ::radix_rust::prelude::IndexMap<String, crate::core_api::generated::models::FunctionSchema>, events: ::radix_rust::prelude::IndexMap<String, crate::core_api::generated::models::BlueprintPayloadDef>, types: ::radix_rust::prelude::IndexMap<String, crate::core_api::generated::models::ScopedTypeId>) -> BlueprintInterface {
         BlueprintInterface {
             outer_blueprint: None,
             generic_type_parameters,

@@ -3701,6 +3701,7 @@ components:
         - GlobalValidator
         - GlobalGenericComponent
         - GlobalAccount
+        - GlobalAccountLocker
         - GlobalIdentity
         - GlobalAccessController
         - GlobalVirtualSecp256k1Account
@@ -3808,6 +3809,7 @@ components:
           AccountVaultEntry: '#/components/schemas/AccountVaultEntrySubstate'
           AccountResourcePreferenceEntry: '#/components/schemas/AccountResourcePreferenceEntrySubstate'
           AccountAuthorizedDepositorEntry: '#/components/schemas/AccountAuthorizedDepositorEntrySubstate'
+          AccountLockerAccountClaimsEntry: '#/components/schemas/AccountLockerAccountClaimsEntrySubstate'
           AccessControllerFieldState: '#/components/schemas/AccessControllerFieldStateSubstate'
           GenericScryptoComponentFieldState: '#/components/schemas/GenericScryptoComponentFieldStateSubstate'
           GenericKeyValueStoreEntry: '#/components/schemas/GenericKeyValueStoreEntrySubstate'
@@ -3862,6 +3864,7 @@ components:
         - AccountVaultEntry
         - AccountResourcePreferenceEntry
         - AccountAuthorizedDepositorEntry
+        - AccountLockerAccountClaimsEntry
         - AccessControllerFieldState
         - GenericScryptoComponentFieldState
         - GenericKeyValueStoreEntry
@@ -5230,6 +5233,36 @@ components:
             so a present entry is not confused by clients for a deleted/missing entry (which would imply
             not authorized).
           type: boolean
+    AccountLockerAccountClaimsEntrySubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - key
+            - value
+          properties:
+            key:
+              $ref: '#/components/schemas/AccountAddressKey'
+            value:
+              $ref: '#/components/schemas/AccountLockerAccountClaimsEntryValue'
+    AccountAddressKey:
+      type: object
+      description: An account which can claim the contents of associated vaults.
+      required:
+        - account_address
+      properties:
+        account_address:
+          type: string
+          description: The Bech32m-encoded human readable version of the account's global address.
+    AccountLockerAccountClaimsEntryValue:
+      type: object
+      description: |
+        An owned Key-Value Store entity, which maps `ResourceAddress`es to Vault `EntityAddress`es.
+      required:
+        - resource_vaults
+      properties:
+        resource_vaults:
+          $ref: '#/components/schemas/EntityReference'
     AccessControllerFieldStateSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'

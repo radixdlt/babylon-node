@@ -28,6 +28,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.AccessControllerFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.AccountAuthorizedDepositorEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccountFieldStateSubstate;
+import com.radixdlt.api.core.generated.models.AccountLockerAccountClaimsEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccountResourcePreferenceEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccountVaultEntrySubstate;
 import com.radixdlt.api.core.generated.models.BootLoaderModuleFieldVmBootSubstate;
@@ -101,6 +102,8 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = AccountAuthorizedDepositorEntrySubstate.class, name = "AccountAuthorizedDepositorEntrySubstate"),
   @JsonSubTypes.Type(value = AccountFieldStateSubstate.class, name = "AccountFieldState"),
   @JsonSubTypes.Type(value = AccountFieldStateSubstate.class, name = "AccountFieldStateSubstate"),
+  @JsonSubTypes.Type(value = AccountLockerAccountClaimsEntrySubstate.class, name = "AccountLockerAccountClaimsEntry"),
+  @JsonSubTypes.Type(value = AccountLockerAccountClaimsEntrySubstate.class, name = "AccountLockerAccountClaimsEntrySubstate"),
   @JsonSubTypes.Type(value = AccountResourcePreferenceEntrySubstate.class, name = "AccountResourcePreferenceEntry"),
   @JsonSubTypes.Type(value = AccountResourcePreferenceEntrySubstate.class, name = "AccountResourcePreferenceEntrySubstate"),
   @JsonSubTypes.Type(value = AccountVaultEntrySubstate.class, name = "AccountVaultEntry"),
@@ -308,6 +311,8 @@ static {
   mappings.put("AccountAuthorizedDepositorEntrySubstate", AccountAuthorizedDepositorEntrySubstate.class);
   mappings.put("AccountFieldState", AccountFieldStateSubstate.class);
   mappings.put("AccountFieldStateSubstate", AccountFieldStateSubstate.class);
+  mappings.put("AccountLockerAccountClaimsEntry", AccountLockerAccountClaimsEntrySubstate.class);
+  mappings.put("AccountLockerAccountClaimsEntrySubstate", AccountLockerAccountClaimsEntrySubstate.class);
   mappings.put("AccountResourcePreferenceEntry", AccountResourcePreferenceEntrySubstate.class);
   mappings.put("AccountResourcePreferenceEntrySubstate", AccountResourcePreferenceEntrySubstate.class);
   mappings.put("AccountVaultEntry", AccountVaultEntrySubstate.class);

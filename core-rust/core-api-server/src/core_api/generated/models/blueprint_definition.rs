@@ -17,14 +17,14 @@ pub struct BlueprintDefinition {
     pub interface: Box<crate::core_api::generated::models::BlueprintInterface>,
     /// A map from the function name to its export
     #[serde(rename = "function_exports")]
-    pub function_exports: ::utils::rust::prelude::IndexMap<String, crate::core_api::generated::models::PackageExport>,
+    pub function_exports: ::radix_rust::prelude::IndexMap<String, crate::core_api::generated::models::PackageExport>,
     /// A map from certain object lifecycle hooks to a callback \"package export\". There is at most one callback registered for each `ObjectHook`. 
     #[serde(rename = "hook_exports")]
     pub hook_exports: Vec<crate::core_api::generated::models::HookExport>,
 }
 
 impl BlueprintDefinition {
-    pub fn new(interface: crate::core_api::generated::models::BlueprintInterface, function_exports: ::utils::rust::prelude::IndexMap<String, crate::core_api::generated::models::PackageExport>, hook_exports: Vec<crate::core_api::generated::models::HookExport>) -> BlueprintDefinition {
+    pub fn new(interface: crate::core_api::generated::models::BlueprintInterface, function_exports: ::radix_rust::prelude::IndexMap<String, crate::core_api::generated::models::PackageExport>, hook_exports: Vec<crate::core_api::generated::models::HookExport>) -> BlueprintDefinition {
         BlueprintDefinition {
             interface: Box::new(interface),
             function_exports,

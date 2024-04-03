@@ -1,3 +1,4 @@
+use crate::engine_prelude::wasm::*;
 use crate::engine_prelude::*;
 
 use std::collections::HashMap;

@@ -26,7 +26,7 @@ pub struct TransactionIntent {
     pub instructions: Option<String>,
     /// A map of the hex-encoded blob hash, to hex-encoded blob content. Only returned if enabled in `TransactionFormatOptions` on your request.
     #[serde(rename = "blobs_hex", skip_serializing_if = "Option::is_none")]
-    pub blobs_hex: Option<::utils::rust::prelude::IndexMap<String, String>>,
+    pub blobs_hex: Option<::radix_rust::prelude::IndexMap<String, String>>,
     #[serde(rename = "message", skip_serializing_if = "Option::is_none")]
     pub message: Option<Box<crate::core_api::generated::models::TransactionMessage>>,
 }

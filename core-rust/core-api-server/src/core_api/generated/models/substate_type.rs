@@ -98,6 +98,8 @@ pub enum SubstateType {
     AccountResourcePreferenceEntry,
     #[serde(rename = "AccountAuthorizedDepositorEntry")]
     AccountAuthorizedDepositorEntry,
+    #[serde(rename = "AccountLockerAccountClaimsEntry")]
+    AccountLockerAccountClaimsEntry,
     #[serde(rename = "AccessControllerFieldState")]
     AccessControllerFieldState,
     #[serde(rename = "GenericScryptoComponentFieldState")]
@@ -163,6 +165,7 @@ impl ToString for SubstateType {
             Self::AccountVaultEntry => String::from("AccountVaultEntry"),
             Self::AccountResourcePreferenceEntry => String::from("AccountResourcePreferenceEntry"),
             Self::AccountAuthorizedDepositorEntry => String::from("AccountAuthorizedDepositorEntry"),
+            Self::AccountLockerAccountClaimsEntry => String::from("AccountLockerAccountClaimsEntry"),
             Self::AccessControllerFieldState => String::from("AccessControllerFieldState"),
             Self::GenericScryptoComponentFieldState => String::from("GenericScryptoComponentFieldState"),
             Self::GenericKeyValueStoreEntry => String::from("GenericKeyValueStoreEntry"),

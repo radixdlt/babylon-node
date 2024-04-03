@@ -30,6 +30,7 @@ import com.radixdlt.api.core.generated.models.AccountAuthorizedDepositorEntrySub
 import com.radixdlt.api.core.generated.models.AccountAuthorizedDepositorEntrySubstateAllOf;
 import com.radixdlt.api.core.generated.models.AccountAuthorizedDepositorEntryValue;
 import com.radixdlt.api.core.generated.models.AccountFieldStateSubstate;
+import com.radixdlt.api.core.generated.models.AccountLockerAccountClaimsEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccountResourcePreferenceEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccountVaultEntrySubstate;
 import com.radixdlt.api.core.generated.models.AuthorizedDepositorKey;
@@ -102,6 +103,7 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = AccessControllerFieldStateSubstate.class, name = "AccessControllerFieldState"),
   @JsonSubTypes.Type(value = AccountAuthorizedDepositorEntrySubstate.class, name = "AccountAuthorizedDepositorEntry"),
   @JsonSubTypes.Type(value = AccountFieldStateSubstate.class, name = "AccountFieldState"),
+  @JsonSubTypes.Type(value = AccountLockerAccountClaimsEntrySubstate.class, name = "AccountLockerAccountClaimsEntry"),
   @JsonSubTypes.Type(value = AccountResourcePreferenceEntrySubstate.class, name = "AccountResourcePreferenceEntry"),
   @JsonSubTypes.Type(value = AccountVaultEntrySubstate.class, name = "AccountVaultEntry"),
   @JsonSubTypes.Type(value = BootLoaderModuleFieldVmBootSubstate.class, name = "BootLoaderModuleFieldVmBoot"),
@@ -262,6 +264,7 @@ static {
   mappings.put("AccessControllerFieldState", AccessControllerFieldStateSubstate.class);
   mappings.put("AccountAuthorizedDepositorEntry", AccountAuthorizedDepositorEntrySubstate.class);
   mappings.put("AccountFieldState", AccountFieldStateSubstate.class);
+  mappings.put("AccountLockerAccountClaimsEntry", AccountLockerAccountClaimsEntrySubstate.class);
   mappings.put("AccountResourcePreferenceEntry", AccountResourcePreferenceEntrySubstate.class);
   mappings.put("AccountVaultEntry", AccountVaultEntrySubstate.class);
   mappings.put("BootLoaderModuleFieldVmBoot", BootLoaderModuleFieldVmBootSubstate.class);

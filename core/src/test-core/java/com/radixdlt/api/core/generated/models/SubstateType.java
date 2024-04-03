@@ -114,6 +114,8 @@ public enum SubstateType {
   
   ACCOUNTAUTHORIZEDDEPOSITORENTRY("AccountAuthorizedDepositorEntry"),
   
+  ACCOUNTLOCKERACCOUNTCLAIMSENTRY("AccountLockerAccountClaimsEntry"),
+  
   ACCESSCONTROLLERFIELDSTATE("AccessControllerFieldState"),
   
   GENERICSCRYPTOCOMPONENTFIELDSTATE("GenericScryptoComponentFieldState"),

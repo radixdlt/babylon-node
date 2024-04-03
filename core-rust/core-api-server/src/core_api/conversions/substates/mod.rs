@@ -1,6 +1,7 @@
 mod access_controller;
 mod access_rules_module;
 mod account;
+mod account_locker;
 mod consensus_manager;
 mod generic;
 mod metadata_module;

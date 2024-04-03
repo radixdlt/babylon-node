@@ -74,11 +74,7 @@ use crate::*;
 use node_common::config::limits::VertexLimitsConfig;
 
 use crate::engine_prelude::*;
-use ::transaction::model::PrepareError; // disambiguation needed because of a wide prelude
-
-use transaction_scenarios::scenario::DescribedAddress as ScenarioDescribedAddress;
-use transaction_scenarios::scenario::*;
-use transaction_scenarios::scenarios::*;
+use ::radix_transactions::model::PrepareError; // disambiguation needed because of a wide prelude
 
 use node_common::locks::{DbLock, LockFactory, Mutex, RwLock};
 use prometheus::Registry;
@@ -86,7 +82,7 @@ use tracing::{debug, info, warn};
 
 use crate::protocol::*;
 use crate::store::traits::scenario::{
-    DescribedAddress, ExecutedGenesisScenario, ExecutedGenesisScenarioStore,
+    DescribedAddressRendering, ExecutedGenesisScenario, ExecutedGenesisScenarioStore,
     ExecutedScenarioTransaction, ScenarioSequenceNumber,
 };
 
@@ -214,9 +210,7 @@ impl GenesisCommitRequestFactory {
         &mut self,
         result: ScenarioPrepareResult,
     ) -> Option<GenesisCommitRequest> {
-        let Some(ledger_hashes) = result.committable_ledger_hashes else {
-            return None;
-        };
+        let ledger_hashes = result.committable_ledger_hashes?;
         self.state_version = self
             .state_version
             .next()
@@ -944,16 +938,16 @@ impl StateComputer {
                             .interesting_addresses
                             .0
                             .into_iter()
-                            .map(|(descriptor, address)| DescribedAddress {
+                            .map(|(descriptor, address)| DescribedAddressRendering {
                                 logical_name: descriptor,
                                 rendered_address: match address {
-                                    ScenarioDescribedAddress::Global(address) => {
+                                    DescribedAddress::Global(address) => {
                                         address.to_string(&encoder)
                                     }
-                                    ScenarioDescribedAddress::Internal(address) => {
+                                    DescribedAddress::Internal(address) => {
                                         address.to_string(&encoder)
                                     }
-                                    ScenarioDescribedAddress::NonFungible(nf_global_id) => {
+                                    DescribedAddress::NonFungible(nf_global_id) => {
                                         nf_global_id.to_string(&encoder)
                                     }
                                 },

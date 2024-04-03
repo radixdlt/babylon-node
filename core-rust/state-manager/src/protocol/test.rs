@@ -103,8 +103,9 @@ fn flash_protocol_update_test() {
             .state_computer
             .execute_genesis_for_unit_tests_with_default_config();
         // Now we can prepare the state updates based on the initialized database
-        let state_updates = generate_validator_fee_fix_state_updates(
+        let state_updates = ProtocolUpdateEntry::ValidatorCreationFeeFix.generate_state_updates(
             tmp_state_manager.database.access_direct().deref(),
+            &state_manager_config.network_definition,
         );
         state_updates
     };

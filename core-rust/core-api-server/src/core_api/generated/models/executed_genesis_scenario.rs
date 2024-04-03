@@ -23,11 +23,11 @@ pub struct ExecutedGenesisScenario {
     pub committed_transactions: Vec<crate::core_api::generated::models::ExecutedScenarioTransaction>,
     /// Well-named addresses touched/created by the Scenario, keyed by their name. 
     #[serde(rename = "addresses")]
-    pub addresses: ::utils::rust::prelude::IndexMap<String, String>,
+    pub addresses: ::radix_rust::prelude::IndexMap<String, String>,
 }
 
 impl ExecutedGenesisScenario {
-    pub fn new(sequence_number: i32, logical_name: String, committed_transactions: Vec<crate::core_api::generated::models::ExecutedScenarioTransaction>, addresses: ::utils::rust::prelude::IndexMap<String, String>) -> ExecutedGenesisScenario {
+    pub fn new(sequence_number: i32, logical_name: String, committed_transactions: Vec<crate::core_api::generated::models::ExecutedScenarioTransaction>, addresses: ::radix_rust::prelude::IndexMap<String, String>) -> ExecutedGenesisScenario {
         ExecutedGenesisScenario {
             sequence_number,
             logical_name,

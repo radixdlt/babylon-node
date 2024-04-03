@@ -24,7 +24,7 @@ pub struct LtsStateAccountDepositBehaviourResponse {
     pub is_badge_authorized_depositor: Option<bool>,
     /// A map from one of the input `resource_addresses` to its specific deposit behavior configured for this account. This field will only be present if an array of specific resource addresses was passed in the request (even if empty). 
     #[serde(rename = "resource_specific_behaviours", skip_serializing_if = "Option::is_none")]
-    pub resource_specific_behaviours: Option<::utils::rust::prelude::IndexMap<String, crate::core_api::generated::models::ResourceSpecificDepositBehaviour>>,
+    pub resource_specific_behaviours: Option<::radix_rust::prelude::IndexMap<String, crate::core_api::generated::models::ResourceSpecificDepositBehaviour>>,
 }
 
 impl LtsStateAccountDepositBehaviourResponse {

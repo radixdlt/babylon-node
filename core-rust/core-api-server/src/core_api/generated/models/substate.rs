@@ -36,6 +36,15 @@ pub enum Substate {
         #[serde(rename = "value")]
         value: Box<crate::core_api::generated::models::AccountFieldStateValue>,
     },
+    #[serde(rename="AccountLockerAccountClaimsEntry")]
+    AccountLockerAccountClaimsEntrySubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
+        #[serde(rename = "key")]
+        key: Box<crate::core_api::generated::models::AccountAddressKey>,
+        #[serde(rename = "value")]
+        value: Box<crate::core_api::generated::models::AccountLockerAccountClaimsEntryValue>,
+    },
     #[serde(rename="AccountResourcePreferenceEntry")]
     AccountResourcePreferenceEntrySubstate {
         #[serde(rename = "is_locked")]
