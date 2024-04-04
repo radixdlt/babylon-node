@@ -81,7 +81,7 @@ use crate::staging::ReadableStore;
 use crate::staging::node_ancestry_resolver::NodeAncestryResolver;
 use crate::staging::overlays::{MapSubstateNodeAncestryStore, StagedSubstateNodeAncestryStore};
 use crate::store::traits::{KeyedSubstateNodeAncestryRecord, SubstateNodeAncestryStore};
-use crate::traits::{AssociationCause, LeafSubstateKeyAssociation};
+use crate::traits::LeafSubstateKeyAssociation;
 use node_common::utils::IsAccountExt;
 
 pub enum ProcessedTransactionReceipt {
@@ -380,7 +380,7 @@ impl ProcessedCommitResult {
         }
     }
 
-    fn compute_state_tree_update<S: ReadableStateTreeStore>(
+    fn compute_state_tree_update<S: ReadableStateTreeStore + SubstateDatabase>(
         store: &S,
         parent_state_version: StateVersion,
         database_updates: &DatabaseUpdates,
@@ -638,7 +638,7 @@ impl<'s, S: ReadableTreeStore> ReadableTreeStore for CollectingTreeStore<'s, S> 
     }
 }
 
-impl<'s, S> WriteableTreeStore for CollectingTreeStore<'s, S> {
+impl<'s, S: SubstateDatabase> WriteableTreeStore for CollectingTreeStore<'s, S> {
     fn insert_node(&self, key: StoredTreeNodeKey, node: TreeNode) {
         self.diff.borrow_mut().new_nodes.push((key, node));
     }
@@ -654,8 +654,13 @@ impl<'s, S> WriteableTreeStore for CollectingTreeStore<'s, S> {
             .borrow_mut()
             .push(LeafSubstateKeyAssociation {
                 tree_node_key: state_tree_leaf_key.clone(),
-                substate_key: (partition_key.clone(), sort_key.clone()),
-                cause: AssociationCause::from(substate_value),
+                substate_value: match substate_value {
+                    AssociatedSubstateValue::Upserted(value) => value.clone(),
+                    AssociatedSubstateValue::Unchanged => self
+                        .readable_delegate
+                        .get_substate(partition_key, sort_key)
+                        .expect("unchanged value not found in substate database"),
+                },
             });
     }
 

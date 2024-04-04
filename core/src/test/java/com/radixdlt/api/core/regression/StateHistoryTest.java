@@ -120,7 +120,7 @@ public class StateHistoryTest extends DeterministicCoreApiTestBase {
       final var result = submitAndWaitForSuccess(test, burnManifest, List.of(accountKeyPair));
 
       // Assert: we only need this to succeed (the original bug caused panics)
-      assertThat(result.errorMessage()).isNull();
+      assertThat(result.errorMessage()).isEmpty();
     }
   }
 

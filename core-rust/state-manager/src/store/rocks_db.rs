@@ -1195,25 +1195,8 @@ impl<R: WriteableRocks> CommitStore for StateManagerDatabase<R> {
 
         if self.config.enable_historical_substate_values {
             let associated_values_cf = db_context.cf(AssociatedStateTreeValuesCf);
-            for new_leaf_substate_key in commit_bundle.new_leaf_substate_keys {
-                let LeafSubstateKeyAssociation {
-                    tree_node_key,
-                    substate_key,
-                    cause,
-                } = new_leaf_substate_key;
-                let substate_value = match cause {
-                    AssociationCause::SubstateUpsert => commit_bundle
-                        .substate_store_update
-                        .get_upserted_value(&substate_key)
-                        .map(Cow::Borrowed)
-                        .expect("upserted value not found in database updates"),
-                    AssociationCause::TreeRestructuring => db_context
-                        .cf(SubstatesCf)
-                        .get(&substate_key)
-                        .map(Cow::Owned)
-                        .expect("unchanged value not found in substate database"),
-                };
-                associated_values_cf.put(&tree_node_key, substate_value.as_ref());
+            for association in commit_bundle.new_leaf_substate_keys {
+                associated_values_cf.put(&association.tree_node_key, &association.substate_value);
             }
         }
 
