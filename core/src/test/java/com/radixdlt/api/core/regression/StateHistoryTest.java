@@ -62,46 +62,72 @@
  * permissions under this License.
  */
 
-mod cache;
-pub mod epoch_handling;
-mod node_ancestry_resolver;
-mod overlays;
-mod result;
-mod stage_tree;
+package com.radixdlt.api.core.regression;
 
-use crate::accumulator_tree::storage::ReadableAccuTreeStore;
-use crate::engine_prelude::*;
-use crate::{ReceiptTreeHash, StateVersion, TransactionTreeHash};
+import static org.assertj.core.api.Assertions.assertThat;
 
-use crate::store::traits::SubstateNodeAncestryStore;
-use crate::traits::ConfigurableDatabase;
-pub use cache::*;
-pub use result::*;
+import com.radixdlt.api.DeterministicCoreApiTestBase;
+import com.radixdlt.api.core.generated.models.*;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.environment.DatabaseConfig;
+import com.radixdlt.environment.StateTreeGcConfig;
+import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.identifiers.Address;
+import com.radixdlt.rev2.Manifest;
+import com.radixdlt.rev2.TransactionBuilder;
+import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.UInt64;
+import java.util.List;
+import org.junit.Test;
 
-pub trait ReadableStateTreeStore: ReadableTreeStore {}
-impl<T> ReadableStateTreeStore for T where T: ReadableTreeStore {}
+public class StateHistoryTest extends DeterministicCoreApiTestBase {
 
-pub trait ReadableHashStructuresStore:
-    ReadableStateTreeStore
-    + ReadableAccuTreeStore<StateVersion, TransactionTreeHash>
-    + ReadableAccuTreeStore<StateVersion, ReceiptTreeHash>
-{
-}
-impl<T> ReadableHashStructuresStore for T where
-    T: ReadableStateTreeStore
-        + ReadableAccuTreeStore<StateVersion, TransactionTreeHash>
-        + ReadableAccuTreeStore<StateVersion, ReceiptTreeHash>
-{
-}
+  @Test
+  public void state_history_supports_substate_deletes() throws Exception {
+    try (var test = buildTest(true, 20L)) {
+      test.suppressUnusedWarning();
 
-pub trait ReadableStore:
-    SubstateDatabase + ReadableHashStructuresStore + SubstateNodeAncestryStore + ConfigurableDatabase
-{
-}
-impl<T> ReadableStore for T where
-    T: SubstateDatabase
-        + ReadableHashStructuresStore
-        + SubstateNodeAncestryStore
-        + ConfigurableDatabase
-{
+      // Arrange: we will use "burn NFT" for our "delete" operation:
+      final var resourceAddress = createFreeMintBurnNonFungibleResource(test);
+
+      final var accountKeyPair = ECKeyPair.generateNew();
+      final var accountAddress = Address.virtualAccountAddress(accountKeyPair.getPublicKey());
+      final var transactionMetadata =
+          getLtsApi()
+              .ltsTransactionConstructionPost(
+                  new LtsTransactionConstructionRequest().network(networkLogicalName));
+
+      final var mintManifest =
+          Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
+              resourceAddress, accountAddress, List.of(1), List.of());
+      final var burnManifest =
+          Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
+              resourceAddress, accountAddress, List.of(2), List.of(1, 2));
+
+      // Act: Queue up a minting transaction...
+      getLtsApi()
+          .ltsTransactionSubmitPost(
+              new LtsTransactionSubmitRequest()
+                  .network(networkLogicalName)
+                  .notarizedTransactionHex(
+                      TransactionBuilder.forNetwork(networkDefinition)
+                          .manifest(mintManifest)
+                          .fromEpoch(transactionMetadata.getCurrentEpoch())
+                          .signatories(List.of(accountKeyPair))
+                          .prepare()
+                          .hexPayloadBytes()));
+      // ... and then a burning transaction, so that they end up in one low-level "commit batch":
+      final var result = submitAndWaitForSuccess(test, burnManifest, List.of(accountKeyPair));
+
+      // Assert: we only need this to succeed (the original bug caused panics)
+      assertThat(result.errorMessage()).isEmpty();
+    }
+  }
+
+  private DeterministicTest buildTest(boolean stateHistoryEnabled, long historyLength) {
+    return buildRunningServerTest(
+        new DatabaseConfig(true, false, stateHistoryEnabled),
+        new StateTreeGcConfig(
+            UInt32.fromNonNegativeInt(1), UInt64.fromNonNegativeLong(historyLength)));
+  }
 }
