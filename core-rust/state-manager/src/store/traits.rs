@@ -136,12 +136,19 @@ pub trait ConfigurableDatabase {
 
     fn is_local_transaction_execution_index_enabled(&self) -> bool;
 
+    /// Returns [`true`] if the Node should be storing historical Substate values (and if it can
+    /// handle historical state requests).
+    ///
+    /// The exact [`StateVersion`] from which the history is available can be obtained from
+    /// [`Self::get_first_stored_historical_state_version()`].
+    fn is_state_history_enabled(&self) -> bool;
+
     /// Returns the first [`StateVersion`]s for which *historical* Substate values are currently
     /// available in the database.
     ///
-    /// Returns [`None`] if the state history feature is disabled, or if the history length
-    /// configuration is 0.
-    fn get_first_stored_historical_state_version(&self) -> Option<StateVersion>;
+    /// This method assumes that [`Self::is_state_history_enabled()`] returned [`true`] and *panics*
+    /// otherwise.
+    fn get_first_stored_historical_state_version(&self) -> StateVersion;
 }
 
 #[derive(Debug, Clone)]

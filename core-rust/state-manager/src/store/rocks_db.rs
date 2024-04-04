@@ -1013,17 +1013,18 @@ impl<R: ReadableRocks> ConfigurableDatabase for StateManagerDatabase<R> {
         self.config.enable_local_transaction_execution_index
     }
 
-    fn get_first_stored_historical_state_version(&self) -> Option<StateVersion> {
-        if !self.config.enable_historical_substate_values {
-            return None; // state history feature disabled explicitly
-        }
+    fn is_state_history_enabled(&self) -> bool {
+        self.config.enable_historical_substate_values
+    }
 
+    fn get_first_stored_historical_state_version(&self) -> StateVersion {
         let first_state_tree_version = self
             .open_read_context()
             .cf(StaleStateTreePartsCf)
             .get_first_key();
         let Some(first_state_tree_version) = first_state_tree_version else {
-            return None; // JMT past gets immediately GC'ed - the history length must be 0
+            // we need to handle a special case where the configured history length is 0:
+            return self.max_state_version();
         };
 
         // we also need to take the "still collecting the max history length" case into account:
@@ -1036,10 +1037,10 @@ impl<R: ReadableRocks> ConfigurableDatabase for StateManagerDatabase<R> {
                     .unwrap()
                     .into_latest()
             })
-            .expect("state history feature enabled, but its metadata not found")
+            .expect("state history metadata not found")
             .values_associated_from;
 
-        Some(max(first_state_tree_version, values_associated_from))
+        max(first_state_tree_version, values_associated_from)
     }
 }
 
