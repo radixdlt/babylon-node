@@ -74,6 +74,7 @@ use crate::engine_prelude::*;
 use crate::{ReceiptTreeHash, StateVersion, TransactionTreeHash};
 
 use crate::store::traits::SubstateNodeAncestryStore;
+use crate::traits::ConfigurableDatabase;
 pub use cache::*;
 pub use result::*;
 
@@ -94,10 +95,13 @@ impl<T> ReadableHashStructuresStore for T where
 }
 
 pub trait ReadableStore:
-    SubstateDatabase + ReadableHashStructuresStore + SubstateNodeAncestryStore
+    SubstateDatabase + ReadableHashStructuresStore + SubstateNodeAncestryStore + ConfigurableDatabase
 {
 }
 impl<T> ReadableStore for T where
-    T: SubstateDatabase + ReadableHashStructuresStore + SubstateNodeAncestryStore
+    T: SubstateDatabase
+        + ReadableHashStructuresStore
+        + SubstateNodeAncestryStore
+        + ConfigurableDatabase
 {
 }

@@ -218,10 +218,10 @@ impl<'s, R: ReadableRocks> VersionScopedSubstateDatabase<'s, StateManagerDatabas
             return Ok(Self::current(database, current_version)); // explicit "use current version"
         }
 
-        let first_available_version = database.get_first_stored_historical_state_version();
-        let Some(first_available_version) = first_available_version else {
+        if !database.is_state_history_enabled() {
             return Err(StateHistoryError::StateHistoryDisabled);
         };
+        let first_available_version = database.get_first_stored_historical_state_version();
         if requested_version < first_available_version {
             return Err(StateHistoryError::StateVersionInTooDistantPast {
                 first_available_version,

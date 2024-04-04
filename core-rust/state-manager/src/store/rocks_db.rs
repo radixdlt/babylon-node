@@ -1012,23 +1012,21 @@ impl<R: ReadableRocks> ConfigurableDatabase for StateManagerDatabase<R> {
         self.config.enable_local_transaction_execution_index
     }
 
-    fn get_first_stored_historical_state_version(&self) -> Option<StateVersion> {
-        if !self.config.enable_historical_substate_values {
-            return None; // state history feature disabled explicitly
-        }
+    fn is_state_history_enabled(&self) -> bool {
+        self.config.enable_historical_substate_values
+    }
 
-        Some(
-            self.open_read_context()
-                .cf(ExtensionsDataCf)
-                .get(&ExtensionsDataKey::StateTreeAssociatedValuesStatus)
-                .map(|bytes| {
-                    scrypto_decode::<VersionedStateTreeAssociatedValuesStatus>(&bytes)
-                        .unwrap()
-                        .into_latest()
-                })
-                .expect("state history feature enabled, but its metadata not found")
-                .historical_substate_values_available_from,
-        )
+    fn get_first_stored_historical_state_version(&self) -> StateVersion {
+        self.open_read_context()
+            .cf(ExtensionsDataCf)
+            .get(&ExtensionsDataKey::StateTreeAssociatedValuesStatus)
+            .map(|bytes| {
+                scrypto_decode::<VersionedStateTreeAssociatedValuesStatus>(&bytes)
+                    .unwrap()
+                    .into_latest()
+            })
+            .expect("state history feature metadata not found")
+            .historical_substate_values_available_from
     }
 }
 
@@ -1184,25 +1182,8 @@ impl<R: WriteableRocks> CommitStore for StateManagerDatabase<R> {
 
         if self.config.enable_historical_substate_values {
             let associated_values_cf = db_context.cf(AssociatedStateTreeValuesCf);
-            for new_leaf_substate_key in commit_bundle.new_leaf_substate_keys {
-                let LeafSubstateKeyAssociation {
-                    tree_node_key,
-                    substate_key,
-                    cause,
-                } = new_leaf_substate_key;
-                let substate_value = match cause {
-                    AssociationCause::SubstateUpsert => commit_bundle
-                        .substate_store_update
-                        .get_upserted_value(&substate_key)
-                        .map(Cow::Borrowed)
-                        .expect("upserted value not found in database updates"),
-                    AssociationCause::TreeRestructuring => db_context
-                        .cf(SubstatesCf)
-                        .get(&substate_key)
-                        .map(Cow::Owned)
-                        .expect("unchanged value not found in substate database"),
-                };
-                associated_values_cf.put(&tree_node_key, substate_value.as_ref());
+            for association in commit_bundle.new_leaf_substate_keys {
+                associated_values_cf.put(&association.tree_node_key, &association.substate_value);
             }
         }
 
@@ -1346,9 +1327,7 @@ impl<'r> Iterator for RocksDBCommittedTransactionBundleIterator<'r> {
     type Item = CommittedTransactionBundle;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let Some((txn_version, txn)) = self.txns_iter.next() else {
-            return None;
-        };
+        let (txn_version, txn) = self.txns_iter.next()?;
 
         let (ledger_receipt_version, ledger_receipt) = self
             .ledger_receipts_iter
