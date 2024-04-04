@@ -208,14 +208,6 @@ impl StateManager {
             ),
         );
 
-        let mut costing_parameters = CostingParameters::default();
-        if config.no_fees {
-            costing_parameters.execution_cost_unit_price = Decimal::ZERO;
-            costing_parameters.finalization_cost_unit_price = Decimal::ZERO;
-            costing_parameters.state_storage_price = Decimal::ZERO;
-            costing_parameters.archive_storage_price = Decimal::ZERO;
-        }
-
         let mempool = Arc::new(
             lock_factory
                 .named("mempool")
