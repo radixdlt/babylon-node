@@ -61,7 +61,6 @@ test.properties
 
 # nod
 node_modules/
-package-lock.json
 
 # auto-generated doc
 **/resources/documentation/*.html

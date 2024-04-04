@@ -1,4 +1,6 @@
 rootProject.name='babylon-node'
+
+// NOTE - If changing this, also update `update-locks.sh`
 include ':core'
 include ':cli-tools'
 include ':olympia-engine'
