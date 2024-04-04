@@ -214,9 +214,7 @@ impl GenesisCommitRequestFactory {
         &mut self,
         result: ScenarioPrepareResult,
     ) -> Option<GenesisCommitRequest> {
-        let Some(ledger_hashes) = result.committable_ledger_hashes else {
-            return None;
-        };
+        let ledger_hashes = result.committable_ledger_hashes?;
         self.state_version = self
             .state_version
             .next()
