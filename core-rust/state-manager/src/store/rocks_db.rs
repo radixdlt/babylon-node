@@ -1357,9 +1357,7 @@ impl<'r> Iterator for RocksDBCommittedTransactionBundleIterator<'r> {
     type Item = CommittedTransactionBundle;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let Some((txn_version, txn)) = self.txns_iter.next() else {
-            return None;
-        };
+        let (txn_version, txn) = self.txns_iter.next()?;
 
         let (ledger_receipt_version, ledger_receipt) = self
             .ledger_receipts_iter
