@@ -527,19 +527,19 @@ impl PendingTransactionResultCache {
             return record.clone();
         }
 
-        let new = PendingTransactionRecord::new(intent_hash, invalid_from_epoch, attempt);
+        let new_record = PendingTransactionRecord::new(intent_hash, invalid_from_epoch, attempt);
 
         // NB - removed is the item kicked out of the LRU cache if it's at capacity
         let removed = self
             .pending_transaction_records
-            .push(notarized_transaction_hash, new.clone());
+            .push(notarized_transaction_hash, new_record.clone());
 
         self.handled_added(intent_hash, notarized_transaction_hash);
-        if let Some((p, r)) = removed {
-            self.handled_removed(p, r);
+        if let Some((removed_notarized_transaction_hash, removed_record)) = removed {
+            self.handled_removed(removed_notarized_transaction_hash, removed_record);
         }
 
-        new
+        new_record
     }
 
     pub fn track_committed_transactions(

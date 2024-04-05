@@ -170,31 +170,12 @@ impl MempoolManager {
             .read()
             .iter_by_state_version()
             .take(max_reevaluated_count as usize)
-            .collect();
+            .collect(); // collect, just to release the mempool lock
 
-        let mut transactions_to_remove = Vec::new();
         for candidate_transaction in candidate_transactions {
-            let record = self
-                .cached_committability_validator
+            // invoking the check automatically removes the transaction when rejected
+            self.cached_committability_validator
                 .check_for_rejection_validated(&candidate_transaction.transaction.validated);
-            if record.latest_attempt.rejection.is_some() {
-                transactions_to_remove.push(candidate_transaction);
-            }
-        }
-
-        if !transactions_to_remove.is_empty() {
-            let mut write_mempool = self.mempool.write();
-            transactions_to_remove
-                .iter()
-                .for_each(|transaction_to_remove| {
-                    write_mempool.remove_by_payload_hash(
-                        &transaction_to_remove
-                            .transaction
-                            .validated
-                            .prepared
-                            .notarized_transaction_hash(),
-                    );
-                });
         }
     }
 
