@@ -273,7 +273,7 @@ impl MempoolManager {
         // STEP 4 - We check if the result should mean we add the transaction to our mempool
         let PendingExecutedTransaction {
             transaction,
-            latest_attempt_against_state_version,
+            latest_attempt_against_state,
         } = record
             .should_accept_into_mempool(check_result)
             .map_err(MempoolAddError::Rejected)?;
@@ -286,7 +286,7 @@ impl MempoolManager {
             mempool_transaction.clone(),
             source,
             Instant::now(),
-            latest_attempt_against_state_version,
+            latest_attempt_against_state.committed_version(),
         ) {
             Ok(_evicted) => Ok(mempool_transaction),
             Err(error) => Err(error),

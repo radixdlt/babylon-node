@@ -3,7 +3,7 @@ use node_common::locks::RwLock;
 
 use crate::{
     transaction::{CheckMetadata, StaticValidation},
-    CommittedUserTransactionIdentifiers, MempoolAddRejection, StateVersion,
+    CommittedUserTransactionIdentifiers, MempoolAddRejection, StateVersion, TransactionTreeHash,
 };
 
 use crate::priority_mempool::PriorityMempool;
@@ -227,10 +227,12 @@ pub struct TransactionAttempt {
 
 impl TransactionAttempt {
     pub fn was_against_permanent_state(&self) -> bool {
-        match self.against_state {
+        match &self.against_state {
             AtState::Static => true,
-            AtState::Committed { .. } => true,
-            AtState::PendingPreparingVertices { .. } => false,
+            AtState::Specific(specific) => match specific {
+                AtSpecificState::Committed { .. } => true,
+                AtSpecificState::PendingPreparingVertices { .. } => false,
+            },
         }
     }
 
@@ -257,22 +259,28 @@ impl TransactionAttempt {
 pub enum AtState {
     // We might need this to be versioned by protocol update later...
     Static,
+    Specific(AtSpecificState),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AtSpecificState {
     Committed {
         state_version: StateVersion,
     },
     PendingPreparingVertices {
         base_committed_state_version: StateVersion,
+        pending_transactions_root: TransactionTreeHash,
     },
 }
 
-impl AtState {
-    pub fn specific_version(&self) -> Option<StateVersion> {
+impl AtSpecificState {
+    pub fn committed_version(&self) -> StateVersion {
         match self {
-            AtState::Static => None,
-            AtState::Committed { state_version } => Some(*state_version),
-            AtState::PendingPreparingVertices {
+            Self::Committed { state_version } => *state_version,
+            Self::PendingPreparingVertices {
                 base_committed_state_version,
-            } => Some(*base_committed_state_version),
+                ..
+            } => *base_committed_state_version,
         }
     }
 }
@@ -288,17 +296,17 @@ pub enum RetryFrom {
 #[derive(Debug, Clone)]
 pub struct PendingExecutedTransaction {
     pub transaction: Box<ValidatedNotarizedTransactionV1>,
-    pub latest_attempt_against_state_version: StateVersion,
+    pub latest_attempt_against_state: AtSpecificState,
 }
 
 impl PendingExecutedTransaction {
-    pub fn new(
-        transaction: Box<ValidatedNotarizedTransactionV1>,
-        state_version: StateVersion,
-    ) -> Self {
+    pub fn new(transaction: Box<ValidatedNotarizedTransactionV1>, against_state: AtState) -> Self {
+        let AtState::Specific(latest_attempt_against_state) = against_state else {
+            panic!("transaction must have been executed against some state")
+        };
         Self {
             transaction,
-            latest_attempt_against_state_version: state_version,
+            latest_attempt_against_state,
         }
     }
 }
@@ -399,15 +407,9 @@ impl PendingTransactionRecord {
             CheckMetadata::Cached => {
                 panic!("Precondition was not met - the result was cached, but the latest attempt was not a rejection")
             }
-            CheckMetadata::Fresh(StaticValidation::Valid(transaction)) => {
-                Ok(PendingExecutedTransaction::new(
-                    transaction,
-                    self.latest_attempt
-                        .against_state
-                        .specific_version()
-                        .unwrap(),
-                ))
-            }
+            CheckMetadata::Fresh(StaticValidation::Valid(transaction)) => Ok(
+                PendingExecutedTransaction::new(transaction, self.latest_attempt.against_state),
+            ),
             CheckMetadata::Fresh(StaticValidation::Invalid) => {
                 panic!("A statically invalid transaction should already have been handled in the above")
             }
@@ -510,10 +512,10 @@ impl PendingTransactionResultCache {
         let mut write_mempool = self.mempool.write();
         if attempt.rejection.is_some() {
             write_mempool.remove_by_payload_hash(&notarized_transaction_hash);
-        } else if let Some(state_version) = attempt.against_state.specific_version() {
+        } else if let AtState::Specific(specific_state) = &attempt.against_state {
             write_mempool.update_transaction_executed_state_version(
                 &notarized_transaction_hash,
-                state_version,
+                specific_state.committed_version(),
             );
         }
         drop(write_mempool);
@@ -579,9 +581,9 @@ impl PendingTransactionResultCache {
                                 committed_notarized_transaction_hash,
                             },
                         )),
-                        against_state: AtState::Committed {
+                        against_state: AtState::Specific(AtSpecificState::Committed {
                             state_version: committed_transaction.state_version,
-                        },
+                        }),
                         timestamp: current_timestamp,
                     })
                 }
@@ -615,9 +617,9 @@ impl PendingTransactionResultCache {
                                 .notarized_transaction_hash,
                         },
                     )),
-                    against_state: AtState::Committed {
+                    against_state: AtState::Specific(AtSpecificState::Committed {
                         state_version: committed_intent_record.state_version,
-                    },
+                    }),
                     timestamp: committed_intent_record.timestamp,
                 },
             ));
@@ -737,9 +739,9 @@ mod tests {
             rejection: Some(MempoolRejectionReason::FromExecution(Box::new(
                 ExecutionRejectionReason::SuccessButFeeLoanNotRepaid,
             ))),
-            against_state: AtState::Committed {
+            against_state: AtState::Specific(AtSpecificState::Committed {
                 state_version: StateVersion::pre_genesis(),
-            },
+            }),
             timestamp: SystemTime::now(),
         };
 
@@ -903,9 +905,9 @@ mod tests {
             rejection: Some(MempoolRejectionReason::FromExecution(Box::new(
                 ExecutionRejectionReason::SuccessButFeeLoanNotRepaid,
             ))),
-            against_state: AtState::Committed {
+            against_state: AtState::Specific(AtSpecificState::Committed {
                 state_version: StateVersion::pre_genesis(),
-            },
+            }),
             timestamp: start,
         };
         let attempt_with_rejection_until_epoch_10 = TransactionAttempt {
@@ -915,25 +917,25 @@ mod tests {
                     current_epoch: Epoch::of(9),
                 },
             ))),
-            against_state: AtState::Committed {
+            against_state: AtState::Specific(AtSpecificState::Committed {
                 state_version: StateVersion::of(10000),
-            },
+            }),
             timestamp: start,
         };
         let attempt_with_permanent_rejection = TransactionAttempt {
             rejection: Some(MempoolRejectionReason::ValidationError(
                 TransactionValidationError::TransactionTooLarge,
             )),
-            against_state: AtState::Committed {
+            against_state: AtState::Specific(AtSpecificState::Committed {
                 state_version: StateVersion::pre_genesis(),
-            },
+            }),
             timestamp: start,
         };
         let attempt_with_no_rejection = TransactionAttempt {
             rejection: None,
-            against_state: AtState::Committed {
+            against_state: AtState::Specific(AtSpecificState::Committed {
                 state_version: StateVersion::pre_genesis(),
-            },
+            }),
             timestamp: start,
         };
 

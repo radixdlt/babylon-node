@@ -362,9 +362,11 @@ impl StateComputer {
         // our execution cache),
         //========================================================================================
 
-        let pending_transaction_base_state = AtState::PendingPreparingVertices {
-            base_committed_state_version: series_executor.latest_state_version(),
-        };
+        let pending_transaction_base_state =
+            AtState::Specific(AtSpecificState::PendingPreparingVertices {
+                base_committed_state_version: series_executor.latest_state_version(),
+                pending_transactions_root: prepare_request.ancestor_ledger_hashes.transaction_root,
+            });
 
         for raw_ancestor in prepare_request.ancestor_transactions {
             // TODO(optimization-only): We could avoid the hashing, decoding, signature verification
