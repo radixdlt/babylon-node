@@ -62,16 +62,60 @@
  * permissions under this License.
  */
 
-pub mod config;
-pub mod environment;
-pub mod indexing;
-pub mod java;
-pub mod jni;
-pub mod locks;
-pub mod metrics;
-pub mod scheduler;
-pub mod utils;
+use std::collections::btree_set::BTreeSet;
 
-pub(crate) mod engine_prelude {
-    pub use radix_engine_common::prelude::*;
+/// An natural-order "secondary index" of key-value pairs.
+///
+/// The "secondary" nature means that this structure assumes certain invariants maintained by the
+/// primary storage of the same elements. Please see individual method documentation for details.
+///
+/// Implementation-wise, this is a simple wrapper for a [`BTreeSet`], exposing only the most popular
+/// operations related to key-value pairs in our codebase.
+pub struct SecondaryIndex<K, V> {
+    sorted_set: BTreeSet<(K, V)>,
+}
+
+impl<K: Ord, V: Ord> Default for SecondaryIndex<K, V> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<K: Ord, V: Ord> SecondaryIndex<K, V> {
+    /// Creates an empty index.
+    pub fn new() -> Self {
+        Self {
+            sorted_set: BTreeSet::new(),
+        }
+    }
+
+    /// Inserts a new pair.
+    ///
+    /// *Panics* if such pair was already in the index.
+    pub fn insert(&mut self, key: K, value: V) {
+        if !self.sorted_set.insert((key, value)) {
+            panic!("value already present in the index");
+        }
+    }
+
+    /// Removes the given pair.
+    ///
+    /// *Panics* if such pair was not in the index.
+    pub fn remove(&mut self, key: K, value: V) {
+        if !self.sorted_set.remove(&(key, value)) {
+            panic!("value not present in the index");
+        }
+    }
+
+    /// Iterates over all values, starting from the least pair (according to its key's and value's
+    /// natural ordering).
+    pub fn iter_values_from_least(&self) -> impl Iterator<Item = &V> + '_ {
+        self.sorted_set.iter().map(|(_key, value)| value)
+    }
+
+    /// Iterates over all values, starting from the greatest pair (according to its key's and
+    /// value's natural ordering).
+    pub fn iter_values_from_greatest(&self) -> impl Iterator<Item = &V> + '_ {
+        self.sorted_set.iter().rev().map(|(_key, value)| value)
+    }
 }
