@@ -165,12 +165,12 @@ impl MempoolManager {
     /// Checks the committability of up to `max_reevaluated_count` of transactions executed against
     /// earliest state versions and removes the newly rejected ones from the mempool.
     pub fn reevaluate_transaction_committability(&self, max_reevaluated_count: u32) {
-        let candidate_transactions: Vec<Arc<MempoolData>> = self
+        let candidate_transactions = self
             .mempool
             .read()
             .iter_by_state_version()
             .take(max_reevaluated_count as usize)
-            .collect(); // collect, just to release the mempool lock
+            .collect::<Vec<_>>(); // collect, just to release the mempool lock
 
         for candidate_transaction in candidate_transactions {
             // invoking the check automatically removes the transaction when rejected
@@ -333,7 +333,7 @@ impl MempoolManager {
     }
 
     /// Removes transactions no longer valid at or after the given epoch.
-    pub fn remove_txns_where_end_epoch_expired(&self, epoch: Epoch) -> Vec<Arc<MempoolData>> {
+    pub fn remove_txns_where_end_epoch_expired(&self, epoch: Epoch) -> Vec<MempoolData> {
         self.mempool
             .write()
             .remove_txns_where_end_epoch_expired(epoch)

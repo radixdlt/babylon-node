@@ -90,12 +90,15 @@ pub const MEMPOOL_TRANSACTION_OVERHEAD_FACTOR_PERCENT: u32 = 230;
 #[derive(Clone, PartialEq, Eq)]
 pub struct MempoolData {
     /// The mempool transaction.
-    /// The MempoolTransaction is stored in an Arc for performance, so it's cheap to clone it as part of mempool operations.
+    /// The [`MempoolTransaction`] is stored in an [`Arc`] for performance, so it is cheap to clone
+    /// it as part of mempool operations.
     pub transaction: Arc<MempoolTransaction>,
     /// The instant at which the transaction was added to the mempool.
     pub added_at: Instant,
     /// The source of the transaction.
     pub source: MempoolAddSource,
+    /// The state version of this transaction's last successful execution.
+    pub successfully_executed_at: StateVersion,
 }
 
 // There is only 1 [`MempoolData`] per unique [`MempoolTransaction`]
@@ -165,23 +168,25 @@ impl HasNotarizedTransactionHash for MempoolTransaction {
 }
 
 impl MempoolData {
-    fn create(
+    fn new(
         transaction: Arc<MempoolTransaction>,
         added_at: Instant,
         source: MempoolAddSource,
-    ) -> MempoolData {
-        MempoolData {
+        successfully_executed_at: StateVersion,
+    ) -> Self {
+        Self {
             transaction,
             added_at,
             source,
+            successfully_executed_at,
         }
     }
 }
 
-/// A wrapper around an [`Arc<MempoolData>`] which implements ordering traits for the proposal priority.
+/// A wrapper around a [`MempoolData`] which implements ordering traits for the proposal priority.
 /// If a > b then a is prioritized over b.
 #[derive(Clone, Eq, PartialEq)]
-pub struct MempoolDataProposalPriorityOrdering(pub Arc<MempoolData>);
+pub struct MempoolDataProposalPriorityOrdering(pub MempoolData);
 
 impl Ord for MempoolDataProposalPriorityOrdering {
     fn cmp(&self, other: &Self) -> Ordering {
@@ -205,9 +210,9 @@ impl PartialOrd for MempoolDataProposalPriorityOrdering {
     }
 }
 
-/// A wrapper around an [`Arc<MempoolData>`] which implements ordering traits by end epoch (exclusive).
+/// A wrapper around a [`MempoolData`] which implements ordering traits by end epoch (exclusive).
 #[derive(Clone, Eq, PartialEq)]
-pub struct MempoolDataEndEpochExclusiveOrdering(pub Arc<MempoolData>);
+pub struct MempoolDataEndEpochExclusiveOrdering(pub MempoolData);
 
 impl Ord for MempoolDataEndEpochExclusiveOrdering {
     fn cmp(&self, other: &Self) -> Ordering {
@@ -230,22 +235,26 @@ impl PartialOrd for MempoolDataEndEpochExclusiveOrdering {
     }
 }
 
-/// A wrapper for [`StateVersion`], [`Arc<Mempool>`] pairs that implements ordering traits by state version.
+/// A wrapper around a [`MempoolData`] which implements ordering traits by last successful execution
+/// state version.
 #[derive(Clone, Eq, PartialEq)]
-pub struct MempoolDataStateVersion(pub StateVersion, pub Arc<MempoolData>);
+pub struct MempoolDataStateVersionOrdering(pub MempoolData);
 
-impl Ord for MempoolDataStateVersion {
+impl Ord for MempoolDataStateVersionOrdering {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.0.cmp(&other.0).then_with(|| {
-            self.1
-                .transaction
-                .notarized_transaction_hash()
-                .cmp(&other.1.transaction.notarized_transaction_hash())
-        })
+        self.0
+            .successfully_executed_at
+            .cmp(&other.0.successfully_executed_at)
+            .then_with(|| {
+                self.0
+                    .transaction
+                    .notarized_transaction_hash()
+                    .cmp(&other.0.transaction.notarized_transaction_hash())
+            })
     }
 }
 
-impl PartialOrd for MempoolDataStateVersion {
+impl PartialOrd for MempoolDataStateVersionOrdering {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
@@ -256,9 +265,9 @@ pub struct PriorityMempool {
     remaining_transaction_count: u32,
     /// Max sum of transactions size that can live in [`self.data`].
     remaining_total_transactions_size: u64,
-    /// Mapping from [`NotarizedTransactionHash`] to [`Arc<MempoolData>`] containing [`MempoolTransaction`] with said payload hash.
+    /// Mapping from [`NotarizedTransactionHash`] to [`MempoolData`] containing [`MempoolTransaction`] with said payload hash.
     /// We use [`IndexMap`] for it's O(1) [`get_index`] needed for efficient random sampling.
-    data: IndexMap<NotarizedTransactionHash, Arc<MempoolData>>,
+    data: IndexMap<NotarizedTransactionHash, MempoolData>,
     /// Mapping from [`IntentHash`] to all transactions ([`NotarizedTransactionHash`]) that submit said intent.
     intent_lookup: HashMap<IntentHash, HashSet<NotarizedTransactionHash>>,
     /// Keeps ordering of the transactions by proposal priority (best transaction is highest tip percentage and longest time in mempool).
@@ -266,9 +275,7 @@ pub struct PriorityMempool {
     /// Keeps ordering of the transactions by end epoch.
     end_epoch_exclusive_index: BTreeSet<MempoolDataEndEpochExclusiveOrdering>,
     /// Keeps ordering of the transactions by latest successful execution
-    executed_state_version_index: BTreeSet<MempoolDataStateVersion>,
-    /// Mapping from [`Arc<MempoolData>`] to latest [`StateVersion`] it was executed against. The (StateVersion, Arc<MempoolData>)
-    data_to_executed_state_version: HashMap<Arc<MempoolData>, StateVersion>,
+    executed_state_version_index: BTreeSet<MempoolDataStateVersionOrdering>,
     /// Various metrics.
     metrics: MempoolMetrics,
 }
@@ -283,7 +290,6 @@ impl PriorityMempool {
             proposal_priority_index: BTreeSet::new(),
             end_epoch_exclusive_index: BTreeSet::new(),
             executed_state_version_index: BTreeSet::new(),
-            data_to_executed_state_version: HashMap::new(),
             metrics: MempoolMetrics::new(metric_registry),
         }
     }
@@ -300,7 +306,7 @@ impl PriorityMempool {
         source: MempoolAddSource,
         added_at: Instant,
         executed_at: StateVersion,
-    ) -> Result<Vec<Arc<MempoolData>>, MempoolAddError> {
+    ) -> Result<Vec<MempoolData>, MempoolAddError> {
         let payload_hash = transaction.notarized_transaction_hash();
 
         if self.contains_transaction(&payload_hash) {
@@ -310,7 +316,7 @@ impl PriorityMempool {
         let intent_hash = transaction.intent_hash();
         let transaction_size = transaction.raw.0.len() as u64;
 
-        let transaction_data = Arc::new(MempoolData::create(transaction, added_at, source));
+        let transaction_data = MempoolData::new(transaction, added_at, source, executed_at);
         let new_order_data = MempoolDataProposalPriorityOrdering(transaction_data.clone());
 
         let mut total_transaction_size_free_space = self.remaining_total_transactions_size;
@@ -395,10 +401,8 @@ impl PriorityMempool {
             ));
 
         // Add executed state version index
-        self.data_to_executed_state_version
-            .insert(transaction_data.clone(), executed_at);
         self.executed_state_version_index
-            .insert(MempoolDataStateVersion(executed_at, transaction_data));
+            .insert(MempoolDataStateVersionOrdering(transaction_data));
 
         // Add intent lookup
         self.intent_lookup
@@ -416,7 +420,7 @@ impl PriorityMempool {
     }
 
     // Internal only method. Assumes data is part of the Mempool.
-    fn remove_data(&mut self, data: Arc<MempoolData>) {
+    fn remove_data(&mut self, data: MempoolData) {
         let payload_hash = &data.transaction.notarized_transaction_hash();
         let intent_hash = &data.transaction.intent_hash();
 
@@ -462,14 +466,9 @@ impl PriorityMempool {
         }
 
         // Remove from executed_state_version_index
-        let state_version = match self.data_to_executed_state_version.remove(&data) {
-            None => panic!("Mempool state version map out of sync on remove"),
-            Some(state_version) => state_version,
-        };
-
         if !self
             .executed_state_version_index
-            .remove(&MempoolDataStateVersion(state_version, data))
+            .remove(&MempoolDataStateVersionOrdering(data))
         {
             panic!("Mempool executed state version index out of sync on remove");
         }
@@ -480,29 +479,41 @@ impl PriorityMempool {
         payload_hash: &NotarizedTransactionHash,
         state_version: StateVersion,
     ) {
-        if let Some(data) = self.data.get(payload_hash) {
-            let current_state_version = self
-                .data_to_executed_state_version
-                .insert(data.clone(), state_version)
-                .expect("Mempool state version map out of sync on update");
+        if let Some(data) = self.data.get_mut(payload_hash) {
+            if !self
+                .proposal_priority_index
+                .remove(&MempoolDataProposalPriorityOrdering(data.clone()))
+            {
+                panic!("Mempool proposal priority index out of sync on update");
+            }
+            if !self
+                .end_epoch_exclusive_index
+                .remove(&MempoolDataEndEpochExclusiveOrdering(data.clone()))
+            {
+                panic!("Mempool end epoch index out of sync on update");
+            }
             if !self
                 .executed_state_version_index
-                .remove(&MempoolDataStateVersion(
-                    current_state_version,
-                    data.clone(),
-                ))
+                .remove(&MempoolDataStateVersionOrdering(data.clone()))
             {
                 panic!("Mempool executed state version index out of sync on update");
             }
+
+            data.successfully_executed_at = state_version;
+
+            self.proposal_priority_index
+                .insert(MempoolDataProposalPriorityOrdering(data.clone()));
+            self.end_epoch_exclusive_index
+                .insert(MempoolDataEndEpochExclusiveOrdering(data.clone()));
             self.executed_state_version_index
-                .insert(MempoolDataStateVersion(state_version, data.clone()));
+                .insert(MempoolDataStateVersionOrdering(data.clone()));
         }
     }
 
     pub fn remove_by_payload_hash(
         &mut self,
         payload_hash: &NotarizedTransactionHash,
-    ) -> Option<Arc<MempoolData>> {
+    ) -> Option<MempoolData> {
         let to_remove = self.data.get(payload_hash).cloned();
         match &to_remove {
             None => {}
@@ -511,7 +522,7 @@ impl PriorityMempool {
         to_remove
     }
 
-    pub fn remove_by_intent_hash(&mut self, intent_hash: &IntentHash) -> Vec<Arc<MempoolData>> {
+    pub fn remove_by_intent_hash(&mut self, intent_hash: &IntentHash) -> Vec<MempoolData> {
         let data: Vec<_> = self
             .intent_lookup
             .get(intent_hash)
@@ -532,7 +543,7 @@ impl PriorityMempool {
             .collect()
     }
 
-    pub fn remove_txns_where_end_epoch_expired(&mut self, epoch: Epoch) -> Vec<Arc<MempoolData>> {
+    pub fn remove_txns_where_end_epoch_expired(&mut self, epoch: Epoch) -> Vec<MempoolData> {
         let mempool_data = self.get_txns_where_end_epoch_expired(epoch);
         mempool_data
             .iter()
@@ -540,7 +551,7 @@ impl PriorityMempool {
         mempool_data
     }
 
-    pub fn get_txns_where_end_epoch_expired(&self, epoch: Epoch) -> Vec<Arc<MempoolData>> {
+    pub fn get_txns_where_end_epoch_expired(&self, epoch: Epoch) -> Vec<MempoolData> {
         self.end_epoch_exclusive_index
             .iter()
             .take_while_ref(|&mempool_data_end_epoch_order| {
@@ -580,10 +591,10 @@ impl PriorityMempool {
             })
     }
 
-    pub fn iter_by_state_version(&self) -> impl Iterator<Item = Arc<MempoolData>> + '_ {
+    pub fn iter_by_state_version(&self) -> impl Iterator<Item = MempoolData> + '_ {
         self.executed_state_version_index
             .iter()
-            .map(|mempool_data_state_version| mempool_data_state_version.1.clone())
+            .map(|mempool_data_state_version| mempool_data_state_version.0.clone())
     }
 
     pub fn get_payload(
@@ -907,17 +918,19 @@ mod tests {
         let now = Instant::now();
         let time_point = [now + Duration::from_secs(1), now + Duration::from_secs(2)];
 
-        let md1 = Arc::new(MempoolData {
-            transaction: mt1.clone(),
-            added_at: time_point[0],
-            source: MempoolAddSource::CoreApi,
-        });
+        let md1 = MempoolData::new(
+            mt1.clone(),
+            time_point[0],
+            MempoolAddSource::CoreApi,
+            StateVersion::of(3),
+        );
 
-        let md2 = Arc::new(MempoolData {
-            transaction: mt1,
-            added_at: time_point[1],
-            source: MempoolAddSource::CoreApi,
-        });
+        let md2 = MempoolData::new(
+            mt1,
+            time_point[1],
+            MempoolAddSource::CoreApi,
+            StateVersion::of(3),
+        );
 
         // For same tip_percentage, earliest seen transaction is prioritized.
         assert!(
@@ -925,11 +938,12 @@ mod tests {
                 > MempoolDataProposalPriorityOrdering(md2.clone())
         );
 
-        let md3 = Arc::new(MempoolData {
-            transaction: mt2,
-            added_at: time_point[0],
-            source: MempoolAddSource::CoreApi,
-        });
+        let md3 = MempoolData::new(
+            mt2,
+            time_point[0],
+            MempoolAddSource::CoreApi,
+            StateVersion::of(3),
+        );
 
         // Highest tip percentage is always prioritized.
         assert!(
