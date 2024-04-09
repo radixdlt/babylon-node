@@ -22,54 +22,85 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.InstantMs;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * ConsensusManagerFieldCurrentTimeValue
+ * InstantMs
  */
 @JsonPropertyOrder({
-  ConsensusManagerFieldCurrentTimeValue.JSON_PROPERTY_PROPOSER_TIMESTAMP
+  InstantMs.JSON_PROPERTY_UNIX_TIMESTAMP_MS,
+  InstantMs.JSON_PROPERTY_DATE_TIME
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class ConsensusManagerFieldCurrentTimeValue {
-  public static final String JSON_PROPERTY_PROPOSER_TIMESTAMP = "proposer_timestamp";
-  private InstantMs proposerTimestamp;
+public class InstantMs {
+  public static final String JSON_PROPERTY_UNIX_TIMESTAMP_MS = "unix_timestamp_ms";
+  private Long unixTimestampMs;
 
-  public ConsensusManagerFieldCurrentTimeValue() { 
+  public static final String JSON_PROPERTY_DATE_TIME = "date_time";
+  private String dateTime;
+
+  public InstantMs() { 
   }
 
-  public ConsensusManagerFieldCurrentTimeValue proposerTimestamp(InstantMs proposerTimestamp) {
-    this.proposerTimestamp = proposerTimestamp;
+  public InstantMs unixTimestampMs(Long unixTimestampMs) {
+    this.unixTimestampMs = unixTimestampMs;
     return this;
   }
 
    /**
-   * Get proposerTimestamp
-   * @return proposerTimestamp
+   * An integer between &#x60;0&#x60; and &#x60;10^14&#x60;, marking the unix timestamp in ms.
+   * minimum: 0
+   * maximum: 100000000000000
+   * @return unixTimestampMs
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_PROPOSER_TIMESTAMP)
+  @ApiModelProperty(required = true, value = "An integer between `0` and `10^14`, marking the unix timestamp in ms.")
+  @JsonProperty(JSON_PROPERTY_UNIX_TIMESTAMP_MS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public InstantMs getProposerTimestamp() {
-    return proposerTimestamp;
+  public Long getUnixTimestampMs() {
+    return unixTimestampMs;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_PROPOSER_TIMESTAMP)
+  @JsonProperty(JSON_PROPERTY_UNIX_TIMESTAMP_MS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setProposerTimestamp(InstantMs proposerTimestamp) {
-    this.proposerTimestamp = proposerTimestamp;
+  public void setUnixTimestampMs(Long unixTimestampMs) {
+    this.unixTimestampMs = unixTimestampMs;
+  }
+
+
+  public InstantMs dateTime(String dateTime) {
+    this.dateTime = dateTime;
+    return this;
+  }
+
+   /**
+   * The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use \&quot;Z\&quot; (denoting UTC) and include milliseconds (even if &#x60;000&#x60;). E.g.: &#x60;2023-01-26T18:30:09.453Z&#x60;. 
+   * @return dateTime
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use \"Z\" (denoting UTC) and include milliseconds (even if `000`). E.g.: `2023-01-26T18:30:09.453Z`. ")
+  @JsonProperty(JSON_PROPERTY_DATE_TIME)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getDateTime() {
+    return dateTime;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_DATE_TIME)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setDateTime(String dateTime) {
+    this.dateTime = dateTime;
   }
 
 
   /**
-   * Return true if this ConsensusManagerFieldCurrentTimeValue object is equal to o.
+   * Return true if this InstantMs object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -79,20 +110,22 @@ public class ConsensusManagerFieldCurrentTimeValue {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ConsensusManagerFieldCurrentTimeValue consensusManagerFieldCurrentTimeValue = (ConsensusManagerFieldCurrentTimeValue) o;
-    return Objects.equals(this.proposerTimestamp, consensusManagerFieldCurrentTimeValue.proposerTimestamp);
+    InstantMs instantMs = (InstantMs) o;
+    return Objects.equals(this.unixTimestampMs, instantMs.unixTimestampMs) &&
+        Objects.equals(this.dateTime, instantMs.dateTime);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(proposerTimestamp);
+    return Objects.hash(unixTimestampMs, dateTime);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ConsensusManagerFieldCurrentTimeValue {\n");
-    sb.append("    proposerTimestamp: ").append(toIndentedString(proposerTimestamp)).append("\n");
+    sb.append("class InstantMs {\n");
+    sb.append("    unixTimestampMs: ").append(toIndentedString(unixTimestampMs)).append("\n");
+    sb.append("    dateTime: ").append(toIndentedString(dateTime)).append("\n");
     sb.append("}");
     return sb.toString();
   }

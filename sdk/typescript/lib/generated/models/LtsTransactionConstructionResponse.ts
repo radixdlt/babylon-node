@@ -13,12 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { Instant } from './Instant';
+import type { InstantMs } from './InstantMs';
 import {
-    InstantFromJSON,
-    InstantFromJSONTyped,
-    InstantToJSON,
-} from './Instant';
+    InstantMsFromJSON,
+    InstantMsFromJSONTyped,
+    InstantMsToJSON,
+} from './InstantMs';
 
 /**
  * 
@@ -34,10 +34,10 @@ export interface LtsTransactionConstructionResponse {
     current_epoch: number;
     /**
      * 
-     * @type {Instant}
+     * @type {InstantMs}
      * @memberof LtsTransactionConstructionResponse
      */
-    ledger_clock: Instant;
+    ledger_clock: InstantMs;
 }
 
 /**
@@ -62,7 +62,7 @@ export function LtsTransactionConstructionResponseFromJSONTyped(json: any, ignor
     return {
         
         'current_epoch': json['current_epoch'],
-        'ledger_clock': InstantFromJSON(json['ledger_clock']),
+        'ledger_clock': InstantMsFromJSON(json['ledger_clock']),
     };
 }
 
@@ -76,7 +76,7 @@ export function LtsTransactionConstructionResponseToJSON(value?: LtsTransactionC
     return {
         
         'current_epoch': value.current_epoch,
-        'ledger_clock': InstantToJSON(value.ledger_clock),
+        'ledger_clock': InstantMsToJSON(value.ledger_clock),
     };
 }
 

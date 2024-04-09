@@ -160,9 +160,7 @@ pub fn to_api_ledger_header_summary(
             transaction_tree_hash: to_api_transaction_tree_hash(&hashes.transaction_root),
             receipt_tree_hash: to_api_receipt_tree_hash(&hashes.receipt_root),
         }),
-        proposer_timestamp: Box::new(to_api_instant_from_safe_timestamp(
-            header.proposer_timestamp_ms,
-        )?),
+        proposer_timestamp: Box::new(to_api_clamped_instant(header.proposer_timestamp_ms)?),
     })
 }
 

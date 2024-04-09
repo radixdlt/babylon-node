@@ -217,7 +217,7 @@ models/IndexBlueprintCollectionSchemaAllOf.ts
 models/IndexedStateSchema.ts
 models/InstanceSchemaBlueprintTypeReference.ts
 models/InstanceSchemaBlueprintTypeReferenceAllOf.ts
-models/Instant.ts
+models/InstantMs.ts
 models/InstructionResourceChanges.ts
 models/KeyValueBasedStructure.ts
 models/KeyValueBlueprintCollectionSchema.ts
@@ -508,6 +508,7 @@ models/SchemaEntrySubstateAllOf.ts
 models/SchemaEntryValue.ts
 models/SchemaKey.ts
 models/ScopedTypeId.ts
+models/ScryptoInstant.ts
 models/ScryptoSchema.ts
 models/SignallingValidator.ts
 models/Signature.ts
