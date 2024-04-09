@@ -1,20 +1,23 @@
 use crate::engine_prelude::*;
+use node_common::locks::RwLock;
 
 use crate::{
     transaction::{CheckMetadata, StaticValidation},
     CommittedUserTransactionIdentifiers, MempoolAddRejection, StateVersion,
 };
 
+use crate::priority_mempool::PriorityMempool;
 use lru::LruCache;
 use std::{
     collections::{hash_map::Entry, HashMap, HashSet},
     fmt,
     num::NonZeroUsize,
     ops::Add,
+    sync::Arc,
     time::{Duration, SystemTime},
 };
 
-pub type ExecutionRejectionReason = radix_engine::errors::RejectionReason;
+pub type ExecutionRejectionReason = RejectionReason;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MempoolRejectionReason {
@@ -262,12 +265,42 @@ pub enum AtState {
     },
 }
 
+impl AtState {
+    pub fn specific_version(&self) -> Option<StateVersion> {
+        match self {
+            AtState::Static => None,
+            AtState::Committed { state_version } => Some(*state_version),
+            AtState::PendingPreparingVertices {
+                base_committed_state_version,
+            } => Some(*base_committed_state_version),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RetryFrom {
     Never,
     FromTime(SystemTime),
     FromEpoch(Epoch),
     Whenever,
+}
+
+#[derive(Debug, Clone)]
+pub struct PendingExecutedTransaction {
+    pub transaction: Box<ValidatedNotarizedTransactionV1>,
+    pub latest_attempt_against_state_version: StateVersion,
+}
+
+impl PendingExecutedTransaction {
+    pub fn new(
+        transaction: Box<ValidatedNotarizedTransactionV1>,
+        state_version: StateVersion,
+    ) -> Self {
+        Self {
+            transaction,
+            latest_attempt_against_state_version: state_version,
+        }
+    }
 }
 
 impl PendingTransactionRecord {
@@ -341,7 +374,7 @@ impl PendingTransactionRecord {
     pub fn should_accept_into_mempool(
         self,
         check: CheckMetadata,
-    ) -> Result<Box<ValidatedNotarizedTransactionV1>, MempoolAddRejection> {
+    ) -> Result<PendingExecutedTransaction, MempoolAddRejection> {
         if let Some(permanent_rejection) = self.earliest_permanent_rejection {
             return Err(MempoolAddRejection {
                 reason: permanent_rejection.rejection.unwrap(),
@@ -366,7 +399,15 @@ impl PendingTransactionRecord {
             CheckMetadata::Cached => {
                 panic!("Precondition was not met - the result was cached, but the latest attempt was not a rejection")
             }
-            CheckMetadata::Fresh(StaticValidation::Valid(transaction)) => Ok(transaction),
+            CheckMetadata::Fresh(StaticValidation::Valid(transaction)) => {
+                Ok(PendingExecutedTransaction::new(
+                    transaction,
+                    self.latest_attempt
+                        .against_state
+                        .specific_version()
+                        .unwrap(),
+                ))
+            }
             CheckMetadata::Fresh(StaticValidation::Invalid) => {
                 panic!("A statically invalid transaction should already have been handled in the above")
             }
@@ -434,14 +475,20 @@ const NON_REJECTION_RECALCULATION_DELAY: Duration = Duration::from_secs(120);
 const MAX_RECALCULATION_DELAY: Duration = Duration::from_secs(1000);
 
 pub struct PendingTransactionResultCache {
+    mempool: Arc<RwLock<PriorityMempool>>,
     pending_transaction_records: LruCache<NotarizedTransactionHash, PendingTransactionRecord>,
     intent_lookup: HashMap<IntentHash, HashSet<NotarizedTransactionHash>>,
     recently_committed_intents: LruCache<IntentHash, CommittedIntentRecord>,
 }
 
 impl PendingTransactionResultCache {
-    pub fn new(pending_txn_records_max_count: u32, committed_intents_max_size: u32) -> Self {
+    pub fn new(
+        mempool: Arc<RwLock<PriorityMempool>>,
+        pending_txn_records_max_count: u32,
+        committed_intents_max_size: u32,
+    ) -> Self {
         PendingTransactionResultCache {
+            mempool,
             pending_transaction_records: LruCache::new(
                 NonZeroUsize::new(pending_txn_records_max_count as usize).unwrap(),
             ),
@@ -460,6 +507,17 @@ impl PendingTransactionResultCache {
         invalid_from_epoch: Option<Epoch>,
         attempt: TransactionAttempt,
     ) -> PendingTransactionRecord {
+        let mut write_mempool = self.mempool.write();
+        if attempt.rejection.is_some() {
+            write_mempool.remove_by_payload_hash(&notarized_transaction_hash);
+        } else if let Some(state_version) = attempt.against_state.specific_version() {
+            write_mempool.update_transaction_executed_state_version(
+                &notarized_transaction_hash,
+                state_version,
+            );
+        }
+        drop(write_mempool);
+
         let existing_record = self
             .pending_transaction_records
             .get_mut(&notarized_transaction_hash);
@@ -636,6 +694,8 @@ struct CommittedIntentRecord {
 
 #[cfg(test)]
 mod tests {
+    use node_common::{config::MempoolConfig, locks::LockFactory};
+    use prometheus::Registry;
 
     use super::*;
 
@@ -652,8 +712,7 @@ mod tests {
         let rejection_limit = 3;
         let recently_committed_intents_limit = 1;
 
-        let mut cache =
-            PendingTransactionResultCache::new(rejection_limit, recently_committed_intents_limit);
+        let mut cache = create_subject(rejection_limit, recently_committed_intents_limit);
 
         let payload_hash_1 = user_payload_hash(1);
         let payload_hash_2 = user_payload_hash(2);
@@ -798,8 +857,7 @@ mod tests {
         let recently_committed_intents_limit = 1;
         let now = SystemTime::now();
 
-        let mut cache =
-            PendingTransactionResultCache::new(rejection_limit, recently_committed_intents_limit);
+        let mut cache = create_subject(rejection_limit, recently_committed_intents_limit);
 
         let payload_hash_1 = user_payload_hash(1);
         let payload_hash_2 = user_payload_hash(2);
@@ -831,8 +889,7 @@ mod tests {
         let far_in_future = start.add(Duration::from_secs(u32::MAX as u64));
         let little_in_future = start.add(Duration::from_secs(1));
 
-        let mut cache =
-            PendingTransactionResultCache::new(rejection_limit, recently_committed_intents_limit);
+        let mut cache = create_subject(rejection_limit, recently_committed_intents_limit);
 
         let payload_hash_1 = user_payload_hash(1);
         let payload_hash_2 = user_payload_hash(2);
@@ -960,5 +1017,20 @@ mod tests {
         assert!(record
             .unwrap()
             .should_recalculate(current_epoch, little_in_future));
+    }
+
+    fn create_subject(
+        rejection_limit: u32,
+        recently_committed_intents_limit: u32,
+    ) -> PendingTransactionResultCache {
+        let lock_factory = LockFactory::new("testing");
+        PendingTransactionResultCache::new(
+            Arc::new(lock_factory.new_rwlock(PriorityMempool::new(
+                MempoolConfig::default(),
+                &Registry::new(),
+            ))),
+            rejection_limit,
+            recently_committed_intents_limit,
+        )
     }
 }
