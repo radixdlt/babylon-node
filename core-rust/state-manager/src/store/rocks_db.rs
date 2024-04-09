@@ -1817,29 +1817,25 @@ impl<R: WriteableRocks> StateTreeGcStore for StateManagerDatabase<R> {
     fn progress_historical_substate_values_availability(&self, available_from: StateVersion) {
         let db_context = self.open_rw_context();
         let extension_data_cf = db_context.cf(ExtensionsDataCf);
-        let current_available_from = extension_data_cf
+        let status = extension_data_cf
             .get(&ExtensionsDataKey::StateTreeAssociatedValuesStatus)
             .map(|bytes| {
                 scrypto_decode::<VersionedStateTreeAssociatedValuesStatus>(&bytes)
                     .unwrap()
                     .into_latest()
-                    .historical_substate_values_available_from
             });
-        let Some(current_available_from) = current_available_from else {
+        let Some(mut status) = status else {
             // The state history feature is simply not enabled.
             return;
         };
-        if available_from <= current_available_from {
+        if available_from <= status.historical_substate_values_available_from {
             // The state history feature was enabled after this state version.
             return;
         }
-        let updated_status =
-            VersionedStateTreeAssociatedValuesStatus::from(StateTreeAssociatedValuesStatusV1 {
-                historical_substate_values_available_from: available_from,
-            });
+        status.historical_substate_values_available_from = available_from;
         extension_data_cf.put(
             &ExtensionsDataKey::StateTreeAssociatedValuesStatus,
-            &scrypto_encode(&updated_status).unwrap(),
+            &scrypto_encode(&status).unwrap(),
         );
     }
 
