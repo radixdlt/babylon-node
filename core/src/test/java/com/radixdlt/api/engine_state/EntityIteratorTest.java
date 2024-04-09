@@ -66,16 +66,23 @@ package com.radixdlt.api.engine_state;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.collect.Multimaps;
+import com.google.common.collect.Ordering;
 import com.radixdlt.api.DeterministicEngineStateApiTestBase;
 import com.radixdlt.api.engine_state.generated.models.*;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Set;
+import com.radixdlt.environment.StateTreeGcConfig;
+import com.radixdlt.harness.predicates.NodesPredicate;
+import com.radixdlt.testutil.TestStateReader;
+import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.UInt64;
+import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
+import org.awaitility.Awaitility;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -270,29 +277,143 @@ public final class EntityIteratorTest extends DeterministicEngineStateApiTestBas
   }
 
   @Test
-  public void engine_state_api_entity_iterator_requires_same_filter_across_pages()
+  public void engine_state_api_entity_iterator_requires_same_params_across_pages()
       throws Exception {
     try (var test = buildRunningServerTest()) {
       test.suppressUnusedWarning();
+
+      final var sameFilter = new EntityTypeFilter().entityType(EntityType.INTERNALKEYVALUESTORE);
+      final var sameLedgerStateSelector =
+          new VersionLedgerStateSelector()
+              .stateVersion(5L)
+              .type(LedgerStateSelectorType.BYSTATEVERSION);
 
       final var firstPageResponse =
           getEntitiesApi()
               .entityIteratorPost(
                   new EntityIteratorRequest()
-                      .filter(new EntityTypeFilter().entityType(EntityType.INTERNALKEYVALUESTORE))
+                      .filter(sameFilter)
+                      .atLedgerState(sameLedgerStateSelector)
                       .maxPageSize(1)); // we assume there is more than 1 KV-store
 
-      final var errorResponse =
+      final var whenDifferingFilter =
           assertErrorResponse(
               () ->
                   getEntitiesApi()
                       .entityIteratorPost(
                           new EntityIteratorRequest()
                               .filter(new EntityTypeFilter().entityType(EntityType.GLOBALPACKAGE))
+                              .atLedgerState(sameLedgerStateSelector)
                               .continuationToken(firstPageResponse.getContinuationToken())));
+      assertThat(whenDifferingFilter.getMessage()).contains("filter");
+      assertThat(whenDifferingFilter.getDetails()).isNull(); // it is not an application logic error
 
-      assertThat(errorResponse.getMessage()).contains("filter");
-      assertThat(errorResponse.getDetails()).isNull(); // it is not an application logic error
+      final var whenDifferingLedgerStateSelector =
+          assertErrorResponse(
+              () ->
+                  getEntitiesApi()
+                      .entityIteratorPost(
+                          new EntityIteratorRequest()
+                              .filter(sameFilter)
+                              .atLedgerState(
+                                  new VersionLedgerStateSelector()
+                                      .stateVersion(4L)
+                                      .type(LedgerStateSelectorType.BYSTATEVERSION))
+                              .continuationToken(firstPageResponse.getContinuationToken())));
+      assertThat(whenDifferingLedgerStateSelector.getMessage()).contains("filter");
+      assertThat(whenDifferingLedgerStateSelector.getDetails())
+          .isNull(); // it is not an application logic error
+    }
+  }
+
+  // Note: we want to test "historical state" working with and without filters.
+  public EntityIteratorFilter[] noneOrBroadFilters() {
+    return Stream.concat(Stream.of((EntityIteratorFilter) null), Arrays.stream(broadFilters()))
+        .toArray(EntityIteratorFilter[]::new);
+  }
+
+  @Test
+  @Parameters(method = "noneOrBroadFilters")
+  public void engine_state_api_entity_iterator_supports_history(
+      @Nullable EntityIteratorFilter filter) throws Exception {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
+
+      // Arrange: collect all entities (as of now) and index them by creation version:
+      final var currentVersionResponse =
+          getEntitiesApi().entityIteratorPost(new EntityIteratorRequest().filter(filter));
+      // sanity check: make sure we don't have to deal with pages in this scenario:
+      assertThat(currentVersionResponse.getContinuationToken()).isNull();
+
+      final var entitiesByCreationVersion =
+          Multimaps.index(
+              currentVersionResponse.getPage(), ListedEntityItem::getCreatedAtStateVersion);
+      // find all the non-latest entities (called "older" from this point on):
+      final var latestEntitiesCreatedAtVersion =
+          Ordering.natural().max(entitiesByCreationVersion.keySet());
+      final var olderEntities =
+          entitiesByCreationVersion.asMap().entrySet().stream()
+              .filter(entry -> entry.getKey() < latestEntitiesCreatedAtVersion)
+              .flatMap(entry -> entry.getValue().stream())
+              .toList();
+      // sanity check: make sure that there are >0 older entities
+      assertThat(olderEntities).isNotEmpty();
+
+      // Act: list all entities at a state version just before the creation of the latest ones:
+      final var olderVersionResponse =
+          getEntitiesApi()
+              .entityIteratorPost(
+                  new EntityIteratorRequest()
+                      .filter(filter)
+                      .atLedgerState(
+                          new VersionLedgerStateSelector()
+                              .stateVersion(latestEntitiesCreatedAtVersion - 1)
+                              .type(LedgerStateSelectorType.BYSTATEVERSION)));
+
+      // Assert: we clearly know the older entities:
+      assertThat(olderVersionResponse.getPage()).hasSameElementsAs(olderEntities);
+      assertThat(olderVersionResponse.getAtLedgerState().getStateVersion())
+          .isEqualTo(latestEntitiesCreatedAtVersion - 1);
+    }
+  }
+
+  // Note: the claim in the test's name below is technically false - in fact, the historical Entity
+  // iteration is powered by the Node's internal index of "Entities created at state versions", and
+  // does not touch the JMT at all.
+  // However, for consistency with other "historical" endpoints of the API, we explicitly validate
+  // this aspect, so it's also worth testing.
+  @Test
+  public void engine_state_api_entity_iterator_at_state_version_requires_history_feature()
+      throws Exception {
+    final var tooShortHistory =
+        new StateTreeGcConfig(UInt32.fromNonNegativeInt(1), UInt64.fromNonNegativeLong(10));
+    try (var test = buildRunningServerTest(tooShortHistory)) {
+      test.suppressUnusedWarning();
+
+      // Reach a known state version:
+      test.runUntilState(NodesPredicate.anyAtOrOverStateVersion(37));
+
+      // Wait for the async GC to catch up its target:
+      Awaitility.await()
+          .until(
+              test.getInstance(0, TestStateReader.class)::getLeastStaleStateTreeVersion,
+              Predicate.isEqual(27L));
+
+      // Try to list Entities at "too old" state version:
+      final var errorResponse =
+          assertErrorResponse(
+              () ->
+                  getEntitiesApi()
+                      .entityIteratorPost(
+                          new EntityIteratorRequest()
+                              .atLedgerState(
+                                  new VersionLedgerStateSelector()
+                                      .stateVersion(26L)
+                                      .type(LedgerStateSelectorType.BYSTATEVERSION))));
+
+      // Assert that the error informs about it:
+      assertThat(errorResponse.getMessage())
+          .containsIgnoringCase("state version past the earliest available 27");
     }
   }
 }

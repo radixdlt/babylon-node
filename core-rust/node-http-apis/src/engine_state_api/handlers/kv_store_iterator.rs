@@ -12,11 +12,8 @@ pub(crate) async fn handle_kv_store_iterator(
     let mapping_context =
         MappingContext::new(&state.network).with_sbor_formats(request.sbor_format_options);
     let extraction_context = ExtractionContext::new(&state.network);
-    let paging_support = HandlerPagingSupport::new(
-        request.max_page_size,
-        request.continuation_token,
-        &Option::<()>::None,
-    );
+    let paging_support =
+        HandlerPagingSupport::new_without_filter(request.max_page_size, request.continuation_token);
 
     let node_id = extract_address_as_node_id(&extraction_context, &request.entity_address)
         .map_err(|err| err.into_response_error("entity_address"))?;

@@ -785,6 +785,8 @@ components:
           $ref: "#/components/schemas/MaxPageSize"
         continuation_token:
           $ref: "#/components/schemas/ContinuationToken"
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSelector"
     EntityIteratorFilterType:
       type: string
       enum:
