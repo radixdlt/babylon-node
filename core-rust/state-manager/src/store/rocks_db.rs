@@ -1835,7 +1835,7 @@ impl<R: WriteableRocks> StateTreeGcStore for StateManagerDatabase<R> {
         status.historical_substate_values_available_from = available_from;
         extension_data_cf.put(
             &ExtensionsDataKey::StateTreeAssociatedValuesStatus,
-            &scrypto_encode(&status).unwrap(),
+            &scrypto_encode(&VersionedStateTreeAssociatedValuesStatus::from(status)).unwrap(),
         );
     }
 
