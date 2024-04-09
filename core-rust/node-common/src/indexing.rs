@@ -92,7 +92,7 @@ impl<K: Ord, V: Ord> SecondaryIndex<K, V> {
     /// Inserts a new pair.
     ///
     /// *Panics* if such pair was already in the index.
-    pub fn insert(&mut self, key: K, value: V) {
+    pub fn insert_unique(&mut self, key: K, value: V) {
         if !self.sorted_set.insert((key, value)) {
             panic!("value already present in the index");
         }
@@ -101,7 +101,7 @@ impl<K: Ord, V: Ord> SecondaryIndex<K, V> {
     /// Removes the given pair.
     ///
     /// *Panics* if such pair was not in the index.
-    pub fn remove(&mut self, key: K, value: V) {
+    pub fn remove_existing(&mut self, key: K, value: V) {
         if !self.sorted_set.remove(&(key, value)) {
             panic!("value not present in the index");
         }

@@ -646,19 +646,6 @@ impl StateComputer {
             debug!("TXN INVALID: {}", &rejection.error);
         }
 
-        let pending_rejected_transactions = pending_transaction_results
-            .iter()
-            .filter(|pending_result| pending_result.rejection_reason.is_some())
-            .map(|pending_result| {
-                (
-                    &pending_result.intent_hash,
-                    &pending_result.notarized_transaction_hash,
-                )
-            })
-            .collect::<Vec<_>>();
-        self.mempool_manager
-            .remove_rejected(&pending_rejected_transactions);
-
         let mut write_pending_transaction_result_cache =
             self.pending_transaction_result_cache.write();
         for pending_transaction_result in pending_transaction_results {

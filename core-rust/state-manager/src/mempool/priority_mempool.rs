@@ -353,15 +353,15 @@ impl PriorityMempool {
             panic!("Broken precondition: Transaction already inside mempool.");
         }
 
-        self.proposal_priority_index.insert(
+        self.proposal_priority_index.insert_unique(
             ProposalPriority::new(&transaction_data),
             notarized_transaction_hash,
         );
-        self.end_epoch_exclusive_index.insert(
+        self.end_epoch_exclusive_index.insert_unique(
             TransactionEndEpoch::new(&transaction_data),
             notarized_transaction_hash,
         );
-        self.executed_state_version_index.insert(
+        self.executed_state_version_index.insert_unique(
             ExecutionStateVersion::new(&transaction_data),
             notarized_transaction_hash,
         );
@@ -377,78 +377,26 @@ impl PriorityMempool {
         Ok(to_be_removed)
     }
 
-    pub fn contains_transaction(&self, payload_hash: &NotarizedTransactionHash) -> bool {
-        self.data.contains_key(payload_hash)
+    pub fn contains_transaction(
+        &self,
+        notarized_transaction_hash: &NotarizedTransactionHash,
+    ) -> bool {
+        self.data.contains_key(notarized_transaction_hash)
     }
 
-    // Internal only method. Assumes data is part of the Mempool.
-    fn remove_data(&mut self, data: MempoolData) {
-        let notarized_transaction_hash = &data.transaction.notarized_transaction_hash();
-        let intent_hash = &data.transaction.intent_hash();
-
-        let transaction_size = data.transaction.raw.0.len();
-        self.remaining_transaction_count += 1;
-        self.remaining_total_transactions_size += transaction_size as u64;
-
-        // Update metrics
-        self.metrics
-            .current_total_transactions_size
-            .sub(transaction_size as i64);
-        self.metrics.current_transactions.sub(1);
-
-        self.data.remove(notarized_transaction_hash);
-
-        // Update intent_lookup
-        let payload_lookup = self
-            .intent_lookup
-            .get_mut(intent_hash)
-            .expect("Mempool intent hash lookup out of sync on remove");
-
-        if !payload_lookup.remove(notarized_transaction_hash) {
-            panic!("Mempool intent hash lookup out of sync on remove");
-        }
-        if payload_lookup.is_empty() {
-            self.intent_lookup.remove(intent_hash);
-        }
-
-        self.proposal_priority_index
-            .remove(ProposalPriority::new(&data), *notarized_transaction_hash);
-        self.end_epoch_exclusive_index
-            .remove(TransactionEndEpoch::new(&data), *notarized_transaction_hash);
-        self.executed_state_version_index.remove(
-            ExecutionStateVersion::new(&data),
-            *notarized_transaction_hash,
-        );
-    }
-
-    pub fn update_transaction_executed_state_version(
+    pub fn observe_pending_execution_result(
         &mut self,
         notarized_transaction_hash: &NotarizedTransactionHash,
-        state_version: StateVersion,
+        attempt: &TransactionAttempt,
     ) {
-        if let Some(data) = self.data.get_mut(notarized_transaction_hash) {
-            self.executed_state_version_index.remove(
-                ExecutionStateVersion::new(data),
-                *notarized_transaction_hash,
-            );
-            data.successfully_executed_at = state_version;
-            self.executed_state_version_index.insert(
-                ExecutionStateVersion::new(data),
-                *notarized_transaction_hash,
+        if attempt.rejection.is_some() {
+            self.remove_by_notarized_transaction_hash(notarized_transaction_hash);
+        } else if let AtState::Specific(specific_state) = &attempt.against_state {
+            self.update_transaction_executed_state_version(
+                notarized_transaction_hash,
+                specific_state.committed_version(),
             );
         }
-    }
-
-    pub fn remove_by_payload_hash(
-        &mut self,
-        payload_hash: &NotarizedTransactionHash,
-    ) -> Option<MempoolData> {
-        let to_remove = self.data.get(payload_hash).cloned();
-        match &to_remove {
-            None => {}
-            Some(data) => self.remove_data(data.clone()),
-        }
-        to_remove
     }
 
     pub fn remove_by_intent_hash(&mut self, intent_hash: &IntentHash) -> Vec<MempoolData> {
@@ -456,13 +404,9 @@ impl PriorityMempool {
             .intent_lookup
             .get(intent_hash)
             .iter()
-            .flat_map(|payload_hashes| payload_hashes.iter())
-            .map(|payload_hash| {
-                self.data
-                    .get(payload_hash)
-                    .expect("Mempool intent hash lookup out of sync on remove by intent hash.")
-                    .clone()
-            })
+            .flat_map(|notarized_transaction_hashes| notarized_transaction_hashes.iter())
+            .map(|notarized_transaction_hash| self.data.index(notarized_transaction_hash))
+            .cloned()
             .collect();
         data.into_iter()
             .map(|data| {
@@ -493,12 +437,14 @@ impl PriorityMempool {
         self.data.len()
     }
 
-    pub fn get_payload_hashes_for_intent(
+    pub fn get_notarized_transaction_hashes_for_intent(
         &self,
         intent_hash: &IntentHash,
     ) -> Vec<NotarizedTransactionHash> {
         match self.intent_lookup.get(intent_hash) {
-            Some(payload_hashes) => payload_hashes.iter().cloned().collect(),
+            Some(notarized_transaction_hashes) => {
+                notarized_transaction_hashes.iter().cloned().collect()
+            }
             None => vec![],
         }
     }
@@ -508,10 +454,12 @@ impl PriorityMempool {
     ) -> impl Iterator<Item = (&IntentHash, &NotarizedTransactionHash)> {
         self.intent_lookup
             .iter()
-            .flat_map(|(intent_hash, payload_hashes)| {
-                payload_hashes
+            .flat_map(|(intent_hash, notarized_transaction_hashes)| {
+                notarized_transaction_hashes
                     .iter()
-                    .map(move |payload_hash| (intent_hash, payload_hash))
+                    .map(move |notarized_transaction_hash| {
+                        (intent_hash, notarized_transaction_hash)
+                    })
             })
     }
 
@@ -523,9 +471,9 @@ impl PriorityMempool {
 
     pub fn get_payload(
         &self,
-        payload_hash: &NotarizedTransactionHash,
+        notarized_transaction_hash: &NotarizedTransactionHash,
     ) -> Option<&MempoolTransaction> {
-        Some(&self.data.get(payload_hash)?.transaction)
+        Some(&self.data.get(notarized_transaction_hash)?.transaction)
     }
 
     /// Returns [`count`] randomly sampled transactions from the mempool.
@@ -549,7 +497,7 @@ impl PriorityMempool {
         &self,
         max_count: usize,
         max_payload_size_bytes: u64,
-        user_payload_hashes_to_exclude: &HashSet<NotarizedTransactionHash>,
+        notarized_transaction_hashes_to_exclude: &HashSet<NotarizedTransactionHash>,
     ) -> Vec<Arc<MempoolTransaction>> {
         const MAX_TRANSACTIONS_TO_TRY: usize = 1000;
         let max_transactions_to_try = max(max_count, MAX_TRANSACTIONS_TO_TRY);
@@ -557,7 +505,7 @@ impl PriorityMempool {
         let mut payload_size_so_far = 0;
         self.proposal_priority_index
             .iter_values_from_greatest()
-            .filter(|hash| !user_payload_hashes_to_exclude.contains(*hash))
+            .filter(|hash| !notarized_transaction_hashes_to_exclude.contains(*hash))
             .take(max_transactions_to_try)
             .map(|hash| self.data.index(hash).transaction.clone())
             .filter(|transaction| {
@@ -570,6 +518,80 @@ impl PriorityMempool {
             })
             .take(max_count)
             .collect()
+    }
+
+    // Only internals below:
+
+    /// Removes the given item from the mempool's storage (and all indices).
+    ///
+    /// Note: assumes that the given transaction is currently in the mempool.
+    fn remove_data(&mut self, data: MempoolData) {
+        let notarized_transaction_hash = &data.transaction.notarized_transaction_hash();
+        let intent_hash = &data.transaction.intent_hash();
+
+        let transaction_size = data.transaction.raw.0.len();
+        self.remaining_transaction_count += 1;
+        self.remaining_total_transactions_size += transaction_size as u64;
+
+        // Update metrics
+        self.metrics
+            .current_total_transactions_size
+            .sub(transaction_size as i64);
+        self.metrics.current_transactions.sub(1);
+
+        self.data.remove(notarized_transaction_hash);
+
+        // Update intent_lookup
+        let payload_lookup = self
+            .intent_lookup
+            .get_mut(intent_hash)
+            .expect("Mempool intent hash lookup out of sync on remove");
+
+        if !payload_lookup.remove(notarized_transaction_hash) {
+            panic!("Mempool intent hash lookup out of sync on remove");
+        }
+        if payload_lookup.is_empty() {
+            self.intent_lookup.remove(intent_hash);
+        }
+
+        self.proposal_priority_index
+            .remove_existing(ProposalPriority::new(&data), *notarized_transaction_hash);
+        self.end_epoch_exclusive_index
+            .remove_existing(TransactionEndEpoch::new(&data), *notarized_transaction_hash);
+        self.executed_state_version_index.remove_existing(
+            ExecutionStateVersion::new(&data),
+            *notarized_transaction_hash,
+        );
+    }
+
+    fn update_transaction_executed_state_version(
+        &mut self,
+        notarized_transaction_hash: &NotarizedTransactionHash,
+        state_version: StateVersion,
+    ) {
+        if let Some(data) = self.data.get_mut(notarized_transaction_hash) {
+            self.executed_state_version_index.remove_existing(
+                ExecutionStateVersion::new(data),
+                *notarized_transaction_hash,
+            );
+            data.successfully_executed_at = state_version;
+            self.executed_state_version_index.insert_unique(
+                ExecutionStateVersion::new(data),
+                *notarized_transaction_hash,
+            );
+        }
+    }
+
+    fn remove_by_notarized_transaction_hash(
+        &mut self,
+        notarized_transaction_hash: &NotarizedTransactionHash,
+    ) -> Option<MempoolData> {
+        let to_remove = self.data.get(notarized_transaction_hash).cloned();
+        match &to_remove {
+            None => {}
+            Some(data) => self.remove_data(data.clone()),
+        }
+        to_remove
     }
 }
 
@@ -765,34 +787,34 @@ mod tests {
 
         assert_eq!(mp.get_count(), 4);
         assert_eq!(
-            mp.get_payload_hashes_for_intent(&intent_2_payload_1.intent_hash())
+            mp.get_notarized_transaction_hashes_for_intent(&intent_2_payload_1.intent_hash())
                 .len(),
             1
         );
         assert_eq!(
-            mp.get_payload_hashes_for_intent(&intent_1_payload_1.intent_hash())
+            mp.get_notarized_transaction_hashes_for_intent(&intent_1_payload_1.intent_hash())
                 .len(),
             3
         );
-        mp.remove_by_payload_hash(&intent_1_payload_2.notarized_transaction_hash());
+        mp.remove_by_notarized_transaction_hash(&intent_1_payload_2.notarized_transaction_hash());
         assert_eq!(
-            mp.get_payload_hashes_for_intent(&intent_1_payload_1.intent_hash())
+            mp.get_notarized_transaction_hashes_for_intent(&intent_1_payload_1.intent_hash())
                 .len(),
             2
         );
-        let removed_data =
-            mp.remove_by_payload_hash(&intent_2_payload_2.notarized_transaction_hash());
+        let removed_data = mp
+            .remove_by_notarized_transaction_hash(&intent_2_payload_2.notarized_transaction_hash());
         assert!(removed_data.is_none());
         assert_eq!(
-            mp.get_payload_hashes_for_intent(&intent_2_payload_2.intent_hash())
+            mp.get_notarized_transaction_hashes_for_intent(&intent_2_payload_2.intent_hash())
                 .len(),
             1
         );
-        let removed_data =
-            mp.remove_by_payload_hash(&intent_2_payload_1.notarized_transaction_hash());
+        let removed_data = mp
+            .remove_by_notarized_transaction_hash(&intent_2_payload_1.notarized_transaction_hash());
         assert!(removed_data.is_some());
         assert_eq!(
-            mp.get_payload_hashes_for_intent(&intent_2_payload_2.intent_hash())
+            mp.get_notarized_transaction_hashes_for_intent(&intent_2_payload_2.intent_hash())
                 .len(),
             0
         );
@@ -808,7 +830,7 @@ mod tests {
 
         mp.remove_by_intent_hash(&intent_1_payload_2.intent_hash());
         assert_eq!(
-            mp.get_payload_hashes_for_intent(&intent_1_payload_1.intent_hash())
+            mp.get_notarized_transaction_hashes_for_intent(&intent_1_payload_1.intent_hash())
                 .len(),
             0
         );
@@ -823,7 +845,7 @@ mod tests {
             .unwrap()
             .is_empty());
         assert_eq!(
-            mp.get_payload_hashes_for_intent(&intent_2_payload_2.intent_hash())
+            mp.get_notarized_transaction_hashes_for_intent(&intent_2_payload_2.intent_hash())
                 .len(),
             2
         );

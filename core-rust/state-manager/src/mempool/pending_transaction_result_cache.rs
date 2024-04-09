@@ -509,16 +509,9 @@ impl PendingTransactionResultCache {
         invalid_from_epoch: Option<Epoch>,
         attempt: TransactionAttempt,
     ) -> PendingTransactionRecord {
-        let mut write_mempool = self.mempool.write();
-        if attempt.rejection.is_some() {
-            write_mempool.remove_by_payload_hash(&notarized_transaction_hash);
-        } else if let AtState::Specific(specific_state) = &attempt.against_state {
-            write_mempool.update_transaction_executed_state_version(
-                &notarized_transaction_hash,
-                specific_state.committed_version(),
-            );
-        }
-        drop(write_mempool);
+        self.mempool
+            .write()
+            .observe_pending_execution_result(&notarized_transaction_hash, &attempt);
 
         let existing_record = self
             .pending_transaction_records

@@ -310,28 +310,6 @@ impl MempoolManager {
             .for_each(|wait| self.metrics.from_local_api_to_commit_wait.observe(wait));
     }
 
-    /// Removes the transactions specified by the given user payload hashes (while checking
-    /// consistency of their intent hashes).
-    /// This method is meant to be called for transactions that were rejected - and
-    /// this assumption is important for metric correctness.
-    ///
-    /// Note:
-    /// Removing transactions rejected during prepare from the mempool is a bit of overkill:
-    /// just because transactions were rejected in this history doesn't mean this history will be
-    /// committed.
-    /// But it'll do for now as a defensive measure until we can have a more intelligent mempool.
-    pub fn remove_rejected(
-        &self,
-        rejected_transactions: &[(&IntentHash, &NotarizedTransactionHash)],
-    ) {
-        let mut write_mempool = self.mempool.write();
-        rejected_transactions
-            .iter()
-            .for_each(|(_intent_hash, user_payload_hash)| {
-                write_mempool.remove_by_payload_hash(user_payload_hash);
-            });
-    }
-
     /// Removes transactions no longer valid at or after the given epoch.
     pub fn remove_txns_where_end_epoch_expired(&self, epoch: Epoch) -> Vec<MempoolData> {
         self.mempool
