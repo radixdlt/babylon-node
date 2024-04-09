@@ -398,7 +398,11 @@ impl<'s, R: ReadableRocks + 's, DS: Deref<Target = StateManagerDatabase<R>>> Con
         self.underlying().are_re_node_listing_indices_enabled()
     }
 
-    fn get_first_stored_historical_state_version(&self) -> Option<StateVersion> {
+    fn is_state_history_enabled(&self) -> bool {
+        self.underlying().is_state_history_enabled()
+    }
+
+    fn get_first_stored_historical_state_version(&self) -> StateVersion {
         self.underlying()
             .get_first_stored_historical_state_version()
     }
