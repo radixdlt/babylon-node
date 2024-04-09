@@ -68,11 +68,12 @@ use prometheus::Registry;
 use rand::seq::index::sample;
 use tracing::warn;
 
-use crate::mempool::*;
+use crate::{mempool::*, StateVersion};
 use itertools::Itertools;
 
 use std::cmp::{max, min, Ordering};
 use std::collections::{BTreeSet, HashMap, HashSet};
+use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -97,10 +98,24 @@ pub struct MempoolData {
     pub source: MempoolAddSource,
 }
 
+// There is only 1 [`MempoolData`] per unique [`MempoolTransaction`]
+impl Hash for MempoolData {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.transaction.hash(state);
+    }
+}
+
 #[derive(Debug, Clone, Eq)]
 pub struct MempoolTransaction {
     pub validated: Box<ValidatedNotarizedTransactionV1>,
     pub raw: RawNotarizedTransaction,
+}
+
+// We can uniquely identify the whole [`MempoolTransaction`] just by the [`RawNotarizedTransaction`] hash.
+impl Hash for MempoolTransaction {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.raw.hash(state);
+    }
 }
 
 impl PartialEq for MempoolTransaction {
@@ -215,6 +230,27 @@ impl PartialOrd for MempoolDataEndEpochExclusiveOrdering {
     }
 }
 
+/// A wrapper for [`StateVersion`], [`Arc<Mempool>`] pairs that implements ordering traits by state version.
+#[derive(Clone, Eq, PartialEq)]
+pub struct MempoolDataStateVersion(pub StateVersion, pub Arc<MempoolData>);
+
+impl Ord for MempoolDataStateVersion {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.0.cmp(&other.0).then_with(|| {
+            self.1
+                .transaction
+                .notarized_transaction_hash()
+                .cmp(&other.1.transaction.notarized_transaction_hash())
+        })
+    }
+}
+
+impl PartialOrd for MempoolDataStateVersion {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 pub struct PriorityMempool {
     /// Max number of different (by [`NotarizedTransactionHash`]) transactions that can live at any moment of time in the mempool.
     remaining_transaction_count: u32,
@@ -229,6 +265,10 @@ pub struct PriorityMempool {
     proposal_priority_index: BTreeSet<MempoolDataProposalPriorityOrdering>,
     /// Keeps ordering of the transactions by end epoch.
     end_epoch_exclusive_index: BTreeSet<MempoolDataEndEpochExclusiveOrdering>,
+    /// Keeps ordering of the transactions by latest successful execution
+    executed_state_version_index: BTreeSet<MempoolDataStateVersion>,
+    /// Mapping from [`Arc<MempoolData>`] to latest [`StateVersion`] it was executed against. The (StateVersion, Arc<MempoolData>)
+    data_to_executed_state_version: HashMap<Arc<MempoolData>, StateVersion>,
     /// Various metrics.
     metrics: MempoolMetrics,
 }
@@ -242,6 +282,8 @@ impl PriorityMempool {
             intent_lookup: HashMap::new(),
             proposal_priority_index: BTreeSet::new(),
             end_epoch_exclusive_index: BTreeSet::new(),
+            executed_state_version_index: BTreeSet::new(),
+            data_to_executed_state_version: HashMap::new(),
             metrics: MempoolMetrics::new(metric_registry),
         }
     }
@@ -257,6 +299,7 @@ impl PriorityMempool {
         transaction: Arc<MempoolTransaction>,
         source: MempoolAddSource,
         added_at: Instant,
+        executed_at: StateVersion,
     ) -> Result<Vec<Arc<MempoolData>>, MempoolAddError> {
         let payload_hash = transaction.notarized_transaction_hash();
 
@@ -347,7 +390,15 @@ impl PriorityMempool {
 
         // Add end epoch exclusive index
         self.end_epoch_exclusive_index
-            .insert(MempoolDataEndEpochExclusiveOrdering(transaction_data));
+            .insert(MempoolDataEndEpochExclusiveOrdering(
+                transaction_data.clone(),
+            ));
+
+        // Add executed state version index
+        self.data_to_executed_state_version
+            .insert(transaction_data.clone(), executed_at);
+        self.executed_state_version_index
+            .insert(MempoolDataStateVersion(executed_at, transaction_data));
 
         // Add intent lookup
         self.intent_lookup
@@ -381,6 +432,7 @@ impl PriorityMempool {
 
         self.data.remove(payload_hash);
 
+        // Update intent_lookup
         let payload_lookup = self
             .intent_lookup
             .get_mut(intent_hash)
@@ -393,6 +445,7 @@ impl PriorityMempool {
             self.intent_lookup.remove(intent_hash);
         }
 
+        // Remove from proposal_priority_index
         if !self
             .proposal_priority_index
             .remove(&MempoolDataProposalPriorityOrdering(data.clone()))
@@ -400,11 +453,49 @@ impl PriorityMempool {
             panic!("Mempool priority index out of sync on remove");
         }
 
+        // Remove from end_epoch_exclusive_index
         if !self
             .end_epoch_exclusive_index
-            .remove(&MempoolDataEndEpochExclusiveOrdering(data))
+            .remove(&MempoolDataEndEpochExclusiveOrdering(data.clone()))
         {
             panic!("Mempool end epoch index out of sync on remove");
+        }
+
+        // Remove from executed_state_version_index
+        let state_version = match self.data_to_executed_state_version.remove(&data) {
+            None => panic!("Mempool state version map out of sync on remove"),
+            Some(state_version) => state_version,
+        };
+
+        if !self
+            .executed_state_version_index
+            .remove(&MempoolDataStateVersion(state_version, data))
+        {
+            panic!("Mempool executed state version index out of sync on remove");
+        }
+    }
+
+    pub fn update_transaction_executed_state_version(
+        &mut self,
+        payload_hash: &NotarizedTransactionHash,
+        state_version: StateVersion,
+    ) {
+        if let Some(data) = self.data.get(payload_hash) {
+            let current_state_version = self
+                .data_to_executed_state_version
+                .insert(data.clone(), state_version)
+                .expect("Mempool state version map out of sync on update");
+            if !self
+                .executed_state_version_index
+                .remove(&MempoolDataStateVersion(
+                    current_state_version,
+                    data.clone(),
+                ))
+            {
+                panic!("Mempool executed state version index out of sync on update");
+            }
+            self.executed_state_version_index
+                .insert(MempoolDataStateVersion(state_version, data.clone()));
         }
     }
 
@@ -487,6 +578,12 @@ impl PriorityMempool {
                     .iter()
                     .map(move |payload_hash| (intent_hash, payload_hash))
             })
+    }
+
+    pub fn iter_by_state_version(&self) -> impl Iterator<Item = Arc<MempoolData>> + '_ {
+        self.executed_state_version_index
+            .iter()
+            .map(|mempool_data_state_version| mempool_data_state_version.1.clone())
     }
 
     pub fn get_payload(
@@ -622,6 +719,7 @@ mod tests {
         let mt1 = create_fake_pending_transaction(1, 0, 0);
         let mt2 = create_fake_pending_transaction(2, 0, 0);
         let mt3 = create_fake_pending_transaction(3, 0, 0);
+        let v1 = StateVersion::of(1);
 
         let registry = Registry::new();
 
@@ -635,8 +733,13 @@ mod tests {
         assert_eq!(mp.remaining_transaction_count, 5);
         assert_eq!(mp.get_count(), 0);
 
-        mp.add_transaction_if_not_present(mt1.clone(), MempoolAddSource::CoreApi, Instant::now())
-            .unwrap();
+        mp.add_transaction_if_not_present(
+            mt1.clone(),
+            MempoolAddSource::CoreApi,
+            Instant::now(),
+            v1,
+        )
+        .unwrap();
         assert_eq!(mp.remaining_transaction_count, 4);
         assert_eq!(mp.get_count(), 1);
         assert!(mp.contains_transaction(&mt1.notarized_transaction_hash()));
@@ -645,6 +748,7 @@ mod tests {
             mt2.clone(),
             MempoolAddSource::MempoolSync,
             Instant::now(),
+            v1,
         )
         .unwrap();
         assert_eq!(mp.remaining_transaction_count, 3);
@@ -679,6 +783,7 @@ mod tests {
         let intent_1_payload_3 = create_fake_pending_transaction(1, 3, 0);
         let intent_2_payload_1 = create_fake_pending_transaction(2, 1, 0);
         let intent_2_payload_2 = create_fake_pending_transaction(2, 2, 0);
+        let v1 = StateVersion::of(1);
 
         let registry = Registry::new();
 
@@ -693,7 +798,8 @@ mod tests {
             .add_transaction_if_not_present(
                 intent_1_payload_1.clone(),
                 MempoolAddSource::CoreApi,
-                Instant::now()
+                Instant::now(),
+                v1
             )
             .unwrap()
             .is_empty());
@@ -701,7 +807,8 @@ mod tests {
             .add_transaction_if_not_present(
                 intent_1_payload_2.clone(),
                 MempoolAddSource::CoreApi,
-                Instant::now()
+                Instant::now(),
+                v1
             )
             .unwrap()
             .is_empty());
@@ -709,7 +816,8 @@ mod tests {
             .add_transaction_if_not_present(
                 intent_1_payload_3,
                 MempoolAddSource::MempoolSync,
-                Instant::now()
+                Instant::now(),
+                v1
             )
             .unwrap()
             .is_empty());
@@ -717,7 +825,8 @@ mod tests {
             .add_transaction_if_not_present(
                 intent_2_payload_1.clone(),
                 MempoolAddSource::CoreApi,
-                Instant::now()
+                Instant::now(),
+                v1
             )
             .unwrap()
             .is_empty());
@@ -759,7 +868,8 @@ mod tests {
             .add_transaction_if_not_present(
                 intent_2_payload_1,
                 MempoolAddSource::MempoolSync,
-                Instant::now()
+                Instant::now(),
+                v1
             )
             .unwrap()
             .is_empty());
@@ -775,7 +885,8 @@ mod tests {
             .add_transaction_if_not_present(
                 intent_2_payload_2.clone(),
                 MempoolAddSource::CoreApi,
-                Instant::now()
+                Instant::now(),
+                v1
             )
             .unwrap()
             .is_empty());
@@ -843,6 +954,7 @@ mod tests {
         let mt9 = create_fake_pending_transaction(5, 0, 40);
 
         let now = Instant::now();
+        let v1 = StateVersion::of(1);
         let time_point = [
             now + Duration::from_secs(1),
             now + Duration::from_secs(2),
@@ -860,53 +972,69 @@ mod tests {
         );
 
         assert!(mp
-            .add_transaction_if_not_present(mt4.clone(), MempoolAddSource::CoreApi, time_point[0])
+            .add_transaction_if_not_present(
+                mt4.clone(),
+                MempoolAddSource::CoreApi,
+                time_point[0],
+                v1
+            )
             .unwrap()
             .is_empty());
         assert!(mp
-            .add_transaction_if_not_present(mt2.clone(), MempoolAddSource::CoreApi, time_point[1])
+            .add_transaction_if_not_present(
+                mt2.clone(),
+                MempoolAddSource::CoreApi,
+                time_point[1],
+                v1
+            )
             .unwrap()
             .is_empty());
         assert!(mp
             .add_transaction_if_not_present(
                 mt3.clone(),
                 MempoolAddSource::MempoolSync,
-                time_point[0]
+                time_point[0],
+                v1
             )
             .unwrap()
             .is_empty());
         assert!(mp
-            .add_transaction_if_not_present(mt1.clone(), MempoolAddSource::CoreApi, time_point[0])
+            .add_transaction_if_not_present(
+                mt1.clone(),
+                MempoolAddSource::CoreApi,
+                time_point[0],
+                v1
+            )
             .unwrap()
             .is_empty());
 
         let evicted = mp
-            .add_transaction_if_not_present(mt5, MempoolAddSource::CoreApi, time_point[1])
+            .add_transaction_if_not_present(mt5, MempoolAddSource::CoreApi, time_point[1], v1)
             .unwrap();
         assert_eq!(evicted.len(), 1);
         assert_eq!(evicted[0].transaction, mt1);
 
         // mt2 should be evicted before mt3 because of lower time spent in the mempool
         let evicted = mp
-            .add_transaction_if_not_present(mt6, MempoolAddSource::CoreApi, time_point[1])
+            .add_transaction_if_not_present(mt6, MempoolAddSource::CoreApi, time_point[1], v1)
             .unwrap();
         assert_eq!(evicted.len(), 1);
         assert_eq!(evicted[0].transaction, mt2);
 
         let evicted = mp
-            .add_transaction_if_not_present(mt7, MempoolAddSource::CoreApi, time_point[1])
+            .add_transaction_if_not_present(mt7, MempoolAddSource::CoreApi, time_point[1], v1)
             .unwrap();
         assert_eq!(evicted.len(), 1);
         assert_eq!(evicted[0].transaction, mt3);
 
         let evicted = mp
-            .add_transaction_if_not_present(mt8, MempoolAddSource::CoreApi, time_point[1])
+            .add_transaction_if_not_present(mt8, MempoolAddSource::CoreApi, time_point[1], v1)
             .unwrap();
         assert_eq!(evicted.len(), 1);
         assert_eq!(evicted[0].transaction, mt4);
 
         assert!(mp
-            .add_transaction_if_not_present(mt9, MempoolAddSource::CoreApi, time_point[2])
+            .add_transaction_if_not_present(mt9, MempoolAddSource::CoreApi, time_point[2], v1)
             .is_err());
     }
 
@@ -915,6 +1043,7 @@ mod tests {
         let mempool_txn = create_fake_pending_transaction(1, 0, 10);
 
         let now = Instant::now();
+        let v1 = StateVersion::of(1);
 
         let registry = Registry::new();
 
@@ -928,14 +1057,15 @@ mod tests {
 
         // Inserting the same transaction twice should be a non-panicking no-op
         assert!(mempool
-            .add_transaction_if_not_present(mempool_txn.clone(), MempoolAddSource::CoreApi, now)
+            .add_transaction_if_not_present(mempool_txn.clone(), MempoolAddSource::CoreApi, now, v1)
             .unwrap()
             .is_empty());
         assert!(mempool
             .add_transaction_if_not_present(
                 mempool_txn.clone(),
                 MempoolAddSource::MempoolSync,
-                now + Duration::from_secs(1)
+                now + Duration::from_secs(1),
+                v1
             )
             .unwrap()
             .is_empty());

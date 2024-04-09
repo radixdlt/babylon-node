@@ -62,51 +62,73 @@
  * permissions under this License.
  */
 
-package com.radixdlt.monitoring;
+package com.radixdlt.api.core.regression;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.Map;
+import com.radixdlt.api.DeterministicCoreApiTestBase;
+import com.radixdlt.api.core.generated.models.*;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.environment.DatabaseConfig;
+import com.radixdlt.environment.StateTreeGcConfig;
+import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.identifiers.Address;
+import com.radixdlt.rev2.Manifest;
+import com.radixdlt.rev2.TransactionBuilder;
+import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.UInt64;
+import java.util.List;
 import org.junit.Test;
 
-public class ApplicationVersionTest {
+public class StateHistoryTest extends DeterministicCoreApiTestBase {
+
   @Test
-  public void testCalculateVersionForCleanRepo() {
-    var details =
-        Map.of(
-            "tag", "1.0-beta.35.1",
-            "last_tag", "1.0-beta.35.1");
+  public void state_history_supports_substate_deletes() throws Exception {
+    try (var test = buildTest(true, 20L)) {
+      test.suppressUnusedWarning();
 
-    var version = ApplicationVersion.calculateVersionString(details);
+      // Arrange: we will use "burn NFT" for our "delete" operation:
+      final var resourceAddress = createFreeMintBurnNonFungibleResource(test);
 
-    assertEquals("1.0-beta.35.1", version);
+      final var accountKeyPair = ECKeyPair.generateNew();
+      final var accountAddress = Address.virtualAccountAddress(accountKeyPair.getPublicKey());
+      final var transactionMetadata =
+          getLtsApi()
+              .ltsTransactionConstructionPost(
+                  new LtsTransactionConstructionRequest().network(networkLogicalName));
+
+      final var mintManifest =
+          Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
+              resourceAddress, accountAddress, List.of(1), List.of());
+      final var burnManifest =
+          Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
+              resourceAddress, accountAddress, List.of(2), List.of(1, 2));
+
+      // Act: Queue up a minting transaction...
+      getLtsApi()
+          .ltsTransactionSubmitPost(
+              new LtsTransactionSubmitRequest()
+                  .network(networkLogicalName)
+                  .notarizedTransactionHex(
+                      TransactionBuilder.forNetwork(networkDefinition)
+                          .manifest(mintManifest)
+                          .fromEpoch(transactionMetadata.getCurrentEpoch())
+                          .signatories(List.of(accountKeyPair))
+                          .prepare()
+                          .hexPayloadBytes()));
+      // ... and then a burning transaction, so that they end up in one low-level "commit batch":
+      final var result =
+          getApiHelper().submitAndWaitForSuccess(test, burnManifest, List.of(accountKeyPair));
+
+      // Assert: we only need this to succeed (the original bug caused panics)
+      assertThat(result.errorMessage()).isEmpty();
+    }
   }
 
-  @Test
-  public void testCalculateVersionForDirtyRepo() {
-    var details =
-        Map.of(
-            "tag", "",
-            "last_tag", "1.0-beta.35.1",
-            "build", "ed0717c",
-            "branch", "feature/rpnv1-1306-refactor-json-rpc-implementation");
-
-    var version = ApplicationVersion.calculateVersionString(details);
-
-    assertEquals(
-        "1.0-beta.35.1-feature~rpnv1-1306-refactor-json-rpc-implementation-ed0717c", version);
-  }
-
-  @Test
-  public void testCalculateVersionForDetachedHead() {
-    var details =
-        Map.of(
-            "tag", "",
-            "last_tag", "1.0-beta.35.1",
-            "build", "ed0717c");
-
-    var version = ApplicationVersion.calculateVersionString(details);
-
-    assertEquals("detached-head-ed0717c", version);
+  private DeterministicTest buildTest(boolean stateHistoryEnabled, long historyLength) {
+    return buildRunningServerTest(
+        new DatabaseConfig(true, false, stateHistoryEnabled, false),
+        new StateTreeGcConfig(
+            UInt32.fromNonNegativeInt(1), UInt64.fromNonNegativeLong(historyLength)));
   }
 }

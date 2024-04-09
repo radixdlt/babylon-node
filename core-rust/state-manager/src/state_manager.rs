@@ -208,11 +208,15 @@ impl StateManager {
             ),
         );
 
-        let pending_transaction_result_cache = Arc::new(
+        let mempool = Arc::new(
             lock_factory
-                .named("pending_cache")
-                .new_rwlock(PendingTransactionResultCache::new(10000, 10000)),
+                .named("mempool")
+                .new_rwlock(PriorityMempool::new(mempool_config, metrics_registry)),
         );
+        let pending_transaction_result_cache =
+            Arc::new(lock_factory.named("pending_cache").new_rwlock(
+                PendingTransactionResultCache::new(mempool.clone(), 10000, 10000),
+            ));
         let committability_validator =
             Arc::new(lock_factory.named("committability_validator").new_rwlock(
                 CommittabilityValidator::new(
@@ -226,13 +230,6 @@ impl StateManager {
             committability_validator.clone(),
             pending_transaction_result_cache.clone(),
         );
-
-        let mempool = Arc::new(
-            lock_factory
-                .named("mempool")
-                .new_rwlock(PriorityMempool::new(mempool_config, metrics_registry)),
-        );
-
         let mempool_manager = Arc::new(match mempool_relay_dispatcher {
             None => MempoolManager::new_for_testing(
                 mempool.clone(),

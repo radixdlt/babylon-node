@@ -82,6 +82,7 @@ use im::hashmap::HashMap as ImmutableHashMap;
 use itertools::Itertools;
 
 use crate::store::traits::{SubstateNodeAncestryRecord, SubstateNodeAncestryStore};
+use crate::traits::ConfigurableDatabase;
 use slotmap::SecondaryMap;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd)]
@@ -398,6 +399,28 @@ impl<'s, S: SubstateNodeAncestryStore> SubstateNodeAncestryStore for StagedStore
     ) -> Vec<Option<SubstateNodeAncestryRecord>> {
         let overlay = MapSubstateNodeAncestryStore::wrap(&self.overlay.node_ancestry_records);
         StagedSubstateNodeAncestryStore::new(self.root, &overlay).batch_get_ancestry(node_ids)
+    }
+}
+
+impl<'s, S: ConfigurableDatabase> ConfigurableDatabase for StagedStore<'s, S> {
+    fn is_account_change_index_enabled(&self) -> bool {
+        self.root.is_account_change_index_enabled()
+    }
+
+    fn is_local_transaction_execution_index_enabled(&self) -> bool {
+        self.root.is_local_transaction_execution_index_enabled()
+    }
+
+    fn are_re_node_listing_indices_enabled(&self) -> bool {
+        self.root.are_re_node_listing_indices_enabled()
+    }
+
+    fn is_state_history_enabled(&self) -> bool {
+        self.root.is_state_history_enabled()
+    }
+
+    fn get_first_stored_historical_state_version(&self) -> StateVersion {
+        self.root.get_first_stored_historical_state_version()
     }
 }
 

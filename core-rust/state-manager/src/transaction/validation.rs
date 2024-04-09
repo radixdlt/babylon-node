@@ -250,7 +250,12 @@ impl CommittabilityValidator {
             };
         }
 
-        let receipt = self.test_execute_transaction_up_to_fee_loan(database.deref(), transaction);
+        let receipt = self
+            .execution_configurator
+            .read()
+            .wrap_pending_transaction(transaction)
+            .execute_on(database.deref());
+
         let result = match receipt.result {
             TransactionResult::Reject(RejectResult { reason }) => {
                 if matches!(
@@ -280,17 +285,6 @@ impl CommittabilityValidator {
             },
             timestamp,
         }
-    }
-
-    fn test_execute_transaction_up_to_fee_loan<S: SubstateDatabase>(
-        &self,
-        root_store: &S,
-        transaction: &ValidatedNotarizedTransactionV1,
-    ) -> TransactionReceiptV1 {
-        self.execution_configurator
-            .read()
-            .wrap_pending_transaction(transaction)
-            .execute_on(root_store)
     }
 }
 
@@ -383,12 +377,6 @@ pub enum CheckMetadata {
     Fresh(StaticValidation),
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub enum PrevalidatedCheckMetadata {
-    Cached,
-    Fresh,
-}
-
 impl CheckMetadata {
     pub fn was_cached(&self) -> bool {
         match self {
@@ -461,38 +449,26 @@ impl CachedCommittabilityValidator {
         }
     }
 
-    /// Reads the transaction rejection status from the cache, else calculates it fresh, using
-    /// `CommittabilityValidator`.
+    /// Recalculates (i.e. ignoring the cache) the given already-validatated transaction's status,
+    /// using `CommittabilityValidator`.
     ///
     /// The result is stored in the cache.
     /// If the transaction is freshly rejected, the caller should perform additional cleanup,
     /// e.g. removing the transaction from the mempool.
     ///
-    /// Its pending transaction record is returned, along with a boolean about whether the last
-    /// attempt was cached.
-    pub fn check_for_rejection_cached_prevalidated(
+    /// Returns the transaction's new pending transaction record.
+    pub fn check_for_rejection_validated(
         &self,
         validated: &ValidatedNotarizedTransactionV1,
-        force_recalculate: ForceRecalculation,
-    ) -> (PendingTransactionRecord, PrevalidatedCheckMetadata) {
-        let current_time = SystemTime::now();
-
-        if let ShouldRecalculate::No(record) =
-            self.should_recalculate(&validated.prepared, current_time, force_recalculate)
-        {
-            return (record, PrevalidatedCheckMetadata::Cached);
-        }
-
+    ) -> PendingTransactionRecord {
         let metadata = TransactionMetadata::read_from(&validated.prepared);
 
         let attempt = self
             .committability_validator
             .read()
-            .check_for_rejection(validated, current_time);
-        (
-            self.write_attempt(metadata, attempt),
-            PrevalidatedCheckMetadata::Fresh,
-        )
+            .check_for_rejection(validated, SystemTime::now());
+
+        self.write_attempt(metadata, attempt)
     }
 
     fn should_recalculate(
