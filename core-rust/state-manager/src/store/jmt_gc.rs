@@ -124,14 +124,15 @@ impl StateTreeGc {
     /// JMT DB rows. For this reason, it can use the direct [`DbLock::access_direct()`] and
     /// effectively own these rows (for reads and deletes), without locking the database.
     pub fn run(&self) {
-        let database = self.database.access_direct();
+        let direct_database = self.database.access_direct();
+        let database = direct_database.deref();
         let current_state_version = database.max_state_version();
         let to_state_version = current_state_version
             .relative(-self.history_len)
             .unwrap_or(StateVersion::pre_genesis());
 
         info!(
-            "Starting a GC run: current state version is {:?}; pruning JMT up to version {:?}",
+            "Starting a GC run: current state version is {:?}; pruning JMT up to version {:?} (exclusive)",
             current_state_version.number(),
             to_state_version.number(),
         );
@@ -144,6 +145,16 @@ impl StateTreeGc {
         // Collect the stale node keys into a "delete buffer":
         let mut deleted_nodes = Vec::new();
         for (state_version, StaleTreePartsV1(stale_tree_parts)) in stale_entries {
+            // Periodically rotate the collected buffer of node keys to delete:
+            if deleted_nodes.len() >= DELETED_NODE_BUFFER_MAX_LEN {
+                // The flush is handled before the processing, so that we always operate on exclusive right bound of state versions.
+                info!(
+                    "Flushing a full delete buffer up to version {} (exclusive)",
+                    state_version
+                );
+                delete_nodes_and_update_state_history(database, &deleted_nodes, state_version);
+                deleted_nodes.clear();
+            }
             for stale_tree_part in stale_tree_parts {
                 let part_keys: Box<dyn Iterator<Item = StoredTreeNodeKey>> = match stale_tree_part {
                     StaleTreePart::Node(key) => Box::new(iter::once(key)),
@@ -152,26 +163,36 @@ impl StateTreeGc {
                     // only after its children, in case this process is interrupted half-way
                     // and need to be resumed).
                     StaleTreePart::Subtree(subtree_root_key) => {
-                        Box::new(iterate_dfs_post_order(database.deref(), subtree_root_key))
+                        Box::new(iterate_dfs_post_order(database, subtree_root_key))
                     }
                 };
-                for key in part_keys {
-                    deleted_nodes.push(key);
-                    // Periodically rotate the collected buffer of node keys to delete:
-                    if deleted_nodes.len() == DELETED_NODE_BUFFER_MAX_LEN {
-                        info!("Flushing a full delete buffer at version {}", state_version);
-                        database.batch_delete_node(deleted_nodes.iter());
-                        deleted_nodes.clear();
-                    }
-                }
+                deleted_nodes.extend(part_keys);
             }
         }
 
-        // Delete the last collected batch of keys, and then delete the processed "stale tree parts" records:
+        // Delete the last collected batch of keys:
         info!("Flushing the last buffer ({} deletes)", deleted_nodes.len());
-        database.batch_delete_node(deleted_nodes.iter());
-        database.delete_stale_tree_parts_up_to_version(to_state_version);
+        delete_nodes_and_update_state_history(database, &deleted_nodes, to_state_version);
     }
+}
+
+/// A helper method for flushing the GC's partial DB update batches.
+///
+/// Note: the order of the operations is important for non-trivial reasons - see comments.
+fn delete_nodes_and_update_state_history(
+    database: &ActualStateManagerDatabase,
+    deleted_nodes: &[StoredTreeNodeKey],
+    state_version: StateVersion,
+) {
+    // First, bump the minimum state version from which the state history is available:
+    // (this will prevent the readers from trying to access the nodes that we are about to delete)
+    database.progress_historical_substate_values_availability(state_version);
+    // Delete the actual tree nodes:
+    database.batch_delete_node(deleted_nodes.iter());
+    // Finally, remove the processed items from the GC's work queue:
+    // (it is safe to do it last: even if the Node restarts right before this point, it will simply
+    // re-process these stale tree parts, performing a couple of no-op deletes)
+    database.delete_stale_tree_parts_up_to_version(state_version);
 }
 
 /// Iterates the node keys from the state hash tree's subtree starting at the given root key, in a

@@ -724,6 +724,10 @@ pub mod gc {
             &self,
         ) -> Box<dyn Iterator<Item = (StateVersion, StaleTreeParts)> + '_>;
 
+        /// Updates the metadata of the state history feature - but only if the given `available_from`
+        /// version is actually greater than the currently stored one.
+        fn progress_historical_substate_values_availability(&self, available_from: StateVersion);
+
         /// Deletes a batch of state hash tree nodes.
         fn batch_delete_node<'a>(&self, keys: impl IntoIterator<Item = &'a StoredTreeNodeKey>);
 
