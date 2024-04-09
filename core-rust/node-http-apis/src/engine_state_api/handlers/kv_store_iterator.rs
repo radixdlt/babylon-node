@@ -3,8 +3,7 @@ use crate::engine_state_api::*;
 use crate::engine_prelude::*;
 
 use crate::engine_state_api::handlers::HandlerPagingSupport;
-use state_manager::historical_state::VersionScopedSubstateDatabase;
-use std::ops::Deref;
+use state_manager::historical_state::VersionScopingSupport;
 
 pub(crate) async fn handle_kv_store_iterator(
     state: State<EngineStateApiState>,
@@ -25,12 +24,13 @@ pub(crate) async fn handle_kv_store_iterator(
         extract_opt_ledger_state_selector(request.at_ledger_state.as_deref())
             .map_err(|err| err.into_response_error("at_ledger_state"))?;
 
-    let database = state.state_manager.database.snapshot();
+    let database = state
+        .state_manager
+        .database
+        .snapshot()
+        .scoped_at(requested_state_version)?;
 
-    let substate_database =
-        VersionScopedSubstateDatabase::new(database.deref(), requested_state_version)?;
-
-    let meta_loader = EngineStateMetaLoader::new(&substate_database);
+    let meta_loader = EngineStateMetaLoader::new(&database);
     let EntityMeta::KeyValueStore(kv_store_meta) = meta_loader.load_entity_meta(&node_id)? else {
         return Err(ResponseError::new(
             StatusCode::BAD_REQUEST,
@@ -41,12 +41,12 @@ pub(crate) async fn handle_kv_store_iterator(
         }));
     };
 
-    let data_loader = EngineStateDataLoader::new(&substate_database);
+    let data_loader = EngineStateDataLoader::new(&database);
 
     let page = paging_support
         .get_page(|from| data_loader.iter_kv_store_keys(&node_id, &kv_store_meta, from))?;
 
-    let header = read_proving_ledger_header(database.deref(), substate_database.at_state_version());
+    let header = database.proving_ledger_header();
 
     Ok(Json(models::KeyValueStoreIteratorResponse {
         at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
