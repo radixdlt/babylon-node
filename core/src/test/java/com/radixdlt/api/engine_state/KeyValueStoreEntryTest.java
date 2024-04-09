@@ -147,8 +147,11 @@ public final class KeyValueStoreEntryTest extends DeterministicEngineStateApiTes
                               .key(key)));
 
       // assert that it is "not found" type of error
-      assertThat(errorResponse.getDetails().getErrorType())
-          .isEqualTo(ErrorType.REQUESTEDITEMNOTFOUND);
+      assertThat(errorResponse.getDetails())
+          .isEqualTo(
+              new RequestedItemNotFoundDetails()
+                  .itemType(RequestedItemType.ENTRYKEY)
+                  .errorType(ErrorType.REQUESTEDITEMNOTFOUND));
       assertThat(errorResponse.getMessage()).contains("not found");
     }
   }

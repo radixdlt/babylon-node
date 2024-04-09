@@ -28,6 +28,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.engine_state.generated.models.ErrorType;
 import com.radixdlt.api.engine_state.generated.models.RequestedItemInvalidDetails;
 import com.radixdlt.api.engine_state.generated.models.RequestedItemNotFoundDetails;
+import com.radixdlt.api.engine_state.generated.models.StateVersionInFutureDetails;
+import com.radixdlt.api.engine_state.generated.models.StateVersionInTooDistantPastDetails;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -51,6 +53,10 @@ import com.radixdlt.api.engine_state.generated.client.JSON;
   @JsonSubTypes.Type(value = RequestedItemInvalidDetails.class, name = "RequestedItemInvalidDetails"),
   @JsonSubTypes.Type(value = RequestedItemNotFoundDetails.class, name = "RequestedItemNotFound"),
   @JsonSubTypes.Type(value = RequestedItemNotFoundDetails.class, name = "RequestedItemNotFoundDetails"),
+  @JsonSubTypes.Type(value = StateVersionInFutureDetails.class, name = "StateVersionInFuture"),
+  @JsonSubTypes.Type(value = StateVersionInFutureDetails.class, name = "StateVersionInFutureDetails"),
+  @JsonSubTypes.Type(value = StateVersionInTooDistantPastDetails.class, name = "StateVersionInTooDistantPast"),
+  @JsonSubTypes.Type(value = StateVersionInTooDistantPastDetails.class, name = "StateVersionInTooDistantPastDetails"),
 })
 
 public class ErrorDetails {
@@ -133,6 +139,10 @@ static {
   mappings.put("RequestedItemInvalidDetails", RequestedItemInvalidDetails.class);
   mappings.put("RequestedItemNotFound", RequestedItemNotFoundDetails.class);
   mappings.put("RequestedItemNotFoundDetails", RequestedItemNotFoundDetails.class);
+  mappings.put("StateVersionInFuture", StateVersionInFutureDetails.class);
+  mappings.put("StateVersionInFutureDetails", StateVersionInFutureDetails.class);
+  mappings.put("StateVersionInTooDistantPast", StateVersionInTooDistantPastDetails.class);
+  mappings.put("StateVersionInTooDistantPastDetails", StateVersionInTooDistantPastDetails.class);
   mappings.put("ErrorDetails", ErrorDetails.class);
   JSON.registerDiscriminator(ErrorDetails.class, "error_type", mappings);
 }

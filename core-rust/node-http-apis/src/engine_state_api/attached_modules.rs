@@ -3,8 +3,6 @@ use std::ops::Deref;
 
 use crate::engine_prelude::*;
 
-use crate::engine_state_api::models::{ErrorDetails, RequestedItemType};
-
 use super::*;
 
 lazy_static::lazy_static! {
@@ -366,8 +364,8 @@ impl From<AttachedModuleBrowsingError> for ResponseError {
                 StatusCode::BAD_REQUEST,
                 "The requested Entity is not an Object",
             )
-            .with_public_details(ErrorDetails::RequestedItemInvalidDetails {
-                item_type: RequestedItemType::Entity,
+            .with_public_details(models::ErrorDetails::RequestedItemInvalidDetails {
+                item_type: models::RequestedItemType::Entity,
             }),
             AttachedModuleBrowsingError::AttachedModulesInvariantBroken(message) => {
                 ResponseError::new(
