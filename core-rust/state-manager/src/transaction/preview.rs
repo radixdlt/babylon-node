@@ -7,7 +7,7 @@ use crate::historical_state::{StateHistoryError, VersionScopedSubstateDatabase};
 use crate::traits::IterableProofStore;
 use crate::transaction::*;
 use crate::{
-    ActualStateManagerDatabase, GlobalBalanceSummary, LedgerHeader, LedgerStateChanges,
+    ActualStateManagerDatabase, GlobalBalanceSummary, LedgerHeaderSummary, LedgerStateChanges,
     PreviewRequest, ProcessedCommitResult, StateVersion,
 };
 
@@ -19,7 +19,7 @@ pub struct TransactionPreviewer {
 }
 
 pub struct ProcessedPreviewResult {
-    pub base_ledger_header: LedgerHeader,
+    pub base_ledger_header: LedgerHeaderSummary,
     pub receipt: TransactionReceipt,
     pub state_changes: LedgerStateChanges,
     pub global_balance_summary: GlobalBalanceSummary,
@@ -59,11 +59,12 @@ impl TransactionPreviewer {
         let substate_database =
             VersionScopedSubstateDatabase::new(database.deref(), requested_state_version)?;
 
-        let base_ledger_header = database
+        let base_ledger_header: LedgerHeaderSummary = database
             .get_proof_iter(substate_database.at_state_version())
             .next()
             .expect("proof for preview's base state")
-            .ledger_header;
+            .ledger_header
+            .into();
 
         let intent = self.create_intent(preview_request, base_ledger_header.epoch);
 

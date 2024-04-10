@@ -4,7 +4,7 @@ use crate::engine_prelude::*;
 
 use state_manager::query::TransactionIdentifierLoader;
 use state_manager::store::traits::*;
-use state_manager::{LedgerHashes, LedgerHeader, LedgerProof, StateVersion};
+use state_manager::{LedgerHashes, LedgerHeaderSummary, LedgerProof, StateVersion};
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_status_network_status(
@@ -30,7 +30,7 @@ pub(crate) async fn handle_status_network_status(
             .map(|proof| -> Result<_, MappingError> {
                 Ok(Box::new(to_api_epoch_round(
                     &mapping_context,
-                    &proof.ledger_header,
+                    &proof.ledger_header.into(),
                 )?))
             })
             .transpose()?,
@@ -74,7 +74,7 @@ pub(crate) async fn handle_status_network_status(
             .map(|proof| -> Result<_, MappingError> {
                 Ok(Box::new(to_api_epoch_round(
                     &mapping_context,
-                    &proof.ledger_header,
+                    &proof.ledger_header.into(),
                 )?))
             })
             .transpose()?,
@@ -84,7 +84,7 @@ pub(crate) async fn handle_status_network_status(
 
 pub fn to_api_epoch_round(
     context: &MappingContext,
-    ledger_header: &LedgerHeader,
+    ledger_header: &LedgerHeaderSummary,
 ) -> Result<models::EpochRound, MappingError> {
     Ok(models::EpochRound {
         epoch: to_api_epoch(context, ledger_header.epoch)?,

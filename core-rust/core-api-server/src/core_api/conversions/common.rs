@@ -1,5 +1,5 @@
 use crate::engine_prelude::*;
-use state_manager::{LedgerHeader, StateVersion};
+use state_manager::{LedgerHeaderSummary, StateVersion};
 
 use crate::core_api::handlers::to_api_epoch_round;
 use crate::core_api::*;
@@ -140,7 +140,7 @@ pub fn to_api_sbor_data_from_bytes(
 
 pub fn to_api_ledger_state_summary(
     mapping_context: &MappingContext,
-    header: &LedgerHeader,
+    header: &LedgerHeaderSummary,
 ) -> Result<models::LedgerStateSummary, MappingError> {
     Ok(models::LedgerStateSummary {
         state_version: to_api_state_version(header.state_version)?,
@@ -150,7 +150,7 @@ pub fn to_api_ledger_state_summary(
 
 pub fn to_api_ledger_header_summary(
     mapping_context: &MappingContext,
-    header: &LedgerHeader,
+    header: &LedgerHeaderSummary,
 ) -> Result<models::LedgerHeaderSummary, MappingError> {
     let hashes = &header.hashes;
     Ok(models::LedgerHeaderSummary {

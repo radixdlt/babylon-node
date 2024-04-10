@@ -56,7 +56,10 @@ pub(crate) async fn handle_state_validator(
     let header = read_current_ledger_header(database.deref());
 
     Ok(Json(models::StateValidatorResponse {
-        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(
+            &mapping_context,
+            &header.into(),
+        )?),
         address: to_api_component_address(&mapping_context, &validator_address)?,
         state: Some(to_api_validator_state_substate(
             &mapping_context,

@@ -503,6 +503,26 @@ impl From<LedgerHeaderV1> for LedgerHeader {
     }
 }
 
+pub struct LedgerHeaderSummary {
+    pub epoch: Epoch,
+    pub round: Round,
+    pub state_version: StateVersion,
+    pub hashes: LedgerHashes,
+    pub proposer_timestamp_ms: i64,
+}
+
+impl From<LedgerHeader> for LedgerHeaderSummary {
+    fn from(header: LedgerHeader) -> Self {
+        Self {
+            epoch: header.epoch,
+            round: header.round,
+            state_version: header.state_version,
+            hashes: header.hashes,
+            proposer_timestamp_ms: header.proposer_timestamp_ms,
+        }
+    }
+}
+
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ProtocolUpdateResult {
     pub post_update_proof: LedgerProof,
