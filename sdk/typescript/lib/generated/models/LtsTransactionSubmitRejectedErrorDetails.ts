@@ -13,12 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { Instant } from './Instant';
+import type { InstantMs } from './InstantMs';
 import {
-    InstantFromJSON,
-    InstantFromJSONTyped,
-    InstantToJSON,
-} from './Instant';
+    InstantMsFromJSON,
+    InstantMsFromJSONTyped,
+    InstantMsToJSON,
+} from './InstantMs';
 
 /**
  * 
@@ -60,10 +60,10 @@ export interface LtsTransactionSubmitRejectedErrorDetails {
     is_intent_rejection_permanent: boolean;
     /**
      * 
-     * @type {Instant}
+     * @type {InstantMs}
      * @memberof LtsTransactionSubmitRejectedErrorDetails
      */
-    retry_from_timestamp?: Instant;
+    retry_from_timestamp?: InstantMs;
     /**
      * An integer between `0` and `10^10`, marking the epoch after which the node will consider recalculating the validity of the transaction.
      * Only present if the rejection is temporary due to a header specifying a "from epoch" in the future.
@@ -119,7 +119,7 @@ export function LtsTransactionSubmitRejectedErrorDetailsFromJSONTyped(json: any,
         'is_fresh': json['is_fresh'],
         'is_payload_rejection_permanent': json['is_payload_rejection_permanent'],
         'is_intent_rejection_permanent': json['is_intent_rejection_permanent'],
-        'retry_from_timestamp': !exists(json, 'retry_from_timestamp') ? undefined : InstantFromJSON(json['retry_from_timestamp']),
+        'retry_from_timestamp': !exists(json, 'retry_from_timestamp') ? undefined : InstantMsFromJSON(json['retry_from_timestamp']),
         'retry_from_epoch': !exists(json, 'retry_from_epoch') ? undefined : json['retry_from_epoch'],
         'invalid_from_epoch': !exists(json, 'invalid_from_epoch') ? undefined : json['invalid_from_epoch'],
     };
@@ -139,7 +139,7 @@ export function LtsTransactionSubmitRejectedErrorDetailsToJSON(value?: LtsTransa
         'is_fresh': value.is_fresh,
         'is_payload_rejection_permanent': value.is_payload_rejection_permanent,
         'is_intent_rejection_permanent': value.is_intent_rejection_permanent,
-        'retry_from_timestamp': InstantToJSON(value.retry_from_timestamp),
+        'retry_from_timestamp': InstantMsToJSON(value.retry_from_timestamp),
         'retry_from_epoch': value.retry_from_epoch,
         'invalid_from_epoch': value.invalid_from_epoch,
     };

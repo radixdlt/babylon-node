@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.Instant;
+import com.radixdlt.api.core.generated.models.InstantMs;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -37,12 +37,12 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ConsensusManagerFieldCurrentTimeRoundedToMinutesValue {
   public static final String JSON_PROPERTY_PROPOSER_TIMESTAMP_ROUNDED_DOWN_TO_MINUTE = "proposer_timestamp_rounded_down_to_minute";
-  private Instant proposerTimestampRoundedDownToMinute;
+  private InstantMs proposerTimestampRoundedDownToMinute;
 
   public ConsensusManagerFieldCurrentTimeRoundedToMinutesValue() { 
   }
 
-  public ConsensusManagerFieldCurrentTimeRoundedToMinutesValue proposerTimestampRoundedDownToMinute(Instant proposerTimestampRoundedDownToMinute) {
+  public ConsensusManagerFieldCurrentTimeRoundedToMinutesValue proposerTimestampRoundedDownToMinute(InstantMs proposerTimestampRoundedDownToMinute) {
     this.proposerTimestampRoundedDownToMinute = proposerTimestampRoundedDownToMinute;
     return this;
   }
@@ -56,14 +56,14 @@ public class ConsensusManagerFieldCurrentTimeRoundedToMinutesValue {
   @JsonProperty(JSON_PROPERTY_PROPOSER_TIMESTAMP_ROUNDED_DOWN_TO_MINUTE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Instant getProposerTimestampRoundedDownToMinute() {
+  public InstantMs getProposerTimestampRoundedDownToMinute() {
     return proposerTimestampRoundedDownToMinute;
   }
 
 
   @JsonProperty(JSON_PROPERTY_PROPOSER_TIMESTAMP_ROUNDED_DOWN_TO_MINUTE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setProposerTimestampRoundedDownToMinute(Instant proposerTimestampRoundedDownToMinute) {
+  public void setProposerTimestampRoundedDownToMinute(InstantMs proposerTimestampRoundedDownToMinute) {
     this.proposerTimestampRoundedDownToMinute = proposerTimestampRoundedDownToMinute;
   }
 

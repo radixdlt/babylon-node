@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.Instant;
+import com.radixdlt.api.core.generated.models.InstantMs;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -41,7 +41,7 @@ public class LtsTransactionConstructionResponse {
   private Long currentEpoch;
 
   public static final String JSON_PROPERTY_LEDGER_CLOCK = "ledger_clock";
-  private Instant ledgerClock;
+  private InstantMs ledgerClock;
 
   public LtsTransactionConstructionResponse() { 
   }
@@ -74,7 +74,7 @@ public class LtsTransactionConstructionResponse {
   }
 
 
-  public LtsTransactionConstructionResponse ledgerClock(Instant ledgerClock) {
+  public LtsTransactionConstructionResponse ledgerClock(InstantMs ledgerClock) {
     this.ledgerClock = ledgerClock;
     return this;
   }
@@ -88,14 +88,14 @@ public class LtsTransactionConstructionResponse {
   @JsonProperty(JSON_PROPERTY_LEDGER_CLOCK)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Instant getLedgerClock() {
+  public InstantMs getLedgerClock() {
     return ledgerClock;
   }
 
 
   @JsonProperty(JSON_PROPERTY_LEDGER_CLOCK)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setLedgerClock(Instant ledgerClock) {
+  public void setLedgerClock(InstantMs ledgerClock) {
     this.ledgerClock = ledgerClock;
   }
 

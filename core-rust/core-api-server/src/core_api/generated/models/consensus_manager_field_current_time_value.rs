@@ -14,11 +14,11 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct ConsensusManagerFieldCurrentTimeValue {
     #[serde(rename = "proposer_timestamp")]
-    pub proposer_timestamp: Box<crate::core_api::generated::models::Instant>,
+    pub proposer_timestamp: Box<crate::core_api::generated::models::InstantMs>,
 }
 
 impl ConsensusManagerFieldCurrentTimeValue {
-    pub fn new(proposer_timestamp: crate::core_api::generated::models::Instant) -> ConsensusManagerFieldCurrentTimeValue {
+    pub fn new(proposer_timestamp: crate::core_api::generated::models::InstantMs) -> ConsensusManagerFieldCurrentTimeValue {
         ConsensusManagerFieldCurrentTimeValue {
             proposer_timestamp: Box::new(proposer_timestamp),
         }

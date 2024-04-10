@@ -25,7 +25,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.Instant;
+import com.radixdlt.api.core.generated.models.InstantMs;
 import com.radixdlt.api.core.generated.models.LtsTransactionSubmitRejectedErrorDetailsAllOf;
 import com.radixdlt.api.core.generated.models.TransactionSubmitErrorDetails;
 import com.radixdlt.api.core.generated.models.TransactionSubmitErrorDetailsType;
@@ -76,7 +76,7 @@ public class TransactionSubmitRejectedErrorDetails extends TransactionSubmitErro
   private Boolean isIntentRejectionPermanent;
 
   public static final String JSON_PROPERTY_RETRY_FROM_TIMESTAMP = "retry_from_timestamp";
-  private Instant retryFromTimestamp;
+  private InstantMs retryFromTimestamp;
 
   public static final String JSON_PROPERTY_RETRY_FROM_EPOCH = "retry_from_epoch";
   private Long retryFromEpoch;
@@ -191,7 +191,7 @@ public class TransactionSubmitRejectedErrorDetails extends TransactionSubmitErro
   }
 
 
-  public TransactionSubmitRejectedErrorDetails retryFromTimestamp(Instant retryFromTimestamp) {
+  public TransactionSubmitRejectedErrorDetails retryFromTimestamp(InstantMs retryFromTimestamp) {
     this.retryFromTimestamp = retryFromTimestamp;
     return this;
   }
@@ -205,14 +205,14 @@ public class TransactionSubmitRejectedErrorDetails extends TransactionSubmitErro
   @JsonProperty(JSON_PROPERTY_RETRY_FROM_TIMESTAMP)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public Instant getRetryFromTimestamp() {
+  public InstantMs getRetryFromTimestamp() {
     return retryFromTimestamp;
   }
 
 
   @JsonProperty(JSON_PROPERTY_RETRY_FROM_TIMESTAMP)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setRetryFromTimestamp(Instant retryFromTimestamp) {
+  public void setRetryFromTimestamp(InstantMs retryFromTimestamp) {
     this.retryFromTimestamp = retryFromTimestamp;
   }
 

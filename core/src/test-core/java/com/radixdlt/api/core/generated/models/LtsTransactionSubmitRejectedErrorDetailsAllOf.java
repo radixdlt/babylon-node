@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.Instant;
+import com.radixdlt.api.core.generated.models.InstantMs;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -56,7 +56,7 @@ public class LtsTransactionSubmitRejectedErrorDetailsAllOf {
   private Boolean isIntentRejectionPermanent;
 
   public static final String JSON_PROPERTY_RETRY_FROM_TIMESTAMP = "retry_from_timestamp";
-  private Instant retryFromTimestamp;
+  private InstantMs retryFromTimestamp;
 
   public static final String JSON_PROPERTY_RETRY_FROM_EPOCH = "retry_from_epoch";
   private Long retryFromEpoch;
@@ -171,7 +171,7 @@ public class LtsTransactionSubmitRejectedErrorDetailsAllOf {
   }
 
 
-  public LtsTransactionSubmitRejectedErrorDetailsAllOf retryFromTimestamp(Instant retryFromTimestamp) {
+  public LtsTransactionSubmitRejectedErrorDetailsAllOf retryFromTimestamp(InstantMs retryFromTimestamp) {
     this.retryFromTimestamp = retryFromTimestamp;
     return this;
   }
@@ -185,14 +185,14 @@ public class LtsTransactionSubmitRejectedErrorDetailsAllOf {
   @JsonProperty(JSON_PROPERTY_RETRY_FROM_TIMESTAMP)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public Instant getRetryFromTimestamp() {
+  public InstantMs getRetryFromTimestamp() {
     return retryFromTimestamp;
   }
 
 
   @JsonProperty(JSON_PROPERTY_RETRY_FROM_TIMESTAMP)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setRetryFromTimestamp(Instant retryFromTimestamp) {
+  public void setRetryFromTimestamp(InstantMs retryFromTimestamp) {
     this.retryFromTimestamp = retryFromTimestamp;
   }
 
