@@ -12,9 +12,9 @@ use crate::store::traits::transactions::QueryableTransactionStore;
 use crate::store::traits::{QueryableProofStore, TransactionIndex};
 use crate::transaction::{ExecutionConfigurator, TransactionLogic};
 use crate::{
-    ActualStateManagerDatabase, AlreadyCommittedError, AtState, ExecutionRejectionReason,
-    MempoolRejectionReason, PendingTransactionRecord, PendingTransactionResultCache,
-    TransactionAttempt,
+    ActualStateManagerDatabase, AlreadyCommittedError, AtSpecificState, AtState,
+    ExecutionRejectionReason, MempoolRejectionReason, PendingTransactionRecord,
+    PendingTransactionResultCache, TransactionAttempt,
 };
 
 use super::{
@@ -243,9 +243,9 @@ impl CommittabilityValidator {
                             .notarized_transaction_hash,
                     },
                 )),
-                against_state: AtState::Committed {
+                against_state: AtState::Specific(AtSpecificState::Committed {
                     state_version: executed_at_state_version,
-                },
+                }),
                 timestamp,
             };
         }
@@ -280,9 +280,9 @@ impl CommittabilityValidator {
 
         TransactionAttempt {
             rejection: result.err(),
-            against_state: AtState::Committed {
+            against_state: AtState::Specific(AtSpecificState::Committed {
                 state_version: executed_at_state_version,
-            },
+            }),
             timestamp,
         }
     }

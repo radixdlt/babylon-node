@@ -62,104 +62,60 @@
  * permissions under this License.
  */
 
-use crate::engine_prelude::*;
+use std::collections::btree_set::BTreeSet;
 
-use std::string::ToString;
-
-pub use crate::pending_transaction_result_cache::*;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum MempoolAddSource {
-    CoreApi,
-    MempoolSync,
+/// An natural-order "secondary index" of key-value pairs.
+///
+/// The "secondary" nature means that this structure assumes certain invariants maintained by the
+/// primary storage of the same elements. Please see individual method documentation for details.
+///
+/// Implementation-wise, this is a simple wrapper for a [`BTreeSet`], exposing only the most popular
+/// operations related to key-value pairs in our codebase.
+pub struct SecondaryIndex<K, V> {
+    sorted_set: BTreeSet<(K, V)>,
 }
 
-#[derive(Debug)]
-pub enum MempoolAddError {
-    PriorityThresholdNotMet {
-        min_tip_percentage_required: Option<u16>,
-        tip_percentage: u16,
-    },
-    Duplicate(NotarizedTransactionHash),
-    Rejected(MempoolAddRejection),
+impl<K: Ord, V: Ord> Default for SecondaryIndex<K, V> {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
-#[derive(Debug)]
-pub struct MempoolAddRejection {
-    pub reason: MempoolRejectionReason,
-    pub against_state: AtState,
-    pub retry_from: RetryFrom,
-    pub was_cached: bool,
-    /// The epoch when the payload will definitely be permanently rejected
-    /// This isn't always provided if the rejection is permanent
-    pub invalid_from_epoch: Option<Epoch>,
-}
-
-impl MempoolAddRejection {
-    pub fn for_static_rejection(validation_error: TransactionValidationError) -> Self {
+impl<K: Ord, V: Ord> SecondaryIndex<K, V> {
+    /// Creates an empty index.
+    pub fn new() -> Self {
         Self {
-            reason: MempoolRejectionReason::ValidationError(validation_error),
-            against_state: AtState::Static,
-            retry_from: RetryFrom::Never,
-            was_cached: false,
-            invalid_from_epoch: None,
+            sorted_set: BTreeSet::new(),
         }
     }
 
-    pub fn is_permanent_for_payload(&self) -> bool {
-        match &self.against_state {
-            AtState::Specific(specific) => match specific {
-                AtSpecificState::Committed { .. } => self.reason.is_permanent_for_payload(),
-                AtSpecificState::PendingPreparingVertices { .. } => false,
-            },
-            AtState::Static => self.reason.is_permanent_for_payload(),
+    /// Inserts a new pair.
+    ///
+    /// *Panics* if such pair was already in the index.
+    pub fn insert_unique(&mut self, key: K, value: V) {
+        if !self.sorted_set.insert((key, value)) {
+            panic!("value already present in the index");
         }
     }
 
-    pub fn is_permanent_for_intent(&self) -> bool {
-        match &self.against_state {
-            AtState::Specific(specific) => match specific {
-                AtSpecificState::Committed { .. } => self.reason.is_permanent_for_intent(),
-                AtSpecificState::PendingPreparingVertices { .. } => false,
-            },
-            AtState::Static => self.reason.is_permanent_for_payload(),
+    /// Removes the given pair.
+    ///
+    /// *Panics* if such pair was not in the index.
+    pub fn remove_existing(&mut self, key: K, value: V) {
+        if !self.sorted_set.remove(&(key, value)) {
+            panic!("value not present in the index");
         }
     }
 
-    pub fn is_rejected_because_intent_already_committed(&self) -> bool {
-        match &self.against_state {
-            AtState::Specific(specific) => match specific {
-                AtSpecificState::Committed { .. } => {
-                    self.reason.is_rejected_because_intent_already_committed()
-                }
-                AtSpecificState::PendingPreparingVertices { .. } => false,
-            },
-            AtState::Static => false,
-        }
+    /// Iterates over all values, starting from the least pair (according to its key's and value's
+    /// natural ordering).
+    pub fn iter_values_from_least(&self) -> impl Iterator<Item = &V> + '_ {
+        self.sorted_set.iter().map(|(_key, value)| value)
+    }
+
+    /// Iterates over all values, starting from the greatest pair (according to its key's and
+    /// value's natural ordering).
+    pub fn iter_values_from_greatest(&self) -> impl Iterator<Item = &V> + '_ {
+        self.sorted_set.iter().rev().map(|(_key, value)| value)
     }
 }
-
-impl ToString for MempoolAddError {
-    fn to_string(&self) -> String {
-        match self {
-            MempoolAddError::PriorityThresholdNotMet {min_tip_percentage_required, tip_percentage} => {
-                match min_tip_percentage_required {
-                    None => {
-                        "Priority Threshold not met. There is no known tip to guarantee mempool submission.".to_string()
-                    }
-                    Some(min_tip_percentage_required) => {
-                        format!("Priority Threshold not met: tip is {tip_percentage} while min tip required {min_tip_percentage_required}")
-                    }
-                }
-            },
-            MempoolAddError::Duplicate(_) => "Duplicate Entry".to_string(),
-            MempoolAddError::Rejected(rejection) => rejection.reason.to_string(),
-        }
-    }
-}
-
-pub mod mempool_manager;
-pub mod mempool_relay_dispatcher;
-pub mod metrics;
-pub mod pending_transaction_result_cache;
-pub mod priority_mempool;
