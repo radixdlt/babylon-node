@@ -980,11 +980,13 @@ impl StateComputer {
         next_nonce: u32,
         scenario_name: &str,
     ) -> Option<Box<dyn ScenarioInstance>> {
-        for scenario_builder in get_builder_for_every_scenario() {
-            let scenario =
-                scenario_builder(ScenarioCore::new(self.network.clone(), epoch, next_nonce));
-            if scenario.metadata().logical_name == scenario_name {
-                return Some(scenario);
+    for (requirements, scenario_builders) in scenario_builders() {
+            for scenario_builder in scenario_builders {
+                let scenario =
+                    scenario_builder(ScenarioCore::new(self.network.clone(), epoch, next_nonce));
+                if scenario.metadata().logical_name == scenario_name {
+                    return Some(scenario);
+                }
             }
         }
         None
