@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.engine_state.generated.models.LedgerStateSelector;
 import com.radixdlt.api.engine_state.generated.models.SborFormatOptions;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -35,7 +36,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   BlueprintInfoRequest.JSON_PROPERTY_PACKAGE_ADDRESS,
   BlueprintInfoRequest.JSON_PROPERTY_BLUEPRINT_NAME,
   BlueprintInfoRequest.JSON_PROPERTY_BLUEPRINT_VERSION,
-  BlueprintInfoRequest.JSON_PROPERTY_SBOR_FORMAT_OPTIONS
+  BlueprintInfoRequest.JSON_PROPERTY_SBOR_FORMAT_OPTIONS,
+  BlueprintInfoRequest.JSON_PROPERTY_AT_LEDGER_STATE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class BlueprintInfoRequest {
@@ -50,6 +52,9 @@ public class BlueprintInfoRequest {
 
   public static final String JSON_PROPERTY_SBOR_FORMAT_OPTIONS = "sbor_format_options";
   private SborFormatOptions sborFormatOptions;
+
+  public static final String JSON_PROPERTY_AT_LEDGER_STATE = "at_ledger_state";
+  private LedgerStateSelector atLedgerState;
 
   public BlueprintInfoRequest() { 
   }
@@ -158,6 +163,32 @@ public class BlueprintInfoRequest {
   }
 
 
+  public BlueprintInfoRequest atLedgerState(LedgerStateSelector atLedgerState) {
+    this.atLedgerState = atLedgerState;
+    return this;
+  }
+
+   /**
+   * Get atLedgerState
+   * @return atLedgerState
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public LedgerStateSelector getAtLedgerState() {
+    return atLedgerState;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setAtLedgerState(LedgerStateSelector atLedgerState) {
+    this.atLedgerState = atLedgerState;
+  }
+
+
   /**
    * Return true if this BlueprintInfoRequest object is equal to o.
    */
@@ -173,12 +204,13 @@ public class BlueprintInfoRequest {
     return Objects.equals(this.packageAddress, blueprintInfoRequest.packageAddress) &&
         Objects.equals(this.blueprintName, blueprintInfoRequest.blueprintName) &&
         Objects.equals(this.blueprintVersion, blueprintInfoRequest.blueprintVersion) &&
-        Objects.equals(this.sborFormatOptions, blueprintInfoRequest.sborFormatOptions);
+        Objects.equals(this.sborFormatOptions, blueprintInfoRequest.sborFormatOptions) &&
+        Objects.equals(this.atLedgerState, blueprintInfoRequest.atLedgerState);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(packageAddress, blueprintName, blueprintVersion, sborFormatOptions);
+    return Objects.hash(packageAddress, blueprintName, blueprintVersion, sborFormatOptions, atLedgerState);
   }
 
   @Override
@@ -189,6 +221,7 @@ public class BlueprintInfoRequest {
     sb.append("    blueprintName: ").append(toIndentedString(blueprintName)).append("\n");
     sb.append("    blueprintVersion: ").append(toIndentedString(blueprintVersion)).append("\n");
     sb.append("    sborFormatOptions: ").append(toIndentedString(sborFormatOptions)).append("\n");
+    sb.append("    atLedgerState: ").append(toIndentedString(atLedgerState)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -69,9 +69,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.MoreCollectors;
 import com.radixdlt.api.DeterministicEngineStateApiTestBase;
+import com.radixdlt.api.engine_state.generated.client.ApiException;
 import com.radixdlt.api.engine_state.generated.models.*;
+import com.radixdlt.harness.predicates.NodesPredicate;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.junit.Test;
 
@@ -173,6 +177,129 @@ public final class BlueprintInfoTest extends DeterministicEngineStateApiTestBase
     }
   }
 
-  // TODO(after merging the `royalties` Scenario in the Engine): Add a test which shows non-zero
-  // Package royalties on some Blueprint
+  @Test
+  public void engine_state_api_returns_blueprint_package_royalties() throws Exception {
+    try (var test = buildRunningServerTestWithScenarios("royalties")) {
+      test.suppressUnusedWarning();
+
+      // Fetch the info of the blueprint created by the "royalties" Scenario:
+      final var blueprint =
+          getTypesApi()
+              .blueprintInfoPost(
+                  new BlueprintInfoRequest()
+                      .packageAddress(findPackageAddressContainingBlueprint("RoyaltiesBp"))
+                      .blueprintName("RoyaltiesBp"))
+              .getInfo();
+
+      // ... and assert that its method have some royalties defined:
+      assertThat(Lists.transform(blueprint.getMethods(), BlueprintMethodInfo::getRoyaltyAmount))
+          .containsOnly(
+              new RoyaltyAmount().amount("31").unit(RoyaltyAmount.UnitEnum.XRD),
+              new RoyaltyAmount().amount("1").unit(RoyaltyAmount.UnitEnum.USD),
+              null); // (one is free)
+    }
+  }
+
+  @Test
+  public void engine_state_api_blueprint_info_supports_history() throws Exception {
+    try (var test = buildRunningServerTestWithScenarios("royalties")) {
+      test.suppressUnusedWarning();
+
+      // Let's re-use the "royalties" Scenario's blueprint; first find out when it was created:
+      final var samplePackageAddress = findPackageAddressContainingBlueprint("RoyaltiesBp");
+      final var createdAtVersion =
+          getEntitiesApi()
+              .entityIteratorPost(
+                  new EntityIteratorRequest()
+                      .filter(new EntityTypeFilter().entityType(EntityType.GLOBALPACKAGE)))
+              .getPage()
+              .stream()
+              .filter(
+                  packageEntity -> packageEntity.getEntityAddress().equals(samplePackageAddress))
+              .map(samplePackageEntity -> samplePackageEntity.getCreatedAtStateVersion())
+              .collect(MoreCollectors.onlyElement());
+
+      // Make sure it is "a history" for us:
+      test.runUntilState(NodesPredicate.anyAtOrOverStateVersion(createdAtVersion + 2));
+
+      // Capture the sample blueprint info at current version: (i.e. no historical reads involved)
+      final var responseAtCurrentVersion =
+          getTypesApi()
+              .blueprintInfoPost(
+                  new BlueprintInfoRequest()
+                      .packageAddress(samplePackageAddress)
+                      .blueprintName("RoyaltiesBp"));
+
+      // Query the blueprint info at some historical time after the blueprint was created...
+      final var responseAfterCreated =
+          getTypesApi()
+              .blueprintInfoPost(
+                  new BlueprintInfoRequest()
+                      .packageAddress(samplePackageAddress)
+                      .blueprintName("RoyaltiesBp")
+                      .atLedgerState(
+                          new VersionLedgerStateSelector()
+                              .stateVersion(createdAtVersion + 1)
+                              .type(LedgerStateSelectorType.BYSTATEVERSION)));
+
+      // ... and assert it has the same data as "current" (since it is immutable)
+      assertThat(responseAfterCreated.getInfo()).isEqualTo(responseAtCurrentVersion.getInfo());
+
+      // However, when we query at "before the blueprint existed"...
+      final var errorResponseBeforeCreated =
+          assertErrorResponse(
+              () ->
+                  getTypesApi()
+                      .blueprintInfoPost(
+                          new BlueprintInfoRequest()
+                              .packageAddress(samplePackageAddress)
+                              .blueprintName("RoyaltiesBp")
+                              .atLedgerState(
+                                  new VersionLedgerStateSelector()
+                                      .stateVersion(createdAtVersion - 1)
+                                      .type(LedgerStateSelectorType.BYSTATEVERSION))));
+
+      // ... we expect a "not found" error:
+      assertThat((RequestedItemNotFoundDetails) errorResponseBeforeCreated.getDetails())
+          .isEqualTo(
+              new RequestedItemNotFoundDetails()
+                  .itemType(RequestedItemType.BLUEPRINT)
+                  .errorType(ErrorType.REQUESTEDITEMNOTFOUND));
+    }
+  }
+
+  private String findPackageAddressContainingBlueprint(String blueprintName) throws ApiException {
+    final var allPackageEntities =
+        getEntitiesApi()
+            .entityIteratorPost(
+                new EntityIteratorRequest()
+                    .filter(new EntityTypeFilter().entityType(EntityType.GLOBALPACKAGE)))
+            .getPage();
+    for (final var packageEntity : allPackageEntities) {
+      final var allBlueprintKeys =
+          getObjectsApi()
+              .objectCollectionIteratorPost(
+                  new ObjectCollectionIteratorRequest()
+                      .entityAddress(packageEntity.getEntityAddress())
+                      .collectionName("blueprint_version_definition"))
+              .getPage()
+              .stream()
+              .map(KeyValueStoreEntryKey.class::cast)
+              .map(key -> (Map<String, Object>) key.getKey().getProgrammaticJson())
+              .toList();
+      for (final var blueprintKey : allBlueprintKeys) {
+        final var keyFields = (List<Map<String, Object>>) blueprintKey.get("fields");
+        final var candidateBlueprintName =
+            keyFields.stream()
+                .filter(field -> field.get("field_name").equals("blueprint"))
+                .map(field -> (String) field.get("value"))
+                .findAny()
+                .get();
+        if (candidateBlueprintName.equals(blueprintName)) {
+          return packageEntity.getEntityAddress();
+        }
+      }
+    }
+    throw new AssertionError("assumed package not found");
+  }
 }

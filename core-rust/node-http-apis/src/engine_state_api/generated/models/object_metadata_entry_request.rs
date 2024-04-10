@@ -21,6 +21,8 @@ pub struct ObjectMetadataEntryRequest {
     pub key: String,
     #[serde(rename = "sbor_format_options", skip_serializing_if = "Option::is_none")]
     pub sbor_format_options: Option<Box<crate::engine_state_api::generated::models::SborFormatOptions>>,
+    #[serde(rename = "at_ledger_state", skip_serializing_if = "Option::is_none")]
+    pub at_ledger_state: Option<Box<crate::engine_state_api::generated::models::LedgerStateSelector>>,
 }
 
 impl ObjectMetadataEntryRequest {
@@ -29,6 +31,7 @@ impl ObjectMetadataEntryRequest {
             entity_address,
             key,
             sbor_format_options: None,
+            at_ledger_state: None,
         }
     }
 }

@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.engine_state.generated.models.LedgerStateSelector;
 import com.radixdlt.api.engine_state.generated.models.SborData;
 import com.radixdlt.api.engine_state.generated.models.SborFormatOptions;
 import io.swagger.annotations.ApiModel;
@@ -35,7 +36,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   KeyValueStoreEntryRequest.JSON_PROPERTY_ENTITY_ADDRESS,
   KeyValueStoreEntryRequest.JSON_PROPERTY_KEY,
-  KeyValueStoreEntryRequest.JSON_PROPERTY_SBOR_FORMAT_OPTIONS
+  KeyValueStoreEntryRequest.JSON_PROPERTY_SBOR_FORMAT_OPTIONS,
+  KeyValueStoreEntryRequest.JSON_PROPERTY_AT_LEDGER_STATE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class KeyValueStoreEntryRequest {
@@ -47,6 +49,9 @@ public class KeyValueStoreEntryRequest {
 
   public static final String JSON_PROPERTY_SBOR_FORMAT_OPTIONS = "sbor_format_options";
   private SborFormatOptions sborFormatOptions;
+
+  public static final String JSON_PROPERTY_AT_LEDGER_STATE = "at_ledger_state";
+  private LedgerStateSelector atLedgerState;
 
   public KeyValueStoreEntryRequest() { 
   }
@@ -129,6 +134,32 @@ public class KeyValueStoreEntryRequest {
   }
 
 
+  public KeyValueStoreEntryRequest atLedgerState(LedgerStateSelector atLedgerState) {
+    this.atLedgerState = atLedgerState;
+    return this;
+  }
+
+   /**
+   * Get atLedgerState
+   * @return atLedgerState
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public LedgerStateSelector getAtLedgerState() {
+    return atLedgerState;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setAtLedgerState(LedgerStateSelector atLedgerState) {
+    this.atLedgerState = atLedgerState;
+  }
+
+
   /**
    * Return true if this KeyValueStoreEntryRequest object is equal to o.
    */
@@ -143,12 +174,13 @@ public class KeyValueStoreEntryRequest {
     KeyValueStoreEntryRequest keyValueStoreEntryRequest = (KeyValueStoreEntryRequest) o;
     return Objects.equals(this.entityAddress, keyValueStoreEntryRequest.entityAddress) &&
         Objects.equals(this.key, keyValueStoreEntryRequest.key) &&
-        Objects.equals(this.sborFormatOptions, keyValueStoreEntryRequest.sborFormatOptions);
+        Objects.equals(this.sborFormatOptions, keyValueStoreEntryRequest.sborFormatOptions) &&
+        Objects.equals(this.atLedgerState, keyValueStoreEntryRequest.atLedgerState);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entityAddress, key, sborFormatOptions);
+    return Objects.hash(entityAddress, key, sborFormatOptions, atLedgerState);
   }
 
   @Override
@@ -158,6 +190,7 @@ public class KeyValueStoreEntryRequest {
     sb.append("    entityAddress: ").append(toIndentedString(entityAddress)).append("\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
     sb.append("    sborFormatOptions: ").append(toIndentedString(sborFormatOptions)).append("\n");
+    sb.append("    atLedgerState: ").append(toIndentedString(atLedgerState)).append("\n");
     sb.append("}");
     return sb.toString();
   }

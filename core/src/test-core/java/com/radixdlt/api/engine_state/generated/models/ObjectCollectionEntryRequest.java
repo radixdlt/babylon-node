@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.engine_state.generated.models.AttachedModuleId;
 import com.radixdlt.api.engine_state.generated.models.CollectionEntryKey;
+import com.radixdlt.api.engine_state.generated.models.LedgerStateSelector;
 import com.radixdlt.api.engine_state.generated.models.SborFormatOptions;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -39,7 +40,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   ObjectCollectionEntryRequest.JSON_PROPERTY_COLLECTION_NAME,
   ObjectCollectionEntryRequest.JSON_PROPERTY_COLLECTION_INDEX,
   ObjectCollectionEntryRequest.JSON_PROPERTY_KEY,
-  ObjectCollectionEntryRequest.JSON_PROPERTY_SBOR_FORMAT_OPTIONS
+  ObjectCollectionEntryRequest.JSON_PROPERTY_SBOR_FORMAT_OPTIONS,
+  ObjectCollectionEntryRequest.JSON_PROPERTY_AT_LEDGER_STATE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ObjectCollectionEntryRequest {
@@ -60,6 +62,9 @@ public class ObjectCollectionEntryRequest {
 
   public static final String JSON_PROPERTY_SBOR_FORMAT_OPTIONS = "sbor_format_options";
   private SborFormatOptions sborFormatOptions;
+
+  public static final String JSON_PROPERTY_AT_LEDGER_STATE = "at_ledger_state";
+  private LedgerStateSelector atLedgerState;
 
   public ObjectCollectionEntryRequest() { 
   }
@@ -222,6 +227,32 @@ public class ObjectCollectionEntryRequest {
   }
 
 
+  public ObjectCollectionEntryRequest atLedgerState(LedgerStateSelector atLedgerState) {
+    this.atLedgerState = atLedgerState;
+    return this;
+  }
+
+   /**
+   * Get atLedgerState
+   * @return atLedgerState
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public LedgerStateSelector getAtLedgerState() {
+    return atLedgerState;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setAtLedgerState(LedgerStateSelector atLedgerState) {
+    this.atLedgerState = atLedgerState;
+  }
+
+
   /**
    * Return true if this ObjectCollectionEntryRequest object is equal to o.
    */
@@ -239,12 +270,13 @@ public class ObjectCollectionEntryRequest {
         Objects.equals(this.collectionName, objectCollectionEntryRequest.collectionName) &&
         Objects.equals(this.collectionIndex, objectCollectionEntryRequest.collectionIndex) &&
         Objects.equals(this.key, objectCollectionEntryRequest.key) &&
-        Objects.equals(this.sborFormatOptions, objectCollectionEntryRequest.sborFormatOptions);
+        Objects.equals(this.sborFormatOptions, objectCollectionEntryRequest.sborFormatOptions) &&
+        Objects.equals(this.atLedgerState, objectCollectionEntryRequest.atLedgerState);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entityAddress, attachedModuleId, collectionName, collectionIndex, key, sborFormatOptions);
+    return Objects.hash(entityAddress, attachedModuleId, collectionName, collectionIndex, key, sborFormatOptions, atLedgerState);
   }
 
   @Override
@@ -257,6 +289,7 @@ public class ObjectCollectionEntryRequest {
     sb.append("    collectionIndex: ").append(toIndentedString(collectionIndex)).append("\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
     sb.append("    sborFormatOptions: ").append(toIndentedString(sborFormatOptions)).append("\n");
+    sb.append("    atLedgerState: ").append(toIndentedString(atLedgerState)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -3,7 +3,8 @@ use crate::engine_state_api::*;
 use crate::engine_prelude::*;
 
 use crate::engine_state_api::handlers::HandlerPagingSupport;
-use std::ops::Deref;
+
+use state_manager::historical_state::VersionScopingSupport;
 
 pub(crate) async fn handle_object_metadata_iterator(
     state: State<EngineStateApiState>,
@@ -17,12 +18,20 @@ pub(crate) async fn handle_object_metadata_iterator(
     let node_id = extract_address_as_node_id(&extraction_context, &request.entity_address)
         .map_err(|err| err.into_response_error("entity_address"))?;
 
-    let database = state.state_manager.database.snapshot();
-    let loader = ObjectMetadataLoader::new(database.deref());
+    let requested_state_version =
+        extract_opt_ledger_state_selector(request.at_ledger_state.as_deref())
+            .map_err(|err| err.into_response_error("at_ledger_state"))?;
 
+    let database = state
+        .state_manager
+        .database
+        .snapshot()
+        .scoped_at(requested_state_version)?;
+
+    let loader = ObjectMetadataLoader::new(&database);
     let page = paging_support.get_page(|from| loader.iter_keys(&node_id, from))?;
 
-    let header = read_current_ledger_header(database.deref());
+    let header = database.proving_ledger_header();
 
     Ok(Json(models::ObjectMetadataIteratorResponse {
         at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),

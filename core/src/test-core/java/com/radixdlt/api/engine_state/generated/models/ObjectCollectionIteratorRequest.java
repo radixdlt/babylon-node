@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.engine_state.generated.models.AttachedModuleId;
+import com.radixdlt.api.engine_state.generated.models.LedgerStateSelector;
 import com.radixdlt.api.engine_state.generated.models.SborFormatOptions;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -39,7 +40,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   ObjectCollectionIteratorRequest.JSON_PROPERTY_COLLECTION_INDEX,
   ObjectCollectionIteratorRequest.JSON_PROPERTY_SBOR_FORMAT_OPTIONS,
   ObjectCollectionIteratorRequest.JSON_PROPERTY_MAX_PAGE_SIZE,
-  ObjectCollectionIteratorRequest.JSON_PROPERTY_CONTINUATION_TOKEN
+  ObjectCollectionIteratorRequest.JSON_PROPERTY_CONTINUATION_TOKEN,
+  ObjectCollectionIteratorRequest.JSON_PROPERTY_AT_LEDGER_STATE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ObjectCollectionIteratorRequest {
@@ -63,6 +65,9 @@ public class ObjectCollectionIteratorRequest {
 
   public static final String JSON_PROPERTY_CONTINUATION_TOKEN = "continuation_token";
   private String continuationToken;
+
+  public static final String JSON_PROPERTY_AT_LEDGER_STATE = "at_ledger_state";
+  private LedgerStateSelector atLedgerState;
 
   public ObjectCollectionIteratorRequest() { 
   }
@@ -253,6 +258,32 @@ public class ObjectCollectionIteratorRequest {
   }
 
 
+  public ObjectCollectionIteratorRequest atLedgerState(LedgerStateSelector atLedgerState) {
+    this.atLedgerState = atLedgerState;
+    return this;
+  }
+
+   /**
+   * Get atLedgerState
+   * @return atLedgerState
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public LedgerStateSelector getAtLedgerState() {
+    return atLedgerState;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setAtLedgerState(LedgerStateSelector atLedgerState) {
+    this.atLedgerState = atLedgerState;
+  }
+
+
   /**
    * Return true if this ObjectCollectionIteratorRequest object is equal to o.
    */
@@ -271,12 +302,13 @@ public class ObjectCollectionIteratorRequest {
         Objects.equals(this.collectionIndex, objectCollectionIteratorRequest.collectionIndex) &&
         Objects.equals(this.sborFormatOptions, objectCollectionIteratorRequest.sborFormatOptions) &&
         Objects.equals(this.maxPageSize, objectCollectionIteratorRequest.maxPageSize) &&
-        Objects.equals(this.continuationToken, objectCollectionIteratorRequest.continuationToken);
+        Objects.equals(this.continuationToken, objectCollectionIteratorRequest.continuationToken) &&
+        Objects.equals(this.atLedgerState, objectCollectionIteratorRequest.atLedgerState);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entityAddress, attachedModuleId, collectionName, collectionIndex, sborFormatOptions, maxPageSize, continuationToken);
+    return Objects.hash(entityAddress, attachedModuleId, collectionName, collectionIndex, sborFormatOptions, maxPageSize, continuationToken, atLedgerState);
   }
 
   @Override
@@ -290,6 +322,7 @@ public class ObjectCollectionIteratorRequest {
     sb.append("    sborFormatOptions: ").append(toIndentedString(sborFormatOptions)).append("\n");
     sb.append("    maxPageSize: ").append(toIndentedString(maxPageSize)).append("\n");
     sb.append("    continuationToken: ").append(toIndentedString(continuationToken)).append("\n");
+    sb.append("    atLedgerState: ").append(toIndentedString(atLedgerState)).append("\n");
     sb.append("}");
     return sb.toString();
   }

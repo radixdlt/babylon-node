@@ -605,6 +605,18 @@ components:
         A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
     LedgerStateSummary:
       type: object
+      description: |
+        A state version and summarized header of the ledger proof which can be used to verify the
+        returned on-ledger data.
+        
+        Please note that:
+        - For "current top-of-ledger" requests (i.e. not specifying any `LedgerStateSelector`),
+          this will always be the most recent ledger header, proving exactly the version at which
+          the on-ledger data was read.
+        - For historical requests (i.e. using a `LedgerStateSelector`), this will be the *nearest*
+          ledger header at *or after* the requested past state version - depending on the
+          granularity of the consensus progress (and the granularity of the ledger proofs actually
+          persisted by the queried Node).
       required:
         - state_version
         - header_summary
@@ -947,7 +959,6 @@ components:
       properties:
         at_ledger_state:
           $ref: "#/components/schemas/LedgerStateSummary"
-          description: A summarized state of the ledger at which the query was performed.
         page:
           type: array
           items:
@@ -1011,7 +1022,6 @@ components:
       properties:
         at_ledger_state:
           $ref: "#/components/schemas/LedgerStateSummary"
-          description: A summarized state of the ledger at which the query was performed.
         info:
           $ref: "#/components/schemas/EntityInfo"
     EntityAncestryInfo:
@@ -1287,6 +1297,8 @@ components:
             A string of format `Major.Minor.Patch` (all parts being `u32`). Defaults to `1.0.0`.
         sbor_format_options:
           $ref: "#/components/schemas/SborFormatOptions"
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSelector"
     BlueprintInfoResponse:
       type: object
       required:
@@ -1295,7 +1307,6 @@ components:
       properties:
         at_ledger_state:
           $ref: "#/components/schemas/LedgerStateSummary"
-          description: A summarized state of the ledger at which the query was performed.
         info:
           $ref: "#/components/schemas/DetailedBlueprintInfo"
     DetailedBlueprintInfo:
@@ -1994,6 +2005,8 @@ components:
           description: Index of the field to read. Either this or `field_name` is required.
         sbor_format_options:
           $ref: "#/components/schemas/SborFormatOptions"
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSelector"
     ObjectFieldResponse:
       type: object
       required:
@@ -2002,7 +2015,6 @@ components:
       properties:
         at_ledger_state:
           $ref: "#/components/schemas/LedgerStateSummary"
-          description: A summarized state of the ledger at which the query was performed.
         content:
           $ref: "#/components/schemas/SborData"
           description: The requested field's value.
@@ -2043,6 +2055,8 @@ components:
           $ref: "#/components/schemas/MaxPageSize"
         continuation_token:
           $ref: "#/components/schemas/ContinuationToken"
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSelector"
     ObjectCollectionIteratorResponse:
       type: object
       required:
@@ -2051,7 +2065,6 @@ components:
       properties:
         at_ledger_state:
           $ref: "#/components/schemas/LedgerStateSummary"
-          description: A summarized state of the ledger at which the query was performed.
         page:
           type: array
           items:
@@ -2148,6 +2161,8 @@ components:
             requested key.
         sbor_format_options:
           $ref: "#/components/schemas/SborFormatOptions"
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSelector"
     ObjectCollectionEntryResponse:
       type: object
       required:
@@ -2156,7 +2171,6 @@ components:
       properties:
         at_ledger_state:
           $ref: "#/components/schemas/LedgerStateSummary"
-          description: A summarized state of the ledger at which the query was performed.
         content:
           $ref: '#/components/schemas/SborData'
           description: The requested Object Collection entry's value.
@@ -2174,6 +2188,8 @@ components:
           $ref: "#/components/schemas/MaxPageSize"
         continuation_token:
           $ref: "#/components/schemas/ContinuationToken"
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSelector"
     ObjectMetadataIteratorResponse:
       type: object
       required:
@@ -2182,7 +2198,6 @@ components:
       properties:
         at_ledger_state:
           $ref: "#/components/schemas/LedgerStateSummary"
-          description: A summarized state of the ledger at which the query was performed.
         page:
           type: array
           items:
@@ -2214,6 +2229,8 @@ components:
           description: The metadata key (i.e. always a string) to look up the entry by.
         sbor_format_options:
           $ref: "#/components/schemas/SborFormatOptions"
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSelector"
     ObjectMetadataEntryResponse:
       type: object
       required:
@@ -2222,7 +2239,6 @@ components:
       properties:
         at_ledger_state:
           $ref: "#/components/schemas/LedgerStateSummary"
-          description: A summarized state of the ledger at which the query was performed.
         content:
           $ref: '#/components/schemas/MetadataValue'
           description: The requested Object metadata value.
@@ -2615,10 +2631,11 @@ components:
       type: object
       required:
         - entity_address
-        - key
       properties:
         entity_address:
           $ref: "#/components/schemas/EntityAddress"
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSelector"
     ObjectRoleAssignmentResponse:
       type: object
       required:
@@ -2629,7 +2646,6 @@ components:
       properties:
         at_ledger_state:
           $ref: "#/components/schemas/LedgerStateSummary"
-          description: A summarized state of the ledger at which the query was performed.
         owner:
           $ref: "#/components/schemas/OwnerRoleEntry"
         main_module_roles:
@@ -2727,10 +2743,11 @@ components:
       type: object
       required:
         - entity_address
-        - key
       properties:
         entity_address:
           $ref: "#/components/schemas/EntityAddress"
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSelector"
     ObjectRoyaltyResponse:
       type: object
       required:
@@ -2739,7 +2756,6 @@ components:
       properties:
         at_ledger_state:
           $ref: "#/components/schemas/LedgerStateSummary"
-          description: A summarized state of the ledger at which the query was performed.
         method_royalties:
           type: array
           items:
@@ -2794,7 +2810,6 @@ components:
       properties:
         at_ledger_state:
           $ref: "#/components/schemas/LedgerStateSummary"
-          description: A summarized state of the ledger at which the query was performed.
         page:
           type: array
           items:
@@ -2828,6 +2843,8 @@ components:
             Exactly one of the available SBOR formats must be used.
         sbor_format_options:
           $ref: "#/components/schemas/SborFormatOptions"
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSelector"
     KeyValueStoreEntryResponse:
       type: object
       required:
@@ -2836,7 +2853,6 @@ components:
       properties:
         at_ledger_state:
           $ref: "#/components/schemas/LedgerStateSummary"
-          description: A summarized state of the ledger at which the query was performed.
         content:
           $ref: '#/components/schemas/SborData'
           description: The requested Key-Value Store entry's value.
@@ -2855,6 +2871,8 @@ components:
           $ref: '#/components/schemas/SchemaHash'
         sbor_format_options:
           $ref: "#/components/schemas/SborFormatOptions"
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSelector"
     EntitySchemaEntryResponse:
       type: object
       required:
@@ -2863,7 +2881,6 @@ components:
       properties:
         at_ledger_state:
           $ref: "#/components/schemas/LedgerStateSummary"
-          description: A summarized state of the ledger at which the query was performed.
         content:
           $ref: '#/components/schemas/SborData'
           description: The requested schema's value.

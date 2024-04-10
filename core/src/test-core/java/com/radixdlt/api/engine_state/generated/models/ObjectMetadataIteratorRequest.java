@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.engine_state.generated.models.LedgerStateSelector;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -33,7 +34,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   ObjectMetadataIteratorRequest.JSON_PROPERTY_ENTITY_ADDRESS,
   ObjectMetadataIteratorRequest.JSON_PROPERTY_MAX_PAGE_SIZE,
-  ObjectMetadataIteratorRequest.JSON_PROPERTY_CONTINUATION_TOKEN
+  ObjectMetadataIteratorRequest.JSON_PROPERTY_CONTINUATION_TOKEN,
+  ObjectMetadataIteratorRequest.JSON_PROPERTY_AT_LEDGER_STATE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ObjectMetadataIteratorRequest {
@@ -45,6 +47,9 @@ public class ObjectMetadataIteratorRequest {
 
   public static final String JSON_PROPERTY_CONTINUATION_TOKEN = "continuation_token";
   private String continuationToken;
+
+  public static final String JSON_PROPERTY_AT_LEDGER_STATE = "at_ledger_state";
+  private LedgerStateSelector atLedgerState;
 
   public ObjectMetadataIteratorRequest() { 
   }
@@ -129,6 +134,32 @@ public class ObjectMetadataIteratorRequest {
   }
 
 
+  public ObjectMetadataIteratorRequest atLedgerState(LedgerStateSelector atLedgerState) {
+    this.atLedgerState = atLedgerState;
+    return this;
+  }
+
+   /**
+   * Get atLedgerState
+   * @return atLedgerState
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public LedgerStateSelector getAtLedgerState() {
+    return atLedgerState;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setAtLedgerState(LedgerStateSelector atLedgerState) {
+    this.atLedgerState = atLedgerState;
+  }
+
+
   /**
    * Return true if this ObjectMetadataIteratorRequest object is equal to o.
    */
@@ -143,12 +174,13 @@ public class ObjectMetadataIteratorRequest {
     ObjectMetadataIteratorRequest objectMetadataIteratorRequest = (ObjectMetadataIteratorRequest) o;
     return Objects.equals(this.entityAddress, objectMetadataIteratorRequest.entityAddress) &&
         Objects.equals(this.maxPageSize, objectMetadataIteratorRequest.maxPageSize) &&
-        Objects.equals(this.continuationToken, objectMetadataIteratorRequest.continuationToken);
+        Objects.equals(this.continuationToken, objectMetadataIteratorRequest.continuationToken) &&
+        Objects.equals(this.atLedgerState, objectMetadataIteratorRequest.atLedgerState);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entityAddress, maxPageSize, continuationToken);
+    return Objects.hash(entityAddress, maxPageSize, continuationToken, atLedgerState);
   }
 
   @Override
@@ -158,6 +190,7 @@ public class ObjectMetadataIteratorRequest {
     sb.append("    entityAddress: ").append(toIndentedString(entityAddress)).append("\n");
     sb.append("    maxPageSize: ").append(toIndentedString(maxPageSize)).append("\n");
     sb.append("    continuationToken: ").append(toIndentedString(continuationToken)).append("\n");
+    sb.append("    atLedgerState: ").append(toIndentedString(atLedgerState)).append("\n");
     sb.append("}");
     return sb.toString();
   }

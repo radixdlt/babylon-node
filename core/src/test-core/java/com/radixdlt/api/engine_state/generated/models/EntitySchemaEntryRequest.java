@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.engine_state.generated.models.LedgerStateSelector;
 import com.radixdlt.api.engine_state.generated.models.SborFormatOptions;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -34,7 +35,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   EntitySchemaEntryRequest.JSON_PROPERTY_ENTITY_ADDRESS,
   EntitySchemaEntryRequest.JSON_PROPERTY_SCHEMA_HASH,
-  EntitySchemaEntryRequest.JSON_PROPERTY_SBOR_FORMAT_OPTIONS
+  EntitySchemaEntryRequest.JSON_PROPERTY_SBOR_FORMAT_OPTIONS,
+  EntitySchemaEntryRequest.JSON_PROPERTY_AT_LEDGER_STATE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class EntitySchemaEntryRequest {
@@ -46,6 +48,9 @@ public class EntitySchemaEntryRequest {
 
   public static final String JSON_PROPERTY_SBOR_FORMAT_OPTIONS = "sbor_format_options";
   private SborFormatOptions sborFormatOptions;
+
+  public static final String JSON_PROPERTY_AT_LEDGER_STATE = "at_ledger_state";
+  private LedgerStateSelector atLedgerState;
 
   public EntitySchemaEntryRequest() { 
   }
@@ -128,6 +133,32 @@ public class EntitySchemaEntryRequest {
   }
 
 
+  public EntitySchemaEntryRequest atLedgerState(LedgerStateSelector atLedgerState) {
+    this.atLedgerState = atLedgerState;
+    return this;
+  }
+
+   /**
+   * Get atLedgerState
+   * @return atLedgerState
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public LedgerStateSelector getAtLedgerState() {
+    return atLedgerState;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setAtLedgerState(LedgerStateSelector atLedgerState) {
+    this.atLedgerState = atLedgerState;
+  }
+
+
   /**
    * Return true if this EntitySchemaEntryRequest object is equal to o.
    */
@@ -142,12 +173,13 @@ public class EntitySchemaEntryRequest {
     EntitySchemaEntryRequest entitySchemaEntryRequest = (EntitySchemaEntryRequest) o;
     return Objects.equals(this.entityAddress, entitySchemaEntryRequest.entityAddress) &&
         Objects.equals(this.schemaHash, entitySchemaEntryRequest.schemaHash) &&
-        Objects.equals(this.sborFormatOptions, entitySchemaEntryRequest.sborFormatOptions);
+        Objects.equals(this.sborFormatOptions, entitySchemaEntryRequest.sborFormatOptions) &&
+        Objects.equals(this.atLedgerState, entitySchemaEntryRequest.atLedgerState);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entityAddress, schemaHash, sborFormatOptions);
+    return Objects.hash(entityAddress, schemaHash, sborFormatOptions, atLedgerState);
   }
 
   @Override
@@ -157,6 +189,7 @@ public class EntitySchemaEntryRequest {
     sb.append("    entityAddress: ").append(toIndentedString(entityAddress)).append("\n");
     sb.append("    schemaHash: ").append(toIndentedString(schemaHash)).append("\n");
     sb.append("    sborFormatOptions: ").append(toIndentedString(sborFormatOptions)).append("\n");
+    sb.append("    atLedgerState: ").append(toIndentedString(atLedgerState)).append("\n");
     sb.append("}");
     return sb.toString();
   }

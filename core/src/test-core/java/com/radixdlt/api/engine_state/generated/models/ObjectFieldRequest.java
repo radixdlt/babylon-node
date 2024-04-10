@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.engine_state.generated.models.AttachedModuleId;
+import com.radixdlt.api.engine_state.generated.models.LedgerStateSelector;
 import com.radixdlt.api.engine_state.generated.models.SborFormatOptions;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -37,7 +38,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   ObjectFieldRequest.JSON_PROPERTY_ATTACHED_MODULE_ID,
   ObjectFieldRequest.JSON_PROPERTY_FIELD_NAME,
   ObjectFieldRequest.JSON_PROPERTY_FIELD_INDEX,
-  ObjectFieldRequest.JSON_PROPERTY_SBOR_FORMAT_OPTIONS
+  ObjectFieldRequest.JSON_PROPERTY_SBOR_FORMAT_OPTIONS,
+  ObjectFieldRequest.JSON_PROPERTY_AT_LEDGER_STATE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ObjectFieldRequest {
@@ -55,6 +57,9 @@ public class ObjectFieldRequest {
 
   public static final String JSON_PROPERTY_SBOR_FORMAT_OPTIONS = "sbor_format_options";
   private SborFormatOptions sborFormatOptions;
+
+  public static final String JSON_PROPERTY_AT_LEDGER_STATE = "at_ledger_state";
+  private LedgerStateSelector atLedgerState;
 
   public ObjectFieldRequest() { 
   }
@@ -191,6 +196,32 @@ public class ObjectFieldRequest {
   }
 
 
+  public ObjectFieldRequest atLedgerState(LedgerStateSelector atLedgerState) {
+    this.atLedgerState = atLedgerState;
+    return this;
+  }
+
+   /**
+   * Get atLedgerState
+   * @return atLedgerState
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public LedgerStateSelector getAtLedgerState() {
+    return atLedgerState;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setAtLedgerState(LedgerStateSelector atLedgerState) {
+    this.atLedgerState = atLedgerState;
+  }
+
+
   /**
    * Return true if this ObjectFieldRequest object is equal to o.
    */
@@ -207,12 +238,13 @@ public class ObjectFieldRequest {
         Objects.equals(this.attachedModuleId, objectFieldRequest.attachedModuleId) &&
         Objects.equals(this.fieldName, objectFieldRequest.fieldName) &&
         Objects.equals(this.fieldIndex, objectFieldRequest.fieldIndex) &&
-        Objects.equals(this.sborFormatOptions, objectFieldRequest.sborFormatOptions);
+        Objects.equals(this.sborFormatOptions, objectFieldRequest.sborFormatOptions) &&
+        Objects.equals(this.atLedgerState, objectFieldRequest.atLedgerState);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entityAddress, attachedModuleId, fieldName, fieldIndex, sborFormatOptions);
+    return Objects.hash(entityAddress, attachedModuleId, fieldName, fieldIndex, sborFormatOptions, atLedgerState);
   }
 
   @Override
@@ -224,6 +256,7 @@ public class ObjectFieldRequest {
     sb.append("    fieldName: ").append(toIndentedString(fieldName)).append("\n");
     sb.append("    fieldIndex: ").append(toIndentedString(fieldIndex)).append("\n");
     sb.append("    sborFormatOptions: ").append(toIndentedString(sborFormatOptions)).append("\n");
+    sb.append("    atLedgerState: ").append(toIndentedString(atLedgerState)).append("\n");
     sb.append("}");
     return sb.toString();
   }

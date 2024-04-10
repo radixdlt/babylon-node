@@ -29,8 +29,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * LedgerStateSummary
+ * A state version and summarized header of the ledger proof which can be used to verify the returned on-ledger data.  Please note that: - For \&quot;current top-of-ledger\&quot; requests (i.e. not specifying any &#x60;LedgerStateSelector&#x60;),   this will always be the most recent ledger header, proving exactly the version at which   the on-ledger data was read. - For historical requests (i.e. using a &#x60;LedgerStateSelector&#x60;), this will be the *nearest*   ledger header at *or after* the requested past state version - depending on the   granularity of the consensus progress (and the granularity of the ledger proofs actually   persisted by the queried Node). 
  */
+@ApiModel(description = "A state version and summarized header of the ledger proof which can be used to verify the returned on-ledger data.  Please note that: - For \"current top-of-ledger\" requests (i.e. not specifying any `LedgerStateSelector`),   this will always be the most recent ledger header, proving exactly the version at which   the on-ledger data was read. - For historical requests (i.e. using a `LedgerStateSelector`), this will be the *nearest*   ledger header at *or after* the requested past state version - depending on the   granularity of the consensus progress (and the granularity of the ledger proofs actually   persisted by the queried Node). ")
 @JsonPropertyOrder({
   LedgerStateSummary.JSON_PROPERTY_STATE_VERSION,
   LedgerStateSummary.JSON_PROPERTY_HEADER_SUMMARY

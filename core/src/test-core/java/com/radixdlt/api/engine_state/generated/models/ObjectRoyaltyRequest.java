@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.engine_state.generated.models.LedgerStateSelector;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -31,12 +32,16 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * ObjectRoyaltyRequest
  */
 @JsonPropertyOrder({
-  ObjectRoyaltyRequest.JSON_PROPERTY_ENTITY_ADDRESS
+  ObjectRoyaltyRequest.JSON_PROPERTY_ENTITY_ADDRESS,
+  ObjectRoyaltyRequest.JSON_PROPERTY_AT_LEDGER_STATE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ObjectRoyaltyRequest {
   public static final String JSON_PROPERTY_ENTITY_ADDRESS = "entity_address";
   private String entityAddress;
+
+  public static final String JSON_PROPERTY_AT_LEDGER_STATE = "at_ledger_state";
+  private LedgerStateSelector atLedgerState;
 
   public ObjectRoyaltyRequest() { 
   }
@@ -67,6 +72,32 @@ public class ObjectRoyaltyRequest {
   }
 
 
+  public ObjectRoyaltyRequest atLedgerState(LedgerStateSelector atLedgerState) {
+    this.atLedgerState = atLedgerState;
+    return this;
+  }
+
+   /**
+   * Get atLedgerState
+   * @return atLedgerState
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public LedgerStateSelector getAtLedgerState() {
+    return atLedgerState;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setAtLedgerState(LedgerStateSelector atLedgerState) {
+    this.atLedgerState = atLedgerState;
+  }
+
+
   /**
    * Return true if this ObjectRoyaltyRequest object is equal to o.
    */
@@ -79,12 +110,13 @@ public class ObjectRoyaltyRequest {
       return false;
     }
     ObjectRoyaltyRequest objectRoyaltyRequest = (ObjectRoyaltyRequest) o;
-    return Objects.equals(this.entityAddress, objectRoyaltyRequest.entityAddress);
+    return Objects.equals(this.entityAddress, objectRoyaltyRequest.entityAddress) &&
+        Objects.equals(this.atLedgerState, objectRoyaltyRequest.atLedgerState);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entityAddress);
+    return Objects.hash(entityAddress, atLedgerState);
   }
 
   @Override
@@ -92,6 +124,7 @@ public class ObjectRoyaltyRequest {
     StringBuilder sb = new StringBuilder();
     sb.append("class ObjectRoyaltyRequest {\n");
     sb.append("    entityAddress: ").append(toIndentedString(entityAddress)).append("\n");
+    sb.append("    atLedgerState: ").append(toIndentedString(atLedgerState)).append("\n");
     sb.append("}");
     return sb.toString();
   }

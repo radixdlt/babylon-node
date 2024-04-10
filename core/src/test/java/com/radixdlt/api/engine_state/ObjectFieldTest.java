@@ -68,8 +68,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.api.DeterministicEngineStateApiTestBase;
 import com.radixdlt.api.engine_state.generated.models.*;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.epoch.EpochRound;
+import com.radixdlt.harness.predicates.NodesPredicate;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.junit.Test;
 
 public final class ObjectFieldTest extends DeterministicEngineStateApiTestBase {
@@ -146,5 +150,63 @@ public final class ObjectFieldTest extends DeterministicEngineStateApiTestBase {
               .getProgrammaticJson();
       assertThat(value).isEqualTo(transientDefaultValue);
     }
+  }
+
+  @Test
+  public void engine_state_api_object_field_support_history() throws Exception {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
+
+      // The easiest way to observe history is to look at the Consensus Manager's state field:
+      final var wellKnownAddresses = getCoreApiHelper().getWellKnownAddresses();
+      final var baseRequest =
+          new ObjectFieldRequest()
+              .entityAddress(wellKnownAddresses.getConsensusManager())
+              .fieldName("state");
+
+      // Progress to a known version and capture Epoch and Round:
+      test.runUntilState(NodesPredicate.anyAtOrOverStateVersion(23));
+      final var epochRoundAtCurrentVersion =
+          parseEpochRound(getObjectsApi().objectFieldPost(baseRequest).getContent());
+
+      // Assert on a slightly-older historical Epoch + Round:
+      final var epochRoundAtVersion19 =
+          parseEpochRound(
+              getObjectsApi()
+                  .objectFieldPost(
+                      baseRequest.atLedgerState(
+                          new VersionLedgerStateSelector()
+                              .stateVersion(19L)
+                              .type(LedgerStateSelectorType.BYSTATEVERSION)))
+                  .getContent());
+      assertThat(epochRoundAtVersion19).isLessThan(epochRoundAtCurrentVersion);
+
+      // Assert on even older historical state:
+      final var epochRoundAtVersion10 =
+          parseEpochRound(
+              getObjectsApi()
+                  .objectFieldPost(
+                      baseRequest.atLedgerState(
+                          new VersionLedgerStateSelector()
+                              .stateVersion(10L)
+                              .type(LedgerStateSelectorType.BYSTATEVERSION)))
+                  .getContent());
+      assertThat(epochRoundAtVersion10).isLessThan(epochRoundAtVersion19);
+    }
+  }
+
+  private static EpochRound parseEpochRound(SborData stateField) {
+    final var wrapper = (Map<String, Object>) stateField.getProgrammaticJson();
+    final var wrapperFields = (List<Map<String, Object>>) wrapper.get("fields");
+    final var value = wrapperFields.get(0);
+    final var valueFields = (List<Map<String, Object>>) value.get("fields");
+    final var fieldMap =
+        valueFields.stream()
+            .collect(
+                Collectors.toMap(
+                    field -> (String) field.get("field_name"),
+                    field -> String.valueOf(field.get("value"))));
+    return EpochRound.of(
+        Long.parseLong(fieldMap.get("epoch")), Round.of(Long.parseLong(fieldMap.get("round"))));
   }
 }

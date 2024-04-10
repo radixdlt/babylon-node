@@ -1,7 +1,7 @@
 use crate::engine_prelude::*;
 use crate::engine_state_api::*;
 
-use std::ops::Deref;
+use state_manager::historical_state::VersionScopingSupport;
 
 pub(crate) async fn handle_blueprint_info(
     state: State<EngineStateApiState>,
@@ -24,13 +24,20 @@ pub(crate) async fn handle_blueprint_info(
             .map_err(|err| err.into_response_error("blueprint_version"))?
             .unwrap_or_default(),
     };
+    let requested_state_version =
+        extract_opt_ledger_state_selector(request.at_ledger_state.as_deref())
+            .map_err(|err| err.into_response_error("at_ledger_state"))?;
 
-    let database = state.state_manager.database.snapshot();
+    let database = state
+        .state_manager
+        .database
+        .snapshot()
+        .scoped_at(requested_state_version)?;
 
-    let meta_loader = EngineStateMetaLoader::new(database.deref());
+    let meta_loader = EngineStateMetaLoader::new(&database);
     let blueprint_meta = meta_loader.load_blueprint_meta(&blueprint_reference)?;
 
-    let header = read_current_ledger_header(database.deref());
+    let header = database.proving_ledger_header();
 
     Ok(Json(models::BlueprintInfoResponse {
         at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
