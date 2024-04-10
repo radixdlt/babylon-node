@@ -165,36 +165,17 @@ impl MempoolManager {
     /// Checks the committability of up to `max_reevaluated_count` of transactions executed against
     /// earliest state versions and removes the newly rejected ones from the mempool.
     pub fn reevaluate_transaction_committability(&self, max_reevaluated_count: u32) {
-        let candidate_transactions: Vec<Arc<MempoolData>> = self
+        let candidate_transactions = self
             .mempool
             .read()
             .iter_by_state_version()
             .take(max_reevaluated_count as usize)
-            .collect();
+            .collect::<Vec<_>>(); // collect, just to release the mempool lock
 
-        let mut transactions_to_remove = Vec::new();
         for candidate_transaction in candidate_transactions {
-            let record = self
-                .cached_committability_validator
+            // invoking the check automatically removes the transaction when rejected
+            self.cached_committability_validator
                 .check_for_rejection_validated(&candidate_transaction.transaction.validated);
-            if record.latest_attempt.rejection.is_some() {
-                transactions_to_remove.push(candidate_transaction);
-            }
-        }
-
-        if !transactions_to_remove.is_empty() {
-            let mut write_mempool = self.mempool.write();
-            transactions_to_remove
-                .iter()
-                .for_each(|transaction_to_remove| {
-                    write_mempool.remove_by_payload_hash(
-                        &transaction_to_remove
-                            .transaction
-                            .validated
-                            .prepared
-                            .notarized_transaction_hash(),
-                    );
-                });
         }
     }
 
@@ -292,7 +273,7 @@ impl MempoolManager {
         // STEP 4 - We check if the result should mean we add the transaction to our mempool
         let PendingExecutedTransaction {
             transaction,
-            latest_attempt_against_state_version,
+            latest_attempt_against_state,
         } = record
             .should_accept_into_mempool(check_result)
             .map_err(MempoolAddError::Rejected)?;
@@ -305,7 +286,7 @@ impl MempoolManager {
             mempool_transaction.clone(),
             source,
             Instant::now(),
-            latest_attempt_against_state_version,
+            latest_attempt_against_state.committed_version(),
         ) {
             Ok(_evicted) => Ok(mempool_transaction),
             Err(error) => Err(error),
@@ -329,30 +310,8 @@ impl MempoolManager {
             .for_each(|wait| self.metrics.from_local_api_to_commit_wait.observe(wait));
     }
 
-    /// Removes the transactions specified by the given user payload hashes (while checking
-    /// consistency of their intent hashes).
-    /// This method is meant to be called for transactions that were rejected - and
-    /// this assumption is important for metric correctness.
-    ///
-    /// Note:
-    /// Removing transactions rejected during prepare from the mempool is a bit of overkill:
-    /// just because transactions were rejected in this history doesn't mean this history will be
-    /// committed.
-    /// But it'll do for now as a defensive measure until we can have a more intelligent mempool.
-    pub fn remove_rejected(
-        &self,
-        rejected_transactions: &[(&IntentHash, &NotarizedTransactionHash)],
-    ) {
-        let mut write_mempool = self.mempool.write();
-        rejected_transactions
-            .iter()
-            .for_each(|(_intent_hash, user_payload_hash)| {
-                write_mempool.remove_by_payload_hash(user_payload_hash);
-            });
-    }
-
     /// Removes transactions no longer valid at or after the given epoch.
-    pub fn remove_txns_where_end_epoch_expired(&self, epoch: Epoch) -> Vec<Arc<MempoolData>> {
+    pub fn remove_txns_where_end_epoch_expired(&self, epoch: Epoch) -> Vec<MempoolData> {
         self.mempool
             .write()
             .remove_txns_where_end_epoch_expired(epoch)
