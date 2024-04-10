@@ -1,5 +1,6 @@
 use chrono::prelude::*;
 use std::any::type_name;
+use std::ops::RangeInclusive;
 
 use crate::engine_prelude::*;
 use state_manager::store::traits::scenario::ScenarioSequenceNumber;
@@ -150,9 +151,17 @@ pub fn to_unix_timestamp_ms(time: std::time::SystemTime) -> Result<i64, MappingE
     })
 }
 
+/// A range of valid years accepted by the basic ISO 8601 (i.e. without extensions).
+///
+/// For those curious:
+/// - The beginning of this range is the start of a Gregorian calendar.
+/// - The end is simply the maximum fitting within 4 characters.
+const ISO_8601_YEAR_RANGE: RangeInclusive<i32> = 1583..=9999;
+
 pub fn to_api_scrypto_instant(instant: &Instant) -> Result<models::ScryptoInstant, MappingError> {
     let timestamp_seconds = instant.seconds_since_unix_epoch;
-    let date_time = NaiveDateTime::from_timestamp_opt(timestamp_seconds, 0);
+    let date_time = NaiveDateTime::from_timestamp_opt(timestamp_seconds, 0)
+        .filter(|date_time| ISO_8601_YEAR_RANGE.contains(&date_time.year()));
     Ok(models::ScryptoInstant {
         unix_timestamp_seconds: to_api_i64_as_string(timestamp_seconds),
         date_time: date_time.map(to_canonical_rfc3339_string),
@@ -375,10 +384,10 @@ mod tests {
             }
         );
         assert_eq!(
-            to_api_scrypto_instant(&Instant::new(-12210998400)).unwrap(),
+            to_api_scrypto_instant(&Instant::new(-12212553600)).unwrap(),
             models::ScryptoInstant {
-                unix_timestamp_seconds: "-12210998400".to_string(),
-                date_time: Some("1583-01-19T00:00:00.000Z".to_string()),
+                unix_timestamp_seconds: "-12212553600".to_string(),
+                date_time: Some("1583-01-01T00:00:00.000Z".to_string()),
             }
         );
 
@@ -387,24 +396,14 @@ mod tests {
             to_api_scrypto_instant(&Instant::new(253402300800)).unwrap(),
             models::ScryptoInstant {
                 unix_timestamp_seconds: "253402300800".to_string(),
-                // Our renderer apparently supports the ISO extension which allows this:
-                date_time: Some("+10000-01-01T00:00:00.000Z".to_string()),
+                date_time: None,
             }
         );
         assert_eq!(
-            to_api_scrypto_instant(&Instant::new(-12210998401)).unwrap(),
+            to_api_scrypto_instant(&Instant::new(-12212553601)).unwrap(),
             models::ScryptoInstant {
-                unix_timestamp_seconds: "-12210998401".to_string(),
-                // Our renderer is fine with Gregorian dates occurring before the invention of a Gregorian calendar:
-                date_time: Some("1583-01-18T23:59:59.000Z".to_string()),
-            }
-        );
-        assert_eq!(
-            to_api_scrypto_instant(&Instant::new(-1234567890123)).unwrap(),
-            models::ScryptoInstant {
-                unix_timestamp_seconds: "-1234567890123".to_string(),
-                // Ok, renderer, now you are simply being ridiculous: (the ISO extension allows this too)
-                date_time: Some("-37152-02-06T18:57:57.000Z".to_string()),
+                unix_timestamp_seconds: "-12212553601".to_string(),
+                date_time: None,
             }
         );
 
@@ -413,14 +412,14 @@ mod tests {
             to_api_scrypto_instant(&Instant::new(i64::MAX)).unwrap(),
             models::ScryptoInstant {
                 unix_timestamp_seconds: "9223372036854775807".to_string(),
-                date_time: None, // Looks like there are some limits after all.
+                date_time: None,
             }
         );
         assert_eq!(
             to_api_scrypto_instant(&Instant::new(i64::MIN)).unwrap(),
             models::ScryptoInstant {
                 unix_timestamp_seconds: "-9223372036854775808".to_string(),
-                date_time: None, // I am glad you did not even try, renderer.
+                date_time: None,
             }
         );
     }
