@@ -104,7 +104,7 @@ fn to_api_response(
 
     let at_ledger_state = Box::new(to_api_ledger_state_summary(
         context,
-        &result.base_ledger_header,
+        &result.base_ledger_state,
     )?);
 
     let execution_fee_data = ExecutionFeeData {

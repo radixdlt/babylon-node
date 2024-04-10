@@ -481,7 +481,7 @@ impl CachedCommittabilityValidator {
             return ShouldRecalculate::Yes;
         }
 
-        let current_epoch = self.database.snapshot().get_epoch();
+        let current_epoch = self.database.snapshot().get_epoch_and_round().0;
         let record_option = self.read_record(prepared);
 
         if let Some(record) = record_option {

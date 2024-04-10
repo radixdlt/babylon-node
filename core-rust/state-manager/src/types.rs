@@ -503,7 +503,7 @@ impl From<LedgerHeaderV1> for LedgerHeader {
     }
 }
 
-pub struct LedgerHeaderSummary {
+pub struct LedgerStateSummary {
     pub epoch: Epoch,
     pub round: Round,
     pub state_version: StateVersion,
@@ -511,7 +511,7 @@ pub struct LedgerHeaderSummary {
     pub proposer_timestamp_ms: i64,
 }
 
-impl From<LedgerHeader> for LedgerHeaderSummary {
+impl From<LedgerHeader> for LedgerStateSummary {
     fn from(header: LedgerHeader) -> Self {
         Self {
             epoch: header.epoch,
