@@ -159,7 +159,9 @@ pub fn to_api_scrypto_instant(instant: &Instant) -> Result<models::ScryptoInstan
     })
 }
 
-pub fn to_api_clamped_instant(timestamp_millis: i64) -> Result<models::InstantMs, MappingError> {
+pub fn to_api_clamped_instant_from_epoch_milli(
+    timestamp_millis: i64,
+) -> Result<models::InstantMs, MappingError> {
     let clamped_timestamp_millis =
         timestamp_millis.clamp(MIN_API_TIMESTAMP_MS, MAX_API_TIMESTAMP_MS);
     let date_time = NaiveDateTime::from_timestamp_millis(clamped_timestamp_millis)
@@ -329,6 +331,157 @@ fn op_or_panic<T: Display>(left: T, op: &str, right: T, result: Option<T>) -> T 
             op,
             right,
             type_name::<T>()
+        );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn api_scrypto_instant_supports_full_i64_range() {
+        // Sanity check (epoch):
+        assert_eq!(
+            to_api_scrypto_instant(&Instant::new(0)).unwrap(),
+            models::ScryptoInstant {
+                unix_timestamp_seconds: "0".to_string(),
+                date_time: Some("1970-01-01T00:00:00.000Z".to_string()),
+            }
+        );
+
+        // Slightly positive and negative:
+        assert_eq!(
+            to_api_scrypto_instant(&Instant::new(1)).unwrap(),
+            models::ScryptoInstant {
+                unix_timestamp_seconds: "1".to_string(),
+                date_time: Some("1970-01-01T00:00:01.000Z".to_string()),
+            }
+        );
+        assert_eq!(
+            to_api_scrypto_instant(&Instant::new(-1)).unwrap(),
+            models::ScryptoInstant {
+                unix_timestamp_seconds: "-1".to_string(),
+                date_time: Some("1969-12-31T23:59:59.000Z".to_string()),
+            }
+        );
+
+        // The extremes of ISO8601:
+        assert_eq!(
+            to_api_scrypto_instant(&Instant::new(253402300799)).unwrap(),
+            models::ScryptoInstant {
+                unix_timestamp_seconds: "253402300799".to_string(),
+                date_time: Some("9999-12-31T23:59:59.000Z".to_string()),
+            }
+        );
+        assert_eq!(
+            to_api_scrypto_instant(&Instant::new(-12210998400)).unwrap(),
+            models::ScryptoInstant {
+                unix_timestamp_seconds: "-12210998400".to_string(),
+                date_time: Some("1583-01-19T00:00:00.000Z".to_string()),
+            }
+        );
+
+        // Slightly outside the extremes of ISO8601:
+        assert_eq!(
+            to_api_scrypto_instant(&Instant::new(253402300800)).unwrap(),
+            models::ScryptoInstant {
+                unix_timestamp_seconds: "253402300800".to_string(),
+                // Our renderer apparently supports the ISO extension which allows this:
+                date_time: Some("+10000-01-01T00:00:00.000Z".to_string()),
+            }
+        );
+        assert_eq!(
+            to_api_scrypto_instant(&Instant::new(-12210998401)).unwrap(),
+            models::ScryptoInstant {
+                unix_timestamp_seconds: "-12210998401".to_string(),
+                // Our renderer is fine with Gregorian dates occurring before the invention of a Gregorian calendar:
+                date_time: Some("1583-01-18T23:59:59.000Z".to_string()),
+            }
+        );
+        assert_eq!(
+            to_api_scrypto_instant(&Instant::new(-1234567890123)).unwrap(),
+            models::ScryptoInstant {
+                unix_timestamp_seconds: "-1234567890123".to_string(),
+                // Ok, renderer, now you are simply being ridiculous: (the ISO extension allows this too)
+                date_time: Some("-37152-02-06T18:57:57.000Z".to_string()),
+            }
+        );
+
+        // The extremes of i64:
+        assert_eq!(
+            to_api_scrypto_instant(&Instant::new(i64::MAX)).unwrap(),
+            models::ScryptoInstant {
+                unix_timestamp_seconds: "9223372036854775807".to_string(),
+                date_time: None, // Looks like there are some limits after all.
+            }
+        );
+        assert_eq!(
+            to_api_scrypto_instant(&Instant::new(i64::MIN)).unwrap(),
+            models::ScryptoInstant {
+                unix_timestamp_seconds: "-9223372036854775808".to_string(),
+                date_time: None, // I am glad you did not even try, renderer.
+            }
+        );
+    }
+
+    #[test]
+    fn to_api_clamped_instant_from_epoch_milli_supports_full_i64_range() {
+        // Sanity check (epoch):
+        assert_eq!(
+            to_api_clamped_instant_from_epoch_milli(0).unwrap(),
+            models::InstantMs {
+                unix_timestamp_ms: 0,
+                date_time: "1970-01-01T00:00:00.000Z".to_string(),
+            }
+        );
+
+        // Slightly positive and negative:
+        assert_eq!(
+            to_api_clamped_instant_from_epoch_milli(1).unwrap(),
+            models::InstantMs {
+                unix_timestamp_ms: 1,
+                date_time: "1970-01-01T00:00:00.001Z".to_string(),
+            }
+        );
+        assert_eq!(
+            to_api_clamped_instant_from_epoch_milli(-1).unwrap(),
+            models::InstantMs {
+                unix_timestamp_ms: 0, // this is the reason for "clamped" in the name
+                date_time: "1970-01-01T00:00:00.000Z".to_string(),
+            }
+        );
+
+        // Our arbitrary 10^14 maximum, and what happens above it:
+        assert_eq!(
+            to_api_clamped_instant_from_epoch_milli(100000000000000).unwrap(),
+            models::InstantMs {
+                unix_timestamp_ms: 100000000000000,
+                date_time: "5138-11-16T09:46:40.000Z".to_string(),
+            }
+        );
+        assert_eq!(
+            to_api_clamped_instant_from_epoch_milli(100000000000001).unwrap(),
+            models::InstantMs {
+                unix_timestamp_ms: 100000000000000, // clamped as expected
+                date_time: "5138-11-16T09:46:40.000Z".to_string(),
+            }
+        );
+
+        // The extremes of i64:
+        assert_eq!(
+            to_api_clamped_instant_from_epoch_milli(i64::MAX).unwrap(),
+            models::InstantMs {
+                unix_timestamp_ms: 100000000000000,
+                date_time: "5138-11-16T09:46:40.000Z".to_string(),
+            }
+        );
+        assert_eq!(
+            to_api_clamped_instant_from_epoch_milli(i64::MIN).unwrap(),
+            models::InstantMs {
+                unix_timestamp_ms: 0,
+                date_time: "1970-01-01T00:00:00.000Z".to_string(),
+            }
         );
     }
 }

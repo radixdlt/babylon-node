@@ -64,11 +64,11 @@ pub(crate) async fn handle_transaction_submit(
                         retry_from_timestamp: match rejection.retry_from {
                             state_manager::RetryFrom::Never => None,
                             state_manager::RetryFrom::FromTime(time) => Some(Box::new(
-                                to_api_clamped_instant(to_unix_timestamp_ms(time)?)?,
+                                to_api_clamped_instant_from_epoch_milli(to_unix_timestamp_ms(time)?)?,
                             )),
                             state_manager::RetryFrom::FromEpoch(_) => None,
                             state_manager::RetryFrom::Whenever => {
-                                Some(Box::new(to_api_clamped_instant(
+                                Some(Box::new(to_api_clamped_instant_from_epoch_milli(
                                     to_unix_timestamp_ms(std::time::SystemTime::now())?,
                                 )?))
                             }

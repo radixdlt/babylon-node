@@ -582,7 +582,9 @@ pub fn to_api_round_update_transaction(
         leader_proposal_history,
     } = round_update_transaction;
     Ok(models::RoundUpdateTransaction {
-        proposer_timestamp: Box::new(to_api_clamped_instant(*proposer_timestamp_ms)?),
+        proposer_timestamp: Box::new(to_api_clamped_instant_from_epoch_milli(
+            *proposer_timestamp_ms,
+        )?),
         epoch: to_api_epoch(context, *epoch)?,
         round_in_epoch: to_api_round(*round)?,
         leader_proposal_history: Box::new(models::LeaderProposalHistory {

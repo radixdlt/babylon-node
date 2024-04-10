@@ -33,6 +33,8 @@ pub(crate) async fn handle_lts_transaction_construction(
 
     Ok(Json(models::LtsTransactionConstructionResponse {
         current_epoch: to_api_epoch(&mapping_context, consensus_manager_substate.epoch)?,
-        ledger_clock: Box::new(to_api_clamped_instant(timestamp_substate.epoch_milli)?),
+        ledger_clock: Box::new(to_api_clamped_instant_from_epoch_milli(
+            timestamp_substate.epoch_milli,
+        )?),
     }))
 }
