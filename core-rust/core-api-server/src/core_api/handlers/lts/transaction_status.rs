@@ -123,7 +123,7 @@ pub(crate) async fn handle_lts_transaction_status(
     }
 
     let mempool = state.state_manager.mempool.read();
-    let mempool_payloads_hashes = mempool.get_payload_hashes_for_intent(&intent_hash);
+    let mempool_payloads_hashes = mempool.get_notarized_transaction_hashes_for_intent(&intent_hash);
     drop(mempool);
 
     if !mempool_payloads_hashes.is_empty() {

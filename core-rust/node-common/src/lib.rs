@@ -64,6 +64,7 @@
 
 pub mod config;
 pub mod environment;
+pub mod indexing;
 pub mod java;
 pub mod jni;
 pub mod locks;
