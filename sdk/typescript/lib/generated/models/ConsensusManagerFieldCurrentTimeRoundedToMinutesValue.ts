@@ -13,12 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { Instant } from './Instant';
+import type { InstantMs } from './InstantMs';
 import {
-    InstantFromJSON,
-    InstantFromJSONTyped,
-    InstantToJSON,
-} from './Instant';
+    InstantMsFromJSON,
+    InstantMsFromJSONTyped,
+    InstantMsToJSON,
+} from './InstantMs';
 
 /**
  * 
@@ -28,10 +28,10 @@ import {
 export interface ConsensusManagerFieldCurrentTimeRoundedToMinutesValue {
     /**
      * 
-     * @type {Instant}
+     * @type {InstantMs}
      * @memberof ConsensusManagerFieldCurrentTimeRoundedToMinutesValue
      */
-    proposer_timestamp_rounded_down_to_minute: Instant;
+    proposer_timestamp_rounded_down_to_minute: InstantMs;
 }
 
 /**
@@ -54,7 +54,7 @@ export function ConsensusManagerFieldCurrentTimeRoundedToMinutesValueFromJSONTyp
     }
     return {
         
-        'proposer_timestamp_rounded_down_to_minute': InstantFromJSON(json['proposer_timestamp_rounded_down_to_minute']),
+        'proposer_timestamp_rounded_down_to_minute': InstantMsFromJSON(json['proposer_timestamp_rounded_down_to_minute']),
     };
 }
 
@@ -67,7 +67,7 @@ export function ConsensusManagerFieldCurrentTimeRoundedToMinutesValueToJSON(valu
     }
     return {
         
-        'proposer_timestamp_rounded_down_to_minute': InstantToJSON(value.proposer_timestamp_rounded_down_to_minute),
+        'proposer_timestamp_rounded_down_to_minute': InstantMsToJSON(value.proposer_timestamp_rounded_down_to_minute),
     };
 }
 

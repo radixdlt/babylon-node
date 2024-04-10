@@ -13,18 +13,18 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { Instant } from './Instant';
-import {
-    InstantFromJSON,
-    InstantFromJSONTyped,
-    InstantToJSON,
-} from './Instant';
 import type { RecoveryProposal } from './RecoveryProposal';
 import {
     RecoveryProposalFromJSON,
     RecoveryProposalFromJSONTyped,
     RecoveryProposalToJSON,
 } from './RecoveryProposal';
+import type { ScryptoInstant } from './ScryptoInstant';
+import {
+    ScryptoInstantFromJSON,
+    ScryptoInstantFromJSONTyped,
+    ScryptoInstantToJSON,
+} from './ScryptoInstant';
 
 /**
  * 
@@ -40,10 +40,10 @@ export interface RecoveryRoleRecoveryAttempt {
     recovery_proposal: RecoveryProposal;
     /**
      * 
-     * @type {Instant}
+     * @type {ScryptoInstant}
      * @memberof RecoveryRoleRecoveryAttempt
      */
-    timed_recovery_allowed_after?: Instant;
+    allow_timed_recovery_after?: ScryptoInstant;
 }
 
 /**
@@ -67,7 +67,7 @@ export function RecoveryRoleRecoveryAttemptFromJSONTyped(json: any, ignoreDiscri
     return {
         
         'recovery_proposal': RecoveryProposalFromJSON(json['recovery_proposal']),
-        'timed_recovery_allowed_after': !exists(json, 'timed_recovery_allowed_after') ? undefined : InstantFromJSON(json['timed_recovery_allowed_after']),
+        'allow_timed_recovery_after': !exists(json, 'allow_timed_recovery_after') ? undefined : ScryptoInstantFromJSON(json['allow_timed_recovery_after']),
     };
 }
 
@@ -81,7 +81,7 @@ export function RecoveryRoleRecoveryAttemptToJSON(value?: RecoveryRoleRecoveryAt
     return {
         
         'recovery_proposal': RecoveryProposalToJSON(value.recovery_proposal),
-        'timed_recovery_allowed_after': InstantToJSON(value.timed_recovery_allowed_after),
+        'allow_timed_recovery_after': ScryptoInstantToJSON(value.allow_timed_recovery_after),
     };
 }
 

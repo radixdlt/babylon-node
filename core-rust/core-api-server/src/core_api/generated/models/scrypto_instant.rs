@@ -12,32 +12,20 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct ConsensusManagerFieldStateValue {
-    /// An integer between `0` and `10^10`, marking the current epoch
-    #[serde(rename = "epoch")]
-    pub epoch: i64,
-    /// An integer between `0` and `10^10`, marking the current round in an epoch
-    #[serde(rename = "round")]
-    pub round: i64,
-    #[serde(rename = "is_started")]
-    pub is_started: bool,
-    #[serde(rename = "effective_epoch_start")]
-    pub effective_epoch_start: Box<crate::core_api::generated::models::InstantMs>,
-    #[serde(rename = "actual_epoch_start")]
-    pub actual_epoch_start: Box<crate::core_api::generated::models::InstantMs>,
-    #[serde(rename = "current_leader", skip_serializing_if = "Option::is_none")]
-    pub current_leader: Option<Box<crate::core_api::generated::models::ActiveValidatorIndex>>,
+pub struct ScryptoInstant {
+    /// A decimal string-encoded 64-bit signed integer, marking the unix timestamp in seconds.  Note: this field accurately represents the full range of possible on-ledger values (i.e. `-2^63 <= seconds < 2^63`). This is contrary to the `InstantMs` type used in other places of this API. 
+    #[serde(rename = "unix_timestamp_seconds")]
+    pub unix_timestamp_seconds: String,
+    /// The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use \"Z\" (denoting UTC) and include milliseconds (which are always `000`). E.g.: `2023-01-26T18:30:09.000Z`.  Note: This field will *not* be present if the actual on-ledger `unix_timestamp_seconds` value cannot be expressed as a RFC 3339 / ISO 8601 string (i.e. in case of extreme signed 64-bit integer values). 
+    #[serde(rename = "date_time", skip_serializing_if = "Option::is_none")]
+    pub date_time: Option<String>,
 }
 
-impl ConsensusManagerFieldStateValue {
-    pub fn new(epoch: i64, round: i64, is_started: bool, effective_epoch_start: crate::core_api::generated::models::InstantMs, actual_epoch_start: crate::core_api::generated::models::InstantMs) -> ConsensusManagerFieldStateValue {
-        ConsensusManagerFieldStateValue {
-            epoch,
-            round,
-            is_started,
-            effective_epoch_start: Box::new(effective_epoch_start),
-            actual_epoch_start: Box::new(actual_epoch_start),
-            current_leader: None,
+impl ScryptoInstant {
+    pub fn new(unix_timestamp_seconds: String) -> ScryptoInstant {
+        ScryptoInstant {
+            unix_timestamp_seconds,
+            date_time: None,
         }
     }
 }

@@ -13,80 +13,55 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { EpochRound } from './EpochRound';
-import {
-    EpochRoundFromJSON,
-    EpochRoundFromJSONTyped,
-    EpochRoundToJSON,
-} from './EpochRound';
-import type { InstantMs } from './InstantMs';
-import {
-    InstantMsFromJSON,
-    InstantMsFromJSONTyped,
-    InstantMsToJSON,
-} from './InstantMs';
-import type { LedgerHashes } from './LedgerHashes';
-import {
-    LedgerHashesFromJSON,
-    LedgerHashesFromJSONTyped,
-    LedgerHashesToJSON,
-} from './LedgerHashes';
-
 /**
  * 
  * @export
- * @interface LedgerHeaderSummary
+ * @interface InstantMs
  */
-export interface LedgerHeaderSummary {
+export interface InstantMs {
     /**
-     * 
-     * @type {EpochRound}
-     * @memberof LedgerHeaderSummary
+     * An integer between `0` and `10^14`, marking the unix timestamp in ms.
+     * @type {number}
+     * @memberof InstantMs
      */
-    epoch_round: EpochRound;
+    unix_timestamp_ms: number;
     /**
-     * 
-     * @type {LedgerHashes}
-     * @memberof LedgerHeaderSummary
+     * The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use "Z"
+     * (denoting UTC) and include milliseconds (even if `000`).
+     * E.g.: `2023-01-26T18:30:09.453Z`.
+     * @type {string}
+     * @memberof InstantMs
      */
-    ledger_hashes: LedgerHashes;
-    /**
-     * 
-     * @type {InstantMs}
-     * @memberof LedgerHeaderSummary
-     */
-    proposer_timestamp: InstantMs;
+    date_time: string;
 }
 
 /**
- * Check if a given object implements the LedgerHeaderSummary interface.
+ * Check if a given object implements the InstantMs interface.
  */
-export function instanceOfLedgerHeaderSummary(value: object): boolean {
+export function instanceOfInstantMs(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "epoch_round" in value;
-    isInstance = isInstance && "ledger_hashes" in value;
-    isInstance = isInstance && "proposer_timestamp" in value;
+    isInstance = isInstance && "unix_timestamp_ms" in value;
+    isInstance = isInstance && "date_time" in value;
 
     return isInstance;
 }
 
-export function LedgerHeaderSummaryFromJSON(json: any): LedgerHeaderSummary {
-    return LedgerHeaderSummaryFromJSONTyped(json, false);
+export function InstantMsFromJSON(json: any): InstantMs {
+    return InstantMsFromJSONTyped(json, false);
 }
 
-export function LedgerHeaderSummaryFromJSONTyped(json: any, ignoreDiscriminator: boolean): LedgerHeaderSummary {
+export function InstantMsFromJSONTyped(json: any, ignoreDiscriminator: boolean): InstantMs {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'epoch_round': EpochRoundFromJSON(json['epoch_round']),
-        'ledger_hashes': LedgerHashesFromJSON(json['ledger_hashes']),
-        'proposer_timestamp': InstantMsFromJSON(json['proposer_timestamp']),
+        'unix_timestamp_ms': json['unix_timestamp_ms'],
+        'date_time': json['date_time'],
     };
 }
 
-export function LedgerHeaderSummaryToJSON(value?: LedgerHeaderSummary | null): any {
+export function InstantMsToJSON(value?: InstantMs | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -95,9 +70,8 @@ export function LedgerHeaderSummaryToJSON(value?: LedgerHeaderSummary | null): a
     }
     return {
         
-        'epoch_round': EpochRoundToJSON(value.epoch_round),
-        'ledger_hashes': LedgerHashesToJSON(value.ledger_hashes),
-        'proposer_timestamp': InstantMsToJSON(value.proposer_timestamp),
+        'unix_timestamp_ms': value.unix_timestamp_ms,
+        'date_time': value.date_time,
     };
 }
 
