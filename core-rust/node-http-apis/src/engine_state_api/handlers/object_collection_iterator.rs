@@ -49,10 +49,13 @@ pub(crate) async fn handle_object_collection_iterator(
         data_loader.iter_object_collection_keys(&node_id, module_id, collection_meta, from)
     })?;
 
-    let header = database.proving_ledger_header();
+    let ledger_state = database.at_ledger_state();
 
     Ok(Json(models::ObjectCollectionIteratorResponse {
-        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(
+            &mapping_context,
+            &ledger_state,
+        )?),
         page: page
             .items
             .into_iter()

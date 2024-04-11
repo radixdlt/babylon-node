@@ -31,10 +31,13 @@ pub(crate) async fn handle_entity_info(
     // available there. So let's load the ancestry directly from our database here.
     let entity_ancestry = database.get_ancestry(&node_id);
 
-    let header = database.proving_ledger_header();
+    let ledger_state = database.at_ledger_state();
 
     Ok(Json(models::EntityInfoResponse {
-        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(
+            &mapping_context,
+            &ledger_state,
+        )?),
         info: Some(to_api_entity_info(
             &mapping_context,
             &node_id,

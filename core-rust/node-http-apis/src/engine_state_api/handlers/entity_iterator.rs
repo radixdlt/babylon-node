@@ -56,10 +56,13 @@ pub(crate) async fn handle_entity_iterator(
             .get_page(|from| entity_lister.iter_blueprint_entities(&blueprint_id, from))?,
     };
 
-    let header = database.proving_ledger_header();
+    let ledger_state = database.at_ledger_state();
 
     Ok(Json(models::EntityIteratorResponse {
-        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(
+            &mapping_context,
+            &ledger_state,
+        )?),
         page: page
             .items
             .into_iter()

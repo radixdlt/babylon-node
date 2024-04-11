@@ -28,64 +28,62 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * Instant
+ * ScryptoInstant
  */
 @JsonPropertyOrder({
-  Instant.JSON_PROPERTY_UNIX_TIMESTAMP_MS,
-  Instant.JSON_PROPERTY_DATE_TIME
+  ScryptoInstant.JSON_PROPERTY_UNIX_TIMESTAMP_SECONDS,
+  ScryptoInstant.JSON_PROPERTY_DATE_TIME
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class Instant {
-  public static final String JSON_PROPERTY_UNIX_TIMESTAMP_MS = "unix_timestamp_ms";
-  private Long unixTimestampMs;
+public class ScryptoInstant {
+  public static final String JSON_PROPERTY_UNIX_TIMESTAMP_SECONDS = "unix_timestamp_seconds";
+  private String unixTimestampSeconds;
 
   public static final String JSON_PROPERTY_DATE_TIME = "date_time";
   private String dateTime;
 
-  public Instant() { 
+  public ScryptoInstant() { 
   }
 
-  public Instant unixTimestampMs(Long unixTimestampMs) {
-    this.unixTimestampMs = unixTimestampMs;
+  public ScryptoInstant unixTimestampSeconds(String unixTimestampSeconds) {
+    this.unixTimestampSeconds = unixTimestampSeconds;
     return this;
   }
 
    /**
-   * An integer between &#x60;0&#x60; and &#x60;10^14&#x60;, marking the unix timestamp in ms.
-   * minimum: 0
-   * maximum: 100000000000000
-   * @return unixTimestampMs
+   * A decimal string-encoded 64-bit signed integer, marking the unix timestamp in seconds.  Note: this field accurately represents the full range of possible on-ledger values (i.e. &#x60;-2^63 &lt;&#x3D; seconds &lt; 2^63&#x60;). This is contrary to the &#x60;InstantMs&#x60; type used in other places of this API. 
+   * @return unixTimestampSeconds
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `10^14`, marking the unix timestamp in ms.")
-  @JsonProperty(JSON_PROPERTY_UNIX_TIMESTAMP_MS)
+  @ApiModelProperty(required = true, value = "A decimal string-encoded 64-bit signed integer, marking the unix timestamp in seconds.  Note: this field accurately represents the full range of possible on-ledger values (i.e. `-2^63 <= seconds < 2^63`). This is contrary to the `InstantMs` type used in other places of this API. ")
+  @JsonProperty(JSON_PROPERTY_UNIX_TIMESTAMP_SECONDS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Long getUnixTimestampMs() {
-    return unixTimestampMs;
+  public String getUnixTimestampSeconds() {
+    return unixTimestampSeconds;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_UNIX_TIMESTAMP_MS)
+  @JsonProperty(JSON_PROPERTY_UNIX_TIMESTAMP_SECONDS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setUnixTimestampMs(Long unixTimestampMs) {
-    this.unixTimestampMs = unixTimestampMs;
+  public void setUnixTimestampSeconds(String unixTimestampSeconds) {
+    this.unixTimestampSeconds = unixTimestampSeconds;
   }
 
 
-  public Instant dateTime(String dateTime) {
+  public ScryptoInstant dateTime(String dateTime) {
     this.dateTime = dateTime;
     return this;
   }
 
    /**
-   * The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use \&quot;Z\&quot; denoting UTC and include milliseconds. EG: &#x60;2023-01-26T18:30:09.453Z&#x60;. 
+   * The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use \&quot;Z\&quot; (denoting UTC) and include milliseconds (which are always &#x60;000&#x60;). E.g.: &#x60;2023-01-26T18:30:09.000Z&#x60;.  Note: This field will *not* be present if the actual on-ledger &#x60;unix_timestamp_seconds&#x60; value is outside the basic range supported by the RFC 3339 / ISO 8601 standard, which starts at year 1583 (i.e. the beginning of the Gregorian calendar) and ends at year 9999 (inclusive). 
    * @return dateTime
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use \"Z\" denoting UTC and include milliseconds. EG: `2023-01-26T18:30:09.453Z`. ")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use \"Z\" (denoting UTC) and include milliseconds (which are always `000`). E.g.: `2023-01-26T18:30:09.000Z`.  Note: This field will *not* be present if the actual on-ledger `unix_timestamp_seconds` value is outside the basic range supported by the RFC 3339 / ISO 8601 standard, which starts at year 1583 (i.e. the beginning of the Gregorian calendar) and ends at year 9999 (inclusive). ")
   @JsonProperty(JSON_PROPERTY_DATE_TIME)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
   public String getDateTime() {
     return dateTime;
@@ -93,14 +91,14 @@ public class Instant {
 
 
   @JsonProperty(JSON_PROPERTY_DATE_TIME)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setDateTime(String dateTime) {
     this.dateTime = dateTime;
   }
 
 
   /**
-   * Return true if this Instant object is equal to o.
+   * Return true if this ScryptoInstant object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -110,21 +108,21 @@ public class Instant {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    Instant instant = (Instant) o;
-    return Objects.equals(this.unixTimestampMs, instant.unixTimestampMs) &&
-        Objects.equals(this.dateTime, instant.dateTime);
+    ScryptoInstant scryptoInstant = (ScryptoInstant) o;
+    return Objects.equals(this.unixTimestampSeconds, scryptoInstant.unixTimestampSeconds) &&
+        Objects.equals(this.dateTime, scryptoInstant.dateTime);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(unixTimestampMs, dateTime);
+    return Objects.hash(unixTimestampSeconds, dateTime);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class Instant {\n");
-    sb.append("    unixTimestampMs: ").append(toIndentedString(unixTimestampMs)).append("\n");
+    sb.append("class ScryptoInstant {\n");
+    sb.append("    unixTimestampSeconds: ").append(toIndentedString(unixTimestampSeconds)).append("\n");
     sb.append("    dateTime: ").append(toIndentedString(dateTime)).append("\n");
     sb.append("}");
     return sb.toString();

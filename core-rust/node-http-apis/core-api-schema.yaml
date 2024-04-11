@@ -1644,7 +1644,15 @@ components:
         ledger_hashes:
           $ref: "#/components/schemas/LedgerHashes"
         proposer_timestamp:
-          $ref: '#/components/schemas/Instant'
+          description: |
+            The time at which the consensus leader created the proposal for extending the ledger to
+            the represented point.
+
+            Note: in abnormal cases (e.g. Byzantine network quorum), this on-ledger field may be set
+            to an arbitrary, extreme value allowed by 64-bit signed integer. The API will still
+            clamp the timestamp to `0 <= ms <= 100000000000000 (== 10^14)`, which translates to
+            `1970-01-01T00:00:00.000Z <= t <= 5138-11-16T09:46:40.000Z`.
+          $ref: '#/components/schemas/InstantMs'
     LedgerHashes:
       type: object
       required:
@@ -2350,7 +2358,7 @@ components:
     GlobalAddress:
       type: string
       description: The Bech32m-encoded human readable version of any global address
-    Instant:
+    InstantMs:
       type: object
       required:
         - unix_timestamp_ms
@@ -2365,8 +2373,33 @@ components:
         date_time:
           type: string
           description: |
-            The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use "Z" denoting UTC and include milliseconds.
-            EG: `2023-01-26T18:30:09.453Z`.
+            The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use "Z"
+            (denoting UTC) and include milliseconds (even if `000`).
+            E.g.: `2023-01-26T18:30:09.453Z`.
+    ScryptoInstant:
+      type: object
+      required:
+        - unix_timestamp_seconds
+      properties:
+        unix_timestamp_seconds:
+          type: string
+          description: |
+            A decimal string-encoded 64-bit signed integer, marking the unix timestamp in seconds.
+            
+            Note: this field accurately represents the full range of possible on-ledger values (i.e.
+            `-2^63 <= seconds < 2^63`). This is contrary to the `InstantMs` type used in other
+            places of this API.
+        date_time:
+          type: string
+          description: |
+            The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use "Z"
+            (denoting UTC) and include milliseconds (which are always `000`).
+            E.g.: `2023-01-26T18:30:09.000Z`.
+            
+            Note: This field will *not* be present if the actual on-ledger `unix_timestamp_seconds`
+            value is outside the basic range supported by the RFC 3339 / ISO 8601 standard, which
+            starts at year 1583 (i.e. the beginning of the Gregorian calendar) and ends at year
+            9999 (inclusive).
     InstructionResourceChanges:
       type: object
       required:
@@ -4921,13 +4954,23 @@ components:
           description: |
             The effective time the epoch started. A drift-free measure, used to work out when the
             epoch should ideally end. 
-          $ref: '#/components/schemas/Instant'
+            
+            Note: in abnormal cases (e.g. Byzantine network quorum), this on-ledger field may be set
+            to an arbitrary, extreme value allowed by 64-bit signed integer. The API will still
+            clamp the timestamp to `0 <= ms <= 100000000000000 (== 10^14)`, which translates to
+            `1970-01-01T00:00:00.000Z <= t <= 5138-11-16T09:46:40.000Z`.
+          $ref: '#/components/schemas/InstantMs'
         actual_epoch_start:
           description: |
             The actual time the epoch started. Not used by any logic, but the difference between
             this and the effective start gives a measure of the time it took for the end-of-epoch
             to be noticed.
-          $ref: '#/components/schemas/Instant'
+            
+            Note: in abnormal cases (e.g. Byzantine network quorum), this on-ledger field may be set
+            to an arbitrary, extreme value allowed by 64-bit signed integer. The API will still
+            clamp the timestamp to `0 <= ms <= 100000000000000 (== 10^14)`, which translates to
+            `1970-01-01T00:00:00.000Z <= t <= 5138-11-16T09:46:40.000Z`.
+          $ref: '#/components/schemas/InstantMs'
         current_leader:
           $ref: '#/components/schemas/ActiveValidatorIndex'
     ConsensusManagerFieldCurrentProposalStatisticSubstate:
@@ -5013,10 +5056,15 @@ components:
         - proposer_timestamp_rounded_down_to_minute
       properties:
         proposer_timestamp_rounded_down_to_minute:
-          $ref: '#/components/schemas/Instant'
+          $ref: '#/components/schemas/InstantMs'
           description: |
             The latest round proposer's timestamp (rounded down to the current minute).
             An honest quorum of validators keeps this aligned with wall-clock time, and non-decreasing.
+
+            Note: in abnormal cases (e.g. Byzantine network quorum), this on-ledger field may be set
+            to an arbitrary, extreme value allowed by 64-bit signed integer. The API will still
+            clamp the timestamp to `0 <= ms <= 100000000000000 (== 10^14)`, which translates to
+            `1970-01-01T00:00:00.000Z <= t <= 5138-11-16T09:46:40.000Z`.
     ConsensusManagerFieldCurrentTimeSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -5032,10 +5080,15 @@ components:
         - proposer_timestamp
       properties:
         proposer_timestamp:
-          $ref: '#/components/schemas/Instant'
+          $ref: '#/components/schemas/InstantMs'
           description: |
             The latest round proposer's timestamp.
             An honest quorum of validators keeps this aligned with wall-clock time, and non-decreasing.
+            
+            Note: in abnormal cases (e.g. Byzantine network quorum), this on-ledger field may be set
+            to an arbitrary, extreme value allowed by 64-bit signed integer. The API will still
+            clamp the timestamp to `0 <= ms <= 100000000000000 (== 10^14)`, which translates to
+            `1970-01-01T00:00:00.000Z <= t <= 5138-11-16T09:46:40.000Z`.
     ValidatorFieldStateSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -5293,8 +5346,8 @@ components:
         recovery_proposal:
           $ref: "#/components/schemas/RecoveryProposal"
           description: A new set of rules being proposed for different roles.
-        timed_recovery_allowed_after:
-          $ref: "#/components/schemas/Instant"
+        allow_timed_recovery_after:
+          $ref: "#/components/schemas/ScryptoInstant"
           description: The time after which the recovery is allowed. Only present if this is a timed recovery.
     RecoveryProposal:
       type: object
@@ -5448,10 +5501,15 @@ components:
           maximum: 10000000000
           description: An integer between `0` and `10^10`, marking the current epoch
         ledger_clock:
-          $ref: '#/components/schemas/Instant'
+          $ref: '#/components/schemas/InstantMs'
           description: |
             The latest round proposer's timestamp (rounded down to the current minute).
             This is provided so that the client can detect if the node is synced up or not.
+            
+            Note: in abnormal cases (e.g. Byzantine network quorum), this on-ledger field may be set
+            to an arbitrary, extreme value allowed by 64-bit signed integer. The API will still
+            clamp the timestamp to `0 <= ms <= 100000000000000 (== 10^14)`, which translates to
+            `1970-01-01T00:00:00.000Z <= t <= 5138-11-16T09:46:40.000Z`.
 ####################################
 # REQUEST: /lts/transaction/status #
 ####################################
@@ -5659,7 +5717,7 @@ components:
                 Whether the rejection of this intent is known to be permanent - this is a stronger statement than the payload rejection
                 being permanent, as it implies any payloads containing the intent will also be permanently rejected.
             retry_from_timestamp:
-              $ref: "#/components/schemas/Instant"
+              $ref: "#/components/schemas/InstantMs"
               description: |
                 The time after which the node will consider recalculating the validity of the transaction.
                 Only present if the rejection is temporary, and not due to the header specifying a "from epoch" in the future.
@@ -6860,7 +6918,7 @@ components:
                 Whether the rejection of this intent is known to be permanent - this is a stronger statement than the payload rejection
                 being permanent, as it implies any payloads containing the intent will also be permanently rejected.
             retry_from_timestamp:
-              $ref: "#/components/schemas/Instant"
+              $ref: "#/components/schemas/InstantMs"
               description: |
                 The time after which the node will consider recalculating the validity of the transaction.
                 Only present if the rejection is temporary, and not due to the header specifying a "from epoch" in the future.
@@ -7735,8 +7793,14 @@ components:
         - leader_proposal_history
       properties:
         proposer_timestamp:
-          $ref: '#/components/schemas/Instant'
-          description: The round proposer's timestamp.
+          $ref: '#/components/schemas/InstantMs'
+          description: |
+            The round proposer's timestamp.
+            
+            Note: in abnormal cases (e.g. Byzantine network quorum), this on-ledger field may be set
+            to an arbitrary, extreme value allowed by 64-bit signed integer. The API will still
+            clamp the timestamp to `0 <= ms <= 100000000000000 (== 10^14)`, which translates to
+            `1970-01-01T00:00:00.000Z <= t <= 5138-11-16T09:46:40.000Z`.
         epoch:
           type: integer
           format: int64

@@ -32,10 +32,13 @@ pub(crate) async fn handle_entity_schema_entry(
         schema_hash,
     })?;
 
-    let header = database.proving_ledger_header();
+    let ledger_state = database.at_ledger_state();
 
     Ok(Json(models::EntitySchemaEntryResponse {
-        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(
+            &mapping_context,
+            &ledger_state,
+        )?),
         content: Box::new(to_api_sbor_data(&mapping_context, versioned_schema_data)?),
     }))
 }

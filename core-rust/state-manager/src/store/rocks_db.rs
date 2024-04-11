@@ -62,7 +62,6 @@
  * permissions under this License.
  */
 
-use std::cmp::max;
 use std::collections::HashSet;
 use std::fmt;
 
@@ -976,7 +975,7 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
                 );
                 self.populate_state_tree_associated_substate_values(current_version);
                 let status = StateTreeAssociatedValuesStatusV1 {
-                    values_associated_from: current_version,
+                    historical_substate_values_available_from: current_version,
                 };
                 extension_data_cf.put(
                     &ExtensionsDataKey::StateTreeAssociatedValuesStatus,
@@ -987,8 +986,8 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
         } else {
             if let Some(status) = status {
                 info!(
-                    "Disabling historical Substate values (were enabled since {:?})",
-                    status.values_associated_from
+                    "Disabling historical Substate values (were available from {:?})",
+                    status.historical_substate_values_available_from
                 );
                 extension_data_cf.delete(&ExtensionsDataKey::StateTreeAssociatedValuesStatus);
             } else {
@@ -1064,18 +1063,7 @@ impl<R: ReadableRocks> ConfigurableDatabase for StateManagerDatabase<R> {
     }
 
     fn get_first_stored_historical_state_version(&self) -> StateVersion {
-        let first_state_tree_version = self
-            .open_read_context()
-            .cf(StaleStateTreePartsCf)
-            .get_first_key();
-        let Some(first_state_tree_version) = first_state_tree_version else {
-            // we need to handle a special case where the configured history length is 0:
-            return self.max_state_version();
-        };
-
-        // we also need to take the "still collecting the max history length" case into account:
-        let values_associated_from = self
-            .open_read_context()
+        self.open_read_context()
             .cf(ExtensionsDataCf)
             .get(&ExtensionsDataKey::StateTreeAssociatedValuesStatus)
             .map(|bytes| {
@@ -1083,10 +1071,8 @@ impl<R: ReadableRocks> ConfigurableDatabase for StateManagerDatabase<R> {
                     .unwrap()
                     .into_latest()
             })
-            .expect("state history metadata not found")
-            .values_associated_from;
-
-        max(first_state_tree_version, values_associated_from)
+            .expect("state history feature metadata not found")
+            .historical_substate_values_available_from
     }
 }
 
@@ -1771,6 +1757,12 @@ impl<R: ReadableRocks> QueryableProofStore for StateManagerDatabase<R> {
             .get_first_value()
     }
 
+    fn get_proof(&self, state_version: StateVersion) -> Option<LedgerProof> {
+        self.open_read_context()
+            .cf(LedgerProofsCf)
+            .get(&state_version)
+    }
+
     fn get_post_genesis_epoch_proof(&self) -> Option<LedgerProof> {
         self.open_read_context()
             .cf(EpochLedgerProofsCf)
@@ -1885,6 +1877,31 @@ impl<R: WriteableRocks> StateTreeGcStore for StateManagerDatabase<R> {
             .iterate(Direction::Forward)
     }
 
+    fn progress_historical_substate_values_availability(&self, available_from: StateVersion) {
+        let db_context = self.open_rw_context();
+        let extension_data_cf = db_context.cf(ExtensionsDataCf);
+        let status = extension_data_cf
+            .get(&ExtensionsDataKey::StateTreeAssociatedValuesStatus)
+            .map(|bytes| {
+                scrypto_decode::<VersionedStateTreeAssociatedValuesStatus>(&bytes)
+                    .unwrap()
+                    .into_latest()
+            });
+        let Some(mut status) = status else {
+            // The state history feature is simply not enabled.
+            return;
+        };
+        if available_from <= status.historical_substate_values_available_from {
+            // The state history feature was enabled after this state version.
+            return;
+        }
+        status.historical_substate_values_available_from = available_from;
+        extension_data_cf.put(
+            &ExtensionsDataKey::StateTreeAssociatedValuesStatus,
+            &scrypto_encode(&VersionedStateTreeAssociatedValuesStatus::from(status)).unwrap(),
+        );
+    }
+
     fn batch_delete_node<'a>(&self, keys: impl IntoIterator<Item = &'a StoredTreeNodeKey>) {
         let db_context = self.open_rw_context();
         let tree_nodes_cf = db_context.cf(StateTreeNodesCf);
@@ -1899,15 +1916,10 @@ impl<R: WriteableRocks> StateTreeGcStore for StateManagerDatabase<R> {
         }
     }
 
-    fn batch_delete_stale_tree_part<'a>(
-        &self,
-        state_versions: impl IntoIterator<Item = &'a StateVersion>,
-    ) {
-        let db_context = self.open_rw_context();
-        let stale_tree_parts_cf = db_context.cf(StaleStateTreePartsCf);
-        for state_version in state_versions {
-            stale_tree_parts_cf.delete(state_version);
-        }
+    fn delete_stale_tree_parts_up_to_version(&self, to_state_version: StateVersion) {
+        self.open_rw_context()
+            .cf(StaleStateTreePartsCf)
+            .delete_range(&StateVersion::pre_genesis(), &to_state_version);
     }
 }
 

@@ -41,10 +41,13 @@ pub(crate) async fn handle_object_field(
     let data_loader = EngineStateDataLoader::new(&database);
     let field_data = data_loader.load_field_value(&node_id, module_id, field_meta)?;
 
-    let header = database.proving_ledger_header();
+    let ledger_state = database.at_ledger_state();
 
     Ok(Json(models::ObjectFieldResponse {
-        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(
+            &mapping_context,
+            &ledger_state,
+        )?),
         content: Box::new(to_api_sbor_data(&mapping_context, field_data)?),
     }))
 }

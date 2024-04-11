@@ -254,6 +254,9 @@ impl<'r, 'w, KC: GroupPreservingDbCodec, CF: TypedCf<KeyCodec = KC>, R: Writeabl
     }
 }
 
+// Note: some methods are defined just for completeness of their family; it may happen that they are
+// no longer used after some refactors, etc. - hence the `allow`:
+#[allow(dead_code)]
 impl<
         'r,
         'w,

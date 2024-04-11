@@ -49,10 +49,13 @@ pub(crate) async fn handle_object_collection_entry(
     let entry_data =
         data_loader.load_collection_entry(&node_id, module_id, collection_meta, &key)?;
 
-    let header = database.proving_ledger_header();
+    let ledger_state = database.at_ledger_state();
 
     Ok(Json(models::ObjectCollectionEntryResponse {
-        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(
+            &mapping_context,
+            &ledger_state,
+        )?),
         content: Box::new(to_api_sbor_data(&mapping_context, entry_data)?),
     }))
 }

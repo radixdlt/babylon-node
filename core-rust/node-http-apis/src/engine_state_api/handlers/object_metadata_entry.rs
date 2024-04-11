@@ -27,10 +27,13 @@ pub(crate) async fn handle_object_metadata_entry(
     let loader = ObjectMetadataLoader::new(&database);
     let metadata_value = loader.load_entry(&node_id, &MetadataKey::from(request.key))?;
 
-    let header = database.proving_ledger_header();
+    let ledger_state = database.at_ledger_state();
 
     Ok(Json(models::ObjectMetadataEntryResponse {
-        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(
+            &mapping_context,
+            &ledger_state,
+        )?),
         content: Some(to_api_metadata_value(&mapping_context, metadata_value)?),
     }))
 }

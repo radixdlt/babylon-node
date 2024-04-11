@@ -40,10 +40,13 @@ pub(crate) async fn handle_kv_store_entry(
     let data_loader = EngineStateDataLoader::new(&database);
     let entry_data = data_loader.load_kv_store_entry(&node_id, &kv_store_meta, &key)?;
 
-    let header = database.proving_ledger_header();
+    let ledger_state = database.at_ledger_state();
 
     Ok(Json(models::KeyValueStoreEntryResponse {
-        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(
+            &mapping_context,
+            &ledger_state,
+        )?),
         content: Box::new(to_api_sbor_data(&mapping_context, entry_data)?),
     }))
 }

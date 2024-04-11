@@ -31,10 +31,13 @@ pub(crate) async fn handle_object_metadata_iterator(
     let loader = ObjectMetadataLoader::new(&database);
     let page = paging_support.get_page(|from| loader.iter_keys(&node_id, from))?;
 
-    let header = database.proving_ledger_header();
+    let ledger_state = database.at_ledger_state();
 
     Ok(Json(models::ObjectMetadataIteratorResponse {
-        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(
+            &mapping_context,
+            &ledger_state,
+        )?),
         page: page
             .items
             .into_iter()

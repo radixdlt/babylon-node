@@ -1,7 +1,7 @@
 use crate::engine_prelude::*;
 use itertools::Either;
 
-use state_manager::{LedgerHeader, StateVersion};
+use state_manager::{LedgerStateSummary, StateVersion};
 
 use crate::engine_state_api::*;
 
@@ -16,35 +16,38 @@ pub fn from_hex<T: AsRef<[u8]>>(v: T) -> Result<Vec<u8>, ExtractionError> {
 
 pub fn to_api_ledger_state_summary(
     mapping_context: &MappingContext,
-    header: &LedgerHeader,
+    state_summary: &LedgerStateSummary,
 ) -> Result<models::LedgerStateSummary, MappingError> {
     Ok(models::LedgerStateSummary {
-        state_version: to_api_state_version(header.state_version)?,
-        header_summary: Box::new(to_api_ledger_header_summary(mapping_context, header)?),
+        state_version: to_api_state_version(state_summary.state_version)?,
+        header_summary: Box::new(to_api_ledger_header_summary(
+            mapping_context,
+            state_summary,
+        )?),
     })
 }
 
 pub fn to_api_ledger_header_summary(
     mapping_context: &MappingContext,
-    header: &LedgerHeader,
+    state_summary: &LedgerStateSummary,
 ) -> Result<models::LedgerHeaderSummary, MappingError> {
-    let hashes = &header.hashes;
+    let hashes = &state_summary.hashes;
     Ok(models::LedgerHeaderSummary {
-        epoch_round: Box::new(to_api_epoch_round(mapping_context, header)?),
+        epoch_round: Box::new(to_api_epoch_round(mapping_context, state_summary)?),
         ledger_hashes: Box::new(models::LedgerHashes {
             state_tree_hash: to_api_state_tree_hash(&hashes.state_root),
             transaction_tree_hash: to_api_transaction_tree_hash(&hashes.transaction_root),
             receipt_tree_hash: to_api_receipt_tree_hash(&hashes.receipt_root),
         }),
         proposer_timestamp: Box::new(to_api_instant_from_safe_timestamp(
-            header.proposer_timestamp_ms,
+            state_summary.proposer_timestamp_ms,
         )?),
     })
 }
 
 pub fn to_api_epoch_round(
     context: &MappingContext,
-    ledger_header: &LedgerHeader,
+    ledger_header: &LedgerStateSummary,
 ) -> Result<models::EpochRound, MappingError> {
     Ok(models::EpochRound {
         epoch: to_api_epoch(context, ledger_header.epoch)?,

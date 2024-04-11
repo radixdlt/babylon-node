@@ -37,10 +37,13 @@ pub(crate) async fn handle_blueprint_info(
     let meta_loader = EngineStateMetaLoader::new(&database);
     let blueprint_meta = meta_loader.load_blueprint_meta(&blueprint_reference)?;
 
-    let header = database.proving_ledger_header();
+    let ledger_state = database.at_ledger_state();
 
     Ok(Json(models::BlueprintInfoResponse {
-        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(
+            &mapping_context,
+            &ledger_state,
+        )?),
         info: Box::new(to_api_blueprint_info(&mapping_context, blueprint_meta)?),
     }))
 }

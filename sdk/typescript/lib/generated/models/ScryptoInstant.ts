@@ -16,51 +16,60 @@ import { exists, mapValues } from '../runtime';
 /**
  * 
  * @export
- * @interface Instant
+ * @interface ScryptoInstant
  */
-export interface Instant {
+export interface ScryptoInstant {
     /**
-     * An integer between `0` and `10^14`, marking the unix timestamp in ms.
-     * @type {number}
-     * @memberof Instant
-     */
-    unix_timestamp_ms: number;
-    /**
-     * The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use "Z" denoting UTC and include milliseconds.
-     * EG: `2023-01-26T18:30:09.453Z`.
+     * A decimal string-encoded 64-bit signed integer, marking the unix timestamp in seconds.
+     * 
+     * Note: this field accurately represents the full range of possible on-ledger values (i.e.
+     * `-2^63 <= seconds < 2^63`). This is contrary to the `InstantMs` type used in other
+     * places of this API.
      * @type {string}
-     * @memberof Instant
+     * @memberof ScryptoInstant
      */
-    date_time: string;
+    unix_timestamp_seconds: string;
+    /**
+     * The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use "Z"
+     * (denoting UTC) and include milliseconds (which are always `000`).
+     * E.g.: `2023-01-26T18:30:09.000Z`.
+     * 
+     * Note: This field will *not* be present if the actual on-ledger `unix_timestamp_seconds`
+     * value is outside the basic range supported by the RFC 3339 / ISO 8601 standard, which
+     * starts at year 1583 (i.e. the beginning of the Gregorian calendar) and ends at year
+     * 9999 (inclusive).
+     * @type {string}
+     * @memberof ScryptoInstant
+     */
+    date_time?: string;
 }
 
 /**
- * Check if a given object implements the Instant interface.
+ * Check if a given object implements the ScryptoInstant interface.
  */
-export function instanceOfInstant(value: object): boolean {
+export function instanceOfScryptoInstant(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "unix_timestamp_ms" in value;
-    isInstance = isInstance && "date_time" in value;
+    isInstance = isInstance && "unix_timestamp_seconds" in value;
 
     return isInstance;
 }
 
-export function InstantFromJSON(json: any): Instant {
-    return InstantFromJSONTyped(json, false);
+export function ScryptoInstantFromJSON(json: any): ScryptoInstant {
+    return ScryptoInstantFromJSONTyped(json, false);
 }
 
-export function InstantFromJSONTyped(json: any, ignoreDiscriminator: boolean): Instant {
+export function ScryptoInstantFromJSONTyped(json: any, ignoreDiscriminator: boolean): ScryptoInstant {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'unix_timestamp_ms': json['unix_timestamp_ms'],
-        'date_time': json['date_time'],
+        'unix_timestamp_seconds': json['unix_timestamp_seconds'],
+        'date_time': !exists(json, 'date_time') ? undefined : json['date_time'],
     };
 }
 
-export function InstantToJSON(value?: Instant | null): any {
+export function ScryptoInstantToJSON(value?: ScryptoInstant | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -69,7 +78,7 @@ export function InstantToJSON(value?: Instant | null): any {
     }
     return {
         
-        'unix_timestamp_ms': value.unix_timestamp_ms,
+        'unix_timestamp_seconds': value.unix_timestamp_seconds,
         'date_time': value.date_time,
     };
 }

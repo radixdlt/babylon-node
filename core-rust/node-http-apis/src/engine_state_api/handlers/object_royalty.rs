@@ -27,10 +27,13 @@ pub(crate) async fn handle_object_royalty(
     let loader = ObjectRoyaltyLoader::new(&database);
     let method_amounts = loader.load_method_amounts(&node_id)?;
 
-    let header = database.proving_ledger_header();
+    let ledger_state = database.at_ledger_state();
 
     Ok(Json(models::ObjectRoyaltyResponse {
-        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(
+            &mapping_context,
+            &ledger_state,
+        )?),
         method_royalties: method_amounts
             .into_iter()
             .map(|method_amount| to_api_method_royalty(&mapping_context, method_amount))

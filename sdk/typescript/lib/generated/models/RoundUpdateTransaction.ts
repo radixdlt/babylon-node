@@ -13,12 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { Instant } from './Instant';
+import type { InstantMs } from './InstantMs';
 import {
-    InstantFromJSON,
-    InstantFromJSONTyped,
-    InstantToJSON,
-} from './Instant';
+    InstantMsFromJSON,
+    InstantMsFromJSONTyped,
+    InstantMsToJSON,
+} from './InstantMs';
 import type { LeaderProposalHistory } from './LeaderProposalHistory';
 import {
     LeaderProposalHistoryFromJSON,
@@ -34,10 +34,10 @@ import {
 export interface RoundUpdateTransaction {
     /**
      * 
-     * @type {Instant}
+     * @type {InstantMs}
      * @memberof RoundUpdateTransaction
      */
-    proposer_timestamp: Instant;
+    proposer_timestamp: InstantMs;
     /**
      * An integer between `0` and `10^10`, marking the epoch.
      * @type {number}
@@ -81,7 +81,7 @@ export function RoundUpdateTransactionFromJSONTyped(json: any, ignoreDiscriminat
     }
     return {
         
-        'proposer_timestamp': InstantFromJSON(json['proposer_timestamp']),
+        'proposer_timestamp': InstantMsFromJSON(json['proposer_timestamp']),
         'epoch': json['epoch'],
         'round_in_epoch': json['round_in_epoch'],
         'leader_proposal_history': LeaderProposalHistoryFromJSON(json['leader_proposal_history']),
@@ -97,7 +97,7 @@ export function RoundUpdateTransactionToJSON(value?: RoundUpdateTransaction | nu
     }
     return {
         
-        'proposer_timestamp': InstantToJSON(value.proposer_timestamp),
+        'proposer_timestamp': InstantMsToJSON(value.proposer_timestamp),
         'epoch': value.epoch,
         'round_in_epoch': value.round_in_epoch,
         'leader_proposal_history': LeaderProposalHistoryToJSON(value.leader_proposal_history),

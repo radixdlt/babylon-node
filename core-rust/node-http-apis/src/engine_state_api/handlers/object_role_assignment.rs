@@ -31,10 +31,13 @@ pub(crate) async fn handle_object_role_assignment(
         attached_modules,
     } = loader.load_role_assignment(&node_id)?;
 
-    let header = database.proving_ledger_header();
+    let ledger_state = database.at_ledger_state();
 
     Ok(Json(models::ObjectRoleAssignmentResponse {
-        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(
+            &mapping_context,
+            &ledger_state,
+        )?),
         owner: Box::new(to_api_owner_role_entry(&mapping_context, owner_role_entry)?),
         main_module_roles: to_api_module_roles(&mapping_context, main_module_roles)?,
         attached_modules: attached_modules

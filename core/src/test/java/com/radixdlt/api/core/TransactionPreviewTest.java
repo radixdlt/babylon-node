@@ -66,6 +66,7 @@ package com.radixdlt.api.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.collect.ContiguousSet;
 import com.google.common.collect.MoreCollectors;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.client.ApiException;
@@ -127,7 +128,7 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
       // Sanity check - a preview of the same manifest at the current version should result in the
       // vault having "2x from Faucet" amount:
       var previewedDirectlyAfterFirstCommit = previewAtVersion(manifest, Optional.empty());
-      assertThat(getVaultBalance(previewedDirectlyAfterFirstCommit, vaultAddress))
+      assertThat(getVaultBalance(previewedDirectlyAfterFirstCommit.getReceipt(), vaultAddress))
           .isEqualTo(2 * FAUCET_AMOUNT);
 
       // Execute precisely the deposit that was just previewed:
@@ -137,14 +138,69 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
 
       // Sanity check - a preview now should give "3x from Faucet" amount:
       var previewedAfterSecondCommit = previewAtVersion(manifest, Optional.empty());
-      assertThat(getVaultBalance(previewedAfterSecondCommit, vaultAddress))
+      assertThat(getVaultBalance(previewedAfterSecondCommit.getReceipt(), vaultAddress))
           .isEqualTo(3 * FAUCET_AMOUNT);
 
       // And a true assert: a preview executed *at version* of the first commit returns exactly the
       // same receipt as the preview executed *directly* on top of the first commit.
       var previewedAsOfAfterFirstCommit =
           previewAtVersion(manifest, Optional.of(firstCommit.stateVersion()));
-      assertThat(previewedAsOfAfterFirstCommit).isEqualTo(previewedDirectlyAfterFirstCommit);
+      assertThat(previewedAsOfAfterFirstCommit.getReceipt())
+          .isEqualTo(previewedDirectlyAfterFirstCommit.getReceipt());
+    }
+  }
+
+  @Test
+  public void transaction_preview_returns_actual_or_synthetic_ledger_header() throws Exception {
+    try (var test = buildTest(true, 20L)) {
+      test.suppressUnusedWarning();
+
+      // To avoid assumptions about "when proofs are created", we will scan a certain version range:
+      var stateVersionRange = ContiguousSet.closed(50L, 60L);
+
+      // Arrange a ledger state where at least one state version does not have ledger proof:
+      test.runUntilState(NodesPredicate.allAtExactlyStateVersion(stateVersionRange.first()));
+      getApiHelper().submitAndWaitForSuccess(test, Manifest.valid(), List.of());
+      test.runUntilState(NodesPredicate.allAtExactlyStateVersion(stateVersionRange.last()));
+
+      // Locate one example of a state version which has and one which has no ledger proof:
+      var stateVersionsWithProofInRange =
+          this.getStreamApi()
+              .streamProofsPost(
+                  new StreamProofsRequest()
+                      .filter(
+                          new StreamProofsFilterAny()
+                              .fromStateVersion(stateVersionRange.first())
+                              .type(StreamProofsFilterType.ANY))
+                      .network(networkLogicalName)
+                      .maxPageSize(stateVersionRange.size()))
+              .getPage()
+              .stream()
+              .map(proof -> proof.getLedgerHeader().getStateVersion())
+              .filter(stateVersionRange::contains)
+              .toList();
+
+      var exampleHistoricalVersionWithProof = stateVersionsWithProofInRange.get(0);
+      // Just a sanity check that it is indeed historical:
+      assertThat(exampleHistoricalVersionWithProof).isLessThan(stateVersionRange.last());
+
+      // And this one definitely is historical, since the top of ledger would have a proof:
+      var exampleHistoricalVersionWithoutProof =
+          stateVersionRange.stream()
+              .filter(stateVersion -> !stateVersionsWithProofInRange.contains(stateVersion))
+              .findFirst()
+              .get();
+
+      // Assert that returned ledger headers point at the exact state versions in both cases:
+      var previewedAtVersionWithProof =
+          previewAtVersion(Manifest.valid(), Optional.of(exampleHistoricalVersionWithProof));
+      assertThat(previewedAtVersionWithProof.getAtLedgerState().getStateVersion())
+          .isEqualTo(exampleHistoricalVersionWithProof);
+
+      var previewedAtVersionWithoutProof =
+          previewAtVersion(Manifest.valid(), Optional.of(exampleHistoricalVersionWithoutProof));
+      assertThat(previewedAtVersionWithoutProof.getAtLedgerState().getStateVersion())
+          .isEqualTo(exampleHistoricalVersionWithoutProof);
     }
   }
 
@@ -167,7 +223,7 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
 
       // Assert that the oldest available version is fine:
       var atOldestVersion = previewAtVersion(Manifest.valid(), Optional.of(oldestAvailableVersion));
-      assertThat(atOldestVersion.getStatus()).isEqualTo(TransactionStatus.SUCCEEDED);
+      assertThat(atOldestVersion.getReceipt().getStatus()).isEqualTo(TransactionStatus.SUCCEEDED);
 
       // ... but the 1-too-old is not:
       var atTooOldVersion =
@@ -212,7 +268,7 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
 
       // The current version can still be requested explicitly, though:
       var atOldestVersion = previewAtVersion(Manifest.valid(), Optional.of(10L));
-      assertThat(atOldestVersion.getStatus()).isEqualTo(TransactionStatus.SUCCEEDED);
+      assertThat(atOldestVersion.getReceipt().getStatus()).isEqualTo(TransactionStatus.SUCCEEDED);
     }
   }
 
@@ -275,7 +331,7 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
     }
   }
 
-  private TransactionReceipt previewAtVersion(
+  private TransactionPreviewResponse previewAtVersion(
       Functions.Func1<Manifest.Parameters, String> manifest, Optional<Long> atStateVersion)
       throws ApiException {
     return getTransactionApi()
@@ -299,8 +355,7 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
                         .useFreeCredit(false)
                         .skipEpochCheck(false)
                         .assumeAllSignatureProofs(true))
-                .manifest(manifest.apply(new Manifest.Parameters(networkDefinition))))
-        .getReceipt();
+                .manifest(manifest.apply(new Manifest.Parameters(networkDefinition))));
   }
 
   private static double getVaultBalance(TransactionReceipt receipt, String vaultAddress) {

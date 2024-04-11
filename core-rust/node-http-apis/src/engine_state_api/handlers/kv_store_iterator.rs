@@ -46,10 +46,13 @@ pub(crate) async fn handle_kv_store_iterator(
     let page = paging_support
         .get_page(|from| data_loader.iter_kv_store_keys(&node_id, &kv_store_meta, from))?;
 
-    let header = database.proving_ledger_header();
+    let ledger_state = database.at_ledger_state();
 
     Ok(Json(models::KeyValueStoreIteratorResponse {
-        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(
+            &mapping_context,
+            &ledger_state,
+        )?),
         page: page
             .items
             .into_iter()
