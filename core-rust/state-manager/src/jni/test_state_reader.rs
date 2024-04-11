@@ -258,7 +258,7 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_epoch(
     jni_sbor_coded_call(&env, request_payload, |_: ()| -> u64 {
         let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
         let database = database.snapshot();
-        database.get_epoch().number()
+        database.get_epoch_and_round().0.number()
     })
 }
 

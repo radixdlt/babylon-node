@@ -63,7 +63,10 @@ pub(crate) async fn handle_state_component(
     let header = read_current_ledger_header(database.deref());
 
     Ok(Json(models::StateComponentResponse {
-        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(
+            &mapping_context,
+            &header.into(),
+        )?),
         info: Some(to_api_type_info_substate(
             &mapping_context,
             &StateMappingLookups::default(),

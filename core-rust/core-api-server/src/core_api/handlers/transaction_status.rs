@@ -41,7 +41,7 @@ pub(crate) async fn handle_transaction_status(
     }
 
     let txn_state_version_opt = database.get_txn_state_version_by_identifier(&intent_hash);
-    let current_epoch = database.get_epoch();
+    let current_epoch = database.get_epoch_and_round().0;
 
     let invalid_from_epoch = known_pending_payloads
         .iter()

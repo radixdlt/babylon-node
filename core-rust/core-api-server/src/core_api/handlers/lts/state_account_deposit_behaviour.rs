@@ -198,7 +198,10 @@ fn response(
 ) -> Result<Json<models::LtsStateAccountDepositBehaviourResponse>, ResponseError<()>> {
     Ok(Json(models::LtsStateAccountDepositBehaviourResponse {
         state_version: to_api_state_version(header.state_version)?,
-        ledger_header_summary: Box::new(to_api_ledger_header_summary(context, header)?),
+        ledger_header_summary: Box::new(to_api_ledger_header_summary(
+            context,
+            &header.clone().into(),
+        )?),
         default_deposit_rule: match default_deposit_rule {
             DefaultDepositRule::Accept => models::DefaultDepositRule::Accept,
             DefaultDepositRule::Reject => models::DefaultDepositRule::Reject,

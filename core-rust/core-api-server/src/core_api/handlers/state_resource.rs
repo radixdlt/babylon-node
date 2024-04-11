@@ -76,7 +76,10 @@ pub(crate) async fn handle_state_resource(
     let header = read_current_ledger_header(database.deref());
 
     Ok(Json(models::StateResourceResponse {
-        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(
+            &mapping_context,
+            &header.into(),
+        )?),
         manager: Some(to_api_resource_manager(&mapping_context, &manager)?),
         owner_role: Some(to_api_owner_role_substate(
             &mapping_context,
