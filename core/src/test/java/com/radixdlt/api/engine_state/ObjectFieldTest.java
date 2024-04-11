@@ -66,13 +66,21 @@ package com.radixdlt.api.engine_state;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.collect.ContiguousSet;
 import com.radixdlt.api.DeterministicEngineStateApiTestBase;
+import com.radixdlt.api.core.generated.models.LedgerHeader;
+import com.radixdlt.api.core.generated.models.LedgerProof;
+import com.radixdlt.api.core.generated.models.StreamProofsFilterAny;
+import com.radixdlt.api.core.generated.models.StreamProofsRequest;
 import com.radixdlt.api.engine_state.generated.models.*;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.EpochRound;
 import com.radixdlt.harness.predicates.NodesPredicate;
+import com.radixdlt.rev2.Manifest;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.junit.Test;
 
@@ -153,7 +161,7 @@ public final class ObjectFieldTest extends DeterministicEngineStateApiTestBase {
   }
 
   @Test
-  public void engine_state_api_object_field_support_history() throws Exception {
+  public void engine_state_api_object_field_supports_history() throws Exception {
     try (var test = buildRunningServerTest()) {
       test.suppressUnusedWarning();
 
@@ -192,6 +200,95 @@ public final class ObjectFieldTest extends DeterministicEngineStateApiTestBase {
                               .type(LedgerStateSelectorType.BYSTATEVERSION)))
                   .getContent());
       assertThat(epochRoundAtVersion10).isLessThan(epochRoundAtVersion19);
+    }
+  }
+
+  @Test
+  public void engine_state_api_returns_accurate_historical_state_summary() throws Exception {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
+
+      // We will query for some arbitrary field (that we know exists since very early versions):
+      final var baseRequest =
+          new ObjectFieldRequest()
+              .entityAddress(getCoreApiHelper().getWellKnownAddresses().getConsensusManager())
+              .fieldName("state");
+
+      // Ensure we have some non-trivial history:
+      final var historicalVersions = ContiguousSet.closed(2L, 20L);
+      getCoreApiHelper().submitAndWaitForSuccess(test, Manifest.valid(), List.of());
+      test.runUntilState(NodesPredicate.anyAtOrOverStateVersion(historicalVersions.last()));
+
+      // Capture actually-existing ledger proofs:
+      final var versionsToActualHeaders =
+          getCoreApiHelper()
+              .streamApi()
+              .streamProofsPost(
+                  new StreamProofsRequest()
+                      .network(networkLogicalName)
+                      .filter(
+                          new StreamProofsFilterAny().fromStateVersion(historicalVersions.first())))
+              .getPage()
+              .stream()
+              .map(LedgerProof::getLedgerHeader)
+              .collect(
+                  Collectors.toMap(
+                      LedgerHeader::getStateVersion,
+                      Function.identity(),
+                      (left, right) -> left,
+                      TreeMap::new));
+
+      // (sanity check only) There are some proofs, and also some state versions in-between proofs:
+      assertThat(versionsToActualHeaders).isNotEmpty();
+      assertThat(versionsToActualHeaders.size()).isLessThan(historicalVersions.size());
+
+      // We can assert something about responses for every historical state version:
+      for (Long historicalVersion : historicalVersions) {
+        final var historicalResponse =
+            getObjectsApi()
+                .objectFieldPost(
+                    baseRequest.atLedgerState(
+                        new VersionLedgerStateSelector()
+                            .stateVersion(historicalVersion)
+                            .type(LedgerStateSelectorType.BYSTATEVERSION)));
+
+        // Assert that the returned state version is exactly the requested one:
+        final var historicalLedgerState = historicalResponse.getAtLedgerState();
+        assertThat(historicalLedgerState.getStateVersion()).isEqualTo(historicalVersion);
+
+        // Assert on those items of the summary which must come from the proving header:
+        final var atOrNextHeader =
+            versionsToActualHeaders.ceilingEntry(historicalVersion).getValue();
+        final var historicalHeaderSummary = historicalLedgerState.getHeaderSummary();
+        assertThat(historicalHeaderSummary.getEpochRound().getEpoch())
+            .isEqualTo(atOrNextHeader.getEpoch());
+        assertThat(historicalHeaderSummary.getEpochRound().getRound())
+            .isEqualTo(atOrNextHeader.getRound());
+        assertThat(historicalHeaderSummary.getProposerTimestamp().getUnixTimestampMs())
+            .isEqualTo(atOrNextHeader.getProposerTimestampMs());
+
+        // Assert on the returned ledger hashes...
+        final var historicalLedgerHashes = historicalHeaderSummary.getLedgerHashes();
+        final var atOrNextHeaderHashes = atOrNextHeader.getHashes();
+        if (atOrNextHeader.getStateVersion().equals(historicalVersion)) {
+          // ... if we happened to query exactly at the "proof point", all these hashes must match:
+          assertThat(historicalLedgerHashes.getStateTreeHash())
+              .isEqualTo(atOrNextHeaderHashes.getStateTreeHash());
+          assertThat(historicalLedgerHashes.getTransactionTreeHash())
+              .isEqualTo(atOrNextHeaderHashes.getTransactionTreeHash());
+          assertThat(historicalLedgerHashes.getReceiptTreeHash())
+              .isEqualTo(atOrNextHeaderHashes.getReceiptTreeHash());
+        } else {
+          // ... if we happened to query at a version in-between proofs, none of these hashes can
+          // match:
+          assertThat(historicalLedgerHashes.getStateTreeHash())
+              .isNotEqualTo(atOrNextHeaderHashes.getStateTreeHash());
+          assertThat(historicalLedgerHashes.getTransactionTreeHash())
+              .isNotEqualTo(atOrNextHeaderHashes.getTransactionTreeHash());
+          assertThat(historicalLedgerHashes.getReceiptTreeHash())
+              .isNotEqualTo(atOrNextHeaderHashes.getReceiptTreeHash());
+        }
+      }
     }
   }
 

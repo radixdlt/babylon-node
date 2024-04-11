@@ -99,6 +99,10 @@ public class CoreApiHelper {
     return new StatusApi(apiClient).statusNetworkConfigurationPost().getWellKnownAddresses();
   }
 
+  public StreamApi streamApi() {
+    return new StreamApi(apiClient);
+  }
+
   public enum TransactionOutcome {
     CommittedSuccess,
     CommittedFailure,
