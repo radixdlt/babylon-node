@@ -14,7 +14,7 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct RoundUpdateTransaction {
     #[serde(rename = "proposer_timestamp")]
-    pub proposer_timestamp: Box<crate::core_api::generated::models::Instant>,
+    pub proposer_timestamp: Box<crate::core_api::generated::models::InstantMs>,
     /// An integer between `0` and `10^10`, marking the epoch. 
     #[serde(rename = "epoch")]
     pub epoch: i64,
@@ -26,7 +26,7 @@ pub struct RoundUpdateTransaction {
 }
 
 impl RoundUpdateTransaction {
-    pub fn new(proposer_timestamp: crate::core_api::generated::models::Instant, epoch: i64, round_in_epoch: i64, leader_proposal_history: crate::core_api::generated::models::LeaderProposalHistory) -> RoundUpdateTransaction {
+    pub fn new(proposer_timestamp: crate::core_api::generated::models::InstantMs, epoch: i64, round_in_epoch: i64, leader_proposal_history: crate::core_api::generated::models::LeaderProposalHistory) -> RoundUpdateTransaction {
         RoundUpdateTransaction {
             proposer_timestamp: Box::new(proposer_timestamp),
             epoch,

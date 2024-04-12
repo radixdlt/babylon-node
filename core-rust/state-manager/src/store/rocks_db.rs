@@ -62,7 +62,6 @@
  * permissions under this License.
  */
 
-use std::cmp::max;
 use std::collections::HashSet;
 use std::fmt;
 
@@ -934,7 +933,7 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
                 );
                 self.populate_state_tree_associated_substate_values(current_version);
                 let status = StateTreeAssociatedValuesStatusV1 {
-                    values_associated_from: current_version,
+                    historical_substate_values_available_from: current_version,
                 };
                 extension_data_cf.put(
                     &ExtensionsDataKey::StateTreeAssociatedValuesStatus,
@@ -945,8 +944,8 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
         } else {
             if let Some(status) = status {
                 info!(
-                    "Disabling historical Substate values (were enabled since {:?})",
-                    status.values_associated_from
+                    "Disabling historical Substate values (were available from {:?})",
+                    status.historical_substate_values_available_from
                 );
                 extension_data_cf.delete(&ExtensionsDataKey::StateTreeAssociatedValuesStatus);
             } else {
@@ -1013,22 +1012,12 @@ impl<R: ReadableRocks> ConfigurableDatabase for StateManagerDatabase<R> {
         self.config.enable_local_transaction_execution_index
     }
 
-    fn get_first_stored_historical_state_version(&self) -> Option<StateVersion> {
-        if !self.config.enable_historical_substate_values {
-            return None; // state history feature disabled explicitly
-        }
+    fn is_state_history_enabled(&self) -> bool {
+        self.config.enable_historical_substate_values
+    }
 
-        let first_state_tree_version = self
-            .open_read_context()
-            .cf(StaleStateTreePartsCf)
-            .get_first_key();
-        let Some(first_state_tree_version) = first_state_tree_version else {
-            return None; // JMT past gets immediately GC'ed - the history length must be 0
-        };
-
-        // we also need to take the "still collecting the max history length" case into account:
-        let values_associated_from = self
-            .open_read_context()
+    fn get_first_stored_historical_state_version(&self) -> StateVersion {
+        self.open_read_context()
             .cf(ExtensionsDataCf)
             .get(&ExtensionsDataKey::StateTreeAssociatedValuesStatus)
             .map(|bytes| {
@@ -1036,10 +1025,8 @@ impl<R: ReadableRocks> ConfigurableDatabase for StateManagerDatabase<R> {
                     .unwrap()
                     .into_latest()
             })
-            .expect("state history feature enabled, but its metadata not found")
-            .values_associated_from;
-
-        Some(max(first_state_tree_version, values_associated_from))
+            .expect("state history feature metadata not found")
+            .historical_substate_values_available_from
     }
 }
 
@@ -1195,25 +1182,8 @@ impl<R: WriteableRocks> CommitStore for StateManagerDatabase<R> {
 
         if self.config.enable_historical_substate_values {
             let associated_values_cf = db_context.cf(AssociatedStateTreeValuesCf);
-            for new_leaf_substate_key in commit_bundle.new_leaf_substate_keys {
-                let LeafSubstateKeyAssociation {
-                    tree_node_key,
-                    substate_key,
-                    cause,
-                } = new_leaf_substate_key;
-                let substate_value = match cause {
-                    AssociationCause::SubstateUpsert => commit_bundle
-                        .substate_store_update
-                        .get_upserted_value(&substate_key)
-                        .map(Cow::Borrowed)
-                        .expect("upserted value not found in database updates"),
-                    AssociationCause::TreeRestructuring => db_context
-                        .cf(SubstatesCf)
-                        .get(&substate_key)
-                        .map(Cow::Owned)
-                        .expect("unchanged value not found in substate database"),
-                };
-                associated_values_cf.put(&tree_node_key, substate_value.as_ref());
+            for association in commit_bundle.new_leaf_substate_keys {
+                associated_values_cf.put(&association.tree_node_key, &association.substate_value);
             }
         }
 
@@ -1844,6 +1814,31 @@ impl<R: WriteableRocks> StateTreeGcStore for StateManagerDatabase<R> {
             .iterate(Direction::Forward)
     }
 
+    fn progress_historical_substate_values_availability(&self, available_from: StateVersion) {
+        let db_context = self.open_rw_context();
+        let extension_data_cf = db_context.cf(ExtensionsDataCf);
+        let status = extension_data_cf
+            .get(&ExtensionsDataKey::StateTreeAssociatedValuesStatus)
+            .map(|bytes| {
+                scrypto_decode::<VersionedStateTreeAssociatedValuesStatus>(&bytes)
+                    .unwrap()
+                    .into_latest()
+            });
+        let Some(mut status) = status else {
+            // The state history feature is simply not enabled.
+            return;
+        };
+        if available_from <= status.historical_substate_values_available_from {
+            // The state history feature was enabled after this state version.
+            return;
+        }
+        status.historical_substate_values_available_from = available_from;
+        extension_data_cf.put(
+            &ExtensionsDataKey::StateTreeAssociatedValuesStatus,
+            &scrypto_encode(&VersionedStateTreeAssociatedValuesStatus::from(status)).unwrap(),
+        );
+    }
+
     fn batch_delete_node<'a>(&self, keys: impl IntoIterator<Item = &'a StoredTreeNodeKey>) {
         let db_context = self.open_rw_context();
         let tree_nodes_cf = db_context.cf(StateTreeNodesCf);
@@ -1858,15 +1853,10 @@ impl<R: WriteableRocks> StateTreeGcStore for StateManagerDatabase<R> {
         }
     }
 
-    fn batch_delete_stale_tree_part<'a>(
-        &self,
-        state_versions: impl IntoIterator<Item = &'a StateVersion>,
-    ) {
-        let db_context = self.open_rw_context();
-        let stale_tree_parts_cf = db_context.cf(StaleStateTreePartsCf);
-        for state_version in state_versions {
-            stale_tree_parts_cf.delete(state_version);
-        }
+    fn delete_stale_tree_parts_up_to_version(&self, to_state_version: StateVersion) {
+        self.open_rw_context()
+            .cf(StaleStateTreePartsCf)
+            .delete_range(&StateVersion::pre_genesis(), &to_state_version);
     }
 }
 

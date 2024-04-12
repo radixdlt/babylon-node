@@ -42,7 +42,7 @@ pub enum LtsTransactionSubmitErrorDetails {
         #[serde(rename = "is_intent_rejection_permanent")]
         is_intent_rejection_permanent: bool,
         #[serde(rename = "retry_from_timestamp", skip_serializing_if = "Option::is_none")]
-        retry_from_timestamp: Option<Box<crate::core_api::generated::models::Instant>>,
+        retry_from_timestamp: Option<Box<crate::core_api::generated::models::InstantMs>>,
         /// An integer between `0` and `10^10`, marking the epoch after which the node will consider recalculating the validity of the transaction. Only present if the rejection is temporary due to a header specifying a \"from epoch\" in the future. 
         #[serde(rename = "retry_from_epoch", skip_serializing_if = "Option::is_none")]
         retry_from_epoch: Option<i64>,

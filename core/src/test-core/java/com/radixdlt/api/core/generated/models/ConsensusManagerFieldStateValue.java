@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.ActiveValidatorIndex;
-import com.radixdlt.api.core.generated.models.Instant;
+import com.radixdlt.api.core.generated.models.InstantMs;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -52,10 +52,10 @@ public class ConsensusManagerFieldStateValue {
   private Boolean isStarted;
 
   public static final String JSON_PROPERTY_EFFECTIVE_EPOCH_START = "effective_epoch_start";
-  private Instant effectiveEpochStart;
+  private InstantMs effectiveEpochStart;
 
   public static final String JSON_PROPERTY_ACTUAL_EPOCH_START = "actual_epoch_start";
-  private Instant actualEpochStart;
+  private InstantMs actualEpochStart;
 
   public static final String JSON_PROPERTY_CURRENT_LEADER = "current_leader";
   private ActiveValidatorIndex currentLeader;
@@ -145,7 +145,7 @@ public class ConsensusManagerFieldStateValue {
   }
 
 
-  public ConsensusManagerFieldStateValue effectiveEpochStart(Instant effectiveEpochStart) {
+  public ConsensusManagerFieldStateValue effectiveEpochStart(InstantMs effectiveEpochStart) {
     this.effectiveEpochStart = effectiveEpochStart;
     return this;
   }
@@ -159,19 +159,19 @@ public class ConsensusManagerFieldStateValue {
   @JsonProperty(JSON_PROPERTY_EFFECTIVE_EPOCH_START)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Instant getEffectiveEpochStart() {
+  public InstantMs getEffectiveEpochStart() {
     return effectiveEpochStart;
   }
 
 
   @JsonProperty(JSON_PROPERTY_EFFECTIVE_EPOCH_START)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEffectiveEpochStart(Instant effectiveEpochStart) {
+  public void setEffectiveEpochStart(InstantMs effectiveEpochStart) {
     this.effectiveEpochStart = effectiveEpochStart;
   }
 
 
-  public ConsensusManagerFieldStateValue actualEpochStart(Instant actualEpochStart) {
+  public ConsensusManagerFieldStateValue actualEpochStart(InstantMs actualEpochStart) {
     this.actualEpochStart = actualEpochStart;
     return this;
   }
@@ -185,14 +185,14 @@ public class ConsensusManagerFieldStateValue {
   @JsonProperty(JSON_PROPERTY_ACTUAL_EPOCH_START)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Instant getActualEpochStart() {
+  public InstantMs getActualEpochStart() {
     return actualEpochStart;
   }
 
 
   @JsonProperty(JSON_PROPERTY_ACTUAL_EPOCH_START)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setActualEpochStart(Instant actualEpochStart) {
+  public void setActualEpochStart(InstantMs actualEpochStart) {
     this.actualEpochStart = actualEpochStart;
   }
 

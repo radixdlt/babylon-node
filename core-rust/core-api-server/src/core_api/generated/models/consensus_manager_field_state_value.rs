@@ -22,15 +22,15 @@ pub struct ConsensusManagerFieldStateValue {
     #[serde(rename = "is_started")]
     pub is_started: bool,
     #[serde(rename = "effective_epoch_start")]
-    pub effective_epoch_start: Box<crate::core_api::generated::models::Instant>,
+    pub effective_epoch_start: Box<crate::core_api::generated::models::InstantMs>,
     #[serde(rename = "actual_epoch_start")]
-    pub actual_epoch_start: Box<crate::core_api::generated::models::Instant>,
+    pub actual_epoch_start: Box<crate::core_api::generated::models::InstantMs>,
     #[serde(rename = "current_leader", skip_serializing_if = "Option::is_none")]
     pub current_leader: Option<Box<crate::core_api::generated::models::ActiveValidatorIndex>>,
 }
 
 impl ConsensusManagerFieldStateValue {
-    pub fn new(epoch: i64, round: i64, is_started: bool, effective_epoch_start: crate::core_api::generated::models::Instant, actual_epoch_start: crate::core_api::generated::models::Instant) -> ConsensusManagerFieldStateValue {
+    pub fn new(epoch: i64, round: i64, is_started: bool, effective_epoch_start: crate::core_api::generated::models::InstantMs, actual_epoch_start: crate::core_api::generated::models::InstantMs) -> ConsensusManagerFieldStateValue {
         ConsensusManagerFieldStateValue {
             epoch,
             round,

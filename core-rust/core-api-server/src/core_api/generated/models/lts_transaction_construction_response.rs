@@ -17,11 +17,11 @@ pub struct LtsTransactionConstructionResponse {
     #[serde(rename = "current_epoch")]
     pub current_epoch: i64,
     #[serde(rename = "ledger_clock")]
-    pub ledger_clock: Box<crate::core_api::generated::models::Instant>,
+    pub ledger_clock: Box<crate::core_api::generated::models::InstantMs>,
 }
 
 impl LtsTransactionConstructionResponse {
-    pub fn new(current_epoch: i64, ledger_clock: crate::core_api::generated::models::Instant) -> LtsTransactionConstructionResponse {
+    pub fn new(current_epoch: i64, ledger_clock: crate::core_api::generated::models::InstantMs) -> LtsTransactionConstructionResponse {
         LtsTransactionConstructionResponse {
             current_epoch,
             ledger_clock: Box::new(ledger_clock),
