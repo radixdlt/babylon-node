@@ -96,6 +96,7 @@ pub use crate::types::*;
 pub(crate) mod engine_prelude {
     pub use radix_engine::errors::*;
     pub use radix_engine::system::bootstrap::*;
+    pub use radix_engine::system::system_callback::*;
     pub use radix_engine::system::system_db_reader::*;
     pub use radix_engine::system::system_substates::*;
     pub use radix_engine::transaction::*;
@@ -112,7 +113,7 @@ pub(crate) mod engine_prelude {
     pub use radix_substate_store_queries::query::*;
     pub use radix_substate_store_queries::typed_substate_layout::*;
     pub use radix_transaction_scenarios::scenario::*;
-    pub use radix_transaction_scenarios::scenarios::*;
+
     pub use radix_transactions::builder::*;
     pub use radix_transactions::errors::*;
     pub use radix_transactions::manifest::*;

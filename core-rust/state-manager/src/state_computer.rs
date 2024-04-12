@@ -88,6 +88,7 @@ use crate::store::traits::scenario::{
 
 use crate::accumulator_tree::storage::ReadableAccuTreeStore;
 use crate::commit_bundle::CommitBundleBuilder;
+use radix_transaction_scenarios::executor::scenarios_vector;
 use std::ops::Deref;
 use std::sync::Arc;
 use std::time::{Instant, SystemTime};
@@ -969,7 +970,7 @@ impl StateComputer {
         next_nonce: u32,
         scenario_name: &str,
     ) -> Option<Box<dyn ScenarioInstance>> {
-        for scenario_builder in get_builder_for_every_scenario() {
+        for (_protocol_version, scenario_builder) in scenarios_vector() {
             let scenario =
                 scenario_builder(ScenarioCore::new(self.network.clone(), epoch, next_nonce));
             if scenario.metadata().logical_name == scenario_name {
