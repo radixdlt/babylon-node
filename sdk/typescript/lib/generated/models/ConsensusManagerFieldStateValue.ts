@@ -19,12 +19,12 @@ import {
     ActiveValidatorIndexFromJSONTyped,
     ActiveValidatorIndexToJSON,
 } from './ActiveValidatorIndex';
-import type { Instant } from './Instant';
+import type { InstantMs } from './InstantMs';
 import {
-    InstantFromJSON,
-    InstantFromJSONTyped,
-    InstantToJSON,
-} from './Instant';
+    InstantMsFromJSON,
+    InstantMsFromJSONTyped,
+    InstantMsToJSON,
+} from './InstantMs';
 
 /**
  * 
@@ -52,16 +52,16 @@ export interface ConsensusManagerFieldStateValue {
     is_started: boolean;
     /**
      * 
-     * @type {Instant}
+     * @type {InstantMs}
      * @memberof ConsensusManagerFieldStateValue
      */
-    effective_epoch_start: Instant;
+    effective_epoch_start: InstantMs;
     /**
      * 
-     * @type {Instant}
+     * @type {InstantMs}
      * @memberof ConsensusManagerFieldStateValue
      */
-    actual_epoch_start: Instant;
+    actual_epoch_start: InstantMs;
     /**
      * 
      * @type {ActiveValidatorIndex}
@@ -97,8 +97,8 @@ export function ConsensusManagerFieldStateValueFromJSONTyped(json: any, ignoreDi
         'epoch': json['epoch'],
         'round': json['round'],
         'is_started': json['is_started'],
-        'effective_epoch_start': InstantFromJSON(json['effective_epoch_start']),
-        'actual_epoch_start': InstantFromJSON(json['actual_epoch_start']),
+        'effective_epoch_start': InstantMsFromJSON(json['effective_epoch_start']),
+        'actual_epoch_start': InstantMsFromJSON(json['actual_epoch_start']),
         'current_leader': !exists(json, 'current_leader') ? undefined : ActiveValidatorIndexFromJSON(json['current_leader']),
     };
 }
@@ -115,8 +115,8 @@ export function ConsensusManagerFieldStateValueToJSON(value?: ConsensusManagerFi
         'epoch': value.epoch,
         'round': value.round,
         'is_started': value.is_started,
-        'effective_epoch_start': InstantToJSON(value.effective_epoch_start),
-        'actual_epoch_start': InstantToJSON(value.actual_epoch_start),
+        'effective_epoch_start': InstantMsToJSON(value.effective_epoch_start),
+        'actual_epoch_start': InstantMsToJSON(value.actual_epoch_start),
         'current_leader': ActiveValidatorIndexToJSON(value.current_leader),
     };
 }

@@ -19,12 +19,12 @@ import {
     EpochRoundFromJSONTyped,
     EpochRoundToJSON,
 } from './EpochRound';
-import type { Instant } from './Instant';
+import type { InstantMs } from './InstantMs';
 import {
-    InstantFromJSON,
-    InstantFromJSONTyped,
-    InstantToJSON,
-} from './Instant';
+    InstantMsFromJSON,
+    InstantMsFromJSONTyped,
+    InstantMsToJSON,
+} from './InstantMs';
 import type { LedgerHashes } from './LedgerHashes';
 import {
     LedgerHashesFromJSON,
@@ -52,10 +52,10 @@ export interface LedgerHeaderSummary {
     ledger_hashes: LedgerHashes;
     /**
      * 
-     * @type {Instant}
+     * @type {InstantMs}
      * @memberof LedgerHeaderSummary
      */
-    proposer_timestamp: Instant;
+    proposer_timestamp: InstantMs;
 }
 
 /**
@@ -82,7 +82,7 @@ export function LedgerHeaderSummaryFromJSONTyped(json: any, ignoreDiscriminator:
         
         'epoch_round': EpochRoundFromJSON(json['epoch_round']),
         'ledger_hashes': LedgerHashesFromJSON(json['ledger_hashes']),
-        'proposer_timestamp': InstantFromJSON(json['proposer_timestamp']),
+        'proposer_timestamp': InstantMsFromJSON(json['proposer_timestamp']),
     };
 }
 
@@ -97,7 +97,7 @@ export function LedgerHeaderSummaryToJSON(value?: LedgerHeaderSummary | null): a
         
         'epoch_round': EpochRoundToJSON(value.epoch_round),
         'ledger_hashes': LedgerHashesToJSON(value.ledger_hashes),
-        'proposer_timestamp': InstantToJSON(value.proposer_timestamp),
+        'proposer_timestamp': InstantMsToJSON(value.proposer_timestamp),
     };
 }
 

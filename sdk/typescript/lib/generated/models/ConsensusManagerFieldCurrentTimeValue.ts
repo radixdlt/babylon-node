@@ -13,12 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { Instant } from './Instant';
+import type { InstantMs } from './InstantMs';
 import {
-    InstantFromJSON,
-    InstantFromJSONTyped,
-    InstantToJSON,
-} from './Instant';
+    InstantMsFromJSON,
+    InstantMsFromJSONTyped,
+    InstantMsToJSON,
+} from './InstantMs';
 
 /**
  * 
@@ -28,10 +28,10 @@ import {
 export interface ConsensusManagerFieldCurrentTimeValue {
     /**
      * 
-     * @type {Instant}
+     * @type {InstantMs}
      * @memberof ConsensusManagerFieldCurrentTimeValue
      */
-    proposer_timestamp: Instant;
+    proposer_timestamp: InstantMs;
 }
 
 /**
@@ -54,7 +54,7 @@ export function ConsensusManagerFieldCurrentTimeValueFromJSONTyped(json: any, ig
     }
     return {
         
-        'proposer_timestamp': InstantFromJSON(json['proposer_timestamp']),
+        'proposer_timestamp': InstantMsFromJSON(json['proposer_timestamp']),
     };
 }
 
@@ -67,7 +67,7 @@ export function ConsensusManagerFieldCurrentTimeValueToJSON(value?: ConsensusMan
     }
     return {
         
-        'proposer_timestamp': InstantToJSON(value.proposer_timestamp),
+        'proposer_timestamp': InstantMsToJSON(value.proposer_timestamp),
     };
 }
 

@@ -15,15 +15,15 @@
 pub struct RecoveryRoleRecoveryAttempt {
     #[serde(rename = "recovery_proposal")]
     pub recovery_proposal: Box<crate::core_api::generated::models::RecoveryProposal>,
-    #[serde(rename = "timed_recovery_allowed_after", skip_serializing_if = "Option::is_none")]
-    pub timed_recovery_allowed_after: Option<Box<crate::core_api::generated::models::Instant>>,
+    #[serde(rename = "allow_timed_recovery_after", skip_serializing_if = "Option::is_none")]
+    pub allow_timed_recovery_after: Option<Box<crate::core_api::generated::models::ScryptoInstant>>,
 }
 
 impl RecoveryRoleRecoveryAttempt {
     pub fn new(recovery_proposal: crate::core_api::generated::models::RecoveryProposal) -> RecoveryRoleRecoveryAttempt {
         RecoveryRoleRecoveryAttempt {
             recovery_proposal: Box::new(recovery_proposal),
-            timed_recovery_allowed_after: None,
+            allow_timed_recovery_after: None,
         }
     }
 }

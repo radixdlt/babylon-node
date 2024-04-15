@@ -136,12 +136,19 @@ pub trait ConfigurableDatabase {
 
     fn is_local_transaction_execution_index_enabled(&self) -> bool;
 
+    /// Returns [`true`] if the Node should be storing historical Substate values (and if it can
+    /// handle historical state requests).
+    ///
+    /// The exact [`StateVersion`] from which the history is available can be obtained from
+    /// [`Self::get_first_stored_historical_state_version()`].
+    fn is_state_history_enabled(&self) -> bool;
+
     /// Returns the first [`StateVersion`]s for which *historical* Substate values are currently
     /// available in the database.
     ///
-    /// Returns [`None`] if the state history feature is disabled, or if the history length
-    /// configuration is 0.
-    fn get_first_stored_historical_state_version(&self) -> Option<StateVersion>;
+    /// This method assumes that [`Self::is_state_history_enabled()`] returned [`true`] and *panics*
+    /// otherwise.
+    fn get_first_stored_historical_state_version(&self) -> StateVersion;
 }
 
 #[derive(Debug, Clone)]
@@ -155,33 +162,7 @@ pub struct CommittedTransactionBundle {
 #[derive(Debug, Clone)]
 pub struct LeafSubstateKeyAssociation {
     pub tree_node_key: StoredTreeNodeKey,
-    pub substate_key: DbSubstateKey,
-    pub cause: AssociationCause,
-}
-
-/// The reason of a particular [`LeafSubstateKeyAssociation`].
-#[derive(Debug, Clone)]
-pub enum AssociationCause {
-    /// A dominant, simple case: a Substate was created or updated. This naturally leads its leaf
-    /// node to be created within the state tree.
-    ///
-    /// The Substate's new value can be found in the [`DatabaseUpdates`].
-    SubstateUpsert,
-    /// The JMT-specific case: a leaf node had to be re-created at different key, because its nibble
-    /// path length has changed, because some other related tree nodes (on this path) were created
-    /// or deleted - see [`AssociatedSubstateValue`]'s docs for more details.
-    ///
-    /// The Substate's value was not changed and can be found in the [`SubstateDatabase`].
-    TreeRestructuring,
-}
-
-impl From<AssociatedSubstateValue<'_>> for AssociationCause {
-    fn from(value: AssociatedSubstateValue) -> Self {
-        match value {
-            AssociatedSubstateValue::Upserted(_) => AssociationCause::SubstateUpsert,
-            AssociatedSubstateValue::Unchanged => AssociationCause::TreeRestructuring,
-        }
-    }
+    pub substate_value: Vec<u8>,
 }
 
 pub mod vertex {
@@ -656,12 +637,13 @@ pub mod extensions {
 
     #[derive(Debug, Clone, Sbor)]
     pub struct StateTreeAssociatedValuesStatusV1 {
-        /// The [`StateVersion`] at which the "state history" feature was most recently enabled.
+        /// The (inclusive) [`StateVersion`] from which the past Substate values are currently
+        /// present in the dedicated "historical" table.
         ///
-        /// From this version (inclusive) onwards, the values of upserted Substates are persisted
-        /// in a dedicated historical table. This piece of metadata is needed to calculate whether
-        /// historical state at particular state version is available or not.
-        pub values_associated_from: StateVersion,
+        /// This value is initialized after the "state history" feature gets enabled (and finishes
+        /// its successful backfill). Then, every subsequent "state tree GC" run progresses it
+        /// forward appropriately.
+        pub historical_substate_values_available_from: StateVersion,
     }
 }
 
@@ -742,14 +724,15 @@ pub mod gc {
             &self,
         ) -> Box<dyn Iterator<Item = (StateVersion, StaleTreeParts)> + '_>;
 
+        /// Updates the metadata of the state history feature - but only if the given `available_from`
+        /// version is actually greater than the currently stored one.
+        fn progress_historical_substate_values_availability(&self, available_from: StateVersion);
+
         /// Deletes a batch of state hash tree nodes.
         fn batch_delete_node<'a>(&self, keys: impl IntoIterator<Item = &'a StoredTreeNodeKey>);
 
-        /// Deletes a batch of stale hash tree parts' records.
-        fn batch_delete_stale_tree_part<'a>(
-            &self,
-            state_versions: impl IntoIterator<Item = &'a StateVersion>,
-        );
+        /// Deletes all stale hash tree parts' records up to the given state version, *exclusive*.
+        fn delete_stale_tree_parts_up_to_version(&self, state_version: StateVersion);
     }
 
     /// A storage API tailored for the [`LedgerProofsGc`].

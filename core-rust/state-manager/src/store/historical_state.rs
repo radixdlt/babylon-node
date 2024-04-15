@@ -65,8 +65,12 @@
 use substate_store_impls::state_tree::entity_tier::EntityTier;
 
 use crate::engine_prelude::*;
+use crate::query::StateManagerSubstateQueries;
 use crate::store::traits::*;
-use crate::{ReadableRocks, StateManagerDatabase, StateVersion};
+use crate::{
+    CommittedTransactionIdentifiers, LedgerStateSummary, ReadableRocks, StateManagerDatabase,
+    StateVersion,
+};
 
 /// An implementation of a [`SubstateDatabase`] viewed at a specific [`StateVersion`].
 ///
@@ -87,15 +91,24 @@ impl<'t, T> StateTreeBasedSubstateDatabase<'t, T> {
         }
     }
 
-    pub fn at_state_version(&self) -> StateVersion {
-        self.at_state_version
-    }
-
     fn create_entity_tier(&self) -> EntityTier<'t, T> {
         EntityTier::new(
             self.tree_store,
             Some(self.at_state_version.number()).filter(|v| *v > 0),
         )
+    }
+}
+
+impl<'t, T: QueryableTransactionStore> StateTreeBasedSubstateDatabase<'t, T> {
+    fn at_transaction(&self) -> (StateVersion, CommittedTransactionIdentifiers) {
+        // The direct read from the unscoped underlying store is actually "historical": the
+        // `QueryableTransactionStore` is append-only, and we request for a state version which
+        // definitely existed at that point.
+        let transaction_identifiers = self
+            .tree_store
+            .get_committed_transaction_identifiers(self.at_state_version)
+            .expect("transaction at the scoped state version");
+        (self.at_state_version, transaction_identifiers)
     }
 }
 
@@ -185,10 +198,7 @@ impl<'t, T: LeafSubstateValueStore> StateTreeBasedSubstateDatabase<'t, T> {
 /// The implementation enum-dispatches either to the runtime store (when at current version), or to
 /// a historical store.
 pub enum VersionScopedSubstateDatabase<'s, S> {
-    Current {
-        database: &'s S,
-        current_version: StateVersion,
-    },
+    Current(&'s S),
     Historical(StateTreeBasedSubstateDatabase<'s, S>),
 }
 
@@ -212,16 +222,16 @@ impl<'s, R: ReadableRocks> VersionScopedSubstateDatabase<'s, StateManagerDatabas
     ) -> Result<Self, StateHistoryError> {
         let current_version = database.max_state_version();
         let Some(requested_version) = requested_version else {
-            return Ok(Self::current(database, current_version)); // implicit "use current version"
+            return Ok(Self::Current(database)); // implicit "use current version"
         };
         if requested_version == current_version {
-            return Ok(Self::current(database, current_version)); // explicit "use current version"
+            return Ok(Self::Current(database)); // explicit "use current version"
         }
 
-        let first_available_version = database.get_first_stored_historical_state_version();
-        let Some(first_available_version) = first_available_version else {
+        if !database.is_state_history_enabled() {
             return Err(StateHistoryError::StateHistoryDisabled);
         };
+        let first_available_version = database.get_first_stored_historical_state_version();
         if requested_version < first_available_version {
             return Err(StateHistoryError::StateVersionInTooDistantPast {
                 first_available_version,
@@ -231,31 +241,37 @@ impl<'s, R: ReadableRocks> VersionScopedSubstateDatabase<'s, StateManagerDatabas
             return Err(StateHistoryError::StateVersionInFuture { current_version });
         }
 
-        return Ok(Self::historical(database, requested_version));
+        return Ok(Self::Historical(StateTreeBasedSubstateDatabase::new(
+            database,
+            requested_version,
+        )));
     }
 
-    /// Returns the state version at which this store is scoped.
-    pub fn at_state_version(&self) -> StateVersion {
+    /// Returns the summary of the ledger's state at which this store is scoped.
+    ///
+    /// Note: this will be based on an actual ledger proof only if it exists at the scoped state
+    /// version (i.e. always in case of "current top of ledger", and also sometimes for incidental
+    /// historical ledger states). Otherwise, it will be composed based on the relevant Substates
+    /// read at the scoped version.
+    pub fn at_ledger_state(&self) -> LedgerStateSummary {
         match self {
-            VersionScopedSubstateDatabase::Current {
-                current_version, ..
-            } => *current_version,
-            VersionScopedSubstateDatabase::Historical(database) => database.at_state_version(),
+            VersionScopedSubstateDatabase::Current(database) => database
+                .get_latest_proof()
+                .expect("proof for current top of ledger")
+                .ledger_header
+                .into(),
+            VersionScopedSubstateDatabase::Historical(database) => {
+                let (state_version, transaction_identifiers) = database.at_transaction();
+                let (epoch, round) = database.get_epoch_and_round();
+                LedgerStateSummary {
+                    epoch,
+                    round,
+                    state_version,
+                    hashes: transaction_identifiers.resultant_ledger_hashes,
+                    proposer_timestamp_ms: transaction_identifiers.proposer_timestamp_ms,
+                }
+            }
         }
-    }
-
-    fn current(database: &'s StateManagerDatabase<R>, current_version: StateVersion) -> Self {
-        Self::Current {
-            database,
-            current_version,
-        }
-    }
-
-    fn historical(database: &'s StateManagerDatabase<R>, historical_version: StateVersion) -> Self {
-        Self::Historical(StateTreeBasedSubstateDatabase::new(
-            database,
-            historical_version,
-        ))
     }
 }
 
@@ -268,7 +284,7 @@ impl<'s, R: ReadableRocks> SubstateDatabase
         sort_key: &DbSortKey,
     ) -> Option<DbSubstateValue> {
         match self {
-            VersionScopedSubstateDatabase::Current { database, .. } => {
+            VersionScopedSubstateDatabase::Current(database) => {
                 database.get_substate(partition_key, sort_key)
             }
             VersionScopedSubstateDatabase::Historical(database) => {
@@ -283,7 +299,7 @@ impl<'s, R: ReadableRocks> SubstateDatabase
         from_sort_key: Option<&DbSortKey>,
     ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
         match self {
-            VersionScopedSubstateDatabase::Current { database, .. } => {
+            VersionScopedSubstateDatabase::Current(database) => {
                 database.list_entries_from(partition_key, from_sort_key)
             }
             VersionScopedSubstateDatabase::Historical(database) => {

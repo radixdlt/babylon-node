@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.EpochRound;
-import com.radixdlt.api.core.generated.models.Instant;
+import com.radixdlt.api.core.generated.models.InstantMs;
 import com.radixdlt.api.core.generated.models.LedgerHashes;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -47,7 +47,7 @@ public class LedgerHeaderSummary {
   private LedgerHashes ledgerHashes;
 
   public static final String JSON_PROPERTY_PROPOSER_TIMESTAMP = "proposer_timestamp";
-  private Instant proposerTimestamp;
+  private InstantMs proposerTimestamp;
 
   public LedgerHeaderSummary() { 
   }
@@ -104,7 +104,7 @@ public class LedgerHeaderSummary {
   }
 
 
-  public LedgerHeaderSummary proposerTimestamp(Instant proposerTimestamp) {
+  public LedgerHeaderSummary proposerTimestamp(InstantMs proposerTimestamp) {
     this.proposerTimestamp = proposerTimestamp;
     return this;
   }
@@ -118,14 +118,14 @@ public class LedgerHeaderSummary {
   @JsonProperty(JSON_PROPERTY_PROPOSER_TIMESTAMP)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Instant getProposerTimestamp() {
+  public InstantMs getProposerTimestamp() {
     return proposerTimestamp;
   }
 
 
   @JsonProperty(JSON_PROPERTY_PROPOSER_TIMESTAMP)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setProposerTimestamp(Instant proposerTimestamp) {
+  public void setProposerTimestamp(InstantMs proposerTimestamp) {
     this.proposerTimestamp = proposerTimestamp;
   }
 

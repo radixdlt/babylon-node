@@ -22,8 +22,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.Instant;
 import com.radixdlt.api.core.generated.models.RecoveryProposal;
+import com.radixdlt.api.core.generated.models.ScryptoInstant;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -34,15 +34,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   RecoveryRoleRecoveryAttempt.JSON_PROPERTY_RECOVERY_PROPOSAL,
-  RecoveryRoleRecoveryAttempt.JSON_PROPERTY_TIMED_RECOVERY_ALLOWED_AFTER
+  RecoveryRoleRecoveryAttempt.JSON_PROPERTY_ALLOW_TIMED_RECOVERY_AFTER
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class RecoveryRoleRecoveryAttempt {
   public static final String JSON_PROPERTY_RECOVERY_PROPOSAL = "recovery_proposal";
   private RecoveryProposal recoveryProposal;
 
-  public static final String JSON_PROPERTY_TIMED_RECOVERY_ALLOWED_AFTER = "timed_recovery_allowed_after";
-  private Instant timedRecoveryAllowedAfter;
+  public static final String JSON_PROPERTY_ALLOW_TIMED_RECOVERY_AFTER = "allow_timed_recovery_after";
+  private ScryptoInstant allowTimedRecoveryAfter;
 
   public RecoveryRoleRecoveryAttempt() { 
   }
@@ -73,29 +73,29 @@ public class RecoveryRoleRecoveryAttempt {
   }
 
 
-  public RecoveryRoleRecoveryAttempt timedRecoveryAllowedAfter(Instant timedRecoveryAllowedAfter) {
-    this.timedRecoveryAllowedAfter = timedRecoveryAllowedAfter;
+  public RecoveryRoleRecoveryAttempt allowTimedRecoveryAfter(ScryptoInstant allowTimedRecoveryAfter) {
+    this.allowTimedRecoveryAfter = allowTimedRecoveryAfter;
     return this;
   }
 
    /**
-   * Get timedRecoveryAllowedAfter
-   * @return timedRecoveryAllowedAfter
+   * Get allowTimedRecoveryAfter
+   * @return allowTimedRecoveryAfter
   **/
   @javax.annotation.Nullable
   @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_TIMED_RECOVERY_ALLOWED_AFTER)
+  @JsonProperty(JSON_PROPERTY_ALLOW_TIMED_RECOVERY_AFTER)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public Instant getTimedRecoveryAllowedAfter() {
-    return timedRecoveryAllowedAfter;
+  public ScryptoInstant getAllowTimedRecoveryAfter() {
+    return allowTimedRecoveryAfter;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TIMED_RECOVERY_ALLOWED_AFTER)
+  @JsonProperty(JSON_PROPERTY_ALLOW_TIMED_RECOVERY_AFTER)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setTimedRecoveryAllowedAfter(Instant timedRecoveryAllowedAfter) {
-    this.timedRecoveryAllowedAfter = timedRecoveryAllowedAfter;
+  public void setAllowTimedRecoveryAfter(ScryptoInstant allowTimedRecoveryAfter) {
+    this.allowTimedRecoveryAfter = allowTimedRecoveryAfter;
   }
 
 
@@ -112,12 +112,12 @@ public class RecoveryRoleRecoveryAttempt {
     }
     RecoveryRoleRecoveryAttempt recoveryRoleRecoveryAttempt = (RecoveryRoleRecoveryAttempt) o;
     return Objects.equals(this.recoveryProposal, recoveryRoleRecoveryAttempt.recoveryProposal) &&
-        Objects.equals(this.timedRecoveryAllowedAfter, recoveryRoleRecoveryAttempt.timedRecoveryAllowedAfter);
+        Objects.equals(this.allowTimedRecoveryAfter, recoveryRoleRecoveryAttempt.allowTimedRecoveryAfter);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(recoveryProposal, timedRecoveryAllowedAfter);
+    return Objects.hash(recoveryProposal, allowTimedRecoveryAfter);
   }
 
   @Override
@@ -125,7 +125,7 @@ public class RecoveryRoleRecoveryAttempt {
     StringBuilder sb = new StringBuilder();
     sb.append("class RecoveryRoleRecoveryAttempt {\n");
     sb.append("    recoveryProposal: ").append(toIndentedString(recoveryProposal)).append("\n");
-    sb.append("    timedRecoveryAllowedAfter: ").append(toIndentedString(timedRecoveryAllowedAfter)).append("\n");
+    sb.append("    allowTimedRecoveryAfter: ").append(toIndentedString(allowTimedRecoveryAfter)).append("\n");
     sb.append("}");
     return sb.toString();
   }

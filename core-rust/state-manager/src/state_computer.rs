@@ -214,9 +214,7 @@ impl GenesisCommitRequestFactory {
         &mut self,
         result: ScenarioPrepareResult,
     ) -> Option<GenesisCommitRequest> {
-        let Some(ledger_hashes) = result.committable_ledger_hashes else {
-            return None;
-        };
+        let ledger_hashes = result.committable_ledger_hashes?;
         self.state_version = self
             .state_version
             .next()
@@ -364,9 +362,11 @@ impl StateComputer {
         // our execution cache),
         //========================================================================================
 
-        let pending_transaction_base_state = AtState::PendingPreparingVertices {
-            base_committed_state_version: series_executor.latest_state_version(),
-        };
+        let pending_transaction_base_state =
+            AtState::Specific(AtSpecificState::PendingPreparingVertices {
+                base_committed_state_version: series_executor.latest_state_version(),
+                pending_transactions_root: prepare_request.ancestor_ledger_hashes.transaction_root,
+            });
 
         for raw_ancestor in prepare_request.ancestor_transactions {
             // TODO(optimization-only): We could avoid the hashing, decoding, signature verification
@@ -645,19 +645,6 @@ impl StateComputer {
         for rejection in rejected_transactions.iter() {
             debug!("TXN INVALID: {}", &rejection.error);
         }
-
-        let pending_rejected_transactions = pending_transaction_results
-            .iter()
-            .filter(|pending_result| pending_result.rejection_reason.is_some())
-            .map(|pending_result| {
-                (
-                    &pending_result.intent_hash,
-                    &pending_result.notarized_transaction_hash,
-                )
-            })
-            .collect::<Vec<_>>();
-        self.mempool_manager
-            .remove_rejected(&pending_rejected_transactions);
 
         let mut write_pending_transaction_result_cache =
             self.pending_transaction_result_cache.write();
