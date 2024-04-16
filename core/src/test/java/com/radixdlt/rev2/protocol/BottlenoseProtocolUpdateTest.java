@@ -65,24 +65,23 @@
 package com.radixdlt.rev2.protocol;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
-import static com.radixdlt.harness.predicates.NodePredicate.committedFailedUserTransaction;
 import static com.radixdlt.harness.predicates.NodesPredicate.*;
 import static com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import com.google.common.collect.ImmutableList;
-import com.google.inject.Key;
 import com.google.inject.Module;
-import com.google.inject.TypeLiteral;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.api.core.generated.api.StreamApi;
+import com.radixdlt.api.core.generated.api.TransactionApi;
+import com.radixdlt.api.core.generated.client.ApiException;
 import com.radixdlt.api.core.generated.models.*;
-import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.api.core.generated.models.TransactionStatus;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
-import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
@@ -90,22 +89,24 @@ import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.protocol.ProtocolUpdateTrigger;
 import com.radixdlt.rev2.*;
 import com.radixdlt.statecomputer.RustStateComputer;
-import com.radixdlt.transactions.PreparedNotarizedTransaction;
+import com.radixdlt.sync.TransactionsAndProofReader;
 import java.util.Arrays;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public final class AnemoneProtocolUpdateTest {
-  private static final String PROTOCOL_VERSION_NAME = ProtocolUpdateTrigger.ANEMONE;
-  private static final long PROTOCOL_UPDATE_EPOCH = 4L;
+public final class BottlenoseProtocolUpdateTest {
 
-  // Enact anemone at fixed epoch 4
+  private static final long BOTTLENOSE_EPOCH = 8;
+
   private static final ProtocolConfig PROTOCOL_CONFIG =
       new ProtocolConfig(
           ImmutableList.of(
+              // Update to Anemone at some arbitrary earlier moment (in case of dependencies):
               new ProtocolUpdateTrigger(
-                  PROTOCOL_VERSION_NAME, unconditionallyAtEpoch(PROTOCOL_UPDATE_EPOCH))));
+                  ProtocolUpdateTrigger.ANEMONE, unconditionallyAtEpoch(BOTTLENOSE_EPOCH - 3)),
+              new ProtocolUpdateTrigger(
+                  ProtocolUpdateTrigger.BOTTLENOSE, unconditionallyAtEpoch(BOTTLENOSE_EPOCH))));
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
@@ -132,98 +133,94 @@ public final class AnemoneProtocolUpdateTest {
                         PROTOCOL_CONFIG))));
   }
 
-  private PreparedNotarizedTransaction createGetTimeCallTxn(boolean secondPrecision) {
-    final var rawEnumValue = secondPrecision ? 1 : 0;
-    return TransactionBuilder.forTests()
-        .manifest(
-            Manifest.singleMethodCall(
-                ScryptoConstants.CONSENSUS_MANAGER_COMPONENT_ADDRESS,
-                "get_current_time",
-                "Enum<" + rawEnumValue + "u8>()"))
-        .prepare();
-  }
-
   @Test
-  public void test_get_current_time_second_precision() {
-    try (var test = createTest()) {
-      // Arrange: Start single node network
+  public void example_bottlenose_feature_is_available_only_after_update() throws ApiException {
+    // The easiest "new feature" to assert on is the AccountLocker package being published:
+    final var addressing = Addressing.ofNetwork(Network.INTEGRATIONTESTNET);
+    final var accountLockerCall =
+        new TransactionCallPreviewRequest()
+            .network(Network.INTEGRATIONTESTNET.getLogicalName())
+            .target(
+                new BlueprintFunctionTargetIdentifier()
+                    .packageAddress(
+                        addressing.encode(ScryptoConstants.ACCOUNT_LOCKER_PACKAGE_ADDRESS))
+                    .blueprintName("AccountLocker")
+                    .functionName("instantiate_simple")
+                    .type(TargetIdentifierType.FUNCTION))
+            .addArgumentsItem("4d0101"); // hex-encoded SBOR `true` (for `allow_recover` parameter)
+
+    final var coreApiHelper = new ProtocolUpdateTestUtils.CoreApiHelper();
+    try (var test = createTest(coreApiHelper.module())) {
+      // Arrange: Start a single node network, reach state just before Bottlenose:
       test.startAllNodes();
-      final var mempoolDispatcher =
-          test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
+      final var stateComputer = test.getInstance(0, RustStateComputer.class);
+      test.runUntilState(allAtOrOverEpoch(BOTTLENOSE_EPOCH - 1));
+      assertNotEquals(
+          ProtocolUpdateTrigger.BOTTLENOSE, stateComputer.protocolState().currentProtocolVersion());
 
-      // Act & Assert #1: Submit TimePrecision::Minute transaction and expect a success
-      final var minutePrecisionBeforeTx = createGetTimeCallTxn(false).raw();
-      mempoolDispatcher.dispatch(MempoolAdd.create(minutePrecisionBeforeTx));
-      test.runUntilState(allCommittedTransactionSuccess(minutePrecisionBeforeTx));
+      // Act: Preview a transaction trying to create an AccountLocker:
+      final var callBeforeBottlenose =
+          new TransactionApi(coreApiHelper.client()).transactionCallPreviewPost(accountLockerCall);
 
-      // Act & Assert #2: Submit TimePrecision::Second transaction and expect a failure
-      final var secondPrecisionBeforeTx = createGetTimeCallTxn(true).raw();
-      mempoolDispatcher.dispatch(MempoolAdd.create(secondPrecisionBeforeTx));
-      test.runUntilState(allNodesMatch(committedFailedUserTransaction(secondPrecisionBeforeTx)));
+      // Assert: It is rightfully rejected, since the package referenced in the manifest does not
+      // exist
+      assertEquals(TransactionStatus.REJECTED, callBeforeBottlenose.getStatus());
 
-      // Act & Assert #3: Run until protocol update epoch and verify protocol update
-      test.runUntilState(allAtOrOverEpoch(PROTOCOL_UPDATE_EPOCH));
-
+      // Arrange: Run the Bottlenose protocol update:
+      test.runUntilState(allAtOrOverEpoch(BOTTLENOSE_EPOCH));
       assertEquals(
-          PROTOCOL_VERSION_NAME,
-          test.getInstance(0, RustStateComputer.class).protocolState().currentProtocolVersion());
-      final var postProtocolUpdateProof =
-          test.getInstance(0, REv2TransactionsAndProofReader.class)
-              .getLatestProofBundle()
-              .orElseThrow();
-      assertEquals(
-          PROTOCOL_VERSION_NAME,
-          postProtocolUpdateProof
-              .closestProtocolUpdateInitProofOnOrBefore()
-              .unwrap()
-              .ledgerHeader()
-              .nextProtocolVersion()
-              .unwrap());
+          ProtocolUpdateTrigger.BOTTLENOSE, stateComputer.protocolState().currentProtocolVersion());
 
-      // Act & Assert #4: Submit TimePrecision::Minute transaction and expect a success
-      final var minutePrecisionAfterTx = createGetTimeCallTxn(false).raw();
-      mempoolDispatcher.dispatch(MempoolAdd.create(minutePrecisionAfterTx));
-      test.runUntilState(allCommittedTransactionSuccess(minutePrecisionAfterTx));
+      // Act: Preview the same transaction again:
+      final var callAfterBottlenose =
+          new TransactionApi(coreApiHelper.client()).transactionCallPreviewPost(accountLockerCall);
 
-      // Act & Assert #5: Submit TimePrecision::Second transaction and expect a success
-      final var secondPrecisionAfterTx = createGetTimeCallTxn(true).raw();
-      mempoolDispatcher.dispatch(MempoolAdd.create(secondPrecisionAfterTx));
-      test.runUntilState(allCommittedTransactionSuccess(secondPrecisionAfterTx));
+      // Assert: It rightfully fails, since the call returns a bucket (with a badge)
+      assertEquals(TransactionStatus.FAILED, callAfterBottlenose.getStatus());
+      assertTrue(callAfterBottlenose.getErrorMessage().contains("DropNonEmptyBucket"));
     }
   }
 
   @Test
-  public void core_api_streams_anemone_flash_transactions() throws Exception {
+  public void core_api_streams_bottlenose_flash_transactions() throws Exception {
     final var coreApiHelper = new ProtocolUpdateTestUtils.CoreApiHelper();
     try (var test = createTest(coreApiHelper.module())) {
-      // Start a single node network and run until protocol update:
+      // Arrange: Start a single Node network and capture the state version right before Bottlenose:
       test.startAllNodes();
-      test.runUntilState(allAtOrOverEpoch(PROTOCOL_UPDATE_EPOCH));
+      test.runUntilState(allAtOrOverEpoch(BOTTLENOSE_EPOCH - 1));
+      final var preBottlenoseStateVersion =
+          test.getInstance(0, TransactionsAndProofReader.class)
+              .getLatestProofBundle()
+              .get()
+              .resultantStateVersion();
 
-      // Fetch all flash transactions:
+      // Act: Run the Bottlenose update and fetch flash transactions executed by it:
+      test.runUntilState(allAtOrOverEpoch(BOTTLENOSE_EPOCH));
       final var committedFlashTransactions =
           new StreamApi(coreApiHelper.client())
                   .streamTransactionsPost(
                       new StreamTransactionsRequest()
                           .network(Network.INTEGRATIONTESTNET.getLogicalName())
                           .limit(1000)
-                          .fromStateVersion(1L))
+                          .fromStateVersion(preBottlenoseStateVersion))
                   .getTransactions()
                   .stream()
                   .filter(txn -> txn.getLedgerTransaction() instanceof FlashLedgerTransaction)
                   .toList();
 
-      // Assert some known facts about Anemone's flashes:
+      // Assert: We know the names of these flash transactions:
       assertEquals(
           Arrays.asList(
-              "anemone-validator-fee-fix",
-              "anemone-seconds-precision",
-              "anemone-vm-boot",
-              "anemone-pools"),
+              "bottlenose-owner-role-getter",
+              "bottlenose-system-patches",
+              "bottlenose-locker-package",
+              "bottlenose-account-try-deposit-or-refund",
+              "bottlenose-protocol-params-to-state"),
           committedFlashTransactions.stream()
               .map(txn -> ((FlashLedgerTransaction) txn.getLedgerTransaction()).getName())
               .toList());
 
+      // Assert: we know the contents of their receipts:
       ProtocolUpdateTestUtils.verifyFlashTransactionReceipts(committedFlashTransactions);
     }
   }

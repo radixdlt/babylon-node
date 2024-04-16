@@ -96,6 +96,11 @@ public final class ScryptoConstants {
           .build(new TypeToken<Natives.Call1<Tuple.Tuple0, ComponentAddress>>() {})
           .call(Tuple.Tuple0.of());
 
+  public static final PackageAddress ACCOUNT_LOCKER_PACKAGE_ADDRESS =
+      Natives.builder(ScryptoConstants::getAccountLockerPackageAddress)
+          .build(new TypeToken<Natives.Call1<Tuple.Tuple0, PackageAddress>>() {})
+          .call(Tuple.Tuple0.of());
+
   private static native byte[] getFaucetAddress(byte[] unused);
 
   private static native byte[] getXrdResourceAddress(byte[] unused);
@@ -103,4 +108,6 @@ public final class ScryptoConstants {
   private static native byte[] getConsensusManagerComponentAddress(byte[] unused);
 
   private static native byte[] getValidatorOwnerTokenResourceAddress(byte[] unused);
+
+  private static native byte[] getAccountLockerPackageAddress(byte[] unused);
 }

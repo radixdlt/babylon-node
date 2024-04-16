@@ -8,6 +8,7 @@ type Overrides<X> = <X as ProtocolUpdateDefinition>::Overrides;
 #[derive(Default, ScryptoSbor)]
 pub struct ProtocolUpdateContentOverrides {
     anemone: Option<Overrides<AnemoneProtocolUpdateDefinition>>,
+    bottlenose: Option<Overrides<BottlenoseProtocolUpdateDefinition>>,
     custom: HashMap<ProtocolVersionName, Overrides<CustomProtocolUpdateDefinition>>,
 }
 
@@ -18,6 +19,14 @@ impl ProtocolUpdateContentOverrides {
 
     pub fn with_anemone(mut self, config: Overrides<AnemoneProtocolUpdateDefinition>) -> Self {
         self.anemone = Some(config);
+        self
+    }
+
+    pub fn with_bottlenose(
+        mut self,
+        config: Overrides<BottlenoseProtocolUpdateDefinition>,
+    ) -> Self {
+        self.bottlenose = Some(config);
         self
     }
 
@@ -44,6 +53,12 @@ impl From<ProtocolUpdateContentOverrides> for RawProtocolUpdateContentOverrides 
         if let Some(config) = value.anemone {
             map.insert(
                 ProtocolVersionName::of(ANEMONE_PROTOCOL_VERSION).unwrap(),
+                scrypto_encode(&config).unwrap(),
+            );
+        }
+        if let Some(config) = value.bottlenose {
+            map.insert(
+                ProtocolVersionName::of(BOTTLENOSE_PROTOCOL_VERSION).unwrap(),
                 scrypto_encode(&config).unwrap(),
             );
         }

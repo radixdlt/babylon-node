@@ -9,6 +9,7 @@ const MAX_PROTOCOL_VERSION_NAME_LEN: usize = 16;
 
 pub const GENESIS_PROTOCOL_VERSION: &str = "babylon-genesis";
 pub const ANEMONE_PROTOCOL_VERSION: &str = "anemone";
+pub const BOTTLENOSE_PROTOCOL_VERSION: &str = "bottlenose";
 
 pub fn resolve_update_definition_for_version(
     protocol_version_name: &ProtocolVersionName,
@@ -18,6 +19,7 @@ pub fn resolve_update_definition_for_version(
         // Genesis only needs to be supported here to identify which configuration to use.
         GENESIS_PROTOCOL_VERSION => Some(Box::new(DefaultConfigOnlyProtocolDefinition)),
         ANEMONE_PROTOCOL_VERSION => Some(Box::new(AnemoneProtocolUpdateDefinition)),
+        BOTTLENOSE_PROTOCOL_VERSION => Some(Box::new(BottlenoseProtocolUpdateDefinition)),
         // Updates starting "custom-" are intended for use with tests, where the thresholds and config are injected on all nodes
         _ if CustomProtocolUpdateDefinition::matches(protocol_version_name) => {
             Some(Box::new(CustomProtocolUpdateDefinition))
