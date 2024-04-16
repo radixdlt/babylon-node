@@ -123,7 +123,13 @@ pub fn to_api_substate_id(
 
     let (substate_type, partition_kind) = match typed_substate_key {
         TypedSubstateKey::BootLoader(TypedBootLoaderSubstateKey::BootLoaderField(
-            BootLoaderField::Vm,
+            BootLoaderField::SystemBoot,
+        )) => (
+            SubstateType::BootLoaderModuleFieldSystemBoot,
+            models::PartitionKind::Field,
+        ),
+        TypedSubstateKey::BootLoader(TypedBootLoaderSubstateKey::BootLoaderField(
+            BootLoaderField::VmBoot,
         )) => (
             SubstateType::BootLoaderModuleFieldVmBoot,
             models::PartitionKind::Field,

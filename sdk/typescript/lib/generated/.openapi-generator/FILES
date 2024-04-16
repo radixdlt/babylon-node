@@ -81,6 +81,9 @@ models/BlueprintTypeReference.ts
 models/BlueprintTypeReferenceBase.ts
 models/BlueprintTypeReferenceKind.ts
 models/BlueprintVersionKey.ts
+models/BootLoaderModuleFieldSystemBootSubstate.ts
+models/BootLoaderModuleFieldSystemBootSubstateAllOf.ts
+models/BootLoaderModuleFieldSystemBootValue.ts
 models/BootLoaderModuleFieldVmBootSubstate.ts
 models/BootLoaderModuleFieldVmBootSubstateAllOf.ts
 models/BootLoaderModuleFieldVmBootValue.ts
@@ -596,6 +599,7 @@ models/SubstateSystemStructureBase.ts
 models/SubstateSystemStructureType.ts
 models/SubstateType.ts
 models/SubstateValue.ts
+models/SystemCostingParameters.ts
 models/SystemFieldKind.ts
 models/SystemFieldStructure.ts
 models/SystemFieldStructureAllOf.ts

@@ -32,14 +32,14 @@ import com.radixdlt.api.core.generated.models.AccountLockerAccountClaimsEntrySub
 import com.radixdlt.api.core.generated.models.AccountResourcePreferenceEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccountVaultEntrySubstate;
 import com.radixdlt.api.core.generated.models.BootLoaderModuleFieldSystemBootSubstate;
+import com.radixdlt.api.core.generated.models.BootLoaderModuleFieldSystemBootSubstateAllOf;
+import com.radixdlt.api.core.generated.models.BootLoaderModuleFieldSystemBootValue;
 import com.radixdlt.api.core.generated.models.BootLoaderModuleFieldVmBootSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldConfigSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentProposalStatisticSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentTimeSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentValidatorSetSubstate;
-import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentValidatorSetSubstateAllOf;
-import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentValidatorSetValue;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldValidatorRewardsSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate;
@@ -87,10 +87,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * ConsensusManagerFieldCurrentValidatorSetSubstate
+ * BootLoaderModuleFieldSystemBootSubstate
  */
 @JsonPropertyOrder({
-  ConsensusManagerFieldCurrentValidatorSetSubstate.JSON_PROPERTY_VALUE
+  BootLoaderModuleFieldSystemBootSubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -152,14 +152,14 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = ValidatorFieldStateSubstate.class, name = "ValidatorFieldState"),
 })
 
-public class ConsensusManagerFieldCurrentValidatorSetSubstate extends Substate {
+public class BootLoaderModuleFieldSystemBootSubstate extends Substate {
   public static final String JSON_PROPERTY_VALUE = "value";
-  private ConsensusManagerFieldCurrentValidatorSetValue value;
+  private BootLoaderModuleFieldSystemBootValue value;
 
-  public ConsensusManagerFieldCurrentValidatorSetSubstate() { 
+  public BootLoaderModuleFieldSystemBootSubstate() { 
   }
 
-  public ConsensusManagerFieldCurrentValidatorSetSubstate value(ConsensusManagerFieldCurrentValidatorSetValue value) {
+  public BootLoaderModuleFieldSystemBootSubstate value(BootLoaderModuleFieldSystemBootValue value) {
     this.value = value;
     return this;
   }
@@ -173,20 +173,20 @@ public class ConsensusManagerFieldCurrentValidatorSetSubstate extends Substate {
   @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ConsensusManagerFieldCurrentValidatorSetValue getValue() {
+  public BootLoaderModuleFieldSystemBootValue getValue() {
     return value;
   }
 
 
   @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValue(ConsensusManagerFieldCurrentValidatorSetValue value) {
+  public void setValue(BootLoaderModuleFieldSystemBootValue value) {
     this.value = value;
   }
 
 
   /**
-   * Return true if this ConsensusManagerFieldCurrentValidatorSetSubstate object is equal to o.
+   * Return true if this BootLoaderModuleFieldSystemBootSubstate object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -196,8 +196,8 @@ public class ConsensusManagerFieldCurrentValidatorSetSubstate extends Substate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ConsensusManagerFieldCurrentValidatorSetSubstate consensusManagerFieldCurrentValidatorSetSubstate = (ConsensusManagerFieldCurrentValidatorSetSubstate) o;
-    return Objects.equals(this.value, consensusManagerFieldCurrentValidatorSetSubstate.value) &&
+    BootLoaderModuleFieldSystemBootSubstate bootLoaderModuleFieldSystemBootSubstate = (BootLoaderModuleFieldSystemBootSubstate) o;
+    return Objects.equals(this.value, bootLoaderModuleFieldSystemBootSubstate.value) &&
         super.equals(o);
   }
 
@@ -209,7 +209,7 @@ public class ConsensusManagerFieldCurrentValidatorSetSubstate extends Substate {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ConsensusManagerFieldCurrentValidatorSetSubstate {\n");
+    sb.append("class BootLoaderModuleFieldSystemBootSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
@@ -281,8 +281,8 @@ static {
   mappings.put("TypeInfoModuleFieldTypeInfo", TypeInfoModuleFieldTypeInfoSubstate.class);
   mappings.put("ValidatorFieldProtocolUpdateReadinessSignal", ValidatorFieldProtocolUpdateReadinessSignalSubstate.class);
   mappings.put("ValidatorFieldState", ValidatorFieldStateSubstate.class);
-  mappings.put("ConsensusManagerFieldCurrentValidatorSetSubstate", ConsensusManagerFieldCurrentValidatorSetSubstate.class);
-  JSON.registerDiscriminator(ConsensusManagerFieldCurrentValidatorSetSubstate.class, "substate_type", mappings);
+  mappings.put("BootLoaderModuleFieldSystemBootSubstate", BootLoaderModuleFieldSystemBootSubstate.class);
+  JSON.registerDiscriminator(BootLoaderModuleFieldSystemBootSubstate.class, "substate_type", mappings);
 }
 }
 

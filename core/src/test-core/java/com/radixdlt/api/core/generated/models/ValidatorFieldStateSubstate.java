@@ -31,6 +31,7 @@ import com.radixdlt.api.core.generated.models.AccountFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.AccountLockerAccountClaimsEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccountResourcePreferenceEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccountVaultEntrySubstate;
+import com.radixdlt.api.core.generated.models.BootLoaderModuleFieldSystemBootSubstate;
 import com.radixdlt.api.core.generated.models.BootLoaderModuleFieldVmBootSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldConfigSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentProposalStatisticSubstate;
@@ -104,6 +105,7 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = AccountLockerAccountClaimsEntrySubstate.class, name = "AccountLockerAccountClaimsEntry"),
   @JsonSubTypes.Type(value = AccountResourcePreferenceEntrySubstate.class, name = "AccountResourcePreferenceEntry"),
   @JsonSubTypes.Type(value = AccountVaultEntrySubstate.class, name = "AccountVaultEntry"),
+  @JsonSubTypes.Type(value = BootLoaderModuleFieldSystemBootSubstate.class, name = "BootLoaderModuleFieldSystemBoot"),
   @JsonSubTypes.Type(value = BootLoaderModuleFieldVmBootSubstate.class, name = "BootLoaderModuleFieldVmBoot"),
   @JsonSubTypes.Type(value = ConsensusManagerFieldConfigSubstate.class, name = "ConsensusManagerFieldConfig"),
   @JsonSubTypes.Type(value = ConsensusManagerFieldCurrentProposalStatisticSubstate.class, name = "ConsensusManagerFieldCurrentProposalStatistic"),
@@ -234,6 +236,7 @@ static {
   mappings.put("AccountLockerAccountClaimsEntry", AccountLockerAccountClaimsEntrySubstate.class);
   mappings.put("AccountResourcePreferenceEntry", AccountResourcePreferenceEntrySubstate.class);
   mappings.put("AccountVaultEntry", AccountVaultEntrySubstate.class);
+  mappings.put("BootLoaderModuleFieldSystemBoot", BootLoaderModuleFieldSystemBootSubstate.class);
   mappings.put("BootLoaderModuleFieldVmBoot", BootLoaderModuleFieldVmBootSubstate.class);
   mappings.put("ConsensusManagerFieldConfig", ConsensusManagerFieldConfigSubstate.class);
   mappings.put("ConsensusManagerFieldCurrentProposalStatistic", ConsensusManagerFieldCurrentProposalStatisticSubstate.class);

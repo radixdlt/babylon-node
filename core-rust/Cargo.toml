@@ -22,17 +22,17 @@ resolver = "2"
 #   $ git push origin "release_name-BLAH"
 # * Then use tag="release_name-BLAH" in the below dependencies.
 # 
-sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-c609566a", features = ["serde"] }
-radix-transactions = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-c609566a" }
-radix-transaction-scenarios = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-c609566a" }
-radix-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-c609566a", features = ["serde"] }
-radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-c609566a" }
-radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-c609566a" }
-radix-substate-store-impls = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-c609566a" }
-radix-substate-store-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-c609566a" }
-radix-substate-store-queries = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-c609566a" }
-radix-rust = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-c609566a", features = ["serde"] }
-radix-blueprint-schema-init = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-c609566a", features = ["serde"] }
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-c263e40c", features = ["serde"] }
+radix-transactions = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-c263e40c" }
+radix-transaction-scenarios = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-c263e40c" }
+radix-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-c263e40c", features = ["serde"] }
+radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-c263e40c" }
+radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-c263e40c" }
+radix-substate-store-impls = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-c263e40c" }
+radix-substate-store-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-c263e40c" }
+radix-substate-store-queries = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-c263e40c" }
+radix-rust = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-c263e40c", features = ["serde"] }
+radix-blueprint-schema-init = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-c263e40c", features = ["serde"] }
 
 itertools = { version = "0.11.0" }
 jni = { version = "0.19.0" }

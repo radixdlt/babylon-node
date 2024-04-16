@@ -28,6 +28,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
  */
 public enum SubstateType {
   
+  BOOTLOADERMODULEFIELDSYSTEMBOOT("BootLoaderModuleFieldSystemBoot"),
+  
   BOOTLOADERMODULEFIELDVMBOOT("BootLoaderModuleFieldVmBoot"),
   
   TYPEINFOMODULEFIELDTYPEINFO("TypeInfoModuleFieldTypeInfo"),

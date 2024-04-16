@@ -13,63 +13,69 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { BootLoaderModuleFieldSystemBootValue } from './BootLoaderModuleFieldSystemBootValue';
+import {
+    BootLoaderModuleFieldSystemBootValueFromJSON,
+    BootLoaderModuleFieldSystemBootValueFromJSONTyped,
+    BootLoaderModuleFieldSystemBootValueToJSON,
+} from './BootLoaderModuleFieldSystemBootValue';
+
 /**
  * 
  * @export
- * @interface ScryptoInstant
+ * @interface BootLoaderModuleFieldSystemBootSubstateAllOf
  */
-export interface ScryptoInstant {
+export interface BootLoaderModuleFieldSystemBootSubstateAllOf {
     /**
-     * A decimal string-encoded 64-bit signed integer, marking the unix timestamp in seconds.
      * 
-     * Note: this field accurately represents the full range of possible on-ledger values (i.e.
-     * `-2^63 <= seconds < 2^63`). This is contrary to the `InstantMs` type used in other
-     * places of this API.
-     * @type {string}
-     * @memberof ScryptoInstant
+     * @type {BootLoaderModuleFieldSystemBootValue}
+     * @memberof BootLoaderModuleFieldSystemBootSubstateAllOf
      */
-    unix_timestamp_seconds: string;
+    value: BootLoaderModuleFieldSystemBootValue;
     /**
-     * The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use "Z"
-     * (denoting UTC) and include milliseconds (which are always `000`).
-     * E.g.: `2023-01-26T18:30:09.000Z`.
      * 
-     * Note: This field will *not* be present if the actual on-ledger `unix_timestamp_seconds`
-     * value is outside the basic range supported by the RFC 3339 / ISO 8601 standard, which
-     * starts at year 1583 (i.e. the beginning of the Gregorian calendar) and ends at year
-     * 9999 (inclusive).
      * @type {string}
-     * @memberof ScryptoInstant
+     * @memberof BootLoaderModuleFieldSystemBootSubstateAllOf
      */
-    date_time?: string;
+    substate_type?: BootLoaderModuleFieldSystemBootSubstateAllOfSubstateTypeEnum;
 }
 
+
 /**
- * Check if a given object implements the ScryptoInstant interface.
+ * @export
  */
-export function instanceOfScryptoInstant(value: object): boolean {
+export const BootLoaderModuleFieldSystemBootSubstateAllOfSubstateTypeEnum = {
+    BootLoaderModuleFieldSystemBoot: 'BootLoaderModuleFieldSystemBoot'
+} as const;
+export type BootLoaderModuleFieldSystemBootSubstateAllOfSubstateTypeEnum = typeof BootLoaderModuleFieldSystemBootSubstateAllOfSubstateTypeEnum[keyof typeof BootLoaderModuleFieldSystemBootSubstateAllOfSubstateTypeEnum];
+
+
+/**
+ * Check if a given object implements the BootLoaderModuleFieldSystemBootSubstateAllOf interface.
+ */
+export function instanceOfBootLoaderModuleFieldSystemBootSubstateAllOf(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "unix_timestamp_seconds" in value;
+    isInstance = isInstance && "value" in value;
 
     return isInstance;
 }
 
-export function ScryptoInstantFromJSON(json: any): ScryptoInstant {
-    return ScryptoInstantFromJSONTyped(json, false);
+export function BootLoaderModuleFieldSystemBootSubstateAllOfFromJSON(json: any): BootLoaderModuleFieldSystemBootSubstateAllOf {
+    return BootLoaderModuleFieldSystemBootSubstateAllOfFromJSONTyped(json, false);
 }
 
-export function ScryptoInstantFromJSONTyped(json: any, ignoreDiscriminator: boolean): ScryptoInstant {
+export function BootLoaderModuleFieldSystemBootSubstateAllOfFromJSONTyped(json: any, ignoreDiscriminator: boolean): BootLoaderModuleFieldSystemBootSubstateAllOf {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'unix_timestamp_seconds': json['unix_timestamp_seconds'],
-        'date_time': !exists(json, 'date_time') ? undefined : json['date_time'],
+        'value': BootLoaderModuleFieldSystemBootValueFromJSON(json['value']),
+        'substate_type': !exists(json, 'substate_type') ? undefined : json['substate_type'],
     };
 }
 
-export function ScryptoInstantToJSON(value?: ScryptoInstant | null): any {
+export function BootLoaderModuleFieldSystemBootSubstateAllOfToJSON(value?: BootLoaderModuleFieldSystemBootSubstateAllOf | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -78,8 +84,8 @@ export function ScryptoInstantToJSON(value?: ScryptoInstant | null): any {
     }
     return {
         
-        'unix_timestamp_seconds': value.unix_timestamp_seconds,
-        'date_time': value.date_time,
+        'value': BootLoaderModuleFieldSystemBootValueToJSON(value.value),
+        'substate_type': value.substate_type,
     };
 }
 

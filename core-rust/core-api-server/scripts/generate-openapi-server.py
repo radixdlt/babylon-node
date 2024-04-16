@@ -169,6 +169,26 @@ def generate_java_models(schema_file, tmp_client_folder, out_location):
     logging.info("Successfully generated java models.")
 
     code_root = os.path.join(tmp_client_folder, 'src/main/java/com/radixdlt/api/core/generated/')
+    code_models = os.path.join(code_root, 'models')
+
+    def fix_discriminator_order(file_path, discriminator, class_name):
+        # Fix bug that discriminator tags contain (unnecessary) entry for each subclass name - when
+        # such unnecessary entry happens to be (lexicographically) placed before the actual
+        # discriminator, the API client will use the (invalid) subclass name as the discriminator
+        # value, and the API server will not be able to deserialize it.
+        subtype_line_pattern = '  @JsonSubTypes.Type(value = {}.class, name = "{}"),\n'
+        replace_in_file(file_path, subtype_line_pattern.format(class_name, class_name), '')
+        replace_in_file(file_path, subtype_line_pattern.format(class_name, discriminator), subtype_line_pattern.format(class_name, discriminator) + subtype_line_pattern.format(class_name, class_name))
+
+    file_names = [file_name for file_name in os.listdir(code_models) if os.path.isfile(os.path.join(code_models, file_name))]
+    for file_name in file_names:
+        file_path = os.path.join(code_models, file_name)
+        # Fix bugs in the OAS generation:
+        fix_discriminator_order(file_path, 'Function', 'BlueprintFunctionTargetIdentifier')
+        fix_discriminator_order(file_path, 'Method', 'ComponentMethodTargetIdentifier')
+
+    logging.info("Successfully fixed up java models.")
+
     shutil.copytree(code_root, out_location)
 
     logging.info("Successfully copied java models.")

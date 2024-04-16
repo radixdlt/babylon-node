@@ -75,6 +75,7 @@ pub(crate) mod engine_prelude {
     pub use radix_engine::blueprints::models::*;
     pub use radix_engine::blueprints::transaction_tracker::*;
     pub use radix_engine::object_modules::metadata::*;
+    pub use radix_engine::system::system_callback::*;
     pub use radix_engine::system::system_modules::costing::*;
     pub use radix_engine::system::system_substates::*;
     pub use radix_engine::transaction::*;

@@ -13,63 +13,52 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { SystemCostingParameters } from './SystemCostingParameters';
+import {
+    SystemCostingParametersFromJSON,
+    SystemCostingParametersFromJSONTyped,
+    SystemCostingParametersToJSON,
+} from './SystemCostingParameters';
+
 /**
  * 
  * @export
- * @interface ScryptoInstant
+ * @interface BootLoaderModuleFieldSystemBootValue
  */
-export interface ScryptoInstant {
+export interface BootLoaderModuleFieldSystemBootValue {
     /**
-     * A decimal string-encoded 64-bit signed integer, marking the unix timestamp in seconds.
      * 
-     * Note: this field accurately represents the full range of possible on-ledger values (i.e.
-     * `-2^63 <= seconds < 2^63`). This is contrary to the `InstantMs` type used in other
-     * places of this API.
-     * @type {string}
-     * @memberof ScryptoInstant
+     * @type {SystemCostingParameters}
+     * @memberof BootLoaderModuleFieldSystemBootValue
      */
-    unix_timestamp_seconds: string;
-    /**
-     * The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use "Z"
-     * (denoting UTC) and include milliseconds (which are always `000`).
-     * E.g.: `2023-01-26T18:30:09.000Z`.
-     * 
-     * Note: This field will *not* be present if the actual on-ledger `unix_timestamp_seconds`
-     * value is outside the basic range supported by the RFC 3339 / ISO 8601 standard, which
-     * starts at year 1583 (i.e. the beginning of the Gregorian calendar) and ends at year
-     * 9999 (inclusive).
-     * @type {string}
-     * @memberof ScryptoInstant
-     */
-    date_time?: string;
+    costing_parameters: SystemCostingParameters;
 }
 
 /**
- * Check if a given object implements the ScryptoInstant interface.
+ * Check if a given object implements the BootLoaderModuleFieldSystemBootValue interface.
  */
-export function instanceOfScryptoInstant(value: object): boolean {
+export function instanceOfBootLoaderModuleFieldSystemBootValue(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "unix_timestamp_seconds" in value;
+    isInstance = isInstance && "costing_parameters" in value;
 
     return isInstance;
 }
 
-export function ScryptoInstantFromJSON(json: any): ScryptoInstant {
-    return ScryptoInstantFromJSONTyped(json, false);
+export function BootLoaderModuleFieldSystemBootValueFromJSON(json: any): BootLoaderModuleFieldSystemBootValue {
+    return BootLoaderModuleFieldSystemBootValueFromJSONTyped(json, false);
 }
 
-export function ScryptoInstantFromJSONTyped(json: any, ignoreDiscriminator: boolean): ScryptoInstant {
+export function BootLoaderModuleFieldSystemBootValueFromJSONTyped(json: any, ignoreDiscriminator: boolean): BootLoaderModuleFieldSystemBootValue {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'unix_timestamp_seconds': json['unix_timestamp_seconds'],
-        'date_time': !exists(json, 'date_time') ? undefined : json['date_time'],
+        'costing_parameters': SystemCostingParametersFromJSON(json['costing_parameters']),
     };
 }
 
-export function ScryptoInstantToJSON(value?: ScryptoInstant | null): any {
+export function BootLoaderModuleFieldSystemBootValueToJSON(value?: BootLoaderModuleFieldSystemBootValue | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -78,8 +67,7 @@ export function ScryptoInstantToJSON(value?: ScryptoInstant | null): any {
     }
     return {
         
-        'unix_timestamp_seconds': value.unix_timestamp_seconds,
-        'date_time': value.date_time,
+        'costing_parameters': SystemCostingParametersToJSON(value.costing_parameters),
     };
 }
 

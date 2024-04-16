@@ -12,20 +12,21 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct ScryptoInstant {
-    /// A decimal string-encoded 64-bit signed integer, marking the unix timestamp in seconds.  Note: this field accurately represents the full range of possible on-ledger values (i.e. `-2^63 <= seconds < 2^63`). This is contrary to the `InstantMs` type used in other places of this API. 
-    #[serde(rename = "unix_timestamp_seconds")]
-    pub unix_timestamp_seconds: String,
-    /// The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use \"Z\" (denoting UTC) and include milliseconds (which are always `000`). E.g.: `2023-01-26T18:30:09.000Z`.  Note: This field will *not* be present if the actual on-ledger `unix_timestamp_seconds` value is outside the basic range supported by the RFC 3339 / ISO 8601 standard, which starts at year 1583 (i.e. the beginning of the Gregorian calendar) and ends at year 9999 (inclusive). 
-    #[serde(rename = "date_time", skip_serializing_if = "Option::is_none")]
-    pub date_time: Option<String>,
+pub struct BootLoaderModuleFieldSystemBootSubstate {
+    #[serde(rename = "substate_type")]
+    pub substate_type: crate::core_api::generated::models::SubstateType,
+    #[serde(rename = "is_locked")]
+    pub is_locked: bool,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::BootLoaderModuleFieldSystemBootValue>,
 }
 
-impl ScryptoInstant {
-    pub fn new(unix_timestamp_seconds: String) -> ScryptoInstant {
-        ScryptoInstant {
-            unix_timestamp_seconds,
-            date_time: None,
+impl BootLoaderModuleFieldSystemBootSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, value: crate::core_api::generated::models::BootLoaderModuleFieldSystemBootValue) -> BootLoaderModuleFieldSystemBootSubstate {
+        BootLoaderModuleFieldSystemBootSubstate {
+            substate_type,
+            is_locked,
+            value: Box::new(value),
         }
     }
 }
