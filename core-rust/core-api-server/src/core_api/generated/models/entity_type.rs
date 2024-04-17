@@ -22,6 +22,8 @@ pub enum EntityType {
     GlobalGenericComponent,
     #[serde(rename = "GlobalAccount")]
     GlobalAccount,
+    #[serde(rename = "GlobalAccountLocker")]
+    GlobalAccountLocker,
     #[serde(rename = "GlobalIdentity")]
     GlobalIdentity,
     #[serde(rename = "GlobalAccessController")]
@@ -65,6 +67,7 @@ impl ToString for EntityType {
             Self::GlobalValidator => String::from("GlobalValidator"),
             Self::GlobalGenericComponent => String::from("GlobalGenericComponent"),
             Self::GlobalAccount => String::from("GlobalAccount"),
+            Self::GlobalAccountLocker => String::from("GlobalAccountLocker"),
             Self::GlobalIdentity => String::from("GlobalIdentity"),
             Self::GlobalAccessController => String::from("GlobalAccessController"),
             Self::GlobalVirtualSecp256k1Account => String::from("GlobalVirtualSecp256k1Account"),

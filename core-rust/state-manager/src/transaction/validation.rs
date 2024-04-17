@@ -4,7 +4,6 @@ use std::sync::Arc;
 use std::time::SystemTime;
 
 use crate::engine_prelude::*;
-use ::transaction::model::PrepareError; // disambiguation needed because of a wide prelude
 
 use crate::query::StateManagerSubstateQueries;
 

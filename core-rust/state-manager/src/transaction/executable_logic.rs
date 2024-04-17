@@ -1,3 +1,4 @@
+use crate::engine_prelude::wasm::*;
 use crate::engine_prelude::*;
 
 use std::collections::HashMap;
@@ -86,7 +87,6 @@ impl ExecutionConfigurator {
                 (
                     ConfigType::Pending,
                     ExecutionConfig::for_notarized_transaction(network.clone())
-                        .up_to_loan_repayment(true)
                         .with_kernel_trace(engine_trace),
                 ),
                 (
@@ -123,7 +123,7 @@ impl ExecutionConfigurator {
         transaction: &'a ValidatedNotarizedTransactionV1,
     ) -> ConfiguredExecutable<'a> {
         self.wrap_transaction(
-            transaction.get_executable(),
+            transaction.get_executable().abort_when_loan_repaid(),
             ConfigType::Pending,
             format!(
                 "pending intent hash {:?}, up to fee loan",
@@ -228,15 +228,16 @@ impl<'a, S: SubstateDatabase> TransactionLogic<S> for ConfiguredExecutable<'a> {
                 description,
             } => {
                 let start = Instant::now();
-                let result = execute_transaction(
+                let result = execute_transaction_with_configuration::<_, _, System<Vm<_, _>>>(
                     store,
-                    Vm {
+                    VmInit {
                         scrypto_vm: scrypto_interpreter,
-                        native_vm: DefaultNativeVm::new(),
+                        native_vm_extension: NoExtension,
                     },
-                    costing_parameters,
+                    Some(*costing_parameters),
                     execution_config,
                     &executable,
+                    (),
                 );
                 let elapsed = start.elapsed();
                 if elapsed > threshold {

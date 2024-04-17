@@ -65,6 +65,9 @@
 use jni::objects::JClass;
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
+use radix_common::prelude::{
+    EXECUTION_COST_UNIT_LIMIT, FINALIZATION_COST_UNIT_LIMIT, MAX_TRANSACTION_SIZE,
+};
 
 use node_common::config::limits::{
     DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED,
@@ -75,9 +78,6 @@ use node_common::config::{
     DEFAULT_MEMPOOL_MAX_TOTAL_TRANSACTIONS_SIZE, DEFAULT_MEMPOOL_MAX_TRANSACTION_COUNT,
 };
 use node_common::java::jni_sbor_coded_call;
-use radix_engine_common::prelude::{
-    EXECUTION_COST_UNIT_LIMIT, FINALIZATION_COST_UNIT_LIMIT, MAX_TRANSACTION_SIZE,
-};
 use state_manager::priority_mempool::MEMPOOL_TRANSACTION_OVERHEAD_FACTOR_PERCENT;
 
 #[no_mangle]

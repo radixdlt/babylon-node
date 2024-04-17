@@ -4,6 +4,23 @@ use crate::core_api::models;
 
 use crate::engine_prelude::*;
 
+pub fn to_api_system_boot_substate(
+    context: &MappingContext,
+    _state_mapping_lookups: &StateMappingLookups,
+    substate: &SystemBoot,
+) -> Result<models::Substate, MappingError> {
+    let value = match substate {
+        SystemBoot::V1 { costing_parameters } => models::BootLoaderModuleFieldSystemBootValue::new(
+            to_api_system_costing_parameters(context, costing_parameters)?,
+        ),
+    };
+
+    Ok(models::Substate::BootLoaderModuleFieldSystemBootSubstate {
+        is_locked: true,
+        value: Box::new(value),
+    })
+}
+
 pub fn to_api_vm_boot_substate(
     _context: &MappingContext,
     _state_mapping_lookups: &StateMappingLookups,
@@ -192,5 +209,25 @@ pub fn to_api_key_value_store_info(
             value_generic_substitution,
         )?),
         allow_ownership: *allow_ownership,
+    })
+}
+
+fn to_api_system_costing_parameters(
+    _context: &MappingContext,
+    costing_parameters: &CostingParameters,
+) -> Result<models::SystemCostingParameters, MappingError> {
+    Ok(models::SystemCostingParameters {
+        execution_cost_unit_price: to_api_decimal(&costing_parameters.execution_cost_unit_price),
+        execution_cost_unit_limit: to_api_u32_as_i64(costing_parameters.execution_cost_unit_limit),
+        execution_cost_unit_loan: to_api_u32_as_i64(costing_parameters.execution_cost_unit_loan),
+        finalization_cost_unit_price: to_api_decimal(
+            &costing_parameters.finalization_cost_unit_price,
+        ),
+        finalization_cost_unit_limit: to_api_u32_as_i64(
+            costing_parameters.finalization_cost_unit_limit,
+        ),
+        xrd_usd_price: to_api_decimal(&costing_parameters.usd_price),
+        xrd_storage_price: to_api_decimal(&costing_parameters.state_storage_price),
+        xrd_archive_storage_price: to_api_decimal(&costing_parameters.archive_storage_price),
     })
 }

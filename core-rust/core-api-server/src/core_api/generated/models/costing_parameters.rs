@@ -19,7 +19,7 @@ pub struct CostingParameters {
     /// An integer between `0` and `2^32 - 1`, representing the maximum amount of cost units available for the transaction execution.
     #[serde(rename = "execution_cost_unit_limit")]
     pub execution_cost_unit_limit: i64,
-    /// An integer between `0` and `2^32 - 1`, representing the number of execution cost units loaned from system.
+    /// An integer between `0` and `2^32 - 1`, representing the maximum number of cost units which can be used before fee is locked from a vault.
     #[serde(rename = "execution_cost_unit_loan")]
     pub execution_cost_unit_loan: i64,
     /// The string-encoded decimal representing the XRD price of a single cost unit of transaction finalization. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. 
@@ -28,7 +28,7 @@ pub struct CostingParameters {
     /// An integer between `0` and `2^32 - 1`, representing the maximum amount of cost units available for the transaction finalization.
     #[serde(rename = "finalization_cost_unit_limit")]
     pub finalization_cost_unit_limit: i64,
-    /// The string-encoded decimal representing the price of 1 USD, expressed in XRD. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. 
+    /// The string-encoded decimal representing what amount of XRD is consumed by a Royalty of 1 USD. This is fixed for a given protocol version, so is not an accurate representation of the XRD price. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. 
     #[serde(rename = "xrd_usd_price")]
     pub xrd_usd_price: String,
     /// The string-encoded decimal representing the price of 1 byte of state storage, expressed in XRD. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. 

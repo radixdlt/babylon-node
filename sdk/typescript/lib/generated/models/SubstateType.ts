@@ -18,6 +18,7 @@
  * @export
  */
 export const SubstateType = {
+    BootLoaderModuleFieldSystemBoot: 'BootLoaderModuleFieldSystemBoot',
     BootLoaderModuleFieldVmBoot: 'BootLoaderModuleFieldVmBoot',
     TypeInfoModuleFieldTypeInfo: 'TypeInfoModuleFieldTypeInfo',
     RoleAssignmentModuleFieldOwnerRole: 'RoleAssignmentModuleFieldOwnerRole',
@@ -61,6 +62,7 @@ export const SubstateType = {
     AccountVaultEntry: 'AccountVaultEntry',
     AccountResourcePreferenceEntry: 'AccountResourcePreferenceEntry',
     AccountAuthorizedDepositorEntry: 'AccountAuthorizedDepositorEntry',
+    AccountLockerAccountClaimsEntry: 'AccountLockerAccountClaimsEntry',
     AccessControllerFieldState: 'AccessControllerFieldState',
     GenericScryptoComponentFieldState: 'GenericScryptoComponentFieldState',
     GenericKeyValueStoreEntry: 'GenericKeyValueStoreEntry',

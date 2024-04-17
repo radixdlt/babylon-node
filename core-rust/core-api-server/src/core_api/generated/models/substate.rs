@@ -36,6 +36,15 @@ pub enum Substate {
         #[serde(rename = "value")]
         value: Box<crate::core_api::generated::models::AccountFieldStateValue>,
     },
+    #[serde(rename="AccountLockerAccountClaimsEntry")]
+    AccountLockerAccountClaimsEntrySubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
+        #[serde(rename = "key")]
+        key: Box<crate::core_api::generated::models::AccountAddressKey>,
+        #[serde(rename = "value")]
+        value: Box<crate::core_api::generated::models::AccountLockerAccountClaimsEntryValue>,
+    },
     #[serde(rename="AccountResourcePreferenceEntry")]
     AccountResourcePreferenceEntrySubstate {
         #[serde(rename = "is_locked")]
@@ -53,6 +62,13 @@ pub enum Substate {
         key: Box<crate::core_api::generated::models::ResourceKey>,
         #[serde(rename = "value")]
         value: Box<crate::core_api::generated::models::AccountVaultEntryValue>,
+    },
+    #[serde(rename="BootLoaderModuleFieldSystemBoot")]
+    BootLoaderModuleFieldSystemBootSubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
+        #[serde(rename = "value")]
+        value: Box<crate::core_api::generated::models::BootLoaderModuleFieldSystemBootValue>,
     },
     #[serde(rename="BootLoaderModuleFieldVmBoot")]
     BootLoaderModuleFieldVmBootSubstate {

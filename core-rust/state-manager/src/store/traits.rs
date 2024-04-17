@@ -477,7 +477,7 @@ pub mod commit {
                                     target_values.insert(sort_key, value);
                                 }
                                 DatabaseUpdate::Delete => {
-                                    let existed = target_values.remove(&sort_key).is_some();
+                                    let existed = target_values.swap_remove(&sort_key).is_some();
                                     if !existed {
                                         panic!("broken invariant: deleting non-existent substate");
                                     }
@@ -578,11 +578,11 @@ pub mod scenario {
     pub struct ExecutedGenesisScenarioV1 {
         pub logical_name: String,
         pub committed_transactions: Vec<ExecutedScenarioTransaction>,
-        pub addresses: Vec<DescribedAddress>,
+        pub addresses: Vec<DescribedAddressRendering>,
     }
 
     #[derive(Debug, Clone, Categorize, Encode, Decode)]
-    pub struct DescribedAddress {
+    pub struct DescribedAddressRendering {
         pub logical_name: String,
         pub rendered_address: String, // we store it pre-rendered, since `GlobalAddress` has no SBOR coding
     }

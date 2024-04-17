@@ -47,10 +47,10 @@ import com.radixdlt.api.core.generated.client.JSON;
 )
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = BlueprintFunctionTargetIdentifier.class, name = "BlueprintFunctionTargetIdentifier"),
-  @JsonSubTypes.Type(value = ComponentMethodTargetIdentifier.class, name = "ComponentMethodTargetIdentifier"),
   @JsonSubTypes.Type(value = BlueprintFunctionTargetIdentifier.class, name = "Function"),
+  @JsonSubTypes.Type(value = BlueprintFunctionTargetIdentifier.class, name = "BlueprintFunctionTargetIdentifier"),
   @JsonSubTypes.Type(value = ComponentMethodTargetIdentifier.class, name = "Method"),
+  @JsonSubTypes.Type(value = ComponentMethodTargetIdentifier.class, name = "ComponentMethodTargetIdentifier"),
 })
 
 public class TargetIdentifier {

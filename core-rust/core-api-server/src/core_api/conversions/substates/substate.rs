@@ -1,5 +1,6 @@
 use super::super::*;
 use super::*;
+use crate::core_api::conversions::substates::account_locker::to_api_account_locker_account_claim_entry;
 use crate::core_api::models;
 
 use crate::engine_prelude::*;
@@ -11,6 +12,9 @@ pub fn to_api_substate(
     typed_substate_value: &TypedSubstateValue,
 ) -> Result<models::Substate, MappingError> {
     Ok(match typed_substate_value {
+        TypedSubstateValue::BootLoader(BootLoaderSubstateValue::System(system_boot_substate)) => {
+            to_api_system_boot_substate(context, state_mapping_lookups, system_boot_substate)?
+        }
         TypedSubstateValue::BootLoader(BootLoaderSubstateValue::Vm(vm_boot_substate)) => {
             to_api_vm_boot_substate(context, state_mapping_lookups, vm_boot_substate)?
         }
@@ -187,6 +191,12 @@ pub fn to_api_substate(
                 AccessControllerTypedFieldSubstateValue::State(substate),
             ),
         )) => to_api_access_controller_substate(context, substate)?,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::AccountLocker(
+            AccountLockerTypedSubstateValue::Field(x),
+        )) => match *x {}, // The field enum is empty, the dereference allows the compiler to realise that.
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::AccountLocker(
+            AccountLockerTypedSubstateValue::AccountClaimsKeyValue(substate),
+        )) => to_api_account_locker_account_claim_entry(context, typed_substate_key, substate)?,
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::GenericScryptoComponent(
             GenericScryptoComponentFieldValue::State(substate),
         )) => to_api_generic_scrypto_component_state_substate(context, substate)?,

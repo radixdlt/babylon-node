@@ -74,11 +74,7 @@ use crate::*;
 use node_common::config::limits::VertexLimitsConfig;
 
 use crate::engine_prelude::*;
-use ::transaction::model::PrepareError; // disambiguation needed because of a wide prelude
-
-use transaction_scenarios::scenario::DescribedAddress as ScenarioDescribedAddress;
-use transaction_scenarios::scenario::*;
-use transaction_scenarios::scenarios::*;
+use ::radix_transactions::model::PrepareError; // disambiguation needed because of a wide prelude
 
 use node_common::locks::{DbLock, LockFactory, Mutex, RwLock};
 use prometheus::Registry;
@@ -86,12 +82,13 @@ use tracing::{debug, info, warn};
 
 use crate::protocol::*;
 use crate::store::traits::scenario::{
-    DescribedAddress, ExecutedGenesisScenario, ExecutedGenesisScenarioStore,
+    DescribedAddressRendering, ExecutedGenesisScenario, ExecutedGenesisScenarioStore,
     ExecutedScenarioTransaction, ScenarioSequenceNumber,
 };
 
 use crate::accumulator_tree::storage::ReadableAccuTreeStore;
 use crate::commit_bundle::CommitBundleBuilder;
+use radix_transaction_scenarios::executor::scenarios_vector;
 use std::ops::Deref;
 use std::sync::Arc;
 use std::time::{Instant, SystemTime};
@@ -931,16 +928,16 @@ impl StateComputer {
                             .interesting_addresses
                             .0
                             .into_iter()
-                            .map(|(descriptor, address)| DescribedAddress {
+                            .map(|(descriptor, address)| DescribedAddressRendering {
                                 logical_name: descriptor,
                                 rendered_address: match address {
-                                    ScenarioDescribedAddress::Global(address) => {
+                                    DescribedAddress::Global(address) => {
                                         address.to_string(&encoder)
                                     }
-                                    ScenarioDescribedAddress::Internal(address) => {
+                                    DescribedAddress::Internal(address) => {
                                         address.to_string(&encoder)
                                     }
-                                    ScenarioDescribedAddress::NonFungible(nf_global_id) => {
+                                    DescribedAddress::NonFungible(nf_global_id) => {
                                         nf_global_id.to_string(&encoder)
                                     }
                                 },
@@ -973,7 +970,7 @@ impl StateComputer {
         next_nonce: u32,
         scenario_name: &str,
     ) -> Option<Box<dyn ScenarioInstance>> {
-        for scenario_builder in get_builder_for_every_scenario() {
+        for (_protocol_version, scenario_builder) in scenarios_vector() {
             let scenario =
                 scenario_builder(ScenarioCore::new(self.network.clone(), epoch, next_nonce));
             if scenario.metadata().logical_name == scenario_name {

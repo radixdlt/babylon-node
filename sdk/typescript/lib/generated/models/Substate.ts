@@ -34,6 +34,13 @@ import {
     AccountFieldStateSubstateToJSON,
 } from './AccountFieldStateSubstate';
 import {
+    AccountLockerAccountClaimsEntrySubstate,
+    instanceOfAccountLockerAccountClaimsEntrySubstate,
+    AccountLockerAccountClaimsEntrySubstateFromJSON,
+    AccountLockerAccountClaimsEntrySubstateFromJSONTyped,
+    AccountLockerAccountClaimsEntrySubstateToJSON,
+} from './AccountLockerAccountClaimsEntrySubstate';
+import {
     AccountResourcePreferenceEntrySubstate,
     instanceOfAccountResourcePreferenceEntrySubstate,
     AccountResourcePreferenceEntrySubstateFromJSON,
@@ -47,6 +54,13 @@ import {
     AccountVaultEntrySubstateFromJSONTyped,
     AccountVaultEntrySubstateToJSON,
 } from './AccountVaultEntrySubstate';
+import {
+    BootLoaderModuleFieldSystemBootSubstate,
+    instanceOfBootLoaderModuleFieldSystemBootSubstate,
+    BootLoaderModuleFieldSystemBootSubstateFromJSON,
+    BootLoaderModuleFieldSystemBootSubstateFromJSONTyped,
+    BootLoaderModuleFieldSystemBootSubstateToJSON,
+} from './BootLoaderModuleFieldSystemBootSubstate';
 import {
     BootLoaderModuleFieldVmBootSubstate,
     instanceOfBootLoaderModuleFieldVmBootSubstate,
@@ -361,7 +375,7 @@ import {
  * 
  * @export
  */
-export type Substate = { substate_type: 'AccessControllerFieldState' } & AccessControllerFieldStateSubstate | { substate_type: 'AccountAuthorizedDepositorEntry' } & AccountAuthorizedDepositorEntrySubstate | { substate_type: 'AccountFieldState' } & AccountFieldStateSubstate | { substate_type: 'AccountResourcePreferenceEntry' } & AccountResourcePreferenceEntrySubstate | { substate_type: 'AccountVaultEntry' } & AccountVaultEntrySubstate | { substate_type: 'BootLoaderModuleFieldVmBoot' } & BootLoaderModuleFieldVmBootSubstate | { substate_type: 'ConsensusManagerFieldConfig' } & ConsensusManagerFieldConfigSubstate | { substate_type: 'ConsensusManagerFieldCurrentProposalStatistic' } & ConsensusManagerFieldCurrentProposalStatisticSubstate | { substate_type: 'ConsensusManagerFieldCurrentTime' } & ConsensusManagerFieldCurrentTimeSubstate | { substate_type: 'ConsensusManagerFieldCurrentTimeRoundedToMinutes' } & ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstate | { substate_type: 'ConsensusManagerFieldCurrentValidatorSet' } & ConsensusManagerFieldCurrentValidatorSetSubstate | { substate_type: 'ConsensusManagerFieldState' } & ConsensusManagerFieldStateSubstate | { substate_type: 'ConsensusManagerFieldValidatorRewards' } & ConsensusManagerFieldValidatorRewardsSubstate | { substate_type: 'ConsensusManagerRegisteredValidatorsByStakeIndexEntry' } & ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate | { substate_type: 'FungibleResourceManagerFieldDivisibility' } & FungibleResourceManagerFieldDivisibilitySubstate | { substate_type: 'FungibleResourceManagerFieldTotalSupply' } & FungibleResourceManagerFieldTotalSupplySubstate | { substate_type: 'FungibleVaultFieldBalance' } & FungibleVaultFieldBalanceSubstate | { substate_type: 'FungibleVaultFieldFrozenStatus' } & FungibleVaultFieldFrozenStatusSubstate | { substate_type: 'GenericKeyValueStoreEntry' } & GenericKeyValueStoreEntrySubstate | { substate_type: 'GenericScryptoComponentFieldState' } & GenericScryptoComponentFieldStateSubstate | { substate_type: 'MetadataModuleEntry' } & MetadataModuleEntrySubstate | { substate_type: 'MultiResourcePoolFieldState' } & MultiResourcePoolFieldStateSubstate | { substate_type: 'NonFungibleResourceManagerDataEntry' } & NonFungibleResourceManagerDataEntrySubstate | { substate_type: 'NonFungibleResourceManagerFieldIdType' } & NonFungibleResourceManagerFieldIdTypeSubstate | { substate_type: 'NonFungibleResourceManagerFieldMutableFields' } & NonFungibleResourceManagerFieldMutableFieldsSubstate | { substate_type: 'NonFungibleResourceManagerFieldTotalSupply' } & NonFungibleResourceManagerFieldTotalSupplySubstate | { substate_type: 'NonFungibleVaultContentsIndexEntry' } & NonFungibleVaultContentsIndexEntrySubstate | { substate_type: 'NonFungibleVaultFieldBalance' } & NonFungibleVaultFieldBalanceSubstate | { substate_type: 'NonFungibleVaultFieldFrozenStatus' } & NonFungibleVaultFieldFrozenStatusSubstate | { substate_type: 'OneResourcePoolFieldState' } & OneResourcePoolFieldStateSubstate | { substate_type: 'PackageBlueprintAuthTemplateEntry' } & PackageBlueprintAuthTemplateEntrySubstate | { substate_type: 'PackageBlueprintDefinitionEntry' } & PackageBlueprintDefinitionEntrySubstate | { substate_type: 'PackageBlueprintDependenciesEntry' } & PackageBlueprintDependenciesEntrySubstate | { substate_type: 'PackageBlueprintRoyaltyEntry' } & PackageBlueprintRoyaltyEntrySubstate | { substate_type: 'PackageCodeInstrumentedCodeEntry' } & PackageCodeInstrumentedCodeEntrySubstate | { substate_type: 'PackageCodeOriginalCodeEntry' } & PackageCodeOriginalCodeEntrySubstate | { substate_type: 'PackageCodeVmTypeEntry' } & PackageCodeVmTypeEntrySubstate | { substate_type: 'PackageFieldRoyaltyAccumulator' } & PackageFieldRoyaltyAccumulatorSubstate | { substate_type: 'RoleAssignmentModuleFieldOwnerRole' } & RoleAssignmentModuleFieldOwnerRoleSubstate | { substate_type: 'RoleAssignmentModuleRuleEntry' } & RoleAssignmentModuleRuleEntrySubstate | { substate_type: 'RoyaltyModuleFieldState' } & RoyaltyModuleFieldStateSubstate | { substate_type: 'RoyaltyModuleMethodRoyaltyEntry' } & RoyaltyModuleMethodRoyaltyEntrySubstate | { substate_type: 'SchemaEntry' } & SchemaEntrySubstate | { substate_type: 'TransactionTrackerCollectionEntry' } & TransactionTrackerCollectionEntrySubstate | { substate_type: 'TransactionTrackerFieldState' } & TransactionTrackerFieldStateSubstate | { substate_type: 'TwoResourcePoolFieldState' } & TwoResourcePoolFieldStateSubstate | { substate_type: 'TypeInfoModuleFieldTypeInfo' } & TypeInfoModuleFieldTypeInfoSubstate | { substate_type: 'ValidatorFieldProtocolUpdateReadinessSignal' } & ValidatorFieldProtocolUpdateReadinessSignalSubstate | { substate_type: 'ValidatorFieldState' } & ValidatorFieldStateSubstate;
+export type Substate = { substate_type: 'AccessControllerFieldState' } & AccessControllerFieldStateSubstate | { substate_type: 'AccountAuthorizedDepositorEntry' } & AccountAuthorizedDepositorEntrySubstate | { substate_type: 'AccountFieldState' } & AccountFieldStateSubstate | { substate_type: 'AccountLockerAccountClaimsEntry' } & AccountLockerAccountClaimsEntrySubstate | { substate_type: 'AccountResourcePreferenceEntry' } & AccountResourcePreferenceEntrySubstate | { substate_type: 'AccountVaultEntry' } & AccountVaultEntrySubstate | { substate_type: 'BootLoaderModuleFieldSystemBoot' } & BootLoaderModuleFieldSystemBootSubstate | { substate_type: 'BootLoaderModuleFieldVmBoot' } & BootLoaderModuleFieldVmBootSubstate | { substate_type: 'ConsensusManagerFieldConfig' } & ConsensusManagerFieldConfigSubstate | { substate_type: 'ConsensusManagerFieldCurrentProposalStatistic' } & ConsensusManagerFieldCurrentProposalStatisticSubstate | { substate_type: 'ConsensusManagerFieldCurrentTime' } & ConsensusManagerFieldCurrentTimeSubstate | { substate_type: 'ConsensusManagerFieldCurrentTimeRoundedToMinutes' } & ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstate | { substate_type: 'ConsensusManagerFieldCurrentValidatorSet' } & ConsensusManagerFieldCurrentValidatorSetSubstate | { substate_type: 'ConsensusManagerFieldState' } & ConsensusManagerFieldStateSubstate | { substate_type: 'ConsensusManagerFieldValidatorRewards' } & ConsensusManagerFieldValidatorRewardsSubstate | { substate_type: 'ConsensusManagerRegisteredValidatorsByStakeIndexEntry' } & ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate | { substate_type: 'FungibleResourceManagerFieldDivisibility' } & FungibleResourceManagerFieldDivisibilitySubstate | { substate_type: 'FungibleResourceManagerFieldTotalSupply' } & FungibleResourceManagerFieldTotalSupplySubstate | { substate_type: 'FungibleVaultFieldBalance' } & FungibleVaultFieldBalanceSubstate | { substate_type: 'FungibleVaultFieldFrozenStatus' } & FungibleVaultFieldFrozenStatusSubstate | { substate_type: 'GenericKeyValueStoreEntry' } & GenericKeyValueStoreEntrySubstate | { substate_type: 'GenericScryptoComponentFieldState' } & GenericScryptoComponentFieldStateSubstate | { substate_type: 'MetadataModuleEntry' } & MetadataModuleEntrySubstate | { substate_type: 'MultiResourcePoolFieldState' } & MultiResourcePoolFieldStateSubstate | { substate_type: 'NonFungibleResourceManagerDataEntry' } & NonFungibleResourceManagerDataEntrySubstate | { substate_type: 'NonFungibleResourceManagerFieldIdType' } & NonFungibleResourceManagerFieldIdTypeSubstate | { substate_type: 'NonFungibleResourceManagerFieldMutableFields' } & NonFungibleResourceManagerFieldMutableFieldsSubstate | { substate_type: 'NonFungibleResourceManagerFieldTotalSupply' } & NonFungibleResourceManagerFieldTotalSupplySubstate | { substate_type: 'NonFungibleVaultContentsIndexEntry' } & NonFungibleVaultContentsIndexEntrySubstate | { substate_type: 'NonFungibleVaultFieldBalance' } & NonFungibleVaultFieldBalanceSubstate | { substate_type: 'NonFungibleVaultFieldFrozenStatus' } & NonFungibleVaultFieldFrozenStatusSubstate | { substate_type: 'OneResourcePoolFieldState' } & OneResourcePoolFieldStateSubstate | { substate_type: 'PackageBlueprintAuthTemplateEntry' } & PackageBlueprintAuthTemplateEntrySubstate | { substate_type: 'PackageBlueprintDefinitionEntry' } & PackageBlueprintDefinitionEntrySubstate | { substate_type: 'PackageBlueprintDependenciesEntry' } & PackageBlueprintDependenciesEntrySubstate | { substate_type: 'PackageBlueprintRoyaltyEntry' } & PackageBlueprintRoyaltyEntrySubstate | { substate_type: 'PackageCodeInstrumentedCodeEntry' } & PackageCodeInstrumentedCodeEntrySubstate | { substate_type: 'PackageCodeOriginalCodeEntry' } & PackageCodeOriginalCodeEntrySubstate | { substate_type: 'PackageCodeVmTypeEntry' } & PackageCodeVmTypeEntrySubstate | { substate_type: 'PackageFieldRoyaltyAccumulator' } & PackageFieldRoyaltyAccumulatorSubstate | { substate_type: 'RoleAssignmentModuleFieldOwnerRole' } & RoleAssignmentModuleFieldOwnerRoleSubstate | { substate_type: 'RoleAssignmentModuleRuleEntry' } & RoleAssignmentModuleRuleEntrySubstate | { substate_type: 'RoyaltyModuleFieldState' } & RoyaltyModuleFieldStateSubstate | { substate_type: 'RoyaltyModuleMethodRoyaltyEntry' } & RoyaltyModuleMethodRoyaltyEntrySubstate | { substate_type: 'SchemaEntry' } & SchemaEntrySubstate | { substate_type: 'TransactionTrackerCollectionEntry' } & TransactionTrackerCollectionEntrySubstate | { substate_type: 'TransactionTrackerFieldState' } & TransactionTrackerFieldStateSubstate | { substate_type: 'TwoResourcePoolFieldState' } & TwoResourcePoolFieldStateSubstate | { substate_type: 'TypeInfoModuleFieldTypeInfo' } & TypeInfoModuleFieldTypeInfoSubstate | { substate_type: 'ValidatorFieldProtocolUpdateReadinessSignal' } & ValidatorFieldProtocolUpdateReadinessSignalSubstate | { substate_type: 'ValidatorFieldState' } & ValidatorFieldStateSubstate;
 
 export function SubstateFromJSON(json: any): Substate {
     return SubstateFromJSONTyped(json, false);
@@ -378,10 +392,14 @@ export function SubstateFromJSONTyped(json: any, ignoreDiscriminator: boolean): 
             return {...AccountAuthorizedDepositorEntrySubstateFromJSONTyped(json, true), substate_type: 'AccountAuthorizedDepositorEntry'};
         case 'AccountFieldState':
             return {...AccountFieldStateSubstateFromJSONTyped(json, true), substate_type: 'AccountFieldState'};
+        case 'AccountLockerAccountClaimsEntry':
+            return {...AccountLockerAccountClaimsEntrySubstateFromJSONTyped(json, true), substate_type: 'AccountLockerAccountClaimsEntry'};
         case 'AccountResourcePreferenceEntry':
             return {...AccountResourcePreferenceEntrySubstateFromJSONTyped(json, true), substate_type: 'AccountResourcePreferenceEntry'};
         case 'AccountVaultEntry':
             return {...AccountVaultEntrySubstateFromJSONTyped(json, true), substate_type: 'AccountVaultEntry'};
+        case 'BootLoaderModuleFieldSystemBoot':
+            return {...BootLoaderModuleFieldSystemBootSubstateFromJSONTyped(json, true), substate_type: 'BootLoaderModuleFieldSystemBoot'};
         case 'BootLoaderModuleFieldVmBoot':
             return {...BootLoaderModuleFieldVmBootSubstateFromJSONTyped(json, true), substate_type: 'BootLoaderModuleFieldVmBoot'};
         case 'ConsensusManagerFieldConfig':
@@ -489,10 +507,14 @@ export function SubstateToJSON(value?: Substate | null): any {
             return AccountAuthorizedDepositorEntrySubstateToJSON(value);
         case 'AccountFieldState':
             return AccountFieldStateSubstateToJSON(value);
+        case 'AccountLockerAccountClaimsEntry':
+            return AccountLockerAccountClaimsEntrySubstateToJSON(value);
         case 'AccountResourcePreferenceEntry':
             return AccountResourcePreferenceEntrySubstateToJSON(value);
         case 'AccountVaultEntry':
             return AccountVaultEntrySubstateToJSON(value);
+        case 'BootLoaderModuleFieldSystemBoot':
+            return BootLoaderModuleFieldSystemBootSubstateToJSON(value);
         case 'BootLoaderModuleFieldVmBoot':
             return BootLoaderModuleFieldVmBootSubstateToJSON(value);
         case 'ConsensusManagerFieldConfig':

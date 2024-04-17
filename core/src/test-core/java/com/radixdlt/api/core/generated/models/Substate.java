@@ -28,8 +28,10 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.AccessControllerFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.AccountAuthorizedDepositorEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccountFieldStateSubstate;
+import com.radixdlt.api.core.generated.models.AccountLockerAccountClaimsEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccountResourcePreferenceEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccountVaultEntrySubstate;
+import com.radixdlt.api.core.generated.models.BootLoaderModuleFieldSystemBootSubstate;
 import com.radixdlt.api.core.generated.models.BootLoaderModuleFieldVmBootSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldConfigSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentProposalStatisticSubstate;
@@ -101,10 +103,14 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = AccountAuthorizedDepositorEntrySubstate.class, name = "AccountAuthorizedDepositorEntrySubstate"),
   @JsonSubTypes.Type(value = AccountFieldStateSubstate.class, name = "AccountFieldState"),
   @JsonSubTypes.Type(value = AccountFieldStateSubstate.class, name = "AccountFieldStateSubstate"),
+  @JsonSubTypes.Type(value = AccountLockerAccountClaimsEntrySubstate.class, name = "AccountLockerAccountClaimsEntry"),
+  @JsonSubTypes.Type(value = AccountLockerAccountClaimsEntrySubstate.class, name = "AccountLockerAccountClaimsEntrySubstate"),
   @JsonSubTypes.Type(value = AccountResourcePreferenceEntrySubstate.class, name = "AccountResourcePreferenceEntry"),
   @JsonSubTypes.Type(value = AccountResourcePreferenceEntrySubstate.class, name = "AccountResourcePreferenceEntrySubstate"),
   @JsonSubTypes.Type(value = AccountVaultEntrySubstate.class, name = "AccountVaultEntry"),
   @JsonSubTypes.Type(value = AccountVaultEntrySubstate.class, name = "AccountVaultEntrySubstate"),
+  @JsonSubTypes.Type(value = BootLoaderModuleFieldSystemBootSubstate.class, name = "BootLoaderModuleFieldSystemBoot"),
+  @JsonSubTypes.Type(value = BootLoaderModuleFieldSystemBootSubstate.class, name = "BootLoaderModuleFieldSystemBootSubstate"),
   @JsonSubTypes.Type(value = BootLoaderModuleFieldVmBootSubstate.class, name = "BootLoaderModuleFieldVmBoot"),
   @JsonSubTypes.Type(value = BootLoaderModuleFieldVmBootSubstate.class, name = "BootLoaderModuleFieldVmBootSubstate"),
   @JsonSubTypes.Type(value = ConsensusManagerFieldConfigSubstate.class, name = "ConsensusManagerFieldConfig"),
@@ -308,10 +314,14 @@ static {
   mappings.put("AccountAuthorizedDepositorEntrySubstate", AccountAuthorizedDepositorEntrySubstate.class);
   mappings.put("AccountFieldState", AccountFieldStateSubstate.class);
   mappings.put("AccountFieldStateSubstate", AccountFieldStateSubstate.class);
+  mappings.put("AccountLockerAccountClaimsEntry", AccountLockerAccountClaimsEntrySubstate.class);
+  mappings.put("AccountLockerAccountClaimsEntrySubstate", AccountLockerAccountClaimsEntrySubstate.class);
   mappings.put("AccountResourcePreferenceEntry", AccountResourcePreferenceEntrySubstate.class);
   mappings.put("AccountResourcePreferenceEntrySubstate", AccountResourcePreferenceEntrySubstate.class);
   mappings.put("AccountVaultEntry", AccountVaultEntrySubstate.class);
   mappings.put("AccountVaultEntrySubstate", AccountVaultEntrySubstate.class);
+  mappings.put("BootLoaderModuleFieldSystemBoot", BootLoaderModuleFieldSystemBootSubstate.class);
+  mappings.put("BootLoaderModuleFieldSystemBootSubstate", BootLoaderModuleFieldSystemBootSubstate.class);
   mappings.put("BootLoaderModuleFieldVmBoot", BootLoaderModuleFieldVmBootSubstate.class);
   mappings.put("BootLoaderModuleFieldVmBootSubstate", BootLoaderModuleFieldVmBootSubstate.class);
   mappings.put("ConsensusManagerFieldConfig", ConsensusManagerFieldConfigSubstate.class);

@@ -38,6 +38,8 @@ public enum EntityType {
   
   GLOBALACCOUNT("GlobalAccount"),
   
+  GLOBALACCOUNTLOCKER("GlobalAccountLocker"),
+  
   GLOBALIDENTITY("GlobalIdentity"),
   
   GLOBALACCESSCONTROLLER("GlobalAccessController"),

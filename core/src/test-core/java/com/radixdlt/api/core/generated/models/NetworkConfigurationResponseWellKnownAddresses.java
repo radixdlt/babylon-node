@@ -55,6 +55,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_GENESIS_HELPER_PACKAGE,
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_FAUCET_PACKAGE,
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_POOL_PACKAGE,
+  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_LOCKER_PACKAGE,
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_CONSENSUS_MANAGER,
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_GENESIS_HELPER,
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_FAUCET,
@@ -130,6 +131,9 @@ public class NetworkConfigurationResponseWellKnownAddresses {
 
   public static final String JSON_PROPERTY_POOL_PACKAGE = "pool_package";
   private String poolPackage;
+
+  public static final String JSON_PROPERTY_LOCKER_PACKAGE = "locker_package";
+  private String lockerPackage;
 
   public static final String JSON_PROPERTY_CONSENSUS_MANAGER = "consensus_manager";
   private String consensusManager;
@@ -744,6 +748,32 @@ public class NetworkConfigurationResponseWellKnownAddresses {
   }
 
 
+  public NetworkConfigurationResponseWellKnownAddresses lockerPackage(String lockerPackage) {
+    this.lockerPackage = lockerPackage;
+    return this;
+  }
+
+   /**
+   * Get lockerPackage
+   * @return lockerPackage
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_LOCKER_PACKAGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getLockerPackage() {
+    return lockerPackage;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_LOCKER_PACKAGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setLockerPackage(String lockerPackage) {
+    this.lockerPackage = lockerPackage;
+  }
+
+
   public NetworkConfigurationResponseWellKnownAddresses consensusManager(String consensusManager) {
     this.consensusManager = consensusManager;
     return this;
@@ -883,6 +913,7 @@ public class NetworkConfigurationResponseWellKnownAddresses {
         Objects.equals(this.genesisHelperPackage, networkConfigurationResponseWellKnownAddresses.genesisHelperPackage) &&
         Objects.equals(this.faucetPackage, networkConfigurationResponseWellKnownAddresses.faucetPackage) &&
         Objects.equals(this.poolPackage, networkConfigurationResponseWellKnownAddresses.poolPackage) &&
+        Objects.equals(this.lockerPackage, networkConfigurationResponseWellKnownAddresses.lockerPackage) &&
         Objects.equals(this.consensusManager, networkConfigurationResponseWellKnownAddresses.consensusManager) &&
         Objects.equals(this.genesisHelper, networkConfigurationResponseWellKnownAddresses.genesisHelper) &&
         Objects.equals(this.faucet, networkConfigurationResponseWellKnownAddresses.faucet) &&
@@ -891,7 +922,7 @@ public class NetworkConfigurationResponseWellKnownAddresses {
 
   @Override
   public int hashCode() {
-    return Objects.hash(xrd, secp256k1SignatureVirtualBadge, ed25519SignatureVirtualBadge, packageOfDirectCallerVirtualBadge, globalCallerVirtualBadge, systemTransactionBadge, packageOwnerBadge, validatorOwnerBadge, accountOwnerBadge, identityOwnerBadge, packagePackage, resourcePackage, accountPackage, identityPackage, consensusManagerPackage, accessControllerPackage, transactionProcessorPackage, metadataModulePackage, royaltyModulePackage, roleAssignmentModulePackage, genesisHelperPackage, faucetPackage, poolPackage, consensusManager, genesisHelper, faucet, transactionTracker);
+    return Objects.hash(xrd, secp256k1SignatureVirtualBadge, ed25519SignatureVirtualBadge, packageOfDirectCallerVirtualBadge, globalCallerVirtualBadge, systemTransactionBadge, packageOwnerBadge, validatorOwnerBadge, accountOwnerBadge, identityOwnerBadge, packagePackage, resourcePackage, accountPackage, identityPackage, consensusManagerPackage, accessControllerPackage, transactionProcessorPackage, metadataModulePackage, royaltyModulePackage, roleAssignmentModulePackage, genesisHelperPackage, faucetPackage, poolPackage, lockerPackage, consensusManager, genesisHelper, faucet, transactionTracker);
   }
 
   @Override
@@ -921,6 +952,7 @@ public class NetworkConfigurationResponseWellKnownAddresses {
     sb.append("    genesisHelperPackage: ").append(toIndentedString(genesisHelperPackage)).append("\n");
     sb.append("    faucetPackage: ").append(toIndentedString(faucetPackage)).append("\n");
     sb.append("    poolPackage: ").append(toIndentedString(poolPackage)).append("\n");
+    sb.append("    lockerPackage: ").append(toIndentedString(lockerPackage)).append("\n");
     sb.append("    consensusManager: ").append(toIndentedString(consensusManager)).append("\n");
     sb.append("    genesisHelper: ").append(toIndentedString(genesisHelper)).append("\n");
     sb.append("    faucet: ").append(toIndentedString(faucet)).append("\n");

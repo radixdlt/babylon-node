@@ -65,6 +65,7 @@ pub fn to_api_entity_type(entity_type: EntityType) -> models::EntityType {
         EntityType::GlobalValidator => models::EntityType::GlobalValidator,
         EntityType::GlobalAccessController => models::EntityType::GlobalAccessController,
         EntityType::GlobalAccount => models::EntityType::GlobalAccount,
+        EntityType::GlobalAccountLocker => models::EntityType::GlobalAccountLocker,
         EntityType::GlobalIdentity => models::EntityType::GlobalIdentity,
         EntityType::GlobalGenericComponent => models::EntityType::GlobalGenericComponent,
         EntityType::GlobalVirtualSecp256k1Account => {
@@ -122,7 +123,13 @@ pub fn to_api_substate_id(
 
     let (substate_type, partition_kind) = match typed_substate_key {
         TypedSubstateKey::BootLoader(TypedBootLoaderSubstateKey::BootLoaderField(
-            BootLoaderField::Vm,
+            BootLoaderField::SystemBoot,
+        )) => (
+            SubstateType::BootLoaderModuleFieldSystemBoot,
+            models::PartitionKind::Field,
+        ),
+        TypedSubstateKey::BootLoader(TypedBootLoaderSubstateKey::BootLoaderField(
+            BootLoaderField::VmBoot,
         )) => (
             SubstateType::BootLoaderModuleFieldVmBoot,
             models::PartitionKind::Field,
@@ -345,6 +352,12 @@ pub fn to_api_substate_id(
             AccountTypedSubstateKey::AuthorizedDepositorKeyValueEntry(_),
         )) => (
             SubstateType::AccountAuthorizedDepositorEntry,
+            models::PartitionKind::KeyValue,
+        ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountLocker(
+            AccountLockerTypedSubstateKey::AccountClaimsKeyValueEntry(_),
+        )) => (
+            SubstateType::AccountLockerAccountClaimsEntry,
             models::PartitionKind::KeyValue,
         ),
         TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccessController(
@@ -598,6 +611,13 @@ pub fn to_api_object_module_partition_kind(
             AccountPartitionOffset::ResourcePreferenceKeyValue => models::PartitionKind::KeyValue,
             AccountPartitionOffset::AuthorizedDepositorKeyValue => models::PartitionKind::KeyValue,
         },
+        EntityType::GlobalAccountLocker => {
+            match AccountLockerPartitionOffset::try_from(partition_offset)? {
+                AccountLockerPartitionOffset::AccountClaimsKeyValue => {
+                    models::PartitionKind::KeyValue
+                }
+            }
+        }
         EntityType::GlobalVirtualSecp256k1Identity
         | EntityType::GlobalVirtualEd25519Identity
         | EntityType::GlobalIdentity => Err(())?, // Identity doesn't have any substates

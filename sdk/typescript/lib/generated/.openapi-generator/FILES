@@ -16,12 +16,16 @@ models/AccessRuleNode.ts
 models/AccessRuleNodeBase.ts
 models/AccessRuleNodeType.ts
 models/AccessRuleType.ts
+models/AccountAddressKey.ts
 models/AccountAuthorizedDepositorEntrySubstate.ts
 models/AccountAuthorizedDepositorEntrySubstateAllOf.ts
 models/AccountAuthorizedDepositorEntryValue.ts
 models/AccountFieldStateSubstate.ts
 models/AccountFieldStateSubstateAllOf.ts
 models/AccountFieldStateValue.ts
+models/AccountLockerAccountClaimsEntrySubstate.ts
+models/AccountLockerAccountClaimsEntrySubstateAllOf.ts
+models/AccountLockerAccountClaimsEntryValue.ts
 models/AccountResourcePreferenceEntrySubstate.ts
 models/AccountResourcePreferenceEntrySubstateAllOf.ts
 models/AccountResourcePreferenceEntryValue.ts
@@ -77,6 +81,9 @@ models/BlueprintTypeReference.ts
 models/BlueprintTypeReferenceBase.ts
 models/BlueprintTypeReferenceKind.ts
 models/BlueprintVersionKey.ts
+models/BootLoaderModuleFieldSystemBootSubstate.ts
+models/BootLoaderModuleFieldSystemBootSubstateAllOf.ts
+models/BootLoaderModuleFieldSystemBootValue.ts
 models/BootLoaderModuleFieldVmBootSubstate.ts
 models/BootLoaderModuleFieldVmBootSubstateAllOf.ts
 models/BootLoaderModuleFieldVmBootValue.ts
@@ -592,6 +599,7 @@ models/SubstateSystemStructureBase.ts
 models/SubstateSystemStructureType.ts
 models/SubstateType.ts
 models/SubstateValue.ts
+models/SystemCostingParameters.ts
 models/SystemFieldKind.ts
 models/SystemFieldStructure.ts
 models/SystemFieldStructureAllOf.ts

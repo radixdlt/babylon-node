@@ -2,10 +2,29 @@ use crate::engine_prelude::*;
 use crate::protocol::*;
 use crate::transaction::FlashTransactionV1;
 
+const ANEMONE_ENTRIES: [(&str, ProtocolUpdateEntry); 4] = [
+    (
+        "anemone-validator-fee-fix",
+        ProtocolUpdateEntry::ValidatorCreationFeeFix,
+    ),
+    (
+        "anemone-seconds-precision",
+        ProtocolUpdateEntry::SecondPrecisionTimestamp,
+    ),
+    ("anemone-vm-boot", ProtocolUpdateEntry::Bls12381AndKeccak256),
+    ("anemone-pools", ProtocolUpdateEntry::PoolMathPrecisionFix),
+];
+
 pub struct AnemoneProtocolUpdateDefinition;
 
 impl ProtocolUpdateDefinition for AnemoneProtocolUpdateDefinition {
     type Overrides = ();
+
+    fn state_computer_config(
+        network_definition: &NetworkDefinition,
+    ) -> ProtocolStateComputerConfig {
+        ProtocolStateComputerConfig::default(network_definition.clone())
+    }
 
     fn create_updater(
         new_protocol_version: &ProtocolVersionName,
@@ -15,18 +34,22 @@ impl ProtocolUpdateDefinition for AnemoneProtocolUpdateDefinition {
         Box::new(BatchedUpdater::new(
             new_protocol_version.clone(),
             Self::state_computer_config(network_definition),
-            AnemoneBatchGenerator,
+            AnemoneBatchGenerator::new(network_definition),
         ))
-    }
-
-    fn state_computer_config(
-        network_definition: &NetworkDefinition,
-    ) -> ProtocolStateComputerConfig {
-        ProtocolStateComputerConfig::default(network_definition.clone())
     }
 }
 
-struct AnemoneBatchGenerator;
+struct AnemoneBatchGenerator {
+    network: NetworkDefinition,
+}
+
+impl AnemoneBatchGenerator {
+    pub fn new(network: &NetworkDefinition) -> Self {
+        Self {
+            network: network.clone(),
+        }
+    }
+}
 
 impl UpdateBatchGenerator for AnemoneBatchGenerator {
     fn generate_batch(
@@ -36,31 +59,19 @@ impl UpdateBatchGenerator for AnemoneBatchGenerator {
     ) -> Option<Vec<UpdateTransaction>> {
         match batch_index {
             0 => {
-                // Just a single batch for Anemone, which includes the following transactions:
-                Some(vec![
-                    FlashTransactionV1 {
-                        name: "anemone-validator-fee-fix".to_string(),
-                        state_updates: generate_validator_fee_fix_state_updates(store),
-                    }
-                    .into(),
-                    FlashTransactionV1 {
-                        name: "anemone-seconds-precision".to_string(),
-                        state_updates: generate_seconds_precision_state_updates(store),
-                    }
-                    .into(),
-                    FlashTransactionV1 {
-                        name: "anemone-vm-boot".to_string(),
-                        state_updates: generate_vm_boot_scrypto_version_state_updates(
-                            ScryptoVmVersion::V1_1,
-                        ),
-                    }
-                    .into(),
-                    FlashTransactionV1 {
-                        name: "anemone-pools".to_string(),
-                        state_updates: generate_pools_v1_1_state_updates(store),
-                    }
-                    .into(),
-                ])
+                // Just a single batch for Anemone, which includes the `ANEMONE_ENTRIES`:
+                Some(
+                    ANEMONE_ENTRIES
+                        .iter()
+                        .map(|(name, entry)| {
+                            FlashTransactionV1 {
+                                name: name.to_string(),
+                                state_updates: entry.generate_state_updates(store, &self.network),
+                            }
+                            .into()
+                        })
+                        .collect(),
+                )
             }
             _ => None,
         }
