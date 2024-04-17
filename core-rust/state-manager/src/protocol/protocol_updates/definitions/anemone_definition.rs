@@ -28,7 +28,7 @@ impl ProtocolUpdateDefinition for AnemoneProtocolUpdateDefinition {
         Box::new(BatchedUpdater::new(
             new_protocol_version.clone(),
             Self::state_computer_config(network_definition),
-            ScryptoEntriesBatchGenerator::new(&ANEMONE_ENTRIES),
+            ScryptoEntriesBatchGenerator::new(network_definition, &ANEMONE_ENTRIES),
         ))
     }
 }

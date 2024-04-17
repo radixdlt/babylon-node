@@ -15,12 +15,14 @@ use crate::protocol::*;
 use crate::transaction::*;
 
 struct ScryptoEntriesBatchGenerator {
+    network: NetworkDefinition,
     named_entries: Vec<(String, ProtocolUpdateEntry)>,
 }
 
 impl ScryptoEntriesBatchGenerator {
-    pub fn new(named_entries: &[(&str, ProtocolUpdateEntry)]) -> Self {
+    pub fn new(network: &NetworkDefinition, named_entries: &[(&str, ProtocolUpdateEntry)]) -> Self {
         Self {
+            network: network.clone(),
             named_entries: named_entries
                 .iter()
                 .map(|(name, entry)| (name.to_string(), *entry))
@@ -33,7 +35,6 @@ impl UpdateBatchGenerator for ScryptoEntriesBatchGenerator {
     fn generate_batch(
         &self,
         store: &impl SubstateDatabase,
-        network: &NetworkDefinition,
         batch_index: u32,
     ) -> Option<Vec<UpdateTransaction>> {
         match batch_index {
@@ -44,7 +45,7 @@ impl UpdateBatchGenerator for ScryptoEntriesBatchGenerator {
                     .map(|(name, entry)| {
                         FlashTransactionV1 {
                             name: name.clone(),
-                            state_updates: entry.generate_state_updates(store, network),
+                            state_updates: entry.generate_state_updates(store, &self.network),
                         }
                         .into()
                     })

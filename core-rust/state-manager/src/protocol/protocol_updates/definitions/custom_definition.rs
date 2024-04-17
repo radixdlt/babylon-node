@@ -44,7 +44,6 @@ impl UpdateBatchGenerator for ArbitraryBatchGenerator {
     fn generate_batch(
         &self,
         _store: &impl SubstateDatabase,
-        _network: &NetworkDefinition,
         batch_index: u32,
     ) -> Option<Vec<UpdateTransaction>> {
         self.batches.get(batch_index as usize).cloned()

@@ -45,7 +45,6 @@ impl<G: UpdateBatchGenerator> BatchedUpdater<G> {
 impl<R: UpdateBatchGenerator> ProtocolUpdater for BatchedUpdater<R> {
     fn execute_remaining_state_updates(&self, database: Arc<DbLock<ActualStateManagerDatabase>>) {
         let database = database.lock();
-        let network = &self.new_state_computer_config.network;
         let mut txn_committer = ProtocolUpdateTransactionCommitter::new(
             self.new_protocol_version.clone(),
             database.deref(),
@@ -61,7 +60,7 @@ impl<R: UpdateBatchGenerator> ProtocolUpdater for BatchedUpdater<R> {
         while let Some(next_batch_idx) = txn_committer.next_committable_batch_idx() {
             let batch = self
                 .resolver
-                .generate_batch(database.deref(), network, next_batch_idx);
+                .generate_batch(database.deref(), next_batch_idx);
             match batch {
                 Some(flash_txns) => {
                     txn_committer.commit_batch(flash_txns);
@@ -78,7 +77,6 @@ pub(crate) trait UpdateBatchGenerator {
     fn generate_batch(
         &self,
         state_database: &impl SubstateDatabase,
-        network: &NetworkDefinition,
         batch_index: u32,
     ) -> Option<Vec<UpdateTransaction>>;
 }

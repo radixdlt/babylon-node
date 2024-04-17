@@ -14,7 +14,7 @@
 
 import { exists, mapValues } from '../runtime';
 /**
- * An account which can claim the contents of associated vaults.
+ * 
  * @export
  * @interface AccountAddressKey
  */

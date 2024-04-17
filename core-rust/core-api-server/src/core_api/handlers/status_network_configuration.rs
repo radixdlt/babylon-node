@@ -10,8 +10,8 @@ pub(crate) async fn handle_status_network_configuration(
     let bech32_encoder = AddressBech32Encoder::new(&network);
     let hrp_set: HrpSet = (&network).into();
 
-    let address_types = ALL_ENTITY_TYPES
-        .into_iter()
+    let address_types = (0..=u8::MAX)
+        .filter_map(EntityType::from_repr)
         .map(|entity_type| to_api_address_type(&hrp_set, entity_type))
         .collect::<Vec<_>>();
 
@@ -77,6 +77,7 @@ pub(crate) async fn handle_status_network_configuration(
                 .unwrap(),
             faucet_package: bech32_encoder.encode(FAUCET_PACKAGE.as_ref()).unwrap(),
             pool_package: bech32_encoder.encode(POOL_PACKAGE.as_ref()).unwrap(),
+            locker_package: bech32_encoder.encode(LOCKER_PACKAGE.as_ref()).unwrap(),
             consensus_manager: bech32_encoder.encode(CONSENSUS_MANAGER.as_ref()).unwrap(),
             genesis_helper: bech32_encoder.encode(GENESIS_HELPER.as_ref()).unwrap(),
             faucet: bech32_encoder.encode(FAUCET.as_ref()).unwrap(),
@@ -84,35 +85,6 @@ pub(crate) async fn handle_status_network_configuration(
         }),
     }))
 }
-
-const ALL_ENTITY_TYPES: [EntityType; 17] = [
-    // Package
-    EntityType::GlobalPackage,
-    // System
-    EntityType::GlobalConsensusManager,
-    EntityType::GlobalValidator,
-    // Standard global
-    EntityType::GlobalGenericComponent,
-    EntityType::GlobalAccount,
-    EntityType::GlobalIdentity,
-    EntityType::GlobalAccessController,
-    // Secp256k1 Virtual Global
-    EntityType::GlobalVirtualSecp256k1Account,
-    EntityType::GlobalVirtualSecp256k1Identity,
-    // Ed25519 Virtual Global Components
-    EntityType::GlobalVirtualEd25519Account,
-    EntityType::GlobalVirtualEd25519Identity,
-    // Fungible-related
-    EntityType::GlobalFungibleResourceManager,
-    EntityType::InternalFungibleVault,
-    // Non-fungible related
-    EntityType::GlobalNonFungibleResourceManager,
-    EntityType::InternalNonFungibleVault,
-    // Internal misc
-    EntityType::InternalGenericComponent,
-    // Internal key-value-store-like
-    EntityType::InternalKeyValueStore,
-];
 
 fn to_api_address_type(hrp_set: &HrpSet, entity_type: EntityType) -> models::AddressType {
     // If you add another entity type here, add it to the ALL_ENTITY_TYPES list above.

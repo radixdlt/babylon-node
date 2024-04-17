@@ -29,9 +29,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * An owned Key-Value Store entity, which maps &#x60;ResourceAddress&#x60;es to Vault &#x60;EntityAddress&#x60;es. 
+ * AccountLockerAccountClaimsEntryValue
  */
-@ApiModel(description = "An owned Key-Value Store entity, which maps `ResourceAddress`es to Vault `EntityAddress`es. ")
 @JsonPropertyOrder({
   AccountLockerAccountClaimsEntryValue.JSON_PROPERTY_RESOURCE_VAULTS
 })

@@ -21,7 +21,7 @@ import {
 } from './EntityReference';
 
 /**
- * An owned Key-Value Store entity, which maps `ResourceAddress`es to Vault `EntityAddress`es.
+ * 
  * @export
  * @interface AccountLockerAccountClaimsEntryValue
  */
