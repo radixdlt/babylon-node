@@ -1859,7 +1859,7 @@ components:
           format: int64
           minimum: 0
           maximum: 4294967295
-          description: An integer between `0` and `2^32 - 1`, representing the number of execution cost units loaned from system.
+          description: An integer between `0` and `2^32 - 1`, representing the maximum number of cost units which can be used before fee is locked from a vault.
         finalization_cost_unit_price:
           type: string
           description: |
@@ -1874,7 +1874,8 @@ components:
         xrd_usd_price:
           type: string
           description: |
-            The string-encoded decimal representing the price of 1 USD, expressed in XRD.
+            The string-encoded decimal representing what amount of XRD is consumed by a Royalty of 1 USD.
+            This is fixed for a given protocol version, so is not an accurate representation of the XRD price.
             A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
         xrd_storage_price:
           type: string
@@ -4044,6 +4045,14 @@ components:
           $ref: "#/components/schemas/IntentHash"
         intent_hash_bech32m:
           $ref: "#/components/schemas/IntentHashBech32m"
+    AccountAddressKey:
+      type: object
+      required:
+        - account_address
+      properties:
+        account_address:
+          type: string
+          description: The Bech32m-encoded human readable version of the account's global address.
     GenericKey:
       type: object
       properties:
@@ -4097,7 +4106,7 @@ components:
           format: int64
           minimum: 0
           maximum: 4294967295
-          description: An integer between `0` and `2^32 - 1`, representing the number of execution cost units loaned from system.
+          description: An integer between `0` and `2^32 - 1`, representing the maximum number of cost units which can be used before fee is locked from a vault.
         finalization_cost_unit_price:
           type: string
           description: |
@@ -4112,7 +4121,8 @@ components:
         xrd_usd_price:
           type: string
           description: |
-            The string-encoded decimal representing the price of 1 USD, expressed in XRD.
+            The string-encoded decimal representing what amount of XRD is consumed by a Royalty of 1 USD.
+            This is fixed for a given protocol version, so is not an accurate representation of the XRD price.
             A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
         xrd_storage_price:
           type: string
@@ -5369,26 +5379,17 @@ components:
           properties:
             key:
               $ref: '#/components/schemas/AccountAddressKey'
+              description: An account which can claim the contents of associated vaults.
             value:
               $ref: '#/components/schemas/AccountLockerAccountClaimsEntryValue'
-    AccountAddressKey:
-      type: object
-      description: An account which can claim the contents of associated vaults.
-      required:
-        - account_address
-      properties:
-        account_address:
-          type: string
-          description: The Bech32m-encoded human readable version of the account's global address.
     AccountLockerAccountClaimsEntryValue:
       type: object
-      description: |
-        An owned Key-Value Store entity, which maps `ResourceAddress`es to Vault `EntityAddress`es.
       required:
         - resource_vaults
       properties:
         resource_vaults:
           $ref: '#/components/schemas/EntityReference'
+          description: An owned Key-Value Store entity, which maps each `ResourceAddress` to its corresponding `Vault`.
     AccessControllerFieldStateSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -6373,6 +6374,7 @@ components:
             - genesis_helper_package
             - faucet_package
             - pool_package
+            - locker_package
             - consensus_manager
             - genesis_helper
             - faucet
@@ -6423,6 +6425,8 @@ components:
             faucet_package:
               type: string
             pool_package:
+              type: string
+            locker_package:
               type: string
             consensus_manager:
               type: string

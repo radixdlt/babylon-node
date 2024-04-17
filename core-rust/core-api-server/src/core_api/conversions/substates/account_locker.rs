@@ -24,8 +24,8 @@ pub fn to_api_account_locker_account_claim_entry(
         models::AccountAddressKey {
             account_address: to_api_component_address(context, &global_account.0)?,
         },
-        resource_vaults => {
-            resource_vaults: Box::new(to_api_entity_reference(context, &resource_vaults.0)?),
+        Own(resource_vaults) => {
+            resource_vaults: Box::new(to_api_entity_reference(context, resource_vaults)?),
         }
     ))
 }

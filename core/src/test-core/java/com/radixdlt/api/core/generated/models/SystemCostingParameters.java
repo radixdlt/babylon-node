@@ -129,13 +129,13 @@ public class SystemCostingParameters {
   }
 
    /**
-   * An integer between &#x60;0&#x60; and &#x60;2^32 - 1&#x60;, representing the number of execution cost units loaned from system.
+   * An integer between &#x60;0&#x60; and &#x60;2^32 - 1&#x60;, representing the maximum number of cost units which can be used before fee is locked from a vault.
    * minimum: 0
    * maximum: 4294967295
    * @return executionCostUnitLoan
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `2^32 - 1`, representing the number of execution cost units loaned from system.")
+  @ApiModelProperty(required = true, value = "An integer between `0` and `2^32 - 1`, representing the maximum number of cost units which can be used before fee is locked from a vault.")
   @JsonProperty(JSON_PROPERTY_EXECUTION_COST_UNIT_LOAN)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -211,11 +211,11 @@ public class SystemCostingParameters {
   }
 
    /**
-   * The string-encoded decimal representing the price of 1 USD, expressed in XRD. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(192 - 1) &lt;&#x3D; m &lt; 2^(192 - 1)&#x60;. 
+   * The string-encoded decimal representing what amount of XRD is consumed by a Royalty of 1 USD. This is fixed for a given protocol version, so is not an accurate representation of the XRD price. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(192 - 1) &lt;&#x3D; m &lt; 2^(192 - 1)&#x60;. 
    * @return xrdUsdPrice
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The string-encoded decimal representing the price of 1 USD, expressed in XRD. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. ")
+  @ApiModelProperty(required = true, value = "The string-encoded decimal representing what amount of XRD is consumed by a Royalty of 1 USD. This is fixed for a given protocol version, so is not an accurate representation of the XRD price. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. ")
   @JsonProperty(JSON_PROPERTY_XRD_USD_PRICE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 

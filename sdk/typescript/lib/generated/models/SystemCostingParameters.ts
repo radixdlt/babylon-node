@@ -33,7 +33,7 @@ export interface SystemCostingParameters {
      */
     execution_cost_unit_limit: number;
     /**
-     * An integer between `0` and `2^32 - 1`, representing the number of execution cost units loaned from system.
+     * An integer between `0` and `2^32 - 1`, representing the maximum number of cost units which can be used before fee is locked from a vault.
      * @type {number}
      * @memberof SystemCostingParameters
      */
@@ -52,7 +52,8 @@ export interface SystemCostingParameters {
      */
     finalization_cost_unit_limit: number;
     /**
-     * The string-encoded decimal representing the price of 1 USD, expressed in XRD.
+     * The string-encoded decimal representing what amount of XRD is consumed by a Royalty of 1 USD.
+     * This is fixed for a given protocol version, so is not an accurate representation of the XRD price.
      * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
      * @type {string}
      * @memberof SystemCostingParameters

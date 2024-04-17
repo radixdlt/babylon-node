@@ -192,8 +192,8 @@ pub fn to_api_substate(
             ),
         )) => to_api_access_controller_substate(context, substate)?,
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::AccountLocker(
-            AccountLockerTypedSubstateValue::Field(_),
-        )) => panic!("no fields on AccountLocker"),
+            AccountLockerTypedSubstateValue::Field(x),
+        )) => match *x {}, // The field enum is empty, the dereference allows the compiler to realise that.
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::AccountLocker(
             AccountLockerTypedSubstateValue::AccountClaimsKeyValue(substate),
         )) => to_api_account_locker_account_claim_entry(context, typed_substate_key, substate)?,

@@ -28,9 +28,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * An account which can claim the contents of associated vaults.
+ * AccountAddressKey
  */
-@ApiModel(description = "An account which can claim the contents of associated vaults.")
 @JsonPropertyOrder({
   AccountAddressKey.JSON_PROPERTY_ACCOUNT_ADDRESS
 })

@@ -162,6 +162,12 @@ export interface NetworkConfigurationResponseWellKnownAddresses {
      * @type {string}
      * @memberof NetworkConfigurationResponseWellKnownAddresses
      */
+    locker_package: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof NetworkConfigurationResponseWellKnownAddresses
+     */
     consensus_manager: string;
     /**
      * 
@@ -211,6 +217,7 @@ export function instanceOfNetworkConfigurationResponseWellKnownAddresses(value: 
     isInstance = isInstance && "genesis_helper_package" in value;
     isInstance = isInstance && "faucet_package" in value;
     isInstance = isInstance && "pool_package" in value;
+    isInstance = isInstance && "locker_package" in value;
     isInstance = isInstance && "consensus_manager" in value;
     isInstance = isInstance && "genesis_helper" in value;
     isInstance = isInstance && "faucet" in value;
@@ -252,6 +259,7 @@ export function NetworkConfigurationResponseWellKnownAddressesFromJSONTyped(json
         'genesis_helper_package': json['genesis_helper_package'],
         'faucet_package': json['faucet_package'],
         'pool_package': json['pool_package'],
+        'locker_package': json['locker_package'],
         'consensus_manager': json['consensus_manager'],
         'genesis_helper': json['genesis_helper'],
         'faucet': json['faucet'],
@@ -291,6 +299,7 @@ export function NetworkConfigurationResponseWellKnownAddressesToJSON(value?: Net
         'genesis_helper_package': value.genesis_helper_package,
         'faucet_package': value.faucet_package,
         'pool_package': value.pool_package,
+        'locker_package': value.locker_package,
         'consensus_manager': value.consensus_manager,
         'genesis_helper': value.genesis_helper,
         'faucet': value.faucet,

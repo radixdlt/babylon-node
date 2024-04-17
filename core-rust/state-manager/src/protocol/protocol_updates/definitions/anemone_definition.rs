@@ -2,8 +2,6 @@ use crate::engine_prelude::*;
 use crate::protocol::*;
 use crate::transaction::FlashTransactionV1;
 
-pub const DEFAULT_MAX_VERTEX_TRANSACTION_COUNT: u32 = 100;
-
 const ANEMONE_ENTRIES: [(&str, ProtocolUpdateEntry); 4] = [
     (
         "anemone-validator-fee-fix",
@@ -36,18 +34,27 @@ impl ProtocolUpdateDefinition for AnemoneProtocolUpdateDefinition {
         Box::new(BatchedUpdater::new(
             new_protocol_version.clone(),
             Self::state_computer_config(network_definition),
-            AnemoneBatchGenerator,
+            AnemoneBatchGenerator::new(network_definition),
         ))
     }
 }
 
-struct AnemoneBatchGenerator;
+struct AnemoneBatchGenerator {
+    network: NetworkDefinition,
+}
+
+impl AnemoneBatchGenerator {
+    pub fn new(network: &NetworkDefinition) -> Self {
+        Self {
+            network: network.clone(),
+        }
+    }
+}
 
 impl UpdateBatchGenerator for AnemoneBatchGenerator {
     fn generate_batch(
         &self,
         store: &impl SubstateDatabase,
-        network: &NetworkDefinition,
         batch_index: u32,
     ) -> Option<Vec<UpdateTransaction>> {
         match batch_index {
@@ -59,7 +66,7 @@ impl UpdateBatchGenerator for AnemoneBatchGenerator {
                         .map(|(name, entry)| {
                             FlashTransactionV1 {
                                 name: name.to_string(),
-                                state_updates: entry.generate_state_updates(store, network),
+                                state_updates: entry.generate_state_updates(store, &self.network),
                             }
                             .into()
                         })
