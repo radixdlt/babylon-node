@@ -106,7 +106,7 @@ extern "system" fn Java_com_radixdlt_rev2_ScryptoConstants_getValidatorOwnerToke
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_rev2_ScryptoConstants_getAccountLockerPackageAddress(
+extern "system" fn Java_com_radixdlt_rev2_ScryptoConstants_getLockerPackageAddress(
     env: JNIEnv,
     _class: JClass,
     request_payload: jbyteArray,

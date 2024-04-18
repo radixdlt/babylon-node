@@ -142,8 +142,7 @@ public final class BottlenoseProtocolUpdateTest {
             .network(Network.INTEGRATIONTESTNET.getLogicalName())
             .target(
                 new BlueprintFunctionTargetIdentifier()
-                    .packageAddress(
-                        addressing.encode(ScryptoConstants.ACCOUNT_LOCKER_PACKAGE_ADDRESS))
+                    .packageAddress(addressing.encode(ScryptoConstants.LOCKER_PACKAGE_ADDRESS))
                     .blueprintName("AccountLocker")
                     .functionName("instantiate_simple")
                     .type(TargetIdentifierType.FUNCTION))

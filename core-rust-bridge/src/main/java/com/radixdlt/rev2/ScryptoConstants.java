@@ -96,8 +96,8 @@ public final class ScryptoConstants {
           .build(new TypeToken<Natives.Call1<Tuple.Tuple0, ComponentAddress>>() {})
           .call(Tuple.Tuple0.of());
 
-  public static final PackageAddress ACCOUNT_LOCKER_PACKAGE_ADDRESS =
-      Natives.builder(ScryptoConstants::getAccountLockerPackageAddress)
+  public static final PackageAddress LOCKER_PACKAGE_ADDRESS =
+      Natives.builder(ScryptoConstants::getLockerPackageAddress)
           .build(new TypeToken<Natives.Call1<Tuple.Tuple0, PackageAddress>>() {})
           .call(Tuple.Tuple0.of());
 
@@ -109,5 +109,5 @@ public final class ScryptoConstants {
 
   private static native byte[] getValidatorOwnerTokenResourceAddress(byte[] unused);
 
-  private static native byte[] getAccountLockerPackageAddress(byte[] unused);
+  private static native byte[] getLockerPackageAddress(byte[] unused);
 }
