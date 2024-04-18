@@ -17,8 +17,11 @@ pub trait ProtocolUpdateDefinition {
 
     /// Returns the new configuration that the state computer
     /// should use after enacting the given protocol version.
-    fn state_computer_config(network_definition: &NetworkDefinition)
-        -> ProtocolStateComputerConfig;
+    fn state_computer_config(
+        network_definition: &NetworkDefinition,
+    ) -> ProtocolStateComputerConfig {
+        ProtocolStateComputerConfig::default(network_definition.clone())
+    }
 
     fn create_updater(
         new_protocol_version: &ProtocolVersionName,

@@ -13,10 +13,4 @@ impl ProtocolUpdateDefinition for DefaultConfigOnlyProtocolDefinition {
     ) -> Box<dyn ProtocolUpdater> {
         Box::new(NoOpProtocolUpdater)
     }
-
-    fn state_computer_config(
-        network_definition: &NetworkDefinition,
-    ) -> ProtocolStateComputerConfig {
-        ProtocolStateComputerConfig::default(network_definition.clone())
-    }
 }

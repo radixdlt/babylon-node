@@ -34,12 +34,6 @@ impl ProtocolUpdateDefinition for CustomProtocolUpdateDefinition {
             },
         ))
     }
-
-    fn state_computer_config(
-        network_definition: &NetworkDefinition,
-    ) -> ProtocolStateComputerConfig {
-        ProtocolStateComputerConfig::default(network_definition.clone())
-    }
 }
 
 pub struct ArbitraryBatchGenerator {

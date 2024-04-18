@@ -38,10 +38,4 @@ impl ProtocolUpdateDefinition for TestProtocolUpdateDefinition {
             },
         ))
     }
-
-    fn state_computer_config(
-        network_definition: &NetworkDefinition,
-    ) -> ProtocolStateComputerConfig {
-        ProtocolStateComputerConfig::default(network_definition.clone())
-    }
 }

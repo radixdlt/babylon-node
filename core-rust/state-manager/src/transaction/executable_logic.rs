@@ -188,32 +188,22 @@ impl<'a, S: SubstateDatabase> TransactionLogic<S> for ConfiguredExecutable<'a> {
         match self {
             ConfiguredExecutable::GenesisFlash { flash_receipt } => flash_receipt.into(),
             ConfiguredExecutable::SystemFlash { state_updates } => {
-                let mut substate_schema_mapper =
-                    SubstateSchemaMapper::new(SystemDatabaseReader::new(store));
-                substate_schema_mapper.add_for_all_individually_updated(&state_updates);
-                let substate_system_structures = substate_schema_mapper.done();
-
-                // Sanity check that all updates are to existing nodes so that
-                // we can assure there are no new entities in the receipt
-                let reader = SystemDatabaseReader::new(store);
-                for (node_id, ..) in &state_updates.by_node {
-                    reader
-                        .get_object_info(*node_id)
-                        .expect("Substate flash is currently only supported for existing nodes.");
-                }
+                let application_events = Vec::new();
+                let system_structure =
+                    SystemStructure::resolve(store, &state_updates, &application_events);
+                let new_node_ids = collect_new_node_ids(&state_updates);
+                let state_update_summary =
+                    StateUpdateSummary::new(store, new_node_ids, &state_updates);
 
                 let commit_result = CommitResult {
                     state_updates,
-                    state_update_summary: Default::default(),
+                    state_update_summary,
                     fee_source: Default::default(),
                     fee_destination: Default::default(),
                     outcome: TransactionOutcome::Success(vec![]),
-                    application_events: vec![],
+                    application_events,
                     application_logs: vec![],
-                    system_structure: SystemStructure {
-                        substate_system_structures,
-                        event_system_structures: index_map_new(),
-                    },
+                    system_structure,
                     execution_trace: None,
                 };
 
@@ -252,4 +242,20 @@ impl<'a, S: SubstateDatabase> TransactionLogic<S> for ConfiguredExecutable<'a> {
             }
         }
     }
+}
+
+/// Traverses the given [`StateUpdates`] and returns [`NodeId`]s of the newly-created entities.
+///
+/// Note: this assumes that the [`TYPE_INFO_FIELD_PARTITION`] is mandatory and immutable, i.e. it is
+/// written to exactly once, at the creation of its entity.
+fn collect_new_node_ids(state_updates: &StateUpdates) -> IndexSet<NodeId> {
+    state_updates
+        .by_node
+        .iter()
+        .filter(|(_node_id, node_state_updates)| {
+            let NodeStateUpdates::Delta { by_partition } = node_state_updates;
+            by_partition.contains_key(&TYPE_INFO_FIELD_PARTITION)
+        })
+        .map(|(node_id, _node_state_updates)| *node_id)
+        .collect()
 }
