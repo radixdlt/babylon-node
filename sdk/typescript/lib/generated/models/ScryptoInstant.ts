@@ -31,12 +31,13 @@ export interface ScryptoInstant {
     unix_timestamp_seconds: string;
     /**
      * The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use "Z"
-     * (denoting UTC) and include milliseconds (which are always `000`).
-     * E.g.: `2023-01-26T18:30:09.000Z`.
+     * (denoting UTC) and a second-precision (i.e. *skipping* the `.000` milliseconds part).
+     * E.g.: `2023-01-26T18:30:09Z`.
      * 
      * Note: This field will *not* be present if the actual on-ledger `unix_timestamp_seconds`
-     * value cannot be expressed as a RFC 3339 / ISO 8601 string (i.e. in case of extreme
-     * signed 64-bit integer values).
+     * value is outside the basic range supported by the RFC 3339 / ISO 8601 standard, which
+     * starts at year 1583 (i.e. the beginning of the Gregorian calendar) and ends at year
+     * 9999 (inclusive).
      * @type {string}
      * @memberof ScryptoInstant
      */
