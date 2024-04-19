@@ -164,7 +164,7 @@ pub fn to_api_scrypto_instant(instant: &Instant) -> Result<models::ScryptoInstan
         .filter(|date_time| ISO_8601_YEAR_RANGE.contains(&date_time.year()));
     Ok(models::ScryptoInstant {
         unix_timestamp_seconds: to_api_i64_as_string(timestamp_seconds),
-        date_time: date_time.map(to_canonical_rfc3339_string),
+        date_time: date_time.map(to_second_precision_rfc3339_string),
     })
 }
 
@@ -183,6 +183,10 @@ pub fn to_api_clamped_instant_from_epoch_milli(
 
 fn to_canonical_rfc3339_string(date_time: NaiveDateTime) -> String {
     DateTime::<Utc>::from_utc(date_time, Utc).to_rfc3339_opts(SecondsFormat::Millis, true)
+}
+
+fn to_second_precision_rfc3339_string(date_time: NaiveDateTime) -> String {
+    DateTime::<Utc>::from_utc(date_time, Utc).to_rfc3339_opts(SecondsFormat::Secs, true)
 }
 
 pub fn extract_api_state_version(
@@ -355,7 +359,7 @@ mod tests {
             to_api_scrypto_instant(&Instant::new(0)).unwrap(),
             models::ScryptoInstant {
                 unix_timestamp_seconds: "0".to_string(),
-                date_time: Some("1970-01-01T00:00:00.000Z".to_string()),
+                date_time: Some("1970-01-01T00:00:00Z".to_string()),
             }
         );
 
@@ -364,14 +368,14 @@ mod tests {
             to_api_scrypto_instant(&Instant::new(1)).unwrap(),
             models::ScryptoInstant {
                 unix_timestamp_seconds: "1".to_string(),
-                date_time: Some("1970-01-01T00:00:01.000Z".to_string()),
+                date_time: Some("1970-01-01T00:00:01Z".to_string()),
             }
         );
         assert_eq!(
             to_api_scrypto_instant(&Instant::new(-1)).unwrap(),
             models::ScryptoInstant {
                 unix_timestamp_seconds: "-1".to_string(),
-                date_time: Some("1969-12-31T23:59:59.000Z".to_string()),
+                date_time: Some("1969-12-31T23:59:59Z".to_string()),
             }
         );
 
@@ -380,14 +384,14 @@ mod tests {
             to_api_scrypto_instant(&Instant::new(253402300799)).unwrap(),
             models::ScryptoInstant {
                 unix_timestamp_seconds: "253402300799".to_string(),
-                date_time: Some("9999-12-31T23:59:59.000Z".to_string()),
+                date_time: Some("9999-12-31T23:59:59Z".to_string()),
             }
         );
         assert_eq!(
             to_api_scrypto_instant(&Instant::new(-12212553600)).unwrap(),
             models::ScryptoInstant {
                 unix_timestamp_seconds: "-12212553600".to_string(),
-                date_time: Some("1583-01-01T00:00:00.000Z".to_string()),
+                date_time: Some("1583-01-01T00:00:00Z".to_string()),
             }
         );
 

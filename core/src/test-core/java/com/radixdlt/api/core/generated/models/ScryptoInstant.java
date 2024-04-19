@@ -77,11 +77,11 @@ public class ScryptoInstant {
   }
 
    /**
-   * The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use \&quot;Z\&quot; (denoting UTC) and include milliseconds (which are always &#x60;000&#x60;). E.g.: &#x60;2023-01-26T18:30:09.000Z&#x60;.  Note: This field will *not* be present if the actual on-ledger &#x60;unix_timestamp_seconds&#x60; value cannot be expressed as a RFC 3339 / ISO 8601 string (i.e. in case of extreme signed 64-bit integer values). 
+   * The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use \&quot;Z\&quot; (denoting UTC) and a second-precision (i.e. *skipping* the &#x60;.000&#x60; milliseconds part). E.g.: &#x60;2023-01-26T18:30:09Z&#x60;.  Note: This field will *not* be present if the actual on-ledger &#x60;unix_timestamp_seconds&#x60; value is outside the basic range supported by the RFC 3339 / ISO 8601 standard, which starts at year 1583 (i.e. the beginning of the Gregorian calendar) and ends at year 9999 (inclusive). 
    * @return dateTime
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use \"Z\" (denoting UTC) and include milliseconds (which are always `000`). E.g.: `2023-01-26T18:30:09.000Z`.  Note: This field will *not* be present if the actual on-ledger `unix_timestamp_seconds` value cannot be expressed as a RFC 3339 / ISO 8601 string (i.e. in case of extreme signed 64-bit integer values). ")
+  @ApiModelProperty(value = "The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use \"Z\" (denoting UTC) and a second-precision (i.e. *skipping* the `.000` milliseconds part). E.g.: `2023-01-26T18:30:09Z`.  Note: This field will *not* be present if the actual on-ledger `unix_timestamp_seconds` value is outside the basic range supported by the RFC 3339 / ISO 8601 standard, which starts at year 1583 (i.e. the beginning of the Gregorian calendar) and ends at year 9999 (inclusive). ")
   @JsonProperty(JSON_PROPERTY_DATE_TIME)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
