@@ -13,12 +13,6 @@ CORE_API_RUST_PACKAGE = 'core_api::generated'
 CORE_API_JAVA_GENERATED_DESTINATION = '../../../core/src/test-core/java/'
 CORE_API_JAVA_PACKAGE = 'com.radixdlt.api.core.generated'
 
-ENGINE_STATE_API_SPEC_LOCATION = '../engine-state-api-schema.yaml'
-ENGINE_STATE_API_RUST_GENERATED_DESTINATION = '../src/engine_state_api/generated/'
-ENGINE_STATE_API_RUST_PACKAGE = 'engine_state_api::generated'
-ENGINE_STATE_API_JAVA_GENERATED_DESTINATION = '../../../core/src/test-core/java/'
-ENGINE_STATE_API_JAVA_PACKAGE = 'com.radixdlt.api.engine_state.generated'
-
 OPENAPI_GENERATION_FOLDER='.'
 OPENAPI_TEMP_GENERATION_FOLDER='./temp'
 OPENAPI_GENERATOR_FIXED_VERSION_JAR=os.path.join(OPENAPI_GENERATION_FOLDER, 'openapi-generator-cli-6.0.1.jar')
@@ -115,7 +109,6 @@ def generate_rust_models(schema_file, tmp_client_folder, out_location, rust_pack
         fix_broken_discriminator_tag(file_path, "error_type")
         fix_broken_discriminator_tag(file_path, "type")
         fix_broken_discriminator_tag(file_path, "pointer_type")
-        fix_broken_discriminator_tag(file_path, "system_type")
         fix_for_enum_not_implementing_default(file_path, "AccessRule")
         fix_for_enum_not_implementing_default(file_path, "AccessRuleNode")
         fix_for_enum_not_implementing_default(file_path, "ProofRule")
@@ -235,12 +228,4 @@ if __name__ == "__main__":
         CORE_API_RUST_PACKAGE,
         CORE_API_JAVA_GENERATED_DESTINATION,
         CORE_API_JAVA_PACKAGE
-    )
-
-    fix_spec_and_generate_models(
-        ENGINE_STATE_API_SPEC_LOCATION,
-        ENGINE_STATE_API_RUST_GENERATED_DESTINATION,
-        ENGINE_STATE_API_RUST_PACKAGE,
-        ENGINE_STATE_API_JAVA_GENERATED_DESTINATION,
-        ENGINE_STATE_API_JAVA_PACKAGE
     )

@@ -103,10 +103,10 @@ jobs:
 
       # ==================== Core API Update ====================
       - name: Change OpenApi version in the Core API spec
-        run: sed -i 's/3.1.0/3.0.0/' core-rust/node-http-apis/core-api-schema.yaml
+        run: sed -i 's/3.1.0/3.0.0/' core-rust/core-api-server/core-api-schema.yaml
       - name: Update Postman's Core API collection from the spec
         run: |
-          npx @apideck/portman@1.18.1 -l core-rust/node-http-apis/core-api-schema.yaml \
+          npx @apideck/portman@1.18.1 -l core-rust/core-api-server/core-api-schema.yaml \
             --postmanUid ${{env.core_api_collection_id}} --syncPostman true --envFile .env --ignoreCircularRefs true
       - name: Download the Core API collection
         run: |
