@@ -15,6 +15,7 @@ state_hash_tree.state_version_history_length=$RADIXDLT_STATE_HASH_TREE_STATE_VER
 db.location=$RADIXDLT_DB_LOCATION
 db.local_transaction_execution_index.enable=$RADIXDLT_DB_LOCAL_TRANSACTION_EXECUTION_INDEX_ENABLE
 db.account_change_index.enable=$RADIXDLT_DB_ACCOUNT_CHANGE_INDEX_ENABLE
+db.re_node_listing_indices.enable=$RADIXDLT_RE_NODE_LISTING_INDICES_ENABLE
 db.historical_substate_values.enable=$RADIXDLT_DB_HISTORICAL_SUBSTATE_VALUES_ENABLE
 db.checkpoints_path=${RADIXDLT_DB_CHECKPOINTS_PATH}
 
