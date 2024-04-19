@@ -62,5 +62,32 @@
  * permissions under this License.
  */
 
-pub mod core_api;
-pub mod engine_state_api;
+extern crate serde;
+extern crate serde_json;
+
+mod engine_state_api;
+pub mod jni;
+
+pub(crate) mod engine_prelude {
+    pub use blueprint_schema_init::*;
+
+    pub use radix_engine::object_modules::metadata::*;
+    pub use radix_engine::system::system_db_reader::*;
+
+    pub use radix_engine::system::system_type_checker::*;
+
+    pub use radix_engine_common::prelude::*;
+
+    pub use radix_engine_interface::blueprints::account::*;
+    pub use radix_engine_interface::blueprints::identity::*;
+
+    pub use radix_engine_interface::prelude::*;
+    pub use sbor::representations::*;
+
+    pub use substate_store_interface::interface::*;
+
+    pub use substate_store_queries::typed_substate_layout::*;
+
+    // Note: plain `pub use radix_engine::track::*` would clash with the top-level `utils::prelude`
+    // (because it contains a private module of the same name)
+}

@@ -398,6 +398,40 @@ dependencies = [
 ]
 
 [[package]]
+name = "core-api-server"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "blake2",
+ "blueprint-schema-init",
+ "chrono",
+ "futures",
+ "futures-util",
+ "hex",
+ "hyper",
+ "jni",
+ "node-common",
+ "paste",
+ "prometheus",
+ "radix-engine",
+ "radix-engine-common",
+ "radix-engine-interface",
+ "sbor",
+ "serde",
+ "serde_json",
+ "state-manager",
+ "substate-store-impls",
+ "substate-store-interface",
+ "substate-store-queries",
+ "tokio",
+ "tower",
+ "tower-http",
+ "tracing",
+ "transaction",
+ "utils",
+]
+
+[[package]]
 name = "core-foundation-sys"
 version = "0.8.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -571,6 +605,46 @@ name = "either"
 version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "11157ac094ffbdde99aa67b23417ebdd801842852b500e395a45a9c0aac03e4a"
+
+[[package]]
+name = "engine-state-api-server"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "blake2",
+ "blueprint-schema-init",
+ "chrono",
+ "convert_case",
+ "futures",
+ "futures-util",
+ "hex",
+ "hyper",
+ "itertools 0.11.0",
+ "jni",
+ "lazy_static",
+ "node-common",
+ "paste",
+ "prometheus",
+ "radix-engine",
+ "radix-engine-common",
+ "radix-engine-interface",
+ "rand 0.8.5",
+ "regex",
+ "sbor",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "state-manager",
+ "substate-store-impls",
+ "substate-store-interface",
+ "substate-store-queries",
+ "tokio",
+ "tower",
+ "tower-http",
+ "tracing",
+ "transaction",
+ "utils",
+]
 
 [[package]]
 name = "equivalent"
@@ -986,9 +1060,10 @@ dependencies = [
 name = "jni-export"
 version = "0.1.0"
 dependencies = [
+ "core-api-server",
+ "engine-state-api-server",
  "jni",
  "node-common",
- "node-http-apis",
  "radix-engine",
  "radix-engine-common",
  "radix-engine-interface",
@@ -1240,46 +1315,6 @@ dependencies = [
  "tracing",
  "tracing-opentelemetry",
  "tracing-subscriber",
- "transaction",
- "utils",
-]
-
-[[package]]
-name = "node-http-apis"
-version = "0.1.0"
-dependencies = [
- "axum",
- "blake2",
- "blueprint-schema-init",
- "chrono",
- "convert_case",
- "futures",
- "futures-util",
- "hex",
- "hyper",
- "itertools 0.11.0",
- "jni",
- "lazy_static",
- "node-common",
- "paste",
- "prometheus",
- "radix-engine",
- "radix-engine-common",
- "radix-engine-interface",
- "rand 0.8.5",
- "regex",
- "sbor",
- "serde",
- "serde_json",
- "serde_with",
- "state-manager",
- "substate-store-impls",
- "substate-store-interface",
- "substate-store-queries",
- "tokio",
- "tower",
- "tower-http",
- "tracing",
  "transaction",
  "utils",
 ]
