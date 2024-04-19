@@ -283,7 +283,7 @@ public final class RadixNodeModule extends AbstractModule {
     var enableAccountChangeIndex = properties.get("db.account_change_index.enable", true);
     var enableHistoricalSubstateValues =
         properties.get("db.historical_substate_values.enable", false);
-    var enableReNodeListingIndices = properties.get("db.re_node_listing_indices.enable", true);
+    var enableReNodeListingIndices = properties.get("db.re_node_listing_indices.enable", false);
     var databaseConfig =
         new DatabaseConfig(
             enableLocalTransactionExecutionIndex,
