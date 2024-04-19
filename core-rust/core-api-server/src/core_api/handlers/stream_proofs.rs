@@ -160,7 +160,7 @@ fn extract_from_state_version(
         return Ok(StateVersion::pre_genesis());
     };
 
-    let from_state_version = extract_state_version(from_state_version)
+    let from_state_version = extract_api_state_version(from_state_version)
         .map_err(|err| err.into_response_error("from_state_version"))?;
 
     let max_state_version = database.max_state_version();
