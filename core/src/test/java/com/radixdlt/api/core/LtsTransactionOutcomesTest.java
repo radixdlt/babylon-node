@@ -70,7 +70,7 @@ import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.DatabaseConfig;
-import com.radixdlt.genesis.GenesisData;
+import com.radixdlt.environment.ScenariosExecutionConfig;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.lang.Option;
 import com.radixdlt.rev2.*;
@@ -147,7 +147,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
   public void test_resultant_account_balances() throws Exception {
     // We run all scenarios for the case when RE decides to change invariants (i.e. no vault
     // substate is deleted).
-    try (var test = buildRunningServerTestWithScenarios(GenesisData.ALL_SCENARIOS)) {
+    try (var test = buildRunningServerTestWithScenarios(ScenariosExecutionConfig.ALL)) {
       test.suppressUnusedWarning();
 
       var account1KeyPair = ECKeyPair.generateNew();

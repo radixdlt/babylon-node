@@ -68,7 +68,6 @@ import static com.radixdlt.environment.deterministic.network.MessageSelector.fir
 import static org.assertj.core.api.Assertions.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.google.common.collect.ImmutableList;
 import com.google.common.reflect.ClassPath;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
@@ -81,7 +80,6 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.*;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
-import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.lang.Functions;
@@ -122,23 +120,27 @@ public abstract class DeterministicCoreApiTestBase {
 
   protected DeterministicTest buildRunningServerTest() {
     return buildRunningServerTest(
-        1000000, TEST_DATABASE_CONFIG, GenesisData.NO_SCENARIOS, ProtocolConfig.testingDefault());
+        1000000,
+        TEST_DATABASE_CONFIG,
+        ScenariosExecutionConfig.NONE,
+        ProtocolConfig.testingDefault());
   }
 
   protected DeterministicTest buildRunningServerTestWithProtocolConfig(
       int roundsPerEpoch, ProtocolConfig protocolConfig) {
     return buildRunningServerTest(
-        roundsPerEpoch, TEST_DATABASE_CONFIG, GenesisData.NO_SCENARIOS, protocolConfig);
+        roundsPerEpoch, TEST_DATABASE_CONFIG, ScenariosExecutionConfig.NONE, protocolConfig);
   }
 
-  protected DeterministicTest buildRunningServerTestWithScenarios(ImmutableList<String> scenarios) {
+  protected DeterministicTest buildRunningServerTestWithScenarios(
+      ScenariosExecutionConfig scenarios) {
     return buildRunningServerTest(
         1000000, TEST_DATABASE_CONFIG, scenarios, ProtocolConfig.testingDefault());
   }
 
   protected DeterministicTest buildRunningServerTest(DatabaseConfig databaseConfig) {
     return buildRunningServerTest(
-        1000000, databaseConfig, GenesisData.NO_SCENARIOS, ProtocolConfig.testingDefault());
+        1000000, databaseConfig, ScenariosExecutionConfig.NONE, ProtocolConfig.testingDefault());
   }
 
   protected DeterministicTest buildRunningServerTest(
@@ -146,7 +148,7 @@ public abstract class DeterministicCoreApiTestBase {
     return buildRunningServerTest(
         1000000,
         databaseConfig,
-        GenesisData.NO_SCENARIOS,
+        ScenariosExecutionConfig.NONE,
         ProtocolConfig.testingDefault(),
         stateTreeGcConfig);
   }
@@ -155,14 +157,14 @@ public abstract class DeterministicCoreApiTestBase {
     return buildRunningServerTest(
         roundsPerEpoch,
         TEST_DATABASE_CONFIG,
-        GenesisData.NO_SCENARIOS,
+        ScenariosExecutionConfig.NONE,
         ProtocolConfig.testingDefault());
   }
 
   protected DeterministicTest buildRunningServerTest(
       int roundsPerEpoch,
       DatabaseConfig databaseConfig,
-      ImmutableList<String> scenariosToRun,
+      ScenariosExecutionConfig scenariosExecutionConfig,
       ProtocolConfig protocolConfig,
       StateTreeGcConfig stateTreeGcConfig) {
     return buildRunningServerTest(
@@ -172,20 +174,20 @@ public abstract class DeterministicCoreApiTestBase {
                 1,
                 Decimal.ONE,
                 GenesisConsensusManagerConfig.Builder.testDefaults()
-                    .epochExactRoundCount(roundsPerEpoch),
-                scenariosToRun),
+                    .epochExactRoundCount(roundsPerEpoch)),
             databaseConfig,
             StateComputerConfig.REV2ProposerConfig.Mempool.defaults(),
             false,
             false,
             protocolConfig,
-            stateTreeGcConfig));
+            stateTreeGcConfig,
+            scenariosExecutionConfig));
   }
 
   protected DeterministicTest buildRunningServerTest(
       int roundsPerEpoch,
       DatabaseConfig databaseConfig,
-      ImmutableList<String> scenariosToRun,
+      ScenariosExecutionConfig scenariosExecutionConfig,
       ProtocolConfig protocolConfig) {
     return buildRunningServerTest(
         StateComputerConfig.rev2(
@@ -194,13 +196,14 @@ public abstract class DeterministicCoreApiTestBase {
                 1,
                 Decimal.ONE,
                 GenesisConsensusManagerConfig.Builder.testDefaults()
-                    .epochExactRoundCount(roundsPerEpoch),
-                scenariosToRun),
+                    .epochExactRoundCount(roundsPerEpoch)),
             databaseConfig,
             StateComputerConfig.REV2ProposerConfig.Mempool.defaults(),
             false,
             false,
-            protocolConfig));
+            protocolConfig,
+            StateTreeGcConfig.forTesting(),
+            scenariosExecutionConfig));
   }
 
   protected DeterministicTest buildRunningServerTest(StateComputerConfig stateComputerConfig) {

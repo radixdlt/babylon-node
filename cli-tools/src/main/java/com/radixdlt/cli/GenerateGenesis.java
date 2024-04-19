@@ -111,7 +111,6 @@ public final class GenerateGenesis {
 
   private static final Set<Network> PRODUCTION_NETWORKS = Set.of(Network.MAINNET);
   private static final Set<Network> NETWORKS_TO_DISABLE_FAUCET = PRODUCTION_NETWORKS;
-  private static final Set<Network> NETWORKS_TO_DISABLE_SCENARIOS = NETWORKS_TO_DISABLE_FAUCET;
 
   private static final Set<Network> NETWORKS_TO_ENSURE_PRODUCTION_EMISSIONS =
       Set.of(
@@ -282,10 +281,6 @@ public final class GenerateGenesis {
     }
 
     final var useFaucet = !NETWORKS_TO_DISABLE_FAUCET.contains(network);
-    final var scenariosToRun =
-        NETWORKS_TO_DISABLE_SCENARIOS.contains(network)
-            ? GenesisData.NO_SCENARIOS
-            : GenesisData.ALL_SCENARIOS;
 
     return GenesisBuilder.createGenesisWithValidatorsAndXrdBalances(
         validators,
@@ -294,8 +289,7 @@ public final class GenerateGenesis {
         xrdBalances,
         consensusConfig,
         useFaucet,
-        stakingAccountOwnsAllValidators,
-        scenariosToRun);
+        stakingAccountOwnsAllValidators);
   }
 
   private static void usage(Options options) {

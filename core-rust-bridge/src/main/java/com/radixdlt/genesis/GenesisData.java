@@ -80,23 +80,9 @@ public record GenesisData(
     long initialTimestampMs,
     GenesisConsensusManagerConfig consensusManagerConfig,
     ImmutableList<GenesisDataChunk> chunks,
-    Decimal faucetSupply,
-    ImmutableList<String> scenarios) {
+    Decimal faucetSupply) {
 
   public static final Decimal DEFAULT_TEST_FAUCET_SUPPLY = Decimal.ofNonNegative(1000_000_000_000L);
-  public static final ImmutableList<String> ALL_SCENARIOS =
-      ImmutableList.of(
-          "transfer_xrd",
-          "radiswap",
-          "metadata",
-          "fungible_resource",
-          "non_fungible_resource",
-          "account_authorized_depositors",
-          "global_n_owned",
-          "non_fungible_resource_with_remote_type",
-          "kv_store_with_remote_type",
-          "max_transaction");
-  public static final ImmutableList<String> NO_SCENARIOS = ImmutableList.of();
 
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
@@ -127,8 +113,7 @@ public record GenesisData(
                         ImmutableList.of(
                             new GenesisStakeAllocation(
                                 UInt32.fromNonNegativeInt(0), Decimal.ONE)))))),
-        DEFAULT_TEST_FAUCET_SUPPLY,
-        NO_SCENARIOS);
+        DEFAULT_TEST_FAUCET_SUPPLY);
   }
 
   public static GenesisData testingDefaultEmpty() {
@@ -137,17 +122,6 @@ public record GenesisData(
         0,
         GenesisConsensusManagerConfig.testingDefaultEmpty(),
         ImmutableList.of(),
-        DEFAULT_TEST_FAUCET_SUPPLY,
-        NO_SCENARIOS);
-  }
-
-  public static GenesisData testingDefaultEmptyWithScenarios() {
-    return new GenesisData(
-        UInt64.fromNonNegativeLong(1L),
-        0,
-        GenesisConsensusManagerConfig.testingDefaultEmpty(),
-        ImmutableList.of(),
-        DEFAULT_TEST_FAUCET_SUPPLY,
-        ALL_SCENARIOS);
+        DEFAULT_TEST_FAUCET_SUPPLY);
   }
 }

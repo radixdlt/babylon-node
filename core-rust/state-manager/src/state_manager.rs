@@ -111,6 +111,13 @@ pub struct StateManagerConfig {
     pub ledger_sync_limits_config: LedgerSyncLimitsConfig,
     pub protocol_config: ProtocolConfig,
     pub no_fees: bool,
+    pub scenarios_execution_config: ScenariosExecutionConfig,
+}
+
+#[derive(Debug, Clone, Default, Sbor)]
+pub struct ScenariosExecutionConfig {
+    pub genesis_scenarios: Vec<String>,
+    // TODO(protocol-update-scenarios): This is the place to define Scenarios to run after PUs.
 }
 
 #[derive(Debug, Clone, Default, Sbor)]
@@ -134,6 +141,7 @@ impl StateManagerConfig {
             ledger_sync_limits_config: LedgerSyncLimitsConfig::default(),
             protocol_config: ProtocolConfig::new_with_no_updates(),
             no_fees: false,
+            scenarios_execution_config: ScenariosExecutionConfig::default(),
         }
     }
 }
@@ -274,6 +282,7 @@ impl StateManager {
             lock_factory.named("state_computer"),
             &initial_state_computer_config,
             initial_protocol_state,
+            config.scenarios_execution_config.clone(),
         ));
 
         // Register the periodic background task for collecting the costly raw DB metrics...

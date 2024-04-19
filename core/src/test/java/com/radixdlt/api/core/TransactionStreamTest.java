@@ -75,7 +75,7 @@ import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.crypto.EdDSAEd25519PublicKey;
 import com.radixdlt.crypto.PublicKey;
-import com.radixdlt.genesis.GenesisData;
+import com.radixdlt.environment.ScenariosExecutionConfig;
 import com.radixdlt.harness.deterministic.TransactionExecutor;
 import com.radixdlt.message.CurveDecryptorSet;
 import com.radixdlt.message.Decryptor;
@@ -98,7 +98,7 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
       throws Exception {
     // This test checks that the transaction stream doesn't return errors when mapping genesis and
     // the scenarios
-    try (var test = buildRunningServerTestWithScenarios(GenesisData.ALL_SCENARIOS)) {
+    try (var test = buildRunningServerTestWithScenarios(ScenariosExecutionConfig.ALL)) {
       test.suppressUnusedWarning();
       var transaction = TransactionBuilder.forTests().prepare();
 

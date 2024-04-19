@@ -92,31 +92,20 @@ public final class GenesisBuilder {
         0,
         builder.build(),
         ImmutableList.of(validatorsAndStakesChunks.first(), validatorsAndStakesChunks.last()),
-        GenesisData.DEFAULT_TEST_FAUCET_SUPPLY,
-        GenesisData.NO_SCENARIOS);
+        GenesisData.DEFAULT_TEST_FAUCET_SUPPLY);
   }
 
   public static GenesisData createTestGenesisWithNumValidators(
       int numValidators, Decimal initialStake, GenesisConsensusManagerConfig.Builder builder) {
     return createTestGenesisWithNumValidatorsAndXrdBalances(
-        numValidators, initialStake, Map.of(), builder, GenesisData.NO_SCENARIOS);
-  }
-
-  public static GenesisData createTestGenesisWithNumValidators(
-      int numValidators,
-      Decimal initialStake,
-      GenesisConsensusManagerConfig.Builder builder,
-      ImmutableList<String> scenariosToRun) {
-    return createTestGenesisWithNumValidatorsAndXrdBalances(
-        numValidators, initialStake, Map.of(), builder, scenariosToRun);
+        numValidators, initialStake, Map.of(), builder);
   }
 
   public static GenesisData createTestGenesisWithNumValidatorsAndXrdBalances(
       int numValidators,
       Decimal initialStake,
       Map<ECDSASecp256k1PublicKey, Decimal> xrdBalances,
-      GenesisConsensusManagerConfig.Builder configBuilder,
-      ImmutableList<String> scenariosToRun) {
+      GenesisConsensusManagerConfig.Builder configBuilder) {
     final var chunksBuilder = ImmutableList.<GenesisDataChunk>builder();
 
     if (!xrdBalances.isEmpty()) {
@@ -138,8 +127,7 @@ public final class GenesisBuilder {
         0,
         configBuilder.build(),
         chunksBuilder.build(),
-        GenesisData.DEFAULT_TEST_FAUCET_SUPPLY,
-        scenariosToRun);
+        GenesisData.DEFAULT_TEST_FAUCET_SUPPLY);
   }
 
   public static GenesisData createGenesisWithValidatorsAndXrdBalances(
@@ -149,8 +137,7 @@ public final class GenesisBuilder {
       Map<ECDSASecp256k1PublicKey, Decimal> xrdBalances,
       GenesisConsensusManagerConfig.Builder configBuilder,
       boolean useFaucet,
-      boolean stakingAccountOwnsAllValidators,
-      ImmutableList<String> scenariosToRun) {
+      boolean stakingAccountOwnsAllValidators) {
     final var chunksBuilder = ImmutableList.<GenesisDataChunk>builder();
 
     if (!xrdBalances.isEmpty()) {
@@ -173,8 +160,7 @@ public final class GenesisBuilder {
         0,
         configBuilder.build(),
         chunksBuilder.build(),
-        useFaucet ? GenesisData.DEFAULT_TEST_FAUCET_SUPPLY : Decimal.ZERO,
-        scenariosToRun);
+        useFaucet ? GenesisData.DEFAULT_TEST_FAUCET_SUPPLY : Decimal.ZERO);
   }
 
   private static GenesisDataChunk.XrdBalances prepareXrdBalancesChunk(

@@ -78,7 +78,6 @@ import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.environment.*;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
-import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.genesis.RawGenesisDataWithHash;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.lang.Option;
@@ -129,7 +128,8 @@ public class REv2StateComputerTest {
             LedgerProofsGcConfig.forTesting(),
             LedgerSyncLimitsConfig.defaults(),
             ProtocolConfig.testingDefault(),
-            false),
+            false,
+            ScenariosExecutionConfig.NONE),
         new REv2LedgerInitializerModule(
             RawGenesisDataWithHash.fromGenesisData(
                 GenesisBuilder.createGenesisWithValidatorsAndXrdBalances(
@@ -139,8 +139,7 @@ public class REv2StateComputerTest {
                     Map.of(),
                     GenesisConsensusManagerConfig.Builder.testDefaults(),
                     true,
-                    false,
-                    GenesisData.NO_SCENARIOS))),
+                    false))),
         new REv2LedgerRecoveryModule(),
         new AbstractModule() {
           @Override

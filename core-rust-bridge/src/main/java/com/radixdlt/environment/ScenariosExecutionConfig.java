@@ -62,79 +62,36 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core;
-
-import static org.assertj.core.api.Assertions.assertThat;
+package com.radixdlt.environment;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.primitives.Longs;
-import com.radixdlt.api.DeterministicCoreApiTestBase;
-import com.radixdlt.api.core.generated.models.*;
-import com.radixdlt.environment.ScenariosExecutionConfig;
-import java.util.List;
-import java.util.stream.LongStream;
-import org.junit.Test;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
 
-public class NetworkScenariosTest extends DeterministicCoreApiTestBase {
-  @Test
-  public void test_network_scenarios() throws Exception {
-    // pick a custom subset/permutation (different than "all scenarios"):
-    final var selectedScenarios =
-        new ScenariosExecutionConfig(ImmutableList.of("radiswap", "transfer_xrd"));
-    try (var test = buildRunningServerTestWithScenarios(selectedScenarios)) {
-      test.suppressUnusedWarning();
+public record ScenariosExecutionConfig(ImmutableList<String> genesisScenarios) {
 
-      // query all scenarios
-      final var executedScenarios =
-          getStatusApi()
-              .statusScenariosPost(new ScenariosRequest().network(networkLogicalName))
-              .getExecutedScenarios();
+  /** A default production-compatible configuration, which does not execute any Scenarios. */
+  public static final ScenariosExecutionConfig NONE =
+      new ScenariosExecutionConfig(ImmutableList.of());
 
-      // assert some selected properties of the known scenarios
-      assertThat(executedScenarios).hasSize(2);
-      assertScenario(
-          executedScenarios,
-          0,
-          "radiswap",
-          ImmutableSet.of("radiswap-add-liquidity", "radiswap-swap-tokens"),
-          ImmutableSet.of("radiswap_dapp_definition_account", "pool_1_resource_1"));
-      assertScenario(
-          executedScenarios,
-          1,
-          "transfer_xrd",
-          ImmutableSet.of("faucet-top-up", "self-transfer--deposit_batch"),
-          ImmutableSet.of("from_account", "to_account_1"));
+  /** A "full test" configuration, executing all Scenarios at appropriate Protocol Update states. */
+  public static final ScenariosExecutionConfig ALL =
+      new ScenariosExecutionConfig(
+          ImmutableList.of(
+              "transfer_xrd",
+              "radiswap",
+              "metadata",
+              "fungible_resource",
+              "non_fungible_resource",
+              "account_authorized_depositors",
+              "global_n_owned",
+              "non_fungible_resource_with_remote_type",
+              "kv_store_with_remote_type",
+              "max_transaction"));
 
-      // assert that the captured transaction state versions are consecutive
-      final var storedStateVersions =
-          executedScenarios.stream()
-              .map(ExecutedGenesisScenario::getCommittedTransactions)
-              .flatMap(List::stream)
-              .mapToLong(ExecutedScenarioTransaction::getStateVersion)
-              .toArray();
-      final var consecutiveStateVersions =
-          LongStream.rangeClosed(Longs.min(storedStateVersions), Longs.max(storedStateVersions))
-              .toArray();
-      assertThat(storedStateVersions).containsExactly(consecutiveStateVersions);
-    }
-  }
-
-  private static void assertScenario(
-      List<ExecutedGenesisScenario> scenarios,
-      int index,
-      String scenarioName,
-      // we deliberately do not want to assert on exact list matches below, to avoid brittle tests
-      ImmutableSet<String> exampleTransactionNames,
-      ImmutableSet<String> exampleAddressNames) {
-    final var scenario = scenarios.get(index);
-    assertThat(scenario.getSequenceNumber()).isEqualTo(index);
-    assertThat(scenario.getLogicalName()).isEqualTo(scenarioName);
-    assertThat(
-            Lists.transform(
-                scenario.getCommittedTransactions(), ExecutedScenarioTransaction::getLogicalName))
-        .containsAll(exampleTransactionNames);
-    assertThat(scenario.getAddresses().keySet()).containsAll(exampleAddressNames);
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        ScenariosExecutionConfig.class,
+        codecs -> StructCodec.fromRecordComponents(ScenariosExecutionConfig.class, codecs));
   }
 }

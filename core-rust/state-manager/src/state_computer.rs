@@ -110,6 +110,7 @@ pub struct StateComputer {
     vertex_prepare_metrics: VertexPrepareMetrics,
     vertex_limits_config: VertexLimitsConfig,
     protocol_state: RwLock<ProtocolState>,
+    scenarios_execution_config: ScenariosExecutionConfig,
 }
 
 impl StateComputer {
@@ -126,6 +127,7 @@ impl StateComputer {
         lock_factory: LockFactory,
         initial_updatable_config: &ProtocolStateComputerConfig,
         initial_protocol_state: ProtocolState,
+        scenarios_execution_config: ScenariosExecutionConfig,
     ) -> Self {
         let (current_transaction_root, current_ledger_proposer_timestamp_ms) = database
             .lock()
@@ -165,6 +167,7 @@ impl StateComputer {
             protocol_state: lock_factory
                 .named("protocol_state")
                 .new_rwlock(initial_protocol_state),
+            scenarios_execution_config,
         }
     }
 
@@ -741,7 +744,6 @@ impl StateComputer {
             initial_timestamp_ms,
             Hash([0; Hash::LENGTH]),
             *DEFAULT_TESTING_FAUCET_SUPPLY,
-            vec![],
         )
     }
 
@@ -775,7 +777,6 @@ impl StateComputer {
         initial_timestamp_ms: i64,
         genesis_opaque_hash: Hash,
         faucet_supply: Decimal,
-        scenarios_to_run: Vec<String>,
     ) -> LedgerProof {
         let start_instant = Instant::now();
 
@@ -846,6 +847,7 @@ impl StateComputer {
 
         // These scenarios are committed before we start consensus / rounds after the genesis wrap-up.
         // This is a little weird, but should be fine.
+        let scenarios_to_run = &self.scenarios_execution_config.genesis_scenarios;
         if !scenarios_to_run.is_empty() {
             info!("Running {} scenarios", scenarios_to_run.len());
             let mut next_nonce: u32 = 0;

@@ -83,7 +83,8 @@ public record StateManagerConfig(
     LedgerProofsGcConfig ledgerProofsGcConfig,
     LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
     ProtocolConfig protocolConfig,
-    boolean noFees) {
+    boolean noFees,
+    ScenariosExecutionConfig scenariosExecutionConfig) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         StateManagerConfig.class,

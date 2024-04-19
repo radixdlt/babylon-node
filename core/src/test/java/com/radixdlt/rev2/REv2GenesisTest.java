@@ -70,6 +70,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.environment.DatabaseConfig;
+import com.radixdlt.environment.ScenariosExecutionConfig;
+import com.radixdlt.environment.StateTreeGcConfig;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
@@ -83,6 +86,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.networks.Network;
+import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.testutil.TestStateReader;
 import java.util.Map;
 import org.junit.Rule;
@@ -152,9 +156,14 @@ public final class REv2GenesisTest {
                             1,
                             INITIAL_STAKE,
                             Map.of(XRD_ALLOC_ACCOUNT_PUB_KEY, XRD_ALLOC_AMOUNT),
-                            GenesisConsensusManagerConfig.Builder.testDefaults(),
-                            GenesisData.ALL_SCENARIOS),
-                        StateComputerConfig.REV2ProposerConfig.Mempool.zero()))));
+                            GenesisConsensusManagerConfig.Builder.testDefaults()),
+                        new DatabaseConfig(true, false, false),
+                        StateComputerConfig.REV2ProposerConfig.Mempool.zero(),
+                        false,
+                        false,
+                        ProtocolConfig.testingDefault(),
+                        StateTreeGcConfig.forTesting(),
+                        ScenariosExecutionConfig.ALL))));
   }
 
   @Test
