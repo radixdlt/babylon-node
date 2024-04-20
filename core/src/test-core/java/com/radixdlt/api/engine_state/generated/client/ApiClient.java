@@ -205,7 +205,7 @@ public class ApiClient {
   }
 
   protected String getDefaultBaseUri() {
-    return "http://localhost:3337/engine-state";
+    return "http://localhost:3336/engine-state";
   }
 
   protected HttpClient.Builder createDefaultHttpClientBuilder() {

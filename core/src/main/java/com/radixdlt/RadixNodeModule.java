@@ -115,7 +115,7 @@ public final class RadixNodeModule extends AbstractModule {
   private static final Logger log = LogManager.getLogger();
 
   private static final int DEFAULT_CORE_API_PORT = 3333;
-  private static final int DEFAULT_ENGINE_STATE_API_PORT = 3337;
+  private static final int DEFAULT_ENGINE_STATE_API_PORT = 3336;
   private static final int DEFAULT_SYSTEM_API_PORT = 3334;
   private static final int DEFAULT_PROMETHEUS_API_PORT = 3335;
 

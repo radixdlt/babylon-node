@@ -21,7 +21,7 @@ info:
     like.
 
 servers:
-  - url: 'localhost:3337/engine-state'
+  - url: 'localhost:3336/engine-state'
 tags:
   - name: Entities
     x-displayName: Entities
