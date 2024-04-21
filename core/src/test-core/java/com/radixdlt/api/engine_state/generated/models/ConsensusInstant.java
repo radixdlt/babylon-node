@@ -28,36 +28,36 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * Instant
+ * ConsensusInstant
  */
 @JsonPropertyOrder({
-  Instant.JSON_PROPERTY_UNIX_TIMESTAMP_MS,
-  Instant.JSON_PROPERTY_DATE_TIME
+  ConsensusInstant.JSON_PROPERTY_UNIX_TIMESTAMP_MS,
+  ConsensusInstant.JSON_PROPERTY_DATE_TIME
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class Instant {
+public class ConsensusInstant {
   public static final String JSON_PROPERTY_UNIX_TIMESTAMP_MS = "unix_timestamp_ms";
   private Long unixTimestampMs;
 
   public static final String JSON_PROPERTY_DATE_TIME = "date_time";
   private String dateTime;
 
-  public Instant() { 
+  public ConsensusInstant() { 
   }
 
-  public Instant unixTimestampMs(Long unixTimestampMs) {
+  public ConsensusInstant unixTimestampMs(Long unixTimestampMs) {
     this.unixTimestampMs = unixTimestampMs;
     return this;
   }
 
    /**
-   * An integer between &#x60;0&#x60; and &#x60;10^14&#x60;, marking the unix timestamp, in milliseconds.
+   * An integer between &#x60;0&#x60; and &#x60;10^14&#x60;, marking the unix timestamp in ms.
    * minimum: 0
    * maximum: 100000000000000
    * @return unixTimestampMs
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `10^14`, marking the unix timestamp, in milliseconds.")
+  @ApiModelProperty(required = true, value = "An integer between `0` and `10^14`, marking the unix timestamp in ms.")
   @JsonProperty(JSON_PROPERTY_UNIX_TIMESTAMP_MS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -73,17 +73,17 @@ public class Instant {
   }
 
 
-  public Instant dateTime(String dateTime) {
+  public ConsensusInstant dateTime(String dateTime) {
     this.dateTime = dateTime;
     return this;
   }
 
    /**
-   * The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use \&quot;Z\&quot; denoting UTC and include milliseconds. EG: &#x60;2023-01-26T18:30:09.453Z&#x60;. 
+   * The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use \&quot;Z\&quot; (denoting UTC) and include milliseconds (even if &#x60;000&#x60;). E.g.: &#x60;2023-01-26T18:30:09.453Z&#x60;. 
    * @return dateTime
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use \"Z\" denoting UTC and include milliseconds. EG: `2023-01-26T18:30:09.453Z`. ")
+  @ApiModelProperty(required = true, value = "The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use \"Z\" (denoting UTC) and include milliseconds (even if `000`). E.g.: `2023-01-26T18:30:09.453Z`. ")
   @JsonProperty(JSON_PROPERTY_DATE_TIME)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -100,7 +100,7 @@ public class Instant {
 
 
   /**
-   * Return true if this Instant object is equal to o.
+   * Return true if this ConsensusInstant object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -110,9 +110,9 @@ public class Instant {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    Instant instant = (Instant) o;
-    return Objects.equals(this.unixTimestampMs, instant.unixTimestampMs) &&
-        Objects.equals(this.dateTime, instant.dateTime);
+    ConsensusInstant consensusInstant = (ConsensusInstant) o;
+    return Objects.equals(this.unixTimestampMs, consensusInstant.unixTimestampMs) &&
+        Objects.equals(this.dateTime, consensusInstant.dateTime);
   }
 
   @Override
@@ -123,7 +123,7 @@ public class Instant {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class Instant {\n");
+    sb.append("class ConsensusInstant {\n");
     sb.append("    unixTimestampMs: ").append(toIndentedString(unixTimestampMs)).append("\n");
     sb.append("    dateTime: ").append(toIndentedString(dateTime)).append("\n");
     sb.append("}");

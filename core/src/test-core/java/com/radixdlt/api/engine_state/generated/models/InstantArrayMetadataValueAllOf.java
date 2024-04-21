@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.engine_state.generated.models.Instant;
+import com.radixdlt.api.engine_state.generated.models.ScryptoInstant;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -39,17 +39,17 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class InstantArrayMetadataValueAllOf {
   public static final String JSON_PROPERTY_VALUE = "value";
-  private List<Instant> value = null;
+  private List<ScryptoInstant> value = null;
 
   public InstantArrayMetadataValueAllOf() { 
   }
 
-  public InstantArrayMetadataValueAllOf value(List<Instant> value) {
+  public InstantArrayMetadataValueAllOf value(List<ScryptoInstant> value) {
     this.value = value;
     return this;
   }
 
-  public InstantArrayMetadataValueAllOf addValueItem(Instant valueItem) {
+  public InstantArrayMetadataValueAllOf addValueItem(ScryptoInstant valueItem) {
     if (this.value == null) {
       this.value = new ArrayList<>();
     }
@@ -66,14 +66,14 @@ public class InstantArrayMetadataValueAllOf {
   @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public List<Instant> getValue() {
+  public List<ScryptoInstant> getValue() {
     return value;
   }
 
 
   @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setValue(List<Instant> value) {
+  public void setValue(List<ScryptoInstant> value) {
     this.value = value;
   }
 

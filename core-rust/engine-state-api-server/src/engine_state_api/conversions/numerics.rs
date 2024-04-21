@@ -1,4 +1,6 @@
 use crate::engine_prelude::*;
+use chrono::prelude::*;
+use std::ops::RangeInclusive;
 
 use regex::Regex;
 use state_manager::StateVersion;
@@ -116,36 +118,42 @@ pub fn to_api_i64_as_string(input: i64) -> String {
     input.to_string()
 }
 
-pub fn to_api_instant(instant: &Instant) -> Result<models::Instant, MappingError> {
-    to_api_instant_from_safe_timestamp(instant.seconds_since_unix_epoch.checked_mul(1000).ok_or(
-        MappingError::IntegerError {
-            message: "Timestamp must be representable as millis in i64".to_owned(),
-        },
-    )?)
+/// A range of valid years accepted by the basic ISO 8601 (i.e. without extensions).
+///
+/// For those curious:
+/// - The beginning of this range is the start of a Gregorian calendar.
+/// - The end is simply the maximum fitting within 4 characters.
+const ISO_8601_YEAR_RANGE: RangeInclusive<i32> = 1583..=9999;
+
+pub fn to_api_scrypto_instant(instant: &Instant) -> Result<models::ScryptoInstant, MappingError> {
+    let timestamp_seconds = instant.seconds_since_unix_epoch;
+    let date_time = NaiveDateTime::from_timestamp_opt(timestamp_seconds, 0)
+        .filter(|date_time| ISO_8601_YEAR_RANGE.contains(&date_time.year()));
+    Ok(models::ScryptoInstant {
+        unix_timestamp_seconds: to_api_i64_as_string(timestamp_seconds),
+        date_time: date_time.map(to_second_precision_rfc3339_string),
+    })
 }
 
-pub fn to_api_instant_from_safe_timestamp(
+pub fn to_api_consensus_instant(
     timestamp_millis: i64,
-) -> Result<models::Instant, MappingError> {
-    if !(MIN_API_TIMESTAMP_MS..=MAX_API_TIMESTAMP_MS).contains(&timestamp_millis) {
-        return Err(MappingError::IntegerError {
-            message: format!("Timestamp ms must be >= 0 and <= {MAX_API_TIMESTAMP_MS}"),
-        });
-    }
-    use chrono::prelude::*;
-    let date_time = NaiveDateTime::from_timestamp_millis(timestamp_millis)
-        .map(|d| {
-            DateTime::<Utc>::from_naive_utc_and_offset(d, Utc)
-                .to_rfc3339_opts(chrono::SecondsFormat::Millis, true)
-        })
-        .ok_or_else(|| MappingError::IntegerError {
-            message: "Timestamp invalid when converted to DateTime".to_string(),
-        })?;
-
-    Ok(models::Instant {
-        unix_timestamp_ms: timestamp_millis,
-        date_time,
+) -> Result<models::ConsensusInstant, MappingError> {
+    let clamped_timestamp_millis =
+        timestamp_millis.clamp(MIN_API_TIMESTAMP_MS, MAX_API_TIMESTAMP_MS);
+    let date_time = NaiveDateTime::from_timestamp_millis(clamped_timestamp_millis)
+        .expect("it just got clamped to 100% supported range above");
+    Ok(models::ConsensusInstant {
+        unix_timestamp_ms: clamped_timestamp_millis,
+        date_time: to_canonical_rfc3339_string(date_time),
     })
+}
+
+fn to_canonical_rfc3339_string(date_time: NaiveDateTime) -> String {
+    DateTime::<Utc>::from_utc(date_time, Utc).to_rfc3339_opts(SecondsFormat::Millis, true)
+}
+
+fn to_second_precision_rfc3339_string(date_time: NaiveDateTime) -> String {
+    DateTime::<Utc>::from_utc(date_time, Utc).to_rfc3339_opts(SecondsFormat::Secs, true)
 }
 
 pub fn extract_api_max_page_size(max_page_size: Option<i32>) -> Result<usize, ExtractionError> {

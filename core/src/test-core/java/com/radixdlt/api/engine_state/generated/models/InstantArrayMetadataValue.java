@@ -35,7 +35,6 @@ import com.radixdlt.api.engine_state.generated.models.I32ArrayMetadataValue;
 import com.radixdlt.api.engine_state.generated.models.I32MetadataValue;
 import com.radixdlt.api.engine_state.generated.models.I64ArrayMetadataValue;
 import com.radixdlt.api.engine_state.generated.models.I64MetadataValue;
-import com.radixdlt.api.engine_state.generated.models.Instant;
 import com.radixdlt.api.engine_state.generated.models.InstantArrayMetadataValue;
 import com.radixdlt.api.engine_state.generated.models.InstantArrayMetadataValueAllOf;
 import com.radixdlt.api.engine_state.generated.models.InstantMetadataValue;
@@ -51,6 +50,7 @@ import com.radixdlt.api.engine_state.generated.models.PublicKeyArrayMetadataValu
 import com.radixdlt.api.engine_state.generated.models.PublicKeyHashArrayMetadataValue;
 import com.radixdlt.api.engine_state.generated.models.PublicKeyHashMetadataValue;
 import com.radixdlt.api.engine_state.generated.models.PublicKeyMetadataValue;
+import com.radixdlt.api.engine_state.generated.models.ScryptoInstant;
 import com.radixdlt.api.engine_state.generated.models.StringArrayMetadataValue;
 import com.radixdlt.api.engine_state.generated.models.StringMetadataValue;
 import com.radixdlt.api.engine_state.generated.models.U32ArrayMetadataValue;
@@ -118,17 +118,17 @@ import com.radixdlt.api.engine_state.generated.client.JSON;
 
 public class InstantArrayMetadataValue extends MetadataValue {
   public static final String JSON_PROPERTY_VALUE = "value";
-  private List<Instant> value = new ArrayList<>();
+  private List<ScryptoInstant> value = new ArrayList<>();
 
   public InstantArrayMetadataValue() { 
   }
 
-  public InstantArrayMetadataValue value(List<Instant> value) {
+  public InstantArrayMetadataValue value(List<ScryptoInstant> value) {
     this.value = value;
     return this;
   }
 
-  public InstantArrayMetadataValue addValueItem(Instant valueItem) {
+  public InstantArrayMetadataValue addValueItem(ScryptoInstant valueItem) {
     this.value.add(valueItem);
     return this;
   }
@@ -142,14 +142,14 @@ public class InstantArrayMetadataValue extends MetadataValue {
   @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<Instant> getValue() {
+  public List<ScryptoInstant> getValue() {
     return value;
   }
 
 
   @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValue(List<Instant> value) {
+  public void setValue(List<ScryptoInstant> value) {
     this.value = value;
   }
 

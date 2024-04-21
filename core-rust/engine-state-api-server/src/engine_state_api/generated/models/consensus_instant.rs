@@ -12,18 +12,18 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct Instant {
-    /// An integer between `0` and `10^14`, marking the unix timestamp, in milliseconds.
+pub struct ConsensusInstant {
+    /// An integer between `0` and `10^14`, marking the unix timestamp in ms.
     #[serde(rename = "unix_timestamp_ms")]
     pub unix_timestamp_ms: i64,
-    /// The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use \"Z\" denoting UTC and include milliseconds. EG: `2023-01-26T18:30:09.453Z`. 
+    /// The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use \"Z\" (denoting UTC) and include milliseconds (even if `000`). E.g.: `2023-01-26T18:30:09.453Z`. 
     #[serde(rename = "date_time")]
     pub date_time: String,
 }
 
-impl Instant {
-    pub fn new(unix_timestamp_ms: i64, date_time: String) -> Instant {
-        Instant {
+impl ConsensusInstant {
+    pub fn new(unix_timestamp_ms: i64, date_time: String) -> ConsensusInstant {
+        ConsensusInstant {
             unix_timestamp_ms,
             date_time,
         }

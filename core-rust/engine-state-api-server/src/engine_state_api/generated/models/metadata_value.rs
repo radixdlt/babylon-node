@@ -69,12 +69,12 @@ pub enum MetadataValue {
     #[serde(rename="Instant")]
     InstantMetadataValue {
         #[serde(rename = "value")]
-        value: Box<crate::engine_state_api::generated::models::Instant>,
+        value: Box<crate::engine_state_api::generated::models::ScryptoInstant>,
     },
     #[serde(rename="InstantArray")]
     InstantArrayMetadataValue {
         #[serde(rename = "value")]
-        value: Vec<crate::engine_state_api::generated::models::Instant>,
+        value: Vec<crate::engine_state_api::generated::models::ScryptoInstant>,
     },
     #[serde(rename="NonFungibleGlobalId")]
     NonFungibleGlobalIdMetadataValue {

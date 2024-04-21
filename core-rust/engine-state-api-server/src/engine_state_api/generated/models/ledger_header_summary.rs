@@ -18,11 +18,11 @@ pub struct LedgerHeaderSummary {
     #[serde(rename = "ledger_hashes")]
     pub ledger_hashes: Box<crate::engine_state_api::generated::models::LedgerHashes>,
     #[serde(rename = "proposer_timestamp")]
-    pub proposer_timestamp: Box<crate::engine_state_api::generated::models::Instant>,
+    pub proposer_timestamp: Box<crate::engine_state_api::generated::models::ConsensusInstant>,
 }
 
 impl LedgerHeaderSummary {
-    pub fn new(epoch_round: crate::engine_state_api::generated::models::EpochRound, ledger_hashes: crate::engine_state_api::generated::models::LedgerHashes, proposer_timestamp: crate::engine_state_api::generated::models::Instant) -> LedgerHeaderSummary {
+    pub fn new(epoch_round: crate::engine_state_api::generated::models::EpochRound, ledger_hashes: crate::engine_state_api::generated::models::LedgerHashes, proposer_timestamp: crate::engine_state_api::generated::models::ConsensusInstant) -> LedgerHeaderSummary {
         LedgerHeaderSummary {
             epoch_round: Box::new(epoch_round),
             ledger_hashes: Box::new(ledger_hashes),

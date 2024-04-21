@@ -16,11 +16,11 @@ pub struct InstantMetadataValue {
     #[serde(rename = "type")]
     pub _type: crate::engine_state_api::generated::models::MetadataValueType,
     #[serde(rename = "value")]
-    pub value: Box<crate::engine_state_api::generated::models::Instant>,
+    pub value: Box<crate::engine_state_api::generated::models::ScryptoInstant>,
 }
 
 impl InstantMetadataValue {
-    pub fn new(_type: crate::engine_state_api::generated::models::MetadataValueType, value: crate::engine_state_api::generated::models::Instant) -> InstantMetadataValue {
+    pub fn new(_type: crate::engine_state_api::generated::models::MetadataValueType, value: crate::engine_state_api::generated::models::ScryptoInstant) -> InstantMetadataValue {
         InstantMetadataValue {
             _type,
             value: Box::new(value),

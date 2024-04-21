@@ -35,7 +35,6 @@ import com.radixdlt.api.engine_state.generated.models.I32ArrayMetadataValue;
 import com.radixdlt.api.engine_state.generated.models.I32MetadataValue;
 import com.radixdlt.api.engine_state.generated.models.I64ArrayMetadataValue;
 import com.radixdlt.api.engine_state.generated.models.I64MetadataValue;
-import com.radixdlt.api.engine_state.generated.models.Instant;
 import com.radixdlt.api.engine_state.generated.models.InstantArrayMetadataValue;
 import com.radixdlt.api.engine_state.generated.models.InstantMetadataValue;
 import com.radixdlt.api.engine_state.generated.models.InstantMetadataValueAllOf;
@@ -51,6 +50,7 @@ import com.radixdlt.api.engine_state.generated.models.PublicKeyArrayMetadataValu
 import com.radixdlt.api.engine_state.generated.models.PublicKeyHashArrayMetadataValue;
 import com.radixdlt.api.engine_state.generated.models.PublicKeyHashMetadataValue;
 import com.radixdlt.api.engine_state.generated.models.PublicKeyMetadataValue;
+import com.radixdlt.api.engine_state.generated.models.ScryptoInstant;
 import com.radixdlt.api.engine_state.generated.models.StringArrayMetadataValue;
 import com.radixdlt.api.engine_state.generated.models.StringMetadataValue;
 import com.radixdlt.api.engine_state.generated.models.U32ArrayMetadataValue;
@@ -116,12 +116,12 @@ import com.radixdlt.api.engine_state.generated.client.JSON;
 
 public class InstantMetadataValue extends MetadataValue {
   public static final String JSON_PROPERTY_VALUE = "value";
-  private Instant value;
+  private ScryptoInstant value;
 
   public InstantMetadataValue() { 
   }
 
-  public InstantMetadataValue value(Instant value) {
+  public InstantMetadataValue value(ScryptoInstant value) {
     this.value = value;
     return this;
   }
@@ -135,14 +135,14 @@ public class InstantMetadataValue extends MetadataValue {
   @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Instant getValue() {
+  public ScryptoInstant getValue() {
     return value;
   }
 
 
   @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValue(Instant value) {
+  public void setValue(ScryptoInstant value) {
     this.value = value;
   }
 

@@ -80,7 +80,7 @@ fn to_api_metadata_value(
             }
         }
         MetadataValue::Instant(value) => models::MetadataValue::InstantMetadataValue {
-            value: Box::new(to_api_instant(&value)?),
+            value: Box::new(to_api_scrypto_instant(&value)?),
         },
         MetadataValue::Url(value) => models::MetadataValue::UrlMetadataValue {
             value: to_api_url(value),
@@ -151,7 +151,7 @@ fn to_api_metadata_value(
         MetadataValue::InstantArray(value) => models::MetadataValue::InstantArrayMetadataValue {
             value: value
                 .into_iter()
-                .map(|value| to_api_instant(&value))
+                .map(|value| to_api_scrypto_instant(&value))
                 .collect::<Result<Vec<_>, _>>()?,
         },
         MetadataValue::UrlArray(value) => models::MetadataValue::UrlArrayMetadataValue {

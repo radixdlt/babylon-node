@@ -14,7 +14,7 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct InstantMetadataValueAllOf {
     #[serde(rename = "value", skip_serializing_if = "Option::is_none")]
-    pub value: Option<Box<crate::engine_state_api::generated::models::Instant>>,
+    pub value: Option<Box<crate::engine_state_api::generated::models::ScryptoInstant>>,
 }
 
 impl InstantMetadataValueAllOf {
