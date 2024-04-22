@@ -12,8 +12,6 @@ use super::*;
 const MAX_API_EPOCH: u64 = 10000000000;
 const MAX_API_ROUND: u64 = 10000000000;
 const MAX_API_STATE_VERSION: u64 = 100000000000000;
-const MIN_API_TIMESTAMP_MS: i64 = 0;
-const MAX_API_TIMESTAMP_MS: i64 = 100000000000000; // For comparison, current timestamp is 1673822843000 (about 1/100th the size)
 const DEFAULT_MAX_PAGE_SIZE: usize = 100; // Must match the OpenAPI's `MaxPageSize.maximum`
 
 #[tracing::instrument(skip_all)]
@@ -135,16 +133,14 @@ pub fn to_api_scrypto_instant(instant: &Instant) -> Result<models::ScryptoInstan
     })
 }
 
-pub fn to_api_consensus_instant(
+pub fn to_api_consensus_instant_from_millis(
     timestamp_millis: i64,
 ) -> Result<models::ConsensusInstant, MappingError> {
-    let clamped_timestamp_millis =
-        timestamp_millis.clamp(MIN_API_TIMESTAMP_MS, MAX_API_TIMESTAMP_MS);
-    let date_time = NaiveDateTime::from_timestamp_millis(clamped_timestamp_millis)
-        .expect("it just got clamped to 100% supported range above");
+    let date_time = NaiveDateTime::from_timestamp_millis(timestamp_millis)
+        .filter(|date_time| ISO_8601_YEAR_RANGE.contains(&date_time.year()));
     Ok(models::ConsensusInstant {
-        unix_timestamp_ms: clamped_timestamp_millis,
-        date_time: to_canonical_rfc3339_string(date_time),
+        unix_timestamp_ms: to_api_i64_as_string(timestamp_millis),
+        date_time: date_time.map(to_canonical_rfc3339_string),
     })
 }
 

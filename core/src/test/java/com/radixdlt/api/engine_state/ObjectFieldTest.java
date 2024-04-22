@@ -265,7 +265,7 @@ public final class ObjectFieldTest extends DeterministicEngineStateApiTestBase {
         assertThat(historicalHeaderSummary.getEpochRound().getRound())
             .isEqualTo(atOrNextHeader.getRound());
         assertThat(historicalHeaderSummary.getProposerTimestamp().getUnixTimestampMs())
-            .isEqualTo(atOrNextHeader.getProposerTimestampMs());
+            .isEqualTo(String.valueOf(atOrNextHeader.getProposerTimestampMs()));
 
         // Assert on the returned ledger hashes...
         final var historicalLedgerHashes = historicalHeaderSummary.getLedgerHashes();

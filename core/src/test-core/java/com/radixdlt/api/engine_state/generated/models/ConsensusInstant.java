@@ -37,7 +37,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ConsensusInstant {
   public static final String JSON_PROPERTY_UNIX_TIMESTAMP_MS = "unix_timestamp_ms";
-  private Long unixTimestampMs;
+  private String unixTimestampMs;
 
   public static final String JSON_PROPERTY_DATE_TIME = "date_time";
   private String dateTime;
@@ -45,30 +45,28 @@ public class ConsensusInstant {
   public ConsensusInstant() { 
   }
 
-  public ConsensusInstant unixTimestampMs(Long unixTimestampMs) {
+  public ConsensusInstant unixTimestampMs(String unixTimestampMs) {
     this.unixTimestampMs = unixTimestampMs;
     return this;
   }
 
    /**
-   * An integer between &#x60;0&#x60; and &#x60;10^14&#x60;, marking the unix timestamp in ms.
-   * minimum: 0
-   * maximum: 100000000000000
+   * A decimal string-encoded 64-bit signed integer, marking the unix timestamp in milliseconds.  Note: this field accurately represents the full range of possible values (i.e. &#x60;-2^63 &lt;&#x3D; milliseconds &lt; 2^63&#x60;). 
    * @return unixTimestampMs
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `10^14`, marking the unix timestamp in ms.")
+  @ApiModelProperty(required = true, value = "A decimal string-encoded 64-bit signed integer, marking the unix timestamp in milliseconds.  Note: this field accurately represents the full range of possible values (i.e. `-2^63 <= milliseconds < 2^63`). ")
   @JsonProperty(JSON_PROPERTY_UNIX_TIMESTAMP_MS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Long getUnixTimestampMs() {
+  public String getUnixTimestampMs() {
     return unixTimestampMs;
   }
 
 
   @JsonProperty(JSON_PROPERTY_UNIX_TIMESTAMP_MS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setUnixTimestampMs(Long unixTimestampMs) {
+  public void setUnixTimestampMs(String unixTimestampMs) {
     this.unixTimestampMs = unixTimestampMs;
   }
 
@@ -79,13 +77,13 @@ public class ConsensusInstant {
   }
 
    /**
-   * The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use \&quot;Z\&quot; (denoting UTC) and include milliseconds (even if &#x60;000&#x60;). E.g.: &#x60;2023-01-26T18:30:09.453Z&#x60;. 
+   * The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use \&quot;Z\&quot; (denoting UTC) and include milliseconds (even if &#x60;000&#x60;). E.g.: &#x60;2023-01-26T18:30:09.453Z&#x60;.  Note: This field will *not* be present if the &#x60;unix_timestamp_ms&#x60; value is outside the basic range supported by the RFC 3339 / ISO 8601 standard, which starts at year 1583 (i.e. the beginning of the Gregorian calendar) and ends at year 9999 (inclusive). 
    * @return dateTime
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use \"Z\" (denoting UTC) and include milliseconds (even if `000`). E.g.: `2023-01-26T18:30:09.453Z`. ")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use \"Z\" (denoting UTC) and include milliseconds (even if `000`). E.g.: `2023-01-26T18:30:09.453Z`.  Note: This field will *not* be present if the `unix_timestamp_ms` value is outside the basic range supported by the RFC 3339 / ISO 8601 standard, which starts at year 1583 (i.e. the beginning of the Gregorian calendar) and ends at year 9999 (inclusive). ")
   @JsonProperty(JSON_PROPERTY_DATE_TIME)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
   public String getDateTime() {
     return dateTime;
@@ -93,7 +91,7 @@ public class ConsensusInstant {
 
 
   @JsonProperty(JSON_PROPERTY_DATE_TIME)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setDateTime(String dateTime) {
     this.dateTime = dateTime;
   }
