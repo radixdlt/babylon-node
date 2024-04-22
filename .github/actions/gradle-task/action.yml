@@ -20,6 +20,7 @@ runs:
           echo "Workflow triggered by push to a branch"
         fi
         version=${{ steps.setup_version_properties.outputs.VERSION_DISPLAY }}
+        VERSION_TAG=${{ steps.setup_version_properties.outputs.VERSION_TAG }}
         echo "Version: $version"
         ./gradlew ${{ inputs.gradle_command }}
       shell: bash
