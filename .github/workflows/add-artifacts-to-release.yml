@@ -154,8 +154,6 @@ jobs:
         with:
           files: |
             babylon-node-rust-${{ matrix.zipname }}-release-${{ needs.setup_version_properties.outputs.VERSION_TAG }}.zip
-      
-        
 
   publish-distribution-zip:
     if: github.event_name == 'release'
