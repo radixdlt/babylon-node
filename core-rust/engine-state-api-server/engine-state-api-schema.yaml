@@ -3,7 +3,7 @@ openapi: 3.1.0
 info:
   # Should be the release version, and the release display name
   version: 'v0.0.1'
-  title: 'Engine State API'
+  title: 'Engine State API - Babylon (Anemone)'
   license:
     name: The Radix License, Version 1.0
     url: https://www.radixfoundation.org/licenses/license-v1
