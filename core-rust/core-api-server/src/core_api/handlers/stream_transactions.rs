@@ -28,7 +28,7 @@ pub(crate) async fn handle_stream_transactions(
         .with_transaction_formats(&request.transaction_format_options)
         .with_substate_formats(&request.substate_format_options);
 
-    let from_state_version = extract_api_state_version(request.from_state_version)
+    let from_state_version = extract_state_version(request.from_state_version)
         .map_err(|err| err.into_response_error("from_state_version"))?;
 
     let limit: u64 = request

@@ -1,5 +1,5 @@
 /*
- * Engine State API
+ * Engine State API - Babylon (Anemone)
  *
  * This API provides a complete view of the current ledger state, operating at a relatively low level (i.e. returning Entities' data and type information in a generic way, without interpreting specifics of different native or custom components).  It mirrors how the Radix Engine views the ledger state in its \"System\" layer, and thus can be useful for Scrypto developers, who need to inspect how the Engine models and stores their application's state, or how an interface / authentication scheme of another component looks like. 
  *
@@ -11,7 +11,7 @@
 
 /// 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
-pub enum EntityIteratorFilterType {
+pub enum EntitySearchFilterType {
     #[serde(rename = "Blueprint")]
     Blueprint,
     #[serde(rename = "SystemType")]
@@ -21,7 +21,7 @@ pub enum EntityIteratorFilterType {
 
 }
 
-impl ToString for EntityIteratorFilterType {
+impl ToString for EntitySearchFilterType {
     fn to_string(&self) -> String {
         match self {
             Self::Blueprint => String::from("Blueprint"),
@@ -31,8 +31,8 @@ impl ToString for EntityIteratorFilterType {
     }
 }
 
-impl Default for EntityIteratorFilterType {
-    fn default() -> EntityIteratorFilterType {
+impl Default for EntitySearchFilterType {
+    fn default() -> EntitySearchFilterType {
         Self::Blueprint
     }
 }

@@ -56,7 +56,7 @@ RUN apt-get update \
     wget=${WGET_VERSION} \
     software-properties-common=0.99.30-4 \
   && apt-get install -y --no-install-recommends \
-    openjdk-17-jdk=17.0.10+7-1~deb12u1 \
+    openjdk-17-jdk=17.0.11+9-1~deb12u1 \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
@@ -257,7 +257,7 @@ LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 # - https://packages.debian.org/bookworm/libc6
 RUN apt-get update -y \
   && apt-get -y --no-install-recommends install \
-    openjdk-17-jre-headless=17.0.10+7-1~deb12u1 \
+    openjdk-17-jre-headless=17.0.11+9-1~deb12u1 \
     # https://security-tracker.debian.org/tracker/CVE-2023-38545
     curl=7.88.1-10+deb12u5 \
     gettext-base=0.21-12 \
@@ -305,9 +305,8 @@ ENV RADIXDLT_HOME=/home/radixdlt \
     RADIXDLT_SYSTEM_API_BIND_ADDRESS=0.0.0.0 \
     RADIXDLT_PROMETHEUS_API_PORT=3335 \
     RADIXDLT_PROMETHEUS_API_BIND_ADDRESS=0.0.0.0 \
-    # Currently, the Engine State API is not exposed by default (i.e. bound to the loopback only):
-    RADIXDLT_ENGINE_STATE_API_PORT=3337 \
-    RADIXDLT_ENGINE_STATE_API_BIND_ADDRESS=127.0.0.1 \
+    RADIXDLT_ENGINE_STATE_API_PORT=3336 \
+    RADIXDLT_ENGINE_STATE_API_BIND_ADDRESS=0.0.0.0 \
     RADIXDLT_NETWORK_ID=240 \
     RADIXDLT_NODE_KEY_CREATE_IF_MISSING=false
 

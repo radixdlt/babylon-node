@@ -176,7 +176,7 @@ pub fn extract_ledger_state_selector(
 ) -> Result<StateVersion, ExtractionError> {
     Ok(match selector {
         models::LedgerStateSelector::VersionLedgerStateSelector { state_version } => {
-            extract_api_state_version(*state_version)?
+            extract_state_version(*state_version)?
         }
     })
 }

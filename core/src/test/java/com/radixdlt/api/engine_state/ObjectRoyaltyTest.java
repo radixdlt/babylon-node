@@ -80,9 +80,9 @@ public final class ObjectRoyaltyTest extends DeterministicEngineStateApiTestBase
 
       // Find all the component instances created by the `royalties` Scenario:
       final var royaltyObjectAddresses =
-          getEntitiesApi()
-              .entityIteratorPost(
-                  new EntityIteratorRequest()
+          getExtraApi()
+              .extraEntitySearchPost(
+                  new ExtraEntitySearchRequest()
                       .filter(new EntityTypeFilter().entityType(EntityType.GLOBALGENERICCOMPONENT)))
               .getPage()
               .stream()

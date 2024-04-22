@@ -16,9 +16,9 @@ pub(crate) async fn handle_object_field(
         .map_err(|err| err.into_response_error("entity_address"))?;
     let module_id = request
         .attached_module_id
-        .map(|module_id| extract_api_attached_module_id(&module_id).into())
+        .map(|module_id| extract_attached_module_id(&module_id).into())
         .unwrap_or(ModuleId::Main);
-    let field_input = extract_api_rich_index_input(request.field_name, request.field_index)
+    let field_input = extract_rich_index_input(request.field_name, request.field_index)
         .map_err(|err| err.into_response_error("field_name or field_index"))?;
 
     let requested_state_version =

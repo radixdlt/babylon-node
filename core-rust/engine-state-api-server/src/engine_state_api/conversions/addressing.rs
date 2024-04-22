@@ -118,7 +118,7 @@ pub fn to_api_attached_module_id(module_id: &AttachedModuleId) -> models::Attach
     }
 }
 
-pub fn extract_api_attached_module_id(module_id: &models::AttachedModuleId) -> AttachedModuleId {
+pub fn extract_attached_module_id(module_id: &models::AttachedModuleId) -> AttachedModuleId {
     match module_id {
         models::AttachedModuleId::Metadata => AttachedModuleId::Metadata,
         models::AttachedModuleId::Royalty => AttachedModuleId::Royalty,

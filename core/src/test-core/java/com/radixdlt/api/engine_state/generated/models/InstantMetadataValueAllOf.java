@@ -1,5 +1,5 @@
 /*
- * Engine State API
+ * Engine State API - Babylon (Anemone)
  * This API provides a complete view of the current ledger state, operating at a relatively low level (i.e. returning Entities' data and type information in a generic way, without interpreting specifics of different native or custom components).  It mirrors how the Radix Engine views the ledger state in its \"System\" layer, and thus can be useful for Scrypto developers, who need to inspect how the Engine models and stores their application's state, or how an interface / authentication scheme of another component looks like. 
  *
  * The version of the OpenAPI document: v0.0.1
@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.engine_state.generated.models.Instant;
+import com.radixdlt.api.engine_state.generated.models.ScryptoInstant;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -37,12 +37,12 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class InstantMetadataValueAllOf {
   public static final String JSON_PROPERTY_VALUE = "value";
-  private Instant value;
+  private ScryptoInstant value;
 
   public InstantMetadataValueAllOf() { 
   }
 
-  public InstantMetadataValueAllOf value(Instant value) {
+  public InstantMetadataValueAllOf value(ScryptoInstant value) {
     this.value = value;
     return this;
   }
@@ -56,14 +56,14 @@ public class InstantMetadataValueAllOf {
   @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public Instant getValue() {
+  public ScryptoInstant getValue() {
     return value;
   }
 
 
   @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setValue(Instant value) {
+  public void setValue(ScryptoInstant value) {
     this.value = value;
   }
 

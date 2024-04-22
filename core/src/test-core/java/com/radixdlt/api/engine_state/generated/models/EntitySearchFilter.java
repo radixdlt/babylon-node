@@ -1,5 +1,5 @@
 /*
- * Engine State API
+ * Engine State API - Babylon (Anemone)
  * This API provides a complete view of the current ledger state, operating at a relatively low level (i.e. returning Entities' data and type information in a generic way, without interpreting specifics of different native or custom components).  It mirrors how the Radix Engine views the ledger state in its \"System\" layer, and thus can be useful for Scrypto developers, who need to inspect how the Engine models and stores their application's state, or how an interface / authentication scheme of another component looks like. 
  *
  * The version of the OpenAPI document: v0.0.1
@@ -26,7 +26,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.engine_state.generated.models.BlueprintFilter;
-import com.radixdlt.api.engine_state.generated.models.EntityIteratorFilterType;
+import com.radixdlt.api.engine_state.generated.models.EntitySearchFilterType;
 import com.radixdlt.api.engine_state.generated.models.EntityTypeFilter;
 import com.radixdlt.api.engine_state.generated.models.SystemTypeFilter;
 import io.swagger.annotations.ApiModel;
@@ -36,10 +36,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.engine_state.generated.client.JSON;
 /**
- * EntityIteratorFilter
+ * EntitySearchFilter
  */
 @JsonPropertyOrder({
-  EntityIteratorFilter.JSON_PROPERTY_TYPE
+  EntitySearchFilter.JSON_PROPERTY_TYPE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -56,14 +56,14 @@ import com.radixdlt.api.engine_state.generated.client.JSON;
   @JsonSubTypes.Type(value = SystemTypeFilter.class, name = "SystemTypeFilter"),
 })
 
-public class EntityIteratorFilter {
+public class EntitySearchFilter {
   public static final String JSON_PROPERTY_TYPE = "type";
-  private EntityIteratorFilterType type;
+  private EntitySearchFilterType type;
 
-  public EntityIteratorFilter() { 
+  public EntitySearchFilter() { 
   }
 
-  public EntityIteratorFilter type(EntityIteratorFilterType type) {
+  public EntitySearchFilter type(EntitySearchFilterType type) {
     this.type = type;
     return this;
   }
@@ -77,20 +77,20 @@ public class EntityIteratorFilter {
   @JsonProperty(JSON_PROPERTY_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EntityIteratorFilterType getType() {
+  public EntitySearchFilterType getType() {
     return type;
   }
 
 
   @JsonProperty(JSON_PROPERTY_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setType(EntityIteratorFilterType type) {
+  public void setType(EntitySearchFilterType type) {
     this.type = type;
   }
 
 
   /**
-   * Return true if this EntityIteratorFilter object is equal to o.
+   * Return true if this EntitySearchFilter object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -100,8 +100,8 @@ public class EntityIteratorFilter {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    EntityIteratorFilter entityIteratorFilter = (EntityIteratorFilter) o;
-    return Objects.equals(this.type, entityIteratorFilter.type);
+    EntitySearchFilter entitySearchFilter = (EntitySearchFilter) o;
+    return Objects.equals(this.type, entitySearchFilter.type);
   }
 
   @Override
@@ -112,7 +112,7 @@ public class EntityIteratorFilter {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class EntityIteratorFilter {\n");
+    sb.append("class EntitySearchFilter {\n");
     sb.append("    type: ").append(toIndentedString(type)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -138,8 +138,8 @@ static {
   mappings.put("EntityTypeFilter", EntityTypeFilter.class);
   mappings.put("SystemType", SystemTypeFilter.class);
   mappings.put("SystemTypeFilter", SystemTypeFilter.class);
-  mappings.put("EntityIteratorFilter", EntityIteratorFilter.class);
-  JSON.registerDiscriminator(EntityIteratorFilter.class, "type", mappings);
+  mappings.put("EntitySearchFilter", EntitySearchFilter.class);
+  JSON.registerDiscriminator(EntitySearchFilter.class, "type", mappings);
 }
 }
 

@@ -1,5 +1,5 @@
 /*
- * Engine State API
+ * Engine State API - Babylon (Anemone)
  *
  * This API provides a complete view of the current ledger state, operating at a relatively low level (i.e. returning Entities' data and type information in a generic way, without interpreting specifics of different native or custom components).  It mirrors how the Radix Engine views the ledger state in its \"System\" layer, and thus can be useful for Scrypto developers, who need to inspect how the Engine models and stores their application's state, or how an interface / authentication scheme of another component looks like. 
  *
@@ -14,13 +14,13 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct EntityTypeFilter {
     #[serde(rename = "type")]
-    pub _type: crate::engine_state_api::generated::models::EntityIteratorFilterType,
+    pub _type: crate::engine_state_api::generated::models::EntitySearchFilterType,
     #[serde(rename = "entity_type")]
     pub entity_type: crate::engine_state_api::generated::models::EntityType,
 }
 
 impl EntityTypeFilter {
-    pub fn new(_type: crate::engine_state_api::generated::models::EntityIteratorFilterType, entity_type: crate::engine_state_api::generated::models::EntityType) -> EntityTypeFilter {
+    pub fn new(_type: crate::engine_state_api::generated::models::EntitySearchFilterType, entity_type: crate::engine_state_api::generated::models::EntityType) -> EntityTypeFilter {
         EntityTypeFilter {
             _type,
             entity_type,

@@ -1,5 +1,5 @@
 /*
- * Engine State API
+ * Engine State API - Babylon (Anemone)
  *
  * This API provides a complete view of the current ledger state, operating at a relatively low level (i.e. returning Entities' data and type information in a generic way, without interpreting specifics of different native or custom components).  It mirrors how the Radix Engine views the ledger state in its \"System\" layer, and thus can be useful for Scrypto developers, who need to inspect how the Engine models and stores their application's state, or how an interface / authentication scheme of another component looks like. 
  *
@@ -69,12 +69,12 @@ pub enum MetadataValue {
     #[serde(rename="Instant")]
     InstantMetadataValue {
         #[serde(rename = "value")]
-        value: Box<crate::engine_state_api::generated::models::Instant>,
+        value: Box<crate::engine_state_api::generated::models::ScryptoInstant>,
     },
     #[serde(rename="InstantArray")]
     InstantArrayMetadataValue {
         #[serde(rename = "value")]
-        value: Vec<crate::engine_state_api::generated::models::Instant>,
+        value: Vec<crate::engine_state_api::generated::models::ScryptoInstant>,
     },
     #[serde(rename="NonFungibleGlobalId")]
     NonFungibleGlobalIdMetadataValue {

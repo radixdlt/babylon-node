@@ -1,5 +1,5 @@
 /*
- * Engine State API
+ * Engine State API - Babylon (Anemone)
  *
  * This API provides a complete view of the current ledger state, operating at a relatively low level (i.e. returning Entities' data and type information in a generic way, without interpreting specifics of different native or custom components).  It mirrors how the Radix Engine views the ledger state in its \"System\" layer, and thus can be useful for Scrypto developers, who need to inspect how the Engine models and stores their application's state, or how an interface / authentication scheme of another component looks like. 
  *
@@ -12,9 +12,9 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct EntityIteratorRequest {
+pub struct ExtraEntitySearchRequest {
     #[serde(rename = "filter", skip_serializing_if = "Option::is_none")]
-    pub filter: Option<Box<crate::engine_state_api::generated::models::EntityIteratorFilter>>,
+    pub filter: Option<Box<crate::engine_state_api::generated::models::EntitySearchFilter>>,
     /// A maximum number of items to be included in the paged listing response.
     #[serde(rename = "max_page_size", skip_serializing_if = "Option::is_none")]
     pub max_page_size: Option<i32>,
@@ -25,9 +25,9 @@ pub struct EntityIteratorRequest {
     pub at_ledger_state: Option<Box<crate::engine_state_api::generated::models::LedgerStateSelector>>,
 }
 
-impl EntityIteratorRequest {
-    pub fn new() -> EntityIteratorRequest {
-        EntityIteratorRequest {
+impl ExtraEntitySearchRequest {
+    pub fn new() -> ExtraEntitySearchRequest {
+        ExtraEntitySearchRequest {
             filter: None,
             max_page_size: None,
             continuation_token: None,

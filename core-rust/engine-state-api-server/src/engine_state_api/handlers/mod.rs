@@ -1,7 +1,7 @@
 mod blueprint_info;
 mod entity_info;
-mod entity_iterator;
 mod entity_schema_entry;
+mod extra_entity_search;
 mod kv_store_entry;
 mod kv_store_iterator;
 mod object_collection_entry;
@@ -16,13 +16,13 @@ use super::{HasKey, Page, ResponseError};
 use crate::engine_prelude::*;
 
 use crate::engine_state_api::{
-    extract_api_max_page_size, extract_api_sbor_hex_string, to_api_sbor_hex_string,
-    ExtractionError, MaxItemCountPolicy, NextKeyPager,
+    extract_from_sbor_hex_string, extract_max_page_size, to_api_sbor_hex_string, ExtractionError,
+    MaxItemCountPolicy, NextKeyPager,
 };
 pub(crate) use blueprint_info::*;
 pub(crate) use entity_info::*;
-pub(crate) use entity_iterator::*;
 pub(crate) use entity_schema_entry::*;
+pub(crate) use extra_entity_search::*;
 pub(crate) use kv_store_entry::*;
 pub(crate) use kv_store_iterator::*;
 pub(crate) use object_collection_entry::*;
@@ -104,14 +104,14 @@ impl HandlerPagingSupport {
         iterable: impl FnOnce(Option<&K>) -> Result<I, E>,
     ) -> Result<Page<T, String>, ResponseError> {
         let paging_policy = MaxItemCountPolicy::new(
-            extract_api_max_page_size(self.max_page_size)
+            extract_max_page_size(self.max_page_size)
                 .map_err(|error| error.into_response_error("max_page_size"))?,
         );
 
         let requested_continuation_token = self
             .requested_continuation_token_string
             .as_ref()
-            .map(extract_api_sbor_hex_string::<NextKeyAndFilterHash<K>>)
+            .map(extract_from_sbor_hex_string::<NextKeyAndFilterHash<K>>)
             .transpose()
             .map_err(|error| error.into_response_error("continuation_token"))?;
 

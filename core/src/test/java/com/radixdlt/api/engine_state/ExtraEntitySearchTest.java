@@ -87,17 +87,17 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(JUnitParamsRunner.class)
-public final class EntityIteratorTest extends DeterministicEngineStateApiTestBase {
+public final class ExtraEntitySearchTest extends DeterministicEngineStateApiTestBase {
 
   private static final int SMALL_PAGE_SIZE = 7;
 
   @Test
-  public void engine_state_api_entity_iterator_pages_through_all_entities() throws Exception {
+  public void engine_state_api_extra_entity_search_pages_through_all_entities() throws Exception {
     try (var test = buildRunningServerTest()) {
       test.suppressUnusedWarning();
 
       // first list all entities with a single request
-      final var allResponse = getEntitiesApi().entityIteratorPost(new EntityIteratorRequest());
+      final var allResponse = getExtraApi().extraEntitySearchPost(new ExtraEntitySearchRequest());
 
       // high default limit of the endpoint should allow to get it all in one page in tests:
       assertThat(allResponse.getContinuationToken()).isNull();
@@ -120,9 +120,9 @@ public final class EntityIteratorTest extends DeterministicEngineStateApiTestBas
 
       while (true) {
         final var smallResponse =
-            getEntitiesApi()
-                .entityIteratorPost(
-                    new EntityIteratorRequest()
+            getExtraApi()
+                .extraEntitySearchPost(
+                    new ExtraEntitySearchRequest()
                         .continuationToken(continuationToken)
                         .maxPageSize(SMALL_PAGE_SIZE));
         final var smallEntities = smallResponse.getPage();
@@ -143,13 +143,13 @@ public final class EntityIteratorTest extends DeterministicEngineStateApiTestBas
 
   @Test
   @Parameters(method = "broadFilters")
-  public void engine_state_api_entity_iterator_pages_through_filtered_entities(
-      EntityIteratorFilter filter) throws Exception {
+  public void engine_state_api_extra_entity_search_pages_through_filtered_entities(
+      EntitySearchFilter filter) throws Exception {
     try (var test = buildRunningServerTest()) {
       test.suppressUnusedWarning();
 
       final var allResponse =
-          getEntitiesApi().entityIteratorPost(new EntityIteratorRequest().filter(filter));
+          getExtraApi().extraEntitySearchPost(new ExtraEntitySearchRequest().filter(filter));
 
       assertThat(allResponse.getContinuationToken()).isNull();
       final var allEntities = allResponse.getPage();
@@ -159,9 +159,9 @@ public final class EntityIteratorTest extends DeterministicEngineStateApiTestBas
 
       while (true) {
         final var smallResponse =
-            getEntitiesApi()
-                .entityIteratorPost(
-                    new EntityIteratorRequest()
+            getExtraApi()
+                .extraEntitySearchPost(
+                    new ExtraEntitySearchRequest()
                         .filter(filter)
                         .continuationToken(continuationToken)
                         .maxPageSize(SMALL_PAGE_SIZE));
@@ -185,19 +185,19 @@ public final class EntityIteratorTest extends DeterministicEngineStateApiTestBas
   // broad filters (i.e. not excluding too many entities, so that pages of `SMALL_PAGE_SIZE` still
   // happen).
   // The actual filters' tests are separate below.
-  public EntityIteratorFilter[] broadFilters() {
-    return new EntityIteratorFilter[] {
+  public EntitySearchFilter[] broadFilters() {
+    return new EntitySearchFilter[] {
       new SystemTypeFilter().systemType(SystemType.OBJECT),
       new EntityTypeFilter().entityType(EntityType.GLOBALPACKAGE),
     };
   }
 
   @Test
-  public void engine_state_api_entity_iterator_sorts_by_creation_asc() throws Exception {
+  public void engine_state_api_extra_entity_search_sorts_by_creation_asc() throws Exception {
     try (var test = buildRunningServerTest()) {
       test.suppressUnusedWarning();
 
-      final var allResponse = getEntitiesApi().entityIteratorPost(new EntityIteratorRequest());
+      final var allResponse = getExtraApi().extraEntitySearchPost(new ExtraEntitySearchRequest());
 
       final var creationVersions =
           allResponse.getPage().stream()
@@ -210,14 +210,14 @@ public final class EntityIteratorTest extends DeterministicEngineStateApiTestBas
   }
 
   @Test
-  public void engine_state_api_entity_iterator_filters_by_system_type() throws Exception {
+  public void engine_state_api_extra_entity_search_filters_by_system_type() throws Exception {
     try (var test = buildRunningServerTest()) {
       test.suppressUnusedWarning();
 
       final var allResponse =
-          getEntitiesApi()
-              .entityIteratorPost(
-                  new EntityIteratorRequest()
+          getExtraApi()
+              .extraEntitySearchPost(
+                  new ExtraEntitySearchRequest()
                       .filter(new SystemTypeFilter().systemType(SystemType.KEYVALUESTORE)));
 
       final var systemTypes =
@@ -230,14 +230,14 @@ public final class EntityIteratorTest extends DeterministicEngineStateApiTestBas
   }
 
   @Test
-  public void engine_state_api_entity_iterator_filters_by_entity_type() throws Exception {
+  public void engine_state_api_extra_entity_search_filters_by_entity_type() throws Exception {
     try (var test = buildRunningServerTest()) {
       test.suppressUnusedWarning();
 
       final var allResponse =
-          getEntitiesApi()
-              .entityIteratorPost(
-                  new EntityIteratorRequest()
+          getExtraApi()
+              .extraEntitySearchPost(
+                  new ExtraEntitySearchRequest()
                       .filter(
                           new EntityTypeFilter().entityType(EntityType.GLOBALNONFUNGIBLERESOURCE)));
 
@@ -251,7 +251,7 @@ public final class EntityIteratorTest extends DeterministicEngineStateApiTestBas
   }
 
   @Test
-  public void engine_state_api_entity_iterator_filters_by_blueprint() throws Exception {
+  public void engine_state_api_extra_entity_search_filters_by_blueprint() throws Exception {
     try (var test = buildRunningServerTest()) {
       test.suppressUnusedWarning();
 
@@ -262,9 +262,9 @@ public final class EntityIteratorTest extends DeterministicEngineStateApiTestBas
               .blueprintName("FungibleResourceManager");
 
       final var allResponse =
-          getEntitiesApi()
-              .entityIteratorPost(
-                  new EntityIteratorRequest()
+          getExtraApi()
+              .extraEntitySearchPost(
+                  new ExtraEntitySearchRequest()
                       .filter(new BlueprintFilter().blueprint(requestedBlueprint)));
 
       final var blueprints =
@@ -277,7 +277,7 @@ public final class EntityIteratorTest extends DeterministicEngineStateApiTestBas
   }
 
   @Test
-  public void engine_state_api_entity_iterator_requires_same_params_across_pages()
+  public void engine_state_api_extra_entity_search_requires_same_params_across_pages()
       throws Exception {
     try (var test = buildRunningServerTest()) {
       test.suppressUnusedWarning();
@@ -289,9 +289,9 @@ public final class EntityIteratorTest extends DeterministicEngineStateApiTestBas
               .type(LedgerStateSelectorType.BYSTATEVERSION);
 
       final var firstPageResponse =
-          getEntitiesApi()
-              .entityIteratorPost(
-                  new EntityIteratorRequest()
+          getExtraApi()
+              .extraEntitySearchPost(
+                  new ExtraEntitySearchRequest()
                       .filter(sameFilter)
                       .atLedgerState(sameLedgerStateSelector)
                       .maxPageSize(1)); // we assume there is more than 1 KV-store
@@ -299,9 +299,9 @@ public final class EntityIteratorTest extends DeterministicEngineStateApiTestBas
       final var whenDifferingFilter =
           assertErrorResponse(
               () ->
-                  getEntitiesApi()
-                      .entityIteratorPost(
-                          new EntityIteratorRequest()
+                  getExtraApi()
+                      .extraEntitySearchPost(
+                          new ExtraEntitySearchRequest()
                               .filter(new EntityTypeFilter().entityType(EntityType.GLOBALPACKAGE))
                               .atLedgerState(sameLedgerStateSelector)
                               .continuationToken(firstPageResponse.getContinuationToken())));
@@ -311,9 +311,9 @@ public final class EntityIteratorTest extends DeterministicEngineStateApiTestBas
       final var whenDifferingLedgerStateSelector =
           assertErrorResponse(
               () ->
-                  getEntitiesApi()
-                      .entityIteratorPost(
-                          new EntityIteratorRequest()
+                  getExtraApi()
+                      .extraEntitySearchPost(
+                          new ExtraEntitySearchRequest()
                               .filter(sameFilter)
                               .atLedgerState(
                                   new VersionLedgerStateSelector()
@@ -327,21 +327,21 @@ public final class EntityIteratorTest extends DeterministicEngineStateApiTestBas
   }
 
   // Note: we want to test "historical state" working with and without filters.
-  public EntityIteratorFilter[] noneOrBroadFilters() {
-    return Stream.concat(Stream.of((EntityIteratorFilter) null), Arrays.stream(broadFilters()))
-        .toArray(EntityIteratorFilter[]::new);
+  public EntitySearchFilter[] noneOrBroadFilters() {
+    return Stream.concat(Stream.of((EntitySearchFilter) null), Arrays.stream(broadFilters()))
+        .toArray(EntitySearchFilter[]::new);
   }
 
   @Test
   @Parameters(method = "noneOrBroadFilters")
-  public void engine_state_api_entity_iterator_supports_history(
-      @Nullable EntityIteratorFilter filter) throws Exception {
+  public void engine_state_api_extra_entity_search_supports_history(
+      @Nullable EntitySearchFilter filter) throws Exception {
     try (var test = buildRunningServerTest()) {
       test.suppressUnusedWarning();
 
       // Arrange: collect all entities (as of now) and index them by creation version:
       final var currentVersionResponse =
-          getEntitiesApi().entityIteratorPost(new EntityIteratorRequest().filter(filter));
+          getExtraApi().extraEntitySearchPost(new ExtraEntitySearchRequest().filter(filter));
       // sanity check: make sure we don't have to deal with pages in this scenario:
       assertThat(currentVersionResponse.getContinuationToken()).isNull();
 
@@ -361,9 +361,9 @@ public final class EntityIteratorTest extends DeterministicEngineStateApiTestBas
 
       // Act: list all entities at a state version just before the creation of the latest ones:
       final var olderVersionResponse =
-          getEntitiesApi()
-              .entityIteratorPost(
-                  new EntityIteratorRequest()
+          getExtraApi()
+              .extraEntitySearchPost(
+                  new ExtraEntitySearchRequest()
                       .filter(filter)
                       .atLedgerState(
                           new VersionLedgerStateSelector()
@@ -383,7 +383,7 @@ public final class EntityIteratorTest extends DeterministicEngineStateApiTestBas
   // However, for consistency with other "historical" endpoints of the API, we explicitly validate
   // this aspect, so it's also worth testing.
   @Test
-  public void engine_state_api_entity_iterator_at_state_version_requires_history_feature()
+  public void engine_state_api_extra_entity_search_at_state_version_requires_history_feature()
       throws Exception {
     final var tooShortHistory =
         new StateTreeGcConfig(UInt32.fromNonNegativeInt(1), UInt64.fromNonNegativeLong(10));
@@ -403,9 +403,9 @@ public final class EntityIteratorTest extends DeterministicEngineStateApiTestBas
       final var errorResponse =
           assertErrorResponse(
               () ->
-                  getEntitiesApi()
-                      .entityIteratorPost(
-                          new EntityIteratorRequest()
+                  getExtraApi()
+                      .extraEntitySearchPost(
+                          new ExtraEntitySearchRequest()
                               .atLedgerState(
                                   new VersionLedgerStateSelector()
                                       .stateVersion(26L)

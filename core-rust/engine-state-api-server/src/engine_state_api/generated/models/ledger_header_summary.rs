@@ -1,5 +1,5 @@
 /*
- * Engine State API
+ * Engine State API - Babylon (Anemone)
  *
  * This API provides a complete view of the current ledger state, operating at a relatively low level (i.e. returning Entities' data and type information in a generic way, without interpreting specifics of different native or custom components).  It mirrors how the Radix Engine views the ledger state in its \"System\" layer, and thus can be useful for Scrypto developers, who need to inspect how the Engine models and stores their application's state, or how an interface / authentication scheme of another component looks like. 
  *
@@ -18,11 +18,11 @@ pub struct LedgerHeaderSummary {
     #[serde(rename = "ledger_hashes")]
     pub ledger_hashes: Box<crate::engine_state_api::generated::models::LedgerHashes>,
     #[serde(rename = "proposer_timestamp")]
-    pub proposer_timestamp: Box<crate::engine_state_api::generated::models::Instant>,
+    pub proposer_timestamp: Box<crate::engine_state_api::generated::models::ConsensusInstant>,
 }
 
 impl LedgerHeaderSummary {
-    pub fn new(epoch_round: crate::engine_state_api::generated::models::EpochRound, ledger_hashes: crate::engine_state_api::generated::models::LedgerHashes, proposer_timestamp: crate::engine_state_api::generated::models::Instant) -> LedgerHeaderSummary {
+    pub fn new(epoch_round: crate::engine_state_api::generated::models::EpochRound, ledger_hashes: crate::engine_state_api::generated::models::LedgerHashes, proposer_timestamp: crate::engine_state_api::generated::models::ConsensusInstant) -> LedgerHeaderSummary {
         LedgerHeaderSummary {
             epoch_round: Box::new(epoch_round),
             ledger_hashes: Box::new(ledger_hashes),

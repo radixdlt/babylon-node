@@ -39,7 +39,7 @@ pub fn to_api_ledger_header_summary(
             transaction_tree_hash: to_api_transaction_tree_hash(&hashes.transaction_root),
             receipt_tree_hash: to_api_receipt_tree_hash(&hashes.receipt_root),
         }),
-        proposer_timestamp: Box::new(to_api_instant_from_safe_timestamp(
+        proposer_timestamp: Box::new(to_api_consensus_instant_from_millis(
             state_summary.proposer_timestamp_ms,
         )?),
     })
@@ -66,24 +66,24 @@ pub fn to_api_sbor_hex_string<T: ScryptoEncode>(
     Ok(to_hex(sbor_bytes))
 }
 
-pub fn extract_api_sbor_hex_string<T: ScryptoDecode>(
+pub fn extract_from_sbor_hex_string<T: ScryptoDecode>(
     sbor_hex_string: &String,
 ) -> Result<T, ExtractionError> {
     let sbor_bytes = from_hex(sbor_hex_string)?;
     scrypto_decode(&sbor_bytes).map_err(ExtractionError::InvalidSbor)
 }
 
-pub fn extract_api_rich_index_input(
+pub fn extract_rich_index_input(
     name: Option<String>,
     index: Option<i32>,
 ) -> Result<RichIndexInput, ExtractionError> {
     Ok(match exactly_one_of("name", name, "index", index)? {
         Either::Left(name) => RichIndexInput::Name(name),
-        Either::Right(index) => RichIndexInput::Index(extract_api_u8_as_i32(index)?),
+        Either::Right(index) => RichIndexInput::Index(extract_u8_from_api_i32(index)?),
     })
 }
 
-pub fn extract_api_sbor_data(
+pub fn extract_from_sbor_data(
     context: &ExtractionContext,
     sbor_data: models::SborData,
 ) -> Result<ScryptoValue, ExtractionError> {
@@ -170,7 +170,7 @@ pub fn extract_ledger_state_selector(
 
 /// An input specification of a [`RichIndex`] (a number outputted together with an optional name).
 /// Such index may be unambiguously specified either by a number or by a name.
-/// See [`extract_api_rich_index_input()`].
+/// See [`extract_rich_index_input()`].
 pub enum RichIndexInput {
     Name(String),
     Index(u8),

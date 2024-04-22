@@ -1,5 +1,5 @@
 /*
- * Engine State API
+ * Engine State API - Babylon (Anemone)
  * This API provides a complete view of the current ledger state, operating at a relatively low level (i.e. returning Entities' data and type information in a generic way, without interpreting specifics of different native or custom components).  It mirrors how the Radix Engine views the ledger state in its \"System\" layer, and thus can be useful for Scrypto developers, who need to inspect how the Engine models and stores their application's state, or how an interface / authentication scheme of another component looks like. 
  *
  * The version of the OpenAPI document: v0.0.1
@@ -27,8 +27,8 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.engine_state.generated.models.BlueprintFilter;
 import com.radixdlt.api.engine_state.generated.models.BlueprintFilterAllOf;
-import com.radixdlt.api.engine_state.generated.models.EntityIteratorFilter;
-import com.radixdlt.api.engine_state.generated.models.EntityIteratorFilterType;
+import com.radixdlt.api.engine_state.generated.models.EntitySearchFilter;
+import com.radixdlt.api.engine_state.generated.models.EntitySearchFilterType;
 import com.radixdlt.api.engine_state.generated.models.EntityTypeFilter;
 import com.radixdlt.api.engine_state.generated.models.SystemTypeFilter;
 import com.radixdlt.api.engine_state.generated.models.UnversionedBlueprintReference;
@@ -56,7 +56,7 @@ import com.radixdlt.api.engine_state.generated.client.JSON;
   @JsonSubTypes.Type(value = SystemTypeFilter.class, name = "SystemType"),
 })
 
-public class BlueprintFilter extends EntityIteratorFilter {
+public class BlueprintFilter extends EntitySearchFilter {
   public static final String JSON_PROPERTY_BLUEPRINT = "blueprint";
   private UnversionedBlueprintReference blueprint;
 

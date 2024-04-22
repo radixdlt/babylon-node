@@ -22,7 +22,8 @@ services:
       - "127.0.0.1:3333:3333"   # Core API - binds to localhost:3333
       - "127.0.0.1:3334:3334"   # System API - binds to localhost:3334
       - "127.0.0.1:3335:3335"   # Prometheus API - binds to localhost:3335
-      - "127.0.0.1:9011:9011"   # JMX Port for Java debugging - binds to localhost:9001
+      - "127.0.0.1:3336:3336"   # Engine State API - binds to localhost:3336
+      - "127.0.0.1:9011:9011"   # JMX Port for Java debugging - binds to localhost:9011
       - "127.0.0.1:50505:50505" # JDWP Port for Java debugging - binds to localhost:50505
       - "127.0.0.1:30000:30000" # Gossip port - binds to localhost:30000
     env_file:

@@ -1,5 +1,5 @@
 /*
- * Engine State API
+ * Engine State API - Babylon (Anemone)
  * This API provides a complete view of the current ledger state, operating at a relatively low level (i.e. returning Entities' data and type information in a generic way, without interpreting specifics of different native or custom components).  It mirrors how the Radix Engine views the ledger state in its \"System\" layer, and thus can be useful for Scrypto developers, who need to inspect how the Engine models and stores their application's state, or how an interface / authentication scheme of another component looks like. 
  *
  * The version of the OpenAPI document: v0.0.1
@@ -24,9 +24,9 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
- * Gets or Sets EntityIteratorFilterType
+ * Gets or Sets EntitySearchFilterType
  */
-public enum EntityIteratorFilterType {
+public enum EntitySearchFilterType {
   
   BLUEPRINT("Blueprint"),
   
@@ -36,7 +36,7 @@ public enum EntityIteratorFilterType {
 
   private String value;
 
-  EntityIteratorFilterType(String value) {
+  EntitySearchFilterType(String value) {
     this.value = value;
   }
 
@@ -51,8 +51,8 @@ public enum EntityIteratorFilterType {
   }
 
   @JsonCreator
-  public static EntityIteratorFilterType fromValue(String value) {
-    for (EntityIteratorFilterType b : EntityIteratorFilterType.values()) {
+  public static EntitySearchFilterType fromValue(String value) {
+    for (EntitySearchFilterType b : EntitySearchFilterType.values()) {
       if (b.value.equals(value)) {
         return b;
       }

@@ -1,4 +1,6 @@
 use crate::engine_prelude::*;
+use chrono::prelude::*;
+use std::ops::RangeInclusive;
 
 use regex::Regex;
 use state_manager::StateVersion;
@@ -10,8 +12,6 @@ use super::*;
 const MAX_API_EPOCH: u64 = 10000000000;
 const MAX_API_ROUND: u64 = 10000000000;
 const MAX_API_STATE_VERSION: u64 = 100000000000000;
-const MIN_API_TIMESTAMP_MS: i64 = 0;
-const MAX_API_TIMESTAMP_MS: i64 = 100000000000000; // For comparison, current timestamp is 1673822843000 (about 1/100th the size)
 const DEFAULT_MAX_PAGE_SIZE: usize = 100; // Must match the OpenAPI's `MaxPageSize.maximum`
 
 #[tracing::instrument(skip_all)]
@@ -116,39 +116,43 @@ pub fn to_api_i64_as_string(input: i64) -> String {
     input.to_string()
 }
 
-pub fn to_api_instant(instant: &Instant) -> Result<models::Instant, MappingError> {
-    to_api_instant_from_safe_timestamp(instant.seconds_since_unix_epoch.checked_mul(1000).ok_or(
-        MappingError::IntegerError {
-            message: "Timestamp must be representable as millis in i64".to_owned(),
-        },
-    )?)
-}
+/// A range of valid years accepted by the basic ISO 8601 (i.e. without extensions).
+///
+/// For those curious:
+/// - The beginning of this range is the start of a Gregorian calendar.
+/// - The end is simply the maximum fitting within 4 characters.
+const ISO_8601_YEAR_RANGE: RangeInclusive<i32> = 1583..=9999;
 
-pub fn to_api_instant_from_safe_timestamp(
-    timestamp_millis: i64,
-) -> Result<models::Instant, MappingError> {
-    if !(MIN_API_TIMESTAMP_MS..=MAX_API_TIMESTAMP_MS).contains(&timestamp_millis) {
-        return Err(MappingError::IntegerError {
-            message: format!("Timestamp ms must be >= 0 and <= {MAX_API_TIMESTAMP_MS}"),
-        });
-    }
-    use chrono::prelude::*;
-    let date_time = NaiveDateTime::from_timestamp_millis(timestamp_millis)
-        .map(|d| {
-            DateTime::<Utc>::from_naive_utc_and_offset(d, Utc)
-                .to_rfc3339_opts(chrono::SecondsFormat::Millis, true)
-        })
-        .ok_or_else(|| MappingError::IntegerError {
-            message: "Timestamp invalid when converted to DateTime".to_string(),
-        })?;
-
-    Ok(models::Instant {
-        unix_timestamp_ms: timestamp_millis,
-        date_time,
+pub fn to_api_scrypto_instant(instant: &Instant) -> Result<models::ScryptoInstant, MappingError> {
+    let timestamp_seconds = instant.seconds_since_unix_epoch;
+    let date_time = NaiveDateTime::from_timestamp_opt(timestamp_seconds, 0)
+        .filter(|date_time| ISO_8601_YEAR_RANGE.contains(&date_time.year()));
+    Ok(models::ScryptoInstant {
+        unix_timestamp_seconds: to_api_i64_as_string(timestamp_seconds),
+        date_time: date_time.map(to_second_precision_rfc3339_string),
     })
 }
 
-pub fn extract_api_max_page_size(max_page_size: Option<i32>) -> Result<usize, ExtractionError> {
+pub fn to_api_consensus_instant_from_millis(
+    timestamp_millis: i64,
+) -> Result<models::ConsensusInstant, MappingError> {
+    let date_time = NaiveDateTime::from_timestamp_millis(timestamp_millis)
+        .filter(|date_time| ISO_8601_YEAR_RANGE.contains(&date_time.year()));
+    Ok(models::ConsensusInstant {
+        unix_timestamp_ms: to_api_i64_as_string(timestamp_millis),
+        date_time: date_time.map(to_canonical_rfc3339_string),
+    })
+}
+
+fn to_canonical_rfc3339_string(date_time: NaiveDateTime) -> String {
+    DateTime::<Utc>::from_utc(date_time, Utc).to_rfc3339_opts(SecondsFormat::Millis, true)
+}
+
+fn to_second_precision_rfc3339_string(date_time: NaiveDateTime) -> String {
+    DateTime::<Utc>::from_utc(date_time, Utc).to_rfc3339_opts(SecondsFormat::Secs, true)
+}
+
+pub fn extract_max_page_size(max_page_size: Option<i32>) -> Result<usize, ExtractionError> {
     let Some(max_page_size) = max_page_size else {
         return Ok(DEFAULT_MAX_PAGE_SIZE);
     };
@@ -165,7 +169,7 @@ pub fn extract_api_max_page_size(max_page_size: Option<i32>) -> Result<usize, Ex
     Ok(usize::try_from(max_page_size).expect("bounds checked already"))
 }
 
-pub fn extract_api_u8_as_i32(input: i32) -> Result<u8, ExtractionError> {
+pub fn extract_u8_from_api_i32(input: i32) -> Result<u8, ExtractionError> {
     if input < 0 {
         return Err(ExtractionError::InvalidInteger {
             message: "Is negative".to_owned(),

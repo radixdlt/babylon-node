@@ -124,7 +124,7 @@ public final class ObjectFieldTest extends DeterministicEngineStateApiTestBase {
 
       // Locate literally any fungible vault:
       final var vault =
-          getEntitiesApi().entityIteratorPost(new EntityIteratorRequest()).getPage().stream()
+          getExtraApi().extraEntitySearchPost(new ExtraEntitySearchRequest()).getPage().stream()
               .filter(entity -> entity.getEntityType() == EntityType.INTERNALFUNGIBLEVAULT)
               .findFirst()
               .orElseThrow();
@@ -265,7 +265,7 @@ public final class ObjectFieldTest extends DeterministicEngineStateApiTestBase {
         assertThat(historicalHeaderSummary.getEpochRound().getRound())
             .isEqualTo(atOrNextHeader.getRound());
         assertThat(historicalHeaderSummary.getProposerTimestamp().getUnixTimestampMs())
-            .isEqualTo(atOrNextHeader.getProposerTimestampMs());
+            .isEqualTo(String.valueOf(atOrNextHeader.getProposerTimestampMs()));
 
         // Assert on the returned ledger hashes...
         final var historicalLedgerHashes = historicalHeaderSummary.getLedgerHashes();
