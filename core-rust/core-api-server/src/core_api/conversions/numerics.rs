@@ -182,13 +182,11 @@ pub fn to_api_clamped_instant_from_epoch_milli(
 }
 
 fn to_canonical_rfc3339_string(date_time: NaiveDateTime) -> String {
-    DateTime::<Utc>::from_naive_utc_and_offset(date_time, Utc)
-        .to_rfc3339_opts(SecondsFormat::Millis, true)
+    DateTime::<Utc>::from_utc(date_time, Utc).to_rfc3339_opts(SecondsFormat::Millis, true)
 }
 
 fn to_second_precision_rfc3339_string(date_time: NaiveDateTime) -> String {
-    DateTime::<Utc>::from_naive_utc_and_offset(date_time, Utc)
-        .to_rfc3339_opts(SecondsFormat::Secs, true)
+    DateTime::<Utc>::from_utc(date_time, Utc).to_rfc3339_opts(SecondsFormat::Secs, true)
 }
 
 pub fn extract_state_version(state_version_number: i64) -> Result<StateVersion, ExtractionError> {
