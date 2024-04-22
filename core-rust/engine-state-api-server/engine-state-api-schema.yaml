@@ -1,8 +1,7 @@
 openapi: 3.1.0
 
 info:
-  # Should be the release version, and the release display name
-  version: 'v0.0.1'
+  version: 'v0.1-beta'
   title: 'Engine State API - Babylon (Anemone)'
   license:
     name: The Radix License, Version 1.0
@@ -11,6 +10,12 @@ info:
     url: https://cdn.document360.io/50e78792-5410-4ac9-aa43-4612b4d33953/Images/Documentation/radix-logo-banner.png
     href: https://docs.radixdlt.com
   description: |
+    *Beta Disclaimer*
+    Please note that this API is currently in its beta phase. It is subject to breaking changes
+    without any prior notice. It should not be used for business-critical integrations before the
+    `version` indicated above becomes stable, which is expected in Q4 of 2024 - please pay attention
+    to the Radix Node's future release notes.
+    
     This API provides a complete view of the current ledger state, operating at a relatively low
     level (i.e. returning Entities' data and type information in a generic way, without interpreting
     specifics of different native or custom components).
