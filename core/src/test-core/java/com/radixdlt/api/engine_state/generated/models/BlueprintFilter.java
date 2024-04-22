@@ -27,8 +27,8 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.engine_state.generated.models.BlueprintFilter;
 import com.radixdlt.api.engine_state.generated.models.BlueprintFilterAllOf;
-import com.radixdlt.api.engine_state.generated.models.EntityIteratorFilter;
-import com.radixdlt.api.engine_state.generated.models.EntityIteratorFilterType;
+import com.radixdlt.api.engine_state.generated.models.EntitySearchFilter;
+import com.radixdlt.api.engine_state.generated.models.EntitySearchFilterType;
 import com.radixdlt.api.engine_state.generated.models.EntityTypeFilter;
 import com.radixdlt.api.engine_state.generated.models.SystemTypeFilter;
 import com.radixdlt.api.engine_state.generated.models.UnversionedBlueprintReference;
@@ -56,7 +56,7 @@ import com.radixdlt.api.engine_state.generated.client.JSON;
   @JsonSubTypes.Type(value = SystemTypeFilter.class, name = "SystemType"),
 })
 
-public class BlueprintFilter extends EntityIteratorFilter {
+public class BlueprintFilter extends EntitySearchFilter {
   public static final String JSON_PROPERTY_BLUEPRINT = "blueprint";
   private UnversionedBlueprintReference blueprint;
 

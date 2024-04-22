@@ -12,23 +12,26 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct EntityIteratorResponse {
-    #[serde(rename = "at_ledger_state")]
-    pub at_ledger_state: Box<crate::engine_state_api::generated::models::LedgerStateSummary>,
-    /// A page of entities. If this page is the last one, the `continuation_token` will be not be included.
-    #[serde(rename = "page")]
-    pub page: Vec<crate::engine_state_api::generated::models::ListedEntityItem>,
+pub struct ExtraEntitySearchRequest {
+    #[serde(rename = "filter", skip_serializing_if = "Option::is_none")]
+    pub filter: Option<Box<crate::engine_state_api::generated::models::EntitySearchFilter>>,
+    /// A maximum number of items to be included in the paged listing response.
+    #[serde(rename = "max_page_size", skip_serializing_if = "Option::is_none")]
+    pub max_page_size: Option<i32>,
     /// An opaque string conveying the information on where the next page of results starts. It is returned in every paged listing response (except for the last page), and it can be passed in every paged listing request (in order to begin listing from where the previous response ended). 
     #[serde(rename = "continuation_token", skip_serializing_if = "Option::is_none")]
     pub continuation_token: Option<String>,
+    #[serde(rename = "at_ledger_state", skip_serializing_if = "Option::is_none")]
+    pub at_ledger_state: Option<Box<crate::engine_state_api::generated::models::LedgerStateSelector>>,
 }
 
-impl EntityIteratorResponse {
-    pub fn new(at_ledger_state: crate::engine_state_api::generated::models::LedgerStateSummary, page: Vec<crate::engine_state_api::generated::models::ListedEntityItem>) -> EntityIteratorResponse {
-        EntityIteratorResponse {
-            at_ledger_state: Box::new(at_ledger_state),
-            page,
+impl ExtraEntitySearchRequest {
+    pub fn new() -> ExtraEntitySearchRequest {
+        ExtraEntitySearchRequest {
+            filter: None,
+            max_page_size: None,
             continuation_token: None,
+            at_ledger_state: None,
         }
     }
 }

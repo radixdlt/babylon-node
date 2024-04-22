@@ -11,7 +11,7 @@
 
 /// 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
-pub enum EntityIteratorFilterType {
+pub enum EntitySearchFilterType {
     #[serde(rename = "Blueprint")]
     Blueprint,
     #[serde(rename = "SystemType")]
@@ -21,7 +21,7 @@ pub enum EntityIteratorFilterType {
 
 }
 
-impl ToString for EntityIteratorFilterType {
+impl ToString for EntitySearchFilterType {
     fn to_string(&self) -> String {
         match self {
             Self::Blueprint => String::from("Blueprint"),
@@ -31,8 +31,8 @@ impl ToString for EntityIteratorFilterType {
     }
 }
 
-impl Default for EntityIteratorFilterType {
-    fn default() -> EntityIteratorFilterType {
+impl Default for EntitySearchFilterType {
+    fn default() -> EntitySearchFilterType {
         Self::Blueprint
     }
 }

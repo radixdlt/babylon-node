@@ -23,6 +23,9 @@ info:
 servers:
   - url: 'localhost:3336/engine-state'
 tags:
+  - name: Extra
+    x-displayName: Extra
+    description: Endpoints offering additional information based on data sources outside of the Radix Engine's runtime storage.
   - name: Entities
     x-displayName: Entities
     description: Endpoints dealing with all Entities.
@@ -40,25 +43,25 @@ tags:
     description: Endpoints dealing with Blueprints and Schemas.
 
 paths:
-  "/entity/iterator":
+  "/extra/entity-search":
     post:
-      summary: List Entities
-      description: Lists addresses of all entities, in an iterator-like paged fashion
+      summary: Search Entities
+      description: Lists addresses of all entities meeting the requested search criteria, in an iterator-like paged fashion.
       tags:
-        - Entities
+        - Extra
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/EntityIteratorRequest"
+              $ref: "#/components/schemas/ExtraEntitySearchRequest"
       responses:
         '200':
           description: A page of entity addresses.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/EntityIteratorResponse"
+                $ref: "#/components/schemas/ExtraEntitySearchResponse"
         '400':
           description: Client error
           content:
@@ -911,42 +914,42 @@ components:
         - EntryKey
 
 #########################################################
-# REQUEST: /entity/iterator                             #
+# REQUEST: /extra/entity-search                         #
 #########################################################
-    EntityIteratorRequest:
+    ExtraEntitySearchRequest:
       type: object
       properties:
         filter:
-          $ref: "#/components/schemas/EntityIteratorFilter"
+          $ref: "#/components/schemas/EntitySearchFilter"
         max_page_size:
           $ref: "#/components/schemas/MaxPageSize"
         continuation_token:
           $ref: "#/components/schemas/ContinuationToken"
         at_ledger_state:
           $ref: "#/components/schemas/LedgerStateSelector"
-    EntityIteratorFilterType:
+    EntitySearchFilterType:
       type: string
       enum:
         - Blueprint
         - SystemType
         - EntityType
-    EntityIteratorFilter:
+    EntitySearchFilter:
       type: object
       required:
         - type
       properties:
         type:
-          $ref: "#/components/schemas/EntityIteratorFilterType"
+          $ref: "#/components/schemas/EntitySearchFilterType"
       discriminator:
         propertyName: type
         mapping:
-          # NOTE: These need to match EntityIteratorFilterType
+          # NOTE: These need to match EntitySearchFilterType
           Blueprint: '#/components/schemas/BlueprintFilter'
           SystemType: '#/components/schemas/SystemTypeFilter'
           EntityType: '#/components/schemas/EntityTypeFilter'
     BlueprintFilter:
       allOf:
-        - $ref: "#/components/schemas/EntityIteratorFilter"
+        - $ref: "#/components/schemas/EntitySearchFilter"
         - type: object
           description: |
             Matches only Object entities instantiated using the given blueprint (disregarding the
@@ -958,7 +961,7 @@ components:
               $ref: "#/components/schemas/UnversionedBlueprintReference"
     SystemTypeFilter:
       allOf:
-        - $ref: "#/components/schemas/EntityIteratorFilter"
+        - $ref: "#/components/schemas/EntitySearchFilter"
         - type: object
           description: Matches only entities of a specific `system_type`.
           required:
@@ -968,7 +971,7 @@ components:
               $ref: "#/components/schemas/SystemType"
     EntityTypeFilter:
       allOf:
-        - $ref: "#/components/schemas/EntityIteratorFilter"
+        - $ref: "#/components/schemas/EntitySearchFilter"
         - type: object
           description: Matches only entities of a specific `entity_type`.
           required:
@@ -976,7 +979,7 @@ components:
           properties:
             entity_type:
               $ref: "#/components/schemas/EntityType"
-    EntityIteratorResponse:
+    ExtraEntitySearchResponse:
       type: object
       required:
         - at_ledger_state

@@ -14,13 +14,13 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct SystemTypeFilter {
     #[serde(rename = "type")]
-    pub _type: crate::engine_state_api::generated::models::EntityIteratorFilterType,
+    pub _type: crate::engine_state_api::generated::models::EntitySearchFilterType,
     #[serde(rename = "system_type")]
     pub system_type: crate::engine_state_api::generated::models::SystemType,
 }
 
 impl SystemTypeFilter {
-    pub fn new(_type: crate::engine_state_api::generated::models::EntityIteratorFilterType, system_type: crate::engine_state_api::generated::models::SystemType) -> SystemTypeFilter {
+    pub fn new(_type: crate::engine_state_api::generated::models::EntitySearchFilterType, system_type: crate::engine_state_api::generated::models::SystemType) -> SystemTypeFilter {
         SystemTypeFilter {
             _type,
             system_type,

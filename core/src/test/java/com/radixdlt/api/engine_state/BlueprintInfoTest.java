@@ -208,9 +208,9 @@ public final class BlueprintInfoTest extends DeterministicEngineStateApiTestBase
       // Let's re-use the "royalties" Scenario's blueprint; first find out when it was created:
       final var samplePackageAddress = findPackageAddressContainingBlueprint("RoyaltiesBp");
       final var createdAtVersion =
-          getEntitiesApi()
-              .entityIteratorPost(
-                  new EntityIteratorRequest()
+          getExtraApi()
+              .extraEntitySearchPost(
+                  new ExtraEntitySearchRequest()
                       .filter(new EntityTypeFilter().entityType(EntityType.GLOBALPACKAGE)))
               .getPage()
               .stream()
@@ -270,9 +270,9 @@ public final class BlueprintInfoTest extends DeterministicEngineStateApiTestBase
 
   private String findPackageAddressContainingBlueprint(String blueprintName) throws ApiException {
     final var allPackageEntities =
-        getEntitiesApi()
-            .entityIteratorPost(
-                new EntityIteratorRequest()
+        getExtraApi()
+            .extraEntitySearchPost(
+                new ExtraEntitySearchRequest()
                     .filter(new EntityTypeFilter().entityType(EntityType.GLOBALPACKAGE)))
             .getPage();
     for (final var packageEntity : allPackageEntities) {

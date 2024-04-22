@@ -12,7 +12,7 @@
 
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "type")]
-pub enum EntityIteratorFilter {
+pub enum EntitySearchFilter {
     #[serde(rename="Blueprint")]
     BlueprintFilter {
         #[serde(rename = "blueprint")]

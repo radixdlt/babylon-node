@@ -14,13 +14,13 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct EntityTypeFilter {
     #[serde(rename = "type")]
-    pub _type: crate::engine_state_api::generated::models::EntityIteratorFilterType,
+    pub _type: crate::engine_state_api::generated::models::EntitySearchFilterType,
     #[serde(rename = "entity_type")]
     pub entity_type: crate::engine_state_api::generated::models::EntityType,
 }
 
 impl EntityTypeFilter {
-    pub fn new(_type: crate::engine_state_api::generated::models::EntityIteratorFilterType, entity_type: crate::engine_state_api::generated::models::EntityType) -> EntityTypeFilter {
+    pub fn new(_type: crate::engine_state_api::generated::models::EntitySearchFilterType, entity_type: crate::engine_state_api::generated::models::EntityType) -> EntityTypeFilter {
         EntityTypeFilter {
             _type,
             entity_type,

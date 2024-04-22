@@ -173,7 +173,7 @@ public final class EntityInfoTest extends DeterministicEngineStateApiTestBase {
 
       // list entities and pick a random KV store
       final var kvStoreAddress =
-          getEntitiesApi().entityIteratorPost(new EntityIteratorRequest()).getPage().stream()
+          getExtraApi().extraEntitySearchPost(new ExtraEntitySearchRequest()).getPage().stream()
               .filter(entity -> entity.getEntityType() == EntityType.INTERNALKEYVALUESTORE)
               .findFirst()
               .orElseThrow()

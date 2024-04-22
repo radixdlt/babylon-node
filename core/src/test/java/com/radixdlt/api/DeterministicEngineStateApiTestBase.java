@@ -213,6 +213,10 @@ public abstract class DeterministicEngineStateApiTestBase {
         .readValue(apiException.getResponseBody(), ErrorResponse.class);
   }
 
+  protected ExtraApi getExtraApi() {
+    return new ExtraApi(apiClient);
+  }
+
   protected EntitiesApi getEntitiesApi() {
     return new EntitiesApi(apiClient);
   }

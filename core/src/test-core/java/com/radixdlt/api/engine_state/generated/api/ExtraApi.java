@@ -17,9 +17,9 @@ import com.radixdlt.api.engine_state.generated.client.ApiException;
 import com.radixdlt.api.engine_state.generated.client.ApiResponse;
 import com.radixdlt.api.engine_state.generated.client.Pair;
 
-import com.radixdlt.api.engine_state.generated.models.EntityInfoRequest;
-import com.radixdlt.api.engine_state.generated.models.EntityInfoResponse;
 import com.radixdlt.api.engine_state.generated.models.ErrorResponse;
+import com.radixdlt.api.engine_state.generated.models.ExtraEntitySearchRequest;
+import com.radixdlt.api.engine_state.generated.models.ExtraEntitySearchResponse;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,7 +40,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class EntitiesApi {
+public class ExtraApi {
   private final HttpClient memberVarHttpClient;
   private final ObjectMapper memberVarObjectMapper;
   private final String memberVarBaseUri;
@@ -49,11 +49,11 @@ public class EntitiesApi {
   private final Consumer<HttpResponse<InputStream>> memberVarResponseInterceptor;
   private final Consumer<HttpResponse<String>> memberVarAsyncResponseInterceptor;
 
-  public EntitiesApi() {
+  public ExtraApi() {
     this(new ApiClient());
   }
 
-  public EntitiesApi(ApiClient apiClient) {
+  public ExtraApi(ApiClient apiClient) {
     memberVarHttpClient = apiClient.getHttpClient();
     memberVarObjectMapper = apiClient.getObjectMapper();
     memberVarBaseUri = apiClient.getBaseUri();
@@ -77,26 +77,26 @@ public class EntitiesApi {
   }
 
   /**
-   * Get Entity Info
-   * Resolves basic information about an entity: its type, attached modules, fields/collections and blueprint. 
-   * @param entityInfoRequest  (required)
-   * @return EntityInfoResponse
+   * Search Entities
+   * Lists addresses of all entities meeting the requested search criteria, in an iterator-like paged fashion.
+   * @param extraEntitySearchRequest  (required)
+   * @return ExtraEntitySearchResponse
    * @throws ApiException if fails to make API call
    */
-  public EntityInfoResponse entityInfoPost(EntityInfoRequest entityInfoRequest) throws ApiException {
-    ApiResponse<EntityInfoResponse> localVarResponse = entityInfoPostWithHttpInfo(entityInfoRequest);
+  public ExtraEntitySearchResponse extraEntitySearchPost(ExtraEntitySearchRequest extraEntitySearchRequest) throws ApiException {
+    ApiResponse<ExtraEntitySearchResponse> localVarResponse = extraEntitySearchPostWithHttpInfo(extraEntitySearchRequest);
     return localVarResponse.getData();
   }
 
   /**
-   * Get Entity Info
-   * Resolves basic information about an entity: its type, attached modules, fields/collections and blueprint. 
-   * @param entityInfoRequest  (required)
-   * @return ApiResponse&lt;EntityInfoResponse&gt;
+   * Search Entities
+   * Lists addresses of all entities meeting the requested search criteria, in an iterator-like paged fashion.
+   * @param extraEntitySearchRequest  (required)
+   * @return ApiResponse&lt;ExtraEntitySearchResponse&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<EntityInfoResponse> entityInfoPostWithHttpInfo(EntityInfoRequest entityInfoRequest) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = entityInfoPostRequestBuilder(entityInfoRequest);
+  public ApiResponse<ExtraEntitySearchResponse> extraEntitySearchPostWithHttpInfo(ExtraEntitySearchRequest extraEntitySearchRequest) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = extraEntitySearchPostRequestBuilder(extraEntitySearchRequest);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -106,12 +106,12 @@ public class EntitiesApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("entityInfoPost", localVarResponse);
+          throw getApiException("extraEntitySearchPost", localVarResponse);
         }
-        return new ApiResponse<EntityInfoResponse>(
+        return new ApiResponse<ExtraEntitySearchResponse>(
           localVarResponse.statusCode(),
           localVarResponse.headers().map(),
-          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<EntityInfoResponse>() {}) // closes the InputStream
+          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<ExtraEntitySearchResponse>() {}) // closes the InputStream
           
         );
       } finally {
@@ -125,15 +125,15 @@ public class EntitiesApi {
     }
   }
 
-  private HttpRequest.Builder entityInfoPostRequestBuilder(EntityInfoRequest entityInfoRequest) throws ApiException {
-    // verify the required parameter 'entityInfoRequest' is set
-    if (entityInfoRequest == null) {
-      throw new ApiException(400, "Missing the required parameter 'entityInfoRequest' when calling entityInfoPost");
+  private HttpRequest.Builder extraEntitySearchPostRequestBuilder(ExtraEntitySearchRequest extraEntitySearchRequest) throws ApiException {
+    // verify the required parameter 'extraEntitySearchRequest' is set
+    if (extraEntitySearchRequest == null) {
+      throw new ApiException(400, "Missing the required parameter 'extraEntitySearchRequest' when calling extraEntitySearchPost");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
 
-    String localVarPath = "/entity/info";
+    String localVarPath = "/extra/entity-search";
 
     localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
 
@@ -141,7 +141,7 @@ public class EntitiesApi {
     localVarRequestBuilder.header("Accept", "application/json");
 
     try {
-      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(entityInfoRequest);
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(extraEntitySearchRequest);
       localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
     } catch (IOException e) {
       throw new ApiException(e);

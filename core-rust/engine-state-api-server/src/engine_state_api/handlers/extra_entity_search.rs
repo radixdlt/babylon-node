@@ -11,10 +11,10 @@ use std::ops::Deref;
 
 use crate::engine_state_api::handlers::HandlerPagingSupport;
 
-pub(crate) async fn handle_entity_iterator(
+pub(crate) async fn handle_extra_entity_search(
     state: State<EngineStateApiState>,
-    Json(request): Json<models::EntityIteratorRequest>,
-) -> Result<Json<models::EntityIteratorResponse>, ResponseError> {
+    Json(request): Json<models::ExtraEntitySearchRequest>,
+) -> Result<Json<models::ExtraEntitySearchResponse>, ResponseError> {
     let mapping_context = MappingContext::new(&state.network);
     let extraction_context = ExtractionContext::new(&state.network);
 
@@ -56,7 +56,7 @@ pub(crate) async fn handle_entity_iterator(
 
     let ledger_state = database.at_ledger_state();
 
-    Ok(Json(models::EntityIteratorResponse {
+    Ok(Json(models::ExtraEntitySearchResponse {
         at_ledger_state: Box::new(to_api_ledger_state_summary(
             &mapping_context,
             &ledger_state,
@@ -116,23 +116,23 @@ fn to_api_unversioned_blueprint_reference(
 
 fn extract_effective_filter(
     extraction_context: &ExtractionContext,
-    explicit_filter: Option<Box<models::EntityIteratorFilter>>,
+    explicit_filter: Option<Box<models::EntitySearchFilter>>,
     at_ledger_state: Option<Box<models::LedgerStateSelector>>,
 ) -> Result<EffectiveFilter, ResponseError> {
     Ok(EffectiveFilter {
         explicit_filter: explicit_filter
             .map(|explicit_filter| {
                 Ok::<_, ResponseError>(match *explicit_filter {
-                    models::EntityIteratorFilter::BlueprintFilter { blueprint } => {
+                    models::EntitySearchFilter::BlueprintFilter { blueprint } => {
                         ExplicitFilter::Blueprint(
                             extract_blueprint_id(extraction_context, blueprint.deref())
                                 .map_err(|err| err.into_response_error("blueprint"))?,
                         )
                     }
-                    models::EntityIteratorFilter::EntityTypeFilter { entity_type } => {
+                    models::EntitySearchFilter::EntityTypeFilter { entity_type } => {
                         ExplicitFilter::OneOfEntityTypes(vec![extract_entity_type(entity_type)])
                     }
-                    models::EntityIteratorFilter::SystemTypeFilter { system_type } => {
+                    models::EntitySearchFilter::SystemTypeFilter { system_type } => {
                         ExplicitFilter::OneOfEntityTypes(
                             system_type_to_entity_types(system_type).collect(),
                         )
@@ -178,7 +178,7 @@ fn system_type_to_entity_types(
         .filter(move |entity_type| entity_type_to_system_type(entity_type) == system_type)
 }
 
-// Note: see the comments at `handle_entity_iterator()` for motivation of the structs below:
+// Note: see the comments at `handle_extra_entity_search()` for motivation of the structs below:
 #[derive(ScryptoEncode)]
 struct EffectiveFilter {
     explicit_filter: Option<ExplicitFilter>,

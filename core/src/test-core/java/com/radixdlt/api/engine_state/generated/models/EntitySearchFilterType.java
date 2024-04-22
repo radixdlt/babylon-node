@@ -24,9 +24,9 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
- * Gets or Sets EntityIteratorFilterType
+ * Gets or Sets EntitySearchFilterType
  */
-public enum EntityIteratorFilterType {
+public enum EntitySearchFilterType {
   
   BLUEPRINT("Blueprint"),
   
@@ -36,7 +36,7 @@ public enum EntityIteratorFilterType {
 
   private String value;
 
-  EntityIteratorFilterType(String value) {
+  EntitySearchFilterType(String value) {
     this.value = value;
   }
 
@@ -51,8 +51,8 @@ public enum EntityIteratorFilterType {
   }
 
   @JsonCreator
-  public static EntityIteratorFilterType fromValue(String value) {
-    for (EntityIteratorFilterType b : EntityIteratorFilterType.values()) {
+  public static EntitySearchFilterType fromValue(String value) {
+    for (EntitySearchFilterType b : EntitySearchFilterType.values()) {
       if (b.value.equals(value)) {
         return b;
       }

@@ -124,7 +124,7 @@ public final class ObjectFieldTest extends DeterministicEngineStateApiTestBase {
 
       // Locate literally any fungible vault:
       final var vault =
-          getEntitiesApi().entityIteratorPost(new EntityIteratorRequest()).getPage().stream()
+          getExtraApi().extraEntitySearchPost(new ExtraEntitySearchRequest()).getPage().stream()
               .filter(entity -> entity.getEntityType() == EntityType.INTERNALFUNGIBLEVAULT)
               .findFirst()
               .orElseThrow();

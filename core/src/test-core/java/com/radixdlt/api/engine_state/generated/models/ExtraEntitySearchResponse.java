@@ -32,15 +32,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * EntityIteratorResponse
+ * ExtraEntitySearchResponse
  */
 @JsonPropertyOrder({
-  EntityIteratorResponse.JSON_PROPERTY_AT_LEDGER_STATE,
-  EntityIteratorResponse.JSON_PROPERTY_PAGE,
-  EntityIteratorResponse.JSON_PROPERTY_CONTINUATION_TOKEN
+  ExtraEntitySearchResponse.JSON_PROPERTY_AT_LEDGER_STATE,
+  ExtraEntitySearchResponse.JSON_PROPERTY_PAGE,
+  ExtraEntitySearchResponse.JSON_PROPERTY_CONTINUATION_TOKEN
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class EntityIteratorResponse {
+public class ExtraEntitySearchResponse {
   public static final String JSON_PROPERTY_AT_LEDGER_STATE = "at_ledger_state";
   private LedgerStateSummary atLedgerState;
 
@@ -50,10 +50,10 @@ public class EntityIteratorResponse {
   public static final String JSON_PROPERTY_CONTINUATION_TOKEN = "continuation_token";
   private String continuationToken;
 
-  public EntityIteratorResponse() { 
+  public ExtraEntitySearchResponse() { 
   }
 
-  public EntityIteratorResponse atLedgerState(LedgerStateSummary atLedgerState) {
+  public ExtraEntitySearchResponse atLedgerState(LedgerStateSummary atLedgerState) {
     this.atLedgerState = atLedgerState;
     return this;
   }
@@ -79,12 +79,12 @@ public class EntityIteratorResponse {
   }
 
 
-  public EntityIteratorResponse page(List<ListedEntityItem> page) {
+  public ExtraEntitySearchResponse page(List<ListedEntityItem> page) {
     this.page = page;
     return this;
   }
 
-  public EntityIteratorResponse addPageItem(ListedEntityItem pageItem) {
+  public ExtraEntitySearchResponse addPageItem(ListedEntityItem pageItem) {
     this.page.add(pageItem);
     return this;
   }
@@ -110,7 +110,7 @@ public class EntityIteratorResponse {
   }
 
 
-  public EntityIteratorResponse continuationToken(String continuationToken) {
+  public ExtraEntitySearchResponse continuationToken(String continuationToken) {
     this.continuationToken = continuationToken;
     return this;
   }
@@ -137,7 +137,7 @@ public class EntityIteratorResponse {
 
 
   /**
-   * Return true if this EntityIteratorResponse object is equal to o.
+   * Return true if this ExtraEntitySearchResponse object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -147,10 +147,10 @@ public class EntityIteratorResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    EntityIteratorResponse entityIteratorResponse = (EntityIteratorResponse) o;
-    return Objects.equals(this.atLedgerState, entityIteratorResponse.atLedgerState) &&
-        Objects.equals(this.page, entityIteratorResponse.page) &&
-        Objects.equals(this.continuationToken, entityIteratorResponse.continuationToken);
+    ExtraEntitySearchResponse extraEntitySearchResponse = (ExtraEntitySearchResponse) o;
+    return Objects.equals(this.atLedgerState, extraEntitySearchResponse.atLedgerState) &&
+        Objects.equals(this.page, extraEntitySearchResponse.page) &&
+        Objects.equals(this.continuationToken, extraEntitySearchResponse.continuationToken);
   }
 
   @Override
@@ -161,7 +161,7 @@ public class EntityIteratorResponse {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class EntityIteratorResponse {\n");
+    sb.append("class ExtraEntitySearchResponse {\n");
     sb.append("    atLedgerState: ").append(toIndentedString(atLedgerState)).append("\n");
     sb.append("    page: ").append(toIndentedString(page)).append("\n");
     sb.append("    continuationToken: ").append(toIndentedString(continuationToken)).append("\n");

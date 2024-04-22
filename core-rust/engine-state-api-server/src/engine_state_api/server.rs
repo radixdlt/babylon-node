@@ -100,8 +100,8 @@ pub async fn create_server<F>(
     F: Future<Output = ()>,
 {
     let router = Router::new()
+        .route("/extra/entity-search", post(handle_extra_entity_search))
         .route("/blueprint/info", post(handle_blueprint_info))
-        .route("/entity/iterator", post(handle_entity_iterator))
         .route("/entity/info", post(handle_entity_info))
         .route("/object/field", post(handle_object_field))
         .route(

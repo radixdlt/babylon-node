@@ -1,7 +1,7 @@
 mod blueprint_info;
 mod entity_info;
-mod entity_iterator;
 mod entity_schema_entry;
+mod extra_entity_search;
 mod kv_store_entry;
 mod kv_store_iterator;
 mod object_collection_entry;
@@ -21,8 +21,8 @@ use crate::engine_state_api::{
 };
 pub(crate) use blueprint_info::*;
 pub(crate) use entity_info::*;
-pub(crate) use entity_iterator::*;
 pub(crate) use entity_schema_entry::*;
+pub(crate) use extra_entity_search::*;
 pub(crate) use kv_store_entry::*;
 pub(crate) use kv_store_iterator::*;
 pub(crate) use object_collection_entry::*;

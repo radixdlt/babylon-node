@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.engine_state.generated.models.EntityIteratorFilter;
+import com.radixdlt.api.engine_state.generated.models.EntitySearchFilter;
 import com.radixdlt.api.engine_state.generated.models.LedgerStateSelector;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -30,18 +30,18 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * EntityIteratorRequest
+ * ExtraEntitySearchRequest
  */
 @JsonPropertyOrder({
-  EntityIteratorRequest.JSON_PROPERTY_FILTER,
-  EntityIteratorRequest.JSON_PROPERTY_MAX_PAGE_SIZE,
-  EntityIteratorRequest.JSON_PROPERTY_CONTINUATION_TOKEN,
-  EntityIteratorRequest.JSON_PROPERTY_AT_LEDGER_STATE
+  ExtraEntitySearchRequest.JSON_PROPERTY_FILTER,
+  ExtraEntitySearchRequest.JSON_PROPERTY_MAX_PAGE_SIZE,
+  ExtraEntitySearchRequest.JSON_PROPERTY_CONTINUATION_TOKEN,
+  ExtraEntitySearchRequest.JSON_PROPERTY_AT_LEDGER_STATE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class EntityIteratorRequest {
+public class ExtraEntitySearchRequest {
   public static final String JSON_PROPERTY_FILTER = "filter";
-  private EntityIteratorFilter filter;
+  private EntitySearchFilter filter;
 
   public static final String JSON_PROPERTY_MAX_PAGE_SIZE = "max_page_size";
   private Integer maxPageSize;
@@ -52,10 +52,10 @@ public class EntityIteratorRequest {
   public static final String JSON_PROPERTY_AT_LEDGER_STATE = "at_ledger_state";
   private LedgerStateSelector atLedgerState;
 
-  public EntityIteratorRequest() { 
+  public ExtraEntitySearchRequest() { 
   }
 
-  public EntityIteratorRequest filter(EntityIteratorFilter filter) {
+  public ExtraEntitySearchRequest filter(EntitySearchFilter filter) {
     this.filter = filter;
     return this;
   }
@@ -69,19 +69,19 @@ public class EntityIteratorRequest {
   @JsonProperty(JSON_PROPERTY_FILTER)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public EntityIteratorFilter getFilter() {
+  public EntitySearchFilter getFilter() {
     return filter;
   }
 
 
   @JsonProperty(JSON_PROPERTY_FILTER)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setFilter(EntityIteratorFilter filter) {
+  public void setFilter(EntitySearchFilter filter) {
     this.filter = filter;
   }
 
 
-  public EntityIteratorRequest maxPageSize(Integer maxPageSize) {
+  public ExtraEntitySearchRequest maxPageSize(Integer maxPageSize) {
     this.maxPageSize = maxPageSize;
     return this;
   }
@@ -109,7 +109,7 @@ public class EntityIteratorRequest {
   }
 
 
-  public EntityIteratorRequest continuationToken(String continuationToken) {
+  public ExtraEntitySearchRequest continuationToken(String continuationToken) {
     this.continuationToken = continuationToken;
     return this;
   }
@@ -135,7 +135,7 @@ public class EntityIteratorRequest {
   }
 
 
-  public EntityIteratorRequest atLedgerState(LedgerStateSelector atLedgerState) {
+  public ExtraEntitySearchRequest atLedgerState(LedgerStateSelector atLedgerState) {
     this.atLedgerState = atLedgerState;
     return this;
   }
@@ -162,7 +162,7 @@ public class EntityIteratorRequest {
 
 
   /**
-   * Return true if this EntityIteratorRequest object is equal to o.
+   * Return true if this ExtraEntitySearchRequest object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -172,11 +172,11 @@ public class EntityIteratorRequest {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    EntityIteratorRequest entityIteratorRequest = (EntityIteratorRequest) o;
-    return Objects.equals(this.filter, entityIteratorRequest.filter) &&
-        Objects.equals(this.maxPageSize, entityIteratorRequest.maxPageSize) &&
-        Objects.equals(this.continuationToken, entityIteratorRequest.continuationToken) &&
-        Objects.equals(this.atLedgerState, entityIteratorRequest.atLedgerState);
+    ExtraEntitySearchRequest extraEntitySearchRequest = (ExtraEntitySearchRequest) o;
+    return Objects.equals(this.filter, extraEntitySearchRequest.filter) &&
+        Objects.equals(this.maxPageSize, extraEntitySearchRequest.maxPageSize) &&
+        Objects.equals(this.continuationToken, extraEntitySearchRequest.continuationToken) &&
+        Objects.equals(this.atLedgerState, extraEntitySearchRequest.atLedgerState);
   }
 
   @Override
@@ -187,7 +187,7 @@ public class EntityIteratorRequest {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class EntityIteratorRequest {\n");
+    sb.append("class ExtraEntitySearchRequest {\n");
     sb.append("    filter: ").append(toIndentedString(filter)).append("\n");
     sb.append("    maxPageSize: ").append(toIndentedString(maxPageSize)).append("\n");
     sb.append("    continuationToken: ").append(toIndentedString(continuationToken)).append("\n");
