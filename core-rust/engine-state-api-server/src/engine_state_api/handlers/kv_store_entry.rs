@@ -14,7 +14,7 @@ pub(crate) async fn handle_kv_store_entry(
 
     let node_id = extract_address_as_node_id(&extraction_context, &request.entity_address)
         .map_err(|err| err.into_response_error("entity_address"))?;
-    let key = extract_api_sbor_data(&extraction_context, *request.key)
+    let key = extract_from_sbor_data(&extraction_context, *request.key)
         .map_err(|err| err.into_response_error("key"))?;
     let requested_state_version =
         extract_opt_ledger_state_selector(request.at_ledger_state.as_deref())

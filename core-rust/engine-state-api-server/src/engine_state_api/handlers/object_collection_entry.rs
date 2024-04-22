@@ -16,12 +16,12 @@ pub(crate) async fn handle_object_collection_entry(
         .map_err(|err| err.into_response_error("entity_address"))?;
     let module_id = request
         .attached_module_id
-        .map(|module_id| extract_api_attached_module_id(&module_id).into())
+        .map(|module_id| extract_attached_module_id(&module_id).into())
         .unwrap_or(ModuleId::Main);
     let collection_input =
-        extract_api_rich_index_input(request.collection_name, request.collection_index)
+        extract_rich_index_input(request.collection_name, request.collection_index)
             .map_err(|err| err.into_response_error("collection_name or collection_index"))?;
-    let key = extract_api_collection_key(
+    let key = extract_collection_key(
         &extraction_context,
         request.key.expect("not actually optional"),
     )
@@ -60,21 +60,21 @@ pub(crate) async fn handle_object_collection_entry(
     }))
 }
 
-fn extract_api_collection_key(
+fn extract_collection_key(
     context: &ExtractionContext,
     key: models::CollectionEntryKey,
 ) -> Result<RawCollectionKey, ExtractionError> {
     Ok(match key {
         models::CollectionEntryKey::IndexEntryKey { key }
         | models::CollectionEntryKey::KeyValueStoreEntryKey { key } => {
-            RawCollectionKey::Unsorted(extract_api_sbor_data(context, *key)?)
+            RawCollectionKey::Unsorted(extract_from_sbor_data(context, *key)?)
         }
         models::CollectionEntryKey::SortedIndexEntryKey {
             sort_prefix_hex,
             key,
         } => RawCollectionKey::Sorted(
             copy_u8_array(&from_hex(sort_prefix_hex)?),
-            extract_api_sbor_data(context, *key)?,
+            extract_from_sbor_data(context, *key)?,
         ),
     })
 }

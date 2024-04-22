@@ -20,10 +20,10 @@ pub(crate) async fn handle_object_collection_iterator(
         .map_err(|err| err.into_response_error("entity_address"))?;
     let module_id = request
         .attached_module_id
-        .map(|module_id| extract_api_attached_module_id(&module_id).into())
+        .map(|module_id| extract_attached_module_id(&module_id).into())
         .unwrap_or(ModuleId::Main);
     let collection_input =
-        extract_api_rich_index_input(request.collection_name, request.collection_index)
+        extract_rich_index_input(request.collection_name, request.collection_index)
             .map_err(|err| err.into_response_error("collection_name or collection_index"))?;
 
     let requested_state_version =

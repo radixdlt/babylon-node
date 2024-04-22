@@ -19,11 +19,9 @@ pub(crate) async fn handle_entity_iterator(
     let extraction_context = ExtractionContext::new(&state.network);
 
     // Note: this endpoint formally accepts a single `filter` request field.
-    // However, it also supports "historical state" - and luckily, when listing immutable entries
-    // (i.e. "entity X created at version V"), the `at_ledger_state` field is effectively just
-    // another filter (i.e. `entity.created_at_version <= request.at_state_version`). Hence:
-    // - have to ensure it is stable across pages (see the `paging_support` instantiation below),
-    // - we can simply pass it as part of the `create_listing_call()` parameter.
+    // However, it also supports "historical state", which is effectively a part of the filter
+    // specification (i.e. `entity.created_at_version <= request.at_state_version`). Hence, we have
+    // to ensure it is stable across pages (see the `paging_support` instantiation below),
     let effective_filter =
         extract_effective_filter(&extraction_context, request.filter, request.at_ledger_state)?;
 

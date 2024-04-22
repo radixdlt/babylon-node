@@ -149,14 +149,16 @@ pub fn to_api_consensus_instant(
 }
 
 fn to_canonical_rfc3339_string(date_time: NaiveDateTime) -> String {
-    DateTime::<Utc>::from_utc(date_time, Utc).to_rfc3339_opts(SecondsFormat::Millis, true)
+    DateTime::<Utc>::from_naive_utc_and_offset(date_time, Utc)
+        .to_rfc3339_opts(SecondsFormat::Millis, true)
 }
 
 fn to_second_precision_rfc3339_string(date_time: NaiveDateTime) -> String {
-    DateTime::<Utc>::from_utc(date_time, Utc).to_rfc3339_opts(SecondsFormat::Secs, true)
+    DateTime::<Utc>::from_naive_utc_and_offset(date_time, Utc)
+        .to_rfc3339_opts(SecondsFormat::Secs, true)
 }
 
-pub fn extract_api_max_page_size(max_page_size: Option<i32>) -> Result<usize, ExtractionError> {
+pub fn extract_max_page_size(max_page_size: Option<i32>) -> Result<usize, ExtractionError> {
     let Some(max_page_size) = max_page_size else {
         return Ok(DEFAULT_MAX_PAGE_SIZE);
     };
@@ -173,7 +175,7 @@ pub fn extract_api_max_page_size(max_page_size: Option<i32>) -> Result<usize, Ex
     Ok(usize::try_from(max_page_size).expect("bounds checked already"))
 }
 
-pub fn extract_api_u8_as_i32(input: i32) -> Result<u8, ExtractionError> {
+pub fn extract_u8_from_api_i32(input: i32) -> Result<u8, ExtractionError> {
     if input < 0 {
         return Err(ExtractionError::InvalidInteger {
             message: "Is negative".to_owned(),

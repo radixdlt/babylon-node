@@ -182,16 +182,16 @@ pub fn to_api_clamped_instant_from_epoch_milli(
 }
 
 fn to_canonical_rfc3339_string(date_time: NaiveDateTime) -> String {
-    DateTime::<Utc>::from_utc(date_time, Utc).to_rfc3339_opts(SecondsFormat::Millis, true)
+    DateTime::<Utc>::from_naive_utc_and_offset(date_time, Utc)
+        .to_rfc3339_opts(SecondsFormat::Millis, true)
 }
 
 fn to_second_precision_rfc3339_string(date_time: NaiveDateTime) -> String {
-    DateTime::<Utc>::from_utc(date_time, Utc).to_rfc3339_opts(SecondsFormat::Secs, true)
+    DateTime::<Utc>::from_naive_utc_and_offset(date_time, Utc)
+        .to_rfc3339_opts(SecondsFormat::Secs, true)
 }
 
-pub fn extract_api_state_version(
-    state_version_number: i64,
-) -> Result<StateVersion, ExtractionError> {
+pub fn extract_state_version(state_version_number: i64) -> Result<StateVersion, ExtractionError> {
     if state_version_number < 1 {
         return Err(ExtractionError::InvalidInteger {
             message: "State version must be >= 1".to_owned(),
@@ -211,7 +211,7 @@ pub fn extract_api_state_version(
     ))
 }
 
-pub fn extract_api_epoch(epoch: i64) -> Result<Epoch, ExtractionError> {
+pub fn extract_epoch(epoch: i64) -> Result<Epoch, ExtractionError> {
     if epoch < 0 {
         return Err(ExtractionError::InvalidInteger {
             message: "Epoch too low".to_owned(),
@@ -226,7 +226,7 @@ pub fn extract_api_epoch(epoch: i64) -> Result<Epoch, ExtractionError> {
 }
 
 #[allow(dead_code)]
-pub fn extract_api_u64_as_string(input: String) -> Result<u64, ExtractionError> {
+pub fn extract_u64_from_api_string(input: String) -> Result<u64, ExtractionError> {
     input
         .parse::<u64>()
         .map_err(|_| ExtractionError::InvalidInteger {
@@ -234,7 +234,7 @@ pub fn extract_api_u64_as_string(input: String) -> Result<u64, ExtractionError> 
         })
 }
 
-pub fn extract_api_u32_as_i64(input: i64) -> Result<u32, ExtractionError> {
+pub fn extract_u32_from_api_i64(input: i64) -> Result<u32, ExtractionError> {
     if input < 0 {
         return Err(ExtractionError::InvalidInteger {
             message: "Is negative".to_owned(),
@@ -248,7 +248,7 @@ pub fn extract_api_u32_as_i64(input: i64) -> Result<u32, ExtractionError> {
     Ok(input.try_into().expect("Number invalid somehow"))
 }
 
-pub fn extract_api_u16_as_i32(input: i32) -> Result<u16, ExtractionError> {
+pub fn extract_u16_from_api_i32(input: i32) -> Result<u16, ExtractionError> {
     if input < 0 {
         return Err(ExtractionError::InvalidInteger {
             message: "Is negative".to_owned(),
