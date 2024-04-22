@@ -129,7 +129,9 @@ public final class QuorumCertificate {
     return this.voteData.getProposed().getLedgerHeader().getEpoch();
   }
 
-  /** @return The weighted timestamp of the signatures, in milliseconds since Unix Epoch. */
+  /**
+   * @return The weighted timestamp of the signatures, in milliseconds since Unix Epoch.
+   */
   public long getWeightedTimestampOfSignatures() {
     // If this is a genesis QC then its signatures are mocked, so just use the previous timestamp
     // NB - this does have the edge case of never increasing timestamps if configuration is

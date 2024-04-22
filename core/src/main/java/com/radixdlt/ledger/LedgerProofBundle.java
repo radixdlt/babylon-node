@@ -127,9 +127,9 @@ public record LedgerProofBundle(
           case LedgerProofOrigin.Consensus consensus -> primaryProof.ledgerHeader();
           case LedgerProofOrigin.Genesis genesis -> primaryProof.ledgerHeader();
           case LedgerProofOrigin.ProtocolUpdate protocolUpdate ->
-          // This assumes that protocol updates always happen at epoch boundary
-          // (which is true, for now)
-          closestProtocolUpdateInitProofOnOrBefore.unwrap().ledgerHeader();
+              // This assumes that protocol updates always happen at epoch boundary
+              // (which is true, for now)
+              closestProtocolUpdateInitProofOnOrBefore.unwrap().ledgerHeader();
         };
 
     return maybeEpochChangeHeader.nextEpoch().isPresent()
@@ -156,12 +156,13 @@ public record LedgerProofBundle(
       case LedgerProofOrigin.Consensus consensus -> primaryProof;
       case LedgerProofOrigin.Genesis genesis -> primaryProof;
       case LedgerProofOrigin.ProtocolUpdate protocolUpdate ->
-      // If our latest proof is of protocol update origin,
-      // then we're returning the closest proof that initializes a protocol update.
-      // Since protocol updates can't themselves trigger another protocol update,
-      // this is guaranteed to be a consensus (or, possibly in some testing corner case, genesis)
-      // proof.
-      closestProtocolUpdateInitProofOnOrBefore().unwrap();
+          // If our latest proof is of protocol update origin,
+          // then we're returning the closest proof that initializes a protocol update.
+          // Since protocol updates can't themselves trigger another protocol update,
+          // this is guaranteed to be a consensus (or, possibly in some testing corner case,
+          // genesis)
+          // proof.
+          closestProtocolUpdateInitProofOnOrBefore().unwrap();
     };
   }
 }

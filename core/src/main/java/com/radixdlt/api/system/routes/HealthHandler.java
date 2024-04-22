@@ -131,36 +131,37 @@ public final class HealthHandler extends SystemJsonHandler<HealthResponse> {
       PendingProtocolUpdate.ReadinessSignalStatusEnum readinessSignalStatus) {
     final var state =
         switch (pendingProtocolUpdate.state()) {
-          case ProtocolState.PendingProtocolUpdateState.Empty
-          empty -> new EmptyPendingProtocolUpdateState().type(PendingProtocolUpdateStateType.EMPTY);
+          case ProtocolState.PendingProtocolUpdateState.Empty empty ->
+              new EmptyPendingProtocolUpdateState().type(PendingProtocolUpdateStateType.EMPTY);
           case ProtocolState.PendingProtocolUpdateState.ForSignalledReadinessSupportCondition
-          forSignalledReadinessSupportCondition -> new SignalledReadinessPendingProtocolUpdateState()
-              .thresholdsState(
-                  forSignalledReadinessSupportCondition.thresholdsState().stream()
-                      .map(
-                          thresholdState ->
-                              new SignalledReadinessPendingProtocolUpdateStateAllOfThresholdsState()
-                                  .threshold(
-                                      new SignalledReadinessThreshold()
-                                          .requiredRatioOfStakeSupported(
-                                              thresholdState
-                                                  .first()
-                                                  .requiredRatioOfStakeSupported()
-                                                  .toString())
-                                          .requiredConsecutiveCompletedEpochsOfSupport(
-                                              thresholdState
-                                                  .first()
-                                                  .requiredConsecutiveCompletedEpochsOfSupport()
-                                                  .toLong()))
-                                  .thresholdState(
-                                      new SignalledReadinessThresholdState()
-                                          .consecutiveStartedEpochsOfSupport(
-                                              thresholdState
-                                                  .last()
-                                                  .consecutiveStartedEpochsOfSupport()
-                                                  .toLong())))
-                      .toList())
-              .type(PendingProtocolUpdateStateType.FORSIGNALLEDREADINESSSUPPORTCONDITION);
+                      forSignalledReadinessSupportCondition ->
+              new SignalledReadinessPendingProtocolUpdateState()
+                  .thresholdsState(
+                      forSignalledReadinessSupportCondition.thresholdsState().stream()
+                          .map(
+                              thresholdState ->
+                                  new SignalledReadinessPendingProtocolUpdateStateAllOfThresholdsState()
+                                      .threshold(
+                                          new SignalledReadinessThreshold()
+                                              .requiredRatioOfStakeSupported(
+                                                  thresholdState
+                                                      .first()
+                                                      .requiredRatioOfStakeSupported()
+                                                      .toString())
+                                              .requiredConsecutiveCompletedEpochsOfSupport(
+                                                  thresholdState
+                                                      .first()
+                                                      .requiredConsecutiveCompletedEpochsOfSupport()
+                                                      .toLong()))
+                                      .thresholdState(
+                                          new SignalledReadinessThresholdState()
+                                              .consecutiveStartedEpochsOfSupport(
+                                                  thresholdState
+                                                      .last()
+                                                      .consecutiveStartedEpochsOfSupport()
+                                                      .toLong())))
+                          .toList())
+                  .type(PendingProtocolUpdateStateType.FORSIGNALLEDREADINESSSUPPORTCONDITION);
         };
 
     final var res =

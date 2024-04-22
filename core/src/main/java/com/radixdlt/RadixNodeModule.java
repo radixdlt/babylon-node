@@ -169,12 +169,12 @@ public final class RadixNodeModule extends AbstractModule {
     final var selfValidatorAddressConfig =
         SelfValidatorAddressConfig.fromRuntimeProperties(properties, addressing);
     switch (selfValidatorAddressConfig) {
-      case SelfValidatorAddressConfig.Set set -> install(
-          new SelfValidatorInfoModule(Optional.of(set.validatorComponentAddress())));
-      case SelfValidatorAddressConfig.FromGenesis fromGenesis -> install(
-          new SelfValidatorInfoFromGenesisModule());
-      case SelfValidatorAddressConfig.Unset unset -> install(
-          new SelfValidatorInfoModule(Optional.empty()));
+      case SelfValidatorAddressConfig.Set set ->
+          install(new SelfValidatorInfoModule(Optional.of(set.validatorComponentAddress())));
+      case SelfValidatorAddressConfig.FromGenesis fromGenesis ->
+          install(new SelfValidatorInfoFromGenesisModule());
+      case SelfValidatorAddressConfig.Unset unset ->
+          install(new SelfValidatorInfoModule(Optional.empty()));
     }
 
     install(new PersistedBFTKeyModule());

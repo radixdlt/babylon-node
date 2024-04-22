@@ -264,8 +264,8 @@ public sealed interface StateComputerConfig {
     public ProposerElection instantiate(long epoch, BFTValidatorSet validatorSet) {
       return switch (this) {
         case ONLY_WEIGHTED_BY_STAKE -> new WeightedRotatingLeaders(validatorSet, 10);
-        case WITH_ROTATE_ONCE_BUT_NO_SHUFFLE -> ProposerElections.testingRotationNoShuffle(
-            validatorSet);
+        case WITH_ROTATE_ONCE_BUT_NO_SHUFFLE ->
+            ProposerElections.testingRotationNoShuffle(validatorSet);
         case WITH_DEFAULT_ROTATION -> ProposerElections.defaultRotation(epoch, validatorSet);
       };
     }

@@ -208,7 +208,8 @@ public final class ConstraintMachine {
     }
 
     public RawSubstate virtualRead(SubstateId substateId)
-        throws VirtualSubstateAlreadyDownException, VirtualParentStateDoesNotExist,
+        throws VirtualSubstateAlreadyDownException,
+            VirtualParentStateDoesNotExist,
             DeserializeException {
       if (remoteDownSubstates.contains(substateId)) {
         throw new VirtualSubstateAlreadyDownException(substateId);
@@ -222,7 +223,8 @@ public final class ConstraintMachine {
     }
 
     public RawSubstate virtualShutdown(SubstateId substateId)
-        throws VirtualSubstateAlreadyDownException, VirtualParentStateDoesNotExist,
+        throws VirtualSubstateAlreadyDownException,
+            VirtualParentStateDoesNotExist,
             DeserializeException {
       var p = virtualRead(substateId);
       remoteDownSubstates.add(substateId);
@@ -230,7 +232,8 @@ public final class ConstraintMachine {
     }
 
     public RawSubstate localVirtualRead(SubstateId substateId)
-        throws VirtualSubstateAlreadyDownException, VirtualParentStateDoesNotExist,
+        throws VirtualSubstateAlreadyDownException,
+            VirtualParentStateDoesNotExist,
             DeserializeException {
       if (remoteDownSubstates.contains(substateId)) {
         throw new VirtualSubstateAlreadyDownException(substateId);
@@ -248,7 +251,8 @@ public final class ConstraintMachine {
     }
 
     public RawSubstate localVirtualShutdown(SubstateId substateId)
-        throws VirtualSubstateAlreadyDownException, VirtualParentStateDoesNotExist,
+        throws VirtualSubstateAlreadyDownException,
+            VirtualParentStateDoesNotExist,
             DeserializeException {
       var p = localVirtualRead(substateId);
       remoteDownSubstates.add(substateId);
@@ -325,8 +329,11 @@ public final class ConstraintMachine {
       ReducerState reducerState,
       Resources immutableAddrs,
       ExecutionContext context)
-      throws SignedSystemException, InvalidPermissionException, AuthorizationException,
-          MeterException, ProcedureException {
+      throws SignedSystemException,
+          InvalidPermissionException,
+          AuthorizationException,
+          MeterException,
+          ProcedureException {
     // System permissions don't require additional authorization
     var authorization = procedure.authorization(procedureParam);
     var requiredLevel = authorization.permissionLevel();

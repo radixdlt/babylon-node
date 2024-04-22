@@ -107,8 +107,8 @@ public record OptionCodec<T>(Codec<T> innerTypeCodec) implements Codec<Option<T>
         decoder.expectSize(1);
         yield Option.some(decoder.decodeWithTypeId(innerTypeCodec));
       }
-      default -> throw new SborDecodeException(
-          String.format("Unknown option variant %s", variantByte));
+      default ->
+          throw new SborDecodeException(String.format("Unknown option variant %s", variantByte));
     };
   }
 

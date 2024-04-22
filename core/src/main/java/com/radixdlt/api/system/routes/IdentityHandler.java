@@ -135,12 +135,12 @@ public final class IdentityHandler extends SystemJsonHandler<IdentityResponse> {
     }
     var epochManager = this.epochManagerOptional.get();
     return switch (epochManager.validationStatus()) {
-      case NOT_CONFIGURED_AS_VALIDATOR -> IdentityResponse.ConsensusStatusEnum
-          .NOT_CONFIGURED_AS_VALIDATOR;
-      case VALIDATING_IN_CURRENT_EPOCH -> IdentityResponse.ConsensusStatusEnum
-          .VALIDATING_IN_CURRENT_EPOCH;
-      case NOT_VALIDATING_IN_CURRENT_EPOCH -> IdentityResponse.ConsensusStatusEnum
-          .NOT_VALIDATING_IN_CURRENT_EPOCH;
+      case NOT_CONFIGURED_AS_VALIDATOR ->
+          IdentityResponse.ConsensusStatusEnum.NOT_CONFIGURED_AS_VALIDATOR;
+      case VALIDATING_IN_CURRENT_EPOCH ->
+          IdentityResponse.ConsensusStatusEnum.VALIDATING_IN_CURRENT_EPOCH;
+      case NOT_VALIDATING_IN_CURRENT_EPOCH ->
+          IdentityResponse.ConsensusStatusEnum.NOT_VALIDATING_IN_CURRENT_EPOCH;
     };
   }
 }

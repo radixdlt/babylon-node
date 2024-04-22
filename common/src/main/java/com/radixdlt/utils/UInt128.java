@@ -76,6 +76,7 @@ public final class UInt128 implements Comparable<UInt128>, Serializable {
   // Some sizing constants in line with Integer, Long etc
   /** Size of this numeric type in bits. */
   public static final int SIZE = Integer.SIZE * 4;
+
   /** Size of this numeric type in bytes. */
   public static final int BYTES = Integer.BYTES * 4;
 

@@ -211,12 +211,10 @@ public final class BFTSync implements BFTSyncer {
     return roundQuorumResolution -> {
       final var highQC =
           switch (roundQuorumResolution.roundQuorum()) {
-            case RoundQuorum.RegularRoundQuorum regularRoundQuorum -> this.vertexStore
-                .highQC()
-                .withHighestQC(regularRoundQuorum.qc());
-            case RoundQuorum.TimeoutRoundQuorum timeoutRoundQuorum -> this.vertexStore
-                .highQC()
-                .withHighestTC(timeoutRoundQuorum.tc());
+            case RoundQuorum.RegularRoundQuorum regularRoundQuorum ->
+                this.vertexStore.highQC().withHighestQC(regularRoundQuorum.qc());
+            case RoundQuorum.TimeoutRoundQuorum timeoutRoundQuorum ->
+                this.vertexStore.highQC().withHighestTC(timeoutRoundQuorum.tc());
           };
 
       final var nodeId =
@@ -637,8 +635,8 @@ public final class BFTSync implements BFTSyncer {
         }
 
         switch (syncState.syncStage) {
-          case GET_COMMITTED_VERTICES -> processVerticesResponseForCommittedSync(
-              syncState, sender, response);
+          case GET_COMMITTED_VERTICES ->
+              processVerticesResponseForCommittedSync(syncState, sender, response);
           case GET_QC_VERTICES -> processVerticesResponseForQCSync(syncState, response);
           default -> throw new IllegalStateException("Unknown sync stage: " + syncState.syncStage);
         }

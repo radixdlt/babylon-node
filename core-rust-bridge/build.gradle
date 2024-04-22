@@ -113,7 +113,7 @@ test {
 jacocoTestReport {
     dependsOn test
     reports {
-        xml.enabled true
-        csv.enabled false
+        xml.required = true
+        csv.required = false
     }
 }

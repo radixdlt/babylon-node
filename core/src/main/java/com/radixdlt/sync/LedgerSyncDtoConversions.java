@@ -93,12 +93,13 @@ public final class LedgerSyncDtoConversions {
   private static Pair<HashCode, TimestampedECDSASignatures> toDtoOpaqueAndSignatures(
       LedgerProofOrigin origin) {
     return switch (origin) {
-      case LedgerProofOrigin.Consensus consensusOrigin -> Pair.of(
-          consensusOrigin.opaque(), REv2ToConsensus.signatures(consensusOrigin.signatures()));
-      case LedgerProofOrigin.Genesis genesisOrigin -> Pair.of(
-          genesisOrigin.genesisOpaqueHash(), new TimestampedECDSASignatures());
-      case LedgerProofOrigin.ProtocolUpdate protocolUpdateOrigin -> Pair.of(
-          HashUtils.zero256(), new TimestampedECDSASignatures());
+      case LedgerProofOrigin.Consensus consensusOrigin ->
+          Pair.of(
+              consensusOrigin.opaque(), REv2ToConsensus.signatures(consensusOrigin.signatures()));
+      case LedgerProofOrigin.Genesis genesisOrigin ->
+          Pair.of(genesisOrigin.genesisOpaqueHash(), new TimestampedECDSASignatures());
+      case LedgerProofOrigin.ProtocolUpdate protocolUpdateOrigin ->
+          Pair.of(HashUtils.zero256(), new TimestampedECDSASignatures());
     };
   }
 

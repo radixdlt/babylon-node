@@ -82,6 +82,7 @@ public class ModelEqualsVerifierTest {
 				.usingGetClass()
 				.withRedefinedSuperclass()
 				.suppress(Warning.NONFINAL_FIELDS)
+				.suppress(Warning.BIGDECIMAL_EQUALITY)
 				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 				.verify());
 	}

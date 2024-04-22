@@ -396,14 +396,16 @@ public abstract class DeterministicCoreApiTestBase {
               }
               return new CommittedResult(intentHash, stateVersion, Optional.empty());
             }
-            case CommittedFailure -> throw new RuntimeException(
-                String.format(
-                    "Transaction got committed as failure: %s",
-                    response.getKnownPayloads().get(0).getErrorMessage()));
-            case PermanentRejection -> throw new RuntimeException(
-                String.format(
-                    "Transaction got permanently rejected: %s",
-                    response.getKnownPayloads().get(0).getErrorMessage()));
+            case CommittedFailure ->
+                throw new RuntimeException(
+                    String.format(
+                        "Transaction got committed as failure: %s",
+                        response.getKnownPayloads().get(0).getErrorMessage()));
+            case PermanentRejection ->
+                throw new RuntimeException(
+                    String.format(
+                        "Transaction got permanently rejected: %s",
+                        response.getKnownPayloads().get(0).getErrorMessage()));
           }
           throw new IllegalStateException("Shouldn't be able to get here");
         });
@@ -420,8 +422,9 @@ public abstract class DeterministicCoreApiTestBase {
         signatories,
         (intentHash, outcome, response) -> {
           switch (outcome) {
-            case CommittedSuccess -> throw new RuntimeException(
-                "Transaction got committed as success, but was expecting committed failure");
+            case CommittedSuccess ->
+                throw new RuntimeException(
+                    "Transaction got committed as success, but was expecting committed failure");
             case CommittedFailure -> {
               var stateVersion = response.getCommittedStateVersion();
               if (stateVersion == null) {
@@ -432,10 +435,11 @@ public abstract class DeterministicCoreApiTestBase {
                   Objects.requireNonNull(response.getKnownPayloads().get(0).getErrorMessage());
               return new CommittedResult(intentHash, stateVersion, Optional.of(errorMessage));
             }
-            case PermanentRejection -> throw new RuntimeException(
-                String.format(
-                    "Transaction got permanently rejected: %s",
-                    response.getKnownPayloads().get(0).getErrorMessage()));
+            case PermanentRejection ->
+                throw new RuntimeException(
+                    String.format(
+                        "Transaction got permanently rejected: %s",
+                        response.getKnownPayloads().get(0).getErrorMessage()));
           }
           throw new IllegalStateException("Shouldn't be able to get here");
         });

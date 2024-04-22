@@ -187,10 +187,10 @@ public final class BFTQuorumAssembler implements BFTEventProcessorAtCurrentRound
             divergentVertexExecutionDetector.processVote(vote);
             this.processQuorum(quorumReached.roundQuorum(), vote);
             yield switch (quorumReached.roundQuorum()) {
-              case RoundQuorum.RegularRoundQuorum unused -> Metrics.Bft.VoteProcessingResult
-                  .ACCEPTED_FORMED_QC;
-              case RoundQuorum.TimeoutRoundQuorum unused -> Metrics.Bft.VoteProcessingResult
-                  .ACCEPTED_FORMED_TC;
+              case RoundQuorum.RegularRoundQuorum unused ->
+                  Metrics.Bft.VoteProcessingResult.ACCEPTED_FORMED_QC;
+              case RoundQuorum.TimeoutRoundQuorum unused ->
+                  Metrics.Bft.VoteProcessingResult.ACCEPTED_FORMED_TC;
             };
           }
         };

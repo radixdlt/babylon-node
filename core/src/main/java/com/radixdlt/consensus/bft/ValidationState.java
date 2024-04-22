@@ -144,12 +144,16 @@ public final class ValidationState {
     return false;
   }
 
-  /** @return {@code true} if we have not accumulated any signatures, {@code false} otherwise. */
+  /**
+   * @return {@code true} if we have not accumulated any signatures, {@code false} otherwise.
+   */
   public boolean isEmpty() {
     return this.signedValidators.isEmpty();
   }
 
-  /** @return {@code true} if we have enough valid signatures to form a quorum, */
+  /**
+   * @return {@code true} if we have enough valid signatures to form a quorum,
+   */
   public boolean complete() {
     return signedPower.compareTo(threshold) >= 0;
   }

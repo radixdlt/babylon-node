@@ -158,8 +158,8 @@ public final class DeterministicMonitors {
       final QuorumCertificate highQC;
       switch (message.message()) {
         case BFTHighQCUpdate update -> highQC = update.getHighQC().highestQC();
-        case BFTCommittedUpdate committed -> highQC =
-            committed.vertexStoreState().getHighQC().highestQC();
+        case BFTCommittedUpdate committed ->
+            highQC = committed.vertexStoreState().getHighQC().highestQC();
         default -> {
           return;
         }

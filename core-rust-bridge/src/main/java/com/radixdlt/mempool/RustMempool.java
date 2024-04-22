@@ -116,20 +116,21 @@ public class RustMempool
     // Handle Errors.
     if (result.isError()) {
       switch (result.unwrapError()) {
-        case MempoolError.PriorityThresholdNotMet
-        e -> throw new MempoolPriorityThresholdNotMetException(
-            String.format(
-                "Mempool is full and transaction's priority threshold not met, min tip percentage"
-                    + " required: %s",
-                e.minTipPercentageRequired()));
-        case MempoolError.Duplicate e -> throw new MempoolDuplicateException(
-            String.format(
-                "Mempool already has transaction with notarized hash %s",
-                e.notarizedTransactionHash()));
-        case MempoolError.TransactionValidationError e -> throw new MempoolRejectedException(
-            e.errorDescription());
-        case MempoolError.Rejected rejected -> throw new MempoolRejectedException(
-            rejected.reason());
+        case MempoolError.PriorityThresholdNotMet e ->
+            throw new MempoolPriorityThresholdNotMetException(
+                String.format(
+                    "Mempool is full and transaction's priority threshold not met, min tip"
+                        + " percentage required: %s",
+                    e.minTipPercentageRequired()));
+        case MempoolError.Duplicate e ->
+            throw new MempoolDuplicateException(
+                String.format(
+                    "Mempool already has transaction with notarized hash %s",
+                    e.notarizedTransactionHash()));
+        case MempoolError.TransactionValidationError e ->
+            throw new MempoolRejectedException(e.errorDescription());
+        case MempoolError.Rejected rejected ->
+            throw new MempoolRejectedException(rejected.reason());
       }
     }
   }

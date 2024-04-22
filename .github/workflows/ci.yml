@@ -99,7 +99,7 @@ jobs:
         uses: RDXWorks-actions/setup-java@main
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: '21'
       - name: Install libclang-dev
         run: sudo apt-get update -y && sudo apt-get install -y libclang-dev
       - name: Cache SonarCloud packages
@@ -159,7 +159,7 @@ jobs:
         uses: RDXWorks-actions/setup-java@main
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: '21'
       - name: Cache Gradle packages
         uses: RDXWorks-actions/cache@main
         with:
@@ -183,7 +183,7 @@ jobs:
         uses: RDXWorks-actions/setup-java@main
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: '21'
       - name: Install libclang-dev
         run: sudo apt-get update -y && sudo apt-get install -y libclang-dev
       - name: Cache Gradle packages
@@ -211,7 +211,7 @@ jobs:
         uses: RDXWorks-actions/setup-java@main
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: '21'
       - name: Install libclang-dev
         run: sudo apt-get update -y && sudo apt-get install -y libclang-dev
       - name: Cache Gradle packages

@@ -147,8 +147,9 @@ public record Decoder(ByteArrayInputStream input) implements DecoderApi {
     return switch (value) {
       case 0 -> false;
       case 1 -> true;
-      default -> throw new SborDecodeException(
-          String.format("Unknown value %s used to encode boolean", value));
+      default ->
+          throw new SborDecodeException(
+              String.format("Unknown value %s used to encode boolean", value));
     };
   }
 

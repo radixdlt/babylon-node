@@ -168,8 +168,8 @@ public final class ECKeyPair implements Signing<ECDSASecp256k1Signature> {
   public ECDSASecp256k1PublicKey getPublicKey() {
     return publicKey;
   }
-  // TODO move this to new class (yet to be created) `ECPrivateKey`.
 
+  // TODO move this to new class (yet to be created) `ECPrivateKey`.
   @Override
   public ECPoint multiply(ECPoint point) {
     BigInteger scalarFromPrivateKey = new BigInteger(1, privateKey);

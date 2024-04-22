@@ -90,13 +90,12 @@ public class BooleanUtils {
     return switch (trimmedLowerCaseValue) {
       case "true" -> true;
       case "false" -> false;
-        // spotless doesn't work with "case null, default", so we're using the solution bellow
-        // instead
-      case Object object -> throw new IllegalArgumentException(
-          String.format(
-              "It was not possible to parse the string '%s' as a boolean. Please use 'true' or"
-                  + " 'false'.",
-              s));
+      case null, default ->
+          throw new IllegalArgumentException(
+              String.format(
+                  "It was not possible to parse the string '%s' as a boolean. Please use 'true' or"
+                      + " 'false'.",
+                  s));
     };
   }
 }

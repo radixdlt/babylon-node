@@ -75,7 +75,9 @@ import java.util.List;
  * @param <M> class of metadata
  */
 public interface PostProcessor<M> {
-  /** @return new metadata to be stored */
+  /**
+   * @return new metadata to be stored
+   */
   default M process(
       M metadata, EngineStore.EngineStoreInTransaction<M> engineStore, List<REProcessedTxn> txns)
       throws PostProcessorException {

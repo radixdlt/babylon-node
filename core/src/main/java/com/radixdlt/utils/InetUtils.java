@@ -84,7 +84,9 @@ public final class InetUtils {
     }
   }
 
-  /** @return true if the specified inet address is bound to any local network interface */
+  /**
+   * @return true if the specified inet address is bound to any local network interface
+   */
   private static boolean isBoundToAnyNetworkInterface(InetAddress inetAddress) {
     try {
       return NetworkInterface.getByInetAddress(inetAddress) != null;

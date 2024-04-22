@@ -109,8 +109,8 @@ public record EitherCodec<L, R>(Codec<L> leftType, Codec<R> rightType)
         decoder.expectSize(1);
         yield Either.left(decoder.decodeWithTypeId(leftType));
       }
-      default -> throw new SborDecodeException(
-          String.format("Unknown result variant %s", variantByte));
+      default ->
+          throw new SborDecodeException(String.format("Unknown result variant %s", variantByte));
     };
   }
 

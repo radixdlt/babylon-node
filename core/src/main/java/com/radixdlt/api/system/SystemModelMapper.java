@@ -193,29 +193,31 @@ public final class SystemModelMapper {
     var enactmentCondition =
         switch (protocolUpdateTrigger.enactmentCondition()) {
           case com.radixdlt.protocol.ProtocolUpdateEnactmentCondition
-              .EnactAtStartOfEpochIfValidatorsReady
-          condition -> new EnactAtStartOfEpochIfValidatorsReadyCondition()
-              .lowerBoundEpochInclusive(condition.lowerBoundInclusive().toLong())
-              .upperBoundEpochExclusive(condition.upperBoundExclusive().toLong())
-              .readinessThresholds(
-                  condition.readinessThresholds().stream()
-                      .map(
-                          threshold ->
-                              new SignalledReadinessThreshold()
-                                  .requiredRatioOfStakeSupported(
-                                      threshold.requiredRatioOfStakeSupported().toString())
-                                  .requiredConsecutiveCompletedEpochsOfSupport(
-                                      threshold
-                                          .requiredConsecutiveCompletedEpochsOfSupport()
-                                          .toLong()))
-                      .toList())
-              .readinessSignal(RustProtocolUpdate.readinessSignalName(protocolUpdateTrigger))
-              .type(ProtocolUpdateEnactmentConditionType.ENACTATSTARTOFEPOCHIFVALIDATORSREADY);
+                          .EnactAtStartOfEpochIfValidatorsReady
+                      condition ->
+              new EnactAtStartOfEpochIfValidatorsReadyCondition()
+                  .lowerBoundEpochInclusive(condition.lowerBoundInclusive().toLong())
+                  .upperBoundEpochExclusive(condition.upperBoundExclusive().toLong())
+                  .readinessThresholds(
+                      condition.readinessThresholds().stream()
+                          .map(
+                              threshold ->
+                                  new SignalledReadinessThreshold()
+                                      .requiredRatioOfStakeSupported(
+                                          threshold.requiredRatioOfStakeSupported().toString())
+                                      .requiredConsecutiveCompletedEpochsOfSupport(
+                                          threshold
+                                              .requiredConsecutiveCompletedEpochsOfSupport()
+                                              .toLong()))
+                          .toList())
+                  .readinessSignal(RustProtocolUpdate.readinessSignalName(protocolUpdateTrigger))
+                  .type(ProtocolUpdateEnactmentConditionType.ENACTATSTARTOFEPOCHIFVALIDATORSREADY);
           case com.radixdlt.protocol.ProtocolUpdateEnactmentCondition
-              .EnactAtStartOfEpochUnconditionally
-          enactUnconditionallyAtEpoch -> new EnactAtStartOfEpochUnconditionallyCondition()
-              .epoch(enactUnconditionallyAtEpoch.epoch().toLong())
-              .type(ProtocolUpdateEnactmentConditionType.ENACTATSTARTOFEPOCHUNCONDITIONALLY);
+                          .EnactAtStartOfEpochUnconditionally
+                      enactUnconditionallyAtEpoch ->
+              new EnactAtStartOfEpochUnconditionallyCondition()
+                  .epoch(enactUnconditionallyAtEpoch.epoch().toLong())
+                  .type(ProtocolUpdateEnactmentConditionType.ENACTATSTARTOFEPOCHUNCONDITIONALLY);
         };
 
     return new ProtocolUpdateTrigger()
