@@ -21,6 +21,7 @@ ENV DEBIAN_FRONTEND noninteractive
 CMD ["/bin/bash"]
 
 ARG WGET_VERSION="1.21.3-1+b2"
+ARG OPENJDK_17_VERSION="17.0.11+9-1~deb12u1"
 ARG VERSION_BRANCH=""
 ARG VERSION_COMMIT=""
 ARG VERSION_DISPLAY=""
@@ -56,7 +57,7 @@ RUN apt-get update \
     wget=${WGET_VERSION} \
     software-properties-common=0.99.30-4 \
   && apt-get install -y --no-install-recommends \
-    openjdk-17-jdk=17.0.11+9-1~deb12u1 \
+    openjdk-17-jdk=OPENJDK_17_VERSION \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
@@ -257,7 +258,7 @@ LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 # - https://packages.debian.org/bookworm/libc6
 RUN apt-get update -y \
   && apt-get -y --no-install-recommends install \
-    openjdk-17-jre-headless=17.0.11+9-1~deb12u1 \
+    openjdk-17-jre-headless=OPENJDK_17_VERSION \
     # https://security-tracker.debian.org/tracker/CVE-2023-38545
     curl=7.88.1-10+deb12u5 \
     gettext-base=0.21-12 \
