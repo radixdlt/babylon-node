@@ -36,10 +36,10 @@ pub(crate) async fn handle_extra_entity_search(
         .database
         .snapshot()
         .scoped_at(effective_filter.at_state_version)?;
-    if !database.are_re_node_listing_indices_enabled() {
+    if !database.are_entity_listing_indices_enabled() {
         return Err(NodeFeatureDisabledError::new(
             "Entity listing",
-            "db.re_node_listing_indices.enable",
+            "db.entity_listing_indices.enable",
         )
         .into());
     }

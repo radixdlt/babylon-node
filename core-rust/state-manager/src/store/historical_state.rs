@@ -412,8 +412,8 @@ impl<'s, R: ReadableRocks + 's, DS: Deref<Target = StateManagerDatabase<R>>> Con
             .is_local_transaction_execution_index_enabled()
     }
 
-    fn are_re_node_listing_indices_enabled(&self) -> bool {
-        self.underlying().are_re_node_listing_indices_enabled()
+    fn are_entity_listing_indices_enabled(&self) -> bool {
+        self.underlying().are_entity_listing_indices_enabled()
     }
 
     fn is_state_history_enabled(&self) -> bool {

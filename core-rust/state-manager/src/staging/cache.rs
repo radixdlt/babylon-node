@@ -411,8 +411,8 @@ impl<'s, S: ConfigurableDatabase> ConfigurableDatabase for StagedStore<'s, S> {
         self.root.is_local_transaction_execution_index_enabled()
     }
 
-    fn are_re_node_listing_indices_enabled(&self) -> bool {
-        self.root.are_re_node_listing_indices_enabled()
+    fn are_entity_listing_indices_enabled(&self) -> bool {
+        self.root.are_entity_listing_indices_enabled()
     }
 
     fn is_state_history_enabled(&self) -> bool {
