@@ -239,6 +239,8 @@ FROM debian:12.1-slim as app-container
 LABEL org.opencontainers.image.source https://github.com/radixdlt/babylon-node
 LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 
+ARG OPENJDK_17_VERSION="17.0.11+9-1~deb12u1"
+
 # Install dependencies needed for building the image or running the application
 # - unzip is needed for unpacking the java build artifacts
 # - daemontools is needed at application runtime for async tasks
