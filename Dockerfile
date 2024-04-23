@@ -12,7 +12,7 @@
 # =================================================================================================
 FROM debian:12.1-slim AS java-build-stage
 
-LABEL org.opencontainers.image.source=https://github.com/radixdlt/babylon-node
+LABEL org.opencontainers.image.source="https://github.com/radixdlt/babylon-node"
 LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 LABEL org.opencontainers.image.description="Java + Debian 12 (OpenJDK)"
 
