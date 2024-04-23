@@ -51,11 +51,11 @@ public class ScryptoInstant {
   }
 
    /**
-   * A decimal string-encoded 64-bit signed integer, marking the unix timestamp in seconds.  Note: this field accurately represents the full range of possible on-ledger values (i.e. &#x60;-2^63 &lt;&#x3D; seconds &lt; 2^63&#x60;). This is contrary to the &#x60;ConsensusInstant&#x60; type used in other places of this API. 
+   * A decimal string-encoded 64-bit signed integer, marking the unix timestamp in seconds.  Note: this field accurately represents the full range of possible on-ledger values (i.e. &#x60;-2^63 &lt;&#x3D; seconds &lt; 2^63&#x60;). 
    * @return unixTimestampSeconds
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "A decimal string-encoded 64-bit signed integer, marking the unix timestamp in seconds.  Note: this field accurately represents the full range of possible on-ledger values (i.e. `-2^63 <= seconds < 2^63`). This is contrary to the `ConsensusInstant` type used in other places of this API. ")
+  @ApiModelProperty(required = true, value = "A decimal string-encoded 64-bit signed integer, marking the unix timestamp in seconds.  Note: this field accurately represents the full range of possible on-ledger values (i.e. `-2^63 <= seconds < 2^63`). ")
   @JsonProperty(JSON_PROPERTY_UNIX_TIMESTAMP_SECONDS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
