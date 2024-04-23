@@ -72,7 +72,7 @@ public record DatabaseConfig(
     boolean enableLocalTransactionExecutionIndex,
     boolean enableAccountChangeIndex,
     boolean enableHistoricalSubstateValues,
-    boolean enableReNodeListingIndices) {
+    boolean enableEntityListingIndices) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         DatabaseConfig.class,

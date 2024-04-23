@@ -88,7 +88,7 @@ pub struct DatabaseConfig {
     pub enable_local_transaction_execution_index: bool,
     pub enable_account_change_index: bool,
     pub enable_historical_substate_values: bool,
-    pub enable_re_node_listing_indices: bool,
+    pub enable_entity_listing_indices: bool,
 }
 
 impl Default for DatabaseConfig {
@@ -97,7 +97,7 @@ impl Default for DatabaseConfig {
             enable_local_transaction_execution_index: true,
             enable_account_change_index: true,
             enable_historical_substate_values: false,
-            enable_re_node_listing_indices: true,
+            enable_entity_listing_indices: true,
         }
     }
 }
@@ -138,7 +138,7 @@ pub trait ConfigurableDatabase {
 
     fn is_local_transaction_execution_index_enabled(&self) -> bool;
 
-    fn are_re_node_listing_indices_enabled(&self) -> bool;
+    fn are_entity_listing_indices_enabled(&self) -> bool;
 
     /// Returns [`true`] if the Node should be storing historical Substate values (and if it can
     /// handle historical state requests).

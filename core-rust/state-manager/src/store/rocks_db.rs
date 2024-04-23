@@ -413,7 +413,7 @@ impl TypedCf for ExtensionsDataCf {
             ExtensionsDataKey::LocalTransactionExecutionIndexEnabled,
             ExtensionsDataKey::December2023LostSubstatesRestored,
             ExtensionsDataKey::StateTreeAssociatedValuesStatus,
-            ExtensionsDataKey::ReNodeListingIndicesLastProcessedStateVersion,
+            ExtensionsDataKey::EntityListingIndicesLastProcessedStateVersion,
         ])
     }
 
@@ -517,7 +517,7 @@ enum ExtensionsDataKey {
     LocalTransactionExecutionIndexEnabled,
     December2023LostSubstatesRestored,
     StateTreeAssociatedValuesStatus,
-    ReNodeListingIndicesLastProcessedStateVersion,
+    EntityListingIndicesLastProcessedStateVersion,
 }
 
 // IMPORTANT NOTE: the strings defined below are used as database identifiers. Any change would
@@ -535,8 +535,8 @@ impl fmt::Display for ExtensionsDataKey {
             }
             Self::December2023LostSubstatesRestored => "december_2023_lost_substates_restored",
             Self::StateTreeAssociatedValuesStatus => "state_tree_associated_values_status",
-            Self::ReNodeListingIndicesLastProcessedStateVersion => {
-                "re_node_listing_indices_last_processed_state_version"
+            Self::EntityListingIndicesLastProcessedStateVersion => {
+                "entity_listing_indices_last_processed_state_version"
             }
         };
         write!(f, "{str}")
@@ -800,8 +800,8 @@ impl ActualStateManagerDatabase {
         state_manager_database.restore_december_2023_lost_substates(network);
         state_manager_database.ensure_historical_substate_values();
 
-        if state_manager_database.config.enable_re_node_listing_indices {
-            state_manager_database.catchup_re_node_listing_indices()
+        if state_manager_database.config.enable_entity_listing_indices {
+            state_manager_database.catchup_entity_listing_indices()
         }
 
         Ok(state_manager_database)
@@ -842,7 +842,7 @@ impl<R: ReadableRocks> StateManagerDatabase<R> {
                 enable_local_transaction_execution_index: false,
                 enable_account_change_index: false,
                 enable_historical_substate_values: false,
-                enable_re_node_listing_indices: false,
+                enable_entity_listing_indices: false,
             },
             rocks: DirectRocks { db },
         }
@@ -879,7 +879,7 @@ impl<R: SecondaryRocks> StateManagerDatabase<R> {
                 enable_local_transaction_execution_index: false,
                 enable_account_change_index: false,
                 enable_historical_substate_values: false,
-                enable_re_node_listing_indices: false,
+                enable_entity_listing_indices: false,
             },
             rocks: DirectRocks { db },
         }
@@ -1054,8 +1054,8 @@ impl<R: ReadableRocks> ConfigurableDatabase for StateManagerDatabase<R> {
         self.config.enable_local_transaction_execution_index
     }
 
-    fn are_re_node_listing_indices_enabled(&self) -> bool {
-        self.config.enable_re_node_listing_indices
+    fn are_entity_listing_indices_enabled(&self) -> bool {
+        self.config.enable_entity_listing_indices
     }
 
     fn is_state_history_enabled(&self) -> bool {
@@ -1255,8 +1255,8 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
             );
         }
 
-        if self.config.enable_re_node_listing_indices {
-            self.batch_update_re_node_listing_indices(
+        if self.config.enable_entity_listing_indices {
+            self.batch_update_entity_listing_indices(
                 db_context,
                 transaction_bundle.state_version,
                 &transaction_bundle
@@ -2060,7 +2060,7 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
         last_state_version
     }
 
-    fn batch_update_re_node_listing_indices(
+    fn batch_update_entity_listing_indices(
         &self,
         db_context: &TypedDbContext<R, BufferedWriteSupport<R>>,
         state_version: StateVersion,
@@ -2119,14 +2119,14 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
         }
     }
 
-    fn catchup_re_node_listing_indices(&self) {
+    fn catchup_entity_listing_indices(&self) {
         const TXN_FLUSH_INTERVAL: u64 = 10_000;
 
         info!("ReNode listing indices are enabled.");
         let db_context = self.open_rw_context();
         let catchup_from_version = db_context
             .cf(ExtensionsDataCf)
-            .get(&ExtensionsDataKey::ReNodeListingIndicesLastProcessedStateVersion)
+            .get(&ExtensionsDataKey::EntityListingIndicesLastProcessedStateVersion)
             .map(StateVersion::from_be_bytes)
             .unwrap_or(StateVersion::pre_genesis())
             .next()
@@ -2138,7 +2138,7 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
             .peekable();
 
         while let Some((state_version, receipt)) = receipts_iter.next() {
-            self.batch_update_re_node_listing_indices(
+            self.batch_update_entity_listing_indices(
                 &db_context,
                 state_version,
                 &receipt.state_changes.substate_level_changes,
@@ -2149,7 +2149,7 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
                     state_version
                 );
                 db_context.cf(ExtensionsDataCf).put(
-                    &ExtensionsDataKey::ReNodeListingIndicesLastProcessedStateVersion,
+                    &ExtensionsDataKey::EntityListingIndicesLastProcessedStateVersion,
                     &state_version.to_be_bytes().to_vec(),
                 );
                 db_context.flush();
