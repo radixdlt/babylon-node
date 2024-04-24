@@ -83,7 +83,34 @@ compileClasspath - Compile classpath for source set 'main'.
 |    \--- io.reactivex.rxjava3:rxjava:3.0.6 -> 3.0.13
 |         \--- org.reactivestreams:reactive-streams:1.0.3
 +--- io.reactivex.rxjava3:rxjava -> 3.0.13 (*)
-\--- io.netty:netty-all -> 4.1.66.Final
+\--- io.netty:netty-all -> 4.1.109.Final
+     +--- io.netty:netty-buffer:4.1.109.Final
+     +--- io.netty:netty-codec:4.1.109.Final
+     +--- io.netty:netty-codec-dns:4.1.109.Final
+     +--- io.netty:netty-codec-haproxy:4.1.109.Final
+     +--- io.netty:netty-codec-http:4.1.109.Final
+     +--- io.netty:netty-codec-http2:4.1.109.Final
+     +--- io.netty:netty-codec-memcache:4.1.109.Final
+     +--- io.netty:netty-codec-mqtt:4.1.109.Final
+     +--- io.netty:netty-codec-redis:4.1.109.Final
+     +--- io.netty:netty-codec-smtp:4.1.109.Final
+     +--- io.netty:netty-codec-socks:4.1.109.Final
+     +--- io.netty:netty-codec-stomp:4.1.109.Final
+     +--- io.netty:netty-codec-xml:4.1.109.Final
+     +--- io.netty:netty-common:4.1.109.Final
+     +--- io.netty:netty-handler:4.1.109.Final
+     +--- io.netty:netty-transport-native-unix-common:4.1.109.Final
+     +--- io.netty:netty-handler-proxy:4.1.109.Final
+     +--- io.netty:netty-handler-ssl-ocsp:4.1.109.Final
+     +--- io.netty:netty-resolver:4.1.109.Final
+     +--- io.netty:netty-resolver-dns:4.1.109.Final
+     +--- io.netty:netty-transport:4.1.109.Final
+     +--- io.netty:netty-transport-rxtx:4.1.109.Final
+     +--- io.netty:netty-transport-sctp:4.1.109.Final
+     +--- io.netty:netty-transport-udt:4.1.109.Final
+     +--- io.netty:netty-transport-classes-epoll:4.1.109.Final
+     +--- io.netty:netty-transport-classes-kqueue:4.1.109.Final
+     \--- io.netty:netty-resolver-dns-classes-macos:4.1.109.Final
 
 compileOnly - Compile only dependencies for source set 'main'. (n)
 No dependencies
@@ -173,7 +200,34 @@ integrationCompileClasspath - Compile classpath for source set 'integration'.
 |    \--- io.reactivex.rxjava3:rxjava:3.0.6 -> 3.0.13
 |         \--- org.reactivestreams:reactive-streams:1.0.3
 +--- io.reactivex.rxjava3:rxjava -> 3.0.13 (*)
-+--- io.netty:netty-all -> 4.1.66.Final
++--- io.netty:netty-all -> 4.1.109.Final
+|    +--- io.netty:netty-buffer:4.1.109.Final
+|    +--- io.netty:netty-codec:4.1.109.Final
+|    +--- io.netty:netty-codec-dns:4.1.109.Final
+|    +--- io.netty:netty-codec-haproxy:4.1.109.Final
+|    +--- io.netty:netty-codec-http:4.1.109.Final
+|    +--- io.netty:netty-codec-http2:4.1.109.Final
+|    +--- io.netty:netty-codec-memcache:4.1.109.Final
+|    +--- io.netty:netty-codec-mqtt:4.1.109.Final
+|    +--- io.netty:netty-codec-redis:4.1.109.Final
+|    +--- io.netty:netty-codec-smtp:4.1.109.Final
+|    +--- io.netty:netty-codec-socks:4.1.109.Final
+|    +--- io.netty:netty-codec-stomp:4.1.109.Final
+|    +--- io.netty:netty-codec-xml:4.1.109.Final
+|    +--- io.netty:netty-common:4.1.109.Final
+|    +--- io.netty:netty-handler:4.1.109.Final
+|    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final
+|    +--- io.netty:netty-handler-proxy:4.1.109.Final
+|    +--- io.netty:netty-handler-ssl-ocsp:4.1.109.Final
+|    +--- io.netty:netty-resolver:4.1.109.Final
+|    +--- io.netty:netty-resolver-dns:4.1.109.Final
+|    +--- io.netty:netty-transport:4.1.109.Final
+|    +--- io.netty:netty-transport-rxtx:4.1.109.Final
+|    +--- io.netty:netty-transport-sctp:4.1.109.Final
+|    +--- io.netty:netty-transport-udt:4.1.109.Final
+|    +--- io.netty:netty-transport-classes-epoll:4.1.109.Final
+|    +--- io.netty:netty-transport-classes-kqueue:4.1.109.Final
+|    \--- io.netty:netty-resolver-dns-classes-macos:4.1.109.Final
 +--- junit:junit -> 4.13.2
 |    \--- org.hamcrest:hamcrest-core:1.3
 +--- org.assertj:assertj-core -> 3.20.2
@@ -329,50 +383,9 @@ integrationRuntimeClasspath - Runtime classpath of source set 'integration'.
 |    |              +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
 |    |              +--- software.amazon.awssdk:utils:2.16.3 (*)
 |    |              +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
-|    |              +--- io.netty:netty-codec-http:4.1.59.Final
-|    |              |    +--- io.netty:netty-common:4.1.59.Final
-|    |              |    +--- io.netty:netty-buffer:4.1.59.Final
-|    |              |    |    \--- io.netty:netty-common:4.1.59.Final
-|    |              |    +--- io.netty:netty-transport:4.1.59.Final
-|    |              |    |    +--- io.netty:netty-common:4.1.59.Final
-|    |              |    |    +--- io.netty:netty-buffer:4.1.59.Final (*)
-|    |              |    |    \--- io.netty:netty-resolver:4.1.59.Final
-|    |              |    |         \--- io.netty:netty-common:4.1.59.Final
-|    |              |    +--- io.netty:netty-codec:4.1.59.Final
-|    |              |    |    +--- io.netty:netty-common:4.1.59.Final
-|    |              |    |    +--- io.netty:netty-buffer:4.1.59.Final (*)
-|    |              |    |    \--- io.netty:netty-transport:4.1.59.Final (*)
-|    |              |    \--- io.netty:netty-handler:4.1.59.Final
-|    |              |         +--- io.netty:netty-common:4.1.59.Final
-|    |              |         +--- io.netty:netty-resolver:4.1.59.Final (*)
-|    |              |         +--- io.netty:netty-buffer:4.1.59.Final (*)
-|    |              |         +--- io.netty:netty-transport:4.1.59.Final (*)
-|    |              |         \--- io.netty:netty-codec:4.1.59.Final (*)
-|    |              +--- io.netty:netty-codec-http2:4.1.59.Final
-|    |              |    +--- io.netty:netty-common:4.1.59.Final
-|    |              |    +--- io.netty:netty-buffer:4.1.59.Final (*)
-|    |              |    +--- io.netty:netty-transport:4.1.59.Final (*)
-|    |              |    +--- io.netty:netty-codec:4.1.59.Final (*)
-|    |              |    +--- io.netty:netty-handler:4.1.59.Final (*)
-|    |              |    \--- io.netty:netty-codec-http:4.1.59.Final (*)
-|    |              +--- io.netty:netty-codec:4.1.59.Final (*)
-|    |              +--- io.netty:netty-transport:4.1.59.Final (*)
-|    |              +--- io.netty:netty-common:4.1.59.Final
-|    |              +--- io.netty:netty-buffer:4.1.59.Final (*)
-|    |              +--- io.netty:netty-handler:4.1.59.Final (*)
-|    |              +--- io.netty:netty-transport-native-epoll:4.1.59.Final
-|    |              |    +--- io.netty:netty-common:4.1.59.Final
-|    |              |    +--- io.netty:netty-buffer:4.1.59.Final (*)
-|    |              |    +--- io.netty:netty-transport:4.1.59.Final (*)
-|    |              |    \--- io.netty:netty-transport-native-unix-common:4.1.59.Final
-|    |              |         +--- io.netty:netty-common:4.1.59.Final
-|    |              |         +--- io.netty:netty-buffer:4.1.59.Final (*)
-|    |              |         \--- io.netty:netty-transport:4.1.59.Final (*)
 |    |              +--- com.typesafe.netty:netty-reactive-streams-http:2.0.4
-|    |              |    +--- com.typesafe.netty:netty-reactive-streams:2.0.4
-|    |              |    |    +--- io.netty:netty-handler:4.1.43.Final -> 4.1.59.Final (*)
-|    |              |    |    \--- org.reactivestreams:reactive-streams:1.0.3
-|    |              |    \--- io.netty:netty-codec-http:4.1.43.Final -> 4.1.59.Final (*)
+|    |              |    \--- com.typesafe.netty:netty-reactive-streams:2.0.4
+|    |              |         \--- org.reactivestreams:reactive-streams:1.0.3
 |    |              +--- org.reactivestreams:reactive-streams:1.0.2 -> 1.0.3
 |    |              \--- org.slf4j:slf4j-api:1.7.28
 |    +--- project :core-rust-bridge
@@ -403,7 +416,87 @@ integrationRuntimeClasspath - Runtime classpath of source set 'integration'.
 |    +--- com.lmax:disruptor -> 3.4.4
 |    +--- commons-cli:commons-cli -> 1.4
 |    +--- org.xerial.snappy:snappy-java -> 1.1.8.4
-|    +--- io.netty:netty-all -> 4.1.66.Final
+|    +--- io.netty:netty-all -> 4.1.109.Final
+|    |    +--- io.netty:netty-buffer:4.1.109.Final
+|    |    |    \--- io.netty:netty-common:4.1.109.Final
+|    |    +--- io.netty:netty-codec:4.1.109.Final
+|    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |    \--- io.netty:netty-transport:4.1.109.Final
+|    |    |         +--- io.netty:netty-common:4.1.109.Final
+|    |    |         +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |         \--- io.netty:netty-resolver:4.1.109.Final
+|    |    |              \--- io.netty:netty-common:4.1.109.Final
+|    |    +--- io.netty:netty-codec-dns:4.1.109.Final
+|    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
+|    |    |    \--- io.netty:netty-codec:4.1.109.Final (*)
+|    |    +--- io.netty:netty-codec-haproxy:4.1.109.Final
+|    |    +--- io.netty:netty-codec-http:4.1.109.Final
+|    |    +--- io.netty:netty-codec-http2:4.1.109.Final
+|    |    +--- io.netty:netty-codec-memcache:4.1.109.Final
+|    |    +--- io.netty:netty-codec-mqtt:4.1.109.Final
+|    |    +--- io.netty:netty-codec-redis:4.1.109.Final
+|    |    +--- io.netty:netty-codec-smtp:4.1.109.Final
+|    |    +--- io.netty:netty-codec-socks:4.1.109.Final
+|    |    +--- io.netty:netty-codec-stomp:4.1.109.Final
+|    |    +--- io.netty:netty-codec-xml:4.1.109.Final
+|    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    +--- io.netty:netty-handler:4.1.109.Final
+|    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    +--- io.netty:netty-resolver:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final
+|    |    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |    |    \--- io.netty:netty-transport:4.1.109.Final (*)
+|    |    |    \--- io.netty:netty-codec:4.1.109.Final (*)
+|    |    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
+|    |    +--- io.netty:netty-handler-proxy:4.1.109.Final
+|    |    +--- io.netty:netty-handler-ssl-ocsp:4.1.109.Final
+|    |    +--- io.netty:netty-resolver:4.1.109.Final (*)
+|    |    +--- io.netty:netty-resolver-dns:4.1.109.Final
+|    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-resolver:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-codec:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-codec-dns:4.1.109.Final (*)
+|    |    |    \--- io.netty:netty-handler:4.1.109.Final (*)
+|    |    +--- io.netty:netty-transport:4.1.109.Final (*)
+|    |    +--- io.netty:netty-transport-rxtx:4.1.109.Final
+|    |    +--- io.netty:netty-transport-sctp:4.1.109.Final
+|    |    +--- io.netty:netty-transport-udt:4.1.109.Final
+|    |    +--- io.netty:netty-transport-classes-epoll:4.1.109.Final
+|    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
+|    |    |    \--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
+|    |    +--- io.netty:netty-transport-classes-kqueue:4.1.109.Final
+|    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
+|    |    |    \--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
+|    |    +--- io.netty:netty-resolver-dns-classes-macos:4.1.109.Final
+|    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    +--- io.netty:netty-resolver-dns:4.1.109.Final (*)
+|    |    |    \--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
+|    |    +--- io.netty:netty-transport-native-epoll:4.1.109.Final
+|    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
+|    |    |    \--- io.netty:netty-transport-classes-epoll:4.1.109.Final (*)
+|    |    +--- io.netty:netty-transport-native-kqueue:4.1.109.Final
+|    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
+|    |    |    \--- io.netty:netty-transport-classes-kqueue:4.1.109.Final (*)
+|    |    \--- io.netty:netty-resolver-dns-native-macos:4.1.109.Final
+|    |         \--- io.netty:netty-resolver-dns-classes-macos:4.1.109.Final (*)
 |    +--- com.google.inject:guice -> 5.0.1 (*)
 |    +--- com.google.inject.extensions:guice-grapher -> 5.0.1
 |    |    +--- com.google.inject.extensions:guice-assistedinject:5.0.1
@@ -433,7 +526,7 @@ integrationRuntimeClasspath - Runtime classpath of source set 'integration'.
 +--- commons-cli:commons-cli -> 1.4
 +--- com.github.akarnokd:rxjava3-extensions -> 3.0.1 (*)
 +--- io.reactivex.rxjava3:rxjava -> 3.0.13 (*)
-+--- io.netty:netty-all -> 4.1.66.Final
++--- io.netty:netty-all -> 4.1.109.Final (*)
 +--- junit:junit -> 4.13.2
 |    \--- org.hamcrest:hamcrest-core:1.3
 +--- org.assertj:assertj-core -> 3.20.2
@@ -535,7 +628,34 @@ p2pTestCompileClasspath - Compile classpath for source set 'p2p test'.
 |    \--- io.reactivex.rxjava3:rxjava:3.0.6 -> 3.0.13
 |         \--- org.reactivestreams:reactive-streams:1.0.3
 +--- io.reactivex.rxjava3:rxjava -> 3.0.13 (*)
-+--- io.netty:netty-all -> 4.1.66.Final
++--- io.netty:netty-all -> 4.1.109.Final
+|    +--- io.netty:netty-buffer:4.1.109.Final
+|    +--- io.netty:netty-codec:4.1.109.Final
+|    +--- io.netty:netty-codec-dns:4.1.109.Final
+|    +--- io.netty:netty-codec-haproxy:4.1.109.Final
+|    +--- io.netty:netty-codec-http:4.1.109.Final
+|    +--- io.netty:netty-codec-http2:4.1.109.Final
+|    +--- io.netty:netty-codec-memcache:4.1.109.Final
+|    +--- io.netty:netty-codec-mqtt:4.1.109.Final
+|    +--- io.netty:netty-codec-redis:4.1.109.Final
+|    +--- io.netty:netty-codec-smtp:4.1.109.Final
+|    +--- io.netty:netty-codec-socks:4.1.109.Final
+|    +--- io.netty:netty-codec-stomp:4.1.109.Final
+|    +--- io.netty:netty-codec-xml:4.1.109.Final
+|    +--- io.netty:netty-common:4.1.109.Final
+|    +--- io.netty:netty-handler:4.1.109.Final
+|    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final
+|    +--- io.netty:netty-handler-proxy:4.1.109.Final
+|    +--- io.netty:netty-handler-ssl-ocsp:4.1.109.Final
+|    +--- io.netty:netty-resolver:4.1.109.Final
+|    +--- io.netty:netty-resolver-dns:4.1.109.Final
+|    +--- io.netty:netty-transport:4.1.109.Final
+|    +--- io.netty:netty-transport-rxtx:4.1.109.Final
+|    +--- io.netty:netty-transport-sctp:4.1.109.Final
+|    +--- io.netty:netty-transport-udt:4.1.109.Final
+|    +--- io.netty:netty-transport-classes-epoll:4.1.109.Final
+|    +--- io.netty:netty-transport-classes-kqueue:4.1.109.Final
+|    \--- io.netty:netty-resolver-dns-classes-macos:4.1.109.Final
 +--- junit:junit -> 4.13.2
 |    \--- org.hamcrest:hamcrest-core:1.3
 +--- org.assertj:assertj-core -> 3.20.2
@@ -691,50 +811,9 @@ p2pTestRuntimeClasspath - Runtime classpath of source set 'p2p test'.
 |    |              +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
 |    |              +--- software.amazon.awssdk:utils:2.16.3 (*)
 |    |              +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
-|    |              +--- io.netty:netty-codec-http:4.1.59.Final
-|    |              |    +--- io.netty:netty-common:4.1.59.Final
-|    |              |    +--- io.netty:netty-buffer:4.1.59.Final
-|    |              |    |    \--- io.netty:netty-common:4.1.59.Final
-|    |              |    +--- io.netty:netty-transport:4.1.59.Final
-|    |              |    |    +--- io.netty:netty-common:4.1.59.Final
-|    |              |    |    +--- io.netty:netty-buffer:4.1.59.Final (*)
-|    |              |    |    \--- io.netty:netty-resolver:4.1.59.Final
-|    |              |    |         \--- io.netty:netty-common:4.1.59.Final
-|    |              |    +--- io.netty:netty-codec:4.1.59.Final
-|    |              |    |    +--- io.netty:netty-common:4.1.59.Final
-|    |              |    |    +--- io.netty:netty-buffer:4.1.59.Final (*)
-|    |              |    |    \--- io.netty:netty-transport:4.1.59.Final (*)
-|    |              |    \--- io.netty:netty-handler:4.1.59.Final
-|    |              |         +--- io.netty:netty-common:4.1.59.Final
-|    |              |         +--- io.netty:netty-resolver:4.1.59.Final (*)
-|    |              |         +--- io.netty:netty-buffer:4.1.59.Final (*)
-|    |              |         +--- io.netty:netty-transport:4.1.59.Final (*)
-|    |              |         \--- io.netty:netty-codec:4.1.59.Final (*)
-|    |              +--- io.netty:netty-codec-http2:4.1.59.Final
-|    |              |    +--- io.netty:netty-common:4.1.59.Final
-|    |              |    +--- io.netty:netty-buffer:4.1.59.Final (*)
-|    |              |    +--- io.netty:netty-transport:4.1.59.Final (*)
-|    |              |    +--- io.netty:netty-codec:4.1.59.Final (*)
-|    |              |    +--- io.netty:netty-handler:4.1.59.Final (*)
-|    |              |    \--- io.netty:netty-codec-http:4.1.59.Final (*)
-|    |              +--- io.netty:netty-codec:4.1.59.Final (*)
-|    |              +--- io.netty:netty-transport:4.1.59.Final (*)
-|    |              +--- io.netty:netty-common:4.1.59.Final
-|    |              +--- io.netty:netty-buffer:4.1.59.Final (*)
-|    |              +--- io.netty:netty-handler:4.1.59.Final (*)
-|    |              +--- io.netty:netty-transport-native-epoll:4.1.59.Final
-|    |              |    +--- io.netty:netty-common:4.1.59.Final
-|    |              |    +--- io.netty:netty-buffer:4.1.59.Final (*)
-|    |              |    +--- io.netty:netty-transport:4.1.59.Final (*)
-|    |              |    \--- io.netty:netty-transport-native-unix-common:4.1.59.Final
-|    |              |         +--- io.netty:netty-common:4.1.59.Final
-|    |              |         +--- io.netty:netty-buffer:4.1.59.Final (*)
-|    |              |         \--- io.netty:netty-transport:4.1.59.Final (*)
 |    |              +--- com.typesafe.netty:netty-reactive-streams-http:2.0.4
-|    |              |    +--- com.typesafe.netty:netty-reactive-streams:2.0.4
-|    |              |    |    +--- io.netty:netty-handler:4.1.43.Final -> 4.1.59.Final (*)
-|    |              |    |    \--- org.reactivestreams:reactive-streams:1.0.3
-|    |              |    \--- io.netty:netty-codec-http:4.1.43.Final -> 4.1.59.Final (*)
+|    |              |    \--- com.typesafe.netty:netty-reactive-streams:2.0.4
+|    |              |         \--- org.reactivestreams:reactive-streams:1.0.3
 |    |              +--- org.reactivestreams:reactive-streams:1.0.2 -> 1.0.3
 |    |              \--- org.slf4j:slf4j-api:1.7.28
 |    +--- project :core-rust-bridge
@@ -765,7 +844,87 @@ p2pTestRuntimeClasspath - Runtime classpath of source set 'p2p test'.
 |    +--- com.lmax:disruptor -> 3.4.4
 |    +--- commons-cli:commons-cli -> 1.4
 |    +--- org.xerial.snappy:snappy-java -> 1.1.8.4
-|    +--- io.netty:netty-all -> 4.1.66.Final
+|    +--- io.netty:netty-all -> 4.1.109.Final
+|    |    +--- io.netty:netty-buffer:4.1.109.Final
+|    |    |    \--- io.netty:netty-common:4.1.109.Final
+|    |    +--- io.netty:netty-codec:4.1.109.Final
+|    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |    \--- io.netty:netty-transport:4.1.109.Final
+|    |    |         +--- io.netty:netty-common:4.1.109.Final
+|    |    |         +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |         \--- io.netty:netty-resolver:4.1.109.Final
+|    |    |              \--- io.netty:netty-common:4.1.109.Final
+|    |    +--- io.netty:netty-codec-dns:4.1.109.Final
+|    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
+|    |    |    \--- io.netty:netty-codec:4.1.109.Final (*)
+|    |    +--- io.netty:netty-codec-haproxy:4.1.109.Final
+|    |    +--- io.netty:netty-codec-http:4.1.109.Final
+|    |    +--- io.netty:netty-codec-http2:4.1.109.Final
+|    |    +--- io.netty:netty-codec-memcache:4.1.109.Final
+|    |    +--- io.netty:netty-codec-mqtt:4.1.109.Final
+|    |    +--- io.netty:netty-codec-redis:4.1.109.Final
+|    |    +--- io.netty:netty-codec-smtp:4.1.109.Final
+|    |    +--- io.netty:netty-codec-socks:4.1.109.Final
+|    |    +--- io.netty:netty-codec-stomp:4.1.109.Final
+|    |    +--- io.netty:netty-codec-xml:4.1.109.Final
+|    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    +--- io.netty:netty-handler:4.1.109.Final
+|    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    +--- io.netty:netty-resolver:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final
+|    |    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |    |    \--- io.netty:netty-transport:4.1.109.Final (*)
+|    |    |    \--- io.netty:netty-codec:4.1.109.Final (*)
+|    |    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
+|    |    +--- io.netty:netty-handler-proxy:4.1.109.Final
+|    |    +--- io.netty:netty-handler-ssl-ocsp:4.1.109.Final
+|    |    +--- io.netty:netty-resolver:4.1.109.Final (*)
+|    |    +--- io.netty:netty-resolver-dns:4.1.109.Final
+|    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-resolver:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-codec:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-codec-dns:4.1.109.Final (*)
+|    |    |    \--- io.netty:netty-handler:4.1.109.Final (*)
+|    |    +--- io.netty:netty-transport:4.1.109.Final (*)
+|    |    +--- io.netty:netty-transport-rxtx:4.1.109.Final
+|    |    +--- io.netty:netty-transport-sctp:4.1.109.Final
+|    |    +--- io.netty:netty-transport-udt:4.1.109.Final
+|    |    +--- io.netty:netty-transport-classes-epoll:4.1.109.Final
+|    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
+|    |    |    \--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
+|    |    +--- io.netty:netty-transport-classes-kqueue:4.1.109.Final
+|    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
+|    |    |    \--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
+|    |    +--- io.netty:netty-resolver-dns-classes-macos:4.1.109.Final
+|    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    +--- io.netty:netty-resolver-dns:4.1.109.Final (*)
+|    |    |    \--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
+|    |    +--- io.netty:netty-transport-native-epoll:4.1.109.Final
+|    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
+|    |    |    \--- io.netty:netty-transport-classes-epoll:4.1.109.Final (*)
+|    |    +--- io.netty:netty-transport-native-kqueue:4.1.109.Final
+|    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
+|    |    |    \--- io.netty:netty-transport-classes-kqueue:4.1.109.Final (*)
+|    |    \--- io.netty:netty-resolver-dns-native-macos:4.1.109.Final
+|    |         \--- io.netty:netty-resolver-dns-classes-macos:4.1.109.Final (*)
 |    +--- com.google.inject:guice -> 5.0.1 (*)
 |    +--- com.google.inject.extensions:guice-grapher -> 5.0.1
 |    |    +--- com.google.inject.extensions:guice-assistedinject:5.0.1
@@ -795,7 +954,7 @@ p2pTestRuntimeClasspath - Runtime classpath of source set 'p2p test'.
 +--- commons-cli:commons-cli -> 1.4
 +--- com.github.akarnokd:rxjava3-extensions -> 3.0.1 (*)
 +--- io.reactivex.rxjava3:rxjava -> 3.0.13 (*)
-+--- io.netty:netty-all -> 4.1.66.Final
++--- io.netty:netty-all -> 4.1.109.Final (*)
 +--- junit:junit -> 4.13.2
 |    \--- org.hamcrest:hamcrest-core:1.3
 +--- org.assertj:assertj-core -> 3.20.2
@@ -947,50 +1106,9 @@ runtimeClasspath - Runtime classpath of source set 'main'.
 |    |              +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
 |    |              +--- software.amazon.awssdk:utils:2.16.3 (*)
 |    |              +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
-|    |              +--- io.netty:netty-codec-http:4.1.59.Final
-|    |              |    +--- io.netty:netty-common:4.1.59.Final
-|    |              |    +--- io.netty:netty-buffer:4.1.59.Final
-|    |              |    |    \--- io.netty:netty-common:4.1.59.Final
-|    |              |    +--- io.netty:netty-transport:4.1.59.Final
-|    |              |    |    +--- io.netty:netty-common:4.1.59.Final
-|    |              |    |    +--- io.netty:netty-buffer:4.1.59.Final (*)
-|    |              |    |    \--- io.netty:netty-resolver:4.1.59.Final
-|    |              |    |         \--- io.netty:netty-common:4.1.59.Final
-|    |              |    +--- io.netty:netty-codec:4.1.59.Final
-|    |              |    |    +--- io.netty:netty-common:4.1.59.Final
-|    |              |    |    +--- io.netty:netty-buffer:4.1.59.Final (*)
-|    |              |    |    \--- io.netty:netty-transport:4.1.59.Final (*)
-|    |              |    \--- io.netty:netty-handler:4.1.59.Final
-|    |              |         +--- io.netty:netty-common:4.1.59.Final
-|    |              |         +--- io.netty:netty-resolver:4.1.59.Final (*)
-|    |              |         +--- io.netty:netty-buffer:4.1.59.Final (*)
-|    |              |         +--- io.netty:netty-transport:4.1.59.Final (*)
-|    |              |         \--- io.netty:netty-codec:4.1.59.Final (*)
-|    |              +--- io.netty:netty-codec-http2:4.1.59.Final
-|    |              |    +--- io.netty:netty-common:4.1.59.Final
-|    |              |    +--- io.netty:netty-buffer:4.1.59.Final (*)
-|    |              |    +--- io.netty:netty-transport:4.1.59.Final (*)
-|    |              |    +--- io.netty:netty-codec:4.1.59.Final (*)
-|    |              |    +--- io.netty:netty-handler:4.1.59.Final (*)
-|    |              |    \--- io.netty:netty-codec-http:4.1.59.Final (*)
-|    |              +--- io.netty:netty-codec:4.1.59.Final (*)
-|    |              +--- io.netty:netty-transport:4.1.59.Final (*)
-|    |              +--- io.netty:netty-common:4.1.59.Final
-|    |              +--- io.netty:netty-buffer:4.1.59.Final (*)
-|    |              +--- io.netty:netty-handler:4.1.59.Final (*)
-|    |              +--- io.netty:netty-transport-native-epoll:4.1.59.Final
-|    |              |    +--- io.netty:netty-common:4.1.59.Final
-|    |              |    +--- io.netty:netty-buffer:4.1.59.Final (*)
-|    |              |    +--- io.netty:netty-transport:4.1.59.Final (*)
-|    |              |    \--- io.netty:netty-transport-native-unix-common:4.1.59.Final
-|    |              |         +--- io.netty:netty-common:4.1.59.Final
-|    |              |         +--- io.netty:netty-buffer:4.1.59.Final (*)
-|    |              |         \--- io.netty:netty-transport:4.1.59.Final (*)
 |    |              +--- com.typesafe.netty:netty-reactive-streams-http:2.0.4
-|    |              |    +--- com.typesafe.netty:netty-reactive-streams:2.0.4
-|    |              |    |    +--- io.netty:netty-handler:4.1.43.Final -> 4.1.59.Final (*)
-|    |              |    |    \--- org.reactivestreams:reactive-streams:1.0.3
-|    |              |    \--- io.netty:netty-codec-http:4.1.43.Final -> 4.1.59.Final (*)
+|    |              |    \--- com.typesafe.netty:netty-reactive-streams:2.0.4
+|    |              |         \--- org.reactivestreams:reactive-streams:1.0.3
 |    |              +--- org.reactivestreams:reactive-streams:1.0.2 -> 1.0.3
 |    |              \--- org.slf4j:slf4j-api:1.7.28
 |    +--- project :core-rust-bridge
@@ -1021,7 +1139,87 @@ runtimeClasspath - Runtime classpath of source set 'main'.
 |    +--- com.lmax:disruptor -> 3.4.4
 |    +--- commons-cli:commons-cli -> 1.4
 |    +--- org.xerial.snappy:snappy-java -> 1.1.8.4
-|    +--- io.netty:netty-all -> 4.1.66.Final
+|    +--- io.netty:netty-all -> 4.1.109.Final
+|    |    +--- io.netty:netty-buffer:4.1.109.Final
+|    |    |    \--- io.netty:netty-common:4.1.109.Final
+|    |    +--- io.netty:netty-codec:4.1.109.Final
+|    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |    \--- io.netty:netty-transport:4.1.109.Final
+|    |    |         +--- io.netty:netty-common:4.1.109.Final
+|    |    |         +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |         \--- io.netty:netty-resolver:4.1.109.Final
+|    |    |              \--- io.netty:netty-common:4.1.109.Final
+|    |    +--- io.netty:netty-codec-dns:4.1.109.Final
+|    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
+|    |    |    \--- io.netty:netty-codec:4.1.109.Final (*)
+|    |    +--- io.netty:netty-codec-haproxy:4.1.109.Final
+|    |    +--- io.netty:netty-codec-http:4.1.109.Final
+|    |    +--- io.netty:netty-codec-http2:4.1.109.Final
+|    |    +--- io.netty:netty-codec-memcache:4.1.109.Final
+|    |    +--- io.netty:netty-codec-mqtt:4.1.109.Final
+|    |    +--- io.netty:netty-codec-redis:4.1.109.Final
+|    |    +--- io.netty:netty-codec-smtp:4.1.109.Final
+|    |    +--- io.netty:netty-codec-socks:4.1.109.Final
+|    |    +--- io.netty:netty-codec-stomp:4.1.109.Final
+|    |    +--- io.netty:netty-codec-xml:4.1.109.Final
+|    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    +--- io.netty:netty-handler:4.1.109.Final
+|    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    +--- io.netty:netty-resolver:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final
+|    |    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |    |    \--- io.netty:netty-transport:4.1.109.Final (*)
+|    |    |    \--- io.netty:netty-codec:4.1.109.Final (*)
+|    |    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
+|    |    +--- io.netty:netty-handler-proxy:4.1.109.Final
+|    |    +--- io.netty:netty-handler-ssl-ocsp:4.1.109.Final
+|    |    +--- io.netty:netty-resolver:4.1.109.Final (*)
+|    |    +--- io.netty:netty-resolver-dns:4.1.109.Final
+|    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-resolver:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-codec:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-codec-dns:4.1.109.Final (*)
+|    |    |    \--- io.netty:netty-handler:4.1.109.Final (*)
+|    |    +--- io.netty:netty-transport:4.1.109.Final (*)
+|    |    +--- io.netty:netty-transport-rxtx:4.1.109.Final
+|    |    +--- io.netty:netty-transport-sctp:4.1.109.Final
+|    |    +--- io.netty:netty-transport-udt:4.1.109.Final
+|    |    +--- io.netty:netty-transport-classes-epoll:4.1.109.Final
+|    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
+|    |    |    \--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
+|    |    +--- io.netty:netty-transport-classes-kqueue:4.1.109.Final
+|    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
+|    |    |    \--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
+|    |    +--- io.netty:netty-resolver-dns-classes-macos:4.1.109.Final
+|    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    +--- io.netty:netty-resolver-dns:4.1.109.Final (*)
+|    |    |    \--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
+|    |    +--- io.netty:netty-transport-native-epoll:4.1.109.Final
+|    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
+|    |    |    \--- io.netty:netty-transport-classes-epoll:4.1.109.Final (*)
+|    |    +--- io.netty:netty-transport-native-kqueue:4.1.109.Final
+|    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
+|    |    |    \--- io.netty:netty-transport-classes-kqueue:4.1.109.Final (*)
+|    |    \--- io.netty:netty-resolver-dns-native-macos:4.1.109.Final
+|    |         \--- io.netty:netty-resolver-dns-classes-macos:4.1.109.Final (*)
 |    +--- com.google.inject:guice -> 5.0.1 (*)
 |    +--- com.google.inject.extensions:guice-grapher -> 5.0.1
 |    |    +--- com.google.inject.extensions:guice-assistedinject:5.0.1
@@ -1051,7 +1249,7 @@ runtimeClasspath - Runtime classpath of source set 'main'.
 +--- commons-cli:commons-cli -> 1.4
 +--- com.github.akarnokd:rxjava3-extensions -> 3.0.1 (*)
 +--- io.reactivex.rxjava3:rxjava -> 3.0.13 (*)
-\--- io.netty:netty-all -> 4.1.66.Final
+\--- io.netty:netty-all -> 4.1.109.Final (*)
 
 runtimeElements - Elements of runtime for main. (n)
 No dependencies
@@ -1132,7 +1330,34 @@ testCompileClasspath - Compile classpath for source set 'test'.
 |    \--- io.reactivex.rxjava3:rxjava:3.0.6 -> 3.0.13
 |         \--- org.reactivestreams:reactive-streams:1.0.3
 +--- io.reactivex.rxjava3:rxjava -> 3.0.13 (*)
-+--- io.netty:netty-all -> 4.1.66.Final
++--- io.netty:netty-all -> 4.1.109.Final
+|    +--- io.netty:netty-buffer:4.1.109.Final
+|    +--- io.netty:netty-codec:4.1.109.Final
+|    +--- io.netty:netty-codec-dns:4.1.109.Final
+|    +--- io.netty:netty-codec-haproxy:4.1.109.Final
+|    +--- io.netty:netty-codec-http:4.1.109.Final
+|    +--- io.netty:netty-codec-http2:4.1.109.Final
+|    +--- io.netty:netty-codec-memcache:4.1.109.Final
+|    +--- io.netty:netty-codec-mqtt:4.1.109.Final
+|    +--- io.netty:netty-codec-redis:4.1.109.Final
+|    +--- io.netty:netty-codec-smtp:4.1.109.Final
+|    +--- io.netty:netty-codec-socks:4.1.109.Final
+|    +--- io.netty:netty-codec-stomp:4.1.109.Final
+|    +--- io.netty:netty-codec-xml:4.1.109.Final
+|    +--- io.netty:netty-common:4.1.109.Final
+|    +--- io.netty:netty-handler:4.1.109.Final
+|    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final
+|    +--- io.netty:netty-handler-proxy:4.1.109.Final
+|    +--- io.netty:netty-handler-ssl-ocsp:4.1.109.Final
+|    +--- io.netty:netty-resolver:4.1.109.Final
+|    +--- io.netty:netty-resolver-dns:4.1.109.Final
+|    +--- io.netty:netty-transport:4.1.109.Final
+|    +--- io.netty:netty-transport-rxtx:4.1.109.Final
+|    +--- io.netty:netty-transport-sctp:4.1.109.Final
+|    +--- io.netty:netty-transport-udt:4.1.109.Final
+|    +--- io.netty:netty-transport-classes-epoll:4.1.109.Final
+|    +--- io.netty:netty-transport-classes-kqueue:4.1.109.Final
+|    \--- io.netty:netty-resolver-dns-classes-macos:4.1.109.Final
 +--- junit:junit -> 4.13.2
 |    \--- org.hamcrest:hamcrest-core:1.3
 +--- org.assertj:assertj-core -> 3.20.2
@@ -1291,50 +1516,9 @@ testRuntimeClasspath - Runtime classpath of source set 'test'.
 |    |              +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
 |    |              +--- software.amazon.awssdk:utils:2.16.3 (*)
 |    |              +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
-|    |              +--- io.netty:netty-codec-http:4.1.59.Final
-|    |              |    +--- io.netty:netty-common:4.1.59.Final
-|    |              |    +--- io.netty:netty-buffer:4.1.59.Final
-|    |              |    |    \--- io.netty:netty-common:4.1.59.Final
-|    |              |    +--- io.netty:netty-transport:4.1.59.Final
-|    |              |    |    +--- io.netty:netty-common:4.1.59.Final
-|    |              |    |    +--- io.netty:netty-buffer:4.1.59.Final (*)
-|    |              |    |    \--- io.netty:netty-resolver:4.1.59.Final
-|    |              |    |         \--- io.netty:netty-common:4.1.59.Final
-|    |              |    +--- io.netty:netty-codec:4.1.59.Final
-|    |              |    |    +--- io.netty:netty-common:4.1.59.Final
-|    |              |    |    +--- io.netty:netty-buffer:4.1.59.Final (*)
-|    |              |    |    \--- io.netty:netty-transport:4.1.59.Final (*)
-|    |              |    \--- io.netty:netty-handler:4.1.59.Final
-|    |              |         +--- io.netty:netty-common:4.1.59.Final
-|    |              |         +--- io.netty:netty-resolver:4.1.59.Final (*)
-|    |              |         +--- io.netty:netty-buffer:4.1.59.Final (*)
-|    |              |         +--- io.netty:netty-transport:4.1.59.Final (*)
-|    |              |         \--- io.netty:netty-codec:4.1.59.Final (*)
-|    |              +--- io.netty:netty-codec-http2:4.1.59.Final
-|    |              |    +--- io.netty:netty-common:4.1.59.Final
-|    |              |    +--- io.netty:netty-buffer:4.1.59.Final (*)
-|    |              |    +--- io.netty:netty-transport:4.1.59.Final (*)
-|    |              |    +--- io.netty:netty-codec:4.1.59.Final (*)
-|    |              |    +--- io.netty:netty-handler:4.1.59.Final (*)
-|    |              |    \--- io.netty:netty-codec-http:4.1.59.Final (*)
-|    |              +--- io.netty:netty-codec:4.1.59.Final (*)
-|    |              +--- io.netty:netty-transport:4.1.59.Final (*)
-|    |              +--- io.netty:netty-common:4.1.59.Final
-|    |              +--- io.netty:netty-buffer:4.1.59.Final (*)
-|    |              +--- io.netty:netty-handler:4.1.59.Final (*)
-|    |              +--- io.netty:netty-transport-native-epoll:4.1.59.Final
-|    |              |    +--- io.netty:netty-common:4.1.59.Final
-|    |              |    +--- io.netty:netty-buffer:4.1.59.Final (*)
-|    |              |    +--- io.netty:netty-transport:4.1.59.Final (*)
-|    |              |    \--- io.netty:netty-transport-native-unix-common:4.1.59.Final
-|    |              |         +--- io.netty:netty-common:4.1.59.Final
-|    |              |         +--- io.netty:netty-buffer:4.1.59.Final (*)
-|    |              |         \--- io.netty:netty-transport:4.1.59.Final (*)
 |    |              +--- com.typesafe.netty:netty-reactive-streams-http:2.0.4
-|    |              |    +--- com.typesafe.netty:netty-reactive-streams:2.0.4
-|    |              |    |    +--- io.netty:netty-handler:4.1.43.Final -> 4.1.59.Final (*)
-|    |              |    |    \--- org.reactivestreams:reactive-streams:1.0.3
-|    |              |    \--- io.netty:netty-codec-http:4.1.43.Final -> 4.1.59.Final (*)
+|    |              |    \--- com.typesafe.netty:netty-reactive-streams:2.0.4
+|    |              |         \--- org.reactivestreams:reactive-streams:1.0.3
 |    |              +--- org.reactivestreams:reactive-streams:1.0.2 -> 1.0.3
 |    |              \--- org.slf4j:slf4j-api:1.7.28
 |    +--- project :core-rust-bridge
@@ -1365,7 +1549,87 @@ testRuntimeClasspath - Runtime classpath of source set 'test'.
 |    +--- com.lmax:disruptor -> 3.4.4
 |    +--- commons-cli:commons-cli -> 1.4
 |    +--- org.xerial.snappy:snappy-java -> 1.1.8.4
-|    +--- io.netty:netty-all -> 4.1.66.Final
+|    +--- io.netty:netty-all -> 4.1.109.Final
+|    |    +--- io.netty:netty-buffer:4.1.109.Final
+|    |    |    \--- io.netty:netty-common:4.1.109.Final
+|    |    +--- io.netty:netty-codec:4.1.109.Final
+|    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |    \--- io.netty:netty-transport:4.1.109.Final
+|    |    |         +--- io.netty:netty-common:4.1.109.Final
+|    |    |         +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |         \--- io.netty:netty-resolver:4.1.109.Final
+|    |    |              \--- io.netty:netty-common:4.1.109.Final
+|    |    +--- io.netty:netty-codec-dns:4.1.109.Final
+|    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
+|    |    |    \--- io.netty:netty-codec:4.1.109.Final (*)
+|    |    +--- io.netty:netty-codec-haproxy:4.1.109.Final
+|    |    +--- io.netty:netty-codec-http:4.1.109.Final
+|    |    +--- io.netty:netty-codec-http2:4.1.109.Final
+|    |    +--- io.netty:netty-codec-memcache:4.1.109.Final
+|    |    +--- io.netty:netty-codec-mqtt:4.1.109.Final
+|    |    +--- io.netty:netty-codec-redis:4.1.109.Final
+|    |    +--- io.netty:netty-codec-smtp:4.1.109.Final
+|    |    +--- io.netty:netty-codec-socks:4.1.109.Final
+|    |    +--- io.netty:netty-codec-stomp:4.1.109.Final
+|    |    +--- io.netty:netty-codec-xml:4.1.109.Final
+|    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    +--- io.netty:netty-handler:4.1.109.Final
+|    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    +--- io.netty:netty-resolver:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final
+|    |    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |    |    \--- io.netty:netty-transport:4.1.109.Final (*)
+|    |    |    \--- io.netty:netty-codec:4.1.109.Final (*)
+|    |    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
+|    |    +--- io.netty:netty-handler-proxy:4.1.109.Final
+|    |    +--- io.netty:netty-handler-ssl-ocsp:4.1.109.Final
+|    |    +--- io.netty:netty-resolver:4.1.109.Final (*)
+|    |    +--- io.netty:netty-resolver-dns:4.1.109.Final
+|    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-resolver:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-codec:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-codec-dns:4.1.109.Final (*)
+|    |    |    \--- io.netty:netty-handler:4.1.109.Final (*)
+|    |    +--- io.netty:netty-transport:4.1.109.Final (*)
+|    |    +--- io.netty:netty-transport-rxtx:4.1.109.Final
+|    |    +--- io.netty:netty-transport-sctp:4.1.109.Final
+|    |    +--- io.netty:netty-transport-udt:4.1.109.Final
+|    |    +--- io.netty:netty-transport-classes-epoll:4.1.109.Final
+|    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
+|    |    |    \--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
+|    |    +--- io.netty:netty-transport-classes-kqueue:4.1.109.Final
+|    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
+|    |    |    \--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
+|    |    +--- io.netty:netty-resolver-dns-classes-macos:4.1.109.Final
+|    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    +--- io.netty:netty-resolver-dns:4.1.109.Final (*)
+|    |    |    \--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
+|    |    +--- io.netty:netty-transport-native-epoll:4.1.109.Final
+|    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
+|    |    |    \--- io.netty:netty-transport-classes-epoll:4.1.109.Final (*)
+|    |    +--- io.netty:netty-transport-native-kqueue:4.1.109.Final
+|    |    |    +--- io.netty:netty-common:4.1.109.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
+|    |    |    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
+|    |    |    \--- io.netty:netty-transport-classes-kqueue:4.1.109.Final (*)
+|    |    \--- io.netty:netty-resolver-dns-native-macos:4.1.109.Final
+|    |         \--- io.netty:netty-resolver-dns-classes-macos:4.1.109.Final (*)
 |    +--- com.google.inject:guice -> 5.0.1 (*)
 |    +--- com.google.inject.extensions:guice-grapher -> 5.0.1
 |    |    +--- com.google.inject.extensions:guice-assistedinject:5.0.1
@@ -1395,7 +1659,7 @@ testRuntimeClasspath - Runtime classpath of source set 'test'.
 +--- commons-cli:commons-cli -> 1.4
 +--- com.github.akarnokd:rxjava3-extensions -> 3.0.1 (*)
 +--- io.reactivex.rxjava3:rxjava -> 3.0.13 (*)
-+--- io.netty:netty-all -> 4.1.66.Final
++--- io.netty:netty-all -> 4.1.109.Final (*)
 +--- junit:junit -> 4.13.2
 |    \--- org.hamcrest:hamcrest-core:1.3
 +--- org.assertj:assertj-core -> 3.20.2
