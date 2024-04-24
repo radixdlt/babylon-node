@@ -52,7 +52,6 @@ impl ConfigType {
 /// `TransactionLogic`.
 pub struct ExecutionConfigurator {
     scrypto_vm: ScryptoVm<DefaultWasmEngine>,
-    pub(crate) costing_parameters: CostingParameters,
     pub execution_configs: HashMap<ConfigType, ExecutionConfig>,
 }
 
@@ -64,41 +63,63 @@ impl ExecutionConfigurator {
     ) -> Self {
         Self {
             scrypto_vm: ScryptoVm::<DefaultWasmEngine>::default(),
-            costing_parameters,
             execution_configs: HashMap::from([
                 (
                     ConfigType::Genesis,
                     ExecutionConfig::for_genesis_transaction(network.clone())
+                        .with_costing_parameters(costing_parameters)
                         .with_kernel_trace(engine_trace),
                 ),
                 (
                     ConfigType::OtherSystem,
-                    ExecutionConfig {
-                        max_number_of_events: 1_000_000,
-                        ..ExecutionConfig::for_system_transaction(network.clone())
-                            .with_kernel_trace(engine_trace)
-                    },
+                    ExecutionConfig::for_system_transaction(network.clone())
+                        .with_costing_parameters(costing_parameters)
+                        .with_limit_parameters(LimitParameters {
+                            max_number_of_events: 1_000_000,
+                            ..LimitParameters::babylon_genesis()
+                        })
+                        .with_kernel_trace(engine_trace),
                 ),
                 (
                     ConfigType::Regular,
                     ExecutionConfig::for_notarized_transaction(network.clone())
+                        .with_costing_parameters(costing_parameters)
                         .with_kernel_trace(engine_trace),
                 ),
                 (
                     ConfigType::Pending,
                     ExecutionConfig::for_notarized_transaction(network.clone())
+                        .with_costing_parameters(costing_parameters)
                         .with_kernel_trace(engine_trace),
                 ),
                 (
                     ConfigType::Preview,
-                    ExecutionConfig::for_preview(network.clone()),
+                    ExecutionConfig::for_preview(network.clone())
+                        .with_costing_parameters(costing_parameters),
                 ),
                 (
                     ConfigType::PreviewNoAuth,
-                    ExecutionConfig::for_preview_no_auth(network.clone()),
+                    ExecutionConfig::for_preview_no_auth(network.clone())
+                        .with_costing_parameters(costing_parameters),
                 ),
             ]),
         }
+    }
+
+    /// Returns the [`CostingParameters`] of [`ConfigType::Regular`] transactions (which is in
+    /// practice the same for all our configurations).
+    ///
+    /// This method is exposed only for metrics purposes
+    pub fn regular_costing_parameters(&self) -> &CostingParameters {
+        self.execution_configs
+            .get(&ConfigType::Regular)
+            .expect("we have configuration for regular transactions")
+            .system_overrides
+            .as_ref()
+            .expect("we apply overrides for all configurations")
+            .costing_parameters
+            .as_ref()
+            .expect("we provide explicit costing parameters for all configurations")
     }
 
     /// Wraps the given `Executable` with a configuration resolved from its `ConfigType`.
@@ -157,7 +178,6 @@ impl ExecutionConfigurator {
         ConfiguredExecutable::Transaction {
             executable,
             scrypto_interpreter: &self.scrypto_vm,
-            costing_parameters: &self.costing_parameters,
             execution_config: self.execution_configs.get(&config_type).unwrap(),
             threshold: config_type.get_transaction_runtime_warn_threshold(),
             description,
@@ -176,7 +196,6 @@ pub enum ConfiguredExecutable<'a> {
     Transaction {
         executable: Executable<'a>,
         scrypto_interpreter: &'a ScryptoVm<DefaultWasmEngine>,
-        costing_parameters: &'a CostingParameters,
         execution_config: &'a ExecutionConfig,
         threshold: Duration,
         description: String,
@@ -212,22 +231,19 @@ impl<'a, S: SubstateDatabase> TransactionLogic<S> for ConfiguredExecutable<'a> {
             ConfiguredExecutable::Transaction {
                 executable,
                 scrypto_interpreter,
-                costing_parameters,
                 execution_config,
                 threshold,
                 description,
             } => {
                 let start = Instant::now();
-                let result = execute_transaction_with_configuration::<_, _, System<Vm<_, _>>>(
+                let result = execute_transaction_with_configuration::<_, Vm<_, _>>(
                     store,
                     VmInit {
                         scrypto_vm: scrypto_interpreter,
                         native_vm_extension: NoExtension,
                     },
-                    Some(*costing_parameters),
                     execution_config,
                     &executable,
-                    (),
                 );
                 let elapsed = start.elapsed();
                 if elapsed > threshold {
@@ -258,4 +274,48 @@ fn collect_new_node_ids(state_updates: &StateUpdates) -> IndexSet<NodeId> {
         })
         .map(|(node_id, _node_state_updates)| *node_id)
         .collect()
+}
+
+/// An extension trait for easier, declarative customization of our various [`ExecutionConfig`]s.
+trait CustomizedExecutionConfig {
+    fn with_costing_parameters(self, costing_parameters: CostingParameters) -> Self;
+    fn with_limit_parameters(self, limit_parameters: LimitParameters) -> Self;
+}
+
+impl CustomizedExecutionConfig for ExecutionConfig {
+    fn with_costing_parameters(self, costing_parameters: CostingParameters) -> Self {
+        let ExecutionConfig {
+            enable_kernel_trace,
+            enable_cost_breakdown,
+            execution_trace,
+            system_overrides,
+        } = self;
+        ExecutionConfig {
+            enable_kernel_trace,
+            enable_cost_breakdown,
+            execution_trace,
+            system_overrides: Some(SystemOverrides {
+                costing_parameters: Some(costing_parameters),
+                ..system_overrides.expect("all ExecutionConfig's constructors set this field")
+            }),
+        }
+    }
+
+    fn with_limit_parameters(self, limit_parameters: LimitParameters) -> Self {
+        let ExecutionConfig {
+            enable_kernel_trace,
+            enable_cost_breakdown,
+            execution_trace,
+            system_overrides,
+        } = self;
+        ExecutionConfig {
+            enable_kernel_trace,
+            enable_cost_breakdown,
+            execution_trace,
+            system_overrides: Some(SystemOverrides {
+                limit_parameters: Some(limit_parameters),
+                ..system_overrides.expect("all ExecutionConfig's constructors set this field")
+            }),
+        }
+    }
 }

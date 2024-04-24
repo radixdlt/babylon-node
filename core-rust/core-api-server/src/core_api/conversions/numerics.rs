@@ -140,6 +140,10 @@ pub fn to_api_i64_as_string(input: i64) -> String {
     input.to_string()
 }
 
+pub fn to_api_usize_as_string(input: usize) -> String {
+    input.to_string()
+}
+
 pub fn to_unix_timestamp_ms(time: std::time::SystemTime) -> Result<i64, MappingError> {
     let millis = time
         .duration_since(std::time::UNIX_EPOCH)

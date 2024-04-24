@@ -249,6 +249,7 @@ models/LedgerStateSummary.ts
 models/LedgerTransaction.ts
 models/LedgerTransactionBase.ts
 models/LedgerTransactionType.ts
+models/LimitParameters.ts
 models/LocalGenericSubstitution.ts
 models/LocalGenericSubstitutionAllOf.ts
 models/LocalNonFungibleKey.ts
@@ -321,6 +322,7 @@ models/MutableField.ts
 models/NetworkConfigurationResponse.ts
 models/NetworkConfigurationResponseVersion.ts
 models/NetworkConfigurationResponseWellKnownAddresses.ts
+models/NetworkDefinition.ts
 models/NetworkStatusRequest.ts
 models/NetworkStatusResponse.ts
 models/NextEpoch.ts
@@ -603,6 +605,7 @@ models/SystemCostingParameters.ts
 models/SystemFieldKind.ts
 models/SystemFieldStructure.ts
 models/SystemFieldStructureAllOf.ts
+models/SystemParameters.ts
 models/SystemSchemaStructure.ts
 models/SystemSchemaStructureAllOf.ts
 models/SystemTransaction.ts

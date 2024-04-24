@@ -89,7 +89,7 @@ impl ProtocolStateComputerConfig {
         ProtocolStateComputerConfig {
             network,
             validation_config: ValidationConfig::default(network_id),
-            costing_parameters: CostingParameters::default(),
+            costing_parameters: CostingParameters::babylon_genesis(),
         }
     }
 }
@@ -114,6 +114,7 @@ impl ProtocolStateComputerConfig {
     ) -> ExecutionConfigurator {
         let mut costing_parameters = self.costing_parameters;
         if no_fees {
+            // TODO(resolve during review): replace with `SystemOverrides.disable_costing`?
             costing_parameters.execution_cost_unit_price = Decimal::ZERO;
             costing_parameters.finalization_cost_unit_price = Decimal::ZERO;
             costing_parameters.state_storage_price = Decimal::ZERO;

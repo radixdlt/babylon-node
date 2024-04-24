@@ -53,8 +53,8 @@ openapi: 3.1.0
 # => Hex-encoded bytes/payload should end _hex and not include _bytes
 info:
   # Should be the release version, and the release display name
-  version: 'v1.1.0'
-  title: 'Radix Core API - Babylon (Anemone)'
+  version: 'v1.2.0'
+  title: 'Radix Core API - Babylon (Bottlenose)'
   license:
     name: The Radix License, Version 1.0
     url: https://www.radixfoundation.org/licenses/license-v1
@@ -4074,10 +4074,43 @@ components:
     BootLoaderModuleFieldSystemBootValue:
       type: object
       required:
-        - costing_parameters
+        - system_parameters
       properties:
+        system_parameters:
+          $ref: '#/components/schemas/SystemParameters'
+    SystemParameters:
+      type: object
+      required:
+        - network_definition
+        - costing_parameters
+        - limit_parameters
+        - xrd_max_per_function_royalty
+      properties:
+        network_definition:
+          $ref: "#/components/schemas/NetworkDefinition"
         costing_parameters:
-          $ref: '#/components/schemas/SystemCostingParameters'
+          $ref: "#/components/schemas/SystemCostingParameters"
+        limit_parameters:
+          $ref: "#/components/schemas/LimitParameters"
+        xrd_max_per_function_royalty:
+          type: string
+          description: |
+            The string-encoded decimal representing the maximum amount of XRD configurable for a single function's royalty.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
+    NetworkDefinition:
+      type: object
+      required:
+        - id
+        - logical_name
+        - hrp_suffix
+      properties:
+        id:
+          $ref: "#/components/schemas/NetworkIdentifierByte"
+        logical_name:
+          $ref: "#/components/schemas/NetworkIdentifier"
+        hrp_suffix:
+          type: string
+          description: The network suffix of Bech32m HRPs used for addressing.
     SystemCostingParameters:
       type: object
       required:
@@ -4134,6 +4167,76 @@ components:
           description: |
             The string-encoded decimal representing the price of 1 byte of archive storage, expressed in XRD.
             A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
+    LimitParameters:
+      type: object
+      required:
+        - max_call_depth
+        - max_heap_substate_total_bytes
+        - max_track_substate_total_bytes
+        - max_substate_key_size
+        - max_substate_value_size
+        - max_invoke_input_size
+        - max_event_size
+        - max_log_size
+        - max_panic_message_size
+        - max_number_of_logs
+        - max_number_of_events
+      properties:
+        max_call_depth:
+          type: string
+          description: |
+            A decimal string-encoded 64-bit unsigned integer, representing the configured maximum
+            call depth allowed during transaction execution.
+        max_heap_substate_total_bytes:
+          type: string
+          description: |
+            A decimal string-encoded 64-bit unsigned integer, representing the configured maximum
+            byte size of all substates kept on the heap during a single transaction's execution.
+        max_track_substate_total_bytes:
+          type: string
+          description: |
+            A decimal string-encoded 64-bit unsigned integer, representing the configured maximum
+            byte size of all substates kept in the track during a single transaction's execution.
+        max_substate_key_size:
+          type: string
+          description: |
+            A decimal string-encoded 64-bit unsigned integer, representing the configured maximum
+            byte size of a Substate's key in the low-level Substate database.
+        max_substate_value_size:
+          type: string
+          description: |
+            A decimal string-encoded 64-bit unsigned integer, representing the configured maximum
+            byte size of a Substate's value in the low-level Substate database.
+        max_invoke_input_size:
+          type: string
+          description: |
+            A decimal string-encoded 64-bit unsigned integer, representing the configured maximum
+            byte size of a single call's input parameters.
+        max_event_size:
+          type: string
+          description: |
+            A decimal string-encoded 64-bit unsigned integer, representing the configured maximum
+            byte size of a single emitted event.
+        max_log_size:
+          type: string
+          description: |
+            A decimal string-encoded 64-bit unsigned integer, representing the configured maximum
+            byte size of a single logged line.
+        max_panic_message_size:
+          type: string
+          description: |
+            A decimal string-encoded 64-bit unsigned integer, representing the configured maximum
+            byte size of a single panic message.
+        max_number_of_logs:
+          type: string
+          description: |
+            A decimal string-encoded 64-bit unsigned integer, representing the configured maximum
+            count of log lines emitted during a single transaction's execution.
+        max_number_of_events:
+          type: string
+          description: |
+            A decimal string-encoded 64-bit unsigned integer, representing the configured maximum
+            count of events emitted during a single transaction's execution.
     BootLoaderModuleFieldVmBootSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
