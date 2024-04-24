@@ -388,17 +388,18 @@ integrationRuntimeClasspath - Runtime classpath of source set 'integration'.
 |    |         \--- org.reactivestreams:reactive-streams:1.0.3
 |    +--- io.reactivex.rxjava3:rxjava -> 3.0.13 (*)
 |    +--- com.sleepycat:je -> 18.3.12
-|    +--- com.squareup.okhttp3:okhttp:4.12.0
-|    |    +--- com.squareup.okio:okio:3.6.0
-|    |    |    \--- com.squareup.okio:okio-jvm:3.6.0
-|    |    |         +--- org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10
-|    |    |         |    +--- org.jetbrains.kotlin:kotlin-stdlib:1.9.10
-|    |    |         |    |    +--- org.jetbrains.kotlin:kotlin-stdlib-common:1.9.10
+|    +--- com.squareup.okhttp3:okhttp:4.11.0
+|    |    +--- com.squareup.okio:okio:3.2.0
+|    |    |    \--- com.squareup.okio:okio-jvm:3.2.0
+|    |    |         +--- org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.6.20
+|    |    |         |    +--- org.jetbrains.kotlin:kotlin-stdlib:1.6.20
+|    |    |         |    |    +--- org.jetbrains.kotlin:kotlin-stdlib-common:1.6.20
 |    |    |         |    |    \--- org.jetbrains:annotations:13.0
-|    |    |         |    \--- org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10
-|    |    |         |         \--- org.jetbrains.kotlin:kotlin-stdlib:1.9.10 (*)
-|    |    |         \--- org.jetbrains.kotlin:kotlin-stdlib-common:1.9.10
-|    |    \--- org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.21 -> 1.9.10 (*)
+|    |    |         |    \--- org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.6.20
+|    |    |         |         \--- org.jetbrains.kotlin:kotlin-stdlib:1.6.20 (*)
+|    |    |         \--- org.jetbrains.kotlin:kotlin-stdlib-common:1.6.20
+|    |    +--- org.jetbrains.kotlin:kotlin-stdlib:1.6.20 (*)
+|    |    \--- org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.6.20 (*)
 |    +--- com.lmax:disruptor -> 3.4.4
 |    +--- commons-cli:commons-cli -> 1.4
 |    +--- org.xerial.snappy:snappy-java -> 1.1.8.4
@@ -749,17 +750,18 @@ p2pTestRuntimeClasspath - Runtime classpath of source set 'p2p test'.
 |    |         \--- org.reactivestreams:reactive-streams:1.0.3
 |    +--- io.reactivex.rxjava3:rxjava -> 3.0.13 (*)
 |    +--- com.sleepycat:je -> 18.3.12
-|    +--- com.squareup.okhttp3:okhttp:4.12.0
-|    |    +--- com.squareup.okio:okio:3.6.0
-|    |    |    \--- com.squareup.okio:okio-jvm:3.6.0
-|    |    |         +--- org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10
-|    |    |         |    +--- org.jetbrains.kotlin:kotlin-stdlib:1.9.10
-|    |    |         |    |    +--- org.jetbrains.kotlin:kotlin-stdlib-common:1.9.10
+|    +--- com.squareup.okhttp3:okhttp:4.11.0
+|    |    +--- com.squareup.okio:okio:3.2.0
+|    |    |    \--- com.squareup.okio:okio-jvm:3.2.0
+|    |    |         +--- org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.6.20
+|    |    |         |    +--- org.jetbrains.kotlin:kotlin-stdlib:1.6.20
+|    |    |         |    |    +--- org.jetbrains.kotlin:kotlin-stdlib-common:1.6.20
 |    |    |         |    |    \--- org.jetbrains:annotations:13.0
-|    |    |         |    \--- org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10
-|    |    |         |         \--- org.jetbrains.kotlin:kotlin-stdlib:1.9.10 (*)
-|    |    |         \--- org.jetbrains.kotlin:kotlin-stdlib-common:1.9.10
-|    |    \--- org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.21 -> 1.9.10 (*)
+|    |    |         |    \--- org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.6.20
+|    |    |         |         \--- org.jetbrains.kotlin:kotlin-stdlib:1.6.20 (*)
+|    |    |         \--- org.jetbrains.kotlin:kotlin-stdlib-common:1.6.20
+|    |    +--- org.jetbrains.kotlin:kotlin-stdlib:1.6.20 (*)
+|    |    \--- org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.6.20 (*)
 |    +--- com.lmax:disruptor -> 3.4.4
 |    +--- commons-cli:commons-cli -> 1.4
 |    +--- org.xerial.snappy:snappy-java -> 1.1.8.4
@@ -1004,17 +1006,18 @@ runtimeClasspath - Runtime classpath of source set 'main'.
 |    |         \--- org.reactivestreams:reactive-streams:1.0.3
 |    +--- io.reactivex.rxjava3:rxjava -> 3.0.13 (*)
 |    +--- com.sleepycat:je -> 18.3.12
-|    +--- com.squareup.okhttp3:okhttp:4.12.0
-|    |    +--- com.squareup.okio:okio:3.6.0
-|    |    |    \--- com.squareup.okio:okio-jvm:3.6.0
-|    |    |         +--- org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10
-|    |    |         |    +--- org.jetbrains.kotlin:kotlin-stdlib:1.9.10
-|    |    |         |    |    +--- org.jetbrains.kotlin:kotlin-stdlib-common:1.9.10
+|    +--- com.squareup.okhttp3:okhttp:4.11.0
+|    |    +--- com.squareup.okio:okio:3.2.0
+|    |    |    \--- com.squareup.okio:okio-jvm:3.2.0
+|    |    |         +--- org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.6.20
+|    |    |         |    +--- org.jetbrains.kotlin:kotlin-stdlib:1.6.20
+|    |    |         |    |    +--- org.jetbrains.kotlin:kotlin-stdlib-common:1.6.20
 |    |    |         |    |    \--- org.jetbrains:annotations:13.0
-|    |    |         |    \--- org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10
-|    |    |         |         \--- org.jetbrains.kotlin:kotlin-stdlib:1.9.10 (*)
-|    |    |         \--- org.jetbrains.kotlin:kotlin-stdlib-common:1.9.10
-|    |    \--- org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.21 -> 1.9.10 (*)
+|    |    |         |    \--- org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.6.20
+|    |    |         |         \--- org.jetbrains.kotlin:kotlin-stdlib:1.6.20 (*)
+|    |    |         \--- org.jetbrains.kotlin:kotlin-stdlib-common:1.6.20
+|    |    +--- org.jetbrains.kotlin:kotlin-stdlib:1.6.20 (*)
+|    |    \--- org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.6.20 (*)
 |    +--- com.lmax:disruptor -> 3.4.4
 |    +--- commons-cli:commons-cli -> 1.4
 |    +--- org.xerial.snappy:snappy-java -> 1.1.8.4
@@ -1347,17 +1350,18 @@ testRuntimeClasspath - Runtime classpath of source set 'test'.
 |    |         \--- org.reactivestreams:reactive-streams:1.0.3
 |    +--- io.reactivex.rxjava3:rxjava -> 3.0.13 (*)
 |    +--- com.sleepycat:je -> 18.3.12
-|    +--- com.squareup.okhttp3:okhttp:4.12.0
-|    |    +--- com.squareup.okio:okio:3.6.0
-|    |    |    \--- com.squareup.okio:okio-jvm:3.6.0
-|    |    |         +--- org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10
-|    |    |         |    +--- org.jetbrains.kotlin:kotlin-stdlib:1.9.10
-|    |    |         |    |    +--- org.jetbrains.kotlin:kotlin-stdlib-common:1.9.10
+|    +--- com.squareup.okhttp3:okhttp:4.11.0
+|    |    +--- com.squareup.okio:okio:3.2.0
+|    |    |    \--- com.squareup.okio:okio-jvm:3.2.0
+|    |    |         +--- org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.6.20
+|    |    |         |    +--- org.jetbrains.kotlin:kotlin-stdlib:1.6.20
+|    |    |         |    |    +--- org.jetbrains.kotlin:kotlin-stdlib-common:1.6.20
 |    |    |         |    |    \--- org.jetbrains:annotations:13.0
-|    |    |         |    \--- org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10
-|    |    |         |         \--- org.jetbrains.kotlin:kotlin-stdlib:1.9.10 (*)
-|    |    |         \--- org.jetbrains.kotlin:kotlin-stdlib-common:1.9.10
-|    |    \--- org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.21 -> 1.9.10 (*)
+|    |    |         |    \--- org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.6.20
+|    |    |         |         \--- org.jetbrains.kotlin:kotlin-stdlib:1.6.20 (*)
+|    |    |         \--- org.jetbrains.kotlin:kotlin-stdlib-common:1.6.20
+|    |    +--- org.jetbrains.kotlin:kotlin-stdlib:1.6.20 (*)
+|    |    \--- org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.6.20 (*)
 |    +--- com.lmax:disruptor -> 3.4.4
 |    +--- commons-cli:commons-cli -> 1.4
 |    +--- org.xerial.snappy:snappy-java -> 1.1.8.4
