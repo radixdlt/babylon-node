@@ -2064,21 +2064,27 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
         substate_changes: &BySubstate<SubstateChangeAction>,
     ) {
         for (index_within_txn, node_id) in substate_changes.iter_node_ids().enumerate() {
-            let type_info_creation = substate_changes.get(
+            let type_info_change = substate_changes.get(
                 node_id,
                 &TYPE_INFO_FIELD_PARTITION,
                 &TypeInfoField::TypeInfo.into(),
             );
-            let Some(type_info_creation) = type_info_creation else {
+            let Some(type_info_change) = type_info_change else {
                 continue;
             };
-            let SubstateChangeAction::Create { new } = type_info_creation else {
-                panic!(
-                    "type info substate should be immutable: {:?}",
-                    type_info_creation
-                );
+            let created_type_info_value = match type_info_change {
+                SubstateChangeAction::Create { new } => new,
+                SubstateChangeAction::Update { .. } => {
+                    // Even if TypeInfo is updated (e.g. its blueprint version bumped), the fields
+                    // that we care about (package address and blueprint name) are effectively
+                    // immutable - we can thus safely ignore all updates to this substate.
+                    continue;
+                },
+                SubstateChangeAction::Delete { .. } => {
+                    panic!("type info substate should not be deleted: {:?}", type_info_change)
+                },
             };
-            let type_info = scrypto_decode::<TypeInfoSubstate>(new).expect("decode type info");
+            let type_info = scrypto_decode::<TypeInfoSubstate>(created_type_info_value).expect("decode type info");
 
             let entity_type = node_id.entity_type().expect("type of upserted Entity");
             let creation_id = CreationId::new(state_version, index_within_txn);
