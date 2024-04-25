@@ -2121,6 +2121,7 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
 
     fn catchup_entity_listing_indices(&self) {
         const TXN_FLUSH_INTERVAL: u64 = 10_000;
+        const PROGRESS_LOG_INTERVAL: u64 = 1_000_000;
 
         info!("ReNode listing indices are enabled.");
         let db_context = self.open_rw_context();
@@ -2144,10 +2145,9 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
                 &receipt.state_changes.substate_level_changes,
             );
             if state_version.number() % TXN_FLUSH_INTERVAL == 0 || receipts_iter.peek().is_none() {
-                info!(
-                    "ReNode listing indices updated to {}; flushing...",
-                    state_version
-                );
+                if state_version.number() % PROGRESS_LOG_INTERVAL == 0 {
+                    info!("Entity listing indices updated to {}",state_version);
+                }
                 db_context.cf(ExtensionsDataCf).put(
                     &ExtensionsDataKey::EntityListingIndicesLastProcessedStateVersion,
                     &state_version.to_be_bytes().to_vec(),
@@ -2155,7 +2155,7 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
                 db_context.flush();
             }
         }
-        info!("ReNode listing indices are caught up.");
+        info!("Entity listing indices are caught up.");
     }
 }
 
