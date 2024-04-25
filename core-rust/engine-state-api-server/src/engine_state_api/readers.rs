@@ -6,7 +6,7 @@ use convert_case::{Case, Casing};
 use itertools::Itertools;
 
 use state_manager::store::traits::indices::{
-    CreationId, EntityBlueprintId, EntityBlueprintIdV1, ReNodeListingIndex,
+    CreationId, EntityBlueprintId, EntityBlueprintIdV1, EntityListingIndex,
 };
 
 use super::*;
@@ -1199,7 +1199,7 @@ pub struct EntitySummary {
     pub blueprint_id: Option<BlueprintId>, // only present for Object entities
 }
 
-impl<'s, S: ReNodeListingIndex> EngineEntityLister<'s, S> {
+impl<'s, S: EntityListingIndex> EngineEntityLister<'s, S> {
     /// Creates an instance reading from the given database.
     pub fn new(database: &'s S) -> Self {
         Self { database }

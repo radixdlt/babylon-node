@@ -68,7 +68,7 @@ use substate_store_impls::state_tree::entity_tier::EntityTier;
 use crate::engine_prelude::*;
 use crate::query::StateManagerSubstateQueries;
 use crate::store::traits::*;
-use crate::traits::indices::{CreationId, EntityBlueprintId, ReNodeListingIndex};
+use crate::traits::indices::{CreationId, EntityBlueprintId, EntityListingIndex};
 use crate::{
     CommittedTransactionIdentifiers, LedgerStateSummary, ReadableRocks, StateManagerDatabase,
     StateVersion,
@@ -77,7 +77,7 @@ use crate::{
 /// An implementation of a [`SubstateDatabase`] viewed at a specific [`StateVersion`].
 ///
 /// This database is backed by:
-/// - a [`ReadableTreeStore`] - a versioned source of ReNodes / Partitions / Substates metadata,
+/// - a [`ReadableTreeStore`] - a versioned source of Entities / Partitions / Substates metadata,
 /// - and a [`LeafSubstateValueStore`] - a store of Substate values' associated with their leafs.
 pub struct StateTreeBasedSubstateDatabase<'s, DS> {
     base_store: DS,
@@ -360,7 +360,7 @@ impl<'s, R: ReadableRocks + 's, DS: Deref<Target = StateManagerDatabase<R>>>
     }
 }
 
-impl<'s, R: ReadableRocks + 's, DS: Deref<Target = StateManagerDatabase<R>>> ReNodeListingIndex
+impl<'s, R: ReadableRocks + 's, DS: Deref<Target = StateManagerDatabase<R>>> EntityListingIndex
     for VersionScopedDatabase<'s, DS>
 {
     fn get_created_entity_iter(

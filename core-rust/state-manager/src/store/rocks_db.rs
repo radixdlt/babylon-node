@@ -94,7 +94,7 @@ use crate::store::traits::gc::{
     LedgerProofsGcProgress, LedgerProofsGcStore, StateTreeGcStore, VersionedLedgerProofsGcProgress,
 };
 use crate::store::traits::indices::{
-    CreationId, EntityBlueprintId, ObjectBlueprintName, ObjectBlueprintNameV1, ReNodeListingIndex,
+    CreationId, EntityBlueprintId, ObjectBlueprintName, ObjectBlueprintNameV1, EntityListingIndex,
     VersionedEntityBlueprintId, VersionedObjectBlueprintName,
 };
 use crate::store::traits::measurement::{CategoryDbVolumeStatistic, MeasurableDatabase};
@@ -2083,7 +2083,7 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
             };
             let type_info = scrypto_decode::<TypeInfoSubstate>(new).expect("decode type info");
 
-            let entity_type = node_id.entity_type().expect("type of upserted ReNode");
+            let entity_type = node_id.entity_type().expect("type of upserted Entity");
             let creation_id = CreationId::new(state_version, index_within_txn);
 
             match type_info {
@@ -2123,7 +2123,7 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
         const TXN_FLUSH_INTERVAL: u64 = 10_000;
         const PROGRESS_LOG_INTERVAL: u64 = 1_000_000;
 
-        info!("ReNode listing indices are enabled.");
+        info!("Entity listing indices are enabled.");
         let db_context = self.open_rw_context();
         let catchup_from_version = db_context
             .cf(ExtensionsDataCf)
@@ -2315,7 +2315,7 @@ impl<R: ReadableRocks> IterableAccountChangeIndex for StateManagerDatabase<R> {
     }
 }
 
-impl<R: ReadableRocks> ReNodeListingIndex for StateManagerDatabase<R> {
+impl<R: ReadableRocks> EntityListingIndex for StateManagerDatabase<R> {
     fn get_created_entity_iter(
         &self,
         entity_type: EntityType,
