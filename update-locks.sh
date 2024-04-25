@@ -8,9 +8,6 @@ echo "\n>> Writing locks for core dependencies...\n"
 echo "\n>> Writing locks for cli-tools dependencies...\n"
 ./gradlew :cli-tools:dependencies --write-locks | sed '/BUILD SUCCESSFUL/d' | tee ./cli-tools/dependencies-tree.txt
 
-echo "\n>> Writing locks for olympia-engine dependencies...\n"
-./gradlew :olympia-engine:dependencies --write-locks | sed '/BUILD SUCCESSFUL/d' | tee ./olympia-engine/dependencies-tree.txt
-
 echo "\n>> Writing locks for common dependencies...\n"
 ./gradlew :common:dependencies --write-locks | sed '/BUILD SUCCESSFUL/d' | tee ./common/dependencies-tree.txt
 
