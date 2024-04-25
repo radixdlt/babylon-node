@@ -94,7 +94,7 @@ use crate::store::traits::gc::{
     LedgerProofsGcProgress, LedgerProofsGcStore, StateTreeGcStore, VersionedLedgerProofsGcProgress,
 };
 use crate::store::traits::indices::{
-    CreationId, EntityBlueprintId, ObjectBlueprintName, ObjectBlueprintNameV1, EntityListingIndex,
+    CreationId, EntityBlueprintId, EntityListingIndex, ObjectBlueprintName, ObjectBlueprintNameV1,
     VersionedEntityBlueprintId, VersionedObjectBlueprintName,
 };
 use crate::store::traits::measurement::{CategoryDbVolumeStatistic, MeasurableDatabase};
@@ -2079,12 +2079,16 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
                     // that we care about (package address and blueprint name) are effectively
                     // immutable - we can thus safely ignore all updates to this substate.
                     continue;
-                },
+                }
                 SubstateChangeAction::Delete { .. } => {
-                    panic!("type info substate should not be deleted: {:?}", type_info_change)
-                },
+                    panic!(
+                        "type info substate should not be deleted: {:?}",
+                        type_info_change
+                    )
+                }
             };
-            let type_info = scrypto_decode::<TypeInfoSubstate>(created_type_info_value).expect("decode type info");
+            let type_info = scrypto_decode::<TypeInfoSubstate>(created_type_info_value)
+                .expect("decode type info");
 
             let entity_type = node_id.entity_type().expect("type of upserted Entity");
             let creation_id = CreationId::new(state_version, index_within_txn);
@@ -2132,8 +2136,11 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
             info!("Entity listing indices are disabled.");
             // We remove the indices' data and metadata in a single, cheap write batch:
             db_context.cf(TypeAndCreationIndexedEntitiesCf).delete_all();
-            db_context.cf(BlueprintAndCreationIndexedObjectsCf).delete_all();
-            db_context.cf(ExtensionsDataCf)
+            db_context
+                .cf(BlueprintAndCreationIndexedObjectsCf)
+                .delete_all();
+            db_context
+                .cf(ExtensionsDataCf)
                 .delete(&ExtensionsDataKey::EntityListingIndicesLastProcessedStateVersion);
             info!("Deleted entity listing indices.");
             return;
@@ -2161,7 +2168,7 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
             );
             if state_version.number() % TXN_FLUSH_INTERVAL == 0 || receipts_iter.peek().is_none() {
                 if state_version.number() % PROGRESS_LOG_INTERVAL == 0 {
-                    info!("Entity listing indices updated to {}",state_version);
+                    info!("Entity listing indices updated to {}", state_version);
                 }
                 db_context.cf(ExtensionsDataCf).put(
                     &ExtensionsDataKey::EntityListingIndicesLastProcessedStateVersion,

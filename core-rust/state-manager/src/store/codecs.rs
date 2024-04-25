@@ -62,6 +62,7 @@
  * permissions under this License.
  */
 
+use std::mem::size_of;
 use std::ops::Range;
 
 use crate::engine_prelude::*;
@@ -316,6 +317,22 @@ impl DbCodec<NodeId> for NodeIdDbCodec {
 #[derive(Default)]
 pub struct TypeAndCreationIndexKeyDbCodec {}
 
+impl TypeAndCreationIndexKeyDbCodec {
+    /// An extracted "how are parts encoded together" knowledge, to be shared with the
+    /// [`BoundedDbCodec`] implementation.
+    fn encode_parts(
+        entity_byte: u8,
+        state_version_bytes: &[u8; StateVersion::BYTE_LEN],
+        index_within_txn_bytes: &[u8; size_of::<u32>()],
+    ) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        bytes.push(entity_byte);
+        bytes.extend_from_slice(state_version_bytes);
+        bytes.extend_from_slice(index_within_txn_bytes);
+        bytes
+    }
+}
+
 impl DbCodec<(EntityType, CreationId)> for TypeAndCreationIndexKeyDbCodec {
     fn encode(&self, value: &(EntityType, CreationId)) -> Vec<u8> {
         let (
@@ -325,11 +342,11 @@ impl DbCodec<(EntityType, CreationId)> for TypeAndCreationIndexKeyDbCodec {
                 index_within_txn,
             },
         ) = value;
-        let mut bytes = Vec::new();
-        bytes.push(*entity_type as u8);
-        bytes.extend_from_slice(&state_version.to_be_bytes());
-        bytes.extend_from_slice(&index_within_txn.to_be_bytes());
-        bytes
+        Self::encode_parts(
+            *entity_type as u8,
+            &state_version.to_be_bytes(),
+            &index_within_txn.to_be_bytes(),
+        )
     }
 
     fn decode(&self, bytes: &[u8]) -> (EntityType, CreationId) {
@@ -346,6 +363,16 @@ impl DbCodec<(EntityType, CreationId)> for TypeAndCreationIndexKeyDbCodec {
                 state_version,
                 index_within_txn,
             },
+        )
+    }
+}
+
+impl BoundedDbCodec for TypeAndCreationIndexKeyDbCodec {
+    fn upper_bound_encoding(&self) -> Vec<u8> {
+        Self::encode_parts(
+            u8::MAX,
+            &[u8::MAX; StateVersion::BYTE_LEN],
+            &[u8::MAX; size_of::<u32>()],
         )
     }
 }
@@ -372,6 +399,24 @@ impl IntraGroupOrderPreservingDbCodec<(EntityType, CreationId)> for TypeAndCreat
 #[derive(Default)]
 pub struct BlueprintAndCreationIndexKeyDbCodec {}
 
+impl BlueprintAndCreationIndexKeyDbCodec {
+    /// An extracted "how are parts encoded together" knowledge, to be shared with the
+    /// [`BoundedDbCodec`] implementation.
+    fn encode_parts(
+        package_address_bytes: &[u8; NodeId::LENGTH],
+        blueprint_name_hash_bytes: &[u8; Hash::LENGTH],
+        state_version_bytes: &[u8; StateVersion::BYTE_LEN],
+        index_within_txn_bytes: &[u8; size_of::<u32>()],
+    ) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(package_address_bytes);
+        bytes.extend_from_slice(blueprint_name_hash_bytes);
+        bytes.extend_from_slice(state_version_bytes);
+        bytes.extend_from_slice(index_within_txn_bytes);
+        bytes
+    }
+}
+
 impl DbCodec<(PackageAddress, Hash, CreationId)> for BlueprintAndCreationIndexKeyDbCodec {
     fn encode(&self, value: &(PackageAddress, Hash, CreationId)) -> Vec<u8> {
         let (
@@ -382,12 +427,12 @@ impl DbCodec<(PackageAddress, Hash, CreationId)> for BlueprintAndCreationIndexKe
                 index_within_txn,
             },
         ) = value;
-        let mut bytes = Vec::new();
-        bytes.extend_from_slice(&package_address.as_node_id().0);
-        bytes.extend_from_slice(&blueprint_name_hash.0);
-        bytes.extend_from_slice(&state_version.to_be_bytes());
-        bytes.extend_from_slice(&index_within_txn.to_be_bytes());
-        bytes
+        Self::encode_parts(
+            &package_address.as_node_id().0,
+            &blueprint_name_hash.0,
+            &state_version.to_be_bytes(),
+            &index_within_txn.to_be_bytes(),
+        )
     }
 
     fn decode(&self, bytes: &[u8]) -> (PackageAddress, Hash, CreationId) {
@@ -409,6 +454,17 @@ impl DbCodec<(PackageAddress, Hash, CreationId)> for BlueprintAndCreationIndexKe
                 state_version,
                 index_within_txn,
             },
+        )
+    }
+}
+
+impl BoundedDbCodec for BlueprintAndCreationIndexKeyDbCodec {
+    fn upper_bound_encoding(&self) -> Vec<u8> {
+        Self::encode_parts(
+            &[u8::MAX; NodeId::LENGTH],
+            &[u8::MAX; Hash::LENGTH],
+            &[u8::MAX; StateVersion::BYTE_LEN],
+            &[u8::MAX; size_of::<u32>()],
         )
     }
 }
