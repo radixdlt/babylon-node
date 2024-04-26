@@ -1,6 +1,5 @@
 use super::super::*;
 use super::*;
-use crate::core_api::conversions::substates::account_locker::to_api_account_locker_account_claim_entry;
 use crate::core_api::models;
 
 use crate::engine_prelude::*;
