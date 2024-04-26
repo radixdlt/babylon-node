@@ -269,7 +269,8 @@ impl CustomizedExecutionConfig for ExecutionConfig {
             execution_trace,
             system_overrides: Some(SystemOverrides {
                 disable_costing: no_fees,
-                ..system_overrides.expect("all ExecutionConfig's constructors set this field")
+                // Note: In practice, all ExecutionConfig's constructors set the system_overrides.
+                ..system_overrides.unwrap_or_default()
             }),
         }
     }
