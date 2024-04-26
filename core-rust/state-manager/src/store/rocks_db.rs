@@ -94,7 +94,7 @@ use crate::store::traits::gc::{
     LedgerProofsGcProgress, LedgerProofsGcStore, StateTreeGcStore, VersionedLedgerProofsGcProgress,
 };
 use crate::store::traits::indices::{
-    CreationId, EntityBlueprintId, ObjectBlueprintName, ObjectBlueprintNameV1, ReNodeListingIndex,
+    CreationId, EntityBlueprintId, EntityListingIndex, ObjectBlueprintName, ObjectBlueprintNameV1,
     VersionedEntityBlueprintId, VersionedObjectBlueprintName,
 };
 use crate::store::traits::measurement::{CategoryDbVolumeStatistic, MeasurableDatabase};
@@ -799,10 +799,7 @@ impl ActualStateManagerDatabase {
         state_manager_database.catchup_account_change_index();
         state_manager_database.restore_december_2023_lost_substates(network);
         state_manager_database.ensure_historical_substate_values();
-
-        if state_manager_database.config.enable_entity_listing_indices {
-            state_manager_database.catchup_entity_listing_indices()
-        }
+        state_manager_database.ensure_entity_listing_indices();
 
         Ok(state_manager_database)
     }
@@ -2067,23 +2064,33 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
         substate_changes: &BySubstate<SubstateChangeAction>,
     ) {
         for (index_within_txn, node_id) in substate_changes.iter_node_ids().enumerate() {
-            let type_info_creation = substate_changes.get(
+            let type_info_change = substate_changes.get(
                 node_id,
                 &TYPE_INFO_FIELD_PARTITION,
                 &TypeInfoField::TypeInfo.into(),
             );
-            let Some(type_info_creation) = type_info_creation else {
+            let Some(type_info_change) = type_info_change else {
                 continue;
             };
-            let SubstateChangeAction::Create { new } = type_info_creation else {
-                panic!(
-                    "type info substate should be immutable: {:?}",
-                    type_info_creation
-                );
+            let created_type_info_value = match type_info_change {
+                SubstateChangeAction::Create { new } => new,
+                SubstateChangeAction::Update { .. } => {
+                    // Even if TypeInfo is updated (e.g. its blueprint version bumped), the fields
+                    // that we care about (package address and blueprint name) are effectively
+                    // immutable - we can thus safely ignore all updates to this substate.
+                    continue;
+                }
+                SubstateChangeAction::Delete { .. } => {
+                    panic!(
+                        "type info substate should not be deleted: {:?}",
+                        type_info_change
+                    )
+                }
             };
-            let type_info = scrypto_decode::<TypeInfoSubstate>(new).expect("decode type info");
+            let type_info = scrypto_decode::<TypeInfoSubstate>(created_type_info_value)
+                .expect("decode type info");
 
-            let entity_type = node_id.entity_type().expect("type of upserted ReNode");
+            let entity_type = node_id.entity_type().expect("type of upserted Entity");
             let creation_id = CreationId::new(state_version, index_within_txn);
 
             match type_info {
@@ -2119,18 +2126,33 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
         }
     }
 
-    fn catchup_entity_listing_indices(&self) {
+    fn ensure_entity_listing_indices(&self) {
         const TXN_FLUSH_INTERVAL: u64 = 10_000;
+        const PROGRESS_LOG_INTERVAL: u64 = 1_000_000;
 
-        info!("ReNode listing indices are enabled.");
         let db_context = self.open_rw_context();
-        let catchup_from_version = db_context
+
+        if !self.config.enable_entity_listing_indices {
+            info!("Entity listing indices are disabled.");
+            // We remove the indices' data and metadata in a single, cheap write batch:
+            db_context.cf(TypeAndCreationIndexedEntitiesCf).delete_all();
+            db_context
+                .cf(BlueprintAndCreationIndexedObjectsCf)
+                .delete_all();
+            db_context
+                .cf(ExtensionsDataCf)
+                .delete(&ExtensionsDataKey::EntityListingIndicesLastProcessedStateVersion);
+            info!("Deleted entity listing indices.");
+            return;
+        }
+
+        info!("Entity listing indices are enabled.");
+        let last_processed_state_version = db_context
             .cf(ExtensionsDataCf)
             .get(&ExtensionsDataKey::EntityListingIndicesLastProcessedStateVersion)
             .map(StateVersion::from_be_bytes)
-            .unwrap_or(StateVersion::pre_genesis())
-            .next()
-            .expect("next version");
+            .unwrap_or(StateVersion::pre_genesis());
+        let catchup_from_version = last_processed_state_version.next().expect("next version");
 
         let mut receipts_iter = db_context
             .cf(TransactionReceiptsCf)
@@ -2144,10 +2166,9 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
                 &receipt.state_changes.substate_level_changes,
             );
             if state_version.number() % TXN_FLUSH_INTERVAL == 0 || receipts_iter.peek().is_none() {
-                info!(
-                    "ReNode listing indices updated to {}; flushing...",
-                    state_version
-                );
+                if state_version.number() % PROGRESS_LOG_INTERVAL == 0 {
+                    info!("Entity listing indices updated to {}", state_version);
+                }
                 db_context.cf(ExtensionsDataCf).put(
                     &ExtensionsDataKey::EntityListingIndicesLastProcessedStateVersion,
                     &state_version.to_be_bytes().to_vec(),
@@ -2155,7 +2176,7 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
                 db_context.flush();
             }
         }
-        info!("ReNode listing indices are caught up.");
+        info!("Caught up Entity listing indices.");
     }
 }
 
@@ -2315,7 +2336,7 @@ impl<R: ReadableRocks> IterableAccountChangeIndex for StateManagerDatabase<R> {
     }
 }
 
-impl<R: ReadableRocks> ReNodeListingIndex for StateManagerDatabase<R> {
+impl<R: ReadableRocks> EntityListingIndex for StateManagerDatabase<R> {
     fn get_created_entity_iter(
         &self,
         entity_type: EntityType,

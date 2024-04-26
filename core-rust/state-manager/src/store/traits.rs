@@ -658,7 +658,7 @@ pub mod indices {
     use super::*;
     use std::ops::Range;
 
-    pub trait ReNodeListingIndex {
+    pub trait EntityListingIndex {
         fn get_created_entity_iter(
             &self,
             entity_type: EntityType,
@@ -672,14 +672,14 @@ pub mod indices {
         ) -> Box<dyn Iterator<Item = (CreationId, EntityBlueprintId)> + '_>;
     }
 
-    /// A unique ID of a ReNode, based on creation order.
+    /// A unique ID of an Entity, based on creation order.
     #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Sbor)]
     pub struct CreationId {
-        /// State version of the transaction which created the ReNode (i.e. which created the first
-        /// substate under this ReNode).
+        /// State version of the transaction which created the Entity (i.e. which created the first
+        /// Substate under this Entity).
         pub state_version: StateVersion,
 
-        /// An index in a list of ReNodes created by a single transaction.
+        /// An index in a list of Entities created by a single transaction.
         pub index_within_txn: u32,
     }
 
@@ -717,7 +717,7 @@ pub mod indices {
     }
 
     /// An entity's ID and its blueprint reference.
-    /// This is a "technical" structure stored in one of the ReNode-listing indices.
+    /// This is a "technical" structure stored in one of the Entity-listing indices.
     #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
     pub struct EntityBlueprintIdV1 {
         /// Node ID.
@@ -751,7 +751,7 @@ pub mod indices {
     }
 
     /// An Object's ID and its blueprint name.
-    /// This is a "technical" structure stored in one of the ReNode-listing indices.
+    /// This is a "technical" structure stored in one of the Entity-listing indices.
     #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
     pub struct ObjectBlueprintNameV1 {
         /// Node ID - guaranteed to *not* be a Key-Value Store.

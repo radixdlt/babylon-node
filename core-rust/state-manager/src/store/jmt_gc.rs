@@ -214,7 +214,7 @@ fn iterate_dfs_post_order<'s, S: ReadableTreeStore>(
         TreeNode::Null => {
             // A special case: this subtree is empty.
             // Note: at the moment of writing this, this case is impossible in practice: we do
-            // not delete ReNode-Tier tree, and we also do not store empty lower-Tier trees
+            // not delete Entity-Tier tree, and we also do not store empty lower-Tier trees
             // (i.e. we delete their higher-Tier leaf counterpart instead). However, we can
             // return a correct empty result here (in case the above assumptions ever change).
             Box::new(iter::empty())
