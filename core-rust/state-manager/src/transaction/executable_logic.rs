@@ -20,8 +20,6 @@ pub trait TransactionLogic<S> {
 pub enum ConfigType {
     /// A system genesis transaction.
     Genesis,
-    /// A system transaction _other_ than genesis (e.g. round update).
-    OtherSystem,
     /// A user transaction during regular execution (e.g. prepare or commit).
     Regular,
     /// A user transaction during "committability check" execution (e.g. in mempool).
@@ -52,7 +50,7 @@ impl ConfigType {
 /// `TransactionLogic`.
 pub struct ExecutionConfigurator {
     scrypto_vm: ScryptoVm<DefaultWasmEngine>,
-    pub execution_configs: HashMap<ConfigType, ExecutionConfig>,
+    execution_configs: HashMap<ConfigType, ExecutionConfig>,
 }
 
 impl ExecutionConfigurator {
@@ -63,12 +61,6 @@ impl ExecutionConfigurator {
                 (
                     ConfigType::Genesis,
                     ExecutionConfig::for_genesis_transaction(network.clone())
-                        .with_no_fees(no_fees)
-                        .with_kernel_trace(engine_trace),
-                ),
-                (
-                    ConfigType::OtherSystem,
-                    ExecutionConfig::for_system_transaction(network.clone())
                         .with_no_fees(no_fees)
                         .with_kernel_trace(engine_trace),
                 ),

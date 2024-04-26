@@ -152,11 +152,7 @@ impl PreparedRoundUpdateTransactionV1 {
                 },
                 pre_allocated_addresses: vec![],
             },
-            // Note: technically the round update is a "system transaction" (which would justify
-            // putting `true` below). However, we treat it differently than genesis transactions
-            // (see `ConfigType::OtherSystem`) - in particular, we apply some customized
-            // `LimitParameters`, so we should not nullify them with `system: true` here.
-            false,
+            true,
         )
     }
 }

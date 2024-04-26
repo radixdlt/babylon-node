@@ -423,8 +423,8 @@ impl ValidatedLedgerTransaction {
         match &self.inner {
             ValidatedLedgerTransactionInner::Genesis(_) => ConfigType::Genesis,
             ValidatedLedgerTransactionInner::UserV1(_) => ConfigType::Regular,
-            ValidatedLedgerTransactionInner::RoundUpdateV1(_) => ConfigType::OtherSystem,
-            ValidatedLedgerTransactionInner::FlashV1(_) => ConfigType::OtherSystem,
+            ValidatedLedgerTransactionInner::RoundUpdateV1(_) => ConfigType::Regular,
+            ValidatedLedgerTransactionInner::FlashV1(_) => ConfigType::Regular,
         }
     }
 
