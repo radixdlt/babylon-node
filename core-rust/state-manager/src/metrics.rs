@@ -67,7 +67,7 @@ use std::cmp::min;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::limits::VertexLimitsExceeded;
-use crate::transaction::{ExecutionConfigurator, LeaderRoundCounter};
+use crate::transaction::LeaderRoundCounter;
 use crate::{StateVersion, ValidatorId};
 use node_common::config::limits::*;
 use node_common::locks::{LockFactory, Mutex};
@@ -288,8 +288,7 @@ impl TransactionMetricsData {
 }
 
 impl CommittedTransactionsMetrics {
-    pub fn new(registry: &Registry, execution_configurator: &ExecutionConfigurator) -> Self {
-        let costing_parameters = execution_configurator.regular_costing_parameters();
+    pub fn new(registry: &Registry) -> Self {
         Self {
             size: new_histogram(
                 opts(
@@ -305,7 +304,7 @@ impl CommittedTransactionsMetrics {
                     "Execution cost units consumed per committed transactions.",
                 ),
                 higher_resolution_for_lower_values_buckets_for_limit(
-                    costing_parameters.execution_cost_unit_limit as usize,
+                    EXECUTION_COST_UNIT_LIMIT as usize,
                 ),
             )
             .registered_at(registry),
@@ -315,7 +314,7 @@ impl CommittedTransactionsMetrics {
                     "Finalization cost units consumed per committed transactions.",
                 ),
                 higher_resolution_for_lower_values_buckets_for_limit(
-                    costing_parameters.finalization_cost_unit_limit as usize,
+                    FINALIZATION_COST_UNIT_LIMIT as usize,
                 ),
             )
             .registered_at(registry),
