@@ -15,8 +15,8 @@ pub trait ProtocolUpdateDefinition {
     /// Additional (static) config which can be used to re-configure the updater.
     type Overrides: ScryptoDecode;
 
-    /// Returns the new configuration that the state computer
-    /// should use after enacting the given protocol version.
+    /// Returns the new configuration that the state computer should use after enacting the given
+    /// protocol version.
     fn state_computer_config(
         network_definition: &NetworkDefinition,
     ) -> ProtocolStateComputerConfig {
@@ -80,7 +80,6 @@ impl<T: ProtocolUpdateDefinition> ConfigurableProtocolUpdateDefinition for T {
 pub struct ProtocolStateComputerConfig {
     pub network: NetworkDefinition,
     pub validation_config: ValidationConfig,
-    pub costing_parameters: CostingParameters,
 }
 
 impl ProtocolStateComputerConfig {
@@ -89,7 +88,6 @@ impl ProtocolStateComputerConfig {
         ProtocolStateComputerConfig {
             network,
             validation_config: ValidationConfig::default(network_id),
-            costing_parameters: CostingParameters::default(),
         }
     }
 }
@@ -112,13 +110,6 @@ impl ProtocolStateComputerConfig {
         no_fees: bool,
         engine_trace: bool,
     ) -> ExecutionConfigurator {
-        let mut costing_parameters = self.costing_parameters;
-        if no_fees {
-            costing_parameters.execution_cost_unit_price = Decimal::ZERO;
-            costing_parameters.finalization_cost_unit_price = Decimal::ZERO;
-            costing_parameters.state_storage_price = Decimal::ZERO;
-            costing_parameters.archive_storage_price = Decimal::ZERO;
-        }
-        ExecutionConfigurator::new(&self.network, engine_trace, costing_parameters)
+        ExecutionConfigurator::new(&self.network, no_fees, engine_trace)
     }
 }

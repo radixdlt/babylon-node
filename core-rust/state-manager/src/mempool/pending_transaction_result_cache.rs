@@ -53,6 +53,7 @@ impl MempoolRejectionReason {
             MempoolRejectionReason::AlreadyCommitted(_) => true,
             MempoolRejectionReason::FromExecution(rejection_reason) => match **rejection_reason {
                 ExecutionRejectionReason::BootloadingError(_) => false,
+                ExecutionRejectionReason::SuccessButFeeLoanNotRepaid => false,
                 ExecutionRejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(_) => false,
                 ExecutionRejectionReason::TransactionEpochNotYetValid { .. } => false,
                 ExecutionRejectionReason::TransactionEpochNoLongerValid { .. } => false,
@@ -83,6 +84,13 @@ impl MempoolRejectionReason {
                         base_delay: Duration::from_secs(2 * 60),
                     },
                 },
+                ExecutionRejectionReason::SuccessButFeeLoanNotRepaid => {
+                    RejectionPermanence::Temporary {
+                        retry: RetrySettings::AfterDelay {
+                            base_delay: Duration::from_secs(2 * 60),
+                        },
+                    }
+                }
                 ExecutionRejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(_) => {
                     RejectionPermanence::Temporary {
                         retry: RetrySettings::AfterDelay {

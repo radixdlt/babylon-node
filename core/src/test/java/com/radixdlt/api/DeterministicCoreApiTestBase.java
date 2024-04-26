@@ -91,6 +91,7 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.rev2.*;
+import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transactions.IntentHash;
 import com.radixdlt.utils.FreePortFinder;

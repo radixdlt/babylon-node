@@ -20,8 +20,6 @@ pub trait TransactionLogic<S> {
 pub enum ConfigType {
     /// A system genesis transaction.
     Genesis,
-    /// A system transaction _other_ than genesis (e.g. round update).
-    OtherSystem,
     /// A user transaction during regular execution (e.g. prepare or commit).
     Regular,
     /// A user transaction during "committability check" execution (e.g. in mempool).
@@ -52,50 +50,39 @@ impl ConfigType {
 /// `TransactionLogic`.
 pub struct ExecutionConfigurator {
     scrypto_vm: ScryptoVm<DefaultWasmEngine>,
-    pub(crate) costing_parameters: CostingParameters,
-    pub execution_configs: HashMap<ConfigType, ExecutionConfig>,
+    execution_configs: HashMap<ConfigType, ExecutionConfig>,
 }
 
 impl ExecutionConfigurator {
-    pub fn new(
-        network: &NetworkDefinition,
-        engine_trace: bool,
-        costing_parameters: CostingParameters,
-    ) -> Self {
+    pub fn new(network: &NetworkDefinition, no_fees: bool, engine_trace: bool) -> Self {
         Self {
             scrypto_vm: ScryptoVm::<DefaultWasmEngine>::default(),
-            costing_parameters,
             execution_configs: HashMap::from([
                 (
                     ConfigType::Genesis,
                     ExecutionConfig::for_genesis_transaction(network.clone())
+                        .with_no_fees(no_fees)
                         .with_kernel_trace(engine_trace),
-                ),
-                (
-                    ConfigType::OtherSystem,
-                    ExecutionConfig {
-                        max_number_of_events: 1_000_000,
-                        ..ExecutionConfig::for_system_transaction(network.clone())
-                            .with_kernel_trace(engine_trace)
-                    },
                 ),
                 (
                     ConfigType::Regular,
                     ExecutionConfig::for_notarized_transaction(network.clone())
+                        .with_no_fees(no_fees)
                         .with_kernel_trace(engine_trace),
                 ),
                 (
                     ConfigType::Pending,
                     ExecutionConfig::for_notarized_transaction(network.clone())
+                        .with_no_fees(no_fees)
                         .with_kernel_trace(engine_trace),
                 ),
                 (
                     ConfigType::Preview,
-                    ExecutionConfig::for_preview(network.clone()),
+                    ExecutionConfig::for_preview(network.clone()).with_no_fees(no_fees),
                 ),
                 (
                     ConfigType::PreviewNoAuth,
-                    ExecutionConfig::for_preview_no_auth(network.clone()),
+                    ExecutionConfig::for_preview_no_auth(network.clone()).with_no_fees(no_fees),
                 ),
             ]),
         }
@@ -157,7 +144,6 @@ impl ExecutionConfigurator {
         ConfiguredExecutable::Transaction {
             executable,
             scrypto_interpreter: &self.scrypto_vm,
-            costing_parameters: &self.costing_parameters,
             execution_config: self.execution_configs.get(&config_type).unwrap(),
             threshold: config_type.get_transaction_runtime_warn_threshold(),
             description,
@@ -176,7 +162,6 @@ pub enum ConfiguredExecutable<'a> {
     Transaction {
         executable: Executable<'a>,
         scrypto_interpreter: &'a ScryptoVm<DefaultWasmEngine>,
-        costing_parameters: &'a CostingParameters,
         execution_config: &'a ExecutionConfig,
         threshold: Duration,
         description: String,
@@ -212,22 +197,19 @@ impl<'a, S: SubstateDatabase> TransactionLogic<S> for ConfiguredExecutable<'a> {
             ConfiguredExecutable::Transaction {
                 executable,
                 scrypto_interpreter,
-                costing_parameters,
                 execution_config,
                 threshold,
                 description,
             } => {
                 let start = Instant::now();
-                let result = execute_transaction_with_configuration::<_, _, System<Vm<_, _>>>(
+                let result = execute_transaction_with_configuration::<_, Vm<_, _>>(
                     store,
                     VmInit {
                         scrypto_vm: scrypto_interpreter,
                         native_vm_extension: NoExtension,
                     },
-                    Some(*costing_parameters),
                     execution_config,
                     &executable,
-                    (),
                 );
                 let elapsed = start.elapsed();
                 if elapsed > threshold {
@@ -258,4 +240,30 @@ fn collect_new_node_ids(state_updates: &StateUpdates) -> IndexSet<NodeId> {
         })
         .map(|(node_id, _node_state_updates)| *node_id)
         .collect()
+}
+
+/// An extension trait for easier, declarative customization of our various [`ExecutionConfig`]s.
+trait CustomizedExecutionConfig {
+    fn with_no_fees(self, no_fees: bool) -> Self;
+}
+
+impl CustomizedExecutionConfig for ExecutionConfig {
+    fn with_no_fees(self, no_fees: bool) -> Self {
+        let ExecutionConfig {
+            enable_kernel_trace,
+            enable_cost_breakdown,
+            execution_trace,
+            system_overrides,
+        } = self;
+        ExecutionConfig {
+            enable_kernel_trace,
+            enable_cost_breakdown,
+            execution_trace,
+            system_overrides: Some(SystemOverrides {
+                disable_costing: no_fees,
+                // Note: In practice, all ExecutionConfig's constructors set the system_overrides.
+                ..system_overrides.unwrap_or_default()
+            }),
+        }
+    }
 }

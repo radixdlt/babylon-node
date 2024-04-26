@@ -131,9 +131,7 @@ impl StateComputer {
             .map(|header| (header.hashes.transaction_root, header.proposer_timestamp_ms))
             .unwrap_or_else(|| (LedgerHashes::pre_genesis().transaction_root, 0));
 
-        let committed_transactions_metrics =
-            CommittedTransactionsMetrics::new(metrics_registry, &execution_configurator.read());
-
+        let committed_transactions_metrics = CommittedTransactionsMetrics::new(metrics_registry);
         let protocol_metrics = ProtocolMetrics::new(metrics_registry, &initial_protocol_state);
 
         StateComputer {
