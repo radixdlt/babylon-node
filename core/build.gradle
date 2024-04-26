@@ -223,7 +223,6 @@ jacocoTestReport {
 }
 
 dependencies {
-    implementation project(':olympia-engine')
     implementation project(':common')
     implementation project(':core-rust-bridge')
     implementation project(':keygen')
