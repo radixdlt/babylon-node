@@ -2147,13 +2147,12 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
         }
 
         info!("Entity listing indices are enabled.");
-        let catchup_from_version = db_context
+        let last_processed_state_version = db_context
             .cf(ExtensionsDataCf)
             .get(&ExtensionsDataKey::EntityListingIndicesLastProcessedStateVersion)
             .map(StateVersion::from_be_bytes)
-            .unwrap_or(StateVersion::pre_genesis())
-            .next()
-            .expect("next version");
+            .unwrap_or(StateVersion::pre_genesis());
+        let catchup_from_version = last_processed_state_version.next().expect("next version");
 
         let mut receipts_iter = db_context
             .cf(TransactionReceiptsCf)
