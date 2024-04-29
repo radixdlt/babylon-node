@@ -572,7 +572,10 @@ impl StateMappingLookups {
                     package_address,
                     blueprint_name: blueprint_name.clone(),
                 },
-                definition.into_latest().interface.types,
+                definition
+                    .fully_update_and_into_latest_version()
+                    .interface
+                    .types,
             );
         }
         Ok(blueprint_type_lookups)

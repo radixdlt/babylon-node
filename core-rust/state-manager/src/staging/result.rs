@@ -489,7 +489,7 @@ impl GlobalBalanceSummary {
                     scrypto_decode::<FungibleVaultBalanceFieldSubstate>(resultant_balance_substate)
                         .expect("cannot decode vault balance substate")
                         .into_payload()
-                        .into_latest()
+                        .fully_update_and_into_latest_version()
                         .amount();
                 let balance_existed = resultant_fungible_account_balances
                     .entry(root_address)

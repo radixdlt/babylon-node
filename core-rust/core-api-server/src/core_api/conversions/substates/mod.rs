@@ -102,7 +102,7 @@ macro_rules! field_substate_versioned {
                 is_locked: matches!($substate.lock_status(), LockStatus::Locked),
                 value: {
                     // NB: We should use compiler to unpack to ensure we map all fields
-                    let $value_unpacking = $substate.payload().as_latest_ref()
+                    let $value_unpacking = $substate.payload().as_latest_version()
                         .ok_or(MappingError::ObsoleteSubstateVersion)?;
                     $($($mapping)+)?;
                     Box::new(models::[<$substate_type Value>] $fields)
@@ -180,7 +180,7 @@ macro_rules! key_value_store_optional_substate_versioned {
                     .map(|opt| -> Result<_, MappingError> {
                         #[allow(clippy::let_unit_value)]
                         let $value_unpacking = opt
-                            .as_latest_ref()
+                            .as_latest_version()
                             .ok_or(MappingError::ObsoleteSubstateVersion)?;
                         Ok(Box::new(models::[<$substate_type Value>] $fields))
                     })
@@ -221,7 +221,7 @@ macro_rules! key_value_store_mandatory_substate_versioned {
     ) => {
         paste::paste! {
             {
-                let $value_unpacking = $substate.get_definitely_present_value()?.as_latest_ref()
+                let $value_unpacking = $substate.get_definitely_present_value()?.as_latest_version()
                     .ok_or(MappingError::ObsoleteSubstateVersion)?;
                 models::Substate::[<$substate_type Substate>] {
                     is_locked: matches!($substate.lock_status(), LockStatus::Locked),
@@ -261,7 +261,7 @@ macro_rules! index_substate_versioned {
     ) => {
         paste::paste! {
             {
-                let $value_unpacking = $substate.value().as_latest_ref()
+                let $value_unpacking = $substate.value().as_latest_version()
                     .ok_or(MappingError::ObsoleteSubstateVersion)?;
                 models::Substate::[<$substate_type Substate>] {
                     is_locked: false,

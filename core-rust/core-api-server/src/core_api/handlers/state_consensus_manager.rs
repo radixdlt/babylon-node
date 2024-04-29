@@ -91,7 +91,9 @@ fn collect_current_validators_by_signalled_protocol_version(
     substate: ConsensusManagerCurrentValidatorSetFieldSubstate,
 ) -> Result<ValidatorsBySignalledProtocolVersion, ResponseError<()>> {
     let mut validators = ValidatorsBySignalledProtocolVersion::default();
-    let payload = substate.into_payload().into_latest();
+    let payload = substate
+        .into_payload()
+        .fully_update_and_into_latest_version();
     for (index, entry) in payload
         .validator_set
         .validators_by_stake_desc
@@ -107,7 +109,7 @@ fn collect_current_validators_by_signalled_protocol_version(
             &ValidatorField::ProtocolUpdateReadinessSignal.into(),
         )?
         .into_payload()
-        .into_latest()
+        .fully_update_and_into_latest_version()
         .protocol_version_name;
         validators.insert(
             ValidatorIndex::try_from(index).expect("validator set size guarantees this"),

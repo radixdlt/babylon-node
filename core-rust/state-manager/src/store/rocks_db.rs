@@ -919,7 +919,7 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
             .map(|bytes| {
                 scrypto_decode::<VersionedStateTreeAssociatedValuesStatus>(&bytes)
                     .unwrap()
-                    .into_latest()
+                    .fully_update_and_into_latest_version()
             });
 
         if self.config.enable_historical_substate_values {
@@ -1023,7 +1023,7 @@ impl<R: ReadableRocks> ConfigurableDatabase for StateManagerDatabase<R> {
             .map(|bytes| {
                 scrypto_decode::<VersionedStateTreeAssociatedValuesStatus>(&bytes)
                     .unwrap()
-                    .into_latest()
+                    .fully_update_and_into_latest_version()
             })
             .expect("state history feature metadata not found")
             .historical_substate_values_available_from
@@ -1822,7 +1822,7 @@ impl<R: WriteableRocks> StateTreeGcStore for StateManagerDatabase<R> {
             .map(|bytes| {
                 scrypto_decode::<VersionedStateTreeAssociatedValuesStatus>(&bytes)
                     .unwrap()
-                    .into_latest()
+                    .fully_update_and_into_latest_version()
             });
         let Some(mut status) = status else {
             // The state history feature is simply not enabled.

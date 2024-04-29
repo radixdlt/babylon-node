@@ -162,7 +162,7 @@ fn flash_protocol_update_test() {
     assert_eq!(
         config_substate
             .into_payload()
-            .into_latest()
+            .fully_update_and_into_latest_version()
             .config
             .validator_creation_usd_cost,
         dec!("100")

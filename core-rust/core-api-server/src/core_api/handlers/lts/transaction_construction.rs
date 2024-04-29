@@ -20,7 +20,7 @@ pub(crate) async fn handle_lts_transaction_construction(
             &ConsensusManagerField::State.into(),
         )?
         .into_payload()
-        .into_latest();
+        .fully_update_and_into_latest_version();
 
     let timestamp_substate =
         read_mandatory_main_field_substate::<ConsensusManagerProposerMilliTimestampFieldPayload>(
@@ -29,7 +29,7 @@ pub(crate) async fn handle_lts_transaction_construction(
             &ConsensusManagerField::ProposerMilliTimestamp.into(),
         )?
         .into_payload()
-        .into_latest();
+        .fully_update_and_into_latest_version();
 
     Ok(Json(models::LtsTransactionConstructionResponse {
         current_epoch: to_api_epoch(&mapping_context, consensus_manager_substate.epoch)?,
