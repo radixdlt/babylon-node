@@ -65,10 +65,11 @@
 package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.VertexWithHash;
+import com.radixdlt.consensus.event.LocalEvent;
 import java.util.Objects;
 
 /** An event emitted when the node decides not to vote for a round */
-public final class NoVote {
+public final class NoVote implements LocalEvent {
   private final VertexWithHash vertex;
 
   private NoVote(VertexWithHash vertex) {

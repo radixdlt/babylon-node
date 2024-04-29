@@ -65,10 +65,11 @@
 package com.radixdlt.consensus.sync;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.event.NonLocalEvent;
 import java.util.Objects;
 
 /** Parameters for a local get vertices request */
-public final class GetVerticesRequest {
+public final class GetVerticesRequest implements NonLocalEvent {
   private final HashCode vertexId;
   private final int count;
 

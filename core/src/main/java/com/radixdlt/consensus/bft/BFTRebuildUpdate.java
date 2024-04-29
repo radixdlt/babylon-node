@@ -64,11 +64,12 @@
 
 package com.radixdlt.consensus.bft;
 
+import com.radixdlt.consensus.event.LocalEvent;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import java.util.Objects;
 
 /** An update emitted when the BFT has been rebuilt */
-public final class BFTRebuildUpdate {
+public final class BFTRebuildUpdate implements LocalEvent {
   private final VertexStoreState vertexStoreState;
 
   private BFTRebuildUpdate(VertexStoreState vertexStoreState) {

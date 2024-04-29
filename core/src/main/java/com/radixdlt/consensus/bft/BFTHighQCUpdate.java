@@ -65,11 +65,12 @@
 package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.event.LocalEvent;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import java.util.Objects;
 
 /** An event emitted when the high qc has been updated */
-public final class BFTHighQCUpdate {
+public final class BFTHighQCUpdate implements LocalEvent {
   private final VertexStoreState vertexStoreState;
 
   private BFTHighQCUpdate(VertexStoreState vertexStoreState) {

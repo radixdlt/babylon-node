@@ -75,6 +75,8 @@ import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.TimeoutQuorumDelayedResolution;
 import com.radixdlt.consensus.epoch.Epoched;
+import com.radixdlt.consensus.event.CoreEvent;
+import com.radixdlt.consensus.event.NonLocalEvent;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.environment.*;
 import com.radixdlt.ledger.LedgerUpdate;
@@ -221,7 +223,7 @@ public final class RxEnvironmentModule extends AbstractModule {
     return builder.build("P2PNetworkRunner " + name);
   }
 
-  private static <T> void addToBuilder(
+  private static <T extends NonLocalEvent> void addToBuilder(
       Class<T> messageType,
       RxRemoteEnvironment rxEnvironment,
       RemoteEventProcessorOnRunner<?, ?> processor,
@@ -243,7 +245,7 @@ public final class RxEnvironmentModule extends AbstractModule {
     processor.getProcessor(messageType).ifPresent(p -> builder.add(events, p));
   }
 
-  private static <T> void addToBuilder(
+  private static <T extends CoreEvent> void addToBuilder(
       TypeLiteral<T> typeLiteral,
       RxEnvironment rxEnvironment,
       EventProcessorOnRunner<?> processor,
@@ -265,7 +267,7 @@ public final class RxEnvironmentModule extends AbstractModule {
     }
   }
 
-  private static <T> void addToBuilder(
+  private static <T extends CoreEvent> void addToBuilder(
       Class<T> eventClass,
       RxEnvironment rxEnvironment,
       EventProcessorOnRunner<?> processor,
@@ -297,8 +299,8 @@ public final class RxEnvironmentModule extends AbstractModule {
         .forEach(
             scheduledEventProducer ->
                 builder.scheduleWithFixedDelay(
-                    (EventDispatcher<Object>) scheduledEventProducer.eventDispatcher(),
-                    (Supplier<Object>) scheduledEventProducer.eventSupplier(),
+                    (EventDispatcher<CoreEvent>) scheduledEventProducer.eventDispatcher(),
+                    (Supplier<CoreEvent>) scheduledEventProducer.eventSupplier(),
                     scheduledEventProducer.initialDelay(),
                     scheduledEventProducer.interval()));
   }

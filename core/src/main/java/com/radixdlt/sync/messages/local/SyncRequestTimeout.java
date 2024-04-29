@@ -64,11 +64,12 @@
 
 package com.radixdlt.sync.messages.local;
 
+import com.radixdlt.consensus.event.LocalEvent;
 import com.radixdlt.p2p.NodeId;
 import java.util.Objects;
 
 /** A message indicating a timeout on receiving a SyncResponse message. */
-public final class SyncRequestTimeout {
+public final class SyncRequestTimeout implements LocalEvent {
 
   private final NodeId peer;
   private final long requestId;

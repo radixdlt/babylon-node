@@ -64,11 +64,12 @@
 
 package com.radixdlt.sync.messages.remote;
 
+import com.radixdlt.consensus.event.NonLocalEvent;
 import com.radixdlt.sync.LedgerExtensionSyncDto;
 import java.util.Objects;
 
 /** A response to the SyncRequest message. */
-public final class SyncResponse {
+public final class SyncResponse implements NonLocalEvent {
 
   private final LedgerExtensionSyncDto dtoLedgerExtension;
 

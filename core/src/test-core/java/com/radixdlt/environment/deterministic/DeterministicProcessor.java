@@ -66,6 +66,8 @@ package com.radixdlt.environment.deterministic;
 
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.event.CoreEvent;
+import com.radixdlt.consensus.event.NonLocalEvent;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.environment.StartProcessorOnRunner;
@@ -101,7 +103,7 @@ public final class DeterministicProcessor {
   }
 
   @SuppressWarnings("unchecked")
-  private static <T> boolean tryExecute(
+  private static <T extends CoreEvent> boolean tryExecute(
       T event, TypeLiteral<?> msgType, EventProcessorOnRunner<?> processor) {
     if (msgType != null) {
       var typeLiteral = (TypeLiteral<T>) msgType;
@@ -117,7 +119,7 @@ public final class DeterministicProcessor {
   }
 
   @SuppressWarnings("unchecked")
-  private static <T> boolean tryExecute(
+  private static <T extends NonLocalEvent> boolean tryExecute(
       NodeId origin, T event, RemoteEventProcessorOnRunner<?, ?> processor) {
     final var eventClass = (Class<T>) event.getClass();
     final var maybeProcessor = processor.getProcessor(eventClass);
@@ -128,12 +130,12 @@ public final class DeterministicProcessor {
   public void handleMessage(NodeId origin, Object message, TypeLiteral<?> msgType) {
     boolean messageHandled = false;
     if (Objects.equals(self, origin)) {
-      for (EventProcessorOnRunner<?> p : processorOnRunners) {
-        messageHandled = tryExecute(message, msgType, p) || messageHandled;
+      for (var p : processorOnRunners) {
+        messageHandled = tryExecute((CoreEvent) message, msgType, p) || messageHandled;
       }
     } else {
-      for (RemoteEventProcessorOnRunner<?, ?> p : remoteProcessorOnRunners) {
-        messageHandled = tryExecute(origin, message, p) || messageHandled;
+      for (var p : remoteProcessorOnRunners) {
+        messageHandled = tryExecute(origin, (NonLocalEvent) message, p) || messageHandled;
       }
     }
 

@@ -64,10 +64,11 @@
 
 package com.radixdlt.environment.rx;
 
+import com.radixdlt.consensus.event.NonLocalEvent;
 import com.radixdlt.p2p.NodeId;
 import io.reactivex.rxjava3.core.Flowable;
 
 /** Provides remote events */
 public interface RxRemoteEnvironment {
-  <T> Flowable<RemoteEvent<NodeId, T>> remoteEvents(Class<T> eventType);
+  <T extends NonLocalEvent> Flowable<RemoteEvent<NodeId, T>> remoteEvents(Class<T> eventType);
 }

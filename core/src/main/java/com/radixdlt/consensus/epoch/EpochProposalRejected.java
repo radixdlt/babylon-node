@@ -65,10 +65,11 @@
 package com.radixdlt.consensus.epoch;
 
 import com.radixdlt.consensus.bft.ProposalRejected;
+import com.radixdlt.consensus.event.LocalEvent;
 import java.util.Objects;
 
 /** A wrapper for a ProposalRejected message that also holds epoch. */
-public final class EpochProposalRejected {
+public final class EpochProposalRejected implements LocalEvent {
 
   private final long epoch;
   private final ProposalRejected proposalRejected;

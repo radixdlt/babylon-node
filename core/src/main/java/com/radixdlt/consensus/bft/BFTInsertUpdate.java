@@ -65,12 +65,13 @@
 package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.BFTHeader;
+import com.radixdlt.consensus.event.LocalEvent;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import java.util.Objects;
 
 /** An update emitted when the BFT has inserted a new vertex */
-public final class BFTInsertUpdate {
+public final class BFTInsertUpdate implements LocalEvent {
   private final VertexStoreState vertexStoreState;
   private final ExecutedVertex insertedVertex;
   private final int siblingsCount;

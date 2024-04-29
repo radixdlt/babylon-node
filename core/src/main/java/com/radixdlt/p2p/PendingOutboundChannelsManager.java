@@ -64,6 +64,7 @@
 
 package com.radixdlt.p2p;
 
+import com.radixdlt.consensus.event.LocalEvent;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
@@ -162,5 +163,5 @@ public final class PendingOutboundChannelsManager {
     };
   }
 
-  public record PeerOutboundConnectionTimeout(RadixNodeUri uri) {}
+  public record PeerOutboundConnectionTimeout(RadixNodeUri uri) implements LocalEvent {}
 }

@@ -65,6 +65,7 @@
 package com.radixdlt.harness.simulation.network;
 
 import com.google.inject.Inject;
+import com.radixdlt.consensus.event.NonLocalEvent;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
@@ -118,7 +119,8 @@ public class SimulationNetwork {
       return Maybe.empty();
     }
 
-    public <N, T> Maybe<RemoteEvent<NodeId, T>> remoteEvent(Class<T> eventClass) {
+    public <N, T extends NonLocalEvent> Maybe<RemoteEvent<NodeId, T>> remoteEvent(
+        Class<T> eventClass) {
       if (!sender.equals(receiver) && eventClass.isInstance(content)) {
         return Maybe.just(RemoteEvent.create(sender, eventClass.cast(content)));
       }
@@ -210,15 +212,17 @@ public class SimulationNetwork {
     }
 
     @Override
-    public <T> Flowable<RemoteEvent<NodeId, T>> remoteEvents(Class<T> messageType) {
+    public <T extends NonLocalEvent> Flowable<RemoteEvent<NodeId, T>> remoteEvents(
+        Class<T> messageType) {
       return myMessages.flatMapMaybe(m -> m.remoteEvent(messageType));
     }
 
-    public <T> RemoteEventDispatcher<NodeId, T> remoteEventDispatcher(Class<T> eventClass) {
+    public <T extends NonLocalEvent> RemoteEventDispatcher<NodeId, T> remoteEventDispatcher(
+        Class<T> eventClass) {
       return this::sendRemoteEvent;
     }
 
-    private <T> void sendRemoteEvent(NodeId node, T event) {
+    private <T extends NonLocalEvent> void sendRemoteEvent(NodeId node, T event) {
       receivedMessages.onNext(MessageInTransit.newMessage(event, thisNode, node));
     }
   }

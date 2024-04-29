@@ -64,13 +64,14 @@
 
 package com.radixdlt.sync.messages.local;
 
+import com.radixdlt.consensus.event.LocalEvent;
 import java.util.Objects;
 
 /**
  * A message indicating that sync service hasn't received an update from ledger after processing
  * previous response.
  */
-public final class SyncLedgerUpdateTimeout {
+public final class SyncLedgerUpdateTimeout implements LocalEvent {
 
   public static SyncLedgerUpdateTimeout create(long stateVersion) {
     return new SyncLedgerUpdateTimeout(stateVersion);

@@ -64,5 +64,7 @@
 
 package com.radixdlt.consensus.bft;
 
+import com.radixdlt.consensus.event.NonLocalEvent;
+
 /** An event indicating that a proposal has been rejected */
-public record ProposalRejected(Round round) {}
+public record ProposalRejected(Round round) implements NonLocalEvent {}

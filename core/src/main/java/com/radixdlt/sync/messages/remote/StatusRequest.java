@@ -64,13 +64,14 @@
 
 package com.radixdlt.sync.messages.remote;
 
+import com.radixdlt.consensus.event.NonLocalEvent;
 import com.radixdlt.messaging.ledgersync.StatusRequestMessage;
 
 /**
  * A request to get the current status of a remote node. Node should respond with a StatusResponse
  * message.
  */
-public final class StatusRequest {
+public final class StatusRequest implements NonLocalEvent {
 
   public static StatusRequest create() {
     return new StatusRequest();

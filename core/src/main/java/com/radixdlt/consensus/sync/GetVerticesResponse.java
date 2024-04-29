@@ -65,11 +65,12 @@
 package com.radixdlt.consensus.sync;
 
 import com.radixdlt.consensus.VertexWithHash;
+import com.radixdlt.consensus.event.NonLocalEvent;
 import java.util.List;
 import java.util.Objects;
 
 /** An RPC response */
-public final class GetVerticesResponse {
+public final class GetVerticesResponse implements NonLocalEvent {
   private final List<VertexWithHash> vertices;
 
   public GetVerticesResponse(List<VertexWithHash> vertices) {

@@ -68,6 +68,7 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.event.CoreEvent;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
 import java.util.Set;
@@ -80,7 +81,8 @@ public final class Dispatchers {
     throw new IllegalStateException("Cannot instantiate.");
   }
 
-  private static class DispatcherProvider<T> implements Provider<EventDispatcher<T>> {
+  private static class DispatcherProvider<T extends CoreEvent>
+      implements Provider<EventDispatcher<T>> {
     @Inject private Provider<Environment> environmentProvider;
 
     @Inject private Metrics metrics;
@@ -110,8 +112,9 @@ public final class Dispatchers {
     }
   }
 
-  private static final class ScheduledDispatcherProvider<T>
+  private static final class ScheduledDispatcherProvider<T extends CoreEvent>
       implements Provider<ScheduledEventDispatcher<T>> {
+    // TODO: get rid of field injection https://radixdlt.atlassian.net/browse/NT-3
     @Inject private Provider<Environment> environmentProvider;
     private final Class<T> eventClass;
     private final TypeLiteral<T> eventLiteral;
@@ -137,7 +140,7 @@ public final class Dispatchers {
     }
   }
 
-  private static final class RemoteDispatcherProvider<T>
+  private static final class RemoteDispatcherProvider<T extends CoreEvent>
       implements Provider<RemoteEventDispatcher<NodeId, T>> {
     @Inject private Provider<Environment> environmentProvider;
 
@@ -172,26 +175,27 @@ public final class Dispatchers {
     }
   }
 
-  public static <T> Provider<EventDispatcher<T>> dispatcherProvider(Class<T> c) {
+  public static <T extends CoreEvent> Provider<EventDispatcher<T>> dispatcherProvider(Class<T> c) {
     return new DispatcherProvider<>(c, (counter, event) -> {});
   }
 
-  public static <T> Provider<EventDispatcher<T>> dispatcherProvider(
+  public static <T extends CoreEvent> Provider<EventDispatcher<T>> dispatcherProvider(
       Class<T> c, MetricUpdater<T> metricUpdater) {
     return new DispatcherProvider<>(c, metricUpdater);
   }
 
-  public static <T> Provider<ScheduledEventDispatcher<T>> scheduledDispatcherProvider(Class<T> c) {
+  public static <T extends CoreEvent>
+      Provider<ScheduledEventDispatcher<T>> scheduledDispatcherProvider(Class<T> c) {
     return new ScheduledDispatcherProvider<>(c);
   }
 
-  public static <T> Provider<ScheduledEventDispatcher<T>> scheduledDispatcherProvider(
-      TypeLiteral<T> t) {
+  public static <T extends CoreEvent>
+      Provider<ScheduledEventDispatcher<T>> scheduledDispatcherProvider(TypeLiteral<T> t) {
     return new ScheduledDispatcherProvider<>(t);
   }
 
-  public static <T> Provider<RemoteEventDispatcher<NodeId, T>> remoteDispatcherProvider(
-      Class<T> messageType) {
+  public static <T extends CoreEvent>
+      Provider<RemoteEventDispatcher<NodeId, T>> remoteDispatcherProvider(Class<T> messageType) {
     return new RemoteDispatcherProvider<>(messageType);
   }
 
@@ -202,7 +206,7 @@ public final class Dispatchers {
    * @param <T> Event type.
    */
   @FunctionalInterface
-  public interface MetricUpdater<T> {
+  public interface MetricUpdater<T extends CoreEvent> {
 
     /**
      * Updates the metrics according to the event.

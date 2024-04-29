@@ -77,6 +77,7 @@ import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.consensus.event.CoreEvent;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.Environment;
@@ -176,7 +177,7 @@ public class SimulationNodes {
 
     Observable<Pair<NodeId, LedgerUpdate>> ledgerUpdates();
 
-    <T> EventDispatcher<T> getDispatcher(Class<T> eventClass, NodeId node);
+    <T extends CoreEvent> EventDispatcher<T> getDispatcher(Class<T> eventClass, NodeId node);
 
     Injector getNodeInjector(NodeId node);
 
@@ -310,7 +311,8 @@ public class SimulationNodes {
     }
 
     @Override
-    public <T> EventDispatcher<T> getDispatcher(Class<T> eventClass, NodeId node) {
+    public <T extends CoreEvent> EventDispatcher<T> getDispatcher(
+        Class<T> eventClass, NodeId node) {
       return getInstance(Environment.class, node).getDispatcher(eventClass);
     }
 

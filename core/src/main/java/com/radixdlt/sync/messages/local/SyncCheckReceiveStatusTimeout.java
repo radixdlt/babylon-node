@@ -64,8 +64,10 @@
 
 package com.radixdlt.sync.messages.local;
 
+import com.radixdlt.consensus.event.LocalEvent;
+
 /** A message indicating a timeout on receiving StatusResponse messages during sync check. */
-public final class SyncCheckReceiveStatusTimeout {
+public final class SyncCheckReceiveStatusTimeout implements LocalEvent {
 
   public static SyncCheckReceiveStatusTimeout create() {
     return new SyncCheckReceiveStatusTimeout();

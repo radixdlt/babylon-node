@@ -66,9 +66,10 @@ package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.event.NonLocalEvent;
 
 /** A consensus event which requires syncing to be effectively processed */
-public sealed interface ConsensusEvent permits Proposal, Vote {
+public sealed interface ConsensusEvent extends NonLocalEvent permits Proposal, Vote {
 
   /**
    * Retrieve the epoch number the consensus message is a part of
