@@ -62,7 +62,7 @@ pub fn to_api_signature_with_public_key(
 }
 
 #[allow(dead_code)]
-pub fn extract_api_signature(signature: models::Signature) -> Result<SignatureV1, ExtractionError> {
+pub fn extract_signature(signature: models::Signature) -> Result<SignatureV1, ExtractionError> {
     Ok(match signature {
         models::Signature::EcdsaSecp256k1Signature { signature_hex } => SignatureV1::Secp256k1(
             Secp256k1Signature::try_from(from_hex(signature_hex)?.as_ref())
@@ -75,7 +75,7 @@ pub fn extract_api_signature(signature: models::Signature) -> Result<SignatureV1
     })
 }
 
-pub fn extract_api_public_key(public_key: models::PublicKey) -> Result<PublicKey, ExtractionError> {
+pub fn extract_public_key(public_key: models::PublicKey) -> Result<PublicKey, ExtractionError> {
     Ok(match public_key {
         models::PublicKey::EcdsaSecp256k1PublicKey { key_hex } => PublicKey::Secp256k1(
             Secp256k1PublicKey::try_from(from_hex(key_hex)?.as_ref())

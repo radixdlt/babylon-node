@@ -303,7 +303,7 @@ public final class ProtocolUpdateWithEpochBoundsTest {
                             STAKE_PER_VALIDATOR,
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(30)
                                 .totalEmissionXrdPerEpoch(Decimal.ZERO)),
-                        new DatabaseConfig(true, false, false),
+                        new DatabaseConfig(true, false, false, false),
                         StateComputerConfig.REV2ProposerConfig.Mempool.defaults(),
                         false,
                         true,

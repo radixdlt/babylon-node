@@ -1,9 +1,9 @@
 use crate::engine_prelude::*;
 use node_common::locks::{DbLock, RwLock};
-use std::ops::{Deref, Range};
+use std::ops::Range;
 use std::sync::Arc;
 
-use crate::historical_state::{StateHistoryError, VersionScopedSubstateDatabase};
+use crate::historical_state::{StateHistoryError, VersionScopingSupport};
 
 use crate::transaction::*;
 use crate::{
@@ -54,12 +54,12 @@ impl TransactionPreviewer {
     ) -> Result<ProcessedPreviewResult, PreviewerError> {
         // Note: we need to access a snapshot even if running against historical version, since we
         // do not want JMT GC to interfere.
-        let database = self.database.snapshot();
+        let database = self
+            .database
+            .snapshot()
+            .scoped_at(requested_state_version)?;
 
-        let substate_database =
-            VersionScopedSubstateDatabase::new(database.deref(), requested_state_version)?;
-
-        let base_ledger_state = substate_database.at_ledger_state();
+        let base_ledger_state = database.at_ledger_state();
 
         let intent = self.create_intent(preview_request, base_ledger_state.epoch);
 
@@ -70,15 +70,15 @@ impl TransactionPreviewer {
         let read_execution_configurator = self.execution_configurator.read();
         let transaction_logic = read_execution_configurator.wrap_preview_transaction(&validated);
 
-        let receipt = transaction_logic.execute_on(&substate_database);
+        let receipt = transaction_logic.execute_on(&database);
         let (state_changes, global_balance_summary) = match &receipt.result {
             TransactionResult::Commit(commit) => {
                 let state_changes = ProcessedCommitResult::compute_ledger_state_changes(
-                    &substate_database,
+                    &database,
                     &commit.state_updates,
                 );
                 let global_balance_update = ProcessedCommitResult::compute_global_balance_update(
-                    database.deref(), // the unversioned `SubstateNodeAncestryStore` is fine - all entries are immutable
+                    &database,
                     &state_changes,
                     &commit.state_update_summary.vault_balance_changes,
                 );

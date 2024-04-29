@@ -138,7 +138,7 @@ public abstract class SystemApiTestBase {
                                 TEST_KEY.getPublicKey(),
                                 Decimal.ONE,
                                 GenesisConsensusManagerConfig.Builder.testDefaults()),
-                            new DatabaseConfig(false, false, false),
+                            new DatabaseConfig(false, false, false, false),
                             StateComputerConfig.REV2ProposerConfig.Mempool.defaults()),
                         new SyncRelayConfig(500, 10, 3000, 10, Long.MAX_VALUE)))),
             new TestP2PModule.Builder().build(),

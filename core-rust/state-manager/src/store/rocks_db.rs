@@ -68,10 +68,11 @@ use std::fmt;
 use crate::engine_prelude::*;
 use crate::store::traits::*;
 use crate::{
-    CommittedTransactionIdentifiers, LedgerProof, LedgerProofOrigin, LedgerTransactionReceipt,
-    LocalTransactionExecution, LocalTransactionReceipt, ReceiptTreeHash, StateVersion,
-    SubstateChangeAction, TransactionTreeHash, VersionedCommittedTransactionIdentifiers,
-    VersionedLedgerProof, VersionedLedgerTransactionReceipt, VersionedLocalTransactionExecution,
+    BySubstate, CommittedTransactionIdentifiers, LedgerProof, LedgerProofOrigin,
+    LedgerTransactionReceipt, LocalTransactionExecution, LocalTransactionReceipt, ReceiptTreeHash,
+    StateVersion, SubstateChangeAction, TransactionTreeHash,
+    VersionedCommittedTransactionIdentifiers, VersionedLedgerProof,
+    VersionedLedgerTransactionReceipt, VersionedLocalTransactionExecution,
 };
 use node_common::utils::IsAccountExt;
 use rocksdb::checkpoint::Checkpoint;
@@ -91,6 +92,10 @@ use crate::store::codecs::*;
 use crate::store::historical_state::StateTreeBasedSubstateDatabase;
 use crate::store::traits::gc::{
     LedgerProofsGcProgress, LedgerProofsGcStore, StateTreeGcStore, VersionedLedgerProofsGcProgress,
+};
+use crate::store::traits::indices::{
+    CreationId, EntityBlueprintId, EntityListingIndex, ObjectBlueprintName, ObjectBlueprintNameV1,
+    VersionedEntityBlueprintId, VersionedObjectBlueprintName,
 };
 use crate::store::traits::measurement::{CategoryDbVolumeStatistic, MeasurableDatabase};
 use crate::store::traits::scenario::{
@@ -122,7 +127,7 @@ use super::traits::extensions::*;
 /// The `NAME` constants defined by `*Cf` structs (and referenced below) are used as database column
 /// family names. Any change would effectively mean a ledger wipe. For this reason, we choose to
 /// define them manually (rather than using the `Into<String>`, which is refactor-sensitive).
-const ALL_COLUMN_FAMILIES: [&str; 23] = [
+const ALL_COLUMN_FAMILIES: [&str; 25] = [
     RawLedgerTransactionsCf::DEFAULT_NAME,
     CommittedTransactionIdentifiersCf::VERSIONED_NAME,
     TransactionReceiptsCf::VERSIONED_NAME,
@@ -146,6 +151,8 @@ const ALL_COLUMN_FAMILIES: [&str; 23] = [
     ExecutedGenesisScenariosCf::VERSIONED_NAME,
     LedgerProofsGcProgressCf::VERSIONED_NAME,
     AssociatedStateTreeValuesCf::DEFAULT_NAME,
+    TypeAndCreationIndexedEntitiesCf::VERSIONED_NAME,
+    BlueprintAndCreationIndexedObjectsCf::VERSIONED_NAME,
 ];
 
 /// Committed transactions.
@@ -406,6 +413,7 @@ impl TypedCf for ExtensionsDataCf {
             ExtensionsDataKey::LocalTransactionExecutionIndexEnabled,
             ExtensionsDataKey::December2023LostSubstatesRestored,
             ExtensionsDataKey::StateTreeAssociatedValuesStatus,
+            ExtensionsDataKey::EntityListingIndicesLastProcessedStateVersion,
         ])
     }
 
@@ -463,6 +471,30 @@ impl VersionedCf for LedgerProofsGcProgressCf {
     type VersionedValue = VersionedLedgerProofsGcProgress;
 }
 
+/// Node IDs and blueprints of all entities, indexed by their type and creation order.
+/// Schema: `[EntityType as u8, StateVersion.to_be_bytes(), (index_within_txn as u32).to_be_bytes()].concat()` -> `scrypto_encode(VersionedEntityBlueprintId)`
+struct TypeAndCreationIndexedEntitiesCf;
+impl VersionedCf for TypeAndCreationIndexedEntitiesCf {
+    type Key = (EntityType, CreationId);
+    type Value = EntityBlueprintId;
+
+    const VERSIONED_NAME: &'static str = "type_and_creation_indexed_entities";
+    type KeyCodec = TypeAndCreationIndexKeyDbCodec;
+    type VersionedValue = VersionedEntityBlueprintId;
+}
+
+/// Node IDs and blueprints of all objects, indexed by their blueprint ID and creation order.
+/// Schema: `[PackageAddress.0, hash(blueprint_name), StateVersion.to_be_bytes(), (index_within_txn as u32).to_be_bytes()].concat()` -> `scrypto_encode(VersionedObjectBlueprintName)`
+struct BlueprintAndCreationIndexedObjectsCf;
+impl VersionedCf for BlueprintAndCreationIndexedObjectsCf {
+    type Key = (PackageAddress, Hash, CreationId);
+    type Value = ObjectBlueprintName;
+
+    const VERSIONED_NAME: &'static str = "blueprint_and_creation_indexed_objects";
+    type KeyCodec = BlueprintAndCreationIndexKeyDbCodec;
+    type VersionedValue = VersionedObjectBlueprintName;
+}
+
 /// Substate values associated with leaf nodes of the state hash tree's Substate Tier.
 /// Needed for [`LeafSubstateValueStore`].
 /// Note: This table does not use explicit versioning wrapper, since each serialized substate
@@ -485,6 +517,7 @@ enum ExtensionsDataKey {
     LocalTransactionExecutionIndexEnabled,
     December2023LostSubstatesRestored,
     StateTreeAssociatedValuesStatus,
+    EntityListingIndicesLastProcessedStateVersion,
 }
 
 // IMPORTANT NOTE: the strings defined below are used as database identifiers. Any change would
@@ -502,6 +535,9 @@ impl fmt::Display for ExtensionsDataKey {
             }
             Self::December2023LostSubstatesRestored => "december_2023_lost_substates_restored",
             Self::StateTreeAssociatedValuesStatus => "state_tree_associated_values_status",
+            Self::EntityListingIndicesLastProcessedStateVersion => {
+                "entity_listing_indices_last_processed_state_version"
+            }
         };
         write!(f, "{str}")
     }
@@ -763,6 +799,7 @@ impl ActualStateManagerDatabase {
         state_manager_database.catchup_account_change_index();
         state_manager_database.restore_december_2023_lost_substates(network);
         state_manager_database.ensure_historical_substate_values();
+        state_manager_database.ensure_entity_listing_indices();
 
         Ok(state_manager_database)
     }
@@ -802,6 +839,7 @@ impl<R: ReadableRocks> StateManagerDatabase<R> {
                 enable_local_transaction_execution_index: false,
                 enable_account_change_index: false,
                 enable_historical_substate_values: false,
+                enable_entity_listing_indices: false,
             },
             rocks: DirectRocks { db },
         }
@@ -838,6 +876,7 @@ impl<R: SecondaryRocks> StateManagerDatabase<R> {
                 enable_local_transaction_execution_index: false,
                 enable_account_change_index: false,
                 enable_historical_substate_values: false,
+                enable_entity_listing_indices: false,
             },
             rocks: DirectRocks { db },
         }
@@ -982,8 +1021,8 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
 
         let db_context = self.open_rw_context();
         let associated_values_cf = db_context.cf(AssociatedStateTreeValuesCf);
-        let substate_leaf_keys =
-            StateTreeBasedSubstateDatabase::new(self, current_version).iter_substate_leaf_keys();
+        let substate_database = StateTreeBasedSubstateDatabase::new(self, current_version);
+        let substate_leaf_keys = substate_database.iter_substate_leaf_keys();
         for (tree_node_key, (partition_key, sort_key)) in substate_leaf_keys {
             let value = self
                 .get_substate(&partition_key, &sort_key)
@@ -1010,6 +1049,10 @@ impl<R: ReadableRocks> ConfigurableDatabase for StateManagerDatabase<R> {
 
     fn is_local_transaction_execution_index_enabled(&self) -> bool {
         self.config.enable_local_transaction_execution_index
+    }
+
+    fn are_entity_listing_indices_enabled(&self) -> bool {
+        self.config.enable_entity_listing_indices
     }
 
     fn is_state_history_enabled(&self) -> bool {
@@ -1205,8 +1248,19 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
         if self.is_account_change_index_enabled() {
             self.batch_update_account_change_index_from_committed_transaction(
                 db_context,
-                transaction_bundle.state_version,
                 &transaction_bundle,
+            );
+        }
+
+        if self.config.enable_entity_listing_indices {
+            self.batch_update_entity_listing_indices(
+                db_context,
+                transaction_bundle.state_version,
+                &transaction_bundle
+                    .receipt
+                    .on_ledger
+                    .state_changes
+                    .substate_level_changes,
             );
         }
 
@@ -1700,6 +1754,12 @@ impl<R: ReadableRocks> QueryableProofStore for StateManagerDatabase<R> {
             .get_first_value()
     }
 
+    fn get_proof(&self, state_version: StateVersion) -> Option<LedgerProof> {
+        self.open_read_context()
+            .cf(LedgerProofsCf)
+            .get(&state_version)
+    }
+
     fn get_post_genesis_epoch_proof(&self) -> Option<LedgerProof> {
         self.open_read_context()
             .cf(EpochLedgerProofsCf)
@@ -1939,9 +1999,9 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
     fn batch_update_account_change_index_from_committed_transaction(
         &self,
         db_context: &TypedDbContext<R, BufferedWriteSupport<R>>,
-        state_version: StateVersion,
         transaction_bundle: &CommittedTransactionBundle,
     ) {
+        let state_version = transaction_bundle.state_version;
         self.batch_update_account_change_index_from_receipt(
             db_context,
             state_version,
@@ -1995,6 +2055,128 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
         );
 
         last_state_version
+    }
+
+    fn batch_update_entity_listing_indices(
+        &self,
+        db_context: &TypedDbContext<R, BufferedWriteSupport<R>>,
+        state_version: StateVersion,
+        substate_changes: &BySubstate<SubstateChangeAction>,
+    ) {
+        for (index_within_txn, node_id) in substate_changes.iter_node_ids().enumerate() {
+            let type_info_change = substate_changes.get(
+                node_id,
+                &TYPE_INFO_FIELD_PARTITION,
+                &TypeInfoField::TypeInfo.into(),
+            );
+            let Some(type_info_change) = type_info_change else {
+                continue;
+            };
+            let created_type_info_value = match type_info_change {
+                SubstateChangeAction::Create { new } => new,
+                SubstateChangeAction::Update { .. } => {
+                    // Even if TypeInfo is updated (e.g. its blueprint version bumped), the fields
+                    // that we care about (package address and blueprint name) are effectively
+                    // immutable - we can thus safely ignore all updates to this substate.
+                    continue;
+                }
+                SubstateChangeAction::Delete { .. } => {
+                    panic!(
+                        "type info substate should not be deleted: {:?}",
+                        type_info_change
+                    )
+                }
+            };
+            let type_info = scrypto_decode::<TypeInfoSubstate>(created_type_info_value)
+                .expect("decode type info");
+
+            let entity_type = node_id.entity_type().expect("type of upserted Entity");
+            let creation_id = CreationId::new(state_version, index_within_txn);
+
+            match type_info {
+                TypeInfoSubstate::Object(object_info) => {
+                    let blueprint_id = object_info.blueprint_info.blueprint_id;
+                    let BlueprintId {
+                        package_address,
+                        blueprint_name,
+                    } = blueprint_id.clone();
+                    db_context.cf(TypeAndCreationIndexedEntitiesCf).put(
+                        &(entity_type, creation_id.clone()),
+                        &EntityBlueprintId::of_object(*node_id, blueprint_id),
+                    );
+                    db_context.cf(BlueprintAndCreationIndexedObjectsCf).put(
+                        &(package_address, hash(&blueprint_name), creation_id),
+                        &ObjectBlueprintNameV1 {
+                            node_id: *node_id,
+                            blueprint_name,
+                        },
+                    );
+                }
+                TypeInfoSubstate::KeyValueStore(_kv_store_info) => {
+                    db_context.cf(TypeAndCreationIndexedEntitiesCf).put(
+                        &(entity_type, creation_id),
+                        &EntityBlueprintId::of_kv_store(*node_id),
+                    );
+                }
+                TypeInfoSubstate::GlobalAddressReservation(_)
+                | TypeInfoSubstate::GlobalAddressPhantom(_) => {
+                    panic!("should not be persisted: {:?}", type_info)
+                }
+            }
+        }
+    }
+
+    fn ensure_entity_listing_indices(&self) {
+        const TXN_FLUSH_INTERVAL: u64 = 10_000;
+        const PROGRESS_LOG_INTERVAL: u64 = 1_000_000;
+
+        let db_context = self.open_rw_context();
+
+        if !self.config.enable_entity_listing_indices {
+            info!("Entity listing indices are disabled.");
+            // We remove the indices' data and metadata in a single, cheap write batch:
+            db_context.cf(TypeAndCreationIndexedEntitiesCf).delete_all();
+            db_context
+                .cf(BlueprintAndCreationIndexedObjectsCf)
+                .delete_all();
+            db_context
+                .cf(ExtensionsDataCf)
+                .delete(&ExtensionsDataKey::EntityListingIndicesLastProcessedStateVersion);
+            info!("Deleted entity listing indices.");
+            return;
+        }
+
+        info!("Entity listing indices are enabled.");
+        let last_processed_state_version = db_context
+            .cf(ExtensionsDataCf)
+            .get(&ExtensionsDataKey::EntityListingIndicesLastProcessedStateVersion)
+            .map(StateVersion::from_be_bytes)
+            .unwrap_or(StateVersion::pre_genesis());
+        let catchup_from_version = last_processed_state_version.next().expect("next version");
+
+        let mut receipts_iter = db_context
+            .cf(TransactionReceiptsCf)
+            .iterate_from(&catchup_from_version, Direction::Forward)
+            .peekable();
+
+        while let Some((state_version, receipt)) = receipts_iter.next() {
+            self.batch_update_entity_listing_indices(
+                &db_context,
+                state_version,
+                &receipt.state_changes.substate_level_changes,
+            );
+            if state_version.number() % TXN_FLUSH_INTERVAL == 0 || receipts_iter.peek().is_none() {
+                if state_version.number() % PROGRESS_LOG_INTERVAL == 0 {
+                    info!("Entity listing indices updated to {}", state_version);
+                }
+                db_context.cf(ExtensionsDataCf).put(
+                    &ExtensionsDataKey::EntityListingIndicesLastProcessedStateVersion,
+                    &state_version.to_be_bytes().to_vec(),
+                );
+                db_context.flush();
+            }
+        }
+        info!("Caught up Entity listing indices.");
     }
 }
 
@@ -2150,6 +2332,57 @@ impl<R: ReadableRocks> IterableAccountChangeIndex for StateManagerDatabase<R> {
                 .iterate_from(&(account, from_state_version), Direction::Forward)
                 .take_while(move |((next_account, _), _)| next_account == &account)
                 .map(|((_, state_version), _)| state_version),
+        )
+    }
+}
+
+impl<R: ReadableRocks> EntityListingIndex for StateManagerDatabase<R> {
+    fn get_created_entity_iter(
+        &self,
+        entity_type: EntityType,
+        from_creation_id: Option<&CreationId>,
+    ) -> Box<dyn Iterator<Item = (CreationId, EntityBlueprintId)> + '_> {
+        let from_creation_id = from_creation_id.cloned().unwrap_or_else(CreationId::zero);
+        Box::new(
+            self.open_read_context()
+                .cf(TypeAndCreationIndexedEntitiesCf)
+                .iterate_group_from(&(entity_type, from_creation_id), Direction::Forward)
+                .map(|((_, creation_id), entity_blueprint_id)| (creation_id, entity_blueprint_id)),
+        )
+    }
+
+    fn get_blueprint_entity_iter(
+        &self,
+        blueprint_id: &BlueprintId,
+        from_creation_id: Option<&CreationId>,
+    ) -> Box<dyn Iterator<Item = (CreationId, EntityBlueprintId)> + '_> {
+        let BlueprintId {
+            package_address,
+            blueprint_name,
+        } = blueprint_id;
+        let blueprint_name_hash = hash(blueprint_name);
+        let from_creation_id = from_creation_id.cloned().unwrap_or_else(CreationId::zero);
+        Box::new(
+            self.open_read_context()
+                .cf(BlueprintAndCreationIndexedObjectsCf)
+                .iterate_group_from(
+                    &(*package_address, blueprint_name_hash, from_creation_id),
+                    Direction::Forward,
+                )
+                .map(
+                    |((package_address, _, creation_id), object_blueprint_name)| {
+                        (
+                            creation_id,
+                            EntityBlueprintId::of_object(
+                                object_blueprint_name.node_id,
+                                BlueprintId::new(
+                                    &package_address,
+                                    object_blueprint_name.blueprint_name,
+                                ),
+                            ),
+                        )
+                    },
+                ),
         )
     }
 }

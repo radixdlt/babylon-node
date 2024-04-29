@@ -185,6 +185,7 @@ public final class NodeSborCodecs {
     TransactionHeader.registerCodec(codecMap);
     CoreApiServerConfig.registerCodec(codecMap);
     CoreApiServerFlags.registerCodec(codecMap);
+    EngineStateApiServerConfig.registerCodec(codecMap);
     ValidatorInfo.registerCodec(codecMap);
     GenesisData.registerCodec(codecMap);
     GenesisConsensusManagerConfig.registerCodec(codecMap);

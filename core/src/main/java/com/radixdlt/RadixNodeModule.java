@@ -68,6 +68,7 @@ import com.google.common.base.Preconditions;
 import com.google.inject.AbstractModule;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.api.CoreApiServerModule;
+import com.radixdlt.api.EngineStateApiServerModule;
 import com.radixdlt.api.prometheus.PrometheusApiModule;
 import com.radixdlt.api.system.SystemApiModule;
 import com.radixdlt.config.SelfValidatorAddressConfig;
@@ -114,11 +115,13 @@ public final class RadixNodeModule extends AbstractModule {
   private static final Logger log = LogManager.getLogger();
 
   private static final int DEFAULT_CORE_API_PORT = 3333;
+  private static final int DEFAULT_ENGINE_STATE_API_PORT = 3336;
   private static final int DEFAULT_SYSTEM_API_PORT = 3334;
   private static final int DEFAULT_PROMETHEUS_API_PORT = 3335;
 
   // APIs are only exposed on localhost by default
   private static final String DEFAULT_CORE_API_BIND_ADDRESS = "127.0.0.1";
+  private static final String DEFAULT_ENGINE_STATE_API_BIND_ADDRESS = "127.0.0.1";
   private static final String DEFAULT_SYSTEM_API_BIND_ADDRESS = "127.0.0.1";
   private static final String DEFAULT_PROMETHEUS_API_BIND_ADDRESS = "127.0.0.1";
 
@@ -280,11 +283,13 @@ public final class RadixNodeModule extends AbstractModule {
     var enableAccountChangeIndex = properties.get("db.account_change_index.enable", true);
     var enableHistoricalSubstateValues =
         properties.get("db.historical_substate_values.enable", false);
+    var enableEntityListingIndices = properties.get("db.entity_listing_indices.enable", false);
     var databaseConfig =
         new DatabaseConfig(
             enableLocalTransactionExecutionIndex,
             enableAccountChangeIndex,
-            enableHistoricalSubstateValues);
+            enableHistoricalSubstateValues,
+            enableEntityListingIndices);
 
     install(new REv2LedgerInitializerModule(genesisProvider));
 
@@ -410,6 +415,12 @@ public final class RadixNodeModule extends AbstractModule {
             coreApiBindAddress,
             coreApiPort,
             new CoreApiServerFlags(coreApiFlagsEnableUnboundedEndpoints)));
+
+    final var engineStateApiBindAddress =
+        properties.get("api.engine_state.bind_address", DEFAULT_ENGINE_STATE_API_BIND_ADDRESS);
+    final var engineStateApiPort =
+        properties.get("api.engine_state.port", DEFAULT_ENGINE_STATE_API_PORT);
+    install(new EngineStateApiServerModule(engineStateApiBindAddress, engineStateApiPort));
 
     final var systemApiBindAddress =
         properties.get("api.system.bind_address", DEFAULT_SYSTEM_API_BIND_ADDRESS);

@@ -92,7 +92,7 @@ import org.junit.rules.TemporaryFolder;
 public final class RustMempoolTest {
 
   private static final DatabaseConfig TEST_DATABASE_CONFIG =
-      new DatabaseConfig(false, false, false);
+      new DatabaseConfig(false, false, false, false);
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 

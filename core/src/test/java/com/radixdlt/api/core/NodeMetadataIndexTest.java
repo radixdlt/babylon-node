@@ -85,7 +85,8 @@ public class NodeMetadataIndexTest extends DeterministicCoreApiTestBase {
       test.suppressUnusedWarning();
       // Set up an account and a vault
       var accountAddress = Address.virtualAccountAddress(ECKeyPair.generateNew().getPublicKey());
-      submitAndWaitForSuccess(test, Manifest.depositFromFaucet(accountAddress), List.of());
+      getApiHelper()
+          .submitAndWaitForSuccess(test, Manifest.depositFromFaucet(accountAddress), List.of());
 
       // Discover the vault's substate node ID
       var vaultEntity =
