@@ -57,7 +57,12 @@ pub(crate) async fn handle_lts_state_account_deposit_behaviour(
         AccountPartitionOffset::Field.as_main_partition(),
         &AccountField::DepositRule.into(),
     )
-    .map(|substate| substate.into_payload().into_latest().default_deposit_rule);
+    .map(|substate| {
+        substate
+            .into_payload()
+            .fully_update_and_into_latest_version()
+            .default_deposit_rule
+    });
 
     // If it does not exist, then either it is an empty virtual account, or a bad account address:
     let Some(default_deposit_rule) = default_deposit_rule else {
@@ -102,7 +107,7 @@ pub(crate) async fn handle_lts_state_account_deposit_behaviour(
                     AccountCollection::ResourcePreferenceKeyValue.collection_index(),
                     &resource_address_substate_key,
                 )
-                .map(|payload| payload.into_latest());
+                .map(|payload| payload.fully_update_and_into_latest_version());
             let vault_exists =
                 read_optional_collection_substate_value::<AccountResourceVaultEntryPayload>(
                     database.deref(),

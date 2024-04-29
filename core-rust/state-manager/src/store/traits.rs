@@ -178,7 +178,7 @@ pub mod vertex {
 
     define_single_versioned! {
         #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-        pub enum VersionedVertexStoreBlob => VertexStoreBlob = VertexStoreBlobV1
+        pub VersionedVertexStoreBlob(VertexStoreBlobVersions) => VertexStoreBlob = VertexStoreBlobV1
     }
 
     #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -226,7 +226,7 @@ pub mod substate {
 
     define_single_versioned! {
         #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-        pub enum VersionedSubstateNodeAncestryRecord => SubstateNodeAncestryRecord = SubstateNodeAncestryRecordV1
+        pub VersionedSubstateNodeAncestryRecord(SubstateNodeAncestryRecordVersions) => SubstateNodeAncestryRecord = SubstateNodeAncestryRecordV1
     }
 
     /// Ancestry information of a RE Node.
@@ -501,7 +501,7 @@ pub mod commit {
 
     define_single_versioned! {
         #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-        pub enum VersionedStaleTreeParts => StaleTreeParts = StaleTreePartsV1
+        pub VersionedStaleTreeParts(StaleTreePartsVersions) => StaleTreeParts = StaleTreePartsV1
     }
 
     #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -545,7 +545,7 @@ pub mod commit {
 
     define_single_versioned! {
         #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-        pub enum VersionedTransactionAccuTreeSlice => TransactionAccuTreeSlice = TransactionAccuTreeSliceV1
+        pub VersionedTransactionAccuTreeSlice(TransactionAccuTreeSliceVersions) => TransactionAccuTreeSlice = TransactionAccuTreeSliceV1
     }
 
     #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -553,7 +553,7 @@ pub mod commit {
 
     define_single_versioned! {
         #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-        pub enum VersionedReceiptAccuTreeSlice => ReceiptAccuTreeSlice = ReceiptAccuTreeSliceV1
+        pub VersionedReceiptAccuTreeSlice(ReceiptAccuTreeSliceVersions) => ReceiptAccuTreeSlice = ReceiptAccuTreeSliceV1
     }
 
     #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -571,7 +571,7 @@ pub mod scenario {
 
     define_single_versioned! {
         #[derive(Debug, Clone, Categorize, Encode, Decode)]
-        pub enum VersionedExecutedGenesisScenario => ExecutedGenesisScenario = ExecutedGenesisScenarioV1
+        pub VersionedExecutedGenesisScenario(ExecutedGenesisScenarioVersions) => ExecutedGenesisScenario = ExecutedGenesisScenarioV1
     }
 
     #[derive(Debug, Clone, Categorize, Encode, Decode)]
@@ -632,7 +632,7 @@ pub mod extensions {
 
     define_single_versioned! {
         #[derive(Debug, Clone, Sbor)]
-        pub enum VersionedStateTreeAssociatedValuesStatus => StateTreeAssociatedValuesStatus = StateTreeAssociatedValuesStatusV1
+        pub VersionedStateTreeAssociatedValuesStatus(StateTreeAssociatedValuesStatusVersions) => StateTreeAssociatedValuesStatus = StateTreeAssociatedValuesStatusV1
     }
 
     #[derive(Debug, Clone, Sbor)]
@@ -749,7 +749,7 @@ pub mod gc {
 
     define_single_versioned! {
         #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-        pub enum VersionedLedgerProofsGcProgress => LedgerProofsGcProgress = LedgerProofsGcProgressV1
+        pub VersionedLedgerProofsGcProgress(LedgerProofsGcProgressVersions) => LedgerProofsGcProgress = LedgerProofsGcProgressV1
     }
 
     /// A state of the GC's progress.

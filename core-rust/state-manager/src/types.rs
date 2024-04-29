@@ -407,7 +407,7 @@ pub struct TimestampedValidatorSignature {
 
 define_versioned!(
     #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-    pub enum VersionedLedgerProof {
+    pub VersionedLedgerProof(LedgerProofVersions) {
         previous_versions: [
             1 => LedgerProofV1: { updates_to: 2 },
         ],
