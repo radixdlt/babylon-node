@@ -3,6 +3,7 @@ members = [
     "node-common",
     "jni-export",
     "core-api-server",
+    "engine-state-api-server",
     "state-manager",
 ]
 resolver = "2"
@@ -43,6 +44,8 @@ prometheus = { version = "0.13.2", default-features = false, features = [] }
 blake2 = { version = "0.10.6", default-features = false }
 serde = { version = "1.0.81", features = ["derive"] }
 serde_json = { version = "1.0.81", features = ["preserve_order"] }
+serde_with = { version = "2.3.0", features = ["hex"] }
+rand = { version = "0.8.5" }
 chrono = { version = "0.4.23", default-features = false, features = ["std"] }
 
 [profile.dev]

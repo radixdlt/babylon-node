@@ -88,6 +88,7 @@ pub struct DatabaseConfig {
     pub enable_local_transaction_execution_index: bool,
     pub enable_account_change_index: bool,
     pub enable_historical_substate_values: bool,
+    pub enable_entity_listing_indices: bool,
 }
 
 impl Default for DatabaseConfig {
@@ -96,6 +97,7 @@ impl Default for DatabaseConfig {
             enable_local_transaction_execution_index: true,
             enable_account_change_index: true,
             enable_historical_substate_values: false,
+            enable_entity_listing_indices: true,
         }
     }
 }
@@ -135,6 +137,8 @@ pub trait ConfigurableDatabase {
     fn is_account_change_index_enabled(&self) -> bool;
 
     fn is_local_transaction_execution_index_enabled(&self) -> bool;
+
+    fn are_entity_listing_indices_enabled(&self) -> bool;
 
     /// Returns [`true`] if the Node should be storing historical Substate values (and if it can
     /// handle historical state requests).
@@ -192,10 +196,12 @@ pub mod substate {
     use crate::SubstateReference;
 
     /// A low-level storage of [`SubstateNodeAncestryRecord`].
+    ///
     /// API note: this trait defines a simple "get by ID" method, and also a performance-driven
     /// batch method. Both provide default implementations (which mutually reduce one problem to the
     /// other). The implementer must choose to implement at least one of the methods, based on its
     /// nature (though implementing both rarely makes sense).
+    /// When in doubt, implementing the batch method should be the default.
     pub trait SubstateNodeAncestryStore {
         /// Returns the [`SubstateNodeAncestryRecord`] for the given [`NodeId`], or [`None`] if:
         /// - the `node_id` happens to be a root Node (since they do not have "ancestry");
@@ -347,6 +353,7 @@ pub mod proofs {
             max_payload_size_in_bytes: u32,
         ) -> Result<TxnsAndProof, GetSyncableTxnsAndProofError>;
         fn get_first_proof(&self) -> Option<LedgerProof>;
+        fn get_proof(&self, state_version: StateVersion) -> Option<LedgerProof>;
         fn get_post_genesis_epoch_proof(&self) -> Option<LedgerProof>;
         fn get_epoch_proof(&self, epoch: Epoch) -> Option<LedgerProof>;
         fn get_latest_proof(&self) -> Option<LedgerProof>;
@@ -644,6 +651,115 @@ pub mod extensions {
         /// its successful backfill). Then, every subsequent "state tree GC" run progresses it
         /// forward appropriately.
         pub historical_substate_values_available_from: StateVersion,
+    }
+}
+
+pub mod indices {
+    use super::*;
+    use std::ops::Range;
+
+    pub trait EntityListingIndex {
+        fn get_created_entity_iter(
+            &self,
+            entity_type: EntityType,
+            from_creation_id: Option<&CreationId>,
+        ) -> Box<dyn Iterator<Item = (CreationId, EntityBlueprintId)> + '_>;
+
+        fn get_blueprint_entity_iter(
+            &self,
+            blueprint_id: &BlueprintId,
+            from_creation_id: Option<&CreationId>,
+        ) -> Box<dyn Iterator<Item = (CreationId, EntityBlueprintId)> + '_>;
+    }
+
+    /// A unique ID of an Entity, based on creation order.
+    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Sbor)]
+    pub struct CreationId {
+        /// State version of the transaction which created the Entity (i.e. which created the first
+        /// Substate under this Entity).
+        pub state_version: StateVersion,
+
+        /// An index in a list of Entities created by a single transaction.
+        pub index_within_txn: u32,
+    }
+
+    impl CreationId {
+        /// Creates the least possible instance.
+        pub fn zero() -> Self {
+            Self {
+                state_version: StateVersion::pre_genesis(),
+                index_within_txn: 0,
+            }
+        }
+
+        /// Creates an ID, ensuring that the given index fits within `u32`.
+        pub fn new(state_version: StateVersion, index_within_txn: usize) -> Self {
+            Self {
+                state_version,
+                index_within_txn: index_within_txn.try_into().expect("unexpected index"),
+            }
+        }
+
+        /// Returns a [`Range`] guaranteed to cover all practically-occurring [`CreationId`]s.
+        pub fn full_range() -> Range<Self> {
+            // we need an exclusive upper bound, so:
+            let above_max = CreationId {
+                state_version: StateVersion::of(u64::MAX), // even if version that large is possible...
+                index_within_txn: u32::MAX, // ... then there is a limit on maximum entities created by a transaction
+            };
+            Self::zero()..above_max
+        }
+    }
+
+    define_single_versioned! {
+        #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+        pub enum VersionedEntityBlueprintId => EntityBlueprintId = EntityBlueprintIdV1
+    }
+
+    /// An entity's ID and its blueprint reference.
+    /// This is a "technical" structure stored in one of the Entity-listing indices.
+    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub struct EntityBlueprintIdV1 {
+        /// Node ID.
+        pub node_id: NodeId,
+
+        /// Blueprint reference, present only for "Object" entities.
+        pub blueprint_id: Option<BlueprintId>,
+    }
+
+    impl EntityBlueprintIdV1 {
+        /// Creates an instance representing an entity of "Object" type.
+        pub fn of_object(object_node_id: NodeId, blueprint_id: BlueprintId) -> Self {
+            Self {
+                node_id: object_node_id,
+                blueprint_id: Some(blueprint_id),
+            }
+        }
+
+        /// Creates an instance representing an entity of "Key-Value Store" type.
+        pub fn of_kv_store(kv_store_node_id: NodeId) -> Self {
+            Self {
+                node_id: kv_store_node_id,
+                blueprint_id: None,
+            }
+        }
+    }
+
+    define_single_versioned! {
+        #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+        pub enum VersionedObjectBlueprintName => ObjectBlueprintName = ObjectBlueprintNameV1
+    }
+
+    /// An Object's ID and its blueprint name.
+    /// This is a "technical" structure stored in one of the Entity-listing indices.
+    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub struct ObjectBlueprintNameV1 {
+        /// Node ID - guaranteed to *not* be a Key-Value Store.
+        pub node_id: NodeId,
+
+        /// The name alone of the Object's blueprint.
+        /// Package address is not needed here, since it is stored on the key's side of the index.
+        pub blueprint_name: String,
     }
 }
 

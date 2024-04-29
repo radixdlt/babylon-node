@@ -21,6 +21,7 @@ ENV DEBIAN_FRONTEND noninteractive
 CMD ["/bin/bash"]
 
 ARG WGET_VERSION="1.21.3-1+b2"
+ARG OPENJDK_17_VERSION="17.0.11+9-1~deb12u1"
 ARG VERSION_BRANCH=""
 ARG VERSION_COMMIT=""
 ARG VERSION_DISPLAY=""
@@ -56,7 +57,7 @@ RUN apt-get update \
     wget=${WGET_VERSION} \
     software-properties-common=0.99.30-4 \
   && apt-get install -y --no-install-recommends \
-    openjdk-17-jdk=17.0.10+7-1~deb12u1 \
+    openjdk-17-jdk=${OPENJDK_17_VERSION} \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
@@ -173,16 +174,19 @@ WORKDIR /app
 # First - we build a dummy rust file, to cache the compilation of all our dependencies in a Docker layer
 RUN USER=root "$HOME/.cargo/bin/cargo" init --lib --name dummy --vcs none . \
   && mkdir -p ./core-api-server/src \
+  && mkdir -p ./engine-state-api-server/src \
   && mkdir -p ./jni-export/src \
   && mkdir -p ./node-common/src \
   && mkdir -p ./state-manager/src \
   && touch ./core-api-server/src/lib.rs \
+  && touch ./engine-state-api-server/src/lib.rs \
   && touch ./jni-export/src/lib.rs \
   && touch ./node-common/src/lib.rs \
   && touch ./state-manager/src/lib.rs
 COPY core-rust/Cargo.toml ./
 COPY core-rust/Cargo.lock ./
 COPY core-rust/core-api-server/Cargo.toml ./core-api-server
+COPY core-rust/engine-state-api-server/Cargo.toml ./engine-state-api-server
 COPY core-rust/jni-export/Cargo.toml ./jni-export
 COPY core-rust/node-common/Cargo.toml ./node-common
 COPY core-rust/state-manager/Cargo.toml ./state-manager
@@ -204,7 +208,7 @@ RUN --mount=type=cache,id=radixdlt-babylon-node-rust-cache,target=/root/.cache/s
 FROM library-build-stage-cache-packages as library-build-stage
 
 # Tidy up from the previous layer
-RUN rm -rf core-api-server jni-export node-common state-manager
+RUN rm -rf core-api-server engine-state-api-server jni-export node-common state-manager
 
 # Copy across all the code (docker ignore excepted)
 COPY core-rust ./
@@ -234,6 +238,8 @@ FROM debian:12.1-slim as app-container
 LABEL org.opencontainers.image.source="https://github.com/radixdlt/babylon-node"
 LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 
+ARG OPENJDK_17_VERSION="17.0.11+9-1~deb12u1"
+
 # Install dependencies needed for building the image or running the application
 # - unzip is needed for unpacking the java build artifacts
 # - daemontools is needed at application runtime for async tasks
@@ -253,7 +259,7 @@ LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 # - https://packages.debian.org/bookworm/libc6
 RUN apt-get update -y \
   && apt-get -y --no-install-recommends install \
-    openjdk-17-jre-headless=17.0.10+7-1~deb12u1 \
+    openjdk-17-jre-headless=${OPENJDK_17_VERSION} \
     # https://security-tracker.debian.org/tracker/CVE-2023-38545
     curl=7.88.1-10+deb12u5 \
     gettext-base=0.21-12 \
@@ -301,6 +307,8 @@ ENV RADIXDLT_HOME=/home/radixdlt \
     RADIXDLT_SYSTEM_API_BIND_ADDRESS=0.0.0.0 \
     RADIXDLT_PROMETHEUS_API_PORT=3335 \
     RADIXDLT_PROMETHEUS_API_BIND_ADDRESS=0.0.0.0 \
+    RADIXDLT_ENGINE_STATE_API_PORT=3336 \
+    RADIXDLT_ENGINE_STATE_API_BIND_ADDRESS=0.0.0.0 \
     RADIXDLT_NETWORK_ID=240 \
     RADIXDLT_NODE_KEY_CREATE_IF_MISSING=false
 
