@@ -65,6 +65,7 @@
 package com.radixdlt.environment.deterministic.network;
 
 import com.google.inject.TypeLiteral;
+import com.radixdlt.consensus.event.CoreEvent;
 import com.radixdlt.environment.*;
 import com.radixdlt.p2p.NodeId;
 import java.util.function.Function;
@@ -102,7 +103,7 @@ public final class ControlledDispatcher implements Environment {
   }
 
   @Override
-  public <T> EventDispatcher<T> getDispatcher(Class<T> eventClass) {
+  public <T extends CoreEvent> EventDispatcher<T> getDispatcher(Class<T> eventClass) {
     return e ->
         handleMessage(
             new ControlledMessage(
@@ -110,7 +111,8 @@ public final class ControlledDispatcher implements Environment {
   }
 
   @Override
-  public <T> ScheduledEventDispatcher<T> getScheduledDispatcher(Class<T> eventClass) {
+  public <T extends CoreEvent> ScheduledEventDispatcher<T> getScheduledDispatcher(
+      Class<T> eventClass) {
     return (t, milliseconds) -> {
       long arrivalTime = addTimeNoOverflow(arrivalTime(this.localChannel), milliseconds);
       var msg = new ControlledMessage(self, this.localChannel, t, null, arrivalTime);
@@ -119,7 +121,8 @@ public final class ControlledDispatcher implements Environment {
   }
 
   @Override
-  public <T> ScheduledEventDispatcher<T> getScheduledDispatcher(TypeLiteral<T> typeLiteral) {
+  public <T extends CoreEvent> ScheduledEventDispatcher<T> getScheduledDispatcher(
+      TypeLiteral<T> typeLiteral) {
     return (t, milliseconds) -> {
       var msg =
           new ControlledMessage(
@@ -133,7 +136,8 @@ public final class ControlledDispatcher implements Environment {
   }
 
   @Override
-  public <T> RemoteEventDispatcher<NodeId, T> getRemoteDispatcher(Class<T> messageType) {
+  public <T extends CoreEvent> RemoteEventDispatcher<NodeId, T> getRemoteDispatcher(
+      Class<T> messageType) {
     return (node, e) -> {
       var receiverIndex = this.p2pAddressBook.apply(NodeId.fromPublicKey(node.getPublicKey()));
       if (receiverIndex == null) {

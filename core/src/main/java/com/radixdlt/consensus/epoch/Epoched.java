@@ -64,6 +64,7 @@
 
 package com.radixdlt.consensus.epoch;
 
+import com.radixdlt.consensus.event.CoreEvent;
 import java.util.Objects;
 
 /**
@@ -71,7 +72,7 @@ import java.util.Objects;
  *
  * @param <T> event which is wrapped TODO: Move other epoch events into this kind of object
  */
-public final class Epoched<T> {
+public final class Epoched<T extends CoreEvent> implements CoreEvent {
   private final long epoch;
   private final T event;
 
@@ -80,14 +81,13 @@ public final class Epoched<T> {
     this.event = event;
   }
 
-  public static <T> Epoched<T> from(long epoch, T event) {
+  public static <T extends CoreEvent> Epoched<T> from(long epoch, T event) {
     Objects.requireNonNull(event);
     return new Epoched<>(epoch, event);
   }
 
   public static boolean isInstance(Object event, Class<?> eventClass) {
-    if (event instanceof Epoched) {
-      Epoched<?> epoched = (Epoched<?>) event;
+    if (event instanceof Epoched<?> epoched) {
       return eventClass.isInstance(epoched.event);
     }
 

@@ -65,10 +65,11 @@
 package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.event.LocalEvent;
 import java.util.Objects;
 
 /** Represents an internal (local) round update. */
-public final class RoundUpdate {
+public final class RoundUpdate implements LocalEvent {
 
   private final Round currentRound;
   private final HighQC highQC;

@@ -64,6 +64,7 @@
 
 package com.radixdlt.sync.messages.remote;
 
+import com.radixdlt.consensus.event.NonLocalEvent;
 import com.radixdlt.sync.LedgerProofSyncDto;
 import java.util.Objects;
 
@@ -71,7 +72,7 @@ import java.util.Objects;
  * A request to sync up ledger state, starting at the given header. The node should respond with a
  * SyncResponse message.
  */
-public final class SyncRequest {
+public final class SyncRequest implements NonLocalEvent {
 
   private final LedgerProofSyncDto startProofExclusive;
 

@@ -74,6 +74,7 @@ import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.bft.VoteProcessingResult.QuorumReached;
 import com.radixdlt.consensus.bft.VoteProcessingResult.VoteAccepted;
 import com.radixdlt.consensus.bft.VoteProcessingResult.VoteRejected;
+import com.radixdlt.consensus.event.LocalEvent;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.monitoring.Metrics;
@@ -95,7 +96,8 @@ public final class BFTQuorumAssembler implements BFTEventProcessorAtCurrentRound
 
   /** A local event triggering a delayed resolution of a timeout quorum */
   public record TimeoutQuorumDelayedResolution(
-      RoundQuorumWithLastVote roundQuorumWithLastVote, long millisecondsWaitTime) {}
+      RoundQuorumWithLastVote roundQuorumWithLastVote, long millisecondsWaitTime)
+      implements LocalEvent {}
 
   private final BFTEventProcessorAtCurrentRound forwardTo;
   private final BFTValidatorId self;

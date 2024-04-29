@@ -70,6 +70,8 @@ import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.consensus.event.CoreEvent;
+import com.radixdlt.consensus.event.NonLocalEvent;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.EventProcessorOnDispatch;
@@ -258,12 +260,13 @@ public class MockedSyncServiceModule extends AbstractModule {
     return noOpRemoteProcessor(SyncResponse.class);
   }
 
-  private EventProcessorOnRunner<?> noOpProcessor(Class<?> clazz) {
+  private <T extends CoreEvent> EventProcessorOnRunner<?> noOpProcessor(Class<T> clazz) {
     return new EventProcessorOnRunner<>(Runners.SYNC, clazz, ev -> {});
   }
 
-  private RemoteEventProcessorOnRunner<?, ?> noOpRemoteProcessor(Class<?> clazz) {
-    return new RemoteEventProcessorOnRunner<>(
-        Runners.SYNC, NodeId.class, clazz, (sender, ev) -> {});
+  private <N, T extends NonLocalEvent> RemoteEventProcessorOnRunner<N, T> noOpRemoteProcessor(
+      Class<T> clazz) {
+    return (RemoteEventProcessorOnRunner<N, T>)
+        new RemoteEventProcessorOnRunner<>(Runners.SYNC, NodeId.class, clazz, (sender, ev) -> {});
   }
 }

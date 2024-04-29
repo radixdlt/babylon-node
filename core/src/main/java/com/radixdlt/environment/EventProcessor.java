@@ -64,11 +64,13 @@
 
 package com.radixdlt.environment;
 
+import com.radixdlt.consensus.event.CoreEvent;
+
 /**
  * Processes an event. An environment is responsible for making the call into processors.
  *
  * @param <T> the event class
  */
-public interface EventProcessor<T> {
+public interface EventProcessor<T extends CoreEvent> {
   void process(T t);
 }

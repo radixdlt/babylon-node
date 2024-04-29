@@ -64,10 +64,11 @@
 
 package com.radixdlt.p2p.liveness;
 
+import com.radixdlt.consensus.event.LocalEvent;
 import com.radixdlt.p2p.NodeId;
 import java.util.Objects;
 
-public final class PeerPingTimeout {
+public final class PeerPingTimeout implements LocalEvent {
 
   private final NodeId nodeId;
 

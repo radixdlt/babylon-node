@@ -64,6 +64,7 @@
 
 package com.radixdlt.environment;
 
+import com.radixdlt.consensus.event.NonLocalEvent;
 import com.radixdlt.environment.rx.RemoteEvent;
 
 /**
@@ -71,7 +72,7 @@ import com.radixdlt.environment.rx.RemoteEvent;
  *
  * @param <T> the event class
  */
-public interface RemoteEventProcessor<N, T> {
+public interface RemoteEventProcessor<N, T extends NonLocalEvent> {
   void process(N sender, T t);
 
   default void process(RemoteEvent<N, T> event) {

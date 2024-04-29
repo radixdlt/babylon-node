@@ -65,6 +65,7 @@
 package com.radixdlt.harness.deterministic;
 
 import com.google.inject.Inject;
+import com.radixdlt.consensus.event.CoreEvent;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.p2p.NodeId;
@@ -100,11 +101,12 @@ public final class NodeEvents {
     this.processors = Objects.requireNonNull(processors);
   }
 
-  public <T> EventProcessor<T> processor(NodeId node, Class<T> eventClass) {
+  public <T extends CoreEvent> EventProcessor<T> processor(NodeId node, Class<T> eventClass) {
     return t -> processors.get(eventClass).forEach(c -> c.process(node, t));
   }
 
-  public <T> EventProcessorOnDispatch<T> processorOnDispatch(NodeId node, Class<T> eventClass) {
+  public <T extends CoreEvent> EventProcessorOnDispatch<T> processorOnDispatch(
+      NodeId node, Class<T> eventClass) {
     return new EventProcessorOnDispatch<>(eventClass, processor(node, eventClass));
   }
 }

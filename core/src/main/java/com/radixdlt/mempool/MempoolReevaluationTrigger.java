@@ -64,7 +64,9 @@
 
 package com.radixdlt.mempool;
 
-public final class MempoolReevaluationTrigger {
+import com.radixdlt.consensus.event.LocalEvent;
+
+public final class MempoolReevaluationTrigger implements LocalEvent {
 
   private MempoolReevaluationTrigger() {}
 

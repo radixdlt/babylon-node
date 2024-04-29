@@ -65,6 +65,7 @@
 package com.radixdlt.ledger;
 
 import com.google.common.primitives.Ints;
+import com.radixdlt.consensus.event.LocalEvent;
 import com.radixdlt.statecomputer.commit.LedgerProof;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import java.util.List;
@@ -88,7 +89,8 @@ import java.util.List;
  *       "TransactionRun" and "CommittedTransactionWithProof".
  * </ul>
  */
-public record LedgerExtension(List<RawLedgerTransaction> transactions, LedgerProof proof) {
+public record LedgerExtension(List<RawLedgerTransaction> transactions, LedgerProof proof)
+    implements LocalEvent {
 
   public static LedgerExtension create(List<RawLedgerTransaction> transactions, LedgerProof proof) {
     return new LedgerExtension(transactions, proof);

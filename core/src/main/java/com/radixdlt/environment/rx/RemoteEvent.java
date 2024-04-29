@@ -64,6 +64,7 @@
 
 package com.radixdlt.environment.rx;
 
+import com.radixdlt.consensus.event.NonLocalEvent;
 import java.util.Objects;
 
 /**
@@ -71,16 +72,16 @@ import java.util.Objects;
  *
  * @param <T> the event class
  */
-public final class RemoteEvent<N, T> {
-  private final T event;
+public final class RemoteEvent<N, T extends NonLocalEvent> implements NonLocalEvent {
   private final N origin;
+  private final T event;
 
   private RemoteEvent(N origin, T event) {
     this.origin = origin;
     this.event = event;
   }
 
-  public static <N, T> RemoteEvent<N, T> create(N origin, T event) {
+  public static <N, T extends NonLocalEvent> RemoteEvent<N, T> create(N origin, T event) {
     Objects.requireNonNull(origin);
     Objects.requireNonNull(event);
 

@@ -66,9 +66,10 @@ package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.epoch.EpochRound;
+import com.radixdlt.consensus.event.LocalEvent;
 
 /** A timeout which has occurred in the bft node */
-public final class EpochLocalTimeoutOccurrence {
+public final class EpochLocalTimeoutOccurrence implements LocalEvent {
   private final long epoch;
   private final LocalTimeoutOccurrence localTimeoutOccurrence;
 

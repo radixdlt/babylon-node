@@ -69,6 +69,7 @@ import static java.util.function.Predicate.not;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.event.NonLocalEvent;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
@@ -90,7 +91,7 @@ import org.apache.logging.log4j.Logger;
  * "discovered" from the config (bootstrapDiscovery) and more peers are requested from the peers
  * we're already connected to.
  */
-public final class PeerDiscovery {
+public final class PeerDiscovery implements NonLocalEvent {
   private static final Logger log = LogManager.getLogger();
 
   private static final int MAX_PEERS_IN_RESPONSE = 50;

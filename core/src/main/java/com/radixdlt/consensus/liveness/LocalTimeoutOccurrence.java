@@ -66,10 +66,11 @@ package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.event.LocalEvent;
 import java.util.Objects;
 
 /** An actual occurrence (as opposed to a potential) of a local timeout */
-public final class LocalTimeoutOccurrence {
+public final class LocalTimeoutOccurrence implements LocalEvent {
   private final ScheduledLocalTimeout scheduledLocalTimeout;
 
   public LocalTimeoutOccurrence(ScheduledLocalTimeout scheduledLocalTimeout) {

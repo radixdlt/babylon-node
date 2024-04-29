@@ -72,6 +72,7 @@ import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.event.NonLocalEvent;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
@@ -273,7 +274,8 @@ public final class MessagingModule extends AbstractModule {
       MessageCentralPeerDiscovery messageCentralPeerDiscovery) {
     return new RxRemoteEnvironment() {
       @Override
-      public <T> Flowable<RemoteEvent<NodeId, T>> remoteEvents(Class<T> messageType) {
+      public <T extends NonLocalEvent> Flowable<RemoteEvent<NodeId, T>> remoteEvents(
+          Class<T> messageType) {
         if (messageType.equals(Vote.class)) {
           return messageCentralBFT.remoteVotes().map(m -> (RemoteEvent<NodeId, T>) m);
         } else if (messageType.equals(Proposal.class)) {

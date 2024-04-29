@@ -64,7 +64,9 @@
 
 package com.radixdlt.p2p.liveness;
 
-public final class Ping {
+import com.radixdlt.consensus.event.NonLocalEvent;
+
+public final class Ping implements NonLocalEvent {
 
   public static Ping create() {
     return new Ping();

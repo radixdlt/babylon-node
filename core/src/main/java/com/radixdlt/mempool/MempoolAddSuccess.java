@@ -64,13 +64,14 @@
 
 package com.radixdlt.mempool;
 
+import com.radixdlt.consensus.event.LocalEvent;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.Objects;
 import java.util.Optional;
 
 /** Message indicating that a transaction was successfully added to the mempool */
-public final class MempoolAddSuccess {
+public final class MempoolAddSuccess implements LocalEvent {
   private final RawNotarizedTransaction transaction;
   private final NodeId origin;
 

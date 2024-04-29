@@ -64,13 +64,14 @@
 
 package com.radixdlt.targeted.mempool;
 
+import com.radixdlt.consensus.event.LocalEvent;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.concurrent.CompletableFuture;
 
 /** An update event to the mempool filler */
-public final class MempoolFillerUpdate {
+public final class MempoolFillerUpdate implements LocalEvent {
   private final int parallelTransactions;
   private final boolean sendToSelf;
   private final CompletableFuture<Void> completableFuture;

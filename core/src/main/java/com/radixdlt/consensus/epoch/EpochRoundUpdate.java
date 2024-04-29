@@ -65,10 +65,11 @@
 package com.radixdlt.consensus.epoch;
 
 import com.radixdlt.consensus.bft.RoundUpdate;
+import com.radixdlt.consensus.event.LocalEvent;
 import java.util.Objects;
 
 /** A wrapper for a RoundUpdate message that also holds epoch. */
-public final class EpochRoundUpdate {
+public final class EpochRoundUpdate implements LocalEvent {
 
   private final long epoch;
   private final RoundUpdate roundUpdate;
