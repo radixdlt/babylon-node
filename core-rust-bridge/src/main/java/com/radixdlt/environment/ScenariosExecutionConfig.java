@@ -64,30 +64,33 @@
 
 package com.radixdlt.environment;
 
-import com.radixdlt.lang.Option;
-import com.radixdlt.mempool.RustMempoolConfig;
-import com.radixdlt.protocol.ProtocolConfig;
-import com.radixdlt.rev2.NetworkDefinition;
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.transaction.LedgerSyncLimitsConfig;
 
-public record StateManagerConfig(
-    NetworkDefinition networkDefinition,
-    Option<RustMempoolConfig> mempoolConfigOpt,
-    Option<VertexLimitsConfig> vertexLimitsConfigOpt,
-    DatabaseBackendConfig databaseBackendConfig,
-    DatabaseConfig databaseConfig,
-    LoggingConfig loggingConfig,
-    StateTreeGcConfig stateTreeGcConfig,
-    LedgerProofsGcConfig ledgerProofsGcConfig,
-    LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
-    ProtocolConfig protocolConfig,
-    boolean noFees,
-    ScenariosExecutionConfig scenariosExecutionConfig) {
+/**
+ * A configuration of what "Engine's test Scenarios" to run automatically.
+ *
+ * <p>Note: currently, this configuration only defines the Scenarios to be run after appropriate
+ * Protocol Updates. Theoretically, it should also include the post-Genesis Scenarios. However, for
+ * legacy reasons, those are defined in the {@link com.radixdlt.genesis.GenesisData}. Extracting
+ * them out is non-trivial (because of some persistence/hardcoding inherent to Genesis handling).
+ */
+public record ScenariosExecutionConfig(
+    ImmutableList<PostProtocolUpdateConfig> afterProtocolUpdates) {
+
+  /** A default production-compatible configuration, which does not execute any Scenarios. */
+  public static final ScenariosExecutionConfig NONE =
+      new ScenariosExecutionConfig(ImmutableList.of());
+
+  /** A "full test" configuration, executing all Scenarios at appropriate Protocol Update states. */
+  public static final ScenariosExecutionConfig ALL =
+      new ScenariosExecutionConfig(
+          ImmutableList.of()); // TODO(wip): new PostProtocolUpdateConfig(...)
+
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        StateManagerConfig.class,
-        codecs -> StructCodec.fromRecordComponents(StateManagerConfig.class, codecs));
+        ScenariosExecutionConfig.class,
+        codecs -> StructCodec.fromRecordComponents(ScenariosExecutionConfig.class, codecs));
   }
 }

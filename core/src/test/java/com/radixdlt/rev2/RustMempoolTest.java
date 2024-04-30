@@ -137,7 +137,8 @@ public final class RustMempoolTest {
             LedgerProofsGcConfig.forTesting(),
             LedgerSyncLimitsConfig.defaults(),
             ProtocolConfig.testingDefault(),
-            false);
+            false,
+            ScenariosExecutionConfig.NONE);
     final var metrics = new MetricsInitializer().initialize();
 
     try (var stateManager = new NodeRustEnvironment(NOOP_DISPATCHER, NOOP_HANDLER, config)) {
@@ -195,7 +196,8 @@ public final class RustMempoolTest {
             LedgerProofsGcConfig.forTesting(),
             LedgerSyncLimitsConfig.defaults(),
             ProtocolConfig.testingDefault(),
-            false);
+            false,
+            ScenariosExecutionConfig.NONE);
     final var metrics = new MetricsInitializer().initialize();
 
     try (var stateManager = new NodeRustEnvironment(NOOP_DISPATCHER, NOOP_HANDLER, config)) {
@@ -336,7 +338,8 @@ public final class RustMempoolTest {
             LedgerProofsGcConfig.forTesting(),
             LedgerSyncLimitsConfig.defaults(),
             ProtocolConfig.testingDefault(),
-            false);
+            false,
+            ScenariosExecutionConfig.NONE);
     final var metrics = new MetricsInitializer().initialize();
 
     try (var stateManager = new NodeRustEnvironment(NOOP_DISPATCHER, NOOP_HANDLER, config)) {

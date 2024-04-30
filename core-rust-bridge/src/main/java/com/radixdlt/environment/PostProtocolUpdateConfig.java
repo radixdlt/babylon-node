@@ -64,30 +64,20 @@
 
 package com.radixdlt.environment;
 
-import com.radixdlt.lang.Option;
-import com.radixdlt.mempool.RustMempoolConfig;
-import com.radixdlt.protocol.ProtocolConfig;
-import com.radixdlt.rev2.NetworkDefinition;
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.transaction.LedgerSyncLimitsConfig;
 
-public record StateManagerConfig(
-    NetworkDefinition networkDefinition,
-    Option<RustMempoolConfig> mempoolConfigOpt,
-    Option<VertexLimitsConfig> vertexLimitsConfigOpt,
-    DatabaseBackendConfig databaseBackendConfig,
-    DatabaseConfig databaseConfig,
-    LoggingConfig loggingConfig,
-    StateTreeGcConfig stateTreeGcConfig,
-    LedgerProofsGcConfig ledgerProofsGcConfig,
-    LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
-    ProtocolConfig protocolConfig,
-    boolean noFees,
-    ScenariosExecutionConfig scenariosExecutionConfig) {
+/**
+ * A configuration of "Engine test Scenarios" to be run automatically after a specific Protocol
+ * Update.
+ */
+public record PostProtocolUpdateConfig(
+    String protocolVersionName, ImmutableList<String> scenarioNames) {
+
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        StateManagerConfig.class,
-        codecs -> StructCodec.fromRecordComponents(StateManagerConfig.class, codecs));
+        PostProtocolUpdateConfig.class,
+        codecs -> StructCodec.fromRecordComponents(PostProtocolUpdateConfig.class, codecs));
   }
 }

@@ -124,6 +124,8 @@ public final class NodeSborCodecs {
     NetworkDefinition.registerCodec(codecMap);
     LoggingConfig.registerCodec(codecMap);
     StateManagerConfig.registerCodec(codecMap);
+    ScenariosExecutionConfig.registerCodec(codecMap);
+    PostProtocolUpdateConfig.registerCodec(codecMap);
     ProtocolConfig.registerCodec(codecMap);
     ProtocolUpdateTrigger.registerCodec(codecMap);
     ProtocolUpdateEnactmentCondition.registerCodec(codecMap);

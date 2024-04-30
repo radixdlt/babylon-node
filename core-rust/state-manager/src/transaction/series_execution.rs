@@ -280,7 +280,7 @@ impl StateTracker {
             );
         }
 
-        if let Some(next_protocol_version) = &self.next_protocol_version() {
+        if let Some(next_protocol_version) = &self.next_protocol_version {
             panic!(
                 "the protocol update {:?} has happened at {:?} (version {}) and must not be followed by {:?}",
                 next_protocol_version,

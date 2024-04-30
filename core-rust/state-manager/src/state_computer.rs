@@ -107,6 +107,7 @@ pub struct StateComputer {
     vertex_prepare_metrics: VertexPrepareMetrics,
     vertex_limits_config: VertexLimitsConfig,
     protocol_state: RwLock<ProtocolState>,
+    scenarios_execution_config: ScenariosExecutionConfig,
 }
 
 impl StateComputer {
@@ -122,6 +123,7 @@ impl StateComputer {
         metrics_registry: &Registry,
         lock_factory: LockFactory,
         initial_protocol_state: ProtocolState,
+        scenarios_execution_config: ScenariosExecutionConfig,
     ) -> Self {
         let (current_transaction_root, current_ledger_proposer_timestamp_ms) = database
             .lock()
@@ -157,6 +159,7 @@ impl StateComputer {
             protocol_state: lock_factory
                 .named("protocol_state")
                 .new_rwlock(initial_protocol_state),
+            scenarios_execution_config,
         }
     }
 
@@ -230,7 +233,7 @@ impl GenesisCommitRequestFactory {
                 proposer_timestamp_ms: self.timestamp,
                 next_epoch,
                 next_protocol_version: None,
-            },
+            }, // TODO(wip): re-use with full origin config
             origin: LedgerProofOrigin::Genesis {
                 genesis_opaque_hash: self.genesis_opaque_hash,
             },
@@ -830,6 +833,7 @@ impl StateComputer {
         // These scenarios are committed before we start consensus / rounds after the genesis wrap-up.
         // This is a little weird, but should be fine.
         if !scenarios_to_run.is_empty() {
+            // TODO(wip): steal
             info!("Running {} scenarios", scenarios_to_run.len());
             let mut next_nonce: u32 = 0;
             for (sequence_number, scenario_name) in scenarios_to_run.iter().enumerate() {
@@ -1147,6 +1151,14 @@ impl StateComputer {
 
         database
             .commit(commit_bundle_builder.build(commit_request.proof, commit_request.vertex_store));
+
+        if let Some(next_protocol_version) = series_executor.next_protocol_version() {
+            let _scenarios = self
+                .scenarios_execution_config
+                .to_run_after_enacting(&next_protocol_version);
+            // TODO(wip): execute these
+        }
+
         drop(database);
 
         self.execution_cache

@@ -129,7 +129,8 @@ public class REv2StateComputerTest {
             LedgerProofsGcConfig.forTesting(),
             LedgerSyncLimitsConfig.defaults(),
             ProtocolConfig.testingDefault(),
-            false),
+            false,
+            ScenariosExecutionConfig.NONE),
         new REv2LedgerInitializerModule(
             RawGenesisDataWithHash.fromGenesisData(
                 GenesisBuilder.createGenesisWithValidatorsAndXrdBalances(

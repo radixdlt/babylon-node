@@ -111,6 +111,28 @@ pub struct StateManagerConfig {
     pub ledger_sync_limits_config: LedgerSyncLimitsConfig,
     pub protocol_config: ProtocolConfig,
     pub no_fees: bool,
+    pub scenarios_execution_config: ScenariosExecutionConfig,
+}
+
+#[derive(Debug, Clone, Default, Sbor)]
+pub struct ScenariosExecutionConfig {
+    pub after_protocol_updates: Vec<PostProtocolUpdateConfig>,
+}
+
+impl ScenariosExecutionConfig {
+    pub fn to_run_after_enacting(&self, protocol_version: &ProtocolVersionName) -> Vec<String> {
+        self.after_protocol_updates
+            .iter()
+            .filter(|config| config.protocol_version_name.as_str() == protocol_version.as_str())
+            .flat_map(|config| config.scenario_names.clone())
+            .collect()
+    }
+}
+
+#[derive(Debug, Clone, Default, Sbor)]
+pub struct PostProtocolUpdateConfig {
+    pub protocol_version_name: String,
+    pub scenario_names: Vec<String>,
 }
 
 #[derive(Debug, Clone, Default, Sbor)]
@@ -134,6 +156,7 @@ impl StateManagerConfig {
             ledger_sync_limits_config: LedgerSyncLimitsConfig::default(),
             protocol_config: ProtocolConfig::new_with_no_updates(),
             no_fees: false,
+            scenarios_execution_config: ScenariosExecutionConfig::default(),
         }
     }
 }
@@ -270,6 +293,7 @@ impl StateManager {
             metrics_registry,
             lock_factory.named("state_computer"),
             initial_protocol_state,
+            config.scenarios_execution_config.clone(),
         ));
 
         // Register the periodic background task for collecting the costly raw DB metrics...

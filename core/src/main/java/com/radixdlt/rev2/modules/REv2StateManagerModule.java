@@ -101,7 +101,6 @@ import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.NotarizedTransactionHash;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
-import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.File;
 
 public final class REv2StateManagerModule extends AbstractModule {
@@ -116,6 +115,7 @@ public final class REv2StateManagerModule extends AbstractModule {
   private final LedgerSyncLimitsConfig ledgerSyncLimitsConfig;
   private final ProtocolConfig protocolConfig;
   private final boolean noFees;
+  private final ScenariosExecutionConfig scenariosExecutionConfig;
 
   private REv2StateManagerModule(
       ProposalLimitsConfig proposalLimitsConfig,
@@ -127,7 +127,8 @@ public final class REv2StateManagerModule extends AbstractModule {
       LedgerProofsGcConfig ledgerProofsGcConfig,
       LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
       ProtocolConfig protocolConfig,
-      boolean noFees) {
+      boolean noFees,
+      ScenariosExecutionConfig scenariosExecutionConfig) {
     this.proposalLimitsConfig = proposalLimitsConfig;
     this.vertexLimitsConfigOpt = vertexLimitsConfigOpt;
     this.databaseConfig = databaseConfig;
@@ -138,6 +139,7 @@ public final class REv2StateManagerModule extends AbstractModule {
     this.ledgerSyncLimitsConfig = ledgerSyncLimitsConfig;
     this.protocolConfig = protocolConfig;
     this.noFees = noFees;
+    this.scenariosExecutionConfig = scenariosExecutionConfig;
   }
 
   public static REv2StateManagerModule create(
@@ -159,7 +161,8 @@ public final class REv2StateManagerModule extends AbstractModule {
         ledgerProofsGcConfig,
         ledgerSyncLimitsConfig,
         protocolConfig,
-        false);
+        false,
+        ScenariosExecutionConfig.NONE);
   }
 
   public static REv2StateManagerModule createForTesting(
@@ -171,7 +174,8 @@ public final class REv2StateManagerModule extends AbstractModule {
       LedgerProofsGcConfig ledgerProofsGcConfig,
       LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
       ProtocolConfig protocolConfig,
-      boolean noFees) {
+      boolean noFees,
+      ScenariosExecutionConfig scenariosExecutionConfig) {
     return new REv2StateManagerModule(
         proposalLimitsConfig,
         Option.none(),
@@ -182,7 +186,8 @@ public final class REv2StateManagerModule extends AbstractModule {
         ledgerProofsGcConfig,
         ledgerSyncLimitsConfig,
         protocolConfig,
-        noFees);
+        noFees,
+        scenariosExecutionConfig);
   }
 
   @Override
@@ -200,7 +205,7 @@ public final class REv2StateManagerModule extends AbstractModule {
           @Provides
           @Singleton
           DatabaseBackendConfig databaseBackendConfig(
-              @NodeStorageLocation String nodeStorageLocation, RuntimeProperties properties) {
+              @NodeStorageLocation String nodeStorageLocation) {
             return new DatabaseBackendConfig(
                 new File(nodeStorageLocation, "state_manager").getPath());
           }
@@ -227,7 +232,8 @@ public final class REv2StateManagerModule extends AbstractModule {
                     ledgerProofsGcConfig,
                     ledgerSyncLimitsConfig,
                     protocolConfig,
-                    noFees));
+                    noFees,
+                    scenariosExecutionConfig));
           }
 
           @Provides
