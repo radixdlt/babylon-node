@@ -62,12 +62,10 @@
  * permissions under this License.
  */
 
-use enum_dispatch::enum_dispatch;
-use radix_engine::types::{ScryptoCategorize, ScryptoDecode, ScryptoEncode};
+use crate::engine_prelude::*;
 
 /// The "read" part of an accumulator tree storage SPI.
 /// Both the key type and node type are implementation-dependent.
-#[enum_dispatch]
 pub trait ReadableAccuTreeStore<K, N> {
     /// Gets a vertical `TreeSlice` by the given key.
     fn get_tree_slice(&self, key: &K) -> Option<TreeSlice<N>>;
@@ -94,7 +92,7 @@ impl<T: ReadableAccuTreeStore<K, N> + WriteableAccuTreeStore<K, N>, K, N> AccuTr
 /// and the resulting merkle updates, propagating up to a single root.
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct TreeSlice<N> {
-    /// The tree-levels of this slice, arranged from leafs to root.
+    /// The tree-levels of this slice, arranged from leaves to root.
     pub levels: Vec<TreeSliceLevel<N>>,
 }
 
@@ -134,7 +132,7 @@ pub struct TreeSliceLevel<N> {
     pub left_sibling_cache: Option<N>,
 
     /// The actual nodes computed during the append to the accumulator tree.
-    /// Depending on the level, these might be exactly all the appended leafs, or their composite
+    /// Depending on the level, these might be exactly all the appended leaves, or their composite
     /// merkle nodes, all the way up. The highest level of each `TreeSlice` contains a single
     /// element in the `nodes`, representing the merkle root.
     pub nodes: Vec<N>,

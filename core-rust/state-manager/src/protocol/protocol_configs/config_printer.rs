@@ -1,5 +1,4 @@
-use radix_engine::prelude::*;
-
+use crate::engine_prelude::*;
 use chrono::prelude::*;
 use chrono::Duration;
 
@@ -128,6 +127,20 @@ fn print_protocol_config_code() {
         println!("{base_indent}    ],");
     }
     println!("{base_indent}}},");
+}
+
+#[test]
+fn calculate_start_of_epoch() {
+    let calculator = CalculationParameters {
+        expected_epoch_length: Duration::minutes(5),
+        // This data can come from the Core API /core/state/consensus-manager response
+        base_epoch: Epoch::of(69946),
+        base_epoch_effective_start: DateTime::<Utc>::from_str("2024-02-05T11:55:57.229Z").unwrap(),
+    };
+    println!(
+        "> Time: {}",
+        calculator.estimate_start_of_epoch(Epoch::of(70575))
+    );
 }
 
 #[test]

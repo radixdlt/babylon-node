@@ -1,11 +1,8 @@
-use radix_engine::blueprints::resource::*;
-use radix_engine::types::*;
-use radix_engine_queries::typed_substate_layout::{TypedMainModuleSubstateKey, TypedSubstateKey};
+use crate::engine_prelude::*;
 
 use std::ops::Deref;
 
 use crate::core_api::*;
-use radix_engine_common::types::SubstateKey;
 
 use crate::core_api::models::StateNonFungibleResponse;
 
@@ -27,7 +24,7 @@ pub(crate) async fn handle_state_non_fungible(
         return Err(client_error("Resource is not a non-fungible resource"));
     }
 
-    let database = state.state_manager.database.read_current();
+    let database = state.state_manager.database.snapshot();
 
     let id_type =
         read_optional_main_field_substate::<NonFungibleResourceManagerIdTypeFieldPayload>(
@@ -64,7 +61,10 @@ pub(crate) async fn handle_state_non_fungible(
     let header = read_current_ledger_header(database.deref());
 
     Ok(Json(StateNonFungibleResponse {
-        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(
+            &mapping_context,
+            &header.into(),
+        )?),
         non_fungible: Some(to_api_non_fungible_resource_manager_data_substate(
             &mapping_context,
             &TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleResourceManager(

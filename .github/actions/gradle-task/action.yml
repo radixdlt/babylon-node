@@ -15,11 +15,17 @@ runs:
       name: Setup version properties
       uses: ./.github/actions/setup-version-properties
     - id: set_variables
+      env:
+        VERSION_BRANCH: ${{ steps.setup_version_properties.outputs.VERSION_BRANCH }}
+        VERSION_COMMIT: ${{ steps.setup_version_properties.outputs.VERSION_COMMIT }}
+        VERSION_DISPLAY: ${{ steps.setup_version_properties.outputs.VERSION_DISPLAY }}
+        VERSION_BUILD: ${{ steps.setup_version_properties.outputs.VERSION_BUILD }}
+        VERSION_TAG: ${{ steps.setup_version_properties.outputs.VERSION_TAG }}
+        VERSION_LAST_TAG: ${{ steps.setup_version_properties.outputs.VERSION_LAST_TAG }}
       run: |
         if [[ ${{ inputs.is_release }} == "false"  ]];then
           echo "Workflow triggered by push to a branch"
         fi
-        version=${{ steps.setup_version_properties.outputs.VERSION_DISPLAY }}
-        echo "Version: $version"
+        echo "Version: $VERSION_TAG"
         ./gradlew ${{ inputs.gradle_command }}
       shell: bash

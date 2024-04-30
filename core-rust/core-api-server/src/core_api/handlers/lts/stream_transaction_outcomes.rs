@@ -12,7 +12,7 @@ pub(crate) async fn handle_lts_stream_transaction_outcomes(
     assert_matching_network(&request.network, &state.network)?;
     let mapping_context = MappingContext::new(&state.network);
 
-    let from_state_version = extract_api_state_version(request.from_state_version)
+    let from_state_version = extract_state_version(request.from_state_version)
         .map_err(|err| err.into_response_error("from_state_version"))?;
 
     let limit: u64 = request
@@ -32,7 +32,7 @@ pub(crate) async fn handle_lts_stream_transaction_outcomes(
 
     let limit = limit.try_into().expect("limit out of usize bounds");
 
-    let database = state.state_manager.database.read_current();
+    let database = state.state_manager.database.snapshot();
 
     if !database.is_local_transaction_execution_index_enabled() {
         return Err(client_error(

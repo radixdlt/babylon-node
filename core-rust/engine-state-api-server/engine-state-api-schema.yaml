@@ -1,0 +1,2923 @@
+openapi: 3.1.0
+
+info:
+  version: 'v0.1-beta'
+  title: 'Engine State API - Babylon (Anemone)'
+  license:
+    name: The Radix License, Version 1.0
+    url: https://www.radixfoundation.org/licenses/license-v1
+  x-logo:
+    url: https://cdn.document360.io/50e78792-5410-4ac9-aa43-4612b4d33953/Images/Documentation/radix-logo-banner.png
+    href: https://docs.radixdlt.com
+  description: |
+    **This API is currently in Beta**
+    
+    This specification may experience breaking changes as part of Babylon Node releases. Such
+    changes will be clearly mentioned in the [babylon-node release notes](https://github.com/radixdlt/babylon-node/releases).
+    We advise against using this API for business-critical integrations before the `version`
+    indicated above becomes stable, which is expected in Q4 of 2024.
+    
+    This API provides a complete view of the current ledger state, operating at a relatively low
+    level (i.e. returning Entities' data and type information in a generic way, without interpreting
+    specifics of different native or custom components).
+    
+    It mirrors how the Radix Engine views the ledger state in its "System" layer, and thus can be
+    useful for Scrypto developers, who need to inspect how the Engine models and stores their
+    application's state, or how an interface / authentication scheme of another component looks
+    like.
+
+servers:
+  - url: 'localhost:3336/engine-state'
+tags:
+  - name: Extra
+    x-displayName: Extra
+    description: Endpoints offering additional information based on data sources outside of the Radix Engine's runtime storage.
+  - name: Entities
+    x-displayName: Entities
+    description: Endpoints dealing with all Entities.
+  - name: Objects
+    x-displayName: Objects
+    description: Endpoints dealing with Objects.
+  - name: AttachedModules
+    x-displayName: Attached Modules
+    description: Endpoints dealing with Attached Modules of Objects.
+  - name: KvStores
+    x-displayName: Key-Value Stores
+    description: Endpoints dealing with Key-Value Stores.
+  - name: Types
+    x-displayName: Blueprints / Schemas
+    description: Endpoints dealing with Blueprints and Schemas.
+
+paths:
+  "/extra/entity-search":
+    post:
+      summary: Search Entities
+      description: Lists addresses of all entities meeting the requested search criteria, in an iterator-like paged fashion.
+      tags:
+        - Extra
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExtraEntitySearchRequest"
+      responses:
+        '200':
+          description: A page of entity addresses.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExtraEntitySearchResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '409':
+          description: Request conflicting with the Node's configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/blueprint/info":
+    post:
+      summary: Get Blueprint Info
+      description: Returns all externally-relevant information about a particular blueprint.
+      tags:
+        - Types
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BlueprintInfoRequest"
+      responses:
+        '200':
+          description: Information about the requested blueprint.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BlueprintInfoResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '409':
+          description: Request conflicting with the Node's configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/entity/info":
+    post:
+      summary: Get Entity Info
+      description: |
+        Resolves basic information about an entity: its type, attached modules, fields/collections
+        and blueprint.
+      tags:
+        - Entities
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EntityInfoRequest"
+      responses:
+        '200':
+          description: Meta-information about the requested entity's state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EntityInfoResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '409':
+          description: Request conflicting with the Node's configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/object/field":
+    post:
+      summary: Get Object Field
+      description: |
+        Reads the current value of an object's field, given an entity address, a module (`Main` by
+        default) and either a field index or its human-readable name (if applicable).
+      tags:
+        - Objects
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ObjectFieldRequest"
+      responses:
+        '200':
+          description: Current object field value
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObjectFieldResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '409':
+          description: Request conflicting with the Node's configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/object/collection/iterator":
+    post:
+      summary: List Object Collection
+      description: Lists keys of all entries from a particular object's collection, in an iterator-like paged fashion
+      tags:
+        - Objects
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ObjectCollectionIteratorRequest"
+      responses:
+        '200':
+          description: A page of entry keys.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObjectCollectionIteratorResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '409':
+          description: Request conflicting with the Node's configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/object/collection/entry":
+    post:
+      summary: Get Object Collection Entry
+      description: |
+        Reads the current value of a specific entry from an Object's Collection.
+      tags:
+        - Objects
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ObjectCollectionEntryRequest"
+      responses:
+        '200':
+          description: Current value of the entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObjectCollectionEntryResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '409':
+          description: Request conflicting with the Node's configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/kv-store/iterator":
+    post:
+      summary: List Key-Value Store
+      description: Lists keys of all entries from a particular Key-Value Store, in an iterator-like paged fashion
+      tags:
+        - KvStores
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KeyValueStoreIteratorRequest"
+      responses:
+        '200':
+          description: A page of map keys.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KeyValueStoreIteratorResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '409':
+          description: Request conflicting with the Node's configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/kv-store/entry":
+    post:
+      summary: Get Key-Value Store Entry
+      description: |
+        Reads the current value of a specific entry from a Key-Value Store.
+      tags:
+        - KvStores
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KeyValueStoreEntryRequest"
+      responses:
+        '200':
+          description: Current value of the entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KeyValueStoreEntryResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '409':
+          description: Request conflicting with the Node's configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/entity/schema/entry":
+    post:
+      summary: Get Schema
+      description: |
+        Reads the contents of a specific schema associated with an entity.
+      tags:
+        - Types
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EntitySchemaEntryRequest"
+      responses:
+        '200':
+          description: Schema contents
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EntitySchemaEntryResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '409':
+          description: Request conflicting with the Node's configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/object/attached-modules/metadata/iterator":
+    post:
+      summary: List Object Metadata
+      description: Lists keys of all metadata entries defined for a particular Object, in an iterator-like paged fashion
+      tags:
+        - AttachedModules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ObjectMetadataIteratorRequest"
+      responses:
+        '200':
+          description: A page of metadata keys.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObjectMetadataIteratorResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '409':
+          description: Request conflicting with the Node's configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/object/attached-modules/metadata/entry":
+    post:
+      summary: Get Metadata Entry
+      description: |
+        Reads the current value of a specific Object's metadata by key.
+      tags:
+        - AttachedModules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ObjectMetadataEntryRequest"
+      responses:
+        '200':
+          description: Current value of the entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObjectMetadataEntryResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '409':
+          description: Request conflicting with the Node's configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/object/attached-modules/role-assignment":
+    post:
+      summary: Get Role Assignment
+      description: |
+        Reads the current assignment of particular Object's Access Rules to Roles defined by the Blueprint.
+      tags:
+        - AttachedModules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ObjectRoleAssignmentRequest"
+      responses:
+        '200':
+          description: Current assignment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObjectRoleAssignmentResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '409':
+          description: Request conflicting with the Node's configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/object/attached-modules/royalty":
+    post:
+      summary: Get Royalty Configuration
+      description: |
+        Reads the currently configured Package and Component Royalty amounts of particular Object's 
+        methods.
+      tags:
+        - AttachedModules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ObjectRoyaltyRequest"
+      responses:
+        '200':
+          description: Current assignment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObjectRoyaltyResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '409':
+          description: Request conflicting with the Node's configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+#############################################################################################
+components:
+  schemas:
+
+###########################################################
+# RESPONSE CONTROL                                        #
+###########################################################
+    SborFormatOptions:
+      type: object
+      description: Requested SBOR representation to use for every `SborData` within the response.
+      properties:
+        raw_hex:
+          description: Whether to return the raw hex-encoded bytes (default false).
+          type: boolean
+        programmatic_json:
+          description: Whether to return the Programmatic JSON (default true).
+          type: boolean
+    ContinuationToken:
+      type: string
+      description: |
+        An opaque string conveying the information on where the next page of results starts.
+        It is returned in every paged listing response (except for the last page), and it can be
+        passed in every paged listing request (in order to begin listing from where the previous
+        response ended).
+    MaxPageSize:
+      type: integer
+      format: int32
+      minimum: 1
+      maximum: 100
+      description: A maximum number of items to be included in the paged listing response.
+    LedgerStateSelectorType:
+      type: string
+      enum:
+        - ByStateVersion
+    LedgerStateSelector:
+      description: |
+        An optional specification of a historical ledger state at which to execute the request.
+        The "historical state" feature (see the `db.historical_substate_values.enable` flag) must be
+        enabled on the Node, and the requested point in history must be recent enough (in accordance
+        with the Node's configured `state_hash_tree.state_version_history_length`).
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/LedgerStateSelectorType'
+      discriminator:
+        propertyName: type
+        mapping:
+          ByStateVersion: '#/components/schemas/VersionLedgerStateSelector'
+          # Currently no other options exist, but we plan to have e.g. `ByTimestamp` in future.
+    VersionLedgerStateSelector:
+      allOf:
+        - $ref: '#/components/schemas/LedgerStateSelector'
+        - type: object
+          required:
+            - state_version
+          properties:
+            state_version:
+              description: An exact version at which to execute the request.
+              $ref: "#/components/schemas/StateVersion"
+
+###########################################################
+# SHARED MODELS                                           #
+###########################################################
+    Decimal:
+      type: string
+      description: |
+        A string-encoded fixed-precision decimal to 18 decimal places.
+        A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
+    LedgerStateSummary:
+      type: object
+      description: |
+        A state version and summarized header of the ledger proof which can be used to verify the
+        returned on-ledger data.
+        
+        Please note that:
+        - For "current top-of-ledger" requests (i.e. not specifying any `LedgerStateSelector`),
+          this will always be the most recent ledger header, proving exactly the version at which
+          the on-ledger data was read.
+        - For historical requests (i.e. using a `LedgerStateSelector`), this will be the *nearest*
+          ledger header at *or after* the requested past state version - depending on the
+          granularity of the consensus progress (and the granularity of the ledger proofs actually
+          persisted by the queried Node).
+      required:
+        - state_version
+        - header_summary
+      properties:
+        state_version:
+          $ref: "#/components/schemas/StateVersion"
+          description: The version at which the state was read.
+        header_summary:
+          $ref: "#/components/schemas/LedgerHeaderSummary"
+          description: The excerpt from the ledger header committed at the `state_version`.
+    LedgerHeaderSummary:
+      type: object
+      required:
+        - epoch_round
+        - ledger_hashes
+        - proposer_timestamp
+      properties:
+        epoch_round:
+          $ref: "#/components/schemas/EpochRound"
+        ledger_hashes:
+          $ref: "#/components/schemas/LedgerHashes"
+        proposer_timestamp:
+          $ref: '#/components/schemas/ConsensusInstant'
+    EpochRound:
+      type: object
+      required:
+        - epoch
+        - round
+      properties:
+        epoch:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: |
+            An integer between `0` and `10^10`, marking the epoch.
+            Only present if the rejection is temporary due to a header specifying a "from epoch" in the future.
+        round:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: An integer between `0` and `10^10`, marking the current round in an epoch
+    LedgerHashes:
+      type: object
+      required:
+        - state_tree_hash
+        - transaction_tree_hash
+        - receipt_tree_hash
+      properties:
+        state_tree_hash:
+          type: string
+          minLength: 64
+          maxLength: 64
+          description: |
+            The hex-encoded root hash of the state tree. This captures the current state of the state on the ledger.
+        transaction_tree_hash:
+          type: string
+          minLength: 64
+          maxLength: 64
+          description: |
+            The hex-encoded root hash of the transaction tree. This captures the ledger transactions committed to the ledger.
+        receipt_tree_hash:
+          type: string
+          minLength: 64
+          maxLength: 64
+          description: |
+            The hex-encoded root hash of the receipt tree. This captures the consensus-agreed output of each transaction on the ledger.
+    ScryptoInstant:
+      type: object
+      required:
+        - unix_timestamp_seconds
+      properties:
+        unix_timestamp_seconds:
+          type: string
+          description: |
+            A decimal string-encoded 64-bit signed integer, marking the unix timestamp in seconds.
+
+            Note: this field accurately represents the full range of possible on-ledger values (i.e.
+            `-2^63 <= seconds < 2^63`).
+        date_time:
+          type: string
+          description: |
+            The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use "Z"
+            (denoting UTC) and a second-precision (i.e. *skipping* the `.000` milliseconds part).
+            E.g.: `2023-01-26T18:30:09Z`.
+
+            Note: This field will *not* be present if the actual on-ledger `unix_timestamp_seconds`
+            value is outside the basic range supported by the RFC 3339 / ISO 8601 standard, which
+            starts at year 1583 (i.e. the beginning of the Gregorian calendar) and ends at year
+            9999 (inclusive).
+    ConsensusInstant:
+      type: object
+      required:
+        - unix_timestamp_ms
+      properties:
+        unix_timestamp_ms:
+          type: string
+          description: |
+            A decimal string-encoded 64-bit signed integer, marking the unix timestamp in milliseconds.
+
+            Note: this field accurately represents the full range of possible values (i.e.
+            `-2^63 <= milliseconds < 2^63`).
+        date_time:
+          type: string
+          description: |
+            The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use "Z"
+            (denoting UTC) and include milliseconds (even if `000`).
+            E.g.: `2023-01-26T18:30:09.453Z`.
+            
+            Note: This field will *not* be present if the `unix_timestamp_ms` value is outside the
+            basic range supported by the RFC 3339 / ISO 8601 standard, which starts at year 1583
+            (i.e. the beginning of the Gregorian calendar) and ends at year 9999 (inclusive).
+    StateVersion:
+      type: integer
+      format: int64
+      minimum: 1
+      maximum: 100000000000000
+    SystemType:
+      type: string
+      enum:
+        - Object
+        - KeyValueStore
+      description: |
+        Determines whether an entity is an object or a key-value store.
+        This categorization is introduced only for convenience / API discoverability (e.g. some
+        endpoints are suited for working only with objects). In fact, the `SystemType` can also be
+        derived from `EntityType`.
+    EntityAddress:
+      type: string
+      description: A Bech32m-encoded, human readable rendering of an arbitrary Entity's address.
+    PackageAddress:
+      type: string
+      description: A Bech32m-encoded, human readable rendering of a Package address.
+    GlobalAddress:
+      type: string
+      description: A Bech32m-encoded, human readable rendering of any global Entity's address.
+    ResourceAddress:
+      type: string
+      description: A Bech32m-encoded human readable version of a Resource address.
+    SchemaHash:
+      type: string
+      minLength: 64
+      maxLength: 64
+      description: A hex-encoded Schema hash, capturing the identity of an SBOR schema.
+    AttachedModuleId:
+      type: string
+      enum:
+        - Metadata
+        - Royalty
+        - RoleAssignment
+    EntityType:
+      type: string
+      enum:
+        - GlobalPackage
+        - GlobalConsensusManager
+        - GlobalValidator
+        - GlobalGenericComponent
+        - GlobalAccount
+        - GlobalIdentity
+        - GlobalAccessController
+        - GlobalVirtualSecp256k1Account
+        - GlobalVirtualSecp256k1Identity
+        - GlobalVirtualEd25519Account
+        - GlobalVirtualEd25519Identity
+        - GlobalFungibleResource
+        - InternalFungibleVault
+        - GlobalNonFungibleResource
+        - InternalNonFungibleVault
+        - InternalGenericComponent
+        - InternalKeyValueStore
+        - GlobalOneResourcePool
+        - GlobalTwoResourcePool
+        - GlobalMultiResourcePool
+        - GlobalTransactionTracker
+    GenericTypeParameterType:
+      type: string
+      enum:
+        - Any
+    GenericTypeParameter:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/GenericTypeParameterType"
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match GenericTypeParameterType
+          Any: '#/components/schemas/AnyGenericTypeParameter'
+    AnyGenericTypeParameter:
+      allOf:
+        - $ref: "#/components/schemas/GenericTypeParameter"
+        - type: object
+    SborData:
+      type: object
+      properties:
+        raw_hex:
+          type: string
+          description: Hex-encoded raw bytes (of the SBOR encoding).
+        programmatic_json:
+          type: object
+          description: |
+            JSON representation of the SBOR structure, annotated with as much metadata (type and
+            field names) as was available. 
+
+###########################################################
+# ERROR SURFACING                                         #
+###########################################################
+    ErrorResponse:
+      type: object
+      required:
+        - message
+        - trace_id
+      properties:
+        message:
+          description: A human-readable error message.
+          type: string
+        trace_id:
+          description: A GUID to be used when reporting errors, to allow correlation with the server's error logs.
+          type: string
+        details:
+          description: |
+            Application-level error details.
+            Will not be present for HTTP-level errors (e.g. HTTP 404).
+          $ref: "#/components/schemas/ErrorDetails"
+    ErrorType:
+      type: string
+      enum:
+        - RequestedItemNotFound
+        - RequestedItemInvalid
+        - StateVersionInTooDistantPast
+        - StateVersionInFuture
+    ErrorDetails:
+      type: object
+      discriminator:
+        propertyName: error_type
+        mapping:
+          # NOTE: These need to match ErrorType
+          RequestedItemNotFound: "#/components/schemas/RequestedItemNotFoundDetails"
+          RequestedItemInvalid: "#/components/schemas/RequestedItemInvalidDetails"
+          StateVersionInTooDistantPast: "#/components/schemas/StateVersionInTooDistantPastDetails"
+          StateVersionInFuture: "#/components/schemas/StateVersionInFutureDetails"
+      required:
+        - error_type
+      properties:
+        error_type:
+          $ref: "#/components/schemas/ErrorType"
+    RequestedItemNotFoundDetails:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - item_type
+          properties:
+            item_type:
+              $ref: "#/components/schemas/RequestedItemType"
+    RequestedItemInvalidDetails:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - item_type
+          properties:
+            item_type:
+              $ref: "#/components/schemas/RequestedItemType"
+    StateVersionInTooDistantPastDetails:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - earliest_available_state_version
+          properties:
+            earliest_available_state_version:
+              $ref: "#/components/schemas/StateVersion"
+    StateVersionInFutureDetails:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - current_state_version
+          properties:
+            current_state_version:
+              $ref: "#/components/schemas/StateVersion"
+    RequestedItemType:
+      type: string
+      enum:
+        - Blueprint
+        - Schema
+        - Entity
+        - Module
+        - Field
+        - Collection
+        - EntryKey
+
+#########################################################
+# REQUEST: /extra/entity-search                         #
+#########################################################
+    ExtraEntitySearchRequest:
+      type: object
+      properties:
+        filter:
+          $ref: "#/components/schemas/EntitySearchFilter"
+        max_page_size:
+          $ref: "#/components/schemas/MaxPageSize"
+        continuation_token:
+          $ref: "#/components/schemas/ContinuationToken"
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSelector"
+    EntitySearchFilterType:
+      type: string
+      enum:
+        - Blueprint
+        - SystemType
+        - EntityType
+    EntitySearchFilter:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/EntitySearchFilterType"
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match EntitySearchFilterType
+          Blueprint: '#/components/schemas/BlueprintFilter'
+          SystemType: '#/components/schemas/SystemTypeFilter'
+          EntityType: '#/components/schemas/EntityTypeFilter'
+    BlueprintFilter:
+      allOf:
+        - $ref: "#/components/schemas/EntitySearchFilter"
+        - type: object
+          description: |
+            Matches only Object entities instantiated using the given blueprint (disregarding the
+            blueprint's exact version).
+          required:
+            - blueprint
+          properties:
+            blueprint:
+              $ref: "#/components/schemas/UnversionedBlueprintReference"
+    SystemTypeFilter:
+      allOf:
+        - $ref: "#/components/schemas/EntitySearchFilter"
+        - type: object
+          description: Matches only entities of a specific `system_type`.
+          required:
+            - system_type
+          properties:
+            system_type:
+              $ref: "#/components/schemas/SystemType"
+    EntityTypeFilter:
+      allOf:
+        - $ref: "#/components/schemas/EntitySearchFilter"
+        - type: object
+          description: Matches only entities of a specific `entity_type`.
+          required:
+            - entity_type
+          properties:
+            entity_type:
+              $ref: "#/components/schemas/EntityType"
+    ExtraEntitySearchResponse:
+      type: object
+      required:
+        - at_ledger_state
+        - page
+      properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+        page:
+          type: array
+          items:
+            $ref: "#/components/schemas/ListedEntityItem"
+          description: A page of entities. If this page is the last one, the `continuation_token` will be not be included.
+        continuation_token:
+          $ref: "#/components/schemas/ContinuationToken"
+    ListedEntityItem:
+      type: object
+      required:
+        - entity_address
+        - system_type
+        - entity_type
+        - is_global
+        - created_at_state_version
+      properties:
+        entity_address:
+          $ref: "#/components/schemas/EntityAddress"
+        system_type:
+          $ref: "#/components/schemas/SystemType"
+        entity_type:
+          $ref: "#/components/schemas/EntityType"
+        is_global:
+          type: boolean
+          description: Whether the entity is a top-level root, or a child of some other entity.
+        created_at_state_version:
+          $ref: "#/components/schemas/StateVersion"
+          description: The state version identifying the transaction which created this entity.
+        blueprint:
+          $ref: "#/components/schemas/UnversionedBlueprintReference"
+          description: |
+            The blueprint used to instantiate this entity (disregarding the blueprint's exact version).
+            In practice, it can only be present when `system_type: Object`.
+    UnversionedBlueprintReference:
+      type: object
+      required:
+        - package_address
+        - blueprint_name
+      properties:
+        package_address:
+          $ref: '#/components/schemas/PackageAddress'
+        blueprint_name:
+          type: string
+#########################################################
+# REQUEST: /entity/info                                 #
+#########################################################
+    EntityInfoRequest:
+      type: object
+      required:
+        - entity_address
+      properties:
+        entity_address:
+          $ref: "#/components/schemas/EntityAddress"
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSelector"
+    EntityInfoResponse:
+      type: object
+      required:
+        - at_ledger_state
+        - info
+      properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+        info:
+          $ref: "#/components/schemas/EntityInfo"
+    EntityAncestryInfo:
+      type: object
+      description: |
+        Information about the ancestor entities - i.e. the immediate parent, and the root entity.
+        Only present when the subject entity is not a root entity itself.
+      required:
+        - parent_entity_address
+        - root_entity_address
+      properties:
+        parent_entity_address:
+          $ref: "#/components/schemas/EntityAddress"
+        root_entity_address:
+          $ref: "#/components/schemas/GlobalAddress"
+    EntityInfo:
+      type: object
+      required:
+        - system_type
+      properties:
+        system_type:
+          $ref: "#/components/schemas/SystemType"
+        ancestry:
+          $ref: "#/components/schemas/EntityAncestryInfo"
+      discriminator:
+        propertyName: system_type
+        mapping:
+          # NOTE: These need to match SystemType
+          Object: '#/components/schemas/ObjectEntityInfo'
+          KeyValueStore: '#/components/schemas/KeyValueStoreEntityInfo'
+    ObjectEntityInfo:
+      allOf:
+        - $ref: "#/components/schemas/EntityInfo"
+        - type: object
+          description: Information available when the entity is an Object.
+          required:
+            - entity_type
+            - is_global
+            - is_instantiated
+            - main_module_state
+            - attached_modules
+            - blueprint_reference
+            - instance_info
+          properties:
+            entity_type:
+              $ref: "#/components/schemas/EntityType"
+            is_global:
+              type: boolean
+              description: Whether the object is a top-level root, or a child of some other entity.
+            is_instantiated:
+              type: boolean
+              description: Whether the object's state is already physically persisted on ledger.
+            main_module_state:
+              $ref: "#/components/schemas/ObjectModuleStateInfo"
+            attached_modules:
+              description: |
+                Information about the other modules attached to the object (possibly empty, even
+                when `is_global`).
+              type: array
+              items:
+                type: object
+                required:
+                  - attached_module_id
+                  - state
+                properties:
+                  attached_module_id:
+                    $ref: "#/components/schemas/AttachedModuleId"
+                  state:
+                    $ref: "#/components/schemas/ObjectModuleStateInfo"
+            blueprint_reference:
+              $ref: '#/components/schemas/BlueprintReference'
+            instance_info:
+              $ref: '#/components/schemas/ObjectInstanceInfo'
+    KeyValueStoreEntityInfo:
+      allOf:
+        - $ref: "#/components/schemas/EntityInfo"
+        - type: object
+          description: Information available when the entity is a Key-Value Store.
+          required:
+            - key_type_reference
+            - value_type_reference
+          properties:
+            key_type_reference:
+              $ref: "#/components/schemas/ResolvedTypeReference"
+            value_type_reference:
+              $ref: "#/components/schemas/ResolvedTypeReference"
+    ObjectModuleStateInfo:
+      description: |
+        Information about the state held by a particular module of the object.
+      type: object
+      required:
+        - fields
+        - collections
+      properties:
+        fields:
+          type: array
+          items:
+            $ref: "#/components/schemas/ObjectFieldInfo"
+        collections:
+          type: array
+          items:
+            $ref: "#/components/schemas/ObjectCollectionInfo"
+    ObjectFieldInfo:
+      type: object
+      required:
+        - index
+        - type_reference
+      properties:
+        index:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 255
+          description: |
+            Field's index - please note that it will not necessarily be equal to an index of this
+            item within `ObjectModuleStateInfo.fields` (since e.g. not all conditional fields
+            defined by the blueprint must be present for the object).
+        name:
+          $ref: "#/components/schemas/DerivedName"
+        type_reference:
+          $ref: "#/components/schemas/ResolvedTypeReference"
+    ObjectCollectionInfo:
+      type: object
+      required:
+        - index
+        - kind
+        - key_type_reference
+        - value_type_reference
+      properties:
+        index:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 255
+          description: |
+            Collection's index - please note that it will not necessarily be equal to an index of
+            this item within `ObjectModuleStateInfo.collections`.
+        kind:
+          $ref: "#/components/schemas/ObjectCollectionKind"
+        name:
+          $ref: "#/components/schemas/DerivedName"
+        key_type_reference:
+          $ref: "#/components/schemas/ResolvedTypeReference"
+        value_type_reference:
+          $ref: "#/components/schemas/ResolvedTypeReference"
+    ObjectCollectionKind:
+      description: One of supported kinds of collections within an Object.
+      type: string
+      enum:
+        - KeyValueStore
+        - Index
+        - SortedIndex
+    ResolvedTypeReferenceType:
+      type: string
+      enum:
+        - WellKnown
+        - SchemaDefined
+    ResolvedTypeReference:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/ResolvedTypeReferenceType"
+        name:
+          $ref: "#/components/schemas/DerivedName"
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match ResolvedTypeReferenceType
+          WellKnown: '#/components/schemas/WellKnownTypeReference'
+          SchemaDefined: '#/components/schemas/SchemaDefinedTypeReference'
+    WellKnownTypeReference:
+      description: Reference to a well-known Scrypto type.
+      allOf:
+        - $ref: "#/components/schemas/ResolvedTypeReference"
+        - type: object
+          required:
+            - index
+          properties:
+            index:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 4294967295
+              description: An effective ID of the well-known type.
+    SchemaDefinedTypeReference:
+      description: Reference to a fully-resolved type within a specific schema.
+      allOf:
+        - $ref: "#/components/schemas/ResolvedTypeReference"
+        - type: object
+          required:
+            - schema_reference
+            - index
+          properties:
+            schema_reference:
+              $ref: "#/components/schemas/SchemaReference"
+            index:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 4294967295
+              description: The type's index within the referenced schema.
+    SchemaReference:
+      description: A reference to a schema within the Schema partition of a specific entity.
+      type: object
+      required:
+        - entity_address
+        - schema_hash
+      properties:
+        entity_address:
+          $ref: '#/components/schemas/EntityAddress'
+        schema_hash:
+          $ref: '#/components/schemas/SchemaHash'
+    DerivedName:
+      type: string
+      description: |
+        A human-readable name, derived on a best-effort basis from the type info/blueprint/schema.
+        May be missing either because the subject deliberately has no defined name (e.g. in case of
+        an unnamed tuple) or because the name resolution was not successful (e.g. when certain
+        naming conventions are not observed within the relevant definitions).
+    BlueprintReference:
+      type: object
+      required:
+        - package_address
+        - blueprint_name
+        - blueprint_version
+      properties:
+        package_address:
+          $ref: '#/components/schemas/PackageAddress'
+        blueprint_name:
+          type: string
+        blueprint_version:
+          type: string
+          description: A string of format `Major.Minor.Patch` (all parts being `u32`).
+    ObjectInstanceInfo:
+      type: object
+      description: |
+        Object's metadata details defined on a per-instance basis (i.e. not in blueprint).
+        Please note that even uninstantiated objects do have instance info (i.e. a default one).
+      required:
+        - enabled_features
+        - substituted_generic_types
+      properties:
+        outer_object_address:
+          $ref: '#/components/schemas/GlobalAddress'
+        enabled_features:
+          type: array
+          description: Names of the features enabled for this instance.
+          items:
+            type: string
+        substituted_generic_types:
+          type: array
+          description: The actual types used for generics defined by the blueprint.
+          items:
+            $ref: "#/components/schemas/ResolvedTypeReference"
+#########################################################
+# REQUEST: /blueprint/info                              #
+#########################################################
+    BlueprintInfoRequest:
+      type: object
+      required:
+        - package_address
+        - blueprint_name
+      properties:
+        package_address:
+          $ref: "#/components/schemas/PackageAddress"
+        blueprint_name:
+          type: string
+        blueprint_version:
+          type: string
+          description: |
+            A string of format `Major.Minor.Patch` (all parts being `u32`). Defaults to `1.0.0`.
+        sbor_format_options:
+          $ref: "#/components/schemas/SborFormatOptions"
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSelector"
+    BlueprintInfoResponse:
+      type: object
+      required:
+        - at_ledger_state
+        - info
+      properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+        info:
+          $ref: "#/components/schemas/DetailedBlueprintInfo"
+    DetailedBlueprintInfo:
+      type: object
+      required:
+        - is_transient
+        - generic_type_parameters
+        - available_features
+        - fields
+        - collections
+        - functions
+        - methods
+        - roles
+        - events
+        - named_types
+      properties:
+        outer_blueprint_name:
+          type: string
+          description: |
+            A name of the outer blueprint within the same package.
+            Only present if this one is an inner blueprint.
+        is_transient:
+          type: boolean
+          description: If true, an instantiation of this blueprint cannot be persisted (e.g. buckets and proofs are transient).
+        generic_type_parameters:
+          description: |
+            Generic type parameters which need to be substituted by an object (when instantiating this blueprint).
+            See `ObjectInstanceInfo.substituted_generic_types`.
+          type: array
+          items:
+            $ref: '#/components/schemas/GenericTypeParameter'
+        available_features:
+          description: |
+            Names of the features that can be enabled for an object (when instantiating this blueprint).
+            See `ObjectInstanceInfo.enabled_features`.
+          type: array
+          items:
+            type: string
+        fields:
+          description: Fields defined by this blueprint.
+          type: array
+          items:
+            $ref: '#/components/schemas/BlueprintFieldInfo'
+        collections:
+          description: Collections defined by this blueprint.
+          type: array
+          items:
+            $ref: '#/components/schemas/BlueprintCollectionInfo'
+        functions:
+          description: Functions defined by this blueprint.
+          type: array
+          items:
+            $ref: '#/components/schemas/BlueprintFunctionInfo'
+        methods:
+          description: Methods defined by this blueprint.
+          type: array
+          items:
+            $ref: '#/components/schemas/BlueprintMethodInfo'
+        roles:
+          $ref: '#/components/schemas/BlueprintRolesDefinition'
+        events:
+          description: Events defined by this blueprint.
+          type: array
+          items:
+            $ref: '#/components/schemas/BlueprintEventInfo'
+        named_types:
+          description: Named types defined by this blueprint.
+          type: array
+          items:
+            $ref: '#/components/schemas/BlueprintNamedTypeInfo'
+    BlueprintNamedTypeInfo:
+      type: object
+      required:
+        - name
+        - type_reference
+      properties:
+        name:
+          type: string
+        type_reference:
+          $ref: "#/components/schemas/ResolvedTypeReference"
+    BlueprintEventInfo:
+      type: object
+      required:
+        - name
+        - type_reference
+      properties:
+        name:
+          type: string
+        type_reference:
+          $ref: "#/components/schemas/BlueprintResolvedTypeReference"
+    BlueprintFunctionInfo:
+      type: object
+      required:
+        - name
+        - input_type_reference
+        - output_type_reference
+        - authorization
+      properties:
+        name:
+          type: string
+        input_type_reference:
+          $ref: "#/components/schemas/BlueprintResolvedTypeReference"
+        output_type_reference:
+          $ref: "#/components/schemas/BlueprintResolvedTypeReference"
+        authorization:
+          $ref: "#/components/schemas/BlueprintFunctionAuthorization"
+        royalty_amount:
+          description: |
+            An amount to be paid in royalties for calling the function belonging to the Blueprint.
+            When not present, then the function is free (either because of explicit configuration,
+            or because of disabled Package royalties).
+          $ref: "#/components/schemas/RoyaltyAmount"
+    RoyaltyAmount:
+      type: object
+      required:
+        - amount
+        - unit
+      properties:
+        amount:
+          $ref: '#/components/schemas/Decimal'
+        unit:
+          type: string
+          enum:
+            - XRD
+            - USD
+    BlueprintFunctionAuthorizationType:
+      type: string
+      enum:
+        - Public
+        - ByAccessRule
+        - RootOnly
+    BlueprintFunctionAuthorization:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/BlueprintFunctionAuthorizationType'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match BlueprintFunctionAuthorizationType options
+          Public: '#/components/schemas/PublicBlueprintFunctionAuthorization'
+          ByAccessRule: '#/components/schemas/ByAccessRuleBlueprintFunctionAuthorization'
+          RootOnly: '#/components/schemas/RootOnlyBlueprintFunctionAuthorization'
+    ByAccessRuleBlueprintFunctionAuthorization:
+      allOf:
+        - $ref: "#/components/schemas/BlueprintFunctionAuthorization"
+        - type: object
+          required:
+            - rule
+          properties:
+            rule:
+              $ref: "#/components/schemas/AccessRule"
+    PublicBlueprintFunctionAuthorization:
+      allOf:
+        - $ref: "#/components/schemas/BlueprintFunctionAuthorization"
+        - type: object
+          description: All callers have access.
+    RootOnlyBlueprintFunctionAuthorization:
+      allOf:
+        - $ref: "#/components/schemas/BlueprintFunctionAuthorization"
+        - type: object
+          description: Only the root call frame has access.
+    AccessRuleType:
+      type: string
+      enum:
+        - Protected
+        - AllowAll
+        - DenyAll
+    AccessRule:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/AccessRuleType'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match AccessRuleType options above
+          Protected: '#/components/schemas/ProtectedAccessRule'
+          AllowAll: '#/components/schemas/AllowAllAccessRule'
+          DenyAll: '#/components/schemas/DenyAllAccessRule'
+    ProtectedAccessRule:
+      allOf:
+        - $ref: '#/components/schemas/AccessRule'
+        - type: object
+          required:
+            - access_rule
+          properties:
+            access_rule:
+              $ref: '#/components/schemas/AccessRuleNode'
+    AllowAllAccessRule:
+      allOf:
+        - $ref: '#/components/schemas/AccessRule'
+        - type: object
+    DenyAllAccessRule:
+      allOf:
+        - $ref: '#/components/schemas/AccessRule'
+        - type: object
+    AccessRuleNodeType:
+      type: string
+      enum:
+        - ProofRule
+        - AnyOf
+        - AllOf
+    AccessRuleNode:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/AccessRuleNodeType'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match AccessRuleNodeType options above
+          ProofRule: '#/components/schemas/ProofAccessRuleNode'
+          AnyOf: '#/components/schemas/AnyOfAccessRuleNode'
+          AllOf: '#/components/schemas/AllOfAccessRuleNode'
+    ProofAccessRuleNode:
+      allOf:
+        - $ref: '#/components/schemas/AccessRuleNode'
+        - type: object
+          required:
+            - proof_rule
+          properties:
+            proof_rule:
+              $ref: '#/components/schemas/ProofRule'
+    AnyOfAccessRuleNode:
+      allOf:
+        - $ref: '#/components/schemas/AccessRuleNode'
+        - type: object
+          required:
+            - access_rules
+          properties:
+            access_rules:
+              type: array
+              items:
+                $ref: '#/components/schemas/AccessRuleNode'
+    AllOfAccessRuleNode:
+      allOf:
+        - $ref: '#/components/schemas/AccessRuleNode'
+        - type: object
+          required:
+            - access_rules
+          properties:
+            access_rules:
+              type: array
+              items:
+                $ref: '#/components/schemas/AccessRuleNode'
+    ProofRuleType:
+      type: string
+      enum:
+        - Require
+        - AmountOf
+        - AllOf
+        - AnyOf
+        - CountOf
+    ProofRule:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/ProofRuleType'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match ProofRuleType options above
+          Require: '#/components/schemas/RequireProofRule'
+          AmountOf: '#/components/schemas/AmountOfProofRule'
+          AllOf: '#/components/schemas/AllOfProofRule'
+          AnyOf: '#/components/schemas/AnyOfProofRule'
+          CountOf: '#/components/schemas/CountOfProofRule'
+    RequireProofRule:
+      allOf:
+        - $ref: '#/components/schemas/ProofRule'
+        - type: object
+          required:
+            - requirement
+          properties:
+            requirement:
+              $ref: '#/components/schemas/Requirement'
+    AmountOfProofRule:
+      allOf:
+        - $ref: '#/components/schemas/ProofRule'
+        - type: object
+          required:
+            - amount
+            - resource
+          properties:
+            amount:
+              type: string
+            resource:
+              $ref: '#/components/schemas/ResourceAddress'
+    AllOfProofRule:
+      allOf:
+        - $ref: '#/components/schemas/ProofRule'
+        - type: object
+          required:
+            - list
+          properties:
+            list:
+              type: array
+              items:
+                $ref: '#/components/schemas/Requirement'
+    AnyOfProofRule:
+      allOf:
+        - $ref: '#/components/schemas/ProofRule'
+        - type: object
+          required:
+            - list
+          properties:
+            list:
+              type: array
+              items:
+                $ref: '#/components/schemas/Requirement'
+    CountOfProofRule:
+      allOf:
+        - $ref: '#/components/schemas/ProofRule'
+        - type: object
+          required:
+            - count
+            - list
+          properties:
+            count:
+              type: integer
+            list:
+              type: array
+              items:
+                $ref: '#/components/schemas/Requirement'
+    Requirement:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/RequirementType'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match RequirementType options below
+          Resource: '#/components/schemas/ResourceRequirement'
+          NonFungible: '#/components/schemas/NonFungibleRequirement'
+    RequirementType:
+      type: string
+      enum:
+        - Resource
+        - NonFungible
+    ResourceRequirement:
+      allOf:
+        - $ref: '#/components/schemas/Requirement'
+        - type: object
+          required:
+            - resource
+          properties:
+            resource:
+              $ref: '#/components/schemas/ResourceAddress'
+    NonFungibleRequirement:
+      allOf:
+        - $ref: '#/components/schemas/Requirement'
+        - type: object
+          required:
+            - non_fungible
+          properties:
+            non_fungible:
+              $ref: '#/components/schemas/NonFungibleGlobalId'
+    NonFungibleGlobalId:
+      type: object
+      required:
+        - resource_address
+        - local_id
+      properties:
+        resource_address:
+          $ref: "#/components/schemas/ResourceAddress"
+        local_id:
+          $ref: "#/components/schemas/NonFungibleLocalId"
+    NonFungibleLocalId:
+      type: string
+      description: |
+        A simple string representation of a non-fungible local ID, with a type-dependent formatting:
+        * For string ids, this is `<the-string-id>`
+        * For integer ids, this is `#the-integer-id#`
+        * For bytes ids, this is `[the-lower-case-hex-representation]`
+        * For RUID ids, this is `{...-...-...-...}` where `...` are each 16 hex characters.
+    BlueprintMethodInfo:
+      type: object
+      required:
+        - name
+        - receiver
+        - input_type_reference
+        - output_type_reference
+        - authorization
+      properties:
+        name:
+          type: string
+        receiver:
+          $ref: "#/components/schemas/BlueprintMethodReceiverInfo"
+        input_type_reference:
+          $ref: "#/components/schemas/BlueprintResolvedTypeReference"
+        output_type_reference:
+          $ref: "#/components/schemas/BlueprintResolvedTypeReference"
+        authorization:
+          $ref: "#/components/schemas/BlueprintMethodAuthorization"
+        royalty_amount:
+          description: |
+            An amount to be paid in royalties for calling the method belonging to the Blueprint (on
+            top of any additional Component royalties defined on an instance-by-instance basis). 
+            When not present, then no Package royalty is due (either because of explicit
+            configuration, or because of disabled Package royalties).
+          $ref: "#/components/schemas/RoyaltyAmount"
+    BlueprintMethodReceiverInfo:
+      type: object
+      required:
+        - receiver_type
+        - reference_types
+      properties:
+        receiver_type:
+          $ref: "#/components/schemas/MethodReceiverType"
+        reference_types:
+          type: array
+          items:
+            $ref: "#/components/schemas/MethodReceiverReferenceType"
+    MethodReceiverType:
+      type: string
+      enum:
+        - SelfRef
+        - SelfRefMut
+    MethodReceiverReferenceType:
+      type: string
+      enum:
+        - Normal
+        - DirectAccess
+    BlueprintMethodAuthorizationType:
+      type: string
+      enum:
+        - Public
+        - ByRoles
+        - OuterObjectOnly
+        - OwnPackageOnly
+    BlueprintMethodAuthorization:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/BlueprintMethodAuthorizationType'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match BlueprintMethodAuthorizationType options
+          Public: '#/components/schemas/PublicBlueprintMethodAuthorization'
+          ByRoles: '#/components/schemas/ByRolesBlueprintMethodAuthorization'
+          OuterObjectOnly: '#/components/schemas/OuterObjectOnlyBlueprintMethodAuthorization'
+          OwnPackageOnly: '#/components/schemas/OwnPackageOnlyBlueprintMethodAuthorization'
+    ByRolesBlueprintMethodAuthorization:
+      allOf:
+        - $ref: "#/components/schemas/BlueprintMethodAuthorization"
+        - type: object
+          description: Only the listed roles have access.
+          required:
+            - role_keys
+          properties:
+            role_keys:
+              type: array
+              items:
+                type: string
+    PublicBlueprintMethodAuthorization:
+      allOf:
+        - $ref: "#/components/schemas/BlueprintMethodAuthorization"
+        - type: object
+          description: All callers have access.
+    OuterObjectOnlyBlueprintMethodAuthorization:
+      allOf:
+        - $ref: "#/components/schemas/BlueprintMethodAuthorization"
+        - type: object
+          description: Only outer objects have access.
+    OwnPackageOnlyBlueprintMethodAuthorization:
+      allOf:
+        - $ref: "#/components/schemas/BlueprintMethodAuthorization"
+        - type: object
+          description: Only the package this method is a part of has access.
+    BlueprintRolesDefinitionType:
+      type: string
+      enum:
+        - Local
+        - Outer
+    BlueprintRolesDefinition:
+      type: object
+      description: Blueprint's definition of authorization roles.
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/BlueprintRolesDefinitionType'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match BlueprintRolesDefinitionType options
+          Local: '#/components/schemas/LocalBlueprintRolesDefinition'
+          Outer: '#/components/schemas/OuterBlueprintRolesDefinition'
+    LocalBlueprintRolesDefinition:
+      allOf:
+        - $ref: "#/components/schemas/BlueprintRolesDefinition"
+        - type: object
+          description: Roles are specified by the blueprint.
+          required:
+            - definitions
+          properties:
+            definitions:
+              type: array
+              items:
+                $ref: "#/components/schemas/BlueprintRoleInfo"
+    OuterBlueprintRolesDefinition:
+      allOf:
+        - $ref: "#/components/schemas/BlueprintRolesDefinition"
+        - type: object
+          description: |
+            Roles are specified in the outer blueprint and defined in the instantiated outer object.
+    BlueprintRoleInfo:
+      type: object
+      required:
+        - key
+        - updater_role_keys
+      properties:
+        key:
+          type: string
+          description: Identifier of a role.
+        updater_role_keys:
+          type: array
+          items:
+            type: string
+            description: Identifiers of roles authorized to update this role.
+    BlueprintCollectionInfo:
+      type: object
+      required:
+        - index
+        - kind
+        - key_type_reference
+        - value_type_reference
+      properties:
+        index:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 255
+        name:
+          $ref: "#/components/schemas/DerivedName"
+        kind:
+          $ref: "#/components/schemas/ObjectCollectionKind"
+        key_type_reference:
+          $ref: "#/components/schemas/BlueprintResolvedTypeReference"
+        value_type_reference:
+          $ref: "#/components/schemas/BlueprintResolvedTypeReference"
+    BlueprintFieldInfo:
+      type: object
+      required:
+        - index
+        - type_reference
+      properties:
+        index:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 255
+        name:
+          $ref: "#/components/schemas/DerivedName"
+        type_reference:
+          $ref: "#/components/schemas/BlueprintResolvedTypeReference"
+        condition:
+          $ref: "#/components/schemas/BlueprintFieldCondition"
+        transience:
+          $ref: "#/components/schemas/BlueprintFieldTransience"
+    BlueprintFieldTransience:
+      type: object
+      description: Properties related to the field's transience. Only present if the field is transient.
+      required:
+        - default_value
+      properties:
+        default_value:
+          $ref: '#/components/schemas/SborData'
+          description: The value to which the transient field is reset after every transaction.
+    BlueprintFieldConditionType:
+      type: string
+      enum:
+        - IfOwnFeature
+        - IfOuterObjectFeature
+    BlueprintFieldCondition:
+      type: object
+      description: |
+        A condition under which the field will actually be present on an object (when instantiating this blueprint).
+        If not specified, the field is always present (unconditionally).
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/BlueprintFieldConditionType'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match BlueprintFieldConditionType options
+          IfOwnFeature: '#/components/schemas/IfOwnFeatureFieldCondition'
+          IfOuterObjectFeature: '#/components/schemas/IfOuterObjectFeatureFieldCondition'
+    IfOwnFeatureFieldCondition:
+      allOf:
+        - $ref: "#/components/schemas/BlueprintFieldCondition"
+        - type: object
+          required:
+            - feature_name
+          properties:
+            feature_name:
+              type: string
+    IfOuterObjectFeatureFieldCondition:
+      allOf:
+        - $ref: "#/components/schemas/BlueprintFieldCondition"
+        - type: object
+          required:
+            - feature_name
+          properties:
+            feature_name:
+              type: string
+    BlueprintResolvedTypeReferenceType:
+      type: string
+      enum:
+        - Static
+        - Generic
+    BlueprintResolvedTypeReference:
+      type: object
+      description: |
+        A type, as declared by a blueprint - which means that it may either be a static, fully-resolved
+        type reference, or one of the blueprint's generic type parameters.
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/BlueprintResolvedTypeReferenceType"
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match BlueprintResolvedTypeReferenceType
+          Static: '#/components/schemas/BlueprintStaticTypeReference'
+          Generic: '#/components/schemas/BlueprintGenericTypeReference'
+    BlueprintStaticTypeReference:
+      allOf:
+        - $ref: "#/components/schemas/BlueprintResolvedTypeReference"
+        - type: object
+          required:
+            - static_type_reference
+          properties:
+            static_type_reference:
+              $ref: "#/components/schemas/ResolvedTypeReference"
+    BlueprintGenericTypeReference:
+      allOf:
+        - $ref: "#/components/schemas/BlueprintResolvedTypeReference"
+        - type: object
+          required:
+            - generic_type_parameter_index
+          properties:
+            generic_type_parameter_index:
+              type: integer
+              format: int32
+              minimum: 0
+              maximum: 255
+              description: An index within `DetailedBlueprintInfo.generic_type_parameters`.
+#########################################################
+# REQUEST: /object/field                                #
+#########################################################
+    ObjectFieldRequest:
+      type: object
+      required:
+        - entity_address
+        # additionally, either `field_name` or `field_index` is required, but hard to make it work with code generator
+      properties:
+        entity_address:
+          $ref: "#/components/schemas/EntityAddress"
+        attached_module_id:
+          description: |
+            Attached Module ID; should only be specified when reading a field of some attached module.
+            Should be skipped to read the Object's own field.
+          $ref: "#/components/schemas/AttachedModuleId"
+        field_name:
+          type: string
+          description: |
+            Name of the field to read. Either this or `field_index` is required.
+            Note: getting a field by name is only a convenience feature, meant for manual, ad-hoc
+            requests (i.e. allowing a human to use the human-readable `DerivedName` when available).
+            In general, a field's primary identifier is its index, and any production-grade
+            integration should use it.
+        field_index:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 255
+          description: Index of the field to read. Either this or `field_name` is required.
+        sbor_format_options:
+          $ref: "#/components/schemas/SborFormatOptions"
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSelector"
+    ObjectFieldResponse:
+      type: object
+      required:
+        - at_ledger_state
+        - content
+      properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+        content:
+          $ref: "#/components/schemas/SborData"
+          description: The requested field's value.
+#########################################################
+# REQUEST: /object/collection/iterator                  #
+#########################################################
+    ObjectCollectionIteratorRequest:
+      type: object
+      required:
+        - entity_address
+        # additionally, either `collection_name` or `collection_index` is required, but hard to make it work with code generator
+      properties:
+        entity_address:
+          $ref: "#/components/schemas/EntityAddress"
+        attached_module_id:
+          description: |
+            Attached Module ID; should only be specified when reading a collection of some attached module.
+            Should be skipped to read the Object's own collection.
+          $ref: "#/components/schemas/AttachedModuleId"
+        collection_name:
+          type: string
+          description: |
+            Name of the collection to read. Either this or `collection_index` is required.
+            Note: getting a collection by name is only a convenience feature, meant for manual,
+            ad-hoc requests (i.e. allowing a human to use the human-readable `DerivedName` when
+            available).
+            In general, a collection's primary identifier is its index, and any production-grade
+            integration should use it.
+        collection_index:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 255
+          description: Index of the collection to read. Either this or `collection_name` is required.
+        sbor_format_options:
+          $ref: "#/components/schemas/SborFormatOptions"
+        max_page_size:
+          $ref: "#/components/schemas/MaxPageSize"
+        continuation_token:
+          $ref: "#/components/schemas/ContinuationToken"
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSelector"
+    ObjectCollectionIteratorResponse:
+      type: object
+      required:
+        - at_ledger_state
+        - page
+      properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+        page:
+          type: array
+          items:
+            $ref: "#/components/schemas/CollectionEntryKey"
+          description: A page of entry keys. If this page is the last one, the `continuation_token` will be not be included.
+        continuation_token:
+          $ref: "#/components/schemas/ContinuationToken"
+    CollectionEntryKey:
+      type: object
+      required:
+        - kind
+      properties:
+        kind:
+          $ref: "#/components/schemas/ObjectCollectionKind"
+      discriminator:
+        propertyName: kind
+        mapping:
+          # NOTE: These need to match ObjectCollectionKind
+          KeyValueStore: '#/components/schemas/KeyValueStoreEntryKey'
+          Index: '#/components/schemas/IndexEntryKey'
+          SortedIndex: '#/components/schemas/SortedIndexEntryKey'
+    KeyValueStoreEntryKey:
+      description: Key within an Object's Key-Value Store collection.
+      allOf:
+        - $ref: "#/components/schemas/CollectionEntryKey"
+        - type: object
+          required:
+            - key
+          properties:
+            key:
+              $ref: '#/components/schemas/SborData'
+    IndexEntryKey:
+      description: Key within an Object's Index collection.
+      allOf:
+        - $ref: "#/components/schemas/CollectionEntryKey"
+        - type: object
+          required:
+            - key
+          properties:
+            key:
+              $ref: '#/components/schemas/SborData'
+    SortedIndexEntryKey:
+      description: Key within an Object's Sorted Index collection.
+      allOf:
+        - $ref: "#/components/schemas/CollectionEntryKey"
+        - type: object
+          required:
+            - sort_prefix_hex
+            - key
+          properties:
+            sort_prefix_hex:
+              type: string
+              description: The hex-encoded bytes of the sorted part of the key.
+            key:
+              $ref: '#/components/schemas/SborData'
+              description: The remaining part of the key.
+#########################################################
+# REQUEST: /object/collection/entry                     #
+#########################################################
+    ObjectCollectionEntryRequest:
+      type: object
+      required:
+        - entity_address
+        # additionally, either `collection_name` or `collection_index` is required, but hard to make it work with code generator
+        - key
+      properties:
+        entity_address:
+          $ref: "#/components/schemas/EntityAddress"
+        attached_module_id:
+          description: |
+            Attached Module ID; should only be specified when reading a collection of some attached module.
+            Should be skipped to read the Object's own collection.
+          $ref: "#/components/schemas/AttachedModuleId"
+        collection_name:
+          type: string
+          description: |
+            Name of the collection to read. Either this or `collection_index` is required.
+            Note: getting a collection by name is only a convenience feature, meant for manual,
+            ad-hoc requests (i.e. allowing a human to use the human-readable `DerivedName` when
+            available).
+            In general, a collection's primary identifier is its index, and any production-grade
+            integration should use it.
+        collection_index:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 255
+          description: Index of the collection to read. Either this or `collection_name` is required.
+        key:
+          $ref: "#/components/schemas/CollectionEntryKey"
+          description: |
+            The key to look up the entry by.
+            Exactly one of the available SBOR formats must be present on the `SborData` within the
+            requested key.
+        sbor_format_options:
+          $ref: "#/components/schemas/SborFormatOptions"
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSelector"
+    ObjectCollectionEntryResponse:
+      type: object
+      required:
+        - at_ledger_state
+        - content
+      properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+        content:
+          $ref: '#/components/schemas/SborData'
+          description: The requested Object Collection entry's value.
+#########################################################
+# REQUEST: /object/attached-modules/metadata/iterator   #
+#########################################################
+    ObjectMetadataIteratorRequest:
+      type: object
+      required:
+        - entity_address
+      properties:
+        entity_address:
+          $ref: "#/components/schemas/EntityAddress"
+        max_page_size:
+          $ref: "#/components/schemas/MaxPageSize"
+        continuation_token:
+          $ref: "#/components/schemas/ContinuationToken"
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSelector"
+    ObjectMetadataIteratorResponse:
+      type: object
+      required:
+        - at_ledger_state
+        - page
+      properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+        page:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetadataEntryKey"
+          description: A page of metadata keys. If this page is the last one, the `continuation_token` will be not be included.
+        continuation_token:
+          $ref: "#/components/schemas/ContinuationToken"
+    MetadataEntryKey:
+      type: object
+      required:
+        - key
+      properties:
+        key:
+          type: string
+          description: Metadata entry key (which is always a string).
+#########################################################
+# REQUEST: /object/attached-modules/metadata/entry      #
+#########################################################
+    ObjectMetadataEntryRequest:
+      type: object
+      required:
+        - entity_address
+        - key
+      properties:
+        entity_address:
+          $ref: "#/components/schemas/EntityAddress"
+        key:
+          type: string
+          description: The metadata key (i.e. always a string) to look up the entry by.
+        sbor_format_options:
+          $ref: "#/components/schemas/SborFormatOptions"
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSelector"
+    ObjectMetadataEntryResponse:
+      type: object
+      required:
+        - at_ledger_state
+        - content
+      properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+        content:
+          $ref: '#/components/schemas/MetadataValue'
+          description: The requested Object metadata value.
+    MetadataValueType:
+      type: string
+      enum:
+        - String
+        - Bool
+        - U8
+        - U32
+        - U64
+        - I32
+        - I64
+        - Decimal
+        - GlobalAddress
+        - PublicKey
+        - NonFungibleGlobalId
+        - NonFungibleLocalId
+        - Instant
+        - Url
+        - Origin
+        - PublicKeyHash
+        - StringArray
+        - BoolArray
+        - U8Array
+        - U32Array
+        - U64Array
+        - I32Array
+        - I64Array
+        - DecimalArray
+        - GlobalAddressArray
+        - PublicKeyArray
+        - NonFungibleGlobalIdArray
+        - NonFungibleLocalIdArray
+        - InstantArray
+        - UrlArray
+        - OriginArray
+        - PublicKeyHashArray
+    MetadataValue:
+      type: object
+      required:
+        - type
+        - value
+      properties:
+        type:
+          $ref: "#/components/schemas/MetadataValueType"
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match MetadataValueType
+          String: '#/components/schemas/StringMetadataValue'
+          Bool: '#/components/schemas/BoolMetadataValue'
+          U8: '#/components/schemas/U8MetadataValue'
+          U32: '#/components/schemas/U32MetadataValue'
+          U64: '#/components/schemas/U64MetadataValue'
+          I32: '#/components/schemas/I32MetadataValue'
+          I64: '#/components/schemas/I64MetadataValue'
+          Decimal: '#/components/schemas/DecimalMetadataValue'
+          GlobalAddress: '#/components/schemas/GlobalAddressMetadataValue'
+          PublicKey: '#/components/schemas/PublicKeyMetadataValue'
+          NonFungibleGlobalId: '#/components/schemas/NonFungibleGlobalIdMetadataValue'
+          NonFungibleLocalId: '#/components/schemas/NonFungibleLocalIdMetadataValue'
+          Instant: '#/components/schemas/InstantMetadataValue'
+          Url: '#/components/schemas/UrlMetadataValue'
+          Origin: '#/components/schemas/OriginMetadataValue'
+          PublicKeyHash: '#/components/schemas/PublicKeyHashMetadataValue'
+          StringArray: '#/components/schemas/StringArrayMetadataValue'
+          BoolArray: '#/components/schemas/BoolArrayMetadataValue'
+          U8Array: '#/components/schemas/U8ArrayMetadataValue'
+          U32Array: '#/components/schemas/U32ArrayMetadataValue'
+          U64Array: '#/components/schemas/U64ArrayMetadataValue'
+          I32Array: '#/components/schemas/I32ArrayMetadataValue'
+          I64Array: '#/components/schemas/I64ArrayMetadataValue'
+          DecimalArray: '#/components/schemas/DecimalArrayMetadataValue'
+          GlobalAddressArray: '#/components/schemas/GlobalAddressArrayMetadataValue'
+          PublicKeyArray: '#/components/schemas/PublicKeyArrayMetadataValue'
+          NonFungibleGlobalIdArray: '#/components/schemas/NonFungibleGlobalIdArrayMetadataValue'
+          NonFungibleLocalIdArray: '#/components/schemas/NonFungibleLocalIdArrayMetadataValue'
+          InstantArray: '#/components/schemas/InstantArrayMetadataValue'
+          UrlArray: '#/components/schemas/UrlArrayMetadataValue'
+          OriginArray: '#/components/schemas/OriginArrayMetadataValue'
+          PublicKeyHashArray: '#/components/schemas/PublicKeyHashArrayMetadataValue'
+    StringMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: string
+    BoolMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: boolean
+    U8MetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: integer
+              format: int32
+              minimum: 0
+              maximum: 255
+    U32MetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 4294967295
+    U64MetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: string
+              description: An unsigned 64-bit integer, encoded as a string (because of JSON limitations).
+    I32MetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: integer
+              format: int64
+              minimum: -2147483648
+              maximum: 2147483647
+    I64MetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: string
+              description: A signed 64-bit integer, encoded as a string (because of JSON limitations).
+    DecimalMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: string
+              description: A string-encoded fixed-precision decimal to 18 decimal places.
+    GlobalAddressMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              $ref: '#/components/schemas/GlobalAddress'
+    PublicKeyMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              $ref: "#/components/schemas/PublicKey"
+    NonFungibleGlobalIdMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              $ref: "#/components/schemas/NonFungibleGlobalId"
+    NonFungibleLocalIdMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              $ref: "#/components/schemas/NonFungibleLocalId"
+    InstantMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              $ref: '#/components/schemas/ScryptoInstant'
+    UrlMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: string
+    OriginMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: string
+    PublicKeyHashMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              $ref: "#/components/schemas/PublicKeyHash"
+    StringArrayMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: array
+              items:
+                type: string
+    BoolArrayMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: array
+              items:
+                type: boolean
+    U8ArrayMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: array
+              items:
+                type: integer
+                format: int32
+                minimum: 0
+                maximum: 255
+    U32ArrayMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: array
+              items:
+                type: integer
+                format: int64
+                minimum: 0
+                maximum: 4294967295
+    U64ArrayMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: array
+              items:
+                type: string
+                description: An unsigned 64-bit integer, encoded as a string (because of JSON limitations).
+    I32ArrayMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: array
+              items:
+                type: integer
+                format: int64
+                minimum: -2147483648
+                maximum: 2147483647
+    I64ArrayMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: array
+              items:
+                type: string
+                description: A signed 64-bit integer, encoded as a string (because of JSON limitations).
+    DecimalArrayMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: array
+              items:
+                type: string
+                description: A string-encoded fixed-precision decimal to 18 decimal places.
+    GlobalAddressArrayMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: array
+              items:
+                $ref: '#/components/schemas/GlobalAddress'
+    PublicKeyArrayMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: array
+              items:
+                $ref: "#/components/schemas/PublicKey"
+    NonFungibleGlobalIdArrayMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: array
+              items:
+                $ref: "#/components/schemas/NonFungibleGlobalId"
+    NonFungibleLocalIdArrayMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: array
+              items:
+                $ref: "#/components/schemas/NonFungibleLocalId"
+    InstantArrayMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: array
+              items:
+                $ref: '#/components/schemas/ScryptoInstant'
+    UrlArrayMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: array
+              items:
+                type: string
+    OriginArrayMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: array
+              items:
+                type: string
+    PublicKeyHashArrayMetadataValue:
+      allOf:
+        - $ref: "#/components/schemas/MetadataValue"
+        - properties:
+            value:
+              type: array
+              items:
+                $ref: "#/components/schemas/PublicKeyHash"
+    PublicKeyType:
+      type: string
+      enum:
+        - EcdsaSecp256k1
+        - EddsaEd25519
+    PublicKey:
+      type: object
+      required:
+        - key_type
+      properties:
+        key_type:
+          $ref: "#/components/schemas/PublicKeyType"
+      discriminator:
+        propertyName: key_type
+        mapping:
+          # NOTE: These need to match PublicKeyType
+          EcdsaSecp256k1: '#/components/schemas/EcdsaSecp256k1PublicKey'
+          EddsaEd25519: '#/components/schemas/EddsaEd25519PublicKey'
+    EcdsaSecp256k1PublicKey:
+      allOf:
+        - $ref: "#/components/schemas/PublicKey"
+        - type: object
+          required:
+            - key_hex
+          properties:
+            key_hex:
+              type: string
+              minLength: 66
+              maxLength: 66
+              description: The hex-encoded compressed ECDSA Secp256k1 public key (33 bytes)
+    EddsaEd25519PublicKey:
+      allOf:
+        - $ref: "#/components/schemas/PublicKey"
+        - type: object
+          required:
+            - key_hex
+          properties:
+            key_hex:
+              type: string
+              minLength: 64
+              maxLength: 64
+              description: The hex-encoded compressed EdDSA Ed25519 public key (32 bytes)
+    PublicKeyHash:
+      type: object
+      required:
+        - key_type
+        - hash
+      properties:
+        key_type:
+          $ref: "#/components/schemas/PublicKeyType"
+        hash:
+          type: string
+          minLength: 58
+          maxLength: 58
+          description: The hex-encoded last 29 bytes of a Blake2b-256 hash of the public key in the Radix canonical encoding.
+#########################################################
+# REQUEST: /object/attached-modules/role-assignment     #
+#########################################################
+    ObjectRoleAssignmentRequest:
+      type: object
+      required:
+        - entity_address
+      properties:
+        entity_address:
+          $ref: "#/components/schemas/EntityAddress"
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSelector"
+    ObjectRoleAssignmentResponse:
+      type: object
+      required:
+        - at_ledger_state
+        - owner
+        - main_module_roles
+        - attached_modules
+      properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+        owner:
+          $ref: "#/components/schemas/OwnerRoleEntry"
+        main_module_roles:
+          type: array
+          items:
+            $ref: "#/components/schemas/RoleAssignmentEntry"
+        attached_modules:
+          description: |
+            Information about the other modules attached to the object (possibly empty, even
+            when `is_global`).
+          type: array
+          items:
+            type: object
+            required:
+              - attached_module_id
+              - roles
+            properties:
+              attached_module_id:
+                $ref: "#/components/schemas/AttachedModuleId"
+              roles:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RoleAssignmentEntry"
+    RoleAssignmentEntry:
+      type: object
+      required:
+        - key
+        - assignment
+      properties:
+        key:
+          type: string
+          description: Role key.
+        assignment:
+          $ref: "#/components/schemas/Assignment"
+    AssignmentType:
+      type: string
+      enum:
+        - Owner
+        - Explicit
+    Assignment:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/AssignmentType"
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match AssignmentType
+          Owner: '#/components/schemas/OwnerAssignment'
+          Explicit: '#/components/schemas/ExplicitAssignment'
+    OwnerAssignment:
+      description: Reference to a well-known Scrypto type.
+      allOf:
+        - $ref: "#/components/schemas/Assignment"
+        - type: object
+    ExplicitAssignment:
+      description: Reference to a well-known Scrypto type.
+      allOf:
+        - $ref: "#/components/schemas/Assignment"
+        - type: object
+          required:
+            - rule
+          properties:
+            rule:
+              $ref: "#/components/schemas/AccessRule"
+              description: A rule identifying the Owner.
+    OwnerRoleEntry:
+      type: object
+      required:
+        - rule
+        - updater
+      properties:
+        rule:
+          $ref: "#/components/schemas/AccessRule"
+          description: A rule identifying the Owner.
+        updater:
+          $ref: "#/components/schemas/OwnerRoleUpdater"
+    OwnerRoleUpdater:
+      type: string
+      enum:
+        - None
+        - Owner
+        - Object
+      description: |
+        The ability to update the Owner:
+        - None: Owner is fixed and cannot be updated by anyone.
+        - Owner: Owner role may only be updated by the owner themselves.
+        - Object: Owner role may be updated by the object containing the access rules. This is currently primarily used for Presecurified objects.
+#########################################################
+# REQUEST: /object/attached-modules/royalty             #
+#########################################################
+    ObjectRoyaltyRequest:
+      type: object
+      required:
+        - entity_address
+      properties:
+        entity_address:
+          $ref: "#/components/schemas/EntityAddress"
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSelector"
+    ObjectRoyaltyResponse:
+      type: object
+      required:
+        - at_ledger_state
+        - method_royalties
+      properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+        method_royalties:
+          type: array
+          items:
+            $ref: "#/components/schemas/ObjectMethodRoyalty"
+    ObjectMethodRoyalty:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Method name.
+        component_royalty_amount:
+          description: |
+            An amount to be paid in royalties to the Component's owner for calling the method.
+            When not present, then no Component royalty is due (either because of explicit
+            configuration, or because of disabled Component royalties).
+            Please note that on top of this amount, a `package_royalty_amount` may also be due.
+          $ref: "#/components/schemas/RoyaltyAmount"
+        package_royalty_amount:
+          description: |
+            An amount to be paid in royalties to the Package's owner for calling the method (on
+            top of the `component_royalty_amount`). 
+            When not present, then no Package royalty is due (either because of explicit
+            configuration, or because of disabled Package royalties).
+            Note: this field is returned here only for convenience; since this is a Blueprint-level
+            configuration, the same information can be obtained from the `/blueprint/info` endpoint.
+          $ref: "#/components/schemas/RoyaltyAmount"
+#########################################################
+# REQUEST: /kv-store/iterator                           #
+#########################################################
+    KeyValueStoreIteratorRequest:
+      type: object
+      required:
+        - entity_address
+      properties:
+        entity_address:
+          $ref: "#/components/schemas/EntityAddress"
+        sbor_format_options:
+          $ref: "#/components/schemas/SborFormatOptions"
+        max_page_size:
+          $ref: "#/components/schemas/MaxPageSize"
+        continuation_token:
+          $ref: "#/components/schemas/ContinuationToken"
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSelector"
+    KeyValueStoreIteratorResponse:
+      type: object
+      required:
+        - at_ledger_state
+        - page
+      properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+        page:
+          type: array
+          items:
+            $ref: "#/components/schemas/KeyValueStoreMapKey"
+          description: A page of map keys. If this page is the last one, the `continuation_token` will be not be included.
+        continuation_token:
+          $ref: "#/components/schemas/ContinuationToken"
+    KeyValueStoreMapKey:
+      type: object
+      required:
+        - key
+      properties:
+        key:
+          $ref: '#/components/schemas/SborData'
+          description: SBOR-encoded map key.
+#########################################################
+# REQUEST: /kv-store/entry                              #
+#########################################################
+    KeyValueStoreEntryRequest:
+      type: object
+      required:
+        - entity_address
+        - key
+      properties:
+        entity_address:
+          $ref: "#/components/schemas/EntityAddress"
+        key:
+          $ref: "#/components/schemas/SborData"
+          description: |
+            The key to look up the entry by.
+            Exactly one of the available SBOR formats must be used.
+        sbor_format_options:
+          $ref: "#/components/schemas/SborFormatOptions"
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSelector"
+    KeyValueStoreEntryResponse:
+      type: object
+      required:
+        - at_ledger_state
+        - content
+      properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+        content:
+          $ref: '#/components/schemas/SborData'
+          description: The requested Key-Value Store entry's value.
+#########################################################
+# REQUEST: /entity/schema/entry                         #
+#########################################################
+    EntitySchemaEntryRequest:
+      type: object
+      required:
+        - entity_address
+        - schema_hash
+      properties:
+        entity_address:
+          $ref: "#/components/schemas/EntityAddress"
+        schema_hash:
+          $ref: '#/components/schemas/SchemaHash'
+        sbor_format_options:
+          $ref: "#/components/schemas/SborFormatOptions"
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSelector"
+    EntitySchemaEntryResponse:
+      type: object
+      required:
+        - at_ledger_state
+        - content
+      properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+        content:
+          $ref: '#/components/schemas/SborData'
+          description: The requested schema's value.

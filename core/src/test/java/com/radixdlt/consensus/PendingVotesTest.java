@@ -78,9 +78,6 @@ import com.radixdlt.consensus.bft.VoteProcessingResult.VoteRejected.VoteRejected
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.lang.Option;
-import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.utils.RandomHasher;
 import com.radixdlt.utils.UInt192;
 import java.util.Arrays;
@@ -91,15 +88,11 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class PendingVotesTest {
-  private BFTValidatorId self;
   private Hasher hasher;
-  private Metrics metrics;
 
   @Before
   public void setup() {
-    this.self = BFTValidatorId.random();
     this.hasher = new RandomHasher();
-    this.metrics = new MetricsInitializer().initialize();
   }
 
   @Test
@@ -118,7 +111,7 @@ public class PendingVotesTest {
     BFTValidatorSet validatorSet =
         BFTValidatorSet.from(
             Collections.singleton(BFTValidator.from(vote1.getAuthor(), UInt192.ONE)));
-    final var pendingVotes = new PendingVotes(self, hasher, e -> {}, validatorSet, metrics);
+    final var pendingVotes = new PendingVotes(hasher, e -> {}, validatorSet);
 
     VoteData voteData = mock(VoteData.class);
     BFTHeader proposed = vote1.getVoteData().getProposed();
@@ -147,7 +140,7 @@ public class PendingVotesTest {
     BFTHeader proposed = vote.getVoteData().getProposed();
     when(voteData.getProposed()).thenReturn(proposed);
 
-    final var pendingVotes = new PendingVotes(self, hasher, e -> {}, validatorSet, metrics);
+    final var pendingVotes = new PendingVotes(hasher, e -> {}, validatorSet);
 
     assertTrue(pendingVotes.insertVote(vote) instanceof VoteProcessingResult.QuorumReached);
   }
@@ -169,7 +162,7 @@ public class PendingVotesTest {
                 BFTValidator.from(vote1.getAuthor(), UInt192.ONE),
                 BFTValidator.from(vote2.getAuthor(), UInt192.ONE)));
 
-    final var pendingVotes = new PendingVotes(self, hasher, e -> {}, validatorSet, metrics);
+    final var pendingVotes = new PendingVotes(hasher, e -> {}, validatorSet);
 
     assertTrue(pendingVotes.insertVote(vote1) instanceof VoteProcessingResult.VoteAccepted);
 
@@ -199,7 +192,7 @@ public class PendingVotesTest {
     BFTHeader proposed = vote.getVoteData().getProposed();
     when(voteData.getProposed()).thenReturn(proposed);
 
-    final var pendingVotes = new PendingVotes(self, hasher, e -> {}, validatorSet, metrics);
+    final var pendingVotes = new PendingVotes(hasher, e -> {}, validatorSet);
 
     // Preconditions
     assertEquals(VoteProcessingResult.accepted(), pendingVotes.insertVote(vote));
@@ -232,7 +225,7 @@ public class PendingVotesTest {
     BFTHeader proposed = vote.getVoteData().getProposed();
     when(voteData.getProposed()).thenReturn(proposed);
 
-    final var pendingVotes = new PendingVotes(self, hasher, e -> {}, validatorSet, metrics);
+    final var pendingVotes = new PendingVotes(hasher, e -> {}, validatorSet);
 
     // Preconditions
     assertEquals(VoteProcessingResult.accepted(), pendingVotes.insertVote(vote));
@@ -267,7 +260,7 @@ public class PendingVotesTest {
                 BFTValidator.from(vote1.getAuthor(), UInt192.ONE),
                 BFTValidator.from(vote2.getAuthor(), UInt192.ONE)));
 
-    final var pendingVotes = new PendingVotes(self, hasher, e -> {}, validatorSet, metrics);
+    final var pendingVotes = new PendingVotes(hasher, e -> {}, validatorSet);
 
     assertTrue(pendingVotes.insertVote(vote1) instanceof VoteProcessingResult.VoteAccepted);
 
@@ -292,52 +285,6 @@ public class PendingVotesTest {
     assertTrue(
         ((VoteProcessingResult.QuorumReached) result2).roundQuorum()
             instanceof RoundQuorum.TimeoutRoundQuorum);
-  }
-
-  @Test
-  public void divergent_vertex_execution_should_be_detected() {
-    // Arrange: create two votes on the same vertexId, but having
-    // different ledger headers
-    final var vertexId = HashUtils.random256();
-
-    final var ledgerHeader1 = mock(LedgerHeader.class);
-    when(ledgerHeader1.nextProtocolVersion()).thenReturn(Option.empty());
-    final var bftHeader1 = mock(BFTHeader.class);
-    when(bftHeader1.getLedgerHeader()).thenReturn(ledgerHeader1);
-    when(bftHeader1.getVertexId()).thenReturn(vertexId);
-    final var voteData1 = mock(VoteData.class);
-    when(voteData1.getProposed()).thenReturn(bftHeader1);
-    final var vote1 =
-        makeVoteWithoutSignatureFor(mock(BFTValidatorId.class), Round.epochInitial(), vertexId);
-    when(vote1.getSignature()).thenReturn(ECDSASecp256k1Signature.zeroSignature());
-    when(vote1.getVoteData()).thenReturn(voteData1);
-
-    final var ledgerHeader2 = mock(LedgerHeader.class);
-    when(ledgerHeader2.nextProtocolVersion()).thenReturn(Option.empty());
-    final var bftHeader2 = mock(BFTHeader.class);
-    when(bftHeader2.getLedgerHeader()).thenReturn(ledgerHeader2);
-    when(bftHeader2.getVertexId()).thenReturn(vertexId);
-    final var voteData2 = mock(VoteData.class);
-    when(voteData2.getProposed()).thenReturn(bftHeader2);
-    final var vote2 =
-        makeVoteWithoutSignatureFor(mock(BFTValidatorId.class), Round.epochInitial(), vertexId);
-    when(vote2.getSignature()).thenReturn(ECDSASecp256k1Signature.zeroSignature());
-    when(vote2.getVoteData()).thenReturn(voteData2);
-
-    final var validatorSet =
-        BFTValidatorSet.from(
-            Arrays.asList(
-                BFTValidator.from(vote1.getAuthor(), UInt192.ONE),
-                BFTValidator.from(vote2.getAuthor(), UInt192.ONE)));
-
-    final var pendingVotes = new PendingVotes(self, hasher, e -> {}, validatorSet, metrics);
-
-    // Should still accept both votes...
-    assertTrue(pendingVotes.insertVote(vote1) instanceof VoteProcessingResult.VoteAccepted);
-    assertTrue(pendingVotes.insertVote(vote2) instanceof VoteProcessingResult.VoteAccepted);
-
-    // ...but produce a warning and bump the metrics
-    assertEquals((int) metrics.bft().divergentVertexExecutions().get(), 1);
   }
 
   private Vote makeSignedVoteFor(BFTValidatorId author, Round parentRound, HashCode vertexId) {

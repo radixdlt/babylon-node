@@ -68,31 +68,21 @@ use super::stage_tree::{Accumulator, Delta, DerivedStageKey, StageKey, StageTree
 use super::ReadableStore;
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
+use crate::engine_prelude::*;
 use crate::protocol::ProtocolState;
-use crate::staging::{
-    AccuTreeDiff, HashStructuresDiff, HashUpdateContext, ProcessedTransactionReceipt,
-    StateHashTreeDiff,
+use crate::staging::overlays::{
+    MapSubstateNodeAncestryStore, StagedSubstateNodeAncestryStore, SubstateOverlayIterator,
 };
+use crate::staging::{
+    AccuTreeDiff, HashStructuresDiff, HashUpdateContext, ProcessedTransactionReceipt, StateTreeDiff,
+};
+use crate::transaction::{LedgerTransactionHash, TransactionLogic};
 use crate::{EpochTransactionIdentifiers, ReceiptTreeHash, StateVersion, TransactionTreeHash};
 use im::hashmap::HashMap as ImmutableHashMap;
 use itertools::Itertools;
 
-use radix_engine_common::prelude::NodeId;
-
-use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
-
-use crate::staging::overlays::{
-    MapSubstateNodeAncestryStore, StagedSubstateNodeAncestryStore, SubstateOverlayIterator,
-};
-use crate::transaction::{LedgerTransactionHash, TransactionLogic};
-use radix_engine_store_interface::interface::{
-    DatabaseUpdate, DbPartitionKey, DbSortKey, DbSubstateValue, PartitionDatabaseUpdates,
-    PartitionEntry, SubstateDatabase,
-};
-use radix_engine_stores::hash_tree::tree_store::{NodeKey, ReadableTreeStore, TreeNode};
-
 use crate::store::traits::{SubstateNodeAncestryRecord, SubstateNodeAncestryStore};
-use sbor::rust::collections::HashMap;
+use crate::traits::ConfigurableDatabase;
 use slotmap::SecondaryMap;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd)]
@@ -184,7 +174,7 @@ impl ExecutionCache {
                     StagedStore::new(root_store, self.stage_tree.get_accumulator(&parent_key));
                 let transaction_receipt = executable.execute_on(&staged_store);
 
-                let processed = ProcessedTransactionReceipt::process::<_, SpreadPrefixKeyMapper>(
+                let processed = ProcessedTransactionReceipt::process(
                     HashUpdateContext {
                         store: &staged_store,
                         epoch_transaction_identifiers,
@@ -369,7 +359,7 @@ impl<'s, S: SubstateDatabase> SubstateDatabase for StagedStore<'s, S> {
 }
 
 impl<'s, S: ReadableTreeStore> ReadableTreeStore for StagedStore<'s, S> {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
+    fn get_node(&self, key: &StoredTreeNodeKey) -> Option<TreeNode> {
         self.overlay
             .state_tree_nodes
             .get(key)
@@ -412,6 +402,28 @@ impl<'s, S: SubstateNodeAncestryStore> SubstateNodeAncestryStore for StagedStore
     }
 }
 
+impl<'s, S: ConfigurableDatabase> ConfigurableDatabase for StagedStore<'s, S> {
+    fn is_account_change_index_enabled(&self) -> bool {
+        self.root.is_account_change_index_enabled()
+    }
+
+    fn is_local_transaction_execution_index_enabled(&self) -> bool {
+        self.root.is_local_transaction_execution_index_enabled()
+    }
+
+    fn are_entity_listing_indices_enabled(&self) -> bool {
+        self.root.are_entity_listing_indices_enabled()
+    }
+
+    fn is_state_history_enabled(&self) -> bool {
+        self.root.is_state_history_enabled()
+    }
+
+    fn get_first_stored_historical_state_version(&self) -> StateVersion {
+        self.root.get_first_stored_historical_state_version()
+    }
+}
+
 impl Delta for ProcessedTransactionReceipt {
     fn weight(&self) -> usize {
         match self {
@@ -428,13 +440,13 @@ impl Delta for ProcessedTransactionReceipt {
 
 impl HashStructuresDiff {
     pub fn weight(&self) -> usize {
-        self.state_hash_tree_diff.weight()
+        self.state_tree_diff.weight()
             + self.transaction_tree_diff.weight()
             + self.receipt_tree_diff.weight()
     }
 }
 
-impl StateHashTreeDiff {
+impl StateTreeDiff {
     pub fn weight(&self) -> usize {
         self.new_nodes.len()
     }
@@ -455,7 +467,7 @@ impl<K, N> AccuTreeDiff<K, N> {
 #[derive(Clone)]
 pub struct ImmutableStore {
     partition_updates: ImmutableHashMap<DbPartitionKey, ImmutablePartitionUpdates>,
-    state_tree_nodes: ImmutableHashMap<NodeKey, TreeNode>,
+    state_tree_nodes: ImmutableHashMap<StoredTreeNodeKey, TreeNode>,
     transaction_tree_slices: ImmutableHashMap<StateVersion, TreeSlice<TransactionTreeHash>>,
     receipt_tree_slices: ImmutableHashMap<StateVersion, TreeSlice<ReceiptTreeHash>>,
     node_ancestry_records: ImmutableHashMap<NodeId, SubstateNodeAncestryRecord>,
@@ -579,7 +591,7 @@ impl Accumulator<ProcessedTransactionReceipt> for ImmutableStore {
             }
 
             let hash_structures_diff = &commit.hash_structures_diff;
-            let state_tree_diff = &hash_structures_diff.state_hash_tree_diff;
+            let state_tree_diff = &hash_structures_diff.state_tree_diff;
             self.state_tree_nodes
                 .extend(state_tree_diff.new_nodes.iter().cloned());
             let transaction_tree_diff = &hash_structures_diff.transaction_tree_diff;

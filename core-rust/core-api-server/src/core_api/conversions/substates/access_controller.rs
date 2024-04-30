@@ -1,10 +1,7 @@
 use super::super::*;
 use super::*;
 use crate::core_api::models;
-
-use radix_engine::types::*;
-use radix_engine_interface::blueprints::access_controller::{RecoveryProposal, RuleSet};
-use radix_engine_queries::typed_substate_layout::*;
+use crate::engine_prelude::*;
 
 pub fn to_api_access_controller_substate(
     context: &MappingContext,
@@ -68,8 +65,8 @@ pub fn to_api_access_controller_substate(
                             context,
                             recovery_proposal,
                         )?),
-                        timed_recovery_allowed_after: timed_recovery_allowed_after
-                            .map(to_api_instant)
+                        allow_timed_recovery_after: timed_recovery_allowed_after
+                            .map(to_api_scrypto_instant)
                             .transpose()?
                             .map(Box::new),
                     }))

@@ -63,17 +63,15 @@
  */
 
 use crate::accumulator_tree::IsMerklizableHash;
+use crate::engine_prelude::*;
 use crate::protocol::ProtocolVersionName;
 use crate::transaction::*;
 use crate::{LedgerTransactionOutcome, PartitionChange, SubstateChange};
-use radix_engine::types::*;
-use radix_engine_common::prelude::IsHash;
 use std::fmt;
 use std::fmt::Formatter;
 use std::mem::size_of;
 use std::num::TryFromIntError;
 use std::ops::Range;
-use transaction::prelude::*;
 
 /// A complete ID of a Substate.
 #[derive(Debug, Clone, Hash, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -501,6 +499,26 @@ impl From<LedgerHeaderV1> for LedgerHeader {
             proposer_timestamp_ms: header.proposer_timestamp_ms,
             next_epoch: header.next_epoch,
             next_protocol_version: None,
+        }
+    }
+}
+
+pub struct LedgerStateSummary {
+    pub epoch: Epoch,
+    pub round: Round,
+    pub state_version: StateVersion,
+    pub hashes: LedgerHashes,
+    pub proposer_timestamp_ms: i64,
+}
+
+impl From<LedgerHeader> for LedgerStateSummary {
+    fn from(header: LedgerHeader) -> Self {
+        Self {
+            epoch: header.epoch,
+            round: header.round,
+            state_version: header.state_version,
+            hashes: header.hashes,
+            proposer_timestamp_ms: header.proposer_timestamp_ms,
         }
     }
 }

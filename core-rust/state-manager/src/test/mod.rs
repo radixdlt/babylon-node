@@ -1,11 +1,10 @@
+use crate::engine_prelude::*;
 use crate::query::TransactionIdentifierLoader;
 use crate::traits::QueryableProofStore;
 use crate::{
     CommitRequest, CommitSummary, LedgerHeader, LedgerProof, LedgerProofOrigin, PrepareRequest,
     PrepareResult, RoundHistory, StateManager,
 };
-use radix_engine_common::crypto::Hash;
-use radix_engine_common::prelude::{Epoch, Round};
 
 /// A bunch of test utils
 
@@ -26,11 +25,10 @@ pub fn commit_round_updates_until_epoch(state_manager: &StateManager, epoch: Epo
 pub fn prepare_and_commit_round_update(
     state_manager: &StateManager,
 ) -> (PrepareResult, CommitSummary) {
-    let read_db = state_manager.database.read_current();
-    let latest_proof: LedgerProof = read_db.get_latest_proof().unwrap();
-    let latest_epoch_proof: LedgerProof = read_db.get_latest_epoch_proof().unwrap();
-    let (top_state_version, top_identifiers) = read_db.get_top_transaction_identifiers().unwrap();
-    drop(read_db);
+    let database = state_manager.database.access_direct();
+    let latest_proof: LedgerProof = database.get_latest_proof().unwrap();
+    let latest_epoch_proof: LedgerProof = database.get_latest_epoch_proof().unwrap();
+    let (top_state_version, top_identifiers) = database.get_top_transaction_identifiers().unwrap();
 
     // Doesn't matter which one we use, we just need some validator from the current validator set
     let proposer_address = latest_epoch_proof

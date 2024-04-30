@@ -3,6 +3,7 @@ members = [
     "node-common",
     "jni-export",
     "core-api-server",
+    "engine-state-api-server",
     "state-manager",
 ]
 resolver = "2"
@@ -22,16 +23,17 @@ resolver = "2"
 #   $ git push origin "release_name-BLAH"
 # * Then use tag="release_name-BLAH" in the below dependencies.
 # 
-sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "anemone-e212f2ea", features = ["serde"] }
-transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "anemone-e212f2ea" }
-transaction-scenarios = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "anemone-e212f2ea" }
-radix-engine-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "anemone-e212f2ea", features = ["serde"] }
-radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "anemone-e212f2ea" }
-radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "anemone-e212f2ea" }
-radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "anemone-e212f2ea" }
-radix-engine-store-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "anemone-e212f2ea" }
-radix-engine-queries = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "anemone-e212f2ea" }
-utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "anemone-e212f2ea", features = ["serde"] }
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-dd5817a0", features = ["serde"] }
+transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-dd5817a0" }
+transaction-scenarios = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-dd5817a0" }
+radix-engine-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-dd5817a0", features = ["serde"] }
+radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-dd5817a0" }
+radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-dd5817a0" }
+substate-store-impls = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-dd5817a0" }
+substate-store-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-dd5817a0" }
+substate-store-queries = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-dd5817a0" }
+utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-dd5817a0", features = ["serde"] }
+blueprint-schema-init = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-dd5817a0", features = ["serde"] }
 
 itertools = { version = "0.11.0" }
 jni = { version = "0.19.0" }
@@ -42,6 +44,8 @@ prometheus = { version = "0.13.2", default-features = false, features = [] }
 blake2 = { version = "0.10.6", default-features = false }
 serde = { version = "1.0.81", features = ["derive"] }
 serde_json = { version = "1.0.81", features = ["preserve_order"] }
+serde_with = { version = "2.3.0", features = ["hex"] }
+rand = { version = "0.8.5" }
 chrono = { version = "0.4.23", default-features = false, features = ["std"] }
 
 [profile.dev]

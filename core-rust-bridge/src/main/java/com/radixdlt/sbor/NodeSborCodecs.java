@@ -181,10 +181,11 @@ public final class NodeSborCodecs {
     LeaderRoundCounter.registerCodec(codecMap);
     InvalidCommitRequestError.registerCodec(codecMap);
     DatabaseBackendConfig.registerCodec(codecMap);
-    DatabaseFlags.registerCodec(codecMap);
+    DatabaseConfig.registerCodec(codecMap);
     TransactionHeader.registerCodec(codecMap);
     CoreApiServerConfig.registerCodec(codecMap);
     CoreApiServerFlags.registerCodec(codecMap);
+    EngineStateApiServerConfig.registerCodec(codecMap);
     ValidatorInfo.registerCodec(codecMap);
     GenesisData.registerCodec(codecMap);
     GenesisConsensusManagerConfig.registerCodec(codecMap);
@@ -207,7 +208,7 @@ public final class NodeSborCodecs {
     VertexLimitsConfig.registerCodec(codecMap);
     LedgerStatus.registerCodec(codecMap);
     RecentSelfProposalMissStatistic.registerCodec(codecMap);
-    StateHashTreeGcConfig.registerCodec(codecMap);
+    StateTreeGcConfig.registerCodec(codecMap);
     LedgerProofsGcConfig.registerCodec(codecMap);
     LedgerSyncLimitsConfig.registerCodec(codecMap);
   }

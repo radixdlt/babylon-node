@@ -62,17 +62,10 @@
  * permissions under this License.
  */
 
+use crate::engine_prelude::*;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use radix_engine::system::system_substates::FieldSubstate;
-use radix_engine::types::*;
-
-use radix_engine_store_interface::db_key_mapper::*;
-
-use radix_engine::blueprints::consensus_manager::{
-    ValidatorField, ValidatorProtocolUpdateReadinessSignalFieldPayload,
-};
 
 use node_common::java::*;
 
@@ -93,10 +86,9 @@ extern "system" fn Java_com_radixdlt_state_RustStateReader_getValidatorProtocolU
         &env,
         request_payload,
         |validator_address: ComponentAddress| -> JavaResult<Option<String>> {
-            let result = JNINodeRustEnvironment::get(&env, j_node_rust_env)
-                .state_manager
-                .database
-                .access_non_locked_historical()
+            let database = JNINodeRustEnvironment::get_database(&env, j_node_rust_env);
+            let result = database
+                .snapshot()
                 .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ValidatorProtocolUpdateReadinessSignalFieldPayload>>(
                     &validator_address.into_node_id(),
                     MAIN_BASE_PARTITION,

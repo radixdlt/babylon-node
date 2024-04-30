@@ -1,8 +1,7 @@
 use crate::core_api::*;
 
-use radix_engine::blueprints::access_controller::AccessControllerField;
-use radix_engine::system::attached_modules::role_assignment::RoleAssignmentField;
-use radix_engine::types::*;
+use crate::engine_prelude::*;
+
 use state_manager::query::dump_component_state;
 
 use std::ops::Deref;
@@ -27,7 +26,7 @@ pub(crate) async fn handle_state_access_controller(
         return Err(client_error("Only access controller addresses work for this endpoint. Try another endpoint instead."));
     }
 
-    let database = state.state_manager.database.read_current();
+    let database = state.state_manager.database.snapshot();
 
     let access_controller_state_substate = read_optional_main_field_substate(
         database.deref(),
@@ -50,7 +49,10 @@ pub(crate) async fn handle_state_access_controller(
     let header = read_current_ledger_header(database.deref());
 
     Ok(Json(models::StateAccessControllerResponse {
-        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(
+            &mapping_context,
+            &header.into(),
+        )?),
         state: Some(to_api_access_controller_substate(
             &mapping_context,
             &access_controller_state_substate,

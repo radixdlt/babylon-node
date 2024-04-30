@@ -1,9 +1,8 @@
 use crate::core_api::*;
-use radix_engine::blueprints::consensus_manager::*;
-use radix_engine::types::*;
+use crate::engine_prelude::*;
 
 use state_manager::protocol::ProtocolVersionName;
-use state_manager::StateManagerDatabase;
+use state_manager::{ReadableRocks, StateManagerDatabase};
 use std::ops::Deref;
 
 #[tracing::instrument(skip(state))]
@@ -13,7 +12,7 @@ pub(crate) async fn handle_state_consensus_manager(
 ) -> Result<Json<models::StateConsensusManagerResponse>, ResponseError<()>> {
     assert_matching_network(&request.network, &state.network)?;
     let mapping_context = MappingContext::new(&state.network);
-    let database = state.state_manager.database.read_current();
+    let database = state.state_manager.database.snapshot();
 
     let config_substate = read_mandatory_main_field_substate(
         database.deref(),
@@ -49,7 +48,10 @@ pub(crate) async fn handle_state_consensus_manager(
     let header = read_current_ledger_header(database.deref());
 
     Ok(Json(models::StateConsensusManagerResponse {
-        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(
+            &mapping_context,
+            &header.into(),
+        )?),
         config: Some(to_api_consensus_manager_config_substate(&config_substate)?),
         state: Some(to_api_consensus_manager_state_substate(
             &mapping_context,
@@ -85,7 +87,7 @@ pub(crate) async fn handle_state_consensus_manager(
 }
 
 fn collect_current_validators_by_signalled_protocol_version(
-    database: &StateManagerDatabase,
+    database: &StateManagerDatabase<impl ReadableRocks>,
     substate: ConsensusManagerCurrentValidatorSetFieldSubstate,
 ) -> Result<ValidatorsBySignalledProtocolVersion, ResponseError<()>> {
     let mut validators = ValidatorsBySignalledProtocolVersion::default();

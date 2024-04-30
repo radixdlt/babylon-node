@@ -24,7 +24,7 @@ pub(crate) async fn handle_lts_stream_account_transaction_outcomes(
     let account_address = extract_global_address(&extraction_context, &request.account_address)
         .map_err(|err| err.into_response_error("account_address"))?;
 
-    let from_state_version = extract_api_state_version(request.from_state_version)
+    let from_state_version = extract_state_version(request.from_state_version)
         .map_err(|err| err.into_response_error("from_state_version"))?;
 
     let limit: usize = request
@@ -42,7 +42,7 @@ pub(crate) async fn handle_lts_stream_account_transaction_outcomes(
         )));
     }
 
-    let database = state.state_manager.database.read_current();
+    let database = state.state_manager.database.snapshot();
 
     if !database.is_local_transaction_execution_index_enabled() {
         return Err(client_error(

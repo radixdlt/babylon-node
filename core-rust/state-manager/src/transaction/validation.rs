@@ -1,24 +1,21 @@
-use node_common::locks::{RwLock, StateLock};
+use node_common::locks::{DbLock, RwLock};
 use std::ops::Deref;
 use std::sync::Arc;
 use std::time::SystemTime;
-use transaction::errors::TransactionValidationError;
 
-use radix_engine::transaction::{AbortReason, RejectResult, TransactionReceipt, TransactionResult};
-
-use radix_engine_common::network::NetworkDefinition;
+use crate::engine_prelude::*;
+use ::transaction::model::PrepareError; // disambiguation needed because of a wide prelude
 
 use crate::query::StateManagerSubstateQueries;
-use crate::staging::ReadableStore;
+
+use crate::store::traits::transactions::QueryableTransactionStore;
 use crate::store::traits::{QueryableProofStore, TransactionIndex};
 use crate::transaction::{ExecutionConfigurator, TransactionLogic};
 use crate::{
-    AlreadyCommittedError, AtState, ExecutionRejectionReason, PendingTransactionRecord,
-    PendingTransactionResultCache, RejectionReason, TransactionAttempt,
+    ActualStateManagerDatabase, AlreadyCommittedError, AtSpecificState, AtState,
+    ExecutionRejectionReason, MempoolRejectionReason, PendingTransactionRecord,
+    PendingTransactionResultCache, TransactionAttempt,
 };
-
-use transaction::prelude::*;
-use transaction::validation::*;
 
 use super::{
     LedgerTransaction, PreparedLedgerTransaction, PreparedLedgerTransactionInner,
@@ -178,20 +175,20 @@ impl From<PrepareError> for LedgerTransactionValidationError {
 
 /// A validator for `NotarizedTransaction`, deciding whether they would be rejected or not-rejected
 /// (i.e. "committable") at a specific state of the `store`.
-pub struct CommittabilityValidator<S> {
-    store: Arc<StateLock<S>>,
+pub struct CommittabilityValidator {
+    database: Arc<DbLock<ActualStateManagerDatabase>>,
     execution_configurator: Arc<RwLock<ExecutionConfigurator>>,
     user_transaction_validator: NotarizedTransactionValidator,
 }
 
-impl<S> CommittabilityValidator<S> {
+impl CommittabilityValidator {
     pub fn new(
-        store: Arc<StateLock<S>>,
+        database: Arc<DbLock<ActualStateManagerDatabase>>,
         execution_configurator: Arc<RwLock<ExecutionConfigurator>>,
         user_transaction_validator: NotarizedTransactionValidator,
     ) -> Self {
         Self {
-            store,
+            database,
             execution_configurator,
             user_transaction_validator,
         }
@@ -213,47 +210,52 @@ impl<S> CommittabilityValidator<S> {
     }
 }
 
-impl<S> CommittabilityValidator<S>
-where
-    S: ReadableStore + QueryableProofStore,
-    S: for<'a> TransactionIndex<&'a IntentHash>,
-{
+impl CommittabilityValidator {
     /// Determine whether it would be rejected given the current state of the substate store.
     pub fn check_for_rejection(
         &self,
         transaction: &ValidatedNotarizedTransactionV1,
         timestamp: SystemTime,
     ) -> TransactionAttempt {
-        let read_store = self.store.read_current();
-        let executed_at_state_version = read_store.max_state_version();
+        let database = self.database.snapshot();
+        let executed_at_state_version = database.max_state_version();
 
         let existing =
-            read_store.get_txn_state_version_by_identifier(&transaction.prepared.intent_hash());
+            database.get_txn_state_version_by_identifier(&transaction.prepared.intent_hash());
 
         if let Some(state_version) = existing {
-            let committed_transaction_identifiers = read_store
+            let committed_transaction_identifiers = database
                 .get_committed_transaction_identifiers(state_version)
                 .expect("transaction of a state version obtained from an index");
 
             return TransactionAttempt {
-                rejection: Some(RejectionReason::AlreadyCommitted(AlreadyCommittedError {
-                    notarized_transaction_hash: transaction.prepared.notarized_transaction_hash(),
-                    committed_state_version: state_version,
-                    committed_notarized_transaction_hash: *committed_transaction_identifiers
-                        .payload
-                        .typed
-                        .user()
-                        .expect("non-user transaction located by intent hash")
-                        .notarized_transaction_hash,
-                })),
-                against_state: AtState::Committed {
+                rejection: Some(MempoolRejectionReason::AlreadyCommitted(
+                    AlreadyCommittedError {
+                        notarized_transaction_hash: transaction
+                            .prepared
+                            .notarized_transaction_hash(),
+                        committed_state_version: state_version,
+                        committed_notarized_transaction_hash: *committed_transaction_identifiers
+                            .payload
+                            .typed
+                            .user()
+                            .expect("non-user transaction located by intent hash")
+                            .notarized_transaction_hash,
+                    },
+                )),
+                against_state: AtState::Specific(AtSpecificState::Committed {
                     state_version: executed_at_state_version,
-                },
+                }),
                 timestamp,
             };
         }
 
-        let receipt = self.test_execute_transaction_up_to_fee_loan(read_store.deref(), transaction);
+        let receipt = self
+            .execution_configurator
+            .read()
+            .wrap_pending_transaction(transaction)
+            .execute_on(database.deref());
+
         let result = match receipt.result {
             TransactionResult::Reject(RejectResult { reason }) => {
                 if matches!(
@@ -265,7 +267,7 @@ where
                         transaction.prepared.intent_hash()
                     );
                 }
-                Err(RejectionReason::FromExecution(Box::new(reason)))
+                Err(MempoolRejectionReason::FromExecution(Box::new(reason)))
             }
             TransactionResult::Commit(..) => Ok(()),
             TransactionResult::Abort(abort_result) => {
@@ -278,40 +280,29 @@ where
 
         TransactionAttempt {
             rejection: result.err(),
-            against_state: AtState::Committed {
+            against_state: AtState::Specific(AtSpecificState::Committed {
                 state_version: executed_at_state_version,
-            },
+            }),
             timestamp,
         }
-    }
-
-    fn test_execute_transaction_up_to_fee_loan(
-        &self,
-        root_store: &S,
-        transaction: &ValidatedNotarizedTransactionV1,
-    ) -> TransactionReceipt {
-        self.execution_configurator
-            .read()
-            .wrap_pending_transaction(transaction)
-            .execute_on(root_store)
     }
 }
 
 /// A caching wrapper for a `CommittabilityValidator`.
-pub struct CachedCommittabilityValidator<S> {
-    store: Arc<StateLock<S>>,
-    committability_validator: Arc<RwLock<CommittabilityValidator<S>>>,
+pub struct CachedCommittabilityValidator {
+    database: Arc<DbLock<ActualStateManagerDatabase>>,
+    committability_validator: Arc<RwLock<CommittabilityValidator>>,
     pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
 }
 
-impl<S> CachedCommittabilityValidator<S> {
+impl CachedCommittabilityValidator {
     pub fn new(
-        store: Arc<StateLock<S>>,
-        committability_validator: Arc<RwLock<CommittabilityValidator<S>>>,
+        database: Arc<DbLock<ActualStateManagerDatabase>>,
+        committability_validator: Arc<RwLock<CommittabilityValidator>>,
         pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
     ) -> Self {
         Self {
-            store,
+            database,
             committability_validator,
             pending_transaction_result_cache,
         }
@@ -386,12 +377,6 @@ pub enum CheckMetadata {
     Fresh(StaticValidation),
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub enum PrevalidatedCheckMetadata {
-    Cached,
-    Fresh,
-}
-
 impl CheckMetadata {
     pub fn was_cached(&self) -> bool {
         match self {
@@ -413,11 +398,7 @@ pub enum ForceRecalculation {
     No,
 }
 
-impl<S> CachedCommittabilityValidator<S>
-where
-    S: ReadableStore + QueryableProofStore,
-    S: for<'a> TransactionIndex<&'a IntentHash>,
-{
+impl CachedCommittabilityValidator {
     /// Reads the transaction rejection status from the cache, else calculates it fresh, using
     /// `CommittabilityValidator`.
     ///
@@ -456,7 +437,7 @@ where
             Err(validation_error) => {
                 // The transaction is statically invalid
                 let attempt = TransactionAttempt {
-                    rejection: Some(RejectionReason::ValidationError(validation_error)),
+                    rejection: Some(MempoolRejectionReason::ValidationError(validation_error)),
                     against_state: AtState::Static,
                     timestamp: current_time,
                 };
@@ -468,38 +449,26 @@ where
         }
     }
 
-    /// Reads the transaction rejection status from the cache, else calculates it fresh, using
-    /// `CommittabilityValidator`.
+    /// Recalculates (i.e. ignoring the cache) the given already-validatated transaction's status,
+    /// using `CommittabilityValidator`.
     ///
     /// The result is stored in the cache.
     /// If the transaction is freshly rejected, the caller should perform additional cleanup,
     /// e.g. removing the transaction from the mempool.
     ///
-    /// Its pending transaction record is returned, along with a boolean about whether the last
-    /// attempt was cached.
-    pub fn check_for_rejection_cached_prevalidated(
+    /// Returns the transaction's new pending transaction record.
+    pub fn check_for_rejection_validated(
         &self,
         validated: &ValidatedNotarizedTransactionV1,
-        force_recalculate: ForceRecalculation,
-    ) -> (PendingTransactionRecord, PrevalidatedCheckMetadata) {
-        let current_time = SystemTime::now();
-
-        if let ShouldRecalculate::No(record) =
-            self.should_recalculate(&validated.prepared, current_time, force_recalculate)
-        {
-            return (record, PrevalidatedCheckMetadata::Cached);
-        }
-
+    ) -> PendingTransactionRecord {
         let metadata = TransactionMetadata::read_from(&validated.prepared);
 
         let attempt = self
             .committability_validator
             .read()
-            .check_for_rejection(validated, current_time);
-        (
-            self.write_attempt(metadata, attempt),
-            PrevalidatedCheckMetadata::Fresh,
-        )
+            .check_for_rejection(validated, SystemTime::now());
+
+        self.write_attempt(metadata, attempt)
     }
 
     fn should_recalculate(
@@ -512,7 +481,7 @@ where
             return ShouldRecalculate::Yes;
         }
 
-        let current_epoch = self.store.read_current().get_epoch();
+        let current_epoch = self.database.snapshot().get_epoch_and_round().0;
         let record_option = self.read_record(prepared);
 
         if let Some(record) = record_option {

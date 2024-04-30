@@ -72,11 +72,12 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Scopes;
 import com.radixdlt.api.common.JSON;
+import com.radixdlt.api.system.SystemApiConfig;
 import com.radixdlt.api.system.health.HealthInfoService;
 import com.radixdlt.api.system.health.HealthInfoServiceImpl;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.DatabaseFlags;
+import com.radixdlt.environment.DatabaseConfig;
 import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
@@ -101,6 +102,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.ExceptionHandler;
 import io.undertow.util.HeaderMap;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 import org.junit.Rule;
@@ -136,7 +138,7 @@ public abstract class SystemApiTestBase {
                                 TEST_KEY.getPublicKey(),
                                 Decimal.ONE,
                                 GenesisConsensusManagerConfig.Builder.testDefaults()),
-                            new DatabaseFlags(false, false),
+                            new DatabaseConfig(false, false, false, false),
                             StateComputerConfig.REV2ProposerConfig.Mempool.defaults()),
                         new SyncRelayConfig(500, 10, 3000, 10, Long.MAX_VALUE)))),
             new TestP2PModule.Builder().build(),
@@ -154,8 +156,13 @@ public abstract class SystemApiTestBase {
                         "localhost",
                         23456);
                 bind(RadixNodeUri.class).annotatedWith(Self.class).toInstance(selfUri);
-                var runtimeProperties = mock(RuntimeProperties.class);
-                bind(RuntimeProperties.class).toInstance(runtimeProperties);
+                try {
+                  bind(SystemApiConfig.class)
+                      .toInstance(new SystemApiConfig(true, folder.newFolder().getAbsolutePath()));
+                } catch (IOException e) {
+                  throw new RuntimeException(e);
+                }
+                bind(RuntimeProperties.class).toInstance(mock(RuntimeProperties.class));
                 bind(HealthInfoService.class).to(HealthInfoServiceImpl.class);
                 bind(HealthInfoServiceImpl.class).in(Scopes.SINGLETON);
               }

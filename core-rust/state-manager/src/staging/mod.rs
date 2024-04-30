@@ -70,11 +70,11 @@ mod result;
 mod stage_tree;
 
 use crate::accumulator_tree::storage::ReadableAccuTreeStore;
+use crate::engine_prelude::*;
 use crate::{ReceiptTreeHash, StateVersion, TransactionTreeHash};
-use radix_engine_store_interface::interface::SubstateDatabase;
-use radix_engine_stores::hash_tree::tree_store::ReadableTreeStore;
 
 use crate::store::traits::SubstateNodeAncestryStore;
+use crate::traits::ConfigurableDatabase;
 pub use cache::*;
 pub use result::*;
 
@@ -95,10 +95,13 @@ impl<T> ReadableHashStructuresStore for T where
 }
 
 pub trait ReadableStore:
-    SubstateDatabase + ReadableHashStructuresStore + SubstateNodeAncestryStore
+    SubstateDatabase + ReadableHashStructuresStore + SubstateNodeAncestryStore + ConfigurableDatabase
 {
 }
 impl<T> ReadableStore for T where
-    T: SubstateDatabase + ReadableHashStructuresStore + SubstateNodeAncestryStore
+    T: SubstateDatabase
+        + ReadableHashStructuresStore
+        + SubstateNodeAncestryStore
+        + ConfigurableDatabase
 {
 }

@@ -62,30 +62,26 @@
  * permissions under this License.
  */
 
-use radix_engine::types::{Categorize, Decode, Encode};
-use radix_engine_stores::hash_tree::tree_store::{
-    NodeKey, ReadableTreeStore, StaleTreePart, TreeChildEntry, TreeNode,
-};
+use crate::engine_prelude::*;
+use node_common::locks::DbLock;
 use std::iter;
 use std::ops::Deref;
 use std::sync::Arc;
 use std::time::Duration;
 use tracing::info;
 
-use crate::store::traits::gc::StateHashTreeGcStore;
+use crate::store::traits::gc::StateTreeGcStore;
 use crate::store::traits::proofs::QueryableProofStore;
 use crate::store::traits::StaleTreePartsV1;
-use crate::store::StateManagerDatabase;
-use crate::{StateVersion, StateVersionDelta};
-use node_common::locks::StateLock;
+use crate::{ActualStateManagerDatabase, StateVersion, StateVersionDelta};
 
 /// A maximum number of JMT nodes collected into "batch delete" buffer.
 /// Needed only to avoid OOM problems.
 const DELETED_NODE_BUFFER_MAX_LEN: usize = 1000000;
 
-/// A configuration for [`StateHashTreeGc`].
+/// A configuration for [`StateTreeGc`].
 #[derive(Debug, Categorize, Encode, Decode, Clone, Default)]
-pub struct StateHashTreeGcConfig {
+pub struct StateTreeGcConfig {
     /// How often to run the GC, in seconds.
     /// This should be at least an order of magnitude shorter than an expected duration over which
     /// the [`state_version_history_length`] spans (to honour the precision of these settings).
@@ -96,17 +92,17 @@ pub struct StateHashTreeGcConfig {
 
 /// A garbage collector of sufficiently-old stale state hash tree nodes.
 /// The implementation is suited for being driven by an external scheduler.
-pub struct StateHashTreeGc {
-    database: Arc<StateLock<StateManagerDatabase>>,
+pub struct StateTreeGc {
+    database: Arc<DbLock<ActualStateManagerDatabase>>,
     interval: Duration,
     history_len: StateVersionDelta,
 }
 
-impl StateHashTreeGc {
+impl StateTreeGc {
     /// Creates a new GC.
     pub fn new(
-        database: Arc<StateLock<StateManagerDatabase>>,
-        config: StateHashTreeGcConfig,
+        database: Arc<DbLock<ActualStateManagerDatabase>>,
+        config: StateTreeGcConfig,
     ) -> Self {
         Self {
             database,
@@ -122,20 +118,21 @@ impl StateHashTreeGc {
 
     /// Performs a single GC run, which is supposed to permanently delete *all* old-enough state
     /// hash tree nodes marked as stale.
-    /// Note: despite the GC modifying the database, we only obtain the "historical" state lock (in
-    /// practice: not locking anything at all). This is valid, since we do not rely on the current
-    /// state's consistency here.
+    ///
+    /// *Note on concurrent database access:*
+    /// The JMT's GC process, by its nature, only accesses "old" (i.e. not "top-of-ledger" new)
+    /// JMT DB rows. For this reason, it can use the direct [`DbLock::access_direct()`] and
+    /// effectively own these rows (for reads and deletes), without locking the database.
     pub fn run(&self) {
-        let database = self.database.access_non_locked_historical();
-        // The line below technically reads the "current state" from a "non-locked, historical" DB;
-        // however, we are fine with the current state progressing while we do the GC.
+        let direct_database = self.database.access_direct();
+        let database = direct_database.deref();
         let current_state_version = database.max_state_version();
         let to_state_version = current_state_version
             .relative(-self.history_len)
             .unwrap_or(StateVersion::pre_genesis());
 
         info!(
-            "Starting a GC run: current state version is {:?}; pruning JMT up to version {:?}",
+            "Starting a GC run: current state version is {:?}; pruning JMT up to version {:?} (exclusive)",
             current_state_version.number(),
             to_state_version.number(),
         );
@@ -146,49 +143,67 @@ impl StateHashTreeGc {
             .take_while(|(state_version, _)| state_version < &to_state_version);
 
         // Collect the stale node keys into a "delete buffer":
-        let mut deleted_state_versions = Vec::new();
         let mut deleted_nodes = Vec::new();
         for (state_version, StaleTreePartsV1(stale_tree_parts)) in stale_entries {
+            // Periodically rotate the collected buffer of node keys to delete:
+            if deleted_nodes.len() >= DELETED_NODE_BUFFER_MAX_LEN {
+                // The flush is handled before the processing, so that we always operate on exclusive right bound of state versions.
+                info!(
+                    "Flushing a full delete buffer up to version {} (exclusive)",
+                    state_version
+                );
+                delete_nodes_and_update_state_history(database, &deleted_nodes, state_version);
+                deleted_nodes.clear();
+            }
             for stale_tree_part in stale_tree_parts {
-                let part_keys: Box<dyn Iterator<Item = NodeKey>> = match stale_tree_part {
+                let part_keys: Box<dyn Iterator<Item = StoredTreeNodeKey>> = match stale_tree_part {
                     StaleTreePart::Node(key) => Box::new(iter::once(key)),
                     // In case of "delete partition", we have to traverse its entire subtree:
                     // Note: it is critical to do a post-order DFS here (i.e. to delete a parent
                     // only after its children, in case this process is interrupted half-way
                     // and need to be resumed).
                     StaleTreePart::Subtree(subtree_root_key) => {
-                        Box::new(iterate_dfs_post_order(database.deref(), subtree_root_key))
+                        Box::new(iterate_dfs_post_order(database, subtree_root_key))
                     }
                 };
-                for key in part_keys {
-                    deleted_nodes.push(key);
-                    // Periodically rotate the collected buffer of node keys to delete:
-                    if deleted_nodes.len() == DELETED_NODE_BUFFER_MAX_LEN {
-                        info!("Flushing a full delete buffer at version {}", state_version);
-                        database.batch_delete_node(deleted_nodes.iter());
-                        deleted_nodes.clear();
-                    }
-                }
+                deleted_nodes.extend(part_keys);
             }
-            deleted_state_versions.push(state_version);
         }
 
-        // Delete the last collected batch of keys, and then delete the processed "stale tree parts" records:
+        // Delete the last collected batch of keys:
         info!("Flushing the last buffer ({} deletes)", deleted_nodes.len());
-        database.batch_delete_node(deleted_nodes.iter());
-        database.batch_delete_stale_tree_part(deleted_state_versions.iter());
+        delete_nodes_and_update_state_history(database, &deleted_nodes, to_state_version);
     }
+}
+
+/// A helper method for flushing the GC's partial DB update batches.
+///
+/// Note: the order of the operations is important for non-trivial reasons - see comments.
+fn delete_nodes_and_update_state_history(
+    database: &ActualStateManagerDatabase,
+    deleted_nodes: &[StoredTreeNodeKey],
+    state_version: StateVersion,
+) {
+    // First, bump the minimum state version from which the state history is available:
+    // (this will prevent the readers from trying to access the nodes that we are about to delete)
+    database.progress_historical_substate_values_availability(state_version);
+    // Delete the actual tree nodes:
+    database.batch_delete_node(deleted_nodes.iter());
+    // Finally, remove the processed items from the GC's work queue:
+    // (it is safe to do it last: even if the Node restarts right before this point, it will simply
+    // re-process these stale tree parts, performing a couple of no-op deletes)
+    database.delete_stale_tree_parts_up_to_version(state_version);
 }
 
 /// Iterates the node keys from the state hash tree's subtree starting at the given root key, in a
 /// depth-first-search, post-order way (i.e. parent after children).
-/// Note: the implementation will only traverse internal nodes, reading the leafs' state from their
-/// parent's child-list. This means that it can return node keys of leafs that were already deleted
+/// Note: the implementation will only traverse internal nodes, reading the leaves' state from their
+/// parent's child-list. This means that it can return node keys of leaves that were already deleted
 /// from the database (in a previous, incomplete GC run).
 fn iterate_dfs_post_order<'s, S: ReadableTreeStore>(
     tree_store: &'s S,
-    root_key: NodeKey,
-) -> Box<dyn Iterator<Item = NodeKey> + 's> {
+    root_key: StoredTreeNodeKey,
+) -> Box<dyn Iterator<Item = StoredTreeNodeKey> + 's> {
     let Some(root_node) = tree_store.get_node(&root_key) else {
         // A "top-level recovery" case: may happen when we resume an interrupted delete of a
         // state version (i.e. this entire subtree was one of the early entries within some
@@ -199,7 +214,7 @@ fn iterate_dfs_post_order<'s, S: ReadableTreeStore>(
         TreeNode::Null => {
             // A special case: this subtree is empty.
             // Note: at the moment of writing this, this case is impossible in practice: we do
-            // not delete ReNode-Tier tree, and we also do not store empty lower-Tier trees
+            // not delete Entity-Tier tree, and we also do not store empty lower-Tier trees
             // (i.e. we delete their higher-Tier leaf counterpart instead). However, we can
             // return a correct empty result here (in case the above assumptions ever change).
             Box::new(iter::empty())
@@ -223,35 +238,37 @@ fn iterate_dfs_post_order<'s, S: ReadableTreeStore>(
 fn recurse_children_and_append_parent<'s, S: ReadableTreeStore + 's>(
     tree_store: &'s S,
     children: Vec<TreeChildEntry>,
-    parent_key: NodeKey,
-) -> impl Iterator<Item = NodeKey> + 's {
+    parent_key: StoredTreeNodeKey,
+) -> impl Iterator<Item = StoredTreeNodeKey> + 's {
     let parent_key_to_be_appended_after_children = iter::once(parent_key.clone());
     children
         .into_iter()
-        .flat_map(move |child| -> Box<dyn Iterator<Item = NodeKey>> {
-            let child_key = parent_key.gen_child_node_key(child.version, child.nibble);
-            if child.is_leaf {
-                // A terminal case: we do not need to recurse into children (nor load them from DB).
-                // Not loading from the DB is an optimization to speed up the performance.
-                // This can mean that we return children which are already deleted / no longer exist.
-                // This is mentioned in the rust doc for `iterate_dfs_post_order`
-                return Box::new(iter::once(child_key));
-            }
-            let Some(child_node) = tree_store.get_node(&child_key) else {
-                // A mid-way "recovery" case: may happen when we resume an interrupted
-                // delete of a particular subtree (and reach an already-deleted child).
-                return Box::new(iter::empty());
-            };
-            let TreeNode::Internal(child_internal_node) = child_node else {
-                panic!("unexpected non-leaf child: {:?}", child_node);
-            };
-            // A recursion case: this internal node has some child internal node.
-            Box::new(recurse_children_and_append_parent(
-                tree_store,
-                child_internal_node.children,
-                child_key,
-            ))
-        })
+        .flat_map(
+            move |child| -> Box<dyn Iterator<Item = StoredTreeNodeKey>> {
+                let child_key = parent_key.gen_child_node_key(child.version, child.nibble);
+                if child.is_leaf {
+                    // A terminal case: we do not need to recurse into children (nor load them from DB).
+                    // Not loading from the DB is an optimization to speed up the performance.
+                    // This can mean that we return children which are already deleted / no longer exist.
+                    // This is mentioned in the rust doc for `iterate_dfs_post_order`
+                    return Box::new(iter::once(child_key));
+                }
+                let Some(child_node) = tree_store.get_node(&child_key) else {
+                    // A mid-way "recovery" case: may happen when we resume an interrupted
+                    // delete of a particular subtree (and reach an already-deleted child).
+                    return Box::new(iter::empty());
+                };
+                let TreeNode::Internal(child_internal_node) = child_node else {
+                    panic!("unexpected non-leaf child: {:?}", child_node);
+                };
+                // A recursion case: this internal node has some child internal node.
+                Box::new(recurse_children_and_append_parent(
+                    tree_store,
+                    child_internal_node.children,
+                    child_key,
+                ))
+            },
+        )
         // DFS post-order: as promised, list the parent after its children.
         .chain(parent_key_to_be_appended_after_children)
 }
@@ -260,13 +277,6 @@ fn recurse_children_and_append_parent<'s, S: ReadableTreeStore + 's>(
 mod tests {
 
     use super::*;
-    use radix_engine::types::indexmap::indexmap;
-    use radix_engine_store_interface::interface::{
-        DatabaseUpdate, DatabaseUpdates, DbSortKey, NodeDatabaseUpdates, PartitionDatabaseUpdates,
-    };
-    use radix_engine_stores::hash_tree::put_at_next_version;
-    use radix_engine_stores::hash_tree::tree_store::{NibblePath, TypedInMemoryTreeStore};
-    use utils::prelude::{index_set_new, IndexSet};
 
     #[test]
     fn iterates_substates_from_deleted_partition_in_dfs_order() {
@@ -352,7 +362,7 @@ mod tests {
         // Note: "5f" is the tier separator byte - an implementation detail of our [`NestedTreeStore`].
         assert_eq!(
             deleted_partition_root_key,
-            NodeKey::new(2, nibbles("c0ffee 5f 07 5f"))
+            StoredTreeNodeKey::new(2, nibbles("c0ffee 5f 07 5f"))
         );
 
         // Act: Request a DFS iterator starting at the deleted partition's root
@@ -364,21 +374,21 @@ mod tests {
             iterated_node_keys,
             vec![
                 // this starts leftmost and completes larger and larger subtrees: (like DFS should)
-                NodeKey::new(2, nibbles("c0ffee 5f 07 5f b0")), // leaf b000000000
-                NodeKey::new(1, nibbles("c0ffee 5f 07 5f ba")), // leaf bada55
-                NodeKey::new(1, nibbles("c0ffee 5f 07 5f be")), // leaf beef
-                NodeKey::new(2, nibbles("c0ffee 5f 07 5f b")),  // parent of these ^ three
+                StoredTreeNodeKey::new(2, nibbles("c0ffee 5f 07 5f b0")), // leaf b000000000
+                StoredTreeNodeKey::new(1, nibbles("c0ffee 5f 07 5f ba")), // leaf bada55
+                StoredTreeNodeKey::new(1, nibbles("c0ffee 5f 07 5f be")), // leaf beef
+                StoredTreeNodeKey::new(2, nibbles("c0ffee 5f 07 5f b")),  // parent of these ^ three
                 // drills down the next sibling's subtree: (like DFS should)
-                NodeKey::new(2, nibbles("c0ffee 5f 07 5f dead")), // leaf dead
-                NodeKey::new(2, nibbles("c0ffee 5f 07 5f deaf")), // leaf deafd00d
-                NodeKey::new(2, nibbles("c0ffee 5f 07 5f dea")),  // parent of these ^ two
-                NodeKey::new(2, nibbles("c0ffee 5f 07 5f dec")), // leaf dec0 (sibling of that parent)
-                NodeKey::new(2, nibbles("c0ffee 5f 07 5f de")),  // parent of these ^ two
-                NodeKey::new(2, nibbles("c0ffee 5f 07 5f d")), // parent of this ^ one (yup, "long common prefix")
+                StoredTreeNodeKey::new(2, nibbles("c0ffee 5f 07 5f dead")), // leaf dead
+                StoredTreeNodeKey::new(2, nibbles("c0ffee 5f 07 5f deaf")), // leaf deafd00d
+                StoredTreeNodeKey::new(2, nibbles("c0ffee 5f 07 5f dea")),  // parent of these ^ two
+                StoredTreeNodeKey::new(2, nibbles("c0ffee 5f 07 5f dec")), // leaf dec0 (sibling of that parent)
+                StoredTreeNodeKey::new(2, nibbles("c0ffee 5f 07 5f de")),  // parent of these ^ two
+                StoredTreeNodeKey::new(2, nibbles("c0ffee 5f 07 5f d")), // parent of this ^ one (yup, "long common prefix")
                 // and visits the rightmost top-level leaf sibling too: (like DFS should)
-                NodeKey::new(1, nibbles("c0ffee 5f 07 5f e")), // leaf ee
+                StoredTreeNodeKey::new(1, nibbles("c0ffee 5f 07 5f e")), // leaf ee
                 // and the root at the end: (like DFS should)
-                NodeKey::new(2, nibbles("c0ffee 5f 07 5f")), // root
+                StoredTreeNodeKey::new(2, nibbles("c0ffee 5f 07 5f")), // root
             ]
         );
 
@@ -427,13 +437,15 @@ mod tests {
         );
 
         // Act: Request a DFS iterator starting at the partition's root
-        let iterator =
-            iterate_dfs_post_order(&tree_store, NodeKey::new(1, nibbles("c0ffee 5f 03 5f")));
+        let iterator = iterate_dfs_post_order(
+            &tree_store,
+            StoredTreeNodeKey::new(1, nibbles("c0ffee 5f 03 5f")),
+        );
 
         // Assert: The single listed node key
         assert_eq!(
             iterator.collect::<Vec<_>>(),
-            vec![NodeKey::new(1, nibbles("c0ffee 5f 03 5f"))], // the root is also the leaf afffff
+            vec![StoredTreeNodeKey::new(1, nibbles("c0ffee 5f 03 5f"))], // the root is also the leaf afffff
         );
     }
 
@@ -444,14 +456,16 @@ mod tests {
         tree_store
             .stale_part_buffer
             .borrow_mut()
-            .push(StaleTreePart::Subtree(NodeKey::new(
+            .push(StaleTreePart::Subtree(StoredTreeNodeKey::new(
                 1,
                 nibbles("c0ffee 5f 03 5f"),
             )));
 
         // Act: Request a DFS iterator starting at the partition's root
-        let mut iterator =
-            iterate_dfs_post_order(&tree_store, NodeKey::new(1, nibbles("c0ffee 5f 03 5f")));
+        let mut iterator = iterate_dfs_post_order(
+            &tree_store,
+            StoredTreeNodeKey::new(1, nibbles("c0ffee 5f 03 5f")),
+        );
 
         // Assert: Empty iterator
         assert!(iterator.next().is_none());

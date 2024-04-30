@@ -69,7 +69,7 @@ import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitor
 import static org.assertj.core.api.Assertions.*;
 
 import com.google.inject.Module;
-import com.radixdlt.environment.DatabaseFlags;
+import com.radixdlt.environment.DatabaseConfig;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -220,7 +220,7 @@ public final class MultiNodeRebootTest {
                         GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
                                 this.roundsPerEpoch)
                             .totalEmissionXrdPerEpoch(Decimal.ofNonNegative(0))),
-                    new DatabaseFlags(true, false),
+                    new DatabaseConfig(true, false, false, false),
                     StateComputerConfig.REV2ProposerConfig.transactionGenerator(
                         new REV2TransactionGenerator(), 1),
                     false,

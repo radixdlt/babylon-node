@@ -1,8 +1,6 @@
 use crate::core_api::*;
-use radix_engine::types::*;
+use crate::engine_prelude::*;
 
-use radix_engine::blueprints::consensus_manager::ValidatorField;
-use radix_engine::system::attached_modules::role_assignment::RoleAssignmentField;
 use state_manager::query::dump_component_state;
 
 use std::ops::Deref;
@@ -28,7 +26,7 @@ pub(crate) async fn handle_state_validator(
         ));
     }
 
-    let database = state.state_manager.database.read_current();
+    let database = state.state_manager.database.snapshot();
 
     let validator_state_substate = read_optional_main_field_substate(
         database.deref(),
@@ -58,7 +56,10 @@ pub(crate) async fn handle_state_validator(
     let header = read_current_ledger_header(database.deref());
 
     Ok(Json(models::StateValidatorResponse {
-        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(
+            &mapping_context,
+            &header.into(),
+        )?),
         address: to_api_component_address(&mapping_context, &validator_address)?,
         state: Some(to_api_validator_state_substate(
             &mapping_context,

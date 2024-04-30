@@ -66,9 +66,8 @@ use jni::objects::JClass;
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 
+use crate::engine_prelude::*;
 use crate::java::utils::jni_sbor_coded_call;
-use radix_engine::types::{CONSENSUS_MANAGER, VALIDATOR_OWNER_BADGE, XRD};
-use radix_engine_interface::constants::FAUCET;
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_rev2_ScryptoConstants_getXrdResourceAddress(

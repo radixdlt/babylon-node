@@ -69,7 +69,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.DatabaseFlags;
+import com.radixdlt.environment.DatabaseConfig;
 import com.radixdlt.harness.deterministic.TransactionExecutor;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.rev2.Manifest;
@@ -83,7 +83,7 @@ public final class LtsAccountDepositBehaviourTest extends DeterministicCoreApiTe
 
   @Test
   public void account_with_default_config_allows_all_deposits() throws Exception {
-    try (final var test = buildRunningServerTest(new DatabaseFlags(true, true))) {
+    try (final var test = buildRunningServerTest(new DatabaseConfig(true, true, false, false))) {
       test.suppressUnusedWarning();
 
       // Arrange: pretty empty state
@@ -123,7 +123,8 @@ public final class LtsAccountDepositBehaviourTest extends DeterministicCoreApiTe
                       .allowsTryDeposit(true)));
 
       // Follow-up: deposit some actual XRD into that account
-      submitAndWaitForSuccess(test, Manifest.depositFromFaucet(accountAddress), List.of());
+      getApiHelper()
+          .submitAndWaitForSuccess(test, Manifest.depositFromFaucet(accountAddress), List.of());
 
       // Act: this time also pass some dummy badge to be checked
       final var differentResult =
@@ -156,7 +157,7 @@ public final class LtsAccountDepositBehaviourTest extends DeterministicCoreApiTe
 
   @Test
   public void account_with_reject_default_rule_disallows_all_deposits() throws Exception {
-    try (final var test = buildRunningServerTest(new DatabaseFlags(true, true))) {
+    try (final var test = buildRunningServerTest(new DatabaseConfig(true, true, false, false))) {
       test.suppressUnusedWarning();
 
       // Arrange: create account and set its default deposit rule to `Reject`
@@ -210,7 +211,7 @@ public final class LtsAccountDepositBehaviourTest extends DeterministicCoreApiTe
 
   @Test
   public void configured_resource_preference_and_depositor_badge_is_returned() throws Exception {
-    try (final var test = buildRunningServerTest(new DatabaseFlags(true, true))) {
+    try (final var test = buildRunningServerTest(new DatabaseConfig(true, true, false, false))) {
       test.suppressUnusedWarning();
 
       // Arrange: create account with some resource preference and some authorized depositor badge

@@ -122,10 +122,10 @@ public class REv2StateComputerTest {
         new CryptoModule(),
         REv2StateManagerModule.createForTesting(
             ProposalLimitsConfig.testDefaults(),
-            new DatabaseFlags(false, false),
+            new DatabaseConfig(false, false, false, false),
             Option.none(),
             false,
-            StateHashTreeGcConfig.forTesting(),
+            StateTreeGcConfig.forTesting(),
             LedgerProofsGcConfig.forTesting(),
             LedgerSyncLimitsConfig.defaults(),
             ProtocolConfig.testingDefault(),

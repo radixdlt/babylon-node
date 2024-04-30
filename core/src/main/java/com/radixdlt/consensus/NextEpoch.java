@@ -133,6 +133,17 @@ public final class NextEpoch {
 
   @Override
   public String toString() {
-    return "NextEpoch{" + "validators=" + validators + ", epoch=" + epoch + '}';
+    final StringBuilder builder = new StringBuilder("NextEpoch{epoch=");
+    builder.append(epoch);
+    builder.append(", stake_by_validator_id=[");
+    validators.forEach(
+        v -> {
+          builder.append(v.getValidatorId());
+          builder.append("->");
+          builder.append(v.getPower());
+          builder.append(",");
+        });
+    builder.append("]}");
+    return builder.toString();
   }
 }

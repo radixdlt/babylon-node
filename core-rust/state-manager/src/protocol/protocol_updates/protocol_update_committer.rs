@@ -1,21 +1,14 @@
 // This file contains the protocol update logic for specific protocol versions
 
-use std::ops::Deref;
-use std::sync::Arc;
+use crate::engine_prelude::*;
+use node_common::locks::{LockFactory, RwLock};
 
-use node_common::locks::{LockFactory, RwLock, StateLock};
-use radix_engine::prelude::*;
-
-use transaction::prelude::*;
-
-use crate::epoch_handling::EpochAwareAccuTreeFactory;
+use crate::commit_bundle::CommitBundleBuilder;
 use crate::protocol::*;
+use crate::query::TransactionIdentifierLoader;
 use crate::traits::*;
 use crate::transaction::*;
-use crate::{
-    CommittedTransactionIdentifiers, ExecutionCache, LedgerHeader, LedgerProof, LedgerProofOrigin,
-    StateManagerDatabase,
-};
+use crate::{ExecutionCache, LedgerHeader, LedgerProof, LedgerProofOrigin, ReadableStore};
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum UpdateTransaction {
@@ -46,23 +39,26 @@ enum ProtocolUpdateProgress {
 /// A helper that manages committing flash transactions state updates.
 /// It handles the logic to fulfill the resumability contract of "execute_remaining_state_updates"
 /// by storing the index of a previously committed transaction batch in the ledger proof.
-pub struct ProtocolUpdateTransactionCommitter {
+pub struct ProtocolUpdateTransactionCommitter<'s, S> {
     protocol_version_name: ProtocolVersionName,
-    store: Arc<StateLock<StateManagerDatabase>>,
+    database: &'s S,
     execution_configurator: RwLock<ExecutionConfigurator>,
     ledger_transaction_validator: LedgerTransactionValidator,
 }
 
-impl ProtocolUpdateTransactionCommitter {
+impl<'s, S> ProtocolUpdateTransactionCommitter<'s, S>
+where
+    S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader + CommitStore,
+{
     pub fn new(
         protocol_version_name: ProtocolVersionName,
-        store: Arc<StateLock<StateManagerDatabase>>,
+        database: &'s S,
         execution_configurator: ExecutionConfigurator,
         ledger_transaction_validator: LedgerTransactionValidator,
     ) -> Self {
         Self {
             protocol_version_name,
-            store,
+            database,
             execution_configurator: LockFactory::new("protocol_update")
                 .new_rwlock(execution_configurator),
             ledger_transaction_validator,
@@ -70,7 +66,7 @@ impl ProtocolUpdateTransactionCommitter {
     }
 
     fn read_protocol_update_progress(&self) -> ProtocolUpdateProgress {
-        let Some(latest_proof) = self.store.read_current().get_latest_proof() else {
+        let Some(latest_proof) = self.database.get_latest_proof() else {
             return ProtocolUpdateProgress::NotUpdating;
         };
 
@@ -147,8 +143,8 @@ impl ProtocolUpdateTransactionCommitter {
             .next_committable_batch_idx()
             .expect("Can't commit next protocol update batch");
 
-        let read_store = self.store.read_current();
-        let latest_proof: LedgerProof = read_store
+        let latest_proof: LedgerProof = self
+            .database
             .get_latest_proof()
             .expect("Pre-genesis protocol updates are currently not supported");
         let latest_header = latest_proof.ledger_header;
@@ -177,23 +173,16 @@ impl ProtocolUpdateTransactionCommitter {
         };
 
         let mut series_executor = TransactionSeriesExecutor::new(
-            read_store.deref(),
+            self.database,
             &execution_cache,
             &self.execution_configurator,
             dummy_protocol_state,
         );
 
-        // TODO: extract common code from here and StateComputer::commit (also see the comment there)
-        let mut committed_transaction_bundles = Vec::new();
-        let mut substate_store_update = SubstateStoreUpdate::new();
-        let mut state_tree_update = HashTreeUpdate::new();
-        let mut new_node_ancestry_records = Vec::new();
-        let epoch_accu_trees = EpochAwareAccuTreeFactory::new(
+        let mut commit_bundle_builder = CommitBundleBuilder::new(
             series_executor.epoch_identifiers().state_version,
             series_executor.latest_state_version(),
         );
-        let mut transaction_tree_slice_merger = epoch_accu_trees.create_merger();
-        let mut receipt_tree_slice_merger = epoch_accu_trees.create_merger();
 
         for transaction in transactions {
             let raw = transaction.to_raw().unwrap();
@@ -205,27 +194,13 @@ impl ProtocolUpdateTransactionCommitter {
                 .expect("protocol update not committable")
                 .expect_success("protocol update");
 
-            substate_store_update.apply(commit.database_updates);
-            let hash_structures_diff = commit.hash_structures_diff;
-            state_tree_update.add(
+            commit_bundle_builder.add_executed_transaction(
                 series_executor.latest_state_version(),
-                hash_structures_diff.state_hash_tree_diff,
-            );
-            new_node_ancestry_records.extend(commit.new_substate_node_ancestry_records);
-            transaction_tree_slice_merger.append(hash_structures_diff.transaction_tree_diff.slice);
-            receipt_tree_slice_merger.append(hash_structures_diff.receipt_tree_diff.slice);
-
-            let proposer_timestamp_ms = latest_header.proposer_timestamp_ms;
-            committed_transaction_bundles.push(CommittedTransactionBundle {
-                state_version: series_executor.latest_state_version(),
+                latest_header.proposer_timestamp_ms,
                 raw,
-                receipt: commit.local_receipt,
-                identifiers: CommittedTransactionIdentifiers {
-                    payload: validated.create_identifiers(),
-                    resultant_ledger_hashes: *series_executor.latest_ledger_hashes(),
-                    proposer_timestamp_ms,
-                },
-            });
+                validated,
+                commit,
+            );
         }
 
         let resultant_state_version = series_executor.latest_state_version();
@@ -248,21 +223,7 @@ impl ProtocolUpdateTransactionCommitter {
             },
         };
 
-        let commit_bundle = CommitBundle {
-            transactions: committed_transaction_bundles,
-            proof,
-            substate_store_update,
-            vertex_store: None,
-            state_tree_update,
-            transaction_tree_slice: TransactionAccuTreeSliceV1(
-                transaction_tree_slice_merger.into_slice(),
-            ),
-            receipt_tree_slice: ReceiptAccuTreeSliceV1(receipt_tree_slice_merger.into_slice()),
-            new_substate_node_ancestry_records: new_node_ancestry_records,
-        };
-
-        drop(read_store);
-
-        self.store.write_current().commit(commit_bundle);
+        self.database
+            .commit(commit_bundle_builder.build(proof, None));
     }
 }

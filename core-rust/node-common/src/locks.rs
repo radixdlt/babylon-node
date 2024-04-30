@@ -187,14 +187,15 @@ impl LockFactory {
         }
     }
 
-    /// Creates a new state lock with the current configuration.
+    /// Creates a new DB lock with the current configuration.
     /// Note: this is a custom lock primitive - please see its documentation.
-    pub fn new_state_lock<T>(self, value: T) -> StateLock<T> {
-        StateLock {
-            underlying: self.named("current").new_rwlock(()),
-            value,
-            access_non_locked_historical_listener: self
-                .named("historical")
+    pub fn new_db_lock<D>(self, database: D) -> DbLock<D> {
+        DbLock {
+            cooperative_marker_lock: self.named("cooperative").new_mutex(()),
+            database,
+            direct_access_listener: self.named("direct").not_stopping_on_panic().into_listener(),
+            on_demand_snapshot_listener: self
+                .named("snapshot")
                 .not_stopping_on_panic()
                 .into_listener(),
         }
@@ -246,73 +247,79 @@ impl<T> RwLock<T> {
     }
 }
 
-/// A custom lock primitive guarding a "current state" of a value composed from an (immutable)
-/// "historical" and (live) "current" parts of state.
-/// The assumption is that the current state needs a classic [`RwLock`] access, while the historical
-/// state can be accessed freely, without obtaining any lock.
-/// The lock caller is responsible for distinguishing proper current vs historical access.
-// TODO(future refactoring): It seems like the "weird lock" should not be needed if we had a DB
-// interface which is more aware of its "current vs historical" nature. Maybe we will naturally go
-// in that direction when introducing DB snapshotting.
-pub struct StateLock<T> {
-    underlying: RwLock<()>, // we use our own primitive to lock a marker for current state
-    value: T,
-    access_non_locked_historical_listener: ActualLockListener, // only for metrics
+/// A custom lock primitive guarding a certain type of database.
+///
+/// The database is assumed to be thread-safe on a physical level (i.e. it will not panic nor
+/// destroy data when concurrent writes happen; on the contrary: it may offer some row-level or
+/// batch-level atomicity guarantees). It may additionally support a cheap creation of its read-only
+/// snapshots (by implementing the optional [`Snapshottable`] trait).
+///
+/// With the above assumptions, this lock offers a couple of database access options. Please see the
+/// linked methods to learn more about:
+/// - a completely-non-locked [`Self::access_direct()`] to the live database.
+/// - a cooperative [`Self::lock()`] on the live database.
+/// - _(optional)_ an on-demand [`Self::snapshot()`] creation.
+pub struct DbLock<D> {
+    cooperative_marker_lock: Mutex<()>,
+    database: D,
+    direct_access_listener: ActualLockListener, // only for metrics of "direct access"
+    on_demand_snapshot_listener: ActualLockListener, // only for metrics of snapshot operations
 }
 
-impl<T> StateLock<T> {
-    /// Locks the current state for reading.
-    /// This method should be used when caller needs a series of reads referring to the current
-    /// state (it "freezes" the notion of "current").
-    pub fn read_current(&self) -> impl Deref<Target = T> + '_ {
-        StateLockGuard {
-            underlying: self.underlying.read(),
-            value: &self.value,
-        }
+/// A (presumably cheap) snapshotting support that a database may have.
+pub trait Snapshottable<'s> {
+    type Snapshot;
+
+    /// Creates a snapshot that will enable continuous access to the frozen, current state of this
+    /// database.
+    fn snapshot(&'s self) -> Self::Snapshot;
+}
+
+impl<D> DbLock<D> {
+    /// Immediately returns a reference to the database (disregarding any [`Self::lock()`])s.
+    ///
+    /// This method should be used by clients who:
+    /// - read data known to be immutable,
+    /// - or read+write data which they exclusively own.
+    pub fn access_direct(&self) -> impl Deref<Target = D> + '_ {
+        LockGuard::new(|| &self.database, self.direct_access_listener.clone())
     }
 
-    /// Locks the current state for writing.
-    /// This method should be used when caller wants to update the guarded value in a way which
-    /// changes the notion of "current".
-    /// Please note that this method deliberately returns [`Deref`] (not [`DerefMut`]), since it
-    /// would create an undefined behaviour (`&` and `&mut` co-existing). The guarded value is
-    /// assumed to use an interior mutability (i.e. expose mutating methods via `&`).
-    pub fn write_current(&self) -> impl Deref<Target = T> + '_ {
-        StateLockGuard {
-            underlying: self.underlying.write(),
-            value: &self.value,
+    /// Acquires an internal lock and returns a lock guard allowing access to the database.
+    /// This can be thought of as a "cooperative locking" (since honest callers need to explicitly
+    /// choose it instead of [`Self::access_direct()`]).
+    ///
+    /// This method should be used by clients who need to coordinate an exclusive read+write access
+    /// to a known mutable region of the database.
+    // TODO(future enhancement): instead of "direct access + [optional] cooperative locking", we
+    // really should have a set of *mandatory* locks for logically independent "database regions".
+    pub fn lock(&self) -> impl Deref<Target = D> + '_ {
+        DbLockGuard {
+            underlying: self.cooperative_marker_lock.lock(),
+            database: &self.database,
         }
     }
+}
 
-    /// Returns a reference to the guarded value, without locking anything.
-    /// This method should be used when the caller wants to interact selectively with pieces of the
-    /// historical state, in a way known to be safe.
-    /// Note: functionally, we could return a `&T` here directly, but returning a "guard" allows us
-    /// to measure usage of this method (in the same way as we do for lock guards).
-    pub fn access_non_locked_historical(&self) -> impl Deref<Target = T> + '_ {
+impl<'s, D: Snapshottable<'s>> DbLock<D> {
+    /// Immediately returns a new snapshot of the database (disregarding any [`Self::lock()`])s.
+    ///
+    /// This method should be used by clients who need to see a consistent view of the database at
+    /// a given moment. Please note that it assumes that all writes happen in atomic batches which
+    /// do not leave database inconsistent.
+    // TODO(future enhancement): also provide something like `lock_snapshot_unlock()`, which would
+    // not need the "writes are atomic+consistent" assumption?
+    pub fn snapshot(&'s self) -> impl Deref<Target = D::Snapshot> + '_ {
         LockGuard::new(
-            || &self.value,
-            self.access_non_locked_historical_listener.clone(),
+            || OwnedDeref {
+                owned: self.database.snapshot(),
+            },
+            self.on_demand_snapshot_listener.clone(),
         )
     }
 }
 
-/// A read guard of a [`StateLock`].
-pub struct StateLockGuard<'a, T, U> {
-    #[allow(dead_code)] // only held to release the lock when dropped
-    underlying: U,
-    value: &'a T,
-}
-
-impl<'a, T: 'a, U> Deref for StateLockGuard<'a, T, U> {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        self.value
-    }
-}
-
-// Only iternals below:
+// Only internals below:
 
 /// A static type of a [`LockListener`] which provides the extra features to locks produced by our
 /// facade.
@@ -362,6 +369,34 @@ impl<T, U: DerefMut<Target = T>, L: LockListener> DerefMut for LockGuard<U, L> {
 impl<U, L: LockListener> Drop for LockGuard<U, L> {
     fn drop(&mut self) {
         self.listener.on_release();
+    }
+}
+
+/// A simple wrapper used only to implement [`Deref`] for an owned instance.
+struct OwnedDeref<T> {
+    owned: T,
+}
+
+impl<T> Deref for OwnedDeref<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.owned
+    }
+}
+
+/// A guard for a [`DbLock::lock()`].
+pub struct DbLockGuard<'d, D, U> {
+    #[allow(dead_code)] // only held to release the marker lock when dropped
+    underlying: U,
+    database: &'d D,
+}
+
+impl<'d, D: 'd, U> Deref for DbLockGuard<'d, D, U> {
+    type Target = D;
+
+    fn deref(&self) -> &Self::Target {
+        self.database
     }
 }
 

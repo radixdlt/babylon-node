@@ -217,7 +217,7 @@ models/IndexBlueprintCollectionSchemaAllOf.ts
 models/IndexedStateSchema.ts
 models/InstanceSchemaBlueprintTypeReference.ts
 models/InstanceSchemaBlueprintTypeReferenceAllOf.ts
-models/Instant.ts
+models/InstantMs.ts
 models/InstructionResourceChanges.ts
 models/KeyValueBasedStructure.ts
 models/KeyValueBlueprintCollectionSchema.ts
@@ -235,6 +235,9 @@ models/LedgerProof.ts
 models/LedgerProofOrigin.ts
 models/LedgerProofOriginBase.ts
 models/LedgerProofOriginType.ts
+models/LedgerStateSelector.ts
+models/LedgerStateSelectorBase.ts
+models/LedgerStateSelectorType.ts
 models/LedgerStateSummary.ts
 models/LedgerTransaction.ts
 models/LedgerTransactionBase.ts
@@ -505,6 +508,7 @@ models/SchemaEntrySubstateAllOf.ts
 models/SchemaEntryValue.ts
 models/SchemaKey.ts
 models/ScopedTypeId.ts
+models/ScryptoInstant.ts
 models/ScryptoSchema.ts
 models/SignallingValidator.ts
 models/Signature.ts
@@ -660,6 +664,8 @@ models/ValidatorFieldStateSubstate.ts
 models/ValidatorFieldStateSubstateAllOf.ts
 models/ValidatorFieldStateValue.ts
 models/VaultBalance.ts
+models/VersionLedgerStateSelector.ts
+models/VersionLedgerStateSelectorAllOf.ts
 models/VirtualLazyLoadSchema.ts
 models/VmType.ts
 models/index.ts
