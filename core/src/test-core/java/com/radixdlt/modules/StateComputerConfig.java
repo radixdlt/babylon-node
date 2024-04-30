@@ -211,7 +211,7 @@ public sealed interface StateComputerConfig {
     return new REv2StateComputerConfig(
         networkId,
         genesis,
-        new DatabaseConfig(true, false, false),
+        new DatabaseConfig(true, false, false, false),
         proposerConfig,
         false,
         StateTreeGcConfig.forTesting(),

@@ -24,7 +24,7 @@ curl \
 ## Running without compose
 If you wanted to run without using compose you can do so like 
 ```
-docker run -p 127.0.0.1:3333:3333 127.0.0.1:3334:3334 127.0.0.1:3335:3335 -v ledger-data:/home/radixdlt/RADIXDB -v key-data:/home/radixdlt/key --env-file radix-node.env radixdlt/babylon-node:rcnet-v2-phase2-r4
+docker run -p 127.0.0.1:3333:3333 127.0.0.1:3334:3334 127.0.0.1:3335:3335 127.0.0.1:3336:3336 -v ledger-data:/home/radixdlt/RADIXDB -v key-data:/home/radixdlt/key --env-file radix-node.env radixdlt/babylon-node:rcnet-v2-phase2-r4
 ```
 
 ## Node volumes

@@ -28,11 +28,10 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 chrono = { workspace = true }
 hex = { workspace = true }
-
-futures = { version = "=0.3.28" }
-futures-util = { version = "=0.3.28" }
-axum = { version = "=0.6.20", features = ["http1", "json"] }
-tower = { version = "=0.4.13" }
-tower-http = { version = "=0.4.3", features = ["catch-panic"]}
-hyper = { version = "=0.14.27", features = ["server", "http1"] }
-paste = { version = "=1.0.14", default-features = false }
+futures = { workspace = true }
+futures-util = { workspace = true }
+axum = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+hyper = { workspace = true }
+paste = { workspace = true }

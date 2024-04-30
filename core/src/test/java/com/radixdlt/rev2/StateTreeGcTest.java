@@ -119,7 +119,7 @@ public final class StateTreeGcTest {
                             1,
                             Decimal.ONE,
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(100)),
-                        new DatabaseConfig(false, false, storeHistoricalSubstates),
+                        new DatabaseConfig(false, false, storeHistoricalSubstates, false),
                         REV2ProposerConfig.noUserTransactions(),
                         false,
                         new StateTreeGcConfig(

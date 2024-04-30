@@ -138,7 +138,7 @@ public final class LedgerProofsGcTest {
                             Decimal.ONE,
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
                                 roundsPerEpoch)),
-                        new DatabaseConfig(false, false, false),
+                        new DatabaseConfig(false, false, false, false),
                         REV2ProposerConfig.transactionGenerator(
                             new SizedTransactionGenerator(NetworkDefinition.INT_TEST_NET, txnSize),
                             1),
