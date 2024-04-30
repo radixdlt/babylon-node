@@ -158,7 +158,7 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_prepare(
         request_payload,
         |prepare_request: PrepareRequest| -> PrepareResult {
             let state_computer = JNINodeRustEnvironment::get_state_computer(&env, j_node_rust_env);
-            state_computer.prepare(prepare_request)
+            state_computer.preparator.prepare(prepare_request)
         },
     )
 }
@@ -202,7 +202,10 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_protocolSta
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |_: ()| -> ProtocolState {
         let env = JNINodeRustEnvironment::get(&env, j_node_rust_env);
-        env.state_manager.state_computer.protocol_state()
+        env.state_manager
+            .state_computer
+            .protocol_state_manager
+            .current_protocol_state()
     })
 }
 

@@ -1,16 +1,58 @@
 use crate::engine_prelude::*;
+use node_common::locks::{LockFactory, RwLock};
+use prometheus::Registry;
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
-
+use std::ops::Deref;
 use tracing::info;
 
 use crate::protocol::*;
 use crate::traits::{IterableProofStore, QueryableProofStore, QueryableTransactionStore};
-use crate::{LocalTransactionReceipt, StateVersion};
+use crate::{LocalTransactionReceipt, ProtocolMetrics, StateVersion};
 use ProtocolUpdateEnactmentCondition::*;
 
 // This file contains types and utilities for
 // managing the (dynamic) protocol state of a running node.
+
+pub struct ProtocolStateManager {
+    protocol_metrics: ProtocolMetrics,
+    protocol_state: RwLock<ProtocolState>,
+}
+
+impl ProtocolStateManager {
+    pub fn new(
+        lock_factory: &LockFactory,
+        metric_registry: &Registry,
+        initial_protocol_state: ProtocolState,
+    ) -> Self {
+        Self {
+            protocol_metrics: ProtocolMetrics::new(metric_registry, &initial_protocol_state),
+            protocol_state: lock_factory
+                .named("state")
+                .new_rwlock(initial_protocol_state),
+        }
+    }
+
+    pub fn current_protocol_state(&self) -> ProtocolState {
+        self.protocol_state.read().deref().clone()
+    }
+
+    pub fn update_protocol_state_and_metrics(
+        &self,
+        new_protocol_state: ProtocolState,
+        epoch_change_event: Option<&EpochChangeEvent>,
+    ) {
+        if let Some(epoch_change_event) = epoch_change_event {
+            self.protocol_metrics
+                .update(&new_protocol_state, epoch_change_event);
+        }
+        *self.protocol_state.write() = new_protocol_state;
+    }
+
+    pub fn update_protocol_version(&self, new_protocol_version: &ProtocolVersionName) {
+        self.protocol_state.write().current_protocol_version = new_protocol_version.clone();
+    }
+}
 
 #[derive(Clone, Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ProtocolState {

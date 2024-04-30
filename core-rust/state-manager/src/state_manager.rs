@@ -69,20 +69,22 @@ use std::time::Duration;
 
 use crate::engine_prelude::*;
 use crate::jni::LedgerSyncLimitsConfig;
-use crate::protocol::{ProtocolConfig, ProtocolState, ProtocolVersionName};
+use crate::protocol::{ProtocolConfig, ProtocolState, ProtocolStateManager, ProtocolVersionName};
 use crate::store::jmt_gc::StateTreeGcConfig;
 use crate::store::proofs_gc::{LedgerProofsGc, LedgerProofsGcConfig};
 use crate::store::traits::proofs::QueryableProofStore;
 use crate::traits::DatabaseConfigValidationError;
-use crate::transaction::ExecutionConfigurator;
+use crate::transaction::{
+    ExecutionConfigurator, LedgerTransactionValidator, Preparator, TransactionExecutorFactory,
+};
 use crate::{
     mempool_manager::MempoolManager,
     mempool_relay_dispatcher::MempoolRelayDispatcher,
     priority_mempool::PriorityMempool,
     store::{jmt_gc::StateTreeGc, DatabaseBackendConfig, DatabaseConfig, RawDbMetricsCollector},
     transaction::{CachedCommittabilityValidator, CommittabilityValidator, TransactionPreviewer},
-    ActualStateManagerDatabase, PendingTransactionResultCache, ProtocolUpdateResult, StateComputer,
-    StateManagerDatabase,
+    ActualStateManagerDatabase, ExecutionCacheManager, PendingTransactionResultCache,
+    ProtocolUpdateResult, StateComputer, StateManagerDatabase,
 };
 use node_common::scheduler::{Metrics, Scheduler, Spawner, Tracker};
 use node_common::{
@@ -120,7 +122,10 @@ pub struct ScenariosExecutionConfig {
 }
 
 impl ScenariosExecutionConfig {
-    pub fn to_run_after_enacting(&self, protocol_version: &ProtocolVersionName) -> Vec<String> {
+    pub fn to_run_after_protocol_update(
+        &self,
+        protocol_version: &ProtocolVersionName,
+    ) -> Vec<String> {
         self.after_protocol_updates
             .iter()
             .filter(|config| config.protocol_version_name.as_str() == protocol_version.as_str())
@@ -212,17 +217,15 @@ impl StateManager {
             database.access_direct().deref(),
             &config.protocol_config,
         );
-
-        let initial_protocol_version = &initial_protocol_state.current_protocol_version;
-        let initial_protocol_updater = config
-            .protocol_config
-            .resolve_updater(&config.network_definition, initial_protocol_version)
-            .unwrap_or_else(|| {
-                panic!(
-                    "Initial protocol version on boot ({}) was not known in the resolver",
-                    initial_protocol_version
-                )
-            });
+        let initial_protocol_updater = config.protocol_config.resolve_updater(
+            &config.network_definition,
+            &initial_protocol_state.current_protocol_version,
+        );
+        let protocol_state_manager = Arc::new(ProtocolStateManager::new(
+            &lock_factory.named("protocol_state"),
+            metrics_registry,
+            initial_protocol_state,
+        ));
 
         let execution_configurator = Arc::new(ExecutionConfigurator::new(
             &network,
@@ -273,27 +276,40 @@ impl StateManager {
             validation_config,
         ));
 
-        let vertex_limits_config = match config.vertex_limits_config {
-            Some(java_vertex_limits_config) => java_vertex_limits_config,
-            None => VertexLimitsConfig::default(),
-        };
+        let execution_cache_manager =
+            Arc::new(ExecutionCacheManager::new(database.clone(), lock_factory));
+        let transaction_executor_factory = Arc::new(TransactionExecutorFactory::new(
+            execution_configurator.clone(),
+            execution_cache_manager.clone(),
+            protocol_state_manager.clone(),
+        ));
+        let ledger_transaction_validator =
+            Arc::new(LedgerTransactionValidator::default_from_network(&network));
+        let preparator = Arc::new(Preparator::new(
+            database.clone(),
+            transaction_executor_factory.clone(),
+            pending_transaction_result_cache.clone(),
+            ledger_transaction_validator.clone(),
+            config.vertex_limits_config.unwrap_or_default(),
+            metrics_registry,
+        ));
 
-        // If we're booting mid-protocol update ensure all required
-        // transactions are committed.
-        initial_protocol_updater.execute_remaining_state_updates(&network, database.clone());
+        // If we're booting mid-protocol update ensure all required transactions are committed:
+        initial_protocol_updater.execute_remaining_state_updates(database.clone());
 
         // Build the state computer:
         let state_computer = Arc::new(StateComputer::new(
             &network,
-            vertex_limits_config,
             database.clone(),
+            ledger_transaction_validator.clone(),
+            transaction_executor_factory.clone(),
+            preparator.clone(),
             mempool_manager.clone(),
-            execution_configurator.clone(),
+            execution_cache_manager.clone(),
             pending_transaction_result_cache.clone(),
             metrics_registry,
             lock_factory.named("state_computer"),
-            initial_protocol_state,
-            config.scenarios_execution_config.clone(),
+            protocol_state_manager.clone(),
         ));
 
         // Register the periodic background task for collecting the costly raw DB metrics...
@@ -341,20 +357,10 @@ impl StateManager {
         &self,
         protocol_version_name: &ProtocolVersionName,
     ) -> ProtocolUpdateResult {
-        let protocol_updater = self
-            .config
+        self.config
             .protocol_config
             .resolve_updater(&self.config.network_definition, protocol_version_name)
-            .unwrap_or_else(|| {
-                panic!(
-                    "Protocol update to version {} was triggered, but isn't known in the resolver",
-                    protocol_version_name
-                )
-            });
-        protocol_updater.execute_remaining_state_updates(
-            &self.config.network_definition,
-            self.database.clone(),
-        );
+            .execute_remaining_state_updates(self.database.clone());
 
         self.state_computer
             .handle_protocol_update(protocol_version_name);

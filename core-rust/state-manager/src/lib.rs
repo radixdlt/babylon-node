@@ -77,6 +77,7 @@ mod staging;
 mod state_computer;
 mod state_manager;
 pub mod store;
+pub mod system_commits;
 pub mod transaction;
 mod types;
 

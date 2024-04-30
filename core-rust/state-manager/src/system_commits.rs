@@ -62,63 +62,81 @@
  * permissions under this License.
  */
 
-use crate::{LedgerStatus, RecentSelfProposalMissStatistic};
-use jni::objects::{JClass, JObject};
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
-use node_common::java::jni_sbor_coded_call;
-use prometheus::*;
+use crate::engine_prelude::*;
+use crate::transaction::*;
+use crate::*;
 
-use super::node_rust_environment::JNINodeRustEnvironment;
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_prometheus_RustPrometheus_prometheusMetrics(
-    env: JNIEnv,
-    _class: JClass,
-    j_node_rust_env: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |_no_args: ()| -> String {
-        let registry = &JNINodeRustEnvironment::get(&env, j_node_rust_env).metric_registry;
-        let encoder = TextEncoder::new();
-        let mut buffer = vec![];
-        encoder.encode(&registry.gather(), &mut buffer).unwrap();
-        String::from_utf8(buffer).unwrap()
-    })
+pub struct SystemCommitRequestFactory {
+    pub epoch: Epoch,
+    pub timestamp: i64,
+    pub state_version: StateVersion,
+    pub proof_origin: LedgerProofOrigin,
 }
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_prometheus_RustPrometheus_ledgerStatus(
-    env: JNIEnv,
-    _class: JClass,
-    j_node_rust_env: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |_no_args: ()| -> LedgerStatus {
-        JNINodeRustEnvironment::get(&env, j_node_rust_env)
-            .state_manager
-            .state_computer
-            .get_ledger_status_from_metrics()
-    })
+impl SystemCommitRequestFactory {
+    pub fn create_for_genesis(&mut self, result: GenesisPrepareResult) -> SystemCommitRequest {
+        self.state_version = self
+            .state_version
+            .next()
+            .expect("Invalid next state version!");
+        SystemCommitRequest {
+            raw: result.raw,
+            validated: result.validated,
+            proof: self.create_proof(result.ledger_hashes, result.next_epoch),
+            require_success: true,
+        }
+    }
+
+    pub fn create_for_scenario(
+        &mut self,
+        result: ScenarioPrepareResult,
+    ) -> Option<SystemCommitRequest> {
+        let ledger_hashes = result.committable_ledger_hashes?;
+        self.state_version = self
+            .state_version
+            .next()
+            .expect("Invalid next state version!");
+        Some(SystemCommitRequest {
+            raw: result.raw,
+            validated: result.validated,
+            proof: self.create_proof(ledger_hashes, None),
+            require_success: false,
+        })
+    }
+
+    fn create_proof(&self, hashes: LedgerHashes, next_epoch: Option<NextEpoch>) -> LedgerProof {
+        LedgerProof {
+            ledger_header: LedgerHeader {
+                epoch: self.epoch,
+                round: Round::zero(),
+                state_version: self.state_version,
+                hashes,
+                consensus_parent_round_timestamp_ms: self.timestamp,
+                proposer_timestamp_ms: self.timestamp,
+                next_epoch,
+                next_protocol_version: None,
+            },
+            origin: self.proof_origin.clone(),
+        }
+    }
 }
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_prometheus_RustPrometheus_recentSelfProposalMissStatistic(
-    env: JNIEnv,
-    _class: JClass,
-    j_node_rust_env: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(
-        &env,
-        request_payload,
-        |_no_args: ()| -> RecentSelfProposalMissStatistic {
-            JNINodeRustEnvironment::get(&env, j_node_rust_env)
-                .state_manager
-                .state_computer
-                .get_recent_self_proposal_miss_statistic() // TODO(wip): too
-        },
-    )
+pub struct GenesisPrepareResult {
+    pub raw: RawLedgerTransaction,
+    pub validated: ValidatedLedgerTransaction,
+    pub ledger_hashes: LedgerHashes,
+    pub next_epoch: Option<NextEpoch>,
 }
 
-pub fn export_extern_functions() {}
+pub struct ScenarioPrepareResult {
+    pub raw: RawLedgerTransaction,
+    pub validated: ValidatedLedgerTransaction,
+    pub committable_ledger_hashes: Option<LedgerHashes>,
+}
+
+pub struct SystemCommitRequest {
+    pub raw: RawLedgerTransaction,
+    pub validated: ValidatedLedgerTransaction,
+    pub proof: LedgerProof,
+    pub require_success: bool,
+}

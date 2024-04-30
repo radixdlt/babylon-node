@@ -81,6 +81,7 @@ use crate::protocol::{
     PendingProtocolUpdateState, ProtocolState, ProtocolUpdateEnactmentCondition,
 };
 use crate::store::traits::measurement::CategoryDbVolumeStatistic;
+use crate::traits::QueryableProofStore;
 
 pub struct LedgerMetrics {
     address_encoder: AddressBech32Encoder, // for label rendering only
@@ -125,12 +126,16 @@ pub struct RawDbMetrics {
 }
 
 impl LedgerMetrics {
-    pub fn new(
+    pub fn new<S: QueryableProofStore>(
         network: &NetworkDefinition,
-        lock_factory: LockFactory,
+        database: &S,
+        lock_factory: &LockFactory,
         registry: &Registry,
-        current_ledger_proposer_timestamp_ms: i64,
     ) -> Self {
+        let current_ledger_proposer_timestamp_ms = database
+            .get_latest_proof()
+            .map(|proof| proof.ledger_header.proposer_timestamp_ms)
+            .unwrap_or_default();
         let instance = Self {
             address_encoder: AddressBech32Encoder::new(network),
             state_version: IntGauge::with_opts(opts(
@@ -404,9 +409,9 @@ impl ProtocolMetrics {
         instance
     }
 
-    pub fn update(&self, protocol_state: &ProtocolState, epoch_change: &EpochChangeEvent) {
+    pub fn update(&self, protocol_state: &ProtocolState, epoch_change_event: &EpochChangeEvent) {
         self.update_state_based_metrics(protocol_state);
-        self.update_epoch_change_based_metrics(epoch_change);
+        self.update_epoch_change_based_metrics(epoch_change_event);
     }
 
     /// Updates the metrics that are based on ProtocolState (pending, enacted updates)
@@ -518,15 +523,16 @@ impl ProtocolMetrics {
     }
 
     /// Updates the metrics that are based on epoch change event
-    fn update_epoch_change_based_metrics(&self, epoch_change: &EpochChangeEvent) {
+    fn update_epoch_change_based_metrics(&self, epoch_change_event: &EpochChangeEvent) {
         self.protocol_update_readiness_ratio.reset();
 
-        let total_stake = epoch_change
+        let total_stake = epoch_change_event
             .validator_set
             .total_active_stake_xrd()
             .expect("Failed to calculate the total stake");
-        for (readiness_signal_name, stake_readiness) in
-            epoch_change.significant_protocol_update_readiness.iter()
+        for (readiness_signal_name, stake_readiness) in epoch_change_event
+            .significant_protocol_update_readiness
+            .iter()
         {
             let readiness_ratio = stake_readiness
                 .checked_div(total_stake)

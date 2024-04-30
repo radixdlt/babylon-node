@@ -65,6 +65,7 @@
 package com.radixdlt.environment;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.protocol.ProtocolUpdateTrigger;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 
@@ -86,7 +87,10 @@ public record ScenariosExecutionConfig(
   /** A "full test" configuration, executing all Scenarios at appropriate Protocol Update states. */
   public static final ScenariosExecutionConfig ALL =
       new ScenariosExecutionConfig(
-          ImmutableList.of()); // TODO(wip): new PostProtocolUpdateConfig(...)
+          ImmutableList.of( // Note: no Anemone protocol scenarios existed.
+              new PostProtocolUpdateConfig(
+                  ProtocolUpdateTrigger.BOTTLENOSE,
+                  ImmutableList.of("account_locker", "maya_router"))));
 
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(

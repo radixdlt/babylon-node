@@ -1,14 +1,13 @@
 // This file contains the protocol update logic for specific protocol versions
 
 use crate::engine_prelude::*;
-use node_common::locks::LockFactory;
 
 use crate::commit_bundle::CommitBundleBuilder;
 use crate::protocol::*;
 use crate::query::TransactionIdentifierLoader;
 use crate::traits::*;
 use crate::transaction::*;
-use crate::{ExecutionCache, LedgerHeader, LedgerProof, LedgerProofOrigin, ReadableStore};
+use crate::{ExecutionCacheManager, LedgerHeader, LedgerProof, LedgerProofOrigin, ReadableStore};
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum UpdateTransaction {
@@ -42,25 +41,16 @@ enum ProtocolUpdateProgress {
 pub struct ProtocolUpdateTransactionCommitter<'s, S> {
     protocol_version_name: ProtocolVersionName,
     database: &'s S,
-    execution_configurator: ExecutionConfigurator,
-    ledger_transaction_validator: LedgerTransactionValidator,
 }
 
 impl<'s, S> ProtocolUpdateTransactionCommitter<'s, S>
 where
     S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader + CommitStore,
 {
-    pub fn new(
-        protocol_version_name: ProtocolVersionName,
-        database: &'s S,
-        execution_configurator: ExecutionConfigurator,
-        ledger_transaction_validator: LedgerTransactionValidator,
-    ) -> Self {
+    pub fn new(protocol_version_name: ProtocolVersionName, database: &'s S) -> Self {
         Self {
             protocol_version_name,
             database,
-            execution_configurator,
-            ledger_transaction_validator,
         }
     }
 
@@ -119,10 +109,6 @@ where
         }
     }
 
-    pub fn commit_single(&mut self, transaction: UpdateTransaction) {
-        self.commit_batch(vec![transaction]);
-    }
-
     /// Commits a batch of flash transactions, followed by a single
     /// proof (of protocol update origin).
     pub fn commit_batch(&mut self, update_transactions: Vec<UpdateTransaction>) {
@@ -158,9 +144,8 @@ where
             (latest_header.epoch, latest_header.round)
         };
 
-        let lock_factory = LockFactory::new("protocol_update");
-        let execution_cache =
-            lock_factory.new_mutex(ExecutionCache::new(latest_header.hashes.transaction_root));
+        let dummy_execution_cache_manager = koko();
+        let dummy_execution_configurator = moko();
         // For the purpose of executing protocol update transactions we're just going to use
         // a dummy protocol state with no configured updates and the name of this (in progress)
         // protocol update as the current version (although that could really be any string,
@@ -173,8 +158,8 @@ where
 
         let mut series_executor = TransactionSeriesExecutor::new(
             self.database,
-            &execution_cache,
-            &self.execution_configurator,
+            &dummy_execution_cache_manager, // TODO(wip): traits for flashes!
+            &dummy_execution_configurator,
             dummy_protocol_state,
         );
 
@@ -183,10 +168,16 @@ where
             series_executor.latest_state_version(),
         );
 
+        // TODO(wip): out!
+        let ledger_transaction_validator =
+            LedgerTransactionValidator::default_from_validation_config(ValidationConfig::default(
+                8,
+            ));
+
         for transaction in transactions {
             let raw = transaction.to_raw().unwrap();
             let prepared = PreparedLedgerTransaction::prepare_from_raw(&raw).unwrap();
-            let validated = self.ledger_transaction_validator.validate_flash(prepared);
+            let validated = ledger_transaction_validator.validate_flash(prepared);
 
             let commit = series_executor
                 .execute_and_update_state(&validated, "flash protocol update")
@@ -225,4 +216,12 @@ where
         self.database
             .commit(commit_bundle_builder.build(proof, None));
     }
+}
+
+// TODO(wip): delete!
+fn koko() -> ExecutionCacheManager {
+    todo!()
+}
+fn moko() -> ExecutionConfigurator {
+    todo!()
 }

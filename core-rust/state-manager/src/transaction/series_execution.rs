@@ -63,22 +63,66 @@
  */
 
 use std::fmt::Formatter;
+use std::ops::Deref;
+use std::sync::Arc;
 
 use crate::protocol::*;
 use crate::query::*;
-use crate::staging::{ExecutionCache, ReadableStore};
+use crate::staging::ReadableStore;
 use crate::store::traits::*;
 use crate::transaction::*;
 use crate::*;
 
 use crate::engine_prelude::*;
-use node_common::locks::Mutex;
+
+pub struct TransactionExecutorFactory {
+    execution_configurator: Arc<ExecutionConfigurator>,
+    execution_cache_manager: Arc<ExecutionCacheManager>,
+    protocol_state_manager: Arc<ProtocolStateManager>,
+}
+
+impl TransactionExecutorFactory {
+    pub fn new(
+        execution_configurator: Arc<ExecutionConfigurator>,
+        execution_cache_manager: Arc<ExecutionCacheManager>,
+        protocol_state_manager: Arc<ProtocolStateManager>,
+    ) -> Self {
+        Self {
+            execution_configurator,
+            execution_cache_manager,
+            protocol_state_manager,
+        }
+    }
+
+    pub fn execute_isolated<S: ReadableStore>(
+        &self,
+        store: &S,
+        transaction: &ValidatedLedgerTransaction,
+        description: &'static str,
+    ) -> TransactionReceipt {
+        self.execution_configurator
+            .wrap_ledger_transaction(transaction, description)
+            .execute_on(store)
+    }
+
+    pub fn start_series_execution<'s, S>(&'s self, store: &'s S) -> TransactionSeriesExecutor<'s, S>
+    where
+        S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader,
+    {
+        TransactionSeriesExecutor::new(
+            store,
+            &self.execution_cache_manager,
+            self.execution_configurator.deref(),
+            self.protocol_state_manager.current_protocol_state(),
+        )
+    }
+}
 
 /// An internal delegate for executing a series of consecutive transactions while tracking their
 /// progress.
 pub struct TransactionSeriesExecutor<'s, S> {
     store: &'s S,
-    execution_cache: &'s Mutex<ExecutionCache>,
+    execution_cache_manager: &'s ExecutionCacheManager,
     execution_configurator: &'s ExecutionConfigurator,
     epoch_identifiers: EpochTransactionIdentifiers,
     epoch_header: Option<LedgerHeader>,
@@ -96,7 +140,7 @@ where
     /// The locking of the borrowed `execution_cache` will be handled by this executor.
     pub fn new(
         store: &'s S,
-        execution_cache: &'s Mutex<ExecutionCache>,
+        execution_cache_manager: &'s ExecutionCacheManager,
         execution_configurator: &'s ExecutionConfigurator,
         protocol_state: ProtocolState,
     ) -> Self {
@@ -105,7 +149,7 @@ where
             .map(|epoch_proof| epoch_proof.ledger_header);
         Self {
             store,
-            execution_cache,
+            execution_cache_manager,
             execution_configurator,
             epoch_identifiers: epoch_header
                 .as_ref()
@@ -164,7 +208,7 @@ where
         description: &DescribedTransactionHash,
         wrapped_executable: T,
     ) -> Result<ProcessedCommitResult, ProcessedRejectResult> {
-        let mut execution_cache = self.execution_cache.lock();
+        let mut execution_cache = self.execution_cache_manager.access_exclusively();
         let processed = execution_cache.execute_transaction(
             self.store,
             self.epoch_identifiers(),

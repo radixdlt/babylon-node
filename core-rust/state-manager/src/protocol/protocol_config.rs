@@ -114,16 +114,15 @@ impl ProtocolConfig {
         &self,
         network: &NetworkDefinition,
         protocol_version_name: &ProtocolVersionName,
-    ) -> Option<Box<dyn ProtocolUpdater>> {
-        let definition = resolve_update_definition_for_version(protocol_version_name)?;
-        Some(
-            definition.create_updater_with_raw_overrides(
+    ) -> Box<dyn ProtocolUpdater> {
+        resolve_update_definition_for_version(protocol_version_name)
+            .unwrap_or_else(|| panic!("{}", protocol_version_name.as_str().to_string()))
+            .create_updater_with_raw_overrides(
                 protocol_version_name,
                 network,
                 self.protocol_update_content_overrides
                     .get(protocol_version_name),
-            ),
-        )
+            )
     }
 }
 
