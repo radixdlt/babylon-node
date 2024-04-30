@@ -1,7 +1,7 @@
 // This file contains the protocol update logic for specific protocol versions
 
 use crate::engine_prelude::*;
-use node_common::locks::{LockFactory, RwLock};
+use node_common::locks::LockFactory;
 
 use crate::commit_bundle::CommitBundleBuilder;
 use crate::protocol::*;
@@ -42,7 +42,7 @@ enum ProtocolUpdateProgress {
 pub struct ProtocolUpdateTransactionCommitter<'s, S> {
     protocol_version_name: ProtocolVersionName,
     database: &'s S,
-    execution_configurator: RwLock<ExecutionConfigurator>,
+    execution_configurator: ExecutionConfigurator,
     ledger_transaction_validator: LedgerTransactionValidator,
 }
 
@@ -59,8 +59,7 @@ where
         Self {
             protocol_version_name,
             database,
-            execution_configurator: LockFactory::new("protocol_update")
-                .new_rwlock(execution_configurator),
+            execution_configurator,
             ledger_transaction_validator,
         }
     }

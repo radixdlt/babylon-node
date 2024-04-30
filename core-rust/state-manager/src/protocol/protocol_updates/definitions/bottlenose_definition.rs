@@ -37,7 +37,6 @@ impl ProtocolUpdateDefinition for BottlenoseProtocolUpdateDefinition {
     ) -> Box<dyn ProtocolUpdater> {
         Box::new(BatchedUpdater::new(
             new_protocol_version.clone(),
-            Self::state_computer_config(network_definition),
             ScryptoEntriesBatchGenerator::new(network_definition, &BOTTLENOSE_ENTRIES),
         ))
     }

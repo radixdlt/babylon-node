@@ -6,44 +6,51 @@ use std::sync::Arc;
 use crate::engine_prelude::*;
 
 use crate::protocol::*;
+use crate::transaction::{ExecutionConfigurator, LedgerTransactionValidator};
 
 pub trait ProtocolUpdater {
     /// Executes these state updates associated with the given protocol version
     /// that haven't yet been applied
     /// (hence "remaining", e.g. if node is restarted mid-protocol update).
-    fn execute_remaining_state_updates(&self, database: Arc<DbLock<ActualStateManagerDatabase>>);
+    fn execute_remaining_state_updates(
+        &self,
+        network: &NetworkDefinition,
+        database: Arc<DbLock<ActualStateManagerDatabase>>,
+    );
 }
 
 pub struct NoOpProtocolUpdater;
 
 impl ProtocolUpdater for NoOpProtocolUpdater {
-    fn execute_remaining_state_updates(&self, _database: Arc<DbLock<ActualStateManagerDatabase>>) {
+    fn execute_remaining_state_updates(
+        &self,
+        _network: &NetworkDefinition,
+        _database: Arc<DbLock<ActualStateManagerDatabase>>,
+    ) {
         // no-op
     }
 }
 
-pub(crate) struct BatchedUpdater<R: UpdateBatchGenerator> {
+pub(crate) struct BatchedUpdater<G: UpdateBatchGenerator> {
     new_protocol_version: ProtocolVersionName,
-    new_state_computer_config: ProtocolStateComputerConfig,
-    resolver: R,
+    batch_generator: G,
 }
 
 impl<G: UpdateBatchGenerator> BatchedUpdater<G> {
-    pub fn new(
-        new_protocol_version: ProtocolVersionName,
-        new_state_computer_config: ProtocolStateComputerConfig,
-        batch_generator: G,
-    ) -> Self {
+    pub fn new(new_protocol_version: ProtocolVersionName, batch_generator: G) -> Self {
         Self {
             new_protocol_version,
-            new_state_computer_config,
-            resolver: batch_generator,
+            batch_generator,
         }
     }
 }
 
-impl<R: UpdateBatchGenerator> ProtocolUpdater for BatchedUpdater<R> {
-    fn execute_remaining_state_updates(&self, database: Arc<DbLock<ActualStateManagerDatabase>>) {
+impl<G: UpdateBatchGenerator> ProtocolUpdater for BatchedUpdater<G> {
+    fn execute_remaining_state_updates(
+        &self,
+        network: &NetworkDefinition,
+        database: Arc<DbLock<ActualStateManagerDatabase>>,
+    ) {
         let database = database.lock();
         let mut txn_committer = ProtocolUpdateTransactionCommitter::new(
             self.new_protocol_version.clone(),
@@ -51,15 +58,13 @@ impl<R: UpdateBatchGenerator> ProtocolUpdater for BatchedUpdater<R> {
             // The costing and logging parameters (of the Engine) are not really used for flash
             // transactions; let's still pass sane values.
             // TODO(when we need non-flash transactions): pass the actually configured flags here.
-            self.new_state_computer_config
-                .execution_configurator(true, false),
-            self.new_state_computer_config
-                .ledger_transaction_validator(),
+            ExecutionConfigurator::new(network, true, false),
+            LedgerTransactionValidator::default_from_network(network),
         );
 
         while let Some(next_batch_idx) = txn_committer.next_committable_batch_idx() {
             let batch = self
-                .resolver
+                .batch_generator
                 .generate_batch(database.deref(), next_batch_idx);
             match batch {
                 Some(flash_txns) => {

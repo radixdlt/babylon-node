@@ -72,14 +72,14 @@ use crate::transaction::*;
 use crate::*;
 
 use crate::engine_prelude::*;
-use node_common::locks::{Mutex, RwLock};
+use node_common::locks::Mutex;
 
 /// An internal delegate for executing a series of consecutive transactions while tracking their
 /// progress.
 pub struct TransactionSeriesExecutor<'s, S> {
     store: &'s S,
     execution_cache: &'s Mutex<ExecutionCache>,
-    execution_configurator: &'s RwLock<ExecutionConfigurator>,
+    execution_configurator: &'s ExecutionConfigurator,
     epoch_identifiers: EpochTransactionIdentifiers,
     epoch_header: Option<LedgerHeader>,
     state_tracker: StateTracker,
@@ -97,7 +97,7 @@ where
     pub fn new(
         store: &'s S,
         execution_cache: &'s Mutex<ExecutionCache>,
-        execution_configurator: &'s RwLock<ExecutionConfigurator>,
+        execution_configurator: &'s ExecutionConfigurator,
         protocol_state: ProtocolState,
     ) -> Self {
         let epoch_header = store
@@ -155,7 +155,6 @@ where
         self.execute_wrapped_no_state_update(
             &description,
             self.execution_configurator
-                .read()
                 .wrap_ledger_transaction(transaction, &description),
         )
     }

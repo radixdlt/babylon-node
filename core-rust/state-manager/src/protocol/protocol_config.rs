@@ -110,23 +110,20 @@ impl ProtocolConfig {
         Ok(())
     }
 
-    pub fn resolve_config_and_updater(
+    pub fn resolve_updater(
         &self,
         network: &NetworkDefinition,
         protocol_version_name: &ProtocolVersionName,
-    ) -> Option<(ProtocolStateComputerConfig, Box<dyn ProtocolUpdater>)> {
+    ) -> Option<Box<dyn ProtocolUpdater>> {
         let definition = resolve_update_definition_for_version(protocol_version_name)?;
-
-        let config = definition.resolve_state_computer_config(network);
-
-        let updater = definition.create_updater_with_raw_overrides(
-            protocol_version_name,
-            network,
-            self.protocol_update_content_overrides
-                .get(protocol_version_name),
-        );
-
-        Some((config, updater))
+        Some(
+            definition.create_updater_with_raw_overrides(
+                protocol_version_name,
+                network,
+                self.protocol_update_content_overrides
+                    .get(protocol_version_name),
+            ),
+        )
     }
 }
 
