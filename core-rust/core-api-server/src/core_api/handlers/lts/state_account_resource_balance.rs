@@ -1,7 +1,5 @@
 use crate::core_api::*;
-use radix_engine::blueprints::account::{AccountCollection, AccountResourceVaultEntryPayload};
-use radix_engine::types::*;
-use radix_engine_queries::typed_substate_layout::*;
+use crate::engine_prelude::*;
 
 use state_manager::LedgerHeader;
 use std::ops::Deref;
@@ -43,7 +41,7 @@ pub(crate) async fn handle_lts_state_account_fungible_resource_balance(
         ));
     }
 
-    let database = state.state_manager.database.read_current();
+    let database = state.state_manager.database.snapshot();
 
     if !account_address.as_node_id().is_global_virtual() {
         read_optional_substate::<TypeInfoSubstate>(
@@ -124,7 +122,10 @@ fn response(
     Ok(Json(
         models::LtsStateAccountFungibleResourceBalanceResponse {
             state_version: to_api_state_version(header.state_version)?,
-            ledger_header_summary: Box::new(to_api_ledger_header_summary(context, header)?),
+            ledger_header_summary: Box::new(to_api_ledger_header_summary(
+                context,
+                &header.clone().into(),
+            )?),
             account_address: to_api_component_address(context, account_address)?,
             fungible_resource_balance: Box::new(models::LtsFungibleResourceBalance {
                 fungible_resource_address: to_api_resource_address(context, resource_address)?,

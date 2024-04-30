@@ -62,11 +62,11 @@
  * permissions under this License.
  */
 
+use crate::engine_prelude::*;
 use jni::errors::Result;
 use jni::objects::{GlobalRef, JObject, JValue};
 use jni::{JNIEnv, JavaVM};
 use std::ops::Deref;
-use transaction::prelude::*;
 
 use node_common::java::*;
 

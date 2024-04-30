@@ -91,6 +91,9 @@ import org.junit.rules.TemporaryFolder;
 
 public final class RustMempoolTest {
 
+  private static final DatabaseConfig TEST_DATABASE_CONFIG =
+      new DatabaseConfig(false, false, false, false);
+
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   /** A no-op dispatcher of transactions to be relayed. */
@@ -128,9 +131,9 @@ public final class RustMempoolTest {
                 new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount)),
             Option.none(),
             new DatabaseBackendConfig(folder.newFolder().getPath()),
-            new DatabaseFlags(false, false),
+            TEST_DATABASE_CONFIG,
             LoggingConfig.getDefault(),
-            StateHashTreeGcConfig.forTesting(),
+            StateTreeGcConfig.forTesting(),
             LedgerProofsGcConfig.forTesting(),
             LedgerSyncLimitsConfig.defaults(),
             ProtocolConfig.testingDefault(),
@@ -186,9 +189,9 @@ public final class RustMempoolTest {
                 new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount)),
             Option.none(),
             new DatabaseBackendConfig(folder.newFolder().getPath()),
-            new DatabaseFlags(false, false),
+            TEST_DATABASE_CONFIG,
             LoggingConfig.getDefault(),
-            StateHashTreeGcConfig.forTesting(),
+            StateTreeGcConfig.forTesting(),
             LedgerProofsGcConfig.forTesting(),
             LedgerSyncLimitsConfig.defaults(),
             ProtocolConfig.testingDefault(),
@@ -327,9 +330,9 @@ public final class RustMempoolTest {
                 new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount)),
             Option.none(),
             new DatabaseBackendConfig(folder.newFolder().getPath()),
-            new DatabaseFlags(false, false),
+            TEST_DATABASE_CONFIG,
             LoggingConfig.getDefault(),
-            StateHashTreeGcConfig.forTesting(),
+            StateTreeGcConfig.forTesting(),
             LedgerProofsGcConfig.forTesting(),
             LedgerSyncLimitsConfig.defaults(),
             ProtocolConfig.testingDefault(),

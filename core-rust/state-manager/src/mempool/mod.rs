@@ -62,8 +62,7 @@
  * permissions under this License.
  */
 
-use radix_engine_common::types::Epoch;
-use transaction::{errors::TransactionValidationError, prelude::NotarizedTransactionHash};
+use crate::engine_prelude::*;
 
 use std::string::ToString;
 
@@ -87,7 +86,7 @@ pub enum MempoolAddError {
 
 #[derive(Debug)]
 pub struct MempoolAddRejection {
-    pub reason: RejectionReason,
+    pub reason: MempoolRejectionReason,
     pub against_state: AtState,
     pub retry_from: RetryFrom,
     pub was_cached: bool,
@@ -99,7 +98,7 @@ pub struct MempoolAddRejection {
 impl MempoolAddRejection {
     pub fn for_static_rejection(validation_error: TransactionValidationError) -> Self {
         Self {
-            reason: RejectionReason::ValidationError(validation_error),
+            reason: MempoolRejectionReason::ValidationError(validation_error),
             against_state: AtState::Static,
             retry_from: RetryFrom::Never,
             was_cached: false,
@@ -108,25 +107,33 @@ impl MempoolAddRejection {
     }
 
     pub fn is_permanent_for_payload(&self) -> bool {
-        match self.against_state {
-            AtState::Committed { .. } => self.reason.is_permanent_for_payload(),
-            AtState::PendingPreparingVertices { .. } => false,
+        match &self.against_state {
+            AtState::Specific(specific) => match specific {
+                AtSpecificState::Committed { .. } => self.reason.is_permanent_for_payload(),
+                AtSpecificState::PendingPreparingVertices { .. } => false,
+            },
             AtState::Static => self.reason.is_permanent_for_payload(),
         }
     }
 
     pub fn is_permanent_for_intent(&self) -> bool {
-        match self.against_state {
-            AtState::Committed { .. } => self.reason.is_permanent_for_intent(),
-            AtState::PendingPreparingVertices { .. } => false,
+        match &self.against_state {
+            AtState::Specific(specific) => match specific {
+                AtSpecificState::Committed { .. } => self.reason.is_permanent_for_intent(),
+                AtSpecificState::PendingPreparingVertices { .. } => false,
+            },
             AtState::Static => self.reason.is_permanent_for_payload(),
         }
     }
 
     pub fn is_rejected_because_intent_already_committed(&self) -> bool {
-        match self.against_state {
-            AtState::Committed { .. } => self.reason.is_rejected_because_intent_already_committed(),
-            AtState::PendingPreparingVertices { .. } => false,
+        match &self.against_state {
+            AtState::Specific(specific) => match specific {
+                AtSpecificState::Committed { .. } => {
+                    self.reason.is_rejected_because_intent_already_committed()
+                }
+                AtSpecificState::PendingPreparingVertices { .. } => false,
+            },
             AtState::Static => false,
         }
     }

@@ -1,18 +1,12 @@
 use crate::core_api::*;
-use radix_engine::prelude::*;
-use radix_engine::transaction::*;
+use crate::engine_prelude::*;
+
 use std::ops::Range;
 
 use state_manager::transaction::ProcessedPreviewResult;
-use state_manager::{ExecutionFeeData, LocalTransactionReceipt, PreviewRequest};
-use transaction::manifest;
-use transaction::manifest::BlobProvider;
-use transaction::model::{
-    AesGcmPayload, AesWrapped128BitKey, DecryptorsByCurve, EncryptedMessageV1, MessageV1,
-    PlaintextMessageV1, PreviewFlags, PublicKeyFingerprint,
+use state_manager::{
+    ActualStateManagerDatabase, ExecutionFeeData, LocalTransactionReceipt, PreviewRequest,
 };
-use transaction::prelude::MessageContentsV1;
-use utils::copy_u8_array;
 
 pub(crate) async fn handle_transaction_preview(
     state: State<CoreApiState>,
@@ -21,18 +15,20 @@ pub(crate) async fn handle_transaction_preview(
     assert_matching_network(&request.network, &state.network)?;
     let mapping_context = MappingContext::new(&state.network);
 
+    let at_state_version = request
+        .at_ledger_state
+        .as_deref()
+        .map(extract_ledger_state_selector)
+        .transpose()
+        .map_err(|err| err.into_response_error("at_ledger_state"))?;
+
     let preview_request = extract_preview_request(&state.network, request)?;
 
     let result = state
         .state_manager
         .transaction_previewer
         .read()
-        .preview(preview_request)
-        .map_err(|err| match err {
-            PreviewError::TransactionValidationError(err) => {
-                client_error(format!("Transaction validation error: {err:?}"))
-            }
-        })?;
+        .preview(preview_request, at_state_version)?;
 
     to_api_response(&mapping_context, result).map(Json)
 }
@@ -55,40 +51,40 @@ fn extract_preview_request(
     let signer_public_keys: Vec<_> = request
         .signer_public_keys
         .into_iter()
-        .map(extract_api_public_key)
+        .map(extract_public_key)
         .collect::<Result<_, _>>()
         .map_err(|err| err.into_response_error("signer_public_keys"))?;
 
     Ok(PreviewRequest {
         manifest,
         explicit_epoch_range: Some(Range {
-            start: extract_api_epoch(request.start_epoch_inclusive)
+            start: extract_epoch(request.start_epoch_inclusive)
                 .map_err(|err| err.into_response_error("start_epoch_inclusive"))?,
-            end: extract_api_epoch(request.end_epoch_exclusive)
+            end: extract_epoch(request.end_epoch_exclusive)
                 .map_err(|err| err.into_response_error("end_epoch_exclusive"))?,
         }),
         notary_public_key: request
             .notary_public_key
             .map(|pk| {
-                extract_api_public_key(*pk)
-                    .map_err(|err| err.into_response_error("notary_public_key"))
+                extract_public_key(*pk).map_err(|err| err.into_response_error("notary_public_key"))
             })
             .transpose()?,
         notary_is_signatory: request.notary_is_signatory.unwrap_or(false),
-        tip_percentage: extract_api_u16_as_i32(request.tip_percentage)
+        tip_percentage: extract_u16_from_api_i32(request.tip_percentage)
             .map_err(|err| err.into_response_error("tip_percentage"))?,
-        nonce: extract_api_u32_as_i64(request.nonce)
+        nonce: extract_u32_from_api_i64(request.nonce)
             .map_err(|err| err.into_response_error("nonce"))?,
         signer_public_keys,
         flags: PreviewFlags {
             use_free_credit: request.flags.use_free_credit,
             assume_all_signature_proofs: request.flags.assume_all_signature_proofs,
             skip_epoch_check: request.flags.skip_epoch_check,
+            disable_auth: request.flags.disable_auth_checks.unwrap_or(false),
         },
         message: request
             .message
             .map(|message| {
-                extract_api_message(*message).map_err(|err| err.into_response_error("message"))
+                extract_message(*message).map_err(|err| err.into_response_error("message"))
             })
             .transpose()?
             .unwrap_or_else(|| MessageV1::None),
@@ -107,7 +103,7 @@ fn to_api_response(
 
     let at_ledger_state = Box::new(to_api_ledger_state_summary(
         context,
-        &result.base_ledger_header,
+        &result.base_ledger_state,
     )?);
 
     let execution_fee_data = ExecutionFeeData {
@@ -172,7 +168,11 @@ fn to_api_response(
             models::TransactionPreviewResponse {
                 at_ledger_state,
                 encoded_receipt,
-                receipt: Box::new(to_api_receipt(None, context, local_receipt)?),
+                receipt: Box::new(to_api_receipt(
+                    None::<&ActualStateManagerDatabase>,
+                    context,
+                    local_receipt,
+                )?),
                 instruction_resource_changes,
                 logs,
             }
@@ -210,7 +210,7 @@ fn to_api_response(
     Ok(response)
 }
 
-fn extract_api_message(message: models::TransactionMessage) -> Result<MessageV1, ExtractionError> {
+fn extract_message(message: models::TransactionMessage) -> Result<MessageV1, ExtractionError> {
     Ok(match message {
         models::TransactionMessage::PlaintextTransactionMessage { mime_type, content } => {
             MessageV1::Plaintext(PlaintextMessageV1 {
@@ -233,9 +233,8 @@ fn extract_api_message(message: models::TransactionMessage) -> Result<MessageV1,
             decryptors_by_curve: curve_decryptor_sets
                 .into_iter()
                 .map(|curve_decryptor_set| -> Result<_, ExtractionError> {
-                    let dh_ephemeral_public_key = extract_api_public_key(
-                        curve_decryptor_set.dh_ephemeral_public_key.unwrap(),
-                    )?;
+                    let dh_ephemeral_public_key =
+                        extract_public_key(curve_decryptor_set.dh_ephemeral_public_key.unwrap())?;
                     let decryptors = curve_decryptor_set
                         .decryptors
                         .into_iter()

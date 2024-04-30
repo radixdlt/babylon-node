@@ -12,9 +12,9 @@ transaction-scenarios = { workspace = true }
 radix-engine-common = { workspace = true }
 radix-engine-interface = { workspace = true }
 radix-engine = { workspace = true }
-radix-engine-stores = { workspace = true }
-radix-engine-store-interface = { workspace = true }
-radix-engine-queries = { workspace = true }
+substate-store-impls = { workspace = true }
+substate-store-interface = { workspace = true }
+substate-store-queries = { workspace = true }
 utils = { workspace = true }
 
 # Non-Radix Engine Dependencies:
@@ -24,14 +24,13 @@ tracing = { workspace = true }
 tokio = { workspace = true }
 prometheus = { workspace = true }
 blake2 = { workspace = true }
+rand = { workspace = true }
 
 rocksdb = { version = "0.21.0" }
 hex = { version = "0.4.3", default-features = false }
 lru = { version = "0.8.0", default-features = false }
 slotmap = { version = "1.0.6" }
 im = { version = "15.1.0" }
-rand = { version = "0.8.5" }
-enum_dispatch = { version = "0.3.11" }
 
 [dev-dependencies]
 tempfile = { version = "3.4.0" }

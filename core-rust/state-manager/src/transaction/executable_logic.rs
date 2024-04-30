@@ -1,30 +1,16 @@
-use radix_engine::system::bootstrap::FlashReceipt;
-use radix_engine::system::system_db_reader::SystemDatabaseReader;
-use radix_engine::track::StateUpdates;
-use radix_engine::transaction::{
-    execute_transaction, CommitResult, CostingParameters, ExecutionConfig, SubstateSchemaMapper,
-    SystemStructure, TransactionOutcome, TransactionReceipt,
-};
-use radix_engine::vm::wasm::DefaultWasmEngine;
-use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
-use radix_engine_common::network::NetworkDefinition;
+use crate::engine_prelude::*;
+
 use std::collections::HashMap;
+
 use std::time::{Duration, Instant};
 
-use radix_engine_interface::*;
-use radix_engine_store_interface::interface::SubstateDatabase;
-
 use tracing::warn;
-
-use crate::LoggingConfig;
-use transaction::model::*;
-use utils::prelude::index_map_new;
 
 use super::ValidatedLedgerTransaction;
 
 /// A logic of an already-validated transaction, ready to be executed against an arbitrary state of
 /// a substate store.
-pub trait TransactionLogic<S>: Sized {
+pub trait TransactionLogic<S> {
     fn execute_on(self, store: &S) -> TransactionReceipt;
 }
 
@@ -41,6 +27,8 @@ pub enum ConfigType {
     Pending,
     /// A user transaction during preview execution.
     Preview,
+    /// A user transaction during preview execution with auth module disabled.
+    PreviewNoAuth,
 }
 
 const PENDING_UP_TO_FEE_LOAN_RUNTIME_WARN_THRESHOLD: Duration = Duration::from_millis(100);
@@ -53,7 +41,7 @@ impl ConfigType {
         match self {
             ConfigType::Genesis => GENESIS_TRANSACTION_RUNTIME_WARN_THRESHOLD,
             ConfigType::Pending => PENDING_UP_TO_FEE_LOAN_RUNTIME_WARN_THRESHOLD,
-            ConfigType::Preview => PREVIEW_RUNTIME_WARN_THRESHOLD,
+            ConfigType::Preview | ConfigType::PreviewNoAuth => PREVIEW_RUNTIME_WARN_THRESHOLD,
             _ => TRANSACTION_RUNTIME_WARN_THRESHOLD,
         }
     }
@@ -70,10 +58,9 @@ pub struct ExecutionConfigurator {
 impl ExecutionConfigurator {
     pub fn new(
         network: &NetworkDefinition,
-        logging_config: &LoggingConfig,
+        engine_trace: bool,
         costing_parameters: CostingParameters,
     ) -> Self {
-        let trace = logging_config.engine_trace;
         Self {
             scrypto_vm: ScryptoVm::<DefaultWasmEngine>::default(),
             costing_parameters,
@@ -81,30 +68,34 @@ impl ExecutionConfigurator {
                 (
                     ConfigType::Genesis,
                     ExecutionConfig::for_genesis_transaction(network.clone())
-                        .with_kernel_trace(trace),
+                        .with_kernel_trace(engine_trace),
                 ),
                 (
                     ConfigType::OtherSystem,
                     ExecutionConfig {
                         max_number_of_events: 1_000_000,
                         ..ExecutionConfig::for_system_transaction(network.clone())
-                            .with_kernel_trace(trace)
+                            .with_kernel_trace(engine_trace)
                     },
                 ),
                 (
                     ConfigType::Regular,
                     ExecutionConfig::for_notarized_transaction(network.clone())
-                        .with_kernel_trace(trace),
+                        .with_kernel_trace(engine_trace),
                 ),
                 (
                     ConfigType::Pending,
                     ExecutionConfig::for_notarized_transaction(network.clone())
                         .up_to_loan_repayment(true)
-                        .with_kernel_trace(trace),
+                        .with_kernel_trace(engine_trace),
                 ),
                 (
                     ConfigType::Preview,
                     ExecutionConfig::for_preview(network.clone()),
+                ),
+                (
+                    ConfigType::PreviewNoAuth,
+                    ExecutionConfig::for_preview_no_auth(network.clone()),
                 ),
             ]),
         }
@@ -145,9 +136,14 @@ impl ExecutionConfigurator {
         &'a self,
         validated_preview_intent: &'a ValidatedPreviewIntent,
     ) -> ConfiguredExecutable<'a> {
+        let config_type = if validated_preview_intent.flags.disable_auth {
+            ConfigType::PreviewNoAuth
+        } else {
+            ConfigType::Preview
+        };
         self.wrap_transaction(
             validated_preview_intent.get_executable(),
-            ConfigType::Preview,
+            config_type,
             "preview".to_string(),
         )
     }

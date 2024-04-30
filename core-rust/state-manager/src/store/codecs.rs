@@ -62,17 +62,16 @@
  * permissions under this License.
  */
 
+use std::mem::size_of;
 use std::ops::Range;
 
-use crate::StateVersion;
+use crate::engine_prelude::*;
 
-use radix_engine::types::*;
-use radix_engine_store_interface::interface::*;
-use radix_engine_stores::hash_tree::tree_store::{encode_key, NodeKey};
-
+use crate::store::traits::indices::CreationId;
 use crate::store::traits::scenario::ScenarioSequenceNumber;
 use crate::store::typed_cf_api::*;
 use crate::transaction::RawLedgerTransaction;
+use crate::StateVersion;
 
 #[derive(Default)]
 pub struct StateVersionDbCodec {}
@@ -171,7 +170,7 @@ impl<T: IsHash> DbCodec<T> for HashDbCodec<T> {
 ///
 /// An example:
 ///
-/// `(NodeKey[1, 3, 3, 7], PartitionNum(88), SortKey(200, 100, 150))`
+/// `(StoredTreeNodeKey[1, 3, 3, 7], PartitionNum(88), SortKey(200, 100, 150))`
 /// is encoded into:
 /// `[4, 1, 3, 3, 7, 88, 200, 100, 150]`
 #[derive(Default)]
@@ -246,15 +245,26 @@ impl SubstateKeyDbCodec {
 }
 
 #[derive(Default)]
-pub struct NodeKeyDbCodec {}
+pub struct StoredTreeNodeKeyDbCodec {}
 
-impl DbCodec<NodeKey> for NodeKeyDbCodec {
-    fn encode(&self, value: &NodeKey) -> Vec<u8> {
+impl DbCodec<StoredTreeNodeKey> for StoredTreeNodeKeyDbCodec {
+    fn encode(&self, value: &StoredTreeNodeKey) -> Vec<u8> {
         encode_key(value)
     }
 
-    fn decode(&self, _bytes: &[u8]) -> NodeKey {
-        unimplemented!("no use-case for decoding hash tree's `NodeKey`s exists yet")
+    fn decode(&self, _bytes: &[u8]) -> StoredTreeNodeKey {
+        unimplemented!("no use-case for decoding hash tree's `StoredTreeNodeKey`s exists yet")
+    }
+}
+
+impl BoundedDbCodec for StoredTreeNodeKeyDbCodec {
+    fn upper_bound_encoding(&self) -> Vec<u8> {
+        // Note: here we use knowledge of `encode_key()`'s internals: it puts the state version
+        // first. Additionally we need to assume that maximum state version is never reached.
+        encode_key(&StoredTreeNodeKey::new(
+            Version::MAX,
+            NibblePath::new_even(vec![]),
+        ))
     }
 }
 
@@ -301,6 +311,186 @@ impl DbCodec<NodeId> for NodeIdDbCodec {
 
     fn decode(&self, bytes: &[u8]) -> NodeId {
         NodeId(copy_u8_array(bytes))
+    }
+}
+
+#[derive(Default)]
+pub struct TypeAndCreationIndexKeyDbCodec {}
+
+impl TypeAndCreationIndexKeyDbCodec {
+    /// An extracted "how are parts encoded together" knowledge, to be shared with the
+    /// [`BoundedDbCodec`] implementation.
+    fn encode_parts(
+        entity_byte: u8,
+        state_version_bytes: &[u8; StateVersion::BYTE_LEN],
+        index_within_txn_bytes: &[u8; size_of::<u32>()],
+    ) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        bytes.push(entity_byte);
+        bytes.extend_from_slice(state_version_bytes);
+        bytes.extend_from_slice(index_within_txn_bytes);
+        bytes
+    }
+}
+
+impl DbCodec<(EntityType, CreationId)> for TypeAndCreationIndexKeyDbCodec {
+    fn encode(&self, value: &(EntityType, CreationId)) -> Vec<u8> {
+        let (
+            entity_type,
+            CreationId {
+                state_version,
+                index_within_txn,
+            },
+        ) = value;
+        Self::encode_parts(
+            *entity_type as u8,
+            &state_version.to_be_bytes(),
+            &index_within_txn.to_be_bytes(),
+        )
+    }
+
+    fn decode(&self, bytes: &[u8]) -> (EntityType, CreationId) {
+        let (entity_type_byte, bytes) = bytes.split_at(1);
+        let entity_type = EntityType::from_repr(entity_type_byte[0]).expect("unexpected type byte");
+
+        let (state_version_bytes, index_within_txn_bytes) = bytes.split_at(StateVersion::BYTE_LEN);
+        let state_version = StateVersion::from_be_bytes(state_version_bytes);
+        let index_within_txn = u32::from_be_bytes(copy_u8_array(index_within_txn_bytes));
+
+        (
+            entity_type,
+            CreationId {
+                state_version,
+                index_within_txn,
+            },
+        )
+    }
+}
+
+impl BoundedDbCodec for TypeAndCreationIndexKeyDbCodec {
+    fn upper_bound_encoding(&self) -> Vec<u8> {
+        Self::encode_parts(
+            u8::MAX,
+            &[u8::MAX; StateVersion::BYTE_LEN],
+            &[u8::MAX; size_of::<u32>()],
+        )
+    }
+}
+
+impl GroupPreservingDbCodec for TypeAndCreationIndexKeyDbCodec {
+    type Group = EntityType;
+
+    fn encode_group_range(&self, entity_type: &EntityType) -> Range<Vec<u8>> {
+        let Range { start, end } = CreationId::full_range();
+        Range {
+            start: self.encode(&(*entity_type, start)),
+            end: self.encode(&(*entity_type, end)),
+        }
+    }
+}
+
+impl IntraGroupOrderPreservingDbCodec<(EntityType, CreationId)> for TypeAndCreationIndexKeyDbCodec {
+    fn resolve_group_of(&self, value: &(EntityType, CreationId)) -> EntityType {
+        let (entity_type, _) = value;
+        *entity_type
+    }
+}
+
+#[derive(Default)]
+pub struct BlueprintAndCreationIndexKeyDbCodec {}
+
+impl BlueprintAndCreationIndexKeyDbCodec {
+    /// An extracted "how are parts encoded together" knowledge, to be shared with the
+    /// [`BoundedDbCodec`] implementation.
+    fn encode_parts(
+        package_address_bytes: &[u8; NodeId::LENGTH],
+        blueprint_name_hash_bytes: &[u8; Hash::LENGTH],
+        state_version_bytes: &[u8; StateVersion::BYTE_LEN],
+        index_within_txn_bytes: &[u8; size_of::<u32>()],
+    ) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(package_address_bytes);
+        bytes.extend_from_slice(blueprint_name_hash_bytes);
+        bytes.extend_from_slice(state_version_bytes);
+        bytes.extend_from_slice(index_within_txn_bytes);
+        bytes
+    }
+}
+
+impl DbCodec<(PackageAddress, Hash, CreationId)> for BlueprintAndCreationIndexKeyDbCodec {
+    fn encode(&self, value: &(PackageAddress, Hash, CreationId)) -> Vec<u8> {
+        let (
+            package_address,
+            blueprint_name_hash,
+            CreationId {
+                state_version,
+                index_within_txn,
+            },
+        ) = value;
+        Self::encode_parts(
+            &package_address.as_node_id().0,
+            &blueprint_name_hash.0,
+            &state_version.to_be_bytes(),
+            &index_within_txn.to_be_bytes(),
+        )
+    }
+
+    fn decode(&self, bytes: &[u8]) -> (PackageAddress, Hash, CreationId) {
+        let (package_address_bytes, bytes) = bytes.split_at(NodeId::LENGTH);
+        let package_address =
+            PackageAddress::try_from(package_address_bytes).expect("invalid package address");
+
+        let (blueprint_name_hash_bytes, bytes) = bytes.split_at(Hash::LENGTH);
+        let blueprint_name_hash = Hash::from_bytes(copy_u8_array(blueprint_name_hash_bytes));
+
+        let (state_version_bytes, index_within_txn_bytes) = bytes.split_at(StateVersion::BYTE_LEN);
+        let state_version = StateVersion::from_be_bytes(state_version_bytes);
+        let index_within_txn = u32::from_be_bytes(copy_u8_array(index_within_txn_bytes));
+
+        (
+            package_address,
+            blueprint_name_hash,
+            CreationId {
+                state_version,
+                index_within_txn,
+            },
+        )
+    }
+}
+
+impl BoundedDbCodec for BlueprintAndCreationIndexKeyDbCodec {
+    fn upper_bound_encoding(&self) -> Vec<u8> {
+        Self::encode_parts(
+            &[u8::MAX; NodeId::LENGTH],
+            &[u8::MAX; Hash::LENGTH],
+            &[u8::MAX; StateVersion::BYTE_LEN],
+            &[u8::MAX; size_of::<u32>()],
+        )
+    }
+}
+
+impl GroupPreservingDbCodec for BlueprintAndCreationIndexKeyDbCodec {
+    type Group = (PackageAddress, Hash);
+
+    fn encode_group_range(&self, group: &(PackageAddress, Hash)) -> Range<Vec<u8>> {
+        let (package_address, blueprint_name_hash) = group;
+        let Range { start, end } = CreationId::full_range();
+        Range {
+            start: self.encode(&(*package_address, *blueprint_name_hash, start)),
+            end: self.encode(&(*package_address, *blueprint_name_hash, end)),
+        }
+    }
+}
+
+impl IntraGroupOrderPreservingDbCodec<(PackageAddress, Hash, CreationId)>
+    for BlueprintAndCreationIndexKeyDbCodec
+{
+    fn resolve_group_of(
+        &self,
+        value: &(PackageAddress, Hash, CreationId),
+    ) -> (PackageAddress, Hash) {
+        let (package_address, blueprint_name_hash, _) = value;
+        (*package_address, *blueprint_name_hash)
     }
 }
 

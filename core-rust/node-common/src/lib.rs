@@ -64,9 +64,14 @@
 
 pub mod config;
 pub mod environment;
+pub mod indexing;
 pub mod java;
 pub mod jni;
 pub mod locks;
 pub mod metrics;
 pub mod scheduler;
 pub mod utils;
+
+pub(crate) mod engine_prelude {
+    pub use radix_engine_common::prelude::*;
+}

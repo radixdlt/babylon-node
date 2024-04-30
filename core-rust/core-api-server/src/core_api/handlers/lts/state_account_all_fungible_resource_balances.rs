@@ -1,6 +1,6 @@
 use crate::core_api::*;
-use radix_engine::types::*;
-use radix_engine_queries::typed_substate_layout::*;
+use crate::engine_prelude::*;
+
 use state_manager::query::{dump_component_state, VaultData};
 
 use std::ops::Deref;
@@ -32,7 +32,7 @@ pub(crate) async fn handle_lts_state_account_all_fungible_resource_balances(
         ));
     }
 
-    let database = state.state_manager.database.read_current();
+    let database = state.state_manager.database.snapshot();
     let header = read_current_ledger_header(database.deref());
 
     let type_info: Option<TypeInfoSubstate> = read_optional_substate::<TypeInfoSubstate>(
@@ -49,7 +49,7 @@ pub(crate) async fn handle_lts_state_account_all_fungible_resource_balances(
                     state_version: to_api_state_version(header.state_version)?,
                     ledger_header_summary: Box::new(to_api_ledger_header_summary(
                         &mapping_context,
-                        &header,
+                        &header.into(),
                     )?),
                     account_address: to_api_component_address(
                         &mapping_context,
@@ -102,7 +102,7 @@ pub(crate) async fn handle_lts_state_account_all_fungible_resource_balances(
             state_version: to_api_state_version(header.state_version)?,
             ledger_header_summary: Box::new(to_api_ledger_header_summary(
                 &mapping_context,
-                &header,
+                &header.into(),
             )?),
             account_address: to_api_component_address(&mapping_context, &component_address)?,
             fungible_resource_balances,

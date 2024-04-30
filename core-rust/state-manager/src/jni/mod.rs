@@ -62,6 +62,7 @@
  * permissions under this License.
  */
 
+pub mod db_checkpoints;
 pub mod fatal_panic_handler;
 pub mod mempool;
 pub mod node_rust_environment;
@@ -74,7 +75,7 @@ pub mod transaction_preparer;
 pub mod transaction_store;
 pub mod vertex_store_recovery;
 
-use radix_engine::prelude::*;
+use crate::engine_prelude::*;
 
 /// Limits regarding the granularity of ledger sync (and thus of ledger proofs kept in storage).
 /// This struct is defined publicly here, since it is used by the transaction store and the ledger

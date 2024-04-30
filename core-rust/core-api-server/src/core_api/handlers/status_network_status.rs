@@ -1,10 +1,10 @@
 use crate::core_api::*;
 
-use radix_engine_interface::prelude::*;
+use crate::engine_prelude::*;
 
 use state_manager::query::TransactionIdentifierLoader;
 use state_manager::store::traits::*;
-use state_manager::{LedgerHashes, LedgerHeader, LedgerProof, StateVersion};
+use state_manager::{LedgerHashes, LedgerProof, LedgerStateSummary, StateVersion};
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_status_network_status(
@@ -14,7 +14,7 @@ pub(crate) async fn handle_status_network_status(
     assert_matching_network(&request.network, &state.network)?;
     let mapping_context = MappingContext::new(&state.network);
 
-    let database = state.state_manager.database.read_current();
+    let database = state.state_manager.database.snapshot();
     let (current_state_version, current_ledger_hashes) = database.get_top_ledger_hashes();
     let current_protocol_version = state
         .state_manager
@@ -30,7 +30,7 @@ pub(crate) async fn handle_status_network_status(
             .map(|proof| -> Result<_, MappingError> {
                 Ok(Box::new(to_api_epoch_round(
                     &mapping_context,
-                    &proof.ledger_header,
+                    &proof.ledger_header.into(),
                 )?))
             })
             .transpose()?,
@@ -74,7 +74,7 @@ pub(crate) async fn handle_status_network_status(
             .map(|proof| -> Result<_, MappingError> {
                 Ok(Box::new(to_api_epoch_round(
                     &mapping_context,
-                    &proof.ledger_header,
+                    &proof.ledger_header.into(),
                 )?))
             })
             .transpose()?,
@@ -84,7 +84,7 @@ pub(crate) async fn handle_status_network_status(
 
 pub fn to_api_epoch_round(
     context: &MappingContext,
-    ledger_header: &LedgerHeader,
+    ledger_header: &LedgerStateSummary,
 ) -> Result<models::EpochRound, MappingError> {
     Ok(models::EpochRound {
         epoch: to_api_epoch(context, ledger_header.epoch)?,

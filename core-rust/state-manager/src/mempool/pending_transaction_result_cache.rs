@@ -1,24 +1,26 @@
-use radix_engine_common::types::Epoch;
-use transaction::{errors::TransactionValidationError, model::*};
+use crate::engine_prelude::*;
+use node_common::locks::RwLock;
 
 use crate::{
     transaction::{CheckMetadata, StaticValidation},
-    CommittedUserTransactionIdentifiers, MempoolAddRejection, StateVersion,
+    CommittedUserTransactionIdentifiers, MempoolAddRejection, StateVersion, TransactionTreeHash,
 };
 
+use crate::priority_mempool::PriorityMempool;
 use lru::LruCache;
 use std::{
     collections::{hash_map::Entry, HashMap, HashSet},
     fmt,
     num::NonZeroUsize,
     ops::Add,
+    sync::Arc,
     time::{Duration, SystemTime},
 };
 
-pub type ExecutionRejectionReason = radix_engine::errors::RejectionReason;
+pub type ExecutionRejectionReason = RejectionReason;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum RejectionReason {
+pub enum MempoolRejectionReason {
     AlreadyCommitted(AlreadyCommittedError),
     FromExecution(Box<ExecutionRejectionReason>),
     ValidationError(TransactionValidationError),
@@ -31,13 +33,13 @@ pub struct AlreadyCommittedError {
     pub committed_notarized_transaction_hash: NotarizedTransactionHash,
 }
 
-impl From<TransactionValidationError> for RejectionReason {
+impl From<TransactionValidationError> for MempoolRejectionReason {
     fn from(value: TransactionValidationError) -> Self {
         Self::ValidationError(value)
     }
 }
 
-impl RejectionReason {
+impl MempoolRejectionReason {
     pub fn is_permanent_for_payload(&self) -> bool {
         self.permanence().is_permanent_for_payload()
     }
@@ -48,8 +50,8 @@ impl RejectionReason {
 
     pub fn is_rejected_because_intent_already_committed(&self) -> bool {
         match self {
-            RejectionReason::AlreadyCommitted(_) => true,
-            RejectionReason::FromExecution(rejection_reason) => match **rejection_reason {
+            MempoolRejectionReason::AlreadyCommitted(_) => true,
+            MempoolRejectionReason::FromExecution(rejection_reason) => match **rejection_reason {
                 ExecutionRejectionReason::SuccessButFeeLoanNotRepaid => false,
                 ExecutionRejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(_) => false,
                 ExecutionRejectionReason::TransactionEpochNotYetValid { .. } => false,
@@ -57,25 +59,25 @@ impl RejectionReason {
                 ExecutionRejectionReason::IntentHashPreviouslyCommitted => true,
                 ExecutionRejectionReason::IntentHashPreviouslyCancelled => true,
             },
-            RejectionReason::ValidationError(_) => false,
+            MempoolRejectionReason::ValidationError(_) => false,
         }
     }
 
     pub fn already_committed_error(&self) -> Option<&AlreadyCommittedError> {
         match self {
-            RejectionReason::AlreadyCommitted(error) => Some(error),
+            MempoolRejectionReason::AlreadyCommitted(error) => Some(error),
             _ => None,
         }
     }
 
     pub fn permanence(&self) -> RejectionPermanence {
         match self {
-            RejectionReason::AlreadyCommitted(_) => {
+            MempoolRejectionReason::AlreadyCommitted(_) => {
                 // This is permanent for the intent - because even other, non-committed transactions
                 // of the same intent will fail with `ExecutionRejectionReason::IntentHashPreviouslyCommitted`
                 RejectionPermanence::PermanentForAnyPayloadWithThisIntent
             }
-            RejectionReason::FromExecution(rejection_error) => match **rejection_error {
+            MempoolRejectionReason::FromExecution(rejection_error) => match **rejection_error {
                 ExecutionRejectionReason::SuccessButFeeLoanNotRepaid => {
                     RejectionPermanence::Temporary {
                         retry: RetrySettings::AfterDelay {
@@ -105,7 +107,7 @@ impl RejectionReason {
                     RejectionPermanence::PermanentForAnyPayloadWithThisIntent
                 }
             },
-            RejectionReason::ValidationError(validation_error) => match validation_error {
+            MempoolRejectionReason::ValidationError(validation_error) => match validation_error {
                 // The size is a property of the payload, not the intent
                 TransactionValidationError::TransactionTooLarge => {
                     RejectionPermanence::PermanentForPayload
@@ -174,12 +176,16 @@ pub enum RetrySettings {
     FromEpoch { epoch: Epoch },
 }
 
-impl fmt::Display for RejectionReason {
+impl fmt::Display for MempoolRejectionReason {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            RejectionReason::AlreadyCommitted(error) => write!(f, "Already committed: {error:?}"),
-            RejectionReason::FromExecution(rejection_error) => write!(f, "{rejection_error}"),
-            RejectionReason::ValidationError(validation_error) => {
+            MempoolRejectionReason::AlreadyCommitted(error) => {
+                write!(f, "Already committed: {error:?}")
+            }
+            MempoolRejectionReason::FromExecution(rejection_error) => {
+                write!(f, "{rejection_error}")
+            }
+            MempoolRejectionReason::ValidationError(validation_error) => {
                 write!(f, "Validation Error: {validation_error:?}")
             }
         }
@@ -214,17 +220,19 @@ pub struct PendingTransactionRecord {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TransactionAttempt {
-    pub rejection: Option<RejectionReason>,
+    pub rejection: Option<MempoolRejectionReason>,
     pub against_state: AtState,
     pub timestamp: SystemTime,
 }
 
 impl TransactionAttempt {
     pub fn was_against_permanent_state(&self) -> bool {
-        match self.against_state {
+        match &self.against_state {
             AtState::Static => true,
-            AtState::Committed { .. } => true,
-            AtState::PendingPreparingVertices { .. } => false,
+            AtState::Specific(specific) => match specific {
+                AtSpecificState::Committed { .. } => true,
+                AtSpecificState::PendingPreparingVertices { .. } => false,
+            },
         }
     }
 
@@ -251,12 +259,30 @@ impl TransactionAttempt {
 pub enum AtState {
     // We might need this to be versioned by protocol update later...
     Static,
+    Specific(AtSpecificState),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AtSpecificState {
     Committed {
         state_version: StateVersion,
     },
     PendingPreparingVertices {
         base_committed_state_version: StateVersion,
+        pending_transactions_root: TransactionTreeHash,
     },
+}
+
+impl AtSpecificState {
+    pub fn committed_version(&self) -> StateVersion {
+        match self {
+            Self::Committed { state_version } => *state_version,
+            Self::PendingPreparingVertices {
+                base_committed_state_version,
+                ..
+            } => *base_committed_state_version,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -265,6 +291,24 @@ pub enum RetryFrom {
     FromTime(SystemTime),
     FromEpoch(Epoch),
     Whenever,
+}
+
+#[derive(Debug, Clone)]
+pub struct PendingExecutedTransaction {
+    pub transaction: Box<ValidatedNotarizedTransactionV1>,
+    pub latest_attempt_against_state: AtSpecificState,
+}
+
+impl PendingExecutedTransaction {
+    pub fn new(transaction: Box<ValidatedNotarizedTransactionV1>, against_state: AtState) -> Self {
+        let AtState::Specific(latest_attempt_against_state) = against_state else {
+            panic!("transaction must have been executed against some state")
+        };
+        Self {
+            transaction,
+            latest_attempt_against_state,
+        }
+    }
 }
 
 impl PendingTransactionRecord {
@@ -338,7 +382,7 @@ impl PendingTransactionRecord {
     pub fn should_accept_into_mempool(
         self,
         check: CheckMetadata,
-    ) -> Result<Box<ValidatedNotarizedTransactionV1>, MempoolAddRejection> {
+    ) -> Result<PendingExecutedTransaction, MempoolAddRejection> {
         if let Some(permanent_rejection) = self.earliest_permanent_rejection {
             return Err(MempoolAddRejection {
                 reason: permanent_rejection.rejection.unwrap(),
@@ -363,14 +407,16 @@ impl PendingTransactionRecord {
             CheckMetadata::Cached => {
                 panic!("Precondition was not met - the result was cached, but the latest attempt was not a rejection")
             }
-            CheckMetadata::Fresh(StaticValidation::Valid(transaction)) => Ok(transaction),
+            CheckMetadata::Fresh(StaticValidation::Valid(transaction)) => Ok(
+                PendingExecutedTransaction::new(transaction, self.latest_attempt.against_state),
+            ),
             CheckMetadata::Fresh(StaticValidation::Invalid) => {
                 panic!("A statically invalid transaction should already have been handled in the above")
             }
         }
     }
 
-    pub fn most_applicable_status(&self) -> Option<&RejectionReason> {
+    pub fn most_applicable_status(&self) -> Option<&MempoolRejectionReason> {
         self.earliest_permanent_rejection
             .as_ref()
             .and_then(|r| r.rejection.as_ref())
@@ -431,14 +477,20 @@ const NON_REJECTION_RECALCULATION_DELAY: Duration = Duration::from_secs(120);
 const MAX_RECALCULATION_DELAY: Duration = Duration::from_secs(1000);
 
 pub struct PendingTransactionResultCache {
+    mempool: Arc<RwLock<PriorityMempool>>,
     pending_transaction_records: LruCache<NotarizedTransactionHash, PendingTransactionRecord>,
     intent_lookup: HashMap<IntentHash, HashSet<NotarizedTransactionHash>>,
     recently_committed_intents: LruCache<IntentHash, CommittedIntentRecord>,
 }
 
 impl PendingTransactionResultCache {
-    pub fn new(pending_txn_records_max_count: u32, committed_intents_max_size: u32) -> Self {
+    pub fn new(
+        mempool: Arc<RwLock<PriorityMempool>>,
+        pending_txn_records_max_count: u32,
+        committed_intents_max_size: u32,
+    ) -> Self {
         PendingTransactionResultCache {
+            mempool,
             pending_transaction_records: LruCache::new(
                 NonZeroUsize::new(pending_txn_records_max_count as usize).unwrap(),
             ),
@@ -457,6 +509,10 @@ impl PendingTransactionResultCache {
         invalid_from_epoch: Option<Epoch>,
         attempt: TransactionAttempt,
     ) -> PendingTransactionRecord {
+        self.mempool
+            .write()
+            .observe_pending_execution_result(&notarized_transaction_hash, &attempt);
+
         let existing_record = self
             .pending_transaction_records
             .get_mut(&notarized_transaction_hash);
@@ -466,19 +522,19 @@ impl PendingTransactionResultCache {
             return record.clone();
         }
 
-        let new = PendingTransactionRecord::new(intent_hash, invalid_from_epoch, attempt);
+        let new_record = PendingTransactionRecord::new(intent_hash, invalid_from_epoch, attempt);
 
         // NB - removed is the item kicked out of the LRU cache if it's at capacity
         let removed = self
             .pending_transaction_records
-            .push(notarized_transaction_hash, new.clone());
+            .push(notarized_transaction_hash, new_record.clone());
 
         self.handled_added(intent_hash, notarized_transaction_hash);
-        if let Some((p, r)) = removed {
-            self.handled_removed(p, r);
+        if let Some((removed_notarized_transaction_hash, removed_record)) = removed {
+            self.handled_removed(removed_notarized_transaction_hash, removed_record);
         }
 
-        new
+        new_record
     }
 
     pub fn track_committed_transactions(
@@ -511,14 +567,16 @@ impl PendingTransactionResultCache {
                     // We even overwrite the record for transaction which got committed here
                     // because this is a cache for pending transactions, and it can't be re-committed
                     record.track_attempt(TransactionAttempt {
-                        rejection: Some(RejectionReason::AlreadyCommitted(AlreadyCommittedError {
-                            notarized_transaction_hash: *cached_payload_hash,
-                            committed_state_version: committed_transaction.state_version,
-                            committed_notarized_transaction_hash,
-                        })),
-                        against_state: AtState::Committed {
+                        rejection: Some(MempoolRejectionReason::AlreadyCommitted(
+                            AlreadyCommittedError {
+                                notarized_transaction_hash: *cached_payload_hash,
+                                committed_state_version: committed_transaction.state_version,
+                                committed_notarized_transaction_hash,
+                            },
+                        )),
+                        against_state: AtState::Specific(AtSpecificState::Committed {
                             state_version: committed_transaction.state_version,
-                        },
+                        }),
                         timestamp: current_timestamp,
                     })
                 }
@@ -544,15 +602,17 @@ impl PendingTransactionResultCache {
                 *intent_hash,
                 None,
                 TransactionAttempt {
-                    rejection: Some(RejectionReason::AlreadyCommitted(AlreadyCommittedError {
-                        notarized_transaction_hash: *notarized_transaction_hash,
-                        committed_state_version: committed_intent_record.state_version,
-                        committed_notarized_transaction_hash: committed_intent_record
-                            .notarized_transaction_hash,
-                    })),
-                    against_state: AtState::Committed {
+                    rejection: Some(MempoolRejectionReason::AlreadyCommitted(
+                        AlreadyCommittedError {
+                            notarized_transaction_hash: *notarized_transaction_hash,
+                            committed_state_version: committed_intent_record.state_version,
+                            committed_notarized_transaction_hash: committed_intent_record
+                                .notarized_transaction_hash,
+                        },
+                    )),
+                    against_state: AtState::Specific(AtSpecificState::Committed {
                         state_version: committed_intent_record.state_version,
-                    },
+                    }),
                     timestamp: committed_intent_record.timestamp,
                 },
             ));
@@ -629,7 +689,8 @@ struct CommittedIntentRecord {
 
 #[cfg(test)]
 mod tests {
-    use radix_engine_interface::crypto::blake2b_256_hash;
+    use node_common::{config::MempoolConfig, locks::LockFactory};
+    use prometheus::Registry;
 
     use super::*;
 
@@ -646,8 +707,7 @@ mod tests {
         let rejection_limit = 3;
         let recently_committed_intents_limit = 1;
 
-        let mut cache =
-            PendingTransactionResultCache::new(rejection_limit, recently_committed_intents_limit);
+        let mut cache = create_subject(rejection_limit, recently_committed_intents_limit);
 
         let payload_hash_1 = user_payload_hash(1);
         let payload_hash_2 = user_payload_hash(2);
@@ -661,7 +721,7 @@ mod tests {
         let intent_hash_3 = intent_hash(3);
 
         let example_attempt_1 = TransactionAttempt {
-            rejection: Some(RejectionReason::ValidationError(
+            rejection: Some(MempoolRejectionReason::ValidationError(
                 TransactionValidationError::TransactionTooLarge,
             )),
             against_state: AtState::Static,
@@ -669,12 +729,12 @@ mod tests {
         };
 
         let example_attempt_2 = TransactionAttempt {
-            rejection: Some(RejectionReason::FromExecution(Box::new(
+            rejection: Some(MempoolRejectionReason::FromExecution(Box::new(
                 ExecutionRejectionReason::SuccessButFeeLoanNotRepaid,
             ))),
-            against_state: AtState::Committed {
+            against_state: AtState::Specific(AtSpecificState::Committed {
                 state_version: StateVersion::pre_genesis(),
-            },
+            }),
             timestamp: SystemTime::now(),
         };
 
@@ -792,8 +852,7 @@ mod tests {
         let recently_committed_intents_limit = 1;
         let now = SystemTime::now();
 
-        let mut cache =
-            PendingTransactionResultCache::new(rejection_limit, recently_committed_intents_limit);
+        let mut cache = create_subject(rejection_limit, recently_committed_intents_limit);
 
         let payload_hash_1 = user_payload_hash(1);
         let payload_hash_2 = user_payload_hash(2);
@@ -825,8 +884,7 @@ mod tests {
         let far_in_future = start.add(Duration::from_secs(u32::MAX as u64));
         let little_in_future = start.add(Duration::from_secs(1));
 
-        let mut cache =
-            PendingTransactionResultCache::new(rejection_limit, recently_committed_intents_limit);
+        let mut cache = create_subject(rejection_limit, recently_committed_intents_limit);
 
         let payload_hash_1 = user_payload_hash(1);
         let payload_hash_2 = user_payload_hash(2);
@@ -837,40 +895,40 @@ mod tests {
         let intent_hash_2 = intent_hash(2);
 
         let attempt_with_temporary_rejection = TransactionAttempt {
-            rejection: Some(RejectionReason::FromExecution(Box::new(
+            rejection: Some(MempoolRejectionReason::FromExecution(Box::new(
                 ExecutionRejectionReason::SuccessButFeeLoanNotRepaid,
             ))),
-            against_state: AtState::Committed {
+            against_state: AtState::Specific(AtSpecificState::Committed {
                 state_version: StateVersion::pre_genesis(),
-            },
+            }),
             timestamp: start,
         };
         let attempt_with_rejection_until_epoch_10 = TransactionAttempt {
-            rejection: Some(RejectionReason::FromExecution(Box::new(
+            rejection: Some(MempoolRejectionReason::FromExecution(Box::new(
                 ExecutionRejectionReason::TransactionEpochNotYetValid {
                     valid_from: Epoch::of(10),
                     current_epoch: Epoch::of(9),
                 },
             ))),
-            against_state: AtState::Committed {
+            against_state: AtState::Specific(AtSpecificState::Committed {
                 state_version: StateVersion::of(10000),
-            },
+            }),
             timestamp: start,
         };
         let attempt_with_permanent_rejection = TransactionAttempt {
-            rejection: Some(RejectionReason::ValidationError(
+            rejection: Some(MempoolRejectionReason::ValidationError(
                 TransactionValidationError::TransactionTooLarge,
             )),
-            against_state: AtState::Committed {
+            against_state: AtState::Specific(AtSpecificState::Committed {
                 state_version: StateVersion::pre_genesis(),
-            },
+            }),
             timestamp: start,
         };
         let attempt_with_no_rejection = TransactionAttempt {
             rejection: None,
-            against_state: AtState::Committed {
+            against_state: AtState::Specific(AtSpecificState::Committed {
                 state_version: StateVersion::pre_genesis(),
-            },
+            }),
             timestamp: start,
         };
 
@@ -954,5 +1012,20 @@ mod tests {
         assert!(record
             .unwrap()
             .should_recalculate(current_epoch, little_in_future));
+    }
+
+    fn create_subject(
+        rejection_limit: u32,
+        recently_committed_intents_limit: u32,
+    ) -> PendingTransactionResultCache {
+        let lock_factory = LockFactory::new("testing");
+        PendingTransactionResultCache::new(
+            Arc::new(lock_factory.new_rwlock(PriorityMempool::new(
+                MempoolConfig::default(),
+                &Registry::new(),
+            ))),
+            rejection_limit,
+            recently_committed_intents_limit,
+        )
     }
 }

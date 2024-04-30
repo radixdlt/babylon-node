@@ -1,16 +1,10 @@
 use crate::core_api::*;
-use radix_engine::blueprints::account::{
-    AccountAuthorizedDepositorEntryPayload, AccountCollection, AccountDepositRuleFieldSubstate,
-    AccountField, AccountResourcePreference, AccountResourcePreferenceEntryPayload,
-    AccountResourcePreferenceV1, AccountResourceVaultEntryPayload,
-};
-use radix_engine::types::*;
+use crate::engine_prelude::*;
 
 use state_manager::LedgerHeader;
 use std::ops::Deref;
 
 use node_common::utils::IsAccountExt;
-use radix_engine_interface::blueprints::account::{DefaultDepositRule, ResourcePreference};
 
 /// Maximum number of resource addresses allowed in the request.
 /// Must be aligned with the `maxItems` in the API documentation.
@@ -53,7 +47,7 @@ pub(crate) async fn handle_lts_state_account_deposit_behaviour(
         .map_err(|err| err.into_response_error("badge"))?;
 
     // If the above checks were al fine, open database (and capture the "at state" information):
-    let database = state.state_manager.database.read_current();
+    let database = state.state_manager.database.snapshot();
     let header = read_current_ledger_header(database.deref());
 
     // Read out the field that must exist for non-virtual addresses:
@@ -204,7 +198,10 @@ fn response(
 ) -> Result<Json<models::LtsStateAccountDepositBehaviourResponse>, ResponseError<()>> {
     Ok(Json(models::LtsStateAccountDepositBehaviourResponse {
         state_version: to_api_state_version(header.state_version)?,
-        ledger_header_summary: Box::new(to_api_ledger_header_summary(context, header)?),
+        ledger_header_summary: Box::new(to_api_ledger_header_summary(
+            context,
+            &header.clone().into(),
+        )?),
         default_deposit_rule: match default_deposit_rule {
             DefaultDepositRule::Accept => models::DefaultDepositRule::Accept,
             DefaultDepositRule::Reject => models::DefaultDepositRule::Reject,
