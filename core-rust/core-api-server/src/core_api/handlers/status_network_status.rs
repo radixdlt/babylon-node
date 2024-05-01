@@ -18,9 +18,8 @@ pub(crate) async fn handle_status_network_status(
     let (current_state_version, current_ledger_hashes) = database.get_top_ledger_hashes();
     let current_protocol_state = state
         .state_manager
-        .state_computer
         .protocol_state_manager
-        .current_protocol_state(); // TODO(wip): from somewhere else
+        .current_protocol_state();
     Ok(Json(models::NetworkStatusResponse {
         pre_genesis_state_identifier: Box::new(to_api_committed_state_identifiers(
             StateVersion::pre_genesis(),

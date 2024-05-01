@@ -77,23 +77,20 @@ pub fn prepare_and_commit_round_update(
             )
         };
 
-    let prepare_result = state_manager
-        .state_computer
-        .preparator
-        .prepare(PrepareRequest {
-            committed_ledger_hashes: top_identifiers.resultant_ledger_hashes,
-            ancestor_transactions: vec![],
-            ancestor_ledger_hashes: top_identifiers.resultant_ledger_hashes,
-            proposed_transactions: vec![],
-            round_history: RoundHistory {
-                is_fallback: false,
-                epoch,
-                round: next_round,
-                gap_round_leader_addresses: vec![],
-                proposer_address,
-                proposer_timestamp_ms: latest_proof.ledger_header.proposer_timestamp_ms,
-            },
-        });
+    let prepare_result = state_manager.preparator.prepare(PrepareRequest {
+        committed_ledger_hashes: top_identifiers.resultant_ledger_hashes,
+        ancestor_transactions: vec![],
+        ancestor_ledger_hashes: top_identifiers.resultant_ledger_hashes,
+        proposed_transactions: vec![],
+        round_history: RoundHistory {
+            is_fallback: false,
+            epoch,
+            round: next_round,
+            gap_round_leader_addresses: vec![],
+            proposer_address,
+            proposer_timestamp_ms: latest_proof.ledger_header.proposer_timestamp_ms,
+        },
+    });
 
     let txns_to_commit = prepare_result
         .committed

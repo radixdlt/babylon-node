@@ -129,7 +129,6 @@ impl LedgerTransactionValidator {
     }
 
     pub fn validate_flash(
-        // TODO(wip): consider moving out of here or add comment why validator needed
         &self,
         prepared: PreparedLedgerTransaction,
     ) -> ValidatedLedgerTransaction {

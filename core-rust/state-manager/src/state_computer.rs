@@ -85,7 +85,7 @@ use crate::store::traits::scenario::{
 use crate::system_commits::*;
 
 use crate::accumulator_tree::storage::ReadableAccuTreeStore;
-use crate::commit_bundle::CommitBundleBuilder;
+
 use radix_transaction_scenarios::executor::scenarios_vector;
 use std::ops::Deref;
 use std::sync::Arc;
@@ -96,16 +96,17 @@ pub struct StateComputer {
     database: Arc<DbLock<ActualStateManagerDatabase>>,
     ledger_transaction_validator: Arc<LedgerTransactionValidator>,
     transaction_executor_factory: Arc<TransactionExecutorFactory>,
-    pub preparator: Arc<Preparator>, // TODO(wip): other access pattern!
+    preparator: Arc<Preparator>,
     mempool_manager: Arc<MempoolManager>,
     execution_cache_manager: Arc<ExecutionCacheManager>,
     pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
+    protocol_state_manager: Arc<ProtocolStateManager>,
     ledger_metrics: LedgerMetrics,
     committed_transactions_metrics: CommittedTransactionsMetrics,
-    pub protocol_state_manager: Arc<ProtocolStateManager>,
 }
 
 impl StateComputer {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         network: &NetworkDefinition,
         database: Arc<DbLock<ActualStateManagerDatabase>>,
@@ -115,9 +116,9 @@ impl StateComputer {
         mempool_manager: Arc<MempoolManager>,
         execution_cache_manager: Arc<ExecutionCacheManager>,
         pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
+        protocol_state_manager: Arc<ProtocolStateManager>,
         metrics_registry: &Registry,
         lock_factory: LockFactory,
-        protocol_state_manager: Arc<ProtocolStateManager>,
     ) -> Self {
         let ledger_metrics = LedgerMetrics::new(
             network,
@@ -267,7 +268,7 @@ impl StateComputer {
         final_ledger_proof
     }
 
-    fn execute_scenarios(
+    pub fn execute_scenarios(
         &self,
         system_commit_request_factory: &mut SystemCommitRequestFactory,
         scenarios: Vec<String>,
@@ -497,10 +498,8 @@ impl StateComputer {
         let mut committed_user_transactions = Vec::new();
 
         // Step 3.: Actually execute the transactions, collect their results into DB structures
-        let mut commit_bundle_builder = CommitBundleBuilder::new(
-            series_executor.epoch_identifiers().state_version,
-            series_executor.latest_state_version(),
-        );
+        let mut commit_bundle_builder = series_executor.start_commit_builder();
+
         for ((raw, prepared), proposer_timestamp_ms) in commit_request
             .transactions
             .into_iter()
@@ -657,13 +656,6 @@ impl StateComputer {
         }
     }
 
-    pub fn handle_protocol_update(&self, protocol_version_name: &ProtocolVersionName) {
-        self.protocol_state_manager
-            .update_protocol_version(protocol_version_name);
-        // Protocol update might change transaction execution rules, so we need to clear the cache:
-        self.execution_cache_manager.clear();
-    }
-
     /// Performs a simplified [`commit()`] flow meant for system transactions.
     /// This method accepts a pre-validated transaction and trusts its contents (i.e. skips some
     /// validations).
@@ -678,10 +670,7 @@ impl StateComputer {
         let mut series_executor = self
             .transaction_executor_factory
             .start_series_execution(database.deref());
-        let mut commit_bundle_builder = CommitBundleBuilder::new(
-            series_executor.epoch_identifiers().state_version,
-            series_executor.latest_state_version(),
-        );
+        let mut commit_bundle_builder = series_executor.start_commit_builder();
 
         let mut commit = series_executor
             .execute_and_update_state(&validated, "system transaction")
@@ -711,7 +700,10 @@ impl StateComputer {
         // Protocol updates aren't allowed during system transactions, so no need to handle an
         // update here, just assign the latest protocol state.
         self.protocol_state_manager
-            .update_protocol_state_and_metrics(series_executor.protocol_state(), None);
+            .update_protocol_state_and_metrics(
+                series_executor.protocol_state(),
+                series_executor.epoch_change().as_ref(),
+            );
 
         drop(database);
 

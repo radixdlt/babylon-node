@@ -66,6 +66,7 @@ use std::fmt::Formatter;
 use std::ops::Deref;
 use std::sync::Arc;
 
+use crate::commit_bundle::CommitBundleBuilder;
 use crate::protocol::*;
 use crate::query::*;
 use crate::staging::ReadableStore;
@@ -200,6 +201,15 @@ where
             &description,
             self.execution_configurator
                 .wrap_ledger_transaction(transaction, &description),
+        )
+    }
+
+    /// Creates an empty [`CommitBundleBuilder`] ready to collect commits from the current state
+    /// version reached by this executor.
+    pub fn start_commit_builder(&self) -> CommitBundleBuilder {
+        CommitBundleBuilder::new(
+            self.epoch_identifiers.state_version,
+            self.state_tracker.state_version,
         )
     }
 

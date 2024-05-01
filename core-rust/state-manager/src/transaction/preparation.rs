@@ -515,6 +515,7 @@ impl Preparator {
         }
     }
 
+    // only public for test purposes
     pub fn try_prepare_ledger_transaction_from_user_transaction(
         &self,
         raw_user_transaction: &RawNotarizedTransaction,

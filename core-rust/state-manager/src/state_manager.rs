@@ -69,7 +69,9 @@ use std::time::Duration;
 
 use crate::engine_prelude::*;
 use crate::jni::LedgerSyncLimitsConfig;
-use crate::protocol::{ProtocolConfig, ProtocolState, ProtocolStateManager, ProtocolVersionName};
+use crate::protocol::{
+    ProtocolConfig, ProtocolStateManager, ProtocolUpdateExecutor, ProtocolVersionName,
+};
 use crate::store::jmt_gc::StateTreeGcConfig;
 use crate::store::proofs_gc::{LedgerProofsGc, LedgerProofsGcConfig};
 use crate::store::traits::proofs::QueryableProofStore;
@@ -86,6 +88,7 @@ use crate::{
     ActualStateManagerDatabase, ExecutionCacheManager, PendingTransactionResultCache,
     ProtocolUpdateResult, StateComputer, StateManagerDatabase,
 };
+use node_common::java::{JavaError, JavaResult, StructFromJava};
 use node_common::scheduler::{Metrics, Scheduler, Spawner, Tracker};
 use node_common::{
     config::{limits::VertexLimitsConfig, MempoolConfig},
@@ -164,22 +167,33 @@ impl StateManagerConfig {
             scenarios_execution_config: ScenariosExecutionConfig::default(),
         }
     }
+
+    /// Parses the [`Self`] (see [`StructFromJava`]) and performs static validation of all
+    /// applicable configuration components.
+    pub fn valid_from_java(data: &[u8]) -> JavaResult<Self> {
+        let instance = Self::from_java(data)?;
+        instance.protocol_config.validate().map_err(JavaError)?;
+        Ok(instance)
+    }
 }
 
 #[derive(Clone)]
 pub struct StateManager {
-    config: StateManagerConfig,
-    pub state_computer: Arc<StateComputer>,
     pub database: Arc<DbLock<ActualStateManagerDatabase>>,
-    pub pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
     pub mempool: Arc<RwLock<PriorityMempool>>,
     pub mempool_manager: Arc<MempoolManager>,
-    pub execution_configurator: Arc<ExecutionConfigurator>,
     pub committability_validator: Arc<RwLock<CommittabilityValidator>>,
     pub transaction_previewer: Arc<TransactionPreviewer>,
+    pub preparator: Arc<Preparator>,
+    pub execution_cache_manager: Arc<ExecutionCacheManager>,
+    pub state_computer: Arc<StateComputer>,
+    pub pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
+    pub protocol_state_manager: Arc<ProtocolStateManager>,
+    pub protocol_update_executor: Arc<ProtocolUpdateExecutor>,
 }
 
 impl StateManager {
+    // TODO(resolve during review): should we already acknowledge that this is really just `RustServices::bootstrap()`?
     pub fn new(
         config: StateManagerConfig,
         mempool_relay_dispatcher: Option<MempoolRelayDispatcher>,
@@ -187,13 +201,23 @@ impl StateManager {
         metrics_registry: &Registry,
         scheduler: &Scheduler<impl Spawner, impl Tracker, impl Metrics>,
     ) -> Self {
-        // in general, missing mempool config should mean that mempool isn't needed
-        // but for now just using a default
-        let mempool_config = config.mempool_config.clone().unwrap_or_default();
-        let network = config.network_definition.clone();
+        let StateManagerConfig {
+            network_definition,
+            mempool_config,
+            vertex_limits_config,
+            database_backend_config,
+            database_config,
+            logging_config,
+            state_tree_gc_config,
+            ledger_proofs_gc_config,
+            ledger_sync_limits_config,
+            protocol_config,
+            no_fees,
+            scenarios_execution_config,
+        } = config;
 
-        let db_path = PathBuf::from(config.database_backend_config.rocks_db_path.clone());
-        let raw_db = match StateManagerDatabase::new(db_path, config.database_config.clone(), &network) {
+        let db_path = PathBuf::from(database_backend_config.rocks_db_path);
+        let raw_db = match StateManagerDatabase::new(db_path, database_config, &network_definition) {
             Ok(db) => db,
             Err(error) => {
                 match error {
@@ -209,40 +233,36 @@ impl StateManager {
 
         let database = Arc::new(lock_factory.named("database").new_db_lock(raw_db));
 
-        if let Err(err) = config.protocol_config.validate() {
-            panic!("Protocol misconfiguration: {}", err);
-        };
+        let ledger_transaction_validator = Arc::new(
+            LedgerTransactionValidator::default_from_network(&network_definition),
+        );
 
-        let initial_protocol_state = ProtocolState::compute_initial(
-            database.access_direct().deref(),
-            &config.protocol_config,
-        );
-        let initial_protocol_updater = config.protocol_config.resolve_updater(
-            &config.network_definition,
-            &initial_protocol_state.current_protocol_version,
-        );
         let protocol_state_manager = Arc::new(ProtocolStateManager::new(
-            &lock_factory.named("protocol_state"),
+            &protocol_config,
+            database.lock().deref(),
+            &lock_factory.named("protocol_state_manager"),
             metrics_registry,
-            initial_protocol_state,
         ));
 
         let execution_configurator = Arc::new(ExecutionConfigurator::new(
-            &network,
-            config.no_fees,
-            config.logging_config.engine_trace,
+            &network_definition,
+            no_fees,
+            logging_config.engine_trace,
         ));
 
         let mempool = Arc::new(
             lock_factory
                 .named("mempool")
-                .new_rwlock(PriorityMempool::new(mempool_config, metrics_registry)),
+                .new_rwlock(PriorityMempool::new(
+                    mempool_config.unwrap_or_default(),
+                    metrics_registry,
+                )),
         );
         let pending_transaction_result_cache =
             Arc::new(lock_factory.named("pending_cache").new_rwlock(
                 PendingTransactionResultCache::new(mempool.clone(), 10000, 10000),
             ));
-        let validation_config = ValidationConfig::default(network.id);
+        let validation_config = ValidationConfig::default(network_definition.id);
         let committability_validator =
             Arc::new(lock_factory.named("committability_validator").new_rwlock(
                 CommittabilityValidator::new(
@@ -283,23 +303,34 @@ impl StateManager {
             execution_cache_manager.clone(),
             protocol_state_manager.clone(),
         ));
-        let ledger_transaction_validator =
-            Arc::new(LedgerTransactionValidator::default_from_network(&network));
         let preparator = Arc::new(Preparator::new(
             database.clone(),
             transaction_executor_factory.clone(),
             pending_transaction_result_cache.clone(),
             ledger_transaction_validator.clone(),
-            config.vertex_limits_config.unwrap_or_default(),
+            vertex_limits_config.unwrap_or_default(),
             metrics_registry,
         ));
 
-        // If we're booting mid-protocol update ensure all required transactions are committed:
-        initial_protocol_updater.execute_remaining_state_updates(database.clone());
+        let protocol_update_executor = Arc::new(ProtocolUpdateExecutor::new(
+            network_definition.clone(),
+            protocol_config,
+            scenarios_execution_config,
+            database.clone(),
+            transaction_executor_factory.clone(),
+            ledger_transaction_validator.clone(),
+        ));
+
+        // If we are booting mid-protocol-update, ensure all required transactions are committed:
+        protocol_update_executor.execute_protocol_update(
+            &protocol_state_manager
+                .current_protocol_state()
+                .current_protocol_version,
+        );
 
         // Build the state computer:
         let state_computer = Arc::new(StateComputer::new(
-            &network,
+            &network_definition,
             database.clone(),
             ledger_transaction_validator.clone(),
             transaction_executor_factory.clone(),
@@ -307,9 +338,9 @@ impl StateManager {
             mempool_manager.clone(),
             execution_cache_manager.clone(),
             pending_transaction_result_cache.clone(),
+            protocol_state_manager.clone(),
             metrics_registry,
             lock_factory.named("state_computer"),
-            protocol_state_manager.clone(),
         ));
 
         // Register the periodic background task for collecting the costly raw DB metrics...
@@ -322,7 +353,7 @@ impl StateManager {
             });
 
         // ... and for deleting the stale state hash tree nodes (a.k.a. "JMT GC")...
-        let state_tree_gc = StateTreeGc::new(database.clone(), config.state_tree_gc_config.clone());
+        let state_tree_gc = StateTreeGc::new(database.clone(), state_tree_gc_config);
         scheduler
             .named("state_tree_gc")
             .start_periodic(state_tree_gc.interval(), move || state_tree_gc.run());
@@ -330,8 +361,8 @@ impl StateManager {
         // ... and for deleting the old, non-critical ledger proofs (a.k.a. "Proofs GC"):
         let ledger_proofs_gc = LedgerProofsGc::new(
             database.clone(),
-            config.ledger_proofs_gc_config.clone(),
-            config.ledger_sync_limits_config.clone(),
+            ledger_proofs_gc_config,
+            ledger_sync_limits_config,
         );
         scheduler.named("ledger_proofs_gc").start_periodic(
             ledger_proofs_gc.interval(),
@@ -341,29 +372,35 @@ impl StateManager {
         );
 
         Self {
-            config,
-            state_computer,
             database,
-            pending_transaction_result_cache,
             mempool,
             mempool_manager,
-            execution_configurator,
             committability_validator,
             transaction_previewer,
+            preparator,
+            execution_cache_manager,
+            state_computer,
+            pending_transaction_result_cache,
+            protocol_state_manager,
+            protocol_update_executor,
         }
     }
 
+    /// Executes the actual protocol update transactions (on-ledger) and performs any changes to the
+    /// services (off-ledger) affected by the protocol update.
     pub fn apply_protocol_update(
         &self,
         protocol_version_name: &ProtocolVersionName,
     ) -> ProtocolUpdateResult {
-        self.config
-            .protocol_config
-            .resolve_updater(&self.config.network_definition, protocol_version_name)
-            .execute_remaining_state_updates(self.database.clone());
+        self.protocol_update_executor
+            .execute_protocol_update(protocol_version_name);
 
-        self.state_computer
-            .handle_protocol_update(protocol_version_name);
+        // TODO(resolve during review): should we somehow check that the call above was effective?
+        self.protocol_state_manager
+            .set_current_protocol_version(protocol_version_name);
+
+        // Protocol update might change transaction execution rules, so we need to clear the cache:
+        self.execution_cache_manager.clear();
 
         ProtocolUpdateResult {
             post_update_proof: self
@@ -372,14 +409,5 @@ impl StateManager {
                 .get_latest_proof()
                 .expect("Missing post protocol update proof"),
         }
-    }
-
-    pub fn newest_protocol_version(&self) -> ProtocolVersionName {
-        let protocol_config = &self.config.protocol_config;
-        protocol_config
-            .protocol_update_triggers
-            .last()
-            .map(|protocol_update| protocol_update.next_protocol_version.clone())
-            .unwrap_or(protocol_config.genesis_protocol_version.clone())
     }
 }

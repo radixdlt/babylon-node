@@ -1,35 +1,87 @@
 use crate::engine_prelude::*;
-use node_common::locks::{LockFactory, RwLock};
+use node_common::locks::{DbLock, LockFactory, RwLock};
 use prometheus::Registry;
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::ops::Deref;
+use std::sync::Arc;
 use tracing::info;
 
 use crate::protocol::*;
 use crate::traits::{IterableProofStore, QueryableProofStore, QueryableTransactionStore};
-use crate::{LocalTransactionReceipt, ProtocolMetrics, StateVersion};
+use crate::transaction::{LedgerTransactionValidator, TransactionExecutorFactory};
+use crate::{
+    ActualStateManagerDatabase, LocalTransactionReceipt, ProtocolMetrics, ScenariosExecutionConfig,
+    StateVersion,
+};
 use ProtocolUpdateEnactmentCondition::*;
 
-// This file contains types and utilities for
-// managing the (dynamic) protocol state of a running node.
+// This file contains types and utilities for managing the (dynamic) protocol state of a running
+// node.
+
+pub struct ProtocolUpdateExecutor {
+    network: NetworkDefinition,
+    protocol_config: ProtocolConfig,
+    database: Arc<DbLock<ActualStateManagerDatabase>>,
+    transaction_executor_factory: Arc<TransactionExecutorFactory>,
+    ledger_transaction_validator: Arc<LedgerTransactionValidator>,
+}
+
+impl ProtocolUpdateExecutor {
+    pub fn new(
+        network: NetworkDefinition,
+        protocol_config: ProtocolConfig,
+        // TODO(wip): pass it down
+        _scenarios_execution_config: ScenariosExecutionConfig,
+        database: Arc<DbLock<ActualStateManagerDatabase>>,
+        transaction_executor_factory: Arc<TransactionExecutorFactory>,
+        ledger_transaction_validator: Arc<LedgerTransactionValidator>,
+    ) -> Self {
+        Self {
+            network,
+            protocol_config,
+            database,
+            transaction_executor_factory,
+            ledger_transaction_validator,
+        }
+    }
+
+    /// Executes the (remaining part of the) given protocol update's transactions.
+    pub fn execute_protocol_update(&self, new_protocol_version: &ProtocolVersionName) {
+        self.protocol_config
+            .resolve_updater(&self.network, new_protocol_version)
+            .execute_remaining_state_updates(
+                self.database.clone(),
+                &self.transaction_executor_factory,
+                &self.ledger_transaction_validator,
+            );
+    }
+}
 
 pub struct ProtocolStateManager {
     protocol_metrics: ProtocolMetrics,
     protocol_state: RwLock<ProtocolState>,
+    newest_protocol_version: ProtocolVersionName,
 }
 
 impl ProtocolStateManager {
-    pub fn new(
+    pub fn new<S: QueryableProofStore + IterableProofStore + QueryableTransactionStore>(
+        config: &ProtocolConfig,
+        database: &S,
         lock_factory: &LockFactory,
         metric_registry: &Registry,
-        initial_protocol_state: ProtocolState,
     ) -> Self {
+        let initial_protocol_state = ProtocolState::compute_initial(database, config);
         Self {
             protocol_metrics: ProtocolMetrics::new(metric_registry, &initial_protocol_state),
             protocol_state: lock_factory
                 .named("state")
                 .new_rwlock(initial_protocol_state),
+            newest_protocol_version: config
+                .protocol_update_triggers
+                .last()
+                .map(|protocol_update| protocol_update.next_protocol_version.clone())
+                .unwrap_or(config.genesis_protocol_version.clone()),
         }
     }
 
@@ -49,8 +101,12 @@ impl ProtocolStateManager {
         *self.protocol_state.write() = new_protocol_state;
     }
 
-    pub fn update_protocol_version(&self, new_protocol_version: &ProtocolVersionName) {
-        self.protocol_state.write().current_protocol_version = new_protocol_version.clone();
+    pub fn newest_protocol_version(&self) -> ProtocolVersionName {
+        self.newest_protocol_version.clone()
+    }
+
+    pub fn set_current_protocol_version(&self, protocol_version: &ProtocolVersionName) {
+        self.protocol_state.write().current_protocol_version = protocol_version.clone()
     }
 }
 
