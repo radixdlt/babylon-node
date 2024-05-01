@@ -16,7 +16,7 @@ pub fn to_api_system_boot_substate(
     };
 
     Ok(models::Substate::BootLoaderModuleFieldSystemBootSubstate {
-        is_locked: true,
+        is_locked: false,
         value: Box::new(value),
     })
 }
@@ -33,7 +33,7 @@ pub fn to_api_vm_boot_substate(
     };
 
     Ok(models::Substate::BootLoaderModuleFieldVmBootSubstate {
-        is_locked: true,
+        is_locked: false,
         value: Box::new(value),
     })
 }
@@ -50,7 +50,7 @@ pub fn to_api_kernel_boot_substate(
     };
 
     Ok(models::Substate::BootLoaderModuleFieldKernelBootSubstate {
-        is_locked: true,
+        is_locked: false,
         value: Box::new(value),
     })
 }
