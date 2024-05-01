@@ -38,6 +38,23 @@ pub fn to_api_vm_boot_substate(
     })
 }
 
+pub fn to_api_kernel_boot_substate(
+    _context: &MappingContext,
+    _state_mapping_lookups: &StateMappingLookups,
+    substate: &KernelBoot,
+) -> Result<models::Substate, MappingError> {
+    let value = match substate {
+        KernelBoot::V1 { ref_check_costing } => {
+            models::BootLoaderModuleFieldKernelBootValue::new(*ref_check_costing)
+        }
+    };
+
+    Ok(models::Substate::BootLoaderModuleFieldKernelBootSubstate {
+        is_locked: true,
+        value: Box::new(value),
+    })
+}
+
 fn to_api_system_parameters(
     context: &MappingContext,
     system_parameters: &SystemParameters,
@@ -47,6 +64,7 @@ fn to_api_system_parameters(
         costing_parameters,
         limit_parameters,
         max_per_function_royalty_in_xrd,
+        apply_additional_costing,
     } = system_parameters;
     Ok(models::SystemParameters {
         network_definition: Box::new(to_api_network_definition(context, network_definition)?),
@@ -56,6 +74,7 @@ fn to_api_system_parameters(
         )?),
         limit_parameters: Box::new(to_api_limit_parameters(context, limit_parameters)?),
         xrd_max_per_function_royalty: to_api_decimal(max_per_function_royalty_in_xrd),
+        apply_additional_costing: *apply_additional_costing,
     })
 }
 
