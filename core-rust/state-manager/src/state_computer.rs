@@ -163,59 +163,6 @@ pub enum StateComputerRejectReason {
 }
 
 impl StateComputer {
-    pub fn execute_genesis_for_unit_tests_with_config(
-        &self,
-        consensus_manager_config: ConsensusManagerConfig,
-    ) -> LedgerProof {
-        // Roughly copied from bootstrap_test_default in scrypto
-        let genesis_validator: GenesisValidator = Secp256k1PublicKey([0; 33]).into();
-        let genesis_chunks = vec![
-            GenesisDataChunk::Validators(vec![genesis_validator.clone()]),
-            GenesisDataChunk::Stakes {
-                accounts: vec![ComponentAddress::virtual_account_from_public_key(
-                    &genesis_validator.key,
-                )],
-                allocations: vec![(
-                    genesis_validator.key,
-                    vec![GenesisStakeAllocation {
-                        account_index: 0,
-                        xrd_amount: dec!("100"),
-                    }],
-                )],
-            },
-        ];
-        let initial_epoch = Epoch::of(1);
-        let initial_timestamp_ms = 1;
-        self.execute_genesis(
-            genesis_chunks,
-            initial_epoch,
-            consensus_manager_config,
-            initial_timestamp_ms,
-            Hash([0; Hash::LENGTH]),
-            *DEFAULT_TESTING_FAUCET_SUPPLY,
-            vec![],
-        )
-    }
-
-    /// Performs an [`execute_genesis()`] with a hardcoded genesis data meant for test purposes.
-    pub fn execute_genesis_for_unit_tests_with_default_config(&self) -> LedgerProof {
-        let default_config = ConsensusManagerConfig {
-            max_validators: 10,
-            epoch_change_condition: EpochChangeCondition {
-                min_round_count: 3,
-                max_round_count: 3,
-                target_duration_millis: 0,
-            },
-            num_unstake_epochs: 1,
-            total_emission_xrd_per_epoch: Decimal::one(),
-            min_validator_reliability: Decimal::one(),
-            num_owner_stake_units_unlock_epochs: 2,
-            num_fee_increase_delay_epochs: 1,
-            validator_creation_usd_cost: Decimal::one(),
-        };
-        self.execute_genesis_for_unit_tests_with_config(default_config)
-    }
-
     /// Creates and commits a series of genesis transactions (i.e. a bootstrap, then potentially many
     /// data ingestion chunks, and then a wrap-up).
     #[allow(clippy::too_many_arguments)]
@@ -804,6 +751,65 @@ pub struct CommittedUserTransactionIdentifiers {
     pub notarized_transaction_hash: NotarizedTransactionHash,
 }
 
+// ONLY TESTS BELOW
+
+#[cfg(test)]
+impl StateComputer {
+    /// Performs an [`execute_genesis()`] with a hardcoded genesis data meant for test purposes.
+    pub fn execute_genesis_for_unit_tests_with_config(
+        &self,
+        consensus_manager_config: ConsensusManagerConfig,
+    ) -> LedgerProof {
+        // Roughly copied from bootstrap_test_default in scrypto
+        let genesis_validator: GenesisValidator = Secp256k1PublicKey([0; 33]).into();
+        let genesis_chunks = vec![
+            GenesisDataChunk::Validators(vec![genesis_validator.clone()]),
+            GenesisDataChunk::Stakes {
+                accounts: vec![ComponentAddress::virtual_account_from_public_key(
+                    &genesis_validator.key,
+                )],
+                allocations: vec![(
+                    genesis_validator.key,
+                    vec![GenesisStakeAllocation {
+                        account_index: 0,
+                        xrd_amount: dec!("100"),
+                    }],
+                )],
+            },
+        ];
+        let initial_epoch = Epoch::of(1);
+        let initial_timestamp_ms = 1;
+        self.execute_genesis(
+            genesis_chunks,
+            initial_epoch,
+            consensus_manager_config,
+            initial_timestamp_ms,
+            Hash([0; Hash::LENGTH]),
+            *DEFAULT_TESTING_FAUCET_SUPPLY,
+            vec![],
+        )
+    }
+
+    /// Performs an [`execute_genesis_for_unit_tests_with_config()`] with a hardcoded config.
+    pub fn execute_genesis_for_unit_tests_with_default_config(&self) -> LedgerProof {
+        let default_config = ConsensusManagerConfig {
+            max_validators: 10,
+            epoch_change_condition: EpochChangeCondition {
+                min_round_count: 3,
+                max_round_count: 3,
+                target_duration_millis: 0,
+            },
+            num_unstake_epochs: 1,
+            total_emission_xrd_per_epoch: Decimal::one(),
+            min_validator_reliability: Decimal::one(),
+            num_owner_stake_units_unlock_epochs: 2,
+            num_fee_increase_delay_epochs: 1,
+            validator_creation_usd_cost: Decimal::one(),
+        };
+        self.execute_genesis_for_unit_tests_with_config(default_config)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::ops::Deref;
@@ -814,9 +820,8 @@ mod tests {
         LedgerProof, PrepareRequest, PrepareResult, RoundHistory, StateManager, StateManagerConfig,
     };
     use node_common::config::limits::VertexLimitsConfig;
-    use node_common::locks::LockFactory;
-    use node_common::scheduler::Scheduler;
-    use prometheus::Registry;
+
+    use crate::test::create_state_manager;
     use tempfile::TempDir;
 
     // TODO: maybe move/refactor testing infra as we add more Rust tests
@@ -909,20 +914,11 @@ mod tests {
         tmp: &TempDir,
         vertex_limits_config: VertexLimitsConfig,
     ) -> (LedgerProof, StateManager) {
-        let lock_factory = LockFactory::new("testing");
-        let metrics_registry = Registry::new();
-
         let config = StateManagerConfig {
             vertex_limits_config: Some(vertex_limits_config),
             ..StateManagerConfig::new_for_testing(tmp.path().to_str().unwrap())
         };
-        let state_manager = StateManager::new(
-            config,
-            None,
-            &lock_factory,
-            &metrics_registry,
-            &Scheduler::new("testing"),
-        );
+        let state_manager = create_state_manager(config);
 
         let proof = state_manager
             .state_computer

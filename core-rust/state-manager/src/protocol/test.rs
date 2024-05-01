@@ -62,19 +62,14 @@
  * permissions under this License.
  */
 
-use prometheus::Registry;
-
 use crate::engine_prelude::*;
 use crate::traits::QueryableProofStore;
 
-use node_common::locks::LockFactory;
-use node_common::scheduler::Scheduler;
-
 use crate::protocol::*;
-use crate::{LedgerProof, LedgerProofOrigin, StateManager, StateManagerConfig};
+use crate::{LedgerProof, LedgerProofOrigin, StateManagerConfig};
 use std::ops::Deref;
 
-use crate::test::prepare_and_commit_round_update;
+use crate::test::{create_state_manager, prepare_and_commit_round_update};
 use crate::transaction::FlashTransactionV1;
 
 const CUSTOM_V2_PROTOCOL_VERSION: &str = "custom-v2";
@@ -193,14 +188,4 @@ fn flash_protocol_update_test() {
         protocol_update_epoch
     );
     assert_eq!(latest_execution_proof.ledger_header.round, Round::zero());
-}
-
-fn create_state_manager(config: StateManagerConfig) -> StateManager {
-    StateManager::new(
-        config,
-        None,
-        &LockFactory::new("testing"),
-        &Registry::new(),
-        &Scheduler::new("testing"),
-    )
 }

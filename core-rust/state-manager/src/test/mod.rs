@@ -3,10 +3,23 @@ use crate::query::TransactionIdentifierLoader;
 use crate::traits::QueryableProofStore;
 use crate::{
     CommitRequest, CommitSummary, LedgerHeader, LedgerProof, LedgerProofOrigin, PrepareRequest,
-    PrepareResult, RoundHistory, StateManager,
+    PrepareResult, RoundHistory, StateManager, StateManagerConfig,
 };
+use node_common::locks::LockFactory;
+use node_common::scheduler::Scheduler;
+use prometheus::Registry;
 
-/// A bunch of test utils
+// A bunch of test utils
+
+pub fn create_state_manager(config: StateManagerConfig) -> StateManager {
+    StateManager::new(
+        config,
+        None,
+        &LockFactory::new("testing"),
+        &Registry::new(),
+        &Scheduler::new("testing"),
+    )
+}
 
 pub fn commit_round_updates_until_epoch(state_manager: &StateManager, epoch: Epoch) {
     loop {
