@@ -159,8 +159,8 @@ public final class EventLoggerModule extends AbstractModule {
               "bft_nxtrnd{epoch={} round={} leader={} next_leader={}}",
               u.getEpoch(),
               u.getEpochRound().getRound().number(),
-              eventLoggerConfig.formatBftValidatorId().apply(u.getRoundUpdate().getLeader()),
-              eventLoggerConfig.formatBftValidatorId().apply(u.getRoundUpdate().getNextLeader()));
+              eventLoggerConfig.formatBftValidatorId().apply(u.getRoundUpdate().leader()),
+              eventLoggerConfig.formatBftValidatorId().apply(u.getRoundUpdate().nextLeader()));
         });
   }
 

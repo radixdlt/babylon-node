@@ -86,11 +86,11 @@ public final class LocalTimeoutOccurrence implements LocalEvent {
   }
 
   public BFTValidatorId getLeader() {
-    return scheduledLocalTimeout.roundUpdate().getLeader();
+    return scheduledLocalTimeout.roundUpdate().leader();
   }
 
   public BFTValidatorId getNextLeader() {
-    return scheduledLocalTimeout.roundUpdate().getNextLeader();
+    return scheduledLocalTimeout.roundUpdate().nextLeader();
   }
 
   @Override
