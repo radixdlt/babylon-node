@@ -66,6 +66,7 @@ extern crate core;
 
 mod accumulator_tree;
 mod commit_bundle;
+mod committer;
 pub mod jni;
 mod limits;
 pub mod mempool;
@@ -84,6 +85,7 @@ mod types;
 #[cfg(test)]
 mod test;
 
+pub use crate::committer::*;
 pub use crate::mempool::*;
 pub use crate::metrics::*;
 pub use crate::pending_transaction_result_cache::*;

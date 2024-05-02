@@ -62,108 +62,53 @@
  * permissions under this License.
  */
 
-use crate::mempool_manager::MempoolManager;
 use crate::query::*;
-use crate::staging::epoch_handling::EpochAwareAccuTreeFactory;
+
 use crate::store::traits::*;
 use crate::transaction::*;
-use crate::types::CommitRequest;
+
 use crate::*;
 
 use crate::engine_prelude::*;
-// disambiguation needed because of a wide prelude
 
-use node_common::locks::{DbLock, LockFactory, RwLock};
-use prometheus::Registry;
-use tracing::{info, warn};
+use node_common::locks::DbLock;
 
-use crate::protocol::*;
+use tracing::info;
+
 use crate::store::traits::scenario::{
     DescribedAddressRendering, ExecutedGenesisScenario, ExecutedGenesisScenarioStore,
     ExecutedScenarioTransaction, ScenarioSequenceNumber,
 };
 use crate::system_commits::*;
 
-use crate::accumulator_tree::storage::ReadableAccuTreeStore;
-
 use radix_transaction_scenarios::executor::scenarios_vector;
-use std::ops::Deref;
+
 use std::sync::Arc;
-use std::time::{Instant, SystemTime};
+use std::time::Instant;
 
 pub struct StateComputer {
     network: NetworkDefinition,
     database: Arc<DbLock<ActualStateManagerDatabase>>,
-    ledger_transaction_validator: Arc<LedgerTransactionValidator>,
-    transaction_executor_factory: Arc<TransactionExecutorFactory>,
     preparator: Arc<Preparator>,
-    mempool_manager: Arc<MempoolManager>,
-    execution_cache_manager: Arc<ExecutionCacheManager>,
-    pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
-    protocol_state_manager: Arc<ProtocolStateManager>,
-    ledger_metrics: LedgerMetrics,
-    committed_transactions_metrics: CommittedTransactionsMetrics,
+    committer: Arc<Committer>,
 }
 
+// TODO(resolve during review): should it now be called `SystemTransactionExecutor`?
 impl StateComputer {
-    #[allow(clippy::too_many_arguments)]
     pub fn new(
         network: &NetworkDefinition,
         database: Arc<DbLock<ActualStateManagerDatabase>>,
-        ledger_transaction_validator: Arc<LedgerTransactionValidator>,
-        transaction_executor_factory: Arc<TransactionExecutorFactory>,
         preparator: Arc<Preparator>,
-        mempool_manager: Arc<MempoolManager>,
-        execution_cache_manager: Arc<ExecutionCacheManager>,
-        pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
-        protocol_state_manager: Arc<ProtocolStateManager>,
-        metrics_registry: &Registry,
-        lock_factory: LockFactory,
+        committer: Arc<Committer>,
     ) -> Self {
-        let ledger_metrics = LedgerMetrics::new(
-            network,
-            database.snapshot().deref(),
-            // We deliberately opt-out of measuring the "technical" locks used inside these metrics:
-            &lock_factory.named("ledger_metrics").not_measured(),
-            metrics_registry,
-        );
-        let committed_transactions_metrics = CommittedTransactionsMetrics::new(metrics_registry);
         Self {
             network: network.clone(),
             database,
-            ledger_transaction_validator,
-            transaction_executor_factory,
             preparator,
-            mempool_manager,
-            execution_cache_manager,
-            pending_transaction_result_cache,
-            ledger_metrics,
-            committed_transactions_metrics,
-            protocol_state_manager,
+            committer,
         }
     }
 
-    /// Exposes the [`LedgerMetrics::get_ledger_status()`].
-    /// This abstraction leak is needed to transfer the "overall ledger health" information from a
-    /// Rust-side (derived) metric, via JNI, to the Java-based "system health" endpoint.
-    pub fn get_ledger_status_from_metrics(&self) -> LedgerStatus {
-        self.ledger_metrics.get_ledger_status()
-    }
-
-    /// Exposes the [`LedgerMetrics::get_recent_self_proposal_miss_statistic()`].
-    /// This abstraction leak is needed to transfer this information from a Rust-side (derived)
-    /// metric, via JNI, to the Java-based "system health" endpoint.
-    pub fn get_recent_self_proposal_miss_statistic(&self) -> RecentSelfProposalMissStatistic {
-        self.ledger_metrics
-            .get_recent_self_proposal_miss_statistic()
-    }
-}
-
-pub enum StateComputerRejectReason {
-    TransactionValidationError(TransactionValidationError),
-}
-
-impl StateComputer {
     /// Creates and commits a series of genesis transactions (i.e. a bootstrap, then potentially many
     /// data ingestion chunks, and then a wrap-up).
     #[allow(clippy::too_many_arguments)]
@@ -207,7 +152,7 @@ impl StateComputer {
         info!("Committing system flash");
         let prepare_result = self.preparator.prepare_genesis(GenesisTransaction::Flash);
         let commit_request = system_commit_request_factory.create_for_genesis(prepare_result);
-        self.commit_system(commit_request);
+        self.committer.commit_system(commit_request);
 
         info!("Committing system bootstrap");
         let transaction = create_system_bootstrap_transaction(
@@ -222,7 +167,7 @@ impl StateComputer {
             .preparator
             .prepare_genesis(GenesisTransaction::Transaction(Box::new(transaction)));
         let commit_request = system_commit_request_factory.create_for_genesis(prepare_result);
-        self.commit_system(commit_request);
+        self.committer.commit_system(commit_request);
 
         let genesis_data_chunks_len = genesis_data_chunks.len();
         for (index, chunk) in genesis_data_chunks.into_iter().enumerate() {
@@ -245,7 +190,7 @@ impl StateComputer {
                 .preparator
                 .prepare_genesis(GenesisTransaction::Transaction(Box::new(transaction)));
             let commit_request = system_commit_request_factory.create_for_genesis(prepare_result);
-            self.commit_system(commit_request);
+            self.committer.commit_system(commit_request);
         }
 
         // These scenarios are committed before we start consensus / rounds after the genesis wrap-up.
@@ -259,7 +204,7 @@ impl StateComputer {
             .prepare_genesis(GenesisTransaction::Transaction(Box::new(transaction)));
         let commit_request = system_commit_request_factory.create_for_genesis(prepare_result);
         let final_ledger_proof = commit_request.proof.clone();
-        self.commit_system(commit_request);
+        self.committer.commit_system(commit_request);
 
         info!(
             "Genesis transactions successfully executed in {:?}",
@@ -268,6 +213,7 @@ impl StateComputer {
         final_ledger_proof
     }
 
+    /// Prepares and commits a series of transactions comprising the given Engine Scenarios.
     pub fn execute_scenarios(
         &self,
         system_commit_request_factory: &mut SystemCommitRequestFactory,
@@ -320,7 +266,7 @@ impl StateComputer {
                     if let Some(commit_request) =
                         system_commit_request_factory.create_for_scenario(prepare_result)
                     {
-                        self.commit_system(commit_request);
+                        self.committer.commit_system(commit_request);
                         committed_transactions.push(ExecutedScenarioTransaction {
                             logical_name: next.logical_name.clone(),
                             state_version: system_commit_request_factory.state_version,
@@ -394,353 +340,6 @@ impl StateComputer {
         }
         None
     }
-
-    /// Validates and commits the transactions from the given request (or returns an error in case
-    /// of invalid request).
-    /// Persistently stores the transaction payloads and execution results, together with the
-    /// associated proof and vertex store state.
-    pub fn commit(
-        &self,
-        commit_request: CommitRequest,
-    ) -> Result<CommitSummary, InvalidCommitRequestError> {
-        let commit_transactions_len = commit_request.transactions.len();
-        if commit_transactions_len == 0 {
-            panic!("broken invariant: no transactions in request {commit_request:?}");
-        }
-
-        let commit_ledger_header = &commit_request.proof.ledger_header;
-        let commit_state_version = commit_ledger_header.state_version;
-        let commit_request_start_state_version =
-            commit_state_version.relative(-(commit_transactions_len as i128))
-                .expect("`commit_request_start_state_version` should be computable from `commit_state_version - commit_transactions_len` and valid.");
-
-        // We advance the top-of-ledger, hence lock:
-        let database = self.database.lock();
-
-        // Step 1.: Parse the transactions (and collect specific metrics from them, as a drive-by)
-        let mut prepared_transactions = Vec::new();
-        let mut leader_round_counters_builder = LeaderRoundCountersBuilder::default();
-        let mut proposer_timestamps = Vec::new();
-        let mut proposer_timestamp_ms = database
-            .get_latest_proof()
-            .unwrap()
-            .ledger_header
-            .proposer_timestamp_ms;
-        for (index, raw_transaction) in commit_request.transactions.iter().enumerate() {
-            let result = self
-                .ledger_transaction_validator
-                .prepare_from_raw(raw_transaction);
-            let prepared_transaction = match result {
-                Ok(prepared_transaction) => prepared_transaction,
-                Err(error) => {
-                    warn!(
-                        "invalid commit request: cannot parse transaction at index {}: {:?}",
-                        index, error
-                    );
-                    return Err(InvalidCommitRequestError::TransactionParsingFailed);
-                }
-            };
-
-            if let PreparedLedgerTransactionInner::RoundUpdateV1(_) = &prepared_transaction.inner {
-                let round_update = LedgerTransaction::from_raw(raw_transaction)
-                    .expect("the same transaction was parsed fine above");
-                if let LedgerTransaction::RoundUpdateV1(round_update) = round_update {
-                    leader_round_counters_builder.update(&round_update.leader_proposal_history);
-                    proposer_timestamp_ms = round_update.proposer_timestamp_ms;
-                }
-            }
-
-            prepared_transactions.push(prepared_transaction);
-            proposer_timestamps.push(proposer_timestamp_ms);
-        }
-
-        // Step 2.: Check invariants, set-up DB update structures
-        let mut series_executor = self
-            .transaction_executor_factory
-            .start_series_execution(database.deref());
-
-        if commit_request_start_state_version != series_executor.latest_state_version() {
-            panic!(
-                "broken invariant: commit request assumed state version ({} - {} = {}) while ledger is at {}",
-                commit_state_version,
-                commit_transactions_len,
-                commit_request_start_state_version,
-                series_executor.latest_state_version(),
-            );
-        }
-
-        let resultant_transaction_root = self
-            .execution_cache_manager
-            .find_transaction_root(
-                &series_executor.latest_ledger_hashes().transaction_root,
-                &prepared_transactions,
-            )
-            .unwrap_or_else(|| {
-                Self::calculate_transaction_root(
-                    database.deref(),
-                    series_executor.epoch_identifiers(),
-                    series_executor.latest_state_version(),
-                    &prepared_transactions,
-                )
-            });
-
-        if resultant_transaction_root != commit_ledger_header.hashes.transaction_root {
-            warn!(
-                "invalid commit request: resultant transaction root at version {} differs from the proof ({} != {})",
-                commit_state_version,
-                resultant_transaction_root,
-                commit_ledger_header.hashes.transaction_root
-            );
-            return Err(InvalidCommitRequestError::TransactionRootMismatch);
-        }
-
-        let mut transactions_metrics_data = Vec::new();
-        let mut committed_user_transactions = Vec::new();
-
-        // Step 3.: Actually execute the transactions, collect their results into DB structures
-        let mut commit_bundle_builder = series_executor.start_commit_builder();
-
-        for ((raw, prepared), proposer_timestamp_ms) in commit_request
-            .transactions
-            .into_iter()
-            .zip(prepared_transactions)
-            .zip(proposer_timestamps)
-        {
-            let validated = self
-                .ledger_transaction_validator
-                .validate_user_or_round_update(prepared)
-                .unwrap_or_else(|error| {
-                    panic!("cannot validate transaction to be committed: {error:?}");
-                });
-
-            let commit = series_executor
-                .execute_and_update_state(&validated, "prepared")
-                .expect("cannot execute transaction to be committed");
-
-            if let ValidatedLedgerTransactionInner::UserV1(user_transaction) = &validated.inner {
-                committed_user_transactions.push(CommittedUserTransactionIdentifiers {
-                    state_version: series_executor.latest_state_version(),
-                    intent_hash: user_transaction.intent_hash(),
-                    notarized_transaction_hash: user_transaction.notarized_transaction_hash(),
-                });
-            }
-            transactions_metrics_data.push(TransactionMetricsData::new(
-                raw.0.len(),
-                commit.local_receipt.local_execution.fee_summary.clone(),
-            ));
-
-            commit_bundle_builder.add_executed_transaction(
-                series_executor.latest_state_version(),
-                proposer_timestamp_ms,
-                raw,
-                validated,
-                commit,
-            );
-        }
-
-        let epoch_change = series_executor.epoch_change();
-        self.protocol_state_manager
-            .update_protocol_state_and_metrics(
-                series_executor.protocol_state(),
-                epoch_change.as_ref(),
-            );
-
-        // Step 4.: Check final invariants, perform the DB commit
-        let next_epoch: Option<NextEpoch> = epoch_change.map(|ev| ev.into());
-        if next_epoch != commit_ledger_header.next_epoch {
-            panic!(
-                "resultant next epoch at version {} differs from the proof ({:?} != {:?})",
-                commit_state_version, next_epoch, commit_ledger_header.next_epoch
-            );
-        }
-
-        self.verify_post_commit_protocol_version(
-            commit_state_version,
-            &series_executor.next_protocol_version(),
-            &commit_ledger_header.next_protocol_version,
-        );
-
-        let final_ledger_hashes = series_executor.latest_ledger_hashes();
-        if final_ledger_hashes != &commit_ledger_header.hashes {
-            panic!(
-                "resultant ledger hashes at version {} differ from the proof ({:?} != {:?})",
-                commit_state_version, final_ledger_hashes, commit_ledger_header.hashes
-            );
-        }
-
-        // capture these before we lose the appropriate borrows:
-        let proposer_timestamp_ms = commit_ledger_header.proposer_timestamp_ms;
-        let round_counters = leader_round_counters_builder.build(series_executor.epoch_header());
-        let final_transaction_root = final_ledger_hashes.transaction_root;
-
-        database
-            .commit(commit_bundle_builder.build(commit_request.proof, commit_request.vertex_store));
-
-        drop(database);
-
-        self.execution_cache_manager
-            .access_exclusively()
-            .progress_base(&final_transaction_root);
-
-        self.mempool_manager.remove_committed(
-            committed_user_transactions
-                .iter()
-                .map(|txn| &txn.intent_hash),
-        );
-
-        if let Some(next_epoch) = next_epoch {
-            self.mempool_manager
-                .remove_txns_where_end_epoch_expired(next_epoch.epoch);
-        }
-
-        let num_user_transactions = committed_user_transactions.len() as u32;
-        self.pending_transaction_result_cache
-            .write()
-            .track_committed_transactions(SystemTime::now(), committed_user_transactions);
-
-        self.ledger_metrics.update(
-            commit_transactions_len,
-            commit_state_version,
-            round_counters.clone(),
-            proposer_timestamp_ms,
-            commit_request.self_validator_id,
-        );
-
-        self.committed_transactions_metrics
-            .update(transactions_metrics_data);
-
-        Ok(CommitSummary {
-            validator_round_counters: round_counters,
-            num_user_transactions,
-        })
-    }
-
-    fn verify_post_commit_protocol_version(
-        &self,
-        commit_state_version: StateVersion,
-        next_version_from_local_execution: &Option<ProtocolVersionName>,
-        next_version_from_proof: &Option<ProtocolVersionName>,
-    ) {
-        match (next_version_from_local_execution, next_version_from_proof) {
-            (Some(local_version), Some(proof_version)) if local_version == proof_version => {
-                // All good, local execution enacts the same protocol version as proof. No-op.
-            }
-            (Some(local_version), Some(proof_version)) => {
-                // We're enacting a different version than the proof
-                panic!(
-                    "FATAL: At state version {} this node wants to enact {}, but this doesn't match the proof, which enacts {} (i.e. the validator set have enacted a different version). Make sure your node is running the latest software version.",
-                    commit_state_version,
-                    local_version,
-                    proof_version,
-                );
-            }
-            (Some(local_version), None) => {
-                // We're enacting locally, but the proof doesn't enact anything
-                panic!(
-                    "FATAL: At state version {} this node wants to enact {}, but this doesn't match the proof, which doesn't enact anything (i.e. the validator set haven't enacted it). Make sure your node is running the latest software version.",
-                    commit_state_version,
-                    local_version,
-                );
-            }
-            (None, Some(proof_version)) => {
-                // The proof enacts, but we locally don't
-                panic!(
-                    "FATAL: At state version {} the validator set have enacted {}, but this node didn't expect it to happen (expected enactment at a different time, or protocol version unknown). Make sure your node is running the latest software version.",
-                    commit_state_version,
-                    proof_version,
-                );
-            }
-            (None, None) => {
-                // All good, nothing gets enacted. No-op.
-            }
-        }
-    }
-
-    /// Performs a simplified [`commit()`] flow meant for system transactions.
-    /// This method accepts a pre-validated transaction and trusts its contents (i.e. skips some
-    /// validations).
-    fn commit_system(&self, request: SystemCommitRequest) {
-        let SystemCommitRequest {
-            raw,
-            validated,
-            proof,
-            require_success,
-        } = request;
-        let database = self.database.lock();
-        let mut series_executor = self
-            .transaction_executor_factory
-            .start_series_execution(database.deref());
-        let mut commit_bundle_builder = series_executor.start_commit_builder();
-
-        let mut commit = series_executor
-            .execute_and_update_state(&validated, "system transaction")
-            .expect("cannot execute system transaction");
-
-        if require_success {
-            commit = commit.expect_success("system transaction not successful");
-        }
-
-        let proposer_timestamp_ms = proof.ledger_header.proposer_timestamp_ms;
-        let resultant_state_version = series_executor.latest_state_version();
-
-        commit_bundle_builder.add_executed_transaction(
-            resultant_state_version,
-            proposer_timestamp_ms,
-            raw,
-            validated,
-            commit,
-        );
-
-        self.execution_cache_manager
-            .access_exclusively()
-            .progress_base(&series_executor.latest_ledger_hashes().transaction_root);
-
-        database.commit(commit_bundle_builder.build(proof, None));
-
-        // Protocol updates aren't allowed during system transactions, so no need to handle an
-        // update here, just assign the latest protocol state.
-        self.protocol_state_manager
-            .update_protocol_state_and_metrics(
-                series_executor.protocol_state(),
-                series_executor.epoch_change().as_ref(),
-            );
-
-        drop(database);
-
-        self.ledger_metrics.update(
-            1,
-            resultant_state_version,
-            Vec::new(),
-            proposer_timestamp_ms,
-            None,
-        );
-    }
-
-    fn calculate_transaction_root<S: ReadableAccuTreeStore<StateVersion, TransactionTreeHash>>(
-        store: &S,
-        epoch_identifiers: &EpochTransactionIdentifiers,
-        parent_version: StateVersion,
-        transactions: &[PreparedLedgerTransaction],
-    ) -> TransactionTreeHash {
-        let epoch_accu_trees =
-            EpochAwareAccuTreeFactory::new(epoch_identifiers.state_version, parent_version);
-        let transaction_tree_diff = epoch_accu_trees.compute_tree_diff(
-            epoch_identifiers.transaction_hash,
-            store,
-            transactions
-                .iter()
-                .map(|transaction| transaction.ledger_transaction_hash())
-                .map(TransactionTreeHash::from)
-                .collect(),
-        );
-        *transaction_tree_diff.slice.root()
-    }
-}
-
-pub struct CommittedUserTransactionIdentifiers {
-    pub state_version: StateVersion,
-    pub intent_hash: IntentHash,
-    pub notarized_transaction_hash: NotarizedTransactionHash,
 }
 
 // ONLY TESTS BELOW
@@ -926,7 +525,6 @@ mod tests {
     ) -> PrepareResult {
         let (proof, state_manager) = setup_state_manager(tmp, vertex_limits_config);
         state_manager
-            .state_computer
             .preparator
             .prepare(build_unit_test_prepare_request(
                 &proof,
@@ -938,9 +536,8 @@ mod tests {
         state_manager: &StateManager,
         prepare_request: PrepareRequest,
     ) -> u32 {
-        let database = state_manager.state_computer.database.snapshot();
+        let database = state_manager.database.snapshot();
         let mut series_executor = state_manager
-            .state_computer
             .transaction_executor_factory
             .start_series_execution(database.deref());
 
@@ -950,7 +547,6 @@ mod tests {
         );
         let ledger_round_update = LedgerTransaction::RoundUpdateV1(Box::new(round_update));
         let validated_round_update = state_manager
-            .state_computer
             .ledger_transaction_validator
             .validate_user_or_round_update_from_model(&ledger_round_update)
             .expect("expected to be able to prepare the round update transaction");
@@ -964,13 +560,11 @@ mod tests {
             .iter()
             .map(|raw_user_transaction| {
                 let (_, prepared_transaction) = state_manager
-                    .state_computer
                     .preparator
                     .try_prepare_ledger_transaction_from_user_transaction(raw_user_transaction)
                     .unwrap();
 
                 let validated = state_manager
-                    .state_computer
                     .ledger_transaction_validator
                     .validate_user_or_round_update(prepared_transaction)
                     .unwrap();
@@ -1019,14 +613,12 @@ mod tests {
         proposed_transactions.push(build_committable_transaction(epoch, 9));
         proposed_transactions.push(build_rejected_transaction(epoch, 5));
 
-        let prepare_result =
-            state_manager
-                .state_computer
-                .preparator
-                .prepare(build_unit_test_prepare_request(
-                    &proof,
-                    proposed_transactions.clone(),
-                ));
+        let prepare_result = state_manager
+            .preparator
+            .prepare(build_unit_test_prepare_request(
+                &proof,
+                proposed_transactions.clone(),
+            ));
 
         assert_eq!(prepare_result.committed.len(), 10); // 9 committable transactions + 1 round update transaction
         assert_eq!(prepare_result.rejected.len(), 5); // 5 rejected transactions

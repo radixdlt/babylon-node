@@ -95,8 +95,7 @@ extern "system" fn Java_com_radixdlt_prometheus_RustPrometheus_ledgerStatus(
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |_no_args: ()| -> LedgerStatus {
-        JNINodeRustEnvironment::get_state_computer(&env, j_node_rust_env)
-            .get_ledger_status_from_metrics()
+        JNINodeRustEnvironment::get_ledger_metrics(&env, j_node_rust_env).get_ledger_status()
     })
 }
 
@@ -111,7 +110,7 @@ extern "system" fn Java_com_radixdlt_prometheus_RustPrometheus_recentSelfProposa
         &env,
         request_payload,
         |_no_args: ()| -> RecentSelfProposalMissStatistic {
-            JNINodeRustEnvironment::get_state_computer(&env, j_node_rust_env)
+            JNINodeRustEnvironment::get_ledger_metrics(&env, j_node_rust_env)
                 .get_recent_self_proposal_miss_statistic()
         },
     )

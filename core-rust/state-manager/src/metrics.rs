@@ -67,8 +67,8 @@ use std::cmp::min;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::limits::VertexLimitsExceeded;
-use crate::transaction::LeaderRoundCounter;
-use crate::{StateVersion, ValidatorId};
+use crate::transaction::{LeaderRoundCounter, RawLedgerTransaction};
+use crate::{ProcessedCommitResult, StateVersion, ValidatorId};
 use node_common::config::limits::*;
 use node_common::locks::{LockFactory, Mutex};
 use node_common::metrics::*;
@@ -87,18 +87,15 @@ pub struct LedgerMetrics {
     address_encoder: AddressBech32Encoder, // for label rendering only
     pub state_version: IntGauge,
     pub transactions_committed: IntCounter,
+    pub committed_transactions_size: Histogram,
+    pub execution_cost_units_consumed: Histogram,
+    pub finalization_cost_units_consumed: Histogram,
     pub consensus_rounds_committed: IntCounterVec,
     pub self_consensus_rounds_committed: IntCounterVec, // a subset of the above, for convenience
     pub last_update_epoch_second: Gauge,
     pub last_update_proposer_epoch_second: Gauge,
     pub recent_self_proposal_miss_count: ValidatorProposalMissTracker,
     pub recent_proposer_timestamp_progress_rate: ProposerTimestampProgressRateTracker,
-}
-
-pub struct CommittedTransactionsMetrics {
-    pub size: Histogram,
-    pub execution_cost_units_consumed: Histogram,
-    pub finalization_cost_units_consumed: Histogram,
 }
 
 pub struct ProtocolMetrics {
@@ -147,6 +144,34 @@ impl LedgerMetrics {
                 "ledger_transactions_committed_total",
                 "Count of transactions committed to the ledger.",
             ))
+            .registered_at(registry),
+            committed_transactions_size: new_histogram(
+                opts(
+                    "committed_transactions_size",
+                    "Size in bytes of committed transactions.",
+                ),
+                higher_resolution_for_lower_values_buckets_for_limit(MAX_TRANSACTION_SIZE),
+            )
+            .registered_at(registry),
+            execution_cost_units_consumed: new_histogram(
+                opts(
+                    "committed_transactions_execution_cost_units_consumed",
+                    "Execution cost units consumed per committed transactions.",
+                ),
+                higher_resolution_for_lower_values_buckets_for_limit(
+                    EXECUTION_COST_UNIT_LIMIT as usize,
+                ),
+            )
+            .registered_at(registry),
+            finalization_cost_units_consumed: new_histogram(
+                opts(
+                    "committed_transactions_finalization_cost_units_consumed",
+                    "Finalization cost units consumed per committed transactions.",
+                ),
+                higher_resolution_for_lower_values_buckets_for_limit(
+                    FINALIZATION_COST_UNIT_LIMIT as usize,
+                ),
+            )
             .registered_at(registry),
             consensus_rounds_committed: IntCounterVec::new(
                 opts(
@@ -210,10 +235,20 @@ impl LedgerMetrics {
         validator_proposal_counters: Vec<(ValidatorId, LeaderRoundCounter)>,
         proposer_timestamp_ms: i64,
         self_validator_id: Option<ValidatorId>,
+        transactions_metrics_data: Vec<TransactionMetricsData>,
     ) {
         self.state_version.set(new_state_version.number() as i64);
+
         self.transactions_committed
             .inc_by(added_transactions as u64);
+        for TransactionMetricsData { size, fee_summary } in transactions_metrics_data {
+            self.committed_transactions_size.observe(size as f64);
+            self.execution_cost_units_consumed
+                .observe(fee_summary.total_execution_cost_units_consumed as f64);
+            self.finalization_cost_units_consumed
+                .observe(fee_summary.total_finalization_cost_units_consumed as f64);
+        }
+
         for (validator_id, counter) in validator_proposal_counters {
             let is_self = self_validator_id == Some(validator_id);
             let encoded_validator_address = self
@@ -242,6 +277,7 @@ impl LedgerMetrics {
                 self.recent_self_proposal_miss_count.track(&counter);
             }
         }
+
         self.last_update_epoch_second.set(
             SystemTime::now()
                 .duration_since(UNIX_EPOCH)
@@ -287,58 +323,14 @@ pub struct TransactionMetricsData {
 }
 
 impl TransactionMetricsData {
-    pub fn new(size: usize, fee_summary: TransactionFeeSummary) -> Self {
-        TransactionMetricsData { size, fee_summary }
-    }
-}
-
-impl CommittedTransactionsMetrics {
-    pub fn new(registry: &Registry) -> Self {
-        Self {
-            size: new_histogram(
-                opts(
-                    "committed_transactions_size",
-                    "Size in bytes of committed transactions.",
-                ),
-                higher_resolution_for_lower_values_buckets_for_limit(MAX_TRANSACTION_SIZE),
-            )
-            .registered_at(registry),
-            execution_cost_units_consumed: new_histogram(
-                opts(
-                    "committed_transactions_execution_cost_units_consumed",
-                    "Execution cost units consumed per committed transactions.",
-                ),
-                higher_resolution_for_lower_values_buckets_for_limit(
-                    EXECUTION_COST_UNIT_LIMIT as usize,
-                ),
-            )
-            .registered_at(registry),
-            finalization_cost_units_consumed: new_histogram(
-                opts(
-                    "committed_transactions_finalization_cost_units_consumed",
-                    "Finalization cost units consumed per committed transactions.",
-                ),
-                higher_resolution_for_lower_values_buckets_for_limit(
-                    FINALIZATION_COST_UNIT_LIMIT as usize,
-                ),
-            )
-            .registered_at(registry),
-        }
-    }
-
-    pub fn update(&self, transactions_metrics_data: Vec<TransactionMetricsData>) {
-        for transaction_metrics_data in transactions_metrics_data {
-            self.size.observe(transaction_metrics_data.size as f64);
-            self.execution_cost_units_consumed.observe(
-                transaction_metrics_data
-                    .fee_summary
-                    .total_execution_cost_units_consumed as f64,
-            );
-            self.finalization_cost_units_consumed.observe(
-                transaction_metrics_data
-                    .fee_summary
-                    .total_finalization_cost_units_consumed as f64,
-            );
+    pub fn new(raw: &RawLedgerTransaction, commit_result: &ProcessedCommitResult) -> Self {
+        TransactionMetricsData {
+            size: raw.0.len(),
+            fee_summary: commit_result
+                .local_receipt
+                .local_execution
+                .fee_summary
+                .clone(),
         }
     }
 }

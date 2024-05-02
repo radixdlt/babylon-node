@@ -87,7 +87,10 @@ use super::fatal_panic_handler::FatalPanicHandler;
 
 use crate::protocol::ProtocolStateManager;
 use crate::transaction::Preparator;
-use crate::{ActualStateManagerDatabase, StateComputer, StateManager, StateManagerConfig};
+use crate::{
+    ActualStateManagerDatabase, Committer, LedgerMetrics, StateComputer, StateManager,
+    StateManagerConfig,
+};
 
 const POINTER_JNI_FIELD_NAME: &str = "rustNodeRustEnvironmentPointer";
 
@@ -227,6 +230,13 @@ impl JNINodeRustEnvironment {
             .clone()
     }
 
+    pub fn get_committer(env: &JNIEnv, j_node_rust_env: JObject) -> Arc<Committer> {
+        Self::get(env, j_node_rust_env)
+            .state_manager
+            .committer
+            .clone()
+    }
+
     pub fn get_protocol_state_manager(
         env: &JNIEnv,
         j_node_rust_env: JObject,
@@ -234,6 +244,13 @@ impl JNINodeRustEnvironment {
         Self::get(env, j_node_rust_env)
             .state_manager
             .protocol_state_manager
+            .clone()
+    }
+
+    pub fn get_ledger_metrics(env: &JNIEnv, j_node_rust_env: JObject) -> Arc<LedgerMetrics> {
+        Self::get(env, j_node_rust_env)
+            .state_manager
+            .ledger_metrics
             .clone()
     }
 }

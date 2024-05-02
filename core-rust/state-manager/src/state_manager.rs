@@ -85,8 +85,8 @@ use crate::{
     priority_mempool::PriorityMempool,
     store::{jmt_gc::StateTreeGc, DatabaseBackendConfig, DatabaseConfig, RawDbMetricsCollector},
     transaction::{CachedCommittabilityValidator, CommittabilityValidator, TransactionPreviewer},
-    ActualStateManagerDatabase, ExecutionCacheManager, PendingTransactionResultCache,
-    ProtocolUpdateResult, StateComputer, StateManagerDatabase,
+    ActualStateManagerDatabase, Committer, ExecutionCacheManager, LedgerMetrics,
+    PendingTransactionResultCache, ProtocolUpdateResult, StateComputer, StateManagerDatabase,
 };
 use node_common::java::{JavaError, JavaResult, StructFromJava};
 use node_common::scheduler::{Metrics, Scheduler, Spawner, Tracker};
@@ -182,14 +182,18 @@ pub struct StateManager {
     pub database: Arc<DbLock<ActualStateManagerDatabase>>,
     pub mempool: Arc<RwLock<PriorityMempool>>,
     pub mempool_manager: Arc<MempoolManager>,
+    pub ledger_transaction_validator: Arc<LedgerTransactionValidator>,
     pub committability_validator: Arc<RwLock<CommittabilityValidator>>,
     pub transaction_previewer: Arc<TransactionPreviewer>,
     pub preparator: Arc<Preparator>,
+    pub committer: Arc<Committer>,
+    pub transaction_executor_factory: Arc<TransactionExecutorFactory>,
     pub execution_cache_manager: Arc<ExecutionCacheManager>,
     pub state_computer: Arc<StateComputer>,
     pub pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
     pub protocol_state_manager: Arc<ProtocolStateManager>,
     pub protocol_update_executor: Arc<ProtocolUpdateExecutor>,
+    pub ledger_metrics: Arc<LedgerMetrics>,
 }
 
 impl StateManager {
@@ -312,6 +316,25 @@ impl StateManager {
             metrics_registry,
         ));
 
+        let ledger_metrics = Arc::new(LedgerMetrics::new(
+            &network_definition,
+            database.lock().deref(),
+            // We deliberately opt-out of measuring the "technical" locks used inside these metrics:
+            &lock_factory.named("ledger_metrics").not_measured(),
+            metrics_registry,
+        ));
+
+        let committer = Arc::new(Committer::new(
+            database.clone(),
+            transaction_executor_factory.clone(),
+            ledger_transaction_validator.clone(),
+            mempool_manager.clone(),
+            execution_cache_manager.clone(),
+            pending_transaction_result_cache.clone(),
+            protocol_state_manager.clone(),
+            ledger_metrics.clone(),
+        ));
+
         let protocol_update_executor = Arc::new(ProtocolUpdateExecutor::new(
             network_definition.clone(),
             protocol_config,
@@ -332,15 +355,8 @@ impl StateManager {
         let state_computer = Arc::new(StateComputer::new(
             &network_definition,
             database.clone(),
-            ledger_transaction_validator.clone(),
-            transaction_executor_factory.clone(),
             preparator.clone(),
-            mempool_manager.clone(),
-            execution_cache_manager.clone(),
-            pending_transaction_result_cache.clone(),
-            protocol_state_manager.clone(),
-            metrics_registry,
-            lock_factory.named("state_computer"),
+            committer.clone(),
         ));
 
         // Register the periodic background task for collecting the costly raw DB metrics...
@@ -375,14 +391,18 @@ impl StateManager {
             database,
             mempool,
             mempool_manager,
+            ledger_transaction_validator,
             committability_validator,
             transaction_previewer,
             preparator,
+            committer,
+            transaction_executor_factory,
             execution_cache_manager,
             state_computer,
             pending_transaction_result_cache,
             protocol_state_manager,
             protocol_update_executor,
+            ledger_metrics,
         }
     }
 

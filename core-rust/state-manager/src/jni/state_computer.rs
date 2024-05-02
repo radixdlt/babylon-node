@@ -173,7 +173,7 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_commit(
         &env,
         request_payload,
         |commit_request: CommitRequest| -> Result<CommitSummary, InvalidCommitRequestError> {
-            JNINodeRustEnvironment::get_state_computer(&env, j_node_rust_env).commit(commit_request)
+            JNINodeRustEnvironment::get_committer(&env, j_node_rust_env).commit(commit_request)
         },
     )
 }

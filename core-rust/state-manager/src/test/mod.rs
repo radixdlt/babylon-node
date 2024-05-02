@@ -99,7 +99,7 @@ pub fn prepare_and_commit_round_update(
         .collect();
 
     let commit_result = state_manager
-        .state_computer
+        .committer
         .commit(CommitRequest {
             transactions: txns_to_commit,
             proof: LedgerProof {
