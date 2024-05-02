@@ -12,29 +12,15 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct SystemParameters {
-    #[serde(rename = "network_definition")]
-    pub network_definition: Box<crate::core_api::generated::models::NetworkDefinition>,
-    #[serde(rename = "costing_parameters")]
-    pub costing_parameters: Box<crate::core_api::generated::models::SystemCostingParameters>,
-    #[serde(rename = "limit_parameters")]
-    pub limit_parameters: Box<crate::core_api::generated::models::LimitParameters>,
-    /// The string-encoded decimal representing the maximum amount of XRD configurable for a single function's royalty. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. 
-    #[serde(rename = "xrd_max_per_function_royalty")]
-    pub xrd_max_per_function_royalty: String,
-    /// Whether to adjust costs for querying fee reserve state and encoding bech32 addresses.
-    #[serde(rename = "apply_additional_costing")]
-    pub apply_additional_costing: bool,
+pub struct BootLoaderModuleFieldKernelBootValue {
+    #[serde(rename = "ref_check_costing")]
+    pub ref_check_costing: bool,
 }
 
-impl SystemParameters {
-    pub fn new(network_definition: crate::core_api::generated::models::NetworkDefinition, costing_parameters: crate::core_api::generated::models::SystemCostingParameters, limit_parameters: crate::core_api::generated::models::LimitParameters, xrd_max_per_function_royalty: String, apply_additional_costing: bool) -> SystemParameters {
-        SystemParameters {
-            network_definition: Box::new(network_definition),
-            costing_parameters: Box::new(costing_parameters),
-            limit_parameters: Box::new(limit_parameters),
-            xrd_max_per_function_royalty,
-            apply_additional_costing,
+impl BootLoaderModuleFieldKernelBootValue {
+    pub fn new(ref_check_costing: bool) -> BootLoaderModuleFieldKernelBootValue {
+        BootLoaderModuleFieldKernelBootValue {
+            ref_check_costing,
         }
     }
 }

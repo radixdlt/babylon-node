@@ -16,6 +16,8 @@ pub enum SubstateType {
     BootLoaderModuleFieldSystemBoot,
     #[serde(rename = "BootLoaderModuleFieldVmBoot")]
     BootLoaderModuleFieldVmBoot,
+    #[serde(rename = "BootLoaderModuleFieldKernelBoot")]
+    BootLoaderModuleFieldKernelBoot,
     #[serde(rename = "TypeInfoModuleFieldTypeInfo")]
     TypeInfoModuleFieldTypeInfo,
     #[serde(rename = "RoleAssignmentModuleFieldOwnerRole")]
@@ -126,6 +128,7 @@ impl ToString for SubstateType {
         match self {
             Self::BootLoaderModuleFieldSystemBoot => String::from("BootLoaderModuleFieldSystemBoot"),
             Self::BootLoaderModuleFieldVmBoot => String::from("BootLoaderModuleFieldVmBoot"),
+            Self::BootLoaderModuleFieldKernelBoot => String::from("BootLoaderModuleFieldKernelBoot"),
             Self::TypeInfoModuleFieldTypeInfo => String::from("TypeInfoModuleFieldTypeInfo"),
             Self::RoleAssignmentModuleFieldOwnerRole => String::from("RoleAssignmentModuleFieldOwnerRole"),
             Self::RoleAssignmentModuleRuleEntry => String::from("RoleAssignmentModuleRuleEntry"),

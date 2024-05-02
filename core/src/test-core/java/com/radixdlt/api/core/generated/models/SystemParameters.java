@@ -37,7 +37,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   SystemParameters.JSON_PROPERTY_NETWORK_DEFINITION,
   SystemParameters.JSON_PROPERTY_COSTING_PARAMETERS,
   SystemParameters.JSON_PROPERTY_LIMIT_PARAMETERS,
-  SystemParameters.JSON_PROPERTY_XRD_MAX_PER_FUNCTION_ROYALTY
+  SystemParameters.JSON_PROPERTY_XRD_MAX_PER_FUNCTION_ROYALTY,
+  SystemParameters.JSON_PROPERTY_APPLY_ADDITIONAL_COSTING
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class SystemParameters {
@@ -52,6 +53,9 @@ public class SystemParameters {
 
   public static final String JSON_PROPERTY_XRD_MAX_PER_FUNCTION_ROYALTY = "xrd_max_per_function_royalty";
   private String xrdMaxPerFunctionRoyalty;
+
+  public static final String JSON_PROPERTY_APPLY_ADDITIONAL_COSTING = "apply_additional_costing";
+  private Boolean applyAdditionalCosting;
 
   public SystemParameters() { 
   }
@@ -160,6 +164,32 @@ public class SystemParameters {
   }
 
 
+  public SystemParameters applyAdditionalCosting(Boolean applyAdditionalCosting) {
+    this.applyAdditionalCosting = applyAdditionalCosting;
+    return this;
+  }
+
+   /**
+   * Whether to adjust costs for querying fee reserve state and encoding bech32 addresses.
+   * @return applyAdditionalCosting
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "Whether to adjust costs for querying fee reserve state and encoding bech32 addresses.")
+  @JsonProperty(JSON_PROPERTY_APPLY_ADDITIONAL_COSTING)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Boolean getApplyAdditionalCosting() {
+    return applyAdditionalCosting;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_APPLY_ADDITIONAL_COSTING)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setApplyAdditionalCosting(Boolean applyAdditionalCosting) {
+    this.applyAdditionalCosting = applyAdditionalCosting;
+  }
+
+
   /**
    * Return true if this SystemParameters object is equal to o.
    */
@@ -175,12 +205,13 @@ public class SystemParameters {
     return Objects.equals(this.networkDefinition, systemParameters.networkDefinition) &&
         Objects.equals(this.costingParameters, systemParameters.costingParameters) &&
         Objects.equals(this.limitParameters, systemParameters.limitParameters) &&
-        Objects.equals(this.xrdMaxPerFunctionRoyalty, systemParameters.xrdMaxPerFunctionRoyalty);
+        Objects.equals(this.xrdMaxPerFunctionRoyalty, systemParameters.xrdMaxPerFunctionRoyalty) &&
+        Objects.equals(this.applyAdditionalCosting, systemParameters.applyAdditionalCosting);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(networkDefinition, costingParameters, limitParameters, xrdMaxPerFunctionRoyalty);
+    return Objects.hash(networkDefinition, costingParameters, limitParameters, xrdMaxPerFunctionRoyalty, applyAdditionalCosting);
   }
 
   @Override
@@ -191,6 +222,7 @@ public class SystemParameters {
     sb.append("    costingParameters: ").append(toIndentedString(costingParameters)).append("\n");
     sb.append("    limitParameters: ").append(toIndentedString(limitParameters)).append("\n");
     sb.append("    xrdMaxPerFunctionRoyalty: ").append(toIndentedString(xrdMaxPerFunctionRoyalty)).append("\n");
+    sb.append("    applyAdditionalCosting: ").append(toIndentedString(applyAdditionalCosting)).append("\n");
     sb.append("}");
     return sb.toString();
   }

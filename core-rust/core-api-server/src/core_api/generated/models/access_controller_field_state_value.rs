@@ -15,6 +15,8 @@
 pub struct AccessControllerFieldStateValue {
     #[serde(rename = "controlled_vault")]
     pub controlled_vault: Box<crate::core_api::generated::models::EntityReference>,
+    #[serde(rename = "xrd_fee_vault", skip_serializing_if = "Option::is_none")]
+    pub xrd_fee_vault: Option<Box<crate::core_api::generated::models::EntityReference>>,
     /// An integer between `0` and `2^32 - 1`, specifying the amount of time (in minutes) that it takes for timed recovery to be done. When not present, then timed recovery can not be performed through this access controller. 
     #[serde(rename = "timed_recovery_delay_minutes", skip_serializing_if = "Option::is_none")]
     pub timed_recovery_delay_minutes: Option<i64>,
@@ -40,6 +42,7 @@ impl AccessControllerFieldStateValue {
     pub fn new(controlled_vault: crate::core_api::generated::models::EntityReference, recovery_badge_resource_address: String, is_primary_role_locked: bool, has_primary_role_badge_withdraw_attempt: bool, has_recovery_role_badge_withdraw_attempt: bool) -> AccessControllerFieldStateValue {
         AccessControllerFieldStateValue {
             controlled_vault: Box::new(controlled_vault),
+            xrd_fee_vault: None,
             timed_recovery_delay_minutes: None,
             recovery_badge_resource_address,
             is_primary_role_locked,
