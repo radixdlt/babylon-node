@@ -252,8 +252,7 @@ public class EpochsConsensusModule extends AbstractModule {
       ScheduledEventDispatcher<Epoched<ScheduledLocalTimeout>> localTimeoutSender,
       EpochChange initialEpoch) {
     return localTimeout -> {
-      Epoched<ScheduledLocalTimeout> epochTimeout =
-          Epoched.from(initialEpoch.nextEpoch(), localTimeout);
+      var epochTimeout = Epoched.from(initialEpoch.nextEpoch(), localTimeout);
       localTimeoutSender.dispatch(epochTimeout, localTimeout.millisecondsWaitTime());
     };
   }
