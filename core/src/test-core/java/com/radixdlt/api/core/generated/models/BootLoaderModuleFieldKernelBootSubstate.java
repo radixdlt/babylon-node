@@ -32,6 +32,8 @@ import com.radixdlt.api.core.generated.models.AccountLockerAccountClaimsEntrySub
 import com.radixdlt.api.core.generated.models.AccountResourcePreferenceEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccountVaultEntrySubstate;
 import com.radixdlt.api.core.generated.models.BootLoaderModuleFieldKernelBootSubstate;
+import com.radixdlt.api.core.generated.models.BootLoaderModuleFieldKernelBootSubstateAllOf;
+import com.radixdlt.api.core.generated.models.BootLoaderModuleFieldKernelBootValue;
 import com.radixdlt.api.core.generated.models.BootLoaderModuleFieldSystemBootSubstate;
 import com.radixdlt.api.core.generated.models.BootLoaderModuleFieldVmBootSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldConfigSubstate;
@@ -54,8 +56,6 @@ import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerDataEntr
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldIdTypeSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldMutableFieldsSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldTotalSupplySubstate;
-import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldTotalSupplySubstateAllOf;
-import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldTotalSupplyValue;
 import com.radixdlt.api.core.generated.models.NonFungibleVaultContentsIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleVaultFieldBalanceSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleVaultFieldFrozenStatusSubstate;
@@ -88,10 +88,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * NonFungibleResourceManagerFieldTotalSupplySubstate
+ * BootLoaderModuleFieldKernelBootSubstate
  */
 @JsonPropertyOrder({
-  NonFungibleResourceManagerFieldTotalSupplySubstate.JSON_PROPERTY_VALUE
+  BootLoaderModuleFieldKernelBootSubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -154,14 +154,14 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = ValidatorFieldStateSubstate.class, name = "ValidatorFieldState"),
 })
 
-public class NonFungibleResourceManagerFieldTotalSupplySubstate extends Substate {
+public class BootLoaderModuleFieldKernelBootSubstate extends Substate {
   public static final String JSON_PROPERTY_VALUE = "value";
-  private NonFungibleResourceManagerFieldTotalSupplyValue value;
+  private BootLoaderModuleFieldKernelBootValue value;
 
-  public NonFungibleResourceManagerFieldTotalSupplySubstate() { 
+  public BootLoaderModuleFieldKernelBootSubstate() { 
   }
 
-  public NonFungibleResourceManagerFieldTotalSupplySubstate value(NonFungibleResourceManagerFieldTotalSupplyValue value) {
+  public BootLoaderModuleFieldKernelBootSubstate value(BootLoaderModuleFieldKernelBootValue value) {
     this.value = value;
     return this;
   }
@@ -175,20 +175,20 @@ public class NonFungibleResourceManagerFieldTotalSupplySubstate extends Substate
   @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public NonFungibleResourceManagerFieldTotalSupplyValue getValue() {
+  public BootLoaderModuleFieldKernelBootValue getValue() {
     return value;
   }
 
 
   @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValue(NonFungibleResourceManagerFieldTotalSupplyValue value) {
+  public void setValue(BootLoaderModuleFieldKernelBootValue value) {
     this.value = value;
   }
 
 
   /**
-   * Return true if this NonFungibleResourceManagerFieldTotalSupplySubstate object is equal to o.
+   * Return true if this BootLoaderModuleFieldKernelBootSubstate object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -198,8 +198,8 @@ public class NonFungibleResourceManagerFieldTotalSupplySubstate extends Substate
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    NonFungibleResourceManagerFieldTotalSupplySubstate nonFungibleResourceManagerFieldTotalSupplySubstate = (NonFungibleResourceManagerFieldTotalSupplySubstate) o;
-    return Objects.equals(this.value, nonFungibleResourceManagerFieldTotalSupplySubstate.value) &&
+    BootLoaderModuleFieldKernelBootSubstate bootLoaderModuleFieldKernelBootSubstate = (BootLoaderModuleFieldKernelBootSubstate) o;
+    return Objects.equals(this.value, bootLoaderModuleFieldKernelBootSubstate.value) &&
         super.equals(o);
   }
 
@@ -211,7 +211,7 @@ public class NonFungibleResourceManagerFieldTotalSupplySubstate extends Substate
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class NonFungibleResourceManagerFieldTotalSupplySubstate {\n");
+    sb.append("class BootLoaderModuleFieldKernelBootSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
@@ -284,8 +284,8 @@ static {
   mappings.put("TypeInfoModuleFieldTypeInfo", TypeInfoModuleFieldTypeInfoSubstate.class);
   mappings.put("ValidatorFieldProtocolUpdateReadinessSignal", ValidatorFieldProtocolUpdateReadinessSignalSubstate.class);
   mappings.put("ValidatorFieldState", ValidatorFieldStateSubstate.class);
-  mappings.put("NonFungibleResourceManagerFieldTotalSupplySubstate", NonFungibleResourceManagerFieldTotalSupplySubstate.class);
-  JSON.registerDiscriminator(NonFungibleResourceManagerFieldTotalSupplySubstate.class, "substate_type", mappings);
+  mappings.put("BootLoaderModuleFieldKernelBootSubstate", BootLoaderModuleFieldKernelBootSubstate.class);
+  JSON.registerDiscriminator(BootLoaderModuleFieldKernelBootSubstate.class, "substate_type", mappings);
 }
 }
 
