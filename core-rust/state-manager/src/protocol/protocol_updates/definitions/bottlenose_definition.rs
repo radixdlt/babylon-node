@@ -2,14 +2,14 @@ use crate::engine_prelude::*;
 use crate::protocol::protocol_updates::definitions::ScryptoEntriesBatchGenerator;
 use crate::protocol::*;
 
-const BOTTLENOSE_ENTRIES: [(&str, ProtocolUpdateEntry); 5] = [
+const BOTTLENOSE_ENTRIES: [(&str, ProtocolUpdateEntry); 7] = [
     (
         "bottlenose-owner-role-getter",
         ProtocolUpdateEntry::OwnerRoleGetter,
     ),
     (
-        "bottlenose-system-patches",
-        ProtocolUpdateEntry::SystemPatches,
+        "bottlenose-transaction-processor-blob-limits",
+        ProtocolUpdateEntry::TransactionProcessorBlobLimits,
     ),
     (
         "bottlenose-locker-package",
@@ -22,6 +22,14 @@ const BOTTLENOSE_ENTRIES: [(&str, ProtocolUpdateEntry); 5] = [
     (
         "bottlenose-protocol-params-to-state",
         ProtocolUpdateEntry::ProtocolParamsToState,
+    ),
+    (
+        "bottlenose-deferred-reference-check-costs",
+        ProtocolUpdateEntry::RefCheckCosts,
+    ),
+    (
+        "bottlenose-access-controller-fee-vault",
+        ProtocolUpdateEntry::AccessControllerFeeVault,
     ),
 ];
 

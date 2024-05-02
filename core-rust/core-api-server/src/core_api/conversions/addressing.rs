@@ -134,6 +134,12 @@ pub fn to_api_substate_id(
             SubstateType::BootLoaderModuleFieldVmBoot,
             models::PartitionKind::Field,
         ),
+        TypedSubstateKey::BootLoader(TypedBootLoaderSubstateKey::BootLoaderField(
+            BootLoaderField::KernelBoot,
+        )) => (
+            SubstateType::BootLoaderModuleFieldKernelBoot,
+            models::PartitionKind::Field,
+        ),
         TypedSubstateKey::TypeInfo(TypedTypeInfoSubstateKey::TypeInfoField(
             TypeInfoField::TypeInfo,
         )) => (
@@ -361,7 +367,7 @@ pub fn to_api_substate_id(
             models::PartitionKind::KeyValue,
         ),
         TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccessController(
-            AccessControllerTypedSubstateKey::Field(AccessControllerField::State),
+            AccessControllerV2TypedSubstateKey::Field(AccessControllerV2Field::State),
         )) => (
             SubstateType::AccessControllerFieldState,
             models::PartitionKind::Field,

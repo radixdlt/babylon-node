@@ -71,9 +71,12 @@ pub mod jni;
 pub(crate) mod engine_prelude {
     pub use radix_blueprint_schema_init::*;
     pub use radix_common::prelude::*;
+    pub use radix_engine::blueprints::access_controller::latest::*;
+    pub use radix_engine::blueprints::access_controller::*;
     pub use radix_engine::blueprints::account::*;
     pub use radix_engine::blueprints::models::*;
     pub use radix_engine::blueprints::transaction_tracker::*;
+    pub use radix_engine::kernel::kernel::*;
     pub use radix_engine::object_modules::metadata::*;
     pub use radix_engine::system::system_callback::*;
     pub use radix_engine::system::system_modules::costing::*;

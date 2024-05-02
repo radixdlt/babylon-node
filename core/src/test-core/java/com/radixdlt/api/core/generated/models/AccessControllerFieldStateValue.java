@@ -35,6 +35,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   AccessControllerFieldStateValue.JSON_PROPERTY_CONTROLLED_VAULT,
+  AccessControllerFieldStateValue.JSON_PROPERTY_XRD_FEE_VAULT,
   AccessControllerFieldStateValue.JSON_PROPERTY_TIMED_RECOVERY_DELAY_MINUTES,
   AccessControllerFieldStateValue.JSON_PROPERTY_RECOVERY_BADGE_RESOURCE_ADDRESS,
   AccessControllerFieldStateValue.JSON_PROPERTY_IS_PRIMARY_ROLE_LOCKED,
@@ -47,6 +48,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 public class AccessControllerFieldStateValue {
   public static final String JSON_PROPERTY_CONTROLLED_VAULT = "controlled_vault";
   private EntityReference controlledVault;
+
+  public static final String JSON_PROPERTY_XRD_FEE_VAULT = "xrd_fee_vault";
+  private EntityReference xrdFeeVault;
 
   public static final String JSON_PROPERTY_TIMED_RECOVERY_DELAY_MINUTES = "timed_recovery_delay_minutes";
   private Long timedRecoveryDelayMinutes;
@@ -95,6 +99,32 @@ public class AccessControllerFieldStateValue {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setControlledVault(EntityReference controlledVault) {
     this.controlledVault = controlledVault;
+  }
+
+
+  public AccessControllerFieldStateValue xrdFeeVault(EntityReference xrdFeeVault) {
+    this.xrdFeeVault = xrdFeeVault;
+    return this;
+  }
+
+   /**
+   * Get xrdFeeVault
+   * @return xrdFeeVault
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_XRD_FEE_VAULT)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public EntityReference getXrdFeeVault() {
+    return xrdFeeVault;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_XRD_FEE_VAULT)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setXrdFeeVault(EntityReference xrdFeeVault) {
+    this.xrdFeeVault = xrdFeeVault;
   }
 
 
@@ -295,6 +325,7 @@ public class AccessControllerFieldStateValue {
     }
     AccessControllerFieldStateValue accessControllerFieldStateValue = (AccessControllerFieldStateValue) o;
     return Objects.equals(this.controlledVault, accessControllerFieldStateValue.controlledVault) &&
+        Objects.equals(this.xrdFeeVault, accessControllerFieldStateValue.xrdFeeVault) &&
         Objects.equals(this.timedRecoveryDelayMinutes, accessControllerFieldStateValue.timedRecoveryDelayMinutes) &&
         Objects.equals(this.recoveryBadgeResourceAddress, accessControllerFieldStateValue.recoveryBadgeResourceAddress) &&
         Objects.equals(this.isPrimaryRoleLocked, accessControllerFieldStateValue.isPrimaryRoleLocked) &&
@@ -306,7 +337,7 @@ public class AccessControllerFieldStateValue {
 
   @Override
   public int hashCode() {
-    return Objects.hash(controlledVault, timedRecoveryDelayMinutes, recoveryBadgeResourceAddress, isPrimaryRoleLocked, primaryRoleRecoveryAttempt, hasPrimaryRoleBadgeWithdrawAttempt, recoveryRoleRecoveryAttempt, hasRecoveryRoleBadgeWithdrawAttempt);
+    return Objects.hash(controlledVault, xrdFeeVault, timedRecoveryDelayMinutes, recoveryBadgeResourceAddress, isPrimaryRoleLocked, primaryRoleRecoveryAttempt, hasPrimaryRoleBadgeWithdrawAttempt, recoveryRoleRecoveryAttempt, hasRecoveryRoleBadgeWithdrawAttempt);
   }
 
   @Override
@@ -314,6 +345,7 @@ public class AccessControllerFieldStateValue {
     StringBuilder sb = new StringBuilder();
     sb.append("class AccessControllerFieldStateValue {\n");
     sb.append("    controlledVault: ").append(toIndentedString(controlledVault)).append("\n");
+    sb.append("    xrdFeeVault: ").append(toIndentedString(xrdFeeVault)).append("\n");
     sb.append("    timedRecoveryDelayMinutes: ").append(toIndentedString(timedRecoveryDelayMinutes)).append("\n");
     sb.append("    recoveryBadgeResourceAddress: ").append(toIndentedString(recoveryBadgeResourceAddress)).append("\n");
     sb.append("    isPrimaryRoleLocked: ").append(toIndentedString(isPrimaryRoleLocked)).append("\n");

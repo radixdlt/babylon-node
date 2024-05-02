@@ -63,6 +63,12 @@ export interface SystemParameters {
      * @memberof SystemParameters
      */
     xrd_max_per_function_royalty: string;
+    /**
+     * Whether to adjust costs for querying fee reserve state and encoding bech32 addresses.
+     * @type {boolean}
+     * @memberof SystemParameters
+     */
+    apply_additional_costing: boolean;
 }
 
 /**
@@ -74,6 +80,7 @@ export function instanceOfSystemParameters(value: object): boolean {
     isInstance = isInstance && "costing_parameters" in value;
     isInstance = isInstance && "limit_parameters" in value;
     isInstance = isInstance && "xrd_max_per_function_royalty" in value;
+    isInstance = isInstance && "apply_additional_costing" in value;
 
     return isInstance;
 }
@@ -92,6 +99,7 @@ export function SystemParametersFromJSONTyped(json: any, ignoreDiscriminator: bo
         'costing_parameters': SystemCostingParametersFromJSON(json['costing_parameters']),
         'limit_parameters': LimitParametersFromJSON(json['limit_parameters']),
         'xrd_max_per_function_royalty': json['xrd_max_per_function_royalty'],
+        'apply_additional_costing': json['apply_additional_costing'],
     };
 }
 
@@ -108,6 +116,7 @@ export function SystemParametersToJSON(value?: SystemParameters | null): any {
         'costing_parameters': SystemCostingParametersToJSON(value.costing_parameters),
         'limit_parameters': LimitParametersToJSON(value.limit_parameters),
         'xrd_max_per_function_royalty': value.xrd_max_per_function_royalty,
+        'apply_additional_costing': value.apply_additional_costing,
     };
 }
 
