@@ -70,8 +70,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.radixdlt.consensus.EpochNodeWeightMapping;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.EpochRound;
-import com.radixdlt.consensus.epoch.Epoched;
-import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.environment.deterministic.network.ChannelId;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
@@ -139,7 +137,7 @@ public class MovingWindowValidatorsTest {
 
   private MessageMutator mutator() {
     return (message, queue) -> {
-      if (Epoched.isInstance(message.message(), ScheduledLocalTimeout.class)) {
+      if (MessageMutator.isEpochedScheduledLocalTimeout(message.message())) {
         // Discard
         return true;
       }

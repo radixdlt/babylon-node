@@ -72,53 +72,16 @@ import java.util.Objects;
  *
  * @param <T> event which is wrapped TODO: Move other epoch events into this kind of object
  */
-public final class Epoched<T extends CoreEvent> implements CoreEvent {
-  private final long epoch;
-  private final T event;
+public interface Epoched<T extends CoreEvent> extends CoreEvent {
+  long epoch();
 
-  private Epoched(long epoch, T event) {
-    this.epoch = epoch;
-    this.event = event;
-  }
+  T event();
 
-  public static <T extends CoreEvent> Epoched<T> from(long epoch, T event) {
+  static <T extends CoreEvent> Epoched<T> from(long epoch, T event) {
     Objects.requireNonNull(event);
-    return new Epoched<>(epoch, event);
-  }
 
-  public static boolean isInstance(Object event, Class<?> eventClass) {
-    if (event instanceof Epoched<?> epoched) {
-      return eventClass.isInstance(epoched.event);
-    }
+    record epoched<T extends CoreEvent>(long epoch, T event) implements Epoched<T> {}
 
-    return false;
-  }
-
-  public long epoch() {
-    return epoch;
-  }
-
-  public T event() {
-    return event;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(epoch, event);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof Epoched)) {
-      return false;
-    }
-
-    Epoched<?> other = (Epoched<?>) o;
-    return Objects.equals(other.event, this.event) && other.epoch == this.epoch;
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s{epoch=%s event=%s}", this.getClass().getSimpleName(), epoch, event);
+    return new epoched<>(epoch, event);
   }
 }
