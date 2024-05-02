@@ -64,10 +64,10 @@
 
 package com.radixdlt.consensus.bft;
 
-import com.radixdlt.consensus.event.CoreEvent;
+import com.radixdlt.consensus.event.LocalEvent;
 
 /** Represents a BFT round/round used by the Pacemaker of a BFT instance */
-public final class Round implements Comparable<Round>, CoreEvent {
+public final class Round implements Comparable<Round>, LocalEvent {
   private static final Round EPOCH_INITIAL_ROUND = Round.of(0L);
   private final long roundNumber;
 
