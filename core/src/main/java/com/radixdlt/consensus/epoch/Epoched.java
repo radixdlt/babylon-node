@@ -64,7 +64,7 @@
 
 package com.radixdlt.consensus.epoch;
 
-import com.radixdlt.consensus.event.CoreEvent;
+import com.radixdlt.consensus.event.LocalEvent;
 import java.util.Objects;
 
 /**
@@ -72,15 +72,15 @@ import java.util.Objects;
  *
  * @param <T> event which is wrapped TODO: Move other epoch events into this kind of object
  */
-public interface Epoched<T extends CoreEvent> extends CoreEvent {
+public interface Epoched<T extends LocalEvent> extends LocalEvent {
   long epoch();
 
   T event();
 
-  static <T extends CoreEvent> Epoched<T> from(long epoch, T event) {
+  static <T extends LocalEvent> Epoched<T> from(long epoch, T event) {
     Objects.requireNonNull(event);
 
-    record epoched<T extends CoreEvent>(long epoch, T event) implements Epoched<T> {}
+    record epoched<T extends LocalEvent>(long epoch, T event) implements Epoched<T> {}
 
     return new epoched<>(epoch, event);
   }

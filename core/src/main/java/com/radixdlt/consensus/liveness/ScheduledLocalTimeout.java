@@ -87,6 +87,6 @@ public record ScheduledLocalTimeout(
   }
 
   public Round round() {
-    return roundUpdate.getCurrentRound();
+    return roundUpdate.currentRound();
   }
 }

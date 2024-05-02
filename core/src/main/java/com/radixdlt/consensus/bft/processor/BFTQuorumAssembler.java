@@ -139,7 +139,7 @@ public final class BFTQuorumAssembler implements BFTEventProcessorAtCurrentRound
 
   @Override
   public void processRoundUpdate(RoundUpdate roundUpdate) {
-    final var previousRound = this.latestRoundUpdate.getCurrentRound();
+    final var previousRound = this.latestRoundUpdate.currentRound();
     this.latestRoundUpdate = roundUpdate;
     this.hasCurrentRoundBeenResolved = false;
     this.hasTimeoutQuorumResolutionBeenDelayedInCurrentRound = false;
@@ -159,9 +159,9 @@ public final class BFTQuorumAssembler implements BFTEventProcessorAtCurrentRound
   }
 
   private void processVoteInternal(Vote vote) {
-    final var currentRound = this.latestRoundUpdate.getCurrentRound();
+    final var currentRound = this.latestRoundUpdate.currentRound();
 
-    if (!this.self.equals(this.latestRoundUpdate.getNextLeader()) && !vote.isTimeout()) {
+    if (!this.self.equals(this.latestRoundUpdate.nextLeader()) && !vote.isTimeout()) {
       metrics.bft().ignoredVotes().label(new IgnoredVote(VoteIgnoreReason.UNEXPECTED_VOTE)).inc();
       log.trace(
           "Vote: Ignoring vote from {} for round {}, unexpected vote",

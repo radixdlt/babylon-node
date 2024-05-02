@@ -80,7 +80,7 @@ public final class EpochRoundUpdate implements LocalEvent {
   }
 
   public EpochRound getEpochRound() {
-    return new EpochRound(epoch, roundUpdate.getCurrentRound());
+    return new EpochRound(epoch, roundUpdate.currentRound());
   }
 
   public long getEpoch() {

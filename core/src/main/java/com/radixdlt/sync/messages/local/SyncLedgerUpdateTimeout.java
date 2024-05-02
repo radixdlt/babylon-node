@@ -65,47 +65,17 @@
 package com.radixdlt.sync.messages.local;
 
 import com.radixdlt.consensus.event.LocalEvent;
-import java.util.Objects;
 
 /**
  * A message indicating that sync service hasn't received an update from ledger after processing
  * previous response.
  */
-public final class SyncLedgerUpdateTimeout implements LocalEvent {
+public interface SyncLedgerUpdateTimeout extends LocalEvent {
+  long stateVersion();
 
-  public static SyncLedgerUpdateTimeout create(long stateVersion) {
-    return new SyncLedgerUpdateTimeout(stateVersion);
-  }
+  static SyncLedgerUpdateTimeout create(long stateVersion) {
+    record syncLedgerUpdateTimeout(long stateVersion) implements SyncLedgerUpdateTimeout {}
 
-  private final long stateVersion;
-
-  private SyncLedgerUpdateTimeout(long stateVersion) {
-    this.stateVersion = stateVersion;
-  }
-
-  public long stateVersion() {
-    return this.stateVersion;
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s{stateVersion=%s}", this.getClass().getSimpleName(), stateVersion);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    final var that = (SyncLedgerUpdateTimeout) o;
-    return Objects.equals(stateVersion, that.stateVersion);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(stateVersion);
+    return new syncLedgerUpdateTimeout(stateVersion);
   }
 }
