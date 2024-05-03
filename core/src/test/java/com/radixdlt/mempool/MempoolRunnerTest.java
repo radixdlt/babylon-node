@@ -73,12 +73,12 @@ import com.google.inject.Module;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.event.NonLocalEvent;
+import com.radixdlt.consensus.event.RemoteEvent;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.environment.StartProcessorOnRunner;
-import com.radixdlt.environment.rx.RemoteEvent;
+import com.radixdlt.environment.rx.IncomingEvent;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
 import com.radixdlt.ledger.LedgerProofBundle;
@@ -127,7 +127,7 @@ public final class MempoolRunnerTest {
             .toInstance(
                 new RxRemoteEnvironment() {
                   @Override
-                  public <T extends NonLocalEvent> Flowable<RemoteEvent<NodeId, T>> remoteEvents(
+                  public <T extends RemoteEvent> Flowable<IncomingEvent<NodeId, T>> remoteEvents(
                       Class<T> messageType) {
                     return Flowable.never();
                   }

@@ -68,7 +68,7 @@ import com.google.inject.Inject;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.rx.RemoteEvent;
+import com.radixdlt.environment.rx.IncomingEvent;
 import com.radixdlt.messaging.core.Message;
 import com.radixdlt.messaging.core.MessageCentral;
 import com.radixdlt.messaging.core.MessageFromPeer;
@@ -87,25 +87,25 @@ public final class MessageCentralBFTNetwork {
   }
 
   // TODO: cleanup unnecessary code duplication and "fat" lambdas
-  public Flowable<RemoteEvent<NodeId, Vote>> remoteVotes() {
+  public Flowable<IncomingEvent<NodeId, Vote>> remoteVotes() {
     return remoteBftEvents()
         .filter(m -> m.message().getConsensusMessage() instanceof Vote)
         .map(
             m -> {
               final var msg = m.message();
               var vote = (Vote) msg.getConsensusMessage();
-              return RemoteEvent.create(m.source(), vote);
+              return IncomingEvent.create(m.source(), vote);
             });
   }
 
-  public Flowable<RemoteEvent<NodeId, Proposal>> remoteProposals() {
+  public Flowable<IncomingEvent<NodeId, Proposal>> remoteProposals() {
     return remoteBftEvents()
         .filter(m -> m.message().getConsensusMessage() instanceof Proposal)
         .map(
             m -> {
               final var msg = m.message();
               var proposal = (Proposal) msg.getConsensusMessage();
-              return RemoteEvent.create(m.source(), proposal);
+              return IncomingEvent.create(m.source(), proposal);
             });
   }
 

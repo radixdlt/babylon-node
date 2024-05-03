@@ -65,7 +65,8 @@
 package com.radixdlt.environment;
 
 import com.google.inject.TypeLiteral;
-import com.radixdlt.consensus.event.CoreEvent;
+import com.radixdlt.consensus.event.LocalEvent;
+import com.radixdlt.consensus.event.RemoteEvent;
 import com.radixdlt.p2p.NodeId;
 
 /**
@@ -73,12 +74,13 @@ import com.radixdlt.p2p.NodeId;
  * for getting dispatched events to their processors.
  */
 public interface Environment {
-  <T extends CoreEvent> EventDispatcher<T> getDispatcher(Class<T> eventClass);
+  <T extends LocalEvent> EventDispatcher<T> getDispatcher(Class<T> eventClass);
 
-  <T extends CoreEvent> ScheduledEventDispatcher<T> getScheduledDispatcher(Class<T> eventClass);
+  <T extends LocalEvent> ScheduledEventDispatcher<T> getScheduledDispatcher(Class<T> eventClass);
 
-  <T extends CoreEvent> ScheduledEventDispatcher<T> getScheduledDispatcher(
+  <T extends LocalEvent> ScheduledEventDispatcher<T> getScheduledDispatcher(
       TypeLiteral<T> typeLiteral);
 
-  <T extends CoreEvent> RemoteEventDispatcher<NodeId, T> getRemoteDispatcher(Class<T> messageType);
+  <T extends RemoteEvent> RemoteEventDispatcher<NodeId, T> getRemoteDispatcher(
+      Class<T> messageType);
 }

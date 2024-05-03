@@ -68,6 +68,7 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.event.LocalEvent;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import java.util.ArrayList;
@@ -104,7 +105,7 @@ public final class MultiNodeDeterministicRunner {
     return nodes.get(index);
   }
 
-  public <T> void dispatchToAll(Key<EventDispatcher<T>> dispatcherKey, T t) {
+  public <T extends LocalEvent> void dispatchToAll(Key<EventDispatcher<T>> dispatcherKey, T t) {
     this.nodes.forEach(n -> n.getInstance(dispatcherKey).dispatch(t));
   }
 

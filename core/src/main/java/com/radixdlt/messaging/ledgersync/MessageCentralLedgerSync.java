@@ -65,7 +65,7 @@
 package com.radixdlt.messaging.ledgersync;
 
 import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.rx.RemoteEvent;
+import com.radixdlt.environment.rx.IncomingEvent;
 import com.radixdlt.messaging.core.MessageCentral;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
@@ -87,55 +87,56 @@ public final class MessageCentralLedgerSync {
     this.messageCentral = Objects.requireNonNull(messageCentral);
   }
 
-  public Flowable<RemoteEvent<NodeId, StatusRequest>> statusRequests() {
+  public Flowable<IncomingEvent<NodeId, StatusRequest>> statusRequests() {
     return this.messageCentral
         .messagesOf(StatusRequestMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
-        .map(m -> RemoteEvent.create(m.source(), StatusRequest.create()));
+        .map(m -> IncomingEvent.create(m.source(), StatusRequest.create()));
   }
 
-  public Flowable<RemoteEvent<NodeId, StatusResponse>> statusResponses() {
+  public Flowable<IncomingEvent<NodeId, StatusResponse>> statusResponses() {
     return this.messageCentral
         .messagesOf(StatusResponseMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
         .map(
             m -> {
               final var msg = m.message();
-              return RemoteEvent.create(m.source(), StatusResponse.create(msg.getProof()));
+              return IncomingEvent.create(m.source(), StatusResponse.create(msg.getProof()));
             });
   }
 
-  public Flowable<RemoteEvent<NodeId, SyncRequest>> syncRequests() {
+  public Flowable<IncomingEvent<NodeId, SyncRequest>> syncRequests() {
     return this.messageCentral
         .messagesOf(SyncRequestMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
         .map(
             m -> {
               final var msg = m.message();
-              return RemoteEvent.create(
+              return IncomingEvent.create(
                   m.source(), SyncRequest.create(msg.getStartProofExclusive()));
             });
   }
 
-  public Flowable<RemoteEvent<NodeId, SyncResponse>> syncResponses() {
+  public Flowable<IncomingEvent<NodeId, SyncResponse>> syncResponses() {
     return this.messageCentral
         .messagesOf(SyncResponseMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
         .map(
             m -> {
               final var msg = m.message();
-              return RemoteEvent.create(m.source(), SyncResponse.create(msg.getLedgerExtension()));
+              return IncomingEvent.create(
+                  m.source(), SyncResponse.create(msg.getLedgerExtension()));
             });
   }
 
-  public Flowable<RemoteEvent<NodeId, LedgerStatusUpdate>> ledgerStatusUpdates() {
+  public Flowable<IncomingEvent<NodeId, LedgerStatusUpdate>> ledgerStatusUpdates() {
     return this.messageCentral
         .messagesOf(LedgerStatusUpdateMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
         .map(
             m -> {
               final var header = m.message().getProof();
-              return RemoteEvent.create(m.source(), LedgerStatusUpdate.create(header));
+              return IncomingEvent.create(m.source(), LedgerStatusUpdate.create(header));
             });
   }
 

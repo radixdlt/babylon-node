@@ -65,25 +65,26 @@
 package com.radixdlt.environment;
 
 import com.google.inject.TypeLiteral;
-import com.radixdlt.consensus.event.CoreEvent;
+import com.radixdlt.consensus.event.LocalEvent;
+import com.radixdlt.consensus.event.RemoteEvent;
 import com.radixdlt.p2p.NodeId;
 
 public final class NoOpEnvironment implements Environment {
-  public <T extends CoreEvent> EventDispatcher<T> getDispatcher(Class<T> eventClass) {
+  public <T extends LocalEvent> EventDispatcher<T> getDispatcher(Class<T> eventClass) {
     return ev -> {};
   }
 
-  public <T extends CoreEvent> ScheduledEventDispatcher<T> getScheduledDispatcher(
+  public <T extends LocalEvent> ScheduledEventDispatcher<T> getScheduledDispatcher(
       Class<T> eventClass) {
     return (ev, delay) -> {};
   }
 
-  public <T extends CoreEvent> ScheduledEventDispatcher<T> getScheduledDispatcher(
+  public <T extends LocalEvent> ScheduledEventDispatcher<T> getScheduledDispatcher(
       TypeLiteral<T> typeLiteral) {
     return (ev, delay) -> {};
   }
 
-  public <T extends CoreEvent> RemoteEventDispatcher<NodeId, T> getRemoteDispatcher(
+  public <T extends RemoteEvent> RemoteEventDispatcher<NodeId, T> getRemoteDispatcher(
       Class<T> messageType) {
     return (ev, delay) -> {};
   }

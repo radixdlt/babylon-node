@@ -64,14 +64,14 @@
 
 package com.radixdlt.environment;
 
-import com.radixdlt.consensus.event.CoreEvent;
+import com.radixdlt.consensus.event.RemoteEvent;
 
 /**
  * Attempts to dispatch an event to a remote node.
  *
  * @param <T> the event class
  */
-public interface RemoteEventDispatcher<N, T extends CoreEvent> {
+public interface RemoteEventDispatcher<N, T extends RemoteEvent> {
   void dispatch(N receiver, T t);
 
   default void dispatch(Iterable<N> receivers, T t) {

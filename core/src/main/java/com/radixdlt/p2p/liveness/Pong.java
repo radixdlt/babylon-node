@@ -64,9 +64,10 @@
 
 package com.radixdlt.p2p.liveness;
 
-import com.radixdlt.consensus.event.NonLocalEvent;
+import com.radixdlt.consensus.event.LocalEvent;
+import com.radixdlt.consensus.event.RemoteEvent;
 
-public final class Pong implements NonLocalEvent {
+public final class Pong implements RemoteEvent, LocalEvent {
 
   public static Pong create() {
     return new Pong();

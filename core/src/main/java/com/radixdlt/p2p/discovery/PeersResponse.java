@@ -65,11 +65,12 @@
 package com.radixdlt.p2p.discovery;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.consensus.event.NonLocalEvent;
+import com.radixdlt.consensus.event.LocalEvent;
+import com.radixdlt.consensus.event.RemoteEvent;
 import com.radixdlt.p2p.RadixNodeUri;
 import java.util.Objects;
 
-public final class PeersResponse implements NonLocalEvent {
+public final class PeersResponse implements RemoteEvent, LocalEvent {
 
   private final ImmutableSet<RadixNodeUri> peers;
 

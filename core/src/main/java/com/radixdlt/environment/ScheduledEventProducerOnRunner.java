@@ -64,13 +64,13 @@
 
 package com.radixdlt.environment;
 
-import com.radixdlt.consensus.event.CoreEvent;
+import com.radixdlt.consensus.event.LocalEvent;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.function.Supplier;
 
 /** An event producer registered to run on a runner. */
-public record ScheduledEventProducerOnRunner<T extends CoreEvent>(
+public record ScheduledEventProducerOnRunner<T extends LocalEvent>(
     String runnerName,
     EventDispatcher<T> eventDispatcher,
     Supplier<T> eventSupplier,

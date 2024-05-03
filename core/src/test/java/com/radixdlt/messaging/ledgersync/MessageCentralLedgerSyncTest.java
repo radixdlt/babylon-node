@@ -68,7 +68,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.rx.RemoteEvent;
+import com.radixdlt.environment.rx.IncomingEvent;
 import com.radixdlt.messaging.core.MessageCentral;
 import com.radixdlt.messaging.core.MessageCentralMockProvider;
 import com.radixdlt.p2p.NodeId;
@@ -95,7 +95,7 @@ public class MessageCentralLedgerSyncTest {
 
   @Test
   public void when_receive_sync_request__then_should_receive_it() {
-    TestSubscriber<RemoteEvent<NodeId, SyncRequest>> testObserver =
+    TestSubscriber<IncomingEvent<NodeId, SyncRequest>> testObserver =
         this.messageCentralLedgerSync.syncRequests().test();
     final var peer = createPeer();
     SyncRequestMessage syncRequestMessage = mock(SyncRequestMessage.class);
@@ -111,7 +111,7 @@ public class MessageCentralLedgerSyncTest {
 
   @Test
   public void when_receive_sync_response__then_should_receive_it() {
-    TestSubscriber<RemoteEvent<NodeId, SyncResponse>> testObserver =
+    TestSubscriber<IncomingEvent<NodeId, SyncResponse>> testObserver =
         this.messageCentralLedgerSync.syncResponses().test();
     final var peer = createPeer();
     SyncResponseMessage syncResponseMessage = mock(SyncResponseMessage.class);
@@ -124,7 +124,7 @@ public class MessageCentralLedgerSyncTest {
 
   @Test
   public void when_receive_status_request__then_should_receive_it() {
-    TestSubscriber<RemoteEvent<NodeId, StatusRequest>> testObserver =
+    TestSubscriber<IncomingEvent<NodeId, StatusRequest>> testObserver =
         this.messageCentralLedgerSync.statusRequests().test();
     final var peer = createPeer();
     StatusRequestMessage statusRequestMessage = mock(StatusRequestMessage.class);
@@ -135,7 +135,7 @@ public class MessageCentralLedgerSyncTest {
 
   @Test
   public void when_receive_status_response__then_should_receive_it() {
-    TestSubscriber<RemoteEvent<NodeId, StatusResponse>> testObserver =
+    TestSubscriber<IncomingEvent<NodeId, StatusResponse>> testObserver =
         this.messageCentralLedgerSync.statusResponses().test();
     final var peer = createPeer();
     final var header = mock(LedgerProofSyncStatusDto.class);

@@ -64,9 +64,10 @@
 
 package com.radixdlt.p2p.discovery;
 
-import com.radixdlt.consensus.event.NonLocalEvent;
+import com.radixdlt.consensus.event.LocalEvent;
+import com.radixdlt.consensus.event.RemoteEvent;
 
-public final class GetPeers implements NonLocalEvent {
+public final class GetPeers implements RemoteEvent, LocalEvent {
 
   public static GetPeers create() {
     return new GetPeers();

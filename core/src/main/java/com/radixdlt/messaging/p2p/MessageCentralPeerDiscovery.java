@@ -65,7 +65,7 @@
 package com.radixdlt.messaging.p2p;
 
 import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.rx.RemoteEvent;
+import com.radixdlt.environment.rx.IncomingEvent;
 import com.radixdlt.messaging.core.MessageCentral;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.discovery.GetPeers;
@@ -86,18 +86,18 @@ public final class MessageCentralPeerDiscovery {
     this.messageCentral = Objects.requireNonNull(messageCentral);
   }
 
-  public Flowable<RemoteEvent<NodeId, GetPeers>> getPeersEvents() {
+  public Flowable<IncomingEvent<NodeId, GetPeers>> getPeersEvents() {
     return this.messageCentral
         .messagesOf(GetPeersMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
-        .map(m -> RemoteEvent.create(m.source(), GetPeers.create()));
+        .map(m -> IncomingEvent.create(m.source(), GetPeers.create()));
   }
 
-  public Flowable<RemoteEvent<NodeId, PeersResponse>> peersResponses() {
+  public Flowable<IncomingEvent<NodeId, PeersResponse>> peersResponses() {
     return this.messageCentral
         .messagesOf(PeersResponseMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
-        .map(m -> RemoteEvent.create(m.source(), PeersResponse.create(m.message().getPeers())));
+        .map(m -> IncomingEvent.create(m.source(), PeersResponse.create(m.message().getPeers())));
   }
 
   public RemoteEventDispatcher<NodeId, GetPeers> getPeersDispatcher() {

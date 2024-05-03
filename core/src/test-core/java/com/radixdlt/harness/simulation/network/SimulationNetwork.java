@@ -65,9 +65,9 @@
 package com.radixdlt.harness.simulation.network;
 
 import com.google.inject.Inject;
-import com.radixdlt.consensus.event.NonLocalEvent;
+import com.radixdlt.consensus.event.RemoteEvent;
 import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.rx.RemoteEvent;
+import com.radixdlt.environment.rx.IncomingEvent;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
 import com.radixdlt.p2p.NodeId;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
@@ -96,7 +96,7 @@ public class SimulationNetwork {
 
     private MessageInTransit(
         Object content, NodeId sender, NodeId receiver, long delay, long delayAfterPrevious) {
-      if (content instanceof RemoteEvent) {
+      if (content instanceof IncomingEvent) {
         throw new IllegalArgumentException("Message in transit should not be RemoteEvent");
       }
 
@@ -119,10 +119,10 @@ public class SimulationNetwork {
       return Maybe.empty();
     }
 
-    public <N, T extends NonLocalEvent> Maybe<RemoteEvent<NodeId, T>> remoteEvent(
+    public <N, T extends RemoteEvent> Maybe<IncomingEvent<NodeId, T>> remoteEvent(
         Class<T> eventClass) {
       if (!sender.equals(receiver) && eventClass.isInstance(content)) {
-        return Maybe.just(RemoteEvent.create(sender, eventClass.cast(content)));
+        return Maybe.just(IncomingEvent.create(sender, eventClass.cast(content)));
       }
 
       return Maybe.empty();
@@ -212,17 +212,17 @@ public class SimulationNetwork {
     }
 
     @Override
-    public <T extends NonLocalEvent> Flowable<RemoteEvent<NodeId, T>> remoteEvents(
+    public <T extends RemoteEvent> Flowable<IncomingEvent<NodeId, T>> remoteEvents(
         Class<T> messageType) {
       return myMessages.flatMapMaybe(m -> m.remoteEvent(messageType));
     }
 
-    public <T extends NonLocalEvent> RemoteEventDispatcher<NodeId, T> remoteEventDispatcher(
+    public <T extends RemoteEvent> RemoteEventDispatcher<NodeId, T> remoteEventDispatcher(
         Class<T> eventClass) {
       return this::sendRemoteEvent;
     }
 
-    private <T extends NonLocalEvent> void sendRemoteEvent(NodeId node, T event) {
+    private <T extends RemoteEvent> void sendRemoteEvent(NodeId node, T event) {
       receivedMessages.onNext(MessageInTransit.newMessage(event, thisNode, node));
     }
   }
