@@ -67,49 +67,26 @@ package com.radixdlt.consensus.liveness;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.event.LocalEvent;
-import java.util.Objects;
 
 /** An actual occurrence (as opposed to a potential) of a local timeout */
-public final class LocalTimeoutOccurrence implements LocalEvent {
-  private final ScheduledLocalTimeout scheduledLocalTimeout;
+public interface LocalTimeoutOccurrence extends LocalEvent {
+  ScheduledLocalTimeout timeout();
 
-  public LocalTimeoutOccurrence(ScheduledLocalTimeout scheduledLocalTimeout) {
-    this.scheduledLocalTimeout = Objects.requireNonNull(scheduledLocalTimeout);
+  static LocalTimeoutOccurrence create(ScheduledLocalTimeout scheduledTimeout) {
+    record localTimeoutOccurrence(ScheduledLocalTimeout timeout)
+        implements LocalTimeoutOccurrence {}
+    return new localTimeoutOccurrence(scheduledTimeout);
   }
 
-  public ScheduledLocalTimeout timeout() {
-    return scheduledLocalTimeout;
+  default Round round() {
+    return timeout().round();
   }
 
-  public Round getRound() {
-    return scheduledLocalTimeout.round();
+  default BFTValidatorId leader() {
+    return timeout().roundUpdate().leader();
   }
 
-  public BFTValidatorId getLeader() {
-    return scheduledLocalTimeout.roundUpdate().leader();
-  }
-
-  public BFTValidatorId getNextLeader() {
-    return scheduledLocalTimeout.roundUpdate().nextLeader();
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(scheduledLocalTimeout);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof LocalTimeoutOccurrence)) {
-      return false;
-    }
-
-    LocalTimeoutOccurrence other = (LocalTimeoutOccurrence) o;
-    return Objects.equals(scheduledLocalTimeout, other.scheduledLocalTimeout);
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s{timeout=%s}", this.getClass().getSimpleName(), scheduledLocalTimeout);
+  default BFTValidatorId nextLeader() {
+    return timeout().roundUpdate().nextLeader();
   }
 }

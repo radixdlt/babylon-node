@@ -79,7 +79,7 @@ public final class EpochLocalTimeoutOccurrence implements LocalEvent {
   }
 
   public EpochRound getEpochRound() {
-    return new EpochRound(epoch, localTimeoutOccurrence.getRound());
+    return new EpochRound(epoch, localTimeoutOccurrence.round());
   }
 
   public LocalTimeoutOccurrence getBase() {
@@ -87,11 +87,11 @@ public final class EpochLocalTimeoutOccurrence implements LocalEvent {
   }
 
   public BFTValidatorId getLeader() {
-    return localTimeoutOccurrence.getLeader();
+    return localTimeoutOccurrence.leader();
   }
 
   public BFTValidatorId getNextLeader() {
-    return localTimeoutOccurrence.getNextLeader();
+    return localTimeoutOccurrence.nextLeader();
   }
 
   @Override

@@ -102,7 +102,7 @@ public final class DeterministicMonitors {
       private MessageMonitor byzantineDetection() {
         return (m, t) -> {
           if (m.message() instanceof LocalTimeoutOccurrence event) {
-            throw new TimeoutOccurred(event.getLeader().toString(), event.getRound().toString());
+            throw new TimeoutOccurred(event.leader().toString(), event.round().toString());
           }
 
           if (m.message() instanceof EpochLocalTimeoutOccurrence event) {
