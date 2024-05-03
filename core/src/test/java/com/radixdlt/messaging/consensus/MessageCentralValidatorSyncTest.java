@@ -85,7 +85,7 @@ import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.environment.rx.RemoteEvent;
+import com.radixdlt.environment.rx.IncomingEvent;
 import com.radixdlt.messaging.core.MessageCentral;
 import com.radixdlt.messaging.core.MessageCentralMockProvider;
 import com.radixdlt.p2p.NodeId;
@@ -142,7 +142,7 @@ public class MessageCentralValidatorSyncTest {
 
     final var peer = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
     TestSubscriber<GetVerticesRequest> testObserver =
-        sync.requests().map(RemoteEvent::event).test();
+        sync.requests().map(IncomingEvent::event).test();
     messageCentral.send(peer, new GetVerticesRequestMessage(vertexId0, 1));
     messageCentral.send(peer, new GetVerticesRequestMessage(vertexId1, 1));
 

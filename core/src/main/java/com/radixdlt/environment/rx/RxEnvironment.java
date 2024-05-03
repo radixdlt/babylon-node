@@ -66,6 +66,8 @@ package com.radixdlt.environment.rx;
 
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.event.CoreEvent;
+import com.radixdlt.consensus.event.LocalEvent;
+import com.radixdlt.consensus.event.RemoteEvent;
 import com.radixdlt.environment.*;
 import com.radixdlt.p2p.NodeId;
 import io.reactivex.rxjava3.core.Observable;
@@ -119,12 +121,12 @@ public final class RxEnvironment implements Environment {
   }
 
   @Override
-  public <T extends CoreEvent> EventDispatcher<T> getDispatcher(Class<T> eventClass) {
+  public <T extends LocalEvent> EventDispatcher<T> getDispatcher(Class<T> eventClass) {
     return getSubject(eventClass).<EventDispatcher<T>>map(s -> s::onNext).orElse(e -> {});
   }
 
   @Override
-  public <T extends CoreEvent> ScheduledEventDispatcher<T> getScheduledDispatcher(
+  public <T extends LocalEvent> ScheduledEventDispatcher<T> getScheduledDispatcher(
       Class<T> eventClass) {
     return (e, millis) ->
         getSubject(eventClass)
@@ -133,7 +135,7 @@ public final class RxEnvironment implements Environment {
   }
 
   @Override
-  public <T extends CoreEvent> ScheduledEventDispatcher<T> getScheduledDispatcher(
+  public <T extends LocalEvent> ScheduledEventDispatcher<T> getScheduledDispatcher(
       TypeLiteral<T> typeLiteral) {
     return (e, millis) ->
         getSubject(typeLiteral)
@@ -141,17 +143,15 @@ public final class RxEnvironment implements Environment {
                 s -> executorService.schedule(() -> s.onNext(e), millis, TimeUnit.MILLISECONDS));
   }
 
+  @SuppressWarnings("unchecked")
   @Override
-  public <T extends CoreEvent> RemoteEventDispatcher<NodeId, T> getRemoteDispatcher(
+  public <T extends RemoteEvent> RemoteEventDispatcher<NodeId, T> getRemoteDispatcher(
       Class<T> messageType) {
     if (!remoteDispatchers.containsKey(messageType)) {
       throw new IllegalStateException("No dispatcher for " + messageType);
     }
 
-    @SuppressWarnings("unchecked")
-    final RemoteEventDispatcher<NodeId, T> dispatcher =
-        (RemoteEventDispatcher<NodeId, T>) remoteDispatchers.get(messageType).dispatcher();
-    return dispatcher;
+    return (RemoteEventDispatcher<NodeId, T>) remoteDispatchers.get(messageType).dispatcher();
   }
 
   public <T extends CoreEvent> Observable<T> getObservable(Class<T> eventClass) {

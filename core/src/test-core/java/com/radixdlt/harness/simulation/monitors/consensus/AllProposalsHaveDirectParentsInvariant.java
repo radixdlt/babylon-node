@@ -67,7 +67,7 @@ package com.radixdlt.harness.simulation.monitors.consensus;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.environment.rx.RemoteEvent;
+import com.radixdlt.environment.rx.IncomingEvent;
 import com.radixdlt.harness.simulation.TestInvariant;
 import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
 import io.reactivex.rxjava3.core.Observable;
@@ -83,7 +83,7 @@ public class AllProposalsHaveDirectParentsInvariant implements TestInvariant {
     var correctProposals =
         network.getNodes().stream()
             .map(network.getUnderlyingNetwork()::getNetwork)
-            .map(net -> net.remoteEvents(ConsensusEvent.class).map(RemoteEvent::event))
+            .map(net -> net.remoteEvents(ConsensusEvent.class).map(IncomingEvent::event))
             .map(p -> p.ofType(Proposal.class).toObservable().map(Proposal::getVertex))
             .toList();
 

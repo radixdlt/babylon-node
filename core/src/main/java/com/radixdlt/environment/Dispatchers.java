@@ -69,6 +69,8 @@ import com.google.inject.Provider;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.event.CoreEvent;
+import com.radixdlt.consensus.event.LocalEvent;
+import com.radixdlt.consensus.event.RemoteEvent;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
 import java.util.Set;
@@ -81,7 +83,7 @@ public final class Dispatchers {
     throw new IllegalStateException("Cannot instantiate.");
   }
 
-  private static class DispatcherProvider<T extends CoreEvent>
+  private static class DispatcherProvider<T extends LocalEvent>
       implements Provider<EventDispatcher<T>> {
     @Inject private Provider<Environment> environmentProvider;
 
@@ -112,7 +114,7 @@ public final class Dispatchers {
     }
   }
 
-  private static final class ScheduledDispatcherProvider<T extends CoreEvent>
+  private static final class ScheduledDispatcherProvider<T extends LocalEvent>
       implements Provider<ScheduledEventDispatcher<T>> {
     // TODO: get rid of field injection https://radixdlt.atlassian.net/browse/NT-3
     @Inject private Provider<Environment> environmentProvider;
@@ -140,7 +142,7 @@ public final class Dispatchers {
     }
   }
 
-  private static final class RemoteDispatcherProvider<T extends CoreEvent>
+  private static final class RemoteDispatcherProvider<T extends RemoteEvent & LocalEvent>
       implements Provider<RemoteEventDispatcher<NodeId, T>> {
     @Inject private Provider<Environment> environmentProvider;
 
@@ -175,26 +177,26 @@ public final class Dispatchers {
     }
   }
 
-  public static <T extends CoreEvent> Provider<EventDispatcher<T>> dispatcherProvider(Class<T> c) {
+  public static <T extends LocalEvent> Provider<EventDispatcher<T>> dispatcherProvider(Class<T> c) {
     return new DispatcherProvider<>(c, (counter, event) -> {});
   }
 
-  public static <T extends CoreEvent> Provider<EventDispatcher<T>> dispatcherProvider(
+  public static <T extends LocalEvent> Provider<EventDispatcher<T>> dispatcherProvider(
       Class<T> c, MetricUpdater<T> metricUpdater) {
     return new DispatcherProvider<>(c, metricUpdater);
   }
 
-  public static <T extends CoreEvent>
+  public static <T extends LocalEvent>
       Provider<ScheduledEventDispatcher<T>> scheduledDispatcherProvider(Class<T> c) {
     return new ScheduledDispatcherProvider<>(c);
   }
 
-  public static <T extends CoreEvent>
+  public static <T extends LocalEvent>
       Provider<ScheduledEventDispatcher<T>> scheduledDispatcherProvider(TypeLiteral<T> t) {
     return new ScheduledDispatcherProvider<>(t);
   }
 
-  public static <T extends CoreEvent>
+  public static <T extends RemoteEvent & LocalEvent>
       Provider<RemoteEventDispatcher<NodeId, T>> remoteDispatcherProvider(Class<T> messageType) {
     return new RemoteDispatcherProvider<>(messageType);
   }

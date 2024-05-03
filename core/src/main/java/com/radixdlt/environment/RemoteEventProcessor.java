@@ -64,18 +64,18 @@
 
 package com.radixdlt.environment;
 
-import com.radixdlt.consensus.event.NonLocalEvent;
-import com.radixdlt.environment.rx.RemoteEvent;
+import com.radixdlt.consensus.event.RemoteEvent;
+import com.radixdlt.environment.rx.IncomingEvent;
 
 /**
  * Processes events from a remote node
  *
  * @param <T> the event class
  */
-public interface RemoteEventProcessor<N, T extends NonLocalEvent> {
+public interface RemoteEventProcessor<N, T extends RemoteEvent> {
   void process(N sender, T t);
 
-  default void process(RemoteEvent<N, T> event) {
+  default void process(IncomingEvent<N, T> event) {
     process(event.origin(), event.event());
   }
 }

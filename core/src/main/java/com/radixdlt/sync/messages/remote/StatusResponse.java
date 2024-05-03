@@ -64,12 +64,13 @@
 
 package com.radixdlt.sync.messages.remote;
 
-import com.radixdlt.consensus.event.NonLocalEvent;
+import com.radixdlt.consensus.event.LocalEvent;
+import com.radixdlt.consensus.event.RemoteEvent;
 import com.radixdlt.sync.LedgerProofSyncStatusDto;
 import java.util.Objects;
 
 /** Node status response message. */
-public final class StatusResponse implements NonLocalEvent {
+public final class StatusResponse implements RemoteEvent, LocalEvent {
 
   private final LedgerProofSyncStatusDto proof;
 

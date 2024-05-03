@@ -65,7 +65,7 @@
 package com.radixdlt.messaging.mempool;
 
 import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.rx.RemoteEvent;
+import com.radixdlt.environment.rx.IncomingEvent;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.messaging.core.Message;
 import com.radixdlt.messaging.core.MessageCentral;
@@ -95,10 +95,10 @@ public final class MessageCentralMempool {
     this.messageCentral.send(recipient, message);
   }
 
-  public Flowable<RemoteEvent<NodeId, MempoolAdd>> mempoolComands() {
+  public Flowable<IncomingEvent<NodeId, MempoolAdd>> mempoolComands() {
     return messageCentral
         .messagesOf(MempoolAddMessage.class)
-        .map(msg -> RemoteEvent.create(msg.source(), MempoolAdd.create(msg.message().getTxns())))
+        .map(msg -> IncomingEvent.create(msg.source(), MempoolAdd.create(msg.message().getTxns())))
         .toFlowable(BackpressureStrategy.BUFFER);
   }
 }

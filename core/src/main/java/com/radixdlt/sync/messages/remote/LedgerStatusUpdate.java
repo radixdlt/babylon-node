@@ -64,7 +64,8 @@
 
 package com.radixdlt.sync.messages.remote;
 
-import com.radixdlt.consensus.event.NonLocalEvent;
+import com.radixdlt.consensus.event.LocalEvent;
+import com.radixdlt.consensus.event.RemoteEvent;
 import com.radixdlt.sync.LedgerProofSyncStatusDto;
 import java.util.Objects;
 
@@ -72,7 +73,7 @@ import java.util.Objects;
  * A message pushed to a subset of connected non-validator nodes indicating that the ledger state
  * has been updated.
  */
-public final class LedgerStatusUpdate implements NonLocalEvent {
+public final class LedgerStatusUpdate implements RemoteEvent, LocalEvent {
 
   private final LedgerProofSyncStatusDto proof;
 

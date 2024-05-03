@@ -65,12 +65,13 @@
 package com.radixdlt.consensus.sync;
 
 import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.event.NonLocalEvent;
+import com.radixdlt.consensus.event.LocalEvent;
+import com.radixdlt.consensus.event.RemoteEvent;
 import java.util.Objects;
 
 /** An error response to the GetVertices call */
 public record GetVerticesErrorResponse(HighQC highQC, GetVerticesRequest request)
-    implements NonLocalEvent {
+    implements RemoteEvent, LocalEvent {
   public GetVerticesErrorResponse(HighQC highQC, GetVerticesRequest request) {
     this.highQC = Objects.requireNonNull(highQC);
     this.request = Objects.requireNonNull(request);

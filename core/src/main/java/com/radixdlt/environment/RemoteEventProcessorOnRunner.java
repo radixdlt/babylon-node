@@ -64,7 +64,7 @@
 
 package com.radixdlt.environment;
 
-import com.radixdlt.consensus.event.NonLocalEvent;
+import com.radixdlt.consensus.event.RemoteEvent;
 import com.radixdlt.p2p.NodeId;
 import java.util.Objects;
 import java.util.Optional;
@@ -74,7 +74,7 @@ import java.util.Optional;
  *
  * @param <T> the class of the remote event
  */
-public final class RemoteEventProcessorOnRunner<N, T extends NonLocalEvent> {
+public final class RemoteEventProcessorOnRunner<N, T extends RemoteEvent> {
   private final String runnerName;
   private final Class<T> eventClass;
   private final Class<N> nodeIdClass;
@@ -113,7 +113,7 @@ public final class RemoteEventProcessorOnRunner<N, T extends NonLocalEvent> {
     return runnerName;
   }
 
-  public <U extends NonLocalEvent> Optional<RemoteEventProcessor<NodeId, U>> getProcessor(
+  public <U extends RemoteEvent> Optional<RemoteEventProcessor<NodeId, U>> getProcessor(
       Class<U> messageType) {
     if (messageType.isAssignableFrom(eventClass)) {
       return Optional.of((RemoteEventProcessor<NodeId, U>) processor);

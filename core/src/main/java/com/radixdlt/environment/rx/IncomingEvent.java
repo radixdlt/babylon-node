@@ -62,7 +62,42 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.event;
+package com.radixdlt.environment.rx;
 
-// TODO: SIY: rename to RemoteEvent
-public interface NonLocalEvent extends CoreEvent {}
+import com.radixdlt.consensus.event.RemoteEvent;
+import java.util.Objects;
+
+/**
+ * A helper class which contains remote event and the origin node.
+ *
+ * @param <T> the event class
+ */
+public final class IncomingEvent<N, T extends RemoteEvent> implements RemoteEvent {
+  private final N origin;
+  private final T event;
+
+  private IncomingEvent(N origin, T event) {
+    this.origin = origin;
+    this.event = event;
+  }
+
+  public static <N, T extends RemoteEvent> IncomingEvent<N, T> create(N origin, T event) {
+    Objects.requireNonNull(origin);
+    Objects.requireNonNull(event);
+
+    return new IncomingEvent<>(origin, event);
+  }
+
+  public N origin() {
+    return origin;
+  }
+
+  public T event() {
+    return event;
+  }
+
+  @Override
+  public String toString() {
+    return String.format("%s[%s->%s]", getClass().getSimpleName(), this.origin, this.event);
+  }
+}

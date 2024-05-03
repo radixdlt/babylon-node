@@ -64,7 +64,7 @@
 
 package com.radixdlt.environment.rx;
 
-import com.radixdlt.consensus.event.NonLocalEvent;
+import com.radixdlt.consensus.event.RemoteEvent;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.p2p.NodeId;
 import java.util.Objects;
@@ -74,7 +74,7 @@ import java.util.Objects;
  *
  * @param <T> the event class
  */
-public final class RxRemoteDispatcher<T extends NonLocalEvent> {
+public final class RxRemoteDispatcher<T extends RemoteEvent> {
   private final Class<T> eventClass;
   private final RemoteEventDispatcher<NodeId, T> dispatcher;
 
@@ -91,7 +91,7 @@ public final class RxRemoteDispatcher<T extends NonLocalEvent> {
     return dispatcher;
   }
 
-  public static <T extends NonLocalEvent> RxRemoteDispatcher<T> create(
+  public static <T extends RemoteEvent> RxRemoteDispatcher<T> create(
       Class<T> eventClass, RemoteEventDispatcher<NodeId, T> dispatcher) {
     return new RxRemoteDispatcher<>(
         Objects.requireNonNull(eventClass), Objects.requireNonNull(dispatcher));

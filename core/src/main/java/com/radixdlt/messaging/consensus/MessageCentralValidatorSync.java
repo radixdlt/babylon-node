@@ -72,7 +72,7 @@ import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.rx.RemoteEvent;
+import com.radixdlt.environment.rx.IncomingEvent;
 import com.radixdlt.messaging.core.Message;
 import com.radixdlt.messaging.core.MessageCentral;
 import com.radixdlt.p2p.NodeId;
@@ -123,14 +123,15 @@ public class MessageCentralValidatorSync {
     this.messageCentral.send(nodeId, msg);
   }
 
-  public Flowable<RemoteEvent<NodeId, GetVerticesRequest>> requests() {
+  public Flowable<IncomingEvent<NodeId, GetVerticesRequest>> requests() {
     return this.createFlowable(
         GetVerticesRequestMessage.class,
         (peer, msg) ->
-            RemoteEvent.create(peer, GetVerticesRequest.create(msg.getVertexId(), msg.getCount())));
+            IncomingEvent.create(
+                peer, GetVerticesRequest.create(msg.getVertexId(), msg.getCount())));
   }
 
-  public Flowable<RemoteEvent<NodeId, GetVerticesResponse>> responses() {
+  public Flowable<IncomingEvent<NodeId, GetVerticesResponse>> responses() {
     return this.createFlowable(
         GetVerticesResponseMessage.class,
         (src, msg) -> {
@@ -140,17 +141,17 @@ public class MessageCentralValidatorSync {
                   .map(v -> v.withId(hasher))
                   .collect(ImmutableList.toImmutableList());
 
-          return RemoteEvent.create(src, new GetVerticesResponse(hashedVertices));
+          return IncomingEvent.create(src, new GetVerticesResponse(hashedVertices));
         });
   }
 
-  public Flowable<RemoteEvent<NodeId, GetVerticesErrorResponse>> errorResponses() {
+  public Flowable<IncomingEvent<NodeId, GetVerticesErrorResponse>> errorResponses() {
     return this.createFlowable(
         GetVerticesErrorResponseMessage.class,
         (src, msg) -> {
           final var request =
               GetVerticesRequest.create(msg.request().getVertexId(), msg.request().getCount());
-          return RemoteEvent.create(src, new GetVerticesErrorResponse(msg.highQC(), request));
+          return IncomingEvent.create(src, new GetVerticesErrorResponse(msg.highQC(), request));
         });
   }
 
