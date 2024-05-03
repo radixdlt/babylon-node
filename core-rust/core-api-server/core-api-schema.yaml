@@ -3233,6 +3233,10 @@ components:
           properties:
             field_kind:
               $ref: "#/components/schemas/SystemFieldKind"
+            boot_loader_type:
+              # Note: this conditional field is a way to support the boot types in a backwards-compatible way
+              $ref: "#/components/schemas/BootLoaderType"
+              description: An exact type, if the `field_kind` is `BootLoader`.
     SystemSchemaStructure:
       allOf:
         - $ref: "#/components/schemas/SubstateSystemStructure"
@@ -3285,6 +3289,12 @@ components:
       enum:
         - BootLoader
         - TypeInfo
+    BootLoaderType:
+      type: string
+      enum:
+        - KernelBoot
+        - SystemBoot
+        - VmBoot
     ObjectSubstateTypeReferenceType:
       type: string
       enum:

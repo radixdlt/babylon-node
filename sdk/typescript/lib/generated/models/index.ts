@@ -83,6 +83,7 @@ export * from './BootLoaderModuleFieldSystemBootValue';
 export * from './BootLoaderModuleFieldVmBootSubstate';
 export * from './BootLoaderModuleFieldVmBootSubstateAllOf';
 export * from './BootLoaderModuleFieldVmBootValue';
+export * from './BootLoaderType';
 export * from './CommittedIntentMetadata';
 export * from './CommittedStateIdentifier';
 export * from './CommittedStateIdentifierAllOf';

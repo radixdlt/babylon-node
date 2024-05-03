@@ -144,6 +144,8 @@ pub mod boot_loader_module_field_vm_boot_substate_all_of;
 pub use self::boot_loader_module_field_vm_boot_substate_all_of::BootLoaderModuleFieldVmBootSubstateAllOf;
 pub mod boot_loader_module_field_vm_boot_value;
 pub use self::boot_loader_module_field_vm_boot_value::BootLoaderModuleFieldVmBootValue;
+pub mod boot_loader_type;
+pub use self::boot_loader_type::BootLoaderType;
 pub mod committed_intent_metadata;
 pub use self::committed_intent_metadata::CommittedIntentMetadata;
 pub mod committed_state_identifier;

@@ -9,23 +9,34 @@
  */
 
 
+/// 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
+pub enum BootLoaderType {
+    #[serde(rename = "KernelBoot")]
+    KernelBoot,
+    #[serde(rename = "SystemBoot")]
+    SystemBoot,
+    #[serde(rename = "VmBoot")]
+    VmBoot,
 
-
-#[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct SystemFieldStructureAllOf {
-    #[serde(rename = "field_kind")]
-    pub field_kind: crate::core_api::generated::models::SystemFieldKind,
-    #[serde(rename = "boot_loader_type", skip_serializing_if = "Option::is_none")]
-    pub boot_loader_type: Option<crate::core_api::generated::models::BootLoaderType>,
 }
 
-impl SystemFieldStructureAllOf {
-    pub fn new(field_kind: crate::core_api::generated::models::SystemFieldKind) -> SystemFieldStructureAllOf {
-        SystemFieldStructureAllOf {
-            field_kind,
-            boot_loader_type: None,
+impl ToString for BootLoaderType {
+    fn to_string(&self) -> String {
+        match self {
+            Self::KernelBoot => String::from("KernelBoot"),
+            Self::SystemBoot => String::from("SystemBoot"),
+            Self::VmBoot => String::from("VmBoot"),
         }
     }
 }
+
+impl Default for BootLoaderType {
+    fn default() -> BootLoaderType {
+        Self::KernelBoot
+    }
+}
+
+
 
 
