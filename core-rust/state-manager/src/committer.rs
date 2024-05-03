@@ -185,6 +185,9 @@ impl Committer {
             .start_series_execution(database.deref());
         self.verify_pre_commit_invariants(&series_executor, transactions.len(), &proof);
 
+        // Naively, the below could be a part of pre-commit invariants (see above); however, we do
+        // not want to panic, but rather return an `Err` for the consensus layer, since a
+        // transaction root mismatch may mean a malicious peer (and not our inconsistent state).
         let resultant_transaction_root = self
             .execution_cache_manager
             .find_transaction_root(
@@ -199,9 +202,7 @@ impl Committer {
                     &prepared_transactions,
                 )
             });
-
         if resultant_transaction_root != commit_ledger_header.hashes.transaction_root {
-            // TODO(wip): move too!
             warn!(
                 "invalid commit request: resultant transaction root at version {} differs from the proof ({} != {})",
                 commit_state_version,

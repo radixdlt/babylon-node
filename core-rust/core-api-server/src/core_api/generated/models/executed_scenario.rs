@@ -12,8 +12,8 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct ExecutedGenesisScenario {
-    /// An index of the Scenario on the list of all Scenarios that were executed. Note: the stored sequence numbers do not necessarily have to be consecutive (e.g. in a case where some configured Scenario failed to execute or failed to write results to the database). 
+pub struct ExecutedScenario {
+    /// An index of the Scenario (reflecting its execution order).
     #[serde(rename = "sequence_number")]
     pub sequence_number: i32,
     #[serde(rename = "logical_name")]
@@ -26,9 +26,9 @@ pub struct ExecutedGenesisScenario {
     pub addresses: ::radix_rust::prelude::IndexMap<String, String>,
 }
 
-impl ExecutedGenesisScenario {
-    pub fn new(sequence_number: i32, logical_name: String, committed_transactions: Vec<crate::core_api::generated::models::ExecutedScenarioTransaction>, addresses: ::radix_rust::prelude::IndexMap<String, String>) -> ExecutedGenesisScenario {
-        ExecutedGenesisScenario {
+impl ExecutedScenario {
+    pub fn new(sequence_number: i32, logical_name: String, committed_transactions: Vec<crate::core_api::generated::models::ExecutedScenarioTransaction>, addresses: ::radix_rust::prelude::IndexMap<String, String>) -> ExecutedScenario {
+        ExecutedScenario {
             sequence_number,
             logical_name,
             committed_transactions,

@@ -33,16 +33,16 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * ExecutedGenesisScenario
+ * ExecutedScenario
  */
 @JsonPropertyOrder({
-  ExecutedGenesisScenario.JSON_PROPERTY_SEQUENCE_NUMBER,
-  ExecutedGenesisScenario.JSON_PROPERTY_LOGICAL_NAME,
-  ExecutedGenesisScenario.JSON_PROPERTY_COMMITTED_TRANSACTIONS,
-  ExecutedGenesisScenario.JSON_PROPERTY_ADDRESSES
+  ExecutedScenario.JSON_PROPERTY_SEQUENCE_NUMBER,
+  ExecutedScenario.JSON_PROPERTY_LOGICAL_NAME,
+  ExecutedScenario.JSON_PROPERTY_COMMITTED_TRANSACTIONS,
+  ExecutedScenario.JSON_PROPERTY_ADDRESSES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class ExecutedGenesisScenario {
+public class ExecutedScenario {
   public static final String JSON_PROPERTY_SEQUENCE_NUMBER = "sequence_number";
   private Integer sequenceNumber;
 
@@ -55,22 +55,22 @@ public class ExecutedGenesisScenario {
   public static final String JSON_PROPERTY_ADDRESSES = "addresses";
   private Map<String, String> addresses = new HashMap<>();
 
-  public ExecutedGenesisScenario() { 
+  public ExecutedScenario() { 
   }
 
-  public ExecutedGenesisScenario sequenceNumber(Integer sequenceNumber) {
+  public ExecutedScenario sequenceNumber(Integer sequenceNumber) {
     this.sequenceNumber = sequenceNumber;
     return this;
   }
 
    /**
-   * An index of the Scenario on the list of all Scenarios that were executed. Note: the stored sequence numbers do not necessarily have to be consecutive (e.g. in a case where some configured Scenario failed to execute or failed to write results to the database). 
+   * An index of the Scenario (reflecting its execution order).
    * minimum: 0
    * maximum: 1000000
    * @return sequenceNumber
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An index of the Scenario on the list of all Scenarios that were executed. Note: the stored sequence numbers do not necessarily have to be consecutive (e.g. in a case where some configured Scenario failed to execute or failed to write results to the database). ")
+  @ApiModelProperty(required = true, value = "An index of the Scenario (reflecting its execution order).")
   @JsonProperty(JSON_PROPERTY_SEQUENCE_NUMBER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -86,7 +86,7 @@ public class ExecutedGenesisScenario {
   }
 
 
-  public ExecutedGenesisScenario logicalName(String logicalName) {
+  public ExecutedScenario logicalName(String logicalName) {
     this.logicalName = logicalName;
     return this;
   }
@@ -112,12 +112,12 @@ public class ExecutedGenesisScenario {
   }
 
 
-  public ExecutedGenesisScenario committedTransactions(List<ExecutedScenarioTransaction> committedTransactions) {
+  public ExecutedScenario committedTransactions(List<ExecutedScenarioTransaction> committedTransactions) {
     this.committedTransactions = committedTransactions;
     return this;
   }
 
-  public ExecutedGenesisScenario addCommittedTransactionsItem(ExecutedScenarioTransaction committedTransactionsItem) {
+  public ExecutedScenario addCommittedTransactionsItem(ExecutedScenarioTransaction committedTransactionsItem) {
     this.committedTransactions.add(committedTransactionsItem);
     return this;
   }
@@ -143,12 +143,12 @@ public class ExecutedGenesisScenario {
   }
 
 
-  public ExecutedGenesisScenario addresses(Map<String, String> addresses) {
+  public ExecutedScenario addresses(Map<String, String> addresses) {
     this.addresses = addresses;
     return this;
   }
 
-  public ExecutedGenesisScenario putAddressesItem(String key, String addressesItem) {
+  public ExecutedScenario putAddressesItem(String key, String addressesItem) {
     this.addresses.put(key, addressesItem);
     return this;
   }
@@ -175,7 +175,7 @@ public class ExecutedGenesisScenario {
 
 
   /**
-   * Return true if this ExecutedGenesisScenario object is equal to o.
+   * Return true if this ExecutedScenario object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -185,11 +185,11 @@ public class ExecutedGenesisScenario {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ExecutedGenesisScenario executedGenesisScenario = (ExecutedGenesisScenario) o;
-    return Objects.equals(this.sequenceNumber, executedGenesisScenario.sequenceNumber) &&
-        Objects.equals(this.logicalName, executedGenesisScenario.logicalName) &&
-        Objects.equals(this.committedTransactions, executedGenesisScenario.committedTransactions) &&
-        Objects.equals(this.addresses, executedGenesisScenario.addresses);
+    ExecutedScenario executedScenario = (ExecutedScenario) o;
+    return Objects.equals(this.sequenceNumber, executedScenario.sequenceNumber) &&
+        Objects.equals(this.logicalName, executedScenario.logicalName) &&
+        Objects.equals(this.committedTransactions, executedScenario.committedTransactions) &&
+        Objects.equals(this.addresses, executedScenario.addresses);
   }
 
   @Override
@@ -200,7 +200,7 @@ public class ExecutedGenesisScenario {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ExecutedGenesisScenario {\n");
+    sb.append("class ExecutedScenario {\n");
     sb.append("    sequenceNumber: ").append(toIndentedString(sequenceNumber)).append("\n");
     sb.append("    logicalName: ").append(toIndentedString(logicalName)).append("\n");
     sb.append("    committedTransactions: ").append(toIndentedString(committedTransactions)).append("\n");

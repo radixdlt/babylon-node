@@ -76,8 +76,7 @@ use node_common::locks::DbLock;
 use tracing::info;
 
 use crate::store::traits::scenario::{
-    DescribedAddressRendering, ExecutedGenesisScenario, ExecutedGenesisScenarioStore,
-    ExecutedScenarioTransaction, ScenarioSequenceNumber,
+    DescribedAddressRendering, ExecutedScenario, ExecutedScenarioStore, ExecutedScenarioTransaction,
 };
 use crate::system_commits::*;
 
@@ -253,8 +252,6 @@ impl StateComputer {
                 self.committer.commit_system(commit_request);
             }
             ProtocolUpdateTransactionBatch::Scenario(scenario) => {
-                // TODO(wip): handle it as auto-increment on DB's side
-                let dummy_sequence_number = 0;
                 // Note: here we re-use the batch_idx as a nonce, since we need a growing number
                 // that survives Node restarts. It is not going to be the same as the manual nonce
                 // used for Genesis Scenarios:
@@ -265,7 +262,6 @@ impl StateComputer {
                 let protocol_update_specific_nonce = batch_idx;
                 self.execute_scenario(
                     &mut system_commit_request_factory,
-                    dummy_sequence_number,
                     scenario.as_str(),
                     protocol_update_specific_nonce,
                 );
@@ -274,13 +270,13 @@ impl StateComputer {
     }
 
     // NOTE:
-    // Execution of Genesis Scenarios differs in important detail from regular Scenarios: they are
-    // simply executed in a series of commits that happen right after Genesis, without any progress
-    // being tracked in the database (neither intermediate, nor final). Actually, the same is true
-    // about the Genesis itself. Thus, if this process is interrupted e.g. by a Node restart, it
-    // may result in an inconsistent DB state (e.g. incomplete Scenario results, or even panics on
-    // boot-up, requiring ledger wipe). We are currently fine with this, since a wipe of an empty
-    // ledger does not hurt that much.
+    // Execution of Genesis Scenarios differs in one important detail from regular Scenarios: they
+    // are simply executed in a series of commits that happen right after Genesis, without any
+    // progress being tracked in the database (neither intermediate, nor final). Actually, the same
+    // is true about the Genesis itself. Thus, if this process is interrupted e.g. by a Node
+    // restart, it may result in an inconsistent DB state (e.g. incomplete Scenario results, or even
+    // panics on boot-up, requiring ledger wipe). We are currently fine with this, since a wipe of
+    // an empty ledger does not hurt that much.
     fn execute_genesis_scenarios(
         &self,
         system_commit_request_factory: &mut SystemCommitRequestFactory,
@@ -289,11 +285,10 @@ impl StateComputer {
         if !scenarios.is_empty() {
             info!("Running {} scenarios", scenarios.len());
             let mut next_nonce: u32 = 0;
-            for (sequence_number, scenario_name) in scenarios.iter().enumerate() {
+            for scenario in scenarios {
                 next_nonce = self.execute_scenario(
                     system_commit_request_factory,
-                    sequence_number.try_into().unwrap(),
-                    scenario_name.as_str(),
+                    scenario.as_str(),
                     next_nonce,
                 );
             }
@@ -304,7 +299,6 @@ impl StateComputer {
     fn execute_scenario(
         &self,
         system_commit_request_factory: &mut SystemCommitRequestFactory,
-        sequence_number: ScenarioSequenceNumber,
         scenario_name: &str,
         nonce: u32,
     ) -> u32 {
@@ -353,7 +347,7 @@ impl StateComputer {
                 }
                 NextAction::Completed(end_state) => {
                     let encoder = AddressBech32Encoder::new(&self.network);
-                    let executed_scenario = ExecutedGenesisScenario {
+                    let executed_scenario = ExecutedScenario {
                         logical_name: scenario.metadata().logical_name.to_string(),
                         committed_transactions,
                         addresses: end_state
@@ -390,7 +384,7 @@ impl StateComputer {
                             .join("\n")
                     );
                     let database = self.database.lock();
-                    database.put_scenario(sequence_number, executed_scenario);
+                    database.put_next_scenario(executed_scenario);
                     return end_state.next_unused_nonce;
                 }
             }

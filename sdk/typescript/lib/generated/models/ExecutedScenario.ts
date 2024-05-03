@@ -23,42 +23,39 @@ import {
 /**
  * 
  * @export
- * @interface ExecutedGenesisScenario
+ * @interface ExecutedScenario
  */
-export interface ExecutedGenesisScenario {
+export interface ExecutedScenario {
     /**
-     * An index of the Scenario on the list of all Scenarios that were executed.
-     * Note: the stored sequence numbers do not necessarily have to be consecutive (e.g. in a
-     * case where some configured Scenario failed to execute or failed to write results to the
-     * database).
+     * An index of the Scenario (reflecting its execution order).
      * @type {number}
-     * @memberof ExecutedGenesisScenario
+     * @memberof ExecutedScenario
      */
     sequence_number: number;
     /**
      * 
      * @type {string}
-     * @memberof ExecutedGenesisScenario
+     * @memberof ExecutedScenario
      */
     logical_name: string;
     /**
      * Transactions successfully committed by the Scenario.
      * @type {Array<ExecutedScenarioTransaction>}
-     * @memberof ExecutedGenesisScenario
+     * @memberof ExecutedScenario
      */
     committed_transactions: Array<ExecutedScenarioTransaction>;
     /**
      * Well-named addresses touched/created by the Scenario, keyed by their name.
      * @type {{ [key: string]: string; }}
-     * @memberof ExecutedGenesisScenario
+     * @memberof ExecutedScenario
      */
     addresses: { [key: string]: string; };
 }
 
 /**
- * Check if a given object implements the ExecutedGenesisScenario interface.
+ * Check if a given object implements the ExecutedScenario interface.
  */
-export function instanceOfExecutedGenesisScenario(value: object): boolean {
+export function instanceOfExecutedScenario(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "sequence_number" in value;
     isInstance = isInstance && "logical_name" in value;
@@ -68,11 +65,11 @@ export function instanceOfExecutedGenesisScenario(value: object): boolean {
     return isInstance;
 }
 
-export function ExecutedGenesisScenarioFromJSON(json: any): ExecutedGenesisScenario {
-    return ExecutedGenesisScenarioFromJSONTyped(json, false);
+export function ExecutedScenarioFromJSON(json: any): ExecutedScenario {
+    return ExecutedScenarioFromJSONTyped(json, false);
 }
 
-export function ExecutedGenesisScenarioFromJSONTyped(json: any, ignoreDiscriminator: boolean): ExecutedGenesisScenario {
+export function ExecutedScenarioFromJSONTyped(json: any, ignoreDiscriminator: boolean): ExecutedScenario {
     if ((json === undefined) || (json === null)) {
         return json;
     }
@@ -85,7 +82,7 @@ export function ExecutedGenesisScenarioFromJSONTyped(json: any, ignoreDiscrimina
     };
 }
 
-export function ExecutedGenesisScenarioToJSON(value?: ExecutedGenesisScenario | null): any {
+export function ExecutedScenarioToJSON(value?: ExecutedScenario | null): any {
     if (value === undefined) {
         return undefined;
     }
