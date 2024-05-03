@@ -13,237 +13,257 @@ on:
       - main
       - release\/*
 jobs:
-  snyk-scan-deps-licences:
-    name: Snyk deps/licences scan
-    runs-on: ubuntu-latest
+  phylum_analyze:
+    name: Analyze dependencies with Phylum
     permissions:
-      id-token: write
-      pull-requests: read
       contents: read
-      deployments: write
-    steps:
-      - uses: RDXWorks-actions/checkout@main
-      - uses: radixdlt/public-iac-resuable-artifacts/fetch-secrets@main
-        with:
-          role_name: ${{ secrets.AWS_ROLE_NAME_SNYK_SECRET }}
-          app_name: 'babylon-node'
-          step_name: 'snyk-scan-deps-licenses'
-          secret_prefix: 'SNYK'
-          secret_name: ${{ secrets.AWS_SECRET_NAME_SNYK }}
-          parse_json: true
-      - name: Run Snyk to check for deps vulnerabilities
-        uses: RDXWorks-actions/snyk-actions/gradle-jdk17@master
-        with:
-          args: --all-projects --org=${{ env.SNYK_NETWORK_ORG_ID }} --severity-threshold=critical
-  snyk-scan-code:
-    name: Snyk code scan
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      pull-requests: read
-      contents: read
-      deployments: write
-    steps:
-      - uses: RDXWorks-actions/checkout@main
-      - uses: radixdlt/public-iac-resuable-artifacts/fetch-secrets@main
-        with:
-          role_name: ${{ secrets.AWS_ROLE_NAME_SNYK_SECRET }}
-          app_name: 'babylon-node'
-          step_name: 'snyk-scan-code'
-          secret_prefix: 'SNYK'
-          secret_name: ${{ secrets.AWS_SECRET_NAME_SNYK }}
-          parse_json: true
-      - name: Run Snyk to check for code vulnerabilities
-        uses: RDXWorks-actions/snyk-actions/gradle-jdk17@master
-        with:
-          args: --all-projects --org=${{ env.SNYK_NETWORK_ORG_ID }} --severity-threshold=high
-          command: code test
-  snyk-sbom:
-    name: Snyk SBOM
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      pull-requests: read
-      contents: read
-      deployments: write
-    steps:
-      - uses: RDXWorks-actions/checkout@main
-      - uses: radixdlt/public-iac-resuable-artifacts/fetch-secrets@main
-        with:
-          role_name: ${{ secrets.AWS_ROLE_NAME_SNYK_SECRET }}
-          app_name: 'babylon-node'
-          step_name: 'snyk-sbom'
-          secret_prefix: 'SNYK'
-          secret_name: ${{ secrets.AWS_SECRET_NAME_SNYK }}
-          parse_json: true
-      - name: Generate SBOM # check SBOM can be generated but nothing is done with it
-        uses: RDXWorks-actions/snyk-actions/gradle-jdk17@master
-        with:
-          args: --all-projects --org=${{ env.SNYK_NETWORK_ORG_ID }} --format=cyclonedx1.4+json > sbom.json
-          command: sbom
-  build:
-    name: Unit tests and sonarqube
-    runs-on: selfhosted-ubuntu-22.04-16-cores
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - uses: RDXWorks-actions/checkout@main
-        with:
-          # Shallow clones should be disabled for a better relevancy of analysis
-          fetch-depth: 0
-      - uses: RDXWorks-actions/rust-toolchain@master
-        with:
-          toolchain: stable
-      - name: Set up JDK 17
-        uses: RDXWorks-actions/setup-java@main
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-      - name: Install libclang-dev
-        run: sudo apt-get update -y && sudo apt-get install -y libclang-dev
-      - name: Cache SonarCloud packages
-        uses: RDXWorks-actions/cache@main
-        with:
-          path: ~/.sonar/cache
-          key: ${{ runner.os }}-sonar
-          restore-keys: ${{ runner.os }}-sonar
-      - name: Cache Gradle packages
-        uses: RDXWorks-actions/cache@main
-        with:
-          path: ~/.gradle/caches
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
-          restore-keys: ${{ runner.os }}-gradle
-      - name: Unit tests
-        # Theoretically, the lack of `--info` in the Gradle command below should completely suppress
-        # any (application's) output from the tests. However, our current Rust logging infra writes
-        # to STDOUT directly (i.e. bypasses the Gradle's hijacked output) and spams the unit test
-        # results - luckily, it respects the ENV var, and we can set it high enough.
-        env:
-          RADIXDLT_LOG_LEVEL: error
-        run: ./gradlew clean check jacocoTestReport --stacktrace --refresh-dependencies
-      - name: DistZip
-        run: ./gradlew distZip
-      - name: Publish Java distZip
-        uses: RDXWorks-actions/upload-artifact@main
-        with:
-          path: ./core/build/distributions/core-*.zip
-          name: distZip
-          retention-days: 7
-      - uses: ./.github/actions/fetch-secrets
-        with: 
-          role_name: "${{ secrets.COMMON_SECRETS_ROLE_ARN }}"
-          app_name: "babylon-node"
-          step_name: "build"
-          secret_prefix: "SONAR"
-          # SonarCloud access token should be generated from https://sonarcloud.io/account/security/
-          secret_name: "github-actions/common/sonar-token"
-          parse_json: true
-      - name: Sonar analysis
-        env:
-          # Needed to get some information about the pull request, if any
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew sonarqube
-  local-dev-sm-docker-build:
-    name: Test core-rust docker build for local development
+      pull-requests: write
     runs-on: ubuntu-latest
     steps:
-      - uses: RDXWorks-actions/checkout@main
+      - name: Checkout the repo
+        uses: RDXWorks-actions/checkout@main
         with:
-          # Shallow clones should be disabled for a better relevancy of analysis
           fetch-depth: 0
-      - uses: RDXWorks-actions/rust-toolchain@master
+      - name: Analyze dependencies
+        uses: RDXWorks-actions/phylum-analyze-pr-action@v2.1.1
         with:
-          toolchain: stable
-      - name: Set up JDK 17
-        uses: RDXWorks-actions/setup-java@main
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-      - name: Cache Gradle packages
-        uses: RDXWorks-actions/cache@main
-        with:
-          path: ~/.gradle/caches
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
-          restore-keys: ${{ runner.os }}-gradle
-      - name: Run local core-rust docker build
-        run: ./gradlew :core-rust:buildRustForDocker
-  steadystate-integration:
-    name: Steady state integration tests
-    runs-on: selfhosted-ubuntu-22.04-16-cores
-    steps:
-      - uses: RDXWorks-actions/checkout@main
-        with:
-          # Shallow clones should be disabled for a better relevancy of analysis
-          fetch-depth: 0
-      - uses: RDXWorks-actions/rust-toolchain@master
-        with:
-          toolchain: stable
-      - name: Set up JDK 17
-        uses: RDXWorks-actions/setup-java@main
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-      - name: Install libclang-dev
-        run: sudo apt-get update -y && sudo apt-get install -y libclang-dev
-      - name: Cache Gradle packages
-        uses: RDXWorks-actions/cache@main
-        with:
-          path: ~/.gradle/caches
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
-          restore-keys: ${{ runner.os }}-gradle
-      - name: Run steady-state integration tests
-        env:
-          RADIXDLT_LOG_LEVEL: warn
-        run: ./gradlew clean runSteadyStateIntegrationTests --info --refresh-dependencies
-  targeted-integration:
-    name: Targeted integration tests
-    runs-on: selfhosted-ubuntu-22.04-16-cores
-    steps:
-      - uses: RDXWorks-actions/checkout@main
-        with:
-          # Shallow clones should be disabled for a better relevancy of analysis
-          fetch-depth: 0
-      - uses: RDXWorks-actions/rust-toolchain@master
-        with:
-          toolchain: stable
-      - name: Set up JDK 17
-        uses: RDXWorks-actions/setup-java@main
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-      - name: Install libclang-dev
-        run: sudo apt-get update -y && sudo apt-get install -y libclang-dev
-      - name: Cache Gradle packages
-        uses: RDXWorks-actions/cache@main
-        with:
-          path: ~/.gradle/caches
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
-          restore-keys: ${{ runner.os }}-gradle
-      - name: Run targeted integration tests
-        env:
-          RADIXDLT_LOG_LEVEL: warn
-        run: ./gradlew clean runTargetedIntegrationTests --info --refresh-dependencies --parallel
-  cross-xwin:
-    name: Cross compile to Windows
-    runs-on: ubuntu-latest
-    steps:
-      - uses: RDXWorks-actions/checkout@main
-        with:
-          fetch-depth: 1
-      - uses: RDXWorks-actions/rust-toolchain@master
-        with:
-          toolchain: stable
-          targets: x86_64-pc-windows-msvc
-      - name: Update clang version to 16
-        run: sudo apt remove clang-14 && sudo apt autoclean && sudo apt autoremove && wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 16 && sudo ls /usr/bin/ | grep clang && sudo ln -sf /usr/bin/clang-16 /usr/bin/clang && sudo ln -sf /usr/bin/clang++-16 /usr/bin/clang++ && sudo apt-get install -y libclang-dev llvm llvm-dev
-      - name: Install cargo-xwin
-        run: cargo install cargo-xwin
-      - name: cross compile to windows
-        run: pushd core-rust; cargo xwin build --release --target x86_64-pc-windows-msvc
-      - name: Publish corerust.dll
-        uses: RDXWorks-actions/upload-artifact@main
-        with:
-          path: core-rust/target/x86_64-pc-windows-msvc/release/corerust.dll
-          name: corerust.dll
-          retention-days: 7
+          phylum_token: ${{ secrets.PHYLUM_API_KEY }}
+          cmd: |
+            phylum-ci \
+              -vv \
+              --audit \
+              --all-deps
+#  snyk-scan-deps-licences:
+#    name: Snyk deps/licences scan
+#    runs-on: ubuntu-latest
+#    permissions:
+#      id-token: write
+#      pull-requests: read
+#      contents: read
+#      deployments: write
+#    steps:
+#      - uses: RDXWorks-actions/checkout@main
+#      - uses: radixdlt/public-iac-resuable-artifacts/fetch-secrets@main
+#        with:
+#          role_name: ${{ secrets.AWS_ROLE_NAME_SNYK_SECRET }}
+#          app_name: 'babylon-node'
+#          step_name: 'snyk-scan-deps-licenses'
+#          secret_prefix: 'SNYK'
+#          secret_name: ${{ secrets.AWS_SECRET_NAME_SNYK }}
+#          parse_json: true
+#      - name: Run Snyk to check for deps vulnerabilities
+#        uses: RDXWorks-actions/snyk-actions/gradle-jdk17@master
+#        with:
+#          args: --all-projects --org=${{ env.SNYK_NETWORK_ORG_ID }} --severity-threshold=critical
+#  snyk-scan-code:
+#    name: Snyk code scan
+#    runs-on: ubuntu-latest
+#    permissions:
+#      id-token: write
+#      pull-requests: read
+#      contents: read
+#      deployments: write
+#    steps:
+#      - uses: RDXWorks-actions/checkout@main
+#      - uses: radixdlt/public-iac-resuable-artifacts/fetch-secrets@main
+#        with:
+#          role_name: ${{ secrets.AWS_ROLE_NAME_SNYK_SECRET }}
+#          app_name: 'babylon-node'
+#          step_name: 'snyk-scan-code'
+#          secret_prefix: 'SNYK'
+#          secret_name: ${{ secrets.AWS_SECRET_NAME_SNYK }}
+#          parse_json: true
+#      - name: Run Snyk to check for code vulnerabilities
+#        uses: RDXWorks-actions/snyk-actions/gradle-jdk17@master
+#        with:
+#          args: --all-projects --org=${{ env.SNYK_NETWORK_ORG_ID }} --severity-threshold=high
+#          command: code test
+#  snyk-sbom:
+#    name: Snyk SBOM
+#    runs-on: ubuntu-latest
+#    permissions:
+#      id-token: write
+#      pull-requests: read
+#      contents: read
+#      deployments: write
+#    steps:
+#      - uses: RDXWorks-actions/checkout@main
+#      - uses: radixdlt/public-iac-resuable-artifacts/fetch-secrets@main
+#        with:
+#          role_name: ${{ secrets.AWS_ROLE_NAME_SNYK_SECRET }}
+#          app_name: 'babylon-node'
+#          step_name: 'snyk-sbom'
+#          secret_prefix: 'SNYK'
+#          secret_name: ${{ secrets.AWS_SECRET_NAME_SNYK }}
+#          parse_json: true
+#      - name: Generate SBOM # check SBOM can be generated but nothing is done with it
+#        uses: RDXWorks-actions/snyk-actions/gradle-jdk17@master
+#        with:
+#          args: --all-projects --org=${{ env.SNYK_NETWORK_ORG_ID }} --format=cyclonedx1.4+json > sbom.json
+#          command: sbom
+#  build:
+#    name: Unit tests and sonarqube
+#    runs-on: selfhosted-ubuntu-22.04-16-cores
+#    permissions:
+#      id-token: write
+#      contents: read
+#    steps:
+#      - uses: RDXWorks-actions/checkout@main
+#        with:
+#          # Shallow clones should be disabled for a better relevancy of analysis
+#          fetch-depth: 0
+#      - uses: RDXWorks-actions/rust-toolchain@master
+#        with:
+#          toolchain: stable
+#      - name: Set up JDK 17
+#        uses: RDXWorks-actions/setup-java@main
+#        with:
+#          distribution: 'zulu'
+#          java-version: '17'
+#      - name: Install libclang-dev
+#        run: sudo apt-get update -y && sudo apt-get install -y libclang-dev
+#      - name: Cache SonarCloud packages
+#        uses: RDXWorks-actions/cache@main
+#        with:
+#          path: ~/.sonar/cache
+#          key: ${{ runner.os }}-sonar
+#          restore-keys: ${{ runner.os }}-sonar
+#      - name: Cache Gradle packages
+#        uses: RDXWorks-actions/cache@main
+#        with:
+#          path: ~/.gradle/caches
+#          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+#          restore-keys: ${{ runner.os }}-gradle
+#      - name: Unit tests
+#        # Theoretically, the lack of `--info` in the Gradle command below should completely suppress
+#        # any (application's) output from the tests. However, our current Rust logging infra writes
+#        # to STDOUT directly (i.e. bypasses the Gradle's hijacked output) and spams the unit test
+#        # results - luckily, it respects the ENV var, and we can set it high enough.
+#        env:
+#          RADIXDLT_LOG_LEVEL: error
+#        run: ./gradlew clean check jacocoTestReport --stacktrace --refresh-dependencies
+#      - name: DistZip
+#        run: ./gradlew distZip
+#      - name: Publish Java distZip
+#        uses: RDXWorks-actions/upload-artifact@main
+#        with:
+#          path: ./core/build/distributions/core-*.zip
+#          name: distZip
+#          retention-days: 7
+#      - uses: ./.github/actions/fetch-secrets
+#        with:
+#          role_name: "${{ secrets.COMMON_SECRETS_ROLE_ARN }}"
+#          app_name: "babylon-node"
+#          step_name: "build"
+#          secret_prefix: "SONAR"
+#          # SonarCloud access token should be generated from https://sonarcloud.io/account/security/
+#          secret_name: "github-actions/common/sonar-token"
+#          parse_json: true
+#      - name: Sonar analysis
+#        env:
+#          # Needed to get some information about the pull request, if any
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        run: ./gradlew sonarqube
+#  local-dev-sm-docker-build:
+#    name: Test core-rust docker build for local development
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: RDXWorks-actions/checkout@main
+#        with:
+#          # Shallow clones should be disabled for a better relevancy of analysis
+#          fetch-depth: 0
+#      - uses: RDXWorks-actions/rust-toolchain@master
+#        with:
+#          toolchain: stable
+#      - name: Set up JDK 17
+#        uses: RDXWorks-actions/setup-java@main
+#        with:
+#          distribution: 'zulu'
+#          java-version: '17'
+#      - name: Cache Gradle packages
+#        uses: RDXWorks-actions/cache@main
+#        with:
+#          path: ~/.gradle/caches
+#          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+#          restore-keys: ${{ runner.os }}-gradle
+#      - name: Run local core-rust docker build
+#        run: ./gradlew :core-rust:buildRustForDocker
+#  steadystate-integration:
+#    name: Steady state integration tests
+#    runs-on: selfhosted-ubuntu-22.04-16-cores
+#    steps:
+#      - uses: RDXWorks-actions/checkout@main
+#        with:
+#          # Shallow clones should be disabled for a better relevancy of analysis
+#          fetch-depth: 0
+#      - uses: RDXWorks-actions/rust-toolchain@master
+#        with:
+#          toolchain: stable
+#      - name: Set up JDK 17
+#        uses: RDXWorks-actions/setup-java@main
+#        with:
+#          distribution: 'zulu'
+#          java-version: '17'
+#      - name: Install libclang-dev
+#        run: sudo apt-get update -y && sudo apt-get install -y libclang-dev
+#      - name: Cache Gradle packages
+#        uses: RDXWorks-actions/cache@main
+#        with:
+#          path: ~/.gradle/caches
+#          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+#          restore-keys: ${{ runner.os }}-gradle
+#      - name: Run steady-state integration tests
+#        env:
+#          RADIXDLT_LOG_LEVEL: warn
+#        run: ./gradlew clean runSteadyStateIntegrationTests --info --refresh-dependencies
+#  targeted-integration:
+#    name: Targeted integration tests
+#    runs-on: selfhosted-ubuntu-22.04-16-cores
+#    steps:
+#      - uses: RDXWorks-actions/checkout@main
+#        with:
+#          # Shallow clones should be disabled for a better relevancy of analysis
+#          fetch-depth: 0
+#      - uses: RDXWorks-actions/rust-toolchain@master
+#        with:
+#          toolchain: stable
+#      - name: Set up JDK 17
+#        uses: RDXWorks-actions/setup-java@main
+#        with:
+#          distribution: 'zulu'
+#          java-version: '17'
+#      - name: Install libclang-dev
+#        run: sudo apt-get update -y && sudo apt-get install -y libclang-dev
+#      - name: Cache Gradle packages
+#        uses: RDXWorks-actions/cache@main
+#        with:
+#          path: ~/.gradle/caches
+#          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+#          restore-keys: ${{ runner.os }}-gradle
+#      - name: Run targeted integration tests
+#        env:
+#          RADIXDLT_LOG_LEVEL: warn
+#        run: ./gradlew clean runTargetedIntegrationTests --info --refresh-dependencies --parallel
+#  cross-xwin:
+#    name: Cross compile to Windows
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: RDXWorks-actions/checkout@main
+#        with:
+#          fetch-depth: 1
+#      - uses: RDXWorks-actions/rust-toolchain@master
+#        with:
+#          toolchain: stable
+#          targets: x86_64-pc-windows-msvc
+#      - name: Update clang version to 16
+#        run: sudo apt remove clang-14 && sudo apt autoclean && sudo apt autoremove && wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 16 && sudo ls /usr/bin/ | grep clang && sudo ln -sf /usr/bin/clang-16 /usr/bin/clang && sudo ln -sf /usr/bin/clang++-16 /usr/bin/clang++ && sudo apt-get install -y libclang-dev llvm llvm-dev
+#      - name: Install cargo-xwin
+#        run: cargo install cargo-xwin
+#      - name: cross compile to windows
+#        run: pushd core-rust; cargo xwin build --release --target x86_64-pc-windows-msvc
+#      - name: Publish corerust.dll
+#        uses: RDXWorks-actions/upload-artifact@main
+#        with:
+#          path: core-rust/target/x86_64-pc-windows-msvc/release/corerust.dll
+#          name: corerust.dll
+#          retention-days: 7
