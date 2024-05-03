@@ -100,7 +100,6 @@ public class RemoteSyncServiceTest {
   private PeersView peersView;
   private LocalSyncService localSyncService;
   private TransactionsAndProofReader reader;
-  private RemoteEventDispatcher<NodeId, StatusResponse> statusResponseDispatcher;
   private RemoteEventDispatcher<NodeId, SyncResponse> syncResponseDispatcher;
   private RemoteEventDispatcher<NodeId, LedgerStatusUpdate> statusUpdateDispatcher;
 
@@ -109,7 +108,8 @@ public class RemoteSyncServiceTest {
     this.peersView = mock(PeersView.class);
     this.localSyncService = mock(LocalSyncService.class);
     this.reader = mock(TransactionsAndProofReader.class);
-    this.statusResponseDispatcher = rmock(RemoteEventDispatcher.class);
+    RemoteEventDispatcher<NodeId, StatusResponse> statusResponseDispatcher =
+        rmock(RemoteEventDispatcher.class);
     this.syncResponseDispatcher = rmock(RemoteEventDispatcher.class);
     this.statusUpdateDispatcher = rmock(RemoteEventDispatcher.class);
 
@@ -136,7 +136,7 @@ public class RemoteSyncServiceTest {
     LedgerHeader header = mock(LedgerHeader.class);
     when(header.getStateVersion()).thenReturn(2L);
     when(proofDto.getLedgerHeader()).thenReturn(header);
-    when(request.getStartProofExclusive()).thenReturn(proofDto);
+    when(request.startProofExclusive()).thenReturn(proofDto);
     NodeId node = mock(NodeId.class);
     LedgerExtension ledgerExtension = mock(LedgerExtension.class);
     when(ledgerExtension.proof())
@@ -169,7 +169,7 @@ public class RemoteSyncServiceTest {
     when(header.getOpaque()).thenReturn(HashUtils.zero256());
     when(header.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
     when(header.getSignatures()).thenReturn(mock(TimestampedECDSASignatures.class));
-    when(request.getStartProofExclusive()).thenReturn(header);
+    when(request.startProofExclusive()).thenReturn(header);
     processor
         .syncRequestEventProcessor()
         .process(

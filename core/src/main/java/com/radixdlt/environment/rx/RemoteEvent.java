@@ -88,11 +88,11 @@ public final class RemoteEvent<N, T extends NonLocalEvent> implements NonLocalEv
     return new RemoteEvent<>(origin, event);
   }
 
-  public N getOrigin() {
+  public N origin() {
     return origin;
   }
 
-  public T getEvent() {
+  public T event() {
     return event;
   }
 

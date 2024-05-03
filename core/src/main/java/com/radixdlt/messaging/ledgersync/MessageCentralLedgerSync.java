@@ -144,7 +144,7 @@ public final class MessageCentralLedgerSync {
   }
 
   private void sendSyncRequest(NodeId nodeId, SyncRequest syncRequest) {
-    final var msg = new SyncRequestMessage(syncRequest.getStartProofExclusive());
+    final var msg = new SyncRequestMessage(syncRequest.startProofExclusive());
     this.messageCentral.send(nodeId, msg);
   }
 
@@ -153,7 +153,7 @@ public final class MessageCentralLedgerSync {
   }
 
   private void sendSyncResponse(NodeId nodeId, SyncResponse syncResponse) {
-    final var msg = new SyncResponseMessage(syncResponse.getLedgerExtension());
+    final var msg = new SyncResponseMessage(syncResponse.ledgerExtension());
     this.messageCentral.send(nodeId, msg);
   }
 
@@ -171,7 +171,7 @@ public final class MessageCentralLedgerSync {
   }
 
   private void sendStatusResponse(NodeId nodeId, StatusResponse statusResponse) {
-    final var msg = new StatusResponseMessage(statusResponse.getProof());
+    final var msg = new StatusResponseMessage(statusResponse.proof());
     this.messageCentral.send(nodeId, msg);
   }
 
@@ -180,7 +180,7 @@ public final class MessageCentralLedgerSync {
   }
 
   private void sendLedgerStatusUpdate(NodeId nodeId, LedgerStatusUpdate ledgerStatusUpdate) {
-    final var msg = new LedgerStatusUpdateMessage(ledgerStatusUpdate.getProof());
+    final var msg = new LedgerStatusUpdateMessage(ledgerStatusUpdate.proof());
     this.messageCentral.send(nodeId, msg);
   }
 }

@@ -84,7 +84,7 @@ public final class LedgerStatusUpdate implements NonLocalEvent {
     this.proof = proof;
   }
 
-  public LedgerProofSyncStatusDto getProof() {
+  public LedgerProofSyncStatusDto proof() {
     return proof;
   }
 

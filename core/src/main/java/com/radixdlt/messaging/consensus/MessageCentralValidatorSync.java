@@ -106,19 +106,19 @@ public class MessageCentralValidatorSync {
 
   private void sendGetVerticesRequest(NodeId nodeId, GetVerticesRequest request) {
     final GetVerticesRequestMessage vertexRequest =
-        new GetVerticesRequestMessage(request.getVertexId(), request.getCount());
+        new GetVerticesRequestMessage(request.vertexId(), request.count());
     this.messageCentral.send(nodeId, vertexRequest);
   }
 
   private void sendGetVerticesResponse(NodeId nodeId, GetVerticesResponse response) {
-    var rawVertices = response.getVertices().stream().map(VertexWithHash::vertex).toList();
+    var rawVertices = response.vertices().stream().map(VertexWithHash::vertex).toList();
     var msg = new GetVerticesResponseMessage(rawVertices);
     this.messageCentral.send(nodeId, msg);
   }
 
   public void sendGetVerticesErrorResponse(NodeId nodeId, GetVerticesErrorResponse response) {
     var request = response.request();
-    var requestMsg = new GetVerticesRequestMessage(request.getVertexId(), request.getCount());
+    var requestMsg = new GetVerticesRequestMessage(request.vertexId(), request.count());
     var msg = new GetVerticesErrorResponseMessage(response.highQC(), requestMsg);
     this.messageCentral.send(nodeId, msg);
   }
@@ -127,7 +127,7 @@ public class MessageCentralValidatorSync {
     return this.createFlowable(
         GetVerticesRequestMessage.class,
         (peer, msg) ->
-            RemoteEvent.create(peer, new GetVerticesRequest(msg.getVertexId(), msg.getCount())));
+            RemoteEvent.create(peer, GetVerticesRequest.create(msg.getVertexId(), msg.getCount())));
   }
 
   public Flowable<RemoteEvent<NodeId, GetVerticesResponse>> responses() {
@@ -149,7 +149,7 @@ public class MessageCentralValidatorSync {
         GetVerticesErrorResponseMessage.class,
         (src, msg) -> {
           final var request =
-              new GetVerticesRequest(msg.request().getVertexId(), msg.request().getCount());
+              GetVerticesRequest.create(msg.request().getVertexId(), msg.request().getCount());
           return RemoteEvent.create(src, new GetVerticesErrorResponse(msg.highQC(), request));
         });
   }

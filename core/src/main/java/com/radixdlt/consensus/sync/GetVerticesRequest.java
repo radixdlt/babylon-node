@@ -73,16 +73,20 @@ public final class GetVerticesRequest implements NonLocalEvent {
   private final HashCode vertexId;
   private final int count;
 
-  public GetVerticesRequest(HashCode vertexId, int count) {
-    this.vertexId = Objects.requireNonNull(vertexId);
+  private GetVerticesRequest(HashCode vertexId, int count) {
+    this.vertexId = vertexId;
     this.count = count;
   }
 
-  public HashCode getVertexId() {
+  public static GetVerticesRequest create(HashCode vertexId, int count) {
+    return new GetVerticesRequest(Objects.requireNonNull(vertexId), count);
+  }
+
+  public HashCode vertexId() {
     return vertexId;
   }
 
-  public int getCount() {
+  public int count() {
     return count;
   }
 
@@ -93,12 +97,9 @@ public final class GetVerticesRequest implements NonLocalEvent {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof GetVerticesRequest)) {
-      return false;
-    }
-    GetVerticesRequest other = (GetVerticesRequest) o;
-
-    return Objects.equals(other.vertexId, this.vertexId) && other.count == this.count;
+    return o instanceof GetVerticesRequest other
+        && Objects.equals(other.vertexId, this.vertexId)
+        && other.count == this.count;
   }
 
   @Override

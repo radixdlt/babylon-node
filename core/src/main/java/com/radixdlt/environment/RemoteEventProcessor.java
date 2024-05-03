@@ -76,6 +76,6 @@ public interface RemoteEventProcessor<N, T extends NonLocalEvent> {
   void process(N sender, T t);
 
   default void process(RemoteEvent<N, T> event) {
-    process(event.getOrigin(), event.getEvent());
+    process(event.origin(), event.event());
   }
 }

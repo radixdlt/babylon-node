@@ -182,9 +182,9 @@ public final class PeerDiscovery implements NonLocalEvent {
 
       this.peersAsked.remove(senderNodeId);
 
-      if (!peersResponse.getPeers().isEmpty()) {
+      if (!peersResponse.peers().isEmpty()) {
         final var peersUpToLimit =
-            peersResponse.getPeers().stream()
+            peersResponse.peers().stream()
                 .limit(MAX_PEERS_IN_RESPONSE)
                 .collect(ImmutableSet.toImmutableSet());
         this.addressBook.addUncheckedPeers(peersUpToLimit);
