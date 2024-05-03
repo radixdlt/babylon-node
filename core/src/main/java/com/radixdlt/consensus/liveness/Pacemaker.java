@@ -362,7 +362,7 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
       See: `processBFTUpdate` */
       resendPreviousVoteWithTimeoutOrVoteForFallbackVertex();
       // Dispatch an actual timeout occurrence
-      this.timeoutDispatcher.dispatch(new LocalTimeoutOccurrence(scheduledTimeout));
+      this.timeoutDispatcher.dispatch(LocalTimeoutOccurrence.create(scheduledTimeout));
       rescheduleTimeout(scheduledTimeout);
     }
   }

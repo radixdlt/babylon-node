@@ -79,7 +79,7 @@ public final class VertexRequestTimeout implements LocalEvent {
     return new VertexRequestTimeout(request);
   }
 
-  public GetVerticesRequest getRequest() {
+  public GetVerticesRequest request() {
     return request;
   }
 
