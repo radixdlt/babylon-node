@@ -29,11 +29,12 @@ impl ProtocolUpdateDefinition for TestProtocolUpdateDefinition {
         Box::new(BatchedUpdater::new(
             new_protocol_version.clone(),
             ArbitraryBatchGenerator {
-                batches: vec![vec![FlashTransactionV1 {
-                    name: format!("{}-txn", &new_protocol_version),
-                    state_updates: StateUpdates::default(),
-                }
-                .into()]],
+                batches: vec![ProtocolUpdateTransactionBatch::FlashTransactions(vec![
+                    FlashTransactionV1 {
+                        name: format!("{}-txn", &new_protocol_version),
+                        state_updates: StateUpdates::default(),
+                    },
+                ])],
             },
         ))
     }

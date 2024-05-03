@@ -9,10 +9,10 @@ use tracing::info;
 
 use crate::protocol::*;
 use crate::traits::{IterableProofStore, QueryableProofStore, QueryableTransactionStore};
-use crate::transaction::{LedgerTransactionValidator, TransactionExecutorFactory};
+
 use crate::{
     ActualStateManagerDatabase, LocalTransactionReceipt, ProtocolMetrics, ScenariosExecutionConfig,
-    StateVersion,
+    StateComputer, StateVersion,
 };
 use ProtocolUpdateEnactmentCondition::*;
 
@@ -23,8 +23,7 @@ pub struct ProtocolUpdateExecutor {
     network: NetworkDefinition,
     protocol_config: ProtocolConfig,
     database: Arc<DbLock<ActualStateManagerDatabase>>,
-    transaction_executor_factory: Arc<TransactionExecutorFactory>,
-    ledger_transaction_validator: Arc<LedgerTransactionValidator>,
+    state_computer: Arc<StateComputer>,
 }
 
 impl ProtocolUpdateExecutor {
@@ -34,15 +33,13 @@ impl ProtocolUpdateExecutor {
         // TODO(wip): pass it down
         _scenarios_execution_config: ScenariosExecutionConfig,
         database: Arc<DbLock<ActualStateManagerDatabase>>,
-        transaction_executor_factory: Arc<TransactionExecutorFactory>,
-        ledger_transaction_validator: Arc<LedgerTransactionValidator>,
+        state_computer: Arc<StateComputer>,
     ) -> Self {
         Self {
             network,
             protocol_config,
             database,
-            transaction_executor_factory,
-            ledger_transaction_validator,
+            state_computer,
         }
     }
 
@@ -50,11 +47,7 @@ impl ProtocolUpdateExecutor {
     pub fn execute_protocol_update(&self, new_protocol_version: &ProtocolVersionName) {
         self.protocol_config
             .resolve_updater(&self.network, new_protocol_version)
-            .execute_remaining_state_updates(
-                self.database.clone(),
-                &self.transaction_executor_factory,
-                &self.ledger_transaction_validator,
-            );
+            .execute_remaining_batches(self.database.clone(), self.state_computer.deref());
     }
 }
 

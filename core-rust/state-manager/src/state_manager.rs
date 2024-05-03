@@ -335,13 +335,19 @@ impl StateManager {
             ledger_metrics.clone(),
         ));
 
+        let state_computer = Arc::new(StateComputer::new(
+            &network_definition,
+            database.clone(),
+            preparator.clone(),
+            committer.clone(),
+        ));
+
         let protocol_update_executor = Arc::new(ProtocolUpdateExecutor::new(
             network_definition.clone(),
             protocol_config,
             scenarios_execution_config,
             database.clone(),
-            transaction_executor_factory.clone(),
-            ledger_transaction_validator.clone(),
+            state_computer.clone(),
         ));
 
         // If we are booting mid-protocol-update, ensure all required transactions are committed:
@@ -350,14 +356,6 @@ impl StateManager {
                 .current_protocol_state()
                 .current_protocol_version,
         );
-
-        // Build the state computer:
-        let state_computer = Arc::new(StateComputer::new(
-            &network_definition,
-            database.clone(),
-            preparator.clone(),
-            committer.clone(),
-        ));
 
         // Register the periodic background task for collecting the costly raw DB metrics...
         let raw_db_metrics_collector =

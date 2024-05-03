@@ -119,16 +119,46 @@ impl Preparator {
             .transaction_executor_factory
             .start_series_execution(database.deref());
 
-        let commit = series_executor
+        series_executor
             .execute_and_update_state(&validated, "genesis")
             .expect("genesis not committable")
             .expect_success("genesis");
 
         GenesisPrepareResult {
-            raw,
-            validated,
-            ledger_hashes: commit.hash_structures_diff.ledger_hashes,
-            next_epoch: commit.epoch_change().map(|ev| ev.into()),
+            transaction: RawAndValidatedTransaction { raw, validated },
+            ledger_hashes: *series_executor.latest_ledger_hashes(),
+            next_epoch: series_executor.epoch_change().map(|event| event.into()),
+        }
+    }
+
+    pub fn prepare_protocol_update(
+        &self,
+        flash_transactions: Vec<FlashTransactionV1>,
+    ) -> ProtocolUpdatePrepareResult {
+        let database = self.database.lock();
+        let mut series_executor = self
+            .transaction_executor_factory
+            .start_series_execution(database.deref());
+
+        let mut transactions = Vec::new();
+        for flash_transaction in flash_transactions {
+            let raw = LedgerTransaction::FlashV1(Box::new(flash_transaction))
+                .to_raw()
+                .unwrap();
+            let prepared = PreparedLedgerTransaction::prepare_from_raw(&raw).unwrap();
+            let validated = self.ledger_transaction_validator.validate_flash(prepared);
+
+            series_executor
+                .execute_and_update_state(&validated, "protocol update")
+                .expect("protocol update not committable")
+                .expect_success("protocol update");
+
+            transactions.push(RawAndValidatedTransaction { raw, validated });
+        }
+
+        ProtocolUpdatePrepareResult {
+            transactions,
+            ledger_hashes: *series_executor.latest_ledger_hashes(),
         }
     }
 
@@ -165,8 +195,7 @@ impl Preparator {
             .start_series_execution(database.deref());
         let commit = series_executor.execute_and_update_state(&validated, "scenario transaction");
         let prepare_result = ScenarioPrepareResult {
-            raw,
-            validated,
+            transaction: RawAndValidatedTransaction { raw, validated },
             committable_ledger_hashes: commit
                 .ok()
                 .map(|commit_result| commit_result.hash_structures_diff.ledger_hashes),

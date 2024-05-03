@@ -1,4 +1,4 @@
-use crate::ActualStateManagerDatabase;
+use crate::{ActualStateManagerDatabase, StateComputer};
 use node_common::locks::DbLock;
 use std::ops::Deref;
 use std::sync::Arc;
@@ -6,28 +6,32 @@ use std::sync::Arc;
 use crate::engine_prelude::*;
 
 use crate::protocol::*;
-use crate::transaction::{LedgerTransactionValidator, TransactionExecutorFactory};
+
+use crate::transaction::FlashTransactionV1;
+
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+pub enum ProtocolUpdateTransactionBatch {
+    FlashTransactions(Vec<FlashTransactionV1>),
+    Scenario(String),
+}
 
 pub trait ProtocolUpdater {
     /// Executes these state updates associated with the given protocol version that have not yet
     /// been applied (hence "remaining", e.g. if node is restarted mid-protocol update).
-    fn execute_remaining_state_updates(
+    fn execute_remaining_batches(
         &self,
-        // TODO(resolve during review): should it rather be an already-locked `&S`?
         database: Arc<DbLock<ActualStateManagerDatabase>>,
-        transaction_executor_factory: &TransactionExecutorFactory,
-        ledger_transaction_validator: &LedgerTransactionValidator,
+        state_computer: &StateComputer,
     );
 }
 
 pub struct NoOpProtocolUpdater;
 
 impl ProtocolUpdater for NoOpProtocolUpdater {
-    fn execute_remaining_state_updates(
+    fn execute_remaining_batches(
         &self,
         _database: Arc<DbLock<ActualStateManagerDatabase>>,
-        _transaction_executor_factory: &TransactionExecutorFactory,
-        _ledger_transaction_validator: &LedgerTransactionValidator,
+        _state_computer: &StateComputer,
     ) {
         // no-op
     }
@@ -45,33 +49,30 @@ impl<G: UpdateBatchGenerator> BatchedUpdater<G> {
             batch_generator,
         }
     }
+
+    fn resolve_next_batch_to_execute(
+        &self,
+        database: Arc<DbLock<ActualStateManagerDatabase>>,
+    ) -> Option<(u32, ProtocolUpdateTransactionBatch)> {
+        let database = database.lock();
+        let next_batch_idx = ProtocolUpdateProgress::resolve(database.deref())
+            .scoped_on(&self.new_protocol_version)
+            .next_batch_idx()?;
+        let next_batch = self
+            .batch_generator
+            .generate_batch(database.deref(), next_batch_idx)?;
+        Some((next_batch_idx, next_batch))
+    }
 }
 
 impl<G: UpdateBatchGenerator> ProtocolUpdater for BatchedUpdater<G> {
-    fn execute_remaining_state_updates(
+    fn execute_remaining_batches(
         &self,
         database: Arc<DbLock<ActualStateManagerDatabase>>,
-        transaction_executor_factory: &TransactionExecutorFactory,
-        ledger_transaction_validator: &LedgerTransactionValidator,
+        state_computer: &StateComputer,
     ) {
-        let database = database.lock();
-        let mut txn_committer = ProtocolUpdateTransactionCommitter::new(
-            self.new_protocol_version.clone(),
-            database.deref(),
-            transaction_executor_factory,
-            ledger_transaction_validator,
-        );
-
-        while let Some(next_batch_idx) = txn_committer.next_committable_batch_idx() {
-            let batch = self
-                .batch_generator
-                .generate_batch(database.deref(), next_batch_idx);
-            match batch {
-                Some(flash_txns) => {
-                    txn_committer.commit_batch(next_batch_idx, flash_txns);
-                }
-                None => break,
-            }
+        while let Some((idx, batch)) = self.resolve_next_batch_to_execute(database.clone()) {
+            state_computer.execute_protocol_update_batch(&self.new_protocol_version, idx, batch);
         }
     }
 }
@@ -83,5 +84,5 @@ pub(crate) trait UpdateBatchGenerator {
         &self,
         state_database: &impl SubstateDatabase,
         batch_index: u32,
-    ) -> Option<Vec<UpdateTransaction>>;
+    ) -> Option<ProtocolUpdateTransactionBatch>;
 }

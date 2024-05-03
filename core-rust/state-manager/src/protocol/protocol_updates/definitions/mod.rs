@@ -36,21 +36,18 @@ impl UpdateBatchGenerator for ScryptoEntriesBatchGenerator {
         &self,
         store: &impl SubstateDatabase,
         batch_index: u32,
-    ) -> Option<Vec<UpdateTransaction>> {
+    ) -> Option<ProtocolUpdateTransactionBatch> {
         match batch_index {
             // Just a single batch for regular Scrypto updates:
-            0 => Some(
+            0 => Some(ProtocolUpdateTransactionBatch::FlashTransactions(
                 self.named_entries
                     .iter()
-                    .map(|(name, entry)| {
-                        FlashTransactionV1 {
-                            name: name.clone(),
-                            state_updates: entry.generate_state_updates(store, &self.network),
-                        }
-                        .into()
+                    .map(|(name, entry)| FlashTransactionV1 {
+                        name: name.clone(),
+                        state_updates: entry.generate_state_updates(store, &self.network),
                     })
                     .collect(),
-            ),
+            )),
             // TODO(wip): return scenarios as consecutive batches
             _ => None,
         }

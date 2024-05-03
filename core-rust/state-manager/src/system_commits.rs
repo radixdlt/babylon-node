@@ -75,36 +75,63 @@ pub struct SystemCommitRequestFactory {
 
 impl SystemCommitRequestFactory {
     pub fn create_for_genesis(&mut self, result: GenesisPrepareResult) -> SystemCommitRequest {
-        self.state_version = self
-            .state_version
-            .next()
-            .expect("Invalid next state version!");
-        SystemCommitRequest {
-            raw: result.raw,
-            validated: result.validated,
-            proof: self.create_proof(result.ledger_hashes, result.next_epoch),
-            require_success: true,
-        }
+        let GenesisPrepareResult {
+            transaction,
+            ledger_hashes,
+            next_epoch,
+        } = result;
+        self.create(vec![transaction], ledger_hashes, next_epoch, true)
+    }
+
+    pub fn create_for_protocol_update(
+        &mut self,
+        result: ProtocolUpdatePrepareResult,
+    ) -> SystemCommitRequest {
+        let ProtocolUpdatePrepareResult {
+            transactions,
+            ledger_hashes,
+        } = result;
+        self.create(transactions, ledger_hashes, None, true)
     }
 
     pub fn create_for_scenario(
         &mut self,
         result: ScenarioPrepareResult,
     ) -> Option<SystemCommitRequest> {
-        let ledger_hashes = result.committable_ledger_hashes?;
-        self.state_version = self
-            .state_version
-            .next()
-            .expect("Invalid next state version!");
-        Some(SystemCommitRequest {
-            raw: result.raw,
-            validated: result.validated,
-            proof: self.create_proof(ledger_hashes, None),
-            require_success: false,
-        })
+        let ScenarioPrepareResult {
+            transaction,
+            committable_ledger_hashes,
+        } = result;
+        committable_ledger_hashes
+            .map(|ledger_hashes| self.create(vec![transaction], ledger_hashes, None, false))
     }
 
-    fn create_proof(&self, hashes: LedgerHashes, next_epoch: Option<NextEpoch>) -> LedgerProof {
+    fn create(
+        &mut self,
+        transactions: Vec<RawAndValidatedTransaction>,
+        ledger_hashes: LedgerHashes,
+        next_epoch: Option<NextEpoch>,
+        require_success: bool,
+    ) -> SystemCommitRequest {
+        let proof =
+            self.progress_version_and_create_proof(transactions.len(), ledger_hashes, next_epoch);
+        SystemCommitRequest {
+            transactions,
+            proof,
+            require_success,
+        }
+    }
+
+    fn progress_version_and_create_proof(
+        &mut self,
+        transactions_len: usize,
+        hashes: LedgerHashes,
+        next_epoch: Option<NextEpoch>,
+    ) -> LedgerProof {
+        self.state_version = self
+            .state_version
+            .relative(transactions_len as i128)
+            .expect("Invalid next state version!");
         LedgerProof {
             ledger_header: LedgerHeader {
                 epoch: self.epoch,
@@ -121,22 +148,29 @@ impl SystemCommitRequestFactory {
     }
 }
 
-pub struct GenesisPrepareResult {
+pub struct RawAndValidatedTransaction {
     pub raw: RawLedgerTransaction,
     pub validated: ValidatedLedgerTransaction,
+}
+
+pub struct GenesisPrepareResult {
+    pub transaction: RawAndValidatedTransaction,
     pub ledger_hashes: LedgerHashes,
     pub next_epoch: Option<NextEpoch>,
 }
 
+pub struct ProtocolUpdatePrepareResult {
+    pub transactions: Vec<RawAndValidatedTransaction>,
+    pub ledger_hashes: LedgerHashes,
+}
+
 pub struct ScenarioPrepareResult {
-    pub raw: RawLedgerTransaction,
-    pub validated: ValidatedLedgerTransaction,
+    pub transaction: RawAndValidatedTransaction,
     pub committable_ledger_hashes: Option<LedgerHashes>,
 }
 
 pub struct SystemCommitRequest {
-    pub raw: RawLedgerTransaction,
-    pub validated: ValidatedLedgerTransaction,
+    pub transactions: Vec<RawAndValidatedTransaction>,
     pub proof: LedgerProof,
     pub require_success: bool,
 }

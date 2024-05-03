@@ -110,11 +110,12 @@ fn flash_protocol_update_test() {
         .protocol_update_content_overrides = ProtocolUpdateContentOverrides::empty()
         .with_custom(
             custom_v2_protocol_version.clone(),
-            vec![vec![FlashTransactionV1 {
-                name: format!("{CUSTOM_V2_PROTOCOL_VERSION}-flash"),
-                state_updates: consensus_manager_state_updates,
-            }
-            .into()]],
+            vec![ProtocolUpdateTransactionBatch::FlashTransactions(vec![
+                FlashTransactionV1 {
+                    name: format!("{CUSTOM_V2_PROTOCOL_VERSION}-flash"),
+                    state_updates: consensus_manager_state_updates,
+                },
+            ])],
         )
         .into();
 

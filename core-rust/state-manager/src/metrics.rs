@@ -230,7 +230,6 @@ impl LedgerMetrics {
 
     pub fn update(
         &self,
-        added_transactions: usize,
         new_state_version: StateVersion,
         validator_proposal_counters: Vec<(ValidatorId, LeaderRoundCounter)>,
         proposer_timestamp_ms: i64,
@@ -240,7 +239,7 @@ impl LedgerMetrics {
         self.state_version.set(new_state_version.number() as i64);
 
         self.transactions_committed
-            .inc_by(added_transactions as u64);
+            .inc_by(transactions_metrics_data.len() as u64);
         for TransactionMetricsData { size, fee_summary } in transactions_metrics_data {
             self.committed_transactions_size.observe(size as f64);
             self.execution_cost_units_consumed

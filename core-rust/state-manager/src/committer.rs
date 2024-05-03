@@ -129,16 +129,15 @@ impl Committer {
         &self,
         commit_request: CommitRequest,
     ) -> Result<CommitSummary, InvalidCommitRequestError> {
-        let commit_transactions_len = commit_request.transactions.len();
-        if commit_transactions_len == 0 {
-            panic!("broken invariant: no transactions in request {commit_request:?}");
-        }
+        let CommitRequest {
+            transactions,
+            proof,
+            vertex_store,
+            self_validator_id,
+        } = commit_request;
 
-        let commit_ledger_header = &commit_request.proof.ledger_header;
+        let commit_ledger_header = &proof.ledger_header;
         let commit_state_version = commit_ledger_header.state_version;
-        let commit_request_start_state_version =
-            commit_state_version.relative(-(commit_transactions_len as i128))
-                .expect("`commit_request_start_state_version` should be computable from `commit_state_version - commit_transactions_len` and valid.");
 
         // We advance the top-of-ledger, hence lock:
         let database = self.database.lock();
@@ -152,7 +151,7 @@ impl Committer {
             .unwrap()
             .ledger_header
             .proposer_timestamp_ms;
-        for (index, raw_transaction) in commit_request.transactions.iter().enumerate() {
+        for (index, raw_transaction) in transactions.iter().enumerate() {
             let result = self
                 .ledger_transaction_validator
                 .prepare_from_raw(raw_transaction);
@@ -184,16 +183,7 @@ impl Committer {
         let mut series_executor = self
             .transaction_executor_factory
             .start_series_execution(database.deref());
-
-        if commit_request_start_state_version != series_executor.latest_state_version() {
-            panic!(
-                "broken invariant: commit request assumed state version ({} - {} = {}) while ledger is at {}",
-                commit_state_version,
-                commit_transactions_len,
-                commit_request_start_state_version,
-                series_executor.latest_state_version(),
-            );
-        }
+        self.verify_pre_commit_invariants(&series_executor, transactions.len(), &proof);
 
         let resultant_transaction_root = self
             .execution_cache_manager
@@ -211,6 +201,7 @@ impl Committer {
             });
 
         if resultant_transaction_root != commit_ledger_header.hashes.transaction_root {
+            // TODO(wip): move too!
             warn!(
                 "invalid commit request: resultant transaction root at version {} differs from the proof ({} != {})",
                 commit_state_version,
@@ -226,8 +217,7 @@ impl Committer {
         // Step 3.: Actually execute the transactions, collect their results into DB structures
         let mut commit_bundle_builder = series_executor.start_commit_builder();
 
-        for ((raw, prepared), proposer_timestamp_ms) in commit_request
-            .transactions
+        for ((raw, prepared), proposer_timestamp_ms) in transactions
             .into_iter()
             .zip(prepared_transactions)
             .zip(proposer_timestamps)
@@ -261,43 +251,22 @@ impl Committer {
             );
         }
 
-        let epoch_change = series_executor.epoch_change();
         self.protocol_state_manager
             .update_protocol_state_and_metrics(
                 series_executor.protocol_state(),
-                epoch_change.as_ref(),
+                series_executor.epoch_change().as_ref(),
             );
 
         // Step 4.: Check final invariants, perform the DB commit
-        let next_epoch: Option<NextEpoch> = epoch_change.map(|ev| ev.into());
-        if next_epoch != commit_ledger_header.next_epoch {
-            panic!(
-                "resultant next epoch at version {} differs from the proof ({:?} != {:?})",
-                commit_state_version, next_epoch, commit_ledger_header.next_epoch
-            );
-        }
-
-        self.verify_post_commit_protocol_version(
-            commit_state_version,
-            &series_executor.next_protocol_version(),
-            &commit_ledger_header.next_protocol_version,
-        );
-
-        let final_ledger_hashes = series_executor.latest_ledger_hashes();
-        if final_ledger_hashes != &commit_ledger_header.hashes {
-            panic!(
-                "resultant ledger hashes at version {} differ from the proof ({:?} != {:?})",
-                commit_state_version, final_ledger_hashes, commit_ledger_header.hashes
-            );
-        }
+        self.verify_post_commit_invariants(&series_executor, &proof);
 
         // capture these before we lose the appropriate borrows:
         let proposer_timestamp_ms = commit_ledger_header.proposer_timestamp_ms;
         let round_counters = leader_round_counters_builder.build(series_executor.epoch_header());
-        let final_transaction_root = final_ledger_hashes.transaction_root;
+        let final_transaction_root = series_executor.latest_ledger_hashes().transaction_root;
+        let epoch_change = series_executor.epoch_change();
 
-        database
-            .commit(commit_bundle_builder.build(commit_request.proof, commit_request.vertex_store));
+        database.commit(commit_bundle_builder.build(proof, vertex_store));
 
         drop(database);
 
@@ -311,9 +280,9 @@ impl Committer {
                 .map(|txn| &txn.intent_hash),
         );
 
-        if let Some(next_epoch) = next_epoch {
+        if let Some(epoch_change) = epoch_change {
             self.mempool_manager
-                .remove_txns_where_end_epoch_expired(next_epoch.epoch);
+                .remove_txns_where_end_epoch_expired(epoch_change.epoch);
         }
 
         let num_user_transactions = committed_user_transactions.len() as u32;
@@ -322,11 +291,10 @@ impl Committer {
             .track_committed_transactions(SystemTime::now(), committed_user_transactions);
 
         self.ledger_metrics.update(
-            commit_transactions_len,
             commit_state_version,
             round_counters.clone(),
             proposer_timestamp_ms,
-            commit_request.self_validator_id,
+            self_validator_id,
             transactions_metrics_data,
         );
 
@@ -341,37 +309,41 @@ impl Committer {
     /// validations).
     pub fn commit_system(&self, request: SystemCommitRequest) {
         let SystemCommitRequest {
-            raw,
-            validated,
+            transactions,
             proof,
             require_success,
         } = request;
+        let proposer_timestamp_ms = proof.ledger_header.proposer_timestamp_ms;
+
         let database = self.database.lock();
         let mut series_executor = self
             .transaction_executor_factory
             .start_series_execution(database.deref());
+        self.verify_pre_commit_invariants(&series_executor, transactions.len(), &proof);
+
         let mut commit_bundle_builder = series_executor.start_commit_builder();
+        let mut transactions_metrics_data = Vec::new();
+        for RawAndValidatedTransaction { raw, validated } in transactions {
+            let mut commit = series_executor
+                .execute_and_update_state(&validated, "system transaction")
+                .expect("cannot execute system transaction");
 
-        let mut commit = series_executor
-            .execute_and_update_state(&validated, "system transaction")
-            .expect("cannot execute system transaction");
+            transactions_metrics_data.push(TransactionMetricsData::new(&raw, &commit));
 
-        let transaction_metrics_data = TransactionMetricsData::new(&raw, &commit);
+            if require_success {
+                commit = commit.expect_success("system transaction not successful");
+            }
 
-        if require_success {
-            commit = commit.expect_success("system transaction not successful");
+            commit_bundle_builder.add_executed_transaction(
+                series_executor.latest_state_version(),
+                proposer_timestamp_ms,
+                raw,
+                validated,
+                commit,
+            );
         }
 
-        let proposer_timestamp_ms = proof.ledger_header.proposer_timestamp_ms;
-        let resultant_state_version = series_executor.latest_state_version();
-
-        commit_bundle_builder.add_executed_transaction(
-            resultant_state_version,
-            proposer_timestamp_ms,
-            raw,
-            validated,
-            commit,
-        );
+        self.verify_post_commit_invariants(&series_executor, &proof);
 
         self.execution_cache_manager
             .access_exclusively()
@@ -387,15 +359,74 @@ impl Committer {
                 series_executor.epoch_change().as_ref(),
             );
 
-        drop(database);
-
         self.ledger_metrics.update(
-            1,
-            resultant_state_version,
+            series_executor.latest_state_version(),
             Vec::new(),
             proposer_timestamp_ms,
             None,
-            vec![transaction_metrics_data],
+            transactions_metrics_data,
+        );
+    }
+
+    fn verify_pre_commit_invariants(
+        &self,
+        pristine_series_executor: &TransactionSeriesExecutor<ActualStateManagerDatabase>,
+        commit_transactions_len: usize,
+        proof: &LedgerProof,
+    ) {
+        if commit_transactions_len == 0 {
+            panic!("broken invariant: no transactions in a commit request");
+        }
+        let commit_state_version = proof.ledger_header.state_version;
+        let commit_request_start_state_version = commit_state_version
+            .relative(-(commit_transactions_len as i128))
+            .expect("cannot compute `commit_request_start_state_version`");
+        if commit_request_start_state_version != pristine_series_executor.latest_state_version() {
+            panic!(
+                "broken invariant: commit request assumed state version ({} - {} = {}) while ledger is at {}",
+                commit_state_version,
+                commit_transactions_len,
+                commit_request_start_state_version,
+                pristine_series_executor.latest_state_version(),
+            );
+        }
+    }
+
+    fn verify_post_commit_invariants(
+        &self,
+        finished_series_executor: &TransactionSeriesExecutor<ActualStateManagerDatabase>,
+        proof: &LedgerProof,
+    ) {
+        let commit_state_version = proof.ledger_header.state_version;
+        if finished_series_executor.latest_state_version() != commit_state_version {
+            panic!(
+                "resultant state version differs from the proof ({:?} != {:?})",
+                finished_series_executor.latest_ledger_hashes(),
+                commit_state_version,
+            );
+        }
+
+        if finished_series_executor.latest_ledger_hashes() != &proof.ledger_header.hashes {
+            panic!(
+                "resultant ledger hashes at version {} differ from the proof ({:?} != {:?})",
+                commit_state_version,
+                finished_series_executor.latest_ledger_hashes(),
+                proof.ledger_header.hashes,
+            );
+        }
+
+        let next_epoch = finished_series_executor.epoch_change().map(NextEpoch::from);
+        if next_epoch != proof.ledger_header.next_epoch {
+            panic!(
+                "resultant next epoch at version {} differs from the proof ({:?} != {:?})",
+                commit_state_version, next_epoch, proof.ledger_header.next_epoch
+            );
+        }
+
+        self.verify_post_commit_protocol_version(
+            commit_state_version,
+            &finished_series_executor.next_protocol_version(),
+            &proof.ledger_header.next_protocol_version,
         );
     }
 

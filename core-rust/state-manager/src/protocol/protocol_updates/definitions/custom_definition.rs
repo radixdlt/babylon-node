@@ -19,7 +19,7 @@ impl CustomProtocolUpdateDefinition {
 }
 
 impl ProtocolUpdateDefinition for CustomProtocolUpdateDefinition {
-    type Overrides = Vec<Vec<UpdateTransaction>>;
+    type Overrides = Vec<ProtocolUpdateTransactionBatch>;
 
     fn create_updater(
         new_protocol_version: &ProtocolVersionName,
@@ -36,7 +36,7 @@ impl ProtocolUpdateDefinition for CustomProtocolUpdateDefinition {
 }
 
 pub struct ArbitraryBatchGenerator {
-    pub batches: Vec<Vec<UpdateTransaction>>,
+    pub batches: Vec<ProtocolUpdateTransactionBatch>,
 }
 
 impl UpdateBatchGenerator for ArbitraryBatchGenerator {
@@ -44,7 +44,7 @@ impl UpdateBatchGenerator for ArbitraryBatchGenerator {
         &self,
         _store: &impl SubstateDatabase,
         batch_index: u32,
-    ) -> Option<Vec<UpdateTransaction>> {
+    ) -> Option<ProtocolUpdateTransactionBatch> {
         self.batches.get(batch_index as usize).cloned()
     }
 }

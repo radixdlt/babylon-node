@@ -33,7 +33,7 @@ impl ProtocolUpdateContentOverrides {
     pub fn with_custom(
         mut self,
         custom_name: ProtocolVersionName,
-        config: Overrides<CustomProtocolUpdateDefinition>,
+        overrides: Overrides<CustomProtocolUpdateDefinition>,
     ) -> Self {
         if !CustomProtocolUpdateDefinition::matches(&custom_name) {
             panic!(
@@ -41,7 +41,7 @@ impl ProtocolUpdateContentOverrides {
                 custom_name
             );
         }
-        self.custom.insert(custom_name, config);
+        self.custom.insert(custom_name, overrides);
         self
     }
 }

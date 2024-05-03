@@ -83,6 +83,7 @@ use crate::system_commits::*;
 
 use radix_transaction_scenarios::executor::scenarios_vector;
 
+use crate::protocol::{ProtocolUpdateTransactionBatch, ProtocolVersionName};
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -193,9 +194,7 @@ impl StateComputer {
             self.committer.commit_system(commit_request);
         }
 
-        // These scenarios are committed before we start consensus / rounds after the genesis wrap-up.
-        // This is a little weird, but should be fine.
-        self.execute_scenarios(&mut system_commit_request_factory, genesis_scenarios);
+        self.execute_genesis_scenarios(&mut system_commit_request_factory, genesis_scenarios);
 
         info!("Committing genesis wrap-up");
         let transaction: SystemTransactionV1 = create_genesis_wrap_up_transaction();
@@ -213,8 +212,76 @@ impl StateComputer {
         final_ledger_proof
     }
 
-    /// Prepares and commits a series of transactions comprising the given Engine Scenarios.
-    pub fn execute_scenarios(
+    pub fn execute_protocol_update_batch(
+        &self,
+        protocol_version: &ProtocolVersionName,
+        batch_idx: u32,
+        batch: ProtocolUpdateTransactionBatch,
+    ) {
+        let database = self.database.lock();
+        let latest_header = database
+            .get_latest_proof()
+            .expect("Pre-genesis protocol updates are currently not supported")
+            .ledger_header;
+        drop(database);
+
+        // Currently, protocol updates are always executed at epoch boundary. This means that:
+        // - at the update's first batch, we assume the latest header to contain an epoch change,
+        //   and we advance to the next epoch;
+        // - at any consecutive batches, we will simply use the epoch from the latest header (i.e.
+        //   the one generated for the first batch).
+        let epoch = latest_header
+            .next_epoch
+            .map(|next_epoch| next_epoch.epoch)
+            .unwrap_or(latest_header.epoch);
+
+        let mut system_commit_request_factory = SystemCommitRequestFactory {
+            epoch,
+            timestamp: latest_header.proposer_timestamp_ms,
+            state_version: latest_header.state_version,
+            proof_origin: LedgerProofOrigin::ProtocolUpdate {
+                protocol_version_name: protocol_version.clone(),
+                batch_idx,
+            },
+        };
+
+        match batch {
+            ProtocolUpdateTransactionBatch::FlashTransactions(flash_transactions) => {
+                let prepare_result = self.preparator.prepare_protocol_update(flash_transactions);
+                let commit_request =
+                    system_commit_request_factory.create_for_protocol_update(prepare_result);
+                self.committer.commit_system(commit_request);
+            }
+            ProtocolUpdateTransactionBatch::Scenario(scenario) => {
+                // TODO(wip): handle it as auto-increment on DB's side
+                let dummy_sequence_number = 0;
+                // Note: here we re-use the batch_idx as a nonce, since we need a growing number
+                // that survives Node restarts. It is not going to be the same as the manual nonce
+                // used for Genesis Scenarios:
+                // - it is not guaranteed to start with 0 (in practice, it will be 1);
+                // - it will be incremented (by 1) per consecutive Scenarios (while during Genesis
+                //   Scenarios, the next Scenario gets a nonce after all the incrementations done
+                //   by the previous Scenario).
+                let protocol_update_specific_nonce = batch_idx;
+                self.execute_scenario(
+                    &mut system_commit_request_factory,
+                    dummy_sequence_number,
+                    scenario.as_str(),
+                    protocol_update_specific_nonce,
+                );
+            }
+        }
+    }
+
+    // NOTE:
+    // Execution of Genesis Scenarios differs in important detail from regular Scenarios: they are
+    // simply executed in a series of commits that happen right after Genesis, without any progress
+    // being tracked in the database (neither intermediate, nor final). Actually, the same is true
+    // about the Genesis itself. Thus, if this process is interrupted e.g. by a Node restart, it
+    // may result in an inconsistent DB state (e.g. incomplete Scenario results, or even panics on
+    // boot-up, requiring ledger wipe). We are currently fine with this, since a wipe of an empty
+    // ledger does not hurt that much.
+    fn execute_genesis_scenarios(
         &self,
         system_commit_request_factory: &mut SystemCommitRequestFactory,
         scenarios: Vec<String>,
@@ -262,10 +329,15 @@ impl StateComputer {
                     let (prepare_result, basic_receipt) = self
                         .preparator
                         .prepare_scenario_transaction(scenario_name, &next);
-                    let intent_hash = prepare_result.validated.intent_hash_if_user().unwrap();
+                    let intent_hash = prepare_result
+                        .transaction
+                        .validated
+                        .intent_hash_if_user()
+                        .unwrap();
                     if let Some(commit_request) =
                         system_commit_request_factory.create_for_scenario(prepare_result)
                     {
+                        // TODO(wip): collect, create a single commit!
                         self.committer.commit_system(commit_request);
                         committed_transactions.push(ExecutedScenarioTransaction {
                             logical_name: next.logical_name.clone(),
