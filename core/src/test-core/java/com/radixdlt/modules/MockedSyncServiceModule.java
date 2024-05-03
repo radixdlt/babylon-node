@@ -206,7 +206,7 @@ public class MockedSyncServiceModule extends AbstractModule {
         (sender, ev) ->
             localSyncRequestEventDispatcher.dispatch(
                 new LocalSyncRequest(
-                    LedgerSyncDtoConversions.syncStatusDtoToLedgerProof(ev.getProof()),
+                    LedgerSyncDtoConversions.syncStatusDtoToLedgerProof(ev.proof()),
                     ImmutableList.of(sender))));
   }
 
@@ -264,6 +264,7 @@ public class MockedSyncServiceModule extends AbstractModule {
     return new EventProcessorOnRunner<>(Runners.SYNC, clazz, ev -> {});
   }
 
+  @SuppressWarnings("unchecked")
   private <N, T extends NonLocalEvent> RemoteEventProcessorOnRunner<N, T> noOpRemoteProcessor(
       Class<T> clazz) {
     return (RemoteEventProcessorOnRunner<N, T>)

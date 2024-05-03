@@ -71,24 +71,24 @@ import java.util.Objects;
 /** A response to the SyncRequest message. */
 public final class SyncResponse implements NonLocalEvent {
 
-  private final LedgerExtensionSyncDto dtoLedgerExtension;
+  private final LedgerExtensionSyncDto ledgerExtension;
 
   public static SyncResponse create(LedgerExtensionSyncDto dtoLedgerExtension) {
     return new SyncResponse(dtoLedgerExtension);
   }
 
-  private SyncResponse(LedgerExtensionSyncDto dtoLedgerExtension) {
-    this.dtoLedgerExtension = Objects.requireNonNull(dtoLedgerExtension);
+  private SyncResponse(LedgerExtensionSyncDto ledgerExtension) {
+    this.ledgerExtension = Objects.requireNonNull(ledgerExtension);
   }
 
-  public LedgerExtensionSyncDto getLedgerExtension() {
-    return dtoLedgerExtension;
+  public LedgerExtensionSyncDto ledgerExtension() {
+    return ledgerExtension;
   }
 
   @Override
   public String toString() {
     return String.format(
-        "%s{ledgerExtension=%s}", this.getClass().getSimpleName(), dtoLedgerExtension);
+        "%s{ledgerExtension=%s}", this.getClass().getSimpleName(), ledgerExtension);
   }
 
   @Override
@@ -96,15 +96,11 @@ public final class SyncResponse implements NonLocalEvent {
     if (this == o) {
       return true;
     }
-    if (!(o instanceof SyncResponse)) {
-      return false;
-    }
-    SyncResponse that = (SyncResponse) o;
-    return Objects.equals(dtoLedgerExtension, that.dtoLedgerExtension);
+    return o instanceof SyncResponse that && Objects.equals(ledgerExtension, that.ledgerExtension);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(dtoLedgerExtension);
+    return Objects.hash(ledgerExtension);
   }
 }

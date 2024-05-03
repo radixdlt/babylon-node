@@ -81,7 +81,7 @@ public final class PeersResponse implements NonLocalEvent {
     this.peers = peers;
   }
 
-  public ImmutableSet<RadixNodeUri> getPeers() {
+  public ImmutableSet<RadixNodeUri> peers() {
     return peers;
   }
 

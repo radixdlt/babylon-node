@@ -70,15 +70,9 @@ import java.util.List;
 import java.util.Objects;
 
 /** An RPC response */
-public final class GetVerticesResponse implements NonLocalEvent {
-  private final List<VertexWithHash> vertices;
-
+public record GetVerticesResponse(List<VertexWithHash> vertices) implements NonLocalEvent {
   public GetVerticesResponse(List<VertexWithHash> vertices) {
     this.vertices = Objects.requireNonNull(vertices);
-  }
-
-  public List<VertexWithHash> getVertices() {
-    return vertices;
   }
 
   @Override

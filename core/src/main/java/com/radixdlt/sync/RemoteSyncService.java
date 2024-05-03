@@ -126,7 +126,7 @@ public final class RemoteSyncService {
   }
 
   private void processSyncRequest(NodeId sender, SyncRequest syncRequest) {
-    final var remoteCurrentHeader = syncRequest.getStartProofExclusive();
+    final var remoteCurrentHeader = syncRequest.startProofExclusive();
     final var ledgerExtension = getLedgerExtensionForSyncRequest(remoteCurrentHeader);
 
     if (ledgerExtension == null) {

@@ -243,7 +243,7 @@ public final class LocalSyncService {
                                 this.startSync(
                                     state,
                                     ImmutableList.of(peer),
-                                    REv2ToConsensus.ledgerHeader(request.getProof().getHeader()))))
+                                    REv2ToConsensus.ledgerHeader(request.proof().getHeader()))))
             .put(
                 remoteHandler(
                     SyncingState.class,
@@ -255,7 +255,7 @@ public final class LocalSyncService {
                                     state,
                                     ImmutableList.of(peer),
                                     REv2ToConsensus.ledgerHeader(
-                                        ledgerStatusUpdate.getProof().getHeader()))))
+                                        ledgerStatusUpdate.proof().getHeader()))))
             .put(
                 handler(
                     SyncingState.class,
@@ -326,7 +326,7 @@ public final class LocalSyncService {
     // get the highest state that we received that is also higher than what we currently have
     final var maybeMaxPeerHeader =
         currentState.responses().values().stream()
-            .map(StatusResponse::getProof)
+            .map(StatusResponse::proof)
             .max(Comparator.comparing(LedgerProofSyncStatusDto::getStateVersion))
             .filter(h -> h.getStateVersion() > currentState.getLatestProof().stateVersion());
 
@@ -338,7 +338,7 @@ public final class LocalSyncService {
                   currentState.responses().entrySet().stream()
                       .filter(
                           e ->
-                              e.getValue().getProof().getStateVersion()
+                              e.getValue().proof().getStateVersion()
                                   == maxPeerHeader.getStateVersion())
                       .map(Map.Entry::getKey)
                       .collect(ImmutableList.toImmutableList());

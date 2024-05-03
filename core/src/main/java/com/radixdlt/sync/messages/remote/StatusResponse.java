@@ -81,7 +81,7 @@ public final class StatusResponse implements NonLocalEvent {
     this.proof = proof;
   }
 
-  public LedgerProofSyncStatusDto getProof() {
+  public LedgerProofSyncStatusDto proof() {
     return proof;
   }
 
@@ -95,11 +95,8 @@ public final class StatusResponse implements NonLocalEvent {
     if (this == o) {
       return true;
     }
-    if (!(o instanceof StatusResponse)) {
-      return false;
-    }
-    StatusResponse that = (StatusResponse) o;
-    return Objects.equals(proof, that.proof);
+
+    return o instanceof StatusResponse that && Objects.equals(proof, that.proof);
   }
 
   @Override

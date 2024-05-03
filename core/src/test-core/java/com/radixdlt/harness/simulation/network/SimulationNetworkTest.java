@@ -78,15 +78,13 @@ import org.junit.Test;
 public class SimulationNetworkTest {
   private NodeId node1;
   private NodeId node2;
-  private SimulationNetwork.ChannelCommunication channelCommunication;
   private SimulationNetwork network;
 
   @Before
   public void setup() {
     node1 = mock(NodeId.class);
     node2 = mock(NodeId.class);
-    this.channelCommunication = new InOrderChannels(msg -> 50, Map.of());
-    this.network = new SimulationNetwork(channelCommunication);
+    this.network = new SimulationNetwork(new InOrderChannels(msg -> 50, Map.of()));
   }
 
   @Test
@@ -99,9 +97,9 @@ public class SimulationNetworkTest {
     network
         .getNetwork(node1)
         .remoteEventDispatcher(GetVerticesRequest.class)
-        .dispatch(node2, new GetVerticesRequest(vertexId, 1));
+        .dispatch(node2, GetVerticesRequest.create(vertexId, 1));
 
     rpcRequestListener.awaitCount(1);
-    rpcRequestListener.assertValueAt(0, r -> r.getEvent().getVertexId().equals(vertexId));
+    rpcRequestListener.assertValueAt(0, r -> r.event().vertexId().equals(vertexId));
   }
 }

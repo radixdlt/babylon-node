@@ -84,7 +84,7 @@ public final class SyncRequest implements NonLocalEvent {
     this.startProofExclusive = startProofExclusive;
   }
 
-  public LedgerProofSyncDto getStartProofExclusive() {
+  public LedgerProofSyncDto startProofExclusive() {
     return startProofExclusive;
   }
 
@@ -98,11 +98,8 @@ public final class SyncRequest implements NonLocalEvent {
     if (this == o) {
       return true;
     }
-    if (!(o instanceof SyncRequest)) {
-      return false;
-    }
-    SyncRequest that = (SyncRequest) o;
-    return Objects.equals(startProofExclusive, that.startProofExclusive);
+    return o instanceof SyncRequest that
+        && Objects.equals(startProofExclusive, that.startProofExclusive);
   }
 
   @Override

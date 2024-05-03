@@ -69,21 +69,11 @@ import com.radixdlt.consensus.event.NonLocalEvent;
 import java.util.Objects;
 
 /** An error response to the GetVertices call */
-public final class GetVerticesErrorResponse implements NonLocalEvent {
-  private final HighQC highQC;
-  private final GetVerticesRequest request;
-
+public record GetVerticesErrorResponse(HighQC highQC, GetVerticesRequest request)
+    implements NonLocalEvent {
   public GetVerticesErrorResponse(HighQC highQC, GetVerticesRequest request) {
     this.highQC = Objects.requireNonNull(highQC);
     this.request = Objects.requireNonNull(request);
-  }
-
-  public HighQC highQC() {
-    return this.highQC;
-  }
-
-  public GetVerticesRequest request() {
-    return this.request;
   }
 
   @Override

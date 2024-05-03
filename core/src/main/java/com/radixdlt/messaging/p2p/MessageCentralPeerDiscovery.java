@@ -114,7 +114,7 @@ public final class MessageCentralPeerDiscovery {
   }
 
   private void sendPeersResponse(NodeId nodeId, PeersResponse peersResponse) {
-    final var msg = new PeersResponseMessage(peersResponse.getPeers());
+    final var msg = new PeersResponseMessage(peersResponse.peers());
     this.messageCentral.send(nodeId, msg);
   }
 }

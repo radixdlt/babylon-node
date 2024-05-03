@@ -422,7 +422,7 @@ public final class BFTSync implements BFTSyncer {
       int count,
       ImmutableList<NodeId> authors,
       HashCode syncId) {
-    var request = new GetVerticesRequest(vertexId, count);
+    var request = GetVerticesRequest.create(vertexId, count);
     var syncRequestState = bftSyncing.getOrDefault(request, new SyncRequestState(authors, round));
 
     if (syncRequestState.syncIds.isEmpty()) {
@@ -490,11 +490,11 @@ public final class BFTSync implements BFTSyncer {
     log.debug(
         "SYNC_STATE: Processing vertices {} Round {} From {} LatestProof {}",
         syncState,
-        response.getVertices().get(0).vertex().getRound(),
+        response.vertices().get(0).vertex().getRound(),
         sender,
         this.latestProof);
 
-    syncState.fetched.addAll(response.getVertices());
+    syncState.fetched.addAll(response.vertices());
 
     final var commitHeader = syncState.processedQcCommit.committedHeader().getLedgerHeader();
     // TODO: verify actually extends rather than just state version comparison
@@ -536,7 +536,7 @@ public final class BFTSync implements BFTSyncer {
   }
 
   private void processVerticesResponseForQCSync(SyncState syncState, GetVerticesResponse response) {
-    final var vertexWithHash = response.getVertices().get(0);
+    final var vertexWithHash = response.vertices().get(0);
     final var vertex = vertexWithHash.vertex();
     syncState.fetched.addFirst(vertexWithHash);
 
@@ -614,7 +614,7 @@ public final class BFTSync implements BFTSyncer {
 
   private void processGetVerticesResponse(NodeId sender, GetVerticesResponse response) {
     final var allVerticesHaveValidQc =
-        response.getVertices().stream()
+        response.vertices().stream()
             .allMatch(v -> safetyRules.verifyQcAgainstTheValidatorSet(v.vertex().getQCToParent()));
 
     if (!allVerticesHaveValidQc) {
@@ -625,8 +625,8 @@ public final class BFTSync implements BFTSyncer {
 
     log.debug("SYNC_VERTICES: Received GetVerticesResponse {}", response);
 
-    var firstVertex = response.getVertices().get(0);
-    var requestInfo = new GetVerticesRequest(firstVertex.hash(), response.getVertices().size());
+    var firstVertex = response.vertices().get(0);
+    var requestInfo = GetVerticesRequest.create(firstVertex.hash(), response.vertices().size());
     var syncRequestState = bftSyncing.remove(requestInfo);
 
     if (syncRequestState != null) {
