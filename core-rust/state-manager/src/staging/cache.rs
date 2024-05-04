@@ -71,7 +71,6 @@ use std::sync::Arc;
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::engine_prelude::*;
-use crate::protocol::ProtocolState;
 use crate::staging::overlays::{
     MapSubstateNodeAncestryStore, StagedSubstateNodeAncestryStore, SubstateOverlayIterator,
 };
@@ -221,7 +220,6 @@ impl ExecutionCache {
         epoch_transaction_identifiers: &EpochTransactionIdentifiers,
         parent_state_version: StateVersion,
         parent_transaction_root: &TransactionTreeHash,
-        parent_protocol_state: &ProtocolState,
         ledger_transaction_hash: &LedgerTransactionHash,
         executable: T,
     ) -> &ProcessedTransactionReceipt {
@@ -246,7 +244,6 @@ impl ExecutionCache {
                         ledger_transaction_hash,
                     },
                     transaction_receipt,
-                    parent_protocol_state,
                 );
 
                 let internal_transaction_ids = InternalTransactionIds {

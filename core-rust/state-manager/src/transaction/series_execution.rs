@@ -224,7 +224,6 @@ where
             self.epoch_identifiers(),
             self.state_tracker.state_version,
             &self.state_tracker.ledger_hashes.transaction_root,
-            &self.state_tracker.protocol_state,
             &description.ledger_hash,
             wrapped_executable,
         );
@@ -350,8 +349,11 @@ impl StateTracker {
             .expect("Invalid next state version!");
         self.ledger_hashes = result.hash_structures_diff.ledger_hashes;
         self.epoch_change = result.epoch_change();
-        self.protocol_state = result.new_protocol_state.clone();
-        self.next_protocol_version = result.next_protocol_version.clone();
+
+        let (protocol_state, next_protocol_version) =
+            self.protocol_state.compute_next(&result.local_receipt, self.state_version);
+        self.protocol_state = protocol_state;
+        self.next_protocol_version = next_protocol_version;
     }
 
     pub fn next_protocol_version(&self) -> Option<ProtocolVersionName> {
