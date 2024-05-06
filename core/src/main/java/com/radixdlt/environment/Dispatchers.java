@@ -142,7 +142,7 @@ public final class Dispatchers {
     }
   }
 
-  private static final class RemoteDispatcherProvider<T extends RemoteEvent & LocalEvent>
+  private static final class RemoteDispatcherProvider<T extends RemoteEvent>
       implements Provider<RemoteEventDispatcher<NodeId, T>> {
     @Inject private Provider<Environment> environmentProvider;
 
@@ -196,7 +196,7 @@ public final class Dispatchers {
     return new ScheduledDispatcherProvider<>(t);
   }
 
-  public static <T extends RemoteEvent & LocalEvent>
+  public static <T extends RemoteEvent>
       Provider<RemoteEventDispatcher<NodeId, T>> remoteDispatcherProvider(Class<T> messageType) {
     return new RemoteDispatcherProvider<>(messageType);
   }

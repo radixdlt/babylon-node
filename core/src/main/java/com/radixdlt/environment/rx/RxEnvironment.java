@@ -121,7 +121,7 @@ public final class RxEnvironment implements Environment {
   }
 
   @Override
-  public <T extends LocalEvent> EventDispatcher<T> getDispatcher(Class<T> eventClass) {
+  public <T extends CoreEvent> EventDispatcher<T> getDispatcher(Class<T> eventClass) {
     return getSubject(eventClass).<EventDispatcher<T>>map(s -> s::onNext).orElse(e -> {});
   }
 
