@@ -22,7 +22,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.BootLoaderModuleFieldKernelBootValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -37,12 +36,12 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class BootLoaderModuleFieldKernelBootSubstateAllOf {
   public static final String JSON_PROPERTY_VALUE = "value";
-  private BootLoaderModuleFieldKernelBootValue value;
+  private Object value;
 
   public BootLoaderModuleFieldKernelBootSubstateAllOf() { 
   }
 
-  public BootLoaderModuleFieldKernelBootSubstateAllOf value(BootLoaderModuleFieldKernelBootValue value) {
+  public BootLoaderModuleFieldKernelBootSubstateAllOf value(Object value) {
     this.value = value;
     return this;
   }
@@ -56,14 +55,14 @@ public class BootLoaderModuleFieldKernelBootSubstateAllOf {
   @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public BootLoaderModuleFieldKernelBootValue getValue() {
+  public Object getValue() {
     return value;
   }
 
 
   @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValue(BootLoaderModuleFieldKernelBootValue value) {
+  public void setValue(Object value) {
     this.value = value;
   }
 

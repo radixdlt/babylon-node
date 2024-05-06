@@ -130,8 +130,6 @@ pub mod boot_loader_module_field_kernel_boot_substate;
 pub use self::boot_loader_module_field_kernel_boot_substate::BootLoaderModuleFieldKernelBootSubstate;
 pub mod boot_loader_module_field_kernel_boot_substate_all_of;
 pub use self::boot_loader_module_field_kernel_boot_substate_all_of::BootLoaderModuleFieldKernelBootSubstateAllOf;
-pub mod boot_loader_module_field_kernel_boot_value;
-pub use self::boot_loader_module_field_kernel_boot_value::BootLoaderModuleFieldKernelBootValue;
 pub mod boot_loader_module_field_system_boot_substate;
 pub use self::boot_loader_module_field_system_boot_substate::BootLoaderModuleFieldSystemBootSubstate;
 pub mod boot_loader_module_field_system_boot_substate_all_of;
@@ -210,6 +208,8 @@ pub mod consensus_manager_registered_validators_by_stake_index_entry_substate_al
 pub use self::consensus_manager_registered_validators_by_stake_index_entry_substate_all_of::ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstateAllOf;
 pub mod consensus_manager_registered_validators_by_stake_index_entry_value;
 pub use self::consensus_manager_registered_validators_by_stake_index_entry_value::ConsensusManagerRegisteredValidatorsByStakeIndexEntryValue;
+pub mod costing_module_config;
+pub use self::costing_module_config::CostingModuleConfig;
 pub mod costing_parameters;
 pub use self::costing_parameters::CostingParameters;
 pub mod count_of_proof_rule;

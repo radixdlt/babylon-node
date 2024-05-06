@@ -14,13 +14,13 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct BootLoaderModuleFieldKernelBootSubstateAllOf {
     #[serde(rename = "value")]
-    pub value: Box<crate::core_api::generated::models::BootLoaderModuleFieldKernelBootValue>,
+    pub value: serde_json::Value,
 }
 
 impl BootLoaderModuleFieldKernelBootSubstateAllOf {
-    pub fn new(value: crate::core_api::generated::models::BootLoaderModuleFieldKernelBootValue) -> BootLoaderModuleFieldKernelBootSubstateAllOf {
+    pub fn new(value: serde_json::Value) -> BootLoaderModuleFieldKernelBootSubstateAllOf {
         BootLoaderModuleFieldKernelBootSubstateAllOf {
-            value: Box::new(value),
+            value,
         }
     }
 }

@@ -4095,25 +4095,36 @@ components:
       type: object
       required:
         - network_definition
+        - costing_module_config
         - costing_parameters
         - limit_parameters
-        - xrd_max_per_function_royalty
-        - apply_additional_costing
       properties:
         network_definition:
           $ref: "#/components/schemas/NetworkDefinition"
+        costing_module_config:
+          $ref: "#/components/schemas/CostingModuleConfig"
         costing_parameters:
           $ref: "#/components/schemas/SystemCostingParameters"
         limit_parameters:
           $ref: "#/components/schemas/LimitParameters"
+    CostingModuleConfig:
+      type: object
+      required:
+        - xrd_max_per_function_royalty
+        - apply_execution_cost_for_all_system_calls
+        - apply_boot_ref_check_costing
+      properties:
         xrd_max_per_function_royalty:
           type: string
           description: |
             The string-encoded decimal representing the maximum amount of XRD configurable for a single function's royalty.
             A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
-        apply_additional_costing:
+        apply_execution_cost_for_all_system_calls:
           type: boolean
-          description: Whether to adjust costs for querying fee reserve state and encoding bech32 addresses.
+          description: Whether to apply execution costing for all system calls.
+        apply_boot_ref_check_costing:
+          type: boolean
+          description: Whether to apply costing for reference checks on boot.
     NetworkDefinition:
       type: object
       required:
@@ -4284,11 +4295,6 @@ components:
               $ref: '#/components/schemas/BootLoaderModuleFieldKernelBootValue'
     BootLoaderModuleFieldKernelBootValue:
       type: object
-      required:
-        - ref_check_costing
-      properties:
-        ref_check_costing:
-          type: boolean
     TypeInfoModuleFieldTypeInfoSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'

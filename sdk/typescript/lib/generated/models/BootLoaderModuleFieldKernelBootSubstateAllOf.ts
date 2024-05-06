@@ -13,13 +13,6 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { BootLoaderModuleFieldKernelBootValue } from './BootLoaderModuleFieldKernelBootValue';
-import {
-    BootLoaderModuleFieldKernelBootValueFromJSON,
-    BootLoaderModuleFieldKernelBootValueFromJSONTyped,
-    BootLoaderModuleFieldKernelBootValueToJSON,
-} from './BootLoaderModuleFieldKernelBootValue';
-
 /**
  * 
  * @export
@@ -28,10 +21,10 @@ import {
 export interface BootLoaderModuleFieldKernelBootSubstateAllOf {
     /**
      * 
-     * @type {BootLoaderModuleFieldKernelBootValue}
+     * @type {object}
      * @memberof BootLoaderModuleFieldKernelBootSubstateAllOf
      */
-    value: BootLoaderModuleFieldKernelBootValue;
+    value: object;
     /**
      * 
      * @type {string}
@@ -70,7 +63,7 @@ export function BootLoaderModuleFieldKernelBootSubstateAllOfFromJSONTyped(json: 
     }
     return {
         
-        'value': BootLoaderModuleFieldKernelBootValueFromJSON(json['value']),
+        'value': json['value'],
         'substate_type': !exists(json, 'substate_type') ? undefined : json['substate_type'],
     };
 }
@@ -84,7 +77,7 @@ export function BootLoaderModuleFieldKernelBootSubstateAllOfToJSON(value?: BootL
     }
     return {
         
-        'value': BootLoaderModuleFieldKernelBootValueToJSON(value.value),
+        'value': value.value,
         'substate_type': value.substate_type,
     };
 }

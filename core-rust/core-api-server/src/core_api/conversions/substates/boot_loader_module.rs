@@ -44,14 +44,13 @@ pub fn to_api_kernel_boot_substate(
     substate: &KernelBoot,
 ) -> Result<models::Substate, MappingError> {
     let value = match substate {
-        KernelBoot::V1 { ref_check_costing } => {
-            models::BootLoaderModuleFieldKernelBootValue::new(*ref_check_costing)
-        }
+        // Note: this is how OpenAPI generator represents an empty object type, even when named:
+        KernelBoot::V1 => serde_json::Value::Object(serde_json::Map::default()),
     };
 
     Ok(models::Substate::BootLoaderModuleFieldKernelBootSubstate {
         is_locked: false,
-        value: Box::new(value),
+        value,
     })
 }
 
@@ -61,20 +60,37 @@ fn to_api_system_parameters(
 ) -> Result<models::SystemParameters, MappingError> {
     let SystemParameters {
         network_definition,
+        costing_module_config,
         costing_parameters,
         limit_parameters,
-        max_per_function_royalty_in_xrd,
-        apply_additional_costing,
     } = system_parameters;
     Ok(models::SystemParameters {
         network_definition: Box::new(to_api_network_definition(context, network_definition)?),
+        costing_module_config: Box::new(to_api_costing_module_config(
+            context,
+            costing_module_config,
+        )?),
         costing_parameters: Box::new(to_api_system_costing_parameters(
             context,
             costing_parameters,
         )?),
         limit_parameters: Box::new(to_api_limit_parameters(context, limit_parameters)?),
+    })
+}
+
+fn to_api_costing_module_config(
+    _context: &MappingContext,
+    costing_module_config: &CostingModuleConfig,
+) -> Result<models::CostingModuleConfig, MappingError> {
+    let CostingModuleConfig {
+        max_per_function_royalty_in_xrd,
+        apply_execution_cost_2,
+        apply_boot_ref_check_costing,
+    } = costing_module_config;
+    Ok(models::CostingModuleConfig {
         xrd_max_per_function_royalty: to_api_decimal(max_per_function_royalty_in_xrd),
-        apply_additional_costing: *apply_additional_costing,
+        apply_execution_cost_for_all_system_calls: *apply_execution_cost_2,
+        apply_boot_ref_check_costing: *apply_boot_ref_check_costing,
     })
 }
 
