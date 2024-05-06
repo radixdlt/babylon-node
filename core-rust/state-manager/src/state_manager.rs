@@ -197,7 +197,6 @@ pub struct StateManager {
 }
 
 impl StateManager {
-    // TODO(resolve during review): should we already acknowledge that this is really just `RustServices::bootstrap()`?
     pub fn new(
         config: StateManagerConfig,
         mempool_relay_dispatcher: Option<MempoolRelayDispatcher>,
@@ -406,6 +405,9 @@ impl StateManager {
 
     /// Executes the actual protocol update transactions (on-ledger) and performs any changes to the
     /// services (off-ledger) affected by the protocol update.
+    /// Note: This method is only called from Java, after the consensus makes sure that the ledger
+    /// is in particular state and ready for protocol update. Hence, we trust the input here and
+    /// unconditionally update the internally-maintained protocol version to its new value.
     pub fn apply_protocol_update(
         &self,
         protocol_version_name: &ProtocolVersionName,
@@ -413,7 +415,6 @@ impl StateManager {
         self.protocol_update_executor
             .execute_protocol_update(protocol_version_name);
 
-        // TODO(resolve during review): should we somehow check that the call above was effective?
         self.protocol_state_manager
             .set_current_protocol_version(protocol_version_name);
 

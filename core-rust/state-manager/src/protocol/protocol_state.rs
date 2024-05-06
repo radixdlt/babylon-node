@@ -30,7 +30,7 @@ impl ProtocolUpdateExecutor {
     pub fn new(
         network: NetworkDefinition,
         protocol_config: ProtocolConfig,
-        // TODO(wip): pass it down
+        // TODO(post-protocol update scenarios): pass the config down, return Scenarios as batches
         _scenarios_execution_config: ScenariosExecutionConfig,
         database: Arc<DbLock<ActualStateManagerDatabase>>,
         system_executor: Arc<SystemExecutor>,

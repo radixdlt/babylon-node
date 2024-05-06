@@ -48,7 +48,6 @@ impl UpdateBatchGenerator for ScryptoEntriesBatchGenerator {
                     })
                     .collect(),
             )),
-            // TODO(wip): return scenarios as consecutive batches
             _ => None,
         }
     }
