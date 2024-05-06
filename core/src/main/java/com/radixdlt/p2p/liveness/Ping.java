@@ -64,10 +64,9 @@
 
 package com.radixdlt.p2p.liveness;
 
-import com.radixdlt.consensus.event.LocalEvent;
 import com.radixdlt.consensus.event.RemoteEvent;
 
-public final class Ping implements RemoteEvent, LocalEvent {
+public final class Ping implements RemoteEvent {
 
   public static Ping create() {
     return new Ping();

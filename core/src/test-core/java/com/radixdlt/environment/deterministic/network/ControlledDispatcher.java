@@ -65,6 +65,7 @@
 package com.radixdlt.environment.deterministic.network;
 
 import com.google.inject.TypeLiteral;
+import com.radixdlt.consensus.event.CoreEvent;
 import com.radixdlt.consensus.event.LocalEvent;
 import com.radixdlt.consensus.event.RemoteEvent;
 import com.radixdlt.environment.*;
@@ -104,7 +105,7 @@ public final class ControlledDispatcher implements Environment {
   }
 
   @Override
-  public <T extends LocalEvent> EventDispatcher<T> getDispatcher(Class<T> eventClass) {
+  public <T extends CoreEvent> EventDispatcher<T> getDispatcher(Class<T> eventClass) {
     return e ->
         handleMessage(
             new ControlledMessage(
