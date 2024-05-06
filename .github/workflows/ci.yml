@@ -32,6 +32,7 @@ jobs:
             phylum-ci \
               -vv \
               --audit \
+              --force-analysis \
               --all-deps
 #  snyk-scan-deps-licences:
 #    name: Snyk deps/licences scan
