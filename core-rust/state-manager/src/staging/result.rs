@@ -195,7 +195,10 @@ impl ProcessedCommitResult {
             .state_updates
             .create_database_updates::<SpreadPrefixKeyMapper>();
 
-        let global_balance_update = Self::compute_global_balance_update(
+        let GlobalBalanceUpdate {
+            global_balance_summary,
+            new_substate_node_ancestry_records,
+        } = Self::compute_global_balance_update(
             store,
             &state_changes,
             &commit_result.state_update_summary.vault_balance_changes,
@@ -208,7 +211,7 @@ impl ProcessedCommitResult {
             EpochAwareAccuTreeFactory::new(epoch_identifiers.state_version, parent_state_version);
 
         let transaction_tree_diff = epoch_accu_trees.compute_tree_diff(
-            epoch_identifiers.transaction_hash,
+            epoch_identifiers.transaction_root,
             store,
             vec![TransactionTreeHash::from(ledger_transaction_hash)],
         );
@@ -216,13 +219,13 @@ impl ProcessedCommitResult {
         let local_receipt = LocalTransactionReceipt::new(
             commit_result,
             state_changes,
-            global_balance_update.global_balance_summary,
+            global_balance_summary,
             execution_fee_data,
         );
         let consensus_receipt = local_receipt.on_ledger.get_consensus_receipt();
 
         let receipt_tree_diff = epoch_accu_trees.compute_tree_diff(
-            epoch_identifiers.receipt_hash,
+            epoch_identifiers.receipt_root,
             store,
             vec![ReceiptTreeHash::from(consensus_receipt.get_hash())],
         );
@@ -242,8 +245,7 @@ impl ProcessedCommitResult {
                 receipt_tree_diff,
             },
             database_updates,
-            new_substate_node_ancestry_records: global_balance_update
-                .new_substate_node_ancestry_records,
+            new_substate_node_ancestry_records,
             new_leaf_substate_keys,
         }
     }

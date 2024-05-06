@@ -64,6 +64,64 @@
 
 use crate::engine_prelude::*;
 
+/// An implementation helper for a runtime-safe "capture a single expected value" functionality.
+pub enum CaptureSupport<T> {
+    NotExpecting,
+    Expecting,
+    Captured(T),
+}
+
+impl<T> Default for CaptureSupport<T> {
+    fn default() -> Self {
+        Self::NotExpecting
+    }
+}
+
+impl<T> CaptureSupport<T> {
+
+    /// Configures this instance to expect a single [`Self::capture_value()`] call.
+    pub fn expect_capture(&mut self) {
+        match self {
+            Self::NotExpecting => *self = Self::Expecting,
+            Self::Expecting => panic!("already configured to expect a value"),
+            Self::Captured(_) => panic!("previously captured value not retrieved"),
+        }
+    }
+
+    /// Actually captures the given value.
+    /// The state must be "expecting".
+    pub fn capture_value(&mut self, value: T) {
+        match self {
+            Self::NotExpecting => panic!("not expecting capture"),
+            Self::Expecting => *self = Self::Captured(value),
+            Self::Captured(_) => panic!("already captured"),
+        }
+    }
+
+    /// Calls [`Self::capture_value()`] with the clone of the referenced value, or does nothing if
+    /// not expecting any value at the moment.
+    pub fn capture_clone_or_ignore(&mut self, value: &T)
+    where
+        T: Clone,
+    {
+        if matches!(self, CaptureSupport::NotExpecting) {
+            return; // deliberately do nothing
+        }
+        self.capture_value(value.clone());
+    }
+
+    /// Returns the currently captured value and resets the instance to "not expecting" state.
+    /// The [`Self::capture_value()`] must have been called before this method.
+    pub fn retrieve_captured(&mut self) -> T {
+        let self_before_reset = mem::replace(self, Self::NotExpecting);
+        let Self::Captured(value) = self_before_reset else {
+            *self = self_before_reset; // "rollback" our state, just in case someone catches panics
+            panic!("nothing captured");
+        };
+        value
+    }
+}
+
 pub trait IsAccountExt {
     fn is_account(&self) -> bool;
 }

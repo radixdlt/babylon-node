@@ -307,12 +307,14 @@ impl Committer {
 
     /// Performs a simplified [`commit()`] flow meant for system transactions.
     /// This method accepts a pre-validated transaction and trusts its contents (i.e. skips some
-    /// validations).
+    /// validations). The pre/post-commit invariants are still checked, for sanity only.
+    /// All system transactions are expected to be committable, and the commit request may
+    /// additionally require that they are all successful.
     pub fn commit_system(&self, request: SystemCommitRequest) {
         let SystemCommitRequest {
             transactions,
             proof,
-            require_success,
+            require_committed_successes,
         } = request;
         let proposer_timestamp_ms = proof.ledger_header.proposer_timestamp_ms;
 
@@ -328,13 +330,11 @@ impl Committer {
             let mut commit = series_executor
                 .execute_and_update_state(&validated, "system transaction")
                 .expect("cannot execute system transaction");
-
-            transactions_metrics_data.push(TransactionMetricsData::new(&raw, &commit));
-
-            if require_success {
+            if require_committed_successes {
                 commit = commit.expect_success("system transaction not successful");
             }
 
+            transactions_metrics_data.push(TransactionMetricsData::new(&raw, &commit));
             commit_bundle_builder.add_executed_transaction(
                 series_executor.latest_state_version(),
                 proposer_timestamp_ms,
@@ -481,7 +481,7 @@ impl Committer {
         let epoch_accu_trees =
             EpochAwareAccuTreeFactory::new(epoch_identifiers.state_version, parent_version);
         let transaction_tree_diff = epoch_accu_trees.compute_tree_diff(
-            epoch_identifiers.transaction_hash,
+            epoch_identifiers.transaction_root,
             store,
             transactions
                 .iter()

@@ -68,7 +68,7 @@ use prometheus::Registry;
 use std::ops::Deref;
 use std::sync::Arc;
 use std::time::SystemTime;
-use tracing::debug;
+use tracing::{debug, info};
 
 use crate::engine_prelude::*;
 use crate::limits::*;
@@ -106,7 +106,7 @@ impl Preparator {
         }
     }
 
-    pub fn prepare_genesis(&self, genesis_transaction: GenesisTransaction) -> GenesisPrepareResult {
+    pub fn prepare_genesis(&self, genesis_transaction: GenesisTransaction) -> SystemPrepareResult {
         let raw = LedgerTransaction::Genesis(Box::new(genesis_transaction))
             .to_raw()
             .expect("Could not encode genesis transaction");
@@ -124,23 +124,22 @@ impl Preparator {
             .expect("genesis not committable")
             .expect_success("genesis");
 
-        GenesisPrepareResult {
-            transaction: RawAndValidatedTransaction { raw, validated },
-            ledger_hashes: *series_executor.latest_ledger_hashes(),
-            next_epoch: series_executor.epoch_change().map(|event| event.into()),
-        }
+        SystemPrepareResult::from_committed_series(
+            vec![RawAndValidatedTransaction { raw, validated }],
+            series_executor,
+        )
     }
 
     pub fn prepare_protocol_update(
         &self,
         flash_transactions: Vec<FlashTransactionV1>,
-    ) -> ProtocolUpdatePrepareResult {
+    ) -> SystemPrepareResult {
         let database = self.database.lock();
         let mut series_executor = self
             .transaction_executor_factory
             .start_series_execution(database.deref());
 
-        let mut transactions = Vec::new();
+        let mut committed_transactions = Vec::new();
         for flash_transaction in flash_transactions {
             let raw = LedgerTransaction::FlashV1(Box::new(flash_transaction))
                 .to_raw()
@@ -153,55 +152,94 @@ impl Preparator {
                 .expect("protocol update not committable")
                 .expect_success("protocol update");
 
-            transactions.push(RawAndValidatedTransaction { raw, validated });
+            committed_transactions.push(RawAndValidatedTransaction { raw, validated });
         }
 
-        ProtocolUpdatePrepareResult {
-            transactions,
-            ledger_hashes: *series_executor.latest_ledger_hashes(),
+        SystemPrepareResult::from_committed_series(committed_transactions, series_executor)
+    }
+
+    pub fn prepare_scenario(
+        &self,
+        scenario_name: &str,
+        mut scenario: Box<dyn ScenarioInstance>,
+    ) -> (SystemPrepareResult, PreparedScenarioMetadata) {
+        let database = self.database.lock();
+        let mut series_executor = self
+            .transaction_executor_factory
+            .start_series_execution(database.deref());
+
+        let mut previous_engine_receipt = None;
+        let mut committed_transactions = Vec::new();
+        let mut committed_transaction_names = Vec::new();
+        loop {
+            let next = scenario
+                .next(previous_engine_receipt.as_ref())
+                .map_err(|err| err.into_full(&scenario))
+                .unwrap();
+            match next {
+                NextAction::Transaction(next) => {
+                    let (transaction, engine_receipt) = self.prepare_scenario_transaction(
+                        &mut series_executor,
+                        scenario_name,
+                        &next,
+                    );
+                    if matches!(engine_receipt.result, TransactionResult::Commit(_)) {
+                        committed_transactions.push(transaction);
+                        committed_transaction_names
+                            .push((series_executor.latest_state_version(), next.logical_name));
+                    } else {
+                        info!(
+                            "Non-committable transaction {} within scenario {}: {:?}",
+                            next.logical_name, scenario_name, engine_receipt
+                        )
+                    }
+                    previous_engine_receipt = Some(engine_receipt);
+                }
+                NextAction::Completed(end_state) => {
+                    let prepare_result = SystemPrepareResult::from_committed_series(
+                        committed_transactions,
+                        series_executor,
+                    );
+                    let scenario_metadata = PreparedScenarioMetadata {
+                        committed_transaction_names,
+                        end_state,
+                    };
+                    return (prepare_result, scenario_metadata);
+                }
+            }
         }
     }
 
-    pub fn prepare_scenario_transaction(
+    fn prepare_scenario_transaction(
         &self,
+        series_executor: &mut TransactionSeriesExecutor<ActualStateManagerDatabase>,
         scenario_name: &str,
         next: &NextTransaction,
-    ) -> (ScenarioPrepareResult, TransactionReceipt) {
+    ) -> (RawAndValidatedTransaction, TransactionReceipt) {
         let qualified_name = format!(
             "{} scenario - {} transaction",
             scenario_name, &next.logical_name
         );
 
-        let (raw, prepared_ledger_transaction) = self
+        let (raw, prepared) = self
             .try_prepare_ledger_transaction_from_user_transaction(&next.raw_transaction)
-            .unwrap_or_else(|_| panic!("Expected that {} was preparable", qualified_name));
+            .unwrap_or_else(|_| panic!("cannot prepare {}", qualified_name));
 
         let validated = self
             .ledger_transaction_validator
-            .validate_user_or_round_update(prepared_ledger_transaction)
-            .unwrap_or_else(|_| panic!("Expected that {} was valid", qualified_name));
+            .validate_user_or_round_update(prepared)
+            .unwrap_or_else(|_| panic!("{} not valid", qualified_name));
 
-        let database = self.database.lock();
+        series_executor
+            .capture_next_engine_receipt()
+            .execute_and_update_state(&validated, qualified_name.as_str())
+            .ok(); // we need to consume the `Result<>`, but we actually only care about the receipt
+        let engine_receipt = series_executor.retrieve_captured_engine_receipt();
 
-        // Note: the Scenario provider needs a plain Engine receipt from us, so let's capture it:
-        let engine_receipt = self.transaction_executor_factory.execute_isolated(
-            database.deref(),
-            &validated,
-            "scenario transaction",
-        );
-
-        let mut series_executor = self
-            .transaction_executor_factory
-            .start_series_execution(database.deref());
-        let commit = series_executor.execute_and_update_state(&validated, "scenario transaction");
-        let prepare_result = ScenarioPrepareResult {
-            transaction: RawAndValidatedTransaction { raw, validated },
-            committable_ledger_hashes: commit
-                .ok()
-                .map(|commit_result| commit_result.hash_structures_diff.ledger_hashes),
-        };
-
-        (prepare_result, engine_receipt)
+        (
+            RawAndValidatedTransaction { raw, validated },
+            engine_receipt,
+        )
     }
 
     pub fn prepare(&self, prepare_request: PrepareRequest) -> PrepareResult {
@@ -562,6 +600,11 @@ impl Preparator {
                     .map(|prepared_transaction| (raw_ledger_transaction, prepared_transaction))
             })
     }
+}
+
+pub struct PreparedScenarioMetadata {
+    pub committed_transaction_names: Vec<(StateVersion, String)>,
+    pub end_state: EndState,
 }
 
 struct PendingTransactionResult {

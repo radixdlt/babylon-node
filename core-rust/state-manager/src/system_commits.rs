@@ -74,64 +74,31 @@ pub struct SystemCommitRequestFactory {
 }
 
 impl SystemCommitRequestFactory {
-    pub fn create_for_genesis(&mut self, result: GenesisPrepareResult) -> SystemCommitRequest {
-        let GenesisPrepareResult {
-            transaction,
+    /// Creates a default system commit request.
+    /// By default, all system transactions are required to be successful (which is later checked by
+    /// the commit logic). However, this may be customized, e.g. for the Scenarios' case (see
+    /// [`SystemCommitRequest::require_committed_successes()`]).
+    pub fn create(&mut self, prepare_result: SystemPrepareResult) -> SystemCommitRequest {
+        let SystemPrepareResult {
+            committed_transactions,
             ledger_hashes,
             next_epoch,
-        } = result;
-        self.create(vec![transaction], ledger_hashes, next_epoch, true)
-    }
-
-    pub fn create_for_protocol_update(
-        &mut self,
-        result: ProtocolUpdatePrepareResult,
-    ) -> SystemCommitRequest {
-        let ProtocolUpdatePrepareResult {
-            transactions,
-            ledger_hashes,
-        } = result;
-        self.create(transactions, ledger_hashes, None, true)
-    }
-
-    pub fn create_for_scenario(
-        &mut self,
-        result: ScenarioPrepareResult,
-    ) -> Option<SystemCommitRequest> {
-        let ScenarioPrepareResult {
-            transaction,
-            committable_ledger_hashes,
-        } = result;
-        committable_ledger_hashes
-            .map(|ledger_hashes| self.create(vec![transaction], ledger_hashes, None, false))
-    }
-
-    fn create(
-        &mut self,
-        transactions: Vec<RawAndValidatedTransaction>,
-        ledger_hashes: LedgerHashes,
-        next_epoch: Option<NextEpoch>,
-        require_success: bool,
-    ) -> SystemCommitRequest {
-        let proof =
-            self.progress_version_and_create_proof(transactions.len(), ledger_hashes, next_epoch);
+        } = prepare_result;
+        if committed_transactions.is_empty() {
+            panic!("cannot commit an empty batch of system transactions");
+        }
+        self.state_version = self
+            .state_version
+            .relative(committed_transactions.len() as i128)
+            .expect("Invalid next state version!");
         SystemCommitRequest {
-            transactions,
-            proof,
-            require_success,
+            transactions: committed_transactions,
+            proof: self.create_proof(ledger_hashes, next_epoch),
+            require_committed_successes: true,
         }
     }
 
-    fn progress_version_and_create_proof(
-        &mut self,
-        transactions_len: usize,
-        hashes: LedgerHashes,
-        next_epoch: Option<NextEpoch>,
-    ) -> LedgerProof {
-        self.state_version = self
-            .state_version
-            .relative(transactions_len as i128)
-            .expect("Invalid next state version!");
+    fn create_proof(&self, hashes: LedgerHashes, next_epoch: Option<NextEpoch>) -> LedgerProof {
         LedgerProof {
             ledger_header: LedgerHeader {
                 epoch: self.epoch,
@@ -148,29 +115,44 @@ impl SystemCommitRequestFactory {
     }
 }
 
-pub struct RawAndValidatedTransaction {
-    pub raw: RawLedgerTransaction,
-    pub validated: ValidatedLedgerTransaction,
-}
-
-pub struct GenesisPrepareResult {
-    pub transaction: RawAndValidatedTransaction,
+/// An input to [`SystemCommitRequestFactory::create()`].
+pub struct SystemPrepareResult {
+    pub committed_transactions: Vec<RawAndValidatedTransaction>,
     pub ledger_hashes: LedgerHashes,
     pub next_epoch: Option<NextEpoch>,
 }
 
-pub struct ProtocolUpdatePrepareResult {
-    pub transactions: Vec<RawAndValidatedTransaction>,
-    pub ledger_hashes: LedgerHashes,
+impl SystemPrepareResult {
+    /// Creates an instance for committing the given pre-validated transactions, using the current
+    /// end-state of the given series executor.
+    pub fn from_committed_series(
+        committed_transactions: Vec<RawAndValidatedTransaction>,
+        series_executor: TransactionSeriesExecutor<impl Sized>,
+    ) -> Self {
+        Self {
+            committed_transactions,
+            ledger_hashes: *series_executor.latest_ledger_hashes(),
+            next_epoch: series_executor.epoch_change().map(|event| event.into()),
+        }
+    }
 }
 
-pub struct ScenarioPrepareResult {
-    pub transaction: RawAndValidatedTransaction,
-    pub committable_ledger_hashes: Option<LedgerHashes>,
-}
-
+/// An output from [`SystemCommitRequestFactory::create()`].
 pub struct SystemCommitRequest {
     pub transactions: Vec<RawAndValidatedTransaction>,
     pub proof: LedgerProof,
-    pub require_success: bool,
+    pub require_committed_successes: bool,
+}
+
+impl SystemCommitRequest {
+    /// Overrides the default requirement that all system transactions are successful.
+    pub fn require_committed_successes(mut self, required: bool) -> Self {
+        self.require_committed_successes = required;
+        self
+    }
+}
+
+pub struct RawAndValidatedTransaction {
+    pub raw: RawLedgerTransaction,
+    pub validated: ValidatedLedgerTransaction,
 }

@@ -1336,9 +1336,8 @@ impl<R: WriteableRocks> ExecutedScenarioStore for StateManagerDatabase<R> {
         let scenarios_cf = db_context.cf(ExecutedScenariosCf);
         let next_sequence_number = scenarios_cf
             .get_last_key()
-            .unwrap_or_default()
-            .checked_add(1)
-            .expect("cannot auto-increment");
+            .map(|last_number| last_number.checked_add(1).expect("cannot auto-increment"))
+            .unwrap_or_default();
         scenarios_cf.put(&next_sequence_number, &scenario);
     }
 

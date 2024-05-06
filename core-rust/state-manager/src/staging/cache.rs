@@ -222,6 +222,7 @@ impl ExecutionCache {
         parent_transaction_root: &TransactionTreeHash,
         ledger_transaction_hash: &LedgerTransactionHash,
         executable: T,
+        engine_receipt_listener: impl FnOnce(&TransactionReceipt),
     ) -> &ProcessedTransactionReceipt {
         let transaction_placement =
             TransactionPlacement::new(parent_transaction_root, ledger_transaction_hash);
@@ -235,6 +236,7 @@ impl ExecutionCache {
                 let staged_store =
                     StagedStore::new(root_store, self.stage_tree.get_accumulator(&parent_key));
                 let transaction_receipt = executable.execute_on(&staged_store);
+                engine_receipt_listener(&transaction_receipt);
 
                 let processed = ProcessedTransactionReceipt::process(
                     HashUpdateContext {

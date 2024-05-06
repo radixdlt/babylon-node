@@ -83,6 +83,7 @@ use crate::system_commits::*;
 use radix_transaction_scenarios::executor::scenarios_vector;
 
 use crate::protocol::{ProtocolUpdateTransactionBatch, ProtocolVersionName};
+use crate::traits::scenario::ExecutedScenarioV1;
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -151,7 +152,7 @@ impl StateComputer {
 
         info!("Committing system flash");
         let prepare_result = self.preparator.prepare_genesis(GenesisTransaction::Flash);
-        let commit_request = system_commit_request_factory.create_for_genesis(prepare_result);
+        let commit_request = system_commit_request_factory.create(prepare_result);
         self.committer.commit_system(commit_request);
 
         info!("Committing system bootstrap");
@@ -166,7 +167,7 @@ impl StateComputer {
         let prepare_result = self
             .preparator
             .prepare_genesis(GenesisTransaction::Transaction(Box::new(transaction)));
-        let commit_request = system_commit_request_factory.create_for_genesis(prepare_result);
+        let commit_request = system_commit_request_factory.create(prepare_result);
         self.committer.commit_system(commit_request);
 
         let genesis_data_chunks_len = genesis_data_chunks.len();
@@ -189,7 +190,7 @@ impl StateComputer {
             let prepare_result = self
                 .preparator
                 .prepare_genesis(GenesisTransaction::Transaction(Box::new(transaction)));
-            let commit_request = system_commit_request_factory.create_for_genesis(prepare_result);
+            let commit_request = system_commit_request_factory.create(prepare_result);
             self.committer.commit_system(commit_request);
         }
 
@@ -200,7 +201,7 @@ impl StateComputer {
         let prepare_result = self
             .preparator
             .prepare_genesis(GenesisTransaction::Transaction(Box::new(transaction)));
-        let commit_request = system_commit_request_factory.create_for_genesis(prepare_result);
+        let commit_request = system_commit_request_factory.create(prepare_result);
         let final_ledger_proof = commit_request.proof.clone();
         self.committer.commit_system(commit_request);
 
@@ -247,8 +248,7 @@ impl StateComputer {
         match batch {
             ProtocolUpdateTransactionBatch::FlashTransactions(flash_transactions) => {
                 let prepare_result = self.preparator.prepare_protocol_update(flash_transactions);
-                let commit_request =
-                    system_commit_request_factory.create_for_protocol_update(prepare_result);
+                let commit_request = system_commit_request_factory.create(prepare_result);
                 self.committer.commit_system(commit_request);
             }
             ProtocolUpdateTransactionBatch::Scenario(scenario) => {
@@ -256,9 +256,9 @@ impl StateComputer {
                 // that survives Node restarts. It is not going to be the same as the manual nonce
                 // used for Genesis Scenarios:
                 // - it is not guaranteed to start with 0 (in practice, it will be 1);
-                // - it will be incremented (by 1) per consecutive Scenarios (while during Genesis
-                //   Scenarios, the next Scenario gets a nonce after all the incrementations done
-                //   by the previous Scenario).
+                // - it will be incremented only by 1 for each consecutive Scenario (while during
+                //   Genesis Scenarios, the next Scenario gets a nonce incremented by the number of
+                //   transactions of the previous Scenario).
                 let protocol_update_specific_nonce = batch_idx;
                 self.execute_scenario(
                     &mut system_commit_request_factory,
@@ -302,93 +302,54 @@ impl StateComputer {
         scenario_name: &str,
         nonce: u32,
     ) -> u32 {
-        let mut scenario = self
-            .find_scenario(system_commit_request_factory.epoch, nonce, scenario_name)
-            .unwrap_or_else(|| {
-                panic!(
-                    "Could not find scenario with logical name: {}",
-                    scenario_name
-                )
-            });
-        let mut previous = None;
-        let mut committed_transactions = Vec::new();
+        let scenario =
+            self.find_scenario(system_commit_request_factory.epoch, nonce, scenario_name);
         info!("Running scenario: {}", scenario_name);
-        loop {
-            let next = scenario
-                .next(previous.as_ref())
-                .map_err(|err| err.into_full(&scenario))
-                .unwrap();
-            match next {
-                NextAction::Transaction(next) => {
-                    let (prepare_result, basic_receipt) = self
-                        .preparator
-                        .prepare_scenario_transaction(scenario_name, &next);
-                    let intent_hash = prepare_result
-                        .transaction
-                        .validated
-                        .intent_hash_if_user()
-                        .unwrap();
-                    if let Some(commit_request) =
-                        system_commit_request_factory.create_for_scenario(prepare_result)
-                    {
-                        // TODO(wip): collect, create a single commit!
-                        self.committer.commit_system(commit_request);
-                        committed_transactions.push(ExecutedScenarioTransaction {
-                            logical_name: next.logical_name.clone(),
-                            state_version: system_commit_request_factory.state_version,
-                            intent_hash,
-                        });
-                        info!(
-                            "Committed {} at state_version {}",
-                            &next.logical_name, system_commit_request_factory.state_version
-                        );
-                    }
-                    previous = Some(basic_receipt);
-                }
-                NextAction::Completed(end_state) => {
-                    let encoder = AddressBech32Encoder::new(&self.network);
-                    let executed_scenario = ExecutedScenario {
-                        logical_name: scenario.metadata().logical_name.to_string(),
-                        committed_transactions,
-                        addresses: end_state
-                            .output
-                            .interesting_addresses
-                            .0
-                            .into_iter()
-                            .map(|(descriptor, address)| DescribedAddressRendering {
-                                logical_name: descriptor,
-                                rendered_address: match address {
-                                    DescribedAddress::Global(address) => {
-                                        address.to_string(&encoder)
-                                    }
-                                    DescribedAddress::Internal(address) => {
-                                        address.to_string(&encoder)
-                                    }
-                                    DescribedAddress::NonFungible(nf_global_id) => {
-                                        nf_global_id.to_string(&encoder)
-                                    }
-                                },
-                            })
-                            .collect(),
-                    };
-                    info!(
-                        "Completed committing {} transactions for scenario {}, with resultant addresses:\n{}",
-                        executed_scenario.committed_transactions.len(),
-                        executed_scenario.logical_name,
-                        executed_scenario.addresses
-                            .iter()
-                            .map(|address| format!(
-                                "  - {}: {}", address.logical_name, address.rendered_address
-                            ))
-                            .collect::<Vec<_>>()
-                            .join("\n")
-                    );
-                    let database = self.database.lock();
-                    database.put_next_scenario(executed_scenario);
-                    return end_state.next_unused_nonce;
-                }
-            }
+        let (
+            prepare_result,
+            PreparedScenarioMetadata {
+                committed_transaction_names,
+                end_state:
+                    EndState {
+                        next_unused_nonce,
+                        output,
+                    },
+            },
+        ) = self.preparator.prepare_scenario(scenario_name, scenario);
+
+        // Note:
+        // We want to store the information on each executed scenario in the DB (for inspection).
+        // Ideally, we should write it atomically in the same batch as the `commit_system()` call
+        // below - however, it would require breaking some abstraction (i.e. atomicity is currently
+        // driven by the DB layer) or making an API exception for the Scenarios (i.e. accept some
+        // extra params in the commit request). Since Scenarios only exist for test purposes, we
+        // chose to simply write it non-atomically here, before commit. Worst case (i.e. if Node is
+        // restarted right after this line), we will see a duplicate entry in the informative-only
+        // "executed Scenarios" table.
+        let executed_scenario = self.create_executed_scenario_entry(
+            scenario_name,
+            &prepare_result.committed_transactions,
+            committed_transaction_names,
+            output,
+        );
+        log_executed_scenario_details(&executed_scenario);
+        let database = self.database.lock();
+        database.put_next_scenario(executed_scenario);
+        drop(database);
+
+        if prepare_result.committed_transactions.is_empty() {
+            info!(
+                "No committable transaction for Scenario {}; skipping it",
+                scenario_name
+            );
+        } else {
+            let commit_request = system_commit_request_factory
+                .create(prepare_result)
+                .require_committed_successes(false);
+            self.committer.commit_system(commit_request);
         }
+
+        next_unused_nonce
     }
 
     fn find_scenario(
@@ -396,16 +357,87 @@ impl StateComputer {
         epoch: Epoch,
         next_nonce: u32,
         scenario_name: &str,
-    ) -> Option<Box<dyn ScenarioInstance>> {
+    ) -> Box<dyn ScenarioInstance> {
         for (_protocol_version, scenario_builder) in scenarios_vector() {
             let scenario =
                 scenario_builder(ScenarioCore::new(self.network.clone(), epoch, next_nonce));
             if scenario.metadata().logical_name == scenario_name {
-                return Some(scenario);
+                return scenario;
             }
         }
-        None
+        panic!(
+            "Could not find scenario with logical name: {}",
+            scenario_name
+        );
     }
+
+    fn create_executed_scenario_entry(
+        &self,
+        logical_name: &str,
+        committed_transactions: &[RawAndValidatedTransaction],
+        committed_transaction_names: Vec<(StateVersion, String)>,
+        output: ScenarioOutput,
+    ) -> ExecutedScenario {
+        let encoder = AddressBech32Encoder::new(&self.network);
+        ExecutedScenarioV1 {
+            logical_name: logical_name.to_string(),
+            committed_transactions: committed_transactions
+                .iter()
+                .zip(committed_transaction_names)
+                .map(
+                    |(transaction, (state_version, logical_name))| ExecutedScenarioTransaction {
+                        logical_name,
+                        state_version,
+                        intent_hash: transaction.validated.intent_hash_if_user().unwrap(),
+                    },
+                )
+                .collect(),
+            addresses: output
+                .interesting_addresses
+                .0
+                .into_iter()
+                .map(|(descriptor, address)| DescribedAddressRendering {
+                    logical_name: descriptor,
+                    rendered_address: match address {
+                        DescribedAddress::Global(address) => address.to_string(&encoder),
+                        DescribedAddress::Internal(address) => address.to_string(&encoder),
+                        DescribedAddress::NonFungible(nf_global_id) => {
+                            nf_global_id.to_string(&encoder)
+                        }
+                    },
+                })
+                .collect(),
+        }
+    }
+}
+
+fn log_executed_scenario_details(executed_scenario: &ExecutedScenario) {
+    let ExecutedScenarioV1 {
+        logical_name,
+        committed_transactions,
+        addresses,
+    } = executed_scenario;
+    for committed_transaction in committed_transactions {
+        let ExecutedScenarioTransaction {
+            logical_name,
+            state_version,
+            intent_hash,
+        } = committed_transaction;
+        info!(
+            "Committed {} at state version {} ({:?})",
+            logical_name, state_version, intent_hash
+        );
+    }
+    info!(
+        "Completed committing {} transactions for scenario {}, with resultant addresses:\n{}",
+        committed_transactions.len(),
+        logical_name,
+        addresses
+            .iter()
+            .map(|address| format!("  - {}: {}", address.logical_name, address.rendered_address))
+            .collect::<Vec<_>>()
+            .join("\n")
+    );
 }
 
 // ONLY TESTS BELOW
