@@ -87,15 +87,14 @@ use crate::traits::scenario::ExecutedScenarioV1;
 use std::sync::Arc;
 use std::time::Instant;
 
-pub struct StateComputer {
+pub struct SystemExecutor {
     network: NetworkDefinition,
     database: Arc<DbLock<ActualStateManagerDatabase>>,
     preparator: Arc<Preparator>,
     committer: Arc<Committer>,
 }
 
-// TODO(resolve during review): should it now be called `SystemTransactionExecutor`?
-impl StateComputer {
+impl SystemExecutor {
     pub fn new(
         network: &NetworkDefinition,
         database: Arc<DbLock<ActualStateManagerDatabase>>,
@@ -443,7 +442,7 @@ fn log_executed_scenario_details(executed_scenario: &ExecutedScenario) {
 // ONLY TESTS BELOW
 
 #[cfg(test)]
-impl StateComputer {
+impl SystemExecutor {
     /// Performs an [`execute_genesis()`] with a hardcoded genesis data meant for test purposes.
     pub fn execute_genesis_for_unit_tests_with_config(
         &self,
@@ -610,7 +609,7 @@ mod tests {
         let state_manager = create_state_manager(config);
 
         let proof = state_manager
-            .state_computer
+            .system_executor
             .execute_genesis_for_unit_tests_with_default_config();
 
         (proof, state_manager)

@@ -114,12 +114,13 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_executeGene
         &env,
         request_payload,
         |raw_genesis_data: Vec<u8>| -> JavaResult<LedgerProof> {
-            let state_computer = JNINodeRustEnvironment::get_state_computer(&env, j_node_rust_env);
+            let system_executor =
+                JNINodeRustEnvironment::get_system_executor(&env, j_node_rust_env);
             let genesis_data_hash = hash(&raw_genesis_data);
             let genesis_data: JavaGenesisData = scrypto_decode(&raw_genesis_data)
                 .map_err(|err| JavaError(format!("Invalid genesis data {:?}", err)))?;
             let config = genesis_data.initial_config;
-            let resultant_proof = state_computer.execute_genesis(
+            let resultant_proof = system_executor.execute_genesis(
                 genesis_data.chunks,
                 genesis_data.initial_epoch,
                 ConsensusManagerConfig {

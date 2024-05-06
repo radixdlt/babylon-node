@@ -78,7 +78,6 @@ impl<T> Default for CaptureSupport<T> {
 }
 
 impl<T> CaptureSupport<T> {
-
     /// Configures this instance to expect a single [`Self::capture_value()`] call.
     pub fn expect_capture(&mut self) {
         match self {

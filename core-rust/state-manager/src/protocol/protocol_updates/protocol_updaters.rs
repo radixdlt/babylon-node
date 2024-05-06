@@ -1,4 +1,4 @@
-use crate::{ActualStateManagerDatabase, StateComputer};
+use crate::{ActualStateManagerDatabase, SystemExecutor};
 use node_common::locks::DbLock;
 use std::ops::Deref;
 use std::sync::Arc;
@@ -21,7 +21,7 @@ pub trait ProtocolUpdater {
     fn execute_remaining_batches(
         &self,
         database: Arc<DbLock<ActualStateManagerDatabase>>,
-        state_computer: &StateComputer,
+        system_executor: &SystemExecutor,
     );
 }
 
@@ -31,7 +31,7 @@ impl ProtocolUpdater for NoOpProtocolUpdater {
     fn execute_remaining_batches(
         &self,
         _database: Arc<DbLock<ActualStateManagerDatabase>>,
-        _state_computer: &StateComputer,
+        _system_executor: &SystemExecutor,
     ) {
         // no-op
     }
@@ -69,10 +69,10 @@ impl<G: UpdateBatchGenerator> ProtocolUpdater for BatchedUpdater<G> {
     fn execute_remaining_batches(
         &self,
         database: Arc<DbLock<ActualStateManagerDatabase>>,
-        state_computer: &StateComputer,
+        system_executor: &SystemExecutor,
     ) {
         while let Some((idx, batch)) = self.resolve_next_batch_to_execute(database.clone()) {
-            state_computer.execute_protocol_update_batch(&self.new_protocol_version, idx, batch);
+            system_executor.execute_protocol_update_batch(&self.new_protocol_version, idx, batch);
         }
     }
 }

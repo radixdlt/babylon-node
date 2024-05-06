@@ -95,7 +95,7 @@ fn flash_protocol_update_test() {
         // Run the genesis first
         let tmp_state_manager = create_state_manager(state_manager_config.clone());
         tmp_state_manager
-            .state_computer
+            .system_executor
             .execute_genesis_for_unit_tests_with_default_config();
         // Now we can prepare the state updates based on the initialized database
         let state_updates = ProtocolUpdateEntry::ValidatorCreationFeeFix.generate_state_updates(

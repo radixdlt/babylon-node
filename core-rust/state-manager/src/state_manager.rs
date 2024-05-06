@@ -86,7 +86,7 @@ use crate::{
     store::{jmt_gc::StateTreeGc, DatabaseBackendConfig, DatabaseConfig, RawDbMetricsCollector},
     transaction::{CachedCommittabilityValidator, CommittabilityValidator, TransactionPreviewer},
     ActualStateManagerDatabase, Committer, ExecutionCacheManager, LedgerMetrics,
-    PendingTransactionResultCache, ProtocolUpdateResult, StateComputer, StateManagerDatabase,
+    PendingTransactionResultCache, ProtocolUpdateResult, StateManagerDatabase, SystemExecutor,
 };
 use node_common::java::{JavaError, JavaResult, StructFromJava};
 use node_common::scheduler::{Metrics, Scheduler, Spawner, Tracker};
@@ -189,7 +189,7 @@ pub struct StateManager {
     pub committer: Arc<Committer>,
     pub transaction_executor_factory: Arc<TransactionExecutorFactory>,
     pub execution_cache_manager: Arc<ExecutionCacheManager>,
-    pub state_computer: Arc<StateComputer>,
+    pub system_executor: Arc<SystemExecutor>,
     pub pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
     pub protocol_state_manager: Arc<ProtocolStateManager>,
     pub protocol_update_executor: Arc<ProtocolUpdateExecutor>,
@@ -335,7 +335,7 @@ impl StateManager {
             ledger_metrics.clone(),
         ));
 
-        let state_computer = Arc::new(StateComputer::new(
+        let system_executor = Arc::new(SystemExecutor::new(
             &network_definition,
             database.clone(),
             preparator.clone(),
@@ -347,7 +347,7 @@ impl StateManager {
             protocol_config,
             scenarios_execution_config,
             database.clone(),
-            state_computer.clone(),
+            system_executor.clone(),
         ));
 
         // If we are booting mid-protocol-update, ensure all required transactions are committed:
@@ -396,7 +396,7 @@ impl StateManager {
             committer,
             transaction_executor_factory,
             execution_cache_manager,
-            state_computer,
+            system_executor,
             pending_transaction_result_cache,
             protocol_state_manager,
             protocol_update_executor,

@@ -88,8 +88,8 @@ use super::fatal_panic_handler::FatalPanicHandler;
 use crate::protocol::ProtocolStateManager;
 use crate::transaction::Preparator;
 use crate::{
-    ActualStateManagerDatabase, Committer, LedgerMetrics, StateComputer, StateManager,
-    StateManagerConfig,
+    ActualStateManagerDatabase, Committer, LedgerMetrics, StateManager, StateManagerConfig,
+    SystemExecutor,
 };
 
 const POINTER_JNI_FIELD_NAME: &str = "rustNodeRustEnvironmentPointer";
@@ -192,10 +192,10 @@ impl JNINodeRustEnvironment {
             .unwrap()
     }
 
-    pub fn get_state_computer(env: &JNIEnv, j_node_rust_env: JObject) -> Arc<StateComputer> {
+    pub fn get_system_executor(env: &JNIEnv, j_node_rust_env: JObject) -> Arc<SystemExecutor> {
         Self::get(env, j_node_rust_env)
             .state_manager
-            .state_computer
+            .system_executor
             .clone()
     }
 

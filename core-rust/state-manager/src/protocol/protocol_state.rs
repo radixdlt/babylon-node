@@ -12,7 +12,7 @@ use crate::traits::{IterableProofStore, QueryableProofStore, QueryableTransactio
 
 use crate::{
     ActualStateManagerDatabase, LocalTransactionReceipt, ProtocolMetrics, ScenariosExecutionConfig,
-    StateComputer, StateVersion,
+    StateVersion, SystemExecutor,
 };
 use ProtocolUpdateEnactmentCondition::*;
 
@@ -23,7 +23,7 @@ pub struct ProtocolUpdateExecutor {
     network: NetworkDefinition,
     protocol_config: ProtocolConfig,
     database: Arc<DbLock<ActualStateManagerDatabase>>,
-    state_computer: Arc<StateComputer>,
+    system_executor: Arc<SystemExecutor>,
 }
 
 impl ProtocolUpdateExecutor {
@@ -33,13 +33,13 @@ impl ProtocolUpdateExecutor {
         // TODO(wip): pass it down
         _scenarios_execution_config: ScenariosExecutionConfig,
         database: Arc<DbLock<ActualStateManagerDatabase>>,
-        state_computer: Arc<StateComputer>,
+        system_executor: Arc<SystemExecutor>,
     ) -> Self {
         Self {
             network,
             protocol_config,
             database,
-            state_computer,
+            system_executor,
         }
     }
 
@@ -47,7 +47,7 @@ impl ProtocolUpdateExecutor {
     pub fn execute_protocol_update(&self, new_protocol_version: &ProtocolVersionName) {
         self.protocol_config
             .resolve_updater(&self.network, new_protocol_version)
-            .execute_remaining_batches(self.database.clone(), self.state_computer.deref());
+            .execute_remaining_batches(self.database.clone(), self.system_executor.deref());
     }
 }
 

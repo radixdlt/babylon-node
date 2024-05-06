@@ -355,7 +355,7 @@ mod tests {
         };
 
         state_manager
-            .state_computer
+            .system_executor
             .execute_genesis_for_unit_tests_with_config(consensus_manager_config);
 
         let sync_limits_config = LedgerSyncLimitsConfig {
