@@ -9,20 +9,34 @@
  */
 
 
+/// 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
+pub enum BootLoaderType {
+    #[serde(rename = "KernelBoot")]
+    KernelBoot,
+    #[serde(rename = "SystemBoot")]
+    SystemBoot,
+    #[serde(rename = "VmBoot")]
+    VmBoot,
 
-
-#[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct BootLoaderModuleFieldKernelBootValue {
-    #[serde(rename = "ref_check_costing")]
-    pub ref_check_costing: bool,
 }
 
-impl BootLoaderModuleFieldKernelBootValue {
-    pub fn new(ref_check_costing: bool) -> BootLoaderModuleFieldKernelBootValue {
-        BootLoaderModuleFieldKernelBootValue {
-            ref_check_costing,
+impl ToString for BootLoaderType {
+    fn to_string(&self) -> String {
+        match self {
+            Self::KernelBoot => String::from("KernelBoot"),
+            Self::SystemBoot => String::from("SystemBoot"),
+            Self::VmBoot => String::from("VmBoot"),
         }
     }
 }
+
+impl Default for BootLoaderType {
+    fn default() -> BootLoaderType {
+        Self::KernelBoot
+    }
+}
+
+
 
 

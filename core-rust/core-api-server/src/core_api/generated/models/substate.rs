@@ -68,7 +68,7 @@ pub enum Substate {
         #[serde(rename = "is_locked")]
         is_locked: bool,
         #[serde(rename = "value")]
-        value: Box<crate::core_api::generated::models::BootLoaderModuleFieldKernelBootValue>,
+        value: serde_json::Value,
     },
     #[serde(rename="BootLoaderModuleFieldSystemBoot")]
     BootLoaderModuleFieldSystemBootSubstate {

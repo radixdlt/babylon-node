@@ -16,42 +16,59 @@ import { exists, mapValues } from '../runtime';
 /**
  * 
  * @export
- * @interface BootLoaderModuleFieldKernelBootValue
+ * @interface CostingModuleConfig
  */
-export interface BootLoaderModuleFieldKernelBootValue {
+export interface CostingModuleConfig {
     /**
-     * 
-     * @type {boolean}
-     * @memberof BootLoaderModuleFieldKernelBootValue
+     * The string-encoded decimal representing the maximum amount of XRD configurable for a single function's royalty.
+     * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
+     * @type {string}
+     * @memberof CostingModuleConfig
      */
-    ref_check_costing: boolean;
+    xrd_max_per_function_royalty: string;
+    /**
+     * Whether to apply execution costing for all system calls.
+     * @type {boolean}
+     * @memberof CostingModuleConfig
+     */
+    apply_execution_cost_for_all_system_calls: boolean;
+    /**
+     * Whether to apply costing for reference checks on boot.
+     * @type {boolean}
+     * @memberof CostingModuleConfig
+     */
+    apply_boot_ref_check_costing: boolean;
 }
 
 /**
- * Check if a given object implements the BootLoaderModuleFieldKernelBootValue interface.
+ * Check if a given object implements the CostingModuleConfig interface.
  */
-export function instanceOfBootLoaderModuleFieldKernelBootValue(value: object): boolean {
+export function instanceOfCostingModuleConfig(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "ref_check_costing" in value;
+    isInstance = isInstance && "xrd_max_per_function_royalty" in value;
+    isInstance = isInstance && "apply_execution_cost_for_all_system_calls" in value;
+    isInstance = isInstance && "apply_boot_ref_check_costing" in value;
 
     return isInstance;
 }
 
-export function BootLoaderModuleFieldKernelBootValueFromJSON(json: any): BootLoaderModuleFieldKernelBootValue {
-    return BootLoaderModuleFieldKernelBootValueFromJSONTyped(json, false);
+export function CostingModuleConfigFromJSON(json: any): CostingModuleConfig {
+    return CostingModuleConfigFromJSONTyped(json, false);
 }
 
-export function BootLoaderModuleFieldKernelBootValueFromJSONTyped(json: any, ignoreDiscriminator: boolean): BootLoaderModuleFieldKernelBootValue {
+export function CostingModuleConfigFromJSONTyped(json: any, ignoreDiscriminator: boolean): CostingModuleConfig {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'ref_check_costing': json['ref_check_costing'],
+        'xrd_max_per_function_royalty': json['xrd_max_per_function_royalty'],
+        'apply_execution_cost_for_all_system_calls': json['apply_execution_cost_for_all_system_calls'],
+        'apply_boot_ref_check_costing': json['apply_boot_ref_check_costing'],
     };
 }
 
-export function BootLoaderModuleFieldKernelBootValueToJSON(value?: BootLoaderModuleFieldKernelBootValue | null): any {
+export function CostingModuleConfigToJSON(value?: CostingModuleConfig | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -60,7 +77,9 @@ export function BootLoaderModuleFieldKernelBootValueToJSON(value?: BootLoaderMod
     }
     return {
         
-        'ref_check_costing': value.ref_check_costing,
+        'xrd_max_per_function_royalty': value.xrd_max_per_function_royalty,
+        'apply_execution_cost_for_all_system_calls': value.apply_execution_cost_for_all_system_calls,
+        'apply_boot_ref_check_costing': value.apply_boot_ref_check_costing,
     };
 }
 

@@ -41,7 +41,7 @@ pub struct ArbitraryBatchGenerator {
 }
 
 impl UpdateBatchGenerator for ArbitraryBatchGenerator {
-    fn generate_batch(
+    fn generate_transactions(
         &self,
         _store: &impl SubstateDatabase,
         batch_index: u32,

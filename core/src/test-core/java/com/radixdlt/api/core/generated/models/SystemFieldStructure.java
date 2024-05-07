@@ -25,6 +25,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.BootLoaderType;
 import com.radixdlt.api.core.generated.models.KeyValueStoreEntryStructure;
 import com.radixdlt.api.core.generated.models.ObjectFieldStructure;
 import com.radixdlt.api.core.generated.models.ObjectIndexPartitionEntryStructure;
@@ -46,7 +47,8 @@ import com.radixdlt.api.core.generated.client.JSON;
  * SystemFieldStructure
  */
 @JsonPropertyOrder({
-  SystemFieldStructure.JSON_PROPERTY_FIELD_KIND
+  SystemFieldStructure.JSON_PROPERTY_FIELD_KIND,
+  SystemFieldStructure.JSON_PROPERTY_BOOT_LOADER_TYPE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -67,6 +69,9 @@ import com.radixdlt.api.core.generated.client.JSON;
 public class SystemFieldStructure extends SubstateSystemStructure {
   public static final String JSON_PROPERTY_FIELD_KIND = "field_kind";
   private SystemFieldKind fieldKind;
+
+  public static final String JSON_PROPERTY_BOOT_LOADER_TYPE = "boot_loader_type";
+  private BootLoaderType bootLoaderType;
 
   public SystemFieldStructure() { 
   }
@@ -97,6 +102,32 @@ public class SystemFieldStructure extends SubstateSystemStructure {
   }
 
 
+  public SystemFieldStructure bootLoaderType(BootLoaderType bootLoaderType) {
+    this.bootLoaderType = bootLoaderType;
+    return this;
+  }
+
+   /**
+   * Get bootLoaderType
+   * @return bootLoaderType
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_BOOT_LOADER_TYPE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public BootLoaderType getBootLoaderType() {
+    return bootLoaderType;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_BOOT_LOADER_TYPE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setBootLoaderType(BootLoaderType bootLoaderType) {
+    this.bootLoaderType = bootLoaderType;
+  }
+
+
   /**
    * Return true if this SystemFieldStructure object is equal to o.
    */
@@ -110,12 +141,13 @@ public class SystemFieldStructure extends SubstateSystemStructure {
     }
     SystemFieldStructure systemFieldStructure = (SystemFieldStructure) o;
     return Objects.equals(this.fieldKind, systemFieldStructure.fieldKind) &&
+        Objects.equals(this.bootLoaderType, systemFieldStructure.bootLoaderType) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(fieldKind, super.hashCode());
+    return Objects.hash(fieldKind, bootLoaderType, super.hashCode());
   }
 
   @Override
@@ -124,6 +156,7 @@ public class SystemFieldStructure extends SubstateSystemStructure {
     sb.append("class SystemFieldStructure {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    fieldKind: ").append(toIndentedString(fieldKind)).append("\n");
+    sb.append("    bootLoaderType: ").append(toIndentedString(bootLoaderType)).append("\n");
     sb.append("}");
     return sb.toString();
   }

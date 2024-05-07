@@ -50,6 +50,8 @@ pub enum SubstateSystemStructure {
     SystemFieldStructure {
         #[serde(rename = "field_kind")]
         field_kind: crate::core_api::generated::models::SystemFieldKind,
+        #[serde(rename = "boot_loader_type", skip_serializing_if = "Option::is_none")]
+        boot_loader_type: Option<crate::core_api::generated::models::BootLoaderType>,
     },
     #[serde(rename="SystemSchema")]
     SystemSchemaStructure {

@@ -150,11 +150,23 @@ pub fn to_api_substate_system_structure(
 ) -> Result<models::SubstateSystemStructure, MappingError> {
     Ok(match system_structure {
         SubstateSystemStructure::SystemField(SystemFieldStructure { field_kind }) => {
-            models::SubstateSystemStructure::SystemFieldStructure {
-                field_kind: match field_kind {
-                    SystemFieldKind::TypeInfo => models::SystemFieldKind::TypeInfo,
-                    SystemFieldKind::BootLoader => models::SystemFieldKind::BootLoader,
-                },
+            match field_kind {
+                SystemFieldKind::TypeInfo => {
+                    models::SubstateSystemStructure::SystemFieldStructure {
+                        field_kind: models::SystemFieldKind::TypeInfo,
+                        boot_loader_type: None,
+                    }
+                }
+                SystemFieldKind::BootLoader(boot_loader) => {
+                    models::SubstateSystemStructure::SystemFieldStructure {
+                        field_kind: models::SystemFieldKind::BootLoader,
+                        boot_loader_type: Some(match boot_loader {
+                            BootLoaderFieldKind::KernelBoot => models::BootLoaderType::KernelBoot,
+                            BootLoaderFieldKind::SystemBoot => models::BootLoaderType::SystemBoot,
+                            BootLoaderFieldKind::VmBoot => models::BootLoaderType::VmBoot,
+                        }),
+                    }
+                }
             }
         }
         SubstateSystemStructure::SystemSchema => {
@@ -253,11 +265,11 @@ pub fn to_api_object_substate_type_reference(
 
 pub fn to_api_fully_scoped_type_id(
     context: &MappingContext,
-    fully_scoped_type_id: &FullyScopedTypeId<impl Into<NodeId> + Clone>,
+    fully_scoped_type_id: &FullyScopedTypeId<impl AsRef<NodeId>>,
 ) -> Result<models::FullyScopedTypeId, MappingError> {
     let FullyScopedTypeId(address, schema_hash, local_type_id) = fully_scoped_type_id;
     Ok(models::FullyScopedTypeId {
-        entity_address: to_api_entity_address(context, &address.clone().into())?,
+        entity_address: to_api_entity_address(context, address.as_ref())?,
         schema_hash: to_api_schema_hash(schema_hash),
         local_type_id: Box::new(to_api_local_type_id(context, local_type_id)?),
     })

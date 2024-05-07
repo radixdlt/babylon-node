@@ -33,7 +33,6 @@ import com.radixdlt.api.core.generated.models.AccountResourcePreferenceEntrySubs
 import com.radixdlt.api.core.generated.models.AccountVaultEntrySubstate;
 import com.radixdlt.api.core.generated.models.BootLoaderModuleFieldKernelBootSubstate;
 import com.radixdlt.api.core.generated.models.BootLoaderModuleFieldKernelBootSubstateAllOf;
-import com.radixdlt.api.core.generated.models.BootLoaderModuleFieldKernelBootValue;
 import com.radixdlt.api.core.generated.models.BootLoaderModuleFieldSystemBootSubstate;
 import com.radixdlt.api.core.generated.models.BootLoaderModuleFieldVmBootSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldConfigSubstate;
@@ -156,12 +155,12 @@ import com.radixdlt.api.core.generated.client.JSON;
 
 public class BootLoaderModuleFieldKernelBootSubstate extends Substate {
   public static final String JSON_PROPERTY_VALUE = "value";
-  private BootLoaderModuleFieldKernelBootValue value;
+  private Object value;
 
   public BootLoaderModuleFieldKernelBootSubstate() { 
   }
 
-  public BootLoaderModuleFieldKernelBootSubstate value(BootLoaderModuleFieldKernelBootValue value) {
+  public BootLoaderModuleFieldKernelBootSubstate value(Object value) {
     this.value = value;
     return this;
   }
@@ -175,14 +174,14 @@ public class BootLoaderModuleFieldKernelBootSubstate extends Substate {
   @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public BootLoaderModuleFieldKernelBootValue getValue() {
+  public Object getValue() {
     return value;
   }
 
 
   @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValue(BootLoaderModuleFieldKernelBootValue value) {
+  public void setValue(Object value) {
     this.value = value;
   }
 

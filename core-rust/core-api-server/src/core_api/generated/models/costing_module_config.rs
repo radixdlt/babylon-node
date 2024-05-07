@@ -12,15 +12,24 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct BootLoaderModuleFieldKernelBootSubstateAllOf {
-    #[serde(rename = "value")]
-    pub value: serde_json::Value,
+pub struct CostingModuleConfig {
+    /// The string-encoded decimal representing the maximum amount of XRD configurable for a single function's royalty. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. 
+    #[serde(rename = "xrd_max_per_function_royalty")]
+    pub xrd_max_per_function_royalty: String,
+    /// Whether to apply execution costing for all system calls.
+    #[serde(rename = "apply_execution_cost_for_all_system_calls")]
+    pub apply_execution_cost_for_all_system_calls: bool,
+    /// Whether to apply costing for reference checks on boot.
+    #[serde(rename = "apply_boot_ref_check_costing")]
+    pub apply_boot_ref_check_costing: bool,
 }
 
-impl BootLoaderModuleFieldKernelBootSubstateAllOf {
-    pub fn new(value: serde_json::Value) -> BootLoaderModuleFieldKernelBootSubstateAllOf {
-        BootLoaderModuleFieldKernelBootSubstateAllOf {
-            value,
+impl CostingModuleConfig {
+    pub fn new(xrd_max_per_function_royalty: String, apply_execution_cost_for_all_system_calls: bool, apply_boot_ref_check_costing: bool) -> CostingModuleConfig {
+        CostingModuleConfig {
+            xrd_max_per_function_royalty,
+            apply_execution_cost_for_all_system_calls,
+            apply_boot_ref_check_costing,
         }
     }
 }
