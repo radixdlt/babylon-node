@@ -80,7 +80,7 @@ use crate::store::traits::scenario::{
 };
 use crate::system_commits::*;
 
-use crate::protocol::{ProtocolUpdateTransactionBatch, ProtocolVersionName};
+use crate::protocol::{ProtocolUpdateAction, ProtocolVersionName};
 use crate::traits::scenario::ExecutedScenarioV1;
 use radix_transaction_scenarios::scenarios::ALL_SCENARIOS;
 use std::sync::Arc;
@@ -210,11 +210,11 @@ impl SystemExecutor {
         final_ledger_proof
     }
 
-    pub fn execute_protocol_update_batch(
+    pub fn execute_protocol_update_action(
         &self,
         protocol_version: &ProtocolVersionName,
         batch_idx: u32,
-        batch: ProtocolUpdateTransactionBatch,
+        action: ProtocolUpdateAction,
     ) {
         let database = self.database.lock();
         let latest_header = database
@@ -243,13 +243,13 @@ impl SystemExecutor {
             },
         };
 
-        match batch {
-            ProtocolUpdateTransactionBatch::FlashTransactions(flash_transactions) => {
+        match action {
+            ProtocolUpdateAction::FlashTransactions(flash_transactions) => {
                 let prepare_result = self.preparator.prepare_protocol_update(flash_transactions);
                 let commit_request = system_commit_request_factory.create(prepare_result);
                 self.committer.commit_system(commit_request);
             }
-            ProtocolUpdateTransactionBatch::Scenario(scenario) => {
+            ProtocolUpdateAction::Scenario(scenario) => {
                 // Note: here we re-use the batch_idx as a nonce, since we need a growing number
                 // that survives Node restarts. It is not going to be the same as the manual nonce
                 // used for Genesis Scenarios:

@@ -101,17 +101,12 @@ fn flash_protocol_update_test() {
         let validator_fee_fix = AnemoneSettings::all_disabled()
             .enable(|anemone_settings| &mut anemone_settings.validator_fee_fix)
             .create_batch_generator()
-            .generate_transactions(tmp_state_manager.database.access_direct().deref(), 0)
-            .unwrap();
-        let ProtocolUpdateTransactionBatch::FlashTransactions(mut validator_fee_fix) =
-            validator_fee_fix
-        else {
-            panic!("validator_fee_fix should be a batch of flash transaction")
-        };
-        if validator_fee_fix.len() != 1 {
-            panic!("validator_fee_fix should be a single flash transaction")
-        }
-        validator_fee_fix.remove(0).state_updates
+            .generate_batch(tmp_state_manager.database.access_direct().deref(), 0)
+            .unwrap()
+            .transactions
+            .remove(0);
+        let ProtocolUpdateTransactionDetails::FlashV1Transaction(flash) = validator_fee_fix;
+        flash.state_updates
     };
 
     state_manager_config
@@ -119,7 +114,7 @@ fn flash_protocol_update_test() {
         .protocol_update_content_overrides = ProtocolUpdateContentOverrides::empty()
         .with_custom(
             custom_v2_protocol_version.clone(),
-            vec![ProtocolUpdateTransactionBatch::FlashTransactions(vec![
+            vec![ProtocolUpdateAction::FlashTransactions(vec![
                 FlashTransactionV1 {
                     name: format!("{CUSTOM_V2_PROTOCOL_VERSION}-flash"),
                     state_updates: consensus_manager_state_updates,

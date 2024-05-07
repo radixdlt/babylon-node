@@ -218,7 +218,11 @@ impl StateManager {
             no_fees,
             scenarios_execution_config,
         } = config;
-
+        let ProtocolConfig {
+            genesis_protocol_version,
+            protocol_update_triggers,
+            protocol_update_content_overrides,
+        } = protocol_config;
         let db_path = PathBuf::from(database_backend_config.rocks_db_path);
         let raw_db = match StateManagerDatabase::new(db_path, database_config, &network_definition) {
             Ok(db) => db,
@@ -241,7 +245,8 @@ impl StateManager {
         );
 
         let protocol_state_manager = Arc::new(ProtocolStateManager::new(
-            &protocol_config,
+            genesis_protocol_version,
+            protocol_update_triggers,
             database.lock().deref(),
             &lock_factory.named("protocol_state_manager"),
             metrics_registry,
@@ -343,7 +348,7 @@ impl StateManager {
 
         let protocol_update_executor = Arc::new(ProtocolUpdateExecutor::new(
             network_definition.clone(),
-            protocol_config,
+            protocol_update_content_overrides,
             scenarios_execution_config,
             database.clone(),
             system_executor.clone(),

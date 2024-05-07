@@ -21,7 +21,7 @@ use ProtocolUpdateEnactmentCondition::*;
 
 pub struct ProtocolUpdateExecutor {
     network: NetworkDefinition,
-    protocol_config: ProtocolConfig,
+    protocol_update_content_overrides: RawProtocolUpdateContentOverrides,
     scenarios_execution_config: ScenariosExecutionConfig,
     database: Arc<DbLock<ActualStateManagerDatabase>>,
     system_executor: Arc<SystemExecutor>,
@@ -30,14 +30,14 @@ pub struct ProtocolUpdateExecutor {
 impl ProtocolUpdateExecutor {
     pub fn new(
         network: NetworkDefinition,
-        protocol_config: ProtocolConfig,
+        protocol_update_content_overrides: RawProtocolUpdateContentOverrides,
         scenarios_execution_config: ScenariosExecutionConfig,
         database: Arc<DbLock<ActualStateManagerDatabase>>,
         system_executor: Arc<SystemExecutor>,
     ) -> Self {
         Self {
             network,
-            protocol_config,
+            protocol_update_content_overrides,
             scenarios_execution_config,
             database,
             system_executor,
@@ -46,13 +46,34 @@ impl ProtocolUpdateExecutor {
 
     /// Executes the (remaining part of the) given protocol update's transactions.
     pub fn execute_protocol_update(&self, new_protocol_version: &ProtocolVersionName) {
-        self.protocol_config
-            .resolve_updater(&self.network, new_protocol_version)
-            .execute_remaining_batches(self.database.clone(), self.system_executor.deref());
+        let overrides = self
+            .protocol_update_content_overrides
+            .get(new_protocol_version);
+        let action_provider = resolve_update_definition_for_version(new_protocol_version)
+            .unwrap_or_else(|| panic!("{}", new_protocol_version.as_str().to_string()))
+            .create_action_provider_raw(&self.network, self.database.clone(), overrides);
+
         let _scenarios_to_execute = self
             .scenarios_execution_config
             .to_run_after_protocol_update(new_protocol_version);
-        // TODO(post-protocol update scenarios): run `self.system_executor.execute_protocol_update_batch()` for these scenarios
+        // TODO(post-protocol update scenarios): wrap `action_provider` with a decorator which appends these Scenarios at the end
+
+        while let Some(batch_idx) = self.resolve_next_batch_idx_within(new_protocol_version) {
+            let Some(action) = action_provider.provide_action(batch_idx) else {
+                break;
+            };
+            self.system_executor.execute_protocol_update_action(
+                new_protocol_version,
+                batch_idx,
+                action,
+            );
+        }
+    }
+
+    fn resolve_next_batch_idx_within(&self, protocol_version: &ProtocolVersionName) -> Option<u32> {
+        ProtocolUpdateProgress::resolve(self.database.lock().deref())
+            .scoped_on(protocol_version)
+            .next_batch_idx()
     }
 }
 
@@ -64,22 +85,26 @@ pub struct ProtocolStateManager {
 
 impl ProtocolStateManager {
     pub fn new<S: QueryableProofStore + IterableProofStore + QueryableTransactionStore>(
-        config: &ProtocolConfig,
+        genesis_protocol_version: ProtocolVersionName,
+        protocol_update_triggers: Vec<ProtocolUpdateTrigger>,
         database: &S,
         lock_factory: &LockFactory,
         metric_registry: &Registry,
     ) -> Self {
-        let initial_protocol_state = ProtocolState::compute_initial(database, config);
+        let initial_protocol_state = ProtocolState::compute_initial(
+            database,
+            &genesis_protocol_version,
+            &protocol_update_triggers,
+        );
         Self {
             protocol_metrics: ProtocolMetrics::new(metric_registry, &initial_protocol_state),
             protocol_state: lock_factory
                 .named("state")
                 .new_rwlock(initial_protocol_state),
-            newest_protocol_version: config
-                .protocol_update_triggers
+            newest_protocol_version: protocol_update_triggers
                 .last()
                 .map(|protocol_update| protocol_update.next_protocol_version.clone())
-                .unwrap_or(config.genesis_protocol_version.clone()),
+                .unwrap_or(genesis_protocol_version),
         }
     }
 
@@ -276,7 +301,8 @@ impl ProtocolState {
         S: QueryableProofStore + IterableProofStore + QueryableTransactionStore,
     >(
         store: &S,
-        protocol_config: &ProtocolConfig,
+        genesis_protocol_version: &ProtocolVersionName,
+        protocol_update_triggers: &[ProtocolUpdateTrigger],
     ) -> ProtocolState {
         // For each configured allowed protocol update we calculate its expected status against
         // the current state of the ledger, regardless of any information stored
@@ -288,8 +314,7 @@ impl ProtocolState {
         // which hasn't been executed on the local ledger at the right time).
         // This also provides the initial state for stateful (readiness-based)
         // protocol update conditions.
-        let initial_statuses: Vec<_> = protocol_config
-            .protocol_update_triggers
+        let initial_statuses: Vec<_> = protocol_update_triggers
             .iter()
             .map(|protocol_update| {
                 (
@@ -314,7 +339,7 @@ impl ProtocolState {
                 })
                 .collect();
 
-        let actually_enacted_protocol_updates: BTreeMap<StateVersion, ProtocolVersionName> = store
+        let enacted_protocol_updates: BTreeMap<StateVersion, ProtocolVersionName> = store
             .get_protocol_update_init_proof_iter(StateVersion::pre_genesis())
             .map(|proof| {
                 (
@@ -329,20 +354,20 @@ impl ProtocolState {
             })
             .collect();
 
-        if expected_already_enacted_protocol_updates != actually_enacted_protocol_updates {
+        if expected_already_enacted_protocol_updates != enacted_protocol_updates {
             panic!(
                 "State computer couldn't be initialized, protocol misconfiguration: \
              according to the current configuration and the ledger state the following \
              protocol updates should have been enacted: {:?}, but the following \
              updates were actually enacted: {:?}.",
-                expected_already_enacted_protocol_updates, actually_enacted_protocol_updates,
+                expected_already_enacted_protocol_updates, enacted_protocol_updates,
             );
         }
 
-        let current_protocol_version = actually_enacted_protocol_updates
+        let current_protocol_version = enacted_protocol_updates
             .last_key_value()
             .map(|(_, protocol_version)| protocol_version)
-            .unwrap_or(&protocol_config.genesis_protocol_version)
+            .unwrap_or(genesis_protocol_version)
             .clone();
 
         let pending_protocol_updates = initial_statuses
@@ -359,7 +384,7 @@ impl ProtocolState {
 
         ProtocolState {
             current_protocol_version,
-            enacted_protocol_updates: actually_enacted_protocol_updates,
+            enacted_protocol_updates,
             pending_protocol_updates,
         }
     }
