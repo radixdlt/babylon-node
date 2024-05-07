@@ -1,29 +1,5 @@
 use crate::engine_prelude::*;
-use crate::protocol::protocol_updates::definitions::ScryptoEntriesBatchGenerator;
 use crate::protocol::*;
-
-const BOTTLENOSE_ENTRIES: [(&str, ProtocolUpdateEntry); 5] = [
-    (
-        "bottlenose-owner-role-getter",
-        ProtocolUpdateEntry::OwnerRoleGetter,
-    ),
-    (
-        "bottlenose-system-patches",
-        ProtocolUpdateEntry::SystemPatches,
-    ),
-    (
-        "bottlenose-locker-package",
-        ProtocolUpdateEntry::LockerPackage,
-    ),
-    (
-        "bottlenose-account-try-deposit-or-refund",
-        ProtocolUpdateEntry::AccountTryDepositOrRefundBehaviorChanges,
-    ),
-    (
-        "bottlenose-protocol-params-to-state",
-        ProtocolUpdateEntry::ProtocolParamsToState,
-    ),
-];
 
 pub struct BottlenoseProtocolUpdateDefinition;
 
@@ -37,7 +13,8 @@ impl ProtocolUpdateDefinition for BottlenoseProtocolUpdateDefinition {
     ) -> Box<dyn ProtocolUpdater> {
         Box::new(BatchedUpdater::new(
             new_protocol_version.clone(),
-            ScryptoEntriesBatchGenerator::new(network_definition, &BOTTLENOSE_ENTRIES),
+            BottlenoseSettings::all_enabled_as_default_for_network(network_definition)
+                .create_batch_generator(),
         ))
     }
 }

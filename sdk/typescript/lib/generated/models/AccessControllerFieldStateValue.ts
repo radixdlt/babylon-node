@@ -45,6 +45,12 @@ export interface AccessControllerFieldStateValue {
      */
     controlled_vault: EntityReference;
     /**
+     * 
+     * @type {EntityReference}
+     * @memberof AccessControllerFieldStateValue
+     */
+    xrd_fee_vault?: EntityReference;
+    /**
      * An integer between `0` and `2^32 - 1`, specifying the amount of time (in minutes) that
      * it takes for timed recovery to be done. When not present, then timed recovery can not be
      * performed through this access controller.
@@ -115,6 +121,7 @@ export function AccessControllerFieldStateValueFromJSONTyped(json: any, ignoreDi
     return {
         
         'controlled_vault': EntityReferenceFromJSON(json['controlled_vault']),
+        'xrd_fee_vault': !exists(json, 'xrd_fee_vault') ? undefined : EntityReferenceFromJSON(json['xrd_fee_vault']),
         'timed_recovery_delay_minutes': !exists(json, 'timed_recovery_delay_minutes') ? undefined : json['timed_recovery_delay_minutes'],
         'recovery_badge_resource_address': json['recovery_badge_resource_address'],
         'is_primary_role_locked': json['is_primary_role_locked'],
@@ -135,6 +142,7 @@ export function AccessControllerFieldStateValueToJSON(value?: AccessControllerFi
     return {
         
         'controlled_vault': EntityReferenceToJSON(value.controlled_vault),
+        'xrd_fee_vault': EntityReferenceToJSON(value.xrd_fee_vault),
         'timed_recovery_delay_minutes': value.timed_recovery_delay_minutes,
         'recovery_badge_resource_address': value.recovery_badge_resource_address,
         'is_primary_role_locked': value.is_primary_role_locked,

@@ -65,7 +65,7 @@ impl<G: UpdateBatchGenerator> ProtocolUpdater for BatchedUpdater<G> {
         while let Some(next_batch_idx) = txn_committer.next_committable_batch_idx() {
             let batch = self
                 .batch_generator
-                .generate_batch(database.deref(), next_batch_idx);
+                .generate_transactions(database.deref(), next_batch_idx);
             match batch {
                 Some(flash_txns) => {
                     txn_committer.commit_batch(flash_txns);
@@ -79,7 +79,7 @@ impl<G: UpdateBatchGenerator> ProtocolUpdater for BatchedUpdater<G> {
 pub(crate) trait UpdateBatchGenerator {
     /// Generate a batch of transactions to be committed atomically with a proof.
     /// Return None if it's the last batch.
-    fn generate_batch(
+    fn generate_transactions(
         &self,
         state_database: &impl SubstateDatabase,
         batch_index: u32,

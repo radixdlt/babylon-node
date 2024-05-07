@@ -13,6 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { BootLoaderType } from './BootLoaderType';
+import {
+    BootLoaderTypeFromJSON,
+    BootLoaderTypeFromJSONTyped,
+    BootLoaderTypeToJSON,
+} from './BootLoaderType';
 import type { SystemFieldKind } from './SystemFieldKind';
 import {
     SystemFieldKindFromJSON,
@@ -32,6 +38,12 @@ export interface SystemFieldStructureAllOf {
      * @memberof SystemFieldStructureAllOf
      */
     field_kind: SystemFieldKind;
+    /**
+     * 
+     * @type {BootLoaderType}
+     * @memberof SystemFieldStructureAllOf
+     */
+    boot_loader_type?: BootLoaderType;
     /**
      * 
      * @type {string}
@@ -71,6 +83,7 @@ export function SystemFieldStructureAllOfFromJSONTyped(json: any, ignoreDiscrimi
     return {
         
         'field_kind': SystemFieldKindFromJSON(json['field_kind']),
+        'boot_loader_type': !exists(json, 'boot_loader_type') ? undefined : BootLoaderTypeFromJSON(json['boot_loader_type']),
         'type': !exists(json, 'type') ? undefined : json['type'],
     };
 }
@@ -85,6 +98,7 @@ export function SystemFieldStructureAllOfToJSON(value?: SystemFieldStructureAllO
     return {
         
         'field_kind': SystemFieldKindToJSON(value.field_kind),
+        'boot_loader_type': BootLoaderTypeToJSON(value.boot_loader_type),
         'type': value.type,
     };
 }

@@ -32,6 +32,8 @@ public enum SubstateType {
   
   BOOTLOADERMODULEFIELDVMBOOT("BootLoaderModuleFieldVmBoot"),
   
+  BOOTLOADERMODULEFIELDKERNELBOOT("BootLoaderModuleFieldKernelBoot"),
+  
   TYPEINFOMODULEFIELDTYPEINFO("TypeInfoModuleFieldTypeInfo"),
   
   ROLEASSIGNMENTMODULEFIELDOWNERROLE("RoleAssignmentModuleFieldOwnerRole"),

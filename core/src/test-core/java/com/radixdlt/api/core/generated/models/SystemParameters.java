@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.CostingModuleConfig;
 import com.radixdlt.api.core.generated.models.LimitParameters;
 import com.radixdlt.api.core.generated.models.NetworkDefinition;
 import com.radixdlt.api.core.generated.models.SystemCostingParameters;
@@ -35,23 +36,23 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   SystemParameters.JSON_PROPERTY_NETWORK_DEFINITION,
+  SystemParameters.JSON_PROPERTY_COSTING_MODULE_CONFIG,
   SystemParameters.JSON_PROPERTY_COSTING_PARAMETERS,
-  SystemParameters.JSON_PROPERTY_LIMIT_PARAMETERS,
-  SystemParameters.JSON_PROPERTY_XRD_MAX_PER_FUNCTION_ROYALTY
+  SystemParameters.JSON_PROPERTY_LIMIT_PARAMETERS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class SystemParameters {
   public static final String JSON_PROPERTY_NETWORK_DEFINITION = "network_definition";
   private NetworkDefinition networkDefinition;
 
+  public static final String JSON_PROPERTY_COSTING_MODULE_CONFIG = "costing_module_config";
+  private CostingModuleConfig costingModuleConfig;
+
   public static final String JSON_PROPERTY_COSTING_PARAMETERS = "costing_parameters";
   private SystemCostingParameters costingParameters;
 
   public static final String JSON_PROPERTY_LIMIT_PARAMETERS = "limit_parameters";
   private LimitParameters limitParameters;
-
-  public static final String JSON_PROPERTY_XRD_MAX_PER_FUNCTION_ROYALTY = "xrd_max_per_function_royalty";
-  private String xrdMaxPerFunctionRoyalty;
 
   public SystemParameters() { 
   }
@@ -79,6 +80,32 @@ public class SystemParameters {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setNetworkDefinition(NetworkDefinition networkDefinition) {
     this.networkDefinition = networkDefinition;
+  }
+
+
+  public SystemParameters costingModuleConfig(CostingModuleConfig costingModuleConfig) {
+    this.costingModuleConfig = costingModuleConfig;
+    return this;
+  }
+
+   /**
+   * Get costingModuleConfig
+   * @return costingModuleConfig
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_COSTING_MODULE_CONFIG)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public CostingModuleConfig getCostingModuleConfig() {
+    return costingModuleConfig;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_COSTING_MODULE_CONFIG)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setCostingModuleConfig(CostingModuleConfig costingModuleConfig) {
+    this.costingModuleConfig = costingModuleConfig;
   }
 
 
@@ -134,32 +161,6 @@ public class SystemParameters {
   }
 
 
-  public SystemParameters xrdMaxPerFunctionRoyalty(String xrdMaxPerFunctionRoyalty) {
-    this.xrdMaxPerFunctionRoyalty = xrdMaxPerFunctionRoyalty;
-    return this;
-  }
-
-   /**
-   * The string-encoded decimal representing the maximum amount of XRD configurable for a single function&#39;s royalty. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(192 - 1) &lt;&#x3D; m &lt; 2^(192 - 1)&#x60;. 
-   * @return xrdMaxPerFunctionRoyalty
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The string-encoded decimal representing the maximum amount of XRD configurable for a single function's royalty. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. ")
-  @JsonProperty(JSON_PROPERTY_XRD_MAX_PER_FUNCTION_ROYALTY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getXrdMaxPerFunctionRoyalty() {
-    return xrdMaxPerFunctionRoyalty;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_XRD_MAX_PER_FUNCTION_ROYALTY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setXrdMaxPerFunctionRoyalty(String xrdMaxPerFunctionRoyalty) {
-    this.xrdMaxPerFunctionRoyalty = xrdMaxPerFunctionRoyalty;
-  }
-
-
   /**
    * Return true if this SystemParameters object is equal to o.
    */
@@ -173,14 +174,14 @@ public class SystemParameters {
     }
     SystemParameters systemParameters = (SystemParameters) o;
     return Objects.equals(this.networkDefinition, systemParameters.networkDefinition) &&
+        Objects.equals(this.costingModuleConfig, systemParameters.costingModuleConfig) &&
         Objects.equals(this.costingParameters, systemParameters.costingParameters) &&
-        Objects.equals(this.limitParameters, systemParameters.limitParameters) &&
-        Objects.equals(this.xrdMaxPerFunctionRoyalty, systemParameters.xrdMaxPerFunctionRoyalty);
+        Objects.equals(this.limitParameters, systemParameters.limitParameters);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(networkDefinition, costingParameters, limitParameters, xrdMaxPerFunctionRoyalty);
+    return Objects.hash(networkDefinition, costingModuleConfig, costingParameters, limitParameters);
   }
 
   @Override
@@ -188,9 +189,9 @@ public class SystemParameters {
     StringBuilder sb = new StringBuilder();
     sb.append("class SystemParameters {\n");
     sb.append("    networkDefinition: ").append(toIndentedString(networkDefinition)).append("\n");
+    sb.append("    costingModuleConfig: ").append(toIndentedString(costingModuleConfig)).append("\n");
     sb.append("    costingParameters: ").append(toIndentedString(costingParameters)).append("\n");
     sb.append("    limitParameters: ").append(toIndentedString(limitParameters)).append("\n");
-    sb.append("    xrdMaxPerFunctionRoyalty: ").append(toIndentedString(xrdMaxPerFunctionRoyalty)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -13,6 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { CostingModuleConfig } from './CostingModuleConfig';
+import {
+    CostingModuleConfigFromJSON,
+    CostingModuleConfigFromJSONTyped,
+    CostingModuleConfigToJSON,
+} from './CostingModuleConfig';
 import type { LimitParameters } from './LimitParameters';
 import {
     LimitParametersFromJSON,
@@ -46,6 +52,12 @@ export interface SystemParameters {
     network_definition: NetworkDefinition;
     /**
      * 
+     * @type {CostingModuleConfig}
+     * @memberof SystemParameters
+     */
+    costing_module_config: CostingModuleConfig;
+    /**
+     * 
      * @type {SystemCostingParameters}
      * @memberof SystemParameters
      */
@@ -56,13 +68,6 @@ export interface SystemParameters {
      * @memberof SystemParameters
      */
     limit_parameters: LimitParameters;
-    /**
-     * The string-encoded decimal representing the maximum amount of XRD configurable for a single function's royalty.
-     * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
-     * @type {string}
-     * @memberof SystemParameters
-     */
-    xrd_max_per_function_royalty: string;
 }
 
 /**
@@ -71,9 +76,9 @@ export interface SystemParameters {
 export function instanceOfSystemParameters(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "network_definition" in value;
+    isInstance = isInstance && "costing_module_config" in value;
     isInstance = isInstance && "costing_parameters" in value;
     isInstance = isInstance && "limit_parameters" in value;
-    isInstance = isInstance && "xrd_max_per_function_royalty" in value;
 
     return isInstance;
 }
@@ -89,9 +94,9 @@ export function SystemParametersFromJSONTyped(json: any, ignoreDiscriminator: bo
     return {
         
         'network_definition': NetworkDefinitionFromJSON(json['network_definition']),
+        'costing_module_config': CostingModuleConfigFromJSON(json['costing_module_config']),
         'costing_parameters': SystemCostingParametersFromJSON(json['costing_parameters']),
         'limit_parameters': LimitParametersFromJSON(json['limit_parameters']),
-        'xrd_max_per_function_royalty': json['xrd_max_per_function_royalty'],
     };
 }
 
@@ -105,9 +110,9 @@ export function SystemParametersToJSON(value?: SystemParameters | null): any {
     return {
         
         'network_definition': NetworkDefinitionToJSON(value.network_definition),
+        'costing_module_config': CostingModuleConfigToJSON(value.costing_module_config),
         'costing_parameters': SystemCostingParametersToJSON(value.costing_parameters),
         'limit_parameters': LimitParametersToJSON(value.limit_parameters),
-        'xrd_max_per_function_royalty': value.xrd_max_per_function_royalty,
     };
 }
 

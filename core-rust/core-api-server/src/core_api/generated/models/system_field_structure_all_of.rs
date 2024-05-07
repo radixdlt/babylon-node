@@ -15,12 +15,15 @@
 pub struct SystemFieldStructureAllOf {
     #[serde(rename = "field_kind")]
     pub field_kind: crate::core_api::generated::models::SystemFieldKind,
+    #[serde(rename = "boot_loader_type", skip_serializing_if = "Option::is_none")]
+    pub boot_loader_type: Option<crate::core_api::generated::models::BootLoaderType>,
 }
 
 impl SystemFieldStructureAllOf {
     pub fn new(field_kind: crate::core_api::generated::models::SystemFieldKind) -> SystemFieldStructureAllOf {
         SystemFieldStructureAllOf {
             field_kind,
+            boot_loader_type: None,
         }
     }
 }

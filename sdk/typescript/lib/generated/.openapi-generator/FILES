@@ -81,12 +81,15 @@ models/BlueprintTypeReference.ts
 models/BlueprintTypeReferenceBase.ts
 models/BlueprintTypeReferenceKind.ts
 models/BlueprintVersionKey.ts
+models/BootLoaderModuleFieldKernelBootSubstate.ts
+models/BootLoaderModuleFieldKernelBootSubstateAllOf.ts
 models/BootLoaderModuleFieldSystemBootSubstate.ts
 models/BootLoaderModuleFieldSystemBootSubstateAllOf.ts
 models/BootLoaderModuleFieldSystemBootValue.ts
 models/BootLoaderModuleFieldVmBootSubstate.ts
 models/BootLoaderModuleFieldVmBootSubstateAllOf.ts
 models/BootLoaderModuleFieldVmBootValue.ts
+models/BootLoaderType.ts
 models/CommittedIntentMetadata.ts
 models/CommittedStateIdentifier.ts
 models/CommittedStateIdentifierAllOf.ts
@@ -120,6 +123,7 @@ models/ConsensusManagerFieldValidatorRewardsValue.ts
 models/ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate.ts
 models/ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstateAllOf.ts
 models/ConsensusManagerRegisteredValidatorsByStakeIndexEntryValue.ts
+models/CostingModuleConfig.ts
 models/CostingParameters.ts
 models/CountOfProofRule.ts
 models/CountOfProofRuleAllOf.ts

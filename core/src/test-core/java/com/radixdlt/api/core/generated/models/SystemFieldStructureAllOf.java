@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.BootLoaderType;
 import com.radixdlt.api.core.generated.models.SystemFieldKind;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -32,12 +33,16 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * SystemFieldStructureAllOf
  */
 @JsonPropertyOrder({
-  SystemFieldStructureAllOf.JSON_PROPERTY_FIELD_KIND
+  SystemFieldStructureAllOf.JSON_PROPERTY_FIELD_KIND,
+  SystemFieldStructureAllOf.JSON_PROPERTY_BOOT_LOADER_TYPE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class SystemFieldStructureAllOf {
   public static final String JSON_PROPERTY_FIELD_KIND = "field_kind";
   private SystemFieldKind fieldKind;
+
+  public static final String JSON_PROPERTY_BOOT_LOADER_TYPE = "boot_loader_type";
+  private BootLoaderType bootLoaderType;
 
   public SystemFieldStructureAllOf() { 
   }
@@ -68,6 +73,32 @@ public class SystemFieldStructureAllOf {
   }
 
 
+  public SystemFieldStructureAllOf bootLoaderType(BootLoaderType bootLoaderType) {
+    this.bootLoaderType = bootLoaderType;
+    return this;
+  }
+
+   /**
+   * Get bootLoaderType
+   * @return bootLoaderType
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_BOOT_LOADER_TYPE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public BootLoaderType getBootLoaderType() {
+    return bootLoaderType;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_BOOT_LOADER_TYPE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setBootLoaderType(BootLoaderType bootLoaderType) {
+    this.bootLoaderType = bootLoaderType;
+  }
+
+
   /**
    * Return true if this SystemFieldStructure_allOf object is equal to o.
    */
@@ -80,12 +111,13 @@ public class SystemFieldStructureAllOf {
       return false;
     }
     SystemFieldStructureAllOf systemFieldStructureAllOf = (SystemFieldStructureAllOf) o;
-    return Objects.equals(this.fieldKind, systemFieldStructureAllOf.fieldKind);
+    return Objects.equals(this.fieldKind, systemFieldStructureAllOf.fieldKind) &&
+        Objects.equals(this.bootLoaderType, systemFieldStructureAllOf.bootLoaderType);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(fieldKind);
+    return Objects.hash(fieldKind, bootLoaderType);
   }
 
   @Override
@@ -93,6 +125,7 @@ public class SystemFieldStructureAllOf {
     StringBuilder sb = new StringBuilder();
     sb.append("class SystemFieldStructureAllOf {\n");
     sb.append("    fieldKind: ").append(toIndentedString(fieldKind)).append("\n");
+    sb.append("    bootLoaderType: ").append(toIndentedString(bootLoaderType)).append("\n");
     sb.append("}");
     return sb.toString();
   }
