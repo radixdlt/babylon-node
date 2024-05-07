@@ -22,6 +22,7 @@ use ProtocolUpdateEnactmentCondition::*;
 pub struct ProtocolUpdateExecutor {
     network: NetworkDefinition,
     protocol_config: ProtocolConfig,
+    scenarios_execution_config: ScenariosExecutionConfig,
     database: Arc<DbLock<ActualStateManagerDatabase>>,
     system_executor: Arc<SystemExecutor>,
 }
@@ -30,14 +31,14 @@ impl ProtocolUpdateExecutor {
     pub fn new(
         network: NetworkDefinition,
         protocol_config: ProtocolConfig,
-        // TODO(post-protocol update scenarios): pass the config down, return Scenarios as batches
-        _scenarios_execution_config: ScenariosExecutionConfig,
+        scenarios_execution_config: ScenariosExecutionConfig,
         database: Arc<DbLock<ActualStateManagerDatabase>>,
         system_executor: Arc<SystemExecutor>,
     ) -> Self {
         Self {
             network,
             protocol_config,
+            scenarios_execution_config,
             database,
             system_executor,
         }
@@ -48,6 +49,10 @@ impl ProtocolUpdateExecutor {
         self.protocol_config
             .resolve_updater(&self.network, new_protocol_version)
             .execute_remaining_batches(self.database.clone(), self.system_executor.deref());
+        let _scenarios_to_execute = self
+            .scenarios_execution_config
+            .to_run_after_protocol_update(new_protocol_version);
+        // TODO(post-protocol update scenarios): run `self.system_executor.execute_protocol_update_batch()` for these scenarios
     }
 }
 

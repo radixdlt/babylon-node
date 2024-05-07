@@ -258,6 +258,7 @@ impl SystemExecutor {
                 // - it will be incremented only by 1 for each consecutive Scenario (while during
                 //   Genesis Scenarios, the next Scenario gets a nonce incremented by the number of
                 //   transactions of the previous Scenario).
+                // TODO(resolve during review): is the above ok?
                 let protocol_update_specific_nonce = batch_idx;
                 self.execute_scenario(
                     &mut system_commit_request_factory,

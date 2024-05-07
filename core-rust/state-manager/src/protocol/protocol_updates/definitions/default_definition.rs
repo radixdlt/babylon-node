@@ -1,9 +1,9 @@
 use crate::engine_prelude::*;
 use crate::protocol::*;
 
-pub struct DefaultConfigOnlyProtocolDefinition;
+pub struct NoOpProtocolDefinition;
 
-impl ProtocolUpdateDefinition for DefaultConfigOnlyProtocolDefinition {
+impl ProtocolUpdateDefinition for NoOpProtocolDefinition {
     type Overrides = ();
 
     fn create_updater(
