@@ -162,7 +162,7 @@ public final class Dispatchers {
     public RemoteEventDispatcher<NodeId, T> get() {
       var remoteDispatcher = environmentProvider.get().getRemoteDispatcher(messageType);
       var localDispatcher = environmentProvider.get().getDispatcher(messageType);
-      final Set<EventProcessor<T>> onDispatch =
+      var onDispatch =
           onDispatchProcessors.stream()
               .flatMap(p -> p.getProcessor(messageType).stream())
               .collect(Collectors.toSet());

@@ -102,11 +102,9 @@ public final class SyncRequestTimeout implements LocalEvent {
     if (this == o) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    SyncRequestTimeout that = (SyncRequestTimeout) o;
-    return Objects.equals(peer, that.peer) && requestId == that.requestId;
+    return o instanceof SyncRequestTimeout that
+        && Objects.equals(peer, that.peer)
+        && requestId == that.requestId;
   }
 
   @Override

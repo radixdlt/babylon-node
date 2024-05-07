@@ -70,7 +70,6 @@ import com.radixdlt.p2p.RadixNodeUri;
 import java.util.Objects;
 
 public final class PeersResponse implements RemoteEvent {
-
   private final ImmutableSet<RadixNodeUri> peers;
 
   public static PeersResponse create(ImmutableSet<RadixNodeUri> peers) {
@@ -95,11 +94,8 @@ public final class PeersResponse implements RemoteEvent {
     if (this == o) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    final var that = (PeersResponse) o;
-    return Objects.equals(peers, that.peers);
+
+    return o instanceof PeersResponse that && Objects.equals(peers, that.peers);
   }
 
   @Override

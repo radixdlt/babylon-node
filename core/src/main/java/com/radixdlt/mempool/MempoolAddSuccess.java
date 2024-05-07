@@ -100,11 +100,8 @@ public final class MempoolAddSuccess implements LocalEvent {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof MempoolAddSuccess other)) {
-      return false;
-    }
-
-    return Objects.equals(this.transaction, other.transaction)
+    return o instanceof MempoolAddSuccess other
+        && Objects.equals(this.transaction, other.transaction)
         && Objects.equals(this.origin, other.origin);
   }
 

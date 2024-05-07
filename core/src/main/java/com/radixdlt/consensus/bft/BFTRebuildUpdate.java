@@ -97,11 +97,7 @@ public final class BFTRebuildUpdate implements LocalEvent {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof BFTRebuildUpdate)) {
-      return false;
-    }
-
-    BFTRebuildUpdate other = (BFTRebuildUpdate) o;
-    return Objects.equals(other.vertexStoreState, this.vertexStoreState);
+    return o instanceof BFTRebuildUpdate other
+        && Objects.equals(other.vertexStoreState, this.vertexStoreState);
   }
 }

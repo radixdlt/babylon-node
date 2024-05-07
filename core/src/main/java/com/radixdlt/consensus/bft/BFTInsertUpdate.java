@@ -118,12 +118,8 @@ public final class BFTInsertUpdate implements LocalEvent {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof BFTInsertUpdate)) {
-      return false;
-    }
-
-    BFTInsertUpdate other = (BFTInsertUpdate) o;
-    return Objects.equals(this.vertexStoreState, other.vertexStoreState)
+    return o instanceof BFTInsertUpdate other
+        && Objects.equals(this.vertexStoreState, other.vertexStoreState)
         && Objects.equals(this.insertedVertex, other.insertedVertex)
         && this.siblingsCount == other.siblingsCount;
   }

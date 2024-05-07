@@ -102,11 +102,7 @@ public final class BFTHighQCUpdate implements LocalEvent {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof BFTHighQCUpdate)) {
-      return false;
-    }
-
-    BFTHighQCUpdate other = (BFTHighQCUpdate) o;
-    return Objects.equals(other.vertexStoreState, this.vertexStoreState);
+    return o instanceof BFTHighQCUpdate other
+        && Objects.equals(other.vertexStoreState, this.vertexStoreState);
   }
 }

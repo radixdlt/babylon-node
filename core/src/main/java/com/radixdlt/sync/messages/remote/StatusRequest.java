@@ -89,7 +89,7 @@ public final class StatusRequest implements RemoteEvent {
     if (this == o) {
       return true;
     }
-    return (o instanceof StatusRequestMessage);
+    return o instanceof StatusRequestMessage;
   }
 
   @Override

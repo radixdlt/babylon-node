@@ -96,11 +96,6 @@ public final class NoVote implements LocalEvent {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof NoVote)) {
-      return false;
-    }
-
-    NoVote other = (NoVote) o;
-    return Objects.equals(this.vertex, other.vertex);
+    return o instanceof NoVote other && Objects.equals(this.vertex, other.vertex);
   }
 }

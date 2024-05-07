@@ -96,11 +96,9 @@ public final class EpochRoundUpdate implements LocalEvent {
     if (this == o) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    EpochRoundUpdate that = (EpochRoundUpdate) o;
-    return epoch == that.epoch && Objects.equals(roundUpdate, that.roundUpdate);
+    return o instanceof EpochRoundUpdate that
+        && epoch == that.epoch
+        && Objects.equals(roundUpdate, that.roundUpdate);
   }
 
   @Override

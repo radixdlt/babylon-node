@@ -73,7 +73,6 @@ import java.util.Objects;
  * has been updated.
  */
 public final class LedgerStatusUpdate implements RemoteEvent {
-
   private final LedgerProofSyncStatusDto proof;
 
   public static LedgerStatusUpdate create(LedgerProofSyncStatusDto proof) {
@@ -98,11 +97,8 @@ public final class LedgerStatusUpdate implements RemoteEvent {
     if (this == o) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    LedgerStatusUpdate that = (LedgerStatusUpdate) o;
-    return Objects.equals(proof, that.proof);
+
+    return o instanceof LedgerStatusUpdate that && Objects.equals(proof, that.proof);
   }
 
   @Override

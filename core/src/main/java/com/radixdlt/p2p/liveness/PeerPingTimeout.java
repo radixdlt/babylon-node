@@ -89,11 +89,7 @@ public final class PeerPingTimeout implements LocalEvent {
     if (this == o) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    final var that = (PeerPingTimeout) o;
-    return Objects.equals(nodeId, that.nodeId);
+    return o instanceof PeerPingTimeout that && Objects.equals(nodeId, that.nodeId);
   }
 
   @Override

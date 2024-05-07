@@ -92,11 +92,9 @@ public final class EpochProposalRejected implements LocalEvent {
     if (this == o) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    EpochProposalRejected that = (EpochProposalRejected) o;
-    return epoch == that.epoch && Objects.equals(proposalRejected, that.proposalRejected);
+    return o instanceof EpochProposalRejected that
+        && epoch == that.epoch
+        && Objects.equals(proposalRejected, that.proposalRejected);
   }
 
   @Override

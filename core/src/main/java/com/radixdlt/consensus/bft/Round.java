@@ -127,12 +127,7 @@ public final class Round implements Comparable<Round>, LocalEvent {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof Round)) {
-      return false;
-    }
-
-    Round other = (Round) o;
-    return other.roundNumber == this.roundNumber;
+    return o instanceof Round other && other.roundNumber == this.roundNumber;
   }
 
   @Override
