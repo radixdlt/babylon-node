@@ -211,12 +211,13 @@ public final class BottlenoseProtocolUpdateTest {
       assertEquals(
           Arrays.asList(
               "bottlenose-owner-role-getter",
-              "bottlenose-transaction-processor-blob-limits",
               "bottlenose-locker-package",
               "bottlenose-account-try-deposit-or-refund",
               "bottlenose-protocol-params-to-state",
-              "bottlenose-deferred-reference-check-costs",
-              "bottlenose-access-controller-fee-vault"),
+              "bottlenose-access-controller-xrd-fee-vault",
+              "bottlenose-transaction-processor-blob-limits",
+              "bottlenose-add-deferred-reference-check-cost",
+              "bottlenose-restrict-role-assignment-reserved-role-key"),
           committedFlashTransactions.stream()
               .map(txn -> ((FlashLedgerTransaction) txn.getLedgerTransaction()).getName())
               .toList());

@@ -18,15 +18,15 @@ pub struct BootLoaderModuleFieldKernelBootSubstate {
     #[serde(rename = "is_locked")]
     pub is_locked: bool,
     #[serde(rename = "value")]
-    pub value: Box<crate::core_api::generated::models::BootLoaderModuleFieldKernelBootValue>,
+    pub value: serde_json::Value,
 }
 
 impl BootLoaderModuleFieldKernelBootSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, value: crate::core_api::generated::models::BootLoaderModuleFieldKernelBootValue) -> BootLoaderModuleFieldKernelBootSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, value: serde_json::Value) -> BootLoaderModuleFieldKernelBootSubstate {
         BootLoaderModuleFieldKernelBootSubstate {
             substate_type,
             is_locked,
-            value: Box::new(value),
+            value,
         }
     }
 }

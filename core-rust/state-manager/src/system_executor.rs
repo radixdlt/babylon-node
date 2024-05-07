@@ -80,10 +80,9 @@ use crate::store::traits::scenario::{
 };
 use crate::system_commits::*;
 
-use radix_transaction_scenarios::executor::scenarios_vector;
-
 use crate::protocol::{ProtocolUpdateTransactionBatch, ProtocolVersionName};
 use crate::traits::scenario::ExecutedScenarioV1;
+use radix_transaction_scenarios::scenarios::ALL_SCENARIOS;
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -358,17 +357,10 @@ impl SystemExecutor {
         next_nonce: u32,
         scenario_name: &str,
     ) -> Box<dyn ScenarioInstance> {
-        for (_protocol_version, scenario_builder) in scenarios_vector() {
-            let scenario =
-                scenario_builder(ScenarioCore::new(self.network.clone(), epoch, next_nonce));
-            if scenario.metadata().logical_name == scenario_name {
-                return scenario;
-            }
-        }
-        panic!(
-            "Could not find scenario with logical name: {}",
-            scenario_name
-        );
+        ALL_SCENARIOS
+            .get(scenario_name)
+            .expect(scenario_name)
+            .create(ScenarioCore::new(self.network.clone(), epoch, next_nonce))
     }
 
     fn create_executed_scenario_entry(

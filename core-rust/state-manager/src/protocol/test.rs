@@ -98,11 +98,20 @@ fn flash_protocol_update_test() {
             .system_executor
             .execute_genesis_for_unit_tests_with_default_config();
         // Now we can prepare the state updates based on the initialized database
-        let state_updates = ProtocolUpdateEntry::ValidatorCreationFeeFix.generate_state_updates(
-            tmp_state_manager.database.access_direct().deref(),
-            &state_manager_config.network_definition,
-        );
-        state_updates
+        let validator_fee_fix = AnemoneSettings::all_disabled()
+            .enable(|anemone_settings| &mut anemone_settings.validator_fee_fix)
+            .create_batch_generator()
+            .generate_transactions(tmp_state_manager.database.access_direct().deref(), 0)
+            .unwrap();
+        let ProtocolUpdateTransactionBatch::FlashTransactions(mut validator_fee_fix) =
+            validator_fee_fix
+        else {
+            panic!("validator_fee_fix should be a batch of flash transaction")
+        };
+        if validator_fee_fix.len() != 1 {
+            panic!("validator_fee_fix should be a single flash transaction")
+        }
+        validator_fee_fix.remove(0).state_updates
     };
 
     state_manager_config

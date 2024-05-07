@@ -13,13 +13,6 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { BootLoaderModuleFieldKernelBootValue } from './BootLoaderModuleFieldKernelBootValue';
-import {
-    BootLoaderModuleFieldKernelBootValueFromJSON,
-    BootLoaderModuleFieldKernelBootValueFromJSONTyped,
-    BootLoaderModuleFieldKernelBootValueToJSON,
-} from './BootLoaderModuleFieldKernelBootValue';
-
 /**
  * 
  * @export
@@ -40,10 +33,10 @@ export interface BootLoaderModuleFieldKernelBootSubstate {
     is_locked: boolean;
     /**
      * 
-     * @type {BootLoaderModuleFieldKernelBootValue}
+     * @type {object}
      * @memberof BootLoaderModuleFieldKernelBootSubstate
      */
-    value: BootLoaderModuleFieldKernelBootValue;
+    value: object;
 }
 
 
@@ -80,7 +73,7 @@ export function BootLoaderModuleFieldKernelBootSubstateFromJSONTyped(json: any, 
         
         'substate_type': json['substate_type'],
         'is_locked': json['is_locked'],
-        'value': BootLoaderModuleFieldKernelBootValueFromJSON(json['value']),
+        'value': json['value'],
     };
 }
 
@@ -95,7 +88,7 @@ export function BootLoaderModuleFieldKernelBootSubstateToJSON(value?: BootLoader
         
         'substate_type': value.substate_type,
         'is_locked': value.is_locked,
-        'value': BootLoaderModuleFieldKernelBootValueToJSON(value.value),
+        'value': value.value,
     };
 }
 
