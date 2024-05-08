@@ -64,4 +64,8 @@
 
 package com.radixdlt.consensus.event;
 
+/**
+ * Root marker interface for all events present in system. It is used to ensure that no "unrelated"
+ * events are present in the code.
+ */
 public interface CoreEvent {}

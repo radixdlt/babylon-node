@@ -64,5 +64,8 @@
 
 package com.radixdlt.consensus.event;
 
-// TODO: SIY: rename to RemoteEvent
+/**
+ * Marker interface for events which are received from other nodes. Note that some events may be
+ * both local and remote.
+ */
 public interface RemoteEvent extends CoreEvent {}

@@ -66,7 +66,6 @@ package com.radixdlt.environment.rx;
 
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.event.CoreEvent;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.Objects;
@@ -75,25 +74,13 @@ import java.util.Objects;
 public final class ObservableProvider<T extends CoreEvent> implements Provider<Observable<T>> {
   @Inject private Provider<RxEnvironment> rxEnvironmentProvider;
   private final Class<T> c;
-  private final TypeLiteral<T> t;
 
   ObservableProvider(Class<T> c) {
     this.c = Objects.requireNonNull(c);
-    this.t = null;
-  }
-
-  ObservableProvider(TypeLiteral<T> t) { // TODO: SIY: unused
-    this.t = Objects.requireNonNull(t);
-    this.c = null;
   }
 
   @Override
   public Observable<T> get() {
-    RxEnvironment e = rxEnvironmentProvider.get();
-    if (c != null) {
-      return e.getObservable(c);
-    } else {
-      return e.getObservable(t);
-    }
+	  return rxEnvironmentProvider.get().getObservable(c);
   }
 }

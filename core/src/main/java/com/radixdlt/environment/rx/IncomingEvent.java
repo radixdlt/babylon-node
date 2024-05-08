@@ -72,32 +72,15 @@ import java.util.Objects;
  *
  * @param <T> the event class
  */
-public final class IncomingEvent<N, T extends RemoteEvent> implements RemoteEvent {
-  private final N origin;
-  private final T event;
+public interface IncomingEvent<N, T extends RemoteEvent> extends RemoteEvent {
+  N origin();
 
-  private IncomingEvent(N origin, T event) {
-    this.origin = origin;
-    this.event = event;
-  }
+  T event();
 
-  public static <N, T extends RemoteEvent> IncomingEvent<N, T> create(N origin, T event) {
-    Objects.requireNonNull(origin);
-    Objects.requireNonNull(event);
+  static <N, T extends RemoteEvent> IncomingEvent<N, T> create(N origin, T event) {
+    record incomingEvent<N, T extends RemoteEvent>(N origin, T event)
+        implements IncomingEvent<N, T> {}
 
-    return new IncomingEvent<>(origin, event);
-  }
-
-  public N origin() {
-    return origin;
-  }
-
-  public T event() {
-    return event;
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s[%s->%s]", getClass().getSimpleName(), this.origin, this.event);
+    return new incomingEvent<>(Objects.requireNonNull(origin), Objects.requireNonNull(event));
   }
 }
