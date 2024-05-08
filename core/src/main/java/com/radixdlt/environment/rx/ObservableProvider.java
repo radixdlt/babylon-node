@@ -81,6 +81,6 @@ public final class ObservableProvider<T extends CoreEvent> implements Provider<O
 
   @Override
   public Observable<T> get() {
-	  return rxEnvironmentProvider.get().getObservable(c);
+    return rxEnvironmentProvider.get().getObservable(c);
   }
 }
