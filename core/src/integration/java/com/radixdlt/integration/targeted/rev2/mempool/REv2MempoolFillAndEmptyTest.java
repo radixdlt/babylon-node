@@ -89,6 +89,7 @@ import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transactions.NotarizedTransactionHash;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
+import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.assertj.core.api.Assertions;
@@ -154,7 +155,7 @@ public final class REv2MempoolFillAndEmptyTest {
       }
       for (int i = 0; i < 50; i++) {
         var transaction = transactionGenerator.nextTransaction();
-        mempoolDispatcher.dispatch(MempoolAdd.create(transaction));
+        mempoolDispatcher.dispatch(new MempoolAdd(List.of(transaction)));
         test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
       }
     }

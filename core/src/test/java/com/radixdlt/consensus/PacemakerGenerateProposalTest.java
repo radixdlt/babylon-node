@@ -134,8 +134,7 @@ public final class PacemakerGenerateProposalTest {
     this.timeSupplier = mock(TimeSupplier.class);
     final var initialHighQc = mock(HighQC.class);
     when(initialHighQc.getHighestRound()).thenReturn(Round.of(0L));
-    this.initialRoundUpdate =
-        RoundUpdate.create(Round.of(1L), initialHighQc, validator1, validator2);
+    this.initialRoundUpdate = new RoundUpdate(Round.of(1L), initialHighQc, validator1, validator2);
 
     this.sut =
         new Pacemaker(
@@ -167,7 +166,7 @@ public final class PacemakerGenerateProposalTest {
     final var highQc = createMockHighQc(previousTimestamp);
     when(timeSupplier.currentTime()).thenReturn(currentTimestamp);
 
-    sut.processRoundUpdate(RoundUpdate.create(Round.of(2L), highQc, self, validator1));
+    sut.processRoundUpdate(new RoundUpdate(Round.of(2L), highQc, self, validator1));
 
     verify(this.safetyRules, times(1))
         .signProposal(
@@ -185,7 +184,7 @@ public final class PacemakerGenerateProposalTest {
     final var highQc = createMockHighQc(previousTimestamp);
     when(timeSupplier.currentTime()).thenReturn(currentTimestamp);
 
-    sut.processRoundUpdate(RoundUpdate.create(Round.of(2L), highQc, self, validator1));
+    sut.processRoundUpdate(new RoundUpdate(Round.of(2L), highQc, self, validator1));
 
     verify(this.safetyRules, times(1))
         .signProposal(

@@ -70,8 +70,10 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.messaging.core.Message;
 import com.radixdlt.messaging.core.MessageCentral;
 import com.radixdlt.p2p.NodeId;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
+import java.util.List;
 import java.util.Objects;
 import javax.inject.Inject;
 
@@ -98,7 +100,11 @@ public final class MessageCentralMempool {
   public Flowable<IncomingEvent<NodeId, MempoolAdd>> mempoolComands() {
     return messageCentral
         .messagesOf(MempoolAddMessage.class)
-        .map(msg -> IncomingEvent.create(msg.source(), MempoolAdd.create(msg.message().getTxns())))
+        .map(
+            msg -> {
+              List<RawNotarizedTransaction> transactions = msg.message().getTxns();
+              return IncomingEvent.create(msg.source(), new MempoolAdd(transactions));
+            })
         .toFlowable(BackpressureStrategy.BUFFER);
   }
 }

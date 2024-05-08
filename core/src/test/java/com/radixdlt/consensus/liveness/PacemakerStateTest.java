@@ -101,8 +101,8 @@ public class PacemakerStateTest {
   @Before
   public void setUp() {
     when(proposerElection.getProposer(any())).thenReturn(BFTValidatorId.random());
-    RoundUpdate roundUpdate =
-        RoundUpdate.create(
+    var roundUpdate =
+        new RoundUpdate(
             Round.epochInitial(),
             mock(HighQC.class),
             BFTValidatorId.random(),

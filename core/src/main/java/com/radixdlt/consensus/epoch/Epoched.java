@@ -72,16 +72,8 @@ import java.util.Objects;
  *
  * @param <T> event which is wrapped TODO: Move other epoch events into this kind of object
  */
-public interface Epoched<T extends LocalEvent> extends LocalEvent {
-  long epoch();
-
-  T event();
-
+public record Epoched<T extends LocalEvent>(long epoch, T event) implements LocalEvent {
   static <T extends LocalEvent> Epoched<T> from(long epoch, T event) {
-    Objects.requireNonNull(event);
-
-    record epoched<T extends LocalEvent>(long epoch, T event) implements Epoched<T> {}
-
-    return new epoched<>(epoch, event);
+    return new Epoched<>(epoch, Objects.requireNonNull(event));
   }
 }

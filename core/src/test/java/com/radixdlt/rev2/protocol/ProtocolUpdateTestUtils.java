@@ -85,6 +85,7 @@ import com.radixdlt.statecomputer.commit.NextEpoch;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.utils.PrivateKeys;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -121,7 +122,7 @@ public final class ProtocolUpdateTestUtils {
             .notaryIsSignatory(true)
             .prepare()
             .raw();
-    mempoolDispatcher.dispatch(MempoolAdd.create(signalReadinessTransaction));
+    mempoolDispatcher.dispatch(new MempoolAdd(List.of(signalReadinessTransaction)));
     test.runUntilState(allCommittedTransactionSuccess(signalReadinessTransaction));
     // Check that the state reader returns a correct value
     test.getNodeInjectors()

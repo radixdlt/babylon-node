@@ -68,19 +68,7 @@ import com.radixdlt.consensus.event.LocalEvent;
 import com.radixdlt.consensus.event.RemoteEvent;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
-import java.util.Objects;
 
-// TODO: SIY: used as local and remote event, should be split into two
 /** Message to attempt to add transactions to the mempool */
 public record MempoolAdd(List<RawNotarizedTransaction> transactions)
-    implements RemoteEvent, LocalEvent {
-  public static MempoolAdd create(RawNotarizedTransaction transaction) {
-    Objects.requireNonNull(transaction);
-    return new MempoolAdd(List.of(transaction));
-  }
-
-  public static MempoolAdd create(List<RawNotarizedTransaction> transactions) {
-    Objects.requireNonNull(transactions);
-    return new MempoolAdd(transactions);
-  }
-}
+    implements RemoteEvent, LocalEvent {}

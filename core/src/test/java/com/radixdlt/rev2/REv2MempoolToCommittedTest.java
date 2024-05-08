@@ -138,7 +138,7 @@ public class REv2MempoolToCommittedTest {
       var transaction = TransactionBuilder.forTests().prepare().raw();
       var mempoolDispatcher =
           test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
-      mempoolDispatcher.dispatch(MempoolAdd.create(transaction));
+      mempoolDispatcher.dispatch(new MempoolAdd(List.of(transaction)));
       test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
 
       // Act/Assert

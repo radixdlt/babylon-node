@@ -70,12 +70,4 @@ import com.radixdlt.consensus.event.LocalEvent;
  * A message indicating that sync service hasn't received an update from ledger after processing
  * previous response.
  */
-public interface SyncLedgerUpdateTimeout extends LocalEvent {
-  long stateVersion();
-
-  static SyncLedgerUpdateTimeout create(long stateVersion) {
-    record syncLedgerUpdateTimeout(long stateVersion) implements SyncLedgerUpdateTimeout {}
-
-    return new syncLedgerUpdateTimeout(stateVersion);
-  }
-}
+public record SyncLedgerUpdateTimeout(long stateVersion) implements LocalEvent {}

@@ -67,9 +67,18 @@ package com.radixdlt.sync.messages.local;
 import com.radixdlt.consensus.event.LocalEvent;
 
 /** A message indicating that the sync service should start the sync check. */
-public interface SyncCheckTrigger extends LocalEvent {
-  static SyncCheckTrigger create() {
-    record syncCheckTrigger() implements SyncCheckTrigger {}
-    return new syncCheckTrigger();
+public record SyncCheckTrigger() implements LocalEvent {
+  public static SyncCheckTrigger create() {
+    return new SyncCheckTrigger();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    return o instanceof SyncCheckTrigger;
+  }
+
+  @Override
+  public int hashCode() {
+    return 1;
   }
 }

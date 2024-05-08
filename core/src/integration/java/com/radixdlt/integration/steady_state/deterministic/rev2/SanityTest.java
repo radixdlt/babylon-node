@@ -86,6 +86,7 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.sync.SyncRelayConfig;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.Collection;
 import java.util.List;
 import org.junit.Rule;
@@ -155,7 +156,8 @@ public final class SanityTest {
         var mempoolDispatcher =
             test.getInstance(
                 i % test.numNodes(), Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
-        mempoolDispatcher.dispatch(MempoolAdd.create(transactionGenerator.nextTransaction()));
+        RawNotarizedTransaction transaction = transactionGenerator.nextTransaction();
+        mempoolDispatcher.dispatch(new MempoolAdd(List.of(transaction)));
       }
 
       // Post-run assertions

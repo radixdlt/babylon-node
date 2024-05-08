@@ -65,40 +65,6 @@
 package com.radixdlt.consensus.sync;
 
 import com.radixdlt.consensus.event.LocalEvent;
-import java.util.Objects;
 
 /** A scheduled timeout for a given vertex request */
-public final class VertexRequestTimeout implements LocalEvent {
-  private final GetVerticesRequest request;
-
-  private VertexRequestTimeout(GetVerticesRequest request) {
-    this.request = request;
-  }
-
-  public static VertexRequestTimeout create(GetVerticesRequest request) {
-    return new VertexRequestTimeout(request);
-  }
-
-  public GetVerticesRequest request() {
-    return request;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(request);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof VertexRequestTimeout other)) {
-      return false;
-    }
-
-    return Objects.equals(this.request, other.request);
-  }
-
-  @Override
-  public String toString() {
-    return "VertexRequestTimeout{" + "request=" + request + '}';
-  }
-}
+public record VertexRequestTimeout(GetVerticesRequest request) implements LocalEvent {}

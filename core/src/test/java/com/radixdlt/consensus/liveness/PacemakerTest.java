@@ -119,8 +119,8 @@ public class PacemakerTest {
     when(highQC.highestCommittedQC()).thenReturn(committedQc);
     when(highQC.getHighestRound()).thenReturn(Round.of(0));
 
-    RoundUpdate initialRoundUpdate =
-        RoundUpdate.create(
+    var initialRoundUpdate =
+        new RoundUpdate(
             Round.of(0), highQC, mock(BFTValidatorId.class), mock(BFTValidatorId.class));
 
     this.pacemaker =
@@ -164,8 +164,8 @@ public class PacemakerTest {
     when(executedVertex.vertex()).thenReturn(vertex);
     when(this.vertexStore.getExecutedVertex(vertexId)).thenReturn(Optional.of(executedVertex));
 
-    RoundUpdate roundUpdate =
-        RoundUpdate.create(
+    var roundUpdate =
+        new RoundUpdate(
             Round.of(0),
             mock(HighQC.class),
             mock(BFTValidatorId.class),
@@ -197,8 +197,8 @@ public class PacemakerTest {
     when(highestQcProposed.getLedgerHeader()).thenReturn(highQcLedgerHeader);
     when(highestQc.getProposedHeader()).thenReturn(highestQcProposed);
     when(committedQc.getRound()).thenReturn(Round.of(0));
-    RoundUpdate roundUpdate =
-        RoundUpdate.create(Round.of(1), roundUpdateHighQc, leader, mock(BFTValidatorId.class));
+    var roundUpdate =
+        new RoundUpdate(Round.of(1), roundUpdateHighQc, leader, mock(BFTValidatorId.class));
     this.pacemaker.processRoundUpdate(roundUpdate);
     Round round = Round.of(1);
     Vote emptyVote = mock(Vote.class);
@@ -240,8 +240,7 @@ public class PacemakerTest {
 
     this.pacemaker.processLocalTimeout(
         ScheduledLocalTimeout.create(
-            RoundUpdate.create(Round.of(1), mock(HighQC.class), leader, BFTValidatorId.random()),
-            0L));
+            new RoundUpdate(Round.of(1), mock(HighQC.class), leader, BFTValidatorId.random()), 0L));
 
     this.pacemaker.processBFTUpdate(bftInsertUpdate);
 

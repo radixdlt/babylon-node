@@ -427,7 +427,7 @@ public final class BFTSync implements BFTSyncer {
 
     if (syncRequestState.syncIds.isEmpty()) {
       if (this.syncRequestRateLimiter.tryAcquire()) {
-        VertexRequestTimeout scheduledTimeout = VertexRequestTimeout.create(request);
+        VertexRequestTimeout scheduledTimeout = new VertexRequestTimeout(request);
         this.timeoutDispatcher.dispatch(scheduledTimeout, bftSyncPatienceMillis);
         this.requestSender.dispatch(authors.get(0), request);
       } else {

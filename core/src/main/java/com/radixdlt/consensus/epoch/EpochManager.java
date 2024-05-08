@@ -267,7 +267,7 @@ public final class EpochManager {
     final var round = highQC.getHighestRound().next();
     final var leader = proposerElection.getProposer(round);
     final var nextLeader = proposerElection.getProposer(round.next());
-    final var initialRoundUpdate = RoundUpdate.create(round, highQC, leader, nextLeader);
+    final var initialRoundUpdate = new RoundUpdate(round, highQC, leader, nextLeader);
 
     // Mutable Consensus State
     log.info(

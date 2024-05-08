@@ -75,6 +75,7 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.rev2.TransactionBuilder;
 import com.radixdlt.testutil.TransactionDetails;
 import com.radixdlt.transactions.RawNotarizedTransaction;
+import java.util.List;
 
 public final class TransactionExecutor {
   private TransactionExecutor() {
@@ -89,7 +90,7 @@ public final class TransactionExecutor {
       DeterministicTest test, RawNotarizedTransaction transaction) {
     var mempoolDispatcher =
         test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
-    mempoolDispatcher.dispatch(MempoolAdd.create(transaction));
+    mempoolDispatcher.dispatch(new MempoolAdd(List.of(transaction)));
     test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
     test.runUntilState(allCommittedTransactionSuccess(transaction), onlyConsensusEvents());
     return NodesReader.getCommittedTransactionDetails(test.getNodeInjectors(), transaction);

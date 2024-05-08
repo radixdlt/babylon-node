@@ -135,7 +135,7 @@ public class PeerLivenessMonitorTest {
     verify(pingEventDispatcher, times(1)).dispatch(eq(peer1), any());
     verify(pingTimeoutEventDispatcher, times(1)).dispatch(any(), anyLong());
 
-    this.sut.pingTimeoutEventProcessor().process(PeerPingTimeout.create(peer1));
+    this.sut.pingTimeoutEventProcessor().process(new PeerPingTimeout(peer1));
 
     verify(peerEventDispatcher, times(1))
         .dispatch(
@@ -156,7 +156,7 @@ public class PeerLivenessMonitorTest {
     verify(pingTimeoutEventDispatcher, times(1)).dispatch(any(), anyLong());
 
     this.sut.pongRemoteEventProcessor().process(peer1, Pong.create());
-    this.sut.pingTimeoutEventProcessor().process(PeerPingTimeout.create(peer1));
+    this.sut.pingTimeoutEventProcessor().process(new PeerPingTimeout(peer1));
 
     verifyNoInteractions(peerEventDispatcher);
   }

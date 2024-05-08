@@ -98,6 +98,7 @@ import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.TimeSupplier;
 import io.reactivex.rxjava3.core.Flowable;
+import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -153,7 +154,8 @@ public final class MempoolRunnerTest {
     Guice.createInjector(createModule()).injectMembers(this);
     moduleRunners.get(Runners.MEMPOOL).start(error -> log.error("Uncaught runner error", error));
 
-    MempoolAdd mempoolAdd = MempoolAdd.create(RawNotarizedTransaction.create(new byte[0]));
+    RawNotarizedTransaction transaction = RawNotarizedTransaction.create(new byte[0]);
+    MempoolAdd mempoolAdd = new MempoolAdd(List.of(transaction));
     mempoolAddEventDispatcher.dispatch(mempoolAdd);
 
     verify(stateComputer, timeout(1000).times(1)).addToMempool(eq(mempoolAdd), isNull());

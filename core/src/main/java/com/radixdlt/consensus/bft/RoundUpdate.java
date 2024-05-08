@@ -66,29 +66,8 @@ package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.event.LocalEvent;
-import java.util.Objects;
 
 /** Represents an internal (local) round update. */
-public interface RoundUpdate extends LocalEvent {
-  HighQC highQC();
-
-  BFTValidatorId leader();
-
-  BFTValidatorId nextLeader();
-
-  Round currentRound();
-
-  static RoundUpdate create(
-      Round currentRound, HighQC highQC, BFTValidatorId leader, BFTValidatorId nextLeader) {
-    Objects.requireNonNull(currentRound);
-    Objects.requireNonNull(highQC);
-    Objects.requireNonNull(leader);
-    Objects.requireNonNull(nextLeader);
-
-    record roundUpdate(
-        Round currentRound, HighQC highQC, BFTValidatorId leader, BFTValidatorId nextLeader)
-        implements RoundUpdate {}
-
-    return new roundUpdate(currentRound, highQC, leader, nextLeader);
-  }
-}
+public record RoundUpdate(
+    Round currentRound, HighQC highQC, BFTValidatorId leader, BFTValidatorId nextLeader)
+    implements LocalEvent {}

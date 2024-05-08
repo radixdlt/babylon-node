@@ -244,8 +244,7 @@ public class ConsensusModuleTest {
 
       @Provides
       RoundUpdate initialRoundUpdate() {
-        return RoundUpdate.create(
-            Round.of(1), mock(HighQC.class), selfValidatorId, selfValidatorId);
+        return new RoundUpdate(Round.of(1), mock(HighQC.class), selfValidatorId, selfValidatorId);
       }
 
       @Provides
@@ -297,7 +296,7 @@ public class ConsensusModuleTest {
         NodeId.fromPublicKey(validatorId.getKey()),
         HighQcSource.RECEIVED_ALONG_WITH_PROPOSAL);
     GetVerticesRequest request = GetVerticesRequest.create(nextVertex.getSecond().hash(), 1);
-    VertexRequestTimeout timeout = VertexRequestTimeout.create(request);
+    VertexRequestTimeout timeout = new VertexRequestTimeout(request);
 
     // Act
     nothrowSleep(100); // FIXME: Remove when rate limit on send removed

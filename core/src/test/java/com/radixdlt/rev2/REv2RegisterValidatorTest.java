@@ -169,7 +169,7 @@ public final class REv2RegisterValidatorTest {
               .manifest(Manifest.createValidator(validatorPublicKey, ownerAccount))
               .prepare()
               .raw();
-      mempoolDispatcher.dispatch(MempoolAdd.create(createValidatorTransaction));
+      mempoolDispatcher.dispatch(new MempoolAdd(List.of(createValidatorTransaction)));
       test.runUntilState(
           allCommittedTransactionSuccess(createValidatorTransaction),
           onlyConsensusEventsAndSelfLedgerUpdates().or(onlyLocalMempoolAddEvents()));
@@ -191,7 +191,7 @@ public final class REv2RegisterValidatorTest {
               .signatories(List.of(ownerKey))
               .prepare()
               .raw();
-      mempoolDispatcher.dispatch(MempoolAdd.create(stakeValidatorAsOwnerTransaction));
+      mempoolDispatcher.dispatch(new MempoolAdd(List.of(stakeValidatorAsOwnerTransaction)));
       test.runUntilState(
           allCommittedTransactionSuccess(stakeValidatorAsOwnerTransaction),
           onlyConsensusEventsAndSelfLedgerUpdates().or(onlyLocalMempoolAddEvents()));
@@ -203,7 +203,7 @@ public final class REv2RegisterValidatorTest {
               .prepare()
               .raw();
 
-      mempoolDispatcher.dispatch(MempoolAdd.create(registerValidatorTransaction));
+      mempoolDispatcher.dispatch(new MempoolAdd(List.of(registerValidatorTransaction)));
       test.runUntilState(
           allCommittedTransactionSuccess(registerValidatorTransaction),
           onlyConsensusEventsAndSelfLedgerUpdates().or(onlyLocalMempoolAddEvents()));

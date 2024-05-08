@@ -125,14 +125,14 @@ public final class PeerLivenessMonitor {
 
     this.waitingForPong.add(nodeId);
     this.pingEventDispatcher.dispatch(nodeId, Ping.create());
-    this.pingTimeoutEventDispatcher.dispatch(PeerPingTimeout.create(nodeId), config.pingTimeout());
+    this.pingTimeoutEventDispatcher.dispatch(new PeerPingTimeout(nodeId), config.pingTimeout());
   }
 
   public EventProcessor<PeerPingTimeout> pingTimeoutEventProcessor() {
     return timeout -> {
-      final var waitingForPeer = this.waitingForPong.remove(timeout.getNodeId());
+      final var waitingForPeer = this.waitingForPong.remove(timeout.nodeId());
       if (waitingForPeer) {
-        this.peerEventDispatcher.dispatch(new PeerLostLiveness(timeout.getNodeId()));
+        this.peerEventDispatcher.dispatch(new PeerLostLiveness(timeout.nodeId()));
       }
     };
   }

@@ -140,7 +140,7 @@ public final class MempoolRelayer {
 
   private void relayTransactions(
       List<RawNotarizedTransaction> transactions, ImmutableList<NodeId> ignorePeers) {
-    final var mempoolAddMsg = MempoolAdd.create(transactions);
+    final var mempoolAddMsg = new MempoolAdd(transactions);
 
     final var totalTxnPayloadSizeInRelayMsg =
         transactions.stream().map(tx -> tx.getPayload().length).reduce(0, Integer::sum);

@@ -526,7 +526,7 @@ public class LocalSyncServiceTest {
 
     this.localSyncService
         .syncLedgerUpdateTimeoutProcessor()
-        .process(SyncLedgerUpdateTimeout.create(latestProof.stateVersion()));
+        .process(new SyncLedgerUpdateTimeout(latestProof.stateVersion()));
 
     verify(syncRequestDispatcher, times(1)).dispatch(eq(peer1), any());
   }
@@ -546,7 +546,7 @@ public class LocalSyncServiceTest {
     this.localSyncService
         .syncLedgerUpdateTimeoutProcessor()
         .process(
-            SyncLedgerUpdateTimeout.create(
+            new SyncLedgerUpdateTimeout(
                 latestProof.stateVersion() - 1) // timeout event for a past state version
             );
 

@@ -434,7 +434,7 @@ public final class LocalSyncService {
       this.metrics.sync().validResponsesReceived().inc();
       this.peerControl.reportHighPriorityPeer(sender);
       this.syncLedgerUpdateTimeoutDispatcher.dispatch(
-          SyncLedgerUpdateTimeout.create(currentState.getLatestProof().stateVersion()), 1000L);
+          new SyncLedgerUpdateTimeout(currentState.getLatestProof().stateVersion()), 1000L);
       return currentState.clearPendingRequest();
     } catch (InvalidSyncResponseException isre) {
       // Implementation note:

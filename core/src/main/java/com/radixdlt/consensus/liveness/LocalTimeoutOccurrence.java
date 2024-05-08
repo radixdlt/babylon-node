@@ -69,24 +69,16 @@ import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.event.LocalEvent;
 
 /** An actual occurrence (as opposed to a potential) of a local timeout */
-public interface LocalTimeoutOccurrence extends LocalEvent {
-  ScheduledLocalTimeout timeout();
-
-  static LocalTimeoutOccurrence create(ScheduledLocalTimeout scheduledTimeout) {
-    record localTimeoutOccurrence(ScheduledLocalTimeout timeout)
-        implements LocalTimeoutOccurrence {}
-    return new localTimeoutOccurrence(scheduledTimeout);
+public record LocalTimeoutOccurrence(ScheduledLocalTimeout timeout) implements LocalEvent {
+  public Round round() {
+    return timeout.round();
   }
 
-  default Round round() {
-    return timeout().round();
+  public BFTValidatorId leader() {
+    return timeout.roundUpdate().leader();
   }
 
-  default BFTValidatorId leader() {
-    return timeout().roundUpdate().leader();
-  }
-
-  default BFTValidatorId nextLeader() {
-    return timeout().roundUpdate().nextLeader();
+  public BFTValidatorId nextLeader() {
+    return timeout.roundUpdate().nextLeader();
   }
 }
