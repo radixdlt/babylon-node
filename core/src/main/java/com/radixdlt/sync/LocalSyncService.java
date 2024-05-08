@@ -273,7 +273,7 @@ public final class LocalSyncService {
 
     peersToAsk.forEach(peer -> statusRequestDispatcher.dispatch(peer, StatusRequest.create()));
     this.syncCheckReceiveStatusTimeoutDispatcher.dispatch(
-        SyncCheckReceiveStatusTimeout.create(), this.syncRelayConfig.requestTimeout());
+        new SyncCheckReceiveStatusTimeout(), this.syncRelayConfig.requestTimeout());
 
     return SyncCheckState.init(currentState.getLatestProof(), peersToAsk);
   }

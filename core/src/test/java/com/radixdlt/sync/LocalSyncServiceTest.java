@@ -286,7 +286,7 @@ public class LocalSyncServiceTest {
 
     this.localSyncService
         .syncCheckReceiveStatusTimeoutEventProcessor()
-        .process(SyncCheckReceiveStatusTimeout.create());
+        .process(new SyncCheckReceiveStatusTimeout());
 
     verifyNoMoreInteractions(syncRequestDispatcher);
   }
@@ -310,7 +310,7 @@ public class LocalSyncServiceTest {
 
     this.localSyncService
         .syncCheckReceiveStatusTimeoutEventProcessor()
-        .process(SyncCheckReceiveStatusTimeout.create());
+        .process(new SyncCheckReceiveStatusTimeout());
 
     // even though statusHeader2 is more up to date, it should be ignored because was received
     // after a timeout event

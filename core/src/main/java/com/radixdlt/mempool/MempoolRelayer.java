@@ -121,7 +121,7 @@ public final class MempoolRelayer {
     return mempoolAddSuccess -> {
       final var ignorePeers =
           mempoolAddSuccess.getOrigin().map(ImmutableList::of).orElse(ImmutableList.of());
-      relayTransactions(ImmutableList.of(mempoolAddSuccess.getTxn()), ignorePeers);
+      relayTransactions(ImmutableList.of(mempoolAddSuccess.transaction()), ignorePeers);
     };
   }
 

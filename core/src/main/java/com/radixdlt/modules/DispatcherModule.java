@@ -272,7 +272,7 @@ public class DispatcherModule extends AbstractModule {
               @Self NodeId selfNodeId) {
             return transaction ->
                 mempoolAddSuccessEventDispatcher.dispatch(
-                    MempoolAddSuccess.create(transaction, selfNodeId));
+                    new MempoolAddSuccess(transaction, selfNodeId));
           }
         });
   }
