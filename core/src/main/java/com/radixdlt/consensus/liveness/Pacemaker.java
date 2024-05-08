@@ -231,7 +231,7 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
     log.trace("BFTUpdate: Processing {}", update);
 
     final var round = update.getHeader().getRound();
-    final var vertex = update.getInserted();
+    final var vertex = update.insertedVertex();
 
     if (round.equals(currentRound())) {
       // A vertex for the current round has been inserted

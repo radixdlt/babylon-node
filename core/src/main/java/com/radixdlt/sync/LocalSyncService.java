@@ -415,7 +415,7 @@ public final class LocalSyncService {
     this.syncRequestDispatcher.dispatch(
         peer, SyncRequest.create(ledgerProofToSyncDto(latestProof)));
     this.syncRequestTimeoutDispatcher.dispatch(
-        SyncRequestTimeout.create(peer, requestId), this.syncRelayConfig.requestTimeout());
+        new SyncRequestTimeout(peer, requestId), this.syncRelayConfig.requestTimeout());
 
     return currentState.withPendingRequest(peer, requestId);
   }
@@ -567,17 +567,17 @@ public final class LocalSyncService {
         currentState.getPendingRequest().stream()
             .anyMatch(
                 pr ->
-                    pr.getRequestId() == syncRequestTimeout.getRequestId()
-                        && pr.getPeer().equals(syncRequestTimeout.getPeer()));
+                    pr.getRequestId() == syncRequestTimeout.requestId()
+                        && pr.getPeer().equals(syncRequestTimeout.peer()));
 
     if (!timeoutMatchesRequest) {
       return currentState; // ignore, this timeout is no longer valid
     }
 
-    log.trace("LocalSync: Sync request timeout from peer {}", syncRequestTimeout.getPeer());
+    log.trace("LocalSync: Sync request timeout from peer {}", syncRequestTimeout.peer());
 
     return this.processSync(
-        currentState.clearPendingRequest().removeCandidate(syncRequestTimeout.getPeer()));
+        currentState.clearPendingRequest().removeCandidate(syncRequestTimeout.peer()));
   }
 
   private SyncState processSyncLedgerUpdateTimeout(

@@ -339,7 +339,7 @@ public class LocalSyncServiceTest {
 
     this.localSyncService
         .syncRequestTimeoutEventProcessor()
-        .process(SyncRequestTimeout.create(peer1, requestId));
+        .process(new SyncRequestTimeout(peer1, requestId));
 
     verify(syncRequestDispatcher, times(1)).dispatch(eq(peer2), any());
   }
@@ -363,7 +363,7 @@ public class LocalSyncServiceTest {
     // waiting for response from peer1, but got a timeout for peer2
     this.localSyncService
         .syncRequestTimeoutEventProcessor()
-        .process(SyncRequestTimeout.create(peer2, requestId));
+        .process(new SyncRequestTimeout(peer2, requestId));
 
     verifyNoMoreInteractions(syncRequestDispatcher);
   }
@@ -386,7 +386,7 @@ public class LocalSyncServiceTest {
     // waiting for response for request id 2, but got a timeout for 1
     this.localSyncService
         .syncRequestTimeoutEventProcessor()
-        .process(SyncRequestTimeout.create(peer1, 1L));
+        .process(new SyncRequestTimeout(peer1, 1L));
 
     verifyNoMoreInteractions(syncRequestDispatcher);
   }

@@ -66,49 +66,6 @@ package com.radixdlt.sync.messages.local;
 
 import com.radixdlt.consensus.event.LocalEvent;
 import com.radixdlt.p2p.NodeId;
-import java.util.Objects;
 
 /** A message indicating a timeout on receiving a SyncResponse message. */
-public final class SyncRequestTimeout implements LocalEvent {
-
-  private final NodeId peer;
-  private final long requestId;
-
-  public static SyncRequestTimeout create(NodeId peer, long requestId) {
-    return new SyncRequestTimeout(peer, requestId);
-  }
-
-  private SyncRequestTimeout(NodeId peer, long requestId) {
-    this.peer = peer;
-    this.requestId = requestId;
-  }
-
-  public NodeId getPeer() {
-    return peer;
-  }
-
-  public long getRequestId() {
-    return requestId;
-  }
-
-  @Override
-  public String toString() {
-    return String.format(
-        "%s{peer=%s requestId=%s}", this.getClass().getSimpleName(), peer, requestId);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    return o instanceof SyncRequestTimeout that
-        && Objects.equals(peer, that.peer)
-        && requestId == that.requestId;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(peer, requestId);
-  }
-}
+public record SyncRequestTimeout(NodeId peer, long requestId) implements LocalEvent {}

@@ -386,10 +386,10 @@ public class DispatcherModule extends AbstractModule {
       Metrics metrics) {
     var dispatcher = environment.getDispatcher(BFTInsertUpdate.class);
     return update -> {
-      if (update.getSiblingsCount() > 1) {
+      if (update.siblingsCount() > 1) {
         metrics.bft().vertexStore().forks().inc();
       }
-      if (!update.getInserted().getVertexWithHash().vertex().hasDirectParent()) {
+      if (!update.insertedVertex().getVertexWithHash().vertex().hasDirectParent()) {
         metrics.bft().vertexStore().indirectParents().inc();
       }
       metrics.bft().vertexStore().size().set(update.getVertexStoreSize());

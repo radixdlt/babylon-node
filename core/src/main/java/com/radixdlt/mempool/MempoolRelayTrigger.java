@@ -66,25 +66,10 @@ package com.radixdlt.mempool;
 
 import com.radixdlt.consensus.event.LocalEvent;
 
-public final class MempoolRelayTrigger implements LocalEvent {
-
-  private MempoolRelayTrigger() {}
-
-  public static MempoolRelayTrigger create() {
-    return new MempoolRelayTrigger();
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s{}", this.getClass().getSimpleName());
-  }
-
+public record MempoolRelayTrigger() implements LocalEvent {
   @Override
   public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    return o != null && getClass() == o.getClass();
+    return o instanceof MempoolRelayTrigger;
   }
 
   @Override
