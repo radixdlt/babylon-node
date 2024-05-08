@@ -102,7 +102,6 @@ fn flash_protocol_update_test() {
             .enable(|anemone_settings| &mut anemone_settings.validator_fee_fix)
             .create_batch_generator()
             .generate_batch(tmp_state_manager.database.access_direct().deref(), 0)
-            .unwrap()
             .transactions
             .remove(0);
         let ProtocolUpdateTransactionDetails::FlashV1Transaction(flash) = validator_fee_fix;

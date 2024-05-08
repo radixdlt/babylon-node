@@ -16,6 +16,9 @@ pub enum ProtocolUpdateAction {
 /// This is a lazy provider (rather than a [`Vec`]), since e.g. massive flash transactions could
 /// overload memory if initialized all at once.
 pub trait ProtocolUpdateActionProvider {
-    /// Returns an action at the given index, or [`None`] if the index is out of bounds.
-    fn provide_action(&self, index: u32) -> Option<ProtocolUpdateAction>;
+    /// Returns an action at the given index.
+    fn provide_action(&self, index: u32) -> ProtocolUpdateAction;
+
+    /// Returns the number of contained actions.
+    fn action_count(&self) -> u32;
 }

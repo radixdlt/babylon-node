@@ -22,7 +22,11 @@ impl ProtocolUpdateDefinition for NoOpProtocolDefinition {
 pub struct EmptyActionProvider;
 
 impl ProtocolUpdateActionProvider for EmptyActionProvider {
-    fn provide_action(&self, _index: u32) -> Option<ProtocolUpdateAction> {
-        None
+    fn provide_action(&self, _index: u32) -> ProtocolUpdateAction {
+        panic!("no actions")
+    }
+
+    fn action_count(&self) -> u32 {
+        0
     }
 }

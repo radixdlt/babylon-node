@@ -39,7 +39,11 @@ pub struct ArbitraryActionProvider {
 }
 
 impl ProtocolUpdateActionProvider for ArbitraryActionProvider {
-    fn provide_action(&self, index: u32) -> Option<ProtocolUpdateAction> {
-        self.batches.get(index as usize).cloned()
+    fn provide_action(&self, index: u32) -> ProtocolUpdateAction {
+        self.batches.get(index as usize).unwrap().clone()
+    }
+
+    fn action_count(&self) -> u32 {
+        u32::try_from(self.batches.len()).unwrap()
     }
 }

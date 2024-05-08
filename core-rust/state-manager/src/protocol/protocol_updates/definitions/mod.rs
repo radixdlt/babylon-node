@@ -40,18 +40,20 @@ pub fn engine_default_for_network<U: UpdateSettings>(
 impl<G: ProtocolUpdateBatchGenerator> ProtocolUpdateActionProvider
     for EngineProtocolUpdateActionProvider<G>
 {
-    fn provide_action(&self, index: u32) -> Option<ProtocolUpdateAction> {
-        self.engine_batch_generator
-            .generate_batch(self.database.lock().deref(), index)
-            .map(|batch| {
-                ProtocolUpdateAction::FlashTransactions(
-                    batch
-                        .transactions
-                        .into_iter()
-                        .map(FlashTransactionV1::from)
-                        .collect(),
-                )
-            })
+    fn provide_action(&self, index: u32) -> ProtocolUpdateAction {
+        let ProtocolUpdateBatch { transactions } = self
+            .engine_batch_generator
+            .generate_batch(self.database.lock().deref(), index);
+        ProtocolUpdateAction::FlashTransactions(
+            transactions
+                .into_iter()
+                .map(FlashTransactionV1::from)
+                .collect(),
+        )
+    }
+
+    fn action_count(&self) -> u32 {
+        self.engine_batch_generator.batch_count()
     }
 }
 
