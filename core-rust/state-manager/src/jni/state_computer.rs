@@ -187,7 +187,7 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_newestProto
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |_: ()| -> ProtocolVersionName {
-        JNINodeRustEnvironment::get_protocol_state_manager(&env, j_node_rust_env)
+        JNINodeRustEnvironment::get_protocol_manager(&env, j_node_rust_env)
             .newest_protocol_version()
     })
 }
@@ -200,8 +200,7 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_protocolSta
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |_: ()| -> ProtocolState {
-        JNINodeRustEnvironment::get_protocol_state_manager(&env, j_node_rust_env)
-            .current_protocol_state()
+        JNINodeRustEnvironment::get_protocol_manager(&env, j_node_rust_env).current_protocol_state()
     })
 }
 

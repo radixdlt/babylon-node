@@ -85,7 +85,7 @@ use crate::priority_mempool::PriorityMempool;
 
 use super::fatal_panic_handler::FatalPanicHandler;
 
-use crate::protocol::ProtocolStateManager;
+use crate::protocol::ProtocolManager;
 use crate::transaction::Preparator;
 use crate::{
     ActualStateManagerDatabase, Committer, LedgerMetrics, StateManager, StateManagerConfig,
@@ -237,13 +237,10 @@ impl JNINodeRustEnvironment {
             .clone()
     }
 
-    pub fn get_protocol_state_manager(
-        env: &JNIEnv,
-        j_node_rust_env: JObject,
-    ) -> Arc<ProtocolStateManager> {
+    pub fn get_protocol_manager(env: &JNIEnv, j_node_rust_env: JObject) -> Arc<ProtocolManager> {
         Self::get(env, j_node_rust_env)
             .state_manager
-            .protocol_state_manager
+            .protocol_manager
             .clone()
     }
 

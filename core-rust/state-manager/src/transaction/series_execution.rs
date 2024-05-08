@@ -80,19 +80,19 @@ use crate::engine_prelude::*;
 pub struct TransactionExecutorFactory {
     execution_configurator: Arc<ExecutionConfigurator>,
     execution_cache_manager: Arc<ExecutionCacheManager>,
-    protocol_state_manager: Arc<ProtocolStateManager>,
+    protocol_manager: Arc<ProtocolManager>,
 }
 
 impl TransactionExecutorFactory {
     pub fn new(
         execution_configurator: Arc<ExecutionConfigurator>,
         execution_cache_manager: Arc<ExecutionCacheManager>,
-        protocol_state_manager: Arc<ProtocolStateManager>,
+        protocol_manager: Arc<ProtocolManager>,
     ) -> Self {
         Self {
             execution_configurator,
             execution_cache_manager,
-            protocol_state_manager,
+            protocol_manager,
         }
     }
 
@@ -115,7 +115,7 @@ impl TransactionExecutorFactory {
             store,
             &self.execution_cache_manager,
             self.execution_configurator.deref(),
-            self.protocol_state_manager.current_protocol_state(),
+            self.protocol_manager.current_protocol_state(),
         )
     }
 }

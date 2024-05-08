@@ -91,7 +91,7 @@ pub struct Committer {
     mempool_manager: Arc<MempoolManager>,
     execution_cache_manager: Arc<ExecutionCacheManager>,
     pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
-    protocol_state_manager: Arc<ProtocolStateManager>,
+    protocol_manager: Arc<ProtocolManager>,
     ledger_metrics: Arc<LedgerMetrics>,
 }
 
@@ -104,7 +104,7 @@ impl Committer {
         mempool_manager: Arc<MempoolManager>,
         execution_cache_manager: Arc<ExecutionCacheManager>,
         pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
-        protocol_state_manager: Arc<ProtocolStateManager>,
+        protocol_manager: Arc<ProtocolManager>,
         ledger_metrics: Arc<LedgerMetrics>,
     ) -> Self {
         Self {
@@ -114,7 +114,7 @@ impl Committer {
             mempool_manager,
             execution_cache_manager,
             pending_transaction_result_cache,
-            protocol_state_manager,
+            protocol_manager,
             ledger_metrics,
         }
     }
@@ -252,11 +252,10 @@ impl Committer {
             );
         }
 
-        self.protocol_state_manager
-            .update_protocol_state_and_metrics(
-                series_executor.protocol_state(),
-                series_executor.epoch_change().as_ref(),
-            );
+        self.protocol_manager.update_protocol_state_and_metrics(
+            series_executor.protocol_state(),
+            series_executor.epoch_change().as_ref(),
+        );
 
         // Step 4.: Check final invariants, perform the DB commit
         self.verify_post_commit_invariants(&series_executor, &proof);
@@ -354,11 +353,10 @@ impl Committer {
 
         // Protocol updates aren't allowed during system transactions, so no need to handle an
         // update here, just assign the latest protocol state.
-        self.protocol_state_manager
-            .update_protocol_state_and_metrics(
-                series_executor.protocol_state(),
-                series_executor.epoch_change().as_ref(),
-            );
+        self.protocol_manager.update_protocol_state_and_metrics(
+            series_executor.protocol_state(),
+            series_executor.epoch_change().as_ref(),
+        );
 
         self.ledger_metrics.update(
             series_executor.latest_state_version(),

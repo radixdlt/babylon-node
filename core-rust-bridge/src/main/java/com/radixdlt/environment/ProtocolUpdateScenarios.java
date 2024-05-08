@@ -72,12 +72,12 @@ import com.radixdlt.sbor.codec.StructCodec;
  * A configuration of "Engine test Scenarios" to be run automatically after a specific Protocol
  * Update.
  */
-public record PostProtocolUpdateConfig(
+public record ProtocolUpdateScenarios(
     String protocolVersionName, ImmutableList<String> scenarioNames) {
 
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        PostProtocolUpdateConfig.class,
-        codecs -> StructCodec.fromRecordComponents(PostProtocolUpdateConfig.class, codecs));
+        ProtocolUpdateScenarios.class,
+        codecs -> StructCodec.fromRecordComponents(ProtocolUpdateScenarios.class, codecs));
   }
 }

@@ -78,7 +78,7 @@ import com.radixdlt.sbor.codec.StructCodec;
  * them out is non-trivial (because of some persistence/hardcoding inherent to Genesis handling).
  */
 public record ScenariosExecutionConfig(
-    ImmutableList<PostProtocolUpdateConfig> afterProtocolUpdates) {
+    ImmutableList<ProtocolUpdateScenarios> afterProtocolUpdates) {
 
   /** A default production-compatible configuration, which does not execute any Scenarios. */
   public static final ScenariosExecutionConfig NONE =
@@ -88,9 +88,9 @@ public record ScenariosExecutionConfig(
   public static final ScenariosExecutionConfig ALL =
       new ScenariosExecutionConfig(
           ImmutableList.of( // Note: no Anemone protocol scenarios existed.
-              new PostProtocolUpdateConfig(
+              new ProtocolUpdateScenarios(
                   ProtocolUpdateTrigger.BOTTLENOSE,
-                  ImmutableList.of("account_locker", "maya_router"))));
+                  ImmutableList.of("account_locker", "maya_router", "access-controller-v2"))));
 
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(

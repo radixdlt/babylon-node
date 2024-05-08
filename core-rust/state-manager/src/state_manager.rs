@@ -70,7 +70,7 @@ use std::time::Duration;
 use crate::engine_prelude::*;
 use crate::jni::LedgerSyncLimitsConfig;
 use crate::protocol::{
-    ProtocolConfig, ProtocolStateManager, ProtocolUpdateExecutor, ProtocolVersionName,
+    ProtocolConfig, ProtocolManager, ProtocolUpdateExecutor, ProtocolVersionName,
 };
 use crate::store::jmt_gc::StateTreeGcConfig;
 use crate::store::proofs_gc::{LedgerProofsGc, LedgerProofsGcConfig};
@@ -121,7 +121,7 @@ pub struct StateManagerConfig {
 
 #[derive(Debug, Clone, Default, Sbor)]
 pub struct ScenariosExecutionConfig {
-    pub after_protocol_updates: Vec<PostProtocolUpdateConfig>,
+    pub after_protocol_updates: Vec<ProtocolUpdateScenarios>,
 }
 
 impl ScenariosExecutionConfig {
@@ -138,7 +138,7 @@ impl ScenariosExecutionConfig {
 }
 
 #[derive(Debug, Clone, Default, Sbor)]
-pub struct PostProtocolUpdateConfig {
+pub struct ProtocolUpdateScenarios {
     pub protocol_version_name: String,
     pub scenario_names: Vec<String>,
 }
@@ -191,7 +191,7 @@ pub struct StateManager {
     pub execution_cache_manager: Arc<ExecutionCacheManager>,
     pub system_executor: Arc<SystemExecutor>,
     pub pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
-    pub protocol_state_manager: Arc<ProtocolStateManager>,
+    pub protocol_manager: Arc<ProtocolManager>,
     pub protocol_update_executor: Arc<ProtocolUpdateExecutor>,
     pub ledger_metrics: Arc<LedgerMetrics>,
 }
@@ -244,11 +244,11 @@ impl StateManager {
             LedgerTransactionValidator::default_from_network(&network_definition),
         );
 
-        let protocol_state_manager = Arc::new(ProtocolStateManager::new(
+        let protocol_manager = Arc::new(ProtocolManager::new(
             genesis_protocol_version,
             protocol_update_triggers,
             database.lock().deref(),
-            &lock_factory.named("protocol_state_manager"),
+            &lock_factory.named("protocol_manager"),
             metrics_registry,
         ));
 
@@ -309,7 +309,7 @@ impl StateManager {
         let transaction_executor_factory = Arc::new(TransactionExecutorFactory::new(
             execution_configurator.clone(),
             execution_cache_manager.clone(),
-            protocol_state_manager.clone(),
+            protocol_manager.clone(),
         ));
         let preparator = Arc::new(Preparator::new(
             database.clone(),
@@ -335,7 +335,7 @@ impl StateManager {
             mempool_manager.clone(),
             execution_cache_manager.clone(),
             pending_transaction_result_cache.clone(),
-            protocol_state_manager.clone(),
+            protocol_manager.clone(),
             ledger_metrics.clone(),
         ));
 
@@ -356,7 +356,7 @@ impl StateManager {
 
         // If we are booting mid-protocol-update, ensure all required transactions are committed:
         protocol_update_executor.execute_protocol_update(
-            &protocol_state_manager
+            &protocol_manager
                 .current_protocol_state()
                 .current_protocol_version,
         );
@@ -402,7 +402,7 @@ impl StateManager {
             execution_cache_manager,
             system_executor,
             pending_transaction_result_cache,
-            protocol_state_manager,
+            protocol_manager,
             protocol_update_executor,
             ledger_metrics,
         }
@@ -419,8 +419,7 @@ impl StateManager {
     ) -> ProtocolUpdateResult {
         self.protocol_update_executor
             .execute_protocol_update(protocol_version_name);
-
-        self.protocol_state_manager
+        self.protocol_manager
             .set_current_protocol_version(protocol_version_name);
 
         // Protocol update might change transaction execution rules, so we need to clear the cache:

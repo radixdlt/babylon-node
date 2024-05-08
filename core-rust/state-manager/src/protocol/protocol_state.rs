@@ -77,13 +77,13 @@ impl ProtocolUpdateExecutor {
     }
 }
 
-pub struct ProtocolStateManager {
+pub struct ProtocolManager {
     protocol_metrics: ProtocolMetrics,
     protocol_state: RwLock<ProtocolState>,
     newest_protocol_version: ProtocolVersionName,
 }
 
-impl ProtocolStateManager {
+impl ProtocolManager {
     pub fn new<S: QueryableProofStore + IterableProofStore + QueryableTransactionStore>(
         genesis_protocol_version: ProtocolVersionName,
         protocol_update_triggers: Vec<ProtocolUpdateTrigger>,
