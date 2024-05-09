@@ -403,7 +403,7 @@ public class DispatcherModule extends AbstractModule {
       Environment environment, Metrics metrics) {
     var dispatcher = environment.getDispatcher(BFTRebuildUpdate.class);
     return update -> {
-      metrics.bft().vertexStore().size().set(update.getVertexStoreState().getVertices().size());
+      metrics.bft().vertexStore().size().set(update.vertexStoreState().getVertices().size());
       metrics.bft().vertexStore().rebuilds().inc();
       dispatcher.dispatch(update);
     };

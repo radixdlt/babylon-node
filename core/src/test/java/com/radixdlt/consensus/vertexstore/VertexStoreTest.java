@@ -377,7 +377,7 @@ public class VertexStoreTest {
         .dispatch(
             argThat(
                 u -> {
-                  List<VertexWithHash> sentVertices = u.getVertexStoreState().getVertices();
+                  List<VertexWithHash> sentVertices = u.vertexStoreState().getVertices();
                   return sentVertices.equals(vertices.subList(1, vertices.size()));
                 }));
   }

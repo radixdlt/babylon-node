@@ -167,7 +167,7 @@ public final class SyncUpPreprocessor implements BFTEventProcessor {
   @Override
   public void processBFTRebuildUpdate(BFTRebuildUpdate rebuildUpdate) {
     rebuildUpdate
-        .getVertexStoreState()
+        .vertexStoreState()
         .getVertices()
         .forEach(
             v -> {

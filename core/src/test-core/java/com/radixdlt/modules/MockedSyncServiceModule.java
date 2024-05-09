@@ -160,7 +160,7 @@ public class MockedSyncServiceModule extends AbstractModule {
             LongStream.range(currentVersion + 1, proof.stateVersion() + 1)
                 .mapToObj(sharedCommittedTransactions::get)
                 .collect(ImmutableList.toImmutableList());
-        syncedTransactionRunDispatcher.dispatch(LedgerExtension.create(transactions, proof));
+        syncedTransactionRunDispatcher.dispatch(new LedgerExtension(transactions, proof));
         currentVersion = proof.stateVersion();
         currentEpoch =
             proof
@@ -189,7 +189,7 @@ public class MockedSyncServiceModule extends AbstractModule {
                 .mapToObj(sharedCommittedTransactions::get)
                 .collect(ImmutableList.toImmutableList());
 
-        syncedTransactionRunDispatcher.dispatch(LedgerExtension.create(txns, target));
+        syncedTransactionRunDispatcher.dispatch(new LedgerExtension(txns, target));
         currentVersion = targetVersion;
         currentEpoch = request.target().ledgerHeader().epoch().toLong();
       }

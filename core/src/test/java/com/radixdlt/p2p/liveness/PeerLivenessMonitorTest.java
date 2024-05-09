@@ -130,7 +130,7 @@ public class PeerLivenessMonitorTest {
     final var peer1 = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
     when(peersView.peers()).thenReturn(getPeerInfoStream(peer1));
 
-    this.sut.peersLivenessCheckTriggerEventProcessor().process(PeersLivenessCheckTrigger.create());
+    this.sut.peersLivenessCheckTriggerEventProcessor().process(new PeersLivenessCheckTrigger());
 
     verify(pingEventDispatcher, times(1)).dispatch(eq(peer1), any());
     verify(pingTimeoutEventDispatcher, times(1)).dispatch(any(), anyLong());
@@ -150,7 +150,7 @@ public class PeerLivenessMonitorTest {
     final var peer1 = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
     when(peersView.peers()).thenReturn(getPeerInfoStream(peer1));
 
-    this.sut.peersLivenessCheckTriggerEventProcessor().process(PeersLivenessCheckTrigger.create());
+    this.sut.peersLivenessCheckTriggerEventProcessor().process(new PeersLivenessCheckTrigger());
 
     verify(pingEventDispatcher, times(1)).dispatch(eq(peer1), any());
     verify(pingTimeoutEventDispatcher, times(1)).dispatch(any(), anyLong());

@@ -71,6 +71,8 @@ import com.radixdlt.ledger.LedgerProofBundle;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.statecomputer.commit.LedgerProof;
 import com.radixdlt.sync.TransactionsAndProofReader;
+import com.radixdlt.transactions.RawLedgerTransaction;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.TreeMap;
@@ -104,9 +106,9 @@ public final class InMemoryTransactionsAndProofReader implements TransactionsAnd
         long firstVersion = latestStateVersion - transactions.size() + 1;
         for (long version = firstVersion; version <= latestStateVersion; version++) {
           int index = (int) (version - firstVersion);
-          store.committedLedgerExtensions.put(
-              version,
-              LedgerExtension.create(transactions.subList(index, transactions.size()), proof));
+          List<RawLedgerTransaction> transactions1 =
+              transactions.subList(index, transactions.size());
+          store.committedLedgerExtensions.put(version, new LedgerExtension(transactions1, proof));
         }
 
         proof

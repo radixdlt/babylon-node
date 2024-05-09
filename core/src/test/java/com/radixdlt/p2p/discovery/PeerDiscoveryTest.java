@@ -97,7 +97,7 @@ public final class PeerDiscoveryTest extends DeterministicP2PNetworkTest {
 
     testNetworkRunner
         .getInstance(0, new Key<EventDispatcher<DiscoverPeers>>() {})
-        .dispatch(DiscoverPeers.create());
+        .dispatch(new DiscoverPeers());
 
     processForCount(10);
 

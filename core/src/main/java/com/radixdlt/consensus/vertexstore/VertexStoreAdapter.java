@@ -113,7 +113,7 @@ public final class VertexStoreAdapter {
 
     result.onPresent(
         newVertexStoreState ->
-            bftRebuildDispatcher.dispatch(BFTRebuildUpdate.create(newVertexStoreState)));
+            bftRebuildDispatcher.dispatch(new BFTRebuildUpdate(newVertexStoreState)));
 
     return result.isPresent();
   }

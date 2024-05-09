@@ -103,7 +103,7 @@ public final class SyncResponseHandler {
     final var start =
         LedgerSyncDtoConversions.syncDtoToConsensusOriginatedLedgerProof(dto.getStart());
     final var end = LedgerSyncDtoConversions.syncDtoToConsensusOriginatedLedgerProof(dto.getEnd());
-    final var ledgerExtension = LedgerExtension.create(dto.getTransactions(), end);
+    final var ledgerExtension = new LedgerExtension(dto.getTransactions(), end);
     this.checkMatchesPendingRequest(currentState, sender, start);
     this.checkValidTransactionCount(start, ledgerExtension);
     this.checkConsensusProof(end);

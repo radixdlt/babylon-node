@@ -67,24 +67,9 @@ package com.radixdlt.p2p.discovery;
 import com.radixdlt.consensus.event.LocalEvent;
 
 /** A message acting as a trigger for PeerDiscovery to start a discovery round. */
-public final class DiscoverPeers implements LocalEvent {
-
-  public static DiscoverPeers create() {
-    return new DiscoverPeers();
-  }
-
-  private DiscoverPeers() {}
-
-  @Override
-  public String toString() {
-    return String.format("%s{}", this.getClass().getSimpleName());
-  }
-
+public record DiscoverPeers() implements LocalEvent {
   @Override
   public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
     return o instanceof DiscoverPeers;
   }
 
