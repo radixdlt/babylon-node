@@ -120,12 +120,13 @@ public final class EventLoggerModule extends AbstractModule {
         event -> {
           final var authorStr =
               switch (event) {
-                case ConsensusByzantineEvent.ConflictingGenesis conflictingGenesis ->
-                    eventLoggerConfig
-                        .formatNodeAddress()
-                        .apply(conflictingGenesis.author().getPublicKey());
-                case ConsensusByzantineEvent.DoubleVote doubleVote ->
-                    eventLoggerConfig.formatBftValidatorId().apply(doubleVote.author());
+                case ConsensusByzantineEvent.ConflictingGenesis
+                conflictingGenesis -> eventLoggerConfig
+                    .formatNodeAddress()
+                    .apply(conflictingGenesis.author().getPublicKey());
+                case ConsensusByzantineEvent.DoubleVote doubleVote -> eventLoggerConfig
+                    .formatBftValidatorId()
+                    .apply(doubleVote.author());
               };
           logger.warn("Byzantine Behavior detected: {} (author: {})", event, authorStr);
         });

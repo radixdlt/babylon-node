@@ -155,7 +155,7 @@ public class PeerLivenessMonitorTest {
     verify(pingEventDispatcher, times(1)).dispatch(eq(peer1), any());
     verify(pingTimeoutEventDispatcher, times(1)).dispatch(any(), anyLong());
 
-    this.sut.pongRemoteEventProcessor().process(peer1, Pong.create());
+    this.sut.pongRemoteEventProcessor().process(peer1, new Pong());
     this.sut.pingTimeoutEventProcessor().process(new PeerPingTimeout(peer1));
 
     verifyNoInteractions(peerEventDispatcher);
@@ -164,7 +164,7 @@ public class PeerLivenessMonitorTest {
   @Test
   public void should_respond_with_pong_to_ping() {
     final var peer1 = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
-    this.sut.pingRemoteEventProcessor().process(peer1, Ping.create());
+    this.sut.pingRemoteEventProcessor().process(peer1, new Ping());
     verify(pongEventDispatcher, times(1)).dispatch(eq(peer1), any());
   }
 

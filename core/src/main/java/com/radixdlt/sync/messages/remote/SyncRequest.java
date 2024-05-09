@@ -66,44 +66,9 @@ package com.radixdlt.sync.messages.remote;
 
 import com.radixdlt.consensus.event.RemoteEvent;
 import com.radixdlt.sync.LedgerProofSyncDto;
-import java.util.Objects;
 
 /**
  * A request to sync up ledger state, starting at the given header. The node should respond with a
  * SyncResponse message.
  */
-public final class SyncRequest implements RemoteEvent {
-
-  private final LedgerProofSyncDto startProofExclusive;
-
-  public static SyncRequest create(LedgerProofSyncDto startProofExclusive) {
-    return new SyncRequest(startProofExclusive);
-  }
-
-  private SyncRequest(LedgerProofSyncDto startProofExclusive) {
-    this.startProofExclusive = startProofExclusive;
-  }
-
-  public LedgerProofSyncDto startProofExclusive() {
-    return startProofExclusive;
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s{proof=%s}", this.getClass().getSimpleName(), this.startProofExclusive);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    return o instanceof SyncRequest that
-        && Objects.equals(startProofExclusive, that.startProofExclusive);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(startProofExclusive);
-  }
-}
+public record SyncRequest(LedgerProofSyncDto startProofExclusive) implements RemoteEvent {}

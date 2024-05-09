@@ -66,45 +66,6 @@ package com.radixdlt.consensus.sync;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.event.RemoteEvent;
-import java.util.Objects;
 
 /** Parameters for a local get vertices request */
-public final class GetVerticesRequest implements RemoteEvent {
-  private final HashCode vertexId;
-  private final int count;
-
-  private GetVerticesRequest(HashCode vertexId, int count) {
-    this.vertexId = vertexId;
-    this.count = count;
-  }
-
-  public static GetVerticesRequest create(HashCode vertexId, int count) {
-    return new GetVerticesRequest(Objects.requireNonNull(vertexId), count);
-  }
-
-  public HashCode vertexId() {
-    return vertexId;
-  }
-
-  public int count() {
-    return count;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(vertexId, count);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    return o instanceof GetVerticesRequest other
-        && Objects.equals(other.vertexId, this.vertexId)
-        && other.count == this.count;
-  }
-
-  @Override
-  public String toString() {
-    return String.format(
-        "%s{id=%s count=%s}", this.getClass().getSimpleName(), this.vertexId, this.count);
-  }
-}
+public record GetVerticesRequest(HashCode vertexId, int count) implements RemoteEvent {}

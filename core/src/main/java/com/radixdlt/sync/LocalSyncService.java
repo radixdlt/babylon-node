@@ -271,7 +271,7 @@ public final class LocalSyncService {
         "LocalSync: Initializing sync check, about to ask {} peers for their status",
         peersToAsk.size());
 
-    peersToAsk.forEach(peer -> statusRequestDispatcher.dispatch(peer, StatusRequest.create()));
+    peersToAsk.forEach(peer -> statusRequestDispatcher.dispatch(peer, new StatusRequest()));
     this.syncCheckReceiveStatusTimeoutDispatcher.dispatch(
         new SyncCheckReceiveStatusTimeout(), this.syncRelayConfig.requestTimeout());
 
@@ -412,8 +412,9 @@ public final class LocalSyncService {
     final var latestProof = currentState.getLatestProof();
 
     final var requestId = requestIdCounter.incrementAndGet();
+    LedgerProofSyncDto startProofExclusive = ledgerProofToSyncDto(latestProof);
     this.syncRequestDispatcher.dispatch(
-        peer, SyncRequest.create(ledgerProofToSyncDto(latestProof)));
+        peer, new SyncRequest(startProofExclusive));
     this.syncRequestTimeoutDispatcher.dispatch(
         new SyncRequestTimeout(peer, requestId), this.syncRelayConfig.requestTimeout());
 

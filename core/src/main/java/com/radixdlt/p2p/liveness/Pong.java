@@ -66,24 +66,9 @@ package com.radixdlt.p2p.liveness;
 
 import com.radixdlt.consensus.event.RemoteEvent;
 
-public final class Pong implements RemoteEvent {
-
-  public static Pong create() {
-    return new Pong();
-  }
-
-  private Pong() {}
-
-  @Override
-  public String toString() {
-    return String.format("%s{}", this.getClass().getSimpleName());
-  }
-
+public record Pong() implements RemoteEvent {
   @Override
   public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
     return o instanceof Pong;
   }
 

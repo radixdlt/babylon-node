@@ -150,7 +150,7 @@ public final class RemoteSyncService {
         sender);
 
     metrics.sync().remoteRequestsReceived().inc();
-    syncResponseDispatcher.dispatch(sender, SyncResponse.create(verifiable));
+	  syncResponseDispatcher.dispatch(sender, new SyncResponse(verifiable));
   }
 
   private LedgerExtension getLedgerExtensionForSyncRequest(LedgerProofSyncDto startHeader) {
@@ -162,10 +162,11 @@ public final class RemoteSyncService {
   }
 
   private void processStatusRequest(NodeId sender, StatusRequest statusRequest) {
+    LedgerProofSyncStatusDto proof = LedgerSyncDtoConversions.ledgerProofToSyncStatusDto(latestProof.primaryProof());
     statusResponseDispatcher.dispatch(
         sender,
-        StatusResponse.create(
-            LedgerSyncDtoConversions.ledgerProofToSyncStatusDto(latestProof.primaryProof())));
+        new StatusResponse(proof)
+    );
   }
 
   public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {

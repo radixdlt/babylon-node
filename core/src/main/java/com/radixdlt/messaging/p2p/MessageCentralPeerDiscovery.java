@@ -90,7 +90,7 @@ public final class MessageCentralPeerDiscovery {
     return this.messageCentral
         .messagesOf(GetPeersMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
-        .map(m -> IncomingEvent.create(m.source(), GetPeers.create()));
+        .map(m -> IncomingEvent.create(m.source(), new GetPeers()));
   }
 
   public Flowable<IncomingEvent<NodeId, PeersResponse>> peersResponses() {

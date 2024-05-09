@@ -91,7 +91,7 @@ public final class MessageCentralLedgerSync {
     return this.messageCentral
         .messagesOf(StatusRequestMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
-        .map(m -> IncomingEvent.create(m.source(), StatusRequest.create()));
+        .map(m -> IncomingEvent.create(m.source(), new StatusRequest()));
   }
 
   public Flowable<IncomingEvent<NodeId, StatusResponse>> statusResponses() {
@@ -101,7 +101,7 @@ public final class MessageCentralLedgerSync {
         .map(
             m -> {
               final var msg = m.message();
-              return IncomingEvent.create(m.source(), StatusResponse.create(msg.getProof()));
+              return IncomingEvent.create(m.source(), new StatusResponse(msg.getProof()));
             });
   }
 
@@ -113,7 +113,7 @@ public final class MessageCentralLedgerSync {
             m -> {
               final var msg = m.message();
               return IncomingEvent.create(
-                  m.source(), SyncRequest.create(msg.getStartProofExclusive()));
+                  m.source(), new SyncRequest(msg.getStartProofExclusive()));
             });
   }
 
@@ -125,7 +125,7 @@ public final class MessageCentralLedgerSync {
             m -> {
               final var msg = m.message();
               return IncomingEvent.create(
-                  m.source(), SyncResponse.create(msg.getLedgerExtension()));
+                  m.source(), new SyncResponse(msg.getLedgerExtension()));
             });
   }
 

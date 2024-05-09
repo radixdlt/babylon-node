@@ -153,7 +153,7 @@ public final class PeerDiscovery implements RemoteEvent {
             .forEach(
                 peer -> {
                   peersAsked.add(peer.getRemoteNodeId());
-                  getPeersRemoteEventDispatcher.dispatch(peer.getRemoteNodeId(), GetPeers.create());
+                  getPeersRemoteEventDispatcher.dispatch(peer.getRemoteNodeId(), new GetPeers());
                 });
       }
     };

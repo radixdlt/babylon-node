@@ -127,8 +127,9 @@ public class MessageCentralValidatorSync {
     return this.createFlowable(
         GetVerticesRequestMessage.class,
         (peer, msg) ->
-            IncomingEvent.create(
-                peer, GetVerticesRequest.create(msg.getVertexId(), msg.getCount())));
+			IncomingEvent.create(
+				peer, new GetVerticesRequest(msg.getVertexId(), msg.getCount()))
+	);
   }
 
   public Flowable<IncomingEvent<NodeId, GetVerticesResponse>> responses() {
@@ -149,8 +150,8 @@ public class MessageCentralValidatorSync {
     return this.createFlowable(
         GetVerticesErrorResponseMessage.class,
         (src, msg) -> {
-          final var request =
-              GetVerticesRequest.create(msg.request().getVertexId(), msg.request().getCount());
+			final var request =
+				new GetVerticesRequest(msg.request().getVertexId(), msg.request().getCount());
           return IncomingEvent.create(src, new GetVerticesErrorResponse(msg.highQC(), request));
         });
   }

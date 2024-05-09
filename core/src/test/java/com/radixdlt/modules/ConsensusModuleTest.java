@@ -295,7 +295,7 @@ public class ConsensusModuleTest {
         unsyncedHighQC,
         NodeId.fromPublicKey(validatorId.getKey()),
         HighQcSource.RECEIVED_ALONG_WITH_PROPOSAL);
-    GetVerticesRequest request = GetVerticesRequest.create(nextVertex.getSecond().hash(), 1);
+    GetVerticesRequest request = new GetVerticesRequest(nextVertex.getSecond().hash(), 1);
     VertexRequestTimeout timeout = new VertexRequestTimeout(request);
 
     // Act

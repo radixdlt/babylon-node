@@ -124,7 +124,7 @@ public final class PeerLivenessMonitor {
     }
 
     this.waitingForPong.add(nodeId);
-    this.pingEventDispatcher.dispatch(nodeId, Ping.create());
+    this.pingEventDispatcher.dispatch(nodeId, new Ping());
     this.pingTimeoutEventDispatcher.dispatch(new PeerPingTimeout(nodeId), config.pingTimeout());
   }
 
@@ -138,7 +138,7 @@ public final class PeerLivenessMonitor {
   }
 
   public RemoteEventProcessor<NodeId, Ping> pingRemoteEventProcessor() {
-    return (sender, ping) -> this.pongEventDispatcher.dispatch(sender, Pong.create());
+    return (sender, ping) -> this.pongEventDispatcher.dispatch(sender, new Pong());
   }
 
   public RemoteEventProcessor<NodeId, Pong> pongRemoteEventProcessor() {

@@ -422,7 +422,7 @@ public final class BFTSync implements BFTSyncer {
       int count,
       ImmutableList<NodeId> authors,
       HashCode syncId) {
-    var request = GetVerticesRequest.create(vertexId, count);
+    var request = new GetVerticesRequest(vertexId, count);
     var syncRequestState = bftSyncing.getOrDefault(request, new SyncRequestState(authors, round));
 
     if (syncRequestState.syncIds.isEmpty()) {
@@ -626,7 +626,7 @@ public final class BFTSync implements BFTSyncer {
     log.debug("SYNC_VERTICES: Received GetVerticesResponse {}", response);
 
     var firstVertex = response.vertices().get(0);
-    var requestInfo = GetVerticesRequest.create(firstVertex.hash(), response.vertices().size());
+    var requestInfo = new GetVerticesRequest(firstVertex.hash(), response.vertices().size());
     var syncRequestState = bftSyncing.remove(requestInfo);
 
     if (syncRequestState != null) {

@@ -194,7 +194,7 @@ public class LocalSyncServiceTest {
         SyncState.SyncingState.init(latestProof, ImmutableList.of(), targetHeader));
     this.localSyncService
         .statusResponseEventProcessor()
-        .process(sender, StatusResponse.create(statusHeader));
+        .process(sender, new StatusResponse(statusHeader));
 
     verifyNoMoreInteractions(peersView);
     verifyNoMoreInteractions(peerControl);
@@ -214,7 +214,7 @@ public class LocalSyncServiceTest {
         SyncState.SyncCheckState.init(currentHeader, ImmutableSet.of(expectedPeer)));
     this.localSyncService
         .statusResponseEventProcessor()
-        .process(unexpectedPeer, StatusResponse.create(statusHeader));
+        .process(unexpectedPeer, new StatusResponse(statusHeader));
 
     verifyNoMoreInteractions(peersView);
     verifyNoMoreInteractions(peerControl);
@@ -232,12 +232,12 @@ public class LocalSyncServiceTest {
 
     final var syncState =
         SyncState.SyncCheckState.init(currentHeader, ImmutableSet.of(expectedPeer))
-            .withStatusResponse(alreadyReceivedPeer, StatusResponse.create(statusHeader));
+            .withStatusResponse(alreadyReceivedPeer, new StatusResponse(statusHeader));
 
     this.setupSyncServiceWithState(syncState);
     this.localSyncService
         .statusResponseEventProcessor()
-        .process(alreadyReceivedPeer, StatusResponse.create(statusHeader));
+        .process(alreadyReceivedPeer, new StatusResponse(statusHeader));
 
     verifyNoMoreInteractions(peersView);
     verifyNoMoreInteractions(peerControl);
@@ -264,13 +264,13 @@ public class LocalSyncServiceTest {
 
     this.localSyncService
         .statusResponseEventProcessor()
-        .process(waiting1, StatusResponse.create(statusHeader1));
+        .process(waiting1, new StatusResponse(statusHeader1));
     this.localSyncService
         .statusResponseEventProcessor()
-        .process(waiting2, StatusResponse.create(statusHeader2));
+        .process(waiting2, new StatusResponse(statusHeader2));
     this.localSyncService
         .statusResponseEventProcessor()
-        .process(waiting3, StatusResponse.create(statusHeader3));
+        .process(waiting3, new StatusResponse(statusHeader3));
 
     verify(syncRequestDispatcher, times(1)).dispatch(eq(waiting2), any());
   }
@@ -306,7 +306,7 @@ public class LocalSyncServiceTest {
 
     this.localSyncService
         .statusResponseEventProcessor()
-        .process(waiting1, StatusResponse.create(statusHeader1));
+        .process(waiting1, new StatusResponse(statusHeader1));
 
     this.localSyncService
         .syncCheckReceiveStatusTimeoutEventProcessor()
@@ -316,7 +316,7 @@ public class LocalSyncServiceTest {
     // after a timeout event
     this.localSyncService
         .statusResponseEventProcessor()
-        .process(waiting2, StatusResponse.create(statusHeader2));
+        .process(waiting2, new StatusResponse(statusHeader2));
 
     verify(syncRequestDispatcher, times(1)).dispatch(eq(waiting1), any());
   }
