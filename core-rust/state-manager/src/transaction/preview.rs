@@ -1,5 +1,5 @@
 use crate::engine_prelude::*;
-use node_common::locks::{DbLock, RwLock};
+use node_common::locks::DbLock;
 use std::ops::Range;
 use std::sync::Arc;
 
@@ -14,7 +14,7 @@ use crate::{
 /// A transaction preview runner.
 pub struct TransactionPreviewer {
     database: Arc<DbLock<ActualStateManagerDatabase>>,
-    execution_configurator: Arc<RwLock<ExecutionConfigurator>>,
+    execution_configurator: Arc<ExecutionConfigurator>,
     validation_config: ValidationConfig,
 }
 
@@ -34,7 +34,7 @@ pub enum PreviewerError {
 impl TransactionPreviewer {
     pub fn new(
         database: Arc<DbLock<ActualStateManagerDatabase>>,
-        execution_configurator: Arc<RwLock<ExecutionConfigurator>>,
+        execution_configurator: Arc<ExecutionConfigurator>,
         validation_config: ValidationConfig,
     ) -> Self {
         Self {
@@ -67,8 +67,9 @@ impl TransactionPreviewer {
         let validated = validator
             .validate_preview_intent_v1(intent)
             .map_err(PreviewError::TransactionValidationError)?;
-        let read_execution_configurator = self.execution_configurator.read();
-        let transaction_logic = read_execution_configurator.wrap_preview_transaction(&validated);
+        let transaction_logic = self
+            .execution_configurator
+            .wrap_preview_transaction(&validated);
 
         let receipt = transaction_logic.execute_on(&database);
         let (state_changes, global_balance_summary) = match &receipt.result {
@@ -176,7 +177,7 @@ mod tests {
 
         let preview_manifest = ManifestBuilder::new().lock_fee_from_faucet().build();
 
-        let preview_response = state_manager.transaction_previewer.read().preview(
+        let preview_response = state_manager.transaction_previewer.preview(
             PreviewRequest {
                 manifest: preview_manifest,
                 explicit_epoch_range: None,

@@ -97,10 +97,10 @@ pub struct StateComputer {
     network: NetworkDefinition,
     database: Arc<DbLock<ActualStateManagerDatabase>>,
     mempool_manager: Arc<MempoolManager>,
-    execution_configurator: Arc<RwLock<ExecutionConfigurator>>,
+    execution_configurator: Arc<ExecutionConfigurator>,
     pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
     execution_cache: Mutex<ExecutionCache>,
-    ledger_transaction_validator: RwLock<LedgerTransactionValidator>,
+    ledger_transaction_validator: LedgerTransactionValidator,
     ledger_metrics: LedgerMetrics,
     committed_transactions_metrics: CommittedTransactionsMetrics,
     protocol_metrics: ProtocolMetrics,
@@ -117,11 +117,10 @@ impl StateComputer {
         vertex_limits_config: VertexLimitsConfig,
         database: Arc<DbLock<ActualStateManagerDatabase>>,
         mempool_manager: Arc<MempoolManager>,
-        execution_configurator: Arc<RwLock<ExecutionConfigurator>>,
+        execution_configurator: Arc<ExecutionConfigurator>,
         pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
         metrics_registry: &Registry,
         lock_factory: LockFactory,
-        initial_updatable_config: &ProtocolStateComputerConfig,
         initial_protocol_state: ProtocolState,
     ) -> Self {
         let (current_transaction_root, current_ledger_proposer_timestamp_ms) = database
@@ -143,9 +142,7 @@ impl StateComputer {
             execution_cache: lock_factory
                 .named("execution_cache")
                 .new_mutex(ExecutionCache::new(current_transaction_root)),
-            ledger_transaction_validator: lock_factory
-                .named("ledger_transaction_validator")
-                .new_rwlock(initial_updatable_config.ledger_transaction_validator()),
+            ledger_transaction_validator: LedgerTransactionValidator::default_from_network(network),
             vertex_prepare_metrics: VertexPrepareMetrics::new(metrics_registry),
             vertex_limits_config,
             ledger_metrics: LedgerMetrics::new(
@@ -268,10 +265,7 @@ impl StateComputer {
             .expect("Could not encode genesis transaction");
         let prepared = PreparedLedgerTransaction::prepare_from_raw(&raw)
             .expect("Could not prepare genesis transaction");
-        let validated = self
-            .ledger_transaction_validator
-            .read()
-            .validate_genesis(prepared);
+        let validated = self.ledger_transaction_validator.validate_genesis(prepared);
 
         let database = self.database.lock();
         let mut series_executor = self.start_series_execution(database.deref());
@@ -305,7 +299,6 @@ impl StateComputer {
 
         let validated = self
             .ledger_transaction_validator
-            .read()
             .validate_user_or_round_update(prepared_ledger_transaction)
             .unwrap_or_else(|_| panic!("Expected that {} was valid", qualified_name));
 
@@ -314,7 +307,6 @@ impl StateComputer {
         // Note - we first create a basic receipt - because we need it for later
         let basic_receipt = self
             .execution_configurator
-            .read()
             .wrap_ledger_transaction(&validated, "scenario transaction")
             .execute_on(database.deref());
         let mut series_executor = self.start_series_execution(database.deref());
@@ -368,7 +360,6 @@ impl StateComputer {
             // and executable creation) by accessing the execution cache in a more clever way.
             let validated = self
                 .ledger_transaction_validator
-                .read()
                 .validate_user_or_round_update_from_raw(&raw_ancestor)
                 .expect("Ancestor transactions should be valid");
 
@@ -401,7 +392,6 @@ impl StateComputer {
         let ledger_round_update = LedgerTransaction::RoundUpdateV1(Box::new(round_update));
         let validated_round_update = self
             .ledger_transaction_validator
-            .read()
             .validate_user_or_round_update_from_model(&ledger_round_update)
             .expect("expected to be able to prepare the round update transaction");
 
@@ -518,7 +508,6 @@ impl StateComputer {
             // validated transaction from the mempool.
             let validate_result = self
                 .ledger_transaction_validator
-                .read()
                 .validate_user_or_round_update(prepared_transaction);
 
             let validated = match validate_result {
@@ -686,7 +675,6 @@ impl StateComputer {
             })
             .and_then(|raw_ledger_transaction| {
                 self.ledger_transaction_validator
-                    .read()
                     .prepare_from_raw(&raw_ledger_transaction)
                     .map(|prepared_transaction| (raw_ledger_transaction, prepared_transaction))
             })
@@ -1006,7 +994,6 @@ impl StateComputer {
         for (index, raw_transaction) in commit_request.transactions.iter().enumerate() {
             let result = self
                 .ledger_transaction_validator
-                .read()
                 .prepare_from_raw(raw_transaction);
             let prepared_transaction = match result {
                 Ok(prepared_transaction) => prepared_transaction,
@@ -1085,7 +1072,6 @@ impl StateComputer {
         {
             let validated = self
                 .ledger_transaction_validator
-                .read()
                 .validate_user_or_round_update(prepared)
                 .unwrap_or_else(|error| {
                     panic!("cannot validate transaction to be committed: {error:?}");
@@ -1237,13 +1223,7 @@ impl StateComputer {
         }
     }
 
-    pub fn handle_protocol_update(
-        &self,
-        protocol_version_name: &ProtocolVersionName,
-        new_ledger_transaction_validator: LedgerTransactionValidator,
-    ) {
-        *self.ledger_transaction_validator.write() = new_ledger_transaction_validator;
-
+    pub fn handle_protocol_update(&self, protocol_version_name: &ProtocolVersionName) {
         self.protocol_state.write().current_protocol_version = protocol_version_name.clone();
 
         let current_header = self
@@ -1535,7 +1515,6 @@ mod tests {
         let validated_round_update = state_manager
             .state_computer
             .ledger_transaction_validator
-            .read()
             .validate_user_or_round_update_from_model(&ledger_round_update)
             .expect("expected to be able to prepare the round update transaction");
 
@@ -1555,7 +1534,6 @@ mod tests {
                 let validated = state_manager
                     .state_computer
                     .ledger_transaction_validator
-                    .read()
                     .validate_user_or_round_update(prepared_transaction)
                     .unwrap();
 

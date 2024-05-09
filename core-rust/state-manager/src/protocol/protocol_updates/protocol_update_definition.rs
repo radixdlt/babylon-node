@@ -3,8 +3,6 @@
 use crate::engine_prelude::*;
 use crate::protocol::*;
 
-use crate::transaction::*;
-
 /// A protocol update definition consists of two parts:
 /// 1) Updating the current (state computer) configuration ("transaction processing rules").
 ///    This includes: transaction validation, execution configuration, etc
@@ -15,14 +13,6 @@ pub trait ProtocolUpdateDefinition {
     /// Additional (static) config which can be used to re-configure the updater.
     type Overrides: ScryptoDecode;
 
-    /// Returns the new configuration that the state computer should use after enacting the given
-    /// protocol version.
-    fn state_computer_config(
-        network_definition: &NetworkDefinition,
-    ) -> ProtocolStateComputerConfig {
-        ProtocolStateComputerConfig::default(network_definition.clone())
-    }
-
     fn create_updater(
         new_protocol_version: &ProtocolVersionName,
         network_definition: &NetworkDefinition,
@@ -31,11 +21,6 @@ pub trait ProtocolUpdateDefinition {
 }
 
 pub trait ConfigurableProtocolUpdateDefinition {
-    fn resolve_state_computer_config(
-        &self,
-        network_definition: &NetworkDefinition,
-    ) -> ProtocolStateComputerConfig;
-
     /// This method panics if the `raw_overrides` is present and invalid.
     /// A caller should have first validated with validate_raw_overrides.
     fn create_updater_with_raw_overrides(
@@ -49,13 +34,6 @@ pub trait ConfigurableProtocolUpdateDefinition {
 }
 
 impl<T: ProtocolUpdateDefinition> ConfigurableProtocolUpdateDefinition for T {
-    fn resolve_state_computer_config(
-        &self,
-        network_definition: &NetworkDefinition,
-    ) -> ProtocolStateComputerConfig {
-        Self::state_computer_config(network_definition)
-    }
-
     fn create_updater_with_raw_overrides(
         &self,
         new_protocol_version: &ProtocolVersionName,
@@ -73,43 +51,5 @@ impl<T: ProtocolUpdateDefinition> ConfigurableProtocolUpdateDefinition for T {
 
     fn validate_raw_overrides(&self, raw_overrides: &[u8]) -> Result<(), DecodeError> {
         scrypto_decode::<<Self as ProtocolUpdateDefinition>::Overrides>(raw_overrides).map(|_| ())
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct ProtocolStateComputerConfig {
-    pub network: NetworkDefinition,
-    pub validation_config: ValidationConfig,
-}
-
-impl ProtocolStateComputerConfig {
-    pub fn default(network: NetworkDefinition) -> ProtocolStateComputerConfig {
-        let network_id = network.id;
-        ProtocolStateComputerConfig {
-            network,
-            validation_config: ValidationConfig::default(network_id),
-        }
-    }
-}
-
-impl ProtocolStateComputerConfig {
-    pub fn ledger_transaction_validator(&self) -> LedgerTransactionValidator {
-        LedgerTransactionValidator::default_from_validation_config(self.validation_config)
-    }
-
-    pub fn user_transaction_validator(&self) -> NotarizedTransactionValidator {
-        NotarizedTransactionValidator::new(self.validation_config)
-    }
-
-    pub fn validation_config(&self) -> ValidationConfig {
-        self.validation_config
-    }
-
-    pub fn execution_configurator(
-        &self,
-        no_fees: bool,
-        engine_trace: bool,
-    ) -> ExecutionConfigurator {
-        ExecutionConfigurator::new(&self.network, no_fees, engine_trace)
     }
 }

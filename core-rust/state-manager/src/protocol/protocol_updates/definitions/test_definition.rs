@@ -23,12 +23,11 @@ impl ProtocolUpdateDefinition for TestProtocolUpdateDefinition {
 
     fn create_updater(
         new_protocol_version: &ProtocolVersionName,
-        network_definition: &NetworkDefinition,
+        _network_definition: &NetworkDefinition,
         _overrides: Option<Self::Overrides>,
     ) -> Box<dyn ProtocolUpdater> {
         Box::new(BatchedUpdater::new(
             new_protocol_version.clone(),
-            Self::state_computer_config(network_definition),
             ArbitraryBatchGenerator {
                 batches: vec![vec![FlashTransactionV1 {
                     name: format!("{}-txn", &new_protocol_version),

@@ -27,7 +27,6 @@ pub(crate) async fn handle_transaction_preview(
     let result = state
         .state_manager
         .transaction_previewer
-        .read()
         .preview(preview_request, at_state_version)?;
 
     to_api_response(&mapping_context, result).map(Json)

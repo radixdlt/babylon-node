@@ -13,7 +13,6 @@ impl ProtocolUpdateDefinition for BottlenoseProtocolUpdateDefinition {
     ) -> Box<dyn ProtocolUpdater> {
         Box::new(BatchedUpdater::new(
             new_protocol_version.clone(),
-            Self::state_computer_config(network_definition),
             BottlenoseSettings::all_enabled_as_default_for_network(network_definition)
                 .create_batch_generator(),
         ))
