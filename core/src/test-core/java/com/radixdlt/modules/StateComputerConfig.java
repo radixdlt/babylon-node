@@ -147,7 +147,8 @@ public sealed interface StateComputerConfig {
       REV2ProposerConfig proposerConfig,
       boolean debugLogging,
       boolean noFees,
-      ProtocolConfig protocolConfig) {
+      ProtocolConfig protocolConfig,
+      ScenariosExecutionConfig scenariosExecutionConfig) {
     return rev2(
         networkId,
         genesis,
@@ -157,7 +158,7 @@ public sealed interface StateComputerConfig {
         noFees,
         protocolConfig,
         StateTreeGcConfig.forTesting(),
-        ScenariosExecutionConfig.NONE);
+        scenariosExecutionConfig);
   }
 
   static StateComputerConfig rev2(
