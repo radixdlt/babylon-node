@@ -33,15 +33,15 @@ impl ProtocolUpdateContentOverrides {
     pub fn with_custom(
         mut self,
         custom_name: ProtocolVersionName,
-        config: Overrides<CustomProtocolUpdateDefinition>,
+        overrides: Overrides<CustomProtocolUpdateDefinition>,
     ) -> Self {
-        if !CustomProtocolUpdateDefinition::matches(&custom_name) {
+        if !CustomProtocolUpdateDefinition::matches(custom_name.as_str()) {
             panic!(
                 "Not an allowed custom protocol update name: {}",
                 custom_name
             );
         }
-        self.custom.insert(custom_name, config);
+        self.custom.insert(custom_name, overrides);
         self
     }
 }
@@ -64,7 +64,7 @@ impl From<ProtocolUpdateContentOverrides> for RawProtocolUpdateContentOverrides 
         }
 
         for (update_name, config) in value.custom {
-            if CustomProtocolUpdateDefinition::matches(&update_name) {
+            if CustomProtocolUpdateDefinition::matches(update_name.as_str()) {
                 map.insert(update_name, scrypto_encode(&config).unwrap());
             }
         }

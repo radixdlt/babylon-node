@@ -62,58 +62,22 @@
  * permissions under this License.
  */
 
-use crate::{LedgerStatus, RecentSelfProposalMissStatistic};
-use jni::objects::{JClass, JObject};
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
-use node_common::java::jni_sbor_coded_call;
-use prometheus::*;
+package com.radixdlt.environment;
 
-use super::node_rust_environment::JNINodeRustEnvironment;
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_prometheus_RustPrometheus_prometheusMetrics(
-    env: JNIEnv,
-    _class: JClass,
-    j_node_rust_env: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |_no_args: ()| -> String {
-        let registry = &JNINodeRustEnvironment::get(&env, j_node_rust_env).metric_registry;
-        let encoder = TextEncoder::new();
-        let mut buffer = vec![];
-        encoder.encode(&registry.gather(), &mut buffer).unwrap();
-        String::from_utf8(buffer).unwrap()
-    })
+/**
+ * A configuration of "Engine test Scenarios" to be run automatically after a specific Protocol
+ * Update.
+ */
+public record ProtocolUpdateScenarios(
+    String protocolVersionName, ImmutableList<String> scenarioNames) {
+
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        ProtocolUpdateScenarios.class,
+        codecs -> StructCodec.fromRecordComponents(ProtocolUpdateScenarios.class, codecs));
+  }
 }
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_prometheus_RustPrometheus_ledgerStatus(
-    env: JNIEnv,
-    _class: JClass,
-    j_node_rust_env: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |_no_args: ()| -> LedgerStatus {
-        JNINodeRustEnvironment::get_ledger_metrics(&env, j_node_rust_env).get_ledger_status()
-    })
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_prometheus_RustPrometheus_recentSelfProposalMissStatistic(
-    env: JNIEnv,
-    _class: JClass,
-    j_node_rust_env: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(
-        &env,
-        request_payload,
-        |_no_args: ()| -> RecentSelfProposalMissStatistic {
-            JNINodeRustEnvironment::get_ledger_metrics(&env, j_node_rust_env)
-                .get_recent_self_proposal_miss_statistic()
-        },
-    )
-}
-
-pub fn export_extern_functions() {}

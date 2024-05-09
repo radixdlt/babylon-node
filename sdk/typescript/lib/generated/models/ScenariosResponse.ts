@@ -13,12 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { ExecutedGenesisScenario } from './ExecutedGenesisScenario';
+import type { ExecutedScenario } from './ExecutedScenario';
 import {
-    ExecutedGenesisScenarioFromJSON,
-    ExecutedGenesisScenarioFromJSONTyped,
-    ExecutedGenesisScenarioToJSON,
-} from './ExecutedGenesisScenario';
+    ExecutedScenarioFromJSON,
+    ExecutedScenarioFromJSONTyped,
+    ExecutedScenarioToJSON,
+} from './ExecutedScenario';
 
 /**
  * 
@@ -27,11 +27,11 @@ import {
  */
 export interface ScenariosResponse {
     /**
-     * Scenarios executed as part of Genesis (in their execution order).
-     * @type {Array<ExecutedGenesisScenario>}
+     * Scenarios executed as part of Genesis and Protocol Updates, in their execution order.
+     * @type {Array<ExecutedScenario>}
      * @memberof ScenariosResponse
      */
-    executed_scenarios: Array<ExecutedGenesisScenario>;
+    executed_scenarios: Array<ExecutedScenario>;
 }
 
 /**
@@ -54,7 +54,7 @@ export function ScenariosResponseFromJSONTyped(json: any, ignoreDiscriminator: b
     }
     return {
         
-        'executed_scenarios': ((json['executed_scenarios'] as Array<any>).map(ExecutedGenesisScenarioFromJSON)),
+        'executed_scenarios': ((json['executed_scenarios'] as Array<any>).map(ExecutedScenarioFromJSON)),
     };
 }
 
@@ -67,7 +67,7 @@ export function ScenariosResponseToJSON(value?: ScenariosResponse | null): any {
     }
     return {
         
-        'executed_scenarios': ((value.executed_scenarios as Array<any>).map(ExecutedGenesisScenarioToJSON)),
+        'executed_scenarios': ((value.executed_scenarios as Array<any>).map(ExecutedScenarioToJSON)),
     };
 }
 

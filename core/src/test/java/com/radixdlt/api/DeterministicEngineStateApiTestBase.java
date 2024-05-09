@@ -76,10 +76,7 @@ import com.radixdlt.api.engine_state.generated.api.*;
 import com.radixdlt.api.engine_state.generated.client.ApiClient;
 import com.radixdlt.api.engine_state.generated.client.ApiException;
 import com.radixdlt.api.engine_state.generated.models.*;
-import com.radixdlt.environment.CoreApiServerFlags;
-import com.radixdlt.environment.DatabaseConfig;
-import com.radixdlt.environment.StartProcessorOnRunner;
-import com.radixdlt.environment.StateTreeGcConfig;
+import com.radixdlt.environment.*;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.genesis.GenesisData;
@@ -186,7 +183,8 @@ public abstract class DeterministicEngineStateApiTestBase {
                             false,
                             false,
                             ProtocolConfig.testingDefault(),
-                            stateTreeGcConfig),
+                            stateTreeGcConfig,
+                            ScenariosExecutionConfig.NONE),
                         SyncRelayConfig.of(200, 10, 2000))));
     try {
       test.startAllNodes();

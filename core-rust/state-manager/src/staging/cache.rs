@@ -66,24 +66,87 @@
 
 use super::stage_tree::{Accumulator, Delta, DerivedStageKey, StageKey, StageTree};
 use super::ReadableStore;
+use std::ops::{Deref, DerefMut};
+use std::sync::Arc;
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::engine_prelude::*;
-use crate::protocol::ProtocolState;
 use crate::staging::overlays::{
     MapSubstateNodeAncestryStore, StagedSubstateNodeAncestryStore, SubstateOverlayIterator,
 };
 use crate::staging::{
     AccuTreeDiff, HashStructuresDiff, HashUpdateContext, ProcessedTransactionReceipt, StateTreeDiff,
 };
-use crate::transaction::{LedgerTransactionHash, TransactionLogic};
-use crate::{EpochTransactionIdentifiers, ReceiptTreeHash, StateVersion, TransactionTreeHash};
+use crate::transaction::{
+    HasLedgerTransactionHash, LedgerTransactionHash, PreparedLedgerTransaction, TransactionLogic,
+};
+use crate::{
+    ActualStateManagerDatabase, EpochTransactionIdentifiers, LedgerHashes, ReceiptTreeHash,
+    StateVersion, TransactionTreeHash,
+};
 use im::hashmap::HashMap as ImmutableHashMap;
 use itertools::Itertools;
 
 use crate::store::traits::{SubstateNodeAncestryRecord, SubstateNodeAncestryStore};
-use crate::traits::ConfigurableDatabase;
+use crate::traits::{ConfigurableDatabase, QueryableProofStore};
+use node_common::locks::{DbLock, LockFactory, Mutex};
 use slotmap::SecondaryMap;
+
+pub struct ExecutionCacheManager {
+    database: Arc<DbLock<ActualStateManagerDatabase>>,
+    execution_cache: Mutex<ExecutionCache>,
+}
+
+impl ExecutionCacheManager {
+    pub fn new(
+        database: Arc<DbLock<ActualStateManagerDatabase>>,
+        lock_factory: &LockFactory,
+    ) -> Self {
+        let execution_cache = Self::create_clean_execution_cache(database.lock().deref());
+        Self {
+            database,
+            execution_cache: lock_factory
+                .named("execution_cache")
+                .new_mutex(execution_cache),
+        }
+    }
+
+    pub fn clear(&self) {
+        *self.execution_cache.lock() =
+            Self::create_clean_execution_cache(self.database.lock().deref());
+    }
+
+    pub fn access_exclusively(&self) -> impl DerefMut<Target = ExecutionCache> + '_ {
+        self.execution_cache.lock()
+    }
+
+    pub fn find_transaction_root(
+        &self,
+        parent_transaction_root: &TransactionTreeHash,
+        transactions: &[PreparedLedgerTransaction],
+    ) -> Option<TransactionTreeHash> {
+        let execution_cache = self.execution_cache.lock();
+        let mut transaction_root = parent_transaction_root;
+        for transaction in transactions {
+            transaction_root = match execution_cache.get_cached_transaction_root(
+                transaction_root,
+                &transaction.ledger_transaction_hash(),
+            ) {
+                Some(cached) => cached,
+                None => return None,
+            }
+        }
+        Some(*transaction_root)
+    }
+
+    fn create_clean_execution_cache<S: QueryableProofStore>(database: &S) -> ExecutionCache {
+        let current_transaction_root = database
+            .get_latest_proof()
+            .map(|proof| proof.ledger_header.hashes.transaction_root)
+            .unwrap_or_else(|| LedgerHashes::pre_genesis().transaction_root);
+        ExecutionCache::new(current_transaction_root)
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd)]
 struct TransactionPlacement {
@@ -157,9 +220,9 @@ impl ExecutionCache {
         epoch_transaction_identifiers: &EpochTransactionIdentifiers,
         parent_state_version: StateVersion,
         parent_transaction_root: &TransactionTreeHash,
-        parent_protocol_state: &ProtocolState,
         ledger_transaction_hash: &LedgerTransactionHash,
         executable: T,
+        engine_receipt_listener: impl FnOnce(&TransactionReceipt),
     ) -> &ProcessedTransactionReceipt {
         let transaction_placement =
             TransactionPlacement::new(parent_transaction_root, ledger_transaction_hash);
@@ -173,6 +236,7 @@ impl ExecutionCache {
                 let staged_store =
                     StagedStore::new(root_store, self.stage_tree.get_accumulator(&parent_key));
                 let transaction_receipt = executable.execute_on(&staged_store);
+                engine_receipt_listener(&transaction_receipt);
 
                 let processed = ProcessedTransactionReceipt::process(
                     HashUpdateContext {
@@ -182,7 +246,6 @@ impl ExecutionCache {
                         ledger_transaction_hash,
                     },
                     transaction_receipt,
-                    parent_protocol_state,
                 );
 
                 let internal_transaction_ids = InternalTransactionIds {

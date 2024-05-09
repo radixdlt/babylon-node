@@ -66,6 +66,7 @@ extern crate core;
 
 mod accumulator_tree;
 mod commit_bundle;
+mod committer;
 pub mod jni;
 mod limits;
 pub mod mempool;
@@ -74,23 +75,25 @@ pub mod protocol;
 pub mod query;
 mod receipt;
 mod staging;
-mod state_computer;
 mod state_manager;
 pub mod store;
+pub mod system_commits;
+mod system_executor;
 pub mod transaction;
 mod types;
 
 #[cfg(test)]
 mod test;
 
+pub use crate::committer::*;
 pub use crate::mempool::*;
 pub use crate::metrics::*;
 pub use crate::pending_transaction_result_cache::*;
 pub use crate::receipt::*;
 pub use crate::staging::*;
-pub use crate::state_computer::*;
 pub use crate::state_manager::*;
 pub use crate::store::*;
+pub use crate::system_executor::*;
 pub use crate::types::*;
 
 pub(crate) mod engine_prelude {

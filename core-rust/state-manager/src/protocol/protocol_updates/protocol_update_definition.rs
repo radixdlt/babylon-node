@@ -2,51 +2,61 @@
 
 use crate::engine_prelude::*;
 use crate::protocol::*;
+use crate::ActualStateManagerDatabase;
+use node_common::locks::DbLock;
+use std::sync::Arc;
 
-/// A protocol update definition consists of two parts:
-/// 1) Updating the current (state computer) configuration ("transaction processing rules").
-///    This includes: transaction validation, execution configuration, etc
-/// 2) Executing arbitrary state updates against the current database state.
-///    While the abstraction is quite flexible, the only concrete implementation at the moment
-///    only modifies the state through committing system transactions (e.g. substate flash).
+/// A protocol update definition.
+///
+/// Note:
+/// Currently, protocol updates are only interested in modifying the current ledger state.
+/// Consecutive "actions" to be executed and individually committed are defined by
+/// [`Self::create_action_provider()`].
+/// Future protocol updates may additionally want to e.g. modify the configuration of some
+/// services (like transaction validation rules). Such customizable parts will have to be
+/// represented as other methods on this trait.
 pub trait ProtocolUpdateDefinition {
     /// Additional (static) config which can be used to re-configure the updater.
     type Overrides: ScryptoDecode;
 
-    fn create_updater(
-        new_protocol_version: &ProtocolVersionName,
-        network_definition: &NetworkDefinition,
+    /// Returns a provider of on-ledger actions to be executed as part of this protocol update.
+    fn create_action_provider(
+        &self,
+        network: &NetworkDefinition,
+        database: Arc<DbLock<ActualStateManagerDatabase>>,
         overrides: Option<Self::Overrides>,
-    ) -> Box<dyn ProtocolUpdater>;
+    ) -> Box<dyn ProtocolUpdateActionProvider>;
 }
 
+/// A convenience trait for easier validation/parsing of [`ProtocolUpdateDefinition::Overrides`],
+/// automatically implemented for all [`ProtocolUpdateDefinition`].
 pub trait ConfigurableProtocolUpdateDefinition {
-    /// This method panics if the `raw_overrides` is present and invalid.
-    /// A caller should have first validated with validate_raw_overrides.
-    fn create_updater_with_raw_overrides(
+    /// Parses the given raw overrides and passes them to [`Self::create_action_provider`].
+    /// Panics on any [`DecodeError`] from [`Self::validate_overrides()`].
+    fn create_action_provider_raw(
         &self,
-        new_protocol_version: &ProtocolVersionName,
-        network_definition: &NetworkDefinition,
+        network: &NetworkDefinition,
+        database: Arc<DbLock<ActualStateManagerDatabase>>,
         raw_overrides: Option<&[u8]>,
-    ) -> Box<dyn ProtocolUpdater>;
+    ) -> Box<dyn ProtocolUpdateActionProvider>;
 
+    /// Checks that the given raw overrides can be parsed.
     fn validate_raw_overrides(&self, raw_overrides: &[u8]) -> Result<(), DecodeError>;
 }
 
 impl<T: ProtocolUpdateDefinition> ConfigurableProtocolUpdateDefinition for T {
-    fn create_updater_with_raw_overrides(
+    fn create_action_provider_raw(
         &self,
-        new_protocol_version: &ProtocolVersionName,
-        network_definition: &NetworkDefinition,
+        network: &NetworkDefinition,
+        database: Arc<DbLock<ActualStateManagerDatabase>>,
         raw_overrides: Option<&[u8]>,
-    ) -> Box<dyn ProtocolUpdater> {
-        let overrides = raw_overrides.map(|overrides| {
-            scrypto_decode::<<Self as ProtocolUpdateDefinition>::Overrides>(overrides).expect(
-                "Raw overrides should have been validated before being passed to this method",
-            )
-        });
+    ) -> Box<dyn ProtocolUpdateActionProvider> {
+        let overrides = raw_overrides
+            .map(scrypto_decode::<<Self as ProtocolUpdateDefinition>::Overrides>)
+            .transpose()
+            .expect("Raw overrides should have been validated before being passed to this method");
 
-        Self::create_updater(new_protocol_version, network_definition, overrides)
+        self.create_action_provider(network, database, overrides)
     }
 
     fn validate_raw_overrides(&self, raw_overrides: &[u8]) -> Result<(), DecodeError> {

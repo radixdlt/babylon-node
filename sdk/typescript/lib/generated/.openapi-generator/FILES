@@ -163,7 +163,7 @@ models/EventEmitterIdentifier.ts
 models/EventEmitterIdentifierBase.ts
 models/EventEmitterIdentifierType.ts
 models/EventTypeIdentifier.ts
-models/ExecutedGenesisScenario.ts
+models/ExecutedScenario.ts
 models/ExecutedScenarioTransaction.ts
 models/FeeDestination.ts
 models/FeeSource.ts

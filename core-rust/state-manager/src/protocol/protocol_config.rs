@@ -15,18 +15,18 @@ pub fn resolve_update_definition_for_version(
     protocol_version_name: &ProtocolVersionName,
 ) -> Option<Box<dyn ConfigurableProtocolUpdateDefinition>> {
     match protocol_version_name.as_str() {
-        // Genesis execution is done manually.
-        // Genesis only needs to be supported here to identify which configuration to use.
-        GENESIS_PROTOCOL_VERSION => Some(Box::new(DefaultConfigOnlyProtocolDefinition)),
+        // Note: Genesis execution is done manually; it still needs to be defined here so that
+        // resolution on boot-up handles any protocol state in a streamlined way.
+        GENESIS_PROTOCOL_VERSION => Some(Box::new(NoOpProtocolDefinition)),
         ANEMONE_PROTOCOL_VERSION => Some(Box::new(AnemoneProtocolUpdateDefinition)),
         BOTTLENOSE_PROTOCOL_VERSION => Some(Box::new(BottlenoseProtocolUpdateDefinition)),
         // Updates starting "custom-" are intended for use with tests, where the thresholds and config are injected on all nodes
-        _ if CustomProtocolUpdateDefinition::matches(protocol_version_name) => {
+        name_string if CustomProtocolUpdateDefinition::matches(name_string) => {
             Some(Box::new(CustomProtocolUpdateDefinition))
         }
-        _ if TestProtocolUpdateDefinition::matches(protocol_version_name) => {
-            Some(Box::new(TestProtocolUpdateDefinition))
-        }
+        name_string if TestProtocolUpdateDefinition::matches(name_string) => Some(Box::new(
+            TestProtocolUpdateDefinition::new(protocol_version_name.clone()),
+        )),
         _ => None,
     }
 }
@@ -108,22 +108,6 @@ impl ProtocolConfig {
         }
 
         Ok(())
-    }
-
-    pub fn resolve_updater(
-        &self,
-        network: &NetworkDefinition,
-        protocol_version_name: &ProtocolVersionName,
-    ) -> Option<Box<dyn ProtocolUpdater>> {
-        let definition = resolve_update_definition_for_version(protocol_version_name)?;
-        Some(
-            definition.create_updater_with_raw_overrides(
-                protocol_version_name,
-                network,
-                self.protocol_update_content_overrides
-                    .get(protocol_version_name),
-            ),
-        )
     }
 }
 

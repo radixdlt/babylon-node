@@ -530,8 +530,8 @@ pub struct ProtocolUpdateResult {
 
 pub struct EpochTransactionIdentifiers {
     pub state_version: StateVersion,
-    pub transaction_hash: TransactionTreeHash,
-    pub receipt_hash: ReceiptTreeHash,
+    pub transaction_root: TransactionTreeHash,
+    pub receipt_root: ReceiptTreeHash,
 }
 
 impl EpochTransactionIdentifiers {
@@ -539,16 +539,16 @@ impl EpochTransactionIdentifiers {
         let ledger_hashes = LedgerHashes::pre_genesis();
         Self {
             state_version: StateVersion::pre_genesis(),
-            transaction_hash: ledger_hashes.transaction_root,
-            receipt_hash: ledger_hashes.receipt_root,
+            transaction_root: ledger_hashes.transaction_root,
+            receipt_root: ledger_hashes.receipt_root,
         }
     }
 
     pub fn from(epoch_header: &LedgerHeader) -> Self {
         Self {
             state_version: epoch_header.state_version,
-            transaction_hash: epoch_header.hashes.transaction_root,
-            receipt_hash: epoch_header.hashes.receipt_root,
+            transaction_root: epoch_header.hashes.transaction_root,
+            receipt_root: epoch_header.hashes.receipt_root,
         }
     }
 }

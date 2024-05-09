@@ -180,7 +180,8 @@ public abstract class DeterministicCoreApiTestBase {
             false,
             false,
             protocolConfig,
-            stateTreeGcConfig));
+            stateTreeGcConfig,
+            ScenariosExecutionConfig.NONE));
   }
 
   protected DeterministicTest buildRunningServerTest(

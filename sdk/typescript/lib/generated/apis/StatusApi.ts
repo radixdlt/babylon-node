@@ -114,7 +114,7 @@ export class StatusApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get results of test-oriented \"Genesis Scenarios\" executed on this Network.
+     * Get results of test \"Scenarios\" executed on this Network. Note: these Scenarios are meant to only be executed on test Networks; on a production Node, the response is expected to be empty. 
      * Get Scenarios\' results.
      */
     async statusScenariosPostRaw(requestParameters: StatusScenariosPostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ScenariosResponse>> {
@@ -140,7 +140,7 @@ export class StatusApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get results of test-oriented \"Genesis Scenarios\" executed on this Network.
+     * Get results of test \"Scenarios\" executed on this Network. Note: these Scenarios are meant to only be executed on test Networks; on a production Node, the response is expected to be empty. 
      * Get Scenarios\' results.
      */
     async statusScenariosPost(requestParameters: StatusScenariosPostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ScenariosResponse> {

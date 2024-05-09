@@ -108,7 +108,7 @@ public class NetworkScenariosTest extends DeterministicCoreApiTestBase {
       // assert that the captured transaction state versions are consecutive
       final var storedStateVersions =
           scenarios.stream()
-              .map(ExecutedGenesisScenario::getCommittedTransactions)
+              .map(ExecutedScenario::getCommittedTransactions)
               .flatMap(List::stream)
               .mapToLong(ExecutedScenarioTransaction::getStateVersion)
               .toArray();
@@ -120,7 +120,7 @@ public class NetworkScenariosTest extends DeterministicCoreApiTestBase {
   }
 
   private static void assertScenario(
-      List<ExecutedGenesisScenario> scenarios,
+      List<ExecutedScenario> scenarios,
       int index,
       String scenarioName,
       // we deliberately do not want to assert on exact list matches below, to avoid brittle tests

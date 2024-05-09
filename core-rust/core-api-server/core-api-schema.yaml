@@ -493,7 +493,10 @@ paths:
   "/status/scenarios":
     post:
       summary: Get Scenarios' results.
-      description: Get results of test-oriented "Genesis Scenarios" executed on this Network.
+      description: |
+        Get results of test "Scenarios" executed on this Network.
+        Note: these Scenarios are meant to only be executed on test Networks; on a production Node,
+        the response is expected to be empty.
       tags:
         - Status
       requestBody:
@@ -6703,9 +6706,10 @@ components:
         executed_scenarios:
           type: array
           items:
-            $ref: "#/components/schemas/ExecutedGenesisScenario"
-          description: Scenarios executed as part of Genesis (in their execution order).
-    ExecutedGenesisScenario:
+            $ref: "#/components/schemas/ExecutedScenario"
+          description: |
+            Scenarios executed as part of Genesis and Protocol Updates, in their execution order.
+    ExecutedScenario:
       type: object
       required:
         - sequence_number
@@ -6718,11 +6722,7 @@ components:
           format: int32
           minimum: 0
           maximum: 1000000
-          description: |
-            An index of the Scenario on the list of all Scenarios that were executed.
-            Note: the stored sequence numbers do not necessarily have to be consecutive (e.g. in a
-            case where some configured Scenario failed to execute or failed to write results to the
-            database).
+          description: An index of the Scenario (reflecting its execution order).
         logical_name:
           type: string
         committed_transactions:

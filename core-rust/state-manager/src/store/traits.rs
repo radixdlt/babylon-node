@@ -578,11 +578,11 @@ pub mod scenario {
 
     define_single_versioned! {
         #[derive(Debug, Clone, Categorize, Encode, Decode)]
-        pub VersionedExecutedGenesisScenario(ExecutedGenesisScenarioVersions) => ExecutedGenesisScenario = ExecutedGenesisScenarioV1
+        pub VersionedExecutedScenario(ExecutedScenarioVersions) => ExecutedScenario = ExecutedScenarioV1
     }
 
     #[derive(Debug, Clone, Categorize, Encode, Decode)]
-    pub struct ExecutedGenesisScenarioV1 {
+    pub struct ExecutedScenarioV1 {
         pub logical_name: String,
         pub committed_transactions: Vec<ExecutedScenarioTransaction>,
         pub addresses: Vec<DescribedAddressRendering>,
@@ -601,18 +601,15 @@ pub mod scenario {
         pub intent_hash: IntentHash,
     }
 
-    /// A store of testing-specific [`ExecutedGenesisScenario`], meant to be as separated as
-    /// possible from the production stores (e.g. the writes happening outside of the regular commit
-    /// batch write).
-    pub trait ExecutedGenesisScenarioStore {
-        /// Writes the given Scenario under a caller-managed sequence number (which means: it allows
-        /// overwriting, writing out-of-order, leaving gaps, etc.).
-        fn put_scenario(&self, number: ScenarioSequenceNumber, scenario: ExecutedGenesisScenario);
+    /// A store of testing-specific [`ExecutedScenario`], meant to be as separated as possible from
+    /// the production stores (e.g. the writes happening outside of the regular commit batch write).
+    pub trait ExecutedScenarioStore {
+        /// Writes the given Scenario under the next sequence number (auto-incremented).
+        fn put_next_scenario(&self, scenario: ExecutedScenario);
 
-        /// Returns all Scenarios written so far, ordered by their sequence numbers (but with no
-        /// guarantees regarding gaps; see [`put_scenario()`]'s contract).
+        /// Returns all Scenarios written so far, ordered by their sequence numbers.
         /// Performance note: this method assumes a small number of Scenarios.
-        fn list_all_scenarios(&self) -> Vec<(ScenarioSequenceNumber, ExecutedGenesisScenario)>;
+        fn list_all_scenarios(&self) -> Vec<(ScenarioSequenceNumber, ExecutedScenario)>;
     }
 }
 

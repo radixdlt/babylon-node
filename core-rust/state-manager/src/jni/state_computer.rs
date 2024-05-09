@@ -114,12 +114,13 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_executeGene
         &env,
         request_payload,
         |raw_genesis_data: Vec<u8>| -> JavaResult<LedgerProof> {
-            let state_computer = JNINodeRustEnvironment::get_state_computer(&env, j_node_rust_env);
+            let system_executor =
+                JNINodeRustEnvironment::get_system_executor(&env, j_node_rust_env);
             let genesis_data_hash = hash(&raw_genesis_data);
             let genesis_data: JavaGenesisData = scrypto_decode(&raw_genesis_data)
                 .map_err(|err| JavaError(format!("Invalid genesis data {:?}", err)))?;
             let config = genesis_data.initial_config;
-            let resultant_proof = state_computer.execute_genesis(
+            let resultant_proof = system_executor.execute_genesis(
                 genesis_data.chunks,
                 genesis_data.initial_epoch,
                 ConsensusManagerConfig {
@@ -157,8 +158,7 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_prepare(
         &env,
         request_payload,
         |prepare_request: PrepareRequest| -> PrepareResult {
-            let state_computer = JNINodeRustEnvironment::get_state_computer(&env, j_node_rust_env);
-            state_computer.prepare(prepare_request)
+            JNINodeRustEnvironment::get_preparator(&env, j_node_rust_env).prepare(prepare_request)
         },
     )
 }
@@ -174,8 +174,7 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_commit(
         &env,
         request_payload,
         |commit_request: CommitRequest| -> Result<CommitSummary, InvalidCommitRequestError> {
-            let state_computer = JNINodeRustEnvironment::get_state_computer(&env, j_node_rust_env);
-            state_computer.commit(commit_request)
+            JNINodeRustEnvironment::get_committer(&env, j_node_rust_env).commit(commit_request)
         },
     )
 }
@@ -188,8 +187,8 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_newestProto
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |_: ()| -> ProtocolVersionName {
-        let env = JNINodeRustEnvironment::get(&env, j_node_rust_env);
-        env.state_manager.newest_protocol_version()
+        JNINodeRustEnvironment::get_protocol_manager(&env, j_node_rust_env)
+            .newest_protocol_version()
     })
 }
 
@@ -201,8 +200,7 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_protocolSta
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |_: ()| -> ProtocolState {
-        let env = JNINodeRustEnvironment::get(&env, j_node_rust_env);
-        env.state_manager.state_computer.protocol_state()
+        JNINodeRustEnvironment::get_protocol_manager(&env, j_node_rust_env).current_protocol_state()
     })
 }
 

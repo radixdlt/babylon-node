@@ -153,26 +153,19 @@ impl From<StateHistoryError> for PreviewerError {
 mod tests {
 
     use crate::engine_prelude::*;
-    use crate::{PreviewRequest, StateManager, StateManagerConfig};
-    use node_common::locks::LockFactory;
-    use node_common::scheduler::Scheduler;
-    use prometheus::Registry;
+    use crate::{PreviewRequest, StateManagerConfig};
+
+    use crate::test::create_state_manager;
 
     #[test]
     fn test_preview_processed_substate_changes() {
         let tmp = tempfile::tempdir().unwrap();
-        let lock_factory = LockFactory::new("testing");
-        let metrics_registry = Registry::new();
-        let state_manager = StateManager::new(
-            StateManagerConfig::new_for_testing(tmp.path().to_str().unwrap()),
-            None,
-            &lock_factory,
-            &metrics_registry,
-            &Scheduler::new("testing"),
-        );
+        let state_manager = create_state_manager(StateManagerConfig::new_for_testing(
+            tmp.path().to_str().unwrap(),
+        ));
 
         state_manager
-            .state_computer
+            .system_executor
             .execute_genesis_for_unit_tests_with_default_config();
 
         let preview_manifest = ManifestBuilder::new().lock_fee_from_faucet().build();

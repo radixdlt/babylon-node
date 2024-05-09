@@ -62,58 +62,39 @@
  * permissions under this License.
  */
 
-use crate::{LedgerStatus, RecentSelfProposalMissStatistic};
-use jni::objects::{JClass, JObject};
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
-use node_common::java::jni_sbor_coded_call;
-use prometheus::*;
+package com.radixdlt.environment;
 
-use super::node_rust_environment::JNINodeRustEnvironment;
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.protocol.ProtocolUpdateTrigger;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_prometheus_RustPrometheus_prometheusMetrics(
-    env: JNIEnv,
-    _class: JClass,
-    j_node_rust_env: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |_no_args: ()| -> String {
-        let registry = &JNINodeRustEnvironment::get(&env, j_node_rust_env).metric_registry;
-        let encoder = TextEncoder::new();
-        let mut buffer = vec![];
-        encoder.encode(&registry.gather(), &mut buffer).unwrap();
-        String::from_utf8(buffer).unwrap()
-    })
+/**
+ * A configuration of what "Engine's test Scenarios" to run automatically.
+ *
+ * <p>Note: currently, this configuration only defines the Scenarios to be run after appropriate
+ * Protocol Updates. Theoretically, it should also include the post-Genesis Scenarios. However, for
+ * legacy reasons, those are defined in the {@link com.radixdlt.genesis.GenesisData}. Extracting
+ * them out is non-trivial (because of some persistence/hardcoding inherent to Genesis handling).
+ */
+public record ScenariosExecutionConfig(
+    ImmutableList<ProtocolUpdateScenarios> afterProtocolUpdates) {
+
+  /** A default production-compatible configuration, which does not execute any Scenarios. */
+  public static final ScenariosExecutionConfig NONE =
+      new ScenariosExecutionConfig(ImmutableList.of());
+
+  /** A "full test" configuration, executing all Scenarios at appropriate Protocol Update states. */
+  public static final ScenariosExecutionConfig ALL =
+      new ScenariosExecutionConfig(
+          ImmutableList.of( // Note: no Anemone protocol scenarios existed.
+              new ProtocolUpdateScenarios(
+                  ProtocolUpdateTrigger.BOTTLENOSE,
+                  ImmutableList.of("account_locker", "maya_router", "access-controller-v2"))));
+
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        ScenariosExecutionConfig.class,
+        codecs -> StructCodec.fromRecordComponents(ScenariosExecutionConfig.class, codecs));
+  }
 }
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_prometheus_RustPrometheus_ledgerStatus(
-    env: JNIEnv,
-    _class: JClass,
-    j_node_rust_env: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |_no_args: ()| -> LedgerStatus {
-        JNINodeRustEnvironment::get_ledger_metrics(&env, j_node_rust_env).get_ledger_status()
-    })
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_prometheus_RustPrometheus_recentSelfProposalMissStatistic(
-    env: JNIEnv,
-    _class: JClass,
-    j_node_rust_env: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(
-        &env,
-        request_payload,
-        |_no_args: ()| -> RecentSelfProposalMissStatistic {
-            JNINodeRustEnvironment::get_ledger_metrics(&env, j_node_rust_env)
-                .get_recent_self_proposal_miss_statistic()
-        },
-    )
-}
-
-pub fn export_extern_functions() {}

@@ -156,7 +156,7 @@ export * from './EventEmitterIdentifier';
 export * from './EventEmitterIdentifierBase';
 export * from './EventEmitterIdentifierType';
 export * from './EventTypeIdentifier';
-export * from './ExecutedGenesisScenario';
+export * from './ExecutedScenario';
 export * from './ExecutedScenarioTransaction';
 export * from './FeeDestination';
 export * from './FeeSource';

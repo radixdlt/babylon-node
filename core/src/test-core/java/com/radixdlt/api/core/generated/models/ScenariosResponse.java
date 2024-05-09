@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.ExecutedGenesisScenario;
+import com.radixdlt.api.core.generated.models.ExecutedScenario;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -39,38 +39,38 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ScenariosResponse {
   public static final String JSON_PROPERTY_EXECUTED_SCENARIOS = "executed_scenarios";
-  private List<ExecutedGenesisScenario> executedScenarios = new ArrayList<>();
+  private List<ExecutedScenario> executedScenarios = new ArrayList<>();
 
   public ScenariosResponse() { 
   }
 
-  public ScenariosResponse executedScenarios(List<ExecutedGenesisScenario> executedScenarios) {
+  public ScenariosResponse executedScenarios(List<ExecutedScenario> executedScenarios) {
     this.executedScenarios = executedScenarios;
     return this;
   }
 
-  public ScenariosResponse addExecutedScenariosItem(ExecutedGenesisScenario executedScenariosItem) {
+  public ScenariosResponse addExecutedScenariosItem(ExecutedScenario executedScenariosItem) {
     this.executedScenarios.add(executedScenariosItem);
     return this;
   }
 
    /**
-   * Scenarios executed as part of Genesis (in their execution order).
+   * Scenarios executed as part of Genesis and Protocol Updates, in their execution order. 
    * @return executedScenarios
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "Scenarios executed as part of Genesis (in their execution order).")
+  @ApiModelProperty(required = true, value = "Scenarios executed as part of Genesis and Protocol Updates, in their execution order. ")
   @JsonProperty(JSON_PROPERTY_EXECUTED_SCENARIOS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<ExecutedGenesisScenario> getExecutedScenarios() {
+  public List<ExecutedScenario> getExecutedScenarios() {
     return executedScenarios;
   }
 
 
   @JsonProperty(JSON_PROPERTY_EXECUTED_SCENARIOS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setExecutedScenarios(List<ExecutedGenesisScenario> executedScenarios) {
+  public void setExecutedScenarios(List<ExecutedScenario> executedScenarios) {
     this.executedScenarios = executedScenarios;
   }
 

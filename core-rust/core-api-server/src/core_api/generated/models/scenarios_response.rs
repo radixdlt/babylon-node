@@ -13,13 +13,13 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct ScenariosResponse {
-    /// Scenarios executed as part of Genesis (in their execution order).
+    /// Scenarios executed as part of Genesis and Protocol Updates, in their execution order. 
     #[serde(rename = "executed_scenarios")]
-    pub executed_scenarios: Vec<crate::core_api::generated::models::ExecutedGenesisScenario>,
+    pub executed_scenarios: Vec<crate::core_api::generated::models::ExecutedScenario>,
 }
 
 impl ScenariosResponse {
-    pub fn new(executed_scenarios: Vec<crate::core_api::generated::models::ExecutedGenesisScenario>) -> ScenariosResponse {
+    pub fn new(executed_scenarios: Vec<crate::core_api::generated::models::ExecutedScenario>) -> ScenariosResponse {
         ScenariosResponse {
             executed_scenarios,
         }

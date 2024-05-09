@@ -83,9 +83,7 @@ extern "system" fn Java_com_radixdlt_db_checkpoint_RustDbCheckpoints_createCheck
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_fallible_call(&env, request_payload, |path: String| -> JavaResult<()> {
-        JNINodeRustEnvironment::get(&env, j_node_rust_env)
-            .state_manager
-            .database
+        JNINodeRustEnvironment::get_database(&env, j_node_rust_env)
             .snapshot()
             .create_checkpoint(path)
             .map_err(JavaError)
