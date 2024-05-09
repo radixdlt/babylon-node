@@ -90,14 +90,24 @@ public final class MessageCentralPeerLiveness {
     return this.messageCentral
         .messagesOf(PeerPingMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
-        .map(m -> IncomingEvent.create(m.source(), new Ping()));
+        .map(
+            m -> {
+              Ping event = new Ping();
+              return new IncomingEvent<>(
+                  Objects.requireNonNull(m.source()), Objects.requireNonNull(event));
+            });
   }
 
   public Flowable<IncomingEvent<NodeId, Pong>> pongs() {
     return this.messageCentral
         .messagesOf(PeerPongMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
-        .map(m -> IncomingEvent.create(m.source(), new Pong()));
+        .map(
+            m -> {
+              Pong event = new Pong();
+              return new IncomingEvent<>(
+                  Objects.requireNonNull(m.source()), Objects.requireNonNull(event));
+            });
   }
 
   public RemoteEventDispatcher<NodeId, Ping> pingDispatcher() {

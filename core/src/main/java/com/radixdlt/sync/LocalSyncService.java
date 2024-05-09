@@ -413,8 +413,7 @@ public final class LocalSyncService {
 
     final var requestId = requestIdCounter.incrementAndGet();
     LedgerProofSyncDto startProofExclusive = ledgerProofToSyncDto(latestProof);
-    this.syncRequestDispatcher.dispatch(
-        peer, new SyncRequest(startProofExclusive));
+    this.syncRequestDispatcher.dispatch(peer, new SyncRequest(startProofExclusive));
     this.syncRequestTimeoutDispatcher.dispatch(
         new SyncRequestTimeout(peer, requestId), this.syncRelayConfig.requestTimeout());
 

@@ -67,16 +67,6 @@ package com.radixdlt.consensus.sync;
 import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.event.RemoteEvent;
 import java.util.List;
-import java.util.Objects;
 
 /** An RPC response */
-public record GetVerticesResponse(List<VertexWithHash> vertices) implements RemoteEvent {
-  public GetVerticesResponse(List<VertexWithHash> vertices) {
-    this.vertices = Objects.requireNonNull(vertices);
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s{vertices=%s}", this.getClass().getSimpleName(), vertices);
-  }
-}
+public record GetVerticesResponse(List<VertexWithHash> vertices) implements RemoteEvent {}

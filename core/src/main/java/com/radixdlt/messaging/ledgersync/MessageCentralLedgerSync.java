@@ -91,7 +91,12 @@ public final class MessageCentralLedgerSync {
     return this.messageCentral
         .messagesOf(StatusRequestMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
-        .map(m -> IncomingEvent.create(m.source(), new StatusRequest()));
+        .map(
+            m -> {
+              StatusRequest event = new StatusRequest();
+              return new IncomingEvent<>(
+                  Objects.requireNonNull(m.source()), Objects.requireNonNull(event));
+            });
   }
 
   public Flowable<IncomingEvent<NodeId, StatusResponse>> statusResponses() {
@@ -101,7 +106,9 @@ public final class MessageCentralLedgerSync {
         .map(
             m -> {
               final var msg = m.message();
-              return IncomingEvent.create(m.source(), new StatusResponse(msg.getProof()));
+              StatusResponse event = new StatusResponse(msg.getProof());
+              return new IncomingEvent<>(
+                  Objects.requireNonNull(m.source()), Objects.requireNonNull(event));
             });
   }
 
@@ -112,8 +119,9 @@ public final class MessageCentralLedgerSync {
         .map(
             m -> {
               final var msg = m.message();
-              return IncomingEvent.create(
-                  m.source(), new SyncRequest(msg.getStartProofExclusive()));
+              SyncRequest event = new SyncRequest(msg.getStartProofExclusive());
+              return new IncomingEvent<>(
+                  Objects.requireNonNull(m.source()), Objects.requireNonNull(event));
             });
   }
 
@@ -124,8 +132,9 @@ public final class MessageCentralLedgerSync {
         .map(
             m -> {
               final var msg = m.message();
-              return IncomingEvent.create(
-                  m.source(), new SyncResponse(msg.getLedgerExtension()));
+              SyncResponse event = new SyncResponse(msg.getLedgerExtension());
+              return new IncomingEvent<>(
+                  Objects.requireNonNull(m.source()), Objects.requireNonNull(event));
             });
   }
 
@@ -136,7 +145,9 @@ public final class MessageCentralLedgerSync {
         .map(
             m -> {
               final var header = m.message().getProof();
-              return IncomingEvent.create(m.source(), LedgerStatusUpdate.create(header));
+              return new IncomingEvent<>(
+                  Objects.requireNonNull(m.source()),
+                  Objects.requireNonNull(new LedgerStatusUpdate(header)));
             });
   }
 

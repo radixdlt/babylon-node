@@ -65,22 +65,10 @@
 package com.radixdlt.environment.rx;
 
 import com.radixdlt.consensus.event.RemoteEvent;
-import java.util.Objects;
 
 /**
  * A helper class which contains remote event and the origin node.
  *
  * @param <T> the event class
  */
-public interface IncomingEvent<N, T extends RemoteEvent> extends RemoteEvent {
-  N origin();
-
-  T event();
-
-  static <N, T extends RemoteEvent> IncomingEvent<N, T> create(N origin, T event) {
-    record incomingEvent<N, T extends RemoteEvent>(N origin, T event)
-        implements IncomingEvent<N, T> {}
-
-    return new incomingEvent<>(Objects.requireNonNull(origin), Objects.requireNonNull(event));
-  }
-}
+public record IncomingEvent<N, T extends RemoteEvent>(N origin, T event) implements RemoteEvent {}

@@ -207,7 +207,7 @@ public final class PeerDiscovery implements RemoteEvent {
                 .collect(ImmutableSet.toImmutableSet());
       }
 
-      peersResponseRemoteEventDispatcher.dispatch(sender, PeersResponse.create(peersToSend));
+      peersResponseRemoteEventDispatcher.dispatch(sender, new PeersResponse(peersToSend));
     };
   }
 }

@@ -103,7 +103,9 @@ public final class MessageCentralMempool {
         .map(
             msg -> {
               List<RawNotarizedTransaction> transactions = msg.message().getTxns();
-              return IncomingEvent.create(msg.source(), new MempoolAdd(transactions));
+              MempoolAdd event = new MempoolAdd(transactions);
+              return new IncomingEvent<>(
+                  Objects.requireNonNull(msg.source()), Objects.requireNonNull(event));
             })
         .toFlowable(BackpressureStrategy.BUFFER);
   }

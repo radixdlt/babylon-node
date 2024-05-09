@@ -146,7 +146,7 @@ public class RemoteSyncServiceTest {
                     LedgerHeader.create(1L, Round.epochInitial(), 1L, LedgerHashes.zero(), 0L, 0L)),
                 new LedgerProofOrigin.Consensus(HashUtils.zero256(), List.of())));
     when(reader.getTransactions(anyLong())).thenReturn(ledgerExtension);
-	  processor.syncRequestEventProcessor().process(node, new SyncRequest(proofDto));
+    processor.syncRequestEventProcessor().process(node, new SyncRequest(proofDto));
     verify(syncResponseDispatcher, times(1)).dispatch(eq(node), any());
   }
 
@@ -158,7 +158,7 @@ public class RemoteSyncServiceTest {
     when(ledgerExtension.proof()).thenReturn(verifiedHeader);
     when(reader.getTransactions(anyLong())).thenReturn(ledgerExtension);
 
-	  processor.syncRequestEventProcessor().process(node, new SyncRequest(null));
+    processor.syncRequestEventProcessor().process(node, new SyncRequest(null));
     verify(syncResponseDispatcher, times(1)).dispatch(eq(node), any());
   }
 
@@ -170,12 +170,10 @@ public class RemoteSyncServiceTest {
     when(header.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
     when(header.getSignatures()).thenReturn(mock(TimestampedECDSASignatures.class));
     when(request.startProofExclusive()).thenReturn(header);
-	  processor
+    processor
         .syncRequestEventProcessor()
         .process(
-            NodeId.fromPublicKey(PrivateKeys.ofNumeric(1).getPublicKey()),
-			new SyncRequest(header)
-		);
+            NodeId.fromPublicKey(PrivateKeys.ofNumeric(1).getPublicKey()), new SyncRequest(header));
     verify(syncResponseDispatcher, never()).dispatch(any(NodeId.class), any());
   }
 
@@ -185,12 +183,10 @@ public class RemoteSyncServiceTest {
     when(header.getOpaque()).thenReturn(HashUtils.zero256());
     when(header.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
     when(header.getSignatures()).thenReturn(mock(TimestampedECDSASignatures.class));
-	  processor
+    processor
         .syncRequestEventProcessor()
         .process(
-            NodeId.fromPublicKey(PrivateKeys.ofNumeric(1).getPublicKey()),
-			new SyncRequest(header)
-		);
+            NodeId.fromPublicKey(PrivateKeys.ofNumeric(1).getPublicKey()), new SyncRequest(header));
     when(reader.getTransactions(anyLong())).thenReturn(null);
     verify(syncResponseDispatcher, never()).dispatch(any(NodeId.class), any());
   }

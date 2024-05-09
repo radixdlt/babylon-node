@@ -566,7 +566,7 @@ public class LocalSyncServiceTest {
 
     this.localSyncService
         .ledgerStatusUpdateEventProcessor()
-        .process(peer1, LedgerStatusUpdate.create(targetHeader));
+        .process(peer1, new LedgerStatusUpdate(targetHeader));
 
     verify(syncRequestDispatcher, times(1)).dispatch(eq(peer1), any());
   }
@@ -586,12 +586,11 @@ public class LocalSyncServiceTest {
             .withPendingRequest(peer1, 1L);
     this.setupSyncServiceWithState(syncState);
 
+    LedgerProofSyncStatusDto proof =
+        LedgerSyncDtoConversions.ledgerProofToSyncStatusDto(newTargetProof);
     this.localSyncService
         .ledgerStatusUpdateEventProcessor()
-        .process(
-            peer2,
-            LedgerStatusUpdate.create(
-                LedgerSyncDtoConversions.ledgerProofToSyncStatusDto(newTargetProof)));
+        .process(peer2, new LedgerStatusUpdate(proof));
 
     assertEquals(
         newTargetProof.ledgerHeader(),
@@ -615,7 +614,7 @@ public class LocalSyncServiceTest {
 
     this.localSyncService
         .ledgerStatusUpdateEventProcessor()
-        .process(peer2, LedgerStatusUpdate.create(newTargetHeader));
+        .process(peer2, new LedgerStatusUpdate(newTargetHeader));
 
     assertEquals(syncState, this.localSyncService.getSyncState());
   }
@@ -639,12 +638,12 @@ public class LocalSyncServiceTest {
 
     this.localSyncService
         .ledgerStatusUpdateEventProcessor()
-        .process(peer3, LedgerStatusUpdate.create(newTargetHeader));
+        .process(peer3, new LedgerStatusUpdate(newTargetHeader));
 
     // another, newer, ledger update from the same peer
     this.localSyncService
         .ledgerStatusUpdateEventProcessor()
-        .process(peer3, LedgerStatusUpdate.create(evenNewerTargetHeader));
+        .process(peer3, new LedgerStatusUpdate(evenNewerTargetHeader));
 
     assertEquals(
         peer3,

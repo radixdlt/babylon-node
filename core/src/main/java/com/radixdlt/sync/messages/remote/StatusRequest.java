@@ -65,7 +65,6 @@
 package com.radixdlt.sync.messages.remote;
 
 import com.radixdlt.consensus.event.RemoteEvent;
-import com.radixdlt.messaging.ledgersync.StatusRequestMessage;
 
 /**
  * A request to get the current status of a remote node. Node should respond with a StatusResponse
@@ -74,7 +73,7 @@ import com.radixdlt.messaging.ledgersync.StatusRequestMessage;
 public record StatusRequest() implements RemoteEvent {
   @Override
   public boolean equals(Object o) {
-    return o instanceof StatusRequestMessage;
+    return o instanceof StatusRequest;
   }
 
   @Override

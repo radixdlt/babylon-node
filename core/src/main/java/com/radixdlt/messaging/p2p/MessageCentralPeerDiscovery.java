@@ -90,14 +90,23 @@ public final class MessageCentralPeerDiscovery {
     return this.messageCentral
         .messagesOf(GetPeersMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
-        .map(m -> IncomingEvent.create(m.source(), new GetPeers()));
+        .map(
+            m -> {
+              GetPeers event = new GetPeers();
+              return new IncomingEvent<>(
+                  Objects.requireNonNull(m.source()), Objects.requireNonNull(event));
+            });
   }
 
   public Flowable<IncomingEvent<NodeId, PeersResponse>> peersResponses() {
     return this.messageCentral
         .messagesOf(PeersResponseMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
-        .map(m -> IncomingEvent.create(m.source(), PeersResponse.create(m.message().getPeers())));
+        .map(
+            m ->
+                new IncomingEvent<>(
+                    Objects.requireNonNull(m.source()),
+                    Objects.requireNonNull(new PeersResponse(m.message().getPeers()))));
   }
 
   public RemoteEventDispatcher<NodeId, GetPeers> getPeersDispatcher() {

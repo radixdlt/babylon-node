@@ -127,8 +127,8 @@ public class MessageCentralValidatorSyncTest {
     when(highQC.highestQC()).thenReturn(qc);
     when(highQC.highestCommittedQC()).thenReturn(qc);
     var nodeId = NodeId.fromPublicKey(PrivateKeys.ofNumeric(1).getPublicKey());
-	  HashCode vertexId = HashUtils.random256();
-	  final var request = new GetVerticesRequest(vertexId, 3);
+    HashCode vertexId = HashUtils.random256();
+    final var request = new GetVerticesRequest(vertexId, 3);
 
     sync.verticesErrorResponseDispatcher()
         .dispatch(nodeId, new GetVerticesErrorResponse(highQC, request));

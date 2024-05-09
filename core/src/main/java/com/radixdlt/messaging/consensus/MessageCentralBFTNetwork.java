@@ -94,7 +94,8 @@ public final class MessageCentralBFTNetwork {
             m -> {
               final var msg = m.message();
               var vote = (Vote) msg.getConsensusMessage();
-              return IncomingEvent.create(m.source(), vote);
+              return new IncomingEvent<>(
+                  Objects.requireNonNull(m.source()), Objects.requireNonNull(vote));
             });
   }
 
@@ -105,7 +106,8 @@ public final class MessageCentralBFTNetwork {
             m -> {
               final var msg = m.message();
               var proposal = (Proposal) msg.getConsensusMessage();
-              return IncomingEvent.create(m.source(), proposal);
+              return new IncomingEvent<>(
+                  Objects.requireNonNull(m.source()), Objects.requireNonNull(proposal));
             });
   }
 

@@ -150,7 +150,7 @@ public final class RemoteSyncService {
         sender);
 
     metrics.sync().remoteRequestsReceived().inc();
-	  syncResponseDispatcher.dispatch(sender, new SyncResponse(verifiable));
+    syncResponseDispatcher.dispatch(sender, new SyncResponse(verifiable));
   }
 
   private LedgerExtension getLedgerExtensionForSyncRequest(LedgerProofSyncDto startHeader) {
@@ -162,11 +162,9 @@ public final class RemoteSyncService {
   }
 
   private void processStatusRequest(NodeId sender, StatusRequest statusRequest) {
-    LedgerProofSyncStatusDto proof = LedgerSyncDtoConversions.ledgerProofToSyncStatusDto(latestProof.primaryProof());
-    statusResponseDispatcher.dispatch(
-        sender,
-        new StatusResponse(proof)
-    );
+    LedgerProofSyncStatusDto proof =
+        LedgerSyncDtoConversions.ledgerProofToSyncStatusDto(latestProof.primaryProof());
+    statusResponseDispatcher.dispatch(sender, new StatusResponse(proof));
   }
 
   public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
@@ -187,7 +185,7 @@ public final class RemoteSyncService {
       return; // not sending any updates if the node is syncing itself
     }
 
-    final var statusUpdate = LedgerStatusUpdate.create(proof);
+    final var statusUpdate = new LedgerStatusUpdate(proof);
 
     final var currentPeers = this.peersView.peers().collect(Collectors.toList());
     Collections.shuffle(currentPeers);

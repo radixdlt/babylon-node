@@ -126,10 +126,10 @@ public class MessageCentralValidatorSync {
   public Flowable<IncomingEvent<NodeId, GetVerticesRequest>> requests() {
     return this.createFlowable(
         GetVerticesRequestMessage.class,
-        (peer, msg) ->
-			IncomingEvent.create(
-				peer, new GetVerticesRequest(msg.getVertexId(), msg.getCount()))
-	);
+        (peer, msg) -> {
+          GetVerticesRequest event = new GetVerticesRequest(msg.getVertexId(), msg.getCount());
+          return new IncomingEvent<>(Objects.requireNonNull(peer), Objects.requireNonNull(event));
+        });
   }
 
   public Flowable<IncomingEvent<NodeId, GetVerticesResponse>> responses() {
@@ -142,7 +142,8 @@ public class MessageCentralValidatorSync {
                   .map(v -> v.withId(hasher))
                   .collect(ImmutableList.toImmutableList());
 
-          return IncomingEvent.create(src, new GetVerticesResponse(hashedVertices));
+          GetVerticesResponse event = new GetVerticesResponse(hashedVertices);
+          return new IncomingEvent<>(Objects.requireNonNull(src), Objects.requireNonNull(event));
         });
   }
 
@@ -150,9 +151,10 @@ public class MessageCentralValidatorSync {
     return this.createFlowable(
         GetVerticesErrorResponseMessage.class,
         (src, msg) -> {
-			final var request =
-				new GetVerticesRequest(msg.request().getVertexId(), msg.request().getCount());
-          return IncomingEvent.create(src, new GetVerticesErrorResponse(msg.highQC(), request));
+          final var request =
+              new GetVerticesRequest(msg.request().getVertexId(), msg.request().getCount());
+          GetVerticesErrorResponse event = new GetVerticesErrorResponse(msg.highQC(), request);
+          return new IncomingEvent<>(Objects.requireNonNull(src), Objects.requireNonNull(event));
         });
   }
 

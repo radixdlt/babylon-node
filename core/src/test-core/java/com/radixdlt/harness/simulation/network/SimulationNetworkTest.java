@@ -94,7 +94,7 @@ public class SimulationNetworkTest {
     TestObserver<IncomingEvent<NodeId, GetVerticesRequest>> rpcRequestListener =
         network.getNetwork(node2).remoteEvents(GetVerticesRequest.class).toObservable().test();
 
-	  network
+    network
         .getNetwork(node1)
         .remoteEventDispatcher(GetVerticesRequest.class)
         .dispatch(node2, new GetVerticesRequest(vertexId, 1));
