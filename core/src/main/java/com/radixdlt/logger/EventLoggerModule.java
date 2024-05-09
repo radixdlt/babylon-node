@@ -120,13 +120,12 @@ public final class EventLoggerModule extends AbstractModule {
         event -> {
           final var authorStr =
               switch (event) {
-                case ConsensusByzantineEvent.ConflictingGenesis
-                conflictingGenesis -> eventLoggerConfig
-                    .formatNodeAddress()
-                    .apply(conflictingGenesis.author().getPublicKey());
-                case ConsensusByzantineEvent.DoubleVote doubleVote -> eventLoggerConfig
-                    .formatBftValidatorId()
-                    .apply(doubleVote.author());
+                case ConsensusByzantineEvent.ConflictingGenesis conflictingGenesis ->
+                    eventLoggerConfig
+                        .formatNodeAddress()
+                        .apply(conflictingGenesis.author().getPublicKey());
+                case ConsensusByzantineEvent.DoubleVote doubleVote ->
+                    eventLoggerConfig.formatBftValidatorId().apply(doubleVote.author());
               };
           logger.warn("Byzantine Behavior detected: {} (author: {})", event, authorStr);
         });
@@ -196,10 +195,9 @@ public final class EventLoggerModule extends AbstractModule {
 
     self.bftValidatorId()
         .ifPresent(
-            selfValidatorId -> {
-              logSelfMissedProposals(
-                  selfValidatorId, ledgerUpdate.commitSummary(), missedProposalsLogLimiter);
-            });
+            selfValidatorId ->
+                logSelfMissedProposals(
+                    selfValidatorId, ledgerUpdate.commitSummary(), missedProposalsLogLimiter));
   }
 
   private static void logEpochChange(SelfValidatorInfo self, EpochChange epochChange) {
@@ -225,8 +223,7 @@ public final class EventLoggerModule extends AbstractModule {
           proof.primaryProof().ledgerHeader().nextProtocolVersion().or(""),
           stateVersion,
           stateVersion);
-    } else if (proof.primaryProof().origin()
-        instanceof LedgerProofOrigin.ProtocolUpdate protocolUpdateOrigin) {
+    } else if (proof.primaryProof().origin() instanceof LedgerProofOrigin.ProtocolUpdate) {
       // Protocol update init proof must be present if latest proof is of ProtocolUpdate origin.
       final var protocolUpdateInitHeader =
           proof.closestProtocolUpdateInitProofOnOrBefore().unwrap().ledgerHeader();

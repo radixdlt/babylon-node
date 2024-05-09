@@ -96,7 +96,7 @@ public final class MempoolReevaluationModule extends AbstractModule {
   private EventProducer<MempoolReevaluationTrigger> eventProducer(
       ScheduledEventDispatcher<MempoolReevaluationTrigger> dispatcher) {
     return new EventProducer<>(
-        () -> new MempoolReevaluationTrigger(), dispatcher, this.reevaluationInterval.toMillis());
+        MempoolReevaluationTrigger::new, dispatcher, this.reevaluationInterval.toMillis());
   }
 
   @ProvidesIntoSet

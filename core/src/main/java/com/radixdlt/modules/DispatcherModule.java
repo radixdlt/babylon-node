@@ -128,14 +128,10 @@ public class DispatcherModule extends AbstractModule {
                 NoVote.class, (counters, event) -> counters.bft().noVotesSent()))
         .in(Scopes.SINGLETON);
     bind(new TypeLiteral<ScheduledEventDispatcher<Epoched<ScheduledLocalTimeout>>>() {})
-        .toProvider(
-            Dispatchers.scheduledDispatcherProvider(
-                new TypeLiteral<Epoched<ScheduledLocalTimeout>>() {}))
+        .toProvider(Dispatchers.scheduledDispatcherProvider(new TypeLiteral<>() {}))
         .in(Scopes.SINGLETON);
     bind(new TypeLiteral<ScheduledEventDispatcher<Epoched<TimeoutQuorumDelayedResolution>>>() {})
-        .toProvider(
-            Dispatchers.scheduledDispatcherProvider(
-                new TypeLiteral<Epoched<TimeoutQuorumDelayedResolution>>() {}))
+        .toProvider(Dispatchers.scheduledDispatcherProvider(new TypeLiteral<>() {}))
         .in(Scopes.SINGLETON);
     bind(new TypeLiteral<ScheduledEventDispatcher<VertexRequestTimeout>>() {})
         .toProvider(Dispatchers.scheduledDispatcherProvider(VertexRequestTimeout.class))
