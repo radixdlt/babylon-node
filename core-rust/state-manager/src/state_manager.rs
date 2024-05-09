@@ -355,7 +355,7 @@ impl StateManager {
         ));
 
         // If we are booting mid-protocol-update, ensure all required transactions are committed:
-        protocol_update_executor.execute_remaining_protocol_update_actions();
+        protocol_update_executor.resume_protocol_update_if_any();
 
         // Register the periodic background task for collecting the costly raw DB metrics...
         let raw_db_metrics_collector =
@@ -414,7 +414,7 @@ impl StateManager {
         protocol_version_name: &ProtocolVersionName,
     ) -> ProtocolUpdateResult {
         self.protocol_update_executor
-            .execute_new_protocol_update(protocol_version_name);
+            .execute_protocol_update(protocol_version_name);
         self.protocol_manager
             .set_current_protocol_version(protocol_version_name);
 

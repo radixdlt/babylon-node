@@ -46,7 +46,7 @@ impl ProtocolUpdateExecutor {
 
     /// Executes any remaining parts of the currently-effective protocol update.
     /// This method is meant to be called during the boot-up, to support resuming after a restart.
-    pub fn execute_remaining_protocol_update_actions(&self) {
+    pub fn resume_protocol_update_if_any(&self) {
         match ProtocolUpdateProgress::resolve(self.database.lock().deref()) {
             ProtocolUpdateProgress::UpdateInitiatedButNothingCommitted {
                 protocol_version_name,
@@ -55,7 +55,7 @@ impl ProtocolUpdateExecutor {
                     "Starting a {} protocol update execution",
                     protocol_version_name
                 );
-                self.execute_protocol_update(&protocol_version_name, 0);
+                self.execute_protocol_update_actions(&protocol_version_name, 0);
             }
             ProtocolUpdateProgress::UpdateInProgress {
                 protocol_version_name,
@@ -66,21 +66,26 @@ impl ProtocolUpdateExecutor {
                     "Resuming a {} protocol update execution from batch idx {}",
                     protocol_version_name, next_batch_idx
                 );
-                self.execute_protocol_update(&protocol_version_name, next_batch_idx);
+                self.execute_protocol_update_actions(&protocol_version_name, next_batch_idx);
             }
             ProtocolUpdateProgress::NotUpdating => {} // No protocol update in progress
         }
     }
 
     /// Executes all transactions for the given new protocol update.
-    /// This method is meant to be called by the consensus process.
-    pub fn execute_new_protocol_update(&self, new_protocol_version: &ProtocolVersionName) {
+    /// This method is meant to be called by the consensus process, at exactly the right ledger
+    /// state to begin the protocol update.
+    pub fn execute_protocol_update(&self, new_protocol_version: &ProtocolVersionName) {
         info!("Executing {} protocol update", new_protocol_version);
-        self.execute_protocol_update(new_protocol_version, 0)
+        self.execute_protocol_update_actions(new_protocol_version, 0)
     }
 
     /// Executes the (remaining part of the) given protocol update's transactions.
-    fn execute_protocol_update(&self, protocol_version: &ProtocolVersionName, from_batch_idx: u32) {
+    fn execute_protocol_update_actions(
+        &self,
+        protocol_version: &ProtocolVersionName,
+        from_batch_idx: u32,
+    ) {
         let overrides = self.protocol_update_content_overrides.get(protocol_version);
         let protocol_update_transactions = resolve_update_definition_for_version(protocol_version)
             .unwrap_or_else(|| panic!("{}", protocol_version.as_str().to_string()))

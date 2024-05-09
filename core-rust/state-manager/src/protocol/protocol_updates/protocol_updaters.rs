@@ -17,6 +17,7 @@ pub enum ProtocolUpdateAction {
 /// overload memory if initialized all at once.
 pub trait ProtocolUpdateActionProvider {
     /// Returns an action at the given index.
+    /// Panics if the index is out of bounds (as given by the [`Self::action_count()`].
     fn provide_action(&self, index: u32) -> ProtocolUpdateAction;
 
     /// Returns the number of contained actions.
