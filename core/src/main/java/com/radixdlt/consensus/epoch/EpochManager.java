@@ -458,12 +458,12 @@ public final class EpochManager {
 
   public EventProcessor<EpochRoundUpdate> epochRoundUpdateEventProcessor() {
     return epochRoundUpdate -> {
-      if (epochRoundUpdate.getEpoch() != this.currentEpoch()) {
+      if (epochRoundUpdate.epoch() != this.currentEpoch()) {
         return;
       }
 
       log.trace("Processing RoundUpdate: {}", epochRoundUpdate);
-      bftEventProcessor.processRoundUpdate(epochRoundUpdate.getRoundUpdate());
+      bftEventProcessor.processRoundUpdate(epochRoundUpdate.roundUpdate());
     };
   }
 

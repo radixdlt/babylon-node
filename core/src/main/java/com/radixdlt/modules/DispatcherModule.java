@@ -88,7 +88,7 @@ import com.radixdlt.mempool.*;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeerEvent;
-import com.radixdlt.p2p.PendingOutboundChannelsManager.PeerOutboundConnectionTimeout;
+import com.radixdlt.p2p.PeerOutboundConnectionTimeout;
 import com.radixdlt.p2p.discovery.DiscoverPeers;
 import com.radixdlt.p2p.discovery.GetPeers;
 import com.radixdlt.p2p.discovery.PeersResponse;

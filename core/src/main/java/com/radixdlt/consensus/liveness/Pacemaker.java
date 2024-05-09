@@ -293,7 +293,7 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
                   : baseVote;
           dispatchVote(vote);
         },
-        () -> this.noVoteDispatcher.dispatch(NoVote.create(executedVertex.getVertexWithHash())));
+        () -> this.noVoteDispatcher.dispatch(new NoVote(executedVertex.getVertexWithHash())));
   }
 
   private void dispatchVote(Vote vote) {

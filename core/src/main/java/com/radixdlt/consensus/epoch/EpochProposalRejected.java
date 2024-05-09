@@ -66,49 +66,7 @@ package com.radixdlt.consensus.epoch;
 
 import com.radixdlt.consensus.bft.ProposalRejected;
 import com.radixdlt.consensus.event.LocalEvent;
-import java.util.Objects;
 
 /** A wrapper for a ProposalRejected message that also holds epoch. */
-public final class EpochProposalRejected implements LocalEvent {
-
-  private final long epoch;
-  private final ProposalRejected proposalRejected;
-
-  public EpochProposalRejected(long epoch, ProposalRejected proposalRejected) {
-    this.epoch = epoch;
-    this.proposalRejected = Objects.requireNonNull(proposalRejected);
-  }
-
-  public long epoch() {
-    return epoch;
-  }
-
-  public ProposalRejected proposalRejected() {
-    return proposalRejected;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    return o instanceof EpochProposalRejected that
-        && epoch == that.epoch
-        && Objects.equals(proposalRejected, that.proposalRejected);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(epoch, proposalRejected);
-  }
-
-  @Override
-  public String toString() {
-    return "EpochProposalRejected{"
-        + "epoch="
-        + epoch
-        + ", proposalRejected="
-        + proposalRejected
-        + '}';
-  }
-}
+public record EpochProposalRejected(long epoch, ProposalRejected proposalRejected)
+    implements LocalEvent {}

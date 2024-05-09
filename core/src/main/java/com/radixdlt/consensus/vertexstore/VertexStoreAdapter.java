@@ -153,7 +153,7 @@ public final class VertexStoreAdapter {
     //    (that's why this if statement is needed)
     // - no other component needs this event if we're also committing
     if (inserted.committedUpdate().isEmpty()) {
-      this.highQCUpdateDispatcher.dispatch(BFTHighQCUpdate.create(inserted.vertexStoreState()));
+      this.highQCUpdateDispatcher.dispatch(new BFTHighQCUpdate(inserted.vertexStoreState()));
     }
 
     inserted

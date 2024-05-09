@@ -64,7 +64,8 @@
 
 package com.radixdlt.p2p;
 
-import com.radixdlt.consensus.event.LocalEvent;
+import static java.util.Optional.ofNullable;
+
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
@@ -76,7 +77,6 @@ import com.radixdlt.p2p.transport.PeerOutboundBootstrap;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Inject;
@@ -106,7 +106,7 @@ public final class PendingOutboundChannelsManager {
     final CompletableFuture<PeerChannel> newChannelFuture = new CompletableFuture<>();
 
     var existingChannelFutureOpt =
-        Optional.ofNullable(this.pendingChannels.putIfAbsent(remoteNodeId, newChannelFuture));
+        ofNullable(this.pendingChannels.putIfAbsent(remoteNodeId, newChannelFuture));
 
     // There was no existing channel future that has already been initialized for this node ID
     //   so we init a new outbound connection
@@ -131,19 +131,19 @@ public final class PendingOutboundChannelsManager {
 
   private void handlePeerConnected(PeerConnected peerConnected) {
     final var channel = peerConnected.channel();
-    final Optional<CompletableFuture<PeerChannel>> channelFutureOpt;
-    channelFutureOpt = Optional.ofNullable(this.pendingChannels.remove(channel.getRemoteNodeId()));
-    channelFutureOpt.ifPresent(channelFuture -> channelFuture.complete(channel));
+
+    ofNullable(this.pendingChannels.remove(channel.getRemoteNodeId()))
+        .ifPresent(channelFuture -> channelFuture.complete(channel));
   }
 
   private void handlePeerHandshakeFailed(PeerHandshakeFailed peerHandshakeFailed) {
-    final Optional<CompletableFuture<PeerChannel>> channelFutureOpt;
-    channelFutureOpt =
+    final var channelFutureOpt =
         peerHandshakeFailed
             .channel()
             .getUri()
             .map(RadixNodeUri::getNodeId)
-            .flatMap(nodeId -> Optional.ofNullable(this.pendingChannels.remove(nodeId)));
+            .flatMap(nodeId -> ofNullable(this.pendingChannels.remove(nodeId)));
+
     channelFutureOpt.ifPresent(
         channelFuture ->
             channelFuture.completeExceptionally(new IOException("Peer connection failed")));
@@ -151,17 +151,12 @@ public final class PendingOutboundChannelsManager {
 
   public EventProcessor<PeerOutboundConnectionTimeout>
       peerOutboundConnectionTimeoutEventProcessor() {
-    return timeout -> {
-      final Optional<CompletableFuture<PeerChannel>> channelFutureOpt;
-      channelFutureOpt =
-          Optional.ofNullable(this.pendingChannels.remove(timeout.uri().getNodeId()));
-      channelFutureOpt.ifPresent(
-          channelFuture -> {
-            channelFuture.completeExceptionally(new IOException("Peer connection timeout"));
-            peerEventDispatcher.dispatch(new PeerConnectionTimeout(timeout.uri()));
-          });
-    };
+    return timeout ->
+        ofNullable(this.pendingChannels.remove(timeout.uri().getNodeId()))
+            .ifPresent(
+                channelFuture -> {
+                  channelFuture.completeExceptionally(new IOException("Peer connection timeout"));
+                  peerEventDispatcher.dispatch(new PeerConnectionTimeout(timeout.uri()));
+                });
   }
-
-  public record PeerOutboundConnectionTimeout(RadixNodeUri uri) implements LocalEvent {}
 }

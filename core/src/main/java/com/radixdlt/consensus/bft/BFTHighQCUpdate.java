@@ -67,42 +67,10 @@ package com.radixdlt.consensus.bft;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.event.LocalEvent;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
-import java.util.Objects;
 
 /** An event emitted when the high qc has been updated */
-public final class BFTHighQCUpdate implements LocalEvent {
-  private final VertexStoreState vertexStoreState;
-
-  private BFTHighQCUpdate(VertexStoreState vertexStoreState) {
-    this.vertexStoreState = vertexStoreState;
-  }
-
-  public static BFTHighQCUpdate create(VertexStoreState vertexStoreState) {
-    return new BFTHighQCUpdate(vertexStoreState);
-  }
-
+public record BFTHighQCUpdate(VertexStoreState vertexStoreState) implements LocalEvent {
   public HighQC getHighQC() {
     return vertexStoreState.getHighQC();
-  }
-
-  public VertexStoreState getVertexStoreState() {
-    return vertexStoreState;
-  }
-
-  @Override
-  public String toString() {
-    return String.format(
-        "%s{highQC=%s}", this.getClass().getSimpleName(), vertexStoreState.getHighQC());
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(vertexStoreState);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    return o instanceof BFTHighQCUpdate other
-        && Objects.equals(other.vertexStoreState, this.vertexStoreState);
   }
 }

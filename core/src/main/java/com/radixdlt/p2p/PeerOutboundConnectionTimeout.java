@@ -62,13 +62,8 @@
  * permissions under this License.
  */
 
-package com.radixdlt.targeted.mempool;
+package com.radixdlt.p2p;
 
-/** Scheduled event for filling the mempool */
-public enum ScheduledMempoolFill {
-  INSTANCE;
+import com.radixdlt.consensus.event.LocalEvent;
 
-  public static ScheduledMempoolFill create() {
-    return INSTANCE;
-  }
-}
+public record PeerOutboundConnectionTimeout(RadixNodeUri uri) implements LocalEvent {}

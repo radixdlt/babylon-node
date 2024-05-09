@@ -66,49 +66,10 @@ package com.radixdlt.consensus.epoch;
 
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.event.LocalEvent;
-import java.util.Objects;
 
 /** A wrapper for a RoundUpdate message that also holds epoch. */
-public final class EpochRoundUpdate implements LocalEvent {
-
-  private final long epoch;
-  private final RoundUpdate roundUpdate;
-
-  public EpochRoundUpdate(long epoch, RoundUpdate roundUpdate) {
-    this.epoch = epoch;
-    this.roundUpdate = Objects.requireNonNull(roundUpdate);
-  }
-
+public record EpochRoundUpdate(long epoch, RoundUpdate roundUpdate) implements LocalEvent {
   public EpochRound getEpochRound() {
     return new EpochRound(epoch, roundUpdate.currentRound());
-  }
-
-  public long getEpoch() {
-    return epoch;
-  }
-
-  public RoundUpdate getRoundUpdate() {
-    return roundUpdate;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    return o instanceof EpochRoundUpdate that
-        && epoch == that.epoch
-        && Objects.equals(roundUpdate, that.roundUpdate);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(epoch, roundUpdate);
-  }
-
-  @Override
-  public String toString() {
-    return String.format(
-        "%s{epoch=%s round=%s}", this.getClass().getSimpleName(), epoch, roundUpdate);
   }
 }
