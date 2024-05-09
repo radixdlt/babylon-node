@@ -250,19 +250,17 @@ impl SystemExecutor {
                 self.committer.commit_system(commit_request);
             }
             ProtocolUpdateAction::Scenario(scenario) => {
-                // Note: here we re-use the batch_idx as a nonce, since we need a growing number
-                // that survives Node restarts. It is not going to be the same as the manual nonce
-                // used for Genesis Scenarios:
-                // - it is not guaranteed to start with 0 (in practice, it will be 1);
-                // - it will be incremented only by 1 for each consecutive Scenario (while during
-                //   Genesis Scenarios, the next Scenario gets a nonce incremented by the number of
-                //   transactions of the previous Scenario).
-                // TODO(resolve during review): is the above ok?
-                let protocol_update_specific_nonce = batch_idx;
+                // Note: here we use the top-of-ledger's state version as a starting nonce for the
+                // Scenario's transactions. This behavior is different than the Engine's default
+                // Scenario executor's (which increments the last nonce used by the previous
+                // Scenario). Unfortunately, we do not track these nonces in our database (at least
+                // not for easy retrieval), but the ever-incrementing state version is good enough
+                // for transaction deduplication purposes.
+                let starting_nonce = latest_header.state_version.number() as u32;
                 self.execute_scenario(
                     &mut system_commit_request_factory,
                     scenario.as_str(),
-                    protocol_update_specific_nonce,
+                    starting_nonce,
                 );
             }
         }
@@ -299,10 +297,13 @@ impl SystemExecutor {
         &self,
         system_commit_request_factory: &mut SystemCommitRequestFactory,
         scenario_name: &str,
-        nonce: u32,
+        starting_nonce: u32,
     ) -> u32 {
-        let scenario =
-            self.find_scenario(system_commit_request_factory.epoch, nonce, scenario_name);
+        let scenario = self.find_scenario(
+            system_commit_request_factory.epoch,
+            starting_nonce,
+            scenario_name,
+        );
         info!("Running scenario: {}", scenario_name);
         let (
             prepare_result,
@@ -354,13 +355,17 @@ impl SystemExecutor {
     fn find_scenario(
         &self,
         epoch: Epoch,
-        next_nonce: u32,
+        starting_nonce: u32,
         scenario_name: &str,
     ) -> Box<dyn ScenarioInstance> {
         ALL_SCENARIOS
             .get(scenario_name)
             .expect(scenario_name)
-            .create(ScenarioCore::new(self.network.clone(), epoch, next_nonce))
+            .create(ScenarioCore::new(
+                self.network.clone(),
+                epoch,
+                starting_nonce,
+            ))
     }
 
     fn create_executed_scenario_entry(
