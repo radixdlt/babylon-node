@@ -64,6 +64,8 @@
 
 package com.radixdlt.messaging.p2p;
 
+import static java.util.Objects.requireNonNull;
+
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.IncomingEvent;
 import com.radixdlt.messaging.core.MessageCentral;
@@ -72,7 +74,6 @@ import com.radixdlt.p2p.discovery.GetPeers;
 import com.radixdlt.p2p.discovery.PeersResponse;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
-import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -83,19 +84,14 @@ public final class MessageCentralPeerDiscovery {
 
   @Inject
   public MessageCentralPeerDiscovery(MessageCentral messageCentral) {
-    this.messageCentral = Objects.requireNonNull(messageCentral);
+    this.messageCentral = requireNonNull(messageCentral);
   }
 
   public Flowable<IncomingEvent<NodeId, GetPeers>> getPeersEvents() {
     return this.messageCentral
         .messagesOf(GetPeersMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
-        .map(
-            m -> {
-              GetPeers event = new GetPeers();
-              return new IncomingEvent<>(
-                  Objects.requireNonNull(m.source()), Objects.requireNonNull(event));
-            });
+        .map(m -> new IncomingEvent<>(requireNonNull(m.source()), new GetPeers()));
   }
 
   public Flowable<IncomingEvent<NodeId, PeersResponse>> peersResponses() {
@@ -105,8 +101,7 @@ public final class MessageCentralPeerDiscovery {
         .map(
             m ->
                 new IncomingEvent<>(
-                    Objects.requireNonNull(m.source()),
-                    Objects.requireNonNull(new PeersResponse(m.message().getPeers()))));
+                    requireNonNull(m.source()), new PeersResponse(m.message().getPeers())));
   }
 
   public RemoteEventDispatcher<NodeId, GetPeers> getPeersDispatcher() {
@@ -114,8 +109,7 @@ public final class MessageCentralPeerDiscovery {
   }
 
   private void sendGetPeers(NodeId nodeId, GetPeers getPeers) {
-    final var msg = new GetPeersMessage();
-    this.messageCentral.send(nodeId, msg);
+    this.messageCentral.send(nodeId, new GetPeersMessage());
   }
 
   public RemoteEventDispatcher<NodeId, PeersResponse> peersResponseDispatcher() {
@@ -123,7 +117,6 @@ public final class MessageCentralPeerDiscovery {
   }
 
   private void sendPeersResponse(NodeId nodeId, PeersResponse peersResponse) {
-    final var msg = new PeersResponseMessage(peersResponse.peers());
-    this.messageCentral.send(nodeId, msg);
+    this.messageCentral.send(nodeId, new PeersResponseMessage(peersResponse.peers()));
   }
 }

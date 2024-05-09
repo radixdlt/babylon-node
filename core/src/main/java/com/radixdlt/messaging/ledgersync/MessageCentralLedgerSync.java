@@ -64,6 +64,8 @@
 
 package com.radixdlt.messaging.ledgersync;
 
+import static java.util.Objects.requireNonNull;
+
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.IncomingEvent;
 import com.radixdlt.messaging.core.MessageCentral;
@@ -75,7 +77,6 @@ import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
-import java.util.Objects;
 import javax.inject.Inject;
 
 /** Network interface for syncing committed state using the MessageCentral */
@@ -84,7 +85,7 @@ public final class MessageCentralLedgerSync {
 
   @Inject
   public MessageCentralLedgerSync(MessageCentral messageCentral) {
-    this.messageCentral = Objects.requireNonNull(messageCentral);
+    this.messageCentral = requireNonNull(messageCentral);
   }
 
   public Flowable<IncomingEvent<NodeId, StatusRequest>> statusRequests() {
@@ -94,8 +95,7 @@ public final class MessageCentralLedgerSync {
         .map(
             m -> {
               StatusRequest event = new StatusRequest();
-              return new IncomingEvent<>(
-                  Objects.requireNonNull(m.source()), Objects.requireNonNull(event));
+              return new IncomingEvent<>(requireNonNull(m.source()), requireNonNull(event));
             });
   }
 
@@ -107,8 +107,7 @@ public final class MessageCentralLedgerSync {
             m -> {
               final var msg = m.message();
               StatusResponse event = new StatusResponse(msg.getProof());
-              return new IncomingEvent<>(
-                  Objects.requireNonNull(m.source()), Objects.requireNonNull(event));
+              return new IncomingEvent<>(requireNonNull(m.source()), requireNonNull(event));
             });
   }
 
@@ -120,8 +119,7 @@ public final class MessageCentralLedgerSync {
             m -> {
               final var msg = m.message();
               SyncRequest event = new SyncRequest(msg.getStartProofExclusive());
-              return new IncomingEvent<>(
-                  Objects.requireNonNull(m.source()), Objects.requireNonNull(event));
+              return new IncomingEvent<>(requireNonNull(m.source()), requireNonNull(event));
             });
   }
 
@@ -133,8 +131,7 @@ public final class MessageCentralLedgerSync {
             m -> {
               final var msg = m.message();
               SyncResponse event = new SyncResponse(msg.getLedgerExtension());
-              return new IncomingEvent<>(
-                  Objects.requireNonNull(m.source()), Objects.requireNonNull(event));
+              return new IncomingEvent<>(requireNonNull(m.source()), requireNonNull(event));
             });
   }
 
@@ -146,8 +143,7 @@ public final class MessageCentralLedgerSync {
             m -> {
               final var header = m.message().getProof();
               return new IncomingEvent<>(
-                  Objects.requireNonNull(m.source()),
-                  Objects.requireNonNull(new LedgerStatusUpdate(header)));
+                  requireNonNull(m.source()), new LedgerStatusUpdate(header));
             });
   }
 

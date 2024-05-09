@@ -64,6 +64,8 @@
 
 package com.radixdlt.harness.simulation.network;
 
+import static java.util.Objects.requireNonNull;
+
 import com.google.inject.Inject;
 import com.radixdlt.consensus.event.RemoteEvent;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -77,7 +79,6 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -100,7 +101,7 @@ public class SimulationNetwork {
         throw new IllegalArgumentException("Message in transit should not be RemoteEvent");
       }
 
-      this.content = Objects.requireNonNull(content);
+      this.content = requireNonNull(content);
       this.sender = sender;
       this.receiver = receiver;
       this.delay = delay;
@@ -123,8 +124,7 @@ public class SimulationNetwork {
         Class<T> eventClass) {
       if (!sender.equals(receiver) && eventClass.isInstance(content)) {
         return Maybe.just(
-            new IncomingEvent<NodeId, T>(
-                Objects.requireNonNull(sender), Objects.requireNonNull(eventClass.cast(content))));
+            new IncomingEvent<>(requireNonNull(sender), requireNonNull(eventClass.cast(content))));
       }
 
       return Maybe.empty();
@@ -180,7 +180,7 @@ public class SimulationNetwork {
 
   @Inject
   public SimulationNetwork(ChannelCommunication channelCommunication) {
-    this.channelCommunication = Objects.requireNonNull(channelCommunication);
+    this.channelCommunication = requireNonNull(channelCommunication);
     this.receivedMessages =
         ReplaySubject.<MessageInTransit>createWithSize(1024) // To catch startup timing issues
             .toSerialized();
