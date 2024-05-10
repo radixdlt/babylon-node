@@ -70,8 +70,6 @@ import com.radixdlt.protocol.ProtocolUpdateTrigger;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 
-import java.util.List;
-
 /**
  * A configuration of what "Engine's test Scenarios" to run automatically.
  *
