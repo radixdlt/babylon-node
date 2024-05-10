@@ -52,31 +52,4 @@ impl ProtocolUpdateProgress {
             },
         }
     }
-
-    /// Returns the new instance scoped at the given protocol version.
-    /// This means that any other version's Protocol Update will be considered "not updating".
-    pub fn scoped_on(self, specific_protocol_version: &ProtocolVersionName) -> Self {
-        match &self {
-            ProtocolUpdateProgress::UpdateInitiatedButNothingCommitted {
-                protocol_version_name,
-            }
-            | ProtocolUpdateProgress::UpdateInProgress {
-                protocol_version_name,
-                ..
-            } if protocol_version_name == specific_protocol_version => self,
-            _ => ProtocolUpdateProgress::NotUpdating,
-        }
-    }
-
-    /// Returns an index of the next batch to be executed for an active Protocol Update (or [`None`]
-    /// if not updating).
-    pub fn next_batch_idx(&self) -> Option<u32> {
-        match self {
-            ProtocolUpdateProgress::UpdateInitiatedButNothingCommitted { .. } => Some(0),
-            ProtocolUpdateProgress::UpdateInProgress { last_batch_idx, .. } => {
-                Some(last_batch_idx.checked_add(1).unwrap())
-            }
-            ProtocolUpdateProgress::NotUpdating => None,
-        }
-    }
 }

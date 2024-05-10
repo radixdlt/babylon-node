@@ -18,40 +18,40 @@ use node_common::locks::DbLock;
 use std::ops::Deref;
 use std::sync::Arc;
 
-/// A [`ProtocolUpdateActionProvider`] implementation for the actual Engine's protocol updates.
-pub struct EngineProtocolUpdateActionProvider<G> {
+/// A [`ProtocolUpdateNodeBatchGenerator`] implementation for the actual Engine's protocol updates.
+pub struct EngineBatchGenerator<G> {
     database: Arc<DbLock<ActualStateManagerDatabase>>,
     engine_batch_generator: G,
 }
 
-/// Creates an [`EngineProtocolUpdateActionProvider`] for the given [`UpdateSettings`], with all
+/// Creates an [`EngineBatchGenerator`] for the given [`UpdateSettings`], with all
 /// the features that Engine wants enabled by default.
 pub fn engine_default_for_network<U: UpdateSettings>(
     network: &NetworkDefinition,
     database: Arc<DbLock<ActualStateManagerDatabase>>,
-) -> EngineProtocolUpdateActionProvider<U::BatchGenerator> {
-    EngineProtocolUpdateActionProvider {
+) -> EngineBatchGenerator<U::BatchGenerator> {
+    EngineBatchGenerator {
         database,
         engine_batch_generator: U::all_enabled_as_default_for_network(network)
             .create_batch_generator(),
     }
 }
 
-impl<G: ProtocolUpdateBatchGenerator> ProtocolUpdateActionProvider
-    for EngineProtocolUpdateActionProvider<G>
-{
-    fn provide_action(&self, index: u32) -> Option<ProtocolUpdateAction> {
-        self.engine_batch_generator
-            .generate_batch(self.database.lock().deref(), index)
-            .map(|batch| {
-                ProtocolUpdateAction::FlashTransactions(
-                    batch
-                        .transactions
-                        .into_iter()
-                        .map(FlashTransactionV1::from)
-                        .collect(),
-                )
-            })
+impl<G: ProtocolUpdateBatchGenerator> ProtocolUpdateNodeBatchGenerator for EngineBatchGenerator<G> {
+    fn generate_batch(&self, batch_idx: u32) -> ProtocolUpdateNodeBatch {
+        let ProtocolUpdateBatch { transactions } = self
+            .engine_batch_generator
+            .generate_batch(self.database.lock().deref(), batch_idx);
+        ProtocolUpdateNodeBatch::FlashTransactions(
+            transactions
+                .into_iter()
+                .map(FlashTransactionV1::from)
+                .collect(),
+        )
+    }
+
+    fn batch_count(&self) -> u32 {
+        self.engine_batch_generator.batch_count()
     }
 }
 

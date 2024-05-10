@@ -64,6 +64,7 @@
 
 package com.radixdlt.api.core;
 
+import static com.radixdlt.harness.predicates.NodesPredicate.allAtOrOverEpoch;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.api.CoreApiHelper;
@@ -71,7 +72,7 @@ import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.DatabaseConfig;
-import com.radixdlt.genesis.GenesisData;
+import com.radixdlt.harness.deterministic.TestProtocolConfig;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.lang.Option;
 import com.radixdlt.rev2.*;
@@ -152,8 +153,15 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
   public void test_resultant_account_balances() throws Exception {
     // We run all scenarios for the case when RE decides to change invariants (i.e. no vault
     // substate is deleted).
-    try (var test = buildRunningServerTestWithScenarios(GenesisData.ALL_SCENARIOS)) {
+    final var protocolConfig =
+        new TestProtocolConfig()
+            .withAllProtocolUpdatesAtEarlyEpochs()
+            .withAllScenariosForConfiguredProtocolUpdates();
+    try (var test = buildRunningServerTestWithProtocolConfig(30, protocolConfig)) {
       test.suppressUnusedWarning();
+
+      // Wait for all protocol updates:
+      test.runUntilState(allAtOrOverEpoch(protocolConfig.lastProtocolUpdateEnactmentEpoch()));
 
       var account1KeyPair = ECKeyPair.generateNew();
       var account1Address = Address.virtualAccountAddress(account1KeyPair.getPublicKey());

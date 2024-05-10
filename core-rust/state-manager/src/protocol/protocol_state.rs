@@ -44,36 +44,67 @@ impl ProtocolUpdateExecutor {
         }
     }
 
-    /// Executes the (remaining part of the) given protocol update's transactions.
-    pub fn execute_protocol_update(&self, new_protocol_version: &ProtocolVersionName) {
-        let overrides = self
-            .protocol_update_content_overrides
-            .get(new_protocol_version);
-        let action_provider = resolve_update_definition_for_version(new_protocol_version)
-            .unwrap_or_else(|| panic!("{}", new_protocol_version.as_str().to_string()))
-            .create_action_provider_raw(&self.network, self.database.clone(), overrides);
-
-        let _scenarios_to_execute = self
-            .scenarios_execution_config
-            .to_run_after_protocol_update(new_protocol_version);
-        // TODO(post-protocol update scenarios): wrap `action_provider` with a decorator which appends these Scenarios at the end
-
-        while let Some(batch_idx) = self.resolve_next_batch_idx_within(new_protocol_version) {
-            let Some(action) = action_provider.provide_action(batch_idx) else {
-                break;
-            };
-            self.system_executor.execute_protocol_update_action(
-                new_protocol_version,
-                batch_idx,
-                action,
-            );
+    /// Executes any remaining parts of the currently-effective protocol update.
+    /// This method is meant to be called during the boot-up, to support resuming after a restart.
+    pub fn resume_protocol_update_if_any(&self) {
+        match ProtocolUpdateProgress::resolve(self.database.lock().deref()) {
+            ProtocolUpdateProgress::UpdateInitiatedButNothingCommitted {
+                protocol_version_name,
+            } => {
+                info!(
+                    "Starting a {} protocol update execution",
+                    protocol_version_name
+                );
+                self.execute_protocol_update_actions(&protocol_version_name, 0);
+            }
+            ProtocolUpdateProgress::UpdateInProgress {
+                protocol_version_name,
+                last_batch_idx,
+            } => {
+                let next_batch_idx = last_batch_idx.checked_add(1).unwrap();
+                info!(
+                    "Resuming a {} protocol update execution from batch idx {}",
+                    protocol_version_name, next_batch_idx
+                );
+                self.execute_protocol_update_actions(&protocol_version_name, next_batch_idx);
+            }
+            ProtocolUpdateProgress::NotUpdating => {} // No protocol update in progress
         }
     }
 
-    fn resolve_next_batch_idx_within(&self, protocol_version: &ProtocolVersionName) -> Option<u32> {
-        ProtocolUpdateProgress::resolve(self.database.lock().deref())
-            .scoped_on(protocol_version)
-            .next_batch_idx()
+    /// Executes all transactions for the given new protocol update.
+    /// This method is meant to be called by the consensus process, at exactly the right ledger
+    /// state to begin the protocol update.
+    pub fn execute_protocol_update(&self, new_protocol_version: &ProtocolVersionName) {
+        info!("Executing {} protocol update", new_protocol_version);
+        self.execute_protocol_update_actions(new_protocol_version, 0)
+    }
+
+    /// Executes the (remaining part of the) given protocol update's transactions.
+    fn execute_protocol_update_actions(
+        &self,
+        protocol_version: &ProtocolVersionName,
+        from_batch_idx: u32,
+    ) {
+        let overrides = self.protocol_update_content_overrides.get(protocol_version);
+        let protocol_update_transactions = resolve_update_definition_for_version(protocol_version)
+            .unwrap_or_else(|| panic!("{}", protocol_version.as_str().to_string()))
+            .create_batch_generator_raw(&self.network, self.database.clone(), overrides);
+
+        let transactions_and_scenarios = WithScenariosNodeBatchGenerator {
+            base_batch_generator: protocol_update_transactions.deref(),
+            scenario_names: self
+                .scenarios_execution_config
+                .to_run_after_protocol_update(protocol_version),
+        };
+
+        for batch_idx in from_batch_idx..transactions_and_scenarios.batch_count() {
+            self.system_executor.execute_protocol_update_action(
+                protocol_version,
+                batch_idx,
+                transactions_and_scenarios.generate_batch(batch_idx),
+            );
+        }
     }
 }
 

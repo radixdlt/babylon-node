@@ -77,6 +77,10 @@ import com.radixdlt.api.core.generated.api.TransactionApi;
 import com.radixdlt.api.core.generated.client.ApiException;
 import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.api.core.generated.models.TransactionStatus;
+import com.radixdlt.environment.DatabaseConfig;
+import com.radixdlt.environment.LedgerProofsGcConfig;
+import com.radixdlt.environment.ScenariosExecutionConfig;
+import com.radixdlt.environment.StateTreeGcConfig;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
@@ -90,6 +94,7 @@ import com.radixdlt.protocol.ProtocolUpdateTrigger;
 import com.radixdlt.rev2.*;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.sync.TransactionsAndProofReader;
+import com.radixdlt.transaction.LedgerSyncLimitsConfig;
 import java.util.Arrays;
 import org.junit.Rule;
 import org.junit.Test;
@@ -123,14 +128,21 @@ public final class BottlenoseProtocolUpdateTest {
                 FunctionalRadixNodeModule.SafetyRecoveryConfig.BERKELEY_DB,
                 FunctionalRadixNodeModule.ConsensusConfig.of(1000),
                 FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
-                    StateComputerConfig.rev2(
+                    new StateComputerConfig.REv2StateComputerConfig(
                         Network.INTEGRATIONTESTNET.getId(),
                         GenesisBuilder.createTestGenesisWithNumValidators(
                             1,
                             Decimal.ONE,
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(5)),
+                        new DatabaseConfig(true, false, false, false),
                         StateComputerConfig.REV2ProposerConfig.Mempool.singleTransaction(),
-                        PROTOCOL_CONFIG))));
+                        false,
+                        StateTreeGcConfig.forTesting(),
+                        LedgerProofsGcConfig.forTesting(),
+                        LedgerSyncLimitsConfig.defaults(),
+                        PROTOCOL_CONFIG,
+                        false,
+                        ScenariosExecutionConfig.ALL))));
   }
 
   @Test

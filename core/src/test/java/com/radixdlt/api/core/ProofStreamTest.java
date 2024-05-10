@@ -67,10 +67,9 @@ package com.radixdlt.api.core;
 import static com.radixdlt.harness.predicates.NodesPredicate.allAtOrOverEpoch;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.google.common.collect.ImmutableList;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.*;
-import com.radixdlt.protocol.ProtocolConfig;
+import com.radixdlt.harness.deterministic.TestProtocolConfig;
 import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition;
 import com.radixdlt.protocol.ProtocolUpdateTrigger;
 import org.junit.Test;
@@ -79,11 +78,11 @@ public class ProofStreamTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_proof_stream() throws Exception {
     final var protocolConfig =
-        new ProtocolConfig(
-            ImmutableList.of(
-                new ProtocolUpdateTrigger(
+        new TestProtocolConfig()
+            .with(
+                TestProtocolConfig.updateTo(
                     ProtocolUpdateTrigger.ANEMONE,
-                    ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(3L))));
+                    ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(3L)));
 
     try (var test = buildRunningServerTestWithProtocolConfig(10, protocolConfig)) {
       test.runUntilState(allAtOrOverEpoch(5L));

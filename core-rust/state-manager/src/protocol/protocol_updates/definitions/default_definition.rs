@@ -9,20 +9,24 @@ pub struct NoOpProtocolDefinition;
 impl ProtocolUpdateDefinition for NoOpProtocolDefinition {
     type Overrides = ();
 
-    fn create_action_provider(
+    fn create_batch_generator(
         &self,
         _network: &NetworkDefinition,
         _database: Arc<DbLock<ActualStateManagerDatabase>>,
         _overrides: Option<Self::Overrides>,
-    ) -> Box<dyn ProtocolUpdateActionProvider> {
-        Box::new(EmptyActionProvider)
+    ) -> Box<dyn ProtocolUpdateNodeBatchGenerator> {
+        Box::new(EmptyNodeBatchGenerator)
     }
 }
 
-pub struct EmptyActionProvider;
+struct EmptyNodeBatchGenerator;
 
-impl ProtocolUpdateActionProvider for EmptyActionProvider {
-    fn provide_action(&self, _index: u32) -> Option<ProtocolUpdateAction> {
-        None
+impl ProtocolUpdateNodeBatchGenerator for EmptyNodeBatchGenerator {
+    fn generate_batch(&self, _batch_idx: u32) -> ProtocolUpdateNodeBatch {
+        panic!("no batches")
+    }
+
+    fn batch_count(&self) -> u32 {
+        0
     }
 }

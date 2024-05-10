@@ -31,14 +31,14 @@ impl TestProtocolUpdateDefinition {
 impl ProtocolUpdateDefinition for TestProtocolUpdateDefinition {
     type Overrides = ();
 
-    fn create_action_provider(
+    fn create_batch_generator(
         &self,
         _network: &NetworkDefinition,
         _database: Arc<DbLock<ActualStateManagerDatabase>>,
         _overrides: Option<Self::Overrides>,
-    ) -> Box<dyn ProtocolUpdateActionProvider> {
-        Box::new(ArbitraryActionProvider {
-            batches: vec![ProtocolUpdateAction::FlashTransactions(vec![
+    ) -> Box<dyn ProtocolUpdateNodeBatchGenerator> {
+        Box::new(ArbitraryNodeBatchGenerator {
+            batches: vec![ProtocolUpdateNodeBatch::FlashTransactions(vec![
                 FlashTransactionV1 {
                     name: format!("{}-txn", self.protocol_name),
                     state_updates: StateUpdates::default(),

@@ -20,26 +20,30 @@ impl CustomProtocolUpdateDefinition {
 }
 
 impl ProtocolUpdateDefinition for CustomProtocolUpdateDefinition {
-    type Overrides = Vec<ProtocolUpdateAction>;
+    type Overrides = Vec<ProtocolUpdateNodeBatch>;
 
-    fn create_action_provider(
+    fn create_batch_generator(
         &self,
         _network: &NetworkDefinition,
         _database: Arc<DbLock<ActualStateManagerDatabase>>,
         overrides: Option<Self::Overrides>,
-    ) -> Box<dyn ProtocolUpdateActionProvider> {
-        Box::new(ArbitraryActionProvider {
+    ) -> Box<dyn ProtocolUpdateNodeBatchGenerator> {
+        Box::new(ArbitraryNodeBatchGenerator {
             batches: overrides.unwrap_or_default(),
         })
     }
 }
 
-pub struct ArbitraryActionProvider {
-    pub batches: Vec<ProtocolUpdateAction>,
+pub struct ArbitraryNodeBatchGenerator {
+    pub batches: Vec<ProtocolUpdateNodeBatch>,
 }
 
-impl ProtocolUpdateActionProvider for ArbitraryActionProvider {
-    fn provide_action(&self, index: u32) -> Option<ProtocolUpdateAction> {
-        self.batches.get(index as usize).cloned()
+impl ProtocolUpdateNodeBatchGenerator for ArbitraryNodeBatchGenerator {
+    fn generate_batch(&self, batch_idx: u32) -> ProtocolUpdateNodeBatch {
+        self.batches.get(batch_idx as usize).unwrap().clone()
+    }
+
+    fn batch_count(&self) -> u32 {
+        u32::try_from(self.batches.len()).unwrap()
     }
 }
