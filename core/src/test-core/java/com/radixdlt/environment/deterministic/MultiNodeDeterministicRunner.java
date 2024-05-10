@@ -68,20 +68,14 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.event.LocalEvent;
-import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
 
 public final class MultiNodeDeterministicRunner {
-  private static final Logger logger = LogManager.getLogger();
-
   private final List<Supplier<Injector>> nodeCreators;
   private final DeterministicNetwork network;
   private final List<Injector> nodes = new ArrayList<>();
@@ -99,14 +93,6 @@ public final class MultiNodeDeterministicRunner {
 
   public int getSize() {
     return nodes.size();
-  }
-
-  public Injector getNode(int index) {
-    return nodes.get(index);
-  }
-
-  public <T extends LocalEvent> void dispatchToAll(Key<EventDispatcher<T>> dispatcherKey, T t) {
-    this.nodes.forEach(n -> n.getInstance(dispatcherKey).dispatch(t));
   }
 
   public void start() {
@@ -129,29 +115,6 @@ public final class MultiNodeDeterministicRunner {
       injector.getInstance(DeterministicProcessor.class).start();
     } finally {
       ThreadContext.remove("self");
-    }
-  }
-
-  public void processNext() {
-    var msg = this.network.nextMessage();
-    logger.debug("Processing message {}", msg);
-
-    int nodeIndex = msg.value().channelId().receiverIndex();
-    var injector = this.nodes.get(nodeIndex);
-    ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
-
-    try {
-      injector
-          .getInstance(DeterministicProcessor.class)
-          .handleMessage(msg.value().origin(), msg.value().message(), msg.value().typeLiteral());
-    } finally {
-      ThreadContext.remove("self");
-    }
-  }
-
-  public void processForCount(int messageCount) {
-    for (int i = 0; i < messageCount; i++) {
-      processNext();
     }
   }
 }

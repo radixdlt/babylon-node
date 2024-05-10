@@ -64,5 +64,5 @@
 
 package com.radixdlt.consensus.event;
 
-/** Marker interface for events which are generated locally. */
+/** Marker interface for events which are generated and consumed/processed locally. */
 public interface LocalEvent extends CoreEvent {}

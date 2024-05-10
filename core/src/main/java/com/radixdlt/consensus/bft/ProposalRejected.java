@@ -65,7 +65,6 @@
 package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.event.LocalEvent;
-import com.radixdlt.consensus.event.RemoteEvent;
 
 /** An event indicating that a proposal has been rejected */
-public record ProposalRejected(Round round) implements RemoteEvent, LocalEvent {}
+public record ProposalRejected(Round round) implements LocalEvent {}

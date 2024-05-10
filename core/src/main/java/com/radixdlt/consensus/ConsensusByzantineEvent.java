@@ -67,10 +67,9 @@ package com.radixdlt.consensus;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.event.LocalEvent;
-import com.radixdlt.consensus.event.RemoteEvent;
 import com.radixdlt.p2p.NodeId;
 
-public sealed interface ConsensusByzantineEvent extends RemoteEvent, LocalEvent {
+public sealed interface ConsensusByzantineEvent extends LocalEvent {
   record ConflictingGenesis(QuorumCertificate qc, NodeId author)
       implements ConsensusByzantineEvent {}
 

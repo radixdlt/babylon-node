@@ -65,7 +65,7 @@
 package com.radixdlt.consensus.event;
 
 /**
- * Marker interface for events which are received from other nodes. Note that some events may be
- * both local and remote.
+ * Marker interface for events which are received from other nodes or created locally and dispatched
+ * to remote nodes. Note that some events may be both local and remote.
  */
 public interface RemoteEvent extends CoreEvent {}
