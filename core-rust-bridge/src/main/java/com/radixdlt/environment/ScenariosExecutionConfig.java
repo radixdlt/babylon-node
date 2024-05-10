@@ -65,9 +65,12 @@
 package com.radixdlt.environment;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.networks.Network;
 import com.radixdlt.protocol.ProtocolUpdateTrigger;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
+
+import java.util.List;
 
 /**
  * A configuration of what "Engine's test Scenarios" to run automatically.
@@ -96,5 +99,13 @@ public record ScenariosExecutionConfig(
     codecMap.register(
         ScenariosExecutionConfig.class,
         codecs -> StructCodec.fromRecordComponents(ScenariosExecutionConfig.class, codecs));
+  }
+
+  public static ScenariosExecutionConfig resolveForNetwork(Network network) {
+    if (Network.PRODUCTION_NETWORKS.contains(network)) {
+      return ScenariosExecutionConfig.NONE;
+    } else {
+      return ScenariosExecutionConfig.ALL;
+    }
   }
 }
