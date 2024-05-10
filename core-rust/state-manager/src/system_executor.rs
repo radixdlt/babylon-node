@@ -80,7 +80,7 @@ use crate::store::traits::scenario::{
 };
 use crate::system_commits::*;
 
-use crate::protocol::{ProtocolUpdateAction, ProtocolVersionName};
+use crate::protocol::{ProtocolUpdateNodeBatch, ProtocolVersionName};
 use crate::traits::scenario::ExecutedScenarioV1;
 use radix_transaction_scenarios::scenarios::ALL_SCENARIOS;
 use std::sync::Arc;
@@ -214,7 +214,7 @@ impl SystemExecutor {
         &self,
         protocol_version: &ProtocolVersionName,
         batch_idx: u32,
-        action: ProtocolUpdateAction,
+        batch: ProtocolUpdateNodeBatch,
     ) {
         let database = self.database.lock();
         let latest_header = database
@@ -243,13 +243,13 @@ impl SystemExecutor {
             },
         };
 
-        match action {
-            ProtocolUpdateAction::FlashTransactions(flash_transactions) => {
+        match batch {
+            ProtocolUpdateNodeBatch::FlashTransactions(flash_transactions) => {
                 let prepare_result = self.preparator.prepare_protocol_update(flash_transactions);
                 let commit_request = system_commit_request_factory.create(prepare_result);
                 self.committer.commit_system(commit_request);
             }
-            ProtocolUpdateAction::Scenario(scenario) => {
+            ProtocolUpdateNodeBatch::Scenario(scenario) => {
                 // Note: here we use the top-of-ledger's state version as a starting nonce for the
                 // Scenario's transactions. This behavior is different than the Engine's default
                 // Scenario executor's (which increments the last nonce used by the previous

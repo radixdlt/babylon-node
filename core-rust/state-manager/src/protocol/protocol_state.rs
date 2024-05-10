@@ -89,20 +89,20 @@ impl ProtocolUpdateExecutor {
         let overrides = self.protocol_update_content_overrides.get(protocol_version);
         let protocol_update_transactions = resolve_update_definition_for_version(protocol_version)
             .unwrap_or_else(|| panic!("{}", protocol_version.as_str().to_string()))
-            .create_action_provider_raw(&self.network, self.database.clone(), overrides);
+            .create_batch_generator_raw(&self.network, self.database.clone(), overrides);
 
-        let transactions_and_scenarios = WithScenariosActionProvider {
-            base_action_provider: protocol_update_transactions.deref(),
+        let transactions_and_scenarios = WithScenariosNodeBatchGenerator {
+            base_batch_generator: protocol_update_transactions.deref(),
             scenario_names: self
                 .scenarios_execution_config
                 .to_run_after_protocol_update(protocol_version),
         };
 
-        for batch_idx in from_batch_idx..transactions_and_scenarios.action_count() {
+        for batch_idx in from_batch_idx..transactions_and_scenarios.batch_count() {
             self.system_executor.execute_protocol_update_action(
                 protocol_version,
                 batch_idx,
-                transactions_and_scenarios.provide_action(batch_idx),
+                transactions_and_scenarios.generate_batch(batch_idx),
             );
         }
     }
