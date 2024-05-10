@@ -101,6 +101,7 @@ import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.utils.FreePortFinder;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.junit.Rule;
@@ -164,12 +165,12 @@ public final class AnemoneProtocolUpdateTest {
 
       // Act & Assert #1: Submit TimePrecision::Minute transaction and expect a success
       final var minutePrecisionBeforeTx = createGetTimeCallTxn(false).raw();
-      mempoolDispatcher.dispatch(MempoolAdd.create(minutePrecisionBeforeTx));
+      mempoolDispatcher.dispatch(new MempoolAdd(List.of(minutePrecisionBeforeTx)));
       test.runUntilState(allCommittedTransactionSuccess(minutePrecisionBeforeTx));
 
       // Act & Assert #2: Submit TimePrecision::Second transaction and expect a failure
       final var secondPrecisionBeforeTx = createGetTimeCallTxn(true).raw();
-      mempoolDispatcher.dispatch(MempoolAdd.create(secondPrecisionBeforeTx));
+      mempoolDispatcher.dispatch(new MempoolAdd(List.of(secondPrecisionBeforeTx)));
       test.runUntilState(allNodesMatch(committedFailedUserTransaction(secondPrecisionBeforeTx)));
 
       // Act & Assert #3: Run until protocol update epoch and verify protocol update
@@ -193,12 +194,12 @@ public final class AnemoneProtocolUpdateTest {
 
       // Act & Assert #4: Submit TimePrecision::Minute transaction and expect a success
       final var minutePrecisionAfterTx = createGetTimeCallTxn(false).raw();
-      mempoolDispatcher.dispatch(MempoolAdd.create(minutePrecisionAfterTx));
+      mempoolDispatcher.dispatch(new MempoolAdd(List.of(minutePrecisionAfterTx)));
       test.runUntilState(allCommittedTransactionSuccess(minutePrecisionAfterTx));
 
       // Act & Assert #5: Submit TimePrecision::Second transaction and expect a success
       final var secondPrecisionAfterTx = createGetTimeCallTxn(true).raw();
-      mempoolDispatcher.dispatch(MempoolAdd.create(secondPrecisionAfterTx));
+      mempoolDispatcher.dispatch(new MempoolAdd(List.of(secondPrecisionAfterTx)));
       test.runUntilState(allCommittedTransactionSuccess(secondPrecisionAfterTx));
     }
   }

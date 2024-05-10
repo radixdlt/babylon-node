@@ -290,14 +290,14 @@ public final class REv2StateManagerModule extends AbstractModule {
           @ProcessOnDispatch
           EventProcessor<BFTHighQCUpdate> onQCUpdatePersistVertexStore(
               PersistentVertexStore persistentVertexStore) {
-            return update -> persistentVertexStore.save(update.getVertexStoreState());
+            return update -> persistentVertexStore.save(update.vertexStoreState());
           }
 
           @ProvidesIntoSet
           @ProcessOnDispatch
           EventProcessor<BFTInsertUpdate> onInsertUpdatePersistVertexStore(
               PersistentVertexStore persistentVertexStore) {
-            return update -> persistentVertexStore.save(update.getVertexStoreState());
+            return update -> persistentVertexStore.save(update.vertexStoreState());
           }
         });
 

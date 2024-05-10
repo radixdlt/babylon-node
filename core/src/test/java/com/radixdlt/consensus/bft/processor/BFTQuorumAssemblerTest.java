@@ -131,7 +131,7 @@ public final class BFTQuorumAssemblerTest {
 
     // Move to round 1
     this.bftQuorumAssembler.processRoundUpdate(
-        RoundUpdate.create(Round.of(1), highQc, mock(BFTValidatorId.class), this.self));
+        new RoundUpdate(Round.of(1), highQc, mock(BFTValidatorId.class), this.self));
 
     this.bftQuorumAssembler.processVote(vote);
 

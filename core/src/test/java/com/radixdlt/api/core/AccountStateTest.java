@@ -77,6 +77,7 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.rev2.Manifest;
 import com.radixdlt.rev2.TransactionBuilder;
+import java.util.List;
 import org.junit.Test;
 
 public final class AccountStateTest extends DeterministicCoreApiTestBase {
@@ -93,7 +94,7 @@ public final class AccountStateTest extends DeterministicCoreApiTestBase {
 
       // Submit an account creation transaction and await its commit
       test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}))
-          .dispatch(MempoolAdd.create(transaction.raw()));
+          .dispatch(new MempoolAdd(List.of(transaction.raw())));
       test.runUntilState(
           allCommittedTransactionSuccess(transaction.raw()),
           onlyConsensusEvents().or(onlyLocalMempoolAddEvents()));

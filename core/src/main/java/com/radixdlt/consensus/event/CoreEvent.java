@@ -62,33 +62,10 @@
  * permissions under this License.
  */
 
-package com.radixdlt.harness.deterministic;
+package com.radixdlt.consensus.event;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
-import com.radixdlt.harness.invariants.SafetyChecker;
-import com.radixdlt.harness.simulation.TestInvariant;
-import java.util.Optional;
-
-/** Module which checks for consensus safety and throws exception on failure. */
-public class SafetyCheckerModule extends AbstractModule {
-  @Override
-  public void configure() {
-    bind(SafetyChecker.class).in(Scopes.SINGLETON);
-  }
-
-  @ProvidesIntoSet
-  public NodeEvents.NodeEventProcessor<?> safetyCheckProcessor(SafetyChecker safetyChecker) {
-    return new NodeEvents.NodeEventProcessor<>(
-        BFTCommittedUpdate.class,
-        (node, update) -> {
-          Optional<TestInvariant.TestInvariantError> maybeError =
-              safetyChecker.process(node, update);
-          assertThat(maybeError).isEmpty();
-        });
-  }
-}
+/**
+ * Root marker interface for all events present in system. It is used to ensure that no "unrelated"
+ * events are present in the code.
+ */
+public interface CoreEvent {}

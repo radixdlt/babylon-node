@@ -93,7 +93,7 @@ public final class OneProposalPerRoundVerifier implements BFTEventProcessor {
 
   @Override
   public void processRoundUpdate(RoundUpdate roundUpdate) {
-    this.receivedProposals.removeIf(r -> r.lt(roundUpdate.getCurrentRound()));
+    this.receivedProposals.removeIf(r -> r.lt(roundUpdate.currentRound()));
     forwardTo.processRoundUpdate(roundUpdate);
   }
 

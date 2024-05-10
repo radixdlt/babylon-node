@@ -70,8 +70,6 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.EpochNodeWeightMapping;
 import com.radixdlt.consensus.LedgerHashes;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.epoch.Epoched;
-import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -127,9 +125,7 @@ public class ProposerLoadBalancedTest {
 
   private MessageMutator mutator() {
     return (message, queue) -> {
-      Object msg = message.message();
-      if (msg instanceof ScheduledLocalTimeout
-          || Epoched.isInstance(msg, ScheduledLocalTimeout.class)) {
+      if (MessageMutator.isScheduledLocalTimeout(message.message())) {
         return true;
       }
 

@@ -102,7 +102,7 @@ public class ImmediateMempoolRelayOnSubmitTest extends DeterministicCoreApiTestB
       RawNotarizedTransaction transaction) {
     return m -> {
       if (m.value().message() instanceof MempoolAddSuccess message) {
-        return message.getTxn().equals(transaction);
+        return message.transaction().equals(transaction);
       }
       return false;
     };

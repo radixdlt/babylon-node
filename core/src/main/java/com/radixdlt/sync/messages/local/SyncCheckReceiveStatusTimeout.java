@@ -64,26 +64,13 @@
 
 package com.radixdlt.sync.messages.local;
 
+import com.radixdlt.consensus.event.LocalEvent;
+
 /** A message indicating a timeout on receiving StatusResponse messages during sync check. */
-public final class SyncCheckReceiveStatusTimeout {
-
-  public static SyncCheckReceiveStatusTimeout create() {
-    return new SyncCheckReceiveStatusTimeout();
-  }
-
-  private SyncCheckReceiveStatusTimeout() {}
-
-  @Override
-  public String toString() {
-    return String.format("%s{}", this.getClass().getSimpleName());
-  }
-
+public record SyncCheckReceiveStatusTimeout() implements LocalEvent {
   @Override
   public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    return o != null && getClass() == o.getClass();
+    return o instanceof SyncCheckReceiveStatusTimeout;
   }
 
   @Override

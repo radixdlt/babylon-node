@@ -158,7 +158,7 @@ public final class IncreasingValidatorsTest {
       for (var definition : validatorDefinitions) {
         var createValidatorRawTxn = definition.first();
         test.runForCount(100);
-        mempoolDispatcher.dispatch(MempoolAdd.create(createValidatorRawTxn));
+        mempoolDispatcher.dispatch(new MempoolAdd(List.of(createValidatorRawTxn)));
         test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
       }
 
@@ -183,7 +183,7 @@ public final class IncreasingValidatorsTest {
                 .signatories(List.of(key))
                 .prepare()
                 .raw();
-        mempoolDispatcher.dispatch(MempoolAdd.create(registerValidatorTxn));
+        mempoolDispatcher.dispatch(new MempoolAdd(List.of(registerValidatorTxn)));
         test.runUntilState(
             nodeAt(0, NodePredicate.committedUserTransaction(registerValidatorTxn, true, true)));
         var stakeValidatorTxn =
@@ -193,7 +193,7 @@ public final class IncreasingValidatorsTest {
                 .signatories(List.of(key))
                 .prepare()
                 .raw();
-        mempoolDispatcher.dispatch(MempoolAdd.create(stakeValidatorTxn));
+        mempoolDispatcher.dispatch(new MempoolAdd(List.of(stakeValidatorTxn)));
         test.runUntilState(
             nodeAt(0, NodePredicate.committedUserTransaction(stakeValidatorTxn, true, true)));
       }

@@ -86,6 +86,8 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.sync.SyncRelayConfig;
+import com.radixdlt.transactions.RawNotarizedTransaction;
+import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -131,7 +133,8 @@ public final class REv2MempoolRelayerTest {
       var mempoolDispatcher =
           test.getInstance(1, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
       for (int i = 0; i < MEMPOOL_TX_SIZE; i++) {
-        mempoolDispatcher.dispatch(MempoolAdd.create(transactionGenerator.nextTransaction()));
+        RawNotarizedTransaction transaction = transactionGenerator.nextTransaction();
+        mempoolDispatcher.dispatch(new MempoolAdd(List.of(transaction)));
       }
 
       // Run all nodes except validator node0

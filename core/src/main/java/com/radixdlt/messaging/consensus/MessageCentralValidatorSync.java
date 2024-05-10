@@ -72,7 +72,7 @@ import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.rx.RemoteEvent;
+import com.radixdlt.environment.rx.IncomingEvent;
 import com.radixdlt.messaging.core.Message;
 import com.radixdlt.messaging.core.MessageCentral;
 import com.radixdlt.p2p.NodeId;
@@ -106,31 +106,33 @@ public class MessageCentralValidatorSync {
 
   private void sendGetVerticesRequest(NodeId nodeId, GetVerticesRequest request) {
     final GetVerticesRequestMessage vertexRequest =
-        new GetVerticesRequestMessage(request.getVertexId(), request.getCount());
+        new GetVerticesRequestMessage(request.vertexId(), request.count());
     this.messageCentral.send(nodeId, vertexRequest);
   }
 
   private void sendGetVerticesResponse(NodeId nodeId, GetVerticesResponse response) {
-    var rawVertices = response.getVertices().stream().map(VertexWithHash::vertex).toList();
+    var rawVertices = response.vertices().stream().map(VertexWithHash::vertex).toList();
     var msg = new GetVerticesResponseMessage(rawVertices);
     this.messageCentral.send(nodeId, msg);
   }
 
   public void sendGetVerticesErrorResponse(NodeId nodeId, GetVerticesErrorResponse response) {
     var request = response.request();
-    var requestMsg = new GetVerticesRequestMessage(request.getVertexId(), request.getCount());
+    var requestMsg = new GetVerticesRequestMessage(request.vertexId(), request.count());
     var msg = new GetVerticesErrorResponseMessage(response.highQC(), requestMsg);
     this.messageCentral.send(nodeId, msg);
   }
 
-  public Flowable<RemoteEvent<NodeId, GetVerticesRequest>> requests() {
+  public Flowable<IncomingEvent<NodeId, GetVerticesRequest>> requests() {
     return this.createFlowable(
         GetVerticesRequestMessage.class,
-        (peer, msg) ->
-            RemoteEvent.create(peer, new GetVerticesRequest(msg.getVertexId(), msg.getCount())));
+        (peer, msg) -> {
+          GetVerticesRequest event = new GetVerticesRequest(msg.getVertexId(), msg.getCount());
+          return new IncomingEvent<>(Objects.requireNonNull(peer), Objects.requireNonNull(event));
+        });
   }
 
-  public Flowable<RemoteEvent<NodeId, GetVerticesResponse>> responses() {
+  public Flowable<IncomingEvent<NodeId, GetVerticesResponse>> responses() {
     return this.createFlowable(
         GetVerticesResponseMessage.class,
         (src, msg) -> {
@@ -140,17 +142,19 @@ public class MessageCentralValidatorSync {
                   .map(v -> v.withId(hasher))
                   .collect(ImmutableList.toImmutableList());
 
-          return RemoteEvent.create(src, new GetVerticesResponse(hashedVertices));
+          GetVerticesResponse event = new GetVerticesResponse(hashedVertices);
+          return new IncomingEvent<>(Objects.requireNonNull(src), Objects.requireNonNull(event));
         });
   }
 
-  public Flowable<RemoteEvent<NodeId, GetVerticesErrorResponse>> errorResponses() {
+  public Flowable<IncomingEvent<NodeId, GetVerticesErrorResponse>> errorResponses() {
     return this.createFlowable(
         GetVerticesErrorResponseMessage.class,
         (src, msg) -> {
           final var request =
               new GetVerticesRequest(msg.request().getVertexId(), msg.request().getCount());
-          return RemoteEvent.create(src, new GetVerticesErrorResponse(msg.highQC(), request));
+          GetVerticesErrorResponse event = new GetVerticesErrorResponse(msg.highQC(), request);
+          return new IncomingEvent<>(Objects.requireNonNull(src), Objects.requireNonNull(event));
         });
   }
 

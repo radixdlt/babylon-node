@@ -160,7 +160,7 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
     this.latestRoundUpdate = Objects.requireNonNull(initialRoundUpdate);
     this.metrics = Objects.requireNonNull(metrics);
 
-    final var highestQcRound = initialRoundUpdate.getHighQC().getHighestRound();
+    final var highestQcRound = initialRoundUpdate.highQC().getHighestRound();
     this.highestKnownCertificateRound = highestQcRound;
     this.highestReceivedProposalRound = highestQcRound;
   }
@@ -175,8 +175,8 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
   public void processRoundUpdate(RoundUpdate roundUpdate) {
     log.trace("Round Update: {}", roundUpdate);
     this.latestRoundUpdate = roundUpdate;
-    if (roundUpdate.getHighQC().getHighestRound().gt(this.highestKnownCertificateRound)) {
-      this.highestKnownCertificateRound = roundUpdate.getHighQC().getHighestRound();
+    if (roundUpdate.highQC().getHighestRound().gt(this.highestKnownCertificateRound)) {
+      this.highestKnownCertificateRound = roundUpdate.highQC().getHighestRound();
     }
     this.startRound();
   }
@@ -198,7 +198,7 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
     final var scheduledLocalTimeout = ScheduledLocalTimeout.create(latestRoundUpdate, timeoutMs);
     this.scheduledLocalTimeoutDispatcher.dispatch(scheduledLocalTimeout, timeoutMs);
 
-    final var currentRoundProposer = latestRoundUpdate.getLeader();
+    final var currentRoundProposer = latestRoundUpdate.leader();
     if (this.self.equals(currentRoundProposer)) {
       generateProposal()
           .ifPresent(
@@ -231,7 +231,7 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
     log.trace("BFTUpdate: Processing {}", update);
 
     final var round = update.getHeader().getRound();
-    final var vertex = update.getInserted();
+    final var vertex = update.insertedVertex();
 
     if (round.equals(currentRound())) {
       // A vertex for the current round has been inserted
@@ -281,7 +281,7 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
             executedVertex.getVertexWithHash(),
             bftHeader,
             executedVertex.getTimeOfExecution(),
-            this.latestRoundUpdate.getHighQC());
+            this.latestRoundUpdate.highQC());
 
     maybeBaseVote.ifPresentOrElse(
         baseVote -> {
@@ -293,7 +293,7 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
                   : baseVote;
           dispatchVote(vote);
         },
-        () -> this.noVoteDispatcher.dispatch(NoVote.create(executedVertex.getVertexWithHash())));
+        () -> this.noVoteDispatcher.dispatch(new NoVote(executedVertex.getVertexWithHash())));
   }
 
   private void dispatchVote(Vote vote) {
@@ -304,7 +304,7 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
     if (this.scheduledRoundTimeoutHasOccurred) {
       this.voteDispatcher.dispatch(this.validatorSet.validators(), vote);
     } else {
-      this.voteDispatcher.dispatch(this.latestRoundUpdate.getNextLeader(), vote);
+      this.voteDispatcher.dispatch(this.latestRoundUpdate.nextLeader(), vote);
     }
 
     // This should always be Some(), we've just sent a vote for this vertex
@@ -387,9 +387,9 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
   private void voteForFallbackVertex() {
     final var vertex =
         Vertex.createFallback(
-                this.latestRoundUpdate.getHighQC().highestQC(),
-                this.latestRoundUpdate.getCurrentRound(),
-                this.latestRoundUpdate.getLeader())
+                this.latestRoundUpdate.highQC().highestQC(),
+                this.latestRoundUpdate.currentRound(),
+                this.latestRoundUpdate.leader())
             .withId(hasher);
 
     this.vertexStore
@@ -469,7 +469,7 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
   }
 
   private Optional<Proposal> generateProposal() {
-    final var highQC = this.latestRoundUpdate.getHighQC();
+    final var highQC = this.latestRoundUpdate.highQC();
     final var highestQC = highQC.highestQC();
     final var nextTransactions = getTransactionsForProposal(currentRound(), highestQC);
     final var proposerTimestamp = determineNextProposalTimestamp(highestQC);
@@ -544,7 +544,7 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
   }
 
   private Round currentRound() {
-    return this.latestRoundUpdate.getCurrentRound();
+    return this.latestRoundUpdate.currentRound();
   }
 
   @Override

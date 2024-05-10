@@ -65,6 +65,7 @@
 package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.event.LocalEvent;
 
 /**
  * A local event message indicating that a round quorum (either QC or TC) has been resolved.
@@ -72,4 +73,4 @@ import com.radixdlt.consensus.Vote;
  * @param roundQuorum the quorum that has been resolved
  * @param lastVote the last received vote event that led to forming a quorum
  */
-public record RoundQuorumResolution(RoundQuorum roundQuorum, Vote lastVote) {}
+public record RoundQuorumResolution(RoundQuorum roundQuorum, Vote lastVote) implements LocalEvent {}

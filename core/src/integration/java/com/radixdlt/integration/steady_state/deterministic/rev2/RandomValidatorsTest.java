@@ -189,7 +189,7 @@ public final class RandomValidatorsTest {
                     .prepare()
                     .raw();
             creatingValidators.put(randomValidatorIndex, txn);
-            mempoolDispatcher.dispatch(MempoolAdd.create(txn));
+            mempoolDispatcher.dispatch(new MempoolAdd(List.of(txn)));
           } else {
             var maybeTransactionsDetails =
                 NodesReader.tryGetCommittedTransactionDetails(
@@ -259,7 +259,7 @@ public final class RandomValidatorsTest {
                       .raw();
             }
           }
-          mempoolDispatcher.dispatch(MempoolAdd.create(txn));
+          mempoolDispatcher.dispatch(new MempoolAdd(List.of(txn)));
         }
       }
 

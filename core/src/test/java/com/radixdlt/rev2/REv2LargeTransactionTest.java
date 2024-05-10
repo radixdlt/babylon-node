@@ -143,7 +143,7 @@ public final class REv2LargeTransactionTest {
       var mempoolDispatcher =
           test.getInstance(
               fullNodeIndex, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
-      mempoolDispatcher.dispatch(MempoolAdd.create(largeTransaction));
+      mempoolDispatcher.dispatch(new MempoolAdd(List.of(largeTransaction)));
       test.runForCount(10, onlyMempoolSyncEvents());
 
       // Now wait for mempool sync to the validator and commit
