@@ -67,6 +67,7 @@ package com.radixdlt.networks;
 import com.google.common.hash.HashCode;
 import com.radixdlt.utils.WrappedByteArray;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.bouncycastle.util.encoders.Hex;
@@ -147,6 +148,8 @@ public enum Network {
           HashCode.fromBytes(
               Hex.decode("ac79e815b39beb756d9afe261e8c4deff4ed95f8fcc59af001eef060d820b266")),
           "genesis/test_genesis.bin"));
+
+  public static final Set<Network> PRODUCTION_NETWORKS = Set.of(Network.MAINNET);
 
   private final int intId;
   private final byte byteId;

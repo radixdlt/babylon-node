@@ -150,7 +150,8 @@ public final class REv2StateManagerModule extends AbstractModule {
       StateTreeGcConfig stateTreeGcConfig,
       LedgerProofsGcConfig ledgerProofsGcConfig,
       LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
-      ProtocolConfig protocolConfig) {
+      ProtocolConfig protocolConfig,
+      ScenariosExecutionConfig scenariosExecutionConfig) {
     return new REv2StateManagerModule(
         proposalLimitsConfig,
         Option.some(vertexLimitsConfig),
@@ -162,7 +163,7 @@ public final class REv2StateManagerModule extends AbstractModule {
         ledgerSyncLimitsConfig,
         protocolConfig,
         false,
-        ScenariosExecutionConfig.NONE);
+        scenariosExecutionConfig);
   }
 
   public static REv2StateManagerModule createForTesting(
