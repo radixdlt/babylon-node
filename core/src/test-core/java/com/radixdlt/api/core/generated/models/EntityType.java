@@ -38,8 +38,6 @@ public enum EntityType {
   
   GLOBALACCOUNT("GlobalAccount"),
   
-  GLOBALACCOUNTLOCKER("GlobalAccountLocker"),
-  
   GLOBALIDENTITY("GlobalIdentity"),
   
   GLOBALACCESSCONTROLLER("GlobalAccessController"),
@@ -70,7 +68,9 @@ public enum EntityType {
   
   GLOBALMULTIRESOURCEPOOL("GlobalMultiResourcePool"),
   
-  GLOBALTRANSACTIONTRACKER("GlobalTransactionTracker");
+  GLOBALTRANSACTIONTRACKER("GlobalTransactionTracker"),
+  
+  GLOBALACCOUNTLOCKER("GlobalAccountLocker");
 
   private String value;
 

@@ -23,7 +23,6 @@ export const EntityType = {
     GlobalValidator: 'GlobalValidator',
     GlobalGenericComponent: 'GlobalGenericComponent',
     GlobalAccount: 'GlobalAccount',
-    GlobalAccountLocker: 'GlobalAccountLocker',
     GlobalIdentity: 'GlobalIdentity',
     GlobalAccessController: 'GlobalAccessController',
     GlobalVirtualSecp256k1Account: 'GlobalVirtualSecp256k1Account',
@@ -39,7 +38,8 @@ export const EntityType = {
     GlobalOneResourcePool: 'GlobalOneResourcePool',
     GlobalTwoResourcePool: 'GlobalTwoResourcePool',
     GlobalMultiResourcePool: 'GlobalMultiResourcePool',
-    GlobalTransactionTracker: 'GlobalTransactionTracker'
+    GlobalTransactionTracker: 'GlobalTransactionTracker',
+    GlobalAccountLocker: 'GlobalAccountLocker'
 } as const;
 export type EntityType = typeof EntityType[keyof typeof EntityType];
 
