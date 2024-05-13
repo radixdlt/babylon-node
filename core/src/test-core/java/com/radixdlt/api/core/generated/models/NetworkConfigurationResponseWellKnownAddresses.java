@@ -757,10 +757,10 @@ public class NetworkConfigurationResponseWellKnownAddresses {
    * Get lockerPackage
    * @return lockerPackage
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
   @JsonProperty(JSON_PROPERTY_LOCKER_PACKAGE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
   public String getLockerPackage() {
     return lockerPackage;
@@ -768,7 +768,7 @@ public class NetworkConfigurationResponseWellKnownAddresses {
 
 
   @JsonProperty(JSON_PROPERTY_LOCKER_PACKAGE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setLockerPackage(String lockerPackage) {
     this.lockerPackage = lockerPackage;
   }

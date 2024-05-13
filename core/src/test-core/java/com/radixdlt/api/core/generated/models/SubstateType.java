@@ -28,11 +28,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
  */
 public enum SubstateType {
   
-  BOOTLOADERMODULEFIELDSYSTEMBOOT("BootLoaderModuleFieldSystemBoot"),
-  
   BOOTLOADERMODULEFIELDVMBOOT("BootLoaderModuleFieldVmBoot"),
-  
-  BOOTLOADERMODULEFIELDKERNELBOOT("BootLoaderModuleFieldKernelBoot"),
   
   TYPEINFOMODULEFIELDTYPEINFO("TypeInfoModuleFieldTypeInfo"),
   
@@ -118,8 +114,6 @@ public enum SubstateType {
   
   ACCOUNTAUTHORIZEDDEPOSITORENTRY("AccountAuthorizedDepositorEntry"),
   
-  ACCOUNTLOCKERACCOUNTCLAIMSENTRY("AccountLockerAccountClaimsEntry"),
-  
   ACCESSCONTROLLERFIELDSTATE("AccessControllerFieldState"),
   
   GENERICSCRYPTOCOMPONENTFIELDSTATE("GenericScryptoComponentFieldState"),
@@ -134,7 +128,13 @@ public enum SubstateType {
   
   TRANSACTIONTRACKERFIELDSTATE("TransactionTrackerFieldState"),
   
-  TRANSACTIONTRACKERCOLLECTIONENTRY("TransactionTrackerCollectionEntry");
+  TRANSACTIONTRACKERCOLLECTIONENTRY("TransactionTrackerCollectionEntry"),
+  
+  ACCOUNTLOCKERACCOUNTCLAIMSENTRY("AccountLockerAccountClaimsEntry"),
+  
+  BOOTLOADERMODULEFIELDSYSTEMBOOT("BootLoaderModuleFieldSystemBoot"),
+  
+  BOOTLOADERMODULEFIELDKERNELBOOT("BootLoaderModuleFieldKernelBoot");
 
   private String value;
 

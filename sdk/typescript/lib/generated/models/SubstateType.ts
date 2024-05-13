@@ -18,9 +18,7 @@
  * @export
  */
 export const SubstateType = {
-    BootLoaderModuleFieldSystemBoot: 'BootLoaderModuleFieldSystemBoot',
     BootLoaderModuleFieldVmBoot: 'BootLoaderModuleFieldVmBoot',
-    BootLoaderModuleFieldKernelBoot: 'BootLoaderModuleFieldKernelBoot',
     TypeInfoModuleFieldTypeInfo: 'TypeInfoModuleFieldTypeInfo',
     RoleAssignmentModuleFieldOwnerRole: 'RoleAssignmentModuleFieldOwnerRole',
     RoleAssignmentModuleRuleEntry: 'RoleAssignmentModuleRuleEntry',
@@ -63,7 +61,6 @@ export const SubstateType = {
     AccountVaultEntry: 'AccountVaultEntry',
     AccountResourcePreferenceEntry: 'AccountResourcePreferenceEntry',
     AccountAuthorizedDepositorEntry: 'AccountAuthorizedDepositorEntry',
-    AccountLockerAccountClaimsEntry: 'AccountLockerAccountClaimsEntry',
     AccessControllerFieldState: 'AccessControllerFieldState',
     GenericScryptoComponentFieldState: 'GenericScryptoComponentFieldState',
     GenericKeyValueStoreEntry: 'GenericKeyValueStoreEntry',
@@ -71,7 +68,10 @@ export const SubstateType = {
     TwoResourcePoolFieldState: 'TwoResourcePoolFieldState',
     MultiResourcePoolFieldState: 'MultiResourcePoolFieldState',
     TransactionTrackerFieldState: 'TransactionTrackerFieldState',
-    TransactionTrackerCollectionEntry: 'TransactionTrackerCollectionEntry'
+    TransactionTrackerCollectionEntry: 'TransactionTrackerCollectionEntry',
+    AccountLockerAccountClaimsEntry: 'AccountLockerAccountClaimsEntry',
+    BootLoaderModuleFieldSystemBoot: 'BootLoaderModuleFieldSystemBoot',
+    BootLoaderModuleFieldKernelBoot: 'BootLoaderModuleFieldKernelBoot'
 } as const;
 export type SubstateType = typeof SubstateType[keyof typeof SubstateType];
 
