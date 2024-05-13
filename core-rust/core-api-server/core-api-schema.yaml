@@ -3749,7 +3749,6 @@ components:
         - GlobalValidator
         - GlobalGenericComponent
         - GlobalAccount
-        - GlobalAccountLocker
         - GlobalIdentity
         - GlobalAccessController
         - GlobalVirtualSecp256k1Account
@@ -3766,6 +3765,7 @@ components:
         - GlobalTwoResourcePool
         - GlobalMultiResourcePool
         - GlobalTransactionTracker
+        - GlobalAccountLocker
     EntityAddress:
       type: string
       description: Bech32m-encoded human readable version of the entity's address (ie the entity's node id)
@@ -3871,9 +3871,7 @@ components:
     SubstateType:
       type: string
       enum:
-        - BootLoaderModuleFieldSystemBoot
         - BootLoaderModuleFieldVmBoot
-        - BootLoaderModuleFieldKernelBoot
         - TypeInfoModuleFieldTypeInfo
         - RoleAssignmentModuleFieldOwnerRole
         - RoleAssignmentModuleRuleEntry
@@ -3916,7 +3914,6 @@ components:
         - AccountVaultEntry
         - AccountResourcePreferenceEntry
         - AccountAuthorizedDepositorEntry
-        - AccountLockerAccountClaimsEntry
         - AccessControllerFieldState
         - GenericScryptoComponentFieldState
         - GenericKeyValueStoreEntry
@@ -3925,6 +3922,9 @@ components:
         - MultiResourcePoolFieldState
         - TransactionTrackerFieldState
         - TransactionTrackerCollectionEntry
+        - AccountLockerAccountClaimsEntry
+        - BootLoaderModuleFieldSystemBoot
+        - BootLoaderModuleFieldKernelBoot
 ################################################
 # GENERAL / SHARED MODELS - substate key types #
 ################################################
@@ -6524,7 +6524,6 @@ components:
             - genesis_helper_package
             - faucet_package
             - pool_package
-            - locker_package
             - consensus_manager
             - genesis_helper
             - faucet
