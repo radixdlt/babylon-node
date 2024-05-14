@@ -65,32 +65,21 @@
 package com.radixdlt.environment;
 
 import com.radixdlt.consensus.event.CoreEvent;
-import java.util.Objects;
 import java.util.Optional;
 
 /**
- * A processor which is to process an event synchronously at time of dispatch
+ * A processor which is to process an event synchronously at time of dispatch. Note that this
+ * processor can be used for both types of events, local and remote.
  *
  * @param <T> the class of the event
  */
-public final class EventProcessorOnDispatch<T extends CoreEvent> {
-  private final Class<T> eventClass;
-  private final EventProcessor<T> processor;
-
-  public EventProcessorOnDispatch(Class<T> eventClass, EventProcessor<T> processor) {
-    this.eventClass = Objects.requireNonNull(eventClass);
-    this.processor = Objects.requireNonNull(processor);
-  }
-
+public record EventProcessorOnDispatch<T extends CoreEvent>(
+    Class<T> eventClass, EventProcessor<T> processor) {
   public <U extends CoreEvent> Optional<EventProcessor<U>> getProcessor(Class<U> c) {
     if (c.equals(eventClass)) {
       return Optional.of((EventProcessor<U>) processor);
     }
 
     return Optional.empty();
-  }
-
-  public Class<T> getEventClass() {
-    return eventClass;
   }
 }

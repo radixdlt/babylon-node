@@ -65,7 +65,8 @@
 package com.radixdlt.consensus.sync;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.event.LocalEvent;
 import com.radixdlt.consensus.event.RemoteEvent;
 
-/** Parameters for a local get vertices request */
-public record GetVerticesRequest(HashCode vertexId, int count) implements RemoteEvent {}
+/** Parameters for a local get vertices request. Also, could be scheduled locally. */
+public record GetVerticesRequest(HashCode vertexId, int count) implements RemoteEvent, LocalEvent {}
