@@ -64,13 +64,13 @@
 
 package com.radixdlt.environment;
 
-import com.radixdlt.consensus.event.CoreEvent;
+import com.radixdlt.consensus.event.LocalEvent;
 
 /**
  * Dispatches an event after some given time.
  *
  * @param <T> the event class
  */
-public interface ScheduledEventDispatcher<T extends CoreEvent> {
+public interface ScheduledEventDispatcher<T extends LocalEvent> {
   void dispatch(T t, long milliseconds);
 }

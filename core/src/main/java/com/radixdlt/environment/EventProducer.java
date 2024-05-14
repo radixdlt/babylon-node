@@ -64,10 +64,10 @@
 
 package com.radixdlt.environment;
 
-import com.radixdlt.consensus.event.CoreEvent;
+import com.radixdlt.consensus.event.LocalEvent;
 import java.util.function.Supplier;
 
-public final class EventProducer<T extends CoreEvent> implements EventProcessor<T> {
+public final class EventProducer<T extends LocalEvent> implements EventProcessor<T> {
   private final Supplier<T> eventCreator;
   private final ScheduledEventDispatcher<T> dispatcher;
   private final long intervalMillis;

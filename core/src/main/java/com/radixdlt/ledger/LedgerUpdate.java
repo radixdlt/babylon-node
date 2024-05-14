@@ -70,7 +70,6 @@ import com.radixdlt.lang.Option;
 import com.radixdlt.statecomputer.ProtocolState;
 import com.radixdlt.statecomputer.commit.CommitSummary;
 import com.radixdlt.transactions.RawLedgerTransaction;
-
 import java.util.List;
 
 public record LedgerUpdate(

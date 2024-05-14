@@ -70,7 +70,8 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * An Event Processor registered to run on a runner.
+ * An Event Processor registered to run on a runner. Can be used to process both, local and remote
+ * events.
  *
  * @param <T> The event class
  */

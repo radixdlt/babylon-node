@@ -76,7 +76,6 @@ import com.google.inject.util.Modules;
 import com.radixdlt.RadixNodeModule;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.event.CoreEvent;
 import com.radixdlt.consensus.event.LocalEvent;
 import com.radixdlt.consensus.event.RemoteEvent;
 import com.radixdlt.crypto.ECKeyPair;
@@ -84,7 +83,6 @@ import com.radixdlt.crypto.RadixKeyStore;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.environment.*;
 import com.radixdlt.environment.rx.IncomingEvent;
-import com.radixdlt.environment.rx.RxEnvironment;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.genesis.GenesisFromPropertiesLoader;
@@ -301,16 +299,17 @@ public final class RadixShell {
           .dispatch(t);
     }
 
-    public <T extends CoreEvent> Disposable onEvent(Class<T> eventClass, Consumer<T> consumer) {
-      final var disposable =
-          injector
-              .getInstance(RxEnvironment.class)
-              .getObservable(eventClass)
-              .subscribe(consumer::accept);
-
-      eventConsumers.add(disposable);
-      return disposable;
-    }
+    //    public <T extends CoreEvent> Disposable onEvent(Class<T> eventClass, Consumer<T> consumer)
+    // {
+    //      final var disposable =
+    //          injector
+    //              .getInstance(RxEnvironment.class)
+    //              .getObservable(eventClass)
+    //              .subscribe(consumer::accept);
+    //
+    //      eventConsumers.add(disposable);
+    //      return disposable;
+    //    }
 
     public void cleanEventConsumers() {
       eventConsumers.forEach(Disposable::dispose);
