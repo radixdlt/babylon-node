@@ -112,9 +112,7 @@ public class TimeoutPreviousVoteWithDroppedProposalsTest {
                   false,
                   SafetyRecoveryConfig.MOCKED,
                   ConsensusConfig.of(1000L),
-                  LedgerConfig.stateComputerNoSync(
-                      StateComputerConfig.mockedNoEpochs(
-                          3, new StateComputerConfig.MockedMempoolConfig.NoMempool()))))
+                  LedgerConfig.stateComputerNoSync(StateComputerConfig.mockedNoEpochs(3))))
           .addTestModules(
               ConsensusMonitors.safety(),
               LedgerMonitors.consensusToLedger(),

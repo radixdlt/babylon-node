@@ -96,7 +96,7 @@ public class StaticValidatorsTest {
               LedgerMonitors.ordered());
 
   private Map<Monitor, Optional<TestInvariant.TestInvariantError>> runTest(
-      long epochRounds, long epochRoundsCheck) {
+      int epochRounds, long epochRoundsCheck) {
     SimulationTest bftTest =
         bftTestBuilder
             .functionalNodeModule(
@@ -107,9 +107,8 @@ public class StaticValidatorsTest {
                     ConsensusConfig.of(1000),
                     FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
                         StateComputerConfig.mockedWithEpochs(
-                            Round.of(epochRounds),
-                            EpochNodeWeightMapping.constant(e -> IntStream.range(0, 4)),
-                            new StateComputerConfig.MockedMempoolConfig.NoMempool()))))
+                            epochRounds,
+                            EpochNodeWeightMapping.constant(e -> IntStream.range(0, 4))))))
             .addTestModules(ConsensusMonitors.epochMaxRound(Round.of(epochRoundsCheck)))
             .build();
     return bftTest.run().awaitCompletion();

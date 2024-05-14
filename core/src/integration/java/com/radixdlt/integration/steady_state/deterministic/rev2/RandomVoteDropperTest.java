@@ -80,7 +80,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.*;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.sync.SyncRelayConfig;
 import org.junit.Rule;
@@ -104,14 +103,15 @@ public final class RandomVoteDropperTest {
                 SafetyRecoveryConfig.BERKELEY_DB,
                 ConsensusConfig.of(1000),
                 LedgerConfig.stateComputerWithSyncRelay(
-                    StateComputerConfig.rev2(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        GenesisBuilder.createTestGenesisWithNumValidators(
-                            10,
-                            Decimal.ONE,
-                            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10)),
-                        StateComputerConfig.REV2ProposerConfig.Mempool.defaults()
-                            .withReceiverConfig(MempoolReceiverConfig.of(5))),
+                    StateComputerConfig.rev2()
+                        .withGenesis(
+                            GenesisBuilder.createTestGenesisWithNumValidators(
+                                10,
+                                Decimal.ONE,
+                                GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10)))
+                        .withProposerConfig(
+                            StateComputerConfig.REV2ProposerConfig.Mempool.defaults()
+                                .withReceiverConfig(MempoolReceiverConfig.of(5))),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 

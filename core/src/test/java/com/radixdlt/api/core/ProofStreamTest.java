@@ -70,22 +70,32 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.*;
+import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition;
 import com.radixdlt.protocol.ProtocolUpdateTrigger;
+import com.radixdlt.rev2.Decimal;
 import org.junit.Test;
 
 public class ProofStreamTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_proof_stream() throws Exception {
-    final var protocolConfig =
-        new ProtocolConfig(
-            ImmutableList.of(
-                new ProtocolUpdateTrigger(
-                    ProtocolUpdateTrigger.ANEMONE,
-                    ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(3L))));
-
-    try (var test = buildRunningServerTestWithProtocolConfig(10, protocolConfig)) {
+    final var config =
+        defaultConfig()
+            .withProtocolConfig(
+                new ProtocolConfig(
+                    ImmutableList.of(
+                        new ProtocolUpdateTrigger(
+                            ProtocolUpdateTrigger.ANEMONE,
+                            ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(3L)))))
+            .withGenesis(
+                GenesisBuilder.createTestGenesisWithNumValidators(
+                    1,
+                    Decimal.ONE,
+                    GenesisConsensusManagerConfig.Builder.testDefaults()
+                        .epochExactRoundCount(100)));
+    try (var test = buildRunningServerTest(config)) {
       test.runUntilState(allAtOrOverEpoch(5L));
 
       // ==================

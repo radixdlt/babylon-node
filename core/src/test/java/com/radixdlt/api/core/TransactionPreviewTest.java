@@ -275,7 +275,7 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
   @SuppressWarnings("DataFlowIssue") // Suppress invalid null reference warnings
   @Test
   public void transaction_previewed_with_message_consumes_more_cost_units() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       // Prepare a base request (no message)
@@ -382,8 +382,10 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
 
   private DeterministicTest buildTest(boolean stateHistoryEnabled, long historyLength) {
     return buildRunningServerTest(
-        new DatabaseConfig(true, false, stateHistoryEnabled, false),
-        new StateTreeGcConfig(
-            UInt32.fromNonNegativeInt(1), UInt64.fromNonNegativeLong(historyLength)));
+        defaultConfig()
+            .withDatabaseConfig(new DatabaseConfig(true, false, stateHistoryEnabled, false))
+            .withStateTreeGcConfig(
+                new StateTreeGcConfig(
+                    UInt32.fromNonNegativeInt(1), UInt64.fromNonNegativeLong(historyLength))));
   }
 }
