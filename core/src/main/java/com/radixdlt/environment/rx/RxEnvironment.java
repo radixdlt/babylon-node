@@ -109,11 +109,15 @@ public final class RxEnvironment implements Environment {
   }
 
   private <T extends LocalEvent> Optional<Subject<T>> getSubject(TypeLiteral<T> t) {
-    return Optional.ofNullable((Subject<T>) typeLiteralSubjects.get(t));
+    @SuppressWarnings("unchecked")
+    var subject = (Subject<T>) typeLiteralSubjects.get(t);
+    return Optional.ofNullable(subject);
   }
 
   private <T extends LocalEvent> Optional<Subject<T>> getSubject(Class<T> eventClass) {
-    return Optional.ofNullable((Subject<T>) subjects.get(eventClass));
+    @SuppressWarnings("unchecked")
+    var subject = (Subject<T>) subjects.get(eventClass);
+    return Optional.ofNullable(subject);
   }
 
   @Override

@@ -126,10 +126,11 @@ public final class RadixShell {
 
   public static class NodeBuilder {
     private Network network = Network.LOCALNET;
-    private RuntimeProperties properties;
+    private final RuntimeProperties properties;
     private int p2pServerPort = 0;
-    private ImmutableSet.Builder<String> moduleRunnersBuilder = new ImmutableSet.Builder<>();
-    private ImmutableMap.Builder<String, String> customProperties = new ImmutableMap.Builder<>();
+    private final ImmutableSet.Builder<String> moduleRunnersBuilder = new ImmutableSet.Builder<>();
+    private final ImmutableMap.Builder<String, String> customProperties =
+        new ImmutableMap.Builder<>();
     private Optional<String> dataDir = Optional.empty();
     private final String nodeKeyPass = System.getenv("RADIX_NODE_KEYSTORE_PASSWORD");
 
