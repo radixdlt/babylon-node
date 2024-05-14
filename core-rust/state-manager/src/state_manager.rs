@@ -70,6 +70,7 @@ use std::time::Duration;
 use crate::engine_prelude::*;
 use crate::jni::LedgerSyncLimitsConfig;
 use crate::protocol::{ProtocolConfig, ProtocolState, ProtocolVersionName};
+use crate::rocks_db::{ActualStateManagerDatabase, StateManagerDatabase};
 use crate::store::jmt_gc::StateTreeGcConfig;
 use crate::store::proofs_gc::{LedgerProofsGc, LedgerProofsGcConfig};
 use crate::store::traits::proofs::QueryableProofStore;
@@ -81,8 +82,7 @@ use crate::{
     priority_mempool::PriorityMempool,
     store::{jmt_gc::StateTreeGc, DatabaseBackendConfig, DatabaseConfig, RawDbMetricsCollector},
     transaction::{CachedCommittabilityValidator, CommittabilityValidator, TransactionPreviewer},
-    ActualStateManagerDatabase, PendingTransactionResultCache, ProtocolUpdateResult, StateComputer,
-    StateManagerDatabase,
+    PendingTransactionResultCache, ProtocolUpdateResult, StateComputer,
 };
 use node_common::scheduler::{Metrics, Scheduler, Spawner, Tracker};
 use node_common::{

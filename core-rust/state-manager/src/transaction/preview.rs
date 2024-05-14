@@ -5,10 +5,11 @@ use std::sync::Arc;
 
 use crate::historical_state::{StateHistoryError, VersionScopingSupport};
 
+use crate::rocks_db::ActualStateManagerDatabase;
 use crate::transaction::*;
 use crate::{
-    ActualStateManagerDatabase, GlobalBalanceSummary, LedgerStateChanges, LedgerStateSummary,
-    PreviewRequest, ProcessedCommitResult, StateVersion,
+    GlobalBalanceSummary, LedgerStateChanges, LedgerStateSummary, PreviewRequest,
+    ProcessedCommitResult, StateVersion,
 };
 
 /// A transaction preview runner.

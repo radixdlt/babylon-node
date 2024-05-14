@@ -2,7 +2,7 @@ use crate::core_api::*;
 use crate::engine_prelude::*;
 
 use state_manager::protocol::ProtocolVersionName;
-use state_manager::{ReadableRocks, StateManagerDatabase};
+use state_manager::rocks_db::{ReadableRocks, StateManagerDatabase};
 use std::ops::Deref;
 
 #[tracing::instrument(skip(state))]

@@ -92,6 +92,7 @@ use crate::store::traits::scenario::{
 
 use crate::accumulator_tree::storage::ReadableAccuTreeStore;
 use crate::commit_bundle::CommitBundleBuilder;
+use crate::rocks_db::ActualStateManagerDatabase;
 use std::ops::Deref;
 use std::sync::Arc;
 use std::time::{Instant, SystemTime};

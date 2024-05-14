@@ -8,13 +8,14 @@ use ::transaction::model::PrepareError; // disambiguation needed because of a wi
 
 use crate::query::StateManagerSubstateQueries;
 
+use crate::rocks_db::ActualStateManagerDatabase;
 use crate::store::traits::transactions::QueryableTransactionStore;
 use crate::store::traits::{QueryableProofStore, TransactionIndex};
 use crate::transaction::{ExecutionConfigurator, TransactionLogic};
 use crate::{
-    ActualStateManagerDatabase, AlreadyCommittedError, AtSpecificState, AtState,
-    ExecutionRejectionReason, MempoolRejectionReason, PendingTransactionRecord,
-    PendingTransactionResultCache, TransactionAttempt,
+    AlreadyCommittedError, AtSpecificState, AtState, ExecutionRejectionReason,
+    MempoolRejectionReason, PendingTransactionRecord, PendingTransactionResultCache,
+    TransactionAttempt,
 };
 
 use super::{

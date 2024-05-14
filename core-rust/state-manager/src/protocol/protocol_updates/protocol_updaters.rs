@@ -1,4 +1,3 @@
-use crate::ActualStateManagerDatabase;
 use node_common::locks::DbLock;
 use std::ops::Deref;
 use std::sync::Arc;
@@ -6,6 +5,7 @@ use std::sync::Arc;
 use crate::engine_prelude::*;
 
 use crate::protocol::*;
+use crate::rocks_db::ActualStateManagerDatabase;
 
 pub trait ProtocolUpdater {
     /// Executes these state updates associated with the given protocol version

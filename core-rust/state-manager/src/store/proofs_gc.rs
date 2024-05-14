@@ -75,12 +75,13 @@ use crate::store::traits::gc::{
 use crate::store::traits::proofs::QueryableProofStore;
 
 use crate::jni::LedgerSyncLimitsConfig;
+use crate::rocks_db::{ActualStateManagerDatabase, StateManagerDatabase};
 use crate::store::rocks_db::ReadableRocks;
 use crate::traits::GetSyncableTxnsAndProofError::{
     FailedToPrepareAResponseWithinLimits, NothingToServeAtTheGivenStateVersion,
     RefusedToServeGenesis, RefusedToServeProtocolUpdate,
 };
-use crate::{ActualStateManagerDatabase, LedgerProof, StateManagerDatabase, StateVersion};
+use crate::{LedgerProof, StateVersion};
 
 /// A configuration for [`LedgerProofsGc`].
 #[derive(Debug, Categorize, Encode, Decode, Clone, Default)]
