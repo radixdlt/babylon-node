@@ -123,7 +123,9 @@ public final class EventProcessorOnRunner<T extends LocalEvent> {
 
   public <U extends LocalEvent> Optional<EventProcessor<U>> getProcessor(Class<U> c) {
     if (eventClass != null && eventClass.isAssignableFrom(c)) {
-      return Optional.of((EventProcessor<U>) processor);
+      @SuppressWarnings("unchecked")
+      var eventProcessor = (EventProcessor<U>) processor;
+      return Optional.of(eventProcessor);
     }
 
     return Optional.empty();
@@ -131,7 +133,9 @@ public final class EventProcessorOnRunner<T extends LocalEvent> {
 
   public <U extends LocalEvent> Optional<EventProcessor<U>> getProcessor(TypeLiteral<U> c) {
     if (c.equals(typeLiteral)) {
-      return Optional.of((EventProcessor<U>) processor);
+      @SuppressWarnings("unchecked")
+      var eventProcessor = (EventProcessor<U>) processor;
+      return Optional.of(eventProcessor);
     }
 
     return Optional.empty();

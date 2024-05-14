@@ -77,7 +77,10 @@ public record EventProcessorOnDispatch<T extends CoreEvent>(
     Class<T> eventClass, EventProcessor<T> processor) {
   public <U extends CoreEvent> Optional<EventProcessor<U>> getProcessor(Class<U> c) {
     if (c.equals(eventClass)) {
-      return Optional.of((EventProcessor<U>) processor);
+      @SuppressWarnings("unchecked")
+      var eventProcessor = (EventProcessor<U>) processor;
+
+      return Optional.of(eventProcessor);
     }
 
     return Optional.empty();
