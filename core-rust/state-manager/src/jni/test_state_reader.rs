@@ -238,7 +238,7 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_validatorInfo(
                 )
                 .unwrap()
                 .into_payload()
-                .into_latest();
+                .fully_update_and_into_latest_version();
 
             JavaValidatorInfo {
                 stake_unit_resource: validator_state.stake_unit_resource,

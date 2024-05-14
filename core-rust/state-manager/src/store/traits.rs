@@ -182,7 +182,7 @@ pub mod vertex {
 
     define_single_versioned! {
         #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-        pub enum VersionedVertexStoreBlob => VertexStoreBlob = VertexStoreBlobV1
+        pub VersionedVertexStoreBlob(VertexStoreBlobVersions) => VertexStoreBlob = VertexStoreBlobV1
     }
 
     #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -232,7 +232,7 @@ pub mod substate {
 
     define_single_versioned! {
         #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-        pub enum VersionedSubstateNodeAncestryRecord => SubstateNodeAncestryRecord = SubstateNodeAncestryRecordV1
+        pub VersionedSubstateNodeAncestryRecord(SubstateNodeAncestryRecordVersions) => SubstateNodeAncestryRecord = SubstateNodeAncestryRecordV1
     }
 
     /// Ancestry information of a RE Node.
@@ -484,7 +484,7 @@ pub mod commit {
                                     target_values.insert(sort_key, value);
                                 }
                                 DatabaseUpdate::Delete => {
-                                    let existed = target_values.remove(&sort_key).is_some();
+                                    let existed = target_values.swap_remove(&sort_key).is_some();
                                     if !existed {
                                         panic!("broken invariant: deleting non-existent substate");
                                     }
@@ -508,7 +508,7 @@ pub mod commit {
 
     define_single_versioned! {
         #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-        pub enum VersionedStaleTreeParts => StaleTreeParts = StaleTreePartsV1
+        pub VersionedStaleTreeParts(StaleTreePartsVersions) => StaleTreeParts = StaleTreePartsV1
     }
 
     #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -552,7 +552,7 @@ pub mod commit {
 
     define_single_versioned! {
         #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-        pub enum VersionedTransactionAccuTreeSlice => TransactionAccuTreeSlice = TransactionAccuTreeSliceV1
+        pub VersionedTransactionAccuTreeSlice(TransactionAccuTreeSliceVersions) => TransactionAccuTreeSlice = TransactionAccuTreeSliceV1
     }
 
     #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -560,7 +560,7 @@ pub mod commit {
 
     define_single_versioned! {
         #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-        pub enum VersionedReceiptAccuTreeSlice => ReceiptAccuTreeSlice = ReceiptAccuTreeSliceV1
+        pub VersionedReceiptAccuTreeSlice(ReceiptAccuTreeSliceVersions) => ReceiptAccuTreeSlice = ReceiptAccuTreeSliceV1
     }
 
     #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -578,18 +578,18 @@ pub mod scenario {
 
     define_single_versioned! {
         #[derive(Debug, Clone, Categorize, Encode, Decode)]
-        pub enum VersionedExecutedGenesisScenario => ExecutedGenesisScenario = ExecutedGenesisScenarioV1
+        pub VersionedExecutedScenario(ExecutedScenarioVersions) => ExecutedScenario = ExecutedScenarioV1
     }
 
     #[derive(Debug, Clone, Categorize, Encode, Decode)]
-    pub struct ExecutedGenesisScenarioV1 {
+    pub struct ExecutedScenarioV1 {
         pub logical_name: String,
         pub committed_transactions: Vec<ExecutedScenarioTransaction>,
-        pub addresses: Vec<DescribedAddress>,
+        pub addresses: Vec<DescribedAddressRendering>,
     }
 
     #[derive(Debug, Clone, Categorize, Encode, Decode)]
-    pub struct DescribedAddress {
+    pub struct DescribedAddressRendering {
         pub logical_name: String,
         pub rendered_address: String, // we store it pre-rendered, since `GlobalAddress` has no SBOR coding
     }
@@ -601,18 +601,15 @@ pub mod scenario {
         pub intent_hash: IntentHash,
     }
 
-    /// A store of testing-specific [`ExecutedGenesisScenario`], meant to be as separated as
-    /// possible from the production stores (e.g. the writes happening outside of the regular commit
-    /// batch write).
-    pub trait ExecutedGenesisScenarioStore {
-        /// Writes the given Scenario under a caller-managed sequence number (which means: it allows
-        /// overwriting, writing out-of-order, leaving gaps, etc.).
-        fn put_scenario(&self, number: ScenarioSequenceNumber, scenario: ExecutedGenesisScenario);
+    /// A store of testing-specific [`ExecutedScenario`], meant to be as separated as possible from
+    /// the production stores (e.g. the writes happening outside of the regular commit batch write).
+    pub trait ExecutedScenarioStore {
+        /// Writes the given Scenario under the next sequence number (auto-incremented).
+        fn put_next_scenario(&self, scenario: ExecutedScenario);
 
-        /// Returns all Scenarios written so far, ordered by their sequence numbers (but with no
-        /// guarantees regarding gaps; see [`put_scenario()`]'s contract).
+        /// Returns all Scenarios written so far, ordered by their sequence numbers.
         /// Performance note: this method assumes a small number of Scenarios.
-        fn list_all_scenarios(&self) -> Vec<(ScenarioSequenceNumber, ExecutedGenesisScenario)>;
+        fn list_all_scenarios(&self) -> Vec<(ScenarioSequenceNumber, ExecutedScenario)>;
     }
 }
 
@@ -639,7 +636,7 @@ pub mod extensions {
 
     define_single_versioned! {
         #[derive(Debug, Clone, Sbor)]
-        pub enum VersionedStateTreeAssociatedValuesStatus => StateTreeAssociatedValuesStatus = StateTreeAssociatedValuesStatusV1
+        pub VersionedStateTreeAssociatedValuesStatus(StateTreeAssociatedValuesStatusVersions) => StateTreeAssociatedValuesStatus = StateTreeAssociatedValuesStatusV1
     }
 
     #[derive(Debug, Clone, Sbor)]
@@ -713,7 +710,7 @@ pub mod indices {
 
     define_single_versioned! {
         #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-        pub enum VersionedEntityBlueprintId => EntityBlueprintId = EntityBlueprintIdV1
+        pub VersionedEntityBlueprintId(EntityBlueprintIdVersions) => EntityBlueprintId = EntityBlueprintIdV1
     }
 
     /// An entity's ID and its blueprint reference.
@@ -747,7 +744,7 @@ pub mod indices {
 
     define_single_versioned! {
         #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-        pub enum VersionedObjectBlueprintName => ObjectBlueprintName = ObjectBlueprintNameV1
+        pub VersionedObjectBlueprintName(ObjectBlueprintNameVersions) => ObjectBlueprintName = ObjectBlueprintNameV1
     }
 
     /// An Object's ID and its blueprint name.
@@ -865,7 +862,7 @@ pub mod gc {
 
     define_single_versioned! {
         #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-        pub enum VersionedLedgerProofsGcProgress => LedgerProofsGcProgress = LedgerProofsGcProgressV1
+        pub VersionedLedgerProofsGcProgress(LedgerProofsGcProgressVersions) => LedgerProofsGcProgress = LedgerProofsGcProgressV1
     }
 
     /// A state of the GC's progress.

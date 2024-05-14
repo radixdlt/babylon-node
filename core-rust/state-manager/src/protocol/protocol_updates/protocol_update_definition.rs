@@ -2,120 +2,65 @@
 
 use crate::engine_prelude::*;
 use crate::protocol::*;
+use node_common::locks::DbLock;
+use std::sync::Arc;
+use crate::rocks_db::ActualStateManagerDatabase;
 
-use crate::transaction::*;
-
-/// A protocol update definition consists of two parts:
-/// 1) Updating the current (state computer) configuration ("transaction processing rules").
-///    This includes: transaction validation, execution configuration, etc
-/// 2) Executing arbitrary state updates against the current database state.
-///    While the abstraction is quite flexible, the only concrete implementation at the moment
-///    only modifies the state through committing system transactions (e.g. substate flash).
+/// A protocol update definition.
+///
+/// Note:
+/// Currently, protocol updates are only interested in modifying the current ledger state.
+/// Consecutive transaction batches to be executed and individually committed are defined by
+/// [`Self::create_batch_generator()`].
+/// Future protocol updates may additionally want to e.g. modify the configuration of some
+/// services (like transaction validation rules). Such customizable parts will have to be
+/// represented as other methods on this trait.
 pub trait ProtocolUpdateDefinition {
     /// Additional (static) config which can be used to re-configure the updater.
     type Overrides: ScryptoDecode;
 
-    /// Returns the new configuration that the state computer
-    /// should use after enacting the given protocol version.
-    fn state_computer_config(network_definition: &NetworkDefinition)
-        -> ProtocolStateComputerConfig;
-
-    fn create_updater(
-        new_protocol_version: &ProtocolVersionName,
-        network_definition: &NetworkDefinition,
+    /// Returns a provider of on-ledger actions to be executed as part of this protocol update.
+    fn create_batch_generator(
+        &self,
+        network: &NetworkDefinition,
+        database: Arc<DbLock<ActualStateManagerDatabase>>,
         overrides: Option<Self::Overrides>,
-    ) -> Box<dyn ProtocolUpdater>;
+    ) -> Box<dyn ProtocolUpdateNodeBatchGenerator>;
 }
 
+/// A convenience trait for easier validation/parsing of [`ProtocolUpdateDefinition::Overrides`],
+/// automatically implemented for all [`ProtocolUpdateDefinition`].
 pub trait ConfigurableProtocolUpdateDefinition {
-    fn resolve_state_computer_config(
+    /// Parses the given raw overrides and passes them to
+    /// [`ProtocolUpdateDefinition::create_batch_generator`].
+    /// Panics on any [`DecodeError`] from [`Self::validate_overrides()`].
+    fn create_batch_generator_raw(
         &self,
-        network_definition: &NetworkDefinition,
-    ) -> ProtocolStateComputerConfig;
-
-    /// This method panics if the `raw_overrides` is present and invalid.
-    /// A caller should have first validated with validate_raw_overrides.
-    fn create_updater_with_raw_overrides(
-        &self,
-        new_protocol_version: &ProtocolVersionName,
-        network_definition: &NetworkDefinition,
+        network: &NetworkDefinition,
+        database: Arc<DbLock<ActualStateManagerDatabase>>,
         raw_overrides: Option<&[u8]>,
-    ) -> Box<dyn ProtocolUpdater>;
+    ) -> Box<dyn ProtocolUpdateNodeBatchGenerator>;
 
+    /// Checks that the given raw overrides can be parsed.
     fn validate_raw_overrides(&self, raw_overrides: &[u8]) -> Result<(), DecodeError>;
 }
 
 impl<T: ProtocolUpdateDefinition> ConfigurableProtocolUpdateDefinition for T {
-    fn resolve_state_computer_config(
+    fn create_batch_generator_raw(
         &self,
-        network_definition: &NetworkDefinition,
-    ) -> ProtocolStateComputerConfig {
-        Self::state_computer_config(network_definition)
-    }
-
-    fn create_updater_with_raw_overrides(
-        &self,
-        new_protocol_version: &ProtocolVersionName,
-        network_definition: &NetworkDefinition,
+        network: &NetworkDefinition,
+        database: Arc<DbLock<ActualStateManagerDatabase>>,
         raw_overrides: Option<&[u8]>,
-    ) -> Box<dyn ProtocolUpdater> {
-        let overrides = raw_overrides.map(|overrides| {
-            scrypto_decode::<<Self as ProtocolUpdateDefinition>::Overrides>(overrides).expect(
-                "Raw overrides should have been validated before being passed to this method",
-            )
-        });
+    ) -> Box<dyn ProtocolUpdateNodeBatchGenerator> {
+        let overrides = raw_overrides
+            .map(scrypto_decode::<<Self as ProtocolUpdateDefinition>::Overrides>)
+            .transpose()
+            .expect("Raw overrides should have been validated before being passed to this method");
 
-        Self::create_updater(new_protocol_version, network_definition, overrides)
+        self.create_batch_generator(network, database, overrides)
     }
 
     fn validate_raw_overrides(&self, raw_overrides: &[u8]) -> Result<(), DecodeError> {
         scrypto_decode::<<Self as ProtocolUpdateDefinition>::Overrides>(raw_overrides).map(|_| ())
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct ProtocolStateComputerConfig {
-    pub network: NetworkDefinition,
-    pub validation_config: ValidationConfig,
-    pub costing_parameters: CostingParameters,
-}
-
-impl ProtocolStateComputerConfig {
-    pub fn default(network: NetworkDefinition) -> ProtocolStateComputerConfig {
-        let network_id = network.id;
-        ProtocolStateComputerConfig {
-            network,
-            validation_config: ValidationConfig::default(network_id),
-            costing_parameters: CostingParameters::default(),
-        }
-    }
-}
-
-impl ProtocolStateComputerConfig {
-    pub fn ledger_transaction_validator(&self) -> LedgerTransactionValidator {
-        LedgerTransactionValidator::default_from_validation_config(self.validation_config)
-    }
-
-    pub fn user_transaction_validator(&self) -> NotarizedTransactionValidator {
-        NotarizedTransactionValidator::new(self.validation_config)
-    }
-
-    pub fn validation_config(&self) -> ValidationConfig {
-        self.validation_config
-    }
-
-    pub fn execution_configurator(
-        &self,
-        no_fees: bool,
-        engine_trace: bool,
-    ) -> ExecutionConfigurator {
-        let mut costing_parameters = self.costing_parameters;
-        if no_fees {
-            costing_parameters.execution_cost_unit_price = Decimal::ZERO;
-            costing_parameters.finalization_cost_unit_price = Decimal::ZERO;
-            costing_parameters.state_storage_price = Decimal::ZERO;
-            costing_parameters.archive_storage_price = Decimal::ZERO;
-        }
-        ExecutionConfigurator::new(&self.network, engine_trace, costing_parameters)
     }
 }

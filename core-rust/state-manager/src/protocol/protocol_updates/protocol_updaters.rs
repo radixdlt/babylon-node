@@ -1,82 +1,60 @@
-use node_common::locks::DbLock;
-use std::ops::Deref;
-use std::sync::Arc;
-
 use crate::engine_prelude::*;
 
-use crate::protocol::*;
-use crate::rocks_db::ActualStateManagerDatabase;
+use crate::transaction::FlashTransactionV1;
 
-pub trait ProtocolUpdater {
-    /// Executes these state updates associated with the given protocol version
-    /// that haven't yet been applied
-    /// (hence "remaining", e.g. if node is restarted mid-protocol update).
-    fn execute_remaining_state_updates(&self, database: Arc<DbLock<ActualStateManagerDatabase>>);
+/// An atomic part of a protocol update.
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+pub enum ProtocolUpdateNodeBatch {
+    /// An explicit batch of flash transactions.
+    FlashTransactions(Vec<FlashTransactionV1>),
+
+    /// An execution of a single test Scenario.
+    Scenario(String),
 }
 
-pub struct NoOpProtocolUpdater;
+/// A generator of consecutive transaction batches comprising a single protocol update.
+/// This is a lazy provider (rather than a [`Vec`]), since e.g. massive flash transactions could
+/// overload memory if initialized all at once.
+/// Naming note: this is deliberately a "Node batch generator", for disambiguation with the Engine's
+/// [`ProtocolUpdateBatchGenerator`] (which is used internally by one of the implementations here).
+/// Conceptually, a "Node batch" is "either an Engine batch, or a single test Scenario to execute".
+pub trait ProtocolUpdateNodeBatchGenerator {
+    /// Returns a batch at the given index.
+    /// Panics if the index is out of bounds (as given by the [`Self::batch_count()`].
+    fn generate_batch(&self, batch_idx: u32) -> ProtocolUpdateNodeBatch;
 
-impl ProtocolUpdater for NoOpProtocolUpdater {
-    fn execute_remaining_state_updates(&self, _database: Arc<DbLock<ActualStateManagerDatabase>>) {
-        // no-op
-    }
+    /// Returns the number of contained batches.
+    fn batch_count(&self) -> u32;
 }
 
-pub(crate) struct BatchedUpdater<R: UpdateBatchGenerator> {
-    new_protocol_version: ProtocolVersionName,
-    new_state_computer_config: ProtocolStateComputerConfig,
-    resolver: R,
+/// A [`ProtocolUpdateNodeBatchGenerator`] decorator which additionally executes post-update Scenarios.
+pub struct WithScenariosNodeBatchGenerator<'b, B: ProtocolUpdateNodeBatchGenerator + ?Sized> {
+    pub base_batch_generator: &'b B,
+    pub scenario_names: Vec<String>,
 }
 
-impl<G: UpdateBatchGenerator> BatchedUpdater<G> {
-    pub fn new(
-        new_protocol_version: ProtocolVersionName,
-        new_state_computer_config: ProtocolStateComputerConfig,
-        batch_generator: G,
-    ) -> Self {
-        Self {
-            new_protocol_version,
-            new_state_computer_config,
-            resolver: batch_generator,
+impl<'b, B: ProtocolUpdateNodeBatchGenerator + ?Sized> ProtocolUpdateNodeBatchGenerator
+    for WithScenariosNodeBatchGenerator<'b, B>
+{
+    fn generate_batch(&self, batch_idx: u32) -> ProtocolUpdateNodeBatch {
+        let base_batch_count = self.base_batch_generator.batch_count();
+        if batch_idx < base_batch_count {
+            self.base_batch_generator.generate_batch(batch_idx)
+        } else {
+            let scenario_index = batch_idx.checked_sub(base_batch_count).unwrap();
+            let scenario_name = self
+                .scenario_names
+                .get(scenario_index as usize)
+                .unwrap()
+                .clone();
+            ProtocolUpdateNodeBatch::Scenario(scenario_name)
         }
     }
-}
 
-impl<R: UpdateBatchGenerator> ProtocolUpdater for BatchedUpdater<R> {
-    fn execute_remaining_state_updates(&self, database: Arc<DbLock<ActualStateManagerDatabase>>) {
-        let database = database.lock();
-        let mut txn_committer = ProtocolUpdateTransactionCommitter::new(
-            self.new_protocol_version.clone(),
-            database.deref(),
-            // The costing and logging parameters (of the Engine) are not really used for flash
-            // transactions; let's still pass sane values.
-            // TODO(when we need non-flash transactions): pass the actually configured flags here.
-            self.new_state_computer_config
-                .execution_configurator(true, false),
-            self.new_state_computer_config
-                .ledger_transaction_validator(),
-        );
-
-        while let Some(next_batch_idx) = txn_committer.next_committable_batch_idx() {
-            let batch = self
-                .resolver
-                .generate_batch(database.deref(), next_batch_idx);
-            match batch {
-                Some(flash_txns) => {
-                    txn_committer.commit_batch(flash_txns);
-                }
-                None => break,
-            }
-        }
+    fn batch_count(&self) -> u32 {
+        self.base_batch_generator
+            .batch_count()
+            .checked_add(u32::try_from(self.scenario_names.len()).unwrap())
+            .unwrap()
     }
-}
-
-pub(crate) trait UpdateBatchGenerator {
-    /// Generate a batch of transactions to be committed atomically with a proof.
-    /// Return None if it's the last batch.
-    fn generate_batch(
-        &self,
-        state_database: &impl SubstateDatabase,
-        batch_index: u32,
-    ) -> Option<Vec<UpdateTransaction>>;
 }

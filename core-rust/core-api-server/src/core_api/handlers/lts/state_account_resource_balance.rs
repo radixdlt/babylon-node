@@ -89,14 +89,14 @@ pub(crate) async fn handle_lts_state_account_fungible_resource_balance(
                 let vault = substate
                     .into_value()
                     .ok_or(MappingError::KeyValueStoreEntryUnexpectedlyAbsent)?
-                    .into_latest();
+                    .fully_update_and_into_latest_version();
                 read_mandatory_main_field_substate::<FungibleVaultBalanceFieldPayload>(
                     database.deref(),
                     vault.0.as_node_id(),
                     &FungibleVaultField::Balance.into(),
                 )?
                 .into_payload()
-                .into_latest()
+                .fully_update_and_into_latest_version()
                 .amount()
             }
             _ => Decimal::ZERO,

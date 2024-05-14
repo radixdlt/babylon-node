@@ -71,7 +71,7 @@ use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use node_common::environment::setup_tracing;
-use node_common::java::{jni_call, jni_jbytearray_to_vector, StructFromJava};
+use node_common::java::{jni_call, jni_jbytearray_to_vector};
 use node_common::locks::*;
 use prometheus::Registry;
 
@@ -86,7 +86,13 @@ use crate::priority_mempool::PriorityMempool;
 use super::fatal_panic_handler::FatalPanicHandler;
 
 use crate::rocks_db::ActualStateManagerDatabase;
-use crate::{StateComputer, StateManager, StateManagerConfig};
+use crate::{StateManager, StateManagerConfig};
+use crate::protocol::ProtocolManager;
+use crate::transaction::Preparator;
+use crate::{
+    Committer, LedgerMetrics,
+    SystemExecutor,
+};
 
 const POINTER_JNI_FIELD_NAME: &str = "rustNodeRustEnvironmentPointer";
 
@@ -124,7 +130,7 @@ pub struct JNINodeRustEnvironment {
 impl JNINodeRustEnvironment {
     pub fn init(env: &JNIEnv, j_node_rust_env: JObject, j_config: jbyteArray) {
         let config_bytes: Vec<u8> = jni_jbytearray_to_vector(env, j_config).unwrap();
-        let config = StateManagerConfig::from_java(&config_bytes).unwrap();
+        let config = StateManagerConfig::valid_from_java(&config_bytes).unwrap();
 
         let network = config.network_definition.clone();
 
@@ -188,10 +194,10 @@ impl JNINodeRustEnvironment {
             .unwrap()
     }
 
-    pub fn get_state_computer(env: &JNIEnv, j_node_rust_env: JObject) -> Arc<StateComputer> {
+    pub fn get_system_executor(env: &JNIEnv, j_node_rust_env: JObject) -> Arc<SystemExecutor> {
         Self::get(env, j_node_rust_env)
             .state_manager
-            .state_computer
+            .system_executor
             .clone()
     }
 
@@ -216,6 +222,34 @@ impl JNINodeRustEnvironment {
         Self::get(env, j_node_rust_env)
             .state_manager
             .mempool_manager
+            .clone()
+    }
+
+    pub fn get_preparator(env: &JNIEnv, j_node_rust_env: JObject) -> Arc<Preparator> {
+        Self::get(env, j_node_rust_env)
+            .state_manager
+            .preparator
+            .clone()
+    }
+
+    pub fn get_committer(env: &JNIEnv, j_node_rust_env: JObject) -> Arc<Committer> {
+        Self::get(env, j_node_rust_env)
+            .state_manager
+            .committer
+            .clone()
+    }
+
+    pub fn get_protocol_manager(env: &JNIEnv, j_node_rust_env: JObject) -> Arc<ProtocolManager> {
+        Self::get(env, j_node_rust_env)
+            .state_manager
+            .protocol_manager
+            .clone()
+    }
+
+    pub fn get_ledger_metrics(env: &JNIEnv, j_node_rust_env: JObject) -> Arc<LedgerMetrics> {
+        Self::get(env, j_node_rust_env)
+            .state_manager
+            .ledger_metrics
             .clone()
     }
 }

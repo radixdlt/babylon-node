@@ -64,14 +64,16 @@
 
 package com.radixdlt.api.core;
 
+import static com.radixdlt.harness.predicates.NodesPredicate.allAtOrOverEpoch;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.google.common.primitives.Longs;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.*;
+import com.radixdlt.harness.deterministic.TestProtocolConfig;
+import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition;
+import com.radixdlt.protocol.ProtocolUpdateTrigger;
 import java.util.List;
 import java.util.stream.LongStream;
 import org.junit.Test;
@@ -80,59 +82,152 @@ public class NetworkScenariosTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_network_scenarios() throws Exception {
     // pick a custom subset/permutation (different than "all scenarios"):
-    final var names = ImmutableList.of("radiswap", "transfer_xrd");
-    try (var test = buildRunningServerTestWithScenarios(names)) {
+    final var protocolConfig =
+        new TestProtocolConfig()
+            .withGenesisScenarios(ImmutableList.of("radiswap", "transfer_xrd", "royalties"))
+            .with(
+                TestProtocolConfig.updateTo(
+                    ProtocolUpdateTrigger.ANEMONE,
+                    ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(3L)))
+            .with(
+                TestProtocolConfig.updateTo(
+                        ProtocolUpdateTrigger.BOTTLENOSE,
+                        ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(4L))
+                    .withScenarios(ImmutableList.of("maya_router", "access-controller-v2")));
+    try (var test = buildRunningServerTestWithProtocolConfig(30, protocolConfig)) {
       test.suppressUnusedWarning();
 
-      // query all scenarios
-      final var scenarios =
+      // Query scenarios right after genesis
+      final var genesisScenarios =
           getStatusApi()
               .statusScenariosPost(new ScenariosRequest().network(networkLogicalName))
               .getExecutedScenarios();
+      assertThat(genesisScenarios).hasSize(3); // there is 3 of them
+
+      // Wait for all protocol updates:
+      test.runUntilState(allAtOrOverEpoch(protocolConfig.lastProtocolUpdateEnactmentEpoch()));
+
+      // query all scenarios
+      final var allScenarios =
+          getStatusApi()
+              .statusScenariosPost(new ScenariosRequest().network(networkLogicalName))
+              .getExecutedScenarios();
+      assertThat(allScenarios).hasSize(5); // there is 3 genesis + 2 bottlenose
 
       // assert some selected properties of the known scenarios
-      assertThat(scenarios).hasSize(2);
       assertScenario(
-          scenarios,
+          allScenarios,
           0,
           "radiswap",
-          ImmutableSet.of("radiswap-add-liquidity", "radiswap-swap-tokens"),
-          ImmutableSet.of("radiswap_dapp_definition_account", "pool_1_resource_1"));
+          ImmutableList.of(
+              "radiswap-create-new-resources",
+              "radiswap-create-owner-badge-and-dapp-definition-account",
+              "radiswap-publish-and-create-pools",
+              "radiswap-add-liquidity",
+              "radiswap-distribute-tokens",
+              "radiswap-swap-tokens",
+              "radiswap-remove-tokens",
+              "radiswap-set-two-way-linking"),
+          ImmutableList.of(
+              "radiswap_dapp_definition_account",
+              "radiswap_dapp_owner_badge",
+              "storing_account",
+              "user_account_1",
+              "user_account_2",
+              "user_account_3",
+              "radiswap_package",
+              "pool_1_radiswap",
+              "pool_1_pool",
+              "pool_1_resource_1",
+              "pool_1_resource_2",
+              "pool_1_pool_unit",
+              "pool_2_radiswap",
+              "pool_2_pool",
+              "pool_2_resource_1",
+              "pool_2_resource_2",
+              "pool_2_pool_unit"));
       assertScenario(
-          scenarios,
+          allScenarios,
           1,
           "transfer_xrd",
-          ImmutableSet.of("faucet-top-up", "self-transfer--deposit_batch"),
-          ImmutableSet.of("from_account", "to_account_1"));
-
-      // assert that the captured transaction state versions are consecutive
-      final var storedStateVersions =
-          scenarios.stream()
-              .map(ExecutedGenesisScenario::getCommittedTransactions)
-              .flatMap(List::stream)
-              .mapToLong(ExecutedScenarioTransaction::getStateVersion)
-              .toArray();
-      final var consecutiveStateVersions =
-          LongStream.rangeClosed(Longs.min(storedStateVersions), Longs.max(storedStateVersions))
-              .toArray();
-      assertThat(storedStateVersions).containsExactly(consecutiveStateVersions);
+          ImmutableList.of(
+              "faucet-top-up",
+              "transfer--try_deposit_or_abort",
+              "transfer--try_deposit_or_refund",
+              "transfer--try_deposit_batch_or_abort",
+              "transfer--try_deposit_batch_or_refund",
+              "self-transfer--deposit_batch",
+              "multi-transfer--deposit_batch"),
+          ImmutableList.of("from_account", "to_account_1", "to_account_2"));
+      assertScenario(
+          allScenarios,
+          2,
+          "royalties",
+          ImmutableList.of(
+              "royalties--publish-package",
+              "royalties--instantiate-components",
+              "royalties--set-components-royalty",
+              "royalties--call_all_components_all_methods"),
+          ImmutableList.of(
+              "royalty_package_address",
+              "no_royalty_component_address",
+              "xrd_royalty_component_address",
+              "usd_royalty_component_address"));
+      assertScenario(
+          allScenarios,
+          3,
+          "maya_router",
+          ImmutableList.of(
+              "maya-router-create-accounts",
+              "faucet-top-up",
+              "maya-router-create-resources",
+              "maya-router-publish-and-instantiate"),
+          ImmutableList.of(
+              "owner_account",
+              "swapper_account",
+              "maya_router_package",
+              "maya_router_address",
+              "XRD",
+              "resource_1",
+              "resource_2"));
+      assertScenario(
+          allScenarios,
+          4,
+          "access-controller-v2",
+          ImmutableList.of(
+              "access-controller-v2-instantiate",
+              "access-controller-v2-deposit-fees-xrd",
+              "access-controller-v2-lock-fee-and-recover"),
+          ImmutableList.of("access_controller_v2_component_address"));
     }
   }
 
   private static void assertScenario(
-      List<ExecutedGenesisScenario> scenarios,
+      List<ExecutedScenario> scenarios,
       int index,
       String scenarioName,
-      // we deliberately do not want to assert on exact list matches below, to avoid brittle tests
-      ImmutableSet<String> exampleTransactionNames,
-      ImmutableSet<String> exampleAddressNames) {
+      ImmutableList<String> expectedTransactionNames,
+      ImmutableList<String> expectedAddressNames) {
     final var scenario = scenarios.get(index);
     assertThat(scenario.getSequenceNumber()).isEqualTo(index);
     assertThat(scenario.getLogicalName()).isEqualTo(scenarioName);
-    assertThat(
-            Lists.transform(
-                scenario.getCommittedTransactions(), ExecutedScenarioTransaction::getLogicalName))
-        .containsAll(exampleTransactionNames);
-    assertThat(scenario.getAddresses().keySet()).containsAll(exampleAddressNames);
+
+    final var transactionNames =
+        Lists.transform(
+            scenario.getCommittedTransactions(), ExecutedScenarioTransaction::getLogicalName);
+    assertThat(transactionNames).hasSameElementsAs(expectedTransactionNames);
+    final var transactionStateVersions =
+        Lists.transform(
+            scenario.getCommittedTransactions(), ExecutedScenarioTransaction::getStateVersion);
+    assertThat(transactionStateVersions).isNotEmpty();
+    assertThat(transactionStateVersions).doesNotHaveDuplicates();
+    assertThat(transactionStateVersions).isSorted();
+    final var consecutiveVersions =
+        LongStream.rangeClosed(
+            transactionStateVersions.get(0),
+            transactionStateVersions.get(transactionStateVersions.size() - 1));
+    assertThat(transactionStateVersions).hasSameElementsAs(consecutiveVersions.boxed().toList());
+
+    assertThat(scenario.getAddresses().keySet()).hasSameElementsAs(expectedAddressNames);
   }
 }

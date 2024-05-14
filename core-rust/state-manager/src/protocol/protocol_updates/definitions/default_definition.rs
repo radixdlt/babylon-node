@@ -1,22 +1,32 @@
 use crate::engine_prelude::*;
 use crate::protocol::*;
+use node_common::locks::DbLock;
+use std::sync::Arc;
+use crate::rocks_db::ActualStateManagerDatabase;
 
-pub struct DefaultConfigOnlyProtocolDefinition;
+pub struct NoOpProtocolDefinition;
 
-impl ProtocolUpdateDefinition for DefaultConfigOnlyProtocolDefinition {
+impl ProtocolUpdateDefinition for NoOpProtocolDefinition {
     type Overrides = ();
 
-    fn create_updater(
-        _new_protocol_version: &ProtocolVersionName,
-        _network_definition: &NetworkDefinition,
+    fn create_batch_generator(
+        &self,
+        _network: &NetworkDefinition,
+        _database: Arc<DbLock<ActualStateManagerDatabase>>,
         _overrides: Option<Self::Overrides>,
-    ) -> Box<dyn ProtocolUpdater> {
-        Box::new(NoOpProtocolUpdater)
+    ) -> Box<dyn ProtocolUpdateNodeBatchGenerator> {
+        Box::new(EmptyNodeBatchGenerator)
+    }
+}
+
+struct EmptyNodeBatchGenerator;
+
+impl ProtocolUpdateNodeBatchGenerator for EmptyNodeBatchGenerator {
+    fn generate_batch(&self, _batch_idx: u32) -> ProtocolUpdateNodeBatch {
+        panic!("no batches")
     }
 
-    fn state_computer_config(
-        network_definition: &NetworkDefinition,
-    ) -> ProtocolStateComputerConfig {
-        ProtocolStateComputerConfig::default(network_definition.clone())
+    fn batch_count(&self) -> u32 {
+        0
     }
 }

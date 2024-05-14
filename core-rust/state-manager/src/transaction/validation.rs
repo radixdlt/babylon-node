@@ -4,7 +4,6 @@ use std::sync::Arc;
 use std::time::SystemTime;
 
 use crate::engine_prelude::*;
-use ::transaction::model::PrepareError; // disambiguation needed because of a wide prelude
 
 use crate::query::StateManagerSubstateQueries;
 
@@ -178,14 +177,14 @@ impl From<PrepareError> for LedgerTransactionValidationError {
 /// (i.e. "committable") at a specific state of the `store`.
 pub struct CommittabilityValidator {
     database: Arc<DbLock<ActualStateManagerDatabase>>,
-    execution_configurator: Arc<RwLock<ExecutionConfigurator>>,
+    execution_configurator: Arc<ExecutionConfigurator>,
     user_transaction_validator: NotarizedTransactionValidator,
 }
 
 impl CommittabilityValidator {
     pub fn new(
         database: Arc<DbLock<ActualStateManagerDatabase>>,
-        execution_configurator: Arc<RwLock<ExecutionConfigurator>>,
+        execution_configurator: Arc<ExecutionConfigurator>,
         user_transaction_validator: NotarizedTransactionValidator,
     ) -> Self {
         Self {
@@ -253,7 +252,6 @@ impl CommittabilityValidator {
 
         let receipt = self
             .execution_configurator
-            .read()
             .wrap_pending_transaction(transaction)
             .execute_on(database.deref());
 

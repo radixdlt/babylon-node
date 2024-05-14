@@ -785,6 +785,7 @@ components:
         - GlobalValidator
         - GlobalGenericComponent
         - GlobalAccount
+        - GlobalAccountLocker
         - GlobalIdentity
         - GlobalAccessController
         - GlobalVirtualSecp256k1Account

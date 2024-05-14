@@ -8,6 +8,7 @@ type Overrides<X> = <X as ProtocolUpdateDefinition>::Overrides;
 #[derive(Default, ScryptoSbor)]
 pub struct ProtocolUpdateContentOverrides {
     anemone: Option<Overrides<AnemoneProtocolUpdateDefinition>>,
+    bottlenose: Option<Overrides<BottlenoseProtocolUpdateDefinition>>,
     custom: HashMap<ProtocolVersionName, Overrides<CustomProtocolUpdateDefinition>>,
 }
 
@@ -21,18 +22,26 @@ impl ProtocolUpdateContentOverrides {
         self
     }
 
+    pub fn with_bottlenose(
+        mut self,
+        config: Overrides<BottlenoseProtocolUpdateDefinition>,
+    ) -> Self {
+        self.bottlenose = Some(config);
+        self
+    }
+
     pub fn with_custom(
         mut self,
         custom_name: ProtocolVersionName,
-        config: Overrides<CustomProtocolUpdateDefinition>,
+        overrides: Overrides<CustomProtocolUpdateDefinition>,
     ) -> Self {
-        if !CustomProtocolUpdateDefinition::matches(&custom_name) {
+        if !CustomProtocolUpdateDefinition::matches(custom_name.as_str()) {
             panic!(
                 "Not an allowed custom protocol update name: {}",
                 custom_name
             );
         }
-        self.custom.insert(custom_name, config);
+        self.custom.insert(custom_name, overrides);
         self
     }
 }
@@ -47,9 +56,15 @@ impl From<ProtocolUpdateContentOverrides> for RawProtocolUpdateContentOverrides 
                 scrypto_encode(&config).unwrap(),
             );
         }
+        if let Some(config) = value.bottlenose {
+            map.insert(
+                ProtocolVersionName::of(BOTTLENOSE_PROTOCOL_VERSION).unwrap(),
+                scrypto_encode(&config).unwrap(),
+            );
+        }
 
         for (update_name, config) in value.custom {
-            if CustomProtocolUpdateDefinition::matches(&update_name) {
+            if CustomProtocolUpdateDefinition::matches(update_name.as_str()) {
                 map.insert(update_name, scrypto_encode(&config).unwrap());
             }
         }

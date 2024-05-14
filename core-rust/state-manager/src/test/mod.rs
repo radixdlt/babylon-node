@@ -3,10 +3,23 @@ use crate::query::TransactionIdentifierLoader;
 use crate::traits::QueryableProofStore;
 use crate::{
     CommitRequest, CommitSummary, LedgerHeader, LedgerProof, LedgerProofOrigin, PrepareRequest,
-    PrepareResult, RoundHistory, StateManager,
+    PrepareResult, RoundHistory, StateManager, StateManagerConfig,
 };
+use node_common::locks::LockFactory;
+use node_common::scheduler::Scheduler;
+use prometheus::Registry;
 
-/// A bunch of test utils
+// A bunch of test utils
+
+pub fn create_state_manager(config: StateManagerConfig) -> StateManager {
+    StateManager::new(
+        config,
+        None,
+        &LockFactory::new("testing"),
+        &Registry::new(),
+        &Scheduler::new("testing"),
+    )
+}
 
 pub fn commit_round_updates_until_epoch(state_manager: &StateManager, epoch: Epoch) {
     loop {
@@ -64,7 +77,7 @@ pub fn prepare_and_commit_round_update(
             )
         };
 
-    let prepare_result = state_manager.state_computer.prepare(PrepareRequest {
+    let prepare_result = state_manager.preparator.prepare(PrepareRequest {
         committed_ledger_hashes: top_identifiers.resultant_ledger_hashes,
         ancestor_transactions: vec![],
         ancestor_ledger_hashes: top_identifiers.resultant_ledger_hashes,
@@ -86,7 +99,7 @@ pub fn prepare_and_commit_round_update(
         .collect();
 
     let commit_result = state_manager
-        .state_computer
+        .committer
         .commit(CommitRequest {
             transactions: txns_to_commit,
             proof: LedgerProof {

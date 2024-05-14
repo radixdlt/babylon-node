@@ -52,6 +52,7 @@ impl MempoolRejectionReason {
         match self {
             MempoolRejectionReason::AlreadyCommitted(_) => true,
             MempoolRejectionReason::FromExecution(rejection_reason) => match **rejection_reason {
+                ExecutionRejectionReason::BootloadingError(_) => false,
                 ExecutionRejectionReason::SuccessButFeeLoanNotRepaid => false,
                 ExecutionRejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(_) => false,
                 ExecutionRejectionReason::TransactionEpochNotYetValid { .. } => false,
@@ -78,6 +79,11 @@ impl MempoolRejectionReason {
                 RejectionPermanence::PermanentForAnyPayloadWithThisIntent
             }
             MempoolRejectionReason::FromExecution(rejection_error) => match **rejection_error {
+                ExecutionRejectionReason::BootloadingError(_) => RejectionPermanence::Temporary {
+                    retry: RetrySettings::AfterDelay {
+                        base_delay: Duration::from_secs(2 * 60),
+                    },
+                },
                 ExecutionRejectionReason::SuccessButFeeLoanNotRepaid => {
                     RejectionPermanence::Temporary {
                         retry: RetrySettings::AfterDelay {
@@ -689,10 +695,10 @@ struct CommittedIntentRecord {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use node_common::{config::MempoolConfig, locks::LockFactory};
     use prometheus::Registry;
-
-    use super::*;
+    use radix_engine::system::system_modules::costing::{CostingError, FeeReserveError};
 
     fn user_payload_hash(nonce: u8) -> NotarizedTransactionHash {
         NotarizedTransactionHash::from(blake2b_256_hash([0, nonce]))
@@ -730,7 +736,11 @@ mod tests {
 
         let example_attempt_2 = TransactionAttempt {
             rejection: Some(MempoolRejectionReason::FromExecution(Box::new(
-                ExecutionRejectionReason::SuccessButFeeLoanNotRepaid,
+                ExecutionRejectionReason::BootloadingError(
+                    BootloadingError::FailedToApplyDeferredCosts(CostingError::FeeReserveError(
+                        FeeReserveError::Overflow,
+                    )),
+                ),
             ))),
             against_state: AtState::Specific(AtSpecificState::Committed {
                 state_version: StateVersion::pre_genesis(),
@@ -896,7 +906,11 @@ mod tests {
 
         let attempt_with_temporary_rejection = TransactionAttempt {
             rejection: Some(MempoolRejectionReason::FromExecution(Box::new(
-                ExecutionRejectionReason::SuccessButFeeLoanNotRepaid,
+                ExecutionRejectionReason::BootloadingError(
+                    BootloadingError::FailedToApplyDeferredCosts(CostingError::FeeReserveError(
+                        FeeReserveError::Overflow,
+                    )),
+                ),
             ))),
             against_state: AtState::Specific(AtSpecificState::Committed {
                 state_version: StateVersion::pre_genesis(),

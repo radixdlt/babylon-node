@@ -8,15 +8,15 @@ node-common = { path = "../node-common" }
 state-manager = { path = "../state-manager" }
 
 sbor = { workspace = true }
-transaction = { workspace = true }
-radix-engine-common = { workspace = true }
+radix-transactions = { workspace = true }
+radix-common = { workspace = true }
 radix-engine-interface = { workspace = true }
 radix-engine = { workspace = true }
-substate-store-impls = { workspace = true }
-substate-store-interface = { workspace = true }
-substate-store-queries = { workspace = true }
-blueprint-schema-init = { workspace = true }
-utils = { workspace = true }
+radix-substate-store-impls = { workspace = true }
+radix-substate-store-interface = { workspace = true }
+radix-substate-store-queries = { workspace = true }
+radix-blueprint-schema-init = { workspace = true }
+radix-rust = { workspace = true }
 
 # Non-Radix Engine Dependencies:
 jni = { workspace = true }
@@ -29,16 +29,16 @@ serde_json = { workspace = true }
 serde_with = { workspace = true }
 itertools = { workspace = true }
 rand = { workspace = true }
-
 chrono = { workspace = true }
-hex = { version = "0.4.3", default-features = false }
-futures = { version = "0.3" }
-futures-util = "0.3.28"
-axum = { version = "0.6.6", features = ["http1", "json"] }
-tower = "0.4.13"
-tower-http = { version = "0.4.3", features = ["catch-panic"]}
-hyper = { version = "0.14.20", features = ["server", "http1"] }
-paste = { version = "1.0.12", default-features = false }
-convert_case = { version = "0.6.0" }
-regex = {version = "1.7.1"}
-lazy_static = { version = "1.4.0" }
+hex = { workspace = true }
+futures = { workspace = true }
+futures-util = { workspace = true }
+axum = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+hyper = { workspace = true }
+paste = { workspace = true }
+
+convert_case = { version = "=0.6.0" }
+regex = { version = "=1.9.3"}
+lazy_static = { version = "=1.4.0" }

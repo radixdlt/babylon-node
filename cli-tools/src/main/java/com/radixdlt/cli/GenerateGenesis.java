@@ -109,9 +109,8 @@ public final class GenerateGenesis {
           Network.ZABANET,
           Network.STOKENET);
 
-  private static final Set<Network> PRODUCTION_NETWORKS = Set.of(Network.MAINNET);
-  private static final Set<Network> NETWORKS_TO_DISABLE_FAUCET = PRODUCTION_NETWORKS;
-  private static final Set<Network> NETWORKS_TO_DISABLE_SCENARIOS = NETWORKS_TO_DISABLE_FAUCET;
+  private static final Set<Network> NETWORKS_TO_DISABLE_FAUCET = Network.PRODUCTION_NETWORKS;
+  private static final Set<Network> NETWORKS_TO_DISABLE_SCENARIOS = Network.PRODUCTION_NETWORKS;
 
   private static final Set<Network> NETWORKS_TO_ENSURE_PRODUCTION_EMISSIONS =
       Set.of(
@@ -265,7 +264,7 @@ public final class GenerateGenesis {
             : Map.of();
 
     var consensusConfig =
-        PRODUCTION_NETWORKS.contains(network)
+        Network.PRODUCTION_NETWORKS.contains(network)
             ? GenesisConsensusManagerConfig.Builder.productionDefaults()
             : GenesisConsensusManagerConfig.Builder.testEnvironmentDefaults();
 

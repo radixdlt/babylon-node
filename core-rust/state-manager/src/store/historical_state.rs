@@ -63,8 +63,8 @@
  */
 
 use std::ops::Deref;
-use substate_store_impls::state_tree::entity_tier::EntityTier;
 
+use crate::engine_prelude::entity_tier::EntityTier;
 use crate::engine_prelude::*;
 use crate::query::StateManagerSubstateQueries;
 use crate::rocks_db::{ReadableRocks, StateManagerDatabase};

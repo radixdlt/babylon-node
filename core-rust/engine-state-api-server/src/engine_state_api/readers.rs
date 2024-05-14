@@ -17,7 +17,7 @@ lazy_static::lazy_static! {
     static ref VERSIONED_SCHEMA_TYPE: (SchemaV1<ScryptoCustomSchema>, LocalTypeId) = {
         let (local_type_id, versioned_schema) =
             generate_full_schema_from_single_type::<VersionedScryptoSchema, ScryptoCustomSchema>();
-        (versioned_schema.into_latest(), local_type_id)
+        (versioned_schema.fully_update_and_into_latest_version(), local_type_id)
     };
 }
 
@@ -261,7 +261,7 @@ impl<'s, S: SubstateDatabase> EngineStateMetaLoader<'s, S> {
                     "no auth config found for blueprint".to_string(),
                 )
             })?
-            .into_latest();
+            .fully_update_and_into_latest_version();
 
         let royalty_config = self
             .reader
@@ -284,7 +284,7 @@ impl<'s, S: SubstateDatabase> EngineStateMetaLoader<'s, S> {
                     "no royalty config found for blueprint".to_string(),
                 )
             })?
-            .into_latest();
+            .fully_update_and_into_latest_version();
         let mut royalties = match royalty_config {
             PackageRoyaltyConfig::Disabled => index_map_new(),
             PackageRoyaltyConfig::Enabled(royalties) => royalties,
@@ -301,7 +301,7 @@ impl<'s, S: SubstateDatabase> EngineStateMetaLoader<'s, S> {
             } = schema;
             let declared_input_type = self.load_blueprint_type_meta(node_id, input)?;
             let declared_output_type = self.load_blueprint_type_meta(node_id, output)?;
-            let royalty = royalties.remove(&name).unwrap_or(RoyaltyAmount::Free);
+            let royalty = royalties.swap_remove(&name).unwrap_or(RoyaltyAmount::Free);
             match receiver {
                 None => {
                     let authorization = match &function_auth {
@@ -687,7 +687,11 @@ impl<'s, S: SubstateDatabase> EngineStateMetaLoader<'s, S> {
                                 "when locating schema".to_string(),
                             )
                         })?
-                        .clone_into_latest()
+                        .as_ref()
+                        .clone()
+                        .fully_update_and_into_latest_version()
+                    // .as_unique_version()
+                    // .clone()
                 }
                 ResolvedTypeReference::WellKnown(_) => SchemaV1::empty(),
             },

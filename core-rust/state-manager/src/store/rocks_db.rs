@@ -99,8 +99,7 @@ use crate::store::traits::indices::{
 };
 use crate::store::traits::measurement::{CategoryDbVolumeStatistic, MeasurableDatabase};
 use crate::store::traits::scenario::{
-    ExecutedGenesisScenario, ExecutedGenesisScenarioStore, ScenarioSequenceNumber,
-    VersionedExecutedGenesisScenario,
+    ExecutedScenario, ExecutedScenarioStore, ScenarioSequenceNumber, VersionedExecutedScenario,
 };
 use crate::store::typed_cf_api::*;
 use crate::transaction::{
@@ -148,7 +147,7 @@ const ALL_COLUMN_FAMILIES: [&str; 25] = [
     ReceiptAccuTreeSlicesCf::VERSIONED_NAME,
     ExtensionsDataCf::NAME,
     AccountChangeStateVersionsCf::NAME,
-    ExecutedGenesisScenariosCf::VERSIONED_NAME,
+    ExecutedScenariosCf::VERSIONED_NAME,
     LedgerProofsGcProgressCf::VERSIONED_NAME,
     AssociatedStateTreeValuesCf::DEFAULT_NAME,
     TypeAndCreationIndexedEntitiesCf::VERSIONED_NAME,
@@ -447,15 +446,16 @@ impl TypedCf for AccountChangeStateVersionsCf {
 
 /// Additional details of "Scenarios" (and their transactions) executed as part of Genesis,
 /// keyed by their sequence number (i.e. their index in the list of Scenarios to execute).
-/// Schema: `ScenarioSequenceNumber.to_be_bytes()` -> `scrypto_encode(VersionedExecutedGenesisScenario)`
-struct ExecutedGenesisScenariosCf;
-impl VersionedCf for ExecutedGenesisScenariosCf {
+/// Schema: `ScenarioSequenceNumber.to_be_bytes()` -> `scrypto_encode(VersionedExecutedScenario)`
+struct ExecutedScenariosCf;
+impl VersionedCf for ExecutedScenariosCf {
     type Key = ScenarioSequenceNumber;
-    type Value = ExecutedGenesisScenario;
+    type Value = ExecutedScenario;
 
+    // Note: a legacy name is still used here, even though we now have scenarios run outside Genesis
     const VERSIONED_NAME: &'static str = "executed_genesis_scenarios";
     type KeyCodec = ScenarioSequenceNumberDbCodec;
-    type VersionedValue = VersionedExecutedGenesisScenario;
+    type VersionedValue = VersionedExecutedScenario;
 }
 
 /// A progress of the GC process pruning the [`LedgerProofsCf`].
@@ -958,7 +958,7 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
             .map(|bytes| {
                 scrypto_decode::<VersionedStateTreeAssociatedValuesStatus>(&bytes)
                     .unwrap()
-                    .into_latest()
+                    .fully_update_and_into_latest_version()
             });
 
         if self.config.enable_historical_substate_values {
@@ -1066,7 +1066,7 @@ impl<R: ReadableRocks> ConfigurableDatabase for StateManagerDatabase<R> {
             .map(|bytes| {
                 scrypto_decode::<VersionedStateTreeAssociatedValuesStatus>(&bytes)
                     .unwrap()
-                    .into_latest()
+                    .fully_update_and_into_latest_version()
             })
             .expect("state history feature metadata not found")
             .historical_substate_values_available_from
@@ -1330,16 +1330,20 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
     }
 }
 
-impl<R: WriteableRocks> ExecutedGenesisScenarioStore for StateManagerDatabase<R> {
-    fn put_scenario(&self, number: ScenarioSequenceNumber, scenario: ExecutedGenesisScenario) {
-        self.open_rw_context()
-            .cf(ExecutedGenesisScenariosCf)
-            .put(&number, &scenario);
+impl<R: WriteableRocks> ExecutedScenarioStore for StateManagerDatabase<R> {
+    fn put_next_scenario(&self, scenario: ExecutedScenario) {
+        let db_context = self.open_rw_context();
+        let scenarios_cf = db_context.cf(ExecutedScenariosCf);
+        let next_sequence_number = scenarios_cf
+            .get_last_key()
+            .map(|last_number| last_number.checked_add(1).expect("cannot auto-increment"))
+            .unwrap_or_default();
+        scenarios_cf.put(&next_sequence_number, &scenario);
     }
 
-    fn list_all_scenarios(&self) -> Vec<(ScenarioSequenceNumber, ExecutedGenesisScenario)> {
+    fn list_all_scenarios(&self) -> Vec<(ScenarioSequenceNumber, ExecutedScenario)> {
         self.open_read_context()
-            .cf(ExecutedGenesisScenariosCf)
+            .cf(ExecutedScenariosCf)
             .iterate(Direction::Forward)
             .collect()
     }
@@ -1882,7 +1886,7 @@ impl<R: WriteableRocks> StateTreeGcStore for StateManagerDatabase<R> {
             .map(|bytes| {
                 scrypto_decode::<VersionedStateTreeAssociatedValuesStatus>(&bytes)
                     .unwrap()
-                    .into_latest()
+                    .fully_update_and_into_latest_version()
             });
         let Some(mut status) = status else {
             // The state history feature is simply not enabled.
