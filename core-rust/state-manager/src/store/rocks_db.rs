@@ -805,7 +805,7 @@ impl ActualStateManagerDatabase {
     }
 }
 
-impl<R: ReadableRocks> StateManagerDatabase<R> {
+impl StateManagerDatabase<DirectRocks> {
     /// Creates a readonly [`StateManagerDatabase`] that allows only reading from the store, while
     /// some other process is writing to it.
     ///
@@ -816,7 +816,7 @@ impl<R: ReadableRocks> StateManagerDatabase<R> {
     /// way of making it clear that it only wants read lock and not a write lock.
     ///
     /// [`ledger-tools`]: https://github.com/radixdlt/ledger-tools
-    pub fn new_read_only(root_path: PathBuf) -> StateManagerDatabase<impl ReadableRocks> {
+    pub fn new_read_only(root_path: PathBuf) -> StateManagerDatabase<DirectRocks> {
         let mut db_opts = Options::default();
         db_opts.create_if_missing(false);
         db_opts.create_missing_column_families(false);
@@ -832,7 +832,7 @@ impl<R: ReadableRocks> StateManagerDatabase<R> {
             column_families,
             false,
         )
-        .unwrap();
+            .unwrap();
 
         StateManagerDatabase {
             config: DatabaseConfig {
@@ -844,16 +844,14 @@ impl<R: ReadableRocks> StateManagerDatabase<R> {
             rocks: DirectRocks { db },
         }
     }
-}
 
-impl<R: SecondaryRocks> StateManagerDatabase<R> {
     /// Creates a [`StateManagerDatabase`] as a secondary instance which may catch up with the
     /// primary.
     pub fn new_as_secondary(
         root_path: PathBuf,
         temp_path: PathBuf,
         column_families: Vec<&str>,
-    ) -> StateManagerDatabase<impl SecondaryRocks> {
+    ) -> StateManagerDatabase<DirectRocks> {
         let mut db_opts = Options::default();
         db_opts.create_if_missing(false);
         db_opts.create_missing_column_families(false);
