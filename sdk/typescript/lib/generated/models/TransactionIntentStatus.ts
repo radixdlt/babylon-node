@@ -15,7 +15,7 @@
 
 /**
  * The status of the transaction intent, as determined by the node.
- * FateUncertain or FateUncertainButLikelyRejection mean that it's still possible that a payload containing the transaction 
+ * FateUncertain or FateUncertainButLikelyRejection mean that it's still possible that a payload containing the transaction
  * @export
  */
 export const TransactionIntentStatus = {

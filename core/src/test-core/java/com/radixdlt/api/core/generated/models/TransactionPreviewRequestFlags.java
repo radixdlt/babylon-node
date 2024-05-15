@@ -59,11 +59,11 @@ public class TransactionPreviewRequestFlags {
   }
 
    /**
-   * Get useFreeCredit
+   * Whether to use a virtual, preview-only pool of XRD to pay for all execution fees. 
    * @return useFreeCredit
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @ApiModelProperty(required = true, value = "Whether to use a virtual, preview-only pool of XRD to pay for all execution fees. ")
   @JsonProperty(JSON_PROPERTY_USE_FREE_CREDIT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -85,11 +85,11 @@ public class TransactionPreviewRequestFlags {
   }
 
    /**
-   * Get assumeAllSignatureProofs
+   * Whether the virtual signature proofs should be automatically placed in the auth zone. 
    * @return assumeAllSignatureProofs
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @ApiModelProperty(required = true, value = "Whether the virtual signature proofs should be automatically placed in the auth zone. ")
   @JsonProperty(JSON_PROPERTY_ASSUME_ALL_SIGNATURE_PROOFS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -111,11 +111,11 @@ public class TransactionPreviewRequestFlags {
   }
 
    /**
-   * Get skipEpochCheck
+   * Whether to skip the epoch range check (i.e. ignoring the &#x60;start_epoch_inclusive&#x60; and &#x60;end_epoch_exclusive&#x60; parameters, if specified).  Note: effectively, without an epoch range, the Radix Engine cannot perform the *intent hash duplicate* detection, which means that this check will be skipped as well. 
    * @return skipEpochCheck
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @ApiModelProperty(required = true, value = "Whether to skip the epoch range check (i.e. ignoring the `start_epoch_inclusive` and `end_epoch_exclusive` parameters, if specified).  Note: effectively, without an epoch range, the Radix Engine cannot perform the *intent hash duplicate* detection, which means that this check will be skipped as well. ")
   @JsonProperty(JSON_PROPERTY_SKIP_EPOCH_CHECK)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -137,11 +137,11 @@ public class TransactionPreviewRequestFlags {
   }
 
    /**
-   * Can be used to skip performing auth checks during runtime.  This could be used to e.g.: * Preview protocol update style transactions * Mint resources for previewing trades with resources you don&#39;t own. If doing this, be warned:   * Only resources which were potentially mintable/burnable at creation time   will be mintable/burnable, due to feature flags on the resource.   * Please see the below warning about unexpected results if using this approach.  Please be warned - this mode of operation is quite a departure from normal operation: * Calculated fees will likely be lower than a standard execution * This mode can subtly break invariants some dApp code might rely on, or result in unexpected behaviour, so the resulting execution result might not be valid for your needs. For example, if I used this flag to mint pool units to preview a redemption (or some dApp interaction which behind the scenes redeemed them), they&#39;d redeem for less than they&#39;re currently worth, because the blueprint code relies on the total supply of the pool units to calculate their redemption worth, and you&#39;ve just inflated the total supply through the mint operation. 
+   * Whether to skip the auth checks during execution.  This could be used to e.g.: * Preview protocol update style transactions. * Mint resources for previewing trades with resources you don&#39;t own. If doing this, be warned:   * Only resources which were potentially mintable/burnable at creation time     will be mintable/burnable, due to feature flags on the resource.   * Please see the below warning about unexpected results if using this approach.  Warning: this mode of operation is quite a departure from normal operation: * Calculated fees will likely be lower than a standard execution. * This mode can subtly break invariants some dApp code might rely on, or result in unexpected   behaviour, so the resulting execution result might not be valid for your needs. For example,   if I used this flag to mint pool units to preview a redemption (or some dApp interaction which   behind the scenes redeemed them), they&#39;d redeem for less than they&#39;re currently worth,   because the blueprint code relies on the total supply of the pool units to calculate their   redemption worth, and you&#39;ve just inflated the total supply through the mint operation. 
    * @return disableAuthChecks
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "Can be used to skip performing auth checks during runtime.  This could be used to e.g.: * Preview protocol update style transactions * Mint resources for previewing trades with resources you don't own. If doing this, be warned:   * Only resources which were potentially mintable/burnable at creation time   will be mintable/burnable, due to feature flags on the resource.   * Please see the below warning about unexpected results if using this approach.  Please be warned - this mode of operation is quite a departure from normal operation: * Calculated fees will likely be lower than a standard execution * This mode can subtly break invariants some dApp code might rely on, or result in unexpected behaviour, so the resulting execution result might not be valid for your needs. For example, if I used this flag to mint pool units to preview a redemption (or some dApp interaction which behind the scenes redeemed them), they'd redeem for less than they're currently worth, because the blueprint code relies on the total supply of the pool units to calculate their redemption worth, and you've just inflated the total supply through the mint operation. ")
+  @ApiModelProperty(value = "Whether to skip the auth checks during execution.  This could be used to e.g.: * Preview protocol update style transactions. * Mint resources for previewing trades with resources you don't own. If doing this, be warned:   * Only resources which were potentially mintable/burnable at creation time     will be mintable/burnable, due to feature flags on the resource.   * Please see the below warning about unexpected results if using this approach.  Warning: this mode of operation is quite a departure from normal operation: * Calculated fees will likely be lower than a standard execution. * This mode can subtly break invariants some dApp code might rely on, or result in unexpected   behaviour, so the resulting execution result might not be valid for your needs. For example,   if I used this flag to mint pool units to preview a redemption (or some dApp interaction which   behind the scenes redeemed them), they'd redeem for less than they're currently worth,   because the blueprint code relies on the total supply of the pool units to calculate their   redemption worth, and you've just inflated the total supply through the mint operation. ")
   @JsonProperty(JSON_PROPERTY_DISABLE_AUTH_CHECKS)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 

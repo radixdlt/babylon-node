@@ -2615,7 +2615,7 @@ components:
           required:
             - public_key
             - signature
-          description: The EdDSA public key and signature 
+          description: The EdDSA public key and signature
           properties:
             public_key:
               $ref: '#/components/schemas/EddsaEd25519PublicKey'
@@ -3782,7 +3782,7 @@ components:
         mapping:
           # NOTE:
           # There is an important convention to these names, for consistency:
-          # 
+          #
           # For each distinct typed substate, form [SubstateType] = [ModuleSpecifier][SubstateSpecifier][SubstateTypeVersion]
           # - [ModuleSpecifier] is either [ModuleName]Module for non-main modules, or [EntityType] for main modules
           # - [SubstateSpecifier] is either:
@@ -4216,7 +4216,7 @@ components:
           description: |
             The generic substitution is provided remotely by a blueprint type.
             The `resolved_full_type_id` is added by the node, and is always present in the model returned from the transaction stream API.
-            Other APIs may not resolve the type from the blueprint definition. 
+            Other APIs may not resolve the type from the blueprint definition.
           required:
             - blueprint_type_identifier
           properties:
@@ -5580,7 +5580,7 @@ components:
       type: string
       description: |
         The status of the transaction intent, as determined by the node.
-        FateUncertain or FateUncertainButLikelyRejection mean that it's still possible that a payload containing the transaction 
+        FateUncertain or FateUncertainButLikelyRejection mean that it's still possible that a payload containing the transaction
       enum:
         - CommittedSuccess
         - CommittedFailure
@@ -7013,7 +7013,7 @@ components:
       type: string
       description: |
         The status of the transaction intent, as determined by the node.
-        FateUncertain or FateUncertainButLikelyRejection mean that it's still possible that a payload containing the transaction 
+        FateUncertain or FateUncertainButLikelyRejection mean that it's still possible that a payload containing the transaction
       enum:
         - CommittedSuccess
         - CommittedFailure
@@ -7134,8 +7134,6 @@ components:
       required:
         - network
         - manifest
-        - start_epoch_inclusive
-        - end_epoch_exclusive
         - cost_unit_limit
         - tip_percentage
         - nonce
@@ -7147,10 +7145,10 @@ components:
         at_ledger_state:
           $ref: "#/components/schemas/LedgerStateSelector"
         manifest:
-          description: A text-representation of a transaction manifest
+          description: A text representation of a transaction manifest.
           type: string
         blobs_hex:
-          description: An array of hex-encoded blob data (optional)
+          description: An array of hex-encoded blob data, if referenced by the manifest.
           type: array
           items:
             type: string
@@ -7159,32 +7157,41 @@ components:
           format: int64
           minimum: 0
           maximum: 10000000000
-          description: An integer between `0` and `10^10`, marking the epoch at which the transaction starts being valid
+          description: |
+            An integer between `0` and `10^10`, marking the epoch at which the transaction starts
+            being valid. If omitted, the current epoch will be used (taking into account the
+            `at_ledger_state`, if specified).
         end_epoch_exclusive:
           type: integer
           format: int64
           minimum: 0
           maximum: 10000000000
-          description: An integer between `0` and `10^10`, marking the epoch at which the transaction is no longer valid
+          description: |
+            An integer between `0` and `10^10`, marking the epoch at which the transaction is no
+            longer valid. If omitted, a maximum epoch (relative to the `start_epoch_inclusive`) will
+            be used.
         notary_public_key:
           $ref: "#/components/schemas/PublicKey"
-          description: The notary public key to use (optional)
+          description: The notary public key to use (optional).
         notary_is_signatory:
           type: boolean
-          description: Whether the notary should count as a signatory (optional, default false)
+          description: Whether the notary should count as a signatory (defaults to `false`).
         tip_percentage:
           type: integer
           format: int32
           minimum: 0
           maximum: 65535
-          description: An integer between `0` and `65535`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
+          description: |
+            An integer between `0` and `65535`, giving the validator tip as a percentage amount.
+            A value of `1` corresponds to a 1% fee.
         nonce:
           type: integer
           format: int64
           minimum: 0
           maximum: 4294967295
           description: |
-            An integer between `0` and `2^32 - 1`, chosen to allow a unique intent to be created (to enable submitting an otherwise identical/duplicate intent).
+            An integer between `0` and `2^32 - 1`, chosen to allow a unique intent to be created
+            (to enable submitting an otherwise identical/duplicate intent).
         signer_public_keys:
           type: array
           items:
@@ -7201,31 +7208,41 @@ components:
             - skip_epoch_check
           properties:
             use_free_credit:
+              description: |
+                Whether to use a virtual, preview-only pool of XRD to pay for all execution fees.
               type: boolean
             assume_all_signature_proofs:
+              description: |
+                Whether the virtual signature proofs should be automatically placed in the auth zone.
               type: boolean
             skip_epoch_check:
+              description: |
+                Whether to skip the epoch range check (i.e. ignoring the `start_epoch_inclusive` and
+                `end_epoch_exclusive` parameters, if specified).
+                
+                Note: effectively, without an epoch range, the Radix Engine cannot perform the
+                *intent hash duplicate* detection, which means that this check will be skipped as well.
               type: boolean
             # This was added later so isn't required; for backwards compatibility
             disable_auth_checks:
               description: |
-                Can be used to skip performing auth checks during runtime.
+                Whether to skip the auth checks during execution.
                 
                 This could be used to e.g.:
-                * Preview protocol update style transactions
+                * Preview protocol update style transactions.
                 * Mint resources for previewing trades with resources you don't own. If doing this, be warned:
                   * Only resources which were potentially mintable/burnable at creation time
-                  will be mintable/burnable, due to feature flags on the resource.
+                    will be mintable/burnable, due to feature flags on the resource.
                   * Please see the below warning about unexpected results if using this approach.
                 
-                Please be warned - this mode of operation is quite a departure from normal operation:
-                * Calculated fees will likely be lower than a standard execution
+                Warning: this mode of operation is quite a departure from normal operation:
+                * Calculated fees will likely be lower than a standard execution.
                 * This mode can subtly break invariants some dApp code might rely on, or result in unexpected
-                behaviour, so the resulting execution result might not be valid for your needs. For example,
-                if I used this flag to mint pool units to preview a redemption (or some dApp interaction which
-                behind the scenes redeemed them), they'd redeem for less than they're currently worth,
-                because the blueprint code relies on the total supply of the pool units to calculate their
-                redemption worth, and you've just inflated the total supply through the mint operation.
+                  behaviour, so the resulting execution result might not be valid for your needs. For example,
+                  if I used this flag to mint pool units to preview a redemption (or some dApp interaction which
+                  behind the scenes redeemed them), they'd redeem for less than they're currently worth,
+                  because the blueprint code relies on the total supply of the pool units to calculate their
+                  redemption worth, and you've just inflated the total supply through the mint operation.
               type: boolean
     TransactionPreviewResponse:
       type: object

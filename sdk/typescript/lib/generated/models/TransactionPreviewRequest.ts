@@ -57,29 +57,33 @@ export interface TransactionPreviewRequest {
      */
     at_ledger_state?: LedgerStateSelector;
     /**
-     * A text-representation of a transaction manifest
+     * A text representation of a transaction manifest.
      * @type {string}
      * @memberof TransactionPreviewRequest
      */
     manifest: string;
     /**
-     * An array of hex-encoded blob data (optional)
+     * An array of hex-encoded blob data, if referenced by the manifest.
      * @type {Array<string>}
      * @memberof TransactionPreviewRequest
      */
     blobs_hex?: Array<string>;
     /**
-     * An integer between `0` and `10^10`, marking the epoch at which the transaction starts being valid
+     * An integer between `0` and `10^10`, marking the epoch at which the transaction starts
+     * being valid. If omitted, the current epoch will be used (taking into account the
+     * `at_ledger_state`, if specified).
      * @type {number}
      * @memberof TransactionPreviewRequest
      */
-    start_epoch_inclusive: number;
+    start_epoch_inclusive?: number;
     /**
-     * An integer between `0` and `10^10`, marking the epoch at which the transaction is no longer valid
+     * An integer between `0` and `10^10`, marking the epoch at which the transaction is no
+     * longer valid. If omitted, a maximum epoch (relative to the `start_epoch_inclusive`) will
+     * be used.
      * @type {number}
      * @memberof TransactionPreviewRequest
      */
-    end_epoch_exclusive: number;
+    end_epoch_exclusive?: number;
     /**
      * 
      * @type {PublicKey}
@@ -87,19 +91,21 @@ export interface TransactionPreviewRequest {
      */
     notary_public_key?: PublicKey;
     /**
-     * Whether the notary should count as a signatory (optional, default false)
+     * Whether the notary should count as a signatory (defaults to `false`).
      * @type {boolean}
      * @memberof TransactionPreviewRequest
      */
     notary_is_signatory?: boolean;
     /**
-     * An integer between `0` and `65535`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
+     * An integer between `0` and `65535`, giving the validator tip as a percentage amount.
+     * A value of `1` corresponds to a 1% fee.
      * @type {number}
      * @memberof TransactionPreviewRequest
      */
     tip_percentage: number;
     /**
-     * An integer between `0` and `2^32 - 1`, chosen to allow a unique intent to be created (to enable submitting an otherwise identical/duplicate intent).
+     * An integer between `0` and `2^32 - 1`, chosen to allow a unique intent to be created
+     * (to enable submitting an otherwise identical/duplicate intent).
      * @type {number}
      * @memberof TransactionPreviewRequest
      */
@@ -131,8 +137,6 @@ export function instanceOfTransactionPreviewRequest(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "network" in value;
     isInstance = isInstance && "manifest" in value;
-    isInstance = isInstance && "start_epoch_inclusive" in value;
-    isInstance = isInstance && "end_epoch_exclusive" in value;
     isInstance = isInstance && "tip_percentage" in value;
     isInstance = isInstance && "nonce" in value;
     isInstance = isInstance && "signer_public_keys" in value;
@@ -155,8 +159,8 @@ export function TransactionPreviewRequestFromJSONTyped(json: any, ignoreDiscrimi
         'at_ledger_state': !exists(json, 'at_ledger_state') ? undefined : LedgerStateSelectorFromJSON(json['at_ledger_state']),
         'manifest': json['manifest'],
         'blobs_hex': !exists(json, 'blobs_hex') ? undefined : json['blobs_hex'],
-        'start_epoch_inclusive': json['start_epoch_inclusive'],
-        'end_epoch_exclusive': json['end_epoch_exclusive'],
+        'start_epoch_inclusive': !exists(json, 'start_epoch_inclusive') ? undefined : json['start_epoch_inclusive'],
+        'end_epoch_exclusive': !exists(json, 'end_epoch_exclusive') ? undefined : json['end_epoch_exclusive'],
         'notary_public_key': !exists(json, 'notary_public_key') ? undefined : PublicKeyFromJSON(json['notary_public_key']),
         'notary_is_signatory': !exists(json, 'notary_is_signatory') ? undefined : json['notary_is_signatory'],
         'tip_percentage': json['tip_percentage'],
