@@ -100,10 +100,6 @@ public record ScenariosExecutionConfig(
   }
 
   public static ScenariosExecutionConfig resolveForNetwork(Network network) {
-    if (Network.PRODUCTION_NETWORKS.contains(network)) {
-      return ScenariosExecutionConfig.NONE;
-    } else {
-      return ScenariosExecutionConfig.ALL;
-    }
+    return ScenariosExecutionConfig.NONE;
   }
 }
