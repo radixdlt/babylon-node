@@ -114,7 +114,7 @@ pub struct HashUpdateContext<'s, S> {
 pub struct ExecutionFeeData {
     pub fee_summary: TransactionFeeSummary,
     pub engine_costing_parameters: CostingParameters,
-    pub transaction_costing_parameters: TransactionCostingParameters,
+    pub transaction_costing_parameters: TransactionCostingParametersReceipt,
 }
 
 impl ProcessedTransactionReceipt {
