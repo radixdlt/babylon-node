@@ -237,7 +237,7 @@ pub struct LocalTransactionExecutionV1 {
     pub fee_source: FeeSource,
     pub fee_destination: FeeDestination,
     pub engine_costing_parameters: CostingParameters,
-    pub transaction_costing_parameters: TransactionCostingParameters,
+    pub transaction_costing_parameters: TransactionCostingParametersReceipt,
     pub application_logs: Vec<(Level, String)>,
     pub state_update_summary: StateUpdateSummary,
     pub global_balance_summary: GlobalBalanceSummary,

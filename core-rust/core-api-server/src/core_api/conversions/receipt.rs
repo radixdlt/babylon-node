@@ -699,7 +699,7 @@ pub fn to_api_fee_summary(
 pub fn to_api_costing_parameters(
     _context: &MappingContext,
     engine_costing_parameters: &CostingParameters,
-    transaction_costing_parameters: &TransactionCostingParameters,
+    transaction_costing_parameters: &TransactionCostingParametersReceipt,
 ) -> Result<models::CostingParameters, MappingError> {
     Ok(models::CostingParameters {
         execution_cost_unit_price: to_api_decimal(
