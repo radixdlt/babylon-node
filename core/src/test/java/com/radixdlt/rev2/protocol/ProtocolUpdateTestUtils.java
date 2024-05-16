@@ -69,10 +69,23 @@ import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransac
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import com.google.common.collect.Streams;
+import com.google.inject.AbstractModule;
 import com.google.inject.Key;
+import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.api.CoreApiServer;
+import com.radixdlt.api.CoreApiServerModule;
+import com.radixdlt.api.core.generated.client.ApiClient;
+import com.radixdlt.api.core.generated.models.CommittedTransaction;
+import com.radixdlt.api.core.generated.models.DeletedSubstate;
+import com.radixdlt.api.core.generated.models.FlashLedgerTransaction;
+import com.radixdlt.api.core.generated.models.FlashSetSubstate;
 import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.environment.CoreApiServerFlags;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.lang.Option;
@@ -84,9 +97,12 @@ import com.radixdlt.state.RustStateReader;
 import com.radixdlt.statecomputer.commit.NextEpoch;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
+import com.radixdlt.utils.FreePortFinder;
 import com.radixdlt.utils.PrivateKeys;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public final class ProtocolUpdateTestUtils {
   public static long runUntilNextEpoch(DeterministicTest test) {
@@ -192,5 +208,76 @@ public final class ProtocolUpdateTestUtils {
                         epoch, readiness));
               }
             });
+  }
+
+  public static void verifyFlashTransactionReceipts(
+      List<CommittedTransaction> committedFlashTransactions) {
+    final var flashStateUpdates =
+        committedFlashTransactions.stream()
+            .map(txn -> (FlashLedgerTransaction) txn.getLedgerTransaction())
+            .map(FlashLedgerTransaction::getFlashedStateUpdates)
+            .toList();
+    final var receiptStateUpdates =
+        committedFlashTransactions.stream().map(txn -> txn.getReceipt().getStateUpdates()).toList();
+    Streams.forEachPair(
+        flashStateUpdates.stream(),
+        receiptStateUpdates.stream(),
+        (fromFlash, fromReceipt) -> {
+          // all deleted partitions specified by flash were really deleted:
+          assertEquals(fromFlash.getDeletedPartitions(), fromReceipt.getDeletedPartitions());
+
+          // substate values set by flash transactions end up as the receipt's created + updated:
+          final var setFromFlash =
+              fromFlash.getSetSubstates().stream()
+                  .collect(
+                      Collectors.toMap(
+                          FlashSetSubstate::getSubstateId, FlashSetSubstate::getValue));
+          final var setFromReceipt =
+              Streams.concat(
+                      fromReceipt.getCreatedSubstates().stream()
+                          .map(create -> Map.entry(create.getSubstateId(), create.getValue())),
+                      fromReceipt.getUpdatedSubstates().stream()
+                          .map(update -> Map.entry(update.getSubstateId(), update.getNewValue())))
+                  .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+          assertEquals(setFromFlash, setFromReceipt);
+
+          // and the same for deletes:
+          final var deletedFromReceipt =
+              fromReceipt.getDeletedSubstates().stream()
+                  .map(DeletedSubstate::getSubstateId)
+                  .toList();
+          assertEquals(fromFlash.getDeletedSubstates(), deletedFromReceipt);
+        });
+  }
+
+  public static class CoreApiHelper {
+
+    private final int coreApiPort;
+
+    public CoreApiHelper() {
+      this.coreApiPort = FreePortFinder.findFreeLocalPort();
+    }
+
+    public Module module() {
+      return new AbstractModule() {
+        @Override
+        protected void configure() {
+          install(new CoreApiServerModule("127.0.0.1", coreApiPort, new CoreApiServerFlags(true)));
+        }
+
+        @ProvidesIntoSet
+        private StartProcessorOnRunner startCoreApi(CoreApiServer coreApiServer) {
+          // This is a slightly hacky way to run something on node start-up in a Deterministic test.
+          // Stop is called by the AutoClosable binding in CoreApiServerModule
+          return new StartProcessorOnRunner("coreApi", coreApiServer::start);
+        }
+      };
+    }
+
+    public ApiClient client() {
+      final var apiClient = new ApiClient();
+      apiClient.updateBaseUri("http://127.0.0.1:" + coreApiPort + "/core");
+      return apiClient;
+    }
   }
 }

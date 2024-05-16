@@ -75,6 +75,7 @@ import com.radixdlt.consensus.liveness.ProposerElections;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.environment.DatabaseConfig;
 import com.radixdlt.environment.LedgerProofsGcConfig;
+import com.radixdlt.environment.ScenariosExecutionConfig;
 import com.radixdlt.environment.StateTreeGcConfig;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
@@ -146,7 +147,8 @@ public sealed interface StateComputerConfig {
       REV2ProposerConfig proposerConfig,
       boolean debugLogging,
       boolean noFees,
-      ProtocolConfig protocolConfig) {
+      ProtocolConfig protocolConfig,
+      ScenariosExecutionConfig scenariosExecutionConfig) {
     return rev2(
         networkId,
         genesis,
@@ -155,7 +157,8 @@ public sealed interface StateComputerConfig {
         debugLogging,
         noFees,
         protocolConfig,
-        StateTreeGcConfig.forTesting());
+        StateTreeGcConfig.forTesting(),
+        scenariosExecutionConfig);
   }
 
   static StateComputerConfig rev2(
@@ -166,7 +169,8 @@ public sealed interface StateComputerConfig {
       boolean debugLogging,
       boolean noFees,
       ProtocolConfig protocolConfig,
-      StateTreeGcConfig stateTreeGcConfig) {
+      StateTreeGcConfig stateTreeGcConfig,
+      ScenariosExecutionConfig scenariosExecutionConfig) {
     return new REv2StateComputerConfig(
         networkId,
         genesis,
@@ -177,7 +181,8 @@ public sealed interface StateComputerConfig {
         LedgerProofsGcConfig.forTesting(),
         LedgerSyncLimitsConfig.defaults(),
         protocolConfig,
-        noFees);
+        noFees,
+        scenariosExecutionConfig);
   }
 
   static StateComputerConfig rev2(
@@ -195,7 +200,8 @@ public sealed interface StateComputerConfig {
         LedgerProofsGcConfig.forTesting(),
         LedgerSyncLimitsConfig.defaults(),
         ProtocolConfig.testingDefault(),
-        false);
+        false,
+        ScenariosExecutionConfig.NONE);
   }
 
   static StateComputerConfig rev2(
@@ -218,7 +224,8 @@ public sealed interface StateComputerConfig {
         LedgerProofsGcConfig.forTesting(),
         LedgerSyncLimitsConfig.defaults(),
         protocolConfig,
-        false);
+        false,
+        ScenariosExecutionConfig.NONE);
   }
 
   sealed interface MockedMempoolConfig {
@@ -290,7 +297,8 @@ public sealed interface StateComputerConfig {
       LedgerProofsGcConfig ledgerProofsGcConfig,
       LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
       ProtocolConfig protocolConfig,
-      boolean noFees)
+      boolean noFees,
+      ScenariosExecutionConfig scenariosExecutionConfig)
       implements StateComputerConfig {}
 
   sealed interface REV2ProposerConfig {

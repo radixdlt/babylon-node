@@ -10,7 +10,7 @@ use crate::{
 
 define_single_versioned! {
     #[derive(Debug, Clone, Sbor)]
-    pub enum VersionedCommittedTransactionIdentifiers => CommittedTransactionIdentifiers = CommittedTransactionIdentifiersV1
+    pub VersionedCommittedTransactionIdentifiers(CommittedTransactionIdentifiersVersions) => CommittedTransactionIdentifiers = CommittedTransactionIdentifiersV1
 }
 
 #[derive(Debug, Clone, Sbor)]
@@ -202,7 +202,7 @@ pub struct LocalTransactionReceipt {
 
 define_single_versioned! {
     #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-    pub enum VersionedLedgerTransactionReceipt => LedgerTransactionReceipt = LedgerTransactionReceiptV1
+    pub VersionedLedgerTransactionReceipt(LedgerTransactionReceiptVersions) => LedgerTransactionReceipt = LedgerTransactionReceiptV1
 }
 
 /// A part of the [`LocalTransactionReceipt`] which is completely stored on ledger. It contains only
@@ -224,7 +224,7 @@ pub struct LedgerTransactionReceiptV1 {
 
 define_single_versioned! {
     #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-    pub enum VersionedLocalTransactionExecution => LocalTransactionExecution = LocalTransactionExecutionV1
+    pub VersionedLocalTransactionExecution(LocalTransactionExecutionVersions) => LocalTransactionExecution = LocalTransactionExecutionV1
 }
 
 /// A computable/non-critical/non-deterministic part of the `LocalTransactionReceipt` (e.g. logs,
@@ -237,7 +237,7 @@ pub struct LocalTransactionExecutionV1 {
     pub fee_source: FeeSource,
     pub fee_destination: FeeDestination,
     pub engine_costing_parameters: CostingParameters,
-    pub transaction_costing_parameters: TransactionCostingParameters,
+    pub transaction_costing_parameters: TransactionCostingParametersReceipt,
     pub application_logs: Vec<(Level, String)>,
     pub state_update_summary: StateUpdateSummary,
     pub global_balance_summary: GlobalBalanceSummary,
@@ -309,6 +309,7 @@ impl LocalTransactionReceipt {
 /// This simply offers a less wasteful representation of a `Vec<(PartitionReference, T)>`, by
 /// avoiding the repeated [`NodeId`]s (within [`PartitionReference`]s).
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[sbor(categorize_types = "T")]
 pub struct ByPartition<T> {
     by_node_id: IndexMap<NodeId, IndexMap<PartitionNumber, T>>,
 }
@@ -367,6 +368,7 @@ impl<T> Default for ByPartition<T> {
 /// This simply offers a less wasteful representation of a `Vec<(SubstateReference, T)>`, by
 /// avoiding the repeated [`NodeId`]s and [`PartitionNumber`]s (within [`SubstateReference`]s).
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[sbor(categorize_types = "T")]
 pub struct BySubstate<T> {
     by_node_id: IndexMap<NodeId, IndexMap<PartitionNumber, IndexMap<SubstateKey, T>>>,
 }

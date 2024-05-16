@@ -420,27 +420,29 @@ mod tests {
         let schema = ConsensusManagerBlueprint::definition()
             .schema
             .schema
-            .into_latest();
+            .fully_update_and_into_latest_version();
         let type_id = LocalTypeId::SchemaLocalIndex(12);
         let network = NetworkDefinition::mainnet(); // exact value irrelevant
 
         // the struct to perform the round-trip with:
-        let original_payload = ConsensusManagerCurrentValidatorSetFieldPayload {
-            content: VersionedConsensusManagerCurrentValidatorSet::V1(
-                ConsensusManagerCurrentValidatorSetV1 {
-                    validator_set: ActiveValidatorSet {
-                        validators_by_stake_desc: indexmap!(
-                            ComponentAddress::new_or_panic(
-                                [EntityType::GlobalValidator as u8; 30]
-                            ) => Validator {
-                                key: Secp256k1PublicKey([7; 33]),
-                                stake: dec!("13.37")
-                            }
-                        ),
+        let original_payload = ConsensusManagerCurrentValidatorSetFieldPayload::of(
+            VersionedConsensusManagerCurrentValidatorSet::new(
+                ConsensusManagerCurrentValidatorSetVersions::V1(
+                    ConsensusManagerCurrentValidatorSetV1 {
+                        validator_set: ActiveValidatorSet {
+                            validators_by_stake_desc: indexmap!(
+                                ComponentAddress::new_or_panic(
+                                    [EntityType::GlobalValidator as u8; 30]
+                                ) => Validator {
+                                    key: Secp256k1PublicKey([7; 33]),
+                                    stake: dec!("13.37")
+                                }
+                            ),
+                        },
                     },
-                },
+                ),
             ),
-        };
+        );
 
         // struct -> sbor_bytes -> serde JSON:
         let original_bytes = scrypto_encode(&original_payload).unwrap();
@@ -465,26 +467,28 @@ mod tests {
         let schema = ConsensusManagerBlueprint::definition()
             .schema
             .schema
-            .into_latest();
+            .fully_update_and_into_latest_version();
         let type_id = LocalTypeId::SchemaLocalIndex(12);
 
         // the struct with address:
-        let original_payload = ConsensusManagerCurrentValidatorSetFieldPayload {
-            content: VersionedConsensusManagerCurrentValidatorSet::V1(
-                ConsensusManagerCurrentValidatorSetV1 {
-                    validator_set: ActiveValidatorSet {
-                        validators_by_stake_desc: indexmap!(
-                            ComponentAddress::new_or_panic(
-                                [EntityType::GlobalValidator as u8; 30]
-                            ) => Validator {
-                                key: Secp256k1PublicKey([7; 33]),
-                                stake: dec!("13.37")
-                            }
-                        ),
+        let original_payload = ConsensusManagerCurrentValidatorSetFieldPayload::of(
+            VersionedConsensusManagerCurrentValidatorSet::new(
+                ConsensusManagerCurrentValidatorSetVersions::V1(
+                    ConsensusManagerCurrentValidatorSetV1 {
+                        validator_set: ActiveValidatorSet {
+                            validators_by_stake_desc: indexmap!(
+                                ComponentAddress::new_or_panic(
+                                    [EntityType::GlobalValidator as u8; 30]
+                                ) => Validator {
+                                    key: Secp256k1PublicKey([7; 33]),
+                                    stake: dec!("13.37")
+                                }
+                            ),
+                        },
                     },
-                },
+                ),
             ),
-        };
+        );
 
         // serialize and expect error on deserialization:
         let original_bytes = scrypto_encode(&original_payload).unwrap();

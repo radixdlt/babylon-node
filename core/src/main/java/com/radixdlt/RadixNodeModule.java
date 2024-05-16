@@ -387,7 +387,8 @@ public final class RadixNodeModule extends AbstractModule {
             stateTreeGcConfig,
             ledgerProofsGcConfig,
             ledgerSyncLimitsConfig,
-            protocolConfig));
+            protocolConfig,
+            ScenariosExecutionConfig.resolveForNetwork(network)));
 
     // Recovery
     install(new BerkeleySafetyStoreModule());

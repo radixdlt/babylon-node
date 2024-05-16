@@ -137,7 +137,7 @@ impl HasIntentHash for MempoolTransaction {
 }
 
 impl HasSignedIntentHash for MempoolTransaction {
-    fn signed_intent_hash(&self) -> transaction::model::SignedIntentHash {
+    fn signed_intent_hash(&self) -> SignedIntentHash {
         self.validated.prepared.signed_intent_hash()
     }
 }
@@ -539,7 +539,7 @@ impl PriorityMempool {
             .sub(transaction_size as i64);
         self.metrics.current_transactions.sub(1);
 
-        self.data.remove(notarized_transaction_hash);
+        self.data.swap_remove(notarized_transaction_hash);
 
         // Update intent_lookup
         let payload_lookup = self

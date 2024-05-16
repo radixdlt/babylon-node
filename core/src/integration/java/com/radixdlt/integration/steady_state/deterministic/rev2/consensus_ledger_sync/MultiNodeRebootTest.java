@@ -70,6 +70,7 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.google.inject.Module;
 import com.radixdlt.environment.DatabaseConfig;
+import com.radixdlt.environment.ScenariosExecutionConfig;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -225,7 +226,8 @@ public final class MultiNodeRebootTest {
                         new REV2TransactionGenerator(), 1),
                     false,
                     noFees,
-                    ProtocolConfig.testingDefault()),
+                    ProtocolConfig.testingDefault(),
+                    ScenariosExecutionConfig.NONE),
                 // This test can, in some cases, rely on ledger sync
                 // requests timing out in reasonable time,
                 // so setting the request timeout to 100 ms

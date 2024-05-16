@@ -1,7 +1,4 @@
 use crate::engine_prelude::*;
-
-use transaction::errors::TransactionValidationError;
-
 use crate::engine_state_api::*;
 
 /// Should be used when there's an error mapping to an API response

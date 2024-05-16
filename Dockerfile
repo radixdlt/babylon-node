@@ -12,7 +12,7 @@
 # =================================================================================================
 FROM debian:12.1-slim AS java-build-stage
 
-LABEL org.opencontainers.image.source https://github.com/radixdlt/babylon-node
+LABEL org.opencontainers.image.source="https://github.com/radixdlt/babylon-node"
 LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 LABEL org.opencontainers.image.description="Java + Debian 12 (OpenJDK)"
 
@@ -61,7 +61,7 @@ RUN apt-get update \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
-ENV JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF8
+ENV JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF8"
 
 RUN mkdir -p /radixdlt
 # Copy the relevant files at the repo root
@@ -79,7 +79,6 @@ COPY ./gradle /radixdlt/gradle
 COPY ./common /radixdlt/common
 COPY ./core /radixdlt/core
 COPY ./core-rust-bridge /radixdlt/core-rust-bridge
-COPY ./olympia-engine /radixdlt/olympia-engine
 COPY ./cli-tools /radixdlt/cli-tools
 COPY ./shell /radixdlt/shell
 COPY ./keygen /radixdlt/keygen
@@ -236,7 +235,7 @@ COPY --from=library-build-stage /libcorerust.so /
 # =================================================================================================
 FROM debian:12.1-slim as app-container
 
-LABEL org.opencontainers.image.source https://github.com/radixdlt/babylon-node
+LABEL org.opencontainers.image.source="https://github.com/radixdlt/babylon-node"
 LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 
 ARG OPENJDK_17_VERSION="17.0.11+9-1~deb12u1"

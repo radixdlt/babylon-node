@@ -1,5 +1,8 @@
 use crate::engine_prelude::*;
 use crate::protocol::*;
+use crate::ActualStateManagerDatabase;
+use node_common::locks::DbLock;
+use std::sync::Arc;
 
 /// Any protocol update beginning `custom-` can have content injected via config.
 pub struct CustomProtocolUpdateDefinition;
@@ -11,47 +14,36 @@ impl CustomProtocolUpdateDefinition {
         ProtocolVersionName::of(format!("{}{}", Self::RESERVED_NAME_PREFIX, subname)).unwrap()
     }
 
-    pub fn matches(protocol_name: &ProtocolVersionName) -> bool {
-        protocol_name
-            .as_str()
-            .starts_with(Self::RESERVED_NAME_PREFIX)
+    pub fn matches(name_string: &str) -> bool {
+        name_string.starts_with(Self::RESERVED_NAME_PREFIX)
     }
 }
 
 impl ProtocolUpdateDefinition for CustomProtocolUpdateDefinition {
-    type Overrides = Vec<Vec<UpdateTransaction>>;
+    type Overrides = Vec<ProtocolUpdateNodeBatch>;
 
-    fn create_updater(
-        new_protocol_version: &ProtocolVersionName,
-        network_definition: &NetworkDefinition,
-        overrides: Option<Self::Overrides>,
-    ) -> Box<dyn ProtocolUpdater> {
-        Box::new(BatchedUpdater::new(
-            new_protocol_version.clone(),
-            Self::state_computer_config(network_definition),
-            ArbitraryBatchGenerator {
-                batches: overrides.unwrap_or_default(),
-            },
-        ))
-    }
-
-    fn state_computer_config(
-        network_definition: &NetworkDefinition,
-    ) -> ProtocolStateComputerConfig {
-        ProtocolStateComputerConfig::default(network_definition.clone())
-    }
-}
-
-pub struct ArbitraryBatchGenerator {
-    pub batches: Vec<Vec<UpdateTransaction>>,
-}
-
-impl UpdateBatchGenerator for ArbitraryBatchGenerator {
-    fn generate_batch(
+    fn create_batch_generator(
         &self,
-        _store: &impl SubstateDatabase,
-        batch_index: u32,
-    ) -> Option<Vec<UpdateTransaction>> {
-        self.batches.get(batch_index as usize).cloned()
+        _network: &NetworkDefinition,
+        _database: Arc<DbLock<ActualStateManagerDatabase>>,
+        overrides: Option<Self::Overrides>,
+    ) -> Box<dyn ProtocolUpdateNodeBatchGenerator> {
+        Box::new(ArbitraryNodeBatchGenerator {
+            batches: overrides.unwrap_or_default(),
+        })
+    }
+}
+
+pub struct ArbitraryNodeBatchGenerator {
+    pub batches: Vec<ProtocolUpdateNodeBatch>,
+}
+
+impl ProtocolUpdateNodeBatchGenerator for ArbitraryNodeBatchGenerator {
+    fn generate_batch(&self, batch_idx: u32) -> ProtocolUpdateNodeBatch {
+        self.batches.get(batch_idx as usize).unwrap().clone()
+    }
+
+    fn batch_count(&self) -> u32 {
+        u32::try_from(self.batches.len()).unwrap()
     }
 }

@@ -69,19 +69,17 @@ import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransac
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.crypto.EdDSAEd25519PublicKey;
 import com.radixdlt.crypto.PublicKey;
-import com.radixdlt.genesis.GenesisData;
+import com.radixdlt.harness.deterministic.TestProtocolConfig;
 import com.radixdlt.harness.deterministic.TransactionExecutor;
 import com.radixdlt.message.CurveDecryptorSet;
 import com.radixdlt.message.Decryptor;
 import com.radixdlt.message.MessageContent;
 import com.radixdlt.message.TransactionMessage;
-import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition;
 import com.radixdlt.protocol.ProtocolUpdateTrigger;
 import com.radixdlt.rev2.REv2TransactionsAndProofReader;
@@ -98,8 +96,16 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
       throws Exception {
     // This test checks that the transaction stream doesn't return errors when mapping genesis and
     // the scenarios
-    try (var test = buildRunningServerTestWithScenarios(GenesisData.ALL_SCENARIOS)) {
+    final var protocolConfig =
+        new TestProtocolConfig()
+            .withAllProtocolUpdatesAtEarlyEpochs()
+            .withAllScenariosForConfiguredProtocolUpdates();
+    try (var test = buildRunningServerTestWithProtocolConfig(30, protocolConfig)) {
       test.suppressUnusedWarning();
+
+      // Wait for all protocol updates:
+      test.runUntilState(allAtOrOverEpoch(protocolConfig.lastProtocolUpdateEnactmentEpoch()));
+
       var transaction = TransactionBuilder.forTests().prepare();
 
       // Submit transaction
@@ -407,11 +413,12 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
   public void test_core_api_can_return_vm_boot_substate_in_protocol_update_receipt()
       throws Exception {
     final var protocolConfig =
-        new ProtocolConfig(
-            ImmutableList.of(
-                new ProtocolUpdateTrigger(
+        new TestProtocolConfig()
+            .with(
+                TestProtocolConfig.updateTo(
                     ProtocolUpdateTrigger.ANEMONE,
-                    ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(4L))));
+                    ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(4L)));
+
     try (var test = buildRunningServerTestWithProtocolConfig(30, protocolConfig)) {
       test.runUntilState(allAtOrOverEpoch(4L));
 

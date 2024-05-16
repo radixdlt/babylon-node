@@ -34,7 +34,7 @@ pub(crate) async fn handle_state_non_fungible(
         )
         .ok_or_else(|| not_found_error("Resource not found".to_string()))?
         .into_payload()
-        .into_latest();
+        .fully_update_and_into_latest_version();
 
     let non_fungible_id =
         extract_non_fungible_id_from_simple_representation(&request.non_fungible_id)

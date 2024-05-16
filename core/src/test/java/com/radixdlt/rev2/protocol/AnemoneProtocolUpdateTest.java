@@ -71,20 +71,12 @@ import static com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.uncondition
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Streams;
-import com.google.inject.AbstractModule;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.api.CoreApiServer;
-import com.radixdlt.api.CoreApiServerModule;
 import com.radixdlt.api.core.generated.api.StreamApi;
-import com.radixdlt.api.core.generated.client.ApiClient;
 import com.radixdlt.api.core.generated.models.*;
-import com.radixdlt.environment.CoreApiServerFlags;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
@@ -99,10 +91,7 @@ import com.radixdlt.protocol.ProtocolUpdateTrigger;
 import com.radixdlt.rev2.*;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
-import com.radixdlt.utils.FreePortFinder;
 import java.util.Arrays;
-import java.util.Map;
-import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -205,17 +194,15 @@ public final class AnemoneProtocolUpdateTest {
 
   @Test
   public void core_api_streams_anemone_flash_transactions() throws Exception {
-    final var coreApiPort = FreePortFinder.findFreeLocalPort();
-    try (var test = createTest(createCoreApiModule(coreApiPort))) {
+    final var coreApiHelper = new ProtocolUpdateTestUtils.CoreApiHelper();
+    try (var test = createTest(coreApiHelper.module())) {
       // Start a single node network and run until protocol update:
       test.startAllNodes();
       test.runUntilState(allAtOrOverEpoch(PROTOCOL_UPDATE_EPOCH));
 
       // Fetch all flash transactions:
-      final var apiClient = new ApiClient();
-      apiClient.updateBaseUri("http://127.0.0.1:" + coreApiPort + "/core");
       final var committedFlashTransactions =
-          new StreamApi(apiClient)
+          new StreamApi(coreApiHelper.client())
                   .streamTransactionsPost(
                       new StreamTransactionsRequest()
                           .network(Network.INTEGRATIONTESTNET.getLogicalName())
@@ -223,78 +210,21 @@ public final class AnemoneProtocolUpdateTest {
                           .fromStateVersion(1L))
                   .getTransactions()
                   .stream()
-                  .filter(
-                      txn -> txn.getLedgerTransaction().getType() == LedgerTransactionType.FLASH)
+                  .filter(txn -> txn.getLedgerTransaction() instanceof FlashLedgerTransaction)
                   .toList();
-
-      final var flashTransactions =
-          committedFlashTransactions.stream()
-              .map(txn -> (FlashLedgerTransaction) txn.getLedgerTransaction())
-              .toList();
-      final var transactionNames =
-          flashTransactions.stream().map(FlashLedgerTransaction::getName).toList();
-      final var flashStateUpdates =
-          flashTransactions.stream().map(FlashLedgerTransaction::getFlashedStateUpdates).toList();
-      final var receiptStateUpdates =
-          committedFlashTransactions.stream()
-              .map(txn -> txn.getReceipt().getStateUpdates())
-              .toList();
 
       // Assert some known facts about Anemone's flashes:
       assertEquals(
-          transactionNames,
           Arrays.asList(
               "anemone-validator-fee-fix",
               "anemone-seconds-precision",
               "anemone-vm-boot",
-              "anemone-pools"));
+              "anemone-pools"),
+          committedFlashTransactions.stream()
+              .map(txn -> ((FlashLedgerTransaction) txn.getLedgerTransaction()).getName())
+              .toList());
 
-      Streams.forEachPair(
-          flashStateUpdates.stream(),
-          receiptStateUpdates.stream(),
-          (fromFlash, fromReceipt) -> {
-            // all deleted partitions specified by flash were really deleted:
-            assertEquals(fromFlash.getDeletedPartitions(), fromReceipt.getDeletedPartitions());
-
-            // substate values set by flash transactions end up as the receipt's created + updated:
-            final var setFromFlash =
-                fromFlash.getSetSubstates().stream()
-                    .collect(
-                        Collectors.toMap(
-                            FlashSetSubstate::getSubstateId, FlashSetSubstate::getValue));
-            final var setFromReceipt =
-                Streams.concat(
-                        fromReceipt.getCreatedSubstates().stream()
-                            .map(create -> Map.entry(create.getSubstateId(), create.getValue())),
-                        fromReceipt.getUpdatedSubstates().stream()
-                            .map(update -> Map.entry(update.getSubstateId(), update.getNewValue())))
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-            assertEquals(setFromFlash, setFromReceipt);
-
-            // and the same for deletes:
-            final var deletedFromReceipt =
-                fromReceipt.getDeletedSubstates().stream()
-                    .map(DeletedSubstate::getSubstateId)
-                    .toList();
-            assertEquals(fromFlash.getDeletedSubstates(), deletedFromReceipt);
-          });
+      ProtocolUpdateTestUtils.verifyFlashTransactionReceipts(committedFlashTransactions);
     }
-  }
-
-  private static Module createCoreApiModule(int coreApiPort) {
-    return new AbstractModule() {
-
-      @Override
-      protected void configure() {
-        install(new CoreApiServerModule("127.0.0.1", coreApiPort, new CoreApiServerFlags(true)));
-      }
-
-      @ProvidesIntoSet
-      private StartProcessorOnRunner startCoreApi(CoreApiServer coreApiServer) {
-        // This is a slightly hacky way to run something on node start-up in a Deterministic test.
-        // Stop is called by the AutoClosable binding in CoreApiServerModule
-        return new StartProcessorOnRunner("N/A", coreApiServer::start);
-      }
-    };
   }
 }

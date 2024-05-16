@@ -189,8 +189,8 @@ pub fn to_api_non_fungible_resource_manager_data_substate(
         models::LocalNonFungibleKey {
             non_fungible_local_id: Box::new(to_api_non_fungible_local_id(non_fungible_local_id)),
         },
-        NonFungibleResourceManagerDataEntryPayload { content: value } => {
-            data_struct: Box::new(to_api_data_struct_from_scrypto_value(context, value)?),
+        payload => {
+            data_struct: Box::new(to_api_data_struct_from_scrypto_value(context, payload.as_ref())?),
         }
     ))
 }
