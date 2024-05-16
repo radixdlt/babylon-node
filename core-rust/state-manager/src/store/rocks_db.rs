@@ -816,7 +816,7 @@ impl<R: ReadableRocks> StateManagerDatabase<R> {
     /// way of making it clear that it only wants read lock and not a write lock.
     ///
     /// [`ledger-tools`]: https://github.com/radixdlt/ledger-tools
-    pub fn new_read_only(root_path: PathBuf) -> StateManagerDatabase<impl ReadableRocks> {
+    pub fn new_read_only(root_path: PathBuf) -> StateManagerDatabase<DirectRocks> {
         let mut db_opts = Options::default();
         db_opts.create_if_missing(false);
         db_opts.create_missing_column_families(false);
