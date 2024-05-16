@@ -86,7 +86,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.*;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.networks.Network;
 import com.radixdlt.transactions.NotarizedTransactionHash;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import java.util.Collection;
@@ -126,15 +125,16 @@ public class REv2RejectedTransactionMempoolTest {
                 SafetyRecoveryConfig.BERKELEY_DB,
                 ConsensusConfig.of(1000),
                 LedgerConfig.stateComputerNoSync(
-                    StateComputerConfig.rev2(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        GenesisBuilder.createTestGenesisWithNumValidators(
-                            1,
-                            Decimal.ONE,
-                            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
-                                this.roundsPerEpoch)),
-                        StateComputerConfig.REV2ProposerConfig.Mempool.singleTransaction()
-                            .withMempoolConfig(mempoolConfig)))));
+                    StateComputerConfig.rev2()
+                        .withGenesis(
+                            GenesisBuilder.createTestGenesisWithNumValidators(
+                                1,
+                                Decimal.ONE,
+                                GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
+                                    this.roundsPerEpoch)))
+                        .withProposerConfig(
+                            StateComputerConfig.REV2ProposerConfig.Mempool.singleTransaction()
+                                .withMempoolConfig(mempoolConfig)))));
   }
 
   @Test

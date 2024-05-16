@@ -79,7 +79,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.sync.TransactionsAndProofReader;
@@ -123,14 +122,15 @@ public final class REv2LedgerRecoveryTest {
                 SafetyRecoveryConfig.BERKELEY_DB,
                 ConsensusConfig.of(1000),
                 LedgerConfig.stateComputerNoSync(
-                    StateComputerConfig.rev2(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        GenesisBuilder.createTestGenesisWithNumValidators(
-                            1,
-                            Decimal.ONE,
-                            GenesisConsensusManagerConfig.Builder.testInfiniteEpochs()),
-                        StateComputerConfig.REV2ProposerConfig.transactionGenerator(
-                            new REV2TransactionGenerator(), 1)))));
+                    StateComputerConfig.rev2()
+                        .withGenesis(
+                            GenesisBuilder.createTestGenesisWithNumValidators(
+                                1,
+                                Decimal.ONE,
+                                GenesisConsensusManagerConfig.Builder.testInfiniteEpochs()))
+                        .withProposerConfig(
+                            StateComputerConfig.REV2ProposerConfig.transactionGenerator(
+                                new REV2TransactionGenerator(), 1)))));
   }
 
   @Test

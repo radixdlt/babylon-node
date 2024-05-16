@@ -77,7 +77,6 @@ import com.radixdlt.api.system.health.HealthInfoService;
 import com.radixdlt.api.system.health.HealthInfoServiceImpl;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.DatabaseConfig;
 import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
@@ -132,14 +131,12 @@ public abstract class SystemApiTestBase {
                     SafetyRecoveryConfig.MOCKED,
                     ConsensusConfig.of(),
                     LedgerConfig.stateComputerWithSyncRelay(
-                        StateComputerConfig.rev2(
-                            Network.INTEGRATIONTESTNET.getId(),
-                            GenesisBuilder.createTestGenesisWithSingleValidator(
-                                TEST_KEY.getPublicKey(),
-                                Decimal.ONE,
-                                GenesisConsensusManagerConfig.Builder.testDefaults()),
-                            new DatabaseConfig(false, false, false, false),
-                            StateComputerConfig.REV2ProposerConfig.Mempool.defaults()),
+                        StateComputerConfig.rev2()
+                            .withGenesis(
+                                GenesisBuilder.createTestGenesisWithSingleValidator(
+                                    TEST_KEY.getPublicKey(),
+                                    Decimal.ONE,
+                                    GenesisConsensusManagerConfig.Builder.testDefaults())),
                         new SyncRelayConfig(500, 10, 3000, 10, Long.MAX_VALUE)))),
             new TestP2PModule.Builder().build(),
             new TestMessagingModule.Builder().build(),

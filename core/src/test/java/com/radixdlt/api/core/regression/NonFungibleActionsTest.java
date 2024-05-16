@@ -77,7 +77,7 @@ public class NonFungibleActionsTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_can_mint_and_burn_in_same_transaction_against_previously_used_resource()
       throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       var accountKeyPair = ECKeyPair.generateNew();
@@ -106,7 +106,7 @@ public class NonFungibleActionsTest extends DeterministicCoreApiTestBase {
   @Test
   public void minting_non_fungible_id_which_previously_existed_transiently_in_a_transaction_fails()
       throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       var accountKeyPair = ECKeyPair.generateNew();
@@ -136,7 +136,7 @@ public class NonFungibleActionsTest extends DeterministicCoreApiTestBase {
   @Test
   public void minting_non_fungible_id_which_existed_persistently_and_then_got_burned_fails()
       throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       var accountKeyPair = ECKeyPair.generateNew();

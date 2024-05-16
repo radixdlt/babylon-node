@@ -70,22 +70,37 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.*;
+import com.radixdlt.environment.LedgerProofsGcConfig;
+import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition;
 import com.radixdlt.protocol.ProtocolUpdateTrigger;
+import com.radixdlt.rev2.Decimal;
+import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.UInt64;
 import org.junit.Test;
 
 public class ProofStreamTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_proof_stream() throws Exception {
-    final var protocolConfig =
-        new ProtocolConfig(
-            ImmutableList.of(
-                new ProtocolUpdateTrigger(
-                    ProtocolUpdateTrigger.ANEMONE,
-                    ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(3L))));
-
-    try (var test = buildRunningServerTestWithProtocolConfig(10, protocolConfig)) {
+    final var config =
+        defaultConfig()
+            .withProtocolConfig(
+                new ProtocolConfig(
+                    ImmutableList.of(
+                        new ProtocolUpdateTrigger(
+                            ProtocolUpdateTrigger.ANEMONE,
+                            ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(3L)))))
+            // This effectively disables the proofs' GC, so that we can have exact asserts:
+            .withLedgerProofsGcConfig(new LedgerProofsGcConfig(UInt32.MAX_VALUE, UInt64.MAX_VALUE))
+            .withGenesis(
+                GenesisBuilder.createTestGenesisWithNumValidators(
+                    1,
+                    Decimal.ONE,
+                    GenesisConsensusManagerConfig.Builder.testDefaults()
+                        .epochExactRoundCount(100)));
+    try (var test = buildRunningServerTest(config)) {
       test.runUntilState(allAtOrOverEpoch(5L));
 
       // ==================
@@ -143,9 +158,6 @@ public class ProofStreamTest extends DeterministicCoreApiTestBase {
               .streamProofsPost(
                   new StreamProofsRequest().network(networkLogicalName).maxPageSize(page1Size));
 
-      // If this ever fails / flakes, it might be because of the proof gc job running in the
-      // background
-      // Which we probably want to disable in tests
       assertThat(responseNoFilterPage1)
           .usingRecursiveComparison()
           .isEqualTo(responseAnyFilterPage1);

@@ -75,7 +75,7 @@ public final class EntitySchemaEntryTest extends DeterministicEngineStateApiTest
 
   @Test
   public void engine_state_api_returns_schema_contents() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       final var wellKnownAddresses = getCoreApiHelper().getWellKnownAddresses();

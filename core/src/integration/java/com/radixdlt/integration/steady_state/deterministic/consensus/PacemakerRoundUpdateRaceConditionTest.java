@@ -86,7 +86,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.utils.KeyComparator;
 import io.reactivex.rxjava3.schedulers.Timed;
@@ -161,8 +160,7 @@ public class PacemakerRoundUpdateRaceConditionTest {
                     SafetyRecoveryConfig.MOCKED,
                     ConsensusConfig.of(pacemakerTimeout, 0L),
                     FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
-                        StateComputerConfig.mockedNoEpochs(
-                            numValidatorNodes, MockedMempoolConfig.noMempool()))));
+                        StateComputerConfig.mockedNoEpochs(numValidatorNodes))));
 
     test.startAllNodes();
     test.runUntilMessage(nodeUnderTestReachesRound(Round.of(3)), 1000);
