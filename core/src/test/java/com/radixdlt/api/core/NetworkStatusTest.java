@@ -74,7 +74,7 @@ public class NetworkStatusTest extends DeterministicCoreApiTestBase {
   @SuppressWarnings("DataFlowIssue")
   @Test
   public void test_core_api_status_response_at_startup() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
       final var response =
           getStatusApi()

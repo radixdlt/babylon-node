@@ -75,6 +75,8 @@ import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.crypto.EdDSAEd25519PublicKey;
 import com.radixdlt.crypto.PublicKey;
+import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.harness.deterministic.TransactionExecutor;
 import com.radixdlt.message.CurveDecryptorSet;
@@ -84,6 +86,7 @@ import com.radixdlt.message.TransactionMessage;
 import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition;
 import com.radixdlt.protocol.ProtocolUpdateTrigger;
+import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REv2TransactionsAndProofReader;
 import com.radixdlt.rev2.TransactionBuilder;
 import com.radixdlt.utils.Bytes;
@@ -96,9 +99,18 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_core_api_can_submit_and_commit_transaction_after_running_all_scenarios()
       throws Exception {
-    // This test checks that the transaction stream doesn't return errors when mapping genesis and
-    // the scenarios
-    try (var test = buildRunningServerTestWithScenarios(GenesisData.ALL_SCENARIOS)) {
+    final var config =
+        defaultConfig()
+            .withGenesis(
+                GenesisBuilder.createTestGenesisWithNumValidators(
+                    1,
+                    Decimal.ONE,
+                    GenesisConsensusManagerConfig.Builder.testDefaults().epochExactRoundCount(100),
+                    // This test checks that the transaction stream doesn't return errors when
+                    // mapping
+                    // genesis and the scenarios:
+                    GenesisData.ALL_SCENARIOS));
+    try (var test = buildRunningServerTest(config)) {
       test.suppressUnusedWarning();
       var transaction = TransactionBuilder.forTests().prepare();
 
@@ -152,7 +164,7 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
 
   @Test
   public void streamed_transactions_contain_their_message() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       // Prepare 3 different flavors of messages in transaction:
@@ -237,7 +249,7 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
 
   @Test
   public void requesting_state_version_out_of_bounds_returns_error() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       // Arrange: commit any transaction
@@ -312,7 +324,7 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
 
   @Test
   public void test_previous_state_identifiers_and_proofs() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       var firstPartTransactions =
@@ -406,13 +418,21 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_core_api_can_return_vm_boot_substate_in_protocol_update_receipt()
       throws Exception {
-    final var protocolConfig =
-        new ProtocolConfig(
-            ImmutableList.of(
-                new ProtocolUpdateTrigger(
-                    ProtocolUpdateTrigger.ANEMONE,
-                    ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(4L))));
-    try (var test = buildRunningServerTestWithProtocolConfig(30, protocolConfig)) {
+    final var config =
+        defaultConfig()
+            .withProtocolConfig(
+                new ProtocolConfig(
+                    ImmutableList.of(
+                        new ProtocolUpdateTrigger(
+                            ProtocolUpdateTrigger.ANEMONE,
+                            ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(4L)))))
+            .withGenesis(
+                GenesisBuilder.createTestGenesisWithNumValidators(
+                    1,
+                    Decimal.ONE,
+                    GenesisConsensusManagerConfig.Builder.testDefaults()
+                        .epochExactRoundCount(100)));
+    try (var test = buildRunningServerTest(config)) {
       test.runUntilState(allAtOrOverEpoch(4L));
 
       final var protocolUpdateStateVersion =

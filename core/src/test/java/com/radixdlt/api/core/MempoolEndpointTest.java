@@ -79,7 +79,7 @@ import org.junit.Test;
 public class MempoolEndpointTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_mempool_queries() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       var transaction = TransactionBuilder.forTests().prepare();

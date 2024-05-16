@@ -72,6 +72,9 @@ import com.google.common.collect.Lists;
 import com.google.common.primitives.Longs;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.*;
+import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
+import com.radixdlt.rev2.Decimal;
 import java.util.List;
 import java.util.stream.LongStream;
 import org.junit.Test;
@@ -79,9 +82,16 @@ import org.junit.Test;
 public class NetworkScenariosTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_network_scenarios() throws Exception {
-    // pick a custom subset/permutation (different than "all scenarios"):
-    final var names = ImmutableList.of("radiswap", "transfer_xrd");
-    try (var test = buildRunningServerTestWithScenarios(names)) {
+    final var config =
+        defaultConfig()
+            .withGenesis(
+                GenesisBuilder.createTestGenesisWithNumValidators(
+                    1,
+                    Decimal.ONE,
+                    GenesisConsensusManagerConfig.Builder.testDefaults().epochExactRoundCount(100),
+                    // pick a custom subset/permutation (different than "all scenarios"):
+                    ImmutableList.of("radiswap", "transfer_xrd")));
+    try (var test = buildRunningServerTest(config)) {
       test.suppressUnusedWarning();
 
       // query all scenarios

@@ -290,9 +290,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
         false,
         SafetyRecoveryConfig.MOCKED,
         ConsensusConfig.of(),
-        LedgerConfig.stateComputerNoSync(
-            StateComputerConfig.mockedNoEpochs(
-                numValidators, new MockedMempoolConfig.NoMempool())));
+        LedgerConfig.stateComputerNoSync(StateComputerConfig.mockedNoEpochs(numValidators)));
   }
 
   public boolean supportsEpochs() {

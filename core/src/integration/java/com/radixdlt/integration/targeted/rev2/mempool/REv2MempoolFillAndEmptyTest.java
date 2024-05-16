@@ -83,7 +83,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.sync.SyncRelayConfig;
@@ -121,17 +120,20 @@ public final class REv2MempoolFillAndEmptyTest {
                 SafetyRecoveryConfig.MOCKED,
                 ConsensusConfig.of(1000),
                 LedgerConfig.stateComputerWithSyncRelay(
-                    StateComputerConfig.rev2(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        GenesisBuilder.createTestGenesisWithNumValidators(
-                            1,
-                            Decimal.ONE,
-                            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(100000)),
-                        StateComputerConfig.REV2ProposerConfig.mempool(
-                            ProposalLimitsConfig.testDefaults(),
-                            new RustMempoolConfig(100 * 1024 * 1024, MAX_MEMPOOL_TRANSACTION_COUNT),
-                            new MempoolReceiverConfig(0),
-                            MempoolRelayerConfig.defaults())),
+                    StateComputerConfig.rev2()
+                        .withGenesis(
+                            GenesisBuilder.createTestGenesisWithNumValidators(
+                                1,
+                                Decimal.ONE,
+                                GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
+                                    100000)))
+                        .withProposerConfig(
+                            StateComputerConfig.REV2ProposerConfig.mempool(
+                                ProposalLimitsConfig.testDefaults(),
+                                new RustMempoolConfig(
+                                    100 * 1024 * 1024, MAX_MEMPOOL_TRANSACTION_COUNT),
+                                new MempoolReceiverConfig(0),
+                                MempoolRelayerConfig.defaults())),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 

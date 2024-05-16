@@ -140,14 +140,4 @@ public record GenesisData(
         DEFAULT_TEST_FAUCET_SUPPLY,
         NO_SCENARIOS);
   }
-
-  public static GenesisData testingDefaultEmptyWithScenarios() {
-    return new GenesisData(
-        UInt64.fromNonNegativeLong(1L),
-        0,
-        GenesisConsensusManagerConfig.testingDefaultEmpty(),
-        ImmutableList.of(),
-        DEFAULT_TEST_FAUCET_SUPPLY,
-        ALL_SCENARIOS);
-  }
 }

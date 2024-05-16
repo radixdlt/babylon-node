@@ -134,14 +134,15 @@ public final class AnemoneProtocolUpdateTest {
                 FunctionalRadixNodeModule.SafetyRecoveryConfig.BERKELEY_DB,
                 FunctionalRadixNodeModule.ConsensusConfig.of(1000),
                 FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
-                    StateComputerConfig.rev2(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        GenesisBuilder.createTestGenesisWithNumValidators(
-                            1,
-                            Decimal.ONE,
-                            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(5)),
-                        StateComputerConfig.REV2ProposerConfig.Mempool.singleTransaction(),
-                        PROTOCOL_CONFIG))));
+                    StateComputerConfig.rev2()
+                        .withGenesis(
+                            GenesisBuilder.createTestGenesisWithNumValidators(
+                                1,
+                                Decimal.ONE,
+                                GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(5)))
+                        .withProposerConfig(
+                            StateComputerConfig.REV2ProposerConfig.Mempool.singleTransaction())
+                        .withProtocolConfig(PROTOCOL_CONFIG))));
   }
 
   private PreparedNotarizedTransaction createGetTimeCallTxn(boolean secondPrecision) {

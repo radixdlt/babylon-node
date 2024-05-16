@@ -76,7 +76,7 @@ public final class ObjectRoleAssignmentTest extends DeterministicEngineStateApiT
 
   @Test
   public void engine_state_api_returns_object_role_assignment() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       final var wellKnownAddresses = getCoreApiHelper().getWellKnownAddresses();

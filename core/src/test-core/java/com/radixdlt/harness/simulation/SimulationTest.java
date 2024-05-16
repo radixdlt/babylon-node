@@ -261,15 +261,13 @@ public final class SimulationTest {
               SafetyRecoveryConfig.MOCKED,
               consensusConfig,
               LedgerConfig.stateComputerWithSyncRelay(
-                  StateComputerConfig.mockedNoEpochs(
-                      numValidators, new StateComputerConfig.MockedMempoolConfig.NoMempool()),
-                  syncRelayConfig));
+                  StateComputerConfig.mockedNoEpochs(numValidators), syncRelayConfig));
       return this;
     }
 
     public Builder ledgerAndEpochsAndSync(
         ConsensusConfig consensusConfig,
-        Round epochMaxRound,
+        int epochMaxRound,
         Function<Long, IntStream> epochToNodeIndexMapper,
         SyncRelayConfig syncRelayConfig) {
       this.functionalNodeModule =
@@ -280,9 +278,7 @@ public final class SimulationTest {
               consensusConfig,
               LedgerConfig.stateComputerWithSyncRelay(
                   StateComputerConfig.mockedWithEpochs(
-                      epochMaxRound,
-                      EpochNodeWeightMapping.constant(epochToNodeIndexMapper),
-                      new StateComputerConfig.MockedMempoolConfig.NoMempool()),
+                      epochMaxRound, EpochNodeWeightMapping.constant(epochToNodeIndexMapper)),
                   syncRelayConfig));
       return this;
     }
@@ -295,8 +291,8 @@ public final class SimulationTest {
               SafetyRecoveryConfig.MOCKED,
               consensusConfig,
               LedgerConfig.stateComputerNoSync(
-                  StateComputerConfig.mockedNoEpochs(
-                      numValidators, new StateComputerConfig.MockedMempoolConfig.LocalOnly(10))));
+                  StateComputerConfig.mockedNoEpochs(numValidators)
+                      .withMempool(new StateComputerConfig.MockedMempoolConfig.LocalOnly(10))));
       this.modules.add(MempoolReceiverConfig.of(10).asModule());
       return this;
     }

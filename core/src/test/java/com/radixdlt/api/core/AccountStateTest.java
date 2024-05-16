@@ -83,7 +83,7 @@ import org.junit.Test;
 public final class AccountStateTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_core_api_can_retrieve_account_state() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       // Prepare an account creation transaction

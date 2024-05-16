@@ -70,8 +70,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.common.hash.HashCode;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
+import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.harness.predicates.NodePredicate;
 import com.radixdlt.lang.Option;
+import com.radixdlt.rev2.Decimal;
 import com.radixdlt.statecomputer.commit.LedgerHeader;
 import com.radixdlt.testutil.TestStateReader;
 import com.radixdlt.transaction.ExecutedTransaction;
@@ -136,7 +140,17 @@ public class TransactionAccuTreeTest extends DeterministicCoreApiTestBase {
   }
 
   private CapturedEpoch captureEpoch(int epochNumber) {
-    try (var test = buildRunningServerTest(EPOCH_TRANSACTION_LENGTH)) {
+    final var config =
+        defaultConfig()
+            .withGenesis(
+                GenesisBuilder.createTestGenesisWithNumValidators(
+                    1,
+                    Decimal.ONE,
+                    GenesisConsensusManagerConfig.Builder.testDefaults()
+                        .epochExactRoundCount(EPOCH_TRANSACTION_LENGTH),
+                    // We run all scenarios for the case when RE decides to change invariants:
+                    GenesisData.ALL_SCENARIOS));
+    try (var test = buildRunningServerTest(config)) {
       test.suppressUnusedWarning();
 
       // Run the setup until 2 epoch proofs are captured

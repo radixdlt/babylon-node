@@ -80,7 +80,7 @@ public final class EntityInfoTest extends DeterministicEngineStateApiTestBase {
 
   @Test
   public void engine_state_api_returns_root_object_info() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       final var wellKnownAddresses = getCoreApiHelper().getWellKnownAddresses();
@@ -137,7 +137,7 @@ public final class EntityInfoTest extends DeterministicEngineStateApiTestBase {
 
   @Test
   public void engine_state_api_object_info_returns_fields_respecting_conditions() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       // fetch info of 2 well-known objects instantiating the same blueprint with different features
@@ -168,7 +168,7 @@ public final class EntityInfoTest extends DeterministicEngineStateApiTestBase {
 
   @Test
   public void engine_state_api_returns_kv_store_info() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       // list entities and pick a random KV store
@@ -194,7 +194,7 @@ public final class EntityInfoTest extends DeterministicEngineStateApiTestBase {
 
   @Test
   public void engine_state_api_returns_uninstantiated_object_info() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       final var accountKeyPair = ECKeyPair.generateNew();
@@ -239,7 +239,7 @@ public final class EntityInfoTest extends DeterministicEngineStateApiTestBase {
 
   @Test
   public void engine_state_api_entity_info_supports_history() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       // The Entity info is effectively immutable, but we can still experience "historical state"

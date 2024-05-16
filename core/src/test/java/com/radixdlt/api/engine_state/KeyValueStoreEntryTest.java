@@ -80,7 +80,7 @@ public final class KeyValueStoreEntryTest extends DeterministicEngineStateApiTes
 
   @Test
   public void engine_state_api_returns_kv_store_entry() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       // execute a dummy transaction to create a known entry in the Faucet's KV-Store:
@@ -120,7 +120,7 @@ public final class KeyValueStoreEntryTest extends DeterministicEngineStateApiTes
 
   @Test
   public void engine_state_api_returns_not_found_for_unknown_key() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       // execute a few dummy transactions (so that we test against non-empty KV-Store):

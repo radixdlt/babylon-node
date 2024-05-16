@@ -86,7 +86,7 @@ import org.junit.Test;
 public final class TransactionReceiptTest extends DeterministicCoreApiTestBase {
   @Test
   public void core_api_returns_transaction_receipt_with_balance_changes() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       // Prepare a transaction which deposits from faucet:
