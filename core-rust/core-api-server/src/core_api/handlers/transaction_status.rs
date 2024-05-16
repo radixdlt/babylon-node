@@ -84,11 +84,11 @@ pub(crate) async fn handle_transaction_status(
                 "SUCCESS",
                 None,
             ),
-            DetailedTransactionOutcome::Failure(reason) => (
+            DetailedTransactionOutcome::Failure(error) => (
                 models::TransactionIntentStatus::CommittedFailure,
                 models::TransactionPayloadStatus::CommittedFailure,
                 "FAILURE",
-                Some(format!("{reason:?}")),
+                Some(error.render()),
             ),
         };
 

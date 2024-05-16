@@ -250,13 +250,15 @@ impl ProcessedCommitResult {
         }
     }
 
-    pub fn expect_success(self, description: impl Display) -> Self {
+    pub fn expect_success(self, desc: impl Display) -> Self {
         if let DetailedTransactionOutcome::Failure(error) =
             &self.local_receipt.local_execution.outcome
         {
             panic!(
                 "{} (ledger hash: {}) failed: {:?}",
-                description, self.hash_structures_diff.ledger_hashes.transaction_root, error
+                desc,
+                self.hash_structures_diff.ledger_hashes.transaction_root,
+                error.render()
             );
         }
         self

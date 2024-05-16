@@ -84,11 +84,11 @@ pub(crate) async fn handle_lts_transaction_status(
                 "SUCCESS",
                 None,
             ),
-            DetailedTransactionOutcome::Failure(reason) => (
+            DetailedTransactionOutcome::Failure(error) => (
                 models::LtsTransactionIntentStatus::CommittedFailure,
                 models::LtsTransactionPayloadStatus::CommittedFailure,
                 "FAILURE",
-                Some(format!("{reason:?}")),
+                Some(error.render()),
             ),
         };
 
