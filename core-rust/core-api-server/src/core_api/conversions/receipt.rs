@@ -23,7 +23,7 @@ pub fn to_api_receipt(
         DetailedTransactionOutcome::Failure(error) => (
             models::TransactionStatus::Failed,
             None,
-            Some(format!("{error:?}")),
+            Some(error.render()),
         ),
     };
 
