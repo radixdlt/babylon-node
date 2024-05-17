@@ -2,9 +2,9 @@
 
 use crate::engine_prelude::*;
 use crate::protocol::*;
+use crate::rocks_db::ActualStateManagerDatabase;
 use node_common::locks::DbLock;
 use std::sync::Arc;
-use crate::rocks_db::ActualStateManagerDatabase;
 
 /// A protocol update definition.
 ///

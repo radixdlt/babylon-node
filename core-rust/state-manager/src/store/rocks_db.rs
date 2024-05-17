@@ -832,7 +832,7 @@ impl StateManagerDatabase<DirectRocks> {
             column_families,
             false,
         )
-            .unwrap();
+        .unwrap();
 
         StateManagerDatabase {
             config: DatabaseConfig {

@@ -80,10 +80,10 @@ use crate::system_commits::*;
 
 use crate::accumulator_tree::storage::ReadableAccuTreeStore;
 
+use crate::rocks_db::ActualStateManagerDatabase;
 use std::ops::Deref;
 use std::sync::Arc;
 use std::time::SystemTime;
-use crate::rocks_db::ActualStateManagerDatabase;
 
 pub struct Committer {
     database: Arc<DbLock<ActualStateManagerDatabase>>,
@@ -198,7 +198,7 @@ impl Committer {
             .unwrap_or_else(|| {
                 Self::calculate_transaction_root(
                     database.deref(),
-                    series_executor.epoch_identifiers(),
+                    &series_executor.epoch_identifiers(),
                     series_executor.latest_state_version(),
                     &prepared_transactions,
                 )

@@ -81,17 +81,16 @@ use crate::transaction::{
     HasLedgerTransactionHash, LedgerTransactionHash, PreparedLedgerTransaction, TransactionLogic,
 };
 use crate::{
-    EpochTransactionIdentifiers, LedgerHashes, ReceiptTreeHash,
-    StateVersion, TransactionTreeHash,
+    EpochTransactionIdentifiers, LedgerHashes, ReceiptTreeHash, StateVersion, TransactionTreeHash,
 };
 use im::hashmap::HashMap as ImmutableHashMap;
 use itertools::Itertools;
 
+use crate::rocks_db::ActualStateManagerDatabase;
 use crate::store::traits::{SubstateNodeAncestryRecord, SubstateNodeAncestryStore};
 use crate::traits::{ConfigurableDatabase, QueryableProofStore};
 use node_common::locks::{DbLock, LockFactory, Mutex};
 use slotmap::SecondaryMap;
-use crate::rocks_db::ActualStateManagerDatabase;
 
 pub struct ExecutionCacheManager {
     database: Arc<DbLock<ActualStateManagerDatabase>>,
