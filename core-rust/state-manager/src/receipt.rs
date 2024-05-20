@@ -275,9 +275,89 @@ pub struct LocalTransactionExecutionV1 {
     pub application_logs: Vec<(Level, String)>,
     pub state_update_summary: StateUpdateSummary,
     pub global_balance_summary: GlobalBalanceSummary,
-    pub substates_system_structure: BySubstate<SubstateSystemStructure>,
+    pub substates_system_structure: BySubstate<LenientSubstateSystemStructure>,
     pub events_system_structure: IndexMap<EventTypeIdentifier, EventSystemStructure>,
     pub next_epoch: Option<EpochChangeEvent>,
+}
+
+/// A wrapper for SBOR-encoded [`SubstateSystemStructure`] which provides lenient decoding for
+/// different schema versions.
+#[derive(Debug, Clone, ScryptoEncode, ScryptoDecode)]
+#[sbor(transparent)]
+pub struct LenientSubstateSystemStructure(ScryptoValue);
+
+impl Categorize<ScryptoCustomValueKind> for LenientSubstateSystemStructure {
+    fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
+        // We know for a fact that the `SubstateSystemStructure` was at least always an enum...
+        ValueKind::Enum
+    }
+}
+
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+enum OldSchemaSubstateSystemStructure {
+    SystemField(OldSchemaSystemFieldStructure),
+    // If the new schemas' parsing failed, then we can only be dealing with the `SystemField`.
+}
+
+impl From<OldSchemaSubstateSystemStructure> for SubstateSystemStructure {
+    fn from(old_schema: OldSchemaSubstateSystemStructure) -> Self {
+        let field_kind = match old_schema {
+            OldSchemaSubstateSystemStructure::SystemField(structure) => match structure {
+                OldSchemaSystemFieldStructure { field_kind } => match field_kind {
+                    OldSchemaSystemFieldKind::TypeInfo => SystemFieldKind::TypeInfo,
+                    OldSchemaSystemFieldKind::BootLoader(sub_kind) => match sub_kind {
+                        OldSchemaBootLoaderFieldKind::KernelBoot => SystemFieldKind::KernelBoot,
+                        OldSchemaBootLoaderFieldKind::SystemBoot => SystemFieldKind::SystemBoot,
+                        OldSchemaBootLoaderFieldKind::VmBoot => SystemFieldKind::VmBoot,
+                    }
+                }
+            }
+        };
+        SubstateSystemStructure::SystemField(SystemFieldStructure { field_kind })
+    }
+}
+
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+struct OldSchemaSystemFieldStructure {
+    pub field_kind: OldSchemaSystemFieldKind,
+}
+
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+enum OldSchemaSystemFieldKind {
+    TypeInfo,
+    BootLoader(OldSchemaBootLoaderFieldKind),
+}
+
+#[derive(Clone, Debug, ScryptoSbor, PartialEq, Eq)]
+enum OldSchemaBootLoaderFieldKind {
+    KernelBoot,
+    SystemBoot,
+    VmBoot,
+}
+
+impl LenientSubstateSystemStructure {
+    pub fn get(self: &LenientSubstateSystemStructure) -> SubstateSystemStructure {
+        let bytes = scrypto_encode(&self.0).unwrap();
+        match scrypto_decode::<SubstateSystemStructure>(&bytes) {
+            Ok(decoded_new_schema) => decoded_new_schema,
+            Err(new_schema_error) => {
+                match scrypto_decode::<OldSchemaSubstateSystemStructure>(&bytes) {
+                    Ok(decoded_old_schema) => SubstateSystemStructure::from(decoded_old_schema),
+                    Err(old_schema_error) => panic!(
+                        "cannot decode SubstateSystemStructure, neither using the new schema ({:?}), nor the old one ({:?}).",
+                        new_schema_error, old_schema_error
+                    ),
+                }
+            }
+        }
+    }
+}
+
+impl From<SubstateSystemStructure> for LenientSubstateSystemStructure {
+    fn from(value: SubstateSystemStructure) -> Self {
+        let bytes = scrypto_encode(&value).unwrap();
+        Self(scrypto_decode(&bytes).unwrap())
+    }
 }
 
 impl LedgerTransactionReceipt {
@@ -319,7 +399,7 @@ impl LocalTransactionReceipt {
                     .map(|(type_id, data)| ApplicationEvent::new(type_id, data))
                     .collect(),
             },
-            local_execution: LocalTransactionExecution {
+            local_execution: LocalTransactionExecutionV1 {
                 outcome: commit_result.outcome.into(),
                 fee_summary: execution_fee_data.fee_summary,
                 fee_source: commit_result.fee_source,
@@ -331,7 +411,7 @@ impl LocalTransactionReceipt {
                 global_balance_summary,
                 substates_system_structure: BySubstate::wrap(
                     system_structure.substate_system_structures,
-                ),
+                ).into_mapped(),
                 events_system_structure: system_structure.event_system_structures,
                 next_epoch,
             },
@@ -474,6 +554,25 @@ impl<T> BySubstate<T> {
 
     pub fn is_empty(&self) -> bool {
         self.by_node_id.is_empty()
+    }
+
+    pub fn into_mapped<R>(self) -> BySubstate<R> where T: Into<R> {
+        BySubstate {
+            by_node_id: self.by_node_id.into_iter()
+                .map(|(node_id, by_partition_number)| {
+                    (node_id, by_partition_number.into_iter()
+                        .map(|(partition_num, by_substate_key)| {
+                            (partition_num, by_substate_key.into_iter()
+                                .map(|(substate_key, value)| {
+                                    (substate_key, value.into())
+                                })
+                                .collect()
+                            )
+                        })
+                        .collect())
+                })
+                .collect()
+        }
     }
 
     fn wrap(

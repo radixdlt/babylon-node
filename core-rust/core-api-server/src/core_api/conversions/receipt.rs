@@ -4,11 +4,7 @@ use super::addressing::*;
 use crate::core_api::*;
 use crate::engine_prelude::*;
 
-use state_manager::{
-    ApplicationEvent, BySubstate, DetailedTransactionOutcome, LedgerStateChanges,
-    LocalTransactionReceipt, PartitionChangeAction, PartitionReference, ReadableRocks,
-    StateManagerDatabase, SubstateChangeAction, SubstateReference,
-};
+use state_manager::{ApplicationEvent, BySubstate, DetailedTransactionOutcome, LedgerStateChanges, LenientSubstateSystemStructure, LocalTransactionReceipt, PartitionChangeAction, PartitionReference, ReadableRocks, StateManagerDatabase, SubstateChangeAction, SubstateReference};
 
 pub fn to_api_receipt(
     database: Option<&StateManagerDatabase<impl ReadableRocks>>,
@@ -301,7 +297,7 @@ pub fn to_api_next_epoch(
 pub fn to_api_state_updates(
     database: Option<&StateManagerDatabase<impl ReadableRocks>>,
     context: &MappingContext,
-    system_structures: &BySubstate<SubstateSystemStructure>,
+    system_structures: &BySubstate<LenientSubstateSystemStructure>,
     state_changes: &LedgerStateChanges,
     state_update_summary: &StateUpdateSummary,
 ) -> Result<models::StateUpdates, MappingError> {
@@ -350,8 +346,9 @@ pub fn to_api_state_updates(
                     "Missing system structure for substate {:?}:{:?}:{:?}",
                     node_id, partition_number, substate_key
                 ),
-            })?;
-        let system_structure = Some(to_api_substate_system_structure(context, system_structure)?);
+            })?
+            .get();
+        let system_structure = Some(to_api_substate_system_structure(context, &system_structure)?);
         let substate_id = Box::new(to_api_substate_id(
             context,
             &node_id,
