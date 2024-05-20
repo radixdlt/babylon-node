@@ -28,9 +28,13 @@ import com.fasterxml.jackson.annotation.JsonValue;
  */
 public enum SystemFieldKind {
   
-  BOOTLOADER("BootLoader"),
+  VMBOOT("VmBoot"),
   
-  TYPEINFO("TypeInfo");
+  TYPEINFO("TypeInfo"),
+  
+  SYSTEMBOOT("SystemBoot"),
+  
+  KERNELBOOT("KernelBoot");
 
   private String value;
 

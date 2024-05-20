@@ -12,25 +12,31 @@
 /// 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
 pub enum SystemFieldKind {
-    #[serde(rename = "BootLoader")]
-    BootLoader,
+    #[serde(rename = "VmBoot")]
+    VmBoot,
     #[serde(rename = "TypeInfo")]
     TypeInfo,
+    #[serde(rename = "SystemBoot")]
+    SystemBoot,
+    #[serde(rename = "KernelBoot")]
+    KernelBoot,
 
 }
 
 impl ToString for SystemFieldKind {
     fn to_string(&self) -> String {
         match self {
-            Self::BootLoader => String::from("BootLoader"),
+            Self::VmBoot => String::from("VmBoot"),
             Self::TypeInfo => String::from("TypeInfo"),
+            Self::SystemBoot => String::from("SystemBoot"),
+            Self::KernelBoot => String::from("KernelBoot"),
         }
     }
 }
 
 impl Default for SystemFieldKind {
     fn default() -> SystemFieldKind {
-        Self::BootLoader
+        Self::VmBoot
     }
 }
 

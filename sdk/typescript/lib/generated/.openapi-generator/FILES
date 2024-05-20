@@ -89,7 +89,6 @@ models/BootLoaderModuleFieldSystemBootValue.ts
 models/BootLoaderModuleFieldVmBootSubstate.ts
 models/BootLoaderModuleFieldVmBootSubstateAllOf.ts
 models/BootLoaderModuleFieldVmBootValue.ts
-models/BootLoaderType.ts
 models/CommittedIntentMetadata.ts
 models/CommittedStateIdentifier.ts
 models/CommittedStateIdentifierAllOf.ts
