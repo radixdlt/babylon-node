@@ -24,7 +24,7 @@ pub fn to_api_receipt(
         DetailedTransactionOutcome::Failure(error) => (
             models::TransactionStatus::Failed,
             None,
-            Some(format!("{error:?}")),
+            Some(error.render()),
         ),
     };
 
@@ -151,23 +151,13 @@ pub fn to_api_substate_system_structure(
 ) -> Result<models::SubstateSystemStructure, MappingError> {
     Ok(match system_structure {
         SubstateSystemStructure::SystemField(SystemFieldStructure { field_kind }) => {
-            match field_kind {
-                SystemFieldKind::TypeInfo => {
-                    models::SubstateSystemStructure::SystemFieldStructure {
-                        field_kind: models::SystemFieldKind::TypeInfo,
-                        boot_loader_type: None,
-                    }
-                }
-                SystemFieldKind::BootLoader(boot_loader) => {
-                    models::SubstateSystemStructure::SystemFieldStructure {
-                        field_kind: models::SystemFieldKind::BootLoader,
-                        boot_loader_type: Some(match boot_loader {
-                            BootLoaderFieldKind::KernelBoot => models::BootLoaderType::KernelBoot,
-                            BootLoaderFieldKind::SystemBoot => models::BootLoaderType::SystemBoot,
-                            BootLoaderFieldKind::VmBoot => models::BootLoaderType::VmBoot,
-                        }),
-                    }
-                }
+            models::SubstateSystemStructure::SystemFieldStructure {
+                field_kind: match field_kind {
+                    SystemFieldKind::TypeInfo => models::SystemFieldKind::TypeInfo,
+                    SystemFieldKind::VmBoot => models::SystemFieldKind::VmBoot,
+                    SystemFieldKind::SystemBoot => models::SystemFieldKind::SystemBoot,
+                    SystemFieldKind::KernelBoot => models::SystemFieldKind::KernelBoot,
+                },
             }
         }
         SubstateSystemStructure::SystemSchema => {

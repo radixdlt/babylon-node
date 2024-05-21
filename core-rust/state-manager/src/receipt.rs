@@ -128,7 +128,41 @@ impl LedgerTransactionOutcome {
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum DetailedTransactionOutcome {
     Success(Vec<Vec<u8>>),
-    Failure(RuntimeError),
+    Failure(LenientRuntimeError),
+}
+
+/// A wrapper for SBOR-encoded [`RuntimeError`] which may turn out to no longer be decodable (due
+/// to differences in historical error enum schema).
+#[derive(Debug, Clone, ScryptoEncode, ScryptoDecode)]
+#[sbor(transparent)]
+pub struct LenientRuntimeError(ScryptoValue);
+
+impl Categorize<ScryptoCustomValueKind> for LenientRuntimeError {
+    fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
+        // We know for a fact that the `RuntimeError` was at least always an enum...
+        ValueKind::Enum
+    }
+}
+
+impl From<RuntimeError> for LenientRuntimeError {
+    fn from(error: RuntimeError) -> Self {
+        let bytes = scrypto_encode(&error).unwrap();
+        Self(scrypto_decode(&bytes).unwrap())
+    }
+}
+
+impl LenientRuntimeError {
+    /// Performs a best-effort rendering of the wrapped error.
+    /// This will either be a debug-formatted [`RuntimeError`] (if it can be successfully decoded),
+    /// or `UnknownError(DecodeError(...), <hex-encoded error bytes>)` otherwise.
+    pub fn render(&self) -> String {
+        let bytes = scrypto_encode(&self.0).unwrap();
+        scrypto_decode::<RuntimeError>(&bytes)
+            .map(|original_error| format!("{:?}", original_error))
+            .unwrap_or_else(|decode_error| {
+                format!("UnknownError({:?}, {})", decode_error, hex::encode(&bytes))
+            })
+    }
 }
 
 impl From<TransactionOutcome> for DetailedTransactionOutcome {
@@ -148,7 +182,7 @@ impl From<TransactionOutcome> for DetailedTransactionOutcome {
                         .collect(),
                 )
             }
-            TransactionOutcome::Failure(error) => Self::Failure(error),
+            TransactionOutcome::Failure(error) => Self::Failure(LenientRuntimeError::from(error)),
         }
     }
 }

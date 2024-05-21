@@ -1,2 +1,2 @@
 pub mod models;
-pub const SCHEMA_VERSION: &str = "v0.1-beta";
+pub const SCHEMA_VERSION: &str = "v1.2.1-beta";
