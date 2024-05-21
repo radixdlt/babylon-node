@@ -1,8 +1,8 @@
 use crate::engine_prelude::*;
+use crate::rocks_db::ActualStateManagerDatabase;
 use crate::{protocol::*, transaction::FlashTransactionV1};
 use node_common::locks::DbLock;
 use std::sync::Arc;
-use crate::rocks_db::ActualStateManagerDatabase;
 
 /// Any protocol update beginning `test-` just injects a single transaction.
 pub struct TestProtocolUpdateDefinition {

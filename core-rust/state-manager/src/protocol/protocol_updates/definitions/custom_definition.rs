@@ -1,8 +1,8 @@
 use crate::engine_prelude::*;
 use crate::protocol::*;
+use crate::rocks_db::ActualStateManagerDatabase;
 use node_common::locks::DbLock;
 use std::sync::Arc;
-use crate::rocks_db::ActualStateManagerDatabase;
 
 /// Any protocol update beginning `custom-` can have content injected via config.
 pub struct CustomProtocolUpdateDefinition;

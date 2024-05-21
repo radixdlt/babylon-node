@@ -73,7 +73,6 @@ import static com.radixdlt.rev2.protocol.ProtocolUpdateWithEpochBoundsTest.TestE
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.environment.DatabaseConfig;
-import com.radixdlt.environment.ScenariosExecutionConfig;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;

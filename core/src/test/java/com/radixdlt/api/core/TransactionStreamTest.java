@@ -113,9 +113,6 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
     try (var test = buildRunningServerTest(config)) {
       test.suppressUnusedWarning();
 
-      // Wait for all protocol updates:
-      //test.runUntilState(allAtOrOverEpoch(protocolConfig.lastProtocolUpdateEnactmentEpoch()));
-
       var transaction = TransactionBuilder.forTests().prepare();
 
       // Submit transaction

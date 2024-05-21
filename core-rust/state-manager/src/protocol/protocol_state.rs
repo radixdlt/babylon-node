@@ -10,12 +10,12 @@ use tracing::info;
 use crate::protocol::*;
 use crate::traits::{IterableProofStore, QueryableProofStore, QueryableTransactionStore};
 
+use crate::rocks_db::ActualStateManagerDatabase;
 use crate::{
-    LocalTransactionReceipt, ProtocolMetrics, ScenariosExecutionConfig,
-    StateVersion, SystemExecutor,
+    LocalTransactionReceipt, ProtocolMetrics, ScenariosExecutionConfig, StateVersion,
+    SystemExecutor,
 };
 use ProtocolUpdateEnactmentCondition::*;
-use crate::rocks_db::ActualStateManagerDatabase;
 
 // This file contains types and utilities for managing the (dynamic) protocol state of a running
 // node.

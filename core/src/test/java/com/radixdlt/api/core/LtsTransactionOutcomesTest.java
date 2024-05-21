@@ -64,7 +64,6 @@
 
 package com.radixdlt.api.core;
 
-import static com.radixdlt.harness.predicates.NodesPredicate.allAtOrOverEpoch;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.api.CoreApiHelper;
@@ -166,9 +165,6 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
                     GenesisData.ALL_SCENARIOS));
     try (var test = buildRunningServerTest(protocolConfig)) {
       test.suppressUnusedWarning();
-
-      // Wait for all protocol updates:
-      //test.runUntilState(allAtOrOverEpoch(protocolConfig.lastProtocolUpdateEnactmentEpoch()));
 
       var account1KeyPair = ECKeyPair.generateNew();
       var account1Address = Address.virtualAccountAddress(account1KeyPair.getPublicKey());
