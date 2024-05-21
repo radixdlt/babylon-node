@@ -154,7 +154,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
 
   @Test
   public void test_resultant_account_balances() throws Exception {
-    final var protocolConfig =
+    final var config =
         defaultConfig()
             .withGenesis(
                 GenesisBuilder.createTestGenesisWithNumValidators(
@@ -163,7 +163,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
                     GenesisConsensusManagerConfig.Builder.testDefaults().epochExactRoundCount(100),
                     // We run all scenarios for the case when RE decides to change invariants:
                     GenesisData.ALL_SCENARIOS));
-    try (var test = buildRunningServerTest(protocolConfig)) {
+    try (var test = buildRunningServerTest(config)) {
       test.suppressUnusedWarning();
 
       var account1KeyPair = ECKeyPair.generateNew();
