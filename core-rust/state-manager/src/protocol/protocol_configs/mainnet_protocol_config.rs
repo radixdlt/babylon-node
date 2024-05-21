@@ -25,5 +25,24 @@ pub fn mainnet_protocol_config() -> ProtocolConfig {
                 },
             ],
         },
+        BOTTLENOSE_PROTOCOL_VERSION => EnactAtStartOfEpochIfValidatorsReady {
+            // =================================================================
+            // PROTOCOL_VERSION: "bottlenose"
+            // READINESS_SIGNAL: "86894b9104afb73a000000bottlenose"
+            // =================================================================
+            // The below estimates are based off:
+            // - Calculating relative to epoch 97091
+            // - Using that epoch 97091 started at 2024-05-09T18:01:00.000Z
+            // - Assuming epoch length will be 5 mins
+            // =================================================================
+            lower_bound_inclusive: Epoch::of(104291), // estimated: 2024-06-03T18:01:00.000Z
+            upper_bound_exclusive: Epoch::of(112355), // estimated: 2024-07-01T18:01:00.000Z
+            readiness_thresholds: vec![
+                SignalledReadinessThreshold {
+                    required_ratio_of_stake_supported: dec!(0.75),
+                    required_consecutive_completed_epochs_of_support: 4032, // estimated: 2 weeks
+                },
+            ],
+        },
     })
 }

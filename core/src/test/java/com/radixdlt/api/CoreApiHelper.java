@@ -74,6 +74,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.lang.Functions;
 import com.radixdlt.rev2.*;
+import com.radixdlt.rev2.NetworkDefinition; // for disambiguation with models.* only
 import com.radixdlt.transactions.IntentHash;
 import java.net.http.HttpClient;
 import java.util.List;

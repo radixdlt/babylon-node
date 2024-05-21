@@ -3,10 +3,9 @@ use crate::engine_prelude::*;
 
 use std::ops::Range;
 
+use state_manager::rocks_db::ActualStateManagerDatabase;
 use state_manager::transaction::ProcessedPreviewResult;
-use state_manager::{
-    ActualStateManagerDatabase, ExecutionFeeData, LocalTransactionReceipt, PreviewRequest,
-};
+use state_manager::{ExecutionFeeData, LocalTransactionReceipt, PreviewRequest};
 
 pub(crate) async fn handle_transaction_preview(
     state: State<CoreApiState>,
@@ -27,7 +26,6 @@ pub(crate) async fn handle_transaction_preview(
     let result = state
         .state_manager
         .transaction_previewer
-        .read()
         .preview(preview_request, at_state_version)?;
 
     to_api_response(&mapping_context, result).map(Json)

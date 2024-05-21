@@ -91,6 +91,7 @@ impl<T: ReadableAccuTreeStore<K, N> + WriteableAccuTreeStore<K, N>, K, N> AccuTr
 /// This is an "incremental" persistence part of a tree representing a batch of appended leaf nodes
 /// and the resulting merkle updates, propagating up to a single root.
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[sbor(categorize_types = "N")]
 pub struct TreeSlice<N> {
     /// The tree-levels of this slice, arranged from leaves to root.
     pub levels: Vec<TreeSliceLevel<N>>,
@@ -122,6 +123,7 @@ impl<N> TreeSlice<N> {
 /// Effectively this means that it is a horizontal slice of a corresponding level of an entire
 /// accumulator tree.
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[sbor(categorize_types = "N")]
 pub struct TreeSliceLevel<N> {
     /// The cached left sibling of the first node of that level slice, i.e. present if and only if
     /// the `nodes` actually start with a right child.

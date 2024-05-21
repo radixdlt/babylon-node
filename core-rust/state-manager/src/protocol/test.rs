@@ -62,19 +62,14 @@
  * permissions under this License.
  */
 
-use prometheus::Registry;
-
 use crate::engine_prelude::*;
 use crate::traits::QueryableProofStore;
 
-use node_common::locks::LockFactory;
-use node_common::scheduler::Scheduler;
-
 use crate::protocol::*;
-use crate::{LedgerProof, LedgerProofOrigin, StateManager, StateManagerConfig};
+use crate::{LedgerProof, LedgerProofOrigin, StateManagerConfig};
 use std::ops::Deref;
 
-use crate::test::prepare_and_commit_round_update;
+use crate::test::{create_state_manager, prepare_and_commit_round_update};
 use crate::transaction::FlashTransactionV1;
 
 const CUSTOM_V2_PROTOCOL_VERSION: &str = "custom-v2";
@@ -100,13 +95,17 @@ fn flash_protocol_update_test() {
         // Run the genesis first
         let tmp_state_manager = create_state_manager(state_manager_config.clone());
         tmp_state_manager
-            .state_computer
+            .system_executor
             .execute_genesis_for_unit_tests_with_default_config();
         // Now we can prepare the state updates based on the initialized database
-        let state_updates = generate_validator_fee_fix_state_updates(
-            tmp_state_manager.database.access_direct().deref(),
-        );
-        state_updates
+        let validator_fee_fix = AnemoneSettings::all_disabled()
+            .enable(|anemone_settings| &mut anemone_settings.validator_fee_fix)
+            .create_batch_generator()
+            .generate_batch(tmp_state_manager.database.access_direct().deref(), 0)
+            .transactions
+            .remove(0);
+        let ProtocolUpdateTransactionDetails::FlashV1Transaction(flash) = validator_fee_fix;
+        flash.state_updates
     };
 
     state_manager_config
@@ -114,11 +113,12 @@ fn flash_protocol_update_test() {
         .protocol_update_content_overrides = ProtocolUpdateContentOverrides::empty()
         .with_custom(
             custom_v2_protocol_version.clone(),
-            vec![vec![FlashTransactionV1 {
-                name: format!("{CUSTOM_V2_PROTOCOL_VERSION}-flash"),
-                state_updates: consensus_manager_state_updates,
-            }
-            .into()]],
+            vec![ProtocolUpdateNodeBatch::FlashTransactions(vec![
+                FlashTransactionV1 {
+                    name: format!("{CUSTOM_V2_PROTOCOL_VERSION}-flash"),
+                    state_updates: consensus_manager_state_updates,
+                },
+            ])],
         )
         .into();
 
@@ -161,7 +161,7 @@ fn flash_protocol_update_test() {
     assert_eq!(
         config_substate
             .into_payload()
-            .into_latest()
+            .fully_update_and_into_latest_version()
             .config
             .validator_creation_usd_cost,
         dec!("100")
@@ -192,14 +192,4 @@ fn flash_protocol_update_test() {
         protocol_update_epoch
     );
     assert_eq!(latest_execution_proof.ledger_header.round, Round::zero());
-}
-
-fn create_state_manager(config: StateManagerConfig) -> StateManager {
-    StateManager::new(
-        config,
-        None,
-        &LockFactory::new("testing"),
-        &Registry::new(),
-        &Scheduler::new("testing"),
-    )
 }

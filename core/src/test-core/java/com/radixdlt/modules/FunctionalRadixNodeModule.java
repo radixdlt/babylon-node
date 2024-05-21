@@ -76,6 +76,7 @@ import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.NoEpochsConsensusModule;
 import com.radixdlt.environment.NoEpochsSyncModule;
 import com.radixdlt.environment.NodeAutoCloseable;
+import com.radixdlt.environment.ScenariosExecutionConfig;
 import com.radixdlt.genesis.RawGenesisDataWithHash;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.MockedLedgerModule;
@@ -423,7 +424,8 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                         rev2Config.ledgerProofsGcConfig(),
                         rev2Config.ledgerSyncLimitsConfig(),
                         rev2Config.protocolConfig(),
-                        rev2Config.noFees()));
+                        rev2Config.noFees(),
+                        ScenariosExecutionConfig.ALL));
               }
               case REV2ProposerConfig.Mempool mempool -> {
                 install(new MempoolRelayerModule(mempool.mempoolRelayerConfig()));
@@ -440,7 +442,8 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                         rev2Config.ledgerProofsGcConfig(),
                         rev2Config.ledgerSyncLimitsConfig(),
                         rev2Config.protocolConfig(),
-                        rev2Config.noFees()));
+                        rev2Config.noFees(),
+                        ScenariosExecutionConfig.ALL));
               }
             }
           }

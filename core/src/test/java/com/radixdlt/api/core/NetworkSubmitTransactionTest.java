@@ -233,7 +233,7 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
       assertThat(rejectedDetails.getIsPayloadRejectionPermanent()).isFalse();
       assertThat(rejectedDetails.getIsIntentRejectionPermanent()).isFalse();
       assertThat(rejectedDetails.getIsFresh()).isTrue();
-      assertThat(rejectedDetails.getErrorMessage()).contains("LoanRepaymentFailed");
+      assertThat(rejectedDetails.getErrorMessage()).contains("SuccessButFeeLoanNotRepaid");
     }
   }
 

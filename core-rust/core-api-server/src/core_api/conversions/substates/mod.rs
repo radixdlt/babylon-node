@@ -1,6 +1,8 @@
 mod access_controller;
 mod access_rules_module;
 mod account;
+mod account_locker;
+mod boot_loader_module;
 mod consensus_manager;
 mod generic;
 mod metadata_module;
@@ -15,6 +17,8 @@ mod type_info_module;
 pub use access_controller::*;
 pub use access_rules_module::*;
 pub use account::*;
+pub use account_locker::*;
+pub use boot_loader_module::*;
 pub use consensus_manager::*;
 pub use generic::*;
 pub use metadata_module::*;
@@ -98,8 +102,8 @@ macro_rules! field_substate_versioned {
                 is_locked: matches!($substate.lock_status(), LockStatus::Locked),
                 value: {
                     // NB: We should use compiler to unpack to ensure we map all fields
-                    let $value_unpacking = $substate.payload().as_latest_ref()
-                        .ok_or(MappingError::ObsoleteSubstateVersion)?;
+                    let $value_unpacking = &scrypto_clone($substate.payload())
+                        .fully_update_and_into_latest_version();
                     $($($mapping)+)?;
                     Box::new(models::[<$substate_type Value>] $fields)
                 }
@@ -175,9 +179,8 @@ macro_rules! key_value_store_optional_substate_versioned {
                     .get_optional_value()
                     .map(|opt| -> Result<_, MappingError> {
                         #[allow(clippy::let_unit_value)]
-                        let $value_unpacking = opt
-                            .as_latest_ref()
-                            .ok_or(MappingError::ObsoleteSubstateVersion)?;
+                        let $value_unpacking = &scrypto_clone(opt)
+                            .fully_update_and_into_latest_version();
                         Ok(Box::new(models::[<$substate_type Value>] $fields))
                     })
                     .transpose()?,
@@ -217,8 +220,8 @@ macro_rules! key_value_store_mandatory_substate_versioned {
     ) => {
         paste::paste! {
             {
-                let $value_unpacking = $substate.get_definitely_present_value()?.as_latest_ref()
-                    .ok_or(MappingError::ObsoleteSubstateVersion)?;
+                let $value_unpacking = &scrypto_clone($substate.get_definitely_present_value()?)
+                    .fully_update_and_into_latest_version();
                 models::Substate::[<$substate_type Substate>] {
                     is_locked: matches!($substate.lock_status(), LockStatus::Locked),
                     key: Box::new($key),
@@ -257,8 +260,8 @@ macro_rules! index_substate_versioned {
     ) => {
         paste::paste! {
             {
-                let $value_unpacking = $substate.value().as_latest_ref()
-                    .ok_or(MappingError::ObsoleteSubstateVersion)?;
+                let $value_unpacking = &scrypto_clone($substate.value())
+                    .fully_update_and_into_latest_version();
                 models::Substate::[<$substate_type Substate>] {
                     is_locked: false,
                     key: Box::new($key),
@@ -284,4 +287,14 @@ impl<C> WrapperMethods<C> for KeyValueEntrySubstate<C> {
             KeyValueEntrySubstate::V1(v1) => v1.value.as_ref(),
         }
     }
+}
+
+/// "Clones" an SBOR-encodable value.
+/// Note: this hack is required since many of the Substate value structs do not support [`Clone`],
+/// and the convenient "into latest" method (which we need in order to output the value according to
+/// the "current" Core API schema) needs an owned instance. A true fix should involve either cloning
+/// or some other way of "get latest from reference" on the Engine's side.
+fn scrypto_clone<T: ScryptoSbor>(value: &T) -> T {
+    let bytes = scrypto_encode(value).expect("cannot encode");
+    scrypto_decode(&bytes).expect("cannot decode")
 }
