@@ -803,9 +803,7 @@ impl ActualStateManagerDatabase {
 
         Ok(state_manager_database)
     }
-}
 
-impl StateManagerDatabase<DirectRocks> {
     /// Creates a readonly [`StateManagerDatabase`] that allows only reading from the store, while
     /// some other process is writing to it.
     ///
@@ -816,7 +814,7 @@ impl StateManagerDatabase<DirectRocks> {
     /// way of making it clear that it only wants read lock and not a write lock.
     ///
     /// [`ledger-tools`]: https://github.com/radixdlt/ledger-tools
-    pub fn new_read_only(root_path: PathBuf) -> StateManagerDatabase<DirectRocks> {
+    pub fn new_read_only(root_path: PathBuf) -> Self {
         let mut db_opts = Options::default();
         db_opts.create_if_missing(false);
         db_opts.create_missing_column_families(false);
@@ -851,7 +849,7 @@ impl StateManagerDatabase<DirectRocks> {
         root_path: PathBuf,
         temp_path: PathBuf,
         column_families: Vec<&str>,
-    ) -> StateManagerDatabase<DirectRocks> {
+    ) -> Self {
         let mut db_opts = Options::default();
         db_opts.create_if_missing(false);
         db_opts.create_missing_column_families(false);
