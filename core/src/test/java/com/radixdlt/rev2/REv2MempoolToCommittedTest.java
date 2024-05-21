@@ -79,7 +79,6 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.networks.Network;
 import com.radixdlt.sync.SyncRelayConfig;
 import java.util.Collection;
 import java.util.List;
@@ -118,14 +117,15 @@ public class REv2MempoolToCommittedTest {
                 FunctionalRadixNodeModule.SafetyRecoveryConfig.MOCKED,
                 FunctionalRadixNodeModule.ConsensusConfig.of(1000),
                 FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
-                    StateComputerConfig.rev2(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        GenesisBuilder.createTestGenesisWithNumValidators(
-                            1,
-                            Decimal.ONE,
-                            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
-                                this.roundsPerEpoch)),
-                        StateComputerConfig.REV2ProposerConfig.Mempool.singleTransaction()),
+                    StateComputerConfig.rev2()
+                        .withGenesis(
+                            GenesisBuilder.createTestGenesisWithNumValidators(
+                                1,
+                                Decimal.ONE,
+                                GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
+                                    this.roundsPerEpoch)))
+                        .withProposerConfig(
+                            StateComputerConfig.REV2ProposerConfig.Mempool.singleTransaction()),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 

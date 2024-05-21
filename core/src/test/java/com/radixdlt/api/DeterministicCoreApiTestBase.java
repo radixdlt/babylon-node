@@ -83,7 +83,6 @@ import com.radixdlt.environment.CoreApiServerFlags;
 import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
-import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.deterministic.TestProtocolConfig;
@@ -105,8 +104,6 @@ import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 
 public abstract class DeterministicCoreApiTestBase {
-  private static final DatabaseConfig TEST_DATABASE_CONFIG =
-      new DatabaseConfig(true, false, false, false);
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
   public static NetworkDefinition networkDefinition = NetworkDefinition.INT_TEST_NET;
@@ -125,110 +122,14 @@ public abstract class DeterministicCoreApiTestBase {
     this.apiClient = buildApiClient();
   }
 
-  protected DeterministicTest buildRunningServerTest() {
-    return buildRunningServerTest(
-        1000000,
-        TEST_DATABASE_CONFIG,
-        GenesisData.NO_SCENARIOS,
-        ProtocolConfig.testingDefault(),
-        ScenariosExecutionConfig.NONE);
-  }
-
-  protected DeterministicTest buildRunningServerTestWithProtocolConfig(
-      int roundsPerEpoch, TestProtocolConfig testProtocolConfig) {
-    return buildRunningServerTest(
-        roundsPerEpoch,
-        TEST_DATABASE_CONFIG,
-        testProtocolConfig.genesisScenarios(),
-        new ProtocolConfig(
-            testProtocolConfig.protocolUpdateConfigs().stream()
-                .map(pu -> new ProtocolUpdateTrigger(pu.name(), pu.enactmentCondition()))
-                .collect(ImmutableList.toImmutableList()),
-            testProtocolConfig.protocolUpdateConfigs().stream()
-                .flatMap(
-                    pu ->
-                        pu.rawOverride().stream()
-                            .map(rawOverride -> Map.entry(pu.name(), rawOverride)))
-                .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue))),
-        new ScenariosExecutionConfig(
-            testProtocolConfig.protocolUpdateConfigs().stream()
-                .map(pu -> new ProtocolUpdateScenarios(pu.name(), pu.postProtocolUpdateScenarios()))
-                .collect(ImmutableList.toImmutableList())));
-  }
-
-  protected DeterministicTest buildRunningServerTest(DatabaseConfig databaseConfig) {
-    return buildRunningServerTest(
-        1000000,
-        databaseConfig,
-        GenesisData.NO_SCENARIOS,
-        ProtocolConfig.testingDefault(),
-        ScenariosExecutionConfig.NONE);
-  }
-
-  protected DeterministicTest buildRunningServerTest(
-      DatabaseConfig databaseConfig, StateTreeGcConfig stateTreeGcConfig) {
-    return buildRunningServerTest(
-        1000000,
-        databaseConfig,
-        GenesisData.NO_SCENARIOS,
-        ProtocolConfig.testingDefault(),
-        stateTreeGcConfig);
-  }
-
-  protected DeterministicTest buildRunningServerTest(int roundsPerEpoch) {
-    return buildRunningServerTest(
-        roundsPerEpoch,
-        TEST_DATABASE_CONFIG,
-        GenesisData.NO_SCENARIOS,
-        ProtocolConfig.testingDefault(),
-        ScenariosExecutionConfig.NONE);
-  }
-
-  protected DeterministicTest buildRunningServerTest(
-      int roundsPerEpoch,
-      DatabaseConfig databaseConfig,
-      ImmutableList<String> scenariosToRun,
-      ProtocolConfig protocolConfig,
-      StateTreeGcConfig stateTreeGcConfig) {
-    return buildRunningServerTest(
-        StateComputerConfig.rev2(
-            Network.INTEGRATIONTESTNET.getId(),
+  protected StateComputerConfig.REv2StateComputerConfig defaultConfig() {
+    return StateComputerConfig.rev2()
+        .withGenesis(
             GenesisBuilder.createTestGenesisWithNumValidators(
                 1,
                 Decimal.ONE,
                 GenesisConsensusManagerConfig.Builder.testDefaults()
-                    .epochExactRoundCount(roundsPerEpoch),
-                scenariosToRun),
-            databaseConfig,
-            StateComputerConfig.REV2ProposerConfig.Mempool.defaults(),
-            false,
-            false,
-            protocolConfig,
-            stateTreeGcConfig,
-            ScenariosExecutionConfig.NONE));
-  }
-
-  protected DeterministicTest buildRunningServerTest(
-      int roundsPerEpoch,
-      DatabaseConfig databaseConfig,
-      ImmutableList<String> scenariosToRun,
-      ProtocolConfig protocolConfig,
-      ScenariosExecutionConfig scenariosExecutionConfig) {
-    return buildRunningServerTest(
-        StateComputerConfig.rev2(
-            Network.INTEGRATIONTESTNET.getId(),
-            GenesisBuilder.createTestGenesisWithNumValidators(
-                1,
-                Decimal.ONE,
-                GenesisConsensusManagerConfig.Builder.testDefaults()
-                    .epochExactRoundCount(roundsPerEpoch),
-                scenariosToRun),
-            databaseConfig,
-            StateComputerConfig.REV2ProposerConfig.Mempool.defaults(),
-            false,
-            false,
-            protocolConfig,
-            scenariosExecutionConfig));
+                    .epochExactRoundCount(1000000)));
   }
 
   protected DeterministicTest buildRunningServerTest(StateComputerConfig stateComputerConfig) {

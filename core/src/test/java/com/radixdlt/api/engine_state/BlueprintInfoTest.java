@@ -66,14 +66,15 @@ package com.radixdlt.api.engine_state;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.MoreCollectors;
+import com.google.common.collect.*;
 import com.radixdlt.api.DeterministicEngineStateApiTestBase;
 import com.radixdlt.api.engine_state.generated.client.ApiException;
 import com.radixdlt.api.engine_state.generated.models.*;
+import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.predicates.NodesPredicate;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.rev2.Decimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -83,7 +84,7 @@ public final class BlueprintInfoTest extends DeterministicEngineStateApiTestBase
 
   @Test
   public void engine_state_api_returns_blueprint_info() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
       final var wellKnownAddresses = getCoreApiHelper().getWellKnownAddresses();
 
@@ -179,7 +180,7 @@ public final class BlueprintInfoTest extends DeterministicEngineStateApiTestBase
 
   @Test
   public void engine_state_api_returns_blueprint_package_royalties() throws Exception {
-    try (var test = buildRunningServerTestWithScenarios("royalties")) {
+    try (var test = buildRunningServerTest(configWithScenarios("royalties"))) {
       test.suppressUnusedWarning();
 
       // Fetch the info of the blueprint created by the "royalties" Scenario:
@@ -202,7 +203,7 @@ public final class BlueprintInfoTest extends DeterministicEngineStateApiTestBase
 
   @Test
   public void engine_state_api_blueprint_info_supports_history() throws Exception {
-    try (var test = buildRunningServerTestWithScenarios("royalties")) {
+    try (var test = buildRunningServerTest(configWithScenarios("royalties"))) {
       test.suppressUnusedWarning();
 
       // Let's re-use the "royalties" Scenario's blueprint; first find out when it was created:
@@ -301,5 +302,15 @@ public final class BlueprintInfoTest extends DeterministicEngineStateApiTestBase
       }
     }
     throw new AssertionError("assumed package not found");
+  }
+
+  private StateComputerConfig.REv2StateComputerConfig configWithScenarios(String... scenarioNames) {
+    return defaultConfig()
+        .withGenesis(
+            GenesisBuilder.createTestGenesisWithNumValidators(
+                1,
+                Decimal.ONE,
+                GenesisConsensusManagerConfig.Builder.testDefaults().epochExactRoundCount(1000000),
+                ImmutableList.copyOf(scenarioNames)));
   }
 }

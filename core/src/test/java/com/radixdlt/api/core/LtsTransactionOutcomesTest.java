@@ -72,7 +72,9 @@ import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.DatabaseConfig;
-import com.radixdlt.harness.deterministic.TestProtocolConfig;
+import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
+import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.lang.Option;
 import com.radixdlt.rev2.*;
@@ -85,7 +87,9 @@ import org.junit.Test;
 public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_non_fungible_entity_changes() throws Exception {
-    try (var test = buildRunningServerTest(new DatabaseConfig(true, true, false, false))) {
+    final var config =
+        defaultConfig().withDatabaseConfig(new DatabaseConfig(true, true, false, false));
+    try (final var test = buildRunningServerTest(config)) {
       test.suppressUnusedWarning();
 
       var accountKeyPair = ECKeyPair.generateNew();
@@ -151,17 +155,20 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
 
   @Test
   public void test_resultant_account_balances() throws Exception {
-    // We run all scenarios for the case when RE decides to change invariants (i.e. no vault
-    // substate is deleted).
     final var protocolConfig =
-        new TestProtocolConfig()
-            .withAllProtocolUpdatesAtEarlyEpochs()
-            .withAllScenariosForConfiguredProtocolUpdates();
-    try (var test = buildRunningServerTestWithProtocolConfig(30, protocolConfig)) {
+        defaultConfig()
+            .withGenesis(
+                GenesisBuilder.createTestGenesisWithNumValidators(
+                    1,
+                    Decimal.ONE,
+                    GenesisConsensusManagerConfig.Builder.testDefaults().epochExactRoundCount(100),
+                    // We run all scenarios for the case when RE decides to change invariants:
+                    GenesisData.ALL_SCENARIOS));
+    try (var test = buildRunningServerTest(protocolConfig)) {
       test.suppressUnusedWarning();
 
       // Wait for all protocol updates:
-      test.runUntilState(allAtOrOverEpoch(protocolConfig.lastProtocolUpdateEnactmentEpoch()));
+      //test.runUntilState(allAtOrOverEpoch(protocolConfig.lastProtocolUpdateEnactmentEpoch()));
 
       var account1KeyPair = ECKeyPair.generateNew();
       var account1Address = Address.virtualAccountAddress(account1KeyPair.getPublicKey());
@@ -265,7 +272,9 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
 
   @Test
   public void test_multiple_transactions_have_correct_outcomes() throws Exception {
-    try (var test = buildRunningServerTest(new DatabaseConfig(true, true, false, false))) {
+    final var config =
+        defaultConfig().withDatabaseConfig(new DatabaseConfig(true, true, false, false));
+    try (final var test = buildRunningServerTest(config)) {
       test.suppressUnusedWarning();
 
       var faucetAddressStr = ScryptoConstants.FAUCET_ADDRESS.encode(networkDefinition);

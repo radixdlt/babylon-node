@@ -129,8 +129,7 @@ public final class StateTreeGcTest {
                         LedgerProofsGcConfig.forTesting(),
                         LedgerSyncLimitsConfig.defaults(),
                         ProtocolConfig.testingDefault(),
-                        false,
-                        ScenariosExecutionConfig.NONE))));
+                        false))));
   }
 
   @Test

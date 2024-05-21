@@ -127,8 +127,10 @@ public class StateHistoryTest extends DeterministicCoreApiTestBase {
 
   private DeterministicTest buildTest(boolean stateHistoryEnabled, long historyLength) {
     return buildRunningServerTest(
-        new DatabaseConfig(true, false, stateHistoryEnabled, false),
-        new StateTreeGcConfig(
-            UInt32.fromNonNegativeInt(1), UInt64.fromNonNegativeLong(historyLength)));
+        defaultConfig()
+            .withDatabaseConfig(new DatabaseConfig(true, false, stateHistoryEnabled, false))
+            .withStateTreeGcConfig(
+                new StateTreeGcConfig(
+                    UInt32.fromNonNegativeInt(1), UInt64.fromNonNegativeLong(historyLength))));
   }
 }

@@ -71,9 +71,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.*;
-import com.radixdlt.harness.deterministic.TestProtocolConfig;
+import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition;
 import com.radixdlt.protocol.ProtocolUpdateTrigger;
+import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
+import com.radixdlt.rev2.Decimal;
 import java.util.List;
 import java.util.stream.LongStream;
 import org.junit.Test;
@@ -81,20 +84,27 @@ import org.junit.Test;
 public class NetworkScenariosTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_network_scenarios() throws Exception {
-    // pick a custom subset/permutation (different than "all scenarios"):
-    final var protocolConfig =
-        new TestProtocolConfig()
-            .withGenesisScenarios(ImmutableList.of("radiswap", "transfer_xrd", "royalties"))
-            .with(
-                TestProtocolConfig.updateTo(
-                    ProtocolUpdateTrigger.ANEMONE,
-                    ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(3L)))
-            .with(
-                TestProtocolConfig.updateTo(
-                        ProtocolUpdateTrigger.BOTTLENOSE,
-                        ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(4L))
-                    .withScenarios(ImmutableList.of("maya_router", "access-controller-v2")));
-    try (var test = buildRunningServerTestWithProtocolConfig(30, protocolConfig)) {
+    final var config =
+        defaultConfig()
+            .withProtocolConfig(
+                    new ProtocolConfig(
+                            ImmutableList.of(
+                                    new ProtocolUpdateTrigger(
+                                            ProtocolUpdateTrigger.ANEMONE,
+                                            ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(3L)),
+                            new ProtocolUpdateTrigger(
+                                    ProtocolUpdateTrigger.BOTTLENOSE,
+                                    ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(4L)))
+                    ))
+            .withGenesis(
+                GenesisBuilder.createTestGenesisWithNumValidators(
+                    1,
+                    Decimal.ONE,
+                    GenesisConsensusManagerConfig.Builder.testDefaults().epochExactRoundCount(100),
+                    // pick a custom subset/permutation (different than "all scenarios"):
+                    ImmutableList.of("radiswap", "transfer_xrd", "royalties"))
+                );
+    try (var test = buildRunningServerTest(config)) {
       test.suppressUnusedWarning();
 
       // Query scenarios right after genesis
@@ -105,14 +115,14 @@ public class NetworkScenariosTest extends DeterministicCoreApiTestBase {
       assertThat(genesisScenarios).hasSize(3); // there is 3 of them
 
       // Wait for all protocol updates:
-      test.runUntilState(allAtOrOverEpoch(protocolConfig.lastProtocolUpdateEnactmentEpoch()));
+      test.runUntilState(allAtOrOverEpoch(4L));
 
       // query all scenarios
       final var allScenarios =
           getStatusApi()
               .statusScenariosPost(new ScenariosRequest().network(networkLogicalName))
               .getExecutedScenarios();
-      assertThat(allScenarios).hasSize(5); // there is 3 genesis + 2 bottlenose
+      assertThat(allScenarios).hasSize(6); // there is 3 genesis + 3 bottlenose
 
       // assert some selected properties of the known scenarios
       assertScenario(
@@ -175,7 +185,7 @@ public class NetworkScenariosTest extends DeterministicCoreApiTestBase {
               "usd_royalty_component_address"));
       assertScenario(
           allScenarios,
-          3,
+          4,
           "maya_router",
           ImmutableList.of(
               "maya-router-create-accounts",
@@ -192,7 +202,7 @@ public class NetworkScenariosTest extends DeterministicCoreApiTestBase {
               "resource_2"));
       assertScenario(
           allScenarios,
-          4,
+          5,
           "access-controller-v2",
           ImmutableList.of(
               "access-controller-v2-instantiate",

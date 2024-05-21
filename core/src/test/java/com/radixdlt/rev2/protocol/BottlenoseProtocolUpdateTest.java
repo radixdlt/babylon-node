@@ -141,8 +141,7 @@ public final class BottlenoseProtocolUpdateTest {
                         LedgerProofsGcConfig.forTesting(),
                         LedgerSyncLimitsConfig.defaults(),
                         PROTOCOL_CONFIG,
-                        false,
-                        ScenariosExecutionConfig.ALL))));
+                        false))));
   }
 
   @Test

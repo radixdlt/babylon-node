@@ -152,8 +152,7 @@ public final class LedgerProofsGcTest {
                             UInt32.fromNonNegativeInt(maxTxnCountUnderProof),
                             UInt32.fromNonNegativeInt(maxTxnPayloadSizeUnderProof)),
                         ProtocolConfig.testingDefault(),
-                        false,
-                        ScenariosExecutionConfig.NONE),
+                        false),
                     SyncRelayConfig.of(100, 2, 200L))));
   }
 
