@@ -141,7 +141,7 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_getTransactionAtSt
                 },
                 error_message: match local_transaction_execution.outcome {
                     DetailedTransactionOutcome::Success(_) => None,
-                    DetailedTransactionOutcome::Failure(err) => Some(format!("{err:?}")),
+                    DetailedTransactionOutcome::Failure(error) => Some(error.render()),
                 },
                 consensus_receipt_bytes: scrypto_encode(
                     &committed_ledger_transaction_receipt.get_consensus_receipt(),

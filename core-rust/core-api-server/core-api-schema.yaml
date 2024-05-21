@@ -53,7 +53,7 @@ openapi: 3.1.0
 # => Hex-encoded bytes/payload should end _hex and not include _bytes
 info:
   # Should be the release version, and the release display name
-  version: 'v1.2.0'
+  version: 'v1.2.1'
   title: 'Radix Core API - Babylon (Bottlenose)'
   license:
     name: The Radix License, Version 1.0
@@ -3236,10 +3236,6 @@ components:
           properties:
             field_kind:
               $ref: "#/components/schemas/SystemFieldKind"
-            boot_loader_type:
-              # Note: this conditional field is a way to support the boot types in a backwards-compatible way
-              $ref: "#/components/schemas/BootLoaderType"
-              description: An exact type, if the `field_kind` is `BootLoader`.
     SystemSchemaStructure:
       allOf:
         - $ref: "#/components/schemas/SubstateSystemStructure"
@@ -3290,14 +3286,11 @@ components:
     SystemFieldKind:
       type: string
       enum:
-        - BootLoader
-        - TypeInfo
-    BootLoaderType:
-      type: string
-      enum:
-        - KernelBoot
-        - SystemBoot
+        # Note: the weird ordering here maintains backwards compatibility (of enum ordinals):
         - VmBoot
+        - TypeInfo
+        - SystemBoot
+        - KernelBoot
     ObjectSubstateTypeReferenceType:
       type: string
       enum:
