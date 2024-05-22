@@ -109,6 +109,8 @@ pub mod engine_prelude {
     pub use radix_engine::updates::*;
     pub use radix_engine::vm::*;
 
+    pub use radix_clis::*;
+
     pub use radix_engine_interface::blueprints::transaction_processor::*;
     pub use radix_engine_interface::blueprints::account::*;
     pub use radix_engine_interface::prelude::*;

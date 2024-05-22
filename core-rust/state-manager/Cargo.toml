@@ -9,6 +9,7 @@ node-common = { path = "../node-common" }
 sbor = { workspace = true }
 radix-transactions = { workspace = true }
 radix-transaction-scenarios = { workspace = true }
+radix-clis = { workspace = true }
 radix-common = { workspace = true }
 radix-engine-interface = { workspace = true }
 radix-engine = { workspace = true }
