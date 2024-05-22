@@ -26,6 +26,7 @@ resolver = "2"
 sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-7a8a3405", features = ["serde"] }
 radix-transactions = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-7a8a3405" }
 radix-transaction-scenarios = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-7a8a3405" }
+radix-clis = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-7a8a3405" }
 radix-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-7a8a3405", features = ["serde"] }
 radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-7a8a3405" }
 radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-7a8a3405" }
