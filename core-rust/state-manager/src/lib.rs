@@ -100,8 +100,9 @@ pub mod engine_prelude {
     pub use radix_common::prelude::*;
 
     pub use radix_engine::errors::*;
-    pub use radix_engine::system::checkers::*;
     pub use radix_engine::system::bootstrap::*;
+    #[cfg(feature = "db_checker")]
+    pub use radix_engine::system::checkers::*;
     pub use radix_engine::system::system_substates::*;
     pub use radix_engine::transaction::*;
     pub use radix_engine::updates::*;
