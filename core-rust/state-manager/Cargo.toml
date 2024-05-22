@@ -38,3 +38,4 @@ chrono = { workspace = true }
 
 [features]
 db_checker = ["radix-engine/db_checker"]
+rocksdb = ["radix-substate-store-impls/rocksdb"]
