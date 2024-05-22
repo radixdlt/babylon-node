@@ -99,6 +99,7 @@ pub use crate::types::*;
 pub mod engine_prelude {
     pub use radix_common::prelude::*;
 
+    pub use radix_engine::*;
     pub use radix_engine::errors::*;
     pub use radix_engine::system::bootstrap::*;
     #[cfg(feature = "db_checker")]
