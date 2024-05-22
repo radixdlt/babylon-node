@@ -96,10 +96,11 @@ pub use crate::store::*;
 pub use crate::system_executor::*;
 pub use crate::types::*;
 
-pub(crate) mod engine_prelude {
+pub mod engine_prelude {
     pub use radix_common::prelude::*;
 
     pub use radix_engine::errors::*;
+    pub use radix_engine::system::checkers::*;
     pub use radix_engine::system::bootstrap::*;
     pub use radix_engine::system::system_substates::*;
     pub use radix_engine::transaction::*;
