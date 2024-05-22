@@ -109,6 +109,7 @@ pub mod engine_prelude {
     pub use radix_engine::vm::*;
 
     pub use radix_engine_interface::blueprints::transaction_processor::*;
+    pub use radix_engine_interface::blueprints::account::*;
     pub use radix_engine_interface::prelude::*;
 
     pub use radix_substate_store_impls::state_tree::tree_store::*;
