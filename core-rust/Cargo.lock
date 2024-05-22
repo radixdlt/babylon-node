@@ -1812,6 +1812,7 @@ dependencies = [
  "radix-common",
  "radix-rust",
  "radix-substate-store-interface",
+ "rocksdb",
  "sbor",
 ]
 
