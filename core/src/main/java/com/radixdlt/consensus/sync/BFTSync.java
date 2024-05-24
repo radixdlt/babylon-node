@@ -92,7 +92,6 @@ import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
 
 /** Manages keeping the VertexStore and pacemaker in sync for consensus */
 public final class BFTSync implements BFTSyncer {
@@ -444,7 +443,7 @@ public final class BFTSync implements BFTSyncer {
     syncRequestState.syncIds.add(syncId);
   }
 
-  private @NotNull String buildMessage(
+  private String buildMessage(
       String reason, Round round, ImmutableList<NodeId> authors, GetVerticesRequest request) {
     return String.format(
         "RATE_LIMIT: Outbound BFT Sync request %s for round %s due to %s to %s was not sent"
