@@ -18,24 +18,24 @@ pub struct TransactionPreviewRequest {
     pub network: String,
     #[serde(rename = "at_ledger_state", skip_serializing_if = "Option::is_none")]
     pub at_ledger_state: Option<Box<crate::core_api::generated::models::LedgerStateSelector>>,
-    /// A text-representation of a transaction manifest
+    /// A text representation of a transaction manifest.
     #[serde(rename = "manifest")]
     pub manifest: String,
-    /// An array of hex-encoded blob data (optional)
+    /// An array of hex-encoded blob data, if referenced by the manifest.
     #[serde(rename = "blobs_hex", skip_serializing_if = "Option::is_none")]
     pub blobs_hex: Option<Vec<String>>,
-    /// An integer between `0` and `10^10`, marking the epoch at which the transaction starts being valid
-    #[serde(rename = "start_epoch_inclusive")]
-    pub start_epoch_inclusive: i64,
-    /// An integer between `0` and `10^10`, marking the epoch at which the transaction is no longer valid
-    #[serde(rename = "end_epoch_exclusive")]
-    pub end_epoch_exclusive: i64,
+    /// An integer between `0` and `10^10`, marking the epoch at which the transaction starts being valid. If omitted, the current epoch will be used (taking into account the `at_ledger_state`, if specified). 
+    #[serde(rename = "start_epoch_inclusive", skip_serializing_if = "Option::is_none")]
+    pub start_epoch_inclusive: Option<i64>,
+    /// An integer between `0` and `10^10`, marking the epoch at which the transaction is no longer valid. If omitted, a maximum epoch (relative to the `start_epoch_inclusive`) will be used. 
+    #[serde(rename = "end_epoch_exclusive", skip_serializing_if = "Option::is_none")]
+    pub end_epoch_exclusive: Option<i64>,
     #[serde(rename = "notary_public_key", skip_serializing_if = "Option::is_none")]
     pub notary_public_key: Option<Box<crate::core_api::generated::models::PublicKey>>,
-    /// Whether the notary should count as a signatory (optional, default false)
+    /// Whether the notary should count as a signatory (defaults to `false`).
     #[serde(rename = "notary_is_signatory", skip_serializing_if = "Option::is_none")]
     pub notary_is_signatory: Option<bool>,
-    /// An integer between `0` and `65535`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
+    /// An integer between `0` and `65535`, giving the validator tip as a percentage amount. A value of `1` corresponds to a 1% fee. 
     #[serde(rename = "tip_percentage")]
     pub tip_percentage: i32,
     /// An integer between `0` and `2^32 - 1`, chosen to allow a unique intent to be created (to enable submitting an otherwise identical/duplicate intent). 
@@ -51,14 +51,14 @@ pub struct TransactionPreviewRequest {
 }
 
 impl TransactionPreviewRequest {
-    pub fn new(network: String, manifest: String, start_epoch_inclusive: i64, end_epoch_exclusive: i64, tip_percentage: i32, nonce: i64, signer_public_keys: Vec<crate::core_api::generated::models::PublicKey>, flags: crate::core_api::generated::models::TransactionPreviewRequestFlags) -> TransactionPreviewRequest {
+    pub fn new(network: String, manifest: String, tip_percentage: i32, nonce: i64, signer_public_keys: Vec<crate::core_api::generated::models::PublicKey>, flags: crate::core_api::generated::models::TransactionPreviewRequestFlags) -> TransactionPreviewRequest {
         TransactionPreviewRequest {
             network,
             at_ledger_state: None,
             manifest,
             blobs_hex: None,
-            start_epoch_inclusive,
-            end_epoch_exclusive,
+            start_epoch_inclusive: None,
+            end_epoch_exclusive: None,
             notary_public_key: None,
             notary_is_signatory: None,
             tip_percentage,
