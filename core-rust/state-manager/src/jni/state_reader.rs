@@ -94,7 +94,11 @@ extern "system" fn Java_com_radixdlt_state_RustStateReader_getValidatorProtocolU
                     MAIN_BASE_PARTITION,
                     &ValidatorField::ProtocolUpdateReadinessSignal.into()
                 );
-            Ok(result.and_then(|f| f.into_payload().content.into_latest().protocol_version_name))
+            Ok(result.and_then(|f| {
+                f.into_payload()
+                    .fully_update_and_into_latest_version()
+                    .protocol_version_name
+            }))
         },
     )
 }

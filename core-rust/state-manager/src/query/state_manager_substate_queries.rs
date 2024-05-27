@@ -14,7 +14,7 @@ impl<T: SubstateDatabase> StateManagerSubstateQueries for T {
             )
             .unwrap()
             .into_payload()
-            .into_latest();
+            .fully_update_and_into_latest_version();
         (consensus_manager_state.epoch, consensus_manager_state.round)
     }
 }

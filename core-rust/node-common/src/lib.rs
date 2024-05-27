@@ -73,5 +73,5 @@ pub mod scheduler;
 pub mod utils;
 
 pub(crate) mod engine_prelude {
-    pub use radix_engine_common::prelude::*;
+    pub use radix_common::prelude::*;
 }

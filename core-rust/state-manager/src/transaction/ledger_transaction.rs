@@ -1,5 +1,4 @@
 use crate::engine_prelude::*;
-use ::transaction::model::PrepareError; // disambiguation needed because of a wide prelude
 
 use crate::transaction::{ConfigType, ConfiguredExecutable};
 
@@ -424,8 +423,8 @@ impl ValidatedLedgerTransaction {
         match &self.inner {
             ValidatedLedgerTransactionInner::Genesis(_) => ConfigType::Genesis,
             ValidatedLedgerTransactionInner::UserV1(_) => ConfigType::Regular,
-            ValidatedLedgerTransactionInner::RoundUpdateV1(_) => ConfigType::OtherSystem,
-            ValidatedLedgerTransactionInner::FlashV1(_) => ConfigType::OtherSystem,
+            ValidatedLedgerTransactionInner::RoundUpdateV1(_) => ConfigType::Regular,
+            ValidatedLedgerTransactionInner::FlashV1(_) => ConfigType::Regular,
         }
     }
 

@@ -4,10 +4,11 @@ use super::addressing::*;
 use crate::core_api::*;
 use crate::engine_prelude::*;
 
+use state_manager::rocks_db::{ReadableRocks, StateManagerDatabase};
 use state_manager::{
     ApplicationEvent, BySubstate, DetailedTransactionOutcome, LedgerStateChanges,
-    LocalTransactionReceipt, PartitionChangeAction, PartitionReference, ReadableRocks,
-    StateManagerDatabase, SubstateChangeAction, SubstateReference,
+    LocalTransactionReceipt, PartitionChangeAction, PartitionReference, SubstateChangeAction,
+    SubstateReference,
 };
 
 pub fn to_api_receipt(
@@ -23,7 +24,7 @@ pub fn to_api_receipt(
         DetailedTransactionOutcome::Failure(error) => (
             models::TransactionStatus::Failed,
             None,
-            Some(format!("{error:?}")),
+            Some(error.render()),
         ),
     };
 
@@ -153,7 +154,9 @@ pub fn to_api_substate_system_structure(
             models::SubstateSystemStructure::SystemFieldStructure {
                 field_kind: match field_kind {
                     SystemFieldKind::TypeInfo => models::SystemFieldKind::TypeInfo,
-                    SystemFieldKind::BootLoader => models::SystemFieldKind::BootLoader,
+                    SystemFieldKind::VmBoot => models::SystemFieldKind::VmBoot,
+                    SystemFieldKind::SystemBoot => models::SystemFieldKind::SystemBoot,
+                    SystemFieldKind::KernelBoot => models::SystemFieldKind::KernelBoot,
                 },
             }
         }
@@ -253,11 +256,11 @@ pub fn to_api_object_substate_type_reference(
 
 pub fn to_api_fully_scoped_type_id(
     context: &MappingContext,
-    fully_scoped_type_id: &FullyScopedTypeId<impl Into<NodeId> + Clone>,
+    fully_scoped_type_id: &FullyScopedTypeId<impl AsRef<NodeId>>,
 ) -> Result<models::FullyScopedTypeId, MappingError> {
     let FullyScopedTypeId(address, schema_hash, local_type_id) = fully_scoped_type_id;
     Ok(models::FullyScopedTypeId {
-        entity_address: to_api_entity_address(context, &address.clone().into())?,
+        entity_address: to_api_entity_address(context, address.as_ref())?,
         schema_hash: to_api_schema_hash(schema_hash),
         local_type_id: Box::new(to_api_local_type_id(context, local_type_id)?),
     })
@@ -572,7 +575,10 @@ impl StateMappingLookups {
                     package_address,
                     blueprint_name: blueprint_name.clone(),
                 },
-                definition.into_latest().interface.types,
+                definition
+                    .fully_update_and_into_latest_version()
+                    .interface
+                    .types,
             );
         }
         Ok(blueprint_type_lookups)
@@ -683,7 +689,7 @@ pub fn to_api_fee_summary(
 pub fn to_api_costing_parameters(
     _context: &MappingContext,
     engine_costing_parameters: &CostingParameters,
-    transaction_costing_parameters: &TransactionCostingParameters,
+    transaction_costing_parameters: &TransactionCostingParametersReceipt,
 ) -> Result<models::CostingParameters, MappingError> {
     Ok(models::CostingParameters {
         execution_cost_unit_price: to_api_decimal(

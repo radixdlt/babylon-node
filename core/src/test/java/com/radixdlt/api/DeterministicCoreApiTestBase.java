@@ -87,6 +87,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.rev2.*;
+import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.FreePortFinder;
 import java.net.http.HttpClient;

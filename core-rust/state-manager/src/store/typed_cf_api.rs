@@ -539,7 +539,7 @@ pub trait VersionedCf {
 impl<K, V, VV, KC, D> DefaultCf for D
 where
     V: Into<VV> + Clone,
-    VV: ScryptoEncode + ScryptoDecode + HasLatestVersion<Latest = V>,
+    VV: ScryptoEncode + ScryptoDecode + Versioned<LatestVersion = V>,
     KC: Default,
     D: VersionedCf<Key = K, Value = V, KeyCodec = KC, VersionedValue = VV>,
 {
@@ -655,12 +655,12 @@ pub trait IntraGroupOrderPreservingDbCodec<T>: GroupPreservingDbCodec {
 }
 
 /// A reusable versioning decorator for [`DbCodec`]s.
-pub struct VersionedDbCodec<U: DbCodec<VT>, T: Into<VT> + Clone, VT: HasLatestVersion<Latest = T>> {
+pub struct VersionedDbCodec<U: DbCodec<VT>, T: Into<VT> + Clone, VT: Versioned<LatestVersion = T>> {
     underlying: U,
     type_parameters_phantom: PhantomData<VT>,
 }
 
-impl<U: DbCodec<VT> + Default, T: Into<VT> + Clone, VT: HasLatestVersion<Latest = T>> Default
+impl<U: DbCodec<VT> + Default, T: Into<VT> + Clone, VT: Versioned<LatestVersion = T>> Default
     for VersionedDbCodec<U, T, VT>
 {
     fn default() -> Self {
@@ -671,7 +671,7 @@ impl<U: DbCodec<VT> + Default, T: Into<VT> + Clone, VT: HasLatestVersion<Latest 
     }
 }
 
-impl<U: DbCodec<VT>, T: Into<VT> + Clone, VT: HasLatestVersion<Latest = T>> DbCodec<T>
+impl<U: DbCodec<VT>, T: Into<VT> + Clone, VT: Versioned<LatestVersion = T>> DbCodec<T>
     for VersionedDbCodec<U, T, VT>
 {
     fn encode(&self, value: &T) -> Vec<u8> {
@@ -681,7 +681,7 @@ impl<U: DbCodec<VT>, T: Into<VT> + Clone, VT: HasLatestVersion<Latest = T>> DbCo
 
     fn decode(&self, bytes: &[u8]) -> T {
         let versioned = self.underlying.decode(bytes);
-        versioned.into_latest()
+        versioned.fully_update_and_into_latest_version()
     }
 }
 

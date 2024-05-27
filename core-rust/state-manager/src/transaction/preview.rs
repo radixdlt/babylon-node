@@ -1,20 +1,20 @@
 use crate::engine_prelude::*;
-use node_common::locks::{DbLock, RwLock};
-
+use node_common::locks::DbLock;
 use std::sync::Arc;
 
 use crate::historical_state::{StateHistoryError, VersionScopingSupport};
 
+use crate::rocks_db::ActualStateManagerDatabase;
 use crate::transaction::*;
 use crate::{
-    ActualStateManagerDatabase, GlobalBalanceSummary, LedgerStateChanges, LedgerStateSummary,
-    PreviewRequest, ProcessedCommitResult, StateVersion,
+    GlobalBalanceSummary, LedgerStateChanges, LedgerStateSummary, PreviewRequest,
+    ProcessedCommitResult, StateVersion,
 };
 
 /// A transaction preview runner.
 pub struct TransactionPreviewer {
     database: Arc<DbLock<ActualStateManagerDatabase>>,
-    execution_configurator: Arc<RwLock<ExecutionConfigurator>>,
+    execution_configurator: Arc<ExecutionConfigurator>,
     validation_config: ValidationConfig,
 }
 
@@ -34,7 +34,7 @@ pub enum PreviewerError {
 impl TransactionPreviewer {
     pub fn new(
         database: Arc<DbLock<ActualStateManagerDatabase>>,
-        execution_configurator: Arc<RwLock<ExecutionConfigurator>>,
+        execution_configurator: Arc<ExecutionConfigurator>,
         validation_config: ValidationConfig,
     ) -> Self {
         Self {
@@ -67,8 +67,9 @@ impl TransactionPreviewer {
         let validated = validator
             .validate_preview_intent_v1(intent)
             .map_err(PreviewError::TransactionValidationError)?;
-        let read_execution_configurator = self.execution_configurator.read();
-        let transaction_logic = read_execution_configurator.wrap_preview_transaction(&validated);
+        let transaction_logic = self
+            .execution_configurator
+            .wrap_preview_transaction(&validated);
 
         let receipt = transaction_logic.execute_on(&database);
         let (state_changes, global_balance_summary) = match &receipt.result {
@@ -162,31 +163,24 @@ impl From<StateHistoryError> for PreviewerError {
 mod tests {
 
     use crate::engine_prelude::*;
-    use crate::{PreviewRequest, StateManager, StateManagerConfig};
-    use node_common::locks::LockFactory;
-    use node_common::scheduler::Scheduler;
-    use prometheus::Registry;
+    use crate::{PreviewRequest, StateManagerConfig};
+
+    use crate::test::create_state_manager;
 
     #[test]
     fn test_preview_processed_substate_changes() {
         let tmp = tempfile::tempdir().unwrap();
-        let lock_factory = LockFactory::new("testing");
-        let metrics_registry = Registry::new();
-        let state_manager = StateManager::new(
-            StateManagerConfig::new_for_testing(tmp.path().to_str().unwrap()),
-            None,
-            &lock_factory,
-            &metrics_registry,
-            &Scheduler::new("testing"),
-        );
+        let state_manager = create_state_manager(StateManagerConfig::new_for_testing(
+            tmp.path().to_str().unwrap(),
+        ));
 
         state_manager
-            .state_computer
+            .system_executor
             .execute_genesis_for_unit_tests_with_default_config();
 
         let preview_manifest = ManifestBuilder::new().lock_fee_from_faucet().build();
 
-        let preview_response = state_manager.transaction_previewer.read().preview(
+        let preview_response = state_manager.transaction_previewer.preview(
             PreviewRequest {
                 manifest: preview_manifest,
                 start_epoch_inclusive: None,

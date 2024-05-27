@@ -1,8 +1,6 @@
 use crate::engine_prelude::*;
 use crate::engine_state_api::models::SborFormatOptions;
 
-use transaction::model::{TransactionHashBech32Decoder, TransactionHashBech32Encoder};
-
 pub struct MappingContext {
     pub address_encoder: AddressBech32Encoder,
     pub transaction_hash_encoder: TransactionHashBech32Encoder,

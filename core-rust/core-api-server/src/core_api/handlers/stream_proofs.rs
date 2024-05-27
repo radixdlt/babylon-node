@@ -1,10 +1,9 @@
 use crate::core_api::*;
 
 use crate::engine_prelude::*;
+use state_manager::rocks_db::{ReadableRocks, StateManagerDatabase};
 use state_manager::store::traits::*;
-use state_manager::{
-    LedgerProof, LedgerProofOrigin, ReadableRocks, StateManagerDatabase, StateVersion,
-};
+use state_manager::{LedgerProof, LedgerProofOrigin, StateVersion};
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_stream_proofs(

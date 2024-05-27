@@ -112,6 +112,7 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
                     GenesisData.ALL_SCENARIOS));
     try (var test = buildRunningServerTest(config)) {
       test.suppressUnusedWarning();
+
       var transaction = TransactionBuilder.forTests().prepare();
 
       // Submit transaction

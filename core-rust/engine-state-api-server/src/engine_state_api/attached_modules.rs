@@ -391,12 +391,12 @@ fn decode_kv_collection_key<D: ScryptoDecode>(key: SborCollectionKey) -> D {
     decoded
 }
 
-fn decode_latest<V: HasLatestVersion + ScryptoDecode>(
+fn decode_latest<V: Versioned + ScryptoDecode>(
     entry_data: SborData,
-) -> Result<V::Latest, AttachedModuleBrowsingError> {
+) -> Result<V::LatestVersion, AttachedModuleBrowsingError> {
     Ok(scrypto_decode::<V>(entry_data.as_bytes())
         .map_err(AttachedModuleBrowsingError::SborDecode)?
-        .into_latest())
+        .fully_update_and_into_latest_version())
 }
 
 fn create_object_collection_meta<K: ScryptoDescribe, V: ScryptoDescribe>(
@@ -444,6 +444,6 @@ fn create_type_meta<T: ScryptoDescribe>() -> ResolvedTypeMeta {
                 })
             }
         },
-        schema: versioned_schema.into_latest(),
+        schema: versioned_schema.fully_update_and_into_latest_version(),
     }
 }
