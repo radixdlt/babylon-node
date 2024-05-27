@@ -16,10 +16,10 @@ pub(crate) async fn handle_status_network_status(
 
     let database = state.state_manager.database.snapshot();
     let (current_state_version, current_ledger_hashes) = database.get_top_ledger_hashes();
-    let current_protocol_state = state
+    let current_protocol_version = state
         .state_manager
         .protocol_manager
-        .current_protocol_state();
+        .current_protocol_version();
     Ok(Json(models::NetworkStatusResponse {
         pre_genesis_state_identifier: Box::new(to_api_committed_state_identifiers(
             StateVersion::pre_genesis(),
@@ -78,7 +78,7 @@ pub(crate) async fn handle_status_network_status(
                 )?))
             })
             .transpose()?,
-        current_protocol_version: current_protocol_state.current_protocol_version.to_string(),
+        current_protocol_version: current_protocol_version.to_string(),
     }))
 }
 

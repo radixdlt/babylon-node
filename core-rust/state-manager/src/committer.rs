@@ -198,7 +198,7 @@ impl Committer {
             .unwrap_or_else(|| {
                 Self::calculate_transaction_root(
                     database.deref(),
-                    series_executor.epoch_identifiers(),
+                    &series_executor.epoch_identifiers(),
                     series_executor.latest_state_version(),
                     &prepared_transactions,
                 )

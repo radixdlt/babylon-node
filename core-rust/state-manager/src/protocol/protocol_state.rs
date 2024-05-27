@@ -111,6 +111,7 @@ impl ProtocolUpdateExecutor {
 
 pub struct ProtocolManager {
     protocol_metrics: ProtocolMetrics,
+    current_protocol_version: RwLock<ProtocolVersionName>,
     protocol_state: RwLock<ProtocolState>,
     newest_protocol_version: ProtocolVersionName,
 }
@@ -123,13 +124,18 @@ impl ProtocolManager {
         lock_factory: &LockFactory,
         metric_registry: &Registry,
     ) -> Self {
-        let initial_protocol_state = ProtocolState::compute_initial(
-            database,
-            &genesis_protocol_version,
-            &protocol_update_triggers,
-        );
+        let initial_protocol_state =
+            ProtocolState::compute_initial(database, &protocol_update_triggers);
         Self {
             protocol_metrics: ProtocolMetrics::new(metric_registry, &initial_protocol_state),
+            current_protocol_version: lock_factory.named("current_version").new_rwlock(
+                initial_protocol_state
+                    .enacted_protocol_updates
+                    .last_key_value()
+                    .map(|(_, protocol_version)| protocol_version)
+                    .unwrap_or(&genesis_protocol_version)
+                    .clone(),
+            ),
             protocol_state: lock_factory
                 .named("state")
                 .new_rwlock(initial_protocol_state),
@@ -140,8 +146,22 @@ impl ProtocolManager {
         }
     }
 
+    pub fn protocol_state_at_version(&self, _state_version: StateVersion) -> ProtocolState {
+        // TODO(strict correctness): At the moment, the protocol state is only relevant when
+        // executing an epoch change (i.e. as part of a round update, during `prepare()`). In these
+        // cases, we actually always need only the current protocol state. In future though, this
+        // method could be called e.g. by historical transaction preview logic, or historical state
+        // serving API (even if only for informational purposes), and we can cheaply avoid confusion
+        // by resolving this from an in-memory map (which we almost have at `compute_initial()`).
+        self.current_protocol_state()
+    }
+
     pub fn current_protocol_state(&self) -> ProtocolState {
         self.protocol_state.read().deref().clone()
+    }
+
+    pub fn current_protocol_version(&self) -> ProtocolVersionName {
+        self.current_protocol_version.read().deref().clone()
     }
 
     pub fn update_protocol_state_and_metrics(
@@ -161,14 +181,12 @@ impl ProtocolManager {
     }
 
     pub fn set_current_protocol_version(&self, protocol_version: &ProtocolVersionName) {
-        self.protocol_state.write().current_protocol_version = protocol_version.clone()
+        *self.current_protocol_version.write() = protocol_version.clone()
     }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ProtocolState {
-    /// A protocol version currently in use. The latest enacted version or the genesis version.
-    pub current_protocol_version: ProtocolVersionName,
     /// A list of all protocol updates that have been enacted.
     pub enacted_protocol_updates: BTreeMap<StateVersion, ProtocolVersionName>,
     /// A list of protocol updates that haven't yet been enacted, but still can be in the future.
@@ -333,7 +351,6 @@ impl ProtocolState {
         S: QueryableProofStore + IterableProofStore + QueryableTransactionStore,
     >(
         store: &S,
-        genesis_protocol_version: &ProtocolVersionName,
         protocol_update_triggers: &[ProtocolUpdateTrigger],
     ) -> ProtocolState {
         // For each configured allowed protocol update we calculate its expected status against
@@ -396,12 +413,6 @@ impl ProtocolState {
             );
         }
 
-        let current_protocol_version = enacted_protocol_updates
-            .last_key_value()
-            .map(|(_, protocol_version)| protocol_version)
-            .unwrap_or(genesis_protocol_version)
-            .clone();
-
         let pending_protocol_updates = initial_statuses
             .into_iter()
             .flat_map(|(protocol_update, status)| match status {
@@ -415,7 +426,6 @@ impl ProtocolState {
             .collect();
 
         ProtocolState {
-            current_protocol_version,
             enacted_protocol_updates,
             pending_protocol_updates,
         }
