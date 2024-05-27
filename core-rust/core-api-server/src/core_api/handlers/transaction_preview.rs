@@ -1,8 +1,6 @@
 use crate::core_api::*;
 use crate::engine_prelude::*;
 
-use std::ops::Range;
-
 use state_manager::rocks_db::ActualStateManagerDatabase;
 use state_manager::transaction::ProcessedPreviewResult;
 use state_manager::{ExecutionFeeData, LocalTransactionReceipt, PreviewRequest};
@@ -43,8 +41,10 @@ fn extract_preview_request(
         .collect::<Result<_, _>>()
         .map_err(|err| err.into_response_error("blobs"))?;
     let manifest_blob_provider = BlobProvider::new_with_blobs(manifest_blobs);
-    let manifest = manifest::compile(&request.manifest, network, manifest_blob_provider)
+    let manifest = compile(&request.manifest, network, manifest_blob_provider)
         .map_err(|err| client_error(format!("Invalid manifest - {err:?}")))?;
+
+    let honor_requested_epoch_range = !request.flags.skip_epoch_check;
 
     let signer_public_keys: Vec<_> = request
         .signer_public_keys
@@ -55,12 +55,21 @@ fn extract_preview_request(
 
     Ok(PreviewRequest {
         manifest,
-        explicit_epoch_range: Some(Range {
-            start: extract_epoch(request.start_epoch_inclusive)
-                .map_err(|err| err.into_response_error("start_epoch_inclusive"))?,
-            end: extract_epoch(request.end_epoch_exclusive)
-                .map_err(|err| err.into_response_error("end_epoch_exclusive"))?,
-        }),
+        start_epoch_inclusive: request
+            .start_epoch_inclusive
+            .filter(|_| honor_requested_epoch_range)
+            .map(|number| {
+                extract_epoch(number)
+                    .map_err(|err| err.into_response_error("start_epoch_inclusive"))
+            })
+            .transpose()?,
+        end_epoch_exclusive: request
+            .end_epoch_exclusive
+            .filter(|_| honor_requested_epoch_range)
+            .map(|number| {
+                extract_epoch(number).map_err(|err| err.into_response_error("end_epoch_exclusive"))
+            })
+            .transpose()?,
         notary_public_key: request
             .notary_public_key
             .map(|pk| {

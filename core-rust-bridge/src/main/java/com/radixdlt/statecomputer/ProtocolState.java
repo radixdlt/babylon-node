@@ -67,15 +67,16 @@ package com.radixdlt.statecomputer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.lang.Tuple;
+import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition;
 import com.radixdlt.protocol.ProtocolUpdateTrigger;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.EnumCodec;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.utils.UInt64;
+import java.util.Map;
 
 public record ProtocolState(
-    String currentProtocolVersion,
     ImmutableMap<UInt64, String> enactedProtocolUpdates,
     ImmutableList<PendingProtocolUpdate> pendingProtocolUpdates) {
 
@@ -100,8 +101,15 @@ public record ProtocolState(
                 PendingProtocolUpdateState.SignalledReadinessThresholdState.class, codecs));
   }
 
+  public String currentProtocolVersion() {
+    return this.enactedProtocolUpdates().entrySet().stream()
+        .max(Map.Entry.comparingByKey())
+        .map(Map.Entry::getValue)
+        .orElse(ProtocolConfig.GENESIS_PROTOCOL_VERSION_NAME);
+  }
+
   public static ProtocolState testingEmpty() {
-    return new ProtocolState("babylon-genesis", ImmutableMap.of(), ImmutableList.of());
+    return new ProtocolState(ImmutableMap.of(), ImmutableList.of());
   }
 
   public record PendingProtocolUpdate(

@@ -96,27 +96,25 @@ impl TransactionExecutorFactory {
         }
     }
 
-    pub fn execute_isolated<S: ReadableStore>(
-        &self,
-        store: &S,
-        transaction: &ValidatedLedgerTransaction,
-        description: &'static str,
-    ) -> TransactionReceipt {
-        self.execution_configurator
-            .wrap_ledger_transaction(transaction, description)
-            .execute_on(store)
-    }
-
     pub fn start_series_execution<'s, S>(&'s self, store: &'s S) -> TransactionSeriesExecutor<'s, S>
     where
         S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader,
     {
-        TransactionSeriesExecutor::new(
+        let epoch_header = store
+            .get_latest_epoch_proof()
+            .map(|epoch_proof| epoch_proof.ledger_header);
+        let (state_version, ledger_hashes) = store.get_top_ledger_hashes();
+        let protocol_state = self
+            .protocol_manager
+            .protocol_state_at_version(state_version);
+        TransactionSeriesExecutor {
             store,
-            &self.execution_cache_manager,
-            self.execution_configurator.deref(),
-            self.protocol_manager.current_protocol_state(),
-        )
+            execution_cache_manager: self.execution_cache_manager.deref(),
+            execution_configurator: self.execution_configurator.deref(),
+            epoch_header,
+            state_tracker: StateTracker::new(state_version, ledger_hashes, protocol_state),
+            engine_receipt_capture: CaptureSupport::default(),
+        }
     }
 }
 
@@ -126,7 +124,6 @@ pub struct TransactionSeriesExecutor<'s, S> {
     store: &'s S,
     execution_cache_manager: &'s ExecutionCacheManager,
     execution_configurator: &'s ExecutionConfigurator,
-    epoch_identifiers: EpochTransactionIdentifiers,
     epoch_header: Option<LedgerHeader>,
     state_tracker: StateTracker,
     engine_receipt_capture: CaptureSupport<TransactionReceipt>,
@@ -136,34 +133,6 @@ impl<'s, S> TransactionSeriesExecutor<'s, S>
 where
     S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader,
 {
-    /// Creates a new executor for a lifetime of entire transaction batch execution (i.e. for all
-    /// transactions in a prepared vertex, or in a commit request).
-    /// The borrowed `store` should be already locked (i.e. final database writes, if any, should be
-    /// performed under the same lock).
-    /// The locking of the borrowed `execution_cache` will be handled by this executor.
-    pub fn new(
-        store: &'s S,
-        execution_cache_manager: &'s ExecutionCacheManager,
-        execution_configurator: &'s ExecutionConfigurator,
-        protocol_state: ProtocolState,
-    ) -> Self {
-        let epoch_header = store
-            .get_latest_epoch_proof()
-            .map(|epoch_proof| epoch_proof.ledger_header);
-        Self {
-            store,
-            execution_cache_manager,
-            execution_configurator,
-            epoch_identifiers: epoch_header
-                .as_ref()
-                .map(EpochTransactionIdentifiers::from)
-                .unwrap_or_else(EpochTransactionIdentifiers::pre_genesis),
-            epoch_header,
-            state_tracker: StateTracker::new(store.get_top_ledger_hashes(), protocol_state),
-            engine_receipt_capture: CaptureSupport::default(),
-        }
-    }
-
     /// Executes the given already-validated ledger transaction (against the borrowed `store` and
     /// `execution_cache`).
     /// Uses an internal [`StateTracker`] to track the progression of *committable* transactions.
@@ -215,7 +184,7 @@ where
         let mut execution_cache = self.execution_cache_manager.access_exclusively();
         let processed = execution_cache.execute_transaction(
             self.store,
-            &self.epoch_identifiers,
+            &self.epoch_identifiers(),
             self.state_tracker.state_version,
             &self.state_tracker.ledger_hashes.transaction_root,
             &described_ledger_transaction_hash.ledger_hash,
@@ -257,7 +226,10 @@ impl<'s, S> TransactionSeriesExecutor<'s, S> {
     /// version reached by this executor.
     pub fn start_commit_builder(&self) -> CommitBundleBuilder {
         CommitBundleBuilder::new(
-            self.epoch_identifiers.state_version,
+            self.epoch_header
+                .as_ref()
+                .map(|epoch_header| epoch_header.state_version)
+                .unwrap_or_else(StateVersion::pre_genesis),
             self.state_tracker.state_version,
         )
     }
@@ -268,10 +240,12 @@ impl<'s, S> TransactionSeriesExecutor<'s, S> {
         self.epoch_header.as_ref()
     }
 
-    /// Returns transaction identifiers at the beginning of the current epoch (i.e. in which the
-    /// transactions are being executed), or [`EpochTransactionIdentifiers::pre_genesis`].
-    pub fn epoch_identifiers(&self) -> &EpochTransactionIdentifiers {
-        &self.epoch_identifiers
+    /// Returns transaction identifiers of the [`Self::epoch_header()`] (a convenience method).
+    pub fn epoch_identifiers(&self) -> EpochTransactionIdentifiers {
+        self.epoch_header
+            .as_ref()
+            .map(EpochTransactionIdentifiers::from)
+            .unwrap_or_else(EpochTransactionIdentifiers::pre_genesis)
     }
 
     /// Returns the ledger hashes resulting from the most recent `execute()` call.
@@ -332,12 +306,13 @@ struct StateTracker {
 impl StateTracker {
     /// Initializes the tracker to a known state (assuming it is not an end-state of an epoch).
     pub fn new(
-        ledger_hashes_entry: (StateVersion, LedgerHashes),
+        state_version: StateVersion,
+        ledger_hashes: LedgerHashes,
         protocol_state: ProtocolState,
     ) -> Self {
         Self {
-            state_version: ledger_hashes_entry.0,
-            ledger_hashes: ledger_hashes_entry.1,
+            state_version,
+            ledger_hashes,
             epoch_change: None,
             protocol_state,
             next_protocol_version: None,

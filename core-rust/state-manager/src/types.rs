@@ -71,7 +71,6 @@ use std::fmt;
 use std::fmt::Formatter;
 use std::mem::size_of;
 use std::num::TryFromIntError;
-use std::ops::Range;
 
 /// A complete ID of a Substate.
 #[derive(Debug, Clone, Hash, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -305,7 +304,8 @@ impl LedgerHashes {
 #[derive(Debug)]
 pub struct PreviewRequest {
     pub manifest: TransactionManifestV1,
-    pub explicit_epoch_range: Option<Range<Epoch>>,
+    pub start_epoch_inclusive: Option<Epoch>,
+    pub end_epoch_exclusive: Option<Epoch>,
     pub notary_public_key: Option<PublicKey>,
     pub notary_is_signatory: bool,
     pub tip_percentage: u16,
