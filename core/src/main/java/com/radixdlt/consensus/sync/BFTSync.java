@@ -427,15 +427,17 @@ public final class BFTSync implements BFTSyncer {
     var syncRequestState = bftSyncing.getOrDefault(request, new SyncRequestState(authors, round));
 
     if (syncRequestState.syncIds.isEmpty()) {
+      var author = authors.get(0);
+
       if (this.syncRequestRateLimiter.tryAcquire()) {
         this.timeoutDispatcher.dispatch(new VertexRequestTimeout(request), bftSyncPatienceMillis);
-        this.requestSender.dispatch(authors.get(0), request);
+        this.requestSender.dispatch(author, request);
       } else {
         // Report issue. Once per second as info-level message, rest as debug
         if (loggingRateLimiter.tryAcquire() && log.isInfoEnabled()) {
-          log.info(outboundRateLimitLogMessage(reason, round, authors, request));
+          log.info(outboundRateLimitLogMessage(reason, round, author, request));
         } else if (log.isDebugEnabled()) {
-          log.debug(outboundRateLimitLogMessage(reason, round, authors, request));
+          log.debug(outboundRateLimitLogMessage(reason, round, author, request));
         }
       }
       this.bftSyncing.put(request, syncRequestState);
@@ -444,11 +446,11 @@ public final class BFTSync implements BFTSyncer {
   }
 
   private String outboundRateLimitLogMessage(
-      String reason, Round round, ImmutableList<NodeId> authors, GetVerticesRequest request) {
+      String reason, Round round, NodeId author, GetVerticesRequest request) {
     return String.format(
         "RATE_LIMIT: Outbound BFT Sync request %s for round %s due to %s to %s was not sent"
             + " because we're over our %s/second rate limit on sync requests.",
-        request, round, reason, authors.get(0), this.syncRequestRateLimiter.getRate());
+        request, round, reason, author, this.syncRequestRateLimiter.getRate());
   }
 
   private void rebuildAndSyncQC(SyncState syncState) {
