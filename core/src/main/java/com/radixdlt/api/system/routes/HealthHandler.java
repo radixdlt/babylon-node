@@ -72,7 +72,7 @@ import com.radixdlt.api.system.generated.models.*;
 import com.radixdlt.api.system.health.HealthInfoService;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Tuple;
-import com.radixdlt.monitoring.LedgerSummary;
+import com.radixdlt.monitoring.InMemorySystemInfoState;
 import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactAtStartOfEpochIfValidatorsReady;
 import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactAtStartOfEpochUnconditionally;
 import com.radixdlt.statecomputer.ProtocolState;
@@ -103,8 +103,8 @@ public final class HealthHandler extends SystemJsonHandler<HealthResponse> {
 
     final var readinessSignalStatuses = healthInfoService.readinessSignalStatuses();
 
-    final var ledgerSummary = healthInfoService.ledgerSummary();
-    final var protocolState = ledgerSummary.protocolState();
+    final var systemInfoState = healthInfoService.systemInfoState();
+    final var protocolState = systemInfoState.protocolState();
 
     return new HealthResponse()
         .status(statusEnum)
@@ -131,23 +131,23 @@ public final class HealthHandler extends SystemJsonHandler<HealthResponse> {
                             readinessSignalStatuses.getOrDefault(
                                 p.protocolUpdateTrigger().nextProtocolVersion(),
                                 NO_SIGNAL_REQUIRED),
-                            ledgerSummary))
+                            systemInfoState))
                 .toList());
   }
 
   private com.radixdlt.api.system.generated.models.PendingProtocolUpdate pendingProtocolUpdate(
       ProtocolState.PendingProtocolUpdate pendingProtocolUpdate,
       PendingProtocolUpdate.ReadinessSignalStatusEnum readinessSignalStatus,
-      LedgerSummary ledgerSummary) {
-    final var currentEpoch = ledgerSummary.currentEpoch();
+      InMemorySystemInfoState systemInfoState) {
+    final var currentEpoch = systemInfoState.currentEpochRound().getEpoch();
     final var epochStartTimeCalculator =
         new EpochStartTimeCalculator(
-            ledgerSummary.consensusManagerConfigEpochTargetDurationMs(),
+            systemInfoState.consensusManagerConfigEpochTargetDurationMs(),
             currentEpoch,
-            ledgerSummary.consenusManagerStateEpochEffectiveStartMs());
+            systemInfoState.consensusManagerStateEpochEffectiveStartMs());
 
     return switch (pendingProtocolUpdate.protocolUpdateTrigger().enactmentCondition()) {
-      case EnactAtStartOfEpochIfValidatorsReady condition -> {
+      case EnactAtStartOfEpochIfValidatorsReady atStartOfEpochCondition -> {
         final var state = (ForSignalledReadinessSupportCondition) pendingProtocolUpdate.state();
 
         final var projectedFulfillmentEpochByThreshold =
@@ -166,17 +166,17 @@ public final class HealthHandler extends SystemJsonHandler<HealthResponse> {
                                     .first()
                                     .requiredConsecutiveCompletedEpochsOfSupport()
                                     .toLong();
-                            final var projectedFulfillmentEpoch =
+                            final var projectedFulfillmentAtStartOfEpoch =
                                 currentEpoch
                                     + requiredConsecutiveCompletedEpochsOfSupport
                                     - consecutiveStartedEpochsOfSupport
                                     + 1;
 
-                            if (projectedFulfillmentEpoch
-                                    >= condition.lowerBoundInclusive().toLong()
-                                && projectedFulfillmentEpoch
-                                    < condition.upperBoundExclusive().toLong()) {
-                              return Option.some(projectedFulfillmentEpoch);
+                            if (projectedFulfillmentAtStartOfEpoch
+                                    >= atStartOfEpochCondition.lowerBoundInclusive().toLong()
+                                && projectedFulfillmentAtStartOfEpoch
+                                    < atStartOfEpochCondition.upperBoundExclusive().toLong()) {
+                              return Option.some(projectedFulfillmentAtStartOfEpoch);
                             } else {
                               return Option.<Long>none();
                             }

@@ -68,7 +68,7 @@ import com.google.inject.Inject;
 import com.radixdlt.api.system.generated.models.PendingProtocolUpdate;
 import com.radixdlt.consensus.bft.SelfValidatorInfo;
 import com.radixdlt.monitoring.InMemorySystemInfo;
-import com.radixdlt.monitoring.LedgerSummary;
+import com.radixdlt.monitoring.InMemorySystemInfoState;
 import com.radixdlt.prometheus.LedgerStatus;
 import com.radixdlt.prometheus.RecentSelfProposalMissStatistic;
 import com.radixdlt.prometheus.RustPrometheus;
@@ -118,7 +118,7 @@ public final class HealthInfoServiceImpl implements HealthInfoService {
 
   @Override
   public Map<String, PendingProtocolUpdate.ReadinessSignalStatusEnum> readinessSignalStatuses() {
-    final var protocolState = inMemorySystemInfo.getLedgerSummary().protocolState();
+    final var protocolState = inMemorySystemInfo.getState().protocolState();
     return selfValidatorInfo
         .bftValidatorId()
         .map(
@@ -162,7 +162,7 @@ public final class HealthInfoServiceImpl implements HealthInfoService {
   }
 
   @Override
-  public LedgerSummary ledgerSummary() {
-    return this.inMemorySystemInfo.getLedgerSummary();
+  public InMemorySystemInfoState systemInfoState() {
+    return this.inMemorySystemInfo.getState();
   }
 }

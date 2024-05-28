@@ -150,12 +150,12 @@ public final class MetricInstaller {
     return this.self.bftValidatorId().stream()
         .anyMatch(
             selfValidatorId ->
-                this.inMemorySystemInfo.getLedgerSummary().currentEpochValidators().stream()
+                this.inMemorySystemInfo.getState().currentEpochValidators().stream()
                     .anyMatch(
                         v -> BFTValidatorId.create(v.address(), v.key()).equals(selfValidatorId)));
   }
 
   private int countValidators() {
-    return this.inMemorySystemInfo.getLedgerSummary().currentEpochValidators().size();
+    return this.inMemorySystemInfo.getState().currentEpochValidators().size();
   }
 }

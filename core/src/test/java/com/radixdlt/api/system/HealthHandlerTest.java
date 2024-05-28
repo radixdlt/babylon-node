@@ -82,7 +82,7 @@ import com.radixdlt.api.system.routes.HealthHandler;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.EpochRound;
 import com.radixdlt.monitoring.InMemorySystemInfo;
-import com.radixdlt.monitoring.LedgerSummary;
+import com.radixdlt.monitoring.InMemorySystemInfoState;
 import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition;
 import com.radixdlt.protocol.ProtocolUpdateTrigger;
 import com.radixdlt.rev2.Decimal;
@@ -135,18 +135,17 @@ public class HealthHandlerTest extends SystemApiTestBase {
                         ImmutableList.of(tuple(threshold, thresholdState))));
             final var protocolState =
                 new ProtocolState(
-                    "genesis",
                     ImmutableMap.of(UInt64.fromNonNegativeLong(5L), "enacted-v2"),
                     ImmutableList.of(pendingProtocolUpdate));
 
             final var systemInfo = mock(InMemorySystemInfo.class);
             when(systemInfo.getCurrentRound())
                 .thenReturn(EpochRound.of(CURRENT_EPOCH, Round.epochInitial()));
-            when(systemInfo.getLedgerSummary())
+            when(systemInfo.getState())
                 .thenReturn(
-                    new LedgerSummary(
+                    new InMemorySystemInfoState(
                         protocolState,
-                        CURRENT_EPOCH,
+                        EpochRound.of(CURRENT_EPOCH, Round.epochInitial()),
                         Set.of() /* unused in this test */,
                         EPOCH_TARGET_DURATION_MS,
                         EPOCH_EFFECTIVE_START_MS));

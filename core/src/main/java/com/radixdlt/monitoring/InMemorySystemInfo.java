@@ -77,8 +77,7 @@ import com.radixdlt.statecomputer.commit.NextEpoch;
 /** Manages system information to be consumed by clients such as the api. */
 public final class InMemorySystemInfo {
   private final RustStateReader rustStateReader;
-  private EpochRound currentEpochRound;
-  private LedgerSummary ledgerSummary;
+  private InMemorySystemInfoState state;
 
   @Inject
   public InMemorySystemInfo(
@@ -86,43 +85,46 @@ public final class InMemorySystemInfo {
       LedgerProofBundle latestProof,
       ProtocolState initialProtocolState) {
     this.rustStateReader = rustStateReader;
-    this.currentEpochRound =
-        EpochRound.of(latestProof.resultantEpoch(), latestProof.resultantRound());
     final var latestEpochChange =
         latestProof.closestEpochProofOnOrBefore().ledgerHeader().nextEpoch().unwrap();
-    this.ledgerSummary =
-        new LedgerSummary(
+    this.state =
+        new InMemorySystemInfoState(
             initialProtocolState,
-            latestEpochChange.epoch().toLong(),
+            EpochRound.of(latestProof.resultantEpoch(), latestProof.resultantRound()),
             latestEpochChange.validators(),
             rustStateReader.getConsensusManagerConfigEpochTargetDurationMs().toLong(),
             rustStateReader.getConsensusManagerStateEpochEffectiveStartMs());
   }
 
   public void processRoundUpdate(EpochRoundUpdate roundUpdate) {
-    currentEpochRound = roundUpdate.getEpochRound();
+    this.state =
+        new InMemorySystemInfoState(
+            state.protocolState(),
+            roundUpdate.getEpochRound(),
+            state.currentEpochValidators(),
+            state.consensusManagerConfigEpochTargetDurationMs(),
+            state.consensusManagerStateEpochEffectiveStartMs());
   }
 
   public EpochRound getCurrentRound() {
-    return currentEpochRound;
+    return state.currentEpochRound();
   }
 
   public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
     return update -> {
-      final var maybeNextEpoch = update.committedProof().primaryProof().ledgerHeader().nextEpoch();
-      this.ledgerSummary =
-          new LedgerSummary(
+      final var committedProof = update.committedProof();
+      final var maybeNextEpoch = committedProof.primaryProof().ledgerHeader().nextEpoch();
+      this.state =
+          new InMemorySystemInfoState(
               update.resultantProtocolState(),
-              maybeNextEpoch.map(ne -> ne.epoch().toLong()).or(this.ledgerSummary.currentEpoch()),
-              maybeNextEpoch
-                  .map(NextEpoch::validators)
-                  .orElse(this.ledgerSummary.currentEpochValidators()),
+              EpochRound.of(committedProof.resultantEpoch(), committedProof.resultantRound()),
+              maybeNextEpoch.map(NextEpoch::validators).orElse(this.state.currentEpochValidators()),
               rustStateReader.getConsensusManagerConfigEpochTargetDurationMs().toLong(),
               rustStateReader.getConsensusManagerStateEpochEffectiveStartMs());
     };
   }
 
-  public LedgerSummary getLedgerSummary() {
-    return this.ledgerSummary;
+  public InMemorySystemInfoState getState() {
+    return this.state;
   }
 }

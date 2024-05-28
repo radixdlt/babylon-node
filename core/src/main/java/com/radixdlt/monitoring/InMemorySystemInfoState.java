@@ -64,13 +64,14 @@
 
 package com.radixdlt.monitoring;
 
+import com.radixdlt.consensus.epoch.EpochRound;
 import com.radixdlt.statecomputer.ProtocolState;
 import com.radixdlt.statecomputer.commit.ActiveValidatorInfo;
 import java.util.Set;
 
-public record LedgerSummary(
+public record InMemorySystemInfoState(
     ProtocolState protocolState,
-    long currentEpoch,
+    EpochRound currentEpochRound,
     Set<ActiveValidatorInfo> currentEpochValidators,
     long consensusManagerConfigEpochTargetDurationMs,
-    long consenusManagerStateEpochEffectiveStartMs) {}
+    long consensusManagerStateEpochEffectiveStartMs) {}

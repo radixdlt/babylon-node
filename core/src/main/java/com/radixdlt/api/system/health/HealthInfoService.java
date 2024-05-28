@@ -65,7 +65,7 @@
 package com.radixdlt.api.system.health;
 
 import com.radixdlt.api.system.generated.models.PendingProtocolUpdate;
-import com.radixdlt.monitoring.LedgerSummary;
+import com.radixdlt.monitoring.InMemorySystemInfoState;
 import com.radixdlt.prometheus.RecentSelfProposalMissStatistic;
 import java.util.Map;
 
@@ -76,5 +76,5 @@ public interface HealthInfoService {
 
   Map<String, PendingProtocolUpdate.ReadinessSignalStatusEnum> readinessSignalStatuses();
 
-  LedgerSummary ledgerSummary();
+  InMemorySystemInfoState systemInfoState();
 }
