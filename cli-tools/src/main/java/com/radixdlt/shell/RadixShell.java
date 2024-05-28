@@ -300,18 +300,6 @@ public final class RadixShell {
           .dispatch(t);
     }
 
-    //    public <T extends CoreEvent> Disposable onEvent(Class<T> eventClass, Consumer<T> consumer)
-    // {
-    //      final var disposable =
-    //          injector
-    //              .getInstance(RxEnvironment.class)
-    //              .getObservable(eventClass)
-    //              .subscribe(consumer::accept);
-    //
-    //      eventConsumers.add(disposable);
-    //      return disposable;
-    //    }
-
     public void cleanEventConsumers() {
       eventConsumers.forEach(Disposable::dispose);
       eventConsumers.clear();
