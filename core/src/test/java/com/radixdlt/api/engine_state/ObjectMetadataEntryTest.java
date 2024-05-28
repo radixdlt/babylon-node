@@ -74,7 +74,7 @@ public final class ObjectMetadataEntryTest extends DeterministicEngineStateApiTe
 
   @Test
   public void engine_state_api_return_object_metadata_entry() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       final var wellKnownAddresses = getCoreApiHelper().getWellKnownAddresses();

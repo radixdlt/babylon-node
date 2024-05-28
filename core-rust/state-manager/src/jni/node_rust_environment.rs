@@ -86,11 +86,10 @@ use crate::priority_mempool::PriorityMempool;
 use super::fatal_panic_handler::FatalPanicHandler;
 
 use crate::protocol::ProtocolManager;
+use crate::rocks_db::ActualStateManagerDatabase;
 use crate::transaction::Preparator;
-use crate::{
-    ActualStateManagerDatabase, Committer, LedgerMetrics, StateManager, StateManagerConfig,
-    SystemExecutor,
-};
+use crate::{Committer, LedgerMetrics, SystemExecutor};
+use crate::{StateManager, StateManagerConfig};
 
 const POINTER_JNI_FIELD_NAME: &str = "rustNodeRustEnvironmentPointer";
 

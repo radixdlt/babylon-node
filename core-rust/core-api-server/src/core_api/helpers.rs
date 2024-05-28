@@ -1,7 +1,8 @@
 use crate::engine_prelude::*;
 use serde::Serialize;
+use state_manager::rocks_db::{ReadableRocks, StateManagerDatabase};
 use state_manager::store::traits::*;
-use state_manager::{LedgerHeader, ReadableRocks, StateManagerDatabase};
+use state_manager::LedgerHeader;
 use std::io::Write;
 
 use super::*;

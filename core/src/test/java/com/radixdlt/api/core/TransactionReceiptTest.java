@@ -80,12 +80,13 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.rev2.Manifest;
 import com.radixdlt.rev2.ScryptoConstants;
 import com.radixdlt.rev2.TransactionBuilder;
+import java.util.List;
 import org.junit.Test;
 
 public final class TransactionReceiptTest extends DeterministicCoreApiTestBase {
   @Test
   public void core_api_returns_transaction_receipt_with_balance_changes() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       // Prepare a transaction which deposits from faucet:
@@ -98,7 +99,7 @@ public final class TransactionReceiptTest extends DeterministicCoreApiTestBase {
 
       // Submit it and await its commit:
       test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}))
-          .dispatch(MempoolAdd.create(transaction.raw()));
+          .dispatch(new MempoolAdd(List.of(transaction.raw())));
       test.runUntilState(
           allCommittedTransactionSuccess(transaction.raw()),
           onlyConsensusEvents().or(onlyLocalMempoolAddEvents()));

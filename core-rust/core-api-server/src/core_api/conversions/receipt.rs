@@ -4,10 +4,11 @@ use super::addressing::*;
 use crate::core_api::*;
 use crate::engine_prelude::*;
 
+use state_manager::rocks_db::{ReadableRocks, StateManagerDatabase};
 use state_manager::{
     ApplicationEvent, BySubstate, DetailedTransactionOutcome, LedgerStateChanges,
-    LocalTransactionReceipt, PartitionChangeAction, PartitionReference, ReadableRocks,
-    StateManagerDatabase, SubstateChangeAction, SubstateReference,
+    LocalTransactionReceipt, PartitionChangeAction, PartitionReference, SubstateChangeAction,
+    SubstateReference,
 };
 
 pub fn to_api_receipt(

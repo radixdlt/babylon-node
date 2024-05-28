@@ -72,6 +72,7 @@ use crate::jni::LedgerSyncLimitsConfig;
 use crate::protocol::{
     ProtocolConfig, ProtocolManager, ProtocolUpdateExecutor, ProtocolVersionName,
 };
+use crate::rocks_db::{ActualStateManagerDatabase, StateManagerDatabase};
 use crate::store::jmt_gc::StateTreeGcConfig;
 use crate::store::proofs_gc::{LedgerProofsGc, LedgerProofsGcConfig};
 use crate::store::traits::proofs::QueryableProofStore;
@@ -85,8 +86,8 @@ use crate::{
     priority_mempool::PriorityMempool,
     store::{jmt_gc::StateTreeGc, DatabaseBackendConfig, DatabaseConfig, RawDbMetricsCollector},
     transaction::{CachedCommittabilityValidator, CommittabilityValidator, TransactionPreviewer},
-    ActualStateManagerDatabase, Committer, ExecutionCacheManager, LedgerMetrics,
-    PendingTransactionResultCache, ProtocolUpdateResult, StateManagerDatabase, SystemExecutor,
+    Committer, ExecutionCacheManager, LedgerMetrics, PendingTransactionResultCache,
+    ProtocolUpdateResult, SystemExecutor,
 };
 use node_common::java::{JavaError, JavaResult, StructFromJava};
 use node_common::scheduler::{Metrics, Scheduler, Spawner, Tracker};

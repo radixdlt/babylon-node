@@ -62,49 +62,13 @@
  * permissions under this License.
  */
 
-package com.radixdlt.harness.deterministic;
+package com.radixdlt.environment.rx;
 
-import com.google.inject.Inject;
-import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.environment.EventProcessorOnDispatch;
-import com.radixdlt.p2p.NodeId;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.function.BiConsumer;
+import com.radixdlt.consensus.event.RemoteEvent;
 
-/** Manages events from a network of nodes. Used for processing events for tests. */
-public final class NodeEvents {
-  public static class NodeEventProcessor<T> {
-    private final Class<T> eventClass;
-    private final BiConsumer<NodeId, T> processor;
-
-    public NodeEventProcessor(Class<T> eventClass, BiConsumer<NodeId, T> processor) {
-      this.eventClass = eventClass;
-      this.processor = processor;
-    }
-
-    public Class<T> getEventClass() {
-      return eventClass;
-    }
-
-    private void process(NodeId node, Object event) {
-      this.processor.accept(node, eventClass.cast(event));
-    }
-  }
-
-  private final Map<Class<?>, Set<NodeEventProcessor<?>>> processors;
-
-  @Inject
-  public NodeEvents(Map<Class<?>, Set<NodeEventProcessor<?>>> processors) {
-    this.processors = Objects.requireNonNull(processors);
-  }
-
-  public <T> EventProcessor<T> processor(NodeId node, Class<T> eventClass) {
-    return t -> processors.get(eventClass).forEach(c -> c.process(node, t));
-  }
-
-  public <T> EventProcessorOnDispatch<T> processorOnDispatch(NodeId node, Class<T> eventClass) {
-    return new EventProcessorOnDispatch<>(eventClass, processor(node, eventClass));
-  }
-}
+/**
+ * A helper class which contains remote event and the origin node.
+ *
+ * @param <T> the event class
+ */
+public record IncomingEvent<N, T extends RemoteEvent>(N origin, T event) implements RemoteEvent {}

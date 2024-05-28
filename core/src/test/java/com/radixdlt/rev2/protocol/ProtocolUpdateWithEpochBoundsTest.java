@@ -72,8 +72,6 @@ import static com.radixdlt.rev2.protocol.ProtocolUpdateWithEpochBoundsTest.TestE
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.environment.DatabaseConfig;
-import com.radixdlt.environment.ScenariosExecutionConfig;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -84,7 +82,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.networks.Network;
 import com.radixdlt.protocol.*;
 import com.radixdlt.rev2.*;
 import com.radixdlt.utils.UInt192;
@@ -297,19 +294,15 @@ public final class ProtocolUpdateWithEpochBoundsTest {
                 SafetyRecoveryConfig.BERKELEY_DB,
                 ConsensusConfig.of(200),
                 LedgerConfig.stateComputerNoSync(
-                    StateComputerConfig.rev2(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        GenesisBuilder.createTestGenesisWithNumValidators(
-                            scenario.numValidators(),
-                            STAKE_PER_VALIDATOR,
-                            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(30)
-                                .totalEmissionXrdPerEpoch(Decimal.ZERO)),
-                        new DatabaseConfig(true, false, false, false),
-                        StateComputerConfig.REV2ProposerConfig.Mempool.defaults(),
-                        false,
-                        true,
-                        protocolConfig,
-                        ScenariosExecutionConfig.NONE))));
+                    StateComputerConfig.rev2()
+                        .withGenesis(
+                            GenesisBuilder.createTestGenesisWithNumValidators(
+                                scenario.numValidators(),
+                                STAKE_PER_VALIDATOR,
+                                GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(30)
+                                    .totalEmissionXrdPerEpoch(Decimal.ZERO)))
+                        .withProtocolConfig(protocolConfig)
+                        .withNoFees(true))));
   }
 
   @Test

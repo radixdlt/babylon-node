@@ -67,6 +67,7 @@ package com.radixdlt.harness;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.consensus.event.CoreEvent;
 import com.radixdlt.environment.EventProcessorOnDispatch;
 import java.util.Optional;
 import java.util.function.Function;
@@ -76,7 +77,7 @@ public final class FailOnEvent {
     throw new IllegalStateException("Cannot instantiate");
   }
 
-  public static Module asModule(Class<?> eventClass) {
+  public static Module asModule(Class<? extends CoreEvent> eventClass) {
     return new AbstractModule() {
       @ProvidesIntoSet
       EventProcessorOnDispatch<?> failOnEvent() {
@@ -90,7 +91,8 @@ public final class FailOnEvent {
     };
   }
 
-  public static <T> Module asModule(Class<T> eventClass, Function<T, Optional<Throwable>> mapper) {
+  public static <T extends CoreEvent> Module asModule(
+      Class<T> eventClass, Function<T, Optional<Throwable>> mapper) {
     return new AbstractModule() {
       @ProvidesIntoSet
       EventProcessorOnDispatch<?> failOnEvent() {

@@ -75,7 +75,7 @@ public final class ObjectMetadataIteratorTest extends DeterministicEngineStateAp
 
   @Test
   public void engine_state_api_object_metadata_iterator_returns_string_keys() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       final var wellKnownAddresses = getCoreApiHelper().getWellKnownAddresses();

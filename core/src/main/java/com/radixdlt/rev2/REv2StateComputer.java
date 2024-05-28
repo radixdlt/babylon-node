@@ -158,7 +158,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                 // transaction to other nodes if it is invalid or a duplicate (to prevent an
                 // infinite flood-fill effect across the network).
                 var success =
-                    MempoolAddSuccess.create(
+                    new MempoolAddSuccess(
                         RawNotarizedTransaction.create(transaction.getPayload()), origin);
                 mempoolAddSuccessEventDispatcher.dispatch(success);
               } catch (MempoolDuplicateException ignored) {

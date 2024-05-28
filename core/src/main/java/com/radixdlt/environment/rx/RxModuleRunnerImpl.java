@@ -67,6 +67,9 @@ package com.radixdlt.environment.rx;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.event.CoreEvent;
+import com.radixdlt.consensus.event.LocalEvent;
+import com.radixdlt.consensus.event.RemoteEvent;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
@@ -101,7 +104,7 @@ public final class RxModuleRunnerImpl implements ModuleRunner {
   private final List<Subscription<?>> subscriptions;
   private final ImmutableList<Consumer<ScheduledExecutorService>> onStart;
 
-  private record Subscription<T>(Observable<T> o, EventProcessor<T> p) {
+  private record Subscription<T extends CoreEvent>(Observable<T> o, EventProcessor<T> p) {
     Disposable subscribe(Scheduler s, Consumer<Throwable> errorHandler) {
       return o.observeOn(s).subscribe(p::process, errorHandler::accept);
     }
@@ -130,22 +133,23 @@ public final class RxModuleRunnerImpl implements ModuleRunner {
       return this;
     }
 
-    public <T> Builder add(Observable<T> o, EventProcessor<T> p) {
+    public <T extends CoreEvent> Builder add(Observable<T> o, EventProcessor<T> p) {
       subscriptionsBuilder.add(new Subscription<>(o, p));
       return this;
     }
 
-    public <T> Builder add(Flowable<T> o, EventProcessor<T> p) {
+    public <T extends LocalEvent> Builder add(Flowable<T> o, EventProcessor<T> p) {
       subscriptionsBuilder.add(new Subscription<>(o.toObservable(), p));
       return this;
     }
 
-    public <N, T> Builder add(Flowable<RemoteEvent<N, T>> o, RemoteEventProcessor<N, T> p) {
+    public <N, T extends RemoteEvent> Builder add(
+        Flowable<IncomingEvent<N, T>> o, RemoteEventProcessor<N, T> p) {
       subscriptionsBuilder.add(new Subscription<>(o.toObservable(), p::process));
       return this;
     }
 
-    public <T> Builder scheduleWithFixedDelay(
+    public <T extends LocalEvent> Builder scheduleWithFixedDelay(
         EventDispatcher<T> eventDispatcher,
         Supplier<T> eventSupplier,
         Duration initialDelay,

@@ -1,5 +1,5 @@
 use crate::engine_prelude::*;
-use crate::ActualStateManagerDatabase;
+use crate::rocks_db::ActualStateManagerDatabase;
 use crate::{protocol::*, transaction::FlashTransactionV1};
 use node_common::locks::DbLock;
 use std::sync::Arc;

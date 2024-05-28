@@ -137,7 +137,7 @@ public final class ProtocolUpdateTestUtils {
             .notaryIsSignatory(true)
             .prepare()
             .raw();
-    mempoolDispatcher.dispatch(MempoolAdd.create(signalReadinessTransaction));
+    mempoolDispatcher.dispatch(new MempoolAdd(List.of(signalReadinessTransaction)));
     test.runUntilState(allCommittedTransactionSuccess(signalReadinessTransaction));
     // Check that the state reader returns a correct value
     test.getNodeInjectors()

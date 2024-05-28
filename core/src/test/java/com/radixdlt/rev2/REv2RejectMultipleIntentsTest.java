@@ -85,7 +85,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
-import com.radixdlt.networks.Network;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
 import org.junit.Rule;
@@ -108,13 +107,14 @@ public final class REv2RejectMultipleIntentsTest {
                 SafetyRecoveryConfig.BERKELEY_DB,
                 ConsensusConfig.of(1000),
                 LedgerConfig.stateComputerNoSync(
-                    StateComputerConfig.rev2(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        GenesisBuilder.createTestGenesisWithNumValidators(
-                            1,
-                            Decimal.ONE,
-                            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10)),
-                        REV2ProposerConfig.transactionGenerator(proposalGenerator)))));
+                    StateComputerConfig.rev2()
+                        .withGenesis(
+                            GenesisBuilder.createTestGenesisWithNumValidators(
+                                1,
+                                Decimal.ONE,
+                                GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10)))
+                        .withProposerConfig(
+                            REV2ProposerConfig.transactionGenerator(proposalGenerator)))));
   }
 
   private static RawNotarizedTransaction createValidTransactionWithSigs(int nonce, int sigsCount) {

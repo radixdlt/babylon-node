@@ -75,13 +75,13 @@ import com.radixdlt.consensus.liveness.ProposerElections;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.environment.DatabaseConfig;
 import com.radixdlt.environment.LedgerProofsGcConfig;
-import com.radixdlt.environment.ScenariosExecutionConfig;
 import com.radixdlt.environment.StateTreeGcConfig;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.mempool.MempoolReceiverConfig;
 import com.radixdlt.mempool.MempoolRelayerConfig;
 import com.radixdlt.mempool.RustMempoolConfig;
+import com.radixdlt.networks.Network;
 import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.transaction.LedgerSyncLimitsConfig;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -91,147 +91,38 @@ import java.util.stream.Stream;
 
 /** Configuration options for the state computer */
 public sealed interface StateComputerConfig {
-  static StateComputerConfig mockedWithEpochs(
-      Round epochMaxRound, EpochNodeWeightMapping mapping, MockedMempoolConfig mempoolType) {
-    return mockedWithEpochs(epochMaxRound, mapping, LedgerHashes.zero(), mempoolType);
-  }
-
-  static StateComputerConfig mockedWithEpochs(
-      Round epochMaxRound,
-      EpochNodeWeightMapping mapping,
-      MockedMempoolConfig mempoolType,
-      ProposerElectionMode proposerElectionMode) {
-    return mockedWithEpochs(
-        epochMaxRound, mapping, LedgerHashes.zero(), mempoolType, proposerElectionMode);
-  }
-
-  static StateComputerConfig mockedWithEpochs(
-      Round epochMaxRound,
-      EpochNodeWeightMapping mapping,
-      LedgerHashes preGenesisLedgerHashes,
-      MockedMempoolConfig mempoolType) {
-    return mockedWithEpochs(
-        epochMaxRound,
+  static MockedStateComputerConfig mockedWithEpochs(
+      int epochMaxRound, EpochNodeWeightMapping mapping) {
+    return new MockedStateComputerConfigWithEpochs(
+        Round.of(epochMaxRound),
         mapping,
-        preGenesisLedgerHashes,
-        mempoolType,
+        LedgerHashes.zero(),
+        new StateComputerConfig.MockedMempoolConfig.NoMempool(),
         ProposerElectionMode.WITH_DEFAULT_ROTATION);
   }
 
-  static StateComputerConfig mockedWithEpochs(
-      Round epochMaxRound,
-      EpochNodeWeightMapping mapping,
-      LedgerHashes preGenesisLedgerHashes,
-      MockedMempoolConfig mempoolType,
-      ProposerElectionMode proposerElectionMode) {
-    return new MockedStateComputerConfigWithEpochs(
-        epochMaxRound, mapping, preGenesisLedgerHashes, mempoolType, proposerElectionMode);
-  }
-
-  static StateComputerConfig mockedNoEpochs(int numValidators, MockedMempoolConfig mempoolType) {
+  static MockedStateComputerConfig mockedNoEpochs(int numValidators) {
     return new MockedStateComputerConfigNoEpochs(
-        numValidators, mempoolType, ProposerElectionMode.WITH_DEFAULT_ROTATION);
+        numValidators,
+        new StateComputerConfig.MockedMempoolConfig.NoMempool(),
+        ProposerElectionMode.WITH_DEFAULT_ROTATION);
   }
 
-  static StateComputerConfig mockedNoEpochs(
-      int numValidators,
-      MockedMempoolConfig mempoolType,
-      ProposerElectionMode proposerElectionMode) {
-    return new MockedStateComputerConfigNoEpochs(numValidators, mempoolType, proposerElectionMode);
-  }
-
-  static StateComputerConfig rev2(
-      int networkId,
-      GenesisData genesis,
-      DatabaseConfig databaseConfig,
-      REV2ProposerConfig proposerConfig,
-      boolean debugLogging,
-      boolean noFees,
-      ProtocolConfig protocolConfig,
-      ScenariosExecutionConfig scenariosExecutionConfig) {
-    return rev2(
-        networkId,
-        genesis,
-        databaseConfig,
-        proposerConfig,
-        debugLogging,
-        noFees,
-        protocolConfig,
-        StateTreeGcConfig.forTesting(),
-        scenariosExecutionConfig);
-  }
-
-  static StateComputerConfig rev2(
-      int networkId,
-      GenesisData genesis,
-      DatabaseConfig databaseConfig,
-      REV2ProposerConfig proposerConfig,
-      boolean debugLogging,
-      boolean noFees,
-      ProtocolConfig protocolConfig,
-      StateTreeGcConfig stateTreeGcConfig,
-      ScenariosExecutionConfig scenariosExecutionConfig) {
+  static REv2StateComputerConfig rev2() {
     return new REv2StateComputerConfig(
-        networkId,
-        genesis,
-        databaseConfig,
-        proposerConfig,
-        debugLogging,
-        stateTreeGcConfig,
-        LedgerProofsGcConfig.forTesting(),
-        LedgerSyncLimitsConfig.defaults(),
-        protocolConfig,
-        noFees,
-        scenariosExecutionConfig);
-  }
-
-  static StateComputerConfig rev2(
-      int networkId,
-      GenesisData genesis,
-      DatabaseConfig databaseConfig,
-      REV2ProposerConfig proposerConfig) {
-    return new REv2StateComputerConfig(
-        networkId,
-        genesis,
-        databaseConfig,
-        proposerConfig,
+        Network.INTEGRATIONTESTNET.getId(),
+        GenesisData.testingDefaultEmpty(),
+        DatabaseConfig.forTesting(),
+        StateComputerConfig.REV2ProposerConfig.Mempool.defaults(),
         false,
         StateTreeGcConfig.forTesting(),
         LedgerProofsGcConfig.forTesting(),
         LedgerSyncLimitsConfig.defaults(),
         ProtocolConfig.testingDefault(),
-        false,
-        ScenariosExecutionConfig.NONE);
-  }
-
-  static StateComputerConfig rev2(
-      int networkId, GenesisData genesis, REV2ProposerConfig proposerConfig) {
-    return rev2(networkId, genesis, proposerConfig, ProtocolConfig.testingDefault());
-  }
-
-  static StateComputerConfig rev2(
-      int networkId,
-      GenesisData genesis,
-      REV2ProposerConfig proposerConfig,
-      ProtocolConfig protocolConfig) {
-    return new REv2StateComputerConfig(
-        networkId,
-        genesis,
-        new DatabaseConfig(true, false, false, false),
-        proposerConfig,
-        false,
-        StateTreeGcConfig.forTesting(),
-        LedgerProofsGcConfig.forTesting(),
-        LedgerSyncLimitsConfig.defaults(),
-        protocolConfig,
-        false,
-        ScenariosExecutionConfig.NONE);
+        false);
   }
 
   sealed interface MockedMempoolConfig {
-    static MockedMempoolConfig noMempool() {
-      return new NoMempool();
-    }
 
     record NoMempool() implements MockedMempoolConfig {}
 
@@ -242,6 +133,10 @@ public sealed interface StateComputerConfig {
 
   sealed interface MockedStateComputerConfig extends StateComputerConfig {
     MockedMempoolConfig mempoolConfig();
+
+    MockedStateComputerConfig withProposerElection(ProposerElectionMode mode);
+
+    MockedStateComputerConfig withMempool(MockedMempoolConfig config);
   }
 
   record MockedStateComputerConfigWithEpochs(
@@ -254,6 +149,22 @@ public sealed interface StateComputerConfig {
     @Override
     public MockedMempoolConfig mempoolConfig() {
       return mempoolType;
+    }
+
+    @Override
+    public MockedStateComputerConfig withProposerElection(ProposerElectionMode mode) {
+      return new MockedStateComputerConfigWithEpochs(
+          this.epochMaxRound, this.mapping, this.preGenesisLedgerHashes, this.mempoolType, mode);
+    }
+
+    @Override
+    public MockedStateComputerConfig withMempool(MockedMempoolConfig config) {
+      return new MockedStateComputerConfigWithEpochs(
+          this.epochMaxRound,
+          this.mapping,
+          this.preGenesisLedgerHashes,
+          config,
+          this.proposerElectionMode);
     }
   }
 
@@ -285,6 +196,17 @@ public sealed interface StateComputerConfig {
     public MockedMempoolConfig mempoolConfig() {
       return mempoolType;
     }
+
+    @Override
+    public MockedStateComputerConfig withProposerElection(ProposerElectionMode mode) {
+      return new MockedStateComputerConfigNoEpochs(this.numValidators, this.mempoolType, mode);
+    }
+
+    @Override
+    public MockedStateComputerConfig withMempool(MockedMempoolConfig config) {
+      return new MockedStateComputerConfigNoEpochs(
+          this.numValidators, config, this.proposerElectionMode);
+    }
   }
 
   record REv2StateComputerConfig(
@@ -297,9 +219,121 @@ public sealed interface StateComputerConfig {
       LedgerProofsGcConfig ledgerProofsGcConfig,
       LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
       ProtocolConfig protocolConfig,
-      boolean noFees,
-      ScenariosExecutionConfig scenariosExecutionConfig)
-      implements StateComputerConfig {}
+      boolean noFees)
+      implements StateComputerConfig {
+
+    public REv2StateComputerConfig withGenesis(GenesisData genesis) {
+      return new REv2StateComputerConfig(
+          this.networkId,
+          genesis,
+          this.databaseConfig,
+          this.proposerConfig,
+          this.debugLogging,
+          this.stateTreeGcConfig,
+          this.ledgerProofsGcConfig,
+          this.ledgerSyncLimitsConfig,
+          this.protocolConfig,
+          this.noFees);
+    }
+
+    public REv2StateComputerConfig withDatabaseConfig(DatabaseConfig databaseConfig) {
+      return new REv2StateComputerConfig(
+          this.networkId,
+          this.genesis,
+          databaseConfig,
+          this.proposerConfig,
+          this.debugLogging,
+          this.stateTreeGcConfig,
+          this.ledgerProofsGcConfig,
+          this.ledgerSyncLimitsConfig,
+          this.protocolConfig,
+          this.noFees);
+    }
+
+    public REv2StateComputerConfig withProposerConfig(REV2ProposerConfig proposerConfig) {
+      return new REv2StateComputerConfig(
+          this.networkId,
+          this.genesis,
+          this.databaseConfig,
+          proposerConfig,
+          this.debugLogging,
+          this.stateTreeGcConfig,
+          this.ledgerProofsGcConfig,
+          this.ledgerSyncLimitsConfig,
+          this.protocolConfig,
+          this.noFees);
+    }
+
+    public REv2StateComputerConfig withStateTreeGcConfig(StateTreeGcConfig stateTreeGc) {
+      return new REv2StateComputerConfig(
+          this.networkId,
+          this.genesis,
+          this.databaseConfig,
+          this.proposerConfig,
+          this.debugLogging,
+          stateTreeGc,
+          this.ledgerProofsGcConfig,
+          this.ledgerSyncLimitsConfig,
+          this.protocolConfig,
+          this.noFees);
+    }
+
+    public REv2StateComputerConfig withLedgerProofsGcConfig(LedgerProofsGcConfig ledgerProofsGc) {
+      return new REv2StateComputerConfig(
+          this.networkId,
+          this.genesis,
+          this.databaseConfig,
+          this.proposerConfig,
+          this.debugLogging,
+          this.stateTreeGcConfig,
+          ledgerProofsGc,
+          this.ledgerSyncLimitsConfig,
+          this.protocolConfig,
+          this.noFees);
+    }
+
+    public REv2StateComputerConfig withProtocolConfig(ProtocolConfig protocolConfig) {
+      return new REv2StateComputerConfig(
+          this.networkId,
+          this.genesis,
+          this.databaseConfig,
+          this.proposerConfig,
+          this.debugLogging,
+          this.stateTreeGcConfig,
+          this.ledgerProofsGcConfig,
+          this.ledgerSyncLimitsConfig,
+          protocolConfig,
+          this.noFees);
+    }
+
+    public REv2StateComputerConfig withLedgerSyncLimitsConfig(LedgerSyncLimitsConfig config) {
+      return new REv2StateComputerConfig(
+          this.networkId,
+          this.genesis,
+          this.databaseConfig,
+          this.proposerConfig,
+          this.debugLogging,
+          this.stateTreeGcConfig,
+          this.ledgerProofsGcConfig,
+          config,
+          this.protocolConfig,
+          this.noFees);
+    }
+
+    public REv2StateComputerConfig withNoFees(boolean noFees) {
+      return new REv2StateComputerConfig(
+          this.networkId,
+          this.genesis,
+          this.databaseConfig,
+          this.proposerConfig,
+          this.debugLogging,
+          this.stateTreeGcConfig,
+          this.ledgerProofsGcConfig,
+          this.ledgerSyncLimitsConfig,
+          this.protocolConfig,
+          noFees);
+    }
+  }
 
   sealed interface REV2ProposerConfig {
     static REV2ProposerConfig transactionGenerator(

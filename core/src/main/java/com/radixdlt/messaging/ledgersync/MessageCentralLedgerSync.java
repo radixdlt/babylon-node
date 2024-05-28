@@ -64,8 +64,10 @@
 
 package com.radixdlt.messaging.ledgersync;
 
+import static java.util.Objects.requireNonNull;
+
 import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.rx.RemoteEvent;
+import com.radixdlt.environment.rx.IncomingEvent;
 import com.radixdlt.messaging.core.MessageCentral;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
@@ -75,7 +77,6 @@ import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
-import java.util.Objects;
 import javax.inject.Inject;
 
 /** Network interface for syncing committed state using the MessageCentral */
@@ -84,58 +85,65 @@ public final class MessageCentralLedgerSync {
 
   @Inject
   public MessageCentralLedgerSync(MessageCentral messageCentral) {
-    this.messageCentral = Objects.requireNonNull(messageCentral);
+    this.messageCentral = requireNonNull(messageCentral);
   }
 
-  public Flowable<RemoteEvent<NodeId, StatusRequest>> statusRequests() {
+  public Flowable<IncomingEvent<NodeId, StatusRequest>> statusRequests() {
     return this.messageCentral
         .messagesOf(StatusRequestMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
-        .map(m -> RemoteEvent.create(m.source(), StatusRequest.create()));
+        .map(
+            m -> {
+              StatusRequest event = new StatusRequest();
+              return new IncomingEvent<>(requireNonNull(m.source()), requireNonNull(event));
+            });
   }
 
-  public Flowable<RemoteEvent<NodeId, StatusResponse>> statusResponses() {
+  public Flowable<IncomingEvent<NodeId, StatusResponse>> statusResponses() {
     return this.messageCentral
         .messagesOf(StatusResponseMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
         .map(
             m -> {
               final var msg = m.message();
-              return RemoteEvent.create(m.source(), StatusResponse.create(msg.getProof()));
+              StatusResponse event = new StatusResponse(msg.getProof());
+              return new IncomingEvent<>(requireNonNull(m.source()), requireNonNull(event));
             });
   }
 
-  public Flowable<RemoteEvent<NodeId, SyncRequest>> syncRequests() {
+  public Flowable<IncomingEvent<NodeId, SyncRequest>> syncRequests() {
     return this.messageCentral
         .messagesOf(SyncRequestMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
         .map(
             m -> {
               final var msg = m.message();
-              return RemoteEvent.create(
-                  m.source(), SyncRequest.create(msg.getStartProofExclusive()));
+              SyncRequest event = new SyncRequest(msg.getStartProofExclusive());
+              return new IncomingEvent<>(requireNonNull(m.source()), requireNonNull(event));
             });
   }
 
-  public Flowable<RemoteEvent<NodeId, SyncResponse>> syncResponses() {
+  public Flowable<IncomingEvent<NodeId, SyncResponse>> syncResponses() {
     return this.messageCentral
         .messagesOf(SyncResponseMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
         .map(
             m -> {
               final var msg = m.message();
-              return RemoteEvent.create(m.source(), SyncResponse.create(msg.getLedgerExtension()));
+              SyncResponse event = new SyncResponse(msg.getLedgerExtension());
+              return new IncomingEvent<>(requireNonNull(m.source()), requireNonNull(event));
             });
   }
 
-  public Flowable<RemoteEvent<NodeId, LedgerStatusUpdate>> ledgerStatusUpdates() {
+  public Flowable<IncomingEvent<NodeId, LedgerStatusUpdate>> ledgerStatusUpdates() {
     return this.messageCentral
         .messagesOf(LedgerStatusUpdateMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
         .map(
             m -> {
               final var header = m.message().getProof();
-              return RemoteEvent.create(m.source(), LedgerStatusUpdate.create(header));
+              return new IncomingEvent<>(
+                  requireNonNull(m.source()), new LedgerStatusUpdate(header));
             });
   }
 
@@ -144,7 +152,7 @@ public final class MessageCentralLedgerSync {
   }
 
   private void sendSyncRequest(NodeId nodeId, SyncRequest syncRequest) {
-    final var msg = new SyncRequestMessage(syncRequest.getStartProofExclusive());
+    final var msg = new SyncRequestMessage(syncRequest.startProofExclusive());
     this.messageCentral.send(nodeId, msg);
   }
 
@@ -153,7 +161,7 @@ public final class MessageCentralLedgerSync {
   }
 
   private void sendSyncResponse(NodeId nodeId, SyncResponse syncResponse) {
-    final var msg = new SyncResponseMessage(syncResponse.getLedgerExtension());
+    final var msg = new SyncResponseMessage(syncResponse.ledgerExtension());
     this.messageCentral.send(nodeId, msg);
   }
 
@@ -171,7 +179,7 @@ public final class MessageCentralLedgerSync {
   }
 
   private void sendStatusResponse(NodeId nodeId, StatusResponse statusResponse) {
-    final var msg = new StatusResponseMessage(statusResponse.getProof());
+    final var msg = new StatusResponseMessage(statusResponse.proof());
     this.messageCentral.send(nodeId, msg);
   }
 
@@ -180,7 +188,7 @@ public final class MessageCentralLedgerSync {
   }
 
   private void sendLedgerStatusUpdate(NodeId nodeId, LedgerStatusUpdate ledgerStatusUpdate) {
-    final var msg = new LedgerStatusUpdateMessage(ledgerStatusUpdate.getProof());
+    final var msg = new LedgerStatusUpdateMessage(ledgerStatusUpdate.proof());
     this.messageCentral.send(nodeId, msg);
   }
 }

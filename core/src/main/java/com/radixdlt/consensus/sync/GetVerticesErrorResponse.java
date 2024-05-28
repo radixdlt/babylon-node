@@ -65,28 +65,8 @@
 package com.radixdlt.consensus.sync;
 
 import com.radixdlt.consensus.HighQC;
-import java.util.Objects;
+import com.radixdlt.consensus.event.RemoteEvent;
 
 /** An error response to the GetVertices call */
-public final class GetVerticesErrorResponse {
-  private final HighQC highQC;
-  private final GetVerticesRequest request;
-
-  public GetVerticesErrorResponse(HighQC highQC, GetVerticesRequest request) {
-    this.highQC = Objects.requireNonNull(highQC);
-    this.request = Objects.requireNonNull(request);
-  }
-
-  public HighQC highQC() {
-    return this.highQC;
-  }
-
-  public GetVerticesRequest request() {
-    return this.request;
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s{%s}", this.getClass().getSimpleName(), this.highQC);
-  }
-}
+public record GetVerticesErrorResponse(HighQC highQC, GetVerticesRequest request)
+    implements RemoteEvent {}

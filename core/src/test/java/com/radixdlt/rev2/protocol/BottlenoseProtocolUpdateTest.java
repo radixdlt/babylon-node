@@ -79,7 +79,6 @@ import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.api.core.generated.models.TransactionStatus;
 import com.radixdlt.environment.DatabaseConfig;
 import com.radixdlt.environment.LedgerProofsGcConfig;
-import com.radixdlt.environment.ScenariosExecutionConfig;
 import com.radixdlt.environment.StateTreeGcConfig;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.genesis.GenesisBuilder;
@@ -141,8 +140,7 @@ public final class BottlenoseProtocolUpdateTest {
                         LedgerProofsGcConfig.forTesting(),
                         LedgerSyncLimitsConfig.defaults(),
                         PROTOCOL_CONFIG,
-                        false,
-                        ScenariosExecutionConfig.ALL))));
+                        false))));
   }
 
   @Test

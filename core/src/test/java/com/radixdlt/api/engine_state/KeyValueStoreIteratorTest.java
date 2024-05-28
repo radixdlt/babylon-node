@@ -88,7 +88,7 @@ public final class KeyValueStoreIteratorTest extends DeterministicEngineStateApi
 
   @Test
   public void engine_state_api_kv_store_iterator_pages_through_all_entries() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       // execute a couple of dummy transactions (just to create multiple entries in the Faucet's
@@ -130,7 +130,7 @@ public final class KeyValueStoreIteratorTest extends DeterministicEngineStateApi
 
   @Test
   public void engine_state_api_kv_store_iterator_returns_actual_kv_store_keys() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       // execute a dummy transaction to create a known entry in the Faucet's KV-Store:
@@ -162,7 +162,10 @@ public final class KeyValueStoreIteratorTest extends DeterministicEngineStateApi
   @Test
   public void engine_state_api_kv_store_iterator_supports_history() throws Exception {
     final var longHistory =
-        new StateTreeGcConfig(UInt32.fromNonNegativeInt(1), UInt64.fromNonNegativeLong(100));
+        defaultConfig()
+            .withStateTreeGcConfig(
+                new StateTreeGcConfig(
+                    UInt32.fromNonNegativeInt(1), UInt64.fromNonNegativeLong(100)));
     try (var test = buildRunningServerTest(longHistory)) {
       test.suppressUnusedWarning();
 

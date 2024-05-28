@@ -67,12 +67,10 @@ use std::ops::Deref;
 use crate::engine_prelude::entity_tier::EntityTier;
 use crate::engine_prelude::*;
 use crate::query::StateManagerSubstateQueries;
+use crate::rocks_db::{ReadableRocks, StateManagerDatabase};
 use crate::store::traits::*;
 use crate::traits::indices::{CreationId, EntityBlueprintId, EntityListingIndex};
-use crate::{
-    CommittedTransactionIdentifiers, LedgerStateSummary, ReadableRocks, StateManagerDatabase,
-    StateVersion,
-};
+use crate::{CommittedTransactionIdentifiers, LedgerStateSummary, StateVersion};
 
 /// An implementation of a [`SubstateDatabase`] viewed at a specific [`StateVersion`].
 ///

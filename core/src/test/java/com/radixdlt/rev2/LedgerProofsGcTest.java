@@ -69,7 +69,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.environment.DatabaseConfig;
 import com.radixdlt.environment.LedgerProofsGcConfig;
-import com.radixdlt.environment.ScenariosExecutionConfig;
 import com.radixdlt.environment.StateTreeGcConfig;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.genesis.GenesisBuilder;
@@ -152,8 +151,7 @@ public final class LedgerProofsGcTest {
                             UInt32.fromNonNegativeInt(maxTxnCountUnderProof),
                             UInt32.fromNonNegativeInt(maxTxnPayloadSizeUnderProof)),
                         ProtocolConfig.testingDefault(),
-                        false,
-                        ScenariosExecutionConfig.NONE),
+                        false),
                     SyncRelayConfig.of(100, 2, 200L))));
   }
 

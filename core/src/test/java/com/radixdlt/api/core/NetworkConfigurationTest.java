@@ -75,7 +75,7 @@ import org.junit.Test;
 public class NetworkConfigurationTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_network_configuration() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       final var configurationResponse = getStatusApi().statusNetworkConfigurationPost();

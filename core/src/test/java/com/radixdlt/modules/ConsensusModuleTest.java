@@ -116,7 +116,7 @@ public class ConsensusModuleTest {
 
   @Inject private VertexStoreAdapter vertexStore;
 
-  private Hasher hasher = new Blake2b256Hasher(DefaultSerialization.getInstance());
+  private final Hasher hasher = new Blake2b256Hasher(DefaultSerialization.getInstance());
 
   private ECKeyPair validatorKeyPair;
 
@@ -208,8 +208,8 @@ public class ConsensusModuleTest {
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<ConsensusByzantineEvent>>() {})
             .toInstance(rmock(EventDispatcher.class));
-        bind(new TypeLiteral<ScheduledEventDispatcher<Round>>() {})
-            .toInstance(rmock(ScheduledEventDispatcher.class));
+        //        bind(new TypeLiteral<ScheduledEventDispatcher<Round>>() {})
+        //            .toInstance(rmock(ScheduledEventDispatcher.class));
         bind(new TypeLiteral<ScheduledEventDispatcher<VertexRequestTimeout>>() {})
             .toInstance(rmock(ScheduledEventDispatcher.class));
 
@@ -244,8 +244,7 @@ public class ConsensusModuleTest {
 
       @Provides
       RoundUpdate initialRoundUpdate() {
-        return RoundUpdate.create(
-            Round.of(1), mock(HighQC.class), selfValidatorId, selfValidatorId);
+        return new RoundUpdate(Round.of(1), mock(HighQC.class), selfValidatorId, selfValidatorId);
       }
 
       @Provides
@@ -297,7 +296,7 @@ public class ConsensusModuleTest {
         NodeId.fromPublicKey(validatorId.getKey()),
         HighQcSource.RECEIVED_ALONG_WITH_PROPOSAL);
     GetVerticesRequest request = new GetVerticesRequest(nextVertex.getSecond().hash(), 1);
-    VertexRequestTimeout timeout = VertexRequestTimeout.create(request);
+    VertexRequestTimeout timeout = new VertexRequestTimeout(request);
 
     // Act
     nothrowSleep(100); // FIXME: Remove when rate limit on send removed
@@ -307,8 +306,7 @@ public class ConsensusModuleTest {
     verify(requestSender, times(2))
         .dispatch(
             eq(NodeId.fromPublicKey(validatorId.getKey())),
-            argThat(
-                r -> r.getCount() == 1 && r.getVertexId().equals(nextVertex.getSecond().hash())));
+            argThat(r -> r.count() == 1 && r.vertexId().equals(nextVertex.getSecond().hash())));
   }
 
   @Test
@@ -333,8 +331,7 @@ public class ConsensusModuleTest {
     verify(requestSender, times(1))
         .dispatch(
             eq(nodeId),
-            argThat(
-                r -> r.getCount() == 1 && r.getVertexId().equals(nextVertex.getSecond().hash())));
+            argThat(r -> r.count() == 1 && r.vertexId().equals(nextVertex.getSecond().hash())));
   }
 
   @Test
@@ -372,17 +369,13 @@ public class ConsensusModuleTest {
         .dispatch(
             eq(nodeId),
             argThat(
-                r ->
-                    r.getCount() == 1
-                        && r.getVertexId().equals(proposedVertex1.getSecond().hash())));
+                r -> r.count() == 1 && r.vertexId().equals(proposedVertex1.getSecond().hash())));
 
     verify(requestSender, times(1))
         .dispatch(
             eq(nodeId),
             argThat(
-                r ->
-                    r.getCount() == 1
-                        && r.getVertexId().equals(proposedVertex2.getSecond().hash())));
+                r -> r.count() == 1 && r.vertexId().equals(proposedVertex2.getSecond().hash())));
   }
 
   private void nothrowSleep(long milliseconds) {

@@ -68,7 +68,6 @@ import static com.radixdlt.environment.deterministic.network.MessageSelector.fir
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.addressing.Addressing;
@@ -79,14 +78,11 @@ import com.radixdlt.api.engine_state.generated.models.*;
 import com.radixdlt.environment.*;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
-import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.networks.Network;
-import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.rev2.*;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.FreePortFinder;
@@ -98,11 +94,6 @@ import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 
 public abstract class DeterministicEngineStateApiTestBase {
-  private static final DatabaseConfig DEFAULT_DATABASE_CONFIG =
-      new DatabaseConfig(true, false, true, true);
-
-  private static final StateTreeGcConfig DEFAULT_JMT_GC_CONFIG =
-      new StateTreeGcConfig(UInt32.fromNonNegativeInt(1), UInt64.fromNonNegativeLong(20));
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
   public static NetworkDefinition networkDefinition = NetworkDefinition.INT_TEST_NET;
@@ -121,26 +112,19 @@ public abstract class DeterministicEngineStateApiTestBase {
     this.apiClient = this.buildApiClient();
   }
 
-  protected DeterministicTest buildRunningServerTest() {
-    return buildRunningServerTest(
-        1000000, DEFAULT_DATABASE_CONFIG, DEFAULT_JMT_GC_CONFIG, GenesisData.NO_SCENARIOS);
+  protected StateComputerConfig.REv2StateComputerConfig defaultConfig() {
+    return StateComputerConfig.rev2()
+        .withGenesis(
+            GenesisBuilder.createTestGenesisWithNumValidators(
+                1,
+                Decimal.ONE,
+                GenesisConsensusManagerConfig.Builder.testDefaults().epochExactRoundCount(1000000)))
+        .withDatabaseConfig(new DatabaseConfig(true, false, true, true))
+        .withStateTreeGcConfig(
+            new StateTreeGcConfig(UInt32.fromNonNegativeInt(1), UInt64.fromNonNegativeLong(20)));
   }
 
-  protected DeterministicTest buildRunningServerTestWithScenarios(String... scenarios) {
-    return buildRunningServerTest(
-        1000000, DEFAULT_DATABASE_CONFIG, DEFAULT_JMT_GC_CONFIG, ImmutableList.copyOf(scenarios));
-  }
-
-  protected DeterministicTest buildRunningServerTest(StateTreeGcConfig stateTreeGcConfig) {
-    return buildRunningServerTest(
-        1000000, DEFAULT_DATABASE_CONFIG, stateTreeGcConfig, GenesisData.NO_SCENARIOS);
-  }
-
-  protected DeterministicTest buildRunningServerTest(
-      int roundsPerEpoch,
-      DatabaseConfig databaseConfig,
-      StateTreeGcConfig stateTreeGcConfig,
-      ImmutableList<String> scenariosToRun) {
+  protected DeterministicTest buildRunningServerTest(StateComputerConfig config) {
     var test =
         DeterministicTest.builder()
             .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
@@ -170,22 +154,7 @@ public abstract class DeterministicEngineStateApiTestBase {
                     FunctionalRadixNodeModule.SafetyRecoveryConfig.MOCKED,
                     FunctionalRadixNodeModule.ConsensusConfig.of(1000),
                     FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
-                        StateComputerConfig.rev2(
-                            Network.INTEGRATIONTESTNET.getId(),
-                            GenesisBuilder.createTestGenesisWithNumValidators(
-                                1,
-                                Decimal.ONE,
-                                GenesisConsensusManagerConfig.Builder.testDefaults()
-                                    .epochExactRoundCount(roundsPerEpoch),
-                                scenariosToRun),
-                            databaseConfig,
-                            StateComputerConfig.REV2ProposerConfig.Mempool.defaults(),
-                            false,
-                            false,
-                            ProtocolConfig.testingDefault(),
-                            stateTreeGcConfig,
-                            ScenariosExecutionConfig.NONE),
-                        SyncRelayConfig.of(200, 10, 2000))));
+                        config, SyncRelayConfig.of(200, 10, 2000))));
     try {
       test.startAllNodes();
     } catch (Exception ex) {

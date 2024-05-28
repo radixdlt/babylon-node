@@ -243,7 +243,7 @@ public final class LocalSyncService {
                                 this.startSync(
                                     state,
                                     ImmutableList.of(peer),
-                                    REv2ToConsensus.ledgerHeader(request.getProof().getHeader()))))
+                                    REv2ToConsensus.ledgerHeader(request.proof().getHeader()))))
             .put(
                 remoteHandler(
                     SyncingState.class,
@@ -255,7 +255,7 @@ public final class LocalSyncService {
                                     state,
                                     ImmutableList.of(peer),
                                     REv2ToConsensus.ledgerHeader(
-                                        ledgerStatusUpdate.getProof().getHeader()))))
+                                        ledgerStatusUpdate.proof().getHeader()))))
             .put(
                 handler(
                     SyncingState.class,
@@ -271,9 +271,9 @@ public final class LocalSyncService {
         "LocalSync: Initializing sync check, about to ask {} peers for their status",
         peersToAsk.size());
 
-    peersToAsk.forEach(peer -> statusRequestDispatcher.dispatch(peer, StatusRequest.create()));
+    peersToAsk.forEach(peer -> statusRequestDispatcher.dispatch(peer, new StatusRequest()));
     this.syncCheckReceiveStatusTimeoutDispatcher.dispatch(
-        SyncCheckReceiveStatusTimeout.create(), this.syncRelayConfig.requestTimeout());
+        new SyncCheckReceiveStatusTimeout(), this.syncRelayConfig.requestTimeout());
 
     return SyncCheckState.init(currentState.getLatestProof(), peersToAsk);
   }
@@ -326,7 +326,7 @@ public final class LocalSyncService {
     // get the highest state that we received that is also higher than what we currently have
     final var maybeMaxPeerHeader =
         currentState.responses().values().stream()
-            .map(StatusResponse::getProof)
+            .map(StatusResponse::proof)
             .max(Comparator.comparing(LedgerProofSyncStatusDto::getStateVersion))
             .filter(h -> h.getStateVersion() > currentState.getLatestProof().stateVersion());
 
@@ -338,7 +338,7 @@ public final class LocalSyncService {
                   currentState.responses().entrySet().stream()
                       .filter(
                           e ->
-                              e.getValue().getProof().getStateVersion()
+                              e.getValue().proof().getStateVersion()
                                   == maxPeerHeader.getStateVersion())
                       .map(Map.Entry::getKey)
                       .collect(ImmutableList.toImmutableList());
@@ -412,10 +412,10 @@ public final class LocalSyncService {
     final var latestProof = currentState.getLatestProof();
 
     final var requestId = requestIdCounter.incrementAndGet();
-    this.syncRequestDispatcher.dispatch(
-        peer, SyncRequest.create(ledgerProofToSyncDto(latestProof)));
+    LedgerProofSyncDto startProofExclusive = ledgerProofToSyncDto(latestProof);
+    this.syncRequestDispatcher.dispatch(peer, new SyncRequest(startProofExclusive));
     this.syncRequestTimeoutDispatcher.dispatch(
-        SyncRequestTimeout.create(peer, requestId), this.syncRelayConfig.requestTimeout());
+        new SyncRequestTimeout(peer, requestId), this.syncRelayConfig.requestTimeout());
 
     return currentState.withPendingRequest(peer, requestId);
   }
@@ -434,7 +434,7 @@ public final class LocalSyncService {
       this.metrics.sync().validResponsesReceived().inc();
       this.peerControl.reportHighPriorityPeer(sender);
       this.syncLedgerUpdateTimeoutDispatcher.dispatch(
-          SyncLedgerUpdateTimeout.create(currentState.getLatestProof().stateVersion()), 1000L);
+          new SyncLedgerUpdateTimeout(currentState.getLatestProof().stateVersion()), 1000L);
       return currentState.clearPendingRequest();
     } catch (InvalidSyncResponseException isre) {
       // Implementation note:
@@ -567,17 +567,17 @@ public final class LocalSyncService {
         currentState.getPendingRequest().stream()
             .anyMatch(
                 pr ->
-                    pr.getRequestId() == syncRequestTimeout.getRequestId()
-                        && pr.getPeer().equals(syncRequestTimeout.getPeer()));
+                    pr.getRequestId() == syncRequestTimeout.requestId()
+                        && pr.getPeer().equals(syncRequestTimeout.peer()));
 
     if (!timeoutMatchesRequest) {
       return currentState; // ignore, this timeout is no longer valid
     }
 
-    log.trace("LocalSync: Sync request timeout from peer {}", syncRequestTimeout.getPeer());
+    log.trace("LocalSync: Sync request timeout from peer {}", syncRequestTimeout.peer());
 
     return this.processSync(
-        currentState.clearPendingRequest().removeCandidate(syncRequestTimeout.getPeer()));
+        currentState.clearPendingRequest().removeCandidate(syncRequestTimeout.peer()));
   }
 
   private SyncState processSyncLedgerUpdateTimeout(

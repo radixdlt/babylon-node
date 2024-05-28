@@ -64,6 +64,7 @@
 
 package com.radixdlt.environment;
 
+import com.radixdlt.consensus.event.CoreEvent;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -72,7 +73,7 @@ import java.util.Optional;
  *
  * @param <T> the class of the event
  */
-public final class EventProcessorOnDispatch<T> {
+public final class EventProcessorOnDispatch<T extends CoreEvent> {
   private final Class<T> eventClass;
   private final EventProcessor<T> processor;
 
@@ -81,7 +82,7 @@ public final class EventProcessorOnDispatch<T> {
     this.processor = Objects.requireNonNull(processor);
   }
 
-  public <U> Optional<EventProcessor<U>> getProcessor(Class<U> c) {
+  public <U extends CoreEvent> Optional<EventProcessor<U>> getProcessor(Class<U> c) {
     if (c.equals(eventClass)) {
       return Optional.of((EventProcessor<U>) processor);
     }

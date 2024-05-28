@@ -65,7 +65,7 @@
 package com.radixdlt.messaging.p2p;
 
 import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.rx.RemoteEvent;
+import com.radixdlt.environment.rx.IncomingEvent;
 import com.radixdlt.messaging.core.MessageCentral;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.liveness.Ping;
@@ -86,18 +86,28 @@ public final class MessageCentralPeerLiveness {
     this.messageCentral = Objects.requireNonNull(messageCentral);
   }
 
-  public Flowable<RemoteEvent<NodeId, Ping>> pings() {
+  public Flowable<IncomingEvent<NodeId, Ping>> pings() {
     return this.messageCentral
         .messagesOf(PeerPingMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
-        .map(m -> RemoteEvent.create(m.source(), Ping.create()));
+        .map(
+            m -> {
+              Ping event = new Ping();
+              return new IncomingEvent<>(
+                  Objects.requireNonNull(m.source()), Objects.requireNonNull(event));
+            });
   }
 
-  public Flowable<RemoteEvent<NodeId, Pong>> pongs() {
+  public Flowable<IncomingEvent<NodeId, Pong>> pongs() {
     return this.messageCentral
         .messagesOf(PeerPongMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
-        .map(m -> RemoteEvent.create(m.source(), Pong.create()));
+        .map(
+            m -> {
+              Pong event = new Pong();
+              return new IncomingEvent<>(
+                  Objects.requireNonNull(m.source()), Objects.requireNonNull(event));
+            });
   }
 
   public RemoteEventDispatcher<NodeId, Ping> pingDispatcher() {

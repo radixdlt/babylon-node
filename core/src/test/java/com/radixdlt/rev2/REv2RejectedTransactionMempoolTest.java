@@ -86,7 +86,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.*;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.networks.Network;
 import com.radixdlt.transactions.NotarizedTransactionHash;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import java.util.Collection;
@@ -126,15 +125,16 @@ public class REv2RejectedTransactionMempoolTest {
                 SafetyRecoveryConfig.BERKELEY_DB,
                 ConsensusConfig.of(1000),
                 LedgerConfig.stateComputerNoSync(
-                    StateComputerConfig.rev2(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        GenesisBuilder.createTestGenesisWithNumValidators(
-                            1,
-                            Decimal.ONE,
-                            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
-                                this.roundsPerEpoch)),
-                        StateComputerConfig.REV2ProposerConfig.Mempool.singleTransaction()
-                            .withMempoolConfig(mempoolConfig)))));
+                    StateComputerConfig.rev2()
+                        .withGenesis(
+                            GenesisBuilder.createTestGenesisWithNumValidators(
+                                1,
+                                Decimal.ONE,
+                                GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
+                                    this.roundsPerEpoch)))
+                        .withProposerConfig(
+                            StateComputerConfig.REV2ProposerConfig.Mempool.singleTransaction()
+                                .withMempoolConfig(mempoolConfig)))));
   }
 
   @Test
@@ -148,11 +148,12 @@ public class REv2RejectedTransactionMempoolTest {
           TransactionBuilder.forTests().manifest(Manifest.validButReject()).prepare().raw();
       var mempoolDispatcher =
           test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
-      mempoolDispatcher.dispatch(MempoolAdd.create(rawRejectableTransaction));
+      mempoolDispatcher.dispatch(new MempoolAdd(List.of(rawRejectableTransaction)));
       test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
 
       // Act: Submit valid transaction to mempool
-      mempoolDispatcher.dispatch(MempoolAdd.create(TransactionBuilder.forTests().prepare().raw()));
+      mempoolDispatcher.dispatch(
+          new MempoolAdd(List.of(TransactionBuilder.forTests().prepare().raw())));
       test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
 
       // Assert
@@ -201,13 +202,13 @@ public class REv2RejectedTransactionMempoolTest {
               .manifest(Manifest.drainAccount(accountAddress))
               .prepare()
               .raw();
-      mempoolDispatcher.dispatch(MempoolAdd.create(transferTxn1));
+      mempoolDispatcher.dispatch(new MempoolAdd(List.of(transferTxn1)));
       var transferTxn2 =
           TransactionBuilder.forTests()
               .manifest(Manifest.drainAccount(accountAddress))
               .prepare()
               .raw();
-      mempoolDispatcher.dispatch(MempoolAdd.create(transferTxn2));
+      mempoolDispatcher.dispatch(new MempoolAdd(List.of(transferTxn2)));
       test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
 
       // Act

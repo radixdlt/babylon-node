@@ -79,7 +79,9 @@ import org.junit.Test;
 public final class LtsAccountResourceBalanceTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_lts_account_xrd_balance() throws Exception {
-    try (var test = buildRunningServerTest(new DatabaseConfig(true, true, false, false))) {
+    final var config =
+        defaultConfig().withDatabaseConfig(new DatabaseConfig(true, true, false, false));
+    try (final var test = buildRunningServerTest(config)) {
       test.suppressUnusedWarning();
 
       var accountKeyPair = ECKeyPair.generateNew();
