@@ -86,7 +86,7 @@ public record InternalAddress(byte[] value) {
 
   public static InternalAddress create(byte[] addressBytes) {
     if (addressBytes.length != BYTE_LENGTH) {
-      throw new IllegalArgumentException("Invalid ReNode ID length");
+      throw new IllegalArgumentException("Invalid Entity ID length");
     }
     return new InternalAddress(addressBytes);
   }

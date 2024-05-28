@@ -124,6 +124,8 @@ public final class NodeSborCodecs {
     NetworkDefinition.registerCodec(codecMap);
     LoggingConfig.registerCodec(codecMap);
     StateManagerConfig.registerCodec(codecMap);
+    ScenariosExecutionConfig.registerCodec(codecMap);
+    ProtocolUpdateScenarios.registerCodec(codecMap);
     ProtocolConfig.registerCodec(codecMap);
     ProtocolUpdateTrigger.registerCodec(codecMap);
     ProtocolUpdateEnactmentCondition.registerCodec(codecMap);
@@ -185,6 +187,7 @@ public final class NodeSborCodecs {
     TransactionHeader.registerCodec(codecMap);
     CoreApiServerConfig.registerCodec(codecMap);
     CoreApiServerFlags.registerCodec(codecMap);
+    EngineStateApiServerConfig.registerCodec(codecMap);
     ValidatorInfo.registerCodec(codecMap);
     GenesisData.registerCodec(codecMap);
     GenesisConsensusManagerConfig.registerCodec(codecMap);
@@ -207,7 +210,7 @@ public final class NodeSborCodecs {
     VertexLimitsConfig.registerCodec(codecMap);
     LedgerStatus.registerCodec(codecMap);
     RecentSelfProposalMissStatistic.registerCodec(codecMap);
-    StateHashTreeGcConfig.registerCodec(codecMap);
+    StateTreeGcConfig.registerCodec(codecMap);
     LedgerProofsGcConfig.registerCodec(codecMap);
     LedgerSyncLimitsConfig.registerCodec(codecMap);
   }

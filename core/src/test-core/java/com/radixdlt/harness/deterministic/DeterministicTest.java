@@ -448,10 +448,10 @@ public final class DeterministicTest implements AutoCloseable {
       // This method works with both epoched and non-epoched consensus tests
       if (message.message() instanceof final EpochRoundUpdate epochRoundUpdate) {
         return message.channelId().receiverIndex() == nodeIndex
-            && epochRoundUpdate.getRoundUpdate().getCurrentRound().gte(round);
+            && epochRoundUpdate.roundUpdate().currentRound().gte(round);
       } else if (message.message() instanceof final RoundUpdate roundUpdate) {
         return message.channelId().receiverIndex() == nodeIndex
-            && roundUpdate.getCurrentRound().gte(round);
+            && roundUpdate.currentRound().gte(round);
       } else {
         return false;
       }

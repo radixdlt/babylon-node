@@ -71,6 +71,7 @@ import com.radixdlt.consensus.ProposalLimitsConfig;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.vertexstore.PersistentVertexStore;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.db.checkpoint.RustDbCheckpoints;
 import com.radixdlt.environment.*;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
@@ -109,11 +110,12 @@ public final class REv2StateManagerModule extends AbstractModule {
   private final DatabaseConfig databaseConfig;
   private final Option<RustMempoolConfig> mempoolConfig;
   private final boolean debugLogging;
-  private final StateHashTreeGcConfig stateHashTreeGcConfig;
+  private final StateTreeGcConfig stateTreeGcConfig;
   private final LedgerProofsGcConfig ledgerProofsGcConfig;
   private final LedgerSyncLimitsConfig ledgerSyncLimitsConfig;
   private final ProtocolConfig protocolConfig;
   private final boolean noFees;
+  private final ScenariosExecutionConfig scenariosExecutionConfig;
 
   private REv2StateManagerModule(
       ProposalLimitsConfig proposalLimitsConfig,
@@ -121,21 +123,23 @@ public final class REv2StateManagerModule extends AbstractModule {
       DatabaseConfig databaseConfig,
       Option<RustMempoolConfig> mempoolConfig,
       boolean debugLogging,
-      StateHashTreeGcConfig stateHashTreeGcConfig,
+      StateTreeGcConfig stateTreeGcConfig,
       LedgerProofsGcConfig ledgerProofsGcConfig,
       LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
       ProtocolConfig protocolConfig,
-      boolean noFees) {
+      boolean noFees,
+      ScenariosExecutionConfig scenariosExecutionConfig) {
     this.proposalLimitsConfig = proposalLimitsConfig;
     this.vertexLimitsConfigOpt = vertexLimitsConfigOpt;
     this.databaseConfig = databaseConfig;
     this.mempoolConfig = mempoolConfig;
     this.debugLogging = debugLogging;
-    this.stateHashTreeGcConfig = stateHashTreeGcConfig;
+    this.stateTreeGcConfig = stateTreeGcConfig;
     this.ledgerProofsGcConfig = ledgerProofsGcConfig;
     this.ledgerSyncLimitsConfig = ledgerSyncLimitsConfig;
     this.protocolConfig = protocolConfig;
     this.noFees = noFees;
+    this.scenariosExecutionConfig = scenariosExecutionConfig;
   }
 
   public static REv2StateManagerModule create(
@@ -143,21 +147,23 @@ public final class REv2StateManagerModule extends AbstractModule {
       VertexLimitsConfig vertexLimitsConfig,
       DatabaseConfig databaseConfig,
       Option<RustMempoolConfig> mempoolConfig,
-      StateHashTreeGcConfig stateHashTreeGcConfig,
+      StateTreeGcConfig stateTreeGcConfig,
       LedgerProofsGcConfig ledgerProofsGcConfig,
       LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
-      ProtocolConfig protocolConfig) {
+      ProtocolConfig protocolConfig,
+      ScenariosExecutionConfig scenariosExecutionConfig) {
     return new REv2StateManagerModule(
         proposalLimitsConfig,
         Option.some(vertexLimitsConfig),
         databaseConfig,
         mempoolConfig,
         false,
-        stateHashTreeGcConfig,
+        stateTreeGcConfig,
         ledgerProofsGcConfig,
         ledgerSyncLimitsConfig,
         protocolConfig,
-        false);
+        false,
+        scenariosExecutionConfig);
   }
 
   public static REv2StateManagerModule createForTesting(
@@ -165,22 +171,24 @@ public final class REv2StateManagerModule extends AbstractModule {
       DatabaseConfig databaseConfig,
       Option<RustMempoolConfig> mempoolConfig,
       boolean debugLogging,
-      StateHashTreeGcConfig stateHashTreeGcConfig,
+      StateTreeGcConfig stateTreeGcConfig,
       LedgerProofsGcConfig ledgerProofsGcConfig,
       LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
       ProtocolConfig protocolConfig,
-      boolean noFees) {
+      boolean noFees,
+      ScenariosExecutionConfig scenariosExecutionConfig) {
     return new REv2StateManagerModule(
         proposalLimitsConfig,
         Option.none(),
         databaseConfig,
         mempoolConfig,
         debugLogging,
-        stateHashTreeGcConfig,
+        stateTreeGcConfig,
         ledgerProofsGcConfig,
         ledgerSyncLimitsConfig,
         protocolConfig,
-        noFees);
+        noFees,
+        scenariosExecutionConfig);
   }
 
   @Override
@@ -221,11 +229,12 @@ public final class REv2StateManagerModule extends AbstractModule {
                     databaseBackendConfig,
                     databaseConfig,
                     getLoggingConfig(),
-                    stateHashTreeGcConfig,
+                    stateTreeGcConfig,
                     ledgerProofsGcConfig,
                     ledgerSyncLimitsConfig,
                     protocolConfig,
-                    noFees));
+                    noFees,
+                    scenariosExecutionConfig));
           }
 
           @Provides
@@ -288,14 +297,14 @@ public final class REv2StateManagerModule extends AbstractModule {
           @ProcessOnDispatch
           EventProcessor<BFTHighQCUpdate> onQCUpdatePersistVertexStore(
               PersistentVertexStore persistentVertexStore) {
-            return update -> persistentVertexStore.save(update.getVertexStoreState());
+            return update -> persistentVertexStore.save(update.vertexStoreState());
           }
 
           @ProvidesIntoSet
           @ProcessOnDispatch
           EventProcessor<BFTInsertUpdate> onInsertUpdatePersistVertexStore(
               PersistentVertexStore persistentVertexStore) {
-            return update -> persistentVertexStore.save(update.getVertexStoreState());
+            return update -> persistentVertexStore.save(update.vertexStoreState());
           }
         });
 
@@ -347,5 +356,12 @@ public final class REv2StateManagerModule extends AbstractModule {
   @NewestProtocolVersion
   private String newestProtocolVersion(RustStateComputer rustStateComputer) {
     return rustStateComputer.newestProtocolVersion();
+  }
+
+  @Provides
+  @Singleton
+  private RustDbCheckpoints rustCheckpoints(
+      Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
+    return new RustDbCheckpoints(metrics, nodeRustEnvironment);
   }
 }

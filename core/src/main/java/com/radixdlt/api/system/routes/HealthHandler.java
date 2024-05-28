@@ -67,7 +67,7 @@ package com.radixdlt.api.system.routes;
 import static com.radixdlt.api.system.generated.models.PendingProtocolUpdate.ReadinessSignalStatusEnum.NO_SIGNAL_REQUIRED;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.system.SystemGetJsonHandler;
+import com.radixdlt.api.system.SystemJsonHandler;
 import com.radixdlt.api.system.generated.models.*;
 import com.radixdlt.api.system.health.HealthInfoService;
 import com.radixdlt.lang.Option;
@@ -79,7 +79,7 @@ import com.radixdlt.statecomputer.ProtocolState;
 import com.radixdlt.statecomputer.ProtocolState.PendingProtocolUpdateState.ForSignalledReadinessSupportCondition;
 import java.util.stream.Collectors;
 
-public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
+public final class HealthHandler extends SystemJsonHandler<HealthResponse> {
   private final HealthInfoService healthInfoService;
 
   @Inject

@@ -79,11 +79,12 @@ public record StateManagerConfig(
     DatabaseBackendConfig databaseBackendConfig,
     DatabaseConfig databaseConfig,
     LoggingConfig loggingConfig,
-    StateHashTreeGcConfig stateHashTreeGcConfig,
+    StateTreeGcConfig stateTreeGcConfig,
     LedgerProofsGcConfig ledgerProofsGcConfig,
     LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
     ProtocolConfig protocolConfig,
-    boolean noFees) {
+    boolean noFees,
+    ScenariosExecutionConfig scenariosExecutionConfig) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         StateManagerConfig.class,

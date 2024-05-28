@@ -77,7 +77,7 @@ public class NonFungibleActionsTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_can_mint_and_burn_in_same_transaction_against_previously_used_resource()
       throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       var accountKeyPair = ECKeyPair.generateNew();
@@ -87,24 +87,26 @@ public class NonFungibleActionsTest extends DeterministicCoreApiTestBase {
       // These particular manifests caused a panic in the engine at Ash / Birch
 
       // First - we create some data in the resource to ensure the data index is created
-      submitAndWaitForSuccess(
-          test,
-          Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
-              resourceAddress, accountAddress, List.of(1), List.of()),
-          List.of(accountKeyPair));
+      getApiHelper()
+          .submitAndWaitForSuccess(
+              test,
+              Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
+                  resourceAddress, accountAddress, List.of(1), List.of()),
+              List.of(accountKeyPair));
       // A mint+burn of a non-pristine resource currently panics
-      submitAndWaitForSuccess(
-          test,
-          Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
-              resourceAddress, accountAddress, List.of(2), List.of(2)),
-          List.of(accountKeyPair));
+      getApiHelper()
+          .submitAndWaitForSuccess(
+              test,
+              Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
+                  resourceAddress, accountAddress, List.of(2), List.of(2)),
+              List.of(accountKeyPair));
     }
   }
 
   @Test
   public void minting_non_fungible_id_which_previously_existed_transiently_in_a_transaction_fails()
       throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       var accountKeyPair = ECKeyPair.generateNew();
@@ -112,19 +114,21 @@ public class NonFungibleActionsTest extends DeterministicCoreApiTestBase {
       var resourceAddress = createFreeMintBurnNonFungibleResource(test);
 
       // Mint and burn id 1 inside a single transaction
-      submitAndWaitForSuccess(
-          test,
-          Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
-              resourceAddress, accountAddress, List.of(1), List.of(1)),
-          List.of(accountKeyPair));
+      getApiHelper()
+          .submitAndWaitForSuccess(
+              test,
+              Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
+                  resourceAddress, accountAddress, List.of(1), List.of(1)),
+              List.of(accountKeyPair));
 
       // We can NOT mint the id "1" again
       var result =
-          submitAndWaitForCommittedFailure(
-              test,
-              Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
-                  resourceAddress, accountAddress, List.of(1), List.of()),
-              List.of(accountKeyPair));
+          getApiHelper()
+              .submitAndWaitForCommittedFailure(
+                  test,
+                  Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
+                      resourceAddress, accountAddress, List.of(1), List.of()),
+                  List.of(accountKeyPair));
       assertThat(result.errorMessage()).contains("SystemError(KeyValueEntryLocked)");
     }
   }
@@ -132,7 +136,7 @@ public class NonFungibleActionsTest extends DeterministicCoreApiTestBase {
   @Test
   public void minting_non_fungible_id_which_existed_persistently_and_then_got_burned_fails()
       throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       var accountKeyPair = ECKeyPair.generateNew();
@@ -140,26 +144,29 @@ public class NonFungibleActionsTest extends DeterministicCoreApiTestBase {
       var resourceAddress = createFreeMintBurnNonFungibleResource(test);
 
       // Mint id 1
-      submitAndWaitForSuccess(
-          test,
-          Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
-              resourceAddress, accountAddress, List.of(1), List.of()),
-          List.of(accountKeyPair));
-
-      // Burn id 1
-      submitAndWaitForSuccess(
-          test,
-          Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
-              resourceAddress, accountAddress, List.of(), List.of(1)),
-          List.of(accountKeyPair));
-
-      // We can NOT mint the id "1" again
-      var result =
-          submitAndWaitForCommittedFailure(
+      getApiHelper()
+          .submitAndWaitForSuccess(
               test,
               Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
                   resourceAddress, accountAddress, List.of(1), List.of()),
               List.of(accountKeyPair));
+
+      // Burn id 1
+      getApiHelper()
+          .submitAndWaitForSuccess(
+              test,
+              Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
+                  resourceAddress, accountAddress, List.of(), List.of(1)),
+              List.of(accountKeyPair));
+
+      // We can NOT mint the id "1" again
+      var result =
+          getApiHelper()
+              .submitAndWaitForCommittedFailure(
+                  test,
+                  Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
+                      resourceAddress, accountAddress, List.of(1), List.of()),
+                  List.of(accountKeyPair));
       assertThat(result.errorMessage()).contains("SystemError(KeyValueEntryLocked)");
     }
   }

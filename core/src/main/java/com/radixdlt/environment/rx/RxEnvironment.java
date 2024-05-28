@@ -65,6 +65,9 @@
 package com.radixdlt.environment.rx;
 
 import com.google.inject.TypeLiteral;
+import com.radixdlt.consensus.event.CoreEvent;
+import com.radixdlt.consensus.event.LocalEvent;
+import com.radixdlt.consensus.event.RemoteEvent;
 import com.radixdlt.environment.*;
 import com.radixdlt.p2p.NodeId;
 import io.reactivex.rxjava3.core.Observable;
@@ -103,14 +106,14 @@ public final class RxEnvironment implements Environment {
             .collect(Collectors.toMap(RxRemoteDispatcher::eventClass, d -> d));
   }
 
-  private <T> Optional<Subject<T>> getSubject(TypeLiteral<T> t) {
+  private <T extends CoreEvent> Optional<Subject<T>> getSubject(TypeLiteral<T> t) {
     @SuppressWarnings("unchecked")
     Subject<T> eventDispatcher = (Subject<T>) typeLiteralSubjects.get(t);
 
     return Optional.ofNullable(eventDispatcher);
   }
 
-  private <T> Optional<Subject<T>> getSubject(Class<T> eventClass) {
+  private <T extends CoreEvent> Optional<Subject<T>> getSubject(Class<T> eventClass) {
     @SuppressWarnings("unchecked")
     Subject<T> eventDispatcher = (Subject<T>) subjects.get(eventClass);
 
@@ -118,12 +121,13 @@ public final class RxEnvironment implements Environment {
   }
 
   @Override
-  public <T> EventDispatcher<T> getDispatcher(Class<T> eventClass) {
+  public <T extends CoreEvent> EventDispatcher<T> getDispatcher(Class<T> eventClass) {
     return getSubject(eventClass).<EventDispatcher<T>>map(s -> s::onNext).orElse(e -> {});
   }
 
   @Override
-  public <T> ScheduledEventDispatcher<T> getScheduledDispatcher(Class<T> eventClass) {
+  public <T extends LocalEvent> ScheduledEventDispatcher<T> getScheduledDispatcher(
+      Class<T> eventClass) {
     return (e, millis) ->
         getSubject(eventClass)
             .ifPresent(
@@ -131,32 +135,32 @@ public final class RxEnvironment implements Environment {
   }
 
   @Override
-  public <T> ScheduledEventDispatcher<T> getScheduledDispatcher(TypeLiteral<T> typeLiteral) {
+  public <T extends LocalEvent> ScheduledEventDispatcher<T> getScheduledDispatcher(
+      TypeLiteral<T> typeLiteral) {
     return (e, millis) ->
         getSubject(typeLiteral)
             .ifPresent(
                 s -> executorService.schedule(() -> s.onNext(e), millis, TimeUnit.MILLISECONDS));
   }
 
+  @SuppressWarnings("unchecked")
   @Override
-  public <T> RemoteEventDispatcher<NodeId, T> getRemoteDispatcher(Class<T> messageType) {
+  public <T extends RemoteEvent> RemoteEventDispatcher<NodeId, T> getRemoteDispatcher(
+      Class<T> messageType) {
     if (!remoteDispatchers.containsKey(messageType)) {
       throw new IllegalStateException("No dispatcher for " + messageType);
     }
 
-    @SuppressWarnings("unchecked")
-    final RemoteEventDispatcher<NodeId, T> dispatcher =
-        (RemoteEventDispatcher<NodeId, T>) remoteDispatchers.get(messageType).dispatcher();
-    return dispatcher;
+    return (RemoteEventDispatcher<NodeId, T>) remoteDispatchers.get(messageType).dispatcher();
   }
 
-  public <T> Observable<T> getObservable(Class<T> eventClass) {
+  public <T extends CoreEvent> Observable<T> getObservable(Class<T> eventClass) {
     return getSubject(eventClass)
         .orElseThrow(
             () -> new IllegalStateException(eventClass + " not registered as observable."));
   }
 
-  public <T> Observable<T> getObservable(TypeLiteral<T> t) {
+  public <T extends CoreEvent> Observable<T> getObservable(TypeLiteral<T> t) {
     return getSubject(t).orElseThrow();
   }
 }

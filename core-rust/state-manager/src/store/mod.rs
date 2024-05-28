@@ -63,10 +63,10 @@
  */
 
 mod codecs;
-mod historical_state;
+pub mod historical_state;
 pub mod jmt_gc;
 pub mod proofs_gc;
-mod rocks_db;
+pub mod rocks_db;
 pub mod traits;
 mod typed_cf_api;
 
@@ -74,8 +74,7 @@ use crate::store::traits::measurement::MeasurableDatabase;
 use crate::RawDbMetrics;
 use node_common::locks::DbLock;
 use prometheus::Registry;
-pub use rocks_db::{ActualStateManagerDatabase, StateManagerDatabase};
-pub use rocks_db::{ReadableRocks, WriteableRocks};
+use rocks_db::ActualStateManagerDatabase;
 use sbor::{Categorize, Decode, Encode};
 use std::sync::Arc;
 pub use traits::DatabaseConfig;

@@ -85,7 +85,6 @@ import com.radixdlt.mempool.MempoolReceiverConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.*;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.testutil.TestStateReader;
@@ -122,11 +121,11 @@ public final class RandomValidatorsTest {
                 FunctionalRadixNodeModule.SafetyRecoveryConfig.BERKELEY_DB,
                 FunctionalRadixNodeModule.ConsensusConfig.of(1000),
                 FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
-                    StateComputerConfig.rev2(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        GENESIS,
-                        StateComputerConfig.REV2ProposerConfig.Mempool.defaults()
-                            .withReceiverConfig(MempoolReceiverConfig.of(5))),
+                    StateComputerConfig.rev2()
+                        .withGenesis(GENESIS)
+                        .withProposerConfig(
+                            StateComputerConfig.REV2ProposerConfig.Mempool.defaults()
+                                .withReceiverConfig(MempoolReceiverConfig.of(5))),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 
@@ -189,7 +188,7 @@ public final class RandomValidatorsTest {
                     .prepare()
                     .raw();
             creatingValidators.put(randomValidatorIndex, txn);
-            mempoolDispatcher.dispatch(MempoolAdd.create(txn));
+            mempoolDispatcher.dispatch(new MempoolAdd(List.of(txn)));
           } else {
             var maybeTransactionsDetails =
                 NodesReader.tryGetCommittedTransactionDetails(
@@ -259,7 +258,7 @@ public final class RandomValidatorsTest {
                       .raw();
             }
           }
-          mempoolDispatcher.dispatch(MempoolAdd.create(txn));
+          mempoolDispatcher.dispatch(new MempoolAdd(List.of(txn)));
         }
       }
 

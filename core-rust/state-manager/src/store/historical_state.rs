@@ -61,44 +61,109 @@
  * Work. You assume all risks associated with Your use of the Work and the exercise of
  * permissions under this License.
  */
-#![allow(dead_code)]
-// TODO(historical-state): Remove the allow above once the impl here is used
 
-use substate_store_impls::hash_tree::entity_tier::EntityTier;
+use std::ops::Deref;
 
+use crate::engine_prelude::entity_tier::EntityTier;
 use crate::engine_prelude::*;
+use crate::query::StateManagerSubstateQueries;
+use crate::rocks_db::{ReadableRocks, StateManagerDatabase};
 use crate::store::traits::*;
-use crate::StateVersion;
+use crate::traits::indices::{CreationId, EntityBlueprintId, EntityListingIndex};
+use crate::{CommittedTransactionIdentifiers, LedgerStateSummary, StateVersion};
 
 /// An implementation of a [`SubstateDatabase`] viewed at a specific [`StateVersion`].
 ///
 /// This database is backed by:
-/// - a [`ReadableTreeStore`] - a versioned source of ReNodes / Partitions / Substates metadata,
+/// - a [`ReadableTreeStore`] - a versioned source of Entities / Partitions / Substates metadata,
 /// - and a [`LeafSubstateValueStore`] - a store of Substate values' associated with their leafs.
-pub struct StateHashTreeBasedSubstateDatabase<'t, T> {
-    tree_store: &'t T,
+pub struct StateTreeBasedSubstateDatabase<'s, DS> {
+    base_store: DS,
     at_state_version: StateVersion,
+
+    // Note: "Why do we even need to capture `'t`?"
+    //
+    // We want the `StateTreeBasedSubstateDatabase` struct to be ready to either own the underlying
+    // `ReadableTreeStore` instance, or just reference it (depending on the caller's use-case).
+    //
+    // This is achieved by a classic `Deref<Target = T>, T: ReadableTreeStore` approach. However, we
+    // encounter "mismatched lifetimes" issues when implementing the `SubstateDatabase`, which wants
+    // to return a `dyn Iterator<Item = PartitionEntry> + '_` (i.e. return the lifetime of `&self`).
+    // In Rust, there is no syntax to express a requirement for `T: '_` - and without it, the
+    // compiler is not sure whether "type `T` lives long enough".
+    //
+    // One workaround would be to use explicit lifetimes in the `SubstateDatabase` trait definition,
+    // and thus allow to explicitly require `T: 't` just within the relevant implementation here
+    // (see https://users.rust-lang.org/t/trait-impl-lifetime-nightmare/54735/3). This would be
+    // cumbersome, since that trait is defined by a dependency (internal one, but still). Moreover,
+    // banning default/elided lifetimes (in the name of "enabling some `Deref` usage elsewhere")
+    // does not seem right.
+    //
+    // Hence, another solution is used here: by introducing a theoretically-unused `'t` to the
+    // `StateTreeBasedSubstateDatabase` struct itself, we can express `T: 't` requirement wherever
+    // we need to, without touching definitions of implemented traits.
+    phantom: PhantomData<&'s DS>,
 }
 
-impl<'t, T: ReadableTreeStore + LeafSubstateValueStore> StateHashTreeBasedSubstateDatabase<'t, T> {
+impl<'s, S: 's, DS: Deref<Target = S>> StateTreeBasedSubstateDatabase<'s, DS> {
     /// Creates an instance backed by the given lower-level stores and scoped at the given version.
-    pub fn new(tree_store: &'t T, at_state_version: StateVersion) -> Self {
+    pub fn new(base_store: DS, at_state_version: StateVersion) -> Self {
         Self {
-            tree_store,
+            base_store,
             at_state_version,
+            phantom: PhantomData,
         }
     }
 
-    fn create_entity_tier(&self) -> EntityTier<'t, T> {
+    fn create_entity_tier(&'s self) -> EntityTier<'s, S> {
         EntityTier::new(
-            self.tree_store,
+            self.base_store.deref(),
             Some(self.at_state_version.number()).filter(|v| *v > 0),
         )
     }
 }
 
-impl<'t, T: ReadableTreeStore + LeafSubstateValueStore> SubstateDatabase
-    for StateHashTreeBasedSubstateDatabase<'t, T>
+impl<'s, S: QueryableTransactionStore + 's, DS: Deref<Target = S>>
+    StateTreeBasedSubstateDatabase<'s, DS>
+{
+    fn at_transaction(&self) -> (StateVersion, CommittedTransactionIdentifiers) {
+        // The direct read from the unscoped underlying store is actually "historical": the
+        // `QueryableTransactionStore` is append-only, and we request for a state version which
+        // definitely existed at that point.
+        let transaction_identifiers = self
+            .base_store
+            .get_committed_transaction_identifiers(self.at_state_version)
+            .expect("transaction at the scoped state version");
+        (self.at_state_version, transaction_identifiers)
+    }
+}
+
+impl<'s, S: ReadableTreeStore + 's, DS: Deref<Target = S>> StateTreeBasedSubstateDatabase<'s, DS> {
+    /// Returns an iterator over *all* Substate-Tier's leaf keys accessible from the scoped version
+    /// (i.e. from all Entities/Partitions).
+    /// Each Substate leaf key is accompanied by a full key of the Substate it represents.
+    pub fn iter_substate_leaf_keys(
+        &self,
+    ) -> impl Iterator<Item = (StoredTreeNodeKey, DbSubstateKey)> + '_ {
+        self.create_entity_tier()
+            .into_iter_entity_partition_tiers_from(None)
+            .flat_map(|partition_tier| partition_tier.into_iter_partition_substate_tiers_from(None))
+            .flat_map(|substate_tier| {
+                let partition_key = substate_tier.partition_key().clone();
+                substate_tier
+                    .into_iter_substate_summaries_from(None)
+                    .map(move |summary| {
+                        (
+                            summary.state_tree_leaf_key,
+                            (partition_key.clone(), summary.sort_key),
+                        )
+                    })
+            })
+    }
+}
+
+impl<'s, S: ReadableTreeStore + LeafSubstateValueStore + 's, DS: Deref<Target = S>> SubstateDatabase
+    for StateTreeBasedSubstateDatabase<'s, DS>
 {
     fn get_substate(
         &self,
@@ -109,10 +174,7 @@ impl<'t, T: ReadableTreeStore + LeafSubstateValueStore> SubstateDatabase
             .get_entity_partition_tier(partition_key.node_key.clone())
             .get_partition_substate_tier(partition_key.partition_num)
             .get_substate_summary(sort_key)
-            .and_then(|summary| {
-                self.tree_store
-                    .get_associated_value(&summary.state_tree_leaf_key)
-            })
+            .map(|substate| self.get_value(&substate.state_tree_leaf_key))
     }
 
     fn list_entries_from(
@@ -126,13 +188,281 @@ impl<'t, T: ReadableTreeStore + LeafSubstateValueStore> SubstateDatabase
                 .get_partition_substate_tier(partition_key.partition_num)
                 .into_iter_substate_summaries_from(from_sort_key)
                 .map(|substate| {
-                    let value = self
-                        .tree_store
-                        .get_associated_value(&substate.state_tree_leaf_key)
-                        .expect("DB inconsistency: associated value not found for leaf key");
-                    (substate.sort_key, value)
+                    (
+                        substate.sort_key,
+                        self.get_value(&substate.state_tree_leaf_key),
+                    )
                 }),
         )
+    }
+}
+
+impl<'s, S: LeafSubstateValueStore + 's, DS: Deref<Target = S>>
+    StateTreeBasedSubstateDatabase<'s, DS>
+{
+    /// Returns the substate value associated with the given leaf key.
+    ///
+    /// The implementation makes a few assumptions and *panics* is any of them is not met:
+    /// - The queried tree node represents a Substate-Tier's leaf,
+    /// - The queried tree node was stored while the "state history" feature was enabled (see
+    ///   [`DatabaseConfig::enable_historical_substate_values`]),
+    /// - The queried tree node was not garbage-collected yet (see
+    ///   [`StateTreeGcConfig::state_version_history_length`]).
+    ///
+    /// These assumptions are enforced by the [`VersionScopedDatabase::new`] constructor.
+    fn get_value(&self, tree_leaf_key: &StoredTreeNodeKey) -> DbSubstateValue {
+        let Some(value) = self.base_store.get_associated_value(tree_leaf_key) else {
+            panic!(
+                "DB inconsistency: associated value not found for leaf key {:?}",
+                tree_leaf_key
+            );
+        };
+        value
+    }
+}
+
+/// A [`SubstateDatabase`] aware of its state version.
+///
+/// The implementation enum-dispatches either to the runtime store (when at current version), or to
+/// a historical store.
+pub enum VersionScopedDatabase<'s, S> {
+    Current(S),
+    Historical(StateTreeBasedSubstateDatabase<'s, S>),
+}
+
+/// An error that may happen during opening [`VersionScopedDatabase`] at a past version.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum StateHistoryError {
+    StateHistoryDisabled,
+    StateVersionInTooDistantPast {
+        first_available_version: StateVersion,
+    },
+    StateVersionInFuture {
+        current_version: StateVersion,
+    },
+}
+
+impl<'s, R: ReadableRocks + 's, DS: Deref<Target = StateManagerDatabase<R>>>
+    VersionScopedDatabase<'s, DS>
+{
+    /// Creates an instance backed by the given database, and depending on a requested version.
+    pub fn new(
+        database: DS,
+        requested_version: Option<StateVersion>,
+    ) -> Result<Self, StateHistoryError> {
+        let current_version = database.max_state_version();
+        let Some(requested_version) = requested_version else {
+            return Ok(Self::Current(database)); // implicit "use current version"
+        };
+        if requested_version == current_version {
+            return Ok(Self::Current(database)); // explicit "use current version"
+        }
+
+        if !database.is_state_history_enabled() {
+            return Err(StateHistoryError::StateHistoryDisabled);
+        };
+        let first_available_version = database.get_first_stored_historical_state_version();
+        if requested_version < first_available_version {
+            return Err(StateHistoryError::StateVersionInTooDistantPast {
+                first_available_version,
+            });
+        }
+        if requested_version > current_version {
+            return Err(StateHistoryError::StateVersionInFuture { current_version });
+        }
+
+        return Ok(Self::Historical(StateTreeBasedSubstateDatabase::new(
+            database,
+            requested_version,
+        )));
+    }
+
+    /// Returns the summary of the ledger's state at which this store is scoped.
+    ///
+    /// Note: this will be based on an actual ledger proof only if it exists at the scoped state
+    /// version (i.e. always in case of "current top of ledger", and also sometimes for incidental
+    /// historical ledger states). Otherwise, it will be composed based on the relevant Substates
+    /// read at the scoped version.
+    pub fn at_ledger_state(&self) -> LedgerStateSummary {
+        match self {
+            VersionScopedDatabase::Current(database) => database
+                .get_latest_proof()
+                .expect("proof for current top of ledger")
+                .ledger_header
+                .into(),
+            VersionScopedDatabase::Historical(database) => {
+                let (state_version, transaction_identifiers) = database.at_transaction();
+                if let Some(exact_proof) = database.base_store.get_proof(state_version) {
+                    // If an actual header is available at this version, we can use it:
+                    return exact_proof.ledger_header.into();
+                }
+                let (epoch, round) = database.get_epoch_and_round();
+                LedgerStateSummary {
+                    epoch,
+                    round,
+                    state_version,
+                    hashes: transaction_identifiers.resultant_ledger_hashes,
+                    proposer_timestamp_ms: transaction_identifiers.proposer_timestamp_ms,
+                }
+            }
+        }
+    }
+}
+
+impl<'s, R: ReadableRocks + 's, DS: Deref<Target = StateManagerDatabase<R>>> SubstateDatabase
+    for VersionScopedDatabase<'s, DS>
+{
+    fn get_substate(
+        &self,
+        partition_key: &DbPartitionKey,
+        sort_key: &DbSortKey,
+    ) -> Option<DbSubstateValue> {
+        match self {
+            VersionScopedDatabase::Current(database) => {
+                database.get_substate(partition_key, sort_key)
+            }
+            VersionScopedDatabase::Historical(database) => {
+                database.get_substate(partition_key, sort_key)
+            }
+        }
+    }
+
+    fn list_entries_from(
+        &self,
+        partition_key: &DbPartitionKey,
+        from_sort_key: Option<&DbSortKey>,
+    ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
+        match self {
+            VersionScopedDatabase::Current(database) => {
+                database.list_entries_from(partition_key, from_sort_key)
+            }
+            VersionScopedDatabase::Historical(database) => {
+                database.list_entries_from(partition_key, from_sort_key)
+            }
+        }
+    }
+}
+
+// Apart from the meaty `SubstateDatabase`, we implement a couple of other stores typically used by
+// clients interested in historical state:
+
+impl<'s, R: ReadableRocks + 's, DS: Deref<Target = StateManagerDatabase<R>>>
+    SubstateNodeAncestryStore for VersionScopedDatabase<'s, DS>
+{
+    fn batch_get_ancestry<'a>(
+        &self,
+        node_ids: impl IntoIterator<Item = &'a NodeId>,
+    ) -> Vec<Option<SubstateNodeAncestryRecord>> {
+        // Unfortunately, there is no easy way to filter out the "future" here
+        self.underlying().batch_get_ancestry(node_ids)
+    }
+}
+
+impl<'s, R: ReadableRocks + 's, DS: Deref<Target = StateManagerDatabase<R>>> EntityListingIndex
+    for VersionScopedDatabase<'s, DS>
+{
+    fn get_created_entity_iter(
+        &self,
+        entity_type: EntityType,
+        from_creation_id: Option<&CreationId>,
+    ) -> Box<dyn Iterator<Item = (CreationId, EntityBlueprintId)> + '_> {
+        match self {
+            VersionScopedDatabase::Current(current) => {
+                Box::new(current.get_created_entity_iter(entity_type, from_creation_id))
+            }
+            VersionScopedDatabase::Historical(historical) => Box::new(
+                historical
+                    .base_store
+                    .get_created_entity_iter(entity_type, from_creation_id)
+                    .take_while(|(id, _)| id.state_version <= historical.at_state_version),
+            ),
+        }
+    }
+
+    fn get_blueprint_entity_iter(
+        &self,
+        blueprint_id: &BlueprintId,
+        from_creation_id: Option<&CreationId>,
+    ) -> Box<dyn Iterator<Item = (CreationId, EntityBlueprintId)> + '_> {
+        match self {
+            VersionScopedDatabase::Current(current) => {
+                Box::new(current.get_blueprint_entity_iter(blueprint_id, from_creation_id))
+            }
+            VersionScopedDatabase::Historical(historical) => Box::new(
+                historical
+                    .base_store
+                    .get_blueprint_entity_iter(blueprint_id, from_creation_id)
+                    .take_while(|(id, _)| id.state_version <= historical.at_state_version),
+            ),
+        }
+    }
+}
+
+impl<'s, R: ReadableRocks + 's, DS: Deref<Target = StateManagerDatabase<R>>> ConfigurableDatabase
+    for VersionScopedDatabase<'s, DS>
+{
+    fn is_account_change_index_enabled(&self) -> bool {
+        self.underlying().is_account_change_index_enabled()
+    }
+
+    fn is_local_transaction_execution_index_enabled(&self) -> bool {
+        self.underlying()
+            .is_local_transaction_execution_index_enabled()
+    }
+
+    fn are_entity_listing_indices_enabled(&self) -> bool {
+        self.underlying().are_entity_listing_indices_enabled()
+    }
+
+    fn is_state_history_enabled(&self) -> bool {
+        self.underlying().is_state_history_enabled()
+    }
+
+    fn get_first_stored_historical_state_version(&self) -> StateVersion {
+        self.underlying()
+            .get_first_stored_historical_state_version()
+    }
+}
+
+impl<'s, R: ReadableRocks + 's, DS: Deref<Target = StateManagerDatabase<R>>>
+    VersionScopedDatabase<'s, DS>
+{
+    /// Accesses the underlying [`StateManagerDatabase`] directly.
+    ///
+    /// This is an implementation detail for store implementations capable of accessing "runtime"
+    /// tables in a "historical" way (e.g. in case of append-only tables).
+    fn underlying(&self) -> &StateManagerDatabase<R> {
+        match self {
+            VersionScopedDatabase::Current(current) => current.deref(),
+            VersionScopedDatabase::Historical(historical) => historical.base_store.deref(),
+        }
+    }
+}
+
+/// An extension trait for more convenient construction of version-scoped [`StateManagerDatabase`].
+///
+/// Note: an implementation for `Deref<Target = StateManagerDatabase<R>>,  R: ReadableRocks` is
+/// provided - and it is appropriate for all instances of `StateManagerDatabase` obtained from the
+/// DB lock. Callers are not expected to implement it for any other type.
+pub trait VersionScopingSupport<'s, R>: Sized {
+    /// Returns a database scoped at the requested state version.
+    ///
+    /// Note: this method consumes `self`, but since it is only implemented for [`Deref`], it can be
+    /// used both for owning the underlying [`StateManagerDatabase`] and for referencing it.
+    fn scoped_at(
+        self,
+        requested_state_version: Option<StateVersion>,
+    ) -> Result<VersionScopedDatabase<'s, Self>, StateHistoryError>;
+}
+
+impl<'s, R: ReadableRocks + 's, DS: Deref<Target = StateManagerDatabase<R>>>
+    VersionScopingSupport<'s, R> for DS
+{
+    fn scoped_at(
+        self,
+        requested_state_version: Option<StateVersion>,
+    ) -> Result<VersionScopedDatabase<'s, Self>, StateHistoryError> {
+        VersionScopedDatabase::new(self, requested_state_version)
     }
 }
 
@@ -418,7 +748,7 @@ mod tests {
     impl TestStores {
         pub fn new_empty() -> Self {
             Self {
-                tree_store: TypedInMemoryTreeStore::new().storing_substate_values(),
+                tree_store: TypedInMemoryTreeStore::new().storing_associated_substates(),
                 current_version: StateVersion::pre_genesis(),
             }
         }
@@ -457,8 +787,8 @@ mod tests {
         pub fn create_subject(
             &self,
             at_state_version: StateVersion,
-        ) -> StateHashTreeBasedSubstateDatabase<TypedInMemoryTreeStore> {
-            StateHashTreeBasedSubstateDatabase::new(&self.tree_store, at_state_version)
+        ) -> StateTreeBasedSubstateDatabase<&TypedInMemoryTreeStore> {
+            StateTreeBasedSubstateDatabase::new(&self.tree_store, at_state_version)
         }
 
         fn apply_database_updates(&mut self, database_updates: &DatabaseUpdates) -> StateVersion {
@@ -494,10 +824,10 @@ mod tests {
             &self,
             state_tree_leaf_key: &StoredTreeNodeKey,
         ) -> Option<DbSubstateValue> {
-            self.associated_substate_values
+            self.associated_substates
                 .borrow()
                 .get(state_tree_leaf_key)
-                .cloned()
+                .and_then(|(_key, value)| value.clone())
         }
     }
 }

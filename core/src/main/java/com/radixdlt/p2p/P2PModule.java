@@ -73,7 +73,6 @@ import com.radixdlt.environment.*;
 import com.radixdlt.ledger.LedgerProofBundle;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.networks.Network;
-import com.radixdlt.p2p.PendingOutboundChannelsManager.PeerOutboundConnectionTimeout;
 import com.radixdlt.p2p.addressbook.AddressBook;
 import com.radixdlt.p2p.addressbook.AddressBookPeerControl;
 import com.radixdlt.p2p.addressbook.AddressBookPersistence;

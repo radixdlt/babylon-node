@@ -1,5 +1,5 @@
 use crate::engine_prelude::*;
-use state_manager::LedgerHeader;
+use state_manager::{LedgerStateSummary, StateVersion};
 
 use crate::core_api::handlers::to_api_epoch_round;
 use crate::core_api::*;
@@ -140,28 +140,43 @@ pub fn to_api_sbor_data_from_bytes(
 
 pub fn to_api_ledger_state_summary(
     mapping_context: &MappingContext,
-    header: &LedgerHeader,
+    state_summary: &LedgerStateSummary,
 ) -> Result<models::LedgerStateSummary, MappingError> {
     Ok(models::LedgerStateSummary {
-        state_version: to_api_state_version(header.state_version)?,
-        header_summary: Box::new(to_api_ledger_header_summary(mapping_context, header)?),
+        state_version: to_api_state_version(state_summary.state_version)?,
+        header_summary: Box::new(to_api_ledger_header_summary(
+            mapping_context,
+            state_summary,
+        )?),
     })
 }
 
 pub fn to_api_ledger_header_summary(
     mapping_context: &MappingContext,
-    header: &LedgerHeader,
+    state_summary: &LedgerStateSummary,
 ) -> Result<models::LedgerHeaderSummary, MappingError> {
-    let hashes = &header.hashes;
+    let hashes = &state_summary.hashes;
     Ok(models::LedgerHeaderSummary {
-        epoch_round: Box::new(to_api_epoch_round(mapping_context, header)?),
+        epoch_round: Box::new(to_api_epoch_round(mapping_context, state_summary)?),
         ledger_hashes: Box::new(models::LedgerHashes {
             state_tree_hash: to_api_state_tree_hash(&hashes.state_root),
             transaction_tree_hash: to_api_transaction_tree_hash(&hashes.transaction_root),
             receipt_tree_hash: to_api_receipt_tree_hash(&hashes.receipt_root),
         }),
-        proposer_timestamp: Box::new(to_api_instant_from_safe_timestamp(
-            header.proposer_timestamp_ms,
+        proposer_timestamp: Box::new(to_api_clamped_instant_from_epoch_milli(
+            state_summary.proposer_timestamp_ms,
         )?),
+    })
+}
+
+// Note: currently our only way of specifying this is using StateVersion, but we may have to return
+// an enum at some point.
+pub fn extract_ledger_state_selector(
+    selector: &models::LedgerStateSelector,
+) -> Result<StateVersion, ExtractionError> {
+    Ok(match selector {
+        models::LedgerStateSelector::VersionLedgerStateSelector { state_version } => {
+            extract_state_version(*state_version)?
+        }
     })
 }

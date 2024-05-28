@@ -64,25 +64,12 @@
 
 package com.radixdlt.p2p.liveness;
 
+import com.radixdlt.consensus.event.LocalEvent;
+
 /** A message acting as a trigger for PeerLivenessMonitor to send ping messages. */
-public final class PeersLivenessCheckTrigger {
-
-  public static PeersLivenessCheckTrigger create() {
-    return new PeersLivenessCheckTrigger();
-  }
-
-  private PeersLivenessCheckTrigger() {}
-
-  @Override
-  public String toString() {
-    return String.format("%s{}", this.getClass().getSimpleName());
-  }
-
+public record PeersLivenessCheckTrigger() implements LocalEvent {
   @Override
   public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
     return o instanceof PeersLivenessCheckTrigger;
   }
 

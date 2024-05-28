@@ -3,6 +3,7 @@ members = [
     "node-common",
     "jni-export",
     "core-api-server",
+    "engine-state-api-server",
     "state-manager",
 ]
 resolver = "2"
@@ -22,28 +23,38 @@ resolver = "2"
 #   $ git push origin "release_name-BLAH"
 # * Then use tag="release_name-BLAH" in the below dependencies.
 # 
-sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-1b29786b", features = ["serde"] }
-transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-1b29786b" }
-transaction-scenarios = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-1b29786b" }
-radix-engine-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-1b29786b", features = ["serde"] }
-radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-1b29786b" }
-radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-1b29786b" }
-substate-store-impls = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-1b29786b" }
-substate-store-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-1b29786b" }
-substate-store-queries = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-1b29786b" }
-utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-1b29786b", features = ["serde"] }
-blueprint-schema-init = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-1b29786b", features = ["serde"] }
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-7a8a3405", features = ["serde"] }
+radix-transactions = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-7a8a3405" }
+radix-transaction-scenarios = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-7a8a3405" }
+radix-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-7a8a3405", features = ["serde"] }
+radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-7a8a3405" }
+radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-7a8a3405" }
+radix-substate-store-impls = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-7a8a3405" }
+radix-substate-store-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-7a8a3405" }
+radix-substate-store-queries = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-7a8a3405" }
+radix-rust = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-7a8a3405", features = ["serde"] }
+radix-blueprint-schema-init = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "bottlenose-7a8a3405", features = ["serde"] }
 
-itertools = { version = "0.11.0" }
-jni = { version = "0.19.0" }
-tracing = { version = "0.1" }
-tokio = { version = "1.32.0", features = ["full"] }
-tokio-util = { version = "0.7.9" }
-prometheus = { version = "0.13.2", default-features = false, features = [] }
-blake2 = { version = "0.10.6", default-features = false }
-serde = { version = "1.0.81", features = ["derive"] }
-serde_json = { version = "1.0.81", features = ["preserve_order"] }
-chrono = { version = "0.4.23", default-features = false, features = ["std"] }
+itertools = { version = "=0.10.5" }
+jni = { version = "=0.19.0" }
+tracing = { version = "=0.1.37" }
+tokio = { version = "=1.32.0", features = ["full"] }
+tokio-util = { version = "=0.7.9" }
+prometheus = { version = "=0.13.3", default-features = false, features = [] }
+blake2 = { version = "=0.10.6", default-features = false }
+serde = { version = "=1.0.185", features = ["derive"] }
+serde_json = { version = "=1.0.105", features = ["preserve_order"] }
+serde_with = { version = "=2.3.0", features = ["hex"] }
+chrono = { version = "=0.4.26", default-features = false, features = ["std"] }
+hex = { version = "=0.4.3", default-features = false }
+rand = { version = "=0.8.5" }
+futures = { version = "=0.3.28" }
+futures-util = { version = "=0.3.28" }
+axum = { version = "=0.6.20", features = ["http1", "json"] }
+tower = { version = "=0.4.13" }
+tower-http = { version = "=0.4.3", features = ["catch-panic"]}
+hyper = { version = "=0.14.27", features = ["server", "http1"] }
+paste = { version = "=1.0.14", default-features = false }
 
 [profile.dev]
 opt-level = 3

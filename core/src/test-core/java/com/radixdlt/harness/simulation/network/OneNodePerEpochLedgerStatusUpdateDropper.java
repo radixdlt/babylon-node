@@ -85,8 +85,7 @@ public class OneNodePerEpochLedgerStatusUpdateDropper
     }
 
     final var node =
-        nodeToDrop.putIfAbsent(
-            ledgerStatusUpdate.getProof().getEpoch(), messageInTransit.getSender());
+        nodeToDrop.putIfAbsent(ledgerStatusUpdate.proof().getEpoch(), messageInTransit.getSender());
     if (node == null) {
       return true;
     }

@@ -31,7 +31,7 @@ pub(crate) async fn handle_state_access_controller(
     let access_controller_state_substate = read_optional_main_field_substate(
         database.deref(),
         controller_address.as_node_id(),
-        &AccessControllerField::State.into(),
+        &AccessControllerV2Field::State.into(),
     )
     .ok_or_else(|| not_found_error("Access controller not found".to_string()))?;
 
@@ -49,7 +49,10 @@ pub(crate) async fn handle_state_access_controller(
     let header = read_current_ledger_header(database.deref());
 
     Ok(Json(models::StateAccessControllerResponse {
-        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(
+            &mapping_context,
+            &header.into(),
+        )?),
         state: Some(to_api_access_controller_substate(
             &mapping_context,
             &access_controller_state_substate,

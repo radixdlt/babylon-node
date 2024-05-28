@@ -69,10 +69,18 @@ import com.radixdlt.sbor.codec.StructCodec;
 
 /** Database configuration options */
 public record DatabaseConfig(
-    boolean enableLocalTransactionExecutionIndex, boolean enableAccountChangeIndex) {
+    boolean enableLocalTransactionExecutionIndex,
+    boolean enableAccountChangeIndex,
+    boolean enableHistoricalSubstateValues,
+    boolean enableEntityListingIndices) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         DatabaseConfig.class,
         codecs -> StructCodec.fromRecordComponents(DatabaseConfig.class, codecs));
+  }
+
+  public static DatabaseConfig forTesting() {
+    // Many test assert on transaction execution details, so we keep this one on by default:
+    return new DatabaseConfig(true, false, false, false);
   }
 }

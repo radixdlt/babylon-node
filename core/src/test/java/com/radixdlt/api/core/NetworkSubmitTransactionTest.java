@@ -71,6 +71,9 @@ import static org.assertj.core.api.Assertions.*;
 import com.google.common.collect.MoreCollectors;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.*;
+import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
+import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.Manifest;
 import com.radixdlt.rev2.TransactionBuilder;
 import org.junit.Test;
@@ -78,7 +81,7 @@ import org.junit.Test;
 public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_core_api_can_submit_and_commit_transaction() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       var transaction = TransactionBuilder.forTests().prepare();
@@ -128,7 +131,7 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
 
   @Test
   public void test_transaction_rejected_when_same_payload_previously_committed() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       var transaction = TransactionBuilder.forTests().prepare();
@@ -165,7 +168,7 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
 
   @Test
   public void test_transaction_rejected_when_same_intent_previously_committed() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       var transaction1 = TransactionBuilder.forTests().nonce(1337).signatories(1).prepare();
@@ -204,7 +207,7 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
 
   @Test
   public void test_valid_but_rejected_transaction_should_be_rejected() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       var transaction = TransactionBuilder.forTests().manifest(Manifest.validButReject()).prepare();
@@ -230,7 +233,7 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
       assertThat(rejectedDetails.getIsPayloadRejectionPermanent()).isFalse();
       assertThat(rejectedDetails.getIsIntentRejectionPermanent()).isFalse();
       assertThat(rejectedDetails.getIsFresh()).isTrue();
-      assertThat(rejectedDetails.getErrorMessage()).contains("LoanRepaymentFailed");
+      assertThat(rejectedDetails.getErrorMessage()).contains("SuccessButFeeLoanNotRepaid");
     }
   }
 
@@ -238,7 +241,15 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
   public void
       test_valid_but_future_epoch_transaction_should_be_rejected_but_resubmittable_immediately_when_epoch_reached()
           throws Exception {
-    try (var test = buildRunningServerTest(100)) {
+    final var config =
+        defaultConfig()
+            .withGenesis(
+                GenesisBuilder.createTestGenesisWithNumValidators(
+                    1,
+                    Decimal.ONE,
+                    GenesisConsensusManagerConfig.Builder.testDefaults()
+                        .epochExactRoundCount(100)));
+    try (var test = buildRunningServerTest(config)) {
       var currentEpoch = 2; // Epoch after genesis is 2
       var validFromEpoch = 3; // Epoch after genesis is 2, so this needs to be after that
       var transaction = TransactionBuilder.forTests().fromEpoch(validFromEpoch).prepare();

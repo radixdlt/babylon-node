@@ -69,8 +69,6 @@ apply plugin: 'project-report'
 apply plugin: 'nebula.ospackage'
 apply plugin: 'com.moowork.node'
 apply plugin: 'org.sonarqube'
-apply plugin: 'net.nemerosa.versioning'
-apply plugin: 'com.palantir.git-version'
 
 node {
     download = true
@@ -167,14 +165,32 @@ task runAllIntegrationTests(type: Test) {
     mustRunAfter(test)
 }
 
-versionFile {
+task versionFile {
     mustRunAfter(processResources)
-    // Path to the file to be written
-    file = new File("$buildDir/resources/main", 'version.properties')
+    doLast {
+        File resourceFolder = new File("$buildDir/resources/main")
+        if (!resourceFolder.exists()) {
+            resourceFolder.mkdirs()
+        }
+
+        def versionFile = new File("$resourceFolder", 'version.properties').text = """
+VERSION_BRANCH=${getEnvironmentVariable('VERSION_BRANCH')}
+VERSION_COMMIT=${getEnvironmentVariable('VERSION_COMMIT')}
+VERSION_DISPLAY=${getEnvironmentVariable('VERSION_DISPLAY')}
+VERSION_BUILD=${getEnvironmentVariable('VERSION_BUILD')}
+VERSION_TAG=${getEnvironmentVariable('VERSION_TAG')}
+VERSION_LAST_TAG=${getEnvironmentVariable('VERSION_LAST_TAG')}
+    """
+    }
 }
 
 classes {
     dependsOn(versionFile)
+}
+
+def getEnvironmentVariable(envVarName) {
+    def versionEnvVar = System.getenv(envVarName)
+    return (versionEnvVar != null) ? versionEnvVar : ""
 }
 
 runAllIntegrationTests {
@@ -207,7 +223,6 @@ jacocoTestReport {
 }
 
 dependencies {
-    implementation project(':olympia-engine')
     implementation project(':common')
     implementation project(':core-rust-bridge')
     implementation project(':keygen')
@@ -217,7 +232,7 @@ dependencies {
     implementation "com.github.akarnokd:rxjava3-extensions"
     implementation 'io.reactivex.rxjava3:rxjava'
     implementation 'com.sleepycat:je'
-    implementation 'com.squareup.okhttp3:okhttp:4.11.0'
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
 
     implementation 'com.lmax:disruptor'
 

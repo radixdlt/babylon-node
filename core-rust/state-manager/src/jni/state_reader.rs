@@ -94,7 +94,11 @@ extern "system" fn Java_com_radixdlt_state_RustStateReader_getValidatorProtocolU
                     MAIN_BASE_PARTITION,
                     &ValidatorField::ProtocolUpdateReadinessSignal.into()
                 );
-            Ok(result.and_then(|f| f.into_payload().content.into_latest().protocol_version_name))
+            Ok(result.and_then(|f| {
+                f.into_payload()
+                    .fully_update_and_into_latest_version()
+                    .protocol_version_name
+            }))
         },
     )
 }
@@ -117,9 +121,8 @@ extern "system" fn Java_com_radixdlt_state_RustStateReader_getConsensusManagerCo
             )
             .expect("Missing ConsensusManagerConfigurationFieldSubstate");
         let consensus_manager_config = substate
-            .payload()
-            .as_latest_ref()
-            .expect("Consensus manager config mapping error");
+            .into_payload()
+            .fully_update_and_into_latest_version();
 
         Ok(consensus_manager_config
             .config
@@ -146,9 +149,8 @@ extern "system" fn Java_com_radixdlt_state_RustStateReader_getConsensusManagerSt
             )
             .expect("Missing ConsensusManagerStateFieldSubstate");
         let consensus_manager_state = substate
-            .payload()
-            .as_latest_ref()
-            .expect("Consensus manager state mapping error");
+            .into_payload()
+            .fully_update_and_into_latest_version();
 
         Ok(consensus_manager_state.effective_epoch_start_milli)
     })

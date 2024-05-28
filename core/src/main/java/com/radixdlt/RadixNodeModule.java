@@ -68,6 +68,7 @@ import com.google.common.base.Preconditions;
 import com.google.inject.AbstractModule;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.api.CoreApiServerModule;
+import com.radixdlt.api.EngineStateApiServerModule;
 import com.radixdlt.api.prometheus.PrometheusApiModule;
 import com.radixdlt.api.system.SystemApiModule;
 import com.radixdlt.config.SelfValidatorAddressConfig;
@@ -114,11 +115,13 @@ public final class RadixNodeModule extends AbstractModule {
   private static final Logger log = LogManager.getLogger();
 
   private static final int DEFAULT_CORE_API_PORT = 3333;
+  private static final int DEFAULT_ENGINE_STATE_API_PORT = 3336;
   private static final int DEFAULT_SYSTEM_API_PORT = 3334;
   private static final int DEFAULT_PROMETHEUS_API_PORT = 3335;
 
   // APIs are only exposed on localhost by default
   private static final String DEFAULT_CORE_API_BIND_ADDRESS = "127.0.0.1";
+  private static final String DEFAULT_ENGINE_STATE_API_BIND_ADDRESS = "127.0.0.1";
   private static final String DEFAULT_SYSTEM_API_BIND_ADDRESS = "127.0.0.1";
   private static final String DEFAULT_PROMETHEUS_API_BIND_ADDRESS = "127.0.0.1";
 
@@ -274,11 +277,19 @@ public final class RadixNodeModule extends AbstractModule {
         NodeConstants.DEFAULT_MAX_TRANSACTION_SIZE);
     var mempoolConfig =
         new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount);
+
     var enableLocalTransactionExecutionIndex =
         properties.get("db.local_transaction_execution_index.enable", true);
     var enableAccountChangeIndex = properties.get("db.account_change_index.enable", true);
+    var enableHistoricalSubstateValues =
+        properties.get("db.historical_substate_values.enable", false);
+    var enableEntityListingIndices = properties.get("db.entity_listing_indices.enable", false);
     var databaseConfig =
-        new DatabaseConfig(enableLocalTransactionExecutionIndex, enableAccountChangeIndex);
+        new DatabaseConfig(
+            enableLocalTransactionExecutionIndex,
+            enableAccountChangeIndex,
+            enableHistoricalSubstateValues,
+            enableEntityListingIndices);
 
     install(new REv2LedgerInitializerModule(genesisProvider));
 
@@ -348,7 +359,7 @@ public final class RadixNodeModule extends AbstractModule {
             vertexMaxTotalExecutionCostUnitsConsumed,
             vertexMaxTotalFinalizationCostUnitsConsumed);
 
-    var stateHashTreeGcConfig = parseStateHashTreeGcConfig(properties);
+    var stateTreeGcConfig = parseStateTreeGcConfig(properties);
     var ledgerProofsGcConfig = parseLedgerProofsGcConfig(properties);
 
     // this is tied to the number of actually-persisted proofs, and should not be configureable:
@@ -373,10 +384,11 @@ public final class RadixNodeModule extends AbstractModule {
             vertexLimitsConfig,
             databaseConfig,
             Option.some(mempoolConfig),
-            stateHashTreeGcConfig,
+            stateTreeGcConfig,
             ledgerProofsGcConfig,
             ledgerSyncLimitsConfig,
-            protocolConfig));
+            protocolConfig,
+            ScenariosExecutionConfig.resolveForNetwork(network)));
 
     // Recovery
     install(new BerkeleySafetyStoreModule());
@@ -405,6 +417,12 @@ public final class RadixNodeModule extends AbstractModule {
             coreApiPort,
             new CoreApiServerFlags(coreApiFlagsEnableUnboundedEndpoints)));
 
+    final var engineStateApiBindAddress =
+        properties.get("api.engine_state.bind_address", DEFAULT_ENGINE_STATE_API_BIND_ADDRESS);
+    final var engineStateApiPort =
+        properties.get("api.engine_state.port", DEFAULT_ENGINE_STATE_API_PORT);
+    install(new EngineStateApiServerModule(engineStateApiBindAddress, engineStateApiPort));
+
     final var systemApiBindAddress =
         properties.get("api.system.bind_address", DEFAULT_SYSTEM_API_BIND_ADDRESS);
     final var systemApiPort = properties.get("api.system.port", DEFAULT_SYSTEM_API_PORT);
@@ -431,16 +449,16 @@ public final class RadixNodeModule extends AbstractModule {
 
   /**
    * Parses the part of the configuration related to the garbage collection process pruning the
-   * state hash tree. Each {@link StateHashTreeGcConfig#intervalSec()} seconds, we start a GC
-   * process which fully processes the entire backlog of "stale tree parts" recorded in the DB,
-   * <b>except</b> the most recent {@link StateHashTreeGcConfig#stateVersionHistoryLength()}
-   * entries.
+   * state hash tree. Each {@link StateTreeGcConfig#intervalSec()} seconds, we start a GC process
+   * which fully processes the entire backlog of "stale tree parts" recorded in the DB,
+   * <b>except</b> the most recent {@link StateTreeGcConfig#stateVersionHistoryLength()} entries.
    */
-  private StateHashTreeGcConfig parseStateHashTreeGcConfig(RuntimeProperties properties) {
+  private StateTreeGcConfig parseStateTreeGcConfig(RuntimeProperties properties) {
     // How often to run the GC.
     // This only needs to be one order of magnitude shorter than our intended state hash tree
     // minimum history duration (which is ~10 minutes below), and could be computed/hardcoded.
     // However, we make it configurable for tests' purposes.
+    // Note: the legacy `state_hash_tree` name lives on here to avoid breaking configurations.
     var intervalSec = properties.get("state_hash_tree.gc.interval_sec", 60);
     Preconditions.checkArgument(
         intervalSec > 0, "state hash tree GC interval must be positive: %s sec", intervalSec);
@@ -449,6 +467,7 @@ public final class RadixNodeModule extends AbstractModule {
     // The default of "100 * 10 * 60 = 60000" assumes that:
     // - a peak user transaction throughput is 100 TPS;
     // - we want to offer Merkle proofs verification up to 10 minutes after their generation.
+    // Note: the legacy `state_hash_tree` name lives on here to avoid breaking configurations.
     var stateVersionHistoryLength =
         properties.get("state_hash_tree.state_version_history_length", 60000);
     Preconditions.checkArgument(
@@ -456,7 +475,7 @@ public final class RadixNodeModule extends AbstractModule {
         "state version history length must not be negative: %s",
         stateVersionHistoryLength);
 
-    return new StateHashTreeGcConfig(
+    return new StateTreeGcConfig(
         UInt32.fromNonNegativeInt(intervalSec),
         UInt64.fromNonNegativeLong(stateVersionHistoryLength));
   }

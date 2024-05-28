@@ -140,7 +140,7 @@ public final class PeerLivenessMonitorModule extends AbstractModule {
     return new ScheduledEventProducerOnRunner<>(
         Runners.P2P_NETWORK,
         peersLivenessCheckTriggerEventDispatcher,
-        PeersLivenessCheckTrigger::create,
+        () -> new PeersLivenessCheckTrigger(),
         Duration.ofMillis(config.peerLivenessCheckInterval()),
         Duration.ofMillis(config.peerLivenessCheckInterval()));
   }

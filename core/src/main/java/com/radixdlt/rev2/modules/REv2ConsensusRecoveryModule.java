@@ -84,7 +84,7 @@ public final class REv2ConsensusRecoveryModule extends AbstractModule {
     var leader = proposerElection.getProposer(round);
     var nextLeader = proposerElection.getProposer(round.next());
 
-    return RoundUpdate.create(round, highQC, leader, nextLeader);
+    return new RoundUpdate(round, highQC, leader, nextLeader);
   }
 
   @Provides
@@ -93,7 +93,7 @@ public final class REv2ConsensusRecoveryModule extends AbstractModule {
       LedgerProofBundle latestProof,
       BFTValidatorSet validatorSet,
       VertexStoreState vertexStoreState) {
-    final var proposerElection =
+    var proposerElection =
         ProposerElections.defaultRotation(latestProof.resultantEpoch(), validatorSet);
     return new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
   }

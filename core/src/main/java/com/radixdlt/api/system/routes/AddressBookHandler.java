@@ -65,12 +65,12 @@
 package com.radixdlt.api.system.routes;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.system.SystemGetJsonHandler;
+import com.radixdlt.api.system.SystemJsonHandler;
 import com.radixdlt.api.system.SystemModelMapper;
 import com.radixdlt.api.system.generated.models.SystemAddressBookResponse;
 import com.radixdlt.p2p.addressbook.AddressBook;
 
-public final class AddressBookHandler extends SystemGetJsonHandler<SystemAddressBookResponse> {
+public final class AddressBookHandler extends SystemJsonHandler<SystemAddressBookResponse> {
   private final AddressBook addressBook;
   private final SystemModelMapper systemModelMapper;
 

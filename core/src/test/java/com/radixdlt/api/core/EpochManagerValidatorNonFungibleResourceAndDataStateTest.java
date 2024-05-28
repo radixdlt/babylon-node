@@ -74,7 +74,7 @@ public final class EpochManagerValidatorNonFungibleResourceAndDataStateTest
     extends DeterministicCoreApiTestBase {
   @Test
   public void test_misc_state_endpoints() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       // We test all these together because they can bootstrap each other to easily find real

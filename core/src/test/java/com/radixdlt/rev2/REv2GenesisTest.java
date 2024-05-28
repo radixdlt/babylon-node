@@ -82,7 +82,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
-import com.radixdlt.networks.Network;
 import com.radixdlt.testutil.TestStateReader;
 import java.util.Map;
 import org.junit.Rule;
@@ -146,15 +145,16 @@ public final class REv2GenesisTest {
                 SafetyRecoveryConfig.MOCKED,
                 ConsensusConfig.of(1000),
                 LedgerConfig.stateComputerNoSync(
-                    StateComputerConfig.rev2(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        GenesisBuilder.createTestGenesisWithNumValidatorsAndXrdBalances(
-                            1,
-                            INITIAL_STAKE,
-                            Map.of(XRD_ALLOC_ACCOUNT_PUB_KEY, XRD_ALLOC_AMOUNT),
-                            GenesisConsensusManagerConfig.Builder.testDefaults(),
-                            GenesisData.ALL_SCENARIOS),
-                        StateComputerConfig.REV2ProposerConfig.Mempool.zero()))));
+                    StateComputerConfig.rev2()
+                        .withGenesis(
+                            GenesisBuilder.createTestGenesisWithNumValidatorsAndXrdBalances(
+                                1,
+                                INITIAL_STAKE,
+                                Map.of(XRD_ALLOC_ACCOUNT_PUB_KEY, XRD_ALLOC_AMOUNT),
+                                GenesisConsensusManagerConfig.Builder.testDefaults(),
+                                GenesisData.ALL_SCENARIOS))
+                        .withProposerConfig(
+                            StateComputerConfig.REV2ProposerConfig.Mempool.zero()))));
   }
 
   @Test
