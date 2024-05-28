@@ -62,19 +62,16 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system.health;
+package com.radixdlt.monitoring;
 
-import com.radixdlt.api.system.generated.models.PendingProtocolUpdate;
-import com.radixdlt.monitoring.InMemorySystemInfoState;
-import com.radixdlt.prometheus.RecentSelfProposalMissStatistic;
-import java.util.Map;
+import com.radixdlt.consensus.epoch.EpochRound;
+import com.radixdlt.statecomputer.ProtocolState;
+import com.radixdlt.statecomputer.commit.ActiveValidatorInfo;
+import java.util.Set;
 
-public interface HealthInfoService {
-  NodeStatus nodeStatus();
-
-  RecentSelfProposalMissStatistic recentSelfProposalMissStatistic();
-
-  Map<String, PendingProtocolUpdate.ReadinessSignalStatusEnum> readinessSignalStatuses();
-
-  InMemorySystemInfoState systemInfoState();
-}
+public record InMemorySystemInfoState(
+    ProtocolState protocolState,
+    EpochRound currentEpochRound,
+    Set<ActiveValidatorInfo> currentEpochValidators,
+    long consensusManagerConfigEpochTargetDurationMs,
+    long consensusManagerStateEpochEffectiveStartMs) {}
