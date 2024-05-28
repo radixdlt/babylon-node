@@ -68,5 +68,5 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.event.LocalEvent;
 import com.radixdlt.consensus.event.RemoteEvent;
 
-/** Parameters for a local get vertices request. Also, could be scheduled locally. */
+/** Parameters for a local get vertices request. Also, could be scheduled locally in tests. */
 public record GetVerticesRequest(HashCode vertexId, int count) implements RemoteEvent, LocalEvent {}
