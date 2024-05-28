@@ -433,9 +433,9 @@ public final class BFTSync implements BFTSyncer {
       } else {
         // Report issue. Once per second as info-level message, rest as debug
         if (loggingRateLimiter.tryAcquire() && log.isInfoEnabled()) {
-          log.info(buildMessage(reason, round, authors, request));
+          log.info(outboundRateLimitLogMessage(reason, round, authors, request));
         } else if (log.isDebugEnabled()) {
-          log.debug(buildMessage(reason, round, authors, request));
+          log.debug(outboundRateLimitLogMessage(reason, round, authors, request));
         }
       }
       this.bftSyncing.put(request, syncRequestState);
@@ -443,7 +443,7 @@ public final class BFTSync implements BFTSyncer {
     syncRequestState.syncIds.add(syncId);
   }
 
-  private String buildMessage(
+  private String outboundRateLimitLogMessage(
       String reason, Round round, ImmutableList<NodeId> authors, GetVerticesRequest request) {
     return String.format(
         "RATE_LIMIT: Outbound BFT Sync request %s for round %s due to %s to %s was not sent"
