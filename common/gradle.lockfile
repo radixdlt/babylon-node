@@ -72,6 +72,7 @@ software.amazon.awssdk:protocol-core:2.16.3=compileClasspath,runtimeClasspath,te
 software.amazon.awssdk:regions:2.16.3=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 software.amazon.awssdk:sdk-core:2.16.3=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 software.amazon.awssdk:secretsmanager:2.16.3=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+software.amazon.awssdk:ssm:2.16.3=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 software.amazon.awssdk:utils:2.16.3=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 software.amazon.eventstream:eventstream:1.0.1=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 empty=annotationProcessor,testAnnotationProcessor
