@@ -360,6 +360,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
             this.currentProposerElection.set(epochChange.bftConfiguration().getProposerElection()));
 
     final var protocolState = stateComputer.protocolState();
+
     final var ledgerUpdate =
         new LedgerUpdate(
             commitSummary,
