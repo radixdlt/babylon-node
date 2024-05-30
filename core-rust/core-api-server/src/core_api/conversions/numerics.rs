@@ -20,7 +20,7 @@ const MAX_API_ROUND: u64 = 10000000000;
 const MAX_API_STATE_VERSION: u64 = 100000000000000;
 const MIN_API_TIMESTAMP_MS: i64 = 0;
 const MAX_API_TIMESTAMP_MS: i64 = 100000000000000; // For comparison, current timestamp is 1673822843000 (about 1/100th the size)
-const MAX_API_GENESIS_SCENARIO_NUMBER: i32 = 1000000;
+const MAX_API_EXECUTED_SCENARIO_NUMBER: i32 = 1000000;
 const TEN_TRILLION: u64 = 10000000000;
 
 #[tracing::instrument(skip_all)]
@@ -126,10 +126,10 @@ pub fn to_api_index_as_i64(index: usize) -> Result<i64, MappingError> {
 }
 
 pub fn to_api_scenario_number(number: ScenarioSequenceNumber) -> Result<i32, MappingError> {
-    if number > MAX_API_GENESIS_SCENARIO_NUMBER as u32 {
+    if number > MAX_API_EXECUTED_SCENARIO_NUMBER as u32 {
         return Err(MappingError::IntegerError {
             message: format!(
-                "Genesis scenario sequence number must be <= {MAX_API_GENESIS_SCENARIO_NUMBER}"
+                "Executed scenario sequence number must be <= {MAX_API_EXECUTED_SCENARIO_NUMBER}"
             ),
         });
     }
@@ -137,6 +137,10 @@ pub fn to_api_scenario_number(number: ScenarioSequenceNumber) -> Result<i32, Map
 }
 
 pub fn to_api_i64_as_string(input: i64) -> String {
+    input.to_string()
+}
+
+pub fn to_api_usize_as_string(input: usize) -> String {
     input.to_string()
 }
 

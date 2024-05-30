@@ -62,23 +62,10 @@
  * permissions under this License.
  */
 
-package com.radixdlt.harness.simulation.application;
+package com.radixdlt.consensus.event;
 
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.harness.simulation.SimulationTest;
-import com.radixdlt.harness.simulation.network.SimulationNodes;
-import com.radixdlt.targeted.mempool.MempoolFillerUpdate;
-
-/** Starts a mempool filler */
-public final class MempoolFillerStarter implements SimulationTest.SimulationNetworkActor {
-  @Override
-  public void start(SimulationNodes.RunningNetwork network) {
-    EventDispatcher<MempoolFillerUpdate> dispatcher =
-        network.getDispatcher(
-            MempoolFillerUpdate.class, network.getNodes().stream().findAny().orElseThrow());
-    dispatcher.dispatch(MempoolFillerUpdate.enable(15, true));
-  }
-
-  @Override
-  public void stop() {}
-}
+/**
+ * Root marker interface for all events present in system. It is used to ensure that no "unrelated"
+ * events are present in the code.
+ */
+public interface CoreEvent {}

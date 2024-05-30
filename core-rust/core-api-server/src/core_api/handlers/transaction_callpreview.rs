@@ -72,7 +72,7 @@ pub(crate) async fn handle_transaction_callpreview(
         }
     };
 
-    let result = state.state_manager.transaction_previewer.read().preview(
+    let result = state.state_manager.transaction_previewer.preview(
         PreviewRequest {
             manifest: TransactionManifestV1 {
                 instructions: vec![
@@ -85,7 +85,8 @@ pub(crate) async fn handle_transaction_callpreview(
                 ],
                 blobs: index_map_new(),
             },
-            explicit_epoch_range: None,
+            start_epoch_inclusive: None,
+            end_epoch_exclusive: None,
             notary_public_key: None,
             notary_is_signatory: true,
             tip_percentage: 0,

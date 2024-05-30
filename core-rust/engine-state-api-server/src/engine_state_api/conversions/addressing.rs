@@ -45,6 +45,7 @@ pub fn to_api_entity_type(entity_type: EntityType) -> models::EntityType {
         EntityType::GlobalValidator => models::EntityType::GlobalValidator,
         EntityType::GlobalAccessController => models::EntityType::GlobalAccessController,
         EntityType::GlobalAccount => models::EntityType::GlobalAccount,
+        EntityType::GlobalAccountLocker => models::EntityType::GlobalAccountLocker,
         EntityType::GlobalIdentity => models::EntityType::GlobalIdentity,
         EntityType::GlobalGenericComponent => models::EntityType::GlobalGenericComponent,
         EntityType::GlobalVirtualSecp256k1Account => {
@@ -79,6 +80,7 @@ pub fn extract_entity_type(entity_type: models::EntityType) -> EntityType {
         models::EntityType::GlobalValidator => EntityType::GlobalValidator,
         models::EntityType::GlobalAccessController => EntityType::GlobalAccessController,
         models::EntityType::GlobalAccount => EntityType::GlobalAccount,
+        models::EntityType::GlobalAccountLocker => EntityType::GlobalAccountLocker,
         models::EntityType::GlobalIdentity => EntityType::GlobalIdentity,
         models::EntityType::GlobalGenericComponent => EntityType::GlobalGenericComponent,
         models::EntityType::GlobalVirtualSecp256k1Account => {

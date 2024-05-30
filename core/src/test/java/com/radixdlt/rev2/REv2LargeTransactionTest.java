@@ -85,8 +85,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
-import com.radixdlt.networks.Network;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import java.util.List;
@@ -110,13 +108,14 @@ public final class REv2LargeTransactionTest {
                 SafetyRecoveryConfig.BERKELEY_DB,
                 ConsensusConfig.of(1000),
                 LedgerConfig.stateComputerWithSyncRelay(
-                    StateComputerConfig.rev2(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        GenesisBuilder.createTestGenesisWithNumValidators(
-                            1,
-                            Decimal.ONE,
-                            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10)),
-                        REV2ProposerConfig.Mempool.singleTransaction()),
+                    StateComputerConfig.rev2()
+                        .withGenesis(
+                            GenesisBuilder.createTestGenesisWithNumValidators(
+                                1,
+                                Decimal.ONE,
+                                GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10)))
+                        .withProposerConfig(
+                            StateComputerConfig.REV2ProposerConfig.Mempool.singleTransaction()),
                     SyncRelayConfig.of(200, 10, 1000))));
   }
 
@@ -143,7 +142,7 @@ public final class REv2LargeTransactionTest {
       var mempoolDispatcher =
           test.getInstance(
               fullNodeIndex, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
-      mempoolDispatcher.dispatch(MempoolAdd.create(largeTransaction));
+      mempoolDispatcher.dispatch(new MempoolAdd(List.of(largeTransaction)));
       test.runForCount(10, onlyMempoolSyncEvents());
 
       // Now wait for mempool sync to the validator and commit

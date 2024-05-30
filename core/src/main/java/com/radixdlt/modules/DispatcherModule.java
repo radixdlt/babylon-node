@@ -88,7 +88,7 @@ import com.radixdlt.mempool.*;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeerEvent;
-import com.radixdlt.p2p.PendingOutboundChannelsManager.PeerOutboundConnectionTimeout;
+import com.radixdlt.p2p.PeerOutboundConnectionTimeout;
 import com.radixdlt.p2p.discovery.DiscoverPeers;
 import com.radixdlt.p2p.discovery.GetPeers;
 import com.radixdlt.p2p.discovery.PeersResponse;
@@ -128,14 +128,10 @@ public class DispatcherModule extends AbstractModule {
                 NoVote.class, (counters, event) -> counters.bft().noVotesSent()))
         .in(Scopes.SINGLETON);
     bind(new TypeLiteral<ScheduledEventDispatcher<Epoched<ScheduledLocalTimeout>>>() {})
-        .toProvider(
-            Dispatchers.scheduledDispatcherProvider(
-                new TypeLiteral<Epoched<ScheduledLocalTimeout>>() {}))
+        .toProvider(Dispatchers.scheduledDispatcherProvider(new TypeLiteral<>() {}))
         .in(Scopes.SINGLETON);
     bind(new TypeLiteral<ScheduledEventDispatcher<Epoched<TimeoutQuorumDelayedResolution>>>() {})
-        .toProvider(
-            Dispatchers.scheduledDispatcherProvider(
-                new TypeLiteral<Epoched<TimeoutQuorumDelayedResolution>>() {}))
+        .toProvider(Dispatchers.scheduledDispatcherProvider(new TypeLiteral<>() {}))
         .in(Scopes.SINGLETON);
     bind(new TypeLiteral<ScheduledEventDispatcher<VertexRequestTimeout>>() {})
         .toProvider(Dispatchers.scheduledDispatcherProvider(VertexRequestTimeout.class))
@@ -272,7 +268,7 @@ public class DispatcherModule extends AbstractModule {
               @Self NodeId selfNodeId) {
             return transaction ->
                 mempoolAddSuccessEventDispatcher.dispatch(
-                    MempoolAddSuccess.create(transaction, selfNodeId));
+                    new MempoolAddSuccess(transaction, selfNodeId));
           }
         });
   }
@@ -386,10 +382,10 @@ public class DispatcherModule extends AbstractModule {
       Metrics metrics) {
     var dispatcher = environment.getDispatcher(BFTInsertUpdate.class);
     return update -> {
-      if (update.getSiblingsCount() > 1) {
+      if (update.siblingsCount() > 1) {
         metrics.bft().vertexStore().forks().inc();
       }
-      if (!update.getInserted().getVertexWithHash().vertex().hasDirectParent()) {
+      if (!update.insertedVertex().getVertexWithHash().vertex().hasDirectParent()) {
         metrics.bft().vertexStore().indirectParents().inc();
       }
       metrics.bft().vertexStore().size().set(update.getVertexStoreSize());
@@ -403,7 +399,7 @@ public class DispatcherModule extends AbstractModule {
       Environment environment, Metrics metrics) {
     var dispatcher = environment.getDispatcher(BFTRebuildUpdate.class);
     return update -> {
-      metrics.bft().vertexStore().size().set(update.getVertexStoreState().getVertices().size());
+      metrics.bft().vertexStore().size().set(update.vertexStoreState().getVertices().size());
       metrics.bft().vertexStore().rebuilds().inc();
       dispatcher.dispatch(update);
     };

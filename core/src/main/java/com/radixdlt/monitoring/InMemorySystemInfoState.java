@@ -62,41 +62,16 @@
  * permissions under this License.
  */
 
-package com.radixdlt.environment.rx;
+package com.radixdlt.monitoring;
 
-import java.util.Objects;
+import com.radixdlt.consensus.epoch.EpochRound;
+import com.radixdlt.statecomputer.ProtocolState;
+import com.radixdlt.statecomputer.commit.ActiveValidatorInfo;
+import java.util.Set;
 
-/**
- * A helper class which contains remote event and the origin node.
- *
- * @param <T> the event class
- */
-public final class RemoteEvent<N, T> {
-  private final T event;
-  private final N origin;
-
-  private RemoteEvent(N origin, T event) {
-    this.origin = origin;
-    this.event = event;
-  }
-
-  public static <N, T> RemoteEvent<N, T> create(N origin, T event) {
-    Objects.requireNonNull(origin);
-    Objects.requireNonNull(event);
-
-    return new RemoteEvent<>(origin, event);
-  }
-
-  public N getOrigin() {
-    return origin;
-  }
-
-  public T getEvent() {
-    return event;
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s[%s->%s]", getClass().getSimpleName(), this.origin, this.event);
-  }
-}
+public record InMemorySystemInfoState(
+    ProtocolState protocolState,
+    EpochRound currentEpochRound,
+    Set<ActiveValidatorInfo> currentEpochValidators,
+    long consensusManagerConfigEpochTargetDurationMs,
+    long consensusManagerStateEpochEffectiveStartMs) {}

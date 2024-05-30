@@ -62,33 +62,13 @@
  * permissions under this License.
  */
 
-package com.radixdlt.harness.deterministic;
+package com.radixdlt.environment.rx;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import com.radixdlt.consensus.event.RemoteEvent;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
-import com.radixdlt.harness.invariants.SafetyChecker;
-import com.radixdlt.harness.simulation.TestInvariant;
-import java.util.Optional;
-
-/** Module which checks for consensus safety and throws exception on failure. */
-public class SafetyCheckerModule extends AbstractModule {
-  @Override
-  public void configure() {
-    bind(SafetyChecker.class).in(Scopes.SINGLETON);
-  }
-
-  @ProvidesIntoSet
-  public NodeEvents.NodeEventProcessor<?> safetyCheckProcessor(SafetyChecker safetyChecker) {
-    return new NodeEvents.NodeEventProcessor<>(
-        BFTCommittedUpdate.class,
-        (node, update) -> {
-          Optional<TestInvariant.TestInvariantError> maybeError =
-              safetyChecker.process(node, update);
-          assertThat(maybeError).isEmpty();
-        });
-  }
-}
+/**
+ * A helper class which contains remote event and the origin node.
+ *
+ * @param <T> the event class
+ */
+public record IncomingEvent<N, T extends RemoteEvent>(N origin, T event) implements RemoteEvent {}

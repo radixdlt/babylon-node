@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   # Should be the release version, and the release display name
-  version: 'v1.1.3'
+  version: 'v1.2.1'
   title: 'Radix System API - Babylon (Anemone)'
   license:
     name: The Radix License, Version 1.0
@@ -594,6 +594,12 @@ components:
             - READINESS_SIGNALLED
             - READINESS_NOT_SIGNALLED
             - NO_SIGNAL_REQUIRED
+        projected_enactment_at_start_of_epoch:
+          type: integer
+          format: int64
+        projected_enactment_timestamp:
+          type: integer
+          format: int64
     PendingProtocolUpdateStateType:
       type: string
       enum:
@@ -637,6 +643,12 @@ components:
         - consecutive_started_epochs_of_support
       properties:
         consecutive_started_epochs_of_support:
+          type: integer
+          format: int64
+        projected_fulfillment_at_start_of_epoch:
+          type: integer
+          format: int64
+        projected_fulfillment_timestamp:
           type: integer
           format: int64
     EmptyPendingProtocolUpdateState:

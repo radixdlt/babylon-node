@@ -62,13 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.targeted.mempool;
+package com.radixdlt.consensus.event;
 
-/** Scheduled event for filling the mempool */
-public enum ScheduledMempoolFill {
-  INSTANCE;
-
-  public static ScheduledMempoolFill create() {
-    return INSTANCE;
-  }
-}
+/** Marker interface for events which are generated and consumed/processed locally. */
+public interface LocalEvent extends CoreEvent {}

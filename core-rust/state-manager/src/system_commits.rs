@@ -62,49 +62,97 @@
  * permissions under this License.
  */
 
-package com.radixdlt.harness.deterministic;
+use crate::engine_prelude::*;
+use crate::transaction::*;
+use crate::*;
 
-import com.google.inject.Inject;
-import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.environment.EventProcessorOnDispatch;
-import com.radixdlt.p2p.NodeId;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.function.BiConsumer;
+pub struct SystemCommitRequestFactory {
+    pub epoch: Epoch,
+    pub timestamp: i64,
+    pub state_version: StateVersion,
+    pub proof_origin: LedgerProofOrigin,
+}
 
-/** Manages events from a network of nodes. Used for processing events for tests. */
-public final class NodeEvents {
-  public static class NodeEventProcessor<T> {
-    private final Class<T> eventClass;
-    private final BiConsumer<NodeId, T> processor;
-
-    public NodeEventProcessor(Class<T> eventClass, BiConsumer<NodeId, T> processor) {
-      this.eventClass = eventClass;
-      this.processor = processor;
+impl SystemCommitRequestFactory {
+    /// Creates a default system commit request.
+    /// By default, all system transactions are required to be successful (which is later checked by
+    /// the commit logic). However, this may be customized, e.g. for the Scenarios' case (see
+    /// [`SystemCommitRequest::require_committed_successes()`]).
+    pub fn create(&mut self, prepare_result: SystemPrepareResult) -> SystemCommitRequest {
+        let SystemPrepareResult {
+            committed_transactions,
+            ledger_hashes,
+            next_epoch,
+        } = prepare_result;
+        if committed_transactions.is_empty() {
+            panic!("cannot commit an empty batch of system transactions");
+        }
+        self.state_version = self
+            .state_version
+            .relative(committed_transactions.len() as i128)
+            .expect("Invalid next state version!");
+        SystemCommitRequest {
+            transactions: committed_transactions,
+            proof: self.create_proof(ledger_hashes, next_epoch),
+            require_committed_successes: true,
+        }
     }
 
-    public Class<T> getEventClass() {
-      return eventClass;
+    fn create_proof(&self, hashes: LedgerHashes, next_epoch: Option<NextEpoch>) -> LedgerProof {
+        LedgerProof {
+            ledger_header: LedgerHeader {
+                epoch: self.epoch,
+                round: Round::zero(),
+                state_version: self.state_version,
+                hashes,
+                consensus_parent_round_timestamp_ms: self.timestamp,
+                proposer_timestamp_ms: self.timestamp,
+                next_epoch,
+                next_protocol_version: None,
+            },
+            origin: self.proof_origin.clone(),
+        }
     }
+}
 
-    private void process(NodeId node, Object event) {
-      this.processor.accept(node, eventClass.cast(event));
+/// An input to [`SystemCommitRequestFactory::create()`].
+pub struct SystemPrepareResult {
+    pub committed_transactions: Vec<RawAndValidatedTransaction>,
+    pub ledger_hashes: LedgerHashes,
+    pub next_epoch: Option<NextEpoch>,
+}
+
+impl SystemPrepareResult {
+    /// Creates an instance for committing the given pre-validated transactions, using the current
+    /// end-state of the given series executor.
+    pub fn from_committed_series(
+        committed_transactions: Vec<RawAndValidatedTransaction>,
+        series_executor: TransactionSeriesExecutor<impl Sized>,
+    ) -> Self {
+        Self {
+            committed_transactions,
+            ledger_hashes: *series_executor.latest_ledger_hashes(),
+            next_epoch: series_executor.epoch_change().map(|event| event.into()),
+        }
     }
-  }
+}
 
-  private final Map<Class<?>, Set<NodeEventProcessor<?>>> processors;
+/// An output from [`SystemCommitRequestFactory::create()`].
+pub struct SystemCommitRequest {
+    pub transactions: Vec<RawAndValidatedTransaction>,
+    pub proof: LedgerProof,
+    pub require_committed_successes: bool,
+}
 
-  @Inject
-  public NodeEvents(Map<Class<?>, Set<NodeEventProcessor<?>>> processors) {
-    this.processors = Objects.requireNonNull(processors);
-  }
+impl SystemCommitRequest {
+    /// Overrides the default requirement that all system transactions are successful.
+    pub fn require_committed_successes(mut self, required: bool) -> Self {
+        self.require_committed_successes = required;
+        self
+    }
+}
 
-  public <T> EventProcessor<T> processor(NodeId node, Class<T> eventClass) {
-    return t -> processors.get(eventClass).forEach(c -> c.process(node, t));
-  }
-
-  public <T> EventProcessorOnDispatch<T> processorOnDispatch(NodeId node, Class<T> eventClass) {
-    return new EventProcessorOnDispatch<>(eventClass, processor(node, eventClass));
-  }
+pub struct RawAndValidatedTransaction {
+    pub raw: RawLedgerTransaction,
+    pub validated: ValidatedLedgerTransaction,
 }

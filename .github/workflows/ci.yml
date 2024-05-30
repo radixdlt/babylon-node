@@ -94,7 +94,8 @@ jobs:
           fetch-depth: 0
       - uses: RDXWorks-actions/rust-toolchain@master
         with:
-          toolchain: stable
+          toolchain: 1.77.2
+          default: true
       - name: Set up JDK 17
         uses: RDXWorks-actions/setup-java@main
         with:
@@ -154,7 +155,8 @@ jobs:
           fetch-depth: 0
       - uses: RDXWorks-actions/rust-toolchain@master
         with:
-          toolchain: stable
+          toolchain: 1.77.2
+          default: true
       - name: Set up JDK 17
         uses: RDXWorks-actions/setup-java@main
         with:
@@ -178,7 +180,8 @@ jobs:
           fetch-depth: 0
       - uses: RDXWorks-actions/rust-toolchain@master
         with:
-          toolchain: stable
+          toolchain: 1.77.2
+          default: true
       - name: Set up JDK 17
         uses: RDXWorks-actions/setup-java@main
         with:
@@ -206,7 +209,8 @@ jobs:
           fetch-depth: 0
       - uses: RDXWorks-actions/rust-toolchain@master
         with:
-          toolchain: stable
+          toolchain: 1.77.2
+          default: true
       - name: Set up JDK 17
         uses: RDXWorks-actions/setup-java@main
         with:
@@ -233,10 +237,11 @@ jobs:
           fetch-depth: 1
       - uses: RDXWorks-actions/rust-toolchain@master
         with:
-          toolchain: stable
+          toolchain: 1.77.2
+          default: true
           targets: x86_64-pc-windows-msvc
-      - name: Update clang version to 16
-        run: sudo apt remove clang-14 && sudo apt autoclean && sudo apt autoremove && wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 16 && sudo ls /usr/bin/ | grep clang && sudo ln -sf /usr/bin/clang-16 /usr/bin/clang && sudo ln -sf /usr/bin/clang++-16 /usr/bin/clang++ && sudo apt-get install -y libclang-dev llvm llvm-dev
+      - name: Update clang version to 17
+        run: sudo apt remove clang-14 && sudo apt autoclean && sudo apt autoremove && wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 17 && sudo ls /usr/bin/ | grep clang && sudo ln -sf /usr/bin/clang-17 /usr/bin/clang && sudo ln -sf /usr/bin/clang++-17 /usr/bin/clang++ && sudo apt-get install -y libclang-dev llvm llvm-dev
       - name: Install cargo-xwin
         run: cargo install cargo-xwin
       - name: cross compile to windows

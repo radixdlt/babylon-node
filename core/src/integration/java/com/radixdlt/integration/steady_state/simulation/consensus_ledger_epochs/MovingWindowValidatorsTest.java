@@ -114,9 +114,8 @@ public class MovingWindowValidatorsTest {
                     ConsensusConfig.of(5000),
                     LedgerConfig.stateComputerMockedSync(
                         StateComputerConfig.mockedWithEpochs(
-                            Round.of(100),
-                            EpochNodeWeightMapping.constant(windowedEpochToNodesMapper(1, 4)),
-                            new StateComputerConfig.MockedMempoolConfig.NoMempool()))))
+                            100,
+                            EpochNodeWeightMapping.constant(windowedEpochToNodesMapper(1, 4))))))
             .addTestModules(
                 ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
                 ConsensusMonitors.epochMaxRound(Round.of(100)))
@@ -139,9 +138,8 @@ public class MovingWindowValidatorsTest {
                     ConsensusConfig.of(1000),
                     LedgerConfig.stateComputerMockedSync(
                         StateComputerConfig.mockedWithEpochs(
-                            Round.of(100),
-                            EpochNodeWeightMapping.constant(windowedEpochToNodesMapper(3, 4)),
-                            new StateComputerConfig.MockedMempoolConfig.NoMempool()))))
+                            100,
+                            EpochNodeWeightMapping.constant(windowedEpochToNodesMapper(3, 4))))))
             .addTestModules(
                 ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
                 ConsensusMonitors.epochMaxRound(Round.of(100)))
@@ -164,9 +162,8 @@ public class MovingWindowValidatorsTest {
                     ConsensusConfig.of(5000),
                     LedgerConfig.stateComputerMockedSync(
                         StateComputerConfig.mockedWithEpochs(
-                            Round.of(100),
-                            EpochNodeWeightMapping.constant(windowedEpochToNodesMapper(25, 50)),
-                            new StateComputerConfig.MockedMempoolConfig.NoMempool()))))
+                            100,
+                            EpochNodeWeightMapping.constant(windowedEpochToNodesMapper(25, 50))))))
             .addTestModules(
                 ConsensusMonitors.liveness(
                     5, TimeUnit.SECONDS), // High timeout to make Travis happy
@@ -191,9 +188,8 @@ public class MovingWindowValidatorsTest {
                     ConsensusConfig.of(5000),
                     LedgerConfig.stateComputerMockedSync(
                         StateComputerConfig.mockedWithEpochs(
-                            Round.of(1),
-                            EpochNodeWeightMapping.constant(windowedEpochToNodesMapper(25, 50)),
-                            new StateComputerConfig.MockedMempoolConfig.NoMempool()))))
+                            1,
+                            EpochNodeWeightMapping.constant(windowedEpochToNodesMapper(25, 50))))))
             .addTestModules(
                 ConsensusMonitors.epochMaxRound(Round.of(1)),
                 ConsensusMonitors.liveness(5, TimeUnit.SECONDS) // High timeout to make Travis happy

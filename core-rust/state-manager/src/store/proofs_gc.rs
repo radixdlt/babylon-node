@@ -75,12 +75,13 @@ use crate::store::traits::gc::{
 use crate::store::traits::proofs::QueryableProofStore;
 
 use crate::jni::LedgerSyncLimitsConfig;
+use crate::rocks_db::{ActualStateManagerDatabase, StateManagerDatabase};
 use crate::store::rocks_db::ReadableRocks;
 use crate::traits::GetSyncableTxnsAndProofError::{
     FailedToPrepareAResponseWithinLimits, NothingToServeAtTheGivenStateVersion,
     RefusedToServeGenesis, RefusedToServeProtocolUpdate,
 };
-use crate::{ActualStateManagerDatabase, LedgerProof, StateManagerDatabase, StateVersion};
+use crate::{LedgerProof, StateVersion};
 
 /// A configuration for [`LedgerProofsGc`].
 #[derive(Debug, Categorize, Encode, Decode, Clone, Default)]
@@ -312,19 +313,15 @@ mod tests {
     use crate::proofs_gc::{LedgerProofsGc, LedgerProofsGcConfig};
     use crate::protocol::*;
     use crate::store::traits::proofs::QueryableProofStore;
-    use crate::test::commit_round_updates_until_epoch;
+    use crate::test::{commit_round_updates_until_epoch, create_state_manager};
     use crate::traits::GetSyncableTxnsAndProofError;
-    use crate::{StateManager, StateManagerConfig, StateVersion};
-    use node_common::locks::LockFactory;
-    use node_common::scheduler::Scheduler;
-    use prometheus::Registry;
+    use crate::{StateManagerConfig, StateVersion};
+
     use std::time::Duration;
 
     #[test]
     fn test_retain_protocol_update_proofs() {
         let tmp = tempfile::tempdir().unwrap();
-        let lock_factory = LockFactory::new("testing");
-        let metrics_registry = Registry::new();
         let mut config = StateManagerConfig::new_for_testing(tmp.path().to_str().unwrap());
         // Disable scheduled proof GC
         config.ledger_proofs_gc_config = LedgerProofsGcConfig {
@@ -338,13 +335,7 @@ mod tests {
                     5,
                 ))
         });
-        let state_manager = StateManager::new(
-            config,
-            None,
-            &lock_factory,
-            &metrics_registry,
-            &Scheduler::new("testing"),
-        );
+        let state_manager = create_state_manager(config);
 
         let db = state_manager.database.clone();
 
@@ -365,7 +356,7 @@ mod tests {
         };
 
         state_manager
-            .state_computer
+            .system_executor
             .execute_genesis_for_unit_tests_with_config(consensus_manager_config);
 
         let sync_limits_config = LedgerSyncLimitsConfig {

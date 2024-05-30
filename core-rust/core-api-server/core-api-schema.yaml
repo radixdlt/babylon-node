@@ -53,8 +53,8 @@ openapi: 3.1.0
 # => Hex-encoded bytes/payload should end _hex and not include _bytes
 info:
   # Should be the release version, and the release display name
-  version: 'v1.1.3'
-  title: 'Radix Core API - Babylon (Anemone)'
+  version: 'v1.2.1'
+  title: 'Radix Core API - Babylon (Bottlenose)'
   license:
     name: The Radix License, Version 1.0
     url: https://www.radixfoundation.org/licenses/license-v1
@@ -493,7 +493,10 @@ paths:
   "/status/scenarios":
     post:
       summary: Get Scenarios' results.
-      description: Get results of test-oriented "Genesis Scenarios" executed on this Network.
+      description: |
+        Get results of test "Scenarios" executed on this Network.
+        Note: these Scenarios are meant to only be executed on test Networks; on a production Node,
+        the response is expected to be empty.
       tags:
         - Status
       requestBody:
@@ -1860,7 +1863,7 @@ components:
           format: int64
           minimum: 0
           maximum: 4294967295
-          description: An integer between `0` and `2^32 - 1`, representing the number of execution cost units loaned from system.
+          description: An integer between `0` and `2^32 - 1`, representing the maximum number of cost units which can be used before fee is locked from a vault.
         finalization_cost_unit_price:
           type: string
           description: |
@@ -1875,7 +1878,8 @@ components:
         xrd_usd_price:
           type: string
           description: |
-            The string-encoded decimal representing the price of 1 USD, expressed in XRD.
+            The string-encoded decimal representing what amount of XRD is consumed by a Royalty of 1 USD.
+            This is fixed for a given protocol version, so is not an accurate representation of the XRD price.
             A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
         xrd_storage_price:
           type: string
@@ -2615,7 +2619,7 @@ components:
           required:
             - public_key
             - signature
-          description: The EdDSA public key and signature 
+          description: The EdDSA public key and signature
           properties:
             public_key:
               $ref: '#/components/schemas/EddsaEd25519PublicKey'
@@ -3282,8 +3286,11 @@ components:
     SystemFieldKind:
       type: string
       enum:
-        - BootLoader
+        # Note: the weird ordering here maintains backwards compatibility (of enum ordinals):
+        - VmBoot
         - TypeInfo
+        - SystemBoot
+        - KernelBoot
     ObjectSubstateTypeReferenceType:
       type: string
       enum:
@@ -3751,6 +3758,7 @@ components:
         - GlobalTwoResourcePool
         - GlobalMultiResourcePool
         - GlobalTransactionTracker
+        - GlobalAccountLocker
     EntityAddress:
       type: string
       description: Bech32m-encoded human readable version of the entity's address (ie the entity's node id)
@@ -3782,7 +3790,7 @@ components:
         mapping:
           # NOTE:
           # There is an important convention to these names, for consistency:
-          # 
+          #
           # For each distinct typed substate, form [SubstateType] = [ModuleSpecifier][SubstateSpecifier][SubstateTypeVersion]
           # - [ModuleSpecifier] is either [ModuleName]Module for non-main modules, or [EntityType] for main modules
           # - [SubstateSpecifier] is either:
@@ -3801,7 +3809,9 @@ components:
           #   - value - which references the type [SubstateValue]
           #   - key (if it's in a collection partition) - which references a substate key type [X]Key for some X.
           #   - is_locked - this is added to all substates via inclusion on the `Substate` object
+          BootLoaderModuleFieldSystemBoot: '#/components/schemas/BootLoaderModuleFieldSystemBootSubstate'
           BootLoaderModuleFieldVmBoot: '#/components/schemas/BootLoaderModuleFieldVmBootSubstate'
+          BootLoaderModuleFieldKernelBoot: '#/components/schemas/BootLoaderModuleFieldKernelBootSubstate'
           TypeInfoModuleFieldTypeInfo: '#/components/schemas/TypeInfoModuleFieldTypeInfoSubstate'
           RoleAssignmentModuleFieldOwnerRole: '#/components/schemas/RoleAssignmentModuleFieldOwnerRoleSubstate'
           RoleAssignmentModuleRuleEntry: '#/components/schemas/RoleAssignmentModuleRuleEntrySubstate'
@@ -3842,6 +3852,7 @@ components:
           AccountVaultEntry: '#/components/schemas/AccountVaultEntrySubstate'
           AccountResourcePreferenceEntry: '#/components/schemas/AccountResourcePreferenceEntrySubstate'
           AccountAuthorizedDepositorEntry: '#/components/schemas/AccountAuthorizedDepositorEntrySubstate'
+          AccountLockerAccountClaimsEntry: '#/components/schemas/AccountLockerAccountClaimsEntrySubstate'
           AccessControllerFieldState: '#/components/schemas/AccessControllerFieldStateSubstate'
           GenericScryptoComponentFieldState: '#/components/schemas/GenericScryptoComponentFieldStateSubstate'
           GenericKeyValueStoreEntry: '#/components/schemas/GenericKeyValueStoreEntrySubstate'
@@ -3904,6 +3915,9 @@ components:
         - MultiResourcePoolFieldState
         - TransactionTrackerFieldState
         - TransactionTrackerCollectionEntry
+        - AccountLockerAccountClaimsEntry
+        - BootLoaderModuleFieldSystemBoot
+        - BootLoaderModuleFieldKernelBoot
 ################################################
 # GENERAL / SHARED MODELS - substate key types #
 ################################################
@@ -4040,6 +4054,14 @@ components:
           $ref: "#/components/schemas/IntentHash"
         intent_hash_bech32m:
           $ref: "#/components/schemas/IntentHashBech32m"
+    AccountAddressKey:
+      type: object
+      required:
+        - account_address
+      properties:
+        account_address:
+          type: string
+          description: The Bech32m-encoded human readable version of the account's global address.
     GenericKey:
       type: object
       properties:
@@ -4049,6 +4071,196 @@ components:
 ################################################
 # GENERAL / SHARED MODELS - specific substates #
 ################################################
+    BootLoaderModuleFieldSystemBootSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - value
+          properties:
+            value:
+              $ref: '#/components/schemas/BootLoaderModuleFieldSystemBootValue'
+    BootLoaderModuleFieldSystemBootValue:
+      type: object
+      required:
+        - system_parameters
+      properties:
+        system_parameters:
+          $ref: '#/components/schemas/SystemParameters'
+    SystemParameters:
+      type: object
+      required:
+        - network_definition
+        - costing_module_config
+        - costing_parameters
+        - limit_parameters
+      properties:
+        network_definition:
+          $ref: "#/components/schemas/NetworkDefinition"
+        costing_module_config:
+          $ref: "#/components/schemas/CostingModuleConfig"
+        costing_parameters:
+          $ref: "#/components/schemas/SystemCostingParameters"
+        limit_parameters:
+          $ref: "#/components/schemas/LimitParameters"
+    CostingModuleConfig:
+      type: object
+      required:
+        - xrd_max_per_function_royalty
+        - apply_execution_cost_for_all_system_calls
+        - apply_boot_ref_check_costing
+      properties:
+        xrd_max_per_function_royalty:
+          type: string
+          description: |
+            The string-encoded decimal representing the maximum amount of XRD configurable for a single function's royalty.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
+        apply_execution_cost_for_all_system_calls:
+          type: boolean
+          description: Whether to apply execution costing for all system calls.
+        apply_boot_ref_check_costing:
+          type: boolean
+          description: Whether to apply costing for reference checks on boot.
+    NetworkDefinition:
+      type: object
+      required:
+        - id
+        - logical_name
+        - hrp_suffix
+      properties:
+        id:
+          $ref: "#/components/schemas/NetworkIdentifierByte"
+        logical_name:
+          $ref: "#/components/schemas/NetworkIdentifier"
+        hrp_suffix:
+          type: string
+          description: The network suffix of Bech32m HRPs used for addressing.
+    SystemCostingParameters:
+      type: object
+      required:
+        - execution_cost_unit_price
+        - execution_cost_unit_limit
+        - execution_cost_unit_loan
+        - finalization_cost_unit_price
+        - finalization_cost_unit_limit
+        - xrd_usd_price
+        - xrd_storage_price
+        - xrd_archive_storage_price
+      properties:
+        execution_cost_unit_price:
+          type: string
+          description: |
+            The string-encoded decimal representing the XRD price of a single cost unit of transaction execution.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
+        execution_cost_unit_limit:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4294967295
+          description: An integer between `0` and `2^32 - 1`, representing the maximum amount of cost units available for the transaction execution.
+        execution_cost_unit_loan:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4294967295
+          description: An integer between `0` and `2^32 - 1`, representing the maximum number of cost units which can be used before fee is locked from a vault.
+        finalization_cost_unit_price:
+          type: string
+          description: |
+            The string-encoded decimal representing the XRD price of a single cost unit of transaction finalization.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
+        finalization_cost_unit_limit:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4294967295
+          description: An integer between `0` and `2^32 - 1`, representing the maximum amount of cost units available for the transaction finalization.
+        xrd_usd_price:
+          type: string
+          description: |
+            The string-encoded decimal representing what amount of XRD is consumed by a Royalty of 1 USD.
+            This is fixed for a given protocol version, so is not an accurate representation of the XRD price.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
+        xrd_storage_price:
+          type: string
+          description: |
+            The string-encoded decimal representing the price of 1 byte of state storage, expressed in XRD.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
+        xrd_archive_storage_price:
+          type: string
+          description: |
+            The string-encoded decimal representing the price of 1 byte of archive storage, expressed in XRD.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
+    LimitParameters:
+      type: object
+      required:
+        - max_call_depth
+        - max_heap_substate_total_bytes
+        - max_track_substate_total_bytes
+        - max_substate_key_size
+        - max_substate_value_size
+        - max_invoke_input_size
+        - max_event_size
+        - max_log_size
+        - max_panic_message_size
+        - max_number_of_logs
+        - max_number_of_events
+      properties:
+        max_call_depth:
+          type: string
+          description: |
+            A decimal string-encoded 64-bit unsigned integer, representing the configured maximum
+            call depth allowed during transaction execution.
+        max_heap_substate_total_bytes:
+          type: string
+          description: |
+            A decimal string-encoded 64-bit unsigned integer, representing the configured maximum
+            byte size of all substates kept on the heap during a single transaction's execution.
+        max_track_substate_total_bytes:
+          type: string
+          description: |
+            A decimal string-encoded 64-bit unsigned integer, representing the configured maximum
+            byte size of all substates kept in the track during a single transaction's execution.
+        max_substate_key_size:
+          type: string
+          description: |
+            A decimal string-encoded 64-bit unsigned integer, representing the configured maximum
+            byte size of a Substate's key in the low-level Substate database.
+        max_substate_value_size:
+          type: string
+          description: |
+            A decimal string-encoded 64-bit unsigned integer, representing the configured maximum
+            byte size of a Substate's value in the low-level Substate database.
+        max_invoke_input_size:
+          type: string
+          description: |
+            A decimal string-encoded 64-bit unsigned integer, representing the configured maximum
+            byte size of a single call's input parameters.
+        max_event_size:
+          type: string
+          description: |
+            A decimal string-encoded 64-bit unsigned integer, representing the configured maximum
+            byte size of a single emitted event.
+        max_log_size:
+          type: string
+          description: |
+            A decimal string-encoded 64-bit unsigned integer, representing the configured maximum
+            byte size of a single logged line.
+        max_panic_message_size:
+          type: string
+          description: |
+            A decimal string-encoded 64-bit unsigned integer, representing the configured maximum
+            byte size of a single panic message.
+        max_number_of_logs:
+          type: string
+          description: |
+            A decimal string-encoded 64-bit unsigned integer, representing the configured maximum
+            count of log lines emitted during a single transaction's execution.
+        max_number_of_events:
+          type: string
+          description: |
+            A decimal string-encoded 64-bit unsigned integer, representing the configured maximum
+            count of events emitted during a single transaction's execution.
     BootLoaderModuleFieldVmBootSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -4068,6 +4280,17 @@ components:
           format: int64
           minimum: 0
           maximum: 10000000000
+    BootLoaderModuleFieldKernelBootSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - value
+          properties:
+            value:
+              $ref: '#/components/schemas/BootLoaderModuleFieldKernelBootValue'
+    BootLoaderModuleFieldKernelBootValue:
+      type: object
     TypeInfoModuleFieldTypeInfoSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -4216,7 +4439,7 @@ components:
           description: |
             The generic substitution is provided remotely by a blueprint type.
             The `resolved_full_type_id` is added by the node, and is always present in the model returned from the transaction stream API.
-            Other APIs may not resolve the type from the blueprint definition. 
+            Other APIs may not resolve the type from the blueprint definition.
           required:
             - blueprint_type_identifier
           properties:
@@ -5284,6 +5507,27 @@ components:
             so a present entry is not confused by clients for a deleted/missing entry (which would imply
             not authorized).
           type: boolean
+    AccountLockerAccountClaimsEntrySubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - key
+            - value
+          properties:
+            key:
+              $ref: '#/components/schemas/AccountAddressKey'
+              description: An account which can claim the contents of associated vaults.
+            value:
+              $ref: '#/components/schemas/AccountLockerAccountClaimsEntryValue'
+    AccountLockerAccountClaimsEntryValue:
+      type: object
+      required:
+        - resource_vaults
+      properties:
+        resource_vaults:
+          $ref: '#/components/schemas/EntityReference'
+          description: An owned Key-Value Store entity, which maps each `ResourceAddress` to its corresponding `Vault`.
     AccessControllerFieldStateSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -5304,6 +5548,11 @@ components:
       properties:
         controlled_vault:
           $ref: "#/components/schemas/EntityReference"
+        xrd_fee_vault:
+          $ref: "#/components/schemas/EntityReference"
+          description: |
+            An optional helper vault storing some amount of XRD that can be used by any of the roles
+            for locking fees.
         timed_recovery_delay_minutes:
           type: integer
           format: int64
@@ -5580,7 +5829,7 @@ components:
       type: string
       description: |
         The status of the transaction intent, as determined by the node.
-        FateUncertain or FateUncertainButLikelyRejection mean that it's still possible that a payload containing the transaction 
+        FateUncertain or FateUncertainButLikelyRejection mean that it's still possible that a payload containing the transaction
       enum:
         - CommittedSuccess
         - CommittedFailure
@@ -6319,6 +6568,8 @@ components:
               type: string
             pool_package:
               type: string
+            locker_package:
+              type: string
             consensus_manager:
               type: string
             genesis_helper:
@@ -6447,9 +6698,10 @@ components:
         executed_scenarios:
           type: array
           items:
-            $ref: "#/components/schemas/ExecutedGenesisScenario"
-          description: Scenarios executed as part of Genesis (in their execution order).
-    ExecutedGenesisScenario:
+            $ref: "#/components/schemas/ExecutedScenario"
+          description: |
+            Scenarios executed as part of Genesis and Protocol Updates, in their execution order.
+    ExecutedScenario:
       type: object
       required:
         - sequence_number
@@ -6462,11 +6714,7 @@ components:
           format: int32
           minimum: 0
           maximum: 1000000
-          description: |
-            An index of the Scenario on the list of all Scenarios that were executed.
-            Note: the stored sequence numbers do not necessarily have to be consecutive (e.g. in a
-            case where some configured Scenario failed to execute or failed to write results to the
-            database).
+          description: An index of the Scenario (reflecting its execution order).
         logical_name:
           type: string
         committed_transactions:
@@ -7013,7 +7261,7 @@ components:
       type: string
       description: |
         The status of the transaction intent, as determined by the node.
-        FateUncertain or FateUncertainButLikelyRejection mean that it's still possible that a payload containing the transaction 
+        FateUncertain or FateUncertainButLikelyRejection mean that it's still possible that a payload containing the transaction
       enum:
         - CommittedSuccess
         - CommittedFailure
@@ -7134,8 +7382,6 @@ components:
       required:
         - network
         - manifest
-        - start_epoch_inclusive
-        - end_epoch_exclusive
         - cost_unit_limit
         - tip_percentage
         - nonce
@@ -7147,10 +7393,10 @@ components:
         at_ledger_state:
           $ref: "#/components/schemas/LedgerStateSelector"
         manifest:
-          description: A text-representation of a transaction manifest
+          description: A text representation of a transaction manifest.
           type: string
         blobs_hex:
-          description: An array of hex-encoded blob data (optional)
+          description: An array of hex-encoded blob data, if referenced by the manifest.
           type: array
           items:
             type: string
@@ -7159,32 +7405,41 @@ components:
           format: int64
           minimum: 0
           maximum: 10000000000
-          description: An integer between `0` and `10^10`, marking the epoch at which the transaction starts being valid
+          description: |
+            An integer between `0` and `10^10`, marking the epoch at which the transaction starts
+            being valid. If omitted, the current epoch will be used (taking into account the
+            `at_ledger_state`, if specified).
         end_epoch_exclusive:
           type: integer
           format: int64
           minimum: 0
           maximum: 10000000000
-          description: An integer between `0` and `10^10`, marking the epoch at which the transaction is no longer valid
+          description: |
+            An integer between `0` and `10^10`, marking the epoch at which the transaction is no
+            longer valid. If omitted, a maximum epoch (relative to the `start_epoch_inclusive`) will
+            be used.
         notary_public_key:
           $ref: "#/components/schemas/PublicKey"
-          description: The notary public key to use (optional)
+          description: The notary public key to use (optional).
         notary_is_signatory:
           type: boolean
-          description: Whether the notary should count as a signatory (optional, default false)
+          description: Whether the notary should count as a signatory (defaults to `false`).
         tip_percentage:
           type: integer
           format: int32
           minimum: 0
           maximum: 65535
-          description: An integer between `0` and `65535`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
+          description: |
+            An integer between `0` and `65535`, giving the validator tip as a percentage amount.
+            A value of `1` corresponds to a 1% fee.
         nonce:
           type: integer
           format: int64
           minimum: 0
           maximum: 4294967295
           description: |
-            An integer between `0` and `2^32 - 1`, chosen to allow a unique intent to be created (to enable submitting an otherwise identical/duplicate intent).
+            An integer between `0` and `2^32 - 1`, chosen to allow a unique intent to be created
+            (to enable submitting an otherwise identical/duplicate intent).
         signer_public_keys:
           type: array
           items:
@@ -7201,31 +7456,41 @@ components:
             - skip_epoch_check
           properties:
             use_free_credit:
+              description: |
+                Whether to use a virtual, preview-only pool of XRD to pay for all execution fees.
               type: boolean
             assume_all_signature_proofs:
+              description: |
+                Whether the virtual signature proofs should be automatically placed in the auth zone.
               type: boolean
             skip_epoch_check:
+              description: |
+                Whether to skip the epoch range check (i.e. ignoring the `start_epoch_inclusive` and
+                `end_epoch_exclusive` parameters, if specified).
+                
+                Note: effectively, without an epoch range, the Radix Engine cannot perform the
+                *intent hash duplicate* detection, which means that this check will be skipped as well.
               type: boolean
             # This was added later so isn't required; for backwards compatibility
             disable_auth_checks:
               description: |
-                Can be used to skip performing auth checks during runtime.
+                Whether to skip the auth checks during execution.
                 
                 This could be used to e.g.:
-                * Preview protocol update style transactions
+                * Preview protocol update style transactions.
                 * Mint resources for previewing trades with resources you don't own. If doing this, be warned:
                   * Only resources which were potentially mintable/burnable at creation time
-                  will be mintable/burnable, due to feature flags on the resource.
+                    will be mintable/burnable, due to feature flags on the resource.
                   * Please see the below warning about unexpected results if using this approach.
                 
-                Please be warned - this mode of operation is quite a departure from normal operation:
-                * Calculated fees will likely be lower than a standard execution
+                Warning: this mode of operation is quite a departure from normal operation:
+                * Calculated fees will likely be lower than a standard execution.
                 * This mode can subtly break invariants some dApp code might rely on, or result in unexpected
-                behaviour, so the resulting execution result might not be valid for your needs. For example,
-                if I used this flag to mint pool units to preview a redemption (or some dApp interaction which
-                behind the scenes redeemed them), they'd redeem for less than they're currently worth,
-                because the blueprint code relies on the total supply of the pool units to calculate their
-                redemption worth, and you've just inflated the total supply through the mint operation.
+                  behaviour, so the resulting execution result might not be valid for your needs. For example,
+                  if I used this flag to mint pool units to preview a redemption (or some dApp interaction which
+                  behind the scenes redeemed them), they'd redeem for less than they're currently worth,
+                  because the blueprint code relies on the total supply of the pool units to calculate their
+                  redemption worth, and you've just inflated the total supply through the mint operation.
               type: boolean
     TransactionPreviewResponse:
       type: object

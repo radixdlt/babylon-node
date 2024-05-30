@@ -21,7 +21,6 @@ ENV DEBIAN_FRONTEND noninteractive
 CMD ["/bin/bash"]
 
 ARG WGET_VERSION="1.21.3-1+b2"
-ARG OPENJDK_17_VERSION="17.0.11+9-1~deb12u1"
 ARG VERSION_BRANCH=""
 ARG VERSION_COMMIT=""
 ARG VERSION_DISPLAY=""
@@ -57,7 +56,7 @@ RUN apt-get update \
     wget=${WGET_VERSION} \
     software-properties-common=0.99.30-4 \
   && apt-get install -y --no-install-recommends \
-    openjdk-17-jdk=${OPENJDK_17_VERSION} \
+    openjdk-17-jdk=17.0.11+9-1~deb12u1 \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
@@ -139,7 +138,7 @@ RUN apt-get update \
 # We fix the version of Rust here to ensure that we can update it without having
 # issues with the caching layers containing outdated versions which aren't compatible.
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o rustup.sh \
-  && sh rustup.sh -y --target 1.71.1-aarch64-unknown-linux-gnu 1.71.1-x86_64-unknown-linux-gnu
+  && sh rustup.sh -y --target 1.71.1-aarch64-unknown-linux-gnu 1.71.1-x86_64-unknown-linux-gnu --default-toolchain 1.77.2
 
 RUN "$HOME/.cargo/bin/cargo" install sccache --version 0.7.4
 
@@ -238,8 +237,6 @@ FROM debian:12.1-slim as app-container
 LABEL org.opencontainers.image.source="https://github.com/radixdlt/babylon-node"
 LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 
-ARG OPENJDK_17_VERSION="17.0.11+9-1~deb12u1"
-
 # Install dependencies needed for building the image or running the application
 # - unzip is needed for unpacking the java build artifacts
 # - daemontools is needed at application runtime for async tasks
@@ -259,7 +256,7 @@ ARG OPENJDK_17_VERSION="17.0.11+9-1~deb12u1"
 # - https://packages.debian.org/bookworm/libc6
 RUN apt-get update -y \
   && apt-get -y --no-install-recommends install \
-    openjdk-17-jre-headless=${OPENJDK_17_VERSION} \
+    openjdk-17-jre-headless=17.0.11+9-1~deb12u1 \
     # https://security-tracker.debian.org/tracker/CVE-2023-38545
     curl=7.88.1-10+deb12u5 \
     gettext-base=0.21-12 \

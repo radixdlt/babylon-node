@@ -64,24 +64,11 @@
 
 package com.radixdlt.p2p.discovery;
 
-public final class GetPeers {
+import com.radixdlt.consensus.event.RemoteEvent;
 
-  public static GetPeers create() {
-    return new GetPeers();
-  }
-
-  private GetPeers() {}
-
-  @Override
-  public String toString() {
-    return String.format("%s{}", this.getClass().getSimpleName());
-  }
-
+public record GetPeers() implements RemoteEvent {
   @Override
   public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
     return o instanceof GetPeers;
   }
 

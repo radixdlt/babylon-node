@@ -87,10 +87,10 @@ public final class ProtocolConfigGeneratorTest {
     // - Any protocol version starting "test-" will add a single transaction to ledger at enactment
     // - Any protocol version starting "custom-" can be configured with overrides to commit
     // arbitrary flash transactions. To do this, add an overrides map of protocol version => SBOR
-    // encoded bytes of Vec<Vec<UpdateTransaction>>. Where UpdateTransaction is an enum with one
-    // option at present (FlashTransactionV1). These SBOR encoded bytes should be created in Rust.
-    // See e.g. protocol/test.rs - although we should add an easier-to-use generator if we choose
-    // to use this in tests. Please ask if you need help with this.
+    // encoded bytes of `Vec<ProtocolUpdateTransactionBatch>` (see `protocol_updaters.rs`).
+    // These SBOR encoded bytes should be created in Rust (see `protocol/test.rs` - although we
+    // should add an easier-to-use generator if we choose to use this in tests). Please ask if you
+    // need help with this.
     final var protocolConfig =
         new ProtocolConfig(
             // List of triggers

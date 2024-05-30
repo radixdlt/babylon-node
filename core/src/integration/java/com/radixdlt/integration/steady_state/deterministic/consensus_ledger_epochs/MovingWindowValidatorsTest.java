@@ -70,8 +70,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.radixdlt.consensus.EpochNodeWeightMapping;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.EpochRound;
-import com.radixdlt.consensus.epoch.Epoched;
-import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.environment.deterministic.network.ChannelId;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
@@ -98,7 +96,7 @@ public class MovingWindowValidatorsTest {
             .map(index -> (int) (epoch - 1 + index) % totalValidatorCount);
   }
 
-  private void run(int numNodes, int windowSize, int maxEpoch, Round epochMaxRound) {
+  private void run(int numNodes, int windowSize, int maxEpoch, int epochMaxRound) {
     DeterministicTest bftTest =
         DeterministicTest.builder()
             .addPhysicalNodes(PhysicalNodeConfig.createBatchWithFakeAddresses(numNodes))
@@ -114,13 +112,12 @@ public class MovingWindowValidatorsTest {
                         StateComputerConfig.mockedWithEpochs(
                             epochMaxRound,
                             EpochNodeWeightMapping.constant(
-                                windowedEpochToNodesMapper(windowSize, numNodes)),
-                            new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
+                                windowedEpochToNodesMapper(windowSize, numNodes))))));
 
     bftTest.startAllNodes();
     bftTest.runUntilMessage(
-        DeterministicTest.hasReachedEpochRound(EpochRound.of(maxEpoch, epochMaxRound)),
-        maxEpoch * ((int) epochMaxRound.number()) * numNodes * numNodes * 10);
+        DeterministicTest.hasReachedEpochRound(EpochRound.of(maxEpoch, Round.of(epochMaxRound))),
+        maxEpoch * epochMaxRound * numNodes * numNodes * 10);
 
     LinkedList<Metrics> testCounters = metrics(bftTest);
     assertThat(testCounters)
@@ -130,7 +127,7 @@ public class MovingWindowValidatorsTest {
         .extracting(sc -> (long) sc.bft().pacemaker().timeoutsSent().get())
         .containsOnly(0L);
 
-    long maxCount = maxProcessedFor(numNodes, windowSize, maxEpoch, epochMaxRound.number());
+    long maxCount = maxProcessedFor(numNodes, windowSize, maxEpoch, epochMaxRound);
 
     assertThat(testCounters)
         .extracting(sc -> (long) sc.bft().committedVertices().getSum())
@@ -139,7 +136,7 @@ public class MovingWindowValidatorsTest {
 
   private MessageMutator mutator() {
     return (message, queue) -> {
-      if (Epoched.isInstance(message.message(), ScheduledLocalTimeout.class)) {
+      if (MessageMutator.isEpochedScheduledLocalTimeout(message.message())) {
         // Discard
         return true;
       }
@@ -163,25 +160,25 @@ public class MovingWindowValidatorsTest {
   @Test
   public void
       given_correct_1_node_bft_with_4_total_nodes_with_changing_epochs_per_100_rounds__then_should_pass_bft_and_postconditions() {
-    run(4, 1, 100, Round.of(100));
+    run(4, 1, 100, 100);
   }
 
   @Test
   public void
       given_correct_3_node_bft_with_4_total_nodes_with_changing_epochs_per_100_rounds__then_should_pass_bft_and_postconditions() {
-    run(4, 3, 120, Round.of(100));
+    run(4, 3, 120, 100);
   }
 
   @Test
   public void
       given_correct_25_node_bft_with_50_total_nodes_with_changing_epochs_per_100_rounds__then_should_pass_bft_and_postconditions() {
-    run(50, 25, 100, Round.of(100));
+    run(50, 25, 100, 100);
   }
 
   @Test
   public void
       given_correct_25_node_bft_with_100_total_nodes_with_changing_epochs_per_1_round__then_should_pass_bft_and_postconditions() {
-    run(100, 25, 100, Round.of(1));
+    run(100, 25, 100, 1);
   }
 
   private static long maxProcessedFor(

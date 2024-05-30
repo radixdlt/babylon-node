@@ -67,6 +67,7 @@ package com.radixdlt.networks;
 import com.google.common.hash.HashCode;
 import com.radixdlt.utils.WrappedByteArray;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.bouncycastle.util.encoders.Hex;
@@ -93,9 +94,9 @@ public enum Network {
       "tdx_2_",
       FixedNetworkGenesis.constant(
           HashCode.fromBytes(
-              Hex.decode("089f42968c8b170f405f23caa6b861684125988a287d3e65a6886a0a0482516b")),
+              Hex.decode("2825a4f1697dd457a27b6f641999d5f64d46ad512a49ee54653e4b866eab86e3")),
           WrappedByteArray.fromBase64String(
-              "/wYAAHNOYVBwWQCJAwD/tyA07BQUXCEGCgEACQEABQkHKAAAIQoJZAAAAAr0DRoICrgLCRsMCuCTBAUKFTQkoOyCkOtRDo+1mgUYGQEgoAAAZKeztuANGRMJARU7FQkgoAAAEGMtXsdrFYENAeAgIgMEASAhAQKA0fJ+apHv10KbZw/zq1+awjGS4SYu/i7pxk+BCLnNoAAAAGCKph7+xG3S1QgAAAAVArABICEJBiAHIQMOUiH/6qS6qKwATwMsKC0vLUfI6NsNeQFACKZxjs1hSAEBAQFiswDwSSAhAgIMBG5hbWUiAAEME0RlZmF1bHQgdmFsaWRhdG9yIDECDAhpbmZvX3VybCINAQwYaHR0cHM6Ly93d3cucmFkaXhkbHQuY29teskABat8CpOSHutzW15EGqGhfvw0gMuIUS2ZKFuB7Iv2X/H7jd72qwAEMgL+qwAZq4ACrw0N0kHlDH/i2GreozpcuZBx12sHNhj6YF1EaOIhvln2qwAAM/6rAB2rgAMW0qUtuYiPbyBCBqyKDUokPNOghqTrU7tt5IPo1+DROvarAAA0/qsALqsAfOjyN77NvfZi83XLaRS0psRYCfTcnUXfAivEd4mMljkb9qsAADX+qwAuqwB8k3VObxGPji6JAkWp+D3ik+Y0nzl2QP2znVLv37lCls72qwAANv6rAB2rgALNGmbTnPKeZq5o+llHiPtfKl/hTuY46mGRGj7MUW1JDfarAAA3/qsAHauAAznqQoq4j2U0Gg5hlr/bcPg4pGB+2MbwrfPeswTHfIX59qsAADj+qwAuqwB4hKj6wGhwun4klfc+61w0uqJsaYm1e9FHmiKFsm6bV/pXAwA5/qsADasQAQIggAF2RAYMICEJAo4pBsGPAAnBYDCgAAAA6DyA0J88LjsDARERAQVHfsUFlkcAgmEFlkcAgv0EmkcAfpkEmkcAfjUElkcAgtEDlkcAgm0DmkcAfgkDhkcAQVEkQOrtdEbQnCyfDFFO8DwAAAAgDAoMdHJhbnNmZXJfeHJkCHJhZGlzd2FwCG1ldGFkYXRhEWZ1bmdpYmxlX3Jlc291cmNlFW5vbl9mPhYAuB1hY2NvdW50X2F1dGhvcml6ZWRfZGVwb3NpdG9ycw5nbG9iYWxfbl9vd25lZCZuTkMAYF93aXRoX3JlbW90ZV90eXBlGWt2X3N0b3JGGgA8D21heF90cmFuc2FjdGlvbg=="))),
+              "/wYAAHNOYVBwWQCPAgDGlw0JsgsUXCEGCgEACQEABREJICEKCWQAAAAK9A0RCAq4CwkiDArgkwQFChU0JKDsgpDrUQ6PtZoFGBkBIKAAAGSns7bgDRkTCQEVOxUJJKAAABBjLV7HawUJIhUB4CAiAwQBICEBAoDR8n5qke/XQptnD/OrX5rCMZLhJi7+LunGT4EIuc2gAAAAYIqmHv7EbdLVCAAAABUCsAEgIQQGIAchAw5SIf/qpLqorABPAywoLS8tR8jo2w15AUAIpnGOzWFIAQEBAWKzAPBJICECAgwEbmFtZSIAAQwTRGVmYXVsdCB2YWxpZGF0b3IgMQIMCGluZm9fdXJsIg0BDBhodHRwczovL3d3dy5yYWRpeGRsdC5jb216yQAFq3wW0qUtuYiPbyBCBqyKDUokPNOghqTrU7tt5IPo1+DROvarAAQ0Av6rAB2rfJN1Tm8Rj44uiQJFqfg94pPmNJ85dkD9s51S79+5QpbO9qsAADb+qwAuqwB4hKj6wGhwun4klfc+61w0uqJsaYm1e9FHmiKFsm6bV/pWAQA5/qsADasQAQIggAF27QIMICEEAo7SAhAgIQECCWEJMKAAAADoPIDQnzwuOwMBEREBBUd+bgKaRwB+CgKaRwB+pgGGRwAB7iRA6u10RtCcLJ8MEevwPAAAACAMCgx0cmFuc2Zlcl94cmQIcmFkaXN3YXAIbWV0YWRhdGERZnVuZ2libGVfcmVzb3VyY2UVbm9uX2Y+FgC4HWFjY291bnRfYXV0aG9yaXplZF9kZXBvc2l0b3JzDmdsb2JhbF9uX293bmVkJm5OQwBgX3dpdGhfcmVtb3RlX3R5cGUZa3Zfc3RvckYaADwPbWF4X3RyYW5zYWN0aW9u"))),
 
   // Temporary networks that match Olympia - for genesis testing mostly
   OLYMPIA_RELEASENET(3, "releasenet", "tdx_3_"),
@@ -147,6 +148,8 @@ public enum Network {
           HashCode.fromBytes(
               Hex.decode("ac79e815b39beb756d9afe261e8c4deff4ed95f8fcc59af001eef060d820b266")),
           "genesis/test_genesis.bin"));
+
+  public static final Set<Network> PRODUCTION_NETWORKS = Set.of(Network.MAINNET);
 
   private final int intId;
   private final byte byteId;

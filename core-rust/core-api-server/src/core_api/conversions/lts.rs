@@ -1,8 +1,9 @@
 use crate::engine_prelude::*;
+use state_manager::rocks_db::{ReadableRocks, StateManagerDatabase};
 use state_manager::store::traits::SubstateNodeAncestryStore;
 use state_manager::{
     CommittedTransactionIdentifiers, LedgerTransactionOutcome, LocalTransactionReceipt,
-    ReadableRocks, StateManagerDatabase, StateVersion, TransactionTreeHash,
+    StateVersion, TransactionTreeHash,
 };
 
 use crate::core_api::*;

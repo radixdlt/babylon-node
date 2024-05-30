@@ -141,7 +141,7 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_getTransactionAtSt
                 },
                 error_message: match local_transaction_execution.outcome {
                     DetailedTransactionOutcome::Success(_) => None,
-                    DetailedTransactionOutcome::Failure(err) => Some(format!("{err:?}")),
+                    DetailedTransactionOutcome::Failure(error) => Some(error.render()),
                 },
                 consensus_receipt_bytes: scrypto_encode(
                     &committed_ledger_transaction_receipt.get_consensus_receipt(),
@@ -238,7 +238,7 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_validatorInfo(
                 )
                 .unwrap()
                 .into_payload()
-                .into_latest();
+                .fully_update_and_into_latest_version();
 
             JavaValidatorInfo {
                 stake_unit_resource: validator_state.stake_unit_resource,

@@ -62,19 +62,22 @@
  * permissions under this License.
  */
 
-package com.radixdlt.targeted.mempool;
+package com.radixdlt.environment;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import javax.inject.Qualifier;
+/**
+ * A configuration of "Engine test Scenarios" to be run automatically after a specific Protocol
+ * Update.
+ */
+public record ProtocolUpdateScenarios(
+    String protocolVersionName, ImmutableList<String> scenarioNames) {
 
-/** Key for the mempool filler */
-@Qualifier
-@Target({FIELD, PARAMETER, METHOD})
-@Retention(RUNTIME)
-public @interface MempoolFillerKey {}
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        ProtocolUpdateScenarios.class,
+        codecs -> StructCodec.fromRecordComponents(ProtocolUpdateScenarios.class, codecs));
+  }
+}

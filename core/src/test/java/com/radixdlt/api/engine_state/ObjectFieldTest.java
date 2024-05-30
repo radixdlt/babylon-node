@@ -88,7 +88,7 @@ public final class ObjectFieldTest extends DeterministicEngineStateApiTestBase {
 
   @Test
   public void engine_state_api_returns_object_field() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       final var wellKnownAddresses = getCoreApiHelper().getWellKnownAddresses();
@@ -119,7 +119,7 @@ public final class ObjectFieldTest extends DeterministicEngineStateApiTestBase {
 
   @Test
   public void engine_state_api_returns_transient_object_field_default_value() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       // Locate literally any fungible vault:
@@ -162,7 +162,7 @@ public final class ObjectFieldTest extends DeterministicEngineStateApiTestBase {
 
   @Test
   public void engine_state_api_object_field_supports_history() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       // The easiest way to observe history is to look at the Consensus Manager's state field:
@@ -205,7 +205,7 @@ public final class ObjectFieldTest extends DeterministicEngineStateApiTestBase {
 
   @Test
   public void engine_state_api_returns_accurate_historical_state_summary() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       // We will query for some arbitrary field (that we know exists since very early versions):

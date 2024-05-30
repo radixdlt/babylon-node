@@ -91,7 +91,6 @@ import com.radixdlt.mempool.MempoolRelayerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.*;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -119,15 +118,17 @@ public final class IncreasingValidatorsTest {
                 FunctionalRadixNodeModule.SafetyRecoveryConfig.BERKELEY_DB,
                 FunctionalRadixNodeModule.ConsensusConfig.of(1000),
                 FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
-                    StateComputerConfig.rev2(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        GenesisBuilder.createTestGenesisWithNumValidators(
-                            1,
-                            Decimal.ONE,
-                            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10)),
-                        StateComputerConfig.REV2ProposerConfig.Mempool.defaults()
-                            .withReceiverConfig(new MempoolReceiverConfig(5))
-                            .withRelayerConfig(MempoolRelayerConfig.defaults().withMaxPeers(5))),
+                    StateComputerConfig.rev2()
+                        .withGenesis(
+                            GenesisBuilder.createTestGenesisWithNumValidators(
+                                1,
+                                Decimal.ONE,
+                                GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10)))
+                        .withProposerConfig(
+                            StateComputerConfig.REV2ProposerConfig.Mempool.defaults()
+                                .withReceiverConfig(new MempoolReceiverConfig(5))
+                                .withRelayerConfig(
+                                    MempoolRelayerConfig.defaults().withMaxPeers(5))),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 
@@ -158,7 +159,7 @@ public final class IncreasingValidatorsTest {
       for (var definition : validatorDefinitions) {
         var createValidatorRawTxn = definition.first();
         test.runForCount(100);
-        mempoolDispatcher.dispatch(MempoolAdd.create(createValidatorRawTxn));
+        mempoolDispatcher.dispatch(new MempoolAdd(List.of(createValidatorRawTxn)));
         test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
       }
 
@@ -183,7 +184,7 @@ public final class IncreasingValidatorsTest {
                 .signatories(List.of(key))
                 .prepare()
                 .raw();
-        mempoolDispatcher.dispatch(MempoolAdd.create(registerValidatorTxn));
+        mempoolDispatcher.dispatch(new MempoolAdd(List.of(registerValidatorTxn)));
         test.runUntilState(
             nodeAt(0, NodePredicate.committedUserTransaction(registerValidatorTxn, true, true)));
         var stakeValidatorTxn =
@@ -193,7 +194,7 @@ public final class IncreasingValidatorsTest {
                 .signatories(List.of(key))
                 .prepare()
                 .raw();
-        mempoolDispatcher.dispatch(MempoolAdd.create(stakeValidatorTxn));
+        mempoolDispatcher.dispatch(new MempoolAdd(List.of(stakeValidatorTxn)));
         test.runUntilState(
             nodeAt(0, NodePredicate.committedUserTransaction(stakeValidatorTxn, true, true)));
       }
