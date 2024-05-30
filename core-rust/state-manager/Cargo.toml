@@ -16,7 +16,6 @@ radix-substate-store-impls = { workspace = true }
 radix-substate-store-interface = { workspace = true }
 radix-substate-store-queries = { workspace = true }
 radix-rust = { workspace = true }
-scrypto-bindgen = { workspace = true }
 
 # Non-Radix Engine Dependencies:
 itertools = { workspace = true }
