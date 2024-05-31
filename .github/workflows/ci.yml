@@ -124,7 +124,7 @@ jobs:
           RADIXDLT_LOG_LEVEL: error
         run: ./gradlew clean check jacocoTestReport --stacktrace --refresh-dependencies
       - name: Install cargo-llvm-cov
-        uses: taiki-e/install-action@cargo-llvm-cov
+        uses: RDXWorks-actions/install-action@cargo-llvm-cov
       - name: DistZip
         run: cd ./core-rust && cargo llvm-cov --html && cd target && zip -9r ../../core/build/distributions/core-rust-coverage.zip ./llvm-cov/* && cd ../.. && ./gradlew distZip
       - name: Publish Java distZip
