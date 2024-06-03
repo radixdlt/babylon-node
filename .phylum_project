@@ -1,0 +1,19 @@
+id: 3f5b2c53-46bd-4f68-b050-5898f929002f
+name: babylon-node
+created_at: 2024-06-03T08:01:41.851819+02:00
+group_name: Protocol
+depfiles:
+- path: ./core/gradle.lockfile
+  type: gradle
+- path: ./core-rust/Cargo.lock
+  type: cargo
+- path: ./keygen/gradle.lockfile
+  type: gradle
+- path: ./cli-tools/gradle.lockfile
+  type: gradle
+- path: ./common/gradle.lockfile
+  type: gradle
+- path: ./core-rust-bridge/gradle.lockfile
+  type: gradle
+- path: ./build.gradle
+  type: gradle
