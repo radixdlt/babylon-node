@@ -171,6 +171,10 @@ public class DispatcherModule extends AbstractModule {
     final var unexpecedEventKey = new TypeLiteral<EventProcessor<ConsensusByzantineEvent>>() {};
     Multibinder.newSetBinder(binder(), unexpecedEventKey, ProcessOnDispatch.class);
 
+    final var getVerticesRequestCaptureKey =
+        new TypeLiteral<RemoteEventCapture<GetVerticesRequest>>() {};
+    Multibinder.newSetBinder(binder(), getVerticesRequestCaptureKey);
+
     final var scheduledTimeoutKey = new TypeLiteral<EventProcessor<ScheduledLocalTimeout>>() {};
     Multibinder.newSetBinder(binder(), scheduledTimeoutKey, ProcessOnDispatch.class);
     Multibinder.newSetBinder(binder(), scheduledTimeoutKey);
@@ -221,9 +225,6 @@ public class DispatcherModule extends AbstractModule {
     Multibinder.newSetBinder(binder(), committedUpdateKey, ProcessOnDispatch.class);
     final var syncUpdateKey = new TypeLiteral<EventProcessor<LedgerExtension>>() {};
     Multibinder.newSetBinder(binder(), syncUpdateKey, ProcessOnDispatch.class);
-
-    final var verticesRequestKey = new TypeLiteral<EventProcessor<GetVerticesRequest>>() {};
-    Multibinder.newSetBinder(binder(), verticesRequestKey, ProcessOnDispatch.class);
 
     bind(new TypeLiteral<EventDispatcher<RoundQuorumResolution>>() {})
         .toProvider(
@@ -447,7 +448,7 @@ public class DispatcherModule extends AbstractModule {
 
   @Provides
   private RemoteEventDispatcher<NodeId, GetVerticesRequest> verticesRequestDispatcher(
-      @ProcessOnDispatch Set<EventProcessor<GetVerticesRequest>> processors,
+      Set<RemoteEventCapture<GetVerticesRequest>> processors,
       Environment environment,
       Metrics metrics) {
     var dispatcher = environment.getRemoteDispatcher(GetVerticesRequest.class);

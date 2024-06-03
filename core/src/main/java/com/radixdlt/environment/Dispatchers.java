@@ -158,15 +158,17 @@ public final class Dispatchers {
     @Override
     public RemoteEventDispatcher<NodeId, T> get() {
       var remoteDispatcher = environmentProvider.get().getRemoteDispatcher(messageType);
-      var onDispatch =
-          onDispatchProcessors.stream()
-              .flatMap(p -> p.getProcessor(messageType).stream())
-              .collect(Collectors.toSet());
 
       if (LocalEvent.class.isAssignableFrom(messageType)) {
         @SuppressWarnings({"unchecked", "rawtypes"})
         var localMessageType = (Class<LocalEvent>) (Class) messageType;
         var localDispatcher = environmentProvider.get().getDispatcher(localMessageType);
+
+        var onDispatch =
+            onDispatchProcessors.stream()
+                .flatMap(p -> p.getProcessor(messageType.asSubclass(LocalEvent.class)).stream())
+                .map(EventProcessor.class::cast)
+                .collect(Collectors.toSet());
 
         return (node, e) -> {
           if (node.equals(self)) {
@@ -174,7 +176,7 @@ public final class Dispatchers {
           } else {
             remoteDispatcher.dispatch(node, e);
           }
-          onDispatch.forEach(p -> p.process(e));
+          onDispatch.forEach(p -> p.process((LocalEvent) e));
         };
       } else {
         return (node, e) -> {
@@ -184,7 +186,6 @@ public final class Dispatchers {
           } else {
             remoteDispatcher.dispatch(node, e);
           }
-          onDispatch.forEach(p -> p.process(e));
         };
       }
     }
