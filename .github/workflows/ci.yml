@@ -125,12 +125,19 @@ jobs:
         run: ./gradlew clean check jacocoTestReport --stacktrace --refresh-dependencies
       - name: Install cargo-llvm-cov
         uses: RDXWorks-actions/install-action@cargo-llvm-cov
+      - uses: radixdlt/public-iac-resuable-artifacts/fetch-secrets@main
+        with:
+          role_name: ${{ secrets.COMMON_SECRETS_ROLE_ARN }}
+          app_name: "babylon-node"
+          step_name: "codecoverage"
+          secret_prefix: "CODECOV"
+          secret_name: ${{ secrets.AWS_SECRET_NAME_CODECOV }}
+          parse_json: true
       - name: Generate Code Coverage
         run: cd core-rust && cargo llvm-cov --lcov --output-path lcov.info && cd ..
-      - name: Upload to CodeCov.io
+      - name: Upload to codecov.io
         uses: RDXWorks-actions/codecov-action@main
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
           file: ./core-rust/lcov.info
           name: codecov-rust
