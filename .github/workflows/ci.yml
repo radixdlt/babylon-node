@@ -125,8 +125,18 @@ jobs:
         run: ./gradlew clean check jacocoTestReport --stacktrace --refresh-dependencies
       - name: Install cargo-llvm-cov
         uses: RDXWorks-actions/install-action@cargo-llvm-cov
+      - name: Generate Code Coverage
+        run: cd core-rust && cargo llvm-cov --lcov --output-path lcov.info && cd ..
+      - name: Upload to CodeCov.io
+        uses: RDXWorks-actions/codecov-action@main
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: true
+          file: ./core-rust/lcov.info
+          name: codecov-rust
+          flags: rust
       - name: DistZip
-        run: mkdir -p ./core/build/distributions && cd ./core-rust && cargo llvm-cov --html && cd target && zip -9r ../../core/build/distributions/core-rust-coverage.zip ./llvm-cov/* && cd ../.. && ./gradlew distZip
+        run: ./gradlew distZip
       - name: Publish Java distZip
         uses: RDXWorks-actions/upload-artifact@main
         with:
