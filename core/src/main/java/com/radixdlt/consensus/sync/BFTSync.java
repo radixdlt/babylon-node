@@ -448,8 +448,10 @@ public final class BFTSync implements BFTSyncer {
   private String outboundRateLimitLogMessage(
       String reason, Round round, NodeId author, GetVerticesRequest request) {
     return String.format(
-        "RATE_LIMIT: Outbound BFT Sync request %s for round %s due to %s to %s was not sent"
-            + " because we're over our %s/second rate limit on sync requests.",
+        """
+			RATE_LIMIT: Outbound BFT Sync request %s for round %s due to %s to %s was not sent\
+			 because we're over our %s/second rate limit on sync requests.
+			This can happen if a node has a temporarily flaky internet connection.""",
         request, round, reason, author, this.syncRequestRateLimiter.getRate());
   }
 
