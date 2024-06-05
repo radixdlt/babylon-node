@@ -163,19 +163,16 @@ public final class Dispatchers {
         @SuppressWarnings({"unchecked", "rawtypes"})
         var localMessageType = (Class<LocalEvent>) (Class) messageType;
         var localDispatcher = environmentProvider.get().getDispatcher(localMessageType);
-        var onDispatch =
-            onDispatchProcessors.stream()
-                .flatMap(p -> p.getProcessor(localMessageType).stream())
-                .map(p -> (EventProcessor<LocalEvent>) p)
-                .collect(Collectors.toSet());
 
         return (node, e) -> {
           if (node.equals(self)) {
             localDispatcher.dispatch((LocalEvent) e);
+            onDispatchProcessors.stream()
+                .flatMap(p -> p.getProcessor(localMessageType).stream())
+                .forEach(p -> p.process((LocalEvent) e));
           } else {
             remoteDispatcher.dispatch(node, e);
           }
-          onDispatch.forEach(p -> p.process((LocalEvent) e));
         };
       } else {
         return (node, e) -> {

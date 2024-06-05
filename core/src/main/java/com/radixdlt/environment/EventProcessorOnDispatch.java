@@ -68,8 +68,7 @@ import com.radixdlt.consensus.event.LocalEvent;
 import java.util.Optional;
 
 /**
- * A processor which is to process an event synchronously at time of dispatch. Note that this
- * processor can be used for both types of events, local and remote.
+ * A processor which is to process a local event synchronously at time of dispatch.
  *
  * @param <T> the class of the event
  */
