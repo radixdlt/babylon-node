@@ -64,7 +64,7 @@
 
 package com.radixdlt.environment;
 
-import com.radixdlt.consensus.event.CoreEvent;
+import com.radixdlt.consensus.event.LocalEvent;
 import java.util.Optional;
 
 /**
@@ -73,9 +73,9 @@ import java.util.Optional;
  *
  * @param <T> the class of the event
  */
-public record EventProcessorOnDispatch<T extends CoreEvent>(
+public record EventProcessorOnDispatch<T extends LocalEvent>(
     Class<T> eventClass, EventProcessor<T> processor) {
-  public <U extends CoreEvent> Optional<EventProcessor<U>> getProcessor(Class<U> c) {
+  public <U extends LocalEvent> Optional<EventProcessor<U>> getProcessor(Class<U> c) {
     if (c.equals(eventClass)) {
       @SuppressWarnings("unchecked")
       var eventProcessor = (EventProcessor<U>) processor;

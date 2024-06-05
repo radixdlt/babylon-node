@@ -62,45 +62,10 @@
  * permissions under this License.
  */
 
-package com.radixdlt.harness.simulation.monitors;
+package com.radixdlt.environment;
 
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-import com.radixdlt.consensus.event.LocalEvent;
 import com.radixdlt.consensus.event.RemoteEvent;
-import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.environment.EventProcessorOnDispatch;
-import com.radixdlt.environment.RemoteEventCapture;
-import com.radixdlt.p2p.NodeId;
-import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
-import java.util.function.BiConsumer;
 
-/**
- * Temporary class for simulation tests. TODO: Replace use of this class with the NodeEvents class
- * in deterministic tests.
- */
-public final class NodeEvents {
-  private final ConcurrentMap<Class<?>, Set<BiConsumer<NodeId, Object>>> consumers =
-      Maps.newConcurrentMap();
-
-  public <T> void addListener(BiConsumer<NodeId, T> eventConsumer, Class<T> eventClass) {
-    this.consumers
-        .computeIfAbsent(eventClass, k -> Sets.newConcurrentHashSet())
-        .add((node, e) -> eventConsumer.accept(node, eventClass.cast(e)));
-  }
-
-  public <T extends LocalEvent> EventProcessor<T> processor(NodeId node, Class<T> eventClass) {
-    return t -> this.consumers.getOrDefault(eventClass, Set.of()).forEach(c -> c.accept(node, t));
-  }
-
-  public <T extends RemoteEvent> RemoteEventCapture<T> remoteEventCapture(
-      NodeId node, Class<T> eventClass) {
-    return t -> this.consumers.getOrDefault(eventClass, Set.of()).forEach(c -> c.accept(node, t));
-  }
-
-  public <T extends LocalEvent> EventProcessorOnDispatch<T> processorOnDispatch(
-      NodeId node, Class<T> eventClass) {
-    return new EventProcessorOnDispatch<>(eventClass, processor(node, eventClass));
-  }
+public interface RemoteEventCapture<T extends RemoteEvent> {
+  void process(T t);
 }
