@@ -1,10 +1,5 @@
 # Radix Babylon Node
 
-
-| Rust                                                                                                                                      | 
-|:------------------------------------------------------------------------------------------------------------------------------------------|
-| [![codecov](https://codecov.io/gh/radixdlt/babylon-node/graph/badge.svg?token=CUJDJI1IKB)](https://codecov.io/gh/radixdlt/babylon-node)   |
-
 This is the repository for the RadixDLT node, for the Babylon release and beyond.
 
 ## Integrators
