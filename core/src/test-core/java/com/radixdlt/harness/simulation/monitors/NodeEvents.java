@@ -66,9 +66,11 @@ package com.radixdlt.harness.simulation.monitors;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.radixdlt.consensus.event.CoreEvent;
+import com.radixdlt.consensus.event.LocalEvent;
+import com.radixdlt.consensus.event.RemoteEvent;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.EventProcessorOnDispatch;
+import com.radixdlt.environment.RemoteEventCapture;
 import com.radixdlt.p2p.NodeId;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
@@ -88,11 +90,16 @@ public final class NodeEvents {
         .add((node, e) -> eventConsumer.accept(node, eventClass.cast(e)));
   }
 
-  public <T extends CoreEvent> EventProcessor<T> processor(NodeId node, Class<T> eventClass) {
+  public <T extends LocalEvent> EventProcessor<T> processor(NodeId node, Class<T> eventClass) {
     return t -> this.consumers.getOrDefault(eventClass, Set.of()).forEach(c -> c.accept(node, t));
   }
 
-  public <T extends CoreEvent> EventProcessorOnDispatch<T> processorOnDispatch(
+  public <T extends RemoteEvent> RemoteEventCapture<T> remoteEventCapture(
+      NodeId node, Class<T> eventClass) {
+    return t -> this.consumers.getOrDefault(eventClass, Set.of()).forEach(c -> c.accept(node, t));
+  }
+
+  public <T extends LocalEvent> EventProcessorOnDispatch<T> processorOnDispatch(
       NodeId node, Class<T> eventClass) {
     return new EventProcessorOnDispatch<>(eventClass, processor(node, eventClass));
   }
